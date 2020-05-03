@@ -9,6 +9,8 @@
 `define STRINGIFY(x) `"x`"
 `define ratio_error(a,b) (((a)>(b) ? ((a)-(b)) : ((b)-(a))) /(a))
 `define checkr(gotv,expv) do if (`ratio_error((gotv),(expv))>0.0001) begin $write("%%Error: %s:%0d:  got=%g exp=%g\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
 module t;
    integer file;
@@ -61,6 +63,8 @@ module t;
       $fwriteb(file, "b: "); $fwriteb(file, i); $fwriteb(file, " "); $fdisplayb(file, i);
 
       $fflush(file);
+      $fflush();
+      $fflush;
 
       $fclose(file);
 `ifdef verilator
@@ -73,6 +77,11 @@ module t;
 	 // The "r" is required so we get a FD not a MFD
          file = $fopen("DOES_NOT_EXIST","r");
 	 if (|file) $stop;	// Should not exist, IE must return 0
+	 // Check error function
+	 s = "";
+	 i = $ferror(file, s);
+	 `checkh(i, 2);
+	 `checks(s, "No such file or directory");
       end
 
       begin

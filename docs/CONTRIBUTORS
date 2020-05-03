@@ -1,9 +1,7 @@
 The contributors listed below have certified their Verilator contributions
-under the Developer Certificate of Origin
-(https://developercertificate.org/).
+under the Developer Certificate of Origin (https://developercertificate.org/).
 
-Please see the Verilator manual for 200+ additional contributors. Thanks to
-all.
+Please see the Verilator manual for 200+ additional contributors. Thanks to all.
 
 Ahmed El-Mahmoudy
 Alex Chadwick
@@ -16,8 +14,10 @@ Geza Lore
 Gianfranco Costamagna
 Howard Su
 Iztok Jeras
+James Hanlon
 Jeremy Bennett
 John Coiner
+John Demme
 Julien Margetts
 Kanad Kanhere
 Kevin Kiningham
@@ -28,10 +28,14 @@ Maciej Sobkowski
 Marco Widmer
 Matthew Ballance
 Mike Popoloski
+Nathan Kohagen
+Nathan Myers
 Patrick Stewart
+Peter Horvath
 Peter Monsson
 Philipp Wagner
 Pieter Kapsenberg
+Qingyao Sun
 Richard Myers
 Sean Cross
 Sebastien Van Cauwenberghe
@@ -39,6 +43,7 @@ Stefan Wallentowitz
 Tobias Rosenkranz
 Tobias Wölfel
 Todd Strader
+Veripool API Bot
 Wilson Snyder
 Yutetsu TAKATSUKASA
 Yves Mathieu

@@ -37,6 +37,7 @@
 // If set to "", this default is ignored and the user is expected
 // to set them at Verilator runtime.
 
+// clang-format off
 #ifndef DEFENV_SYSTEMC
 # define DEFENV_SYSTEMC ""
 #endif
@@ -52,6 +53,7 @@
 #ifndef DEFENV_VERILATOR_ROOT
 # define DEFENV_VERILATOR_ROOT ""
 #endif
+// clang-format on
 
 //**********************************************************************
 //**** Compile options

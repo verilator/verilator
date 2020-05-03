@@ -14,6 +14,7 @@
 //
 //*************************************************************************
 
+// clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)
 # ifndef PSAPI_VERSION
 #  define PSAPI_VERSION 1  // Needed for compatibility with Windows 7
@@ -22,6 +23,7 @@
 #if defined(__MINGW32__)
 # define MINGW_HAS_SECURE_API 1  // Needed to expose a "secure" POSIX-like API
 #endif
+// clang-format on
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -42,6 +44,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+// clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <windows.h>   // LONG for bcrypt.h on MINGW
 # include <bcrypt.h>  // BCryptGenRandom
@@ -53,7 +56,7 @@
 # include <sys/time.h>
 # include <unistd.h>  // usleep
 #endif
-
+// clang-format on
 
 //######################################################################
 // Environment
@@ -80,17 +83,17 @@ string V3Os::getenvStr(const string& envvar, const string& defaultValue) {
 
 void V3Os::setenvStr(const string& envvar, const string& value, const string& why) {
     if (why != "") {
-        UINFO(1,"export "<<envvar<<"="<<value<<" # "<<why<<endl);
+        UINFO(1, "export " << envvar << "=" << value << " # " << why << endl);
     } else {
-        UINFO(1,"export "<<envvar<<"="<<value<<endl);
+        UINFO(1, "export " << envvar << "=" << value << endl);
     }
 #if defined(_WIN32) || defined(__MINGW32__)
     _putenv_s(envvar.c_str(), value.c_str());
 #elif defined(_BSD_SOURCE) || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L)
     setenv(envvar.c_str(), value.c_str(), true);
 #else
-    //setenv() replaced by putenv() in Solaris environment. Prototype is different
-    //putenv() requires NAME=VALUE format
+    // setenv() replaced by putenv() in Solaris environment. Prototype is different
+    // putenv() requires NAME=VALUE format
     string vareq = envvar + "=" + value;
     putenv(const_cast<char*>(vareq.c_str()));
 #endif
@@ -101,8 +104,11 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
 
 string V3Os::filenameFromDirBase(const string& dir, const string& basename) {
     // Don't return ./{filename} because if filename was absolute, that makes it relative
-    if (dir == ".") return basename;
-    else return dir+"/"+basename;
+    if (dir == ".") {
+        return basename;
+    } else {
+        return dir + "/" + basename;
+    }
 }
 
 string V3Os::filenameDir(const string& filename) {
@@ -117,7 +123,7 @@ string V3Os::filenameDir(const string& filename) {
 string V3Os::filenameNonDir(const string& filename) {
     string::size_type pos;
     if ((pos = filename.rfind('/')) != string::npos) {
-        return filename.substr(pos+1);
+        return filename.substr(pos + 1);
     } else {
         return filename;
     }
@@ -126,9 +132,7 @@ string V3Os::filenameNonDir(const string& filename) {
 string V3Os::filenameNonExt(const string& filename) {
     string base = filenameNonDir(filename);
     string::size_type pos;
-    if ((pos = base.find('.')) != string::npos) {
-        base.erase(pos);
-    }
+    if ((pos = base.find('.')) != string::npos) base.erase(pos);
     return base;
 }
 
@@ -136,32 +140,35 @@ string V3Os::filenameSubstitute(const string& filename) {
     string out;
     enum { NONE, PAREN, CURLY } brackets = NONE;
     for (string::size_type pos = 0; pos < filename.length(); ++pos) {
-        if ((filename[pos] == '$') && (pos+1 < filename.length())) {
-            switch (filename[pos+1]) {
-                case '{': brackets = CURLY; break;
-                case '(': brackets = PAREN; break;
-                default: brackets = NONE; break;
+        if ((filename[pos] == '$') && (pos + 1 < filename.length())) {
+            switch (filename[pos + 1]) {
+            case '{': brackets = CURLY; break;
+            case '(': brackets = PAREN; break;
+            default: brackets = NONE; break;
             }
-            if (brackets != NONE) pos = pos+1;
-            string::size_type endpos = pos+1;
-            while (((endpos+1) < filename.length()) &&
-                   (((brackets==NONE) && (isalnum(filename[endpos+1])
-                                          || filename[endpos+1]=='_'))
-                    || ((brackets==CURLY) && (filename[endpos+1]!='}'))
-                    || ((brackets==PAREN) && (filename[endpos+1]!=')'))))
+            if (brackets != NONE) pos = pos + 1;
+            string::size_type endpos = pos + 1;
+            while (((endpos + 1) < filename.length())
+                   && (((brackets == NONE)
+                        && (isalnum(filename[endpos + 1]) || filename[endpos + 1] == '_'))
+                       || ((brackets == CURLY) && (filename[endpos + 1] != '}'))
+                       || ((brackets == PAREN) && (filename[endpos + 1] != ')'))))
                 ++endpos;
             // Catch bracket errors
-            if (((brackets==CURLY) && (filename[endpos+1]!='}')) ||
-                ((brackets==PAREN) && (filename[endpos+1]!=')'))) {
-              v3fatal("Unmatched brackets in variable substitution in file: "+filename);
+            if (((brackets == CURLY) && (filename[endpos + 1] != '}'))
+                || ((brackets == PAREN) && (filename[endpos + 1] != ')'))) {
+                v3fatal("Unmatched brackets in variable substitution in file: " + filename);
             }
-            string envvar = filename.substr(pos+1, endpos-pos);
+            string envvar = filename.substr(pos + 1, endpos - pos);
             string envvalue;
             if (!envvar.empty()) envvalue = getenvStr(envvar, "");
             if (!envvalue.empty()) {
                 out += envvalue;
-                if (brackets==NONE) pos = endpos;
-                else pos = endpos+1;
+                if (brackets == NONE) {
+                    pos = endpos;
+                } else {
+                    pos = endpos + 1;
+                }
             } else {
                 out += filename[pos];  // *pos == '$'
             }
@@ -170,7 +177,6 @@ string V3Os::filenameSubstitute(const string& filename) {
         }
     }
     return out;
-
 }
 
 string V3Os::filenameRealPath(const string& filename) {
@@ -183,7 +189,7 @@ string V3Os::filenameRealPath(const string& filename) {
 #else
         realpath(filename.c_str(), retpath)
 #endif
-        ) {
+    ) {
         return string(retpath);
     } else {
         return filename;
@@ -191,7 +197,7 @@ string V3Os::filenameRealPath(const string& filename) {
 }
 
 bool V3Os::filenameIsRel(const string& filename) {
-    return (filename.length()>0 && filename[0] != '/');
+    return (filename.length() > 0 && filename[0] != '/');
 }
 
 //######################################################################
@@ -236,6 +242,8 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
     }
 }
 
+std::string V3Os::getcwd() { return filenameRealPath("."); }
+
 //######################################################################
 // METHODS (random)
 
@@ -243,28 +251,27 @@ vluint64_t V3Os::rand64(vluint64_t* statep) {
     // Xoroshiro128+ algorithm
     vluint64_t result = statep[0] + statep[1];
     statep[1] ^= statep[0];
-    statep[0] = (((statep[0] << 55) | (statep[0] >> 9))
-                 ^ statep[1] ^ (statep[1] << 14));
+    statep[0] = (((statep[0] << 55) | (statep[0] >> 9)) ^ statep[1] ^ (statep[1] << 14));
     statep[1] = (statep[1] << 36) | (statep[1] >> 28);
     return result;
 }
 
 string V3Os::trueRandom(size_t size) {
     string result(size, '\xFF');
-    char *const data = const_cast<char*>(result.data());
+    char* const data = const_cast<char*>(result.data());
     // Note: std::string.data() returns a non-const Char* from C++17 onwards.
     // For pre-C++17, this cast is OK in practice, even though it's UB.
 #if defined(_WIN32) || defined(__MINGW32__)
-    NTSTATUS hr = BCryptGenRandom(NULL, reinterpret_cast<BYTE*>(data), size, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-    if (!BCRYPT_SUCCESS(hr)) {
-        v3fatal("Could not acquire random data.");
-    }
+    NTSTATUS hr = BCryptGenRandom(NULL, reinterpret_cast<BYTE*>(data), size,
+                                  BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+    if (!BCRYPT_SUCCESS(hr)) { v3fatal("Could not acquire random data."); }
 #else
-    std::ifstream is ("/dev/urandom", std::ios::in | std::ios::binary);
+    std::ifstream is("/dev/urandom", std::ios::in | std::ios::binary);
     // This read uses the size of the buffer.
     // Flawfinder: ignore
     if (!is.read(data, size)) {
-        v3fatal("Could not open /dev/urandom, no source of randomness. Try specifying a key instead.");
+        v3fatal("Could not open /dev/urandom, no source of randomness. "
+                "Try specifying a key instead.");
     }
 #endif
     return result;
@@ -276,17 +283,18 @@ string V3Os::trueRandom(size_t size) {
 uint64_t V3Os::timeUsecs() {
 #if defined(_WIN32) || defined(__MINGW32__)
     // Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
-    static const uint64_t EPOCH_DIFFERENCE_USECS = 11644473600000000ull;
+    static const uint64_t EPOCH_DIFFERENCE_USECS = 11644473600000000ULL;
 
-    FILETIME ft; // contains number of 0.1us intervals since the beginning of 1601 UTC.
+    FILETIME ft;  // contains number of 0.1us intervals since the beginning of 1601 UTC.
     GetSystemTimeAsFileTime(&ft);
-    uint64_t us = ((static_cast<uint64_t>(ft.dwHighDateTime) << 32) + ft.dwLowDateTime + 5ull) / 10ull;
+    uint64_t us
+        = ((static_cast<uint64_t>(ft.dwHighDateTime) << 32) + ft.dwLowDateTime + 5ULL) / 10ULL;
     return us - EPOCH_DIFFERENCE_USECS;
 #else
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     timeval tv;
     if (gettimeofday(&tv, NULL) < 0) return 0;
-    return static_cast<uint64_t>(tv.tv_sec)*1000000 + tv.tv_usec;
+    return static_cast<uint64_t>(tv.tv_sec) * 1000000 + tv.tv_usec;
 #endif
 }
 
@@ -303,13 +311,13 @@ uint64_t V3Os::memUsageBytes() {
     // Highly unportable. Sorry
     const char* const statmFilename = "/proc/self/statm";
     FILE* fp = fopen(statmFilename, "r");
-    if (!fp) {
-        return 0;
-    }
+    if (!fp) return 0;
     vluint64_t size, resident, share, text, lib, data, dt;  // All in pages
-    if (7 != fscanf(fp, "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %"
-                    VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u",
-                    &size, &resident, &share, &text, &lib, &data, &dt)) {
+    if (7
+        != fscanf(fp,
+                  "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64
+                  "u %" VL_PRI64 "u %" VL_PRI64 "u",
+                  &size, &resident, &share, &text, &lib, &data, &dt)) {
         fclose(fp);
         return 0;
     }
@@ -326,4 +334,22 @@ void V3Os::u_sleep(int64_t usec) {
     // Flawfinder: ignore
     ::usleep(usec);
 #endif
+}
+
+//######################################################################
+// METHODS (sub command)
+
+int V3Os::system(const string& command) {
+    UINFO(1, "Running system: " << command << endl);
+    const int ret = ::system(command.c_str());
+    if (ret == -1) {
+        v3fatal("Failed to execute command:" << command << " " << strerror(errno));
+        return -1;
+    } else {
+        UASSERT(WIFEXITED(ret), "system(" << command << ") returned unexpected value of " << ret);
+        const int exit_code = WEXITSTATUS(ret);
+        UINFO(1, command << " returned exit code of " << exit_code << std::endl);
+        UASSERT(exit_code >= 0, "exit code must not be negative");
+        return exit_code;
+    }
 }

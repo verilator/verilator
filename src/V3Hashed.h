@@ -50,8 +50,9 @@ class V3Hashed : public VHashedBase {
 
     // TYPES
 public:
-    typedef std::multimap<V3Hash,AstNode*> HashMmap;
+    typedef std::multimap<V3Hash, AstNode*> HashMmap;
     typedef HashMmap::iterator iterator;
+
 private:
     // MEMBERS
     HashMmap m_hashMmap;  // hashvalue -> nodes with that hash
@@ -67,17 +68,21 @@ public:
     iterator end() { return m_hashMmap.end(); }
 
     // METHODS
-    void clear() { m_hashMmap.clear(); AstNode::user4ClearTree(); }
+    void clear() {
+        m_hashMmap.clear();
+        AstNode::user4ClearTree();
+    }
     void check();  // Check assertions on structure
-    iterator hashAndInsert(AstNode* nodep);  // Hash the node, and insert into map. Return iterator to inserted
+    // Hash the node, and insert into map. Return iterator to inserted
+    iterator hashAndInsert(AstNode* nodep);
     void hash(AstNode* nodep);  // Only hash the node
     bool sameNodes(AstNode* node1p, AstNode* node2p);  // After hashing, and tell if identical
     void erase(iterator it);  // Remove node from structures
     // Return duplicate in hash, if any, with optional user check for sameness
-    iterator findDuplicate(AstNode* nodep, V3HashedUserSame* checkp=NULL);
+    iterator findDuplicate(AstNode* nodep, V3HashedUserSame* checkp = NULL);
     AstNode* iteratorNodep(iterator it) { return it->second; }
     void dumpFile(const string& filename, bool tree);
-    void dumpFilePrefixed(const string& nameComment, bool tree=false);
+    void dumpFilePrefixed(const string& nameComment, bool tree = false);
     static V3Hash nodeHash(AstNode* nodep) { return V3Hash(nodep->user4p()); }
     // Hash of the nodep tree, without caching in user4.
     static V3Hash uncachedHash(const AstNode* nodep);

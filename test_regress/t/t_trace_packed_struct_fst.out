@@ -1,12 +1,12 @@
 $date
-	Sun Oct 21 21:56:54 2018
+	Sun Apr 19 04:15:38 2020
 
 $end
 $version
 	fstWriter
 $end
 $timescale
-	1ns
+	1ps
 $end
 $scope module top $end
 $var wire 1 ! clk $end
@@ -42,4 +42,3 @@ b00000000000000000000000000000011 "
 0!
 #40
 1!
-b00000000000000000000000000000011 "

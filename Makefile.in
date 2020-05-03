@@ -336,6 +336,7 @@ installdata:
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_c
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_sc
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_protect_lib
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/xml_py
 	cd $(srcdir) \
 	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
@@ -370,8 +371,8 @@ uninstall:
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_c
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_sc
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_protect_lib
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/xml_py
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples
-	-rmdir $(DESTDIR)$(pkgdatadir)/cmake
 	-rmdir $(DESTDIR)$(pkgdatadir)
 	-rmdir $(DESTDIR)$(pkgconfigdir)
 
@@ -454,6 +455,14 @@ analyzer-src:
 analyzer-include:
 	-rm -rf examples/*/obj*
 	scan-build $(MAKE) -k examples
+
+CLANGFORMAT = clang-format
+CLANGFORMAT_FLAGS = -i
+
+clang-format:
+	@$(CLANGFORMAT) --version | egrep 10.0 > /dev/null \
+		|| echo "*** You are not using clang-format 10.0, indents may differ from master's ***"
+	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CPPCHECK_CPP) $(CPPCHECK_H)
 
 ftp: info
 

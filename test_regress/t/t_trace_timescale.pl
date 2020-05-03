@@ -11,10 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt_all => 1);
 
 compile(
-    make_top_shell => 0,
-    make_main => 0,
-    v_flags2 => ["--trace --exe $Self->{t_dir}/t_trace_timescale.cpp"],
-    make_flags => 'CPPFLAGS_ADD=-DVL_TIME_MULTIPLIER=1000',
+    v_flags2 => ["--trace"],
     );
 
 execute(

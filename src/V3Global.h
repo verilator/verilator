@@ -17,10 +17,12 @@
 #ifndef _V3GLOBAL_H_
 #define _V3GLOBAL_H_ 1
 
+// clang-format off
 #include "config_build.h"
 #ifndef HAVE_CONFIG_BUILD
 # error "Something failed during ./configure as config_build.h is incomplete. Perhaps you used autoreconf, don't."
 #endif
+// clang-format on
 
 #include "verilatedos.h"
 
@@ -35,21 +37,19 @@ class AstNetlist;
 //======================================================================
 // Statics
 
-
 //######################################################################
 
 class VWidthMinUsage {
 public:
-    enum en {
-        LINT_WIDTH,
-        MATCHES_WIDTH,
-        VERILOG_WIDTH
-    };
+    enum en { LINT_WIDTH, MATCHES_WIDTH, VERILOG_WIDTH };
     enum en m_e;
-    inline VWidthMinUsage() : m_e(LINT_WIDTH) {}
+    inline VWidthMinUsage()
+        : m_e(LINT_WIDTH) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VWidthMinUsage(en _e) : m_e(_e) {}
-    explicit inline VWidthMinUsage(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VWidthMinUsage(en _e)
+        : m_e(_e) {}
+    explicit inline VWidthMinUsage(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
 };
 inline bool operator==(const VWidthMinUsage& lhs, const VWidthMinUsage& rhs) {
@@ -73,30 +73,34 @@ class V3Global {
     int m_debugFileNumber;  // Number to append to debug files created
     bool m_assertDTypesResolved;  // Tree should have dtypep()'s
     bool m_constRemoveXs;  // Const needs to strip any Xs
-    bool m_needTraceDumper;  // Need __Vm_dumperp in symbols
+    bool m_needC11;  // Need C++11
     bool m_needHInlines;  // Need __Inlines file
     bool m_needHeavy;  // Need verilated_heavy.h include
+    bool m_needTraceDumper;  // Need __Vm_dumperp in symbols
     bool m_dpi;  // Need __Dpi include files
 
 public:
     // Options
     V3Options opt;  // All options; let user see them directly
 
-  public:
+public:
     // CONSTRUCTORS
-    V3Global() {
-        m_debugFileNumber = 0;
-        m_widthMinUsage = VWidthMinUsage::LINT_WIDTH;
-        m_assertDTypesResolved = false;
-        m_constRemoveXs = false;
-        m_needTraceDumper = false;
-        m_needHInlines = false;
-        m_needHeavy = false;
-        m_dpi = false;
-        m_rootp = NULL;  // created by makeInitNetlist() so static constructors run first
-    }
+    V3Global()
+        : m_rootp(NULL)  // created by makeInitNetlist() so static constructors run first
+        , m_widthMinUsage(VWidthMinUsage::LINT_WIDTH)
+        , m_debugFileNumber(0)
+        , m_assertDTypesResolved(false)
+        , m_constRemoveXs(false)
+        , m_needC11(false)
+        , m_needHInlines(false)
+        , m_needHeavy(false)
+        , m_needTraceDumper(false)
+        , m_dpi(false) {}
     AstNetlist* makeNetlist();
-    void boot() { UASSERT(!m_rootp,"call once"); m_rootp = makeNetlist(); }
+    void boot() {
+        UASSERT(!m_rootp, "call once");
+        m_rootp = makeNetlist();
+    }
     void clear();
     // ACCESSORS (general)
     AstNetlist* rootp() const { return m_rootp; }
@@ -106,23 +110,27 @@ public:
     // METHODS
     void readFiles();
     void checkTree();
-    static void dumpCheckGlobalTree(const string& stagename, int newNumber=0, bool doDump=true);
+    static void dumpCheckGlobalTree(const string& stagename, int newNumber = 0,
+                                    bool doDump = true);
     void assertDTypesResolved(bool flag) { m_assertDTypesResolved = flag; }
     void widthMinUsage(const VWidthMinUsage& flag) { m_widthMinUsage = flag; }
     bool constRemoveXs() const { return m_constRemoveXs; }
     void constRemoveXs(bool flag) { m_constRemoveXs = flag; }
-    string debugFilename(const string& nameComment, int newNumber=0) {
+    string debugFilename(const string& nameComment, int newNumber = 0) {
         ++m_debugFileNumber;
         if (newNumber) m_debugFileNumber = newNumber;
-        char digits[100]; sprintf(digits, "%03d", m_debugFileNumber);
-        return opt.makeDir()+"/"+opt.prefix()+"_"+digits+"_"+nameComment;
+        char digits[100];
+        sprintf(digits, "%03d", m_debugFileNumber);
+        return opt.makeDir() + "/" + opt.prefix() + "_" + digits + "_" + nameComment;
     }
-    bool needTraceDumper() const { return m_needTraceDumper; }
-    void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
+    bool needC11() const { return m_needC11; }
+    void needC11(bool flag) { m_needC11 = flag; }
     bool needHInlines() const { return m_needHInlines; }
     void needHInlines(bool flag) { m_needHInlines = flag; }
     bool needHeavy() const { return m_needHeavy; }
     void needHeavy(bool flag) { m_needHeavy = flag; }
+    bool needTraceDumper() const { return m_needTraceDumper; }
+    void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
     bool dpi() const { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
 };

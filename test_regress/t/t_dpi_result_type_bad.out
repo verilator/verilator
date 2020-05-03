@@ -1,0 +1,399 @@
+%Error: t/t_dpi_result_type_bad.v:79:40: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   79 |    import "DPI-C" function bit [ 32:0] i_array_2_state_33();
+      |                                        ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:80:40: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   80 |    import "DPI-C" function bit [ 63:0] i_array_2_state_64();
+      |                                        ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:81:40: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   81 |    import "DPI-C" function bit [ 64:0] i_array_2_state_65();
+      |                                        ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:82:40: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   82 |    import "DPI-C" function bit [127:0] i_array_2_state_128();
+      |                                        ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:85:48: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   85 |    import "DPI-C" function array_2_state_33_t  i_array_2_state_33_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:86:48: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   86 |    import "DPI-C" function array_2_state_64_t  i_array_2_state_64_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:87:48: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   87 |    import "DPI-C" function array_2_state_65_t  i_array_2_state_65_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:88:48: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   88 |    import "DPI-C" function array_2_state_128_t i_array_2_state_128_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:91:47: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   91 |    import "DPI-C" function struct_2_state_33  i_struct_2_state_33();
+      |                                               ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:92:47: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   92 |    import "DPI-C" function struct_2_state_64  i_struct_2_state_64();
+      |                                               ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:93:47: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   93 |    import "DPI-C" function struct_2_state_65  i_struct_2_state_65();
+      |                                               ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:94:47: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   94 |    import "DPI-C" function struct_2_state_128 i_struct_2_state_128();
+      |                                               ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:97:46: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   97 |    import "DPI-C" function union_2_state_33  i_union_2_state_33();
+      |                                              ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:98:46: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   98 |    import "DPI-C" function union_2_state_64  i_union_2_state_64();
+      |                                              ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:99:46: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+   99 |    import "DPI-C" function union_2_state_65  i_union_2_state_65();
+      |                                              ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:100:46: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  100 |    import "DPI-C" function union_2_state_128 i_union_2_state_128();
+      |                                              ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:103:36: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  103 |    import "DPI-C" function integer i_integer();
+      |                                    ^~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:106:42: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  106 |    import "DPI-C" function logic [  0:0] i_array_4_state_1();
+      |                                          ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:107:42: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  107 |    import "DPI-C" function logic [  1:0] i_array_4_state_2();
+      |                                          ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:108:42: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  108 |    import "DPI-C" function logic [  7:0] i_array_4_state_8();
+      |                                          ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:109:42: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  109 |    import "DPI-C" function logic [  8:0] i_array_4_state_9();
+      |                                          ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:110:42: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  110 |    import "DPI-C" function logic [ 15:0] i_array_4_state_16();
+      |                                          ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:111:42: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  111 |    import "DPI-C" function logic [ 16:0] i_array_4_state_17();
+      |                                          ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:112:42: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  112 |    import "DPI-C" function logic [ 31:0] i_array_4_state_32();
+      |                                          ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:113:42: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  113 |    import "DPI-C" function logic [ 32:0] i_array_4_state_33();
+      |                                          ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:114:42: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  114 |    import "DPI-C" function logic [ 63:0] i_array_4_state_64();
+      |                                          ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:115:42: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  115 |    import "DPI-C" function logic [ 64:0] i_array_4_state_65();
+      |                                          ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:116:42: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  116 |    import "DPI-C" function logic [127:0] i_array_4_state_128();
+      |                                          ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:119:48: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  119 |    import "DPI-C" function array_4_state_1_t   i_array_4_state_1_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:120:48: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  120 |    import "DPI-C" function array_4_state_2_t   i_array_4_state_2_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:121:48: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  121 |    import "DPI-C" function array_4_state_8_t   i_array_4_state_8_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:122:48: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  122 |    import "DPI-C" function array_4_state_9_t   i_array_4_state_9_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:123:48: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  123 |    import "DPI-C" function array_4_state_16_t  i_array_4_state_16_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:124:48: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  124 |    import "DPI-C" function array_4_state_17_t  i_array_4_state_17_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:125:48: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  125 |    import "DPI-C" function array_4_state_32_t  i_array_4_state_32_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:126:48: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  126 |    import "DPI-C" function array_4_state_33_t  i_array_4_state_33_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:127:48: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  127 |    import "DPI-C" function array_4_state_64_t  i_array_4_state_64_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:128:48: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  128 |    import "DPI-C" function array_4_state_65_t  i_array_4_state_65_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:129:48: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  129 |    import "DPI-C" function array_4_state_128_t i_array_4_state_128_t();
+      |                                                ^~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:132:47: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  132 |    import "DPI-C" function struct_4_state_1   i_struct_4_state_1();
+      |                                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:133:47: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  133 |    import "DPI-C" function struct_4_state_2   i_struct_4_state_2();
+      |                                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:134:47: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  134 |    import "DPI-C" function struct_4_state_8   i_struct_4_state_8();
+      |                                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:135:47: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  135 |    import "DPI-C" function struct_4_state_9   i_struct_4_state_9();
+      |                                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:136:47: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  136 |    import "DPI-C" function struct_4_state_16  i_struct_4_state_16();
+      |                                               ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:137:47: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  137 |    import "DPI-C" function struct_4_state_17  i_struct_4_state_17();
+      |                                               ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:138:47: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  138 |    import "DPI-C" function struct_4_state_32  i_struct_4_state_32();
+      |                                               ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:139:47: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  139 |    import "DPI-C" function struct_4_state_33  i_struct_4_state_33();
+      |                                               ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:140:47: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  140 |    import "DPI-C" function struct_4_state_64  i_struct_4_state_64();
+      |                                               ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:141:47: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  141 |    import "DPI-C" function struct_4_state_65  i_struct_4_state_65();
+      |                                               ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:142:47: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  142 |    import "DPI-C" function struct_4_state_128 i_struct_4_state_128();
+      |                                               ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:145:46: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  145 |    import "DPI-C" function union_4_state_1   i_union_4_state_1();
+      |                                              ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:146:46: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  146 |    import "DPI-C" function union_4_state_2   i_union_4_state_2();
+      |                                              ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:147:46: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  147 |    import "DPI-C" function union_4_state_8   i_union_4_state_8();
+      |                                              ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:148:46: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  148 |    import "DPI-C" function union_4_state_9   i_union_4_state_9();
+      |                                              ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:149:46: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  149 |    import "DPI-C" function union_4_state_16  i_union_4_state_16();
+      |                                              ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:150:46: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  150 |    import "DPI-C" function union_4_state_17  i_union_4_state_17();
+      |                                              ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:151:46: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  151 |    import "DPI-C" function union_4_state_32  i_union_4_state_32();
+      |                                              ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:152:46: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  152 |    import "DPI-C" function union_4_state_33  i_union_4_state_33();
+      |                                              ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:153:46: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  153 |    import "DPI-C" function union_4_state_64  i_union_4_state_64();
+      |                                              ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:154:46: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  154 |    import "DPI-C" function union_4_state_65  i_union_4_state_65();
+      |                                              ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:155:46: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  155 |    import "DPI-C" function union_4_state_128 i_union_4_state_128();
+      |                                              ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:245:25: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  245 |    function bit [ 32:0] e_array_2_state_33();  return 0; endfunction
+      |                         ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:246:25: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  246 |    function bit [ 63:0] e_array_2_state_64();  return 0; endfunction
+      |                         ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:247:25: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  247 |    function bit [ 64:0] e_array_2_state_65();  return 0; endfunction
+      |                         ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:248:25: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  248 |    function bit [127:0] e_array_2_state_128(); return 0; endfunction
+      |                         ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:251:33: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  251 |    function array_2_state_33_t  e_array_2_state_33_t();  return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:252:33: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  252 |    function array_2_state_64_t  e_array_2_state_64_t();  return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:253:33: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  253 |    function array_2_state_65_t  e_array_2_state_65_t();  return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:254:33: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  254 |    function array_2_state_128_t e_array_2_state_128_t(); return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:257:32: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  257 |    function struct_2_state_33  e_struct_2_state_33();  return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:258:32: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  258 |    function struct_2_state_64  e_struct_2_state_64();  return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:259:32: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  259 |    function struct_2_state_65  e_struct_2_state_65();  return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:260:32: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  260 |    function struct_2_state_128 e_struct_2_state_128(); return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:263:31: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  263 |    function union_2_state_33  e_union_2_state_33();  return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:264:31: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  264 |    function union_2_state_64  e_union_2_state_64();  return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:265:31: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  265 |    function union_2_state_65  e_union_2_state_65();  return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:266:31: DPI function may not return a > 32 bits wide type other than basic types.
+        ... Suggest make it an output argument instead?
+  266 |    function union_2_state_128 e_union_2_state_128(); return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:269:21: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  269 |    function integer e_integer(); return 0; endfunction
+      |                     ^~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:272:27: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  272 |    function logic [  0:0] e_array_4_state_1();   return 0; endfunction
+      |                           ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:273:27: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  273 |    function logic [  1:0] e_array_4_state_2();   return 0; endfunction
+      |                           ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:274:27: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  274 |    function logic [  7:0] e_array_4_state_8();   return 0; endfunction
+      |                           ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:275:27: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  275 |    function logic [  8:0] e_array_4_state_9();   return 0; endfunction
+      |                           ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:276:27: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  276 |    function logic [ 15:0] e_array_4_state_16();  return 0; endfunction
+      |                           ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:277:27: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  277 |    function logic [ 16:0] e_array_4_state_17();  return 0; endfunction
+      |                           ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:278:27: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  278 |    function logic [ 31:0] e_array_4_state_32();  return 0; endfunction
+      |                           ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:279:27: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  279 |    function logic [ 32:0] e_array_4_state_33();  return 0; endfunction
+      |                           ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:280:27: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  280 |    function logic [ 63:0] e_array_4_state_64();  return 0; endfunction
+      |                           ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:281:27: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  281 |    function logic [ 64:0] e_array_4_state_65();  return 0; endfunction
+      |                           ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:282:27: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  282 |    function logic [127:0] e_array_4_state_128(); return 0; endfunction
+      |                           ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:285:33: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  285 |    function array_4_state_1_t   e_array_4_state_1_t();   return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:286:33: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  286 |    function array_4_state_2_t   e_array_4_state_2_t();   return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:287:33: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  287 |    function array_4_state_8_t   e_array_4_state_8_t();   return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:288:33: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  288 |    function array_4_state_9_t   e_array_4_state_9_t();   return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:289:33: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  289 |    function array_4_state_16_t  e_array_4_state_16_t();  return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:290:33: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  290 |    function array_4_state_17_t  e_array_4_state_17_t();  return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:291:33: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  291 |    function array_4_state_32_t  e_array_4_state_32_t();  return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:292:33: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  292 |    function array_4_state_33_t  e_array_4_state_33_t();  return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:293:33: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  293 |    function array_4_state_64_t  e_array_4_state_64_t();  return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:294:33: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  294 |    function array_4_state_65_t  e_array_4_state_65_t();  return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:295:33: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  295 |    function array_4_state_128_t e_array_4_state_128_t(); return 0; endfunction
+      |                                 ^~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:298:32: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  298 |    function struct_4_state_1   e_struct_4_state_1();   return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:299:32: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  299 |    function struct_4_state_2   e_struct_4_state_2();   return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:300:32: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  300 |    function struct_4_state_8   e_struct_4_state_8();   return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:301:32: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  301 |    function struct_4_state_9   e_struct_4_state_9();   return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:302:32: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  302 |    function struct_4_state_16  e_struct_4_state_16();  return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:303:32: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  303 |    function struct_4_state_17  e_struct_4_state_17();  return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:304:32: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  304 |    function struct_4_state_32  e_struct_4_state_32();  return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:305:32: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  305 |    function struct_4_state_33  e_struct_4_state_33();  return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:306:32: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  306 |    function struct_4_state_64  e_struct_4_state_64();  return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:307:32: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  307 |    function struct_4_state_65  e_struct_4_state_65();  return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:308:32: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  308 |    function struct_4_state_128 e_struct_4_state_128(); return 0; endfunction
+      |                                ^~~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:311:31: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  311 |    function union_4_state_1   e_union_4_state_1();   return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:312:31: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  312 |    function union_4_state_2   e_union_4_state_2();   return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:313:31: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  313 |    function union_4_state_8   e_union_4_state_8();   return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:314:31: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  314 |    function union_4_state_9   e_union_4_state_9();   return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:315:31: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  315 |    function union_4_state_16  e_union_4_state_16();  return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:316:31: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  316 |    function union_4_state_17  e_union_4_state_17();  return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:317:31: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  317 |    function union_4_state_32  e_union_4_state_32();  return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:318:31: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  318 |    function union_4_state_33  e_union_4_state_33();  return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:319:31: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  319 |    function union_4_state_64  e_union_4_state_64();  return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:320:31: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  320 |    function union_4_state_65  e_union_4_state_65();  return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:321:31: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
+  321 |    function union_4_state_128 e_union_4_state_128(); return 0; endfunction
+      |                               ^~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to

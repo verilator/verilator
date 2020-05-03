@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    fails => ($Self->{vlt} || $Self->{vltmt}),  # Unsupported bug1523
+    fails => $Self->{vlt_all},  # Unsupported bug1523
     expect_filename => $Self->{golden_filename},
     );
 

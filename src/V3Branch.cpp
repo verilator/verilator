@@ -41,15 +41,15 @@ private:
     // NODE STATE
     // Entire netlist:
     //  AstFTask::user1()       -> int.  Number of references
-    AstUser1InUse       m_inuser1;
+    AstUser1InUse m_inuser1;
 
     // TYPES
     typedef std::vector<AstCFunc*> CFuncVec;
 
     // STATE
-    int         m_likely;       // Excuses for branch likely taken
-    int         m_unlikely;     // Excuses for branch likely not taken
-    CFuncVec    m_cfuncsp;      // List of all tasks
+    int m_likely;  // Excuses for branch likely taken
+    int m_unlikely;  // Excuses for branch likely not taken
+    CFuncVec m_cfuncsp;  // List of all tasks
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -60,14 +60,14 @@ private:
     }
     void checkUnlikely(AstNode* nodep) {
         if (nodep->isUnlikely()) {
-            UINFO(4,"  UNLIKELY: "<<nodep<<endl);
+            UINFO(4, "  UNLIKELY: " << nodep << endl);
             m_unlikely++;
         }
     }
 
     // VISITORS
     virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
-        UINFO(4," IF: "<<nodep<<endl);
+        UINFO(4, " IF: " << nodep << endl);
         int lastLikely = m_likely;
         int lastUnlikely = m_unlikely;
         {
@@ -109,11 +109,9 @@ private:
 
     // METHODS
     void calc_tasks() {
-        for (CFuncVec::iterator it=m_cfuncsp.begin(); it!=m_cfuncsp.end(); ++it) {
+        for (CFuncVec::iterator it = m_cfuncsp.begin(); it != m_cfuncsp.end(); ++it) {
             AstCFunc* nodep = *it;
-            if (!nodep->dontInline()) {
-                nodep->isInline(true);
-            }
+            if (!nodep->dontInline()) nodep->isInline(true);
         }
     }
 
@@ -131,6 +129,6 @@ public:
 // Branch class functions
 
 void V3Branch::branchAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    BranchVisitor visitor (nodep);
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    BranchVisitor visitor(nodep);
 }

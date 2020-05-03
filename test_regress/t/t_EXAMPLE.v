@@ -22,12 +22,12 @@ module t(/*AUTOARG*/
    );
    input clk;
 
-   integer      cyc=0;
-   reg [63:0]   crc;
-   reg [63:0]   sum;
+   integer cyc=0;
+   reg [63:0] crc;
+   reg [63:0] sum;
 
    // Take CRC data and apply to testblock inputs
-   wire [31:0]  in = crc[31:0];
+   wire [31:0] in = crc[31:0];
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)

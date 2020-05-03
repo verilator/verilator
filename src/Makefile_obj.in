@@ -42,6 +42,7 @@ LEX = @LEX@
 LFLAGS = -d
 PERL = @PERL@
 YACC = @YACC@
+OBJCACHE ?= @OBJCACHE@
 
 prefix = @prefix@
 
@@ -167,6 +168,7 @@ RAW_OBJS = \
 	V3Cast.o \
 	V3Cdc.o \
 	V3Changed.o \
+	V3Class.o \
 	V3Clean.o \
 	V3Clock.o \
 	V3Combine.o \
@@ -183,6 +185,7 @@ RAW_OBJS = \
 	V3EmitCInlines.o \
 	V3EmitCSyms.o \
 	V3EmitCMake.o \
+	V3EmitCMain.o \
 	V3EmitMk.o \
 	V3EmitV.o \
 	V3EmitXml.o \

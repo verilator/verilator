@@ -1,0 +1,12 @@
+%Error: t/t_class_new_bad.v:31:16: Too many arguments in function call to FUNC 'new'
+   31 |       c1 = new(3);   
+      |                ^
+%Error: t/t_class_new_bad.v:32:16: Too many arguments in function call to FUNC 'new'
+   32 |       c2 = new(3);   
+      |                ^
+%Error: t/t_class_new_bad.v:33:12: Missing argument on non-defaulted argument 'i' in function call to FUNC 'new'
+   33 |       c3 = new();   
+      |            ^~~
+%Error: Internal Error: t/t_class_new_bad.v:33:12: ../V3Broken.cpp:#: Width != WidthMin
+   33 |       c3 = new();   
+      |            ^~~

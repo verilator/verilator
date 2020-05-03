@@ -57,7 +57,7 @@ extern "C" int mon_check();
 `ifdef VERILATOR
       status = $c32("mon_check()");
 `endif
-`ifdef iverilog
+`ifdef IVERILOG
      status = $mon_check();
 `endif
 `ifndef USE_VPI_NOT_DPI
@@ -100,7 +100,7 @@ endmodule : t
 module sub;
    reg subsig1 /*verilator public_flat_rd*/;
    reg subsig2 /*verilator public_flat_rd*/;
-`ifdef iverilog
+`ifdef IVERILOG
    // stop icarus optimizing signals away
    wire redundant = subsig1 | subsig2;
 `endif

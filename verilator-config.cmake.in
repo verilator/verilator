@@ -163,7 +163,9 @@ function(verilate TARGET)
   endforeach()
 
   string(TOLOWER ${CMAKE_CXX_COMPILER_ID} COMPILER)
-  if (NOT COMPILER MATCHES "msvc|clang")
+  if (COMPILER STREQUAL "appleclang")
+    set(COMPILER clang)
+  elseif (NOT COMPILER MATCHES "^msvc$|^clang$")
     set(COMPILER gcc)
   endif()
 

@@ -27,7 +27,7 @@
 
 //============================================================================
 
-typedef std::pair<AstVar*,AstArg*> V3TaskConnect;  // [port, pin-connects-to]
+typedef std::pair<AstVar*, AstArg*> V3TaskConnect;  // [port, pin-connects-to]
 typedef std::vector<V3TaskConnect> V3TaskConnects;  // [ [port, pin-connects-to] ... ]
 
 //============================================================================
@@ -37,11 +37,9 @@ public:
     static void taskAll(AstNetlist* nodep);
     /// Return vector of [port, pin-connects-to]  (SLOW)
     static V3TaskConnects taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp);
-    static string assignInternalToDpi(AstVar* portp, bool isRtn, bool isPtr,
-                                      const string& frSuffix, const string& toSuffix,
-                                      const string& frPrefix="");
-    static bool dpiToInternalFrStmt(AstVar* portp, const string& frName, bool cvt,
-                                    string& frstmt);
+    static string assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
+                                      const string& toSuffix, const string& frPrefix = "");
+    static bool dpiToInternalFrStmt(AstVar* portp, const string& frName, string& frstmt);
 };
 
 #endif  // Guard

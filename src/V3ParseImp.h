@@ -45,49 +45,51 @@ typedef enum { iprop_NONE, iprop_CONTEXT, iprop_PURE } V3ImportProperty;
 // We can't use bison's %union as we want to pass the fileline with all tokens
 
 struct V3ParseBisonYYSType {
-    FileLine*   fl;
-    AstNode*    scp;    // Symbol table scope for future lookups
-    int         token;  // Read token, aka tok
+    FileLine* fl;
+    AstNode* scp;  // Symbol table scope for future lookups
+    int token;  // Read token, aka tok
     union {
-        V3Number*       nump;
-        string*         strp;
-        int             cint;
-        double          cdouble;
-        bool            cbool;
-        V3UniqState     uniqstate;
-        VSignedState    signstate;
+        V3Number* nump;
+        string* strp;
+        int cint;
+        double cdouble;
+        bool cbool;
+        V3UniqState uniqstate;
         V3ImportProperty iprop;
+        VSigning::en signstate;
         V3ErrorCode::en errcodeen;
         AstAttrType::en attrtypeen;
+        VLifetime::en lifetime;
 
-        AstNode*        nodep;
+        AstNode* nodep;
 
-        AstBasicDType*  bdtypep;
-        AstBegin*       beginp;
-        AstCase*        casep;
-        AstCaseItem*    caseitemp;
-        AstCell*        cellp;
-        AstClass*       classp;
-        AstConst*       constp;
+        AstBasicDType* bdtypep;
+        AstBegin* beginp;
+        AstCase* casep;
+        AstCaseItem* caseitemp;
+        AstCell* cellp;
+        AstClass* classp;
+        AstConst* constp;
+        AstFork* forkp;
         AstMemberDType* memberp;
-        AstNodeModule*  modulep;
+        AstNodeModule* modulep;
         AstNodeUOrStructDType* uorstructp;
-        AstNodeDType*   dtypep;
-        AstNodeFTask*   ftaskp;
+        AstNodeDType* dtypep;
+        AstNodeFTask* ftaskp;
         AstNodeFTaskRef* ftaskrefp;
-        AstNodeRange*   rangep;
+        AstNodeRange* rangep;
         AstNodeSenItem* senitemp;
-        AstNodeVarRef*  varnodep;
-        AstPackage*     packagep;
-        AstPackageRef*  packagerefp;
-        AstParseRef*    parserefp;
-        AstPatMember*   patmemberp;
-        AstPattern*     patternp;
-        AstPin*         pinp;
-        AstRefDType*    refdtypep;
-        AstSenTree*     sentreep;
-        AstVar*         varp;
-        AstVarRef*      varrefp;
+        AstNodeVarRef* varnodep;
+        AstPackage* packagep;
+        AstPackageRef* packagerefp;
+        AstParseRef* parserefp;
+        AstPatMember* patmemberp;
+        AstPattern* patternp;
+        AstPin* pinp;
+        AstRefDType* refdtypep;
+        AstSenTree* sentreep;
+        AstVar* varp;
+        AstVarRef* varrefp;
     };
 };
 
@@ -97,32 +99,35 @@ struct V3ParseBisonYYSType {
 
 class V3ParseImp {
     // MEMBERS
-    AstNetlist*         m_rootp;        // Root of the design
-    VInFilter*          m_filterp;      // Reading filter
-    V3ParseSym*         m_symp;         // Symbol table
+    AstNetlist* m_rootp;  // Root of the design
+    VInFilter* m_filterp;  // Reading filter
+    V3ParseSym* m_symp;  // Symbol table
 
-    V3Lexer*            m_lexerp;       // Current FlexLexer
-    static V3ParseImp*  s_parsep;       // Current THIS, bison() isn't class based
-    FileLine*           m_fileline;     // Filename/linenumber currently active
+    V3Lexer* m_lexerp;  // Current FlexLexer
+    static V3ParseImp* s_parsep;  // Current THIS, bison() isn't class based
+    FileLine* m_fileline;  // Filename/linenumber currently active
 
-    bool        m_inCellDefine;         // Inside a `celldefine
-    bool        m_inLibrary;            // Currently reading a library vs. regular file
-    int         m_inBeginKwd;           // Inside a `begin_keywords
-    int         m_lastVerilogState;     // Last LEX state in `begin_keywords
+    bool m_inCellDefine;  // Inside a `celldefine
+    bool m_inLibrary;  // Currently reading a library vs. regular file
+    int m_inBeginKwd;  // Inside a `begin_keywords
+    int m_lastVerilogState;  // Last LEX state in `begin_keywords
+    VOptionBool m_unconnectedDrive;  // Last unconnected drive
 
-    int         m_prevLexToken;         // previous parsed token (for lexer)
-    bool        m_ahead;                // aheadval is valid
-    V3ParseBisonYYSType m_aheadVal;     // ahead token value
+    int m_prevLexToken;  // previous parsed token (for lexer)
+    bool m_ahead;  // aheadval is valid
+    V3ParseBisonYYSType m_aheadVal;  // ahead token value
     V3ParseBisonYYSType m_curBisonVal;  // current token for error reporting
-    V3ParseBisonYYSType m_prevBisonVal; // previous token for error reporting
+    V3ParseBisonYYSType m_prevBisonVal;  // previous token for error reporting
 
-    std::deque<string*> m_stringps;     // Created strings for later cleanup
-    std::deque<V3Number*> m_numberps;   // Created numbers for later cleanup
-    std::deque<FileLine> m_lintState;   // Current lint state for save/restore
-    std::deque<string> m_ppBuffers;     // Preprocessor->lex buffer of characters to process
+    std::deque<string*> m_stringps;  // Created strings for later cleanup
+    std::deque<V3Number*> m_numberps;  // Created numbers for later cleanup
+    std::deque<FileLine> m_lintState;  // Current lint state for save/restore
+    std::deque<string> m_ppBuffers;  // Preprocessor->lex buffer of characters to process
 
-    string m_tag;                       // Contents (if any) of current verilator tag
-    AstNode* m_tagNodep;                // Points to the node to set to m_tag or NULL to not set.
+    string m_tag;  // Contents (if any) of current verilator tag
+    AstNode* m_tagNodep;  // Points to the node to set to m_tag or NULL to not set.
+    VTimescale m_timeLastUnit;  // Last `timescale's unit
+
 public:
     // Note these are an exception to using the filename as the debug type
     static int debugBison() {
@@ -143,19 +148,33 @@ public:
 
     void ppline(const char* textp);
     void linenoInc() { fileline()->linenoInc(); }
-    void verilatorCmtLint(const char* textp, bool on);
+    void verilatorCmtLint(const char* textp, bool warnOff);
     void verilatorCmtLintSave();
     void verilatorCmtLintRestore();
     void verilatorCmtBad(const char* textp);
     void errorPreprocDirective(const char* textp);
     void tag(const char* text);
     void tagNodep(AstNode* nodep) { m_tagNodep = nodep; }
-    AstNode* tagNodep() const { return m_tagNodep;}
+    AstNode* tagNodep() const { return m_tagNodep; }
+    void timescalePreproc(FileLine* fl, const char* textp);
+    void timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, double unitVal,
+                      bool precSet, double precVal);
+    VTimescale timeLastUnit() const { return m_timeLastUnit; }
 
+    static double parseTimenum(const char* text);
     static double parseDouble(const char* text, size_t length, bool* successp = NULL);
-    void pushBeginKeywords(int state) { m_inBeginKwd++; m_lastVerilogState = state; }
+    void pushBeginKeywords(int state) {
+        m_inBeginKwd++;
+        m_lastVerilogState = state;
+    }
     bool popBeginKeywords() {
-        if (m_inBeginKwd) { m_inBeginKwd--; return true; } else return false; }
+        if (m_inBeginKwd) {
+            m_inBeginKwd--;
+            return true;
+        } else {
+            return false;
+        }
+    }
     int lastVerilogState() const { return m_lastVerilogState; }
     static const char* tokenName(int tok);
 
@@ -199,9 +218,11 @@ public:
     bool inCellDefine() const { return m_inCellDefine; }
     void inCellDefine(bool flag) { m_inCellDefine = flag; }
     bool inLibrary() const { return m_inLibrary; }
+    VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
+    void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
 
     // Interactions with parser
-    int  bisonParse();
+    int bisonParse();
 
     // Interactions with lexer
     void lexNew();
@@ -219,7 +240,9 @@ public:
 public:
     // CONSTRUCTORS
     V3ParseImp(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* parserSymp)
-        : m_rootp(rootp), m_filterp(filterp), m_symp(parserSymp) {
+        : m_rootp(rootp)
+        , m_filterp(filterp)
+        , m_symp(parserSymp) {
         m_fileline = NULL;
         m_lexerp = NULL;
         m_inCellDefine = false;
@@ -232,6 +255,7 @@ public:
         m_prevBisonVal.token = 0;
         // m_aheadVal not used as m_ahead = false, and not all compilers support initing it
         m_tagNodep = NULL;
+        m_timeLastUnit = v3Global.opt.timeDefaultUnit();
     }
     ~V3ParseImp();
     void parserClear();

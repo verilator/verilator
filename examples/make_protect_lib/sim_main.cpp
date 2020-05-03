@@ -17,9 +17,7 @@
 #endif
 
 vluint64_t main_time = 0;
-double sc_time_stamp() {
-    return main_time;
-}
+double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
     if (0 && argc && argv && env) {}
@@ -35,7 +33,7 @@ int main(int argc, char** argv, char** env) {
     // When tracing, the contents of the secret module will not be seen
     VerilatedVcdC* tfp = NULL;
     const char* flag = Verilated::commandArgsPlusMatch("trace");
-    if (flag && 0==strcmp(flag, "+trace")) {
+    if (flag && 0 == strcmp(flag, "+trace")) {
         Verilated::traceEverOn(true);
         VL_PRINTF("Enabling waves into logs/vlt_dump.vcd...\n");
         tfp = new VerilatedVcdC;
@@ -62,11 +60,15 @@ int main(int argc, char** argv, char** env) {
 
     // Close trace if opened
 #if VM_TRACE
-    if (tfp) { tfp->close(); tfp = NULL; }
+    if (tfp) {
+        tfp->close();
+        tfp = NULL;
+    }
 #endif
 
     // Destroy model
-    delete top; top = NULL;
+    delete top;
+    top = NULL;
 
     // Fin
     exit(0);

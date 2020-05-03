@@ -61,6 +61,7 @@ public:
     // Operate on the final ExecMTask graph, immediately prior to code
     // generation time.
     static void finalize();
+
 private:
     static void finalizeCosts(V3Graph* execMTaskGraphp);
     static void setupMTaskDeps(V3Graph* mtasksp, const Vx2MTaskMap* vx2mtaskp);
@@ -75,13 +76,15 @@ private:
 class PartPtrIdMap {
 private:
     // TYPES
-    typedef vl_unordered_map <const void*, vluint64_t> PtrMap;
+    typedef vl_unordered_map<const void*, vluint64_t> PtrMap;
     // MEMBERS
     mutable vluint64_t m_nextId;
     mutable PtrMap m_id;
+
 public:
     // CONSTRUCTORS
-    PartPtrIdMap() : m_nextId(0) {}
+    PartPtrIdMap()
+        : m_nextId(0) {}
     // METHODS
     vluint64_t findId(const void* ptrp) const {
         PtrMap::const_iterator it = m_id.find(ptrp);

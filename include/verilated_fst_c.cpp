@@ -17,13 +17,14 @@
 //=============================================================================
 // SPDIFF_OFF
 
+// clang-format off
+
 #define __STDC_LIMIT_MACROS  // UINT64_MAX
-#include "verilatedos.h"
 #include "verilated.h"
 #include "verilated_fst_c.h"
 
 // GTKWave configuration
-#ifdef VL_TRACE_THREADED
+#ifdef VL_TRACE_FST_WRITER_THREAD
 # define HAVE_LIBPTHREAD
 # define FST_WRITER_PARALLEL
 #endif
@@ -49,54 +50,41 @@
 # include <unistd.h>
 #endif
 
-//=============================================================================
+// clang-format on
 
-class VerilatedFstCallInfo {
-protected:
-    friend class VerilatedFst;
-    VerilatedFstCallback_t m_initcb;  ///< Initialization Callback function
-    VerilatedFstCallback_t m_fullcb;  ///< Full Dumping Callback function
-    VerilatedFstCallback_t m_changecb;  ///< Incremental Dumping Callback function
-    void* m_userthis;  ///< Fake "this" for caller
-    vluint32_t m_code;  ///< Starting code number
-    // CONSTRUCTORS
-    VerilatedFstCallInfo(VerilatedFstCallback_t icb, VerilatedFstCallback_t fcb,
-                         VerilatedFstCallback_t changecb, void* ut)
-        : m_initcb(icb)
-        , m_fullcb(fcb)
-        , m_changecb(changecb)
-        , m_userthis(ut)
-        , m_code(1) {}
-    ~VerilatedFstCallInfo() {}
-};
+//=============================================================================
+// Specialization of the generics for this trace format
+
+#define VL_DERIVED_T VerilatedFst
+#include "verilated_trace_imp.cpp"
+#undef VL_DERIVED_T
 
 //=============================================================================
 // VerilatedFst
 
 VerilatedFst::VerilatedFst(void* fst)
     : m_fst(fst)
-    , m_fullDump(true)
-    , m_nextCode(1)
-    , m_scopeEscape('.') {
-    m_valueStrBuffer.reserve(64 + 1);  // Need enough room for quad
+    , m_symbolp(NULL)
+    , m_strbuf(NULL) {}
+
+VerilatedFst::~VerilatedFst() {
+    if (m_fst) fstWriterClose(m_fst);
+    if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = NULL);
+    if (m_strbuf) VL_DO_CLEAR(delete[] m_strbuf, m_strbuf = NULL);
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     m_assertOne.check();
     m_fst = fstWriterCreate(filename, 1);
     fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
-#ifdef VL_TRACE_THREADED
+    fstWriterSetTimescaleFromString(m_fst, timeResStr().c_str());  // lintok-begin-on-ref
+#ifdef VL_TRACE_FST_WRITER_THREAD
     fstWriterSetParallelMode(m_fst, 1);
 #endif
-    m_curScope.clear();
-    m_nextCode = 1;
 
-    for (vluint32_t ent = 0; ent< m_callbacks.size(); ++ent) {
-        VerilatedFstCallInfo* cip = m_callbacks[ent];
-        cip->m_code = m_nextCode;
-        // Initialize; callbacks will call decl* which update m_nextCode
-        (cip->m_initcb)(this, cip->m_userthis, cip->m_code);
-    }
+    m_curScope.clear();
+
+    VerilatedTrace<VerilatedFst>::traceInit();
 
     // Clear the scope stack
     std::list<std::string>::iterator it = m_curScope.begin();
@@ -104,31 +92,50 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
         fstWriterSetUpscope(m_fst);
         it = m_curScope.erase(it);
     }
+
+    // convert m_code2symbol into an array for fast lookup
+    if (!m_symbolp) {
+        m_symbolp = new fstHandle[nextCode()];
+        for (Code2SymbolType::iterator it = m_code2symbol.begin(); it != m_code2symbol.end();
+             ++it) {
+            m_symbolp[it->first] = it->second;
+        }
+    }
+    m_code2symbol.clear();
+
+    // Allocate string buffer for arrays
+    if (!m_strbuf) { m_strbuf = new char[maxBits() + 32]; }
 }
 
-void VerilatedFst::module(const std::string& name) {
-    m_module = name;
+void VerilatedFst::close() {
+    m_assertOne.check();
+    VerilatedTrace<VerilatedFst>::close();
+    fstWriterClose(m_fst);
+    m_fst = NULL;
 }
+
+void VerilatedFst::flush() {
+    VerilatedTrace<VerilatedFst>::flush();
+    fstWriterFlushContext(m_fst);
+}
+
+void VerilatedFst::emitTimeChange(vluint64_t timeui) { fstWriterEmitTimeChange(m_fst, timeui); }
 
 //=============================================================================
 // Decl
 
 void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elements,
-                                 unsigned int minValbits,
-                                 const char** itemNamesp, const char** itemValuesp) {
-    fstEnumHandle enumNum = fstWriterCreateEnumTable(m_fst, name, elements,
-                                                     minValbits, itemNamesp, itemValuesp);
+                                 unsigned int minValbits, const char** itemNamesp,
+                                 const char** itemValuesp) {
+    fstEnumHandle enumNum
+        = fstWriterCreateEnumTable(m_fst, name, elements, minValbits, itemNamesp, itemValuesp);
     m_local2fstdtype[dtypenum] = enumNum;
 }
 
 void VerilatedFst::declSymbol(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                               fstVarType vartype, bool array, int arraynum, vluint32_t len,
                               vluint32_t bits) {
-
-    // Make sure deduplicate tracking increments for future declarations
-    int codesNeeded = 1 + int(bits / 32);
-    //Not supported: if (tri) codesNeeded *= 2;  // Space in change array for __en signals
-    m_nextCode = std::max(m_nextCode, code + codesNeeded);
+    VerilatedTrace<VerilatedFst>::declCode(code, bits, false);
 
     std::pair<Code2SymbolType::iterator, bool> p
         = m_code2symbol.insert(std::make_pair(code, static_cast<fstHandle>(NULL)));
@@ -137,14 +144,13 @@ void VerilatedFst::declSymbol(vluint32_t code, const char* name, int dtypenum, f
     std::list<std::string> tokens(beg, end);  // Split name
     std::string symbol_name(tokens.back());
     tokens.pop_back();  // Remove symbol name from hierarchy
-    tokens.insert(tokens.begin(), m_module);  // Add current module to the hierarchy
+    tokens.insert(tokens.begin(), moduleName());  // Add current module to the hierarchy
 
     // Find point where current and new scope diverge
     std::list<std::string>::iterator cur_it = m_curScope.begin();
     std::list<std::string>::iterator new_it = tokens.begin();
     while (cur_it != m_curScope.end() && new_it != tokens.end()) {
-        if (*cur_it != *new_it)
-            break;
+        if (*cur_it != *new_it) break;
         ++cur_it;
         ++new_it;
     }
@@ -179,41 +185,93 @@ void VerilatedFst::declSymbol(vluint32_t code, const char* name, int dtypenum, f
     }
 }
 
-//=============================================================================
-// Callbacks
-
-void VerilatedFst::addCallback(VerilatedFstCallback_t initcb, VerilatedFstCallback_t fullcb,
-                               VerilatedFstCallback_t changecb, void* userthis) VL_MT_UNSAFE_ONE {
-    m_assertOne.check();
-    if (VL_UNLIKELY(isOpen())) {
-        std::string msg = (std::string("Internal: ") + __FILE__ + "::" + __FUNCTION__
-                           + " called with already open file");
-        VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
-    }
-    VerilatedFstCallInfo* cip = new VerilatedFstCallInfo(initcb, fullcb, changecb, userthis);
-    m_callbacks.push_back(cip);
+void VerilatedFst::declBit(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                           fstVarType vartype, bool array, int arraynum) {
+    declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1, 1);
+}
+void VerilatedFst::declBus(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                           fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
+    declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
+               msb - lsb + 1);
+}
+void VerilatedFst::declQuad(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                            fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
+    declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
+               msb - lsb + 1);
+}
+void VerilatedFst::declArray(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                             fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
+    declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
+               msb - lsb + 1);
+}
+void VerilatedFst::declFloat(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                             fstVarType vartype, bool array, int arraynum) {
+    declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1, 32);
+}
+void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                              fstVarType vartype, bool array, int arraynum) {
+    declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 2, 64);
 }
 
-//=============================================================================
-// Dumping
+// Note: emit* are only ever called from one place (full* in
+// verilated_trace_imp.cpp, which is included in this file at the top),
+// so always inline them.
 
-void VerilatedFst::dump(vluint64_t timeui) {
-    if (!isOpen()) return;
-    if (VL_UNLIKELY(m_fullDump)) {
-        m_fullDump = false;  // No more need for next dump to be full
-        for (vluint32_t ent = 0; ent< m_callbacks.size(); ++ent) {
-            VerilatedFstCallInfo* cip = m_callbacks[ent];
-            (cip->m_fullcb)(this, cip->m_userthis, cip->m_code);
-        }
-        return;
-    }
-    fstWriterEmitTimeChange(m_fst, timeui);
-    for (vluint32_t ent = 0; ent< m_callbacks.size(); ++ent) {
-        VerilatedFstCallInfo* cip = m_callbacks[ent];
-        (cip->m_changecb)(this, cip->m_userthis, cip->m_code);
-    }
+VL_ATTR_ALWINLINE
+void VerilatedFst::emitBit(vluint32_t code, CData newval) {
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
 }
 
-//********************************************************************
-// Local Variables:
-// End:
+VL_ATTR_ALWINLINE
+void VerilatedFst::emitCData(vluint32_t code, CData newval, int bits) {
+    char buf[VL_BYTESIZE];
+    cvtCDataToStr(buf, newval << (VL_BYTESIZE - bits));
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFst::emitSData(vluint32_t code, SData newval, int bits) {
+    char buf[VL_SHORTSIZE];
+    cvtSDataToStr(buf, newval << (VL_SHORTSIZE - bits));
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFst::emitIData(vluint32_t code, IData newval, int bits) {
+    char buf[VL_IDATASIZE];
+    cvtIDataToStr(buf, newval << (VL_IDATASIZE - bits));
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFst::emitQData(vluint32_t code, QData newval, int bits) {
+    char buf[VL_QUADSIZE];
+    cvtQDataToStr(buf, newval << (VL_QUADSIZE - bits));
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFst::emitWData(vluint32_t code, const WData* newvalp, int bits) {
+    int words = VL_WORDS_I(bits);
+    char* wp = m_strbuf;
+    // Convert the most significant word
+    const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
+    cvtEDataToStr(wp, newvalp[--words] << (VL_EDATASIZE - bitsInMSW));
+    wp += bitsInMSW;
+    // Convert the remaining words
+    while (words > 0) {
+        cvtEDataToStr(wp, newvalp[--words]);
+        wp += VL_EDATASIZE;
+    }
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbuf);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFst::emitFloat(vluint32_t code, float newval) {
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFst::emitDouble(vluint32_t code, double newval) {
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
+}

@@ -51,16 +51,12 @@ class UndrivenVarEntry {
 public:
     // CONSTRUCTORS
     explicit UndrivenVarEntry(AstVar* varp) {  // Construction for when a var is used
-        UINFO(9, "create "<<varp<<endl);
+        UINFO(9, "create " << varp << endl);
         m_varp = varp;
         m_wholeFlags.resize(FLAGS_PER_BIT);
-        for (int i = 0; i < FLAGS_PER_BIT; i++) {
-            m_wholeFlags[i] = false;
-        }
+        for (int i = 0; i < FLAGS_PER_BIT; i++) m_wholeFlags[i] = false;
         m_bitFlags.resize(varp->width() * FLAGS_PER_BIT);
-        for (int i = 0; i < varp->width() * FLAGS_PER_BIT; i++) {
-            m_bitFlags[i] = false;
-        }
+        for (int i = 0; i < varp->width() * FLAGS_PER_BIT; i++) m_bitFlags[i] = false;
     }
     ~UndrivenVarEntry() {}
 
@@ -81,60 +77,63 @@ private:
         bool prev = false;
         int msb = 0;
         // bit==-1 loops below; we do one extra iteration so end with prev=false
-        for (int bit=(m_bitFlags.size()/FLAGS_PER_BIT)-1; bit >= -1; --bit) {
-            if (bit>=0
+        for (int bit = (m_bitFlags.size() / FLAGS_PER_BIT) - 1; bit >= -1; --bit) {
+            if (bit >= 0
                 && ((which == BN_UNUSED && !usedFlag(bit) && drivenFlag(bit))
                     || (which == BN_UNDRIVEN && usedFlag(bit) && !drivenFlag(bit))
                     || (which == BN_BOTH && !usedFlag(bit) && !drivenFlag(bit)))) {
-                if (!prev) { prev=true; msb = bit; }
+                if (!prev) {
+                    prev = true;
+                    msb = bit;
+                }
             } else if (prev) {
                 AstBasicDType* bdtypep = m_varp->basicp();
-                int lsb = bit+1;
+                int lsb = bit + 1;
                 if (bits != "") bits += ",";
-                if (lsb==msb) {
-                    bits += cvtToStr(lsb+bdtypep->lsb());
+                if (lsb == msb) {
+                    bits += cvtToStr(lsb + bdtypep->lsb());
                 } else {
                     if (bdtypep->littleEndian()) {
-                        bits += cvtToStr(lsb+bdtypep->lsb())+":"+cvtToStr(msb+bdtypep->lsb());
+                        bits += cvtToStr(lsb + bdtypep->lsb()) + ":"
+                                + cvtToStr(msb + bdtypep->lsb());
                     } else {
-                        bits += cvtToStr(msb+bdtypep->lsb())+":"+cvtToStr(lsb+bdtypep->lsb());
+                        bits += cvtToStr(msb + bdtypep->lsb()) + ":"
+                                + cvtToStr(lsb + bdtypep->lsb());
                     }
                 }
                 prev = false;
             }
         }
-        return "["+bits+"]";
+        return "[" + bits + "]";
     }
+
 public:
     void usedWhole() {
-        UINFO(9, "set u[*] "<<m_varp->name()<<endl);
+        UINFO(9, "set u[*] " << m_varp->name() << endl);
         m_wholeFlags[FLAG_USED] = true;
     }
     void drivenWhole() {
-        UINFO(9, "set d[*] "<<m_varp->name()<<endl);
+        UINFO(9, "set d[*] " << m_varp->name() << endl);
         m_wholeFlags[FLAG_DRIVEN] = true;
     }
     void usedBit(int bit, int width) {
-        UINFO(9, "set u["<<(bit+width-1)<<":"<<bit<<"] "<<m_varp->name()<<endl);
+        UINFO(9, "set u[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name() << endl);
         for (int i = 0; i < width; i++) {
-            if (bitNumOk(bit + i)) {
-                m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_USED] = true;
-            }
+            if (bitNumOk(bit + i)) m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_USED] = true;
         }
     }
     void drivenBit(int bit, int width) {
-        UINFO(9, "set d["<<(bit+width-1)<<":"<<bit<<"] "<<m_varp->name()<<endl);
+        UINFO(9, "set d[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name() << endl);
         for (int i = 0; i < width; i++) {
-            if (bitNumOk(bit + i)) {
-                m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN] = true;
-            }
+            if (bitNumOk(bit + i)) m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN] = true;
         }
     }
     bool isUsedNotDrivenBit(int bit, int width) const {
         for (int i = 0; i < width; i++) {
             if (bitNumOk(bit + i)
                 && (m_wholeFlags[FLAG_USED] || m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_USED])
-                && !(m_wholeFlags[FLAG_DRIVEN] || m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN]))
+                && !(m_wholeFlags[FLAG_DRIVEN]
+                     || m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN]))
                 return true;
         }
         return false;
@@ -183,39 +182,43 @@ public:
                 // UNDRIVEN is considered more serious - as is more likely a bug,
                 // thus undriven+unused bits get UNUSED warnings, as they're not as buggy.
                 if (!unusedMatch(nodep)) {
-                    nodep->v3warn(UNUSED, "Signal is not driven, nor used: "
-                                  <<nodep->prettyNameQ());
+                    nodep->v3warn(UNUSED,
+                                  "Signal is not driven, nor used: " << nodep->prettyNameQ());
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);  // Warn only once
                 }
             } else if (allD && !anyU) {
                 if (!unusedMatch(nodep)) {
-                    nodep->v3warn(UNUSED, "Signal is not used: "<<nodep->prettyNameQ());
+                    nodep->v3warn(UNUSED, "Signal is not used: " << nodep->prettyNameQ());
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);  // Warn only once
                 }
             } else if (!anyD && allU) {
-                nodep->v3warn(UNDRIVEN, "Signal is not driven: "<<nodep->prettyNameQ());
+                nodep->v3warn(UNDRIVEN, "Signal is not driven: " << nodep->prettyNameQ());
                 nodep->fileline()->modifyWarnOff(V3ErrorCode::UNDRIVEN, true);  // Warn only once
             } else {
                 // Bits have different dispositions
-                bool setU=false; bool setD=false;
+                bool setU = false;
+                bool setD = false;
                 if (anynotDU && !unusedMatch(nodep)) {
                     nodep->v3warn(UNUSED, "Bits of signal are not driven, nor used: "
-                                  <<nodep->prettyNameQ()
-                                  <<bitNames(BN_BOTH));
+                                              << nodep->prettyNameQ() << bitNames(BN_BOTH));
                     setU = true;
                 }
                 if (anyDnotU && !unusedMatch(nodep)) {
-                    nodep->v3warn(UNUSED, "Bits of signal are not used: "<<nodep->prettyNameQ()
-                                  <<bitNames(BN_UNUSED));
+                    nodep->v3warn(UNUSED, "Bits of signal are not used: " << nodep->prettyNameQ()
+                                                                          << bitNames(BN_UNUSED));
                     setU = true;
                 }
                 if (anyUnotD) {
-                    nodep->v3warn(UNDRIVEN, "Bits of signal are not driven: "<<nodep->prettyNameQ()
-                                  <<bitNames(BN_UNDRIVEN));
+                    nodep->v3warn(UNDRIVEN, "Bits of signal are not driven: "
+                                                << nodep->prettyNameQ() << bitNames(BN_UNDRIVEN));
                     setD = true;
                 }
-                if (setU) nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);  // Warn only once
-                if (setD) nodep->fileline()->modifyWarnOff(V3ErrorCode::UNDRIVEN, true);  // Warn only once
+                if (setU) {  // Warn only once
+                    nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
+                }
+                if (setD) {  // Warn only once
+                    nodep->fileline()->modifyWarnOff(V3ErrorCode::UNDRIVEN, true);
+                }
             }
         }
     }
@@ -246,17 +249,21 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     UndrivenVarEntry* getEntryp(AstVar* nodep, int which_user) {
-        if (!(which_user==1 ? nodep->user1p() : nodep->user2p())) {
+        if (!(which_user == 1 ? nodep->user1p() : nodep->user2p())) {
             UndrivenVarEntry* entryp = new UndrivenVarEntry(nodep);
-            //UINFO(9," Associate u="<<which_user<<" "<<cvtToHex(this)<<" "<<nodep->name()<<endl);
+            // UINFO(9," Associate u="<<which_user<<" "<<cvtToHex(this)<<" "<<nodep->name()<<endl);
             m_entryps[which_user].push_back(entryp);
-            if (which_user==1) nodep->user1p(entryp);
-            else if (which_user==2) nodep->user2p(entryp);
-            else nodep->v3fatalSrc("Bad case");
+            if (which_user == 1) {
+                nodep->user1p(entryp);
+            } else if (which_user == 2) {
+                nodep->user2p(entryp);
+            } else {
+                nodep->v3fatalSrc("Bad case");
+            }
             return entryp;
         } else {
-            UndrivenVarEntry* entryp = reinterpret_cast<UndrivenVarEntry*>
-                (which_user==1 ? nodep->user1p() : nodep->user2p());
+            UndrivenVarEntry* entryp = reinterpret_cast<UndrivenVarEntry*>(
+                which_user == 1 ? nodep->user1p() : nodep->user2p());
             return entryp;
         }
     }
@@ -266,35 +273,33 @@ private:
         if (!varp->isParam() && !varp->isGenVar() && !varp->isUsedLoopIdx()
             && !m_inBBox  // We may have falsely considered a SysIgnore as a driver
             && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
-            && !varp->fileline()->warnIsOff(V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
-            nodep->v3warn(ALWCOMBORDER, "Always_comb variable driven after use: "
-                          <<nodep->prettyNameQ());
-            varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER, true);  // Complain just once for any usage
+            && !varp->fileline()->warnIsOff(
+                V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
+            nodep->v3warn(ALWCOMBORDER,
+                          "Always_comb variable driven after use: " << nodep->prettyNameQ());
+            varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER,
+                                            true);  // Complain just once for any usage
         }
     }
 
     // VISITORS
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
-        for (int usr=1; usr<(m_alwaysCombp?3:2); ++usr) {
+        for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
             // For assigns and non-combo always, do just usr==1, to look
             // for module-wide undriven etc.
             // For non-combo always, run both usr==1 for above, and also
             // usr==2 for always-only checks.
             UndrivenVarEntry* entryp = getEntryp(nodep, usr);
-            if (nodep->isNonOutput()
-                || nodep->isSigPublic() || nodep->isSigUserRWPublic()
+            if (nodep->isNonOutput() || nodep->isSigPublic() || nodep->isSigUserRWPublic()
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
                 entryp->drivenWhole();
             }
-            if (nodep->isWritable()
-                || nodep->isSigPublic() || nodep->isSigUserRWPublic()
+            if (nodep->isWritable() || nodep->isSigPublic() || nodep->isSigUserRWPublic()
                 || nodep->isSigUserRdPublic()
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
                 entryp->usedWhole();
             }
-            if (nodep->valuep()) {
-                entryp->drivenWhole();
-            }
+            if (nodep->valuep()) entryp->drivenWhole();
         }
         // Discover variables used in bit definitions, etc
         iterateChildren(nodep);
@@ -311,14 +316,14 @@ private:
         AstNodeVarRef* varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
         AstConst* constp = VN_CAST(nodep->lsbp(), Const);
         if (varrefp && constp && !constp->num().isFourState()) {
-            for (int usr=1; usr<(m_alwaysCombp?3:2); ++usr) {
+            for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
                 UndrivenVarEntry* entryp = getEntryp(varrefp->varp(), usr);
                 int lsb = constp->toUInt();
                 if (m_inBBox || varrefp->lvalue()) {
                     // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
-                    if (usr==2 && m_alwaysCombp
+                    if (usr == 2 && m_alwaysCombp
                         && entryp->isUsedNotDrivenBit(lsb, nodep->width())) {
-                        UINFO(9," Select.  Entryp="<<cvtToHex(entryp)<<endl);
+                        UINFO(9, " Select.  Entryp=" << cvtToHex(entryp) << endl);
                         warnAlwCombOrder(varrefp);
                     }
                     entryp->drivenBit(lsb, nodep->width());
@@ -335,24 +340,27 @@ private:
         if (nodep->lvalue()
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
             if (m_inProcAssign && !nodep->varp()->varType().isProcAssignable()
-                && !nodep->varp()->isDeclTyped()
-                && !nodep->varp()->isFuncLocal()) {
+                && !nodep->varp()->isDeclTyped()  //
+                && !nodep->varp()->isClassMember() && !nodep->varp()->isFuncLocal()) {
                 nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intended var"
-                              << " (IEEE 1800-2017 6.5): " << nodep->prettyNameQ());
+                                               << " (IEEE 1800-2017 6.5): "
+                                               << nodep->prettyNameQ());
             }
             if (m_inContAssign && !nodep->varp()->varType().isContAssignable()
                 && !nodep->fileline()->language().systemVerilog()) {
-                nodep->v3warn(CONTASSREG, "Continuous assignment to reg, perhaps intended wire"
-                              << " (IEEE 1364-2005 6.1; Verilog only, legal in SV): "
-                              << nodep->prettyNameQ());
+                nodep->v3warn(CONTASSREG,
+                              "Continuous assignment to reg, perhaps intended wire"
+                                  << " (IEEE 1364-2005 6.1; Verilog only, legal in SV): "
+                                  << nodep->prettyNameQ());
             }
         }
-        for (int usr=1; usr<(m_alwaysCombp?3:2); ++usr) {
+        for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
             UndrivenVarEntry* entryp = getEntryp(nodep->varp(), usr);
-            bool fdrv = nodep->lvalue() && nodep->varp()->attrFileDescr();  // FD's are also being read from
+            bool fdrv = nodep->lvalue()
+                        && nodep->varp()->attrFileDescr();  // FD's are also being read from
             if (m_inBBox || nodep->lvalue()) {
-                if (usr==2 && m_alwaysCombp && entryp->isUsedNotDrivenAny()) {
-                    UINFO(9," Full bus.  Entryp="<<cvtToHex(entryp)<<endl);
+                if (usr == 2 && m_alwaysCombp && entryp->isUsedNotDrivenAny()) {
+                    UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp) << endl);
                     warnAlwCombOrder(nodep);
                 }
                 entryp->drivenWhole();
@@ -397,11 +405,14 @@ private:
         AstAlways* prevAlwp = m_alwaysCombp;
         {
             AstNode::user2ClearTree();
-            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9,"   "<<nodep<<endl);
-            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) m_alwaysCombp = nodep;
-            else m_alwaysCombp = NULL;
+            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   " << nodep << endl);
+            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
+                m_alwaysCombp = nodep;
+            } else {
+                m_alwaysCombp = NULL;
+            }
             iterateChildren(nodep);
-            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9,"   Done "<<nodep<<endl);
+            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
         }
         m_alwaysCombp = prevAlwp;
     }
@@ -455,6 +466,6 @@ public:
 // Undriven class functions
 
 void V3Undriven::undrivenAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    UndrivenVisitor visitor (nodep);
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    UndrivenVisitor visitor(nodep);
 }

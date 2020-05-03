@@ -30,18 +30,30 @@
 // Global string-related functions
 
 template <class T> std::string cvtToStr(const T& t) {
-    std::ostringstream os; os<<t; return os.str();
+    std::ostringstream os;
+    os << t;
+    return os.str();
 }
 template <class T> std::string cvtToHex(const T* tp) {
-    std::ostringstream os; os<<static_cast<const void*>(tp); return os.str();
+    std::ostringstream os;
+    os << static_cast<const void*>(tp);
+    return os.str();
 }
 
 inline uint32_t cvtToHash(const void* vp) {
     // We can shove a 64 bit pointer into a 32 bit bucket
     // On 32-bit systems, lower is always 0, but who cares?
-    union { const void* up; struct {uint32_t upper; uint32_t lower;} l;} u;
-    u.l.upper = 0; u.l.lower = 0; u.up = vp;
-    return u.l.upper^u.l.lower;
+    union {
+        const void* up;
+        struct {
+            uint32_t upper;
+            uint32_t lower;
+        } l;
+    } u;
+    u.l.upper = 0;
+    u.l.lower = 0;
+    u.up = vp;
+    return u.l.upper ^ u.l.lower;
 }
 
 inline string ucfirst(const string& text) {
@@ -55,6 +67,7 @@ inline string ucfirst(const string& text) {
 
 class VString {
     static bool wildmatchi(const char* s, const char* p);
+
 public:
     // METHODS (generic string utilities)
     // Return true if p with ? or *'s matches s
@@ -62,7 +75,7 @@ public:
     // Return true if p with ? or *'s matches s
     static bool wildmatch(const string& s, const string& p);
     // Return true if this is a wildcard string (contains * or ?)
-    static bool isWildcard(const string &p);
+    static bool isWildcard(const string& p);
     // Return {a}{dot}{b}, omitting dot if a or b are empty
     static string dot(const string& a, const string& dot, const string& b);
     // Convert string to lowercase (tolower)
@@ -74,6 +87,8 @@ public:
     // Replace any unprintable with space
     // This includes removing tabs, so column tracking is correct
     static string spaceUnprintable(const string& str);
+    // Remove any whitespace
+    static string removeWhitespace(const string& str);
     // Return true if only whitespace or ""
     static bool isWhitespace(const string& str);
 };
@@ -88,14 +103,17 @@ class VHashSha256 {
     // Or improve to store 0-63 bytes of data between calls to input().
 
     // MEMBERS
-    uint32_t    m_inthash[8];           // Intermediate hash, in host order
-    string      m_remainder;            // Unhashed data
-    bool        m_final;                // Finalized
-    size_t      m_totLength;            // Total all-chunk length as needed by output digest
+    uint32_t m_inthash[8];  // Intermediate hash, in host order
+    string m_remainder;  // Unhashed data
+    bool m_final;  // Finalized
+    size_t m_totLength;  // Total all-chunk length as needed by output digest
 public:
     // CONSTRUCTORS
     VHashSha256() { init(); }
-    explicit VHashSha256(const string& data) { init(); insert(data); }
+    explicit VHashSha256(const string& data) {
+        init();
+        insert(data);
+    }
     ~VHashSha256() {}
 
     // METHODS
@@ -107,20 +125,26 @@ public:
 
     // Inerting hash data
     void insert(const void* datap, size_t length);  // Process data into the digest
-    void insert(const string& data) { insert(data.data(), data.length()); }  // Process data into the digest
+    void insert(const string& data) {
+        insert(data.data(), data.length());
+    }  // Process data into the digest
     void insert(uint64_t value) { insert(cvtToStr(value)); }
 
 private:
     void init() {
-        m_inthash[0] = 0x6a09e667; m_inthash[1] = 0xbb67ae85;
-        m_inthash[2] = 0x3c6ef372; m_inthash[3] = 0xa54ff53a;
-        m_inthash[4] = 0x510e527f; m_inthash[5] = 0x9b05688c;
-        m_inthash[6] = 0x1f83d9ab; m_inthash[7] = 0x5be0cd19;
+        m_inthash[0] = 0x6a09e667;
+        m_inthash[1] = 0xbb67ae85;
+        m_inthash[2] = 0x3c6ef372;
+        m_inthash[3] = 0xa54ff53a;
+        m_inthash[4] = 0x510e527f;
+        m_inthash[5] = 0x9b05688c;
+        m_inthash[6] = 0x1f83d9ab;
+        m_inthash[7] = 0x5be0cd19;
         m_final = false;
         m_totLength = 0;
     }
-    static void selfTestOne(const string& data, const string& data2,
-                            const string& exp, const string& exp64);
+    static void selfTestOne(const string& data, const string& data2, const string& exp,
+                            const string& exp64);
     void finalize();  // Process remaining data
 };
 
@@ -136,10 +160,14 @@ class VName {
     static size_t s_minLength;  // Length to preserve if over maxLength
 public:
     // CONSTRUCTORS
-    explicit VName(const string& name) : m_name(name) {}
+    explicit VName(const string& name)
+        : m_name(name) {}
     ~VName() {}
     // METHODS
-    void name(const string& name) { m_name = name; m_hashed = ""; }
+    void name(const string& name) {
+        m_name = name;
+        m_hashed = "";
+    }
     string name() const { return m_name; }
     string hashedName();
     // CONFIG STATIC METHODS
@@ -173,21 +201,24 @@ public:
     // Return candidate is closest to provided string, or "" for none
     string bestCandidate(const string& goal) {
         EditDistance dist;
-        return bestCandidateInfo(goal, dist/*ref*/);
+        return bestCandidateInfo(goal, dist /*ref*/);
     }
     // Return friendly message
     string bestCandidateMsg(const string& goal) {
         string candidate = bestCandidate(goal);
-        if (candidate.empty()) return "";
-        else return string("... Suggested alternative: '")+candidate+"'";
+        if (candidate.empty()) {
+            return "";
+        } else {
+            return string("... Suggested alternative: '") + candidate + "'";
+        }
     }
     static void selfTest();
+
 private:
     static EditDistance editDistance(const string& s, const string& t);
     static EditDistance cutoffDistance(size_t goal_len, size_t candidate_len);
     string bestCandidateInfo(const string& goal, EditDistance& distancer);
-    static void selfTestDistanceOne(const string& a, const string& b,
-                                    EditDistance expected);
+    static void selfTestDistanceOne(const string& a, const string& b, EditDistance expected);
     static void selfTestSuggestOne(bool matches, const string& c, const string& goal,
                                    EditDistance dist);
 };

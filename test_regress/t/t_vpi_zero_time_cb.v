@@ -87,7 +87,7 @@ endmodule : t
 module sub;
    reg subsig1 /*verilator public_flat_rd*/;
    reg subsig2 /*verilator public_flat_rd*/;
-`ifdef iverilog
+`ifdef IVERILOG
    // stop icarus optimizing signals away
    wire redundant = subsig1 | subsig2;
 `endif

@@ -35,16 +35,16 @@ $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork; die "Quitting...\n"; }
 
 # Map of all scenarios, with the names used to enable them
 our %All_Scenarios
-    = (dist  => [                       "dist"],
-       atsim => [          "simulator", "atsim"],
-       ghdl  => ["linter", "simulator", "ghdl"],
-       iv    => [          "simulator", "iv"],
-       ms    => ["linter", "simulator", "ms"],
-       nc    => ["linter", "simulator", "nc"],
-       vcs   => ["linter", "simulator", "vcs"],
-       xsim  => ["linter", "simulator", "xsim"],
-       vlt   => ["linter", "simulator", "vlt_all", "vlt"],
-       vltmt => [          "simulator", "vlt_all", "vltmt"],
+    = (dist  => [                                       "dist"],
+       atsim => [          "simulator", "simulator_st", "atsim"],
+       ghdl  => ["linter", "simulator", "simulator_st", "ghdl"],
+       iv    => [          "simulator", "simulator_st", "iv"],
+       ms    => ["linter", "simulator", "simulator_st", "ms"],
+       nc    => ["linter", "simulator", "simulator_st", "nc"],
+       vcs   => ["linter", "simulator", "simulator_st", "vcs"],
+       xsim  => ["linter", "simulator", "simulator_st", "xsim"],
+       vlt   => ["linter", "simulator", "simulator_st", "vlt_all", "vlt"],
+       vltmt => [          "simulator",                 "vlt_all", "vltmt"],
     );
 
 #======================================================================
@@ -192,11 +192,7 @@ if ($opt_rerun && $runner->fail_count) {
         skip_cnt => $orig_runner->{skip_cnt},
         unsup_cnt => $orig_runner->{unsup_cnt});
     foreach my $test (@{$orig_runner->{fail_tests}}) {
-        if (0) {  # TBD if this is required - rare that intermediate results are bad
-            # Remove old results to force hard rebuild
-            system("rm", "-rf", "$test->{obj_dir}__fail1");
-            system("mv", "$test->{obj_dir}", "$test->{obj_dir}__fail1");
-        }
+        $test->clean;
         # Reschedule test
         $runner->one_test(pl_filename => $test->{pl_filename},
                           $test->{scenario} => 1);
@@ -550,6 +546,7 @@ sub new {
         make_top_shell => 1,    # Make a default __top.v file
         make_main => 1,         # Make __main.cpp
         make_pli => 0,          # need to compile pli
+        sc_time_resolution => "SC_PS",  # Keep - PS is SystemC default
         sim_time => 1100,
         benchmark => $opt_benchmark,
         verbose => $opt_verbose,
@@ -588,7 +585,7 @@ sub new {
         ghdl_run_flags => [],
         # IV
         iv => 0,
-        iv_flags => [split(/\s+/,"+define+iverilog -g2012 -o $self->{obj_dir}/simiv")],
+        iv_flags => [split(/\s+/,"+define+IVERILOG -g2012 -o $self->{obj_dir}/simiv")],
         iv_flags2 => [],  # Overridden in some sim files
         iv_pli => 0,  # need to use pli
         iv_run_flags => [],
@@ -605,7 +602,7 @@ sub new {
         nc_run_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
         # ModelSim
         ms => 0,
-        ms_flags => [split(/\s+/,("-sv -work $self->{obj_dir}/work"))],
+        ms_flags => [split(/\s+/, ("-sv -work $self->{obj_dir}/work +define+MS=1 -ccflags \"-DMS=1\""))],
         ms_flags2 => [],  # Overridden in some sim files
         ms_pli => 1,  # need to use pli
         ms_run_flags => [split(/\s+/,"-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
@@ -795,6 +792,25 @@ sub _read_status {
 #----------------------------------------------------------------------
 # Methods invoked by tests
 
+sub clean {
+    my $self = (ref $_[0] ? shift : $Self);
+    # Called on a rerun to cleanup files
+    if ($self->{clean_command}) {
+        system($self->{clean_command});
+    }
+    if (1) {
+        # Prevents false-failures when switching compilers
+        # Remove old results to force hard rebuild
+        system("rm", "-rf", "$self->{obj_dir}__fail1");
+        system("mv", "$self->{obj_dir}", "$self->{obj_dir}__fail1");
+    }
+}
+
+sub clean_objs {
+    my $self = (ref $_[0] ? shift : $Self);
+    system("rm", "-rf", glob("$self->{obj_dir}/*"));
+}
+
 sub compile_vlt_cmd {
     my $self = (ref $_[0]? shift : $Self);
     my %param = (%{$self}, @_);  # Default arguments are from $self
@@ -822,8 +838,7 @@ sub compile_vlt_flags {
                           @{$param{verilator_flags3}});
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
     $self->{trace} = ($opt_trace || $checkflags =~ /-trace\b/
-                      || $checkflags =~ /-trace-fst\b/
-                      || $checkflags =~ /-trace-fst-thread\b/);
+                      || $checkflags =~ /-trace-fst\b/);
     $self->{trace_format} = (($checkflags =~ /-trace-fst/ && 'fst-c')
                              || ($self->{sc} && 'vcd-sc')
                              || (!$self->{sc} && 'vcd-c'));
@@ -838,7 +853,8 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--trace" if $opt_trace;
     my $threads = ::calc_threads($Vltmt_threads);
     unshift @verilator_flags, "--threads $threads" if $param{vltmt} && $checkflags !~ /-threads /;
-    unshift @verilator_flags, "--trace-fst-thread" if $param{vltmt} && $checkflags =~ /-trace-fst/;
+    unshift @verilator_flags, "--trace-threads 1" if $param{vltmt} && $checkflags =~ /-trace /;
+    unshift @verilator_flags, "--trace-threads 2" if $param{vltmt} && $checkflags =~ /-trace-fst /;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
@@ -1603,7 +1619,7 @@ sub _make_main {
     my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
 
     print $fh "// Test defines\n";
-    print $fh "#define VL_TIME_MULTIPLIER $self->{vl_time_multiplier}\n" if $self->{vl_time_multiplier};
+    print $fh "#define MAIN_TIME_MULTIPLIER ".($self->{main_time_multiplier} || 1)."\n";
 
     print $fh "// OS header\n";
     print $fh "#include \"verilatedos.h\"\n";
@@ -1622,8 +1638,13 @@ sub _make_main {
 
     print $fh "$VM_PREFIX* topp;\n";
     if (!$self->sc) {
-        print $fh "vluint64_t main_time = false;\n";
-        print $fh "double sc_time_stamp() { return main_time; }\n";
+        if ($self->{vl_time_stamp64}) {
+            print $fh "vluint64_t main_time = 0;\n";
+            print $fh "vluint64_t vl_time_stamp() { return main_time; }\n";
+        } else {
+            print $fh "double main_time = 0;\n";
+            print $fh "double sc_time_stamp() { return main_time; }\n";
+        }
     }
 
     if ($self->{savable}) {
@@ -1653,7 +1674,8 @@ sub _make_main {
         print $fh "int sc_main(int argc, char** argv) {\n";
         print $fh "    sc_signal<bool> fastclk;\n" if $self->{inputs}{fastclk};
         print $fh "    sc_signal<bool> clk;\n"  if $self->{inputs}{clk};
-        print $fh "    sc_time sim_time($self->{sim_time}, SC_NS);\n";
+        print $fh "    sc_set_time_resolution(1, $Self->{sc_time_resolution});\n";
+        print $fh "    sc_time sim_time($self->{sim_time}, $Self->{sc_time_resolution});\n";
     } else {
         print $fh "int main(int argc, char** argv, char** env) {\n";
         print $fh "    double sim_time = $self->{sim_time};\n";
@@ -1709,7 +1731,8 @@ sub _make_main {
     _print_advance_time($self, $fh, 10);
     print $fh "    }\n";
 
-    print $fh "    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {\n";
+    print $fh "    while ((sc_time_stamp() < sim_time * MAIN_TIME_MULTIPLIER)\n";
+    print $fh "           && !Verilated::gotFinish()) {\n";
     for (my $i=0; $i<5; $i++) {
         my $action = 0;
         if ($self->{inputs}{fastclk}) {
@@ -1765,7 +1788,7 @@ sub _print_advance_time {
 
     if ($self->sc) {
         print $fh "#if (SYSTEMC_VERSION>=20070314)\n";
-        print $fh "        sc_start(${time}, SC_NS);\n";
+        print $fh "        sc_start(${time}, $Self->{sc_time_resolution});\n";
         print $fh "#else\n";
         print $fh "        sc_start(${time});\n";
         print $fh "#endif\n";
@@ -1778,7 +1801,7 @@ sub _print_advance_time {
                 $fh->print("#endif  // VM_TRACE\n");
             }
         }
-        print $fh "        main_time += ${time};\n";
+        print $fh "        main_time += ${time} * MAIN_TIME_MULTIPLIER;\n";
     }
 }
 
@@ -1798,7 +1821,8 @@ sub _make_top_v {
 
     $self->_read_inputs_v();
 
-    my $fh = IO::File->new(">$self->{top_shell_filename}") or die "%Error: $! $self->{top_shell_filename},";
+    my $fh = IO::File->new(">$self->{top_shell_filename}")
+        or die "%Error: $! $self->{top_shell_filename},";
     print $fh "module top;\n";
     foreach my $inp (sort (keys %{$self->{inputs}})) {
         print $fh "    reg ${inp};\n";
@@ -1996,6 +2020,7 @@ sub files_identical {
                     && !/^- [a-z.0-9]+:\d+:[^\n]+\n/
                     && !/^-node:/
                     && !/^dot [^\n]+\n/
+                    && !/^In file: .*\/sc_.*:\d+/
             } @l1;
             @l1 = map {
                 s/(Internal Error: [^\n]+\.cpp):[0-9]+:/$1:#:/;
@@ -2007,6 +2032,7 @@ sub files_identical {
                 $l1[$l] =~ s/\r/<#013>/mig;
                 $l1[$l] =~ s/Command Failed[^\n]+/Command Failed/mig;
                 $l1[$l] =~ s/Version: Verilator[^\n]+/Version: Verilator ###/mig;
+                $l1[$l] =~ s/CPU Time: +[0-9.]+ seconds[^\n]+/CPU Time: ###/mig;
                 if ($l1[$l] =~ s/Exiting due to.*/Exiting due to/mig) {
                     splice @l1, $l+1;  # Trunc rest
                     last;

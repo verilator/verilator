@@ -43,7 +43,7 @@ extern "C" int mon_check();
 
    integer      status;
 
-`ifdef iverilog
+`ifdef IVERILOG
    // stop icarus optimizing signals away
    wire 	redundant = onebit | onetwo[1] | twoone | fourthreetwoone[3];
 `endif
@@ -57,7 +57,7 @@ extern "C" int mon_check();
 `ifdef VERILATOR
       status = $c32("mon_check()");
 `endif
-`ifdef iverilog
+`ifdef IVERILOG
      status = $mon_check();
 `endif
 `ifndef USE_VPI_NOT_DPI

@@ -15,7 +15,7 @@ compile(
     v_flags => ["--debug-sigsegv"],
     fails => 1,
     expect =>
-'%Error: Verilator internal fault, sorry.  Consider trying --debug --gdbbt
+'%Error: Verilator internal fault, sorry. Suggest trying --debug --gdbbt
 %Error: Command Failed.*',
     );
 

@@ -217,6 +217,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fdisplayh"          { FL; return yD_FDISPLAYH; }
   "$fdisplayo"          { FL; return yD_FDISPLAYO; }
   "$feof"               { FL; return yD_FEOF; }
+  "$ferror"             { FL; return yD_FERROR; }
   "$fflush"             { FL; return yD_FFLUSH; }
   "$fgetc"              { FL; return yD_FGETC; }
   "$fgets"              { FL; return yD_FGETS; }
@@ -241,6 +242,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$nochange"           { FL; return yaTIMINGSPEC; }
   "$period"             { FL; return yaTIMINGSPEC; }
   "$pow"                { FL; return yD_POW; }
+  "$printtimescale"     { FL; return yD_PRINTTIMESCALE; }
   "$random"             { FL; return yD_RANDOM; }
   "$readmemb"           { FL; return yD_READMEMB; }
   "$readmemh"           { FL; return yD_READMEMH; }
@@ -274,6 +276,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$test$plusargs"      { FL; return yD_TESTPLUSARGS; }
   "$time"               { FL; return yD_TIME; }
   "$timeskew"           { FL; return yaTIMINGSPEC; }
+  "$timeformat"         { FL; return yD_TIMEFORMAT; }
   "$typename"           { FL; return yD_TYPENAME; }
   "$ungetc"             { FL; return yD_UNGETC; }
   "$value$plusargs"     { FL; return yD_VALUEPLUSARGS; }
@@ -445,6 +448,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$onehot0"            { FL; return yD_ONEHOT0; }
   "$past"               { FL; return yD_PAST; }
   "$right"              { FL; return yD_RIGHT; }
+  "$root"               { FL; return yD_ROOT; }
   "$size"               { FL; return yD_SIZE; }
   "$unpacked_dimensions" { FL; return yD_UNPACKED_DIMENSIONS; }
   "$warning"            { FL; return yD_WARNING; }
@@ -524,7 +528,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "void"                { FL; return yVOID; }
   /*     Generic unsupported warnings */
   /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
-  "$root"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "before"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "bins"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "binsof"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
@@ -890,8 +893,12 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           FL; yylval.cdouble = PARSEP->parseDouble(yytext, yyleng);
                           return yaFLOATNUM;
                         }
-  [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s|step) {
-                          FL; yylval.cdouble = 0;  /* Only for times, not used yet */
+  [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s) {
+                          FL; yylval.cdouble = PARSEP->parseTimenum(yytext);
+                          return yaTIMENUM;
+                        }
+  1step                 {
+                          FL; yylval.cdouble = 0;  // Unsupported
                           return yaTIMENUM;
                         }
 }
@@ -931,6 +938,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <TABLE>{crnl}           { yymore(); }
 <TABLE>";"              { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLELINE; }
 <TABLE>"endtable"       { yy_pop_state(); FL; return yENDTABLE; }
+<TABLE>"`line"{ws}+[^\n\r]*{crnl}       { FL_FWD; PARSEP->ppline(yytext); FL_BRK; }
 <TABLE>.                { yymore(); }
 <TABLE><<EOF>>          { FL_FWD; yyerrorf("EOF in TABLE");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
@@ -965,7 +973,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`noremove_gatenames"                 { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`noremove_netnames"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`nosuppress_faults"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
-  "`nounconnected_drive"                { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`nounconnected_drive"                { FL_FWD; PARSEP->unconnectedDrive(VOptionBool::OPT_DEFAULT_FALSE); FL_BRK; }
   "`portcoerce"                         { FL_FWD; FL_BRK; }
   "`pragma"{ws}*[^\n\r]*                { FL_FWD; FL_BRK; }  // Verilog 2005
   "`protect"                            { FL_FWD; FL_BRK; }
@@ -974,7 +982,12 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`resetall"                           { FL; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true);
                                           return yaT_RESETALL; }  // Rest handled by preproc
   "`suppress_faults"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
-  "`timescale"{ws}+[^\n\r]*             { FL_FWD; FL_BRK; }  // Verilog spec - not supported
+  "`timescale"{ws}+[^\n\r]*             { FL_FWD; PARSEP->timescalePreproc(PARSEP->fileline(),
+                                                                           yytext + strlen("`timescale"));
+                                          FL_BRK; }
+  "`unconnected_drive"{ws}+"pull0"      { FL_FWD; PARSEP->unconnectedDrive(VOptionBool::OPT_FALSE); FL_BRK; }
+  "`unconnected_drive"{ws}+"pull1"      { FL_FWD; PARSEP->unconnectedDrive(VOptionBool::OPT_TRUE); FL_BRK; }
+  "`unconnected_drive"                  { FL_FWD; yyerrorf("Bad `unconnected_drive syntax"); FL_BRK; }
   "`uselib"{ws}+[^\n\r]*                { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
 
   /* See also setLanguage below */

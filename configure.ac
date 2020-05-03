@@ -7,7 +7,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.032 2020-04-04],
+AC_INIT([Verilator],[4.034 2020-05-03],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -157,6 +157,12 @@ fi
 AC_PATH_PROG(YACC,bison)
 if test "x$YACC" = "x" ; then
    AC_MSG_ERROR([Cannot find "bison" in your PATH, please install it])
+fi
+
+AC_CHECK_PROG(OBJCACHE,ccache,ccache)
+if test "x$OBJCACHE" != "x" ; then
+  objcache_version=$($OBJCACHE --version | head -1)
+  AC_MSG_RESULT([objcache is $OBJCACHE --version = $objcache_version])
 fi
 
 # Checks for libraries.
@@ -328,6 +334,7 @@ m4_foreach([cflag],[
         [-mno-cet],
         [-Qunused-arguments],
         [-Wno-bool-operation],
+        [-Wno-tautological-bitwise-compare],
         [-Wno-parentheses-equality],
         [-Wno-sign-compare],
         [-Wno-uninitialized],

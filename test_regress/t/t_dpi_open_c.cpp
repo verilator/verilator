@@ -22,6 +22,8 @@
 # include "../vc_hdrs.h"
 #elif defined(NC)
 # define NEED_EXTERNS
+// #elif defined(MS)
+// # define NEED_EXTERNS
 #else
 # error "Unknown simulator for DPI test"
 #endif
@@ -94,6 +96,15 @@ int dpii_failure() { return failure; }
         } \
     } while (0)
 
+#define CHECK_RESULT_HEX_NE(got, exp) \
+    do { \
+        if ((got) == (exp)) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
+                      << ": GOT=" << (got) << "   EXP!=" << (exp) << std::endl; \
+            failure = __LINE__; \
+        } \
+    } while (0)
+
 void dpii_unused(const svOpenArrayHandle u) {}
 
 void _dpii_all(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o) {
@@ -102,8 +113,10 @@ void _dpii_all(int c, int p, int u, const svOpenArrayHandle i, const svOpenArray
            __FILE__, __LINE__, c, p, u, svGetArrayPtr(i));
 #endif
     (void)svGetArrayPtr(i);
+#ifndef NC
     // NC always returns zero and warns
-    //(void)svSizeOfArray(i);
+    (void)svSizeOfArray(i);
+#endif
 #ifndef VCS  // VCS does not support dimension 0 query
     if (p) {
         int d = 0;
@@ -222,8 +235,29 @@ void dpii_open_pw_u3(int c, int p, int u, const svOpenArrayHandle i, const svOpe
 }
 
 void dpii_open_bit(const svOpenArrayHandle i, const svOpenArrayHandle o) {}
-void dpii_open_byte(const svOpenArrayHandle i, const svOpenArrayHandle o) {}
-void dpii_open_int(const svOpenArrayHandle i, const svOpenArrayHandle o) {}
+
+void dpii_open_byte(const svOpenArrayHandle i, const svOpenArrayHandle o) {
+    intptr_t arrPtr = (intptr_t)svGetArrayPtr(i);
+    CHECK_RESULT_HEX_NE(arrPtr, 0); // All the arrays should actually exist
+#ifndef NC
+    // NC always returns zero and warns
+    int sizeInputOfArray = svSizeOfArray(i);
+    CHECK_RESULT_HEX_NE(sizeInputOfArray, 0); // None of the test cases have zero size
+    CHECK_RESULT_HEX_NE(svDimensions(i), 0); // All the test cases are unpacked arrays
+#endif
+}
+
+void dpii_open_int(const svOpenArrayHandle i, const svOpenArrayHandle o) {
+    intptr_t arrPtr = (intptr_t)svGetArrayPtr(i);
+    CHECK_RESULT_HEX_NE(arrPtr, 0); // All the arrays should actually exist
+#ifndef NC
+    // NC always returns zero and warns
+    int sizeInputOfArray = svSizeOfArray(i);
+    CHECK_RESULT_HEX_NE(sizeInputOfArray, 0); // None of the test cases have zero size
+    CHECK_RESULT_HEX_NE(svDimensions(i), 0); // All the test cases are unpacked arrays
+#endif
+}
+
 void dpii_open_integer(const svOpenArrayHandle i, const svOpenArrayHandle o) {}
 void dpii_open_logic(const svOpenArrayHandle i, const svOpenArrayHandle o) {}
 
