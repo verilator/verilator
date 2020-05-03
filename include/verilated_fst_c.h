@@ -55,8 +55,8 @@ private:
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
-    void declSymbol(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                    fstVarType vartype, bool array, int arraynum, vluint32_t len, vluint32_t bits);
+    void declare(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                 fstVarType vartype, bool array, int arraynum, int msb, int lsb);
 
 protected:
     //=========================================================================

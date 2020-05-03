@@ -132,9 +132,10 @@ void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elem
     m_local2fstdtype[dtypenum] = enumNum;
 }
 
-void VerilatedFst::declSymbol(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                              fstVarType vartype, bool array, int arraynum, vluint32_t len,
-                              vluint32_t bits) {
+void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                           fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
+    const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
+
     VerilatedTrace<VerilatedFst>::declCode(code, bits, false);
 
     std::pair<Code2SymbolType::iterator, bool> p
@@ -178,39 +179,36 @@ void VerilatedFst::declSymbol(vluint32_t code, const char* name, int dtypenum, f
         fstWriterEmitEnumTableRef(m_fst, enumNum);
     }
     if (p.second) {  // New
-        p.first->second = fstWriterCreateVar(m_fst, vartype, vardir, len, name_str.c_str(), 0);
+        p.first->second = fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), 0);
         assert(p.first->second);
     } else {  // Alias
-        fstWriterCreateVar(m_fst, vartype, vardir, len, name_str.c_str(), p.first->second);
+        fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), p.first->second);
     }
 }
 
 void VerilatedFst::declBit(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                            fstVarType vartype, bool array, int arraynum) {
-    declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1, 1);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 0, 0);
 }
 void VerilatedFst::declBus(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                            fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
-    declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
-               msb - lsb + 1);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
 }
 void VerilatedFst::declQuad(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                             fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
-    declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
-               msb - lsb + 1);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
 }
 void VerilatedFst::declArray(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                              fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
-    declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
-               msb - lsb + 1);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
 }
 void VerilatedFst::declFloat(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                              fstVarType vartype, bool array, int arraynum) {
-    declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1, 32);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 31, 0);
 }
 void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                               fstVarType vartype, bool array, int arraynum) {
-    declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 2, 64);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 63, 0);
 }
 
 // Note: emit* are only ever called from one place (full* in

@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.035 devel
 
+****  Fix FST tracing of little bit endian signals. [Geza Lore]
+
 
 * Verilator 4.034 2020-05-03
 
