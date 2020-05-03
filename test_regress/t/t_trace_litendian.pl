@@ -10,8 +10,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
+# Travis environment offers 2 VCPUs, 2 thread setting causes the following warning.
+# %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
+# Strangely, asking for more threads makes it go away.
 compile(
-    verilator_flags2 => ['--cc --trace --trace-params -Wno-LITENDIAN'],
+    verilator_flags2 => ['--cc --trace --trace-params -Wno-LITENDIAN',
+                        ($Self->{vltmt} ? '--threads 6' : '')],
     );
 
 execute(
