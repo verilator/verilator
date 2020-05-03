@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
-* Verilator 4.033 devel
+* Verilator 4.034 2020-05-03
 
 **    Add simplistic class support with many restrictions, see manual, #377.
 
