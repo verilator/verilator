@@ -112,9 +112,11 @@ For more information:
 * https://verilator.org/verilator_doc.html[Verilator manual (HTML)],
 or https://verilator.org/verilator_doc.pdf[Verilator manual (PDF)]
 
+* https://github.com/verilator/verilator-announce[Subscribe to verilator announcements]
+
 * https://verilator.org/forum[Verilator forum]
 
-* https://verilator.org/issues[Verilator Issues]
+* https://verilator.org/issues[Verilator issues]
 
 == Support
 

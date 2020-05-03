@@ -266,10 +266,9 @@ set in your environment; it is built into the executable.
 
 == Announcements
 
-To get notified of new releases, login to
-https://www.veripool.org[Veripool], and click the "watch" button near the
-top right under https://www.veripool.org/projects/verilator/news[Verilator
-News].
+To get notified of new releases, go to
+https://github.com/verilator/verilator-announce[Verilator announcement
+repository] and follow the instructions there.
 
 == Directory Structure
 
