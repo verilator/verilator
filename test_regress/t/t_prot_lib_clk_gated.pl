@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Makes the test run with tracing enabled by default, can be overridden
 # with --notrace
 unshift(@ARGV, "--trace");
