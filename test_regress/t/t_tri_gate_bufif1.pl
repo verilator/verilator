@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
 # Copyright 2003-2009 by Wilson Snyder. This program is free software; you
