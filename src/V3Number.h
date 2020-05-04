@@ -204,6 +204,7 @@ private:
 
 public:
     void v3errorEnd(std::ostringstream& sstr) const;
+    void v3errorEndFatal(std::ostringstream& sstr) const VL_ATTR_NORETURN;
     void width(int width, bool sized = true) {
         // Set width.  Only set m_width here, as we need to tweak vector size
         if (width) {

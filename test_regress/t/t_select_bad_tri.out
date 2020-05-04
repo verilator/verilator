@@ -1,4 +1,7 @@
 %Error: t/t_select_bad_tri.v:11:24: Selection index is constantly unknown or tristated: 1'bx
    11 |       if (in[(   (1'h0 / 1'b0)   )+:71] != 71'h0) $stop;
       |                        ^
-%Error: Internal Error: ../V3Number.cpp:#: toUInt with 4-state 1'bx
+%Error: Internal Error: t/t_select_bad_tri.v:11:24: ../V3Number.cpp:#: toUInt with 4-state 1'bx
+                                                  : ... In instance t
+   11 |       if (in[(   (1'h0 / 1'b0)   )+:71] != 71'h0) $stop;
+      |                        ^
