@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix FST tracing of little bit endian signals. [Geza Lore]
 
+****  Fix +: and -: on unpacked arrays. (#2304) [engr248]
+
 
 * Verilator 4.034 2020-05-03
 

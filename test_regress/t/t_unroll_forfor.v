@@ -24,12 +24,11 @@ module t (/*AUTOARG*/
 	byte i, j;
 	// bug1044
 	for ( i = 0; i < 9; i = i + 1 )
-          for ( j=0; j<(TEST_PARAM[i*8+:8]); j=j+1 )
-            begin
-	       // verilator lint_off WIDTH
-               in_tmp[TEST_PARAM[i*8+:8]+j] = in[TEST_PARAM[i*8+:8]+j];
-	       // verilator lint_on WIDTH
-            end
+	  // verilator lint_off WIDTH
+          for ( j=0; j<(TEST_PARAM[i*8+:8]); j=j+1) begin
+             in_tmp[TEST_PARAM[i*8+:8]+j] = in[TEST_PARAM[i*8+:8]+j];
+          end
+	// verilator lint_on WIDTH
 	$write("*-* All Finished *-*\n");
 	$finish;
      end
