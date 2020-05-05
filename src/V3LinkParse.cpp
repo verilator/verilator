@@ -463,8 +463,7 @@ private:
         iterateChildren(nodep);
         m_valueModp = upperValueModp;
     }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE { visitIterateNoValueMod(nodep); }
-    virtual void visit(AstFinal* nodep) VL_OVERRIDE { visitIterateNoValueMod(nodep); }
+    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE { visitIterateNoValueMod(nodep); }
     virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         m_inAlways = true;
         visitIterateNoValueMod(nodep);

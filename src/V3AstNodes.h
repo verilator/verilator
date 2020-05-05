@@ -3076,25 +3076,34 @@ public:
     bool hasCombo() const;  // Includes a COMBO SenItem
 };
 
-class AstAlways : public AstNode {
+class AstFinal : public AstNodeProcedure {
+public:
+    AstFinal(FileLine* fl, AstNode* bodysp)
+        : ASTGEN_SUPER(fl, bodysp) {}
+    ASTNODE_NODE_FUNCS(Final)
+};
+
+class AstInitial : public AstNodeProcedure {
+public:
+    AstInitial(FileLine* fl, AstNode* bodysp)
+        : ASTGEN_SUPER(fl, bodysp) {}
+    ASTNODE_NODE_FUNCS(Initial)
+};
+
+class AstAlways : public AstNodeProcedure {
     VAlwaysKwd m_keyword;
 
 public:
     AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sensesp, AstNode* bodysp)
-        : ASTGEN_SUPER(fl)
+        : ASTGEN_SUPER(fl, bodysp)
         , m_keyword(keyword) {
         addNOp1p(sensesp);
-        addNOp2p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Always)
     //
     virtual void dump(std::ostream& str) const;
     AstSenTree* sensesp() const { return VN_CAST(op1p(), SenTree); }  // op1 = Sensitivity list
-    AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
-    void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     VAlwaysKwd keyword() const { return m_keyword; }
-    // Special accessors
-    bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
 };
 
 class AstAlwaysPublic : public AstNodeStmt {
@@ -4431,28 +4440,6 @@ public:
     virtual void dump(std::ostream& str) const;
     VJoinType joinType() const { return m_joinType; }
     void joinType(const VJoinType& flag) { m_joinType = flag; }
-};
-
-class AstInitial : public AstNode {
-public:
-    AstInitial(FileLine* fl, AstNode* bodysp)
-        : ASTGEN_SUPER(fl) {
-        addNOp1p(bodysp);
-    }
-    ASTNODE_NODE_FUNCS(Initial)
-    AstNode* bodysp() const { return op1p(); }  // op1 = Expressions to evaluate
-    // Special accessors
-    bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
-};
-
-class AstFinal : public AstNode {
-public:
-    AstFinal(FileLine* fl, AstNode* bodysp)
-        : ASTGEN_SUPER(fl) {
-        addNOp1p(bodysp);
-    }
-    ASTNODE_NODE_FUNCS(Final)
-    AstNode* bodysp() const { return op1p(); }  // op1 = Expressions to evaluate
 };
 
 class AstInside : public AstNodeMath {

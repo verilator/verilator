@@ -2090,6 +2090,20 @@ public:
     virtual bool same(const AstNode*) const { return true; }
 };
 
+class AstNodeProcedure : public AstNode {
+    // IEEE procedure: initial, final, always
+public:
+    AstNodeProcedure(AstType t, FileLine* fl, AstNode* bodysp)
+        : AstNode(t, fl) {
+        addNOp2p(bodysp);
+    }
+    ASTNODE_BASE_FUNCS(NodeProcedure)
+    // METHODS
+    AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
+    void addStmtp(AstNode* nodep) { addOp2p(nodep); }
+    bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
+};
+
 class AstNodeStmt : public AstNode {
     // Statement -- anything that's directly under a function
     bool m_statement;  // Really a statement (e.g. not a function with return)

@@ -476,15 +476,7 @@ private:
             LifeVisitor visitor(nodep, m_statep);
         }
     }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
-        // Usage model 2: Cleanup basic blocks
-        LifeVisitor visitor(nodep, m_statep);
-    }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
-        // Usage model 2: Cleanup basic blocks
-        LifeVisitor visitor(nodep, m_statep);
-    }
-    virtual void visit(AstFinal* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE {
         // Usage model 2: Cleanup basic blocks
         LifeVisitor visitor(nodep, m_statep);
     }
