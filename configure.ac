@@ -16,7 +16,10 @@ AC_INIT([Verilator],[4.035 devel],
 AC_CONFIG_HEADER(src/config_build.h)
 AC_CONFIG_FILES(Makefile docs/Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)
 
+# Version
 AC_MSG_RESULT([configuring for $PACKAGE_STRING])
+PACKAGE_VERSION_NUMBER=`AS_ECHO("$PACKAGE_VERSION") | sed 's/ .*//g'`
+AC_SUBST(PACKAGE_VERSION_NUMBER)
 
 # Ignore automake flags passed by Ubuntu builds
 AC_ARG_ENABLE([dependency-tracking],
