@@ -102,7 +102,7 @@ private:
     bool m_doShort;  // Remove expressions that short circuit
     bool m_doV;  // Verilog, not C++ conversion
     bool m_doGenerate;  // Postpone width checking inside generate
-    bool m_hasJumpGo;  // JumpGo under this while
+    bool m_hasJumpDelay;  // JumpGo or Delay under this while
     AstNodeModule* m_modp;  // Current module
     AstArraySel* m_selp;  // Current select
     AstNode* m_scopep;  // Current scope
@@ -2114,11 +2114,11 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstWhile* nodep) VL_OVERRIDE {
-        bool oldHasJumpGo = m_hasJumpGo;
-        m_hasJumpGo = false;
+        bool oldHasJumpDelay = m_hasJumpDelay;
+        m_hasJumpDelay = false;
         { iterateChildren(nodep); }
-        bool thisWhileHasJumpGo = m_hasJumpGo;
-        m_hasJumpGo = thisWhileHasJumpGo || oldHasJumpGo;
+        bool thisWhileHasJumpDelay = m_hasJumpDelay;
+        m_hasJumpDelay = thisWhileHasJumpDelay || oldHasJumpDelay;
         if (m_doNConst) {
             if (nodep->condp()->isZero()) {
                 UINFO(4, "WHILE(0) => nop " << nodep << endl);
@@ -2129,7 +2129,7 @@ private:
                 }
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             } else if (nodep->condp()->isNeqZero()) {
-                if (!thisWhileHasJumpGo) {
+                if (!thisWhileHasJumpDelay) {
                     nodep->v3warn(INFINITELOOP, "Infinite loop (condition always true)");
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::INFINITELOOP,
                                                      true);  // Complain just once
@@ -2161,9 +2161,13 @@ private:
     //-----
     // Jump elimination
 
+    virtual void visit(AstDelay* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        m_hasJumpDelay = true;
+    }
     virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
-        m_hasJumpGo = true;
+        m_hasJumpDelay = true;
         if (m_doExpensive) {
             // If last statement in a jump label we have JumpLabel(...., JumpGo)
             // Often caused by "return" in a Verilog function.  The Go is pointless, remove.
@@ -2566,7 +2570,7 @@ public:
         m_doShort = true;  // Presently always done
         m_doV = false;
         m_doGenerate = false;  // Inside generate conditionals
-        m_hasJumpGo = false;
+        m_hasJumpDelay = false;
         m_warn = false;
         m_wremove = true;  // Overridden in visitors
         m_modp = NULL;

@@ -189,8 +189,8 @@ private:
     bool m_paramsOnly;  // Computing parameter value; limit operation
     AstRange* m_cellRangep;  // Range for arrayed instantiations, NULL for normal instantiations
     AstNodeFTask* m_ftaskp;  // Current function/task
+    AstNodeProcedure* m_procedurep;  // Current final/always
     AstFunc* m_funcp;  // Current function
-    AstInitial* m_initialp;  // Current initial block
     AstAttrOf* m_attrp;  // Current attribute
     bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables;  // Number of created data type tables
@@ -539,6 +539,17 @@ private:
         }
     }
     virtual void visit(AstDelay* nodep) VL_OVERRIDE {
+        if (VN_IS(m_procedurep, Final)) {
+            nodep->v3error("Delays are not legal in final blocks. IEEE 1800-2017 9.2.3");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        if (VN_IS(m_ftaskp, Func)) {
+            nodep->v3error("Delays are not legal in functions. Suggest use a task. "
+                           "IEEE 1800-2017 13.4.4");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
         nodep->v3warn(STMTDLY, "Unsupported: Ignoring delay on this delayed statement.");
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
@@ -1661,7 +1672,8 @@ private:
         // if (debug() >= 9) nodep->dumpTree(cout, "  VRout ");
         if (nodep->lvalue() && nodep->varp()->direction() == VDirection::CONSTREF) {
             nodep->v3error("Assigning to const ref variable: " << nodep->prettyNameQ());
-        } else if (nodep->lvalue() && nodep->varp()->isConst() && !m_paramsOnly && !m_initialp) {
+        } else if (nodep->lvalue() && nodep->varp()->isConst() && !m_paramsOnly
+                   && !VN_IS(m_procedurep, Initial)) {
             // Too loose, but need to allow our generated first assignment
             // Move this to a property of the AstInitial block
             nodep->v3error("Assigning to const variable: " << nodep->prettyNameQ());
@@ -3763,11 +3775,11 @@ private:
         processFTaskRefArgs(nodep);
         nodep->didWidth(true);
     }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE {
         assertAtStatement(nodep);
-        m_initialp = nodep;
+        m_procedurep = nodep;
         userIterateChildren(nodep, NULL);
-        m_initialp = NULL;
+        m_procedurep = NULL;
     }
     virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         // Iterate modules backwards, in bottom-up order.  That's faster
@@ -5227,8 +5239,8 @@ public:
         m_paramsOnly = paramsOnly;
         m_cellRangep = NULL;
         m_ftaskp = NULL;
+        m_procedurep = NULL;
         m_funcp = NULL;
-        m_initialp = NULL;
         m_attrp = NULL;
         m_doGenerate = doGenerate;
         m_dtTables = 0;
