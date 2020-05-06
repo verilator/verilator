@@ -712,13 +712,13 @@ class LinkDotFindVisitor : public AstNVisitor {
     // METHODS
     int debug() { return LinkDotState::debug(); }
 
-    virtual AstConst* parseParamLiteral(FileLine* fl, const string& literal) {
+    AstConst* parseParamLiteral(FileLine* fl, const string& literal) const {
         bool success = false;
         if (literal[0] == '"') {
             // This is a string
             string v = literal.substr(1, literal.find('"', 1) - 1);
             return new AstConst(fl, AstConst::VerilogStringLiteral(), v);
-        } else if ((literal.find('.') != string::npos) || (literal.find('e') != string::npos)) {
+        } else if (literal.find_first_of(".eEpP") != string::npos) {
             // This may be a real
             double v = V3ParseImp::parseDouble(literal.c_str(), literal.length(), &success);
             if (success) return new AstConst(fl, AstConst::RealDouble(), v);
