@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <sstream>
 #include <tgmath.h>
 #include <sys/stat.h>  // mkdir
 
