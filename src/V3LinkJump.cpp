@@ -16,9 +16,14 @@
 // V3LinkJump's Transformations:
 //
 // Each module:
-//      Look for BEGINs
-//          BEGIN(VAR...) -> VAR ... {renamed}
-//      FOR -> WHILEs
+//   Look for BEGINs
+//      BEGIN(VAR...) -> VAR ... {renamed}
+//   FOR -> WHILEs
+//
+//   Add JumpLabel which branches to after statements within JumpLabel
+//      RETURN -> JUMPLABEL(statements with RETURN changed to JUMPGO)
+//      WHILE(... BREAK) -> JUMPLABEL(WHILE(... statements with BREAK changed to JUMPGO)
+//      WHILE(... CONTINUE) -> WHILE(JUMPLABEL(... statements with CONTINUE changed to JUMPGO)
 //
 //*************************************************************************
 

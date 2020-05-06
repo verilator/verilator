@@ -2329,7 +2329,7 @@ delayExpr<nodep>:
 
 minTypMax<nodep>:		// IEEE: mintypmax_expression and constant_mintypmax_expression
 		delayExpr				{ $$ = $1; }
-	|	delayExpr ':' delayExpr ':' delayExpr	{ $$ = $1; DEL($3); DEL($5); }
+	|	delayExpr ':' delayExpr ':' delayExpr	{ $$ = $3; DEL($1); DEL($5); }
 	;
 
 netSigList<varp>:		// IEEE: list_of_port_identifiers
