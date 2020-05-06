@@ -881,7 +881,10 @@ octal (0..) or binary (0b..) notation.
 
 =item Double literals
 
-Double literals must contain a dot (.) and/or an exponent (e).
+Double literals must be one of the following styles:
+  - contains a dot (.) (e.g. 1.23)
+  - contains an expornent (e/E) (e.g. 12e3)
+  - contains p/P for hexadecimal floating point in C99 (e.g. 0x123.ABCp1)
 
 =item Strings
 
