@@ -80,8 +80,7 @@ MSVC++.
 
 To build or run Verilator you need these standard packages:
 
-   sudo apt-get install perl python3
-   sudo apt-get install make
+   sudo apt-get install perl python3 make
    sudo apt-get install g++  # Alternatively, clang
    sudo apt-get install libgz  # Non-Ubuntu (ignore if gives error)
    sudo apt-get install libfl2 libfl-dev zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
@@ -95,12 +94,11 @@ good performance:
 To build Verilator you will need to install these packages; these do not
 need to be present to run Verilator:
 
-   sudo apt-get install git
-   sudo apt-get install autoconf flex bison
+   sudo apt-get install git autoconf flex bison
 
 Those developing Verilator itself may also want these (see internals.adoc):
 
-   sudo apt-get install gdb asciidoctor graphviz cmake clang-format
+   sudo apt-get install gdb asciidoctor graphviz cmake clang clang-format gprof
    cpan install Pod::Perldoc
    cpan install Unix::Processors
    cpan install Parallel::Forker
