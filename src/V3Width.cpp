@@ -540,13 +540,13 @@ private:
     }
     virtual void visit(AstDelay* nodep) VL_OVERRIDE {
         if (VN_IS(m_procedurep, Final)) {
-            nodep->v3error("Delays are not legal in final blocks. IEEE 1800-2017 9.2.3");
+            nodep->v3error("Delays are not legal in final blocks (IEEE 1800-2017 9.2.3)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
         if (VN_IS(m_ftaskp, Func)) {
-            nodep->v3error("Delays are not legal in functions. Suggest use a task. "
-                           "IEEE 1800-2017 13.4.4");
+            nodep->v3error("Delays are not legal in functions. Suggest use a task "
+                           "(IEEE 1800-2017 13.4.4)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
