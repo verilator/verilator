@@ -4292,44 +4292,81 @@ public:
     void priorityPragma(bool flag) { m_priorityPragma = flag; }
 };
 
-class AstJumpLabel : public AstNodeStmt {
-    // Jump point declaration
-    // Separate from AstJumpGo; as a declaration can't be deleted
+class AstJumpBlock : public AstNodeStmt {
+    // Block of code including a JumpGo and JumpLabel
     // Parents:  {statement list}
-    // Children: {statement list, with JumpGo below}
+    // Children: {statement list, with JumpGo and JumpLabel below}
 private:
+    AstJumpLabel* m_labelp;  // [After V3Jump] Pointer to declaration
     int m_labelNum;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
-    AstJumpLabel(FileLine* fl, AstNode* stmtsp)
+    // After construction must call ->labelp to associate with appropriate label
+    AstJumpBlock(FileLine* fl, AstNode* stmtsp)
         : ASTGEN_SUPER(fl)
         , m_labelNum(0) {
         addNOp1p(stmtsp);
     }
+    virtual const char* broken() const;
+    virtual void cloneRelink();
+    ASTNODE_NODE_FUNCS(JumpBlock)
     virtual int instrCount() const { return 0; }
-    ASTNODE_NODE_FUNCS(JumpLabel)
     virtual bool maybePointedTo() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
     // op1 = Statements
     AstNode* stmtsp() const { return op1p(); }  // op1 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
+    AstNode* endStmtsp() const { return op2p(); }  // op1 = List of end-of-block
+    void addEndStmtsp(AstNode* nodep) { addNOp2p(nodep); }
     int labelNum() const { return m_labelNum; }
     void labelNum(int flag) { m_labelNum = flag; }
+    AstJumpLabel* labelp() const { return m_labelp; }
+    void labelp(AstJumpLabel* labelp) { m_labelp = labelp; }
+};
+
+class AstJumpLabel : public AstNodeStmt {
+    // Jump point declaration
+    // Parents:  {statement list with JumpBlock above}
+    // Children: none
+private:
+    AstJumpBlock* m_blockp;  // [After V3Jump] Pointer to declaration
+public:
+    AstJumpLabel(FileLine* fl, AstJumpBlock* blockp)
+        : ASTGEN_SUPER(fl)
+        , m_blockp(blockp) {}
+    ASTNODE_NODE_FUNCS(JumpLabel)
+    virtual bool maybePointedTo() const { return true; }
+    virtual const char* broken() const {
+        BROKEN_RTN(!blockp()->brokeExistsAbove());
+        BROKEN_RTN(blockp()->labelp() != this);
+        return NULL;
+    }
+    virtual void cloneRelink() {
+        if (m_blockp->clonep()) m_blockp = m_blockp->clonep();
+    }
+    virtual void dump(std::ostream& str) const;
+    virtual int instrCount() const { return 0; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const {
+        return blockp() == static_cast<const AstJumpLabel*>(samep)->blockp();
+    }
+    AstJumpBlock* blockp() const { return m_blockp; }
 };
 
 class AstJumpGo : public AstNodeStmt {
-    // Jump point; branch up to the JumpLabel
-    // Parents:  {statement list}
+    // Jump point; branch down to a JumpLabel
+    // No support for backward jumps at present
+    // Parents:  {statement list with JumpBlock above}
+    // Children: none
 private:
     AstJumpLabel* m_labelp;  // [After V3Jump] Pointer to declaration
 public:
     AstJumpGo(FileLine* fl, AstJumpLabel* labelp)
-        : ASTGEN_SUPER(fl) {
-        m_labelp = labelp;
-    }
-    ASTNODE_NODE_FUNCS(JumpGo)
+        : ASTGEN_SUPER(fl)
+        , m_labelp(labelp) {}
+    ASTNODE_NODE_FUNCS(JumpGo);
     virtual const char* broken() const {
-        BROKEN_RTN(!labelp()->brokeExistsAbove());
+        BROKEN_RTN(!labelp()->brokeExistsBelow());
         return NULL;
     }
     virtual void cloneRelink() {
@@ -4339,7 +4376,6 @@ public:
     virtual int instrCount() const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(labelp()); }
     virtual bool same(const AstNode* samep) const {
-        // Also same if identical tree structure all the way down, but hard to detect
         return labelp() == static_cast<const AstJumpGo*>(samep)->labelp();
     }
     virtual bool isGateOptimizable() const { return false; }

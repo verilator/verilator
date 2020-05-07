@@ -131,6 +131,14 @@ public:
         if (!(iter->second & FLAG_LINKABLE)) return false;
         return true;
     }
+    static bool okIfAbove(const AstNode* nodep) {
+        // Must be linked to and below current node
+        if (!okIfLinkedTo(nodep)) return false;
+        NodeMap::iterator iter = s_nodes.find(nodep);
+        if (iter == s_nodes.end()) return false;
+        if ((iter->second & FLAG_UNDER_NOW)) return false;
+        return true;
+    }
     static bool okIfBelow(const AstNode* nodep) {
         // Must be linked to and below current node
         if (!okIfLinkedTo(nodep)) return false;
@@ -192,6 +200,10 @@ bool AstNode::brokeExists() const {
 bool AstNode::brokeExistsAbove() const {
     // Called by node->broken() routines to do table lookup
     return BrokenTable::okIfBelow(this);
+}
+bool AstNode::brokeExistsBelow() const {
+    // Called by node->broken() routines to do table lookup
+    return BrokenTable::okIfAbove(this);
 }
 
 //######################################################################

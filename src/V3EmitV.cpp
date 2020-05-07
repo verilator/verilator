@@ -272,13 +272,16 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         if (nodep->filep()) iterateAndNextNull(nodep->filep());
         puts(");\n");
     }
-    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
-        putbs("disable " + cvtToHex(nodep->labelp()) + ";\n");
-    }
-    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
-        putbs("begin : " + cvtToHex(nodep) + "\n");
+    virtual void visit(AstJumpBlock* nodep) VL_OVERRIDE {
+        putbs("begin : label" + cvtToStr(nodep->labelNum()) + "\n");
         if (nodep->stmtsp()) iterateAndNextNull(nodep->stmtsp());
         puts("end\n");
+    }
+    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
+        putbs("disable label" + cvtToStr(nodep->labelp()->blockp()->labelNum()) + ";\n");
+    }
+    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+        putbs("// " + cvtToStr(nodep->blockp()) + ":\n");
     }
     virtual void visit(AstNodeReadWriteMem* nodep) VL_OVERRIDE {
         putfs(nodep, nodep->verilogKwd());

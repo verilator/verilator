@@ -1508,6 +1508,7 @@ public:
     }
     bool brokeExists() const;
     bool brokeExistsAbove() const;
+    bool brokeExistsBelow() const;
 
     // CONSTRUCTORS
     virtual ~AstNode() {}

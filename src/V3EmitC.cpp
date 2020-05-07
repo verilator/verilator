@@ -697,15 +697,18 @@ public:
         iterateAndNextNull(nodep->lhsp());
         puts(")");
     }
-    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
-        puts("goto __Vlabel" + cvtToStr(nodep->labelp()->labelNum()) + ";\n");
-    }
-    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+    virtual void visit(AstJumpBlock* nodep) VL_OVERRIDE {
         nodep->labelNum(++m_labelNum);
         puts("{\n");  // Make it visually obvious label jumps outside these
         iterateAndNextNull(nodep->stmtsp());
+        iterateAndNextNull(nodep->endStmtsp());
         puts("}\n");
-        puts("__Vlabel" + cvtToStr(nodep->labelNum()) + ": ;\n");
+    }
+    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
+        puts("goto __Vlabel" + cvtToStr(nodep->labelp()->blockp()->labelNum()) + ";\n");
+    }
+    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+        puts("__Vlabel" + cvtToStr(nodep->blockp()->labelNum()) + ": ;\n");
     }
     virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         iterateAndNextNull(nodep->precondsp());

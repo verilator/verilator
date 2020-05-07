@@ -2167,24 +2167,32 @@ private:
     }
     virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
-        m_hasJumpDelay = true;
+        // Jump to label where label immediately follows label is not useful
+        if (nodep->labelp() == VN_CAST(nodep->nextp(), JumpLabel)) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            // Keep the label, might be other jumps pointing to it, gets cleaned later
+            return;
+        }
         if (m_doExpensive) {
             // If last statement in a jump label we have JumpLabel(...., JumpGo)
             // Often caused by "return" in a Verilog function.  The Go is pointless, remove.
             if (!nodep->nextp()) {
-                if (AstJumpLabel* aboveLabelp = VN_CAST(nodep->abovep(), JumpLabel)) {
-                    if (aboveLabelp == nodep->labelp()) {
-                        UINFO(4, "JUMPGO => last remove " << nodep << endl);
-                        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                        return;
+                if (AstJumpBlock* aboveBlockp = VN_CAST(nodep->abovep(), JumpBlock)) {
+                    if (aboveBlockp == nodep->labelp()->blockp()) {
+                        if (aboveBlockp->endStmtsp() == nodep->labelp()) {
+                            UINFO(4, "JUMPGO => last remove " << nodep << endl);
+                            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                            return;
+                        }
                     }
                 }
             }
-            nodep->labelp()->user4(true);
+            nodep->labelp()->blockp()->user4(true);
         }
+        m_hasJumpDelay = true;
     }
 
-    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+    virtual void visit(AstJumpBlock* nodep) VL_OVERRIDE {
         // Because JumpLabels disable many optimizations,
         // remove JumpLabels that are not pointed to by any AstJumpGos
         // Note this assumes all AstJumpGos are underneath the given label; V3Broken asserts this
@@ -2199,6 +2207,7 @@ private:
             } else {
                 nodep->unlinkFrBack();
             }
+            nodep->labelp()->unlinkFrBack()->deleteTree();
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }

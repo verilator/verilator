@@ -390,7 +390,7 @@ private:
         VL_DO_DANGLING(delete condLifep, condLifep);
         VL_DO_DANGLING(delete bodyLifep, bodyLifep);
     }
-    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+    virtual void visit(AstJumpBlock* nodep) VL_OVERRIDE {
         // As with While's we can't predict if a JumpGo will kill us or not
         // It's worse though as an IF(..., JUMPGO) may change the control flow.
         // Just don't optimize blocks with labels; they're rare - so far.

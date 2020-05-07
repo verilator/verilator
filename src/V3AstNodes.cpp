@@ -746,6 +746,14 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep) {
     return nodep;
 }
 
+const char* AstJumpBlock::broken() const {
+    BROKEN_RTN(!labelp()->brokeExistsBelow());
+    return NULL;
+}
+void AstJumpBlock::cloneRelink() {
+    if (m_labelp->clonep()) m_labelp = m_labelp->clonep();
+}
+
 const char* AstScope::broken() const {
     BROKEN_RTN(m_aboveScopep && !m_aboveScopep->brokeExists());
     BROKEN_RTN(m_aboveCellp && !m_aboveCellp->brokeExists());
@@ -753,7 +761,6 @@ const char* AstScope::broken() const {
     BROKEN_RTN(m_modp && !m_modp->brokeExists());
     return NULL;
 }
-
 void AstScope::cloneRelink() {
     if (m_aboveScopep && m_aboveScopep->clonep()) m_aboveScopep->clonep();
     if (m_aboveCellp && m_aboveCellp->clonep()) m_aboveCellp->clonep();
@@ -761,7 +768,6 @@ void AstScope::cloneRelink() {
         static_cast<AstNode*>(m_modp)->clonep();
     }
 }
-
 string AstScope::nameDotless() const {
     string out = shortName();
     string::size_type pos;
@@ -780,7 +786,6 @@ string AstScopeName::scopePrettyNameFormatter(AstText* scopeTextp) const {
     if (out.substr(0, 1) == ".") out.replace(0, 1, "");
     return AstNode::prettyName(out);
 }
-
 string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
     string out;
     for (AstText* textp = scopeTextp; textp; textp = VN_CAST(textp->nextp(), Text)) {
@@ -1138,6 +1143,15 @@ void AstJumpGo::dump(std::ostream& str) const {
     str << " -> ";
     if (labelp()) {
         labelp()->dump(str);
+    } else {
+        str << "%Error:UNLINKED";
+    }
+}
+void AstJumpLabel::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " -> ";
+    if (blockp()) {
+        blockp()->dump(str);
     } else {
         str << "%Error:UNLINKED";
     }
