@@ -1,8 +1,9 @@
 // -*- SystemC -*-
 // DESCRIPTION: Verilator Example: Top level main for invoking SystemC model
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2017 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2017 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 //======================================================================
 
 // SystemC global header
@@ -28,16 +29,16 @@ int sc_main(int argc, char* argv[]) {
     Vtop* top = new Vtop("top");
 
     // Initialize SC model
-#if (SYSTEMC_VERSION>=20070314)
-    sc_start(1,SC_NS);
+#if (SYSTEMC_VERSION >= 20070314)
+    sc_start(1, SC_NS);
 #else
     sc_start(1);
 #endif
 
     // Simulate until $finish
     while (!Verilated::gotFinish()) {
-#if (SYSTEMC_VERSION>=20070314)
-        sc_start(1,SC_NS);
+#if (SYSTEMC_VERSION >= 20070314)
+        sc_start(1, SC_NS);
 #else
         sc_start(1);
 #endif

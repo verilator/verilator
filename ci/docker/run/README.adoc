@@ -1,49 +1,59 @@
-= Docker Container as Verilator executable
+= Verilator Executable Docker Container
 
-This allows you to run Verilator easily as a docker image, e.g.:
+The Verilator Executable Docker Container allows you to run Verilator
+easily as a docker image, e.g.:
 
     docker run -ti verilator/verilator:latest --version
 
-This is in particular useful to compare against older version or to
-check when an issue was introduced.
+This will install the container, run the latest Verilator and print
+Verilator's version.
 
-You will need to give it access to your files as a volume and fix the
-user rights:
+Containers are automatically built for all released versions, so you may
+easily compare results across versions, e.g.:
+
+    docker run -ti verilator/verilator:4.030 --version
+
+Verilator needs to read and write files on the local system.  To simplify
+this process, use the `verilator-docker` convenience script.  This script
+takes the version number, and all remaining arguments are passed through to
+Verilator. e.g.:
+
+    ./verilator-docker 4.030 --version
+
+or
+
+    ./verilator-docker 4.030 --cc test.v
+
+If you prefer not to use `verilator-docker` you must give the container
+access to your files as a volume with appropriate user rights.  For example
+to Verilate test.v:
 
 ....
 docker run -ti -v ${PWD}:/work --user $(id -u):$(id -g) verilator/verilator:latest --cc test.v
 ....
 
-The caveat is that it can only access files below the current
-directory then, a workaround is to adopt the volume and set
-`-workdir`.
+This method can only access files below the current directory. An
+alternative is setup the volume `-workdir`.
 
-There is a convenience script in this folder that wraps around the
-docker calls:
-
-    $ verilator-docker 3.922 --version
-    Verilator 3.922 2018-03-17 rev UNKNOWN_REV
-
-Finally, you can also work in the container by setting the entrypoint
+You can also work in the container by setting the entrypoint
 (don't forget to mount a volume if you want your work persistent):
 
     docker run -ti --entrypoint /bin/bash verilator/verilator:latest
 
-The other files in this folder all for building the containers and to
-store in them. You could use it to build Verilator at a specific
+You can also use the container to build Verilator at a specific
 commit:
 
     docker build --build-arg SOURCE_COMMIT=<commit> .
 
 == Internals
 
-The Dockerfile is pretty straight-forward, it builds Verilator and
-removes the tree after that to reduce the image size. It sets a
-wrapper script (`verilator-wrap.sh`) as entrypoint. This script calls
-Verilator but also copies the verilated runtime files to the `obj_dir`
-or the `-Mdir` respectively. This allows the user to build the C++
-output with the matching runtime files. The wrapper patches the
-generated Makefile accordingly.
+The Dockerfile builds Verilator and removes the tree when completed to
+reduce the image size. The entrypoint is set as a wrapper script
+(`verilator-wrap.sh`).  That script 1. calls Verilator, and 2. copies the
+Verilated runtime files to the `obj_dir` or the `-Mdir` respectively. This
+allows the user to have the files to they may later build the C++ output
+with the matching runtime files. The wrapper also patches the Verilated
+Makefile accordingly.
 
 There is also a hook defined that is run by docker hub via automated
 builds.

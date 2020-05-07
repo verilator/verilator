@@ -3,14 +3,11 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2020 by Wilson Snyder.  This program is free software;
-// you can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
-//
-// This is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-// for more details.
+// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
+// Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=============================================================================
 ///
@@ -26,6 +23,7 @@
 #include <cerrno>
 #include <fcntl.h>
 
+// clang-format off
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>
 #else
@@ -41,9 +39,11 @@
 #ifndef O_CLOEXEC
 # define O_CLOEXEC 0
 #endif
+// clang-format on
 
 // CONSTANTS
-static const char* const VLTSAVE_HEADER_STR = "verilatorsave01\n";  ///< Value of first bytes of each file
+static const char* const VLTSAVE_HEADER_STR
+    = "verilatorsave01\n";  ///< Value of first bytes of each file
 static const char* const VLTSAVE_TRAILER_STR = "vltsaved";  ///< Value of last bytes of each file
 
 //=============================================================================
@@ -51,22 +51,21 @@ static const char* const VLTSAVE_TRAILER_STR = "vltsaved";  ///< Value of last b
 //=============================================================================
 // Searalization
 
-bool VerilatedDeserialize::readDiffers(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
+bool VerilatedDeserialize::readDiffers(const void* __restrict datap,
+                                       size_t size) VL_MT_UNSAFE_ONE {
     bufferCheck();
     const vluint8_t* __restrict dp = static_cast<const vluint8_t* __restrict>(datap);
     vluint8_t miss = 0;
-    while (size--) {
-        miss |= (*dp++ ^ *m_cp++);
-    }
-    return (miss!=0);
+    while (size--) miss |= (*dp++ ^ *m_cp++);
+    return (miss != 0);
 }
 
 VerilatedDeserialize& VerilatedDeserialize::readAssert(const void* __restrict datap,
                                                        size_t size) VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(readDiffers(datap, size))) {
         std::string fn = filename();
-        std::string msg = "Can't deserialize save-restore file as was made from different model:"
-            +filename();
+        std::string msg
+            = "Can't deserialize save-restore file as was made from different model:" + filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         close();
     }
@@ -80,19 +79,21 @@ void VerilatedSerialize::header() VL_MT_UNSAFE_ONE {
 
     // Verilated doesn't do it itself, as if we're not using save/restore
     // it doesn't need to compile this stuff in
-    os.write(Verilated::serializedPtr(), Verilated::serializedSize());
+    os.write(Verilated::serialized1Ptr(), Verilated::serialized1Size());
+    os.write(Verilated::serialized2Ptr(), Verilated::serialized2Size());
 }
 
 void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR)))) {
         std::string fn = filename();
-        std::string msg = std::string("Can't deserialize; file has wrong header signature: ")
-            +filename();
+        std::string msg
+            = std::string("Can't deserialize; file has wrong header signature: ") + filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         close();
     }
-    os.read(Verilated::serializedPtr(), Verilated::serializedSize());
+    os.read(Verilated::serialized1Ptr(), Verilated::serialized1Size());
+    os.read(Verilated::serialized2Ptr(), Verilated::serialized2Size());
 }
 
 void VerilatedSerialize::trailer() VL_MT_UNSAFE_ONE {
@@ -106,7 +107,7 @@ void VerilatedDeserialize::trailer() VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_TRAILER_STR, strlen(VLTSAVE_TRAILER_STR)))) {
         std::string fn = filename();
         std::string msg = std::string("Can't deserialize; file has wrong end-of-file signature: ")
-            +filename();
+                          + filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         close();
     }
@@ -122,13 +123,13 @@ void VerilatedSave::open(const char* filenamep) VL_MT_UNSAFE_ONE {
     if (isOpen()) return;
     VL_DEBUG_IF(VL_DBG_MSGF("- save: opening save file %s\n", filenamep););
 
-    if (filenamep[0]=='|') {
+    if (filenamep[0] == '|') {
         assert(0);  // Not supported yet.
     } else {
         // cppcheck-suppress duplicateExpression
-        m_fd = ::open(filenamep, O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK|O_CLOEXEC
-                      , 0666);
-        if (m_fd<0) {
+        m_fd = ::open(filenamep,
+                      O_CREAT | O_WRONLY | O_TRUNC | O_LARGEFILE | O_NONBLOCK | O_CLOEXEC, 0666);
+        if (m_fd < 0) {
             // User code can check isOpen()
             m_isOpen = false;
             return;
@@ -145,13 +146,12 @@ void VerilatedRestore::open(const char* filenamep) VL_MT_UNSAFE_ONE {
     if (isOpen()) return;
     VL_DEBUG_IF(VL_DBG_MSGF("- restore: opening restore file %s\n", filenamep););
 
-    if (filenamep[0]=='|') {
+    if (filenamep[0] == '|') {
         assert(0);  // Not supported yet.
     } else {
         // cppcheck-suppress duplicateExpression
-        m_fd = ::open(filenamep, O_CREAT|O_RDONLY|O_LARGEFILE|O_CLOEXEC
-                      , 0666);
-        if (m_fd<0) {
+        m_fd = ::open(filenamep, O_CREAT | O_RDONLY | O_LARGEFILE | O_CLOEXEC, 0666);
+        if (m_fd < 0) {
             // User code can check isOpen()
             m_isOpen = false;
             return;
@@ -187,17 +187,17 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
     m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
     vluint8_t* wp = m_bufp;
-    while (1) {
+    while (true) {
         ssize_t remaining = (m_cp - wp);
-        if (remaining==0) break;
+        if (remaining == 0) break;
         errno = 0;
         ssize_t got = ::write(m_fd, wp, remaining);
-        if (got>0) {
+        if (got > 0) {
             wp += got;
         } else if (got < 0) {
             if (errno != EAGAIN && errno != EINTR) {
                 // write failed, presume error (perhaps out of disk space)
-                std::string msg = std::string(__FUNCTION__)+": "+strerror(errno);
+                std::string msg = std::string(__FUNCTION__) + ": " + strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
@@ -212,21 +212,21 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(!isOpen())) return;
     // Move remaining characters down to start of buffer.  (No memcpy, overlaps allowed)
     vluint8_t* rp = m_bufp;
-    for (vluint8_t* sp=m_cp; sp < m_endp;) *rp++ = *sp++;  // Overlaps
+    for (vluint8_t* sp = m_cp; sp < m_endp; *rp++ = *sp++) {}  // Overlaps
     m_endp = m_bufp + (m_endp - m_cp);
     m_cp = m_bufp;  // Reset buffer
     // Read into buffer starting at m_endp
-    while (1) {
-        ssize_t remaining = (m_bufp+bufferSize() - m_endp);
-        if (remaining==0) break;
+    while (true) {
+        ssize_t remaining = (m_bufp + bufferSize() - m_endp);
+        if (remaining == 0) break;
         errno = 0;
         ssize_t got = ::read(m_fd, m_endp, remaining);
-        if (got>0) {
+        if (got > 0) {
             m_endp += got;
         } else if (got < 0) {
             if (errno != EAGAIN && errno != EINTR) {
                 // write failed, presume error (perhaps out of disk space)
-                std::string msg = std::string(__FUNCTION__)+": "+strerror(errno);
+                std::string msg = std::string(__FUNCTION__) + ": " + strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
@@ -234,7 +234,7 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
         } else {  // got==0, EOF
             // Fill buffer from here to end with NULLs so reader's don't
             // need to check eof each character.
-            while (m_endp < m_bufp+bufferSize()) *m_endp++ = '\0';
+            while (m_endp < m_bufp + bufferSize()) *m_endp++ = '\0';
             break;
         }
     }

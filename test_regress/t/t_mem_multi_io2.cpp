@@ -1,7 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2008 by Lane Brooks
+// without warranty, 2008 by Lane Brooks.
+// SPDX-License-Identifier: CC0-1.0
 
 #include VM_PREFIX_INCLUDE
 
@@ -48,7 +49,7 @@ int main()
 
     // loop through every possibility and check the result
 #ifdef SYSTEMC_VERSION
-    sc_start(1,SC_NS);
+    sc_start(1, SC_NS);
 #  define ASSIGN(s,v) s.write(v)
 #  define READ(s) s.read()
 #else

@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -43,18 +39,15 @@
 class V3Lexer : public V3LexerBase {
 public:
     // CONSTRUCTORS
-    V3Lexer() : V3LexerBase(NULL) {}
+    V3Lexer()
+        : V3LexerBase(NULL) {}
     ~V3Lexer() {}
     // METHODS
-    void statePop() {
-        yy_pop_state();
-    }
+    void statePop() { yy_pop_state(); }
     void unputString(const char* textp, size_t length) {
         // Add characters to input stream in back-to-front order
         const char* cp = textp;
-        for (cp += length - 1; length--; cp--) {
-            unput(*cp);
-        }
+        for (cp += length - 1; length--; cp--) unput(*cp);
     }
 };
 
@@ -78,7 +71,7 @@ int V3ParseImp::yylexReadTok() {
 void V3ParseImp::lexNew() {
     if (m_lexerp) delete m_lexerp;  // Restart from clean slate.
     m_lexerp = new V3Lexer();
-    if (debugFlex()>=9) { m_lexerp->set_debug(~0);  }
+    if (debugFlex() >= 9) { m_lexerp->set_debug(~0); }
 }
 
 void V3ParseImp::lexDestroy() {

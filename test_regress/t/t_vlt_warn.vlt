@@ -1,18 +1,19 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2010 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2010 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 `verilator_config
 
-lint_off -rule DEPRECATED     -file "t/t_vlt_warn.vlt" -lines 13
+lint_off -rule DEPRECATED     -file "t/t_vlt_warn.vlt" -lines 14
 lint_off -rule CASEINCOMPLETE -file "t/t_vlt_warn.v"
-lint_off -rule WIDTH          -file "t/t_vlt_warn.v" -lines 18
+lint_off -rule WIDTH          -file "t/t_vlt_warn.v" -lines 19
 lint_off -rule DECLFILENAME   -file "*/t_vlt_warn.v"
 // Test wildcard filenames
-lint_off -msg WIDTH           -file "*/t_vlt_warn.v" -lines 19-19
+lint_off -msg WIDTH           -file "*/t_vlt_warn.v" -lines 20-20
 // Test global disables
-lint_off                      -file "*/t_vlt_warn.v" -lines 20-20
+lint_off                      -file "*/t_vlt_warn.v" -lines 21-21
 // Test match
 lint_off -rule UNUSED         -file "*/t_vlt_warn.v" -match "Signal is not used: 'width_warn*'"
 

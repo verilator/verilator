@@ -1,0 +1,5 @@
+%Error: t/t_param_avec.v:34:43: Expecting expression to be constant, but variable isn't const: 'array'
+                              : ... In instance t.i0
+   34 |    localparam elementf = get_element(IDX, array);
+      |                                           ^~~~~
+%Error: Exiting due to

@@ -7,15 +7,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -74,11 +70,12 @@ private:
         explicit VxHolderCmp(const T_Compare& lessThan)
             : m_lessThan(lessThan) {}
         // METHODS
-        bool operator() (const VxHolder& a, const VxHolder& b) const {
+        bool operator()(const VxHolder& a, const VxHolder& b) const {
             if (m_lessThan.operator()(a.vertexp(), b.vertexp())) return true;
             if (m_lessThan.operator()(b.vertexp(), a.vertexp())) return false;
             return a.m_pos < b.m_pos;
         }
+
     private:
         VL_UNCOPYABLE(VxHolderCmp);
     };
@@ -95,8 +92,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit GraphStream(const V3Graph* graphp,
-                         GraphWay way = GraphWay::FORWARD,
+    explicit GraphStream(const V3Graph* graphp, GraphWay way = GraphWay::FORWARD,
                          const T_Compare& lessThan = T_Compare())
         // NOTE: Perhaps REVERSE way should also reverse the sense of the
         // lessThan function? For now the only usage of REVERSE is not
@@ -106,8 +102,8 @@ public:
         , m_last(m_readyVertices.end())
         , m_way(way) {
         uint32_t pos = 0;
-        for (const V3GraphVertex* vxp = graphp->verticesBeginp();
-             vxp; vxp=vxp->verticesNextp()) {
+        for (const V3GraphVertex* vxp = graphp->verticesBeginp(); vxp;
+             vxp = vxp->verticesNextp()) {
             // Every vertex initially is waiting, or ready.
             if (way == GraphWay::FORWARD) {
                 if (vxp->inEmpty()) {
@@ -115,8 +111,7 @@ public:
                     m_readyVertices.insert(newVx);
                 } else {
                     uint32_t depCount = 0;
-                    for (V3GraphEdge* depp = vxp->inBeginp();
-                         depp; depp = depp->inNextp()) {
+                    for (V3GraphEdge* depp = vxp->inBeginp(); depp; depp = depp->inNextp()) {
                         depCount++;
                     }
                     VxHolder newVx(vxp, pos++, depCount);
@@ -128,8 +123,7 @@ public:
                     m_readyVertices.insert(newVx);
                 } else {
                     uint32_t depCount = 0;
-                    for (V3GraphEdge* depp = vxp->outBeginp();
-                         depp; depp = depp->outNextp()) {
+                    for (V3GraphEdge* depp = vxp->outBeginp(); depp; depp = depp->outNextp()) {
                         depCount++;
                     }
                     VxHolder newVx(vxp, pos++, depCount);
@@ -181,9 +175,7 @@ public:
             // Wrap curIt. Expect to wrap, and make another pass, to find
             // newly-ready elements that could have appeared ahead of the
             // m_last iterator
-            if (curIt == m_readyVertices.end()) {
-                curIt = m_readyVertices.begin();
-            }
+            if (curIt == m_readyVertices.end()) { curIt = m_readyVertices.begin(); }
         }
 
         if (curIt != m_readyVertices.end()) {
@@ -202,12 +194,10 @@ public:
 private:
     void unblockDeps(const V3GraphVertex* vertexp) {
         if (m_way == GraphWay::FORWARD) {
-            for (V3GraphEdge* edgep = vertexp->outBeginp();
-                 edgep; edgep=edgep->outNextp()) {
+            for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 V3GraphVertex* toVertexp = edgep->top();
 
-                typename WaitingVertices::iterator it =
-                    m_waitingVertices.find(toVertexp);
+                typename WaitingVertices::iterator it = m_waitingVertices.find(toVertexp);
                 UASSERT_OBJ(it != m_waitingVertices.end(), toVertexp,
                             "Found edge into vertex not in waiting list.");
                 if (it->second.unblock()) {
@@ -216,12 +206,10 @@ private:
                 }
             }
         } else {
-            for (V3GraphEdge* edgep = vertexp->inBeginp();
-                 edgep; edgep=edgep->inNextp()) {
+            for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                 V3GraphVertex* fromVertexp = edgep->fromp();
 
-                typename WaitingVertices::iterator it =
-                    m_waitingVertices.find(fromVertexp);
+                typename WaitingVertices::iterator it = m_waitingVertices.find(fromVertexp);
                 UASSERT_OBJ(it != m_waitingVertices.end(), fromVertexp,
                             "Found edge into vertex not in waiting list.");
                 if (it->second.unblock()) {

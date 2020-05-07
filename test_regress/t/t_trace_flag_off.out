@@ -1,0 +1,2 @@
+-Info: t/t_trace_flag_off.v:10: $dumpvar ignored, as Verilated without --trace
+*-* All Finished *-*

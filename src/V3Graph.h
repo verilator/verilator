@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -51,19 +47,23 @@ typedef bool (*V3EdgeFuncP)(const V3GraphEdge* edgep);
 
 class GraphWay {
 public:
-    enum en { FORWARD=0,
-              REVERSE=1,
-              NUM_WAYS=2  // NUM_WAYS is not an actual way, it's typically
-              //          // an array dimension or loop bound.
+    enum en {
+        FORWARD = 0,
+        REVERSE = 1,
+        NUM_WAYS = 2  // NUM_WAYS is not an actual way, it's typically
+        //          // an array dimension or loop bound.
     };
     enum en m_e;
-    inline GraphWay() : m_e(FORWARD) {}
+    inline GraphWay()
+        : m_e(FORWARD) {}
     // cppcheck-suppress noExplicitConstructor
-    inline GraphWay(en _e) : m_e(_e) {}
-    explicit inline GraphWay(int _e) : m_e(static_cast<en>(_e)) {}
+    inline GraphWay(en _e)
+        : m_e(_e) {}
+    explicit inline GraphWay(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = { "FORWARD", "REVERSE" };
+        static const char* const names[] = {"FORWARD", "REVERSE"};
         return names[m_e];
     }
     // METHODS unique to this class
@@ -82,12 +82,14 @@ private:
     // MEMBERS
     V3List<V3GraphVertex*> m_vertices;  // All vertices
     static int s_debug;
+
 protected:
-    friend class V3GraphVertex;    friend class V3GraphEdge;
+    friend class V3GraphVertex;
+    friend class V3GraphEdge;
     friend class GraphAcyc;
     // METHODS
     void acyclicDFS();
-    void acyclicDFSIterate(V3GraphVertex *vertexp, int depth, uint32_t currentRank);
+    void acyclicDFSIterate(V3GraphVertex* vertexp, int depth, uint32_t currentRank);
     void acyclicCut();
     void acyclicLoop(V3GraphVertex* vertexp, int depth);
     double orderDFSIterate(V3GraphVertex* vertexp);
@@ -95,6 +97,7 @@ protected:
     void verticesUnlink() { m_vertices.reset(); }
     // ACCESSORS
     static int debug();
+
 public:
     V3Graph();
     virtual ~V3Graph();
@@ -167,10 +170,10 @@ public:
     void subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp, V3Graph* loopGraphp);
 
     /// Debugging
-    void dump(std::ostream& os=std::cout);
+    void dump(std::ostream& os = std::cout);
     void dumpDotFile(const string& filename, bool colorAsSubgraph) const;
-    void dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph=false) const;
-    void dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsSubgraph=false) const;
+    void dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph = false) const;
+    void dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsSubgraph = false) const;
     void userClearVertices();
     void userClearEdges();
     static void selfTest();
@@ -185,17 +188,19 @@ public:
 class V3GraphVertex {
     // Vertices may be a 'gate'/wire statement OR a variable
 protected:
-    friend class V3Graph;    friend class V3GraphEdge;
-    friend class GraphAcyc;  friend class GraphAlgRank;
+    friend class V3Graph;
+    friend class V3GraphEdge;
+    friend class GraphAcyc;
+    friend class GraphAlgRank;
     V3ListEnt<V3GraphVertex*> m_vertices;  // All vertices, linked list
-    V3List<V3GraphEdge*> m_outs;        // Outbound edges,linked list
-    V3List<V3GraphEdge*> m_ins;         // Inbound edges, linked list
-    double              m_fanout;       // Order fanout
-    uint32_t            m_color;        // Color of the node
-    uint32_t            m_rank;         // Rank of edge
+    V3List<V3GraphEdge*> m_outs;  // Outbound edges,linked list
+    V3List<V3GraphEdge*> m_ins;  // Inbound edges, linked list
+    double m_fanout;  // Order fanout
+    uint32_t m_color;  // Color of the node
+    uint32_t m_rank;  // Rank of edge
     union {
-        void*           m_userp;        // Marker for some algorithms
-        uint32_t        m_user;         // Marker for some algorithms
+        void* m_userp;  // Marker for some algorithms
+        uint32_t m_user;  // Marker for some algorithms
     };
     // METHODS
     void verticesPushBack(V3Graph* graphp);
@@ -206,14 +211,16 @@ protected:
 protected:
     // CONSTRUCTORS
     V3GraphVertex(V3Graph* graphp, const V3GraphVertex& old);
+
 public:
     explicit V3GraphVertex(V3Graph* graphp);
     //! Clone copy constructor. Doesn't copy edges or user/userp.
     virtual V3GraphVertex* clone(V3Graph* graphp) const {
-        return new V3GraphVertex(graphp, *this); }
+        return new V3GraphVertex(graphp, *this);
+    }
     virtual ~V3GraphVertex() {}
-    void        unlinkEdges(V3Graph* graphp);
-    void        unlinkDelete(V3Graph* graphp);
+    void unlinkEdges(V3Graph* graphp);
+    void unlinkDelete(V3Graph* graphp);
 
     // ACCESSORS
     virtual string name() const { return ""; }
@@ -231,27 +238,26 @@ public:
         if (m_fanout > rhsp->m_fanout) return 1;
         return 0;
     }
-    uint32_t    color() const { return m_color; }
-    void        color(uint32_t color) { m_color = color; }
-    uint32_t    rank() const { return m_rank; }
-    void        rank(uint32_t rank) { m_rank = rank; }
-    double      fanout() const { return m_fanout; }
-    void        user(uint32_t user) { m_user = user; }
-    uint32_t    user() const { return m_user; }
-    void        userp(void* userp) { m_userp = userp; }
-    void*       userp() const { return m_userp; }
+    uint32_t color() const { return m_color; }
+    void color(uint32_t color) { m_color = color; }
+    uint32_t rank() const { return m_rank; }
+    void rank(uint32_t rank) { m_rank = rank; }
+    double fanout() const { return m_fanout; }
+    void user(uint32_t user) { m_user = user; }
+    uint32_t user() const { return m_user; }
+    void userp(void* userp) { m_userp = userp; }
+    void* userp() const { return m_userp; }
     // ITERATORS
     V3GraphVertex* verticesNextp() const { return m_vertices.nextp(); }
     V3GraphEdge* inBeginp() const { return m_ins.begin(); }
-    bool         inEmpty() const { return inBeginp()==NULL; }
-    bool         inSize1() const;
-    uint32_t     inHash() const;
+    bool inEmpty() const { return inBeginp() == NULL; }
+    bool inSize1() const;
+    uint32_t inHash() const;
     V3GraphEdge* outBeginp() const { return m_outs.begin(); }
-    bool         outEmpty() const { return outBeginp()==NULL; }
-    bool         outSize1() const;
-    uint32_t     outHash() const;
-    V3GraphEdge* beginp(GraphWay way) const {
-        return way.forward() ? outBeginp() : inBeginp(); }
+    bool outEmpty() const { return outBeginp() == NULL; }
+    bool outSize1() const;
+    uint32_t outHash() const;
+    V3GraphEdge* beginp(GraphWay way) const { return way.forward() ? outBeginp() : inBeginp(); }
     // METHODS
     /// Error reporting
     void v3errorEnd(std::ostringstream& str) const;
@@ -273,22 +279,24 @@ public:
     // ENUMS
     enum Cutable { NOT_CUTABLE = false, CUTABLE = true };  // For passing to V3GraphEdge
 protected:
-    friend class V3Graph;       friend class V3GraphVertex;
-    friend class GraphAcyc;     friend class GraphAcycEdge;
-    V3ListEnt<V3GraphEdge*> m_outs;     // Next Outbound edge for same vertex (linked list)
-    V3ListEnt<V3GraphEdge*> m_ins;      // Next Inbound edge for same vertex (linked list)
+    friend class V3Graph;
+    friend class V3GraphVertex;
+    friend class GraphAcyc;
+    friend class GraphAcycEdge;
+    V3ListEnt<V3GraphEdge*> m_outs;  // Next Outbound edge for same vertex (linked list)
+    V3ListEnt<V3GraphEdge*> m_ins;  // Next Inbound edge for same vertex (linked list)
     //
-    V3GraphVertex*      m_fromp;        // Vertices pointing to this edge
-    V3GraphVertex*      m_top;          // Vertices this edge points to
-    int                 m_weight;       // Weight of the connection
-    bool                m_cutable;      // Interconnect may be broken in order sorting
+    V3GraphVertex* m_fromp;  // Vertices pointing to this edge
+    V3GraphVertex* m_top;  // Vertices this edge points to
+    int m_weight;  // Weight of the connection
+    bool m_cutable;  // Interconnect may be broken in order sorting
     union {
-        void*           m_userp;        // Marker for some algorithms
-        uint32_t        m_user;         // Marker for some algorithms
+        void* m_userp;  // Marker for some algorithms
+        uint32_t m_user;  // Marker for some algorithms
     };
     // METHODS
-    void init(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top,
-              int weight, bool cutable=false);
+    void init(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
+              bool cutable = false);
     void cut() { m_weight = 0; }  // 0 weight is same as disconnected
     void outPushBack();
     void inPushBack();
@@ -298,21 +306,23 @@ protected:
                 const V3GraphEdge& old) {
         init(graphp, fromp, top, old.m_weight, old.m_cutable);
     }
+
 public:
     //! Add DAG from one node to the specified node
-    V3GraphEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top,
-                int weight, bool cutable=false) {
+    V3GraphEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
+                bool cutable = false) {
         init(graphp, fromp, top, weight, cutable);
     }
     //! Clone copy constructor.  Doesn't copy existing vertices or user/userp.
     virtual V3GraphEdge* clone(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top) const {
-        return new V3GraphEdge(graphp, fromp, top, *this); }
+        return new V3GraphEdge(graphp, fromp, top, *this);
+    }
     virtual ~V3GraphEdge() {}
     // METHODS
-    virtual string name() const { return m_fromp->name()+"->"+m_top->name(); }
+    virtual string name() const { return m_fromp->name() + "->" + m_top->name(); }
     virtual string dotLabel() const { return ""; }
-    virtual string dotColor() const { return cutable()?"yellowGreen":"red"; }
-    virtual string dotStyle() const { return cutable()?"dashed":""; }
+    virtual string dotColor() const { return cutable() ? "yellowGreen" : "red"; }
+    virtual string dotStyle() const { return cutable() ? "dashed" : ""; }
     virtual int sortCmp(const V3GraphEdge* rhsp) const {
         if (!m_weight || !rhsp->m_weight) return 0;
         return top()->sortCmp(rhsp->top());
@@ -338,8 +348,7 @@ public:
     // ITERATORS
     V3GraphEdge* outNextp() const { return m_outs.nextp(); }
     V3GraphEdge* inNextp() const { return m_ins.nextp(); }
-    V3GraphEdge* nextp(GraphWay way) const {
-        return way.forward() ? outNextp() : inNextp(); }
+    V3GraphEdge* nextp(GraphWay way) const { return way.forward() ? outNextp() : inNextp(); }
 };
 
 //============================================================================

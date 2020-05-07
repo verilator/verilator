@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2004-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // V3Cast's Transformations:
@@ -59,7 +55,7 @@ private:
     // NODE STATE
     // Entire netlist:
     //   AstNode::user()                // bool.  Indicates node is of known size
-    AstUser1InUse       m_inuser1;
+    AstUser1InUse m_inuser1;
 
     // STATE
 
@@ -67,26 +63,30 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     void insertCast(AstNode* nodep, int needsize) {  // We'll insert ABOVE passed node
-        UINFO(4,"  NeedCast "<<nodep<<endl);
+        UINFO(4, "  NeedCast " << nodep << endl);
         AstNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         //
         AstCCast* castp = new AstCCast(nodep->fileline(), nodep, needsize, nodep->widthMin());
         relinkHandle.relink(castp);
-        //if (debug()>8) castp->dumpTree(cout, "-castins: ");
+        // if (debug() > 8) castp->dumpTree(cout, "-castins: ");
         //
         ensureLower32Cast(castp);
         nodep->user1(1);  // Now must be of known size
     }
     int castSize(AstNode* nodep) {
-        if (nodep->isQuad()) return VL_QUADSIZE;
-        else if (nodep->width() <= 8) return 8;
-        else if (nodep->width() <= 16) return 16;
-        else return VL_IDATASIZE;
+        if (nodep->isQuad()) {
+            return VL_QUADSIZE;
+        } else if (nodep->width() <= 8) {
+            return 8;
+        } else if (nodep->width() <= 16) {
+            return 16;
+        } else {
+            return VL_IDATASIZE;
+        }
     }
     void ensureCast(AstNode* nodep) {
-        if (castSize(nodep->backp()) != castSize(nodep)
-            || !nodep->user1()) {
+        if (castSize(nodep->backp()) != castSize(nodep) || !nodep->user1()) {
             insertCast(nodep, castSize(nodep->backp()));
         }
     }
@@ -95,9 +95,17 @@ private:
         // really needs to be CAST(uint64(CAST(uint32(x))).
         // Otherwise a (uint64)(a>b) would return wrong value, as
         // less than has nondeterministic signedness.
-        if (nodep->isQuad() && !nodep->lhsp()->isQuad()
-            && !VN_IS(nodep->lhsp(), CCast)) {
+        if (nodep->isQuad() && !nodep->lhsp()->isQuad() && !VN_IS(nodep->lhsp(), CCast)) {
             insertCast(nodep->lhsp(), VL_IDATASIZE);
+        }
+    }
+    void ensureNullChecked(AstNode* nodep) {
+        // TODO optimize to track null checked values and avoid where possible
+        if (!VN_IS(nodep->backp(), NullCheck)) {
+            AstNRelinker relinkHandle;
+            nodep->unlinkFrBack(&relinkHandle);
+            AstNode* newp = new AstNullCheck(nodep->fileline(), nodep);
+            relinkHandle.relink(newp);
         }
     }
 
@@ -109,16 +117,13 @@ private:
     }
     virtual void visit(AstNodeBiop* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
-        nodep->user1(nodep->lhsp()->user1()
-                    | nodep->rhsp()->user1());
+        nodep->user1(nodep->lhsp()->user1() | nodep->rhsp()->user1());
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) ensureCast(nodep->rhsp());
     }
     virtual void visit(AstNodeTriop* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
-        nodep->user1(nodep->lhsp()->user1()
-                    | nodep->rhsp()->user1()
-                    | nodep->thsp()->user1());
+        nodep->user1(nodep->lhsp()->user1() | nodep->rhsp()->user1() | nodep->thsp()->user1());
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) ensureCast(nodep->rhsp());
         if (nodep->sizeMattersThs()) ensureCast(nodep->thsp());
@@ -131,7 +136,7 @@ private:
     virtual void visit(AstNegate* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1());
-        if (nodep->lhsp()->widthMin()==1) {
+        if (nodep->lhsp()->widthMin() == 1) {
             // We want to avoid a GCC "converting of negative value" warning
             // from our expansion of
             //    out = {32{a<b}}  =>   out = - (a<b)
@@ -141,11 +146,8 @@ private:
         }
     }
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
-        if (!nodep->lvalue()
-            && !VN_IS(nodep->backp(), CCast)
-            && VN_IS(nodep->backp(), NodeMath)
-            && !VN_IS(nodep->backp(), ArraySel)
-            && nodep->backp()->width()
+        if (!nodep->lvalue() && !VN_IS(nodep->backp(), CCast) && VN_IS(nodep->backp(), NodeMath)
+            && !VN_IS(nodep->backp(), ArraySel) && nodep->backp()->width()
             && castSize(nodep) != castSize(nodep->varp())) {
             // Cast vars to IData first, else below has upper bits wrongly set
             //  CData x=3; out = (QData)(x<<30);
@@ -160,20 +162,29 @@ private:
         nodep->user1(nodep->isQuad() || nodep->isWide());
     }
 
+    // Null dereference protection
+    virtual void visit(AstNullCheck* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        nodep->user1(nodep->lhsp()->user1());
+    }
+    virtual void visit(AstCMethodCall* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        ensureNullChecked(nodep->fromp());
+    }
+    virtual void visit(AstMemberSel* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        ensureNullChecked(nodep->fromp());
+    }
+
     // NOPs
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {}
+    virtual void visit(AstVar*) VL_OVERRIDE {}
 
     //--------------------
-    // Default: Just iterate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit CastVisitor(AstNetlist* nodep) {
-        iterate(nodep);
-    }
+    explicit CastVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~CastVisitor() {}
 };
 
@@ -181,9 +192,7 @@ public:
 // Cast class functions
 
 void V3Cast::castAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    {
-        CastVisitor visitor (nodep);
-    }  // Destruct before checking
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    { CastVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("cast", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2003 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2003 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 `timescale 1ns/1ns
 
@@ -17,7 +18,6 @@ module t (/*AUTOARG*/
          $write;  // Check missing arguments work
          $write("default:   [%0t] 0t time [%t] No0 time  p=%p 0p=%0p\n",
                 $time, $time, $time, $time);
-`ifndef verilator // Unsupported
          $timeformat(-9, 0, "",   0);
          $write("-9,0,,0:   [%0t] 0t time [%t] No0 time  p=%p 0p=%0p\n",
                 $time, $time, $time, $time);
@@ -30,7 +30,6 @@ module t (/*AUTOARG*/
          $timeformat(-9, 3, "ns", 8);
          $write("-9,3,ns,8: [%0t] 0t time [%t] No0 time  p=%p 0p=%0p\n",
                 $time, $time, $time, $time);
-`endif
          $write("\n");
          $write("*-* All Finished *-*\n");
          $finish;

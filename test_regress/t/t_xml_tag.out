@@ -11,72 +11,72 @@
     <file id="d" filename="t/t_xml_tag.v" language="1800-2017"/>
   </module_files>
   <cells>
-    <cell fl="d11" loc="d,11,8,11,9" name="m" submodname="m" hier="m">
-      <cell fl="d28" loc="d,28,8,28,12" name="itop" submodname="ifc" hier="m.itop"/>
+    <cell fl="d12" loc="d,12,8,12,9" name="m" submodname="m" hier="m">
+      <cell fl="d29" loc="d,29,8,29,12" name="itop" submodname="ifc" hier="m.itop"/>
     </cell>
   </cells>
   <netlist>
-    <module fl="d11" loc="d,11,8,11,9" name="m" origName="m" topModule="1">
-      <var fl="d13" loc="d,13,11,13,17" name="clk_ip" tag="clk_ip" dtype_id="1" dir="input" vartype="logic" origName="clk_ip"/>
-      <var fl="d14" loc="d,14,11,14,17" name="rst_ip" dtype_id="1" dir="input" vartype="logic" origName="rst_ip"/>
-      <var fl="d15" loc="d,15,11,15,17" name="foo_op" tag="foo_op" dtype_id="1" dir="output" vartype="logic" origName="foo_op"/>
-      <typedef fl="d24" loc="d,24,6,24,15" name="my_struct" tag="my_struct" dtype_id="2"/>
-      <instance fl="d28" loc="d,28,8,28,12" name="itop" defName="ifc" origName="itop"/>
-      <var fl="d28" loc="d,28,8,28,12" name="itop__Viftop" dtype_id="3" vartype="ifaceref" origName="itop__Viftop"/>
-      <var fl="d30" loc="d,30,14,30,25" name="this_struct" tag="this_struct" dtype_id="4" vartype="" origName="this_struct"/>
-      <var fl="d32" loc="d,32,16,32,22" name="dotted" dtype_id="5" vartype="logic" origName="dotted"/>
-      <contassign fl="d32" loc="d,32,23,32,24" dtype_id="5">
-        <varxref fl="d32" loc="d,32,30,32,35" name="value" dtype_id="6" dotted="itop"/>
-        <varref fl="d32" loc="d,32,16,32,22" name="dotted" dtype_id="5"/>
+    <module fl="d12" loc="d,12,8,12,9" name="m" origName="m" topModule="1">
+      <var fl="d14" loc="d,14,11,14,17" name="clk_ip" tag="clk_ip" dtype_id="1" dir="input" vartype="logic" origName="clk_ip"/>
+      <var fl="d15" loc="d,15,11,15,17" name="rst_ip" dtype_id="1" dir="input" vartype="logic" origName="rst_ip"/>
+      <var fl="d16" loc="d,16,11,16,17" name="foo_op" tag="foo_op" dtype_id="1" dir="output" vartype="logic" origName="foo_op"/>
+      <typedef fl="d25" loc="d,25,6,25,15" name="my_struct" tag="my_struct" dtype_id="2"/>
+      <instance fl="d29" loc="d,29,8,29,12" name="itop" defName="ifc" origName="itop"/>
+      <var fl="d29" loc="d,29,8,29,12" name="itop__Viftop" dtype_id="3" vartype="ifaceref" origName="itop__Viftop"/>
+      <var fl="d31" loc="d,31,14,31,25" name="this_struct" tag="this_struct" dtype_id="4" vartype="" origName="this_struct"/>
+      <var fl="d33" loc="d,33,16,33,22" name="dotted" dtype_id="5" vartype="logic" origName="dotted"/>
+      <contassign fl="d33" loc="d,33,23,33,24" dtype_id="5">
+        <varxref fl="d33" loc="d,33,30,33,35" name="value" dtype_id="6" dotted="itop"/>
+        <varref fl="d33" loc="d,33,16,33,22" name="dotted" dtype_id="5"/>
       </contassign>
-      <func fl="d34" loc="d,34,13,34,14" name="f" dtype_id="1">
-        <var fl="d34" loc="d,34,13,34,14" name="f" dtype_id="1" dir="output" vartype="logic" origName="f"/>
-        <var fl="d34" loc="d,34,28,34,29" name="m" dtype_id="7" dir="input" vartype="string" origName="m"/>
-        <display fl="d35" loc="d,35,7,35,15" displaytype="$display">
-          <sformatf fl="d35" loc="d,35,7,35,15" name="%@" dtype_id="7">
-            <varref fl="d35" loc="d,35,22,35,23" name="m" dtype_id="7"/>
+      <func fl="d35" loc="d,35,13,35,14" name="f" dtype_id="1">
+        <var fl="d35" loc="d,35,13,35,14" name="f" dtype_id="1" dir="output" vartype="logic" origName="f"/>
+        <var fl="d35" loc="d,35,28,35,29" name="m" dtype_id="7" dir="input" vartype="string" origName="m"/>
+        <display fl="d36" loc="d,36,7,36,15" displaytype="$display">
+          <sformatf fl="d36" loc="d,36,7,36,15" name="%@" dtype_id="7">
+            <varref fl="d36" loc="d,36,22,36,23" name="m" dtype_id="7"/>
           </sformatf>
         </display>
       </func>
-      <initial fl="d38" loc="d,38,4,38,11">
-        <begin fl="d38" loc="d,38,12,38,17">
-          <taskref fl="d40" loc="d,40,7,40,8" name="f">
-            <arg fl="d40" loc="d,40,9,40,736">
-              <const fl="d40" loc="d,40,9,40,736" name="&quot;&#1;&#2;&#3;&#4;&#5;&#6;&#7;&#8;&#9;&#10;&#11;&#12;&#13;&#14;&#15;&#16;&#17;&#18;&#19;&#20;&#21;&#22;&#23;&#24;&#25;&#26;&#27;&#28;&#29;&#30;&#31; !&quot;#$%&amp;&apos;()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~&#127;&#128;&#129;&#130;&#131;&#132;&#133;&#134;&#135;&#136;&#137;&#138;&#139;&#140;&#141;&#142;&#143;&#144;&#145;&#146;&#147;&#148;&#149;&#150;&#151;&#152;&#153;&#154;&#155;&#156;&#157;&#158;&#159;&#160;&#161;&#162;&#163;&#164;&#165;&#166;&#167;&#168;&#169;&#170;&#171;&#172;&#173;&#174;&#175;&#176;&#177;&#178;&#179;&#180;&#181;&#182;&#183;&#184;&#185;&#186;&#187;&#188;&#189;&#190;&#191;&#192;&#193;&#194;&#195;&#196;&#197;&#198;&#199;&#200;&#201;&#202;&#203;&#204;&#205;&#206;&#207;&#208;&#209;&#210;&#211;&#212;&#213;&#214;&#215;&#216;&#217;&#218;&#219;&#220;&#221;&#222;&#223;&#224;&#225;&#226;&#227;&#228;&#229;&#230;&#231;&#232;&#233;&#234;&#235;&#236;&#237;&#238;&#239;&#240;&#241;&#242;&#243;&#244;&#245;&#246;&#247;&#248;&#249;&#250;&#251;&#252;&#253;&#254;&#255;&quot;" dtype_id="7"/>
+      <initial fl="d39" loc="d,39,4,39,11">
+        <begin fl="d39" loc="d,39,12,39,17">
+          <taskref fl="d41" loc="d,41,7,41,8" name="f">
+            <arg fl="d41" loc="d,41,9,41,736">
+              <const fl="d41" loc="d,41,9,41,736" name="&quot;&#1;&#2;&#3;&#4;&#5;&#6;&#7;&#8;&#9;&#10;&#11;&#12;&#13;&#14;&#15;&#16;&#17;&#18;&#19;&#20;&#21;&#22;&#23;&#24;&#25;&#26;&#27;&#28;&#29;&#30;&#31; !&quot;#$%&amp;&apos;()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~&#127;&#128;&#129;&#130;&#131;&#132;&#133;&#134;&#135;&#136;&#137;&#138;&#139;&#140;&#141;&#142;&#143;&#144;&#145;&#146;&#147;&#148;&#149;&#150;&#151;&#152;&#153;&#154;&#155;&#156;&#157;&#158;&#159;&#160;&#161;&#162;&#163;&#164;&#165;&#166;&#167;&#168;&#169;&#170;&#171;&#172;&#173;&#174;&#175;&#176;&#177;&#178;&#179;&#180;&#181;&#182;&#183;&#184;&#185;&#186;&#187;&#188;&#189;&#190;&#191;&#192;&#193;&#194;&#195;&#196;&#197;&#198;&#199;&#200;&#201;&#202;&#203;&#204;&#205;&#206;&#207;&#208;&#209;&#210;&#211;&#212;&#213;&#214;&#215;&#216;&#217;&#218;&#219;&#220;&#221;&#222;&#223;&#224;&#225;&#226;&#227;&#228;&#229;&#230;&#231;&#232;&#233;&#234;&#235;&#236;&#237;&#238;&#239;&#240;&#241;&#242;&#243;&#244;&#245;&#246;&#247;&#248;&#249;&#250;&#251;&#252;&#253;&#254;&#255;&quot;" dtype_id="7"/>
             </arg>
           </taskref>
         </begin>
       </initial>
     </module>
-    <iface fl="d6" loc="d,6,11,6,14" name="ifc" origName="ifc">
-      <var fl="d7" loc="d,7,12,7,17" name="value" dtype_id="6" vartype="integer" origName="value"/>
-      <modport fl="d8" loc="d,8,12,8,23" name="out_modport">
-        <modportvarref fl="d8" loc="d,8,32,8,37" name="value" direction="out"/>
+    <iface fl="d7" loc="d,7,11,7,14" name="ifc" origName="ifc">
+      <var fl="d8" loc="d,8,12,8,17" name="value" dtype_id="6" vartype="integer" origName="value"/>
+      <modport fl="d9" loc="d,9,12,9,23" name="out_modport">
+        <modportvarref fl="d9" loc="d,9,32,9,37" name="value" direction="out"/>
       </modport>
     </iface>
     <typetable fl="a0" loc="a,0,0,0,0">
-      <basicdtype fl="d30" loc="d,30,26,30,27" id="5" name="logic" left="31" right="0"/>
-      <basicdtype fl="d7" loc="d,7,4,7,11" id="6" name="integer" left="31" right="0"/>
-      <basicdtype fl="d13" loc="d,13,11,13,17" id="1" name="logic"/>
-      <structdtype fl="d19" loc="d,19,12,19,18" id="2" name="m.my_struct">
-        <memberdtype fl="d20" loc="d,20,16,20,19" id="8" name="clk" tag="this is clk" sub_dtype_id="9"/>
-        <memberdtype fl="d21" loc="d,21,16,21,17" id="10" name="k" sub_dtype_id="11"/>
-        <memberdtype fl="d22" loc="d,22,16,22,22" id="12" name="enable" tag="enable" sub_dtype_id="13"/>
-        <memberdtype fl="d23" loc="d,23,16,23,20" id="14" name="data" tag="data" sub_dtype_id="15"/>
+      <basicdtype fl="d31" loc="d,31,26,31,27" id="5" name="logic" left="31" right="0"/>
+      <basicdtype fl="d8" loc="d,8,4,8,11" id="6" name="integer" left="31" right="0"/>
+      <basicdtype fl="d14" loc="d,14,11,14,17" id="1" name="logic"/>
+      <structdtype fl="d20" loc="d,20,12,20,18" id="2" name="m.my_struct">
+        <memberdtype fl="d21" loc="d,21,16,21,19" id="8" name="clk" tag="this is clk" sub_dtype_id="9"/>
+        <memberdtype fl="d22" loc="d,22,16,22,17" id="10" name="k" sub_dtype_id="11"/>
+        <memberdtype fl="d23" loc="d,23,16,23,22" id="12" name="enable" tag="enable" sub_dtype_id="13"/>
+        <memberdtype fl="d24" loc="d,24,16,24,20" id="14" name="data" tag="data" sub_dtype_id="15"/>
       </structdtype>
-      <basicdtype fl="d20" loc="d,20,7,20,12" id="9" name="logic"/>
-      <basicdtype fl="d21" loc="d,21,7,21,12" id="11" name="logic"/>
-      <basicdtype fl="d22" loc="d,22,7,22,12" id="13" name="logic"/>
-      <basicdtype fl="d23" loc="d,23,7,23,12" id="15" name="logic"/>
-      <ifacerefdtype fl="d28" loc="d,28,8,28,12" id="3" modportname=""/>
-      <unpackarraydtype fl="d30" loc="d,30,26,30,27" id="4" sub_dtype_id="2">
-        <range fl="d30" loc="d,30,26,30,27">
-          <const fl="d30" loc="d,30,26,30,27" name="32&apos;h1" dtype_id="5"/>
-          <const fl="d30" loc="d,30,26,30,27" name="32&apos;h0" dtype_id="5"/>
+      <basicdtype fl="d21" loc="d,21,7,21,12" id="9" name="logic"/>
+      <basicdtype fl="d22" loc="d,22,7,22,12" id="11" name="logic"/>
+      <basicdtype fl="d23" loc="d,23,7,23,12" id="13" name="logic"/>
+      <basicdtype fl="d24" loc="d,24,7,24,12" id="15" name="logic"/>
+      <ifacerefdtype fl="d29" loc="d,29,8,29,12" id="3" modportname=""/>
+      <unpackarraydtype fl="d31" loc="d,31,26,31,27" id="4" sub_dtype_id="2">
+        <range fl="d31" loc="d,31,26,31,27">
+          <const fl="d31" loc="d,31,26,31,27" name="32&apos;h1" dtype_id="5"/>
+          <const fl="d31" loc="d,31,26,31,27" name="32&apos;h0" dtype_id="5"/>
         </range>
       </unpackarraydtype>
-      <refdtype fl="d30" loc="d,30,4,30,13" id="16" name="my_struct" sub_dtype_id="2"/>
-      <basicdtype fl="d34" loc="d,34,21,34,27" id="7" name="string"/>
+      <refdtype fl="d31" loc="d,31,4,31,13" id="16" name="my_struct" sub_dtype_id="2"/>
+      <basicdtype fl="d35" loc="d,35,21,35,27" id="7" name="string"/>
     </typetable>
   </netlist>
 </verilator_xml>

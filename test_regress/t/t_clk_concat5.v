@@ -2,7 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty.
-//
+// SPDX-License-Identifier: CC0-1.0
 
 module some_module (
 		    input [3:0] i_clks

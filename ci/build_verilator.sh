@@ -1,10 +1,11 @@
 #!/bin/bash
 # DESCRIPTION: Verilator: Travis CI build script
 #
-# Copyright 2019 by Todd Strader. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
+# Copyright 2019 by Todd Strader. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 # This script builds and caches the Verilator binaries for Travis CI
 # (and possibly other CI platforms).  The Verilator CI system uses this

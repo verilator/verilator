@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2003 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2003 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t;
    reg [40:0] quad; initial quad = 41'ha_bbbb_cccc;
@@ -132,6 +133,12 @@ module t;
       $display("[%0t] %%8s=:%8s:", $time,
                svs);
 
+      // Displays without format, must use default
+      $write("d: "); $write(nine); $write(" "); $display(nine);
+      $writeh("h: "); $writeh(nine); $writeh(" "); $displayh(nine);
+      $writeo("o: "); $writeo(nine); $writeo(" "); $displayo(nine);
+      $writeb("b: "); $writeb(nine); $writeb(" "); $displayb(nine);
+
       $display("[%0t] %s%s%s", $time,
                "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
       $display("hel", "lo, fr", "om a concatenated string.");
@@ -164,7 +171,9 @@ multiline", $time);
       $write("'%-8s'\n", "beep");
 
       // $itord conversion bug, note a %d instead of proper float
+      // verilator lint_off REALCVT
       $display("log10(2) = %d", $log10(100));
+      // verilator lint_on REALCVT
 
       $write("*-* All Finished *-*\n");
       $finish;

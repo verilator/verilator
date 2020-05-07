@@ -10,15 +10,11 @@
  *
  **************************************************************************
  *
- * Copyright 2003-2020 by Wilson Snyder.  This program is free software;
- * you can redistribute it and/or modify it under the terms of either the
+ * Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+ * can redistribute it and/or modify it under the terms of either the
  * GNU Lesser General Public License Version 3 or the Perl Artistic License
  * Version 2.0.
- *
- * Verilator is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
  *
  **************************************************************************
  * Do not use Flex in C++ mode.  It has bugs with yyunput() which result in
@@ -357,7 +353,7 @@ size_t V3PreLex::inputToLex(char* buf, size_t max_size) {
     // become a stale invalid pointer.
     //
     VPreStream* streamp = curStreamp();
-    if (debug()>=10) {
+    if (debug() >= 10) {
         cout<<"-  pp:inputToLex ITL s="<<max_size<<" bs="<<streamp->m_buffers.size()<<endl;
         dumpStack();
     }
@@ -398,7 +394,7 @@ size_t V3PreLex::inputToLex(char* buf, size_t max_size) {
             if (again) goto again;
         }
     }
-    if (debug()>=10) { cout<<"-  pp::inputToLex  got="<<got<<" '"<<string(buf, got)<<"'"<<endl; }
+    if (debug() >= 10) { cout<<"-  pp::inputToLex  got="<<got<<" '"<<string(buf, got)<<"'"<<endl; }
     return got;
 }
 

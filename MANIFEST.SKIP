@@ -19,15 +19,16 @@
 \.codacy\.yml
 \.travis\.yml
 /build/
-/obj_dir/
 /obj_dbg/
+/obj_dir/
+/obj_dist/
+/obj_iv/
 /obj_nc/
 /obj_opt/
 /obj_vcs/
 /obj_vlt/
 /obj_vltmt/
-/obj_dist/
-/INCA_libs/
+INCA_libs/
 /cov_work/
 /logs/
 ^Makefile$
@@ -36,6 +37,7 @@ bin/verilator_bin.*
 bin/verilator_coverage_bin.*
 docs/.*\.html$
 docs/Makefile$
+docs/clang-format.txt$
 docs/doxygen-doc/.*
 examples/xml_py/copied/
 examples/xml_py/graph.*

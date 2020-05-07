@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -40,15 +36,15 @@ void V3Graph::deleteCutableOnlyEdges() {
 
     // Vertex::m_user begin: indicates can be deleted
     // Pass 1, mark those.  Don't delete now, as we don't want to rip out whole trees
-    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
+    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
         vertexp->user(true);
-        for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep=edgep->inNextp()) {
+        for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
             if (!edgep->cutable()) {
                 vertexp->user(false);  // Can't delete it
                 break;
             }
         }
-        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
+        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             if (!edgep->cutable()) {
                 vertexp->user(false);  // Can't delete it
                 break;
@@ -58,10 +54,10 @@ void V3Graph::deleteCutableOnlyEdges() {
 
     // Pass 2, delete those marked
     // Rather than doing a delete() we set the weight to 0 which disconnects the edge.
-    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
+    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
         if (vertexp->user()) {
-            //UINFO(7,"Disconnect "<<vertexp->name()<<endl);
-            for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
+            // UINFO(7, "Disconnect " << vertexp->name() << endl);
+            for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 edgep->cut();
             }
         }
@@ -75,21 +71,21 @@ void V3Graph::deleteCutableOnlyEdges() {
 // Algorithms - weakly connected components
 
 class GraphRemoveRedundant : GraphAlg<> {
-    bool        m_sumWeights;  ///< Sum, rather then maximize weights
+    bool m_sumWeights;  ///< Sum, rather then maximize weights
 private:
     void main() {
-        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp();
-             vertexp; vertexp=vertexp->verticesNextp()) {
+        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
+             vertexp = vertexp->verticesNextp()) {
             vertexIterate(vertexp);
         }
     }
     void vertexIterate(V3GraphVertex* vertexp) {
         // Clear marks
-        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
+        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             edgep->top()->userp(NULL);
         }
         // Mark edges and detect duplications
-        for (V3GraphEdge* nextp, *edgep = vertexp->outBeginp(); edgep; edgep=nextp) {
+        for (V3GraphEdge *nextp, *edgep = vertexp->outBeginp(); edgep; edgep = nextp) {
             nextp = edgep->outNextp();
             if (followEdge(edgep)) {
                 V3GraphVertex* outVertexp = edgep->top();
@@ -104,7 +100,8 @@ private:
                         saveOld = true;  // old !cutable more important than new
                     } else {
                         saveOld = true;
-                        if (!m_sumWeights && (prevEdgep->weight() < edgep->weight())) {  // Keep max weight
+                        if (!m_sumWeights
+                            && (prevEdgep->weight() < edgep->weight())) {  // Keep max weight
                             prevEdgep->weight(edgep->weight());
                         }
                     }
@@ -120,9 +117,11 @@ private:
             }
         }
     }
+
 public:
     GraphRemoveRedundant(V3Graph* graphp, V3EdgeFuncP edgeFuncp, bool sumWeights)
-        : GraphAlg<>(graphp, edgeFuncp), m_sumWeights(sumWeights) {
+        : GraphAlg<>(graphp, edgeFuncp)
+        , m_sumWeights(sumWeights) {
         main();
     }
     ~GraphRemoveRedundant() {}
@@ -145,33 +144,26 @@ public:
         : GraphAlg<>(graphp, NULL) {}
     void go() {
         GraphPathChecker checker(m_graphp);
-        for (V3GraphVertex* vxp = m_graphp->verticesBeginp();
-             vxp; vxp = vxp->verticesNextp()) {
+        for (V3GraphVertex* vxp = m_graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             V3GraphEdge* deletep = NULL;
-            for (V3GraphEdge* edgep = vxp->outBeginp();
-                 edgep; edgep = edgep->outNextp()) {
+            for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 if (deletep) VL_DO_CLEAR(deletep->unlinkDelete(), deletep = NULL);
                 // It should be safe to modify the graph, despite using
                 // the GraphPathChecker, as none of the modifications will
                 // change what can be reached from what, nor should they
                 // change the rank or CP of any node.
-                if (checker.isTransitiveEdge(edgep)) {
-                    deletep = edgep;
-                }
+                if (checker.isTransitiveEdge(edgep)) deletep = edgep;
             }
-            if (deletep) {
-                VL_DO_DANGLING(deletep->unlinkDelete(), deletep);
-            }
+            if (deletep) VL_DO_DANGLING(deletep->unlinkDelete(), deletep);
         }
     }
+
 private:
     VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(GraphAlgRemoveTransitiveEdges);
 };
 
-void V3Graph::removeTransitiveEdges() {
-    GraphAlgRemoveTransitiveEdges(this).go();
-}
+void V3Graph::removeTransitiveEdges() { GraphAlgRemoveTransitiveEdges(this).go(); }
 
 //######################################################################
 //######################################################################
@@ -184,9 +176,9 @@ private:
         m_graphp->clearColors();
         // Color graph
         uint32_t currentColor = 0;
-        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp();
-             vertexp; vertexp=vertexp->verticesNextp()) {
-            currentColor ++;
+        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
+             vertexp = vertexp->verticesNextp()) {
+            currentColor++;
             vertexIterate(vertexp, currentColor);
         }
     }
@@ -196,17 +188,14 @@ private:
         // then visit each of its edges, giving them the same color
         if (vertexp->color()) return;  // Already colored it
         vertexp->color(currentColor);
-        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
-            if (followEdge(edgep)) {
-                vertexIterate(edgep->top(), currentColor);
-            }
+        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            if (followEdge(edgep)) vertexIterate(edgep->top(), currentColor);
         }
-        for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep=edgep->inNextp()) {
-            if (followEdge(edgep)) {
-                vertexIterate(edgep->fromp(), currentColor);
-            }
+        for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+            if (followEdge(edgep)) vertexIterate(edgep->fromp(), currentColor);
         }
     }
+
 public:
     GraphAlgWeakly(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
         : GraphAlg<>(graphp, edgeFuncp) {
@@ -215,9 +204,7 @@ public:
     ~GraphAlgWeakly() {}
 };
 
-void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) {
-    GraphAlgWeakly(this, edgeFuncp);
-}
+void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgWeakly(this, edgeFuncp); }
 
 //######################################################################
 //######################################################################
@@ -235,14 +222,14 @@ private:
         //     Vertex::color    // Output subtree number (fully processed)
 
         // Clear info
-        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp();
-             vertexp; vertexp=vertexp->verticesNextp()) {
+        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
+             vertexp = vertexp->verticesNextp()) {
             vertexp->color(0);
             vertexp->user(0);
         }
         // Color graph
-        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp();
-             vertexp; vertexp=vertexp->verticesNextp()) {
+        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
+             vertexp = vertexp->verticesNextp()) {
             if (!vertexp->user()) {
                 m_currentDfs++;
                 vertexIterate(vertexp);
@@ -250,10 +237,10 @@ private:
         }
         // If there's a single vertex of a color, it doesn't need a subgraph
         // This simplifies the consumer's code, and reduces graph debugging clutter
-        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp();
-             vertexp; vertexp=vertexp->verticesNextp()) {
+        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
+             vertexp = vertexp->verticesNextp()) {
             bool onecolor = true;
-            for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
+            for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 if (followEdge(edgep)) {
                     if (vertexp->color() == edgep->top()->color()) {
                         onecolor = false;
@@ -269,7 +256,7 @@ private:
         uint32_t thisDfsNum = m_currentDfs++;
         vertexp->user(thisDfsNum);
         vertexp->color(0);
-        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
+        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             if (followEdge(edgep)) {
                 V3GraphVertex* top = edgep->top();
                 if (!top->user()) {  // Dest not computed yet
@@ -295,6 +282,7 @@ private:
             m_callTrace.push_back(vertexp);
         }
     }
+
 public:
     GraphAlgStrongly(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
         : GraphAlg<>(graphp, edgeFuncp) {
@@ -304,9 +292,7 @@ public:
     ~GraphAlgStrongly() {}
 };
 
-void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) {
-    GraphAlgStrongly(this, edgeFuncp);
-}
+void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgStrongly(this, edgeFuncp); }
 
 //######################################################################
 //######################################################################
@@ -318,16 +304,14 @@ private:
         // Rank each vertex, ignoring cutable edges
         // Vertex::m_user begin: 1 indicates processing, 2 indicates completed
         // Clear existing ranks
-        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp();
-             vertexp; vertexp=vertexp->verticesNextp()) {
+        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
+             vertexp = vertexp->verticesNextp()) {
             vertexp->rank(0);
             vertexp->user(0);
         }
-        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp();
-             vertexp; vertexp=vertexp->verticesNextp()) {
-            if (!vertexp->user()) {
-                vertexIterate(vertexp, 1);
-            }
+        for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
+             vertexp = vertexp->verticesNextp()) {
+            if (!vertexp->user()) { vertexIterate(vertexp, 1); }
         }
     }
 
@@ -343,13 +327,14 @@ private:
         if (vertexp->rank() >= currentRank) return;  // Already processed it
         vertexp->user(1);
         vertexp->rank(currentRank);
-        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
+        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             if (followEdge(edgep)) {
                 vertexIterate(edgep->top(), currentRank + vertexp->rankAdder());
             }
         }
         vertexp->user(2);
     }
+
 public:
     GraphAlgRank(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
         : GraphAlg<>(graphp, edgeFuncp) {
@@ -358,13 +343,9 @@ public:
     ~GraphAlgRank() {}
 };
 
-void V3Graph::rank() {
-    GraphAlgRank(this, &V3GraphEdge::followAlwaysTrue);
-}
+void V3Graph::rank() { GraphAlgRank(this, &V3GraphEdge::followAlwaysTrue); }
 
-void V3Graph::rank(V3EdgeFuncP edgeFuncp) {
-    GraphAlgRank(this, edgeFuncp);
-}
+void V3Graph::rank(V3EdgeFuncP edgeFuncp) { GraphAlgRank(this, edgeFuncp); }
 
 //######################################################################
 //######################################################################
@@ -393,7 +374,7 @@ private:
         m_callTrace[currentRank++] = vertexp;
 
         if (vertexp->user() == 1) {
-            for (unsigned i=0; i<currentRank; i++) {
+            for (unsigned i = 0; i < currentRank; i++) {  //
                 m_graphp->loopsVertexCb(m_callTrace[i]);
             }
             m_done = true;
@@ -401,13 +382,12 @@ private:
         }
         if (vertexp->user() == 2) return;  // Already processed it
         vertexp->user(1);
-        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
-            if (followEdge(edgep)) {
-                vertexIterate(edgep->top(), currentRank);
-            }
+        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            if (followEdge(edgep)) vertexIterate(edgep->top(), currentRank);
         }
         vertexp->user(2);
     }
+
 public:
     GraphAlgRLoops(V3Graph* graphp, V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp)
         : GraphAlg<>(graphp, edgeFuncp) {
@@ -420,7 +400,6 @@ public:
 void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
     GraphAlgRLoops(this, edgeFuncp, vertexp);
 }
-
 
 //######################################################################
 //######################################################################
@@ -438,14 +417,12 @@ private:
             newVertexp = vertexp->clone(m_loopGraphp);
             vertexp->userp(newVertexp);
 
-            for (V3GraphEdge* edgep = vertexp->outBeginp();
-                 edgep; edgep=edgep->outNextp()) {
+            for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 if (followEdge(edgep)) {
                     V3GraphEdge* newEdgep = static_cast<V3GraphEdge*>(edgep->userp());
                     if (!newEdgep) {
                         V3GraphVertex* newTop = vertexIterateAll(edgep->top());
-                        newEdgep = edgep->clone(m_loopGraphp, newVertexp,
-                                                newTop);
+                        newEdgep = edgep->clone(m_loopGraphp, newVertexp, newTop);
                         edgep->userp(newEdgep);
                     }
                 }
@@ -455,21 +432,21 @@ private:
     }
 
 public:
-    GraphAlgSubtrees(V3Graph* graphp, V3Graph* loopGraphp,
-                     V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp)
-        : GraphAlg<>(graphp, edgeFuncp), m_loopGraphp(loopGraphp) {
+    GraphAlgSubtrees(V3Graph* graphp, V3Graph* loopGraphp, V3EdgeFuncP edgeFuncp,
+                     V3GraphVertex* vertexp)
+        : GraphAlg<>(graphp, edgeFuncp)
+        , m_loopGraphp(loopGraphp) {
         // Vertex::m_userp - New vertex if we have seen this vertex already
         // Edge::m_userp - New edge if we have seen this edge already
         m_graphp->userClearVertices();
         m_graphp->userClearEdges();
-        (void) vertexIterateAll(vertexp);
+        (void)vertexIterateAll(vertexp);
     }
     ~GraphAlgSubtrees() {}
 };
 
 //! Report the entire connected graph with a loop or loops
-void V3Graph::subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp,
-                           V3Graph* loopGraphp) {
+void V3Graph::subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp, V3Graph* loopGraphp) {
     GraphAlgSubtrees(this, loopGraphp, edgeFuncp, vertexp);
 }
 
@@ -478,7 +455,7 @@ void V3Graph::subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp,
 // Algorithms - make non cutable
 
 void V3Graph::makeEdgesNonCutable(V3EdgeFuncP edgeFuncp) {
-    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
+    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
         // Only need one direction, we'll always see the other at some point...
         for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
             if (edgep->cutable() && edgep->weight() && (edgeFuncp)(edgep)) {
@@ -493,12 +470,12 @@ void V3Graph::makeEdgesNonCutable(V3EdgeFuncP edgeFuncp) {
 // Algorithms - sorting
 
 struct GraphSortVertexCmp {
-    inline bool operator() (const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
+    inline bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
         return lhsp->sortCmp(rhsp) < 0;
     }
 };
 struct GraphSortEdgeCmp {
-    inline bool operator() (const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
+    inline bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
         return lhsp->sortCmp(rhsp) < 0;
     }
 };
@@ -506,12 +483,12 @@ struct GraphSortEdgeCmp {
 void V3Graph::sortVertices() {
     // Sort list of vertices by rank, then fanout
     std::vector<V3GraphVertex*> vertices;
-    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
+    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
         vertices.push_back(vertexp);
     }
     std::stable_sort(vertices.begin(), vertices.end(), GraphSortVertexCmp());
     this->verticesUnlink();
-    for (std::vector<V3GraphVertex*>::iterator it = vertices.begin(); it!=vertices.end(); ++it) {
+    for (std::vector<V3GraphVertex*>::iterator it = vertices.begin(); it != vertices.end(); ++it) {
         (*it)->verticesPushBack(this);
     }
 }
@@ -519,7 +496,7 @@ void V3Graph::sortVertices() {
 void V3Graph::sortEdges() {
     // Sort edges by rank then fanout of node they point to
     std::vector<V3GraphEdge*> edges;
-    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
+    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
         // Make a vector
         for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             edges.push_back(edgep);
@@ -531,7 +508,8 @@ void V3Graph::sortEdges() {
         // We know the vector contains all of the edges that were
         // there originally (didn't delete or add)
         vertexp->outUnlink();
-        for (std::vector<V3GraphEdge*>::const_iterator it = edges.begin(); it!=edges.end(); ++it) {
+        for (std::vector<V3GraphEdge*>::const_iterator it = edges.begin(); it != edges.end();
+             ++it) {
             (*it)->outPushBack();
         }
         // Prep for next
@@ -548,7 +526,7 @@ void V3Graph::sortEdges() {
 //              (Results in better dcache packing.)
 
 void V3Graph::order() {
-    UINFO(2,"Order:\n");
+    UINFO(2, "Order:\n");
 
     // Compute rankings again
     rank(&V3GraphEdge::followAlwaysTrue);
@@ -559,10 +537,8 @@ void V3Graph::orderPreRanked() {
     // Compute fanouts
     // Vertex::m_user begin: 1 indicates processing, 2 indicates completed
     userClearVertices();
-    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
-        if (!vertexp->user()) {
-            orderDFSIterate(vertexp);
-        }
+    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
+        if (!vertexp->user()) orderDFSIterate(vertexp);
     }
 
     // Sort list of vertices by rank, then fanout. Fanout is a bit of a
@@ -585,7 +561,7 @@ double V3Graph::orderDFSIterate(V3GraphVertex* vertexp) {
     }
     // Just count inbound edges
     for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-        if (edgep->weight()) fanout ++;
+        if (edgep->weight()) ++fanout;
     }
     vertexp->fanout(fanout);
     vertexp->user(2);

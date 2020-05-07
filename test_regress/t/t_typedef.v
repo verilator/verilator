@@ -1,10 +1,13 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2009 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2009 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 program t;
    parameter SIZE = 5;
+
+   typedef vec_t;  // Forward
 
    typedef reg [SIZE-1:0] vec_t ;
    vec_t a; initial a =0;

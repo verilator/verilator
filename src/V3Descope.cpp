@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // DESCOPE TRANSFORMATIONS:
@@ -113,6 +109,9 @@ private:
         // The risk that this prevents combining identical logic from differently-
         // named but identical modules seems low.
         if (m_modSingleton) relativeRefOk = false;
+        //
+        // Class methods need relative
+        if (m_modp && VN_IS(m_modp, Class)) relativeRefOk = true;
 
         if (varp && varp->isFuncLocal()) {
             hierThisr = true;
@@ -120,8 +119,7 @@ private:
         } else if (relativeRefOk && scopep == m_scopep) {
             m_needThis = true;
             return "this->";
-        } else if (relativeRefOk && scopep->aboveScopep()
-                   && scopep->aboveScopep()==m_scopep) {
+        } else if (relativeRefOk && scopep->aboveScopep() && scopep->aboveScopep() == m_scopep) {
             // Reference to scope of cell directly under this module, can just "cell->"
             string name = scopep->name();
             string::size_type pos;
@@ -180,8 +178,8 @@ private:
                     UASSERT_OBJ(funcp->scopep(), funcp, "Not scoped");
 
                     UINFO(6, "     Wrapping " << name << " " << funcp << endl);
-                    UINFO(6, "  at " << newfuncp->argTypes()
-                          << " und " << funcp->argTypes() << endl);
+                    UINFO(6,
+                          "  at " << newfuncp->argTypes() << " und " << funcp->argTypes() << endl);
                     funcp->declPrivate(true);
                     AstNode* argsp = NULL;
                     for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -259,8 +257,8 @@ private:
         nodep->hierThis(hierThis);
         nodep->varScopep(NULL);
     }
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
-        // UINFO(9,"       "<<nodep<<endl);
+    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
+        // UINFO(9, "       " << nodep << endl);
         iterateChildren(nodep);
         // Convert the hierch name
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
@@ -311,9 +309,7 @@ public:
 // Descope class functions
 
 void V3Descope::descopeAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    {
-        DescopeVisitor visitor (nodep);
-    }  // Destruct before checking
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    { DescopeVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("descope", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

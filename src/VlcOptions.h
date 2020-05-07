@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -38,6 +34,7 @@ typedef std::set<string> VlStringSet;
 
 class VlcOptions {
     // MEMBERS (general options)
+    // clang-format off
     string m_annotateOut;       // main switch: --annotate I<output_directory>
     bool m_annotateAll;         // main switch: --annotate-all
     int m_annotateMin;          // main switch: --annotate-min I<count>
@@ -45,11 +42,12 @@ class VlcOptions {
     bool m_rank;                // main switch: --rank
     bool m_unlink;              // main switch: --unlink
     string m_writeFile;         // main switch: --write
+    // clang-format on
 
 private:
     // METHODS
-    void showVersion(bool verbose);
-    bool onoff(const char* sw, const char* arg, bool& flag);
+    static void showVersion(bool verbose);
+    static bool onoff(const char* sw, const char* arg, bool& flag);
 
 public:
     // CONSTRUCTORS

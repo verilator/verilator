@@ -3,14 +3,11 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2020 by Wilson Snyder.  This program is free software;
-// you can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
-//
-// This is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-// for more details.
+// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
+// Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=============================================================================
 ///
@@ -31,11 +28,17 @@
 //=============================================================================
 /// Conditionally compile coverage code
 
+// clang-format off
 #ifdef VM_COVERAGE
-# define VL_IF_COVER(stmts) do { stmts ; } while(0)
+# define VL_IF_COVER(stmts) \
+    do { stmts; } while (false)
 #else
-# define VL_IF_COVER(stmts) do { if(0) { stmts ; } } while(0)
+# define VL_IF_COVER(stmts) \
+    do { \
+        if (false) { stmts; } \
+    } while (false)
 #endif
+// clang-format on
 
 //=============================================================================
 /// Insert a item for coverage analysis.
@@ -65,16 +68,17 @@
 ///             VL_COVER_INSERT(&m_cases[i], "comment", "Coverage Case", "i", cvtToNumStr(i));
 ///     }
 
-#define VL_COVER_INSERT(countp,args...) \
-    VL_IF_COVER(VerilatedCov::_inserti(countp); \
-                VerilatedCov::_insertf(__FILE__, __LINE__); \
-                VerilatedCov::_insertp("hier", name(), args))
+#define VL_COVER_INSERT(countp, ...) \
+    VL_IF_COVER(VerilatedCov::_inserti(countp); VerilatedCov::_insertf(__FILE__, __LINE__); \
+                VerilatedCov::_insertp("hier", name(), __VA_ARGS__))
 
 //=============================================================================
 /// Convert VL_COVER_INSERT value arguments to strings
 
-template< class T> std::string vlCovCvtToStr(const T& t) VL_PURE {
-    std::ostringstream os; os<<t; return os.str();
+template <class T> std::string vlCovCvtToStr(const T& t) VL_PURE {
+    std::ostringstream os;
+    os << t;
+    return os.str();
 }
 
 //=============================================================================
@@ -86,6 +90,7 @@ template< class T> std::string vlCovCvtToStr(const T& t) VL_PURE {
 
 class VerilatedCov {
     VL_UNCOPYABLE(VerilatedCov);
+
 public:
     // GLOBAL METHODS
     /// Return default filename
@@ -105,18 +110,18 @@ public:
     // We could have just the maximum argument version, but this compiles
     // much slower (nearly 2x) than having smaller versions also.  However
     // there's not much more gain in having a version for each number of args.
-#define K(n) const char* key ## n
-#define A(n) const char* key ## n, const char* valp ## n  // Argument list
-#define D(n) const char* key ## n = NULL, const char* valp ## n = NULL  // Argument list
-    static void _insertp(D(0),D(1),D(2),D(3),D(4),D(5),D(6),D(7),D(8),D(9));
-    static void _insertp(A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9)
-                         ,A(10),D(11),D(12),D(13),D(14),D(15),D(16),D(17),D(18),D(19));
-    static void _insertp(A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9)
-                         ,A(10),A(11),A(12),A(13),A(14),A(15),A(16),A(17),A(18),A(19)
-                         ,A(20),D(21),D(22),D(23),D(24),D(25),D(26),D(27),D(28),D(29));
+#define K(n) const char* key##n
+#define A(n) const char *key##n, const char *valp##n  // Argument list
+#define D(n) const char *key##n = NULL, const char *valp##n = NULL  // Argument list
+    static void _insertp(D(0), D(1), D(2), D(3), D(4), D(5), D(6), D(7), D(8), D(9));
+    static void _insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9), A(10), D(11),
+                         D(12), D(13), D(14), D(15), D(16), D(17), D(18), D(19));
+    static void _insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9), A(10), A(11),
+                         A(12), A(13), A(14), A(15), A(16), A(17), A(18), A(19), A(20), D(21),
+                         D(22), D(23), D(24), D(25), D(26), D(27), D(28), D(29));
     // Backward compatibility for Verilator
-    static void _insertp(A(0), A(1),  K(2),int val2,  K(3),int val3,
-                         K(4),const std::string& val4,  A(5),A(6));
+    static void _insertp(A(0), A(1), K(2), int val2, K(3), int val3, K(4), const std::string& val4,
+                         A(5), A(6));
 
 #undef K
 #undef A

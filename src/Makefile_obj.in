@@ -7,15 +7,11 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
+# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
-#
-# Verilator is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 #****************************************************************************/
 
@@ -46,6 +42,7 @@ LEX = @LEX@
 LFLAGS = -d
 PERL = @PERL@
 YACC = @YACC@
+OBJCACHE ?= @OBJCACHE@
 
 prefix = @prefix@
 
@@ -171,6 +168,7 @@ RAW_OBJS = \
 	V3Cast.o \
 	V3Cdc.o \
 	V3Changed.o \
+	V3Class.o \
 	V3Clean.o \
 	V3Clock.o \
 	V3Combine.o \
@@ -187,6 +185,7 @@ RAW_OBJS = \
 	V3EmitCInlines.o \
 	V3EmitCSyms.o \
 	V3EmitCMake.o \
+	V3EmitCMain.o \
 	V3EmitMk.o \
 	V3EmitV.o \
 	V3EmitXml.o \
@@ -233,6 +232,7 @@ RAW_OBJS = \
 	V3Slice.o \
 	V3Split.o \
 	V3SplitAs.o \
+	V3SplitVar.o \
 	V3Stats.o \
 	V3StatsReport.o \
 	V3String.o \

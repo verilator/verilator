@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: --protect-lib example module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2019 by Todd Strader.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2019 by Todd Strader.
+// SPDX-License-Identifier: CC0-1.0
 
 // See also the EXAMPLE section in the verilator manpage/document.
 module top (input clk);

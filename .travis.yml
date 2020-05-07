@@ -1,8 +1,10 @@
 # DESCRIPTION: Travis-CI config
 #
-# Copyright 2003-2019 by Todd Strader. Verilator is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU Lesser
-# General Public License Version 3 or the Perl Artistic License Version 2.0.
+# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 version: ~> 1.0
 
@@ -17,7 +19,6 @@ env:
     - VERILATOR_NUM_JOBS=$(echo `nproc` + 1 | bc)
     - VERILATOR_CONFIG_FLAGS="--enable-maintainer-mode --enable-longtests"
     - VERILATOR_AUTHOR_SITE=1
-    - OBJCACHE=ccache
 
 cache:
   directories:
@@ -25,7 +26,9 @@ cache:
 
 before_install:
 # Perl modules needed for testing
-  - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker Bit::Vector
+# Not listing Bit::Vector as slow to install, and only skips one test
+  - touch temp.cpp ; g++ -E -dM -c temp.cpp | sort ; rm -rf temp.cpp
+  - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
   - sudo apt-get install gdb gtkwave
   - sudo apt-get install libgoogle-perftools-dev
 before_script:
@@ -58,9 +61,14 @@ jobs:
       script: ci/test.sh vlt
     - if: type != cron
       stage: test
-      name: Vltmt test
+      name: Vltmt set 0 test
       compiler: gcc
-      script: ci/test.sh vltmt
+      script: ci/test.sh vltmt0
+    - if: type != cron
+      stage: test
+      name: Vltmt set 1 test
+      compiler: gcc
+      script: ci/test.sh vltmt1
 # Cron builds try different OS/compiler combinations
     - if: type = cron
       stage: "Build Verilator"

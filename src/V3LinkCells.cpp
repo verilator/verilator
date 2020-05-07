@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // NO EDITS: Don't replace or delete nodes, as the parser symbol table
@@ -55,16 +51,18 @@ public:
 
 class LinkCellsVertex : public V3GraphVertex {
     AstNodeModule* m_modp;
+
 public:
     LinkCellsVertex(V3Graph* graphp, AstNodeModule* modp)
-        : V3GraphVertex(graphp), m_modp(modp) {}
+        : V3GraphVertex(graphp)
+        , m_modp(modp) {}
     virtual ~LinkCellsVertex() {}
     AstNodeModule* modp() const { return m_modp; }
     virtual string name() const { return modp()->name(); }
     virtual FileLine* fileline() const { return modp()->fileline(); }
     // Recursive modules get space for maximum recursion
     virtual uint32_t rankAdder() const {
-        return m_modp->recursiveClone() ? (1+v3Global.opt.moduleRecursionDepth()) : 1;
+        return m_modp->recursiveClone() ? (1 + v3Global.opt.moduleRecursionDepth()) : 1;
     }
 };
 
@@ -78,10 +76,12 @@ public:
 
 void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
     if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(vertexp)) {
-        vvertexp->modp()->v3error("Unsupported: Recursive multiple modules (module instantiates something leading back to itself): "
-                                  <<vvertexp->modp()->prettyNameQ()<<endl
-                                  <<V3Error::warnMore()
-                                  <<"... note: self-recursion (module instantiating itself directly) is supported.");
+        vvertexp->modp()->v3error(
+            "Unsupported: Recursive multiple modules (module instantiates "
+            "something leading back to itself): "
+            << vvertexp->modp()->prettyNameQ() << endl
+            << V3Error::warnMore()
+            << "... note: self-recursion (module instantiating itself directly) is supported.");
         V3Error::abortIfErrors();
     } else {  // Everything should match above, but...
         v3fatalSrc("Recursive instantiations");
@@ -101,19 +101,19 @@ private:
     //   AstCell::user2()               // bool   clone renaming completed
     //  Allocated across all readFiles in V3Global::readFiles:
     //   AstNode::user4p()      // VSymEnt*    Package and typedef symbol names
-    AstUser1InUse       m_inuser1;
-    AstUser2InUse       m_inuser2;
+    AstUser1InUse m_inuser1;
+    AstUser2InUse m_inuser2;
 
     // STATE
-    VInFilter*          m_filterp;      // Parser filter
-    V3ParseSym*         m_parseSymp;    // Parser symbol table
+    VInFilter* m_filterp;  // Parser filter
+    V3ParseSym* m_parseSymp;  // Parser symbol table
 
     // Below state needs to be preserved between each module call.
-    AstNodeModule*      m_modp;         // Current module
-    VSymGraph           m_mods;         // Symbol table of all module names
-    LinkCellsGraph      m_graph;        // Linked graph of all cell interconnects
-    LibraryVertex*      m_libVertexp;   // Vertex at root of all libraries
-    V3GraphVertex*      m_topVertexp;   // Vertex of top module
+    AstNodeModule* m_modp;  // Current module
+    VSymGraph m_mods;  // Symbol table of all module names
+    LinkCellsGraph m_graph;  // Linked graph of all cell interconnects
+    LibraryVertex* m_libVertexp;  // Vertex at root of all libraries
+    V3GraphVertex* m_topVertexp;  // Vertex of top module
     vl_unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
 
     VL_DEBUG_FUNC;  // Declare debug()
@@ -121,16 +121,17 @@ private:
     // METHODS
     V3GraphVertex* vertex(AstNodeModule* nodep) {
         // Return corresponding vertex for this module
-        if (!nodep->user1p()) {
-            nodep->user1p(new LinkCellsVertex(&m_graph, nodep));
-        }
+        if (!nodep->user1p()) nodep->user1p(new LinkCellsVertex(&m_graph, nodep));
         return (nodep->user1u().toGraphVertex());
     }
 
     AstNodeModule* findModuleSym(const string& modName) {
         VSymEnt* foundp = m_mods.rootp()->findIdFallback(modName);
-        if (!foundp) return NULL;
-        else return VN_CAST(foundp->nodep(), NodeModule);
+        if (!foundp) {
+            return NULL;
+        } else {
+            return VN_CAST(foundp->nodep(), NodeModule);
+        }
     }
 
     AstNodeModule* resolveModule(AstNode* nodep, const string& modName) {
@@ -140,7 +141,7 @@ private:
             // If file not found, make AstNotFoundModule, rather than error out.
             // We'll throw the error when we know the module will really be needed.
             string prettyName = AstNode::prettyName(modName);
-            V3Parse parser (v3Global.rootp(), m_filterp, m_parseSymp);
+            V3Parse parser(v3Global.rootp(), m_filterp, m_parseSymp);
             // true below -> other simulators treat modules in link-found files as library cells
             parser.parseFile(nodep->fileline(), prettyName, true, "");
             V3Error::abortIfErrors();
@@ -151,7 +152,7 @@ private:
             if (!modp) {
                 // This shouldn't throw a message as parseFile will create
                 // a AstNotFoundModule for us
-                nodep->v3error("Can't resolve module reference: '"<<prettyName<<"'");
+                nodep->v3error("Can't resolve module reference: '" << prettyName << "'");
             }
         }
         return modp;
@@ -166,11 +167,11 @@ private:
         m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
         m_graph.dumpDotFilePrefixed("linkcells");
         m_graph.rank();
-        for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
+        for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {
                 // +1 so we leave level 1  for the new wrapper we'll make in a moment
                 AstNodeModule* modp = vvertexp->modp();
-                modp->level(vvertexp->rank()+1);
+                modp->level(vvertexp->rank() + 1);
                 if (vvertexp == m_topVertexp && modp->level() != 2) {
                     AstNodeModule* abovep = NULL;
                     if (V3GraphEdge* edgep = vvertexp->inBeginp()) {
@@ -179,15 +180,16 @@ private:
                             abovep = eFromVertexp->modp();
                         }
                     }
-                    v3error("Specified --top-module '"<<v3Global.opt.topModule()
-                            <<"' isn't at the top level, it's under another cell '"
-                            <<(abovep ? abovep->prettyName() : "UNKNOWN")<<"'");
+                    v3error("Specified --top-module '"
+                            << v3Global.opt.topModule()
+                            << "' isn't at the top level, it's under another cell '"
+                            << (abovep ? abovep->prettyName() : "UNKNOWN") << "'");
                 }
             }
         }
-        if (v3Global.opt.topModule()!=""
-            && !m_topVertexp) {
-            v3error("Specified --top-module '"<<v3Global.opt.topModule()<<"' was not found in design.");
+        if (v3Global.opt.topModule() != "" && !m_topVertexp) {
+            v3error("Specified --top-module '" << v3Global.opt.topModule()
+                                               << "' was not found in design.");
         }
     }
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
@@ -204,9 +206,9 @@ private:
                 if (m_declfnWarned.find(nodep->fileline()->filename()) == m_declfnWarned.end()) {
                     m_declfnWarned.insert(nodep->fileline()->filename());
                     nodep->v3warn(DECLFILENAME, "Filename '"
-                                  << nodep->fileline()->filebasenameNoExt()
-                                  << "' does not match " << nodep->typeName()
-                                  << " name: " << nodep->prettyNameQ());
+                                                    << nodep->fileline()->filebasenameNoExt()
+                                                    << "' does not match " << nodep->typeName()
+                                                    << " name: " << nodep->prettyNameQ());
                 }
             }
             if (VN_IS(nodep, Iface) || VN_IS(nodep, Package)) {
@@ -219,7 +221,7 @@ private:
                 nodep->inLibrary(false);  // Safer to make sure it doesn't disappear
             }
             if (v3Global.opt.topModule() == "" ? nodep->inLibrary()  // Library cells are lower
-                : !topMatch) {  // Any non-specified module is lower
+                                               : !topMatch) {  // Any non-specified module is lower
                 // Put under a fake vertex so that the graph ranking won't indicate
                 // this is a top level module
                 if (!m_libVertexp) m_libVertexp = new LibraryVertex(&m_graph);
@@ -234,7 +236,7 @@ private:
 
     virtual void visit(AstIfaceRefDType* nodep) VL_OVERRIDE {
         // Cell: Resolve its filename.  If necessary, parse it.
-        UINFO(4,"Link IfaceRef: "<<nodep<<endl);
+        UINFO(4, "Link IfaceRef: " << nodep << endl);
         // Use findIdUpward instead of findIdFlat; it doesn't matter for now
         // but we might support modules-under-modules someday.
         AstNodeModule* modp = resolveModule(nodep, nodep->ifaceName());
@@ -245,7 +247,7 @@ private:
                 if (!nodep->cellp()) nodep->ifacep(VN_CAST(modp, Iface));
             } else if (VN_IS(modp, NotFoundModule)) {  // Will error out later
             } else {
-                nodep->v3error("Non-interface used as an interface: "<<nodep->prettyNameQ());
+                nodep->v3error("Non-interface used as an interface: " << nodep->prettyNameQ());
             }
         }
         // Note cannot do modport resolution here; modports are allowed underneath generates
@@ -264,7 +266,7 @@ private:
         // TODO this doesn't allow bind to dotted hier names, that would require
         // this move to post param, which would mean we do not auto-read modules
         // and means we cannot compute module levels until later.
-        UINFO(4,"Link Bind: "<<nodep<<endl);
+        UINFO(4, "Link Bind: " << nodep << endl);
         AstNodeModule* modp = resolveModule(nodep, nodep->name());
         if (modp) {
             AstNode* cellsp = nodep->cellsp()->unlinkFrBackWithNext();
@@ -272,7 +274,8 @@ private:
             AstNodeModule* oldModp = m_modp;
             {
                 m_modp = modp;
-                modp->addStmtp(cellsp);  // Important that this adds to end, as next iterate assumes does all cells
+                // Important that this adds to end, as next iterate assumes does all cells
+                modp->addStmtp(cellsp);
                 iterateAndNextNull(cellsp);
             }
             m_modp = oldModp;
@@ -285,19 +288,18 @@ private:
         // Execute only once.  Complication is that cloning may result in
         // user1 being set (for pre-clone) so check if user1() matches the
         // m_mod, if 0 never did it, if !=, it is an unprocessed clone
-        bool cloned = (nodep->user1p() && nodep->user1p()!=m_modp);
-        if (nodep->user1p()==m_modp) return;  // AstBind and AstNodeModule may call a cell twice
+        bool cloned = (nodep->user1p() && nodep->user1p() != m_modp);
+        if (nodep->user1p() == m_modp) return;  // AstBind and AstNodeModule may call a cell twice
         nodep->user1p(m_modp);
         //
         if (!nodep->modp() || cloned) {
-            UINFO(4,"Link Cell: "<<nodep<<endl);
+            UINFO(4, "Link Cell: " << nodep << endl);
             // Use findIdFallback instead of findIdFlat; it doesn't matter for now
             // but we might support modules-under-modules someday.
             AstNodeModule* cellmodp = resolveModule(nodep, nodep->modName());
             if (cellmodp) {
-                if (cellmodp == m_modp
-                    || cellmodp->user2p() == m_modp) {
-                    UINFO(1,"Self-recursive module "<<cellmodp<<endl);
+                if (cellmodp == m_modp || cellmodp->user2p() == m_modp) {
+                    UINFO(1, "Self-recursive module " << cellmodp << endl);
                     cellmodp->recursive(true);
                     nodep->recursive(true);
                     if (!cellmodp->recursiveClone()) {
@@ -311,27 +313,25 @@ private:
                         AstNodeModule* otherModp = VN_CAST(cellmodp->user2p(), NodeModule);
                         if (!otherModp) {
                             otherModp = cellmodp->cloneTree(false);
-                            otherModp->name(otherModp->name()+"__Vrcm");
+                            otherModp->name(otherModp->name() + "__Vrcm");
                             otherModp->user1p(NULL);  // Need new vertex
                             otherModp->user2p(cellmodp);
                             otherModp->recursiveClone(true);
                             // user1 etc will retain its pre-clone value
                             cellmodp->user2p(otherModp);
                             v3Global.rootp()->addModulep(otherModp);
-                            new V3GraphEdge(&m_graph, vertex(cellmodp),
-                                            vertex(otherModp), 1, false);
+                            new V3GraphEdge(&m_graph, vertex(cellmodp), vertex(otherModp), 1,
+                                            false);
                         }
                         cellmodp = otherModp;
                         nodep->modp(cellmodp);
-                    }
-                    else {
+                    } else {
                         // In the Vrcm, which needs to point back to Vrcm flavor
                         // The cell already has the correct resolution (to Vrcm)
                         nodep->modp(cellmodp);
                         // We don't create a V3GraphEdge (as it would be circular)
                     }
-                }
-                else {  // Non-recursive
+                } else {  // Non-recursive
                     // Track module depths, so can sort list from parent down to children
                     nodep->modp(cellmodp);
                     new V3GraphEdge(&m_graph, vertex(m_modp), vertex(cellmodp), 1, false);
@@ -340,19 +340,17 @@ private:
         }
         // Remove AstCell(AstPin("",NULL)), it's a side effect of how we parse "()"
         // the empty middle is identical to the empty rule that must find pins in "(,)".
-        if (nodep->pinsp() && !nodep->pinsp()->nextp()
-            && nodep->pinsp()->name() == ""
+        if (nodep->pinsp() && !nodep->pinsp()->nextp() && nodep->pinsp()->name() == ""
             && !nodep->pinsp()->exprp()) {
             pushDeletep(nodep->pinsp()->unlinkFrBackWithNext());
         }
-        if (nodep->paramsp() && !nodep->paramsp()->nextp()
-            && nodep->paramsp()->name() == ""
+        if (nodep->paramsp() && !nodep->paramsp()->nextp() && nodep->paramsp()->name() == ""
             && !nodep->paramsp()->exprp()) {
             pushDeletep(nodep->paramsp()->unlinkFrBackWithNext());
         }
         // Convert .* to list of pins
         bool pinStar = false;
-        for (AstPin* nextp, *pinp = nodep->pinsp(); pinp; pinp=nextp) {
+        for (AstPin *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
             nextp = VN_CAST(pinp->nextp(), Pin);
             if (pinp->dotStar()) {
                 if (pinStar) pinp->v3error("Duplicate .* in a cell");
@@ -362,40 +360,41 @@ private:
             }
         }
         // Convert unnamed pins to pin number based assignments
-        for (AstPin* pinp = nodep->pinsp(); pinp; pinp=VN_CAST(pinp->nextp(), Pin)) {
-            if (pinp->name()=="") pinp->name("__pinNumber"+cvtToStr(pinp->pinNum()));
+        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            if (pinp->name() == "") pinp->name("__pinNumber" + cvtToStr(pinp->pinNum()));
         }
-        for (AstPin* pinp = nodep->paramsp(); pinp; pinp=VN_CAST(pinp->nextp(), Pin)) {
+        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
             pinp->param(true);
-            if (pinp->name()=="") pinp->name("__paramNumber"+cvtToStr(pinp->pinNum()));
+            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
         if (nodep->modp()) {
             nodep->modName(nodep->modp()->name());
             // Note what pins exist
             vl_unordered_set<string> ports;  // Symbol table of all connected port names
-            for (AstPin* pinp = nodep->pinsp(); pinp; pinp=VN_CAST(pinp->nextp(), Pin)) {
-                if (pinp->name()=="") pinp->v3error("Connect by position is illegal in .* connected cells");
+            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+                if (pinp->name() == "")
+                    pinp->v3error("Connect by position is illegal in .* connected cells");
                 if (!pinp->exprp()) {
                     if (pinp->name().substr(0, 11) == "__pinNumber") {
-                        pinp->v3warn(PINNOCONNECT, "Cell pin is not connected: "
-                                     <<pinp->prettyNameQ());
+                        pinp->v3warn(PINNOCONNECT,
+                                     "Cell pin is not connected: " << pinp->prettyNameQ());
                     } else {
                         pinp->v3warn(PINCONNECTEMPTY,
                                      "Cell pin connected by name with empty reference: "
-                                     <<pinp->prettyNameQ());
+                                         << pinp->prettyNameQ());
                     }
                 }
                 ports.insert(pinp->name());
             }
             // We search ports, rather than in/out declarations as they aren't resolved yet,
             // and it's easier to do it now than in V3LinkDot when we'd need to repeat steps.
-            for (AstNode* portnodep = nodep->modp()->stmtsp();
-                 portnodep; portnodep=portnodep->nextp()) {
+            for (AstNode* portnodep = nodep->modp()->stmtsp(); portnodep;
+                 portnodep = portnodep->nextp()) {
                 if (const AstPort* portp = VN_CAST(portnodep, Port)) {
                     if (ports.find(portp->name()) == ports.end()
-                        && ports.find("__pinNumber"+cvtToStr(portp->pinNum())) == ports.end()) {
+                        && ports.find("__pinNumber" + cvtToStr(portp->pinNum())) == ports.end()) {
                         if (pinStar) {
-                            UINFO(9,"    need .* PORT  "<<portp<<endl);
+                            UINFO(9, "    need .* PORT  " << portp << endl);
                             // Create any not already connected
                             AstPin* newp = new AstPin(nodep->fileline(), 0, portp->name(),
                                                       new AstParseRef(nodep->fileline(),
@@ -404,8 +403,8 @@ private:
                             newp->svImplicit(true);
                             nodep->addPinsp(newp);
                         } else {  // warn on the CELL that needs it, not the port
-                            nodep->v3warn(PINMISSING, "Cell has missing pin: "
-                                          <<portp->prettyNameQ());
+                            nodep->v3warn(PINMISSING,
+                                          "Cell has missing pin: " << portp->prettyNameQ());
                             AstPin* newp = new AstPin(nodep->fileline(), 0, portp->name(), NULL);
                             nodep->addPinsp(newp);
                         }
@@ -417,8 +416,9 @@ private:
             // Cell really is the parent's instantiation of an interface, not a normal module
             // Make sure we have a variable to refer to this cell, so can <ifacename>.<innermember>
             // in the same way that a child does.  Rename though to avoid conflict with cell.
-            // This is quite similar to how classes work; when unpacked classes are better supported
-            // may remap interfaces to be more like a class.
+            // This is quite similar to how classes work; when unpacked
+            // classes are better supported may remap interfaces to be more
+            // like a class.
             if (!nodep->hasIfaceVar()) {
                 string varName = nodep->name() + "__Viftop";  // V3LinkDot looks for this naming
                 AstIfaceRefDType* idtypep = new AstIfaceRefDType(nodep->fileline(), nodep->name(),
@@ -429,8 +429,8 @@ private:
                 AstVar* varp;
                 if (nodep->rangep()) {
                     AstNodeArrayDType* arrp
-                        = new AstUnpackArrayDType(nodep->fileline(), VFlagChildDType(),
-                                                  idtypep, nodep->rangep()->cloneTree(true));
+                        = new AstUnpackArrayDType(nodep->fileline(), VFlagChildDType(), idtypep,
+                                                  nodep->rangep()->cloneTree(true));
                     varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName,
                                       VFlagChildDType(), arrp);
                 } else {
@@ -442,34 +442,30 @@ private:
                 nodep->hasIfaceVar(true);
             }
         }
-        if (nodep->modp()) {
-            iterateChildren(nodep);
-        }
-        UINFO(4," Link Cell done: "<<nodep<<endl);
+        if (nodep->modp()) { iterateChildren(nodep); }
+        UINFO(4, " Link Cell done: " << nodep << endl);
     }
 
     // Accelerate the recursion
     // Must do statements to support Generates, math though...
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
     // METHODS
     void readModNames() {
         // Look at all modules, and store pointers to all module names
-        for (AstNodeModule* nextp,* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nextp) {
+        for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
             nextp = VN_CAST(nodep->nextp(), NodeModule);
             AstNodeModule* foundp = findModuleSym(nodep->name());
             if (foundp && foundp != nodep) {
                 if (!(foundp->fileline()->warnIsOff(V3ErrorCode::MODDUP)
                       || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP))) {
                     nodep->v3warn(MODDUP, "Duplicate declaration of module: "
-                                  <<nodep->prettyNameQ()<<endl
-                                  <<nodep->warnContextPrimary()<<endl
-                                  <<foundp->warnOther()<<"... Location of original declaration"<<endl
-                                  <<foundp->warnContextSecondary());
+                                              << nodep->prettyNameQ() << endl
+                                              << nodep->warnContextPrimary() << endl
+                                              << foundp->warnOther()
+                                              << "... Location of original declaration" << endl
+                                              << foundp->warnContextSecondary());
                 }
                 nodep->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -477,7 +473,7 @@ private:
                 m_mods.rootp()->insert(nodep->name(), new VSymEnt(&m_mods, nodep));
             }
         }
-        //if (debug()>=9) m_mods.dump(cout, "-syms: ");
+        // if (debug() >= 9) m_mods.dump(cout, "-syms: ");
     }
 
 public:
@@ -498,6 +494,6 @@ public:
 // Link class functions
 
 void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp) {
-    UINFO(4,__FUNCTION__<<": "<<endl);
-    LinkCellsVisitor visitor (nodep, filterp, parseSymp);
+    UINFO(4, __FUNCTION__ << ": " << endl);
+    LinkCellsVisitor visitor(nodep, filterp, parseSymp);
 }

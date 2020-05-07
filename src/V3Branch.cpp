@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // BRANCH TRANSFORMATIONS:
@@ -45,15 +41,15 @@ private:
     // NODE STATE
     // Entire netlist:
     //  AstFTask::user1()       -> int.  Number of references
-    AstUser1InUse       m_inuser1;
+    AstUser1InUse m_inuser1;
 
     // TYPES
     typedef std::vector<AstCFunc*> CFuncVec;
 
     // STATE
-    int         m_likely;       // Excuses for branch likely taken
-    int         m_unlikely;     // Excuses for branch likely not taken
-    CFuncVec    m_cfuncsp;      // List of all tasks
+    int m_likely;  // Excuses for branch likely taken
+    int m_unlikely;  // Excuses for branch likely not taken
+    CFuncVec m_cfuncsp;  // List of all tasks
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -64,14 +60,14 @@ private:
     }
     void checkUnlikely(AstNode* nodep) {
         if (nodep->isUnlikely()) {
-            UINFO(4,"  UNLIKELY: "<<nodep<<endl);
+            UINFO(4, "  UNLIKELY: " << nodep << endl);
             m_unlikely++;
         }
     }
 
     // VISITORS
     virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
-        UINFO(4," IF: "<<nodep<<endl);
+        UINFO(4, " IF: " << nodep << endl);
         int lastLikely = m_likely;
         int lastUnlikely = m_unlikely;
         {
@@ -96,7 +92,7 @@ private:
         m_likely = lastLikely;
         m_unlikely = lastUnlikely;
     }
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
         checkUnlikely(nodep);
         nodep->funcp()->user1Inc();
         iterateChildren(nodep);
@@ -113,11 +109,9 @@ private:
 
     // METHODS
     void calc_tasks() {
-        for (CFuncVec::iterator it=m_cfuncsp.begin(); it!=m_cfuncsp.end(); ++it) {
+        for (CFuncVec::iterator it = m_cfuncsp.begin(); it != m_cfuncsp.end(); ++it) {
             AstCFunc* nodep = *it;
-            if (!nodep->dontInline()) {
-                nodep->isInline(true);
-            }
+            if (!nodep->dontInline()) nodep->isInline(true);
         }
     }
 
@@ -135,6 +129,6 @@ public:
 // Branch class functions
 
 void V3Branch::branchAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    BranchVisitor visitor (nodep);
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    BranchVisitor visitor(nodep);
 }

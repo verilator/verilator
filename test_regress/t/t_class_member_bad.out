@@ -1,0 +1,4 @@
+%Error: t/t_class_member_bad.v:11:20: Unsupported: class extends
+   11 | class Cls2 extends Base1;
+      |                    ^~~~~
+%Error: Exiting due to

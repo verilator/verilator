@@ -1,8 +1,9 @@
 // -*- SystemC -*-
 // DESCRIPTION: Verilator Example: Top level main for invoking SystemC model
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2017 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2017 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 //======================================================================
 
 // SystemC global header
@@ -37,23 +38,26 @@ int sc_main(int argc, char* argv[]) {
     // This needs to be called before you create any model
     Verilated::commandArgs(argc, argv);
 
+    // Create logs/ directory in case we have traces to put under it
+    Verilated::mkdir("logs");
+
     // General logfile
     ios::sync_with_stdio();
 
     // Defaults time
-#if (SYSTEMC_VERSION>20011000)
+#if (SYSTEMC_VERSION > 20011000)
 #else
     sc_time dut(1.0, sc_ns);
     sc_set_default_time_unit(dut);
 #endif
 
     // Define clocks
-#if (SYSTEMC_VERSION>=20070314)
-    sc_clock clk     ("clk",    10,SC_NS, 0.5, 3,SC_NS, true);
-    sc_clock fastclk ("fastclk", 2,SC_NS, 0.5, 2,SC_NS, true);
+#if (SYSTEMC_VERSION >= 20070314)
+    sc_clock clk("clk", 10, SC_NS, 0.5, 3, SC_NS, true);
+    sc_clock fastclk("fastclk", 2, SC_NS, 0.5, 2, SC_NS, true);
 #else
-    sc_clock clk     ("clk",    10, 0.5, 3, true);
-    sc_clock fastclk ("fastclk", 2, 0.5, 2, true);
+    sc_clock clk("clk", 10, 0.5, 3, true);
+    sc_clock fastclk("fastclk", 2, 0.5, 2, true);
 #endif
 
     // Define interconnect
@@ -68,15 +72,15 @@ int sc_main(int argc, char* argv[]) {
     // Construct the Verilated model, from inside Vtop.h
     Vtop* top = new Vtop("top");
     // Attach signals to the model
-    top->clk       (clk);
-    top->fastclk   (fastclk);
-    top->reset_l   (reset_l);
-    top->in_small  (in_small);
-    top->in_quad   (in_quad);
-    top->in_wide   (in_wide);
-    top->out_small (out_small);
-    top->out_quad  (out_quad);
-    top->out_wide  (out_wide);
+    top->clk(clk);
+    top->fastclk(fastclk);
+    top->reset_l(reset_l);
+    top->in_small(in_small);
+    top->in_quad(in_quad);
+    top->in_wide(in_wide);
+    top->out_small(out_small);
+    top->out_quad(out_quad);
+    top->out_wide(out_wide);
 
 #if VM_TRACE
     // Before any evaluation, need to know to calculate those signals only used for tracing
@@ -85,8 +89,8 @@ int sc_main(int argc, char* argv[]) {
 
     // You must do one evaluation before enabling waves, in order to allow
     // SystemC to interconnect everything for testing.
-#if (SYSTEMC_VERSION>=20070314)
-    sc_start(1,SC_NS);
+#if (SYSTEMC_VERSION >= 20070314)
+    sc_start(1, SC_NS);
 #else
     sc_start(1);
 #endif
@@ -96,7 +100,7 @@ int sc_main(int argc, char* argv[]) {
     // and if at run time passed the +trace argument, turn on tracing
     VerilatedVcdSc* tfp = NULL;
     const char* flag = Verilated::commandArgsPlusMatch("trace");
-    if (flag && 0==strcmp(flag, "+trace")) {
+    if (flag && 0 == strcmp(flag, "+trace")) {
         cout << "Enabling waves into logs/vlt_dump.vcd...\n";
         tfp = new VerilatedVcdSc;
         top->trace(tfp, 99);  // Trace 99 levels of hierarchy
@@ -114,15 +118,15 @@ int sc_main(int argc, char* argv[]) {
 #endif
 
         // Apply inputs
-        if (VL_TIME_Q() > 1 && VL_TIME_Q() < 10) {
+        if (sc_time_stamp() > sc_time(1, SC_NS) && sc_time_stamp() < sc_time(10, SC_NS)) {
             reset_l = !1;  // Assert reset
-        } else if (VL_TIME_Q() > 1) {
+        } else {
             reset_l = !0;  // Deassert reset
         }
 
         // Simulate 1ns
-#if (SYSTEMC_VERSION>=20070314)
-        sc_start(1,SC_NS);
+#if (SYSTEMC_VERSION >= 20070314)
+        sc_start(1, SC_NS);
 #else
         sc_start(1);
 #endif
@@ -133,7 +137,10 @@ int sc_main(int argc, char* argv[]) {
 
     // Close trace if opened
 #if VM_TRACE
-    if (tfp) { tfp->close(); tfp = NULL; }
+    if (tfp) {
+        tfp->close();
+        tfp = NULL;
+    }
 #endif
 
     //  Coverage analysis (since test passed)
@@ -143,7 +150,8 @@ int sc_main(int argc, char* argv[]) {
 #endif
 
     // Destroy model
-    delete top; top = NULL;
+    delete top;
+    top = NULL;
 
     // Fin
     return 0;

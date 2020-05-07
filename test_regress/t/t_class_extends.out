@@ -1,0 +1,10 @@
+%Error: t/t_class_extends.v:13:21: Unsupported: class extends
+   13 | class Base1 extends Base0;
+      |                     ^~~~~
+%Error: t/t_class_extends.v:17:21: Unsupported: class extends
+   17 | class Base2 extends Base1;
+      |                     ^~~~~
+%Error: t/t_class_extends.v:21:19: Unsupported: class extends
+   21 | class Cls extends Base2;
+      |                   ^~~~~
+%Error: Exiting due to

@@ -1,0 +1,25 @@
+%Error: t/t_timescale_parse_bad.v:8:1: `timescale timeunit '1ps' must be greater than or equal to timeprecision '1ns'
+    8 | `timescale 1ps/1ns
+      | ^~~~~~~~~~~~~~~~~~
+%Error: t/t_timescale_parse_bad.v:11:1: `timescale timeunit syntax error: 'frump'
+   11 | `timescale frump
+      | ^~~~~~~~~~~~~~~~
+%Error: t/t_timescale_parse_bad.v:12:1: `timescale timeunit syntax error: '1xs'
+   12 | `timescale 1xs
+      | ^~~~~~~~~~~~~~
+%Error: t/t_timescale_parse_bad.v:13:1: `timescale timeunit syntax error: '2ps'
+   13 | `timescale 2ps
+      | ^~~~~~~~~~~~~~
+%Error: t/t_timescale_parse_bad.v:14:1: `timescale timeprecision syntax error: 'frump'
+   14 | `timescale 1ns / frump
+      | ^~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_timescale_parse_bad.v:15:1: `timescale syntax error: ' 1ns / 1ps /extra'
+   15 | `timescale 1ns / 1ps /extra
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_timescale_parse_bad.v:18:13: timeunit illegal value
+   18 |    timeunit 2ps;   
+      |             ^~~
+%Error: t/t_timescale_parse_bad.v:19:18: timeprecision illegal value
+   19 |    timeprecision 2ps;    
+      |                  ^~~
+%Error: Exiting due to

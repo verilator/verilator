@@ -3,14 +3,11 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2020 by Wilson Snyder.  This program is free software;
-// you can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
-//
-// This is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-// for more details.
+// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
+// Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=============================================================================
 ///
@@ -31,6 +28,7 @@
 
 #define VLCOVGEN_ITEM(string_parsed_by_vlcovgen)
 
+// clang-format off
 VLCOVGEN_ITEM("name=>'col0_name',   short=>'C0', group=>1, default=>undef, descr=>'The column title for the header line of this column'")
 VLCOVGEN_ITEM("name=>'col1_name',   short=>'C1', group=>1, default=>undef, ")
 VLCOVGEN_ITEM("name=>'col2_name',   short=>'C2', group=>1, default=>undef, ")
@@ -62,6 +60,7 @@ VLCOVGEN_ITEM("name=>'row1',        short=>'r1', group=>0, default=>undef, ")
 VLCOVGEN_ITEM("name=>'row2',        short=>'r2', group=>0, default=>undef, ")
 VLCOVGEN_ITEM("name=>'row3',        short=>'r3', group=>0, default=>undef, ")
 VLCOVGEN_ITEM("name=>'weight',      short=>'w',  group=>0, default=>undef, descr=>'For totaling items, weight of this item'")
+// clang-format on
 
 // VLCOVGEN_CIK_AUTO_EDIT_BEGIN
 #define VL_CIK_COL0 "c0"

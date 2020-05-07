@@ -1,12 +1,13 @@
 # DESCRIPTION: Process this file with autoconf to produce a configure script.
 #
-# Copyright 2003-2020 by Wilson Snyder. Verilator is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU Lesser
+# Copyright 2003-2020 by Wilson Snyder. Verilator is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.027 devel],
+AC_INIT([Verilator],[4.035 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -15,7 +16,10 @@ AC_INIT([Verilator],[4.027 devel],
 AC_CONFIG_HEADER(src/config_build.h)
 AC_CONFIG_FILES(Makefile docs/Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)
 
+# Version
 AC_MSG_RESULT([configuring for $PACKAGE_STRING])
+PACKAGE_VERSION_NUMBER=`AS_ECHO("$PACKAGE_VERSION") | sed 's/ .*//g'`
+AC_SUBST(PACKAGE_VERSION_NUMBER)
 
 # Ignore automake flags passed by Ubuntu builds
 AC_ARG_ENABLE([dependency-tracking],
@@ -156,6 +160,12 @@ fi
 AC_PATH_PROG(YACC,bison)
 if test "x$YACC" = "x" ; then
    AC_MSG_ERROR([Cannot find "bison" in your PATH, please install it])
+fi
+
+AC_CHECK_PROG(OBJCACHE,ccache,ccache)
+if test "x$OBJCACHE" != "x" ; then
+  objcache_version=$($OBJCACHE --version | head -1)
+  AC_MSG_RESULT([objcache is $OBJCACHE --version = $objcache_version])
 fi
 
 # Checks for libraries.
@@ -301,7 +311,6 @@ AC_SUBST(CFG_CXXFLAGS_WEXTRA)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Qunused-arguments)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-faligned-new)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-undefined-bool-conversion)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
 AC_SUBST(CFG_CXXFLAGS_SRC)
 
@@ -328,6 +337,7 @@ m4_foreach([cflag],[
         [-mno-cet],
         [-Qunused-arguments],
         [-Wno-bool-operation],
+        [-Wno-tautological-bitwise-compare],
         [-Wno-parentheses-equality],
         [-Wno-sign-compare],
         [-Wno-uninitialized],
@@ -369,7 +379,12 @@ AC_SUBST(CFG_LDFLAGS_SRC)
 # The pthread library is required by tcmalloc, so add it if it exists. If it
 # does not, the tcmalloc check below will fail anyway, and linking against
 # pthreads is harmless otherwise.
+CFG_LIBS="$LIBS $CFG_LIBS"
 _MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lpthread)
+
+# Check libraries for MingW
+_MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lbcrypt)
+_MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lpsapi)
 
 # Check if tcmalloc is available based on --enable-tcmalloc
 _MY_LDLIBS_CHECK_IFELSE(

@@ -1,13 +1,16 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2003 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2003 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 `include "verilated.v"
 
 `define STRINGIFY(x) `"x`"
 `define ratio_error(a,b) (((a)>(b) ? ((a)-(b)) : ((b)-(a))) /(a))
 `define checkr(gotv,expv) do if (`ratio_error((gotv),(expv))>0.0001) begin $write("%%Error: %s:%0d:  got=%g exp=%g\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
 module t;
    integer file;
@@ -19,6 +22,7 @@ module t;
    reg [16*8:1]	letterz;
    real		r;
    string	s;
+   integer 	i;
 
    reg [7:0] 	v_a,v_b,v_c,v_d;
    reg [31:0] 	v_worda;
@@ -51,7 +55,16 @@ module t;
 
       $fdisplay(file, "[%0t] hello v=%x", $time, 32'h12345667);
       $fwrite(file, "[%0t] %s\n", $time, "Hello2");
+
+      i = 12;
+      $fwrite(file, "d: "); $fwrite(file, i); $fwrite(file, " "); $fdisplay(file, i);
+      $fwriteh(file, "h: "); $fwriteh(file, i); $fwriteh(file, " "); $fdisplayh(file, i);
+      $fwriteo(file, "o: "); $fwriteo(file, i); $fwriteo(file, " "); $fdisplayo(file, i);
+      $fwriteb(file, "b: "); $fwriteb(file, i); $fwriteb(file, " "); $fdisplayb(file, i);
+
       $fflush(file);
+      $fflush();
+      $fflush;
 
       $fclose(file);
 `ifdef verilator
@@ -64,6 +77,11 @@ module t;
 	 // The "r" is required so we get a FD not a MFD
          file = $fopen("DOES_NOT_EXIST","r");
 	 if (|file) $stop;	// Should not exist, IE must return 0
+	 // Check error function
+	 s = "";
+	 i = $ferror(file, s);
+	 `checkh(i, 2);
+	 `checks(s, "No such file or directory");
       end
 
       begin

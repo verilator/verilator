@@ -123,13 +123,13 @@ sub report {
     }
 
     my $nthreads = scalar keys %Threads;
-    $Global{cpus}{cpu_time} = {};
+    $Global{cpus} = {};
     foreach my $thread (keys %Threads) {
         # Make potentially multiple characters per column
         foreach my $start (keys %{$Threads{$thread}}) {
             my $cpu = $Threads{$thread}{$start}{cpu};
             my $elapsed = $Threads{$thread}{$start}{end} - $start;
-            $Global{cpus}{cpu_time}{$cpu} += $elapsed;
+            $Global{cpus}{$cpu}{cpu_time} += $elapsed;
         }
     }
 
@@ -538,9 +538,12 @@ verilator_gantt.vcd.
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2018-2020 by Wilson Snyder.  Verilator is free software; you can
-redistribute it and/or modify it under the terms of either the GNU Lesser
-General Public License Version 3 or the Perl Artistic License Version 2.0.
+Copyright 2018-2020 by Wilson Snyder. This program is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License Version 3 or the Perl Artistic License
+Version 2.0.
+
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 =head1 AUTHORS
 

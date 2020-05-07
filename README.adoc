@@ -4,7 +4,7 @@
 ifdef::env-github[]
 image:https://img.shields.io/badge/License-LGPL%20v3-blue.svg[license LGPLv3,link=https://www.gnu.org/licenses/lgpl-3.0]
 image:https://img.shields.io/badge/License-Artistic%202.0-0298c3.svg[license Artistic-2.0,link=https://opensource.org/licenses/Artistic-2.0]
-image:https://api.codacy.com/project/badge/Grade/48478c986f13400682ffe4a5e0939b3a[Code Quality,link=https://www.codacy.com/gh/verilator/verilator]
+image:https://api.codacy.com/project/badge/Grade/fa78caa433c84a4ab9049c43e9debc6f[Code Quality,link=https://www.codacy.com/gh/verilator/verilator]
 image:https://travis-ci.com/verilator/verilator.svg?branch=master[Build Status (Travis CI),link=https://travis-ci.com/verilator/verilator]
 endif::[]
 
@@ -22,10 +22,10 @@ endif::[]
 
 [cols="a,a",indent=0,frame="none"]
 |===
-^.^| *Welcome to Verilator, the fastest free Verilog HDL simulator.*
+^.^| *Welcome to Verilator, the fastest Verilog HDL simulator.*
 +++ <br/> +++ &bullet; Accepts synthesizable Verilog or SystemVerilog
 +++ <br/> +++ &bullet; Performs lint code-quality checks
-+++ <br/> +++ &bullet; Compiles into multithreaded {cpp}, SystemC, or (soon) {cpp}-under-Python
++++ <br/> +++ &bullet; Compiles into multithreaded {cpp}, or SystemC
 +++ <br/> +++ &bullet; Creates XML to front-end your own tools
 <.^|image:https://www.veripool.org/img/verilator_256_200_min.png[Logo,256,200]
 
@@ -56,7 +56,7 @@ endif::[]
 == What Verilator Does
 
 Verilator is invoked with parameters similar to GCC or Synopsys's VCS.  It
-"Verilates" the specified synthesizable Verilog or SystemVerilog code by
+"Verilates" the specified Verilog or SystemVerilog code by
 reading it, performing lint checks, and optionally inserting assertion
 checks and coverage-analysis points.  It outputs single- or multi-threaded
 .cpp and .h files, the "Verilated" code.
@@ -72,30 +72,30 @@ Verilator may not be the best choice if you are expecting a full featured
 replacement for NC-Verilog, VCS or another commercial Verilog simulator, or
 if you are looking for a behavioral Verilog simulator e.g. for a quick
 class project (we recommend http://iverilog.icarus.com[Icarus Verilog] for
-this.)  However, if you are looking for a path to migrate synthesizable
-Verilog to {cpp} or SystemC, and your team is comfortable writing just a
+this.)  However, if you are looking for a path to migrate SystemVerilog to
+{cpp} or SystemC, and your team is comfortable writing just a
 touch of {cpp} code, Verilator is the tool for you.
 
 == Performance
 
-Verilator does not simply convert Verilog HDL to {cpp} or SystemC.  Rather
-than only translate, Verilator compiles your code into a much faster
-optimized and optionally thread-partitioned model, which is in turn wrapped
-inside a {cpp}/SystemC/Python module.  The results are a compiled Verilog
-model that executes even on a single-thread over 10x faster than standalone
-SystemC, and on a single thread is about 100 times faster than interpreted
-Verilog simulators such as http://iverilog.icarus.com[Icarus
+Verilator does not simply convert Verilog HDL to {cpp} or SystemC.  Rather,
+Verilator compiles your code into a much faster optimized and optionally
+thread-partitioned model, which is in turn wrapped inside a
+{cpp}/SystemC/{cpp}-under-Python module.  The results are a compiled
+Verilog model that executes even on a single-thread over 10x faster than
+standalone SystemC, and on a single thread is about 100 times faster than
+interpreted Verilog simulators such as http://iverilog.icarus.com[Icarus
 Verilog]. Another 2-10x speedup might be gained from multithreading
 (yielding 200-1000x total over interpreted simulators).
 
-Verilator has typically similar or better performance versus the commercial
-Verilog simulators (Carbon Design Systems Carbonator, Modelsim, Cadence
-Incisive/NC-Verilog, Synopsys VCS, VTOC, and Pragmatic CVer/CVC). But,
-Verilator is free, so you can spend on computes rather than licenses. Thus
-Verilator gives you more cycles/dollar than anything else available.
+Verilator has typically similar or better performance versus the
+closed-source Verilog simulators (Carbon Design Systems Carbonator,
+Modelsim, Cadence Incisive/NC-Verilog, Synopsys VCS, VTOC, and Pragmatic
+CVer/CVC). But, Verilator is open-sourced, so you can spend on computes
+rather than licenses. Thus Verilator gives you the best cycles/dollar.
 
 For more information on how Verilator stacks up to some of the other
-commercial and free Verilog simulators, see the
+closed-sourced and open-sourced Verilog simulators, see the
 https://www.veripool.org/verilog_sim_benchmarks.html[Verilog Simulator
 Benchmarks].  (If you benchmark Verilator, please see the notes in the
 https://verilator.org/verilator_doc.pdf[Verilator manual (PDF)], and also
@@ -112,9 +112,11 @@ For more information:
 * https://verilator.org/verilator_doc.html[Verilator manual (HTML)],
 or https://verilator.org/verilator_doc.pdf[Verilator manual (PDF)]
 
+* https://github.com/verilator/verilator-announce[Subscribe to verilator announcements]
+
 * https://verilator.org/forum[Verilator forum]
 
-* https://verilator.org/issues[Verilator Issues]
+* https://verilator.org/issues[Verilator issues]
 
 == Support
 

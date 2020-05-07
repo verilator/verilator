@@ -4,6 +4,7 @@
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 `define is_near_real(a,b)  (( ((a)<(b)) ? (b)-(a) : (a)-(b)) < (((a)/(b))*0.0001))
 
@@ -81,6 +82,9 @@ module t (/*AUTOARG*/
       // bug
       r = $bitstoreal($realtobits(1.414));
       if (r != 1.414) $stop;
+      // bug
+      r = 32'bxz000_111;  // 7 accoding to IEEE
+      if (r != 7) $stop;
    end
 
    // Test loop

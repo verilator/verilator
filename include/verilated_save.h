@@ -3,14 +3,11 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2012-2020 by Wilson Snyder.  This program is free software;
-// you can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
-//
-// This is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-// for more details.
+// Copyright 2000-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
+// Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=============================================================================
 ///
@@ -49,6 +46,7 @@ protected:
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedSerialize);
+
 public:
     VerilatedSerialize() {
         m_isOpen = false;
@@ -57,7 +55,7 @@ public:
     }
     virtual ~VerilatedSerialize() {
         close();
-        if (m_bufp) { delete m_bufp; m_bufp=NULL; }
+        if (m_bufp) VL_DO_CLEAR(delete m_bufp, m_bufp = NULL);
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }
@@ -68,20 +66,20 @@ public:
         const vluint8_t* __restrict dp = (const vluint8_t* __restrict)datap;
         while (size) {
             bufferCheck();
-            size_t blk = size;  if (blk>bufferInsertSize()) blk = bufferInsertSize();
+            size_t blk = size;
+            if (blk > bufferInsertSize()) blk = bufferInsertSize();
             const vluint8_t* __restrict maxp = dp + blk;
-            while (dp < maxp) *m_cp++ = *dp++;
+            for (; dp < maxp; *m_cp++ = *dp++) {}
             size -= blk;
         }
         return *this;  // For function chaining
     }
+
 private:
     VerilatedSerialize& bufferCheck() VL_MT_UNSAFE_ONE {
         // Flush the write buffer if there's not enough space left for new information
         // We only call this once per vector, so we need enough slop for a very wide "b###" line
-        if (VL_UNLIKELY(m_cp > (m_bufp+(bufferSize()-bufferInsertSize())))) {
-            flush();
-        }
+        if (VL_UNLIKELY(m_cp > (m_bufp + (bufferSize() - bufferInsertSize())))) flush();
         return *this;  // For function chaining
     }
 };
@@ -110,6 +108,7 @@ protected:
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedDeserialize);
+
 public:
     VerilatedDeserialize() {
         m_isOpen = false;
@@ -119,7 +118,7 @@ public:
     }
     virtual ~VerilatedDeserialize() {
         close();
-        if (m_bufp) { delete m_bufp; m_bufp=NULL; }
+        if (m_bufp) VL_DO_CLEAR(delete m_bufp, m_bufp = NULL);
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }
@@ -127,12 +126,13 @@ public:
     virtual void close() VL_MT_UNSAFE_ONE { flush(); }
     virtual void flush() VL_MT_UNSAFE_ONE {}
     inline VerilatedDeserialize& read(void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
-        vluint8_t* __restrict dp = (vluint8_t* __restrict)datap;
+        vluint8_t* __restrict dp = static_cast<vluint8_t* __restrict>(datap);
         while (size) {
             bufferCheck();
-            size_t blk = size;  if (blk>bufferInsertSize()) blk = bufferInsertSize();
+            size_t blk = size;
+            if (blk > bufferInsertSize()) blk = bufferInsertSize();
             const vluint8_t* __restrict maxp = dp + blk;
-            while (dp < maxp) *dp++ = *m_cp++;
+            for (; dp < maxp; *dp++ = *m_cp++) {}
             size -= blk;
         }
         return *this;  // For function chaining
@@ -140,15 +140,15 @@ public:
     // Read a datum and compare with expected value
     VerilatedDeserialize& readAssert(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE;
     VerilatedDeserialize& readAssert(vluint64_t data) VL_MT_UNSAFE_ONE {
-        return readAssert(&data, sizeof(data)); }
+        return readAssert(&data, sizeof(data));
+    }
+
 private:
     bool readDiffers(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE;
     VerilatedDeserialize& bufferCheck() VL_MT_UNSAFE_ONE {
         // Flush the write buffer if there's not enough space left for new information
         // We only call this once per vector, so we need enough slop for a very wide "b###" line
-        if (VL_UNLIKELY((m_cp+bufferInsertSize()) > m_endp)) {
-            fill();
-        }
+        if (VL_UNLIKELY((m_cp + bufferInsertSize()) > m_endp)) fill();
         return *this;  // For function chaining
     }
 };
@@ -163,10 +163,12 @@ private:
 
 public:
     // CONSTRUCTORS
-    VerilatedSave() { m_fd = -1; }
+    VerilatedSave()
+        : m_fd(-1) {}
     virtual ~VerilatedSave() VL_OVERRIDE { close(); }
     // METHODS
-    void open(const char* filenamep) VL_MT_UNSAFE_ONE;  ///< Open the file; call isOpen() to see if errors
+    /// Open the file; call isOpen() to see if errors
+    void open(const char* filenamep) VL_MT_UNSAFE_ONE;
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
     virtual void close() VL_OVERRIDE VL_MT_UNSAFE_ONE;
     virtual void flush() VL_OVERRIDE VL_MT_UNSAFE_ONE;
@@ -182,11 +184,13 @@ private:
 
 public:
     // CONSTRUCTORS
-    VerilatedRestore() { m_fd = -1; }
+    VerilatedRestore()
+        : m_fd(-1) {}
     virtual ~VerilatedRestore() VL_OVERRIDE { close(); }
 
     // METHODS
-    void open(const char* filenamep) VL_MT_UNSAFE_ONE;  ///< Open the file; call isOpen() to see if errors
+    /// Open the file; call isOpen() to see if errors
+    void open(const char* filenamep) VL_MT_UNSAFE_ONE;
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
     virtual void close() VL_OVERRIDE VL_MT_UNSAFE_ONE;
     virtual void flush() VL_OVERRIDE VL_MT_UNSAFE_ONE {}
@@ -253,8 +257,8 @@ VerilatedSerialize& operator<<(VerilatedSerialize& os, VlAssocArray<T_Key, T_Val
     os << rhs.atDefault();
     vluint32_t len = rhs.size();
     os << len;
-    for (typename VlAssocArray<T_Key, T_Value>::const_iterator it = rhs.begin();
-         it != rhs.end(); ++it) {
+    for (typename VlAssocArray<T_Key, T_Value>::const_iterator it = rhs.begin(); it != rhs.end();
+         ++it) {
         T_Key index = it->first;  // Copy to get around const_iterator
         T_Value value = it->second;
         os << index << value;

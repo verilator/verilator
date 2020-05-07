@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -50,6 +46,15 @@ class EmitCInlines : EmitCBaseVisitor {
         v3Global.needHeavy(true);
         iterateChildren(nodep);
     }
+    virtual void visit(AstClass* nodep) VL_OVERRIDE {
+        v3Global.needC11(true);
+        v3Global.needHeavy(true);
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstDynArrayDType* nodep) VL_OVERRIDE {
+        v3Global.needHeavy(true);
+        iterateChildren(nodep);
+    }
     virtual void visit(AstQueueDType* nodep) VL_OVERRIDE {
         v3Global.needHeavy(true);
         iterateChildren(nodep);
@@ -62,7 +67,16 @@ class EmitCInlines : EmitCBaseVisitor {
         v3Global.needHeavy(true);
         iterateChildren(nodep);
     }
+    virtual void visit(AstCNew* nodep) VL_OVERRIDE {
+        if (v3Global.opt.savable()) v3error("Unsupported: --savable with dynamic new");
+        iterateChildren(nodep);
+    }
     virtual void visit(AstAtoN* nodep) VL_OVERRIDE {
+        v3Global.needHeavy(true);
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstDumpCtl* nodep) VL_OVERRIDE {
+        if (v3Global.opt.trace()) v3Global.needTraceDumper(true);
         v3Global.needHeavy(true);
         iterateChildren(nodep);
     }
@@ -87,25 +101,20 @@ class EmitCInlines : EmitCBaseVisitor {
         iterateChildren(nodep);
     }
 
-    // Default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
     //---------------------------------------
-    // ACCESSORS
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     explicit EmitCInlines(AstNetlist* nodep) {
         iterate(nodep);
-        if (v3Global.needHInlines()) {
-            emitInt();
-        }
+        if (v3Global.needHInlines()) emitInt();
     }
 };
 
 void EmitCInlines::emitInt() {
-    string filename = v3Global.opt.makeDir()+"/"+topClassName()+"__Inlines.h";
-    newCFile(filename, false/*slow*/, false/*source*/);
-    V3OutCFile hf (filename);
+    string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Inlines.h";
+    newCFile(filename, false /*slow*/, false /*source*/);
+    V3OutCFile hf(filename);
     m_ofp = &hf;
 
     ofp()->putsHeader();
@@ -126,6 +135,6 @@ void EmitCInlines::emitInt() {
 // EmitC class functions
 
 void V3EmitC::emitcInlines() {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    EmitCInlines syms (v3Global.rootp());
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    EmitCInlines(v3Global.rootp());
 }

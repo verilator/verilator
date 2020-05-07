@@ -3,13 +3,9 @@
 //
 // Copyright 2010-2011 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -45,11 +41,11 @@ using namespace std;
 #define TEST_MSG \
     if (0) printf
 
-unsigned int main_time = false;
-unsigned int callback_count = false;
-unsigned int callback_count_half = false;
-unsigned int callback_count_quad = false;
-unsigned int callback_count_strs = false;
+unsigned int main_time = 0;
+unsigned int callback_count = 0;
+unsigned int callback_count_half = 0;
+unsigned int callback_count_quad = 0;
+unsigned int callback_count_strs = 0;
 unsigned int callback_count_strs_max = 500;
 
 //======================================================================

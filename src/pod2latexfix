@@ -1,15 +1,11 @@
 #!/usr/bin/env perl
 ######################################################################
 #
-# Copyright 2002-2020 by Wilson Snyder.  Verilator is free software; you
+# Copyright 2002-2020 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 ######################################################################
 # DESCRIPTION: Edits pod2latex output
@@ -20,7 +16,7 @@ my $Opt_DistTitle = $ARGV[0] or die "%Error: No disttitle specified,";
 my $Opt_DistDate = $ARGV[1] or die "%Error: No distdate specified,";
 
 my $header =
-    ("\\usepackage[left=1.7in,right=1.7in,top=1.3in,bottom=1.3in]{geometry}\n"
+    ("\\usepackage[left=1.0in,right=1.0in,top=1.0in,bottom=1.0in]{geometry}\n"
      ."\\usepackage[pdftex,bookmarks=true,bookmarksnumbered=true,hypertexnames=false,breaklinks=true,colorlinks=true,linkcolor=blue]{hyperref}\n"
      ."\\usepackage{fancyhdr} \\pagestyle{fancy}\n"
      ."\\usepackage{graphicx}\n"

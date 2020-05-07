@@ -1,6 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2019 by Todd Strader.
+// SPDX-License-Identifier: CC0-1.0
 
 `define DRIVE(sig) \
 /* Just throw a bunch of bits at the input */ \
@@ -14,17 +15,17 @@ if (cyc > 0 && sig``_in != sig``_out) begin \
      $stop; \
        end
 
-module t (/*AUTOARG*/
-          // Inputs
-          clk
-          );
+module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
+                                    // Inputs
+                                    clk
+                                    );
    input clk;
 
    localparam last_cyc =
 `ifdef TEST_BENCHMARK
-        `TEST_BENCHMARK;
+                       `TEST_BENCHMARK;
 `else
-        10;
+   10;
 `endif
 
    genvar x;
@@ -55,6 +56,8 @@ module t (/*AUTOARG*/
          logic [3:0] [31:0] s4x32_in;
          logic [3:0] [31:0] s4x32_out;
 
+         wire 		    clk_en = crc[0];
+
          secret
            secret (
                    .accum_in,
@@ -77,6 +80,7 @@ module t (/*AUTOARG*/
                    .s129_out,
                    .s4x32_in,
                    .s4x32_out,
+                   .clk_en,
                    .clk);
 
          always @(posedge clk) begin
@@ -87,8 +91,6 @@ module t (/*AUTOARG*/
             cyc <= cyc + 1;
             crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
             accum_in <= accum_in + 5;
-            // 7 is the secret_value inside the secret module
-            accum_out_expect <= accum_in + accum_out_expect + 7;
             `DRIVE(s1)
             `DRIVE(s2)
             `DRIVE(s8)
@@ -120,6 +122,22 @@ module t (/*AUTOARG*/
                $write("*-* All Finished *-*\n");
                $finish;
             end
+         end
+
+         logic possibly_gated_clk;
+         if (GATED_CLK != 0) begin: yes_gated_clock
+            logic clk_en_latch /*verilator clock_enable*/;
+            /* verilator lint_off COMBDLY */
+            always_comb if (clk == '0) clk_en_latch <= clk_en;
+            /* verilator lint_on COMBDLY */
+            assign possibly_gated_clk = clk & clk_en_latch;
+         end else begin: no_gated_clock
+            assign possibly_gated_clk = clk;
+         end
+
+         always @(posedge possibly_gated_clk) begin
+            // 7 is the secret_value inside the secret module
+            accum_out_expect <= accum_in + accum_out_expect + 7;
          end
 
          always @(*) begin

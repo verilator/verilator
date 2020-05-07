@@ -1,17 +1,13 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2007 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2007 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
    clk
    );
-
-`ifdef verilator   // Otherwise need it in every module, including test, but that'll make a mess
-   timeunit 1ns;
-   timeprecision 1ns;
-`endif
 
    input clk;
    integer cyc; initial cyc=1;

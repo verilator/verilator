@@ -3,13 +3,9 @@
 //
 // Copyright 2010-2020 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 ///
@@ -32,15 +28,16 @@
 
 #include <deque>
 #include <map>
+#include <memory>
 #include <string>
 
 //===================================================================
 // String formatters (required by below containers)
 
-extern std::string VL_TO_STRING(CData obj);
-extern std::string VL_TO_STRING(SData obj);
-extern std::string VL_TO_STRING(IData obj);
-extern std::string VL_TO_STRING(QData obj);
+extern std::string VL_TO_STRING(CData lhs);
+extern std::string VL_TO_STRING(SData lhs);
+extern std::string VL_TO_STRING(IData lhs);
+extern std::string VL_TO_STRING(QData lhs);
 inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\""; }
 extern std::string VL_TO_STRING_W(int words, WDataInP obj);
 
@@ -86,8 +83,11 @@ public:
 
 template <std::size_t T_Words> class VlWide {
     WData m_storage[T_Words];
+
 public:
-    // Default constructor/destructor/copy are fine
+    // cppcheck-suppress uninitVar
+    VlWide() {}
+    ~VlWide() {}
     const WData& at(size_t index) const { return m_storage[index]; }
     WData& at(size_t index) { return m_storage[index]; }
     WData* data() { return &m_storage[0]; }
@@ -99,13 +99,11 @@ public:
 
 // Convert a C array to std::array reference by pointer magic, without copy.
 // Data type (second argument) is so the function template can automatically generate.
-template <std::size_t T_Words>
-VlWide<T_Words>& VL_CVT_W_A(WDataInP inp, const VlWide<T_Words>&) {
+template <std::size_t T_Words> VlWide<T_Words>& VL_CVT_W_A(WDataInP inp, const VlWide<T_Words>&) {
     return *((VlWide<T_Words>*)inp);
 }
 
-template <std::size_t T_Words>
-std::string VL_TO_STRING(const VlWide<T_Words>& obj) {
+template <std::size_t T_Words> std::string VL_TO_STRING(const VlWide<T_Words>& obj) {
     return VL_TO_STRING_W(T_Words, obj.data());
 }
 
@@ -118,6 +116,7 @@ template <class T_Key, class T_Value> class VlAssocArray {
 private:
     // TYPES
     typedef std::map<T_Key, T_Value> Map;
+
 public:
     typedef typename Map::const_iterator const_iterator;
 
@@ -162,7 +161,7 @@ public:
     int next(T_Key& indexr) const {
         typename Map::const_iterator it = m_map.find(indexr);
         if (VL_UNLIKELY(it == m_map.end())) return 0;
-        it++;
+        ++it;
         if (VL_UNLIKELY(it == m_map.end())) return 0;
         indexr = it->first;
         return 1;
@@ -191,8 +190,11 @@ public:
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(const T_Key& index) const {
         typename Map::iterator it = m_map.find(index);
-        if (it == m_map.end()) return m_defaultValue;
-        else return it->second;
+        if (it == m_map.end()) {
+            return m_defaultValue;
+        } else {
+            return it->second;
+        }
     }
     // For save/restore
     const_iterator begin() const { return m_map.begin(); }
@@ -221,7 +223,7 @@ void VL_READMEM_N(bool hex, int bits, const std::string& filename,
                   VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
     VlReadMem rmem(hex, bits, filename, start, end);
     if (VL_UNLIKELY(!rmem.isOpen())) return;
-    while (1) {
+    while (true) {
         QData addr;
         std::string data;
         if (rmem.get(addr /*ref*/, data /*ref*/)) {
@@ -245,15 +247,17 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
 }
 
 //===================================================================
-// Verilog queue container
+// Verilog queue and dynamic array container
 // There are no multithreaded locks on this; the base variable must
 // be protected by other means
 //
 // Bound here is the maximum size() allowed, e.g. 1 + SystemVerilog bound
+// For dynamic arrays it is always zero
 template <class T_Value, size_t T_MaxSize = 0> class VlQueue {
 private:
     // TYPES
     typedef std::deque<T_Value> Deque;
+
 public:
     typedef typename Deque::const_iterator const_iterator;
 
@@ -277,7 +281,24 @@ public:
     int size() const { return m_deque.size(); }
     // Clear array. Verilog: function void delete([input index])
     void clear() { m_deque.clear(); }
-    void erase(size_t index) { if (VL_LIKELY(index < m_deque.size())) m_deque.erase(index); }
+    void erase(size_t index) {
+        if (VL_LIKELY(index < m_deque.size())) m_deque.erase(index);
+    }
+
+    // Dynamic array new[] becomes a renew()
+    void renew(size_t size) {
+        clear();
+        m_deque.resize(size, atDefault());
+    }
+    // Dynamic array new[]() becomes a renew_copy()
+    void renew_copy(size_t size, const VlQueue<T_Value, T_MaxSize>& rhs) {
+        if (size == 0) {
+            clear();
+        } else {
+            *this = rhs;
+            m_deque.resize(size, atDefault());
+        }
+    }
 
     // function void q.push_front(value)
     void push_front(const T_Value& value) {
@@ -291,12 +312,16 @@ public:
     // function value_t q.pop_front();
     T_Value pop_front() {
         if (m_deque.empty()) return m_defaultValue;
-        T_Value v = m_deque.front(); m_deque.pop_front(); return v;
+        T_Value v = m_deque.front();
+        m_deque.pop_front();
+        return v;
     }
     // function value_t q.pop_back();
     T_Value pop_back() {
         if (m_deque.empty()) return m_defaultValue;
-        T_Value v = m_deque.back(); m_deque.pop_back(); return v;
+        T_Value v = m_deque.back();
+        m_deque.pop_back();
+        return v;
     }
 
     // Setting. Verilog: assoc[index] = v
@@ -304,17 +329,23 @@ public:
     // because we need to be able to insert only when the value is set
     T_Value& at(size_t index) {
         static T_Value s_throwAway;
+        // Needs to work for dynamic arrays, so does not use T_MaxSize
         if (VL_UNLIKELY(index >= m_deque.size())) {
             s_throwAway = atDefault();
             return s_throwAway;
+        } else {
+            return m_deque[index];
         }
-        else return m_deque[index];
     }
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(size_t index) const {
         static T_Value s_throwAway;
-        if (VL_UNLIKELY(index >= m_deque.size())) return atDefault();
-        else return m_deque[index];
+        // Needs to work for dynamic arrays, so does not use T_MaxSize
+        if (VL_UNLIKELY(index >= m_deque.size())) {
+            return atDefault();
+        } else {
+            return m_deque[index];
+        }
     }
     // function void q.insert(index, value);
     void insert(size_t index, const T_Value& value) {
@@ -338,9 +369,28 @@ public:
     }
 };
 
-template <class T_Value>
-std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
+template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
     return obj.to_string();
+}
+
+//===================================================================
+// Verilog class reference container
+// There are no multithreaded locks on this; the base variable must
+// be protected by other means
+//
+
+// clang-format off
+#if (defined(_MSC_VER) && _MSC_VER >= 1900) || (__cplusplus >= 201103L)
+# define VlClassRef std::shared_ptr
+#else
+# define VlClassRef VlClassRef__SystemVerilog_class_support_requires_a_C11_or_newer_compiler
+#endif
+// clang-format on
+
+template <class T>  // T typically of type VlClassRef<x>
+inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {
+    if (VL_UNLIKELY(!t)) Verilated::nullPointerError(filename, linenum);
+    return t;
 }
 
 //======================================================================
@@ -348,26 +398,27 @@ std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
 
 extern std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE;
 inline std::string VL_CVT_PACK_STR_NQ(QData lhs) VL_PURE {
-    WData lw[VL_WQ_WORDS_E]; VL_SET_WQ(lw, lhs);
+    WData lw[VL_WQ_WORDS_E];
+    VL_SET_WQ(lw, lhs);
     return VL_CVT_PACK_STR_NW(VL_WQ_WORDS_E, lw);
 }
-inline std::string VL_CVT_PACK_STR_NN(const std::string& lhs) VL_PURE {
-    return lhs;
-}
+inline std::string VL_CVT_PACK_STR_NN(const std::string& lhs) VL_PURE { return lhs; }
 inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
-    WData lw[VL_WQ_WORDS_E];  VL_SET_WI(lw, lhs);
+    WData lw[VL_WQ_WORDS_E];
+    VL_SET_WI(lw, lhs);
     return VL_CVT_PACK_STR_NW(1, lw);
 }
 inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs) VL_PURE {
     return lhs + rhs;
 }
-inline std::string VL_REPLICATEN_NNQ(int,int,int, const std::string& lhs, IData rep) VL_PURE {
-    std::string out; out.reserve(lhs.length() * rep);
-    for (unsigned times=0; times<rep; ++times) out += lhs;
+inline std::string VL_REPLICATEN_NNQ(int, int, int, const std::string& lhs, IData rep) VL_PURE {
+    std::string out;
+    out.reserve(lhs.length() * rep);
+    for (unsigned times = 0; times < rep; ++times) out += lhs;
     return out;
 }
-inline std::string VL_REPLICATEN_NNI(int obits,int lbits,int rbits,
-                                     const std::string& lhs, IData rep) VL_PURE {
+inline std::string VL_REPLICATEN_NNI(int obits, int lbits, int rbits, const std::string& lhs,
+                                     IData rep) VL_PURE {
     return VL_REPLICATEN_NNQ(obits, lbits, rbits, lhs, rep);
 }
 
@@ -375,6 +426,7 @@ inline IData VL_LEN_IN(const std::string& ld) { return ld.length(); }
 extern std::string VL_TOLOWER_NN(const std::string& ld);
 extern std::string VL_TOUPPER_NN(const std::string& ld);
 
+extern IData VL_FERROR_IN(IData fpi, std::string& outputr) VL_MT_SAFE;
 extern IData VL_FOPEN_NI(const std::string& filename, IData mode) VL_MT_SAFE;
 extern void VL_READMEM_N(bool hex, int bits, QData depth, int array_lsb,
                          const std::string& filename, void* memp, QData start,
@@ -382,11 +434,12 @@ extern void VL_READMEM_N(bool hex, int bits, QData depth, int array_lsb,
 extern void VL_WRITEMEM_N(bool hex, int bits, QData depth, int array_lsb,
                           const std::string& filename, const void* memp, QData start,
                           QData end) VL_MT_SAFE;
-extern IData VL_SSCANF_INX(int lbits, const std::string& ld,
-                           const char* formatp, ...) VL_MT_SAFE;
-extern void VL_SFORMAT_X(int obits_ignored, std::string& output,
-                         const char* formatp, ...) VL_MT_SAFE;
+extern IData VL_SSCANF_INX(int lbits, const std::string& ld, const char* formatp, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_X(int obits_ignored, std::string& output, const char* formatp,
+                         ...) VL_MT_SAFE;
 extern std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE;
+extern void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix,
+                               int width) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {
     WData rwp[2];  // WData must always be at least 2
@@ -440,5 +493,11 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 }
 
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
+
+//======================================================================
+// Dumping
+
+extern const char* vl_dumpctl_filenamep(bool setit = false,
+                                        const std::string& filename = "") VL_MT_SAFE;
 
 #endif  // Guard

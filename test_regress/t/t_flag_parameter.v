@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2016 by Wilson Snyder
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2016 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 //
 // Special cases of "string parameters" :
 // This table compares obtain results from big-3 simulators to Verilator
@@ -35,6 +36,10 @@ module t;
    parameter real22 = 0.1;
    parameter real31 = 0.1;
    parameter real32 = 0.1;
+   parameter real41 = 0.1;
+   parameter real42 = 0.1;
+   parameter real51 = 0.1;
+   parameter real52 = 0.1;
 
    parameter int11 = 1;
    parameter int12 = 1;
@@ -62,6 +67,10 @@ module t;
       `check(real22,400);
       `check(real31,20);
       `check(real32,20);
+      `check(real41,582.5);
+      `check(real42,582.5);
+      `check(real51,145.5);
+      `check(real52,145.5);
       `check(int11,16);
       `check(int12,16);
       `check(int21,16);

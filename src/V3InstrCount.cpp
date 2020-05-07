@@ -7,15 +7,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -56,15 +52,16 @@ private:
         uint32_t m_savedCount;
         AstNode* m_nodep;
         InstrCountVisitor* m_visitor;
+
     public:
         // CONSTRUCTORS
         VisitBase(InstrCountVisitor* visitor, AstNode* nodep)
-            : m_nodep(nodep), m_visitor(visitor) {
+            : m_nodep(nodep)
+            , m_visitor(visitor) {
             m_savedCount = m_visitor->startVisitBase(nodep);
         }
-        ~VisitBase() {
-            m_visitor->endVisitBase(m_savedCount, m_nodep);
-        }
+        ~VisitBase() { m_visitor->endVisitBase(m_savedCount, m_nodep); }
+
     private:
         VL_UNCOPYABLE(VisitBase);
     };
@@ -72,13 +69,12 @@ private:
 public:
     // CONSTRUCTORS
     InstrCountVisitor(AstNode* nodep, bool assertNoDups, std::ostream* osp)
-        : m_instrCount(0),
-          m_startNodep(nodep),
-          m_tracingCall(false),
-          m_inCFunc(false),
-          m_assertNoDups(assertNoDups),
-          m_osp(osp)
-        {
+        : m_instrCount(0)
+        , m_startNodep(nodep)
+        , m_tracingCall(false)
+        , m_inCFunc(false)
+        , m_assertNoDups(assertNoDups)
+        , m_osp(osp) {
         if (nodep) iterate(nodep);
     }
     virtual ~InstrCountVisitor() {}
@@ -102,7 +98,7 @@ private:
             // collisions in CFuncs.
             UASSERT_OBJ(!nodep->user5p(), nodep,
                         "Node originally inserted below logic vertex "
-                        <<static_cast<AstNode*>(nodep->user5p()));
+                            << static_cast<AstNode*>(nodep->user5p()));
             nodep->user5p(const_cast<void*>(reinterpret_cast<const void*>(m_startNodep)));
         }
 
@@ -114,13 +110,12 @@ private:
         return savedCount;
     }
     void endVisitBase(uint32_t savedCount, AstNode* nodep) {
-        UINFO(8, "cost "<<std::setw(6)<<std::left<<m_instrCount
-              <<"  "<<nodep<<endl);
+        UINFO(8, "cost " << std::setw(6) << std::left << m_instrCount << "  " << nodep << endl);
         markCost(nodep);
         m_instrCount += savedCount;
     }
     void markCost(AstNode* nodep) {
-        if (m_osp) nodep->user4(m_instrCount+1);  // Else don't mark to avoid writeback
+        if (m_osp) nodep->user4(m_instrCount + 1);  // Else don't mark to avoid writeback
     }
 
     // VISITORS
@@ -236,7 +231,7 @@ private:
         markCost(nodep);
         UASSERT_OBJ(nodep == m_startNodep, nodep, "Multiple actives, or not start node");
     }
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
         VisitBase vb(this, nodep);
         iterateChildren(nodep);
         m_tracingCall = true;
@@ -279,7 +274,8 @@ private:
 public:
     // CONSTRUCTORS
     InstrCountDumpVisitor(AstNode* nodep, std::ostream* osp)
-        : m_osp(osp), m_depth(0) {
+        : m_osp(osp)
+        , m_depth(0) {
         // No check for NULL output, so...
         UASSERT_OBJ(osp, nodep, "Don't call if not dumping");
         if (nodep) iterate(nodep);
@@ -288,13 +284,12 @@ public:
 
 private:
     // METHODS
-    string indent() { return string(m_depth, ':')+" "; }
+    string indent() { return string(m_depth, ':') + " "; }
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
         ++m_depth;
         if (unsigned costPlus1 = nodep->user4()) {
-            *m_osp <<"  "<<indent()
-                   <<"cost "<<std::setw(6)<<std::left<<(costPlus1-1)
-                   <<"  "<<nodep<<endl;
+            *m_osp << "  " << indent() << "cost " << std::setw(6) << std::left << (costPlus1 - 1)
+                   << "  " << nodep << endl;
             iterateChildren(nodep);
         }
         --m_depth;

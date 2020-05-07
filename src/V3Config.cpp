@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2010-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2010-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -41,9 +37,9 @@ template <typename T> class V3ConfigWildcardResolver {
 
     Map m_mapWildcard;  // Wildcard strings to entities
     Map m_mapResolved;  // Resolved strings to converged entities
-    typename Map::iterator m_last;  // Last access, will probably hit again
 public:
-    V3ConfigWildcardResolver() { m_last = m_mapResolved.end(); }
+    V3ConfigWildcardResolver() {}
+    ~V3ConfigWildcardResolver() {}
 
     /// Update into maps from other
     void update(const V3ConfigWildcardResolver& other) {
@@ -63,10 +59,6 @@ public:
     }
     // Access an entity and resolve wildcards that match it
     T* resolve(const string& name) {
-        // Lookup if recently accessed matches
-        if (VL_LIKELY(m_last != m_mapResolved.end()) && VL_LIKELY(m_last->first == name)) {
-            return &m_last->second;
-        }
         // Lookup if it was resolved before, typically not
         typename Map::iterator it = m_mapResolved.find(name);
         if (VL_UNLIKELY(it != m_mapResolved.end())) { return &it->second; }
@@ -217,7 +209,7 @@ public:
         }
     }
 
-    void applyBlock(AstBegin* nodep) {
+    void applyBlock(AstNodeBlock* nodep) {
         AstPragmaType pragma = AstPragmaType::COVERAGE_BLOCK_OFF;
         if (!nodep->unnamed()) {
             for (StringSet::const_iterator it = m_coverageOffBlocks.begin();
@@ -258,7 +250,7 @@ public:
         return (m_on > rh.m_on);
     }
 };
-std::ostream& operator<<(std::ostream& os, V3ConfigIgnoresLine rhs) {
+std::ostream& operator<<(std::ostream& os, const V3ConfigIgnoresLine& rhs) {
     return os << rhs.m_lineno << ", " << rhs.m_code << ", " << rhs.m_on;
 }
 
@@ -275,7 +267,7 @@ class V3ConfigFile {
 
     LineAttrMap m_lineAttrs;  // Atributes to line mapping
     IgnLines m_ignLines;  // Ignore line settings
-    Waivers m_waivers; // Waive messages
+    Waivers m_waivers;  // Waive messages
 
     struct {
         int lineno;  // Last line number
@@ -319,7 +311,7 @@ public:
         m_waivers.push_back(make_pair(code, match));
     }
 
-    void applyBlock(AstBegin* nodep) {
+    void applyBlock(AstNodeBlock* nodep) {
         // Apply to block at this line
         AstPragmaType pragma = AstPragmaType::COVERAGE_BLOCK_OFF;
         if (lineMatch(nodep->fileline()->lineno(), pragma)) {
@@ -335,12 +327,12 @@ public:
     inline void applyIgnores(FileLine* filelinep) {
         // HOT routine, called each parsed token line of this filename
         if (m_lastIgnore.lineno != filelinep->lineno()) {
-            // UINFO(9,"   ApplyIgnores for "<<filelinep->ascii()<<endl);
+            // UINFO(9, "   ApplyIgnores for " << filelinep->ascii() << endl);
             // Process all on/offs for lines up to and including the current line
             int curlineno = filelinep->lastLineno();
             for (; m_lastIgnore.it != m_ignLines.end(); ++m_lastIgnore.it) {
                 if (m_lastIgnore.it->m_lineno > curlineno) break;
-                // UINFO(9,"     Hit "<<*m_lastIt<<endl);
+                // UINFO(9, "     Hit " << *m_lastIt << endl);
                 filelinep->warnOn(m_lastIgnore.it->m_code, m_lastIgnore.it->m_on);
             }
             if (0 && debug() >= 9) {
@@ -354,7 +346,9 @@ public:
     bool waive(V3ErrorCode code, const string& match) {
         for (Waivers::const_iterator it = m_waivers.begin(); it != m_waivers.end(); ++it) {
             if (((it->first == code) || (it->first == V3ErrorCode::I_LINT))
-                && VString::wildmatch(match, it->second)) return true;
+                && VString::wildmatch(match, it->second)) {
+                return true;
+            }
         }
         return false;
     }
@@ -462,8 +456,8 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
     }
 }
 
-void V3Config::addWaiver(V3ErrorCode code, const string& filename, const string& match) {
-    V3ConfigResolver::s().files().at(filename).addWaiver(code, match);
+void V3Config::addWaiver(V3ErrorCode code, const string& filename, const string& message) {
+    V3ConfigResolver::s().files().at(filename).addWaiver(code, message);
 }
 
 void V3Config::applyCase(AstCase* nodep) {

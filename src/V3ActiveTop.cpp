@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // V3Active's Transformations:
@@ -46,11 +42,11 @@ private:
     //   AstNode::user()                bool. True if processed
     //  Each call to V3Const::constify
     //   AstNode::user4()               Used by V3Const::constify, called below
-    AstUser1InUse       m_inuser1;
+    AstUser1InUse m_inuser1;
 
     // STATE
-    AstTopScope*        m_topscopep;    // Top scope for adding sentrees under
-    SenTreeFinder       m_finder;       // Find global sentree's and add them
+    AstTopScope* m_topscopep;  // Top scope for adding sentrees under
+    SenTreeFinder m_finder;  // Find global sentree's and add them
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -65,16 +61,16 @@ private:
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         // Create required actives and add to module
         // We can start ordering at a module, or a scope
-        UINFO(4," MOD   "<<nodep<<endl);
+        UINFO(4, " MOD   " << nodep << endl);
         iterateChildren(nodep);
     }
     virtual void visit(AstActive* nodep) VL_OVERRIDE {
-        UINFO(4,"   ACTIVE "<<nodep<<endl);
-        V3Const::constifyExpensiveEdit(nodep);  // Remove duplicate clocks and such; sensesp() may change!
+        UINFO(4, "   ACTIVE " << nodep << endl);
+        // Remove duplicate clocks and such; sensesp() may change!
+        V3Const::constifyExpensiveEdit(nodep);
         AstSenTree* sensesp = nodep->sensesp();
         UASSERT_OBJ(sensesp, nodep, "NULL");
-        if (sensesp->sensesp()
-            && VN_IS(sensesp->sensesp(), SenItem)
+        if (sensesp->sensesp() && VN_IS(sensesp->sensesp(), SenItem)
             && VN_CAST(sensesp->sensesp(), SenItem)->isNever()) {
             // Never executing.  Kill it.
             UASSERT_OBJ(!sensesp->sensesp()->nextp(), nodep,
@@ -84,10 +80,9 @@ private:
         }
         // Copy combo tree to settlement tree with duplicated statements
         if (sensesp->hasCombo()) {
-            AstSenTree* newsentreep
-                = new AstSenTree(nodep->fileline(),
-                                 new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
-            AstActive* newp = new AstActive(nodep->fileline(),"settle", newsentreep);
+            AstSenTree* newsentreep = new AstSenTree(
+                nodep->fileline(), new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
+            AstActive* newp = new AstActive(nodep->fileline(), "settle", newsentreep);
             newp->sensesStorep(newsentreep);
             if (nodep->stmtsp()) newp->addStmtsp(nodep->stmtsp()->cloneTree(true));
             nodep->addNextHere(newp);
@@ -95,10 +90,10 @@ private:
         // Move the SENTREE for each active up to the global level.
         // This way we'll easily see what clock domains are identical
         AstSenTree* wantp = m_finder.getSenTree(nodep->fileline(), sensesp);
-        UINFO(4,"   lookdone\n");
+        UINFO(4, "   lookdone\n");
         if (wantp != sensesp) {
             // Move the active's contents to the other active
-            UINFO(4,"   merge active "<<sensesp<<" into "<<wantp<<endl);
+            UINFO(4, "   merge active " << sensesp << " into " << wantp << endl);
             if (nodep->sensesStorep()) {
                 UASSERT_OBJ(sensesp == nodep->sensesStorep(), nodep,
                             "sensesStore should have been deleted earlier if different");
@@ -111,9 +106,9 @@ private:
             nodep->sensesp(wantp);
         }
         // No need to do statements under it, they're already moved.
-        //iterateChildren(nodep);
+        // iterateChildren(nodep);
     }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
     virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
@@ -122,26 +117,18 @@ private:
     virtual void visit(AstAssignW* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc("Node should have been under ACTIVE");
-    }
     virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstFinal* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc("Node should have been deleted");
-    }
-    // Empty visitors, speed things up
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
-    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {}
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstVarScope*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
-    explicit ActiveTopVisitor(AstNetlist* nodep) {
-        m_topscopep = NULL;
+    explicit ActiveTopVisitor(AstNetlist* nodep)
+        : m_topscopep(NULL) {
         iterate(nodep);
     }
     virtual ~ActiveTopVisitor() {}
@@ -151,9 +138,7 @@ public:
 // Active class functions
 
 void V3ActiveTop::activeTopAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    {
-        ActiveTopVisitor visitor (nodep);
-    }  // Destruct before checking
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    { ActiveTopVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("activetop", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -43,11 +43,15 @@
 [0] %s=! %s= what! %s= hmmm!1234
 [0] %6s=:     !: %6s=: what!: %6s=: hmmm!1234:
 [0] %8s=:  sv-str:
+d:  12  12
+h: 00c 00c
+o: 014 014
+b: 000001100 000001100
 [0] hello, from a very long string. Percent %s are literally substituted in.
 hello, from a concatenated string.
 hello, from a concatenated format string [0].
-extra argument: 0000000000000000
-0000000000000000: pre argument
+extra argument:                    0
+                   0: pre argument
 [0] Embedded <#013> return
 [0] Embedded
 multiline

@@ -1,31 +1,28 @@
-%Error: t/t_class_unsup_bad.v:6: Unsupported: virtual interface
-virtual interface vi_t vi;
-^~~~~~~
-%Error: t/t_class_unsup_bad.v:7: Unsupported: virtual data type
-virtual vi_t vi2;
-^~~~~~~
-%Error: t/t_class_unsup_bad.v:12: Unsupported: classes
-class C #(parameter P=1);
-^~~~~
-%Error: t/t_class_unsup_bad.v:13: Unsupported: class parameters
-   localparam LOCPAR = 10;
-                         ^
-%Error: t/t_class_unsup_bad.v:16: Unsupported: 'local' class item
-   local int loc;
-   ^~~~~
-%Error: t/t_class_unsup_bad.v:24: Unsupported: virtual class member qualifier
-   virtual function void func_virtual; endfunction
-   ^~~~~~~
-%Error: t/t_class_unsup_bad.v:25: Unsupported: pure virtual class method
-   pure virtual function void func_pure_virtual; endfunction
-   ^~~~
-%Error: t/t_class_unsup_bad.v:25: syntax error, unexpected endfunction
-   pure virtual function void func_pure_virtual; endfunction
-                                                 ^~~~~~~~~~~
-%Error: t/t_class_unsup_bad.v:31: Unsupported: virtual classes
-virtual class VC;
-^~~~~~~
-%Error: t/t_class_unsup_bad.v:31: Unsupported: classes
-virtual class VC;
-        ^~~~~
+%Error: t/t_class_unsup_bad.v:7:1: Unsupported: virtual interface
+    7 | virtual interface vi_t vi;
+      | ^~~~~~~
+%Error: t/t_class_unsup_bad.v:8:1: Unsupported: virtual data type
+    8 | virtual vi_t vi2;
+      | ^~~~~~~
+%Error: t/t_class_unsup_bad.v:14:26: Unsupported: class parameters
+   14 |    localparam LOCPAR = 10;
+      |                          ^
+%Error: t/t_class_unsup_bad.v:25:4: Unsupported: virtual class member qualifier
+   25 |    virtual function void func_virtual; endfunction
+      |    ^~~~~~~
+%Error: t/t_class_unsup_bad.v:26:4: Unsupported: pure virtual class method
+   26 |    pure virtual function void func_pure_virtual;
+      |    ^~~~
+%Error: t/t_class_unsup_bad.v:27:4: Unsupported: automatic class member qualifier
+   27 |    automatic function void func_automatic; endfunction
+      |    ^~~~~~~~~
+%Error: t/t_class_unsup_bad.v:28:4: Unsupported: const class member qualifier
+   28 |    const function void func_const; endfunction
+      |    ^~~~~
+%Error: t/t_class_unsup_bad.v:29:4: Unsupported: extern class method prototype
+   29 |    extern task exttask;
+      |    ^~~~~~
+%Error: t/t_class_unsup_bad.v:32:1: Unsupported: virtual classes
+   32 | virtual class VC;
+      | ^~~~~~~
 %Error: Exiting due to

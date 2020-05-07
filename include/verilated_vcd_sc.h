@@ -1,16 +1,11 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
-//
-// Copyright 2001-2020 by Wilson Snyder.  This program is free software;
-// you can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
-//
-// This is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-// for more details.
+// Copyright 2001-2020 by Wilson Snyder. This program is free software; you can
+// redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
+// Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=============================================================================
 ///
@@ -36,44 +31,42 @@
 /// This class is passed to the SystemC simulation kernel, just like a
 /// documented SystemC trace format.
 
-class VerilatedVcdSc
-    : sc_trace_file
-    , public VerilatedVcdC
-{
+class VerilatedVcdSc : sc_trace_file, public VerilatedVcdC {
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcdSc);
+
 public:
     VerilatedVcdSc() {
         sc_get_curr_simcontext()->add_trace_file(this);
-# if (SYSTEMC_VERSION>=20060505)
+#if (SYSTEMC_VERSION >= 20060505)
         // We want to avoid a depreciated warning, but still be back compatible.
         // Turning off the message just for this still results in an
         // annoying "to turn off" message.
-        sc_time t1sec(1,SC_SEC);
-        if (t1sec.to_default_time_units()!=0) {
-            sc_time tunits(1.0/t1sec.to_default_time_units(),SC_SEC);
+        sc_time t1sec(1, SC_SEC);
+        if (t1sec.to_default_time_units() != 0) {
+            sc_time tunits(1.0 / t1sec.to_default_time_units(), SC_SEC);
             spTrace()->set_time_unit(tunits.to_string());
         }
         spTrace()->set_time_resolution(sc_get_time_resolution().to_string());
-# elif (SYSTEMC_VERSION>20011000)
+#elif (SYSTEMC_VERSION > 20011000)
         // To confuse matters 2.1.beta returns a char* here, while 2.1.v1 returns a std::string
         // we allow both flavors with overloaded set_time_* functions.
         spTrace()->set_time_unit(sc_get_default_time_unit().to_string());
         spTrace()->set_time_resolution(sc_get_time_resolution().to_string());
-# endif
+#endif
     }
-    virtual ~VerilatedVcdSc() {}
+    virtual ~VerilatedVcdSc() { close(); }
 
     // METHODS
     /// Called by SystemC simulate()
     virtual void cycle(bool delta_cycle) {
-# if (SYSTEMC_VERSION>20011000)
+#if (SYSTEMC_VERSION > 20011000)
         if (!delta_cycle) { this->dump(sc_time_stamp().to_double()); }
-# else
+#else
         // VCD files must have integer timestamps, so we write all times in
         // increments of time_resolution
         if (!delta_cycle) { this->dump(sc_time_stamp().to_double()); }
-# endif
+#endif
     }
 
 private:
@@ -83,26 +76,26 @@ private:
     // Cadence Incisive has these as abstract functions so we must create them
     virtual void set_time_unit(int exponent10_seconds) {}  // deprecated
 #endif
-#if defined(NC_SYSTEMC) || (SYSTEMC_VERSION>=20111100)
+#if defined(NC_SYSTEMC) || (SYSTEMC_VERSION >= 20111100)
     virtual void set_time_unit(double v, sc_time_unit tu) {}
 #endif
 
-
 //--------------------------------------------------
-# if (SYSTEMC_VERSION>=20050714)
+#if (SYSTEMC_VERSION >= 20050714)
     // SystemC 2.1.v1
-# define DECL_TRACE_METHOD_A(tp) \
-    virtual void trace(const tp& object, const std::string& name);
+    // clang-format off
+# define DECL_TRACE_METHOD_A(tp) virtual void trace(const tp& object, const std::string& name);
 # define DECL_TRACE_METHOD_B(tp) \
     virtual void trace(const tp& object, const std::string& name, int width);
 
     virtual void write_comment(const std::string&);
     virtual void trace(const unsigned int&, const std::string&, const char**);
 
-#if (SYSTEMC_VERSION>=20171012)
+    // Formatting matches that of sc_trace.h
+# if (SYSTEMC_VERSION >= 20171012)
     DECL_TRACE_METHOD_A( sc_event )
     DECL_TRACE_METHOD_A( sc_time )
-#endif
+# endif
 
     DECL_TRACE_METHOD_A( bool )
     DECL_TRACE_METHOD_A( sc_dt::sc_bit )
@@ -112,9 +105,9 @@ private:
     DECL_TRACE_METHOD_B( unsigned short )
     DECL_TRACE_METHOD_B( unsigned int )
     DECL_TRACE_METHOD_B( unsigned long )
-#ifdef SYSTEMC_64BIT_PATCHES
+# ifdef SYSTEMC_64BIT_PATCHES
     DECL_TRACE_METHOD_B( unsigned long long)
-#endif
+# endif
     DECL_TRACE_METHOD_B( char )
     DECL_TRACE_METHOD_B( short )
     DECL_TRACE_METHOD_B( int )
@@ -136,12 +129,13 @@ private:
 
     DECL_TRACE_METHOD_A( sc_dt::sc_bv_base )
     DECL_TRACE_METHOD_A( sc_dt::sc_lv_base )
+    // clang-format on
 
 //--------------------------------------------------
-# elif (SYSTEMC_VERSION>20011000)
+#elif (SYSTEMC_VERSION > 20011000)
     // SystemC 2.0.1
-# define DECL_TRACE_METHOD_A(tp) \
-    virtual void trace(const tp& object, const sc_string& name);
+    // clang-format off
+# define DECL_TRACE_METHOD_A(tp) virtual void trace(const tp& object, const sc_string& name);
 # define DECL_TRACE_METHOD_B(tp) \
     virtual void trace(const tp& object, const sc_string& name, int width);
 
@@ -157,13 +151,13 @@ private:
     DECL_TRACE_METHOD_B( unsigned short )
     DECL_TRACE_METHOD_B( unsigned int )
     DECL_TRACE_METHOD_B( unsigned long )
-#ifdef SYSTEMC_64BIT_PATCHES
+# ifdef SYSTEMC_64BIT_PATCHES
     DECL_TRACE_METHOD_B( unsigned long long)
-#endif
-#if (SYSTEMC_VERSION>20041000)
+# endif
+# if (SYSTEMC_VERSION > 20041000)
     DECL_TRACE_METHOD_B( unsigned long long)
     DECL_TRACE_METHOD_B( long long)
-#endif
+# endif
     DECL_TRACE_METHOD_B( char )
     DECL_TRACE_METHOD_B( short )
     DECL_TRACE_METHOD_B( int )
@@ -180,12 +174,13 @@ private:
     DECL_TRACE_METHOD_A( sc_fxnum_fast )
     DECL_TRACE_METHOD_A( sc_bv_base )
     DECL_TRACE_METHOD_A( sc_lv_base )
+    // clang-format on
 
 //--------------------------------------------------
-# else
+#else
     // SystemC 1.2.1beta
-# define DECL_TRACE_METHOD_A(tp) \
-    virtual void trace(const tp& object, const sc_string& name);
+    // clang-format off
+# define DECL_TRACE_METHOD_A(tp) virtual void trace(const tp& object, const sc_string& name);
 # define DECL_TRACE_METHOD_B(tp) \
     virtual void trace(const tp& object, const sc_string& name, int width);
 
@@ -218,9 +213,10 @@ private:
     DECL_TRACE_METHOD_A( sc_bv_ns::sc_bv_base )
     DECL_TRACE_METHOD_A( sc_bv_ns::sc_lv_base )
 # endif
+    // clang-format on
 
-# undef DECL_TRACE_METHOD_A
-# undef DECL_TRACE_METHOD_B
+#undef DECL_TRACE_METHOD_A
+#undef DECL_TRACE_METHOD_B
 };
 
 #endif  // Guard
