@@ -912,10 +912,17 @@ bool V3Number::isFourState() const {
     }
     return false;
 }
-bool V3Number::isUnknown() const {
+bool V3Number::isAnyX() const {
     if (isDouble() || isString()) return false;
     for (int bit = 0; bit < width(); bit++) {
         if (bitIsX(bit)) return true;
+    }
+    return false;
+}
+bool V3Number::isAnyXZ() const {
+    if (isDouble() || isString()) return false;
+    for (int bit = 0; bit < width(); bit++) {
+        if (bitIsX(bit) || bitIsZ(bit)) return true;
     }
     return false;
 }
@@ -1099,7 +1106,7 @@ V3Number& V3Number::opCountOnes(const V3Number& lhs) {
 }
 V3Number& V3Number::opIsUnknown(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
-    return setSingleBits(lhs.isUnknown());
+    return setSingleBits(lhs.isAnyXZ());
 }
 V3Number& V3Number::opOneHot(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
