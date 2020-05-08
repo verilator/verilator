@@ -1918,7 +1918,7 @@ public:
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "") const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
-    string vlPropInit() const;  // Return VerilatorVarProps initializer
+    string vlPropDecl(string propName) const;  // Return VerilatorVarProps declaration
     void combineType(AstVarType type);
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     // op1 = Range of variable
@@ -2078,7 +2078,7 @@ public:
 private:
     class VlArgTypeRecursed;
     VlArgTypeRecursed vlArgTypeRecurse(bool forFunc, const AstNodeDType* dtypep,
-                                       bool arrayed) const;
+                                       bool compound = false) const;
 };
 
 class AstDefParam : public AstNode {

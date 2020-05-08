@@ -875,12 +875,17 @@ private:
                     if (args != "") args += ", ";
 
                     if (portp->isDpiOpenArray()) {
+                        AstNodeDType* dtypep = portp->dtypep()->skipRefp();
+                        if (VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType)) {
+                            v3fatalSrc("Passing dynamic array or queue as actual argument to DPI "
+                                       "open array is not yet supported");
+                        }
+
                         // Ideally we'd make a table of variable
                         // characteristics, and reuse it wherever we can
                         // At least put them into the module's CTOR as static?
                         string propName = portp->name() + "__Vopenprops";
-                        string propCode = ("static const VerilatedVarProps " + propName + "("
-                                           + portp->vlPropInit() + ");\n");
+                        string propCode = portp->vlPropDecl(propName);
                         cfuncp->addStmtsp(new AstCStmt(portp->fileline(), propCode));
                         //
                         // At runtime we need the svOpenArrayHandle to
