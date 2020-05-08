@@ -435,26 +435,27 @@ string AstVar::vlEnumDir() const {
 string AstVar::vlPropDecl(string propName) const {
     string out;
 
-    std::vector<int> unpackedDims;
+    std::vector<int> ulims;  // Unpacked dimension limits
     for (const AstNodeDType* dtp = dtypep(); dtp;) {
         dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
         if (const AstNodeArrayDType* const adtypep = VN_CAST_CONST(dtp, NodeArrayDType)) {
-            unpackedDims.push_back(adtypep->declRange().left());
-            unpackedDims.push_back(adtypep->declRange().right());
+            ulims.push_back(adtypep->declRange().left());
+            ulims.push_back(adtypep->declRange().right());
             dtp = adtypep->subDTypep();
         } else {
             break;  // AstBasicDType - nothing below
         }
     }
 
-    if (!unpackedDims.empty()) {
-        out += "static const int " + propName + "__unpackedDims[";
-        out += cvtToStr(unpackedDims.size() / 2);
-        out += "][2] = {";
-        for (std::vector<int>::const_iterator it = unpackedDims.begin();
-             it != unpackedDims.end();) {
-            if (it != unpackedDims.begin()) { out += ", "; }
-            out += "{" + cvtToStr(*it++) + ", " + cvtToStr(*it++) + "}";
+    if (!ulims.empty()) {
+        out += "static const int " + propName + "__ulims[";
+        out += cvtToStr(ulims.size());
+        out += "] = {";
+        std::vector<int>::const_iterator it = ulims.begin();
+        out += cvtToStr(*it);
+        while (++it != ulims.end()) {
+            out += ", ";
+            out += cvtToStr(*it);
         }
         out += "};\n";
     }
@@ -470,10 +471,10 @@ string AstVar::vlPropDecl(string propName) const {
         out += ", " + cvtToStr(bdtypep->right());
     }
 
-    if (!unpackedDims.empty()) {
+    if (!ulims.empty()) {
         out += ", VerilatedVarProps::Unpacked()";
-        out += ", " + cvtToStr(unpackedDims.size() / 2);
-        out += ", " + propName + "__unpackedDims";
+        out += ", " + cvtToStr(ulims.size() / 2);
+        out += ", " + propName + "__ulims";
     }
 
     out += ");\n";

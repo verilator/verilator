@@ -81,10 +81,10 @@ class VerilatedVarProps {
     const int m_udims;  // Unpacked dimensions
     VerilatedRange m_packed;  // Packed array range
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
-    void initUnpacked(const int (*ulims)[2]) {
+    void initUnpacked(const int* ulims) {
         for (int i = 0; i < m_udims; ++i) {
-            const int left = ulims ? ulims[i][0] : 0;
-            const int right = ulims ? ulims[i][1] : 0;
+            const int left = ulims ? ulims[2 * i + 0] : 0;
+            const int right = ulims ? ulims[2 * i + 1] : 0;
             m_unpacked.push_back(VerilatedRange(left, right));
         }
     }
@@ -109,8 +109,7 @@ public:
         , m_vlflags(VerilatedVarFlags(vlflags))
         , m_pdims(0)
         , m_udims(0) {}
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims,
-                      const int (*ulims)[2])
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims)
         : m_magic(MAGIC)
         , m_vltype(vltype)
         , m_vlflags(VerilatedVarFlags(vlflags))
@@ -128,7 +127,7 @@ public:
         , m_udims(0)
         , m_packed(pl, pr) {}
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr, Unpacked,
-                      int udims, const int (*ulims)[2])
+                      int udims, const int* ulims)
         : m_magic(MAGIC)
         , m_vltype(vltype)
         , m_vlflags(VerilatedVarFlags(vlflags))
