@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix +: and -: on unpacked arrays. (#2304) [engr248]
 
+****  Fix $isunknown with constant Z's.
+
 
 * Verilator 4.034 2020-05-03
 

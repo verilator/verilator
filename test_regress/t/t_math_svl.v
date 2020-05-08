@@ -135,6 +135,13 @@ module t (/*AUTOARG*/
       end
    end
 
+   initial begin
+      if ($isunknown(4'b000x) !== 1'b1) $stop;
+      if ($isunknown(4'b000z) !== 1'b1) $stop;
+      if ($isunknown(4'b00xz) !== 1'b1) $stop;
+      if ($isunknown(4'b0000) !== 1'b0) $stop;
+   end
+
    final begin
       $write("Goodbye world, at cycle %0d\n", cyc);
    end
