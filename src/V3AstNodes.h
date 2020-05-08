@@ -2886,14 +2886,18 @@ public:
     AstNode* rhsp() const { return op2p(); }
 };
 
-class AstUnbounded : public AstNode {
+class AstUnbounded : public AstNodeMath {
     // A $ in the parser, used for unbounded and queues
+    // Due to where is used, treated as Signed32
 public:
     explicit AstUnbounded(FileLine* fl)
-        : ASTGEN_SUPER(fl) {}
+        : ASTGEN_SUPER(fl) {
+        dtypeSetSigned32();
+    }
     ASTNODE_NODE_FUNCS(Unbounded)
     virtual string emitVerilog() { return "$"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return true; }
 };
 
 //######################################################################
@@ -5444,6 +5448,24 @@ public:
     ASTNODE_NODE_FUNCS(IsUnknown)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opIsUnknown(lhs); }
     virtual string emitVerilog() { return "%f$isunknown(%l)"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool sizeMattersLhs() const { return false; }
+};
+class AstIsUnbounded : public AstNodeUniop {
+    // True if is unmbounded ($)
+public:
+    AstIsUnbounded(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {
+        dtypeSetLogicBool();
+    }
+    ASTNODE_NODE_FUNCS(IsUnbounded)
+    virtual void numberOperate(V3Number& out, const V3Number&) {
+        // Any constant isn't unbounded
+        out.setZero();
+    }
+    virtual string emitVerilog() { return "%f$isunbounded(%l)"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return false; }

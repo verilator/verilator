@@ -1045,7 +1045,18 @@ private:
         }
     }
     virtual void visit(AstUnbounded* nodep) VL_OVERRIDE {
-        nodep->v3error("Unsupported/illegal unbounded ('$') in this context.");
+        nodep->dtypeSetSigned32();  // Used in int context
+        if (!VN_IS(nodep->backp(), IsUnbounded)
+            && !(VN_IS(nodep->backp(), Var)
+                 && VN_CAST(nodep->backp(), Var)->isParam())) {
+            nodep->v3error("Unsupported/illegal unbounded ('$') in this context.");
+        }
+    }
+    virtual void visit(AstIsUnbounded* nodep) VL_OVERRIDE {
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
+            nodep->dtypeSetLogicBool();
+        }
     }
     virtual void visit(AstUCFunc* nodep) VL_OVERRIDE {
         // Give it the size the user wants.

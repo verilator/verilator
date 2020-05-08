@@ -595,6 +595,7 @@ class AstSenTree;
 %token<fl>		yD_HYPOT	"$hypot"
 %token<fl>		yD_INCREMENT	"$increment"
 %token<fl>		yD_INFO		"$info"
+%token<fl>		yD_ISUNBOUNDED	"$isunbounded"
 %token<fl>		yD_ISUNKNOWN	"$isunknown"
 %token<fl>		yD_ITOR		"$itor"
 %token<fl>		yD_LEFT		"$left"
@@ -3408,7 +3409,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_HYPOT '(' expr ',' expr ')'		{ $$ = new AstHypotD($1,$3,$5); }
 	|	yD_INCREMENT '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_INCREMENT,$3,NULL); }
 	|	yD_INCREMENT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_INCREMENT,$3,$5); }
-	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1,$3); }
+	|	yD_ISUNBOUNDED '(' expr ')'		{ $$ = new AstIsUnbounded($1, $3); }
+	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1, $3); }
 	|	yD_ITOR '(' expr ')'			{ $$ = new AstIToRD($1,$3); }
 	|	yD_LEFT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_LEFT,$3,NULL); }
 	|	yD_LEFT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_LEFT,$3,$5); }

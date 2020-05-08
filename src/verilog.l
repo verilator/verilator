@@ -441,6 +441,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$high"               { FL; return yD_HIGH; }
   "$increment"          { FL; return yD_INCREMENT; }
   "$info"               { FL; return yD_INFO; }
+  "$isunbounded"        { FL; return yD_ISUNBOUNDED; }
   "$isunknown"          { FL; return yD_ISUNKNOWN; }
   "$left"               { FL; return yD_LEFT; }
   "$low"                { FL; return yD_LOW; }

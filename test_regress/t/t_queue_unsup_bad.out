@@ -34,10 +34,6 @@
                                    : ... In instance t
    38 |       q = {q[0], q[2:$]};   
       |                      ^
-%Error: t/t_queue_unsup_bad.v:38:22: Expecting expression to be constant, but can't convert a UNBOUNDED to constant.
-                                   : ... In instance t
-   38 |       q = {q[0], q[2:$]};   
-      |                      ^
 %Error: t/t_queue_unsup_bad.v:38:22: First value of [a:b] isn't a constant, maybe you want +: or -:
                                    : ... In instance t
    38 |       q = {q[0], q[2:$]};   

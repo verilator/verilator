@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.035 devel
 
+****  Support $isunbounded and parameter $. (#2104)
+
 ****  Fix FST tracing of little bit endian signals. [Geza Lore]
 
 ****  Fix +: and -: on unpacked arrays. (#2304) [engr248]

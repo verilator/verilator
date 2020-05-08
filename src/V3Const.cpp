@@ -1629,6 +1629,11 @@ private:
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     did = true;
+                } else if (nodep->varp()->isParam() && VN_IS(valuep, Unbounded)) {
+                    AstNode* newp = valuep->cloneTree(false);
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    did = true;
                 }
             }
         }
@@ -2141,6 +2146,7 @@ private:
     }
     virtual void visit(AstInitArray* nodep) VL_OVERRIDE { iterateChildren(nodep); }
     virtual void visit(AstInitItem* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstUnbounded* nodep) VL_OVERRIDE { iterateChildren(nodep); }
     // These are converted by V3Param.  Don't constify as we don't want the
     // from() VARREF to disappear, if any.
     // If output of a presel didn't get consted, chances are V3Param didn't visit properly
@@ -2531,6 +2537,9 @@ private:
     TREEOPC("AstPutcN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
     TREEOPC("AstSubstrN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
     TREEOPC("AstCvtPackString{$lhsp.castConst}", "replaceConstString(nodep, VN_CAST(nodep->lhsp(), Const)->num().toString())");
+    // Custom
+    // Implied by AstIsUnbounded::numberOperate: V("AstIsUnbounded{$lhsp.castConst}", "replaceNum(nodep, 0)");
+    TREEOPV("AstIsUnbounded{$lhsp.castUnbounded}", "replaceNum(nodep, 1)");
     // clang-format on
 
     // Possible futures:
