@@ -105,8 +105,6 @@ public:
 };
 #endif
 
-class VerilatedTraceCallInfo;
-
 //=============================================================================
 // VerilatedTrace
 
@@ -114,13 +112,34 @@ class VerilatedTraceCallInfo;
 // implementations in the format specific derived class, which must be passed
 // as the type parameter T_Derived
 template <class T_Derived> class VerilatedTrace {
-private:
+public:
     //=========================================================================
     // Generic tracing internals
 
+    typedef void (*initCb_t)(void*, T_Derived*, uint32_t);  // Type of init callbacks
+    typedef void (*dumpCb_t)(void*, T_Derived*);  // Type of all but init callbacks
+
+private:
+    struct CallbackRecord {
+        const union {
+            initCb_t m_initCb;  // The callback function
+            dumpCb_t m_dumpCb;  // The callback function
+        };
+        void* const m_userp;  // The user pointer to pass to the callback (the symbol table)
+        CallbackRecord(initCb_t cb, void* userp)
+            : m_initCb(cb)
+            , m_userp(userp) {}
+        CallbackRecord(dumpCb_t cb, void* userp)
+            : m_dumpCb(cb)
+            , m_userp(userp) {}
+    };
+
     vluint32_t* m_sigs_oldvalp;  ///< Old value store
     vluint64_t m_timeLastDump;  ///< Last time we did a dump
-    std::vector<VerilatedTraceCallInfo*> m_callbacks;  ///< Routines to perform dumping
+    std::vector<CallbackRecord> m_initCbs;  ///< Routines to initialize traciong
+    std::vector<CallbackRecord> m_fullCbs;  ///< Routines to perform full dump
+    std::vector<CallbackRecord> m_chgCbs;  ///< Routines to perform incremental dump
+    std::vector<CallbackRecord> m_cleanupCbs;  ///< Routines to call at the end of dump
     bool m_fullDump;  ///< Whether a full dump is required on the next call to 'dump'
     vluint32_t m_nextCode;  ///< Next code number to assign
     vluint32_t m_numSignals;  ///< Number of distinct signals
@@ -129,6 +148,8 @@ private:
     char m_scopeEscape;
     double m_timeRes;  ///< Time resolution (ns/ms etc)
     double m_timeUnit;  ///< Time units (ns/ms etc)
+
+    void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord& cbRec);
 
     // Equivalent to 'this' but is of the sub-type 'T_Derived*'. Use 'self()->'
     // to access duck-typed functions to avoid a virtual function call.
@@ -232,12 +253,12 @@ public:
     //=========================================================================
     // Non-hot path internal interface to Verilator generated code
 
-    typedef void (*callback_t)(T_Derived* tracep, void* userthis, vluint32_t code);
+    void addInitCb(initCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
+    void addFullCb(dumpCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
+    void addChgCb(dumpCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
+    void addCleanupCb(dumpCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
 
     void changeThread() { m_assertOne.changeThread(); }
-
-    void addCallback(callback_t initcb, callback_t fullcb, callback_t changecb,
-                     void* userthis) VL_MT_UNSAFE_ONE;
 
     void module(const std::string& name) VL_MT_UNSAFE_ONE {
         m_assertOne.check();

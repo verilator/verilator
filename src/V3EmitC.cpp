@@ -3140,13 +3140,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     emitIntFuncDecls(modp, true);
 
     if (v3Global.opt.trace() && !VN_IS(modp, Class)) {
-        ofp()->putsPrivate(false);  // public:
-        puts("static void " + protect("traceInit") + "(" + v3Global.opt.traceClassBase()
-             + "* vcdp, void* userthis, uint32_t code);\n");
-        puts("static void " + protect("traceFull") + "(" + v3Global.opt.traceClassBase()
-             + "* vcdp, void* userthis, uint32_t code);\n");
-        puts("static void " + protect("traceChg") + "(" + v3Global.opt.traceClassBase()
-             + "* vcdp, void* userthis, uint32_t code);\n");
+        ofp()->putsPrivate(true);  // private:
+        puts("static void " + protect("traceInit") + "(void* userp, "
+             + v3Global.opt.traceClassBase() + "* tracep, uint32_t code) VL_ATTR_COLD;\n");
     }
     if (v3Global.opt.savable()) {
         ofp()->putsPrivate(false);  // public:
@@ -3376,53 +3372,26 @@ class EmitCTrace : EmitCStmts {
 
         puts("void " + topClassName() + "::trace(");
         puts(v3Global.opt.traceClassBase() + "C* tfp, int, int) {\n");
-        puts("tfp->spTrace()->addCallback("
-             "&"
-             + topClassName() + "::" + protect("traceInit") + ", &" + topClassName()
-             + "::" + protect("traceFull") + ", &" + topClassName() + "::" + protect("traceChg")
-             + ", this);\n");
+        puts("tfp->spTrace()->addInitCb(&" + protect("traceInit") + ", __VlSymsp);\n");
+        puts(protect("traceRegister") + "(tfp->spTrace());\n");
         puts("}\n");
+        puts("\n");
         splitSizeInc(10);
 
-        puts("void " + topClassName() + "::" + protect("traceInit") + "("
-             + v3Global.opt.traceClassBase() + "* vcdp, void* userthis, uint32_t code) {\n");
-        putsDecoration("// Callback from vcd->open()\n");
-        puts(topClassName() + "* t = (" + topClassName() + "*)userthis;\n");
-        puts(EmitCBaseVisitor::symClassVar() + " = t->__VlSymsp;  // Setup global symbol table\n");
+        puts("void " + topClassName() + "::" + protect("traceInit") + "(void* userp, "
+             + v3Global.opt.traceClassBase() + "* tracep, uint32_t code) {\n");
+        putsDecoration("// Callback from tracep->open()\n");
+        puts(symClassVar() + " = static_cast<" + symClassName() + "*>(userp);\n");
         puts("if (!Verilated::calcUnusedSigs()) {\n");
         puts("VL_FATAL_MT(__FILE__, __LINE__, __FILE__,\n");
         puts("            \"Turning on wave traces requires Verilated::traceEverOn(true) call "
              "before time 0.\");\n");
         puts("}\n");
-        puts("vcdp->scopeEscape(' ');\n");
-        puts("t->" + protect("traceInitThis") + "(vlSymsp, vcdp, code);\n");
-        puts("vcdp->scopeEscape('.');\n");  // Restore so later traced files won't break
-        puts("}\n");
-        splitSizeInc(10);
-
-        puts("void " + topClassName() + "::" + protect("traceFull") + "("
-             + v3Global.opt.traceClassBase() + "* vcdp, void* userthis, uint32_t code) {\n");
-        putsDecoration("// Callback from vcd->dump()\n");
-        puts(topClassName() + "* t = (" + topClassName() + "*)userthis;\n");
-        puts(EmitCBaseVisitor::symClassVar() + " = t->__VlSymsp;  // Setup global symbol table\n");
-        puts("t->" + protect("traceFullThis") + "(vlSymsp, vcdp, code);\n");
-        puts("}\n");
-        splitSizeInc(10);
-
-        puts("\n//======================\n\n");
-    }
-
-    void emitTraceFast() {
-        puts("\n//======================\n\n");
-
-        puts("void " + topClassName() + "::" + protect("traceChg") + "("
-             + v3Global.opt.traceClassBase() + "* vcdp, void* userthis, uint32_t code) {\n");
-        putsDecoration("// Callback from vcd->dump()\n");
-        puts(topClassName() + "* t = (" + topClassName() + "*)userthis;\n");
-        puts(EmitCBaseVisitor::symClassVar() + " = t->__VlSymsp;  // Setup global symbol table\n");
-        puts("if (vlSymsp->getClearActivity()) {\n");
-        puts("t->" + protect("traceChgThis") + "(vlSymsp, vcdp, code);\n");
-        puts("}\n");
+        puts("vlSymsp->__Vm_baseCode = code;\n");
+        puts("tracep->module(vlSymsp->name());\n");
+        puts("tracep->scopeEscape(' ');\n");
+        puts(topClassName() + "::" + protect("traceInitTop") + "(vlSymsp, tracep);\n");
+        puts("tracep->scopeEscape('.');\n");  // Restore so later traced files won't break
         puts("}\n");
         splitSizeInc(10);
 
@@ -3430,21 +3399,21 @@ class EmitCTrace : EmitCStmts {
     }
 
     bool emitTraceIsScBv(AstTraceInc* nodep) {
-        const AstVarRef* varrefp = VN_CAST(nodep->valuep(), VarRef);
+        const AstVarRef* varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
         AstVar* varp = varrefp->varp();
         return varp->isSc() && varp->isScBv();
     }
 
     bool emitTraceIsScBigUint(AstTraceInc* nodep) {
-        const AstVarRef* varrefp = VN_CAST(nodep->valuep(), VarRef);
+        const AstVarRef* varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
         AstVar* varp = varrefp->varp();
         return varp->isSc() && varp->isScBigUint();
     }
 
     bool emitTraceIsScUint(AstTraceInc* nodep) {
-        const AstVarRef* varrefp = VN_CAST(nodep->valuep(), VarRef);
+        const AstVarRef* varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
         AstVar* varp = varrefp->varp();
         return varp->isSc() && varp->isScUint();
@@ -3452,15 +3421,15 @@ class EmitCTrace : EmitCStmts {
 
     void emitTraceInitOne(AstTraceDecl* nodep, int enumNum) {
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("vcdp->declDouble");
+            puts("tracep->declDouble");
         } else if (nodep->isWide()) {
-            puts("vcdp->declArray");
+            puts("tracep->declArray");
         } else if (nodep->isQuad()) {
-            puts("vcdp->declQuad");
+            puts("tracep->declQuad");
         } else if (nodep->bitRange().ranged()) {
-            puts("vcdp->declBus");
+            puts("tracep->declBus");
         } else {
-            puts("vcdp->declBit");
+            puts("tracep->declBit");
         }
 
         puts("(c+" + cvtToStr(nodep->code()));
@@ -3574,10 +3543,10 @@ class EmitCTrace : EmitCStmts {
                         putbs("\"" + constp->num().displayed(nodep, "%0b") + "\"");
                     }
                     puts("};\n");
-                    puts("vcdp->declDTypeEnum(" + cvtToStr(enumNum) + ", \"" + enump->prettyName()
-                         + "\", " + cvtToStr(nvals) + ", " + cvtToStr(enump->widthMin()) + ", "
-                         + protect("__VenumItemNames") + ", " + protect("__VenumItemValues")
-                         + ");\n");
+                    puts("tracep->declDTypeEnum(" + cvtToStr(enumNum) + ", \""
+                         + enump->prettyName() + "\", " + cvtToStr(nvals) + ", "
+                         + cvtToStr(enump->widthMin()) + ", " + protect("__VenumItemNames") + ", "
+                         + protect("__VenumItemValues") + ");\n");
                     puts("}\n");
                 }
                 return enumNum;
@@ -3588,31 +3557,29 @@ class EmitCTrace : EmitCStmts {
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
         iterateAndNextNull(nodep->precondsp());
-        const bool full = (m_funcp->funcType() == AstCFuncType::TRACE_FULL
-                           || m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB);
-        const string func = full ? "full" : "chg";
+        const string func = nodep->full() ? "full" : "chg";
         bool emitWidth = true;
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("vcdp->" + func + "Double");
+            puts("tracep->" + func + "Double");
             emitWidth = false;
         } else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
-            puts("vcdp->" + func + "WData");
+            puts("tracep->" + func + "WData");
         } else if (nodep->isQuad()) {
-            puts("vcdp->" + func + "QData");
+            puts("tracep->" + func + "QData");
         } else if (nodep->declp()->widthMin() > 16) {
-            puts("vcdp->" + func + "IData");
+            puts("tracep->" + func + "IData");
         } else if (nodep->declp()->widthMin() > 8) {
-            puts("vcdp->" + func + "SData");
+            puts("tracep->" + func + "SData");
         } else if (nodep->declp()->widthMin() > 1) {
-            puts("vcdp->" + func + "CData");
+            puts("tracep->" + func + "CData");
         } else {
-            puts("vcdp->" + func + "Bit");
+            puts("tracep->" + func + "Bit");
             emitWidth = false;
         }
 
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
         const uint32_t code = nodep->declp()->code() + offset;
-        puts(v3Global.opt.trueTraceThreads() && !full ? "(base+" : "(oldp+");
+        puts(v3Global.opt.trueTraceThreads() && !nodep->full() ? "(base+" : "(oldp+");
         puts(cvtToStr(code - m_baseCode));
         puts(",");
         emitTraceValue(nodep, arrayindex);
@@ -3620,8 +3587,7 @@ class EmitCTrace : EmitCStmts {
         puts(");\n");
     }
     void emitTraceValue(AstTraceInc* nodep, int arrayindex) {
-        if (VN_IS(nodep->valuep(), VarRef)) {
-            AstVarRef* varrefp = VN_CAST(nodep->valuep(), VarRef);
+        if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
             AstVar* varp = varrefp->varp();
             puts("(");
             if (emitTraceIsScBigUint(nodep)) {
@@ -3682,30 +3648,37 @@ class EmitCTrace : EmitCStmts {
             puts(" ");
             puts(topClassName() + "::" + nodep->nameProtect() + "(" + cFuncArgs(nodep) + ") {\n");
 
-            if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign() + "\n");
+            if (nodep->funcType() != AstCFuncType::TRACE_REGISTER) {
+                puts(symClassVar() + " = static_cast<" + symClassName() + "*>(userp);\n");
+            }
+
+            if (nodep->symProlog()) puts(symTopAssign() + "\n");
 
             m_baseCode = -1;
 
-            if (nodep->funcType() == AstCFuncType::TRACE_FULL_SUB
-                || nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
-                const AstTraceInc* const stmtp = VN_CAST_CONST(nodep->stmtsp(), TraceInc);
-                if (!stmtp) {
-                    nodep->stmtsp()->v3fatalSrc("Trace sub function should contain AstTraceInc");
-                }
-                m_baseCode = stmtp->declp()->code();
-                if (v3Global.opt.trueTraceThreads()
-                    && nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
-                    puts("vluint32_t base = code+" + cvtToStr(m_baseCode) + ";\n");
-                    puts("if (false && vcdp && base) {}  // Prevent unused\n");
+            if (nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
+                const AstNode* const stmtp = nodep->stmtsp();
+                const AstIf* const ifp = VN_CAST_CONST(stmtp, If);
+                const AstTraceInc* const tracep
+                    = VN_CAST_CONST(ifp ? ifp->ifsp() : stmtp, TraceInc);
+                // On rare occasions we can end up with an empty sub function
+                m_baseCode = tracep ? tracep->declp()->code() : 0;
+                if (v3Global.opt.trueTraceThreads()) {
+                    puts("const vluint32_t base = vlSymsp->__Vm_baseCode + " + cvtToStr(m_baseCode)
+                         + ";\n");
+                    puts("if (false && tracep && base) {}  // Prevent unused\n");
                 } else {
-                    puts("vluint32_t* oldp = vcdp->oldp(code+" + cvtToStr(m_baseCode) + ");\n");
-                    puts("if (false && vcdp && oldp) {}  // Prevent unused\n");
+                    puts("vluint32_t* const oldp = tracep->oldp(vlSymsp->__Vm_baseCode + "
+                         + cvtToStr(m_baseCode) + ");\n");
+                    puts("if (false && oldp) {}  // Prevent unused\n");
                 }
+            } else if (nodep->funcType() == AstCFuncType::TRACE_FULL_SUB) {
+                m_baseCode = 0;
+                puts("vluint32_t* const oldp = tracep->oldp(vlSymsp->__Vm_baseCode);\n");
+                puts("if (false && oldp) {}  // Prevent unused\n");
             } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
-                puts("int c = code;\n");
-                puts("if (false && vcdp && c) {}  // Prevent unused\n");
-            } else {
-                puts("if (false && vcdp) {}  // Prevent unused\n");
+                puts("const int c = vlSymsp->__Vm_baseCode;\n");
+                puts("if (false && tracep && c) {}  // Prevent unused\n");
             }
 
             if (nodep->initsp()) {
@@ -3764,11 +3737,7 @@ public:
         // Put out the file
         newOutCFile(0);
 
-        if (m_slow) {
-            emitTraceSlow();
-        } else {
-            emitTraceFast();
-        }
+        if (m_slow) { emitTraceSlow(); }
 
         iterate(v3Global.rootp());
 

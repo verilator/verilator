@@ -442,6 +442,7 @@ void EmitCSyms::emitSymHdr() {
     }
     if (v3Global.opt.trace()) {
         puts("bool __Vm_activity;  ///< Used by trace routines to determine change occurred\n");
+        puts("uint32_t __Vm_baseCode;  ///< Used by trace routines when tracing multiple models\n");
     }
     puts("bool __Vm_didInit;\n");
 
@@ -495,10 +496,6 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// METHODS\n");
     puts("inline const char* name() { return __Vm_namep; }\n");
-    if (v3Global.opt.trace()) {
-        puts("inline bool getClearActivity() { bool r=__Vm_activity; "
-             "__Vm_activity=false; return r; }\n");
-    }
     if (v3Global.opt.savable()) {
         puts("void " + protect("__Vserialize") + "(VerilatedSerialize& os);\n");
         puts("void " + protect("__Vdeserialize") + "(VerilatedDeserialize& os);\n");
@@ -627,7 +624,10 @@ void EmitCSyms::emitSymImp() {
         puts("    , __Vm_dumping(false)\n");
         puts("    , __Vm_dumperp(NULL)\n");
     }
-    if (v3Global.opt.trace()) puts("    , __Vm_activity(false)\n");
+    if (v3Global.opt.trace()) {
+        puts("    , __Vm_activity(false)\n");
+        puts("    , __Vm_baseCode(0)\n");
+    }
     puts("    , __Vm_didInit(false)\n");
     puts("    // Setup submodule names\n");
     char comma = ',';

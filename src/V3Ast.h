@@ -193,12 +193,14 @@ class AstCFuncType {
 public:
     enum en {
         FT_NORMAL,
+        TRACE_REGISTER,
         TRACE_INIT,
         TRACE_INIT_SUB,
         TRACE_FULL,
         TRACE_FULL_SUB,
         TRACE_CHANGE,
-        TRACE_CHANGE_SUB
+        TRACE_CHANGE_SUB,
+        TRACE_CLEANUP
     };
     enum en m_e;
     inline AstCFuncType()
@@ -210,10 +212,7 @@ public:
         : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     // METHODS
-    bool isTrace() const {
-        return (m_e == TRACE_INIT || m_e == TRACE_INIT_SUB || m_e == TRACE_FULL
-                || m_e == TRACE_FULL_SUB || m_e == TRACE_CHANGE || m_e == TRACE_CHANGE_SUB);
-    }
+    bool isTrace() const { return m_e != FT_NORMAL; }
 };
 inline bool operator==(const AstCFuncType& lhs, const AstCFuncType& rhs) {
     return lhs.m_e == rhs.m_e;

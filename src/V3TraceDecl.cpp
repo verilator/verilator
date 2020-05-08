@@ -14,9 +14,9 @@
 //
 //*************************************************************************
 // V3TraceDecl's Transformations:
-//      Create trace CFUNCs
-//      For each VARSCOPE
-//          If appropriate type of signal, create a TRACE
+//      Create trace init CFunc
+//      For each VarScope
+//          If appropriate type of signal, create a TraceDecl
 //
 //*************************************************************************
 
@@ -36,11 +36,10 @@ private:
     // NODE STATE
 
     // STATE
-    AstScope* m_scopetopp;  // Current top scope
+    AstScope* m_topScopep;  // Current top scope
     AstCFunc* m_initFuncp;  // Trace function being built
     AstCFunc* m_initSubFuncp;  // Trace function being built (under m_init)
     int m_initSubStmts;  // Number of statements in function
-    AstCFunc* m_chgFuncp;  // Trace function being built
     int m_funcNum;  // Function number being built
     AstVarScope* m_traVscp;  // Signal being trace constructed
     AstNode* m_traValuep;  // Signal being traced's value to trace in it
@@ -69,39 +68,29 @@ private:
         return NULL;
     }
 
-    AstCFunc* newCFunc(AstCFuncType type, const string& name, bool slow) {
-        FileLine* const flp = m_scopetopp->fileline();
-        AstCFunc* const funcp = new AstCFunc(flp, name, m_scopetopp);
-        funcp->slow(slow);
-        string argTypes;
-        argTypes += EmitCBaseVisitor::symClassVar();
-        argTypes += ", " + v3Global.opt.traceClassBase() + "* vcdp";
-        argTypes += ", uint32_t code";
+    AstCFunc* newCFunc(AstCFuncType type, const string& name) {
+        FileLine* const flp = m_topScopep->fileline();
+        AstCFunc* const funcp = new AstCFunc(flp, name, m_topScopep);
+        string argTypes("void* userp, " + v3Global.opt.traceClassBase() + "* tracep");
         if (m_interface) argTypes += ", const char* scopep";
         funcp->argTypes(argTypes);
         funcp->funcType(type);
         funcp->symProlog(true);
-        if (type == AstCFuncType::TRACE_INIT) {
-            // Setup signal names
-            const string str = "vcdp->module(vlSymsp->name());\n";
-            funcp->addStmtsp(new AstCStmt(flp, str));
-        }
-        m_scopetopp->addActivep(funcp);
+        funcp->slow(true);
+        funcp->declPrivate(true);
+        m_topScopep->addActivep(funcp);
         UINFO(5, "  Newfunc " << funcp << endl);
         return funcp;
     }
     void callCFuncSub(AstCFunc* basep, AstCFunc* funcp, AstIntfRef* irp) {
         AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
-        callp->argTypes("vlSymsp, vcdp, code");
+        callp->argTypes("userp, tracep");
         if (irp) callp->addArgsp(irp->unlinkFrBack());
         basep->addStmtsp(callp);
     }
     AstCFunc* newCFuncSub(AstCFunc* basep) {
-        UASSERT_OBJ(basep->funcType() == AstCFuncType::TRACE_INIT
-                        || basep->funcType() == AstCFuncType::TRACE_INIT_SUB,
-                    basep, "Strange base function type");
-        const string name = basep->name() + "__" + cvtToStr(++m_funcNum);
-        AstCFunc* const funcp = newCFunc(AstCFuncType::TRACE_INIT_SUB, name, basep->slow());
+        const string name = "traceInitSub" + cvtToStr(m_funcNum++);
+        AstCFunc* const funcp = newCFunc(AstCFuncType::TRACE_INIT_SUB, name);
         if (!m_interface) callCFuncSub(basep, funcp, NULL);
         return funcp;
     }
@@ -116,7 +105,7 @@ private:
         }
         AstTraceDecl* const declp
             = new AstTraceDecl(m_traVscp->fileline(), m_traShowname, m_traVscp->varp(),
-                               m_traValuep, bitRange, arrayRange, m_interface);
+                               m_traValuep->cloneTree(true), bitRange, arrayRange, m_interface);
         UINFO(9, "Decl " << declp << endl);
 
         if (!m_interface && v3Global.opt.outputSplitCTrace()
@@ -127,10 +116,6 @@ private:
 
         m_initSubFuncp->addStmtsp(declp);
         m_initSubStmts += EmitCBaseCounterVisitor(declp).count();
-
-        m_chgFuncp->addStmtsp(
-            new AstTraceInc(m_traVscp->fileline(), declp, m_traValuep->cloneTree(true)));
-        // The full version will get constructed in V3Trace
     }
     void addIgnore(const char* why) {
         ++m_statIgnSigs;
@@ -140,12 +125,10 @@ private:
 
     // VISITORS
     virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
-        m_scopetopp = nodep->scopep();
-        // Make containers for TRACEDECLs first
-        m_initFuncp = newCFunc(AstCFuncType::TRACE_INIT, "traceInitThis", true);
-        /*fullFuncp*/ newCFunc(AstCFuncType::TRACE_FULL, "traceFullThis", true);
-        m_chgFuncp = newCFunc(AstCFuncType::TRACE_CHANGE, "traceChgThis", false);
-        //
+        m_topScopep = nodep->scopep();
+        // Create the trace init function
+        m_initFuncp = newCFunc(AstCFuncType::TRACE_INIT, "traceInitTop");
+        // Create initial sub function
         m_initSubFuncp = newCFuncSub(m_initFuncp);
         // And find variables
         iterateChildren(nodep);
@@ -254,10 +237,10 @@ private:
                 }
             } else {
                 // Unroll now, as have no other method to get right signal names
-                AstNodeDType*const subtypep = nodep->subDTypep()->skipRefToEnump();
+                AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
                 for (int i = nodep->lsb(); i <= nodep->msb(); ++i) {
                     const string oldShowname = m_traShowname;
-                    AstNode*const oldValuep = m_traValuep;
+                    AstNode* const oldValuep = m_traValuep;
                     {
                         m_traShowname += string("(") + cvtToStr(i) + string(")");
                         m_traValuep = new AstArraySel(
@@ -281,7 +264,7 @@ private:
                 // a much faster way to trace
                 addTraceDecl(VNumRange(), nodep->width());
             } else {
-                AstNodeDType*const subtypep = nodep->subDTypep()->skipRefToEnump();
+                AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
                 for (int i = nodep->lsb(); i <= nodep->msb(); ++i) {
                     const string oldShowname = m_traShowname;
                     AstNode* const oldValuep = m_traValuep;
@@ -356,11 +339,10 @@ private:
 public:
     // CONSTRUCTORS
     explicit TraceDeclVisitor(AstNetlist* nodep) {
-        m_scopetopp = NULL;
+        m_topScopep = NULL;
         m_initFuncp = NULL;
         m_initSubFuncp = NULL;
         m_initSubStmts = 0;
-        m_chgFuncp = NULL;
         m_funcNum = 0;
         m_traVscp = NULL;
         m_traValuep = NULL;
