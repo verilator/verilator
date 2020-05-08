@@ -516,8 +516,8 @@ private:
     virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {
         iterateNewStmt(nodep, "CoverToggle", "CoverToggle");
     }
-    virtual void visit(AstTraceInc* nodep) VL_OVERRIDE {
-        bool lastslow = m_inSlow;
+    virtual void visit(AstTraceDecl* nodep) VL_OVERRIDE {
+        const bool lastslow = m_inSlow;
         m_inSlow = true;
         iterateNewStmt(nodep, "Tracing", "Tracing");
         m_inSlow = lastslow;

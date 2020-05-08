@@ -4809,7 +4809,7 @@ class AstTraceDecl : public AstNodeStmt {
     // Trace point declaration
     // Separate from AstTraceInc; as a declaration can't be deleted
     // Parents:  {statement list}
-    // Children: none
+    // Children: expression being traced
 private:
     uint32_t m_code;  // Trace identifier code; converted to ASCII by trace routines
     const string m_showname;  // Name of variable
@@ -4838,6 +4838,7 @@ public:
         , m_declDirection(varp->declDirection())
         , m_isScoped(isScoped) {
         dtypeFrom(valuep);
+        addNOp1p(valuep);
     }
     virtual int instrCount() const { return 100; }  // Large...
     ASTNODE_NODE_FUNCS(TraceDecl)
@@ -4856,20 +4857,25 @@ public:
     AstBasicDTypeKwd declKwd() const { return m_declKwd; }
     VDirection declDirection() const { return m_declDirection; }
     bool isScoped() const { return m_isScoped; }
+    AstNode* valuep() const { return op1p(); }
 };
 
 class AstTraceInc : public AstNodeStmt {
-    // Trace point; incremental change detect and dump
+    // Trace point dump
     // Parents:  {statement list}
-    // Children: incremental value
+    // Children: op1: things to emit before this node,
+    //           op2: expression being traced (from decl)
+
 private:
-    AstTraceDecl* m_declp;  // [After V3Trace] Pointer to declaration
+    AstTraceDecl* m_declp;  // Pointer to declaration
+    const bool m_full;  // Is this a full vs incremental dump
 public:
-    AstTraceInc(FileLine* fl, AstTraceDecl* declp, AstNode* valuep)
-        : ASTGEN_SUPER(fl) {
+    AstTraceInc(FileLine* fl, AstTraceDecl* declp, bool full)
+        : ASTGEN_SUPER(fl)
+        , m_declp(declp)
+        , m_full(full) {
         dtypeFrom(declp);
-        m_declp = declp;
-        addNOp2p(valuep);
+        addOp2p(declp->valuep()->cloneTree(true));
     }
     ASTNODE_NODE_FUNCS(TraceInc)
     virtual const char* broken() const {
@@ -4891,13 +4897,11 @@ public:
     virtual bool isOutputter() const { return true; }
     // but isPure()  true
     // op1 = Statements before the value
-    AstNode* precondsp() const {
-        return op1p();
-    }  // op1 = prepare statements for condition (exec every loop)
+    AstNode* precondsp() const { return op1p(); }
     void addPrecondsp(AstNode* newp) { addOp1p(newp); }
-    // op2 = Value to trace
-    AstTraceDecl* declp() const { return m_declp; }  // Where defined
     AstNode* valuep() const { return op2p(); }
+    AstTraceDecl* declp() const { return m_declp; }
+    bool full() const { return m_full; }
 };
 
 class AstActive : public AstNode {

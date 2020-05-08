@@ -732,7 +732,7 @@ private:
 
     // Ignores
     virtual void visit(AstInitial*) VL_OVERRIDE {}
-    virtual void visit(AstTraceInc*) VL_OVERRIDE {}
+    virtual void visit(AstTraceDecl*) VL_OVERRIDE {}
     virtual void visit(AstCoverToggle*) VL_OVERRIDE {}
     virtual void visit(AstNodeDType*) VL_OVERRIDE {}
 
