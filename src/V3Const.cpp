@@ -2180,6 +2180,10 @@ private:
             return;
         }
         if (m_doExpensive) {
+            // Any non-label statements (at this statement level) can never execute
+            while (nodep->nextp() && !VN_IS(nodep->nextp(), JumpLabel)) {
+                nodep->nextp()->unlinkFrBack()->deleteTree();
+            }
             // If last statement in a jump label we have JumpLabel(...., JumpGo)
             // Often caused by "return" in a Verilog function.  The Go is pointless, remove.
             if (!nodep->nextp()) {
