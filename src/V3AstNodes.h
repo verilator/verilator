@@ -4811,33 +4811,33 @@ class AstTraceDecl : public AstNodeStmt {
     // Parents:  {statement list}
     // Children: none
 private:
-    string m_showname;  // Name of variable
     uint32_t m_code;  // Trace identifier code; converted to ASCII by trace routines
-    VNumRange m_bitRange;  // Property of var the trace details
-    VNumRange m_arrayRange;  // Property of var the trace details
-    uint32_t m_codeInc;  // Code increment
-    AstVarType m_varType;  // Type of variable (for localparam vs. param)
-    AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
-    VDirection m_declDirection;  // Declared direction input/output etc
-    bool m_isScoped;  // Uses run-time scope (for interfaces)
+    const string m_showname;  // Name of variable
+    const VNumRange m_bitRange;  // Property of var the trace details
+    const VNumRange m_arrayRange;  // Property of var the trace details
+    const uint32_t m_codeInc;  // Code increment
+    const AstVarType m_varType;  // Type of variable (for localparam vs. param)
+    const AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
+    const VDirection m_declDirection;  // Declared direction input/output etc
+    const bool m_isScoped;  // Uses run-time scope (for interfaces)
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
                  AstVar* varp,  // For input/output state etc
                  AstNode* valuep, const VNumRange& bitRange, const VNumRange& arrayRange,
                  bool isScoped)
         : ASTGEN_SUPER(fl)
+        , m_code(0)
         , m_showname(showname)
         , m_bitRange(bitRange)
         , m_arrayRange(arrayRange)
+        , m_codeInc(
+              ((arrayRange.ranged() ? arrayRange.elements() : 1) * valuep->dtypep()->widthWords()
+               * (VL_EDATASIZE / 32)))  // A code is always 32-bits
+        , m_varType(varp->varType())
+        , m_declKwd(varp->declKwd())
+        , m_declDirection(varp->declDirection())
         , m_isScoped(isScoped) {
         dtypeFrom(valuep);
-        m_code = 0;
-        m_codeInc
-            = ((arrayRange.ranged() ? arrayRange.elements() : 1) * valuep->dtypep()->widthWords()
-               * (VL_EDATASIZE / (8 * sizeof(uint32_t))));  // A code is always 32-bits
-        m_varType = varp->varType();
-        m_declKwd = varp->declKwd();
-        m_declDirection = varp->declDirection();
     }
     virtual int instrCount() const { return 100; }  // Large...
     ASTNODE_NODE_FUNCS(TraceDecl)

@@ -3708,17 +3708,6 @@ class EmitCTrace : EmitCStmts {
                 puts("if (false && vcdp) {}  // Prevent unused\n");
             }
 
-            if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
-                puts("vcdp->module(vlSymsp->name());  // Setup signal names\n");
-            } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
-            } else if (nodep->funcType() == AstCFuncType::TRACE_FULL) {
-            } else if (nodep->funcType() == AstCFuncType::TRACE_FULL_SUB) {
-            } else if (nodep->funcType() == AstCFuncType::TRACE_CHANGE) {
-            } else if (nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
-            } else {
-                nodep->v3fatalSrc("Bad Case");
-            }
-
             if (nodep->initsp()) {
                 string section;
                 putsDecoration("// Variables\n");
