@@ -426,13 +426,12 @@ private:
         nodep->dtypeSetUInt64();  // A pointer, but not that it matters
     }
 
-    // Special cases.  So many....
     virtual void visit(AstNodeCond* nodep) VL_OVERRIDE {
-        // op=cond?expr1:expr2
-        // Signed: Output signed iff RHS & THS signed  (presumed, not in IEEE)
+        // op = cond ? expr1 : expr2
         // See IEEE-2012 11.4.11 and Table 11-21.
         //   LHS is self-determined
-        //   Width: max(RHS,THS)
+        //   Width: max(RHS, THS)
+        //   Signed: Output signed iff RHS & THS signed  (presumed, not in IEEE)
         //   Real: Output real if either expression is real, non-real argument gets converted
         if (m_vup->prelim()) {  // First stage evaluation
             // Just once, do the conditional, expect one bit out.
@@ -4550,14 +4549,17 @@ private:
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
         } else if (expDTypep->isDouble() && !underp->isDouble()) {
+            AstNode* oldp = underp;  // Need FINAL on children; otherwise splice would block it
             underp = spliceCvtD(underp);
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP(SELF, FINAL).p());
         } else if (!expDTypep->isDouble() && underp->isDouble()) {
+            AstNode* oldp = underp;  // Need FINAL on children; otherwise splice would block it
             underp = spliceCvtS(underp, true, expDTypep->width());  // Round RHS
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP(SELF, FINAL).p());
         } else if (expDTypep->isString() && !underp->dtypep()->isString()) {
+            AstNode* oldp = underp;  // Need FINAL on children; otherwise splice would block it
             underp = spliceCvtString(underp);
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP(SELF, FINAL).p());
         } else {
             AstBasicDType* expBasicp = expDTypep->basicp();
             AstBasicDType* underBasicp = underp->dtypep()->basicp();
