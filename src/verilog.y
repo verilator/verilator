@@ -1971,6 +1971,8 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'	{ $$ = NULL; BBUNSUP($1, "Unsupported: SystemVerilog 2005 typedef in this context"); }
 	//			// Combines into above "data_type id" rule
 	//			// Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
+	//UNSUP			// Below should be idAny to allow duplicate forward defs; need to expand
+	//			// data_type to exclude IDs, or add id__SEMI rule
 	|	yTYPEDEF id ';'				{ $$ = NULL; $$ = new AstTypedefFwd($<fl>2, *$2); SYMP->reinsert($$); PARSEP->tagNodep($$); }
 	|	yTYPEDEF yENUM idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
 	|	yTYPEDEF ySTRUCT idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
@@ -4267,6 +4269,8 @@ gateRangeE<nodep>:
 gateBuf<nodep>:
 		gateFront variable_lvalue ',' gatePinExpr ')'
 			{ $$ = new AstAssignW($<fl>1, $2, $4); DEL($1); }
+	// UNSUP			// IEEE: Multiple output variable_lvalues
+	// UNSUP			// Causes conflict - need to take in variable_lvalue or a gatePinExpr
 	;
 gateBufif0<nodep>:
 		gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
@@ -4279,6 +4283,8 @@ gateBufif1<nodep>:
 gateNot<nodep>:
 		gateFront variable_lvalue ',' gatePinExpr ')'
 			{ $$ = new AstAssignW($<fl>1, $2, new AstNot($<fl>1, $4)); DEL($1); }
+	// UNSUP			// IEEE: Multiple output variable_lvalues
+	// UNSUP			// Causes conflict - need to take in variable_lvalue or a gatePinExpr
 	;
 gateNotif0<nodep>:
 		gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
