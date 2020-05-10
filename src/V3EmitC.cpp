@@ -1014,7 +1014,7 @@ public:
         iterateAndNextNull(nodep->fhsp());
         puts(", ");
         puts(cvtToStr(nodep->lhsp()->widthMin()));
-        puts(");");
+        puts(")");
     }
     // Terminals
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
