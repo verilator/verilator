@@ -1046,8 +1046,7 @@ private:
     virtual void visit(AstUnbounded* nodep) VL_OVERRIDE {
         nodep->dtypeSetSigned32();  // Used in int context
         if (!VN_IS(nodep->backp(), IsUnbounded)
-            && !(VN_IS(nodep->backp(), Var)
-                 && VN_CAST(nodep->backp(), Var)->isParam())) {
+            && !(VN_IS(nodep->backp(), Var) && VN_CAST(nodep->backp(), Var)->isParam())) {
             nodep->v3error("Unsupported/illegal unbounded ('$') in this context.");
         }
     }
