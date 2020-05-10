@@ -52,6 +52,7 @@ private:
     AstNodeFTask* m_ftaskp;  // Current function/task
     AstWhile* m_loopp;  // Current loop
     bool m_loopInc;  // In loop increment
+    bool m_inFork;  // Under fork
     int m_modRepeatNum;  // Repeat counter
     BlockStack m_blockStack;  // All begin blocks above current node
 
@@ -136,9 +137,14 @@ private:
     }
     virtual void visit(AstNodeBlock* nodep) VL_OVERRIDE {
         UINFO(8, "  " << nodep << endl);
+        bool oldFork = m_inFork;
         m_blockStack.push_back(nodep);
-        iterateChildren(nodep);
+        {
+            m_inFork = m_inFork || VN_IS(nodep, Fork);
+            iterateChildren(nodep);
+        }
         m_blockStack.pop_back();
+        m_inFork = oldFork;
     }
     virtual void visit(AstRepeat* nodep) VL_OVERRIDE {
         // So later optimizations don't need to deal with them,
@@ -185,7 +191,11 @@ private:
     virtual void visit(AstReturn* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         AstFunc* funcp = VN_CAST(m_ftaskp, Func);
-        if (!m_ftaskp) {
+        if (m_inFork) {
+            nodep->v3error("Return isn't legal under fork (IEEE 1800-2017 9.2.3)");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        } else if (!m_ftaskp) {
             nodep->v3error("Return isn't underneath a task or function");
         } else if (funcp && !nodep->lhsp()) {
             nodep->v3error("Return underneath a function should have return value");
@@ -268,6 +278,7 @@ public:
     explicit LinkJumpVisitor(AstNetlist* nodep) {
         m_modp = NULL;
         m_ftaskp = NULL;
+        m_inFork = false;
         m_loopp = NULL;
         m_loopInc = false;
         m_modRepeatNum = 0;

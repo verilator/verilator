@@ -552,6 +552,23 @@ private:
         nodep->v3warn(STMTDLY, "Unsupported: Ignoring delay on this delayed statement.");
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
+    virtual void visit(AstFork* nodep) VL_OVERRIDE {
+        if (VN_IS(m_ftaskp, Func) && !nodep->joinType().joinNone()) {
+            nodep->v3error("Only fork .. join_none is legal in functions. "
+                           "(IEEE 1800-2017 13.4.4)");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        if (v3Global.opt.bboxUnsup()) {
+            AstBegin* newp
+                = new AstBegin(nodep->fileline(), nodep->name(), nodep->stmtsp()->unlinkFrBack());
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else {
+            nodep->v3error("Unsupported: fork statements");
+            // TBD might support only normal join, if so complain about other join flavors
+        }
+    }
     virtual void visit(AstToLowerN* nodep) VL_OVERRIDE {
         if (m_vup->prelim()) {
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
