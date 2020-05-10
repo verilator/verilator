@@ -1918,7 +1918,7 @@ public:
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "") const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
-    string vlPropInit() const;  // Return VerilatorVarProps initializer
+    string vlPropDecl(string propName) const;  // Return VerilatorVarProps declaration
     void combineType(AstVarType type);
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     // op1 = Range of variable
@@ -2078,7 +2078,7 @@ public:
 private:
     class VlArgTypeRecursed;
     VlArgTypeRecursed vlArgTypeRecurse(bool forFunc, const AstNodeDType* dtypep,
-                                       bool arrayed) const;
+                                       bool compound = false) const;
 };
 
 class AstDefParam : public AstNode {
@@ -2812,8 +2812,8 @@ private:
     string m_name;
 
 public:
-    AstParseRef(FileLine* fl, VParseRefExp expect, const string& name, AstNode* lhsp,
-                AstNodeFTaskRef* ftaskrefp)
+    AstParseRef(FileLine* fl, VParseRefExp expect, const string& name, AstNode* lhsp = NULL,
+                AstNodeFTaskRef* ftaskrefp = NULL)
         : ASTGEN_SUPER(fl)
         , m_expect(expect)
         , m_name(name) {
@@ -2886,14 +2886,18 @@ public:
     AstNode* rhsp() const { return op2p(); }
 };
 
-class AstUnbounded : public AstNode {
+class AstUnbounded : public AstNodeMath {
     // A $ in the parser, used for unbounded and queues
+    // Due to where is used, treated as Signed32
 public:
     explicit AstUnbounded(FileLine* fl)
-        : ASTGEN_SUPER(fl) {}
+        : ASTGEN_SUPER(fl) {
+        dtypeSetSigned32();
+    }
     ASTNODE_NODE_FUNCS(Unbounded)
     virtual string emitVerilog() { return "$"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return true; }
 };
 
 //######################################################################
@@ -3076,25 +3080,34 @@ public:
     bool hasCombo() const;  // Includes a COMBO SenItem
 };
 
-class AstAlways : public AstNode {
+class AstFinal : public AstNodeProcedure {
+public:
+    AstFinal(FileLine* fl, AstNode* bodysp)
+        : ASTGEN_SUPER(fl, bodysp) {}
+    ASTNODE_NODE_FUNCS(Final)
+};
+
+class AstInitial : public AstNodeProcedure {
+public:
+    AstInitial(FileLine* fl, AstNode* bodysp)
+        : ASTGEN_SUPER(fl, bodysp) {}
+    ASTNODE_NODE_FUNCS(Initial)
+};
+
+class AstAlways : public AstNodeProcedure {
     VAlwaysKwd m_keyword;
 
 public:
     AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sensesp, AstNode* bodysp)
-        : ASTGEN_SUPER(fl)
+        : ASTGEN_SUPER(fl, bodysp)
         , m_keyword(keyword) {
         addNOp1p(sensesp);
-        addNOp2p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Always)
     //
     virtual void dump(std::ostream& str) const;
     AstSenTree* sensesp() const { return VN_CAST(op1p(), SenTree); }  // op1 = Sensitivity list
-    AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
-    void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     VAlwaysKwd keyword() const { return m_keyword; }
-    // Special accessors
-    bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
 };
 
 class AstAlwaysPublic : public AstNodeStmt {
@@ -4283,44 +4296,81 @@ public:
     void priorityPragma(bool flag) { m_priorityPragma = flag; }
 };
 
-class AstJumpLabel : public AstNodeStmt {
-    // Jump point declaration
-    // Separate from AstJumpGo; as a declaration can't be deleted
+class AstJumpBlock : public AstNodeStmt {
+    // Block of code including a JumpGo and JumpLabel
     // Parents:  {statement list}
-    // Children: {statement list, with JumpGo below}
+    // Children: {statement list, with JumpGo and JumpLabel below}
 private:
+    AstJumpLabel* m_labelp;  // [After V3Jump] Pointer to declaration
     int m_labelNum;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
-    AstJumpLabel(FileLine* fl, AstNode* stmtsp)
+    // After construction must call ->labelp to associate with appropriate label
+    AstJumpBlock(FileLine* fl, AstNode* stmtsp)
         : ASTGEN_SUPER(fl)
         , m_labelNum(0) {
         addNOp1p(stmtsp);
     }
+    virtual const char* broken() const;
+    virtual void cloneRelink();
+    ASTNODE_NODE_FUNCS(JumpBlock)
     virtual int instrCount() const { return 0; }
-    ASTNODE_NODE_FUNCS(JumpLabel)
     virtual bool maybePointedTo() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
     // op1 = Statements
     AstNode* stmtsp() const { return op1p(); }  // op1 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
+    AstNode* endStmtsp() const { return op2p(); }  // op1 = List of end-of-block
+    void addEndStmtsp(AstNode* nodep) { addNOp2p(nodep); }
     int labelNum() const { return m_labelNum; }
     void labelNum(int flag) { m_labelNum = flag; }
+    AstJumpLabel* labelp() const { return m_labelp; }
+    void labelp(AstJumpLabel* labelp) { m_labelp = labelp; }
+};
+
+class AstJumpLabel : public AstNodeStmt {
+    // Jump point declaration
+    // Parents:  {statement list with JumpBlock above}
+    // Children: none
+private:
+    AstJumpBlock* m_blockp;  // [After V3Jump] Pointer to declaration
+public:
+    AstJumpLabel(FileLine* fl, AstJumpBlock* blockp)
+        : ASTGEN_SUPER(fl)
+        , m_blockp(blockp) {}
+    ASTNODE_NODE_FUNCS(JumpLabel)
+    virtual bool maybePointedTo() const { return true; }
+    virtual const char* broken() const {
+        BROKEN_RTN(!blockp()->brokeExistsAbove());
+        BROKEN_RTN(blockp()->labelp() != this);
+        return NULL;
+    }
+    virtual void cloneRelink() {
+        if (m_blockp->clonep()) m_blockp = m_blockp->clonep();
+    }
+    virtual void dump(std::ostream& str) const;
+    virtual int instrCount() const { return 0; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const {
+        return blockp() == static_cast<const AstJumpLabel*>(samep)->blockp();
+    }
+    AstJumpBlock* blockp() const { return m_blockp; }
 };
 
 class AstJumpGo : public AstNodeStmt {
-    // Jump point; branch up to the JumpLabel
-    // Parents:  {statement list}
+    // Jump point; branch down to a JumpLabel
+    // No support for backward jumps at present
+    // Parents:  {statement list with JumpBlock above}
+    // Children: none
 private:
     AstJumpLabel* m_labelp;  // [After V3Jump] Pointer to declaration
 public:
     AstJumpGo(FileLine* fl, AstJumpLabel* labelp)
-        : ASTGEN_SUPER(fl) {
-        m_labelp = labelp;
-    }
-    ASTNODE_NODE_FUNCS(JumpGo)
+        : ASTGEN_SUPER(fl)
+        , m_labelp(labelp) {}
+    ASTNODE_NODE_FUNCS(JumpGo);
     virtual const char* broken() const {
-        BROKEN_RTN(!labelp()->brokeExistsAbove());
+        BROKEN_RTN(!labelp()->brokeExistsBelow());
         return NULL;
     }
     virtual void cloneRelink() {
@@ -4330,7 +4380,6 @@ public:
     virtual int instrCount() const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(labelp()); }
     virtual bool same(const AstNode* samep) const {
-        // Also same if identical tree structure all the way down, but hard to detect
         return labelp() == static_cast<const AstJumpGo*>(samep)->labelp();
     }
     virtual bool isGateOptimizable() const { return false; }
@@ -4431,28 +4480,6 @@ public:
     virtual void dump(std::ostream& str) const;
     VJoinType joinType() const { return m_joinType; }
     void joinType(const VJoinType& flag) { m_joinType = flag; }
-};
-
-class AstInitial : public AstNode {
-public:
-    AstInitial(FileLine* fl, AstNode* bodysp)
-        : ASTGEN_SUPER(fl) {
-        addNOp1p(bodysp);
-    }
-    ASTNODE_NODE_FUNCS(Initial)
-    AstNode* bodysp() const { return op1p(); }  // op1 = Expressions to evaluate
-    // Special accessors
-    bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
-};
-
-class AstFinal : public AstNode {
-public:
-    AstFinal(FileLine* fl, AstNode* bodysp)
-        : ASTGEN_SUPER(fl) {
-        addNOp1p(bodysp);
-    }
-    ASTNODE_NODE_FUNCS(Final)
-    AstNode* bodysp() const { return op1p(); }  // op1 = Expressions to evaluate
 };
 
 class AstInside : public AstNodeMath {
@@ -5089,6 +5116,7 @@ public:
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNegate(lhs); }
     virtual string emitVerilog() { return "%f(- %l)"; }
     virtual string emitC() { return "VL_NEGATE_%lq(%lW, %P, %li)"; }
+    virtual string emitSimpleOperator() { return "-"; }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return false; }
     virtual bool sizeMattersLhs() const { return true; }
@@ -5447,6 +5475,24 @@ public:
     ASTNODE_NODE_FUNCS(IsUnknown)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opIsUnknown(lhs); }
     virtual string emitVerilog() { return "%f$isunknown(%l)"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool sizeMattersLhs() const { return false; }
+};
+class AstIsUnbounded : public AstNodeUniop {
+    // True if is unmbounded ($)
+public:
+    AstIsUnbounded(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {
+        dtypeSetLogicBool();
+    }
+    ASTNODE_NODE_FUNCS(IsUnbounded)
+    virtual void numberOperate(V3Number& out, const V3Number&) {
+        // Any constant isn't unbounded
+        out.setZero();
+    }
+    virtual string emitVerilog() { return "%f$isunbounded(%l)"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return false; }
@@ -8427,6 +8473,7 @@ public:
         BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
         return NULL;
     }
+    virtual string name() const { return "$root"; }
     virtual void dump(std::ostream& str) const;
     AstNodeModule* modulesp() const {  // op1 = List of modules
         return VN_CAST(op1p(), NodeModule);

@@ -6,10 +6,14 @@
 -pvalue+string22=\"New\ String\"
 -Greal11=0.2
 -pvalue+real12=0.2
--Greal21=4e2
+-Greal21=4E2
 -pvalue+real22=4e2
 -Greal31=0.2e2
 -pvalue+real32=0.2e2
+-Greal41=0x123.4p1
+-pvalue+real42=0X123.4P1
+-Greal51=0x123p-1
+-pvalue+real52=0X123P-1
 -Gint11=0x10
 -pvalue+int12=0x10
 -Gint21=020

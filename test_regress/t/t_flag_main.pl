@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -15,7 +15,6 @@ compile(
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
     make_main => 0,
-    make_top => 1,
     );
 
 execute(

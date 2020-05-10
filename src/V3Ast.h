@@ -900,6 +900,7 @@ class VParseRefExp {
 public:
     enum en {
         PX_NONE,  // Used in V3LinkParse only
+        PX_ROOT,
         PX_TEXT  // Unknown ID component
     };
     enum en m_e;
@@ -912,7 +913,7 @@ public:
         : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"", "TEXT", "PREDOT"};
+        static const char* const names[] = {"", "$root", "TEXT", "PREDOT"};
         return names[m_e];
     }
 };
@@ -1507,6 +1508,7 @@ public:
     }
     bool brokeExists() const;
     bool brokeExistsAbove() const;
+    bool brokeExistsBelow() const;
 
     // CONSTRUCTORS
     virtual ~AstNode() {}
@@ -2126,6 +2128,20 @@ public:
     virtual bool same(const AstNode*) const { return true; }
 };
 
+class AstNodeProcedure : public AstNode {
+    // IEEE procedure: initial, final, always
+public:
+    AstNodeProcedure(AstType t, FileLine* fl, AstNode* bodysp)
+        : AstNode(t, fl) {
+        addNOp2p(bodysp);
+    }
+    ASTNODE_BASE_FUNCS(NodeProcedure)
+    // METHODS
+    AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
+    void addStmtp(AstNode* nodep) { addOp2p(nodep); }
+    bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
+};
+
 class AstNodeStmt : public AstNode {
     // Statement -- anything that's directly under a function
     bool m_statement;  // Really a statement (e.g. not a function with return)
@@ -2440,9 +2456,9 @@ public:
     virtual void dump(std::ostream& str) const;
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     virtual AstBasicDType* basicp() const {
-        return (isFourstate() ? VN_CAST(findLogicRangeDType(VNumRange(width() - 1, 0, false),
-                                                            width(), numeric()),
-                                        BasicDType)
+        return (isFourstate() ? VN_CAST(
+                    findLogicRangeDType(VNumRange(width() - 1, 0, false), width(), numeric()),
+                    BasicDType)
                               : VN_CAST(findBitRangeDType(VNumRange(width() - 1, 0, false),
                                                           width(), numeric()),
                                         BasicDType));

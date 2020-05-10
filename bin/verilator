@@ -184,11 +184,14 @@ sub run {
             if (($status & 127) == 4  # SIGILL
                 || ($status & 127) == 8  # SIGFPA
                 || ($status & 127) == 11) {  # SIGSEGV
-                warn "%Error: Verilator internal fault, sorry.  Consider trying --debug --gdbbt\n" if !$Debug;
+                warn "%Error: Verilator internal fault, sorry. "
+                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
             } elsif (($status & 127) == 6) {  # SIGABRT
-                warn "%Error: Verilator aborted.  Consider trying --debug --gdbbt\n" if !$Debug;
+                warn "%Error: Verilator aborted. "
+                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
             } else {
-                warn "%Error: Verilator threw signal $status.  Consider trying --debug --gdbbt\n" if !$Debug;
+                warn "%Error: Verilator threw signal $status. "
+                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
             }
         }
         if (!$opt_quiet_exit && ($status != 256 || $Debug)) {  # i.e. not normal exit(1)
@@ -271,12 +274,12 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
     --bin <filename>            Override Verilator binary
-    --build                     Call make system to build executable after Verilation
+    --build                     Build model executable/library after Verilation
      -CFLAGS <flags>            C++ Compiler flags for makefile
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
     --clk <signal-name>         Mark specified signal as clock
-    --make <make-system>        Generate scripts for specified make system
+    --make <build-tool>         Generate scripts for specified build tool
     --compiler <compiler-name>  Tune for specified C++ compiler
     --converge-limit <loops>    Tune convergence settle time
     --coverage                  Enable all coverage
@@ -322,7 +325,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --language <lang>           Default language standard to parse
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
-     -MAKEFLAGS <flags>         Options to make/cmake during --build
+     -MAKEFLAGS <flags>         Options to make during --build
     --max-num-width <value>     Maximum number width (default: 64K)
     --MMD                       Create .d dependency files
     --MP                        Create phony dependency targets
@@ -542,8 +545,10 @@ output files.
 
 =item --build
 
-After generating the SystemC/C++ code, Verilator will use the make system
-to build a library or executable. See also C<--make> and C<--exe>.
+After generating the SystemC/C++ code, Verilator will invoke the toolchain to
+build the model library (and executable when C<--exe> is also used). Verilator
+manages the build itself, and for this --build requires GNU Make to be
+available on the platform.
 
 =item -CFLAGS I<flags>
 
@@ -590,15 +595,17 @@ If clock signals are assigned to vectors and then later used individually,
 Verilator will attempt to decompose the vector and connect the single-bit
 clock signals directly.  This should be transparent to the user.
 
-=item --make I<make-system>
+=item --make I<build-tool>
 
-Generates a script for the specified make system.
+Generates a script for the specified build tool.
 
-Supported make systems are gmake and cmake. Both can be specified.
-If no make system is specified, gmake is assumed.
-The executable of gmake can be configured via environment variable "MAKE".
+Supported values are C<gmake> for GNU Make and C<cmake> for CMake.  Both can be
+specified together.  If no build tool is specified, gmake is assumed.  The
+executable of gmake can be configured via environment variable "MAKE".
 
-See also --build.
+When using --build Verilator takes over the responsibility of building the
+model library/executable.  For this reason --make cannot be specified when
+using --build.
 
 =item --compiler I<compiler-name>
 
@@ -874,7 +881,10 @@ octal (0..) or binary (0b..) notation.
 
 =item Double literals
 
-Double literals must contain a dot (.) and/or an exponent (e).
+Double literals must be one of the following styles:
+  - contains a dot (.) (e.g. 1.23)
+  - contains an expornent (e/E) (e.g. 12e3)
+  - contains p/P for hexadecimal floating point in C99 (e.g. 0x123.ABCp1)
 
 =item Strings
 
@@ -948,9 +958,11 @@ for very small modules; they will always be inlined, if allowed.
 
 =item -j <value>
 
-Specify the parallelism for make system. This option is used when --build
-options is specified. <value> must be a positive integer or can be omitted.
-Build system exploits maximum parallelism when <value> is omitted.
+Specify the level of parallelism for --build. <value> must be a positive
+integer specifying the maximum number of parallel build jobs, or can be
+omitted. When <value> is omitted, the build will not try to limit the number of
+parallel build jobs but attempt to execute all independent build steps in
+parallel.
 
 =item -LDFLAGS I<flags>
 
@@ -999,10 +1011,11 @@ If the design is not to be completely Verilated see also the --bbox-sys and
 
 =item -MAKEFLAGS <string>
 
-When using --build, add the specified flag to the make/cmake command line.
+When using --build, add the specified flag to the invoked make command line.
 For multiple flags either pass them as a single argument with space separators
 quoted in the shell (e.g. C<-MAKEFLAGS "-a -b">), or use multiple -MAKEFLAGS
-arguments (e.g. C<-MAKEFLAGS -l -MAKEFLAGS -k>).
+arguments (e.g. C<-MAKEFLAGS -l -MAKEFLAGS -k>). Use of this option should not
+be required for simple builds using the host toolchain.
 
 =item --max-num-width I<value>
 
@@ -1573,7 +1586,9 @@ Note -v is fairly standard across Verilog tools.
 
 =item --no-verilate
 
-When using --build, disable generation of C++/SC code, and only run make/cmake.
+When using --build, disable generation of C++/SC code, and execute only the
+build. This can be useful for rebuilding verilated code produced by a previous
+invocation of Verilator.
 
 =item  +verilog1995ext+I<ext>
 
@@ -2068,18 +2083,18 @@ OPT, OPT_FAST, or OPT_SLOW lib/verilated.mk.  Or, use the -CFLAGS and/or
 the compiler or linker.  Or, just for one run, pass them on the command
 line to make:
 
-    make OPT_FAST="-Os -fno-stack-protector" -f Vour.mk Vour__ALL.a
+    make OPT_FAST="-Os -march=native -fno-stack-protector" -f Vour.mk Vour__ALL.a
 
 OPT_FAST specifies optimizations for those programs that are part of the
 fast path, mostly code that is executed every cycle.  OPT_SLOW specifies
 optimizations for slow-path files (plus tracing), which execute only
 rarely, yet take a long time to compile with optimization on.  OPT
 specifies overall optimization and affects all compiles, including those
-OPT_FAST and OPT_SLOW control.  For best results, use OPT="-Os", and link
-with "-static".  Nearly the same results can be had with much better
-compile times with OPT_FAST="-O1 -fstrict-aliasing".  Higher optimization
-such as "-O2" or "-O3" may help, but gcc compile times may be excessive
-under O3 on even medium sized designs.
+OPT_FAST and OPT_SLOW control.  For best results, use OPT="-Os
+-march=native", and link with "-static".  Nearly the same results can be
+had with much better compile times with OPT_FAST="-O1 -fstrict-aliasing".
+Higher optimization such as "-O2" or "-O3" may help, but gcc compile times
+may be excessive under O3 on even medium sized designs.
 
 Unfortunately, using the optimizer with SystemC files can result in
 compiles taking several minutes.  (The SystemC libraries have many little
@@ -2190,7 +2205,7 @@ needed at simulation runtime.
 
 =item MAKE
 
-Executable of the make command used in --build option.
+Names the executable of the make command invoked when using the --build option.
 Some operating systems may require "gmake" to this variable to launch GNU make.
 If this variable is not specified, "make" is used.
 
@@ -5271,17 +5286,21 @@ be accessing with a /*verilator public*/ comment before the closing
 semicolon.  Then scope into the C++ class to read the value of the signal,
 as you would any other member variable.
 
-Signals are the smallest of 8-bit chars, 16-bit shorts, 32-bit longs, or
-64-bit long longs that fits the width of the signal.  Generally, you can
-use just uint32_t's for 1 to 32 bits, or vluint64_t for 1 to 64 bits, and
-the compiler will properly up-convert smaller entities.
+Signals are the smallest of 8-bit unsigned chars (equivalent to uint8_t),
+16-bit unsigned shorts (uint16_t), 32-bit unsigned longs (uint32_t), or
+64-bit unsigned long longs (uint64_t) that fits the width of the signal.
+Generally, you can use just uint32_t's for 1 to 32 bits, or vluint64_t for
+1 to 64 bits, and the compiler will properly up-convert smaller entities.
+Note even signed ports are declared as unsigned; you must sign extend
+yourself to the appropriate signal width.
 
 Signals wider than 64 bits are stored as an array of 32-bit uint32_t's.
 Thus to read bits 31:0, access signal[0], and for bits 63:32, access
 signal[1].  Unused bits (for example bit numbers 65-96 of a 65-bit vector)
-will always be zero.  if you change the value you must make sure to pack
-zeros in the unused bits or core-dumps may result.  (Because Verilator
-strips array bound checks where it believes them to be unnecessary.)
+will always be zero.  If you change the value you must make sure to pack
+zeros in the unused bits or core-dumps may result, because Verilator strips
+array bound checks where it believes them to be unnecessary to improve
+performance.
 
 In the SYSTEMC example above, if you had in our.v:
 

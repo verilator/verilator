@@ -81,36 +81,28 @@ public:
     }
 };
 
-// Commands used by thread tracing. Note that the bottom 8 bits of all these
-// values are empty and are used to store small amounts of additional command
-// parameters. Anonymous enum in class, as we want it scoped, but we also
-// want the automatic conversion to integer types.
+// Commands used by thread tracing. Anonymous enum in class, as we want
+// it scoped, but we also want the automatic conversion to integer types.
 class VerilatedTraceCommand {
 public:
+    // These must all fit in 4 bit at the moment, as the tracing routines
+    // pack parameters in the top bits.
     enum {
-        CHG_BIT = 0x0000,
-        CHG_BUS = 0x0100,
-        CHG_QUAD = 0x0200,
-        CHG_ARRAY = 0x0300,
-        CHG_FLOAT = 0x0400,
-        CHG_DOUBLE = 0x0500,
-        TIME_CHANGE = 0x8000,
-        END = 0xf000,  // End of buffer
-        SHUTDOWN = 0xf200  // Shutdown worker thread, also marks end of buffer
+        CHG_BIT_0 = 0x0,
+        CHG_BIT_1 = 0x1,
+        CHG_CDATA = 0x2,
+        CHG_SDATA = 0x3,
+        CHG_IDATA = 0x4,
+        CHG_QDATA = 0x5,
+        CHG_WDATA = 0x6,
+        CHG_FLOAT = 0x7,
+        CHG_DOUBLE = 0x8,
+        // TODO: full..
+        TIME_CHANGE = 0xd,
+        END = 0xe,  // End of buffer
+        SHUTDOWN = 0xf  // Shutdown worker thread, also marks end of buffer
     };
 };
-
-typedef union {
-    vluint32_t cmd;  // Command code + params in bottom 8 bits
-    vluint32_t* oldp;  // Pointer to previous value buffer to consult/update
-    // Note: These are 64-bit wide, as this union already has a pointer type in it.
-    vluint64_t params;  // Command parameter
-    // New signal value in various forms
-    vluint64_t newBits;
-    float newFloat;
-    double newDouble;
-    vluint64_t timeui;
-} VerilatedTraceEntry;
 #endif
 
 class VerilatedTraceCallInfo;
@@ -132,6 +124,7 @@ private:
     bool m_fullDump;  ///< Whether a full dump is required on the next call to 'dump'
     vluint32_t m_nextCode;  ///< Next code number to assign
     vluint32_t m_numSignals;  ///< Number of distinct signals
+    vluint32_t m_maxBits;  ///< Number of bits in the widest signal
     std::string m_moduleName;  ///< Name of module being trace initialized now
     char m_scopeEscape;
     double m_timeRes;  ///< Time resolution (ns/ms etc)
@@ -149,18 +142,18 @@ private:
     size_t m_traceBufferSize;
 
     // Buffers handed to worker for processing
-    VerilatedThreadQueue<VerilatedTraceEntry*> m_buffersToWorker;
+    VerilatedThreadQueue<vluint32_t*> m_buffersToWorker;
     // Buffers returned from worker after processing
-    VerilatedThreadQueue<VerilatedTraceEntry*> m_buffersFromWorker;
+    VerilatedThreadQueue<vluint32_t*> m_buffersFromWorker;
 
     // Get a new trace buffer that can be populated. May block if none available
-    VerilatedTraceEntry* getTraceBuffer();
+    vluint32_t* getTraceBuffer();
 
     // Write pointer into current buffer
-    VerilatedTraceEntry* m_traceBufferWritep;
+    vluint32_t* m_traceBufferWritep;
 
     // End of trace buffer
-    VerilatedTraceEntry* m_traceBufferEndp;
+    vluint32_t* m_traceBufferEndp;
 
     // The worker thread itself
     std::unique_ptr<std::thread> m_workerThread;
@@ -169,7 +162,7 @@ private:
     void workerThreadMain();
 
     // Wait until given buffer is placed in m_buffersFromWorker
-    void waitForBuffer(const VerilatedTraceEntry* bufferp);
+    void waitForBuffer(const vluint32_t* bufferp);
 
     // Shut down and join worker, if it's running, otherwise do nothing
     void shutdownWorker();
@@ -186,6 +179,7 @@ protected:
 
     vluint32_t nextCode() const { return m_nextCode; }
     vluint32_t numSignals() const { return m_numSignals; }
+    vluint32_t maxBits() const { return m_maxBits; }
     const std::string& moduleName() const { return m_moduleName; }
     void fullDump(bool value) { m_fullDump = value; }
     vluint64_t timeLastDump() { return m_timeLastDump; }
@@ -261,67 +255,84 @@ public:
     // these here, but we cannot afford dynamic dispatch for calling these as
     // this is very hot code during tracing.
 
-    // duck-typed void emitBit(vluint32_t code, vluint32_t newval) = 0;
-    // duck-typed template <int T_Bits> void emitBus(vluint32_t code, vluint32_t newval) = 0;
-    // duck-typed void emitQuad(vluint32_t code, vluint64_t newval, int bits) = 0;
-    // duck-typed void emitArray(vluint32_t code, const vluint32_t* newvalp, int bits) = 0;
+    // duck-typed void emitBit(vluint32_t code, CData newval) = 0;
+    // duck-typed void emitCData(vluint32_t code, CData newval, int bits) = 0;
+    // duck-typed void emitSData(vluint32_t code, SData newval, int bits) = 0;
+    // duck-typed void emitIData(vluint32_t code, IData newval, int bits) = 0;
+    // duck-typed void emitQData(vluint32_t code, QData newval, int bits) = 0;
+    // duck-typed void emitWData(vluint32_t code, const WData* newvalp, int bits) = 0;
     // duck-typed void emitFloat(vluint32_t code, float newval) = 0;
     // duck-typed void emitDouble(vluint32_t code, double newval) = 0;
 
     vluint32_t* oldp(vluint32_t code) { return m_sigs_oldvalp + code; }
 
     // Write to previous value buffer value and emit trace entry.
-    void fullBit(vluint32_t* oldp, vluint32_t newval);
-    template <int T_Bits> void fullBus(vluint32_t* oldp, vluint32_t newval);
-    void fullQuad(vluint32_t* oldp, vluint64_t newval, int bits);
-    void fullArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits);
+    void fullBit(vluint32_t* oldp, CData newval);
+    void fullCData(vluint32_t* oldp, CData newval, int bits);
+    void fullSData(vluint32_t* oldp, SData newval, int bits);
+    void fullIData(vluint32_t* oldp, IData newval, int bits);
+    void fullQData(vluint32_t* oldp, QData newval, int bits);
+    void fullWData(vluint32_t* oldp, const WData* newvalp, int bits);
     void fullFloat(vluint32_t* oldp, float newval);
     void fullDouble(vluint32_t* oldp, double newval);
 
 #ifdef VL_TRACE_THREADED
     // Threaded tracing. Just dump everything in the trace buffer
-    inline void chgBit(vluint32_t* oldp, vluint32_t newval) {
-        m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_BIT | newval;
-        m_traceBufferWritep[1].oldp = oldp;
+    inline void chgBit(vluint32_t code, CData newval) {
+        m_traceBufferWritep[0] = VerilatedTraceCommand::CHG_BIT_0 | newval;
+        m_traceBufferWritep[1] = code;
         m_traceBufferWritep += 2;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
-    template <int T_Bits> inline void chgBus(vluint32_t* oldp, vluint32_t newval) {
-        m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_BUS | T_Bits;
-        m_traceBufferWritep[1].oldp = oldp;
-        m_traceBufferWritep[2].newBits = newval;
+    inline void chgCData(vluint32_t code, CData newval, int bits) {
+        m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_CDATA;
+        m_traceBufferWritep[1] = code;
+        m_traceBufferWritep[2] = newval;
         m_traceBufferWritep += 3;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
-    inline void chgQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
-        m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_QUAD | bits;
-        m_traceBufferWritep[1].oldp = oldp;
-        m_traceBufferWritep[2].newBits = newval;
+    inline void chgSData(vluint32_t code, SData newval, int bits) {
+        m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_SDATA;
+        m_traceBufferWritep[1] = code;
+        m_traceBufferWritep[2] = newval;
         m_traceBufferWritep += 3;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
-    inline void chgArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
-        m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_ARRAY;
-        m_traceBufferWritep[1].oldp = oldp;
-        m_traceBufferWritep[2].params = bits;
-        m_traceBufferWritep += 3;
-        vluint32_t* const wp = reinterpret_cast<vluint32_t*>(m_traceBufferWritep);
-        for (int i = 0; i < (bits + 31) / 32; ++i) { wp[i] = newvalp[i]; }
-        m_traceBufferWritep += (bits + 63) / 64;
-        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
-    }
-    inline void chgFloat(vluint32_t* oldp, float newval) {
-        m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_FLOAT;
-        m_traceBufferWritep[1].oldp = oldp;
-        m_traceBufferWritep[2].newFloat = newval;
+    inline void chgIData(vluint32_t code, IData newval, int bits) {
+        m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_IDATA;
+        m_traceBufferWritep[1] = code;
+        m_traceBufferWritep[2] = newval;
         m_traceBufferWritep += 3;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
-    inline void chgDouble(vluint32_t* oldp, double newval) {
-        m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_DOUBLE;
-        m_traceBufferWritep[1].oldp = oldp;
-        m_traceBufferWritep[2].newDouble = newval;
+    inline void chgQData(vluint32_t code, QData newval, int bits) {
+        m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_QDATA;
+        m_traceBufferWritep[1] = code;
+        *reinterpret_cast<QData*>(m_traceBufferWritep + 2) = newval;
+        m_traceBufferWritep += 4;
+        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
+    }
+    inline void chgWData(vluint32_t code, const WData* newvalp, int bits) {
+        m_traceBufferWritep[0] = (bits << 4) | VerilatedTraceCommand::CHG_WDATA;
+        m_traceBufferWritep[1] = code;
+        m_traceBufferWritep += 2;
+        for (int i = 0; i < (bits + 31) / 32; ++i) { *m_traceBufferWritep++ = newvalp[i]; }
+        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
+    }
+    inline void chgFloat(vluint32_t code, float newval) {
+        m_traceBufferWritep[0] = VerilatedTraceCommand::CHG_FLOAT;
+        m_traceBufferWritep[1] = code;
+        // cppcheck-suppress invalidPointerCast
+        *reinterpret_cast<float*>(m_traceBufferWritep + 2) = newval;
         m_traceBufferWritep += 3;
+        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
+    }
+    inline void chgDouble(vluint32_t code, double newval) {
+        m_traceBufferWritep[0] = VerilatedTraceCommand::CHG_DOUBLE;
+        m_traceBufferWritep[1] = code;
+        // cppcheck-suppress invalidPointerCast
+        *reinterpret_cast<double*>(m_traceBufferWritep + 2) = newval;
+        m_traceBufferWritep += 4;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
 
@@ -335,22 +346,30 @@ public:
     // thread and are called chg*Impl
 
     // Check previous dumped value of signal. If changed, then emit trace entry
-    inline void CHG(Bit)(vluint32_t* oldp, vluint32_t newval) {
+    inline void CHG(Bit)(vluint32_t* oldp, CData newval) {
         const vluint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullBit(oldp, newval);
     }
-    template <int T_Bits> inline void CHG(Bus)(vluint32_t* oldp, vluint32_t newval) {
+    inline void CHG(CData)(vluint32_t* oldp, CData newval, int bits) {
         const vluint32_t diff = *oldp ^ newval;
-        if (VL_UNLIKELY(diff)) fullBus<T_Bits>(oldp, newval);
+        if (VL_UNLIKELY(diff)) fullCData(oldp, newval, bits);
     }
-    inline void CHG(Quad)(vluint32_t* oldp, vluint64_t newval, int bits) {
-        const vluint64_t diff = *reinterpret_cast<vluint64_t*>(oldp) ^ newval;
-        if (VL_UNLIKELY(diff)) fullQuad(oldp, newval, bits);
+    inline void CHG(SData)(vluint32_t* oldp, SData newval, int bits) {
+        const vluint32_t diff = *oldp ^ newval;
+        if (VL_UNLIKELY(diff)) fullSData(oldp, newval, bits);
     }
-    inline void CHG(Array)(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
+    inline void CHG(IData)(vluint32_t* oldp, IData newval, int bits) {
+        const vluint32_t diff = *oldp ^ newval;
+        if (VL_UNLIKELY(diff)) fullIData(oldp, newval, bits);
+    }
+    inline void CHG(QData)(vluint32_t* oldp, QData newval, int bits) {
+        const vluint64_t diff = *reinterpret_cast<QData*>(oldp) ^ newval;
+        if (VL_UNLIKELY(diff)) fullQData(oldp, newval, bits);
+    }
+    inline void CHG(WData)(vluint32_t* oldp, const WData* newvalp, int bits) {
         for (int i = 0; i < (bits + 31) / 32; ++i) {
             if (VL_UNLIKELY(oldp[i] ^ newvalp[i])) {
-                fullArray(oldp, newvalp, bits);
+                fullWData(oldp, newvalp, bits);
                 return;
             }
         }

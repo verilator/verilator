@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -33,7 +33,7 @@ if ( -e $Self->{obj_dir} . '/Vt_flag_verilate.mk' ) {
 compile(  # Don't call cmake nor gmake from driver.pl. Just verilate here.
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
-    verilator_flags2 => ['--exe --cc --make gmake --verilate',
+    verilator_flags2 => ['--exe --cc --verilate',
                          '../' . $Self->{main_filename}]
     );
 
@@ -46,7 +46,7 @@ if ( ! -e $Self->{obj_dir} . '/Vt_flag_verilate.mk' ) {
 compile(  # Don't call cmake nor gmake from driver.pl. Just build here
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
-    verilator_flags2 => ['--exe --cc --build --make gmake --no-verilate',
+    verilator_flags2 => ['--exe --cc --build --no-verilate',
                          '../' . $Self->{main_filename},
                          '--debugi 1 --dump-tree'],
     );

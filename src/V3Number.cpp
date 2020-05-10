@@ -83,6 +83,12 @@ void V3Number::v3errorEnd(std::ostringstream& str) const {
     }
 }
 
+void V3Number::v3errorEndFatal(std::ostringstream& str) const {
+    v3errorEnd(str);
+    assert(0);
+    VL_UNREACHABLE
+}
+
 //======================================================================
 // Read class functions
 // CREATION
@@ -212,15 +218,14 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
                     this->opAdd(product, addend);
                     if (product.bitsValue(width(), 4)) {  // Overflowed
                         static int warned = 0;
-                        v3error(
-                            "Too many digits for "
-                            << width() << " bit number: " << sourcep << std::endl
-                            << ((!m_sized && !warned++)
-                                    ? (V3Error::warnMore() + "... As that number was unsized"
-                                       + " ('d...) it is limited to 32 bits (IEEE 1800-2017 "
-                                         "5.7.1)\n"
-                                       + V3Error::warnMore() + "... Suggest adding a size to it.")
-                                    : ""));
+                        v3error("Too many digits for "
+                                << width() << " bit number: " << sourcep << std::endl
+                                << ((!m_sized && !warned++) ? (
+                                        V3Error::warnMore() + "... As that number was unsized"
+                                        + " ('d...) it is limited to 32 bits (IEEE 1800-2017 "
+                                          "5.7.1)\n"
+                                        + V3Error::warnMore() + "... Suggest adding a size to it.")
+                                                            : ""));
                         while (*(cp + 1)) cp++;  // Skip ahead so don't get multiple warnings
                     }
                 }
@@ -916,10 +921,17 @@ bool V3Number::isFourState() const {
     }
     return false;
 }
-bool V3Number::isUnknown() const {
+bool V3Number::isAnyX() const {
     if (isDouble() || isString()) return false;
     for (int bit = 0; bit < width(); bit++) {
         if (bitIsX(bit)) return true;
+    }
+    return false;
+}
+bool V3Number::isAnyXZ() const {
+    if (isDouble() || isString()) return false;
+    for (int bit = 0; bit < width(); bit++) {
+        if (bitIsX(bit) || bitIsZ(bit)) return true;
     }
     return false;
 }
@@ -1143,7 +1155,7 @@ V3Number& V3Number::opCountOnes(const V3Number& lhs) {
 }
 V3Number& V3Number::opIsUnknown(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
-    return setSingleBits(lhs.isUnknown());
+    return setSingleBits(lhs.isAnyXZ());
 }
 V3Number& V3Number::opOneHot(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);

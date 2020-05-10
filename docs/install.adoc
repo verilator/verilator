@@ -80,8 +80,7 @@ MSVC++.
 
 To build or run Verilator you need these standard packages:
 
-   sudo apt-get install perl python3
-   sudo apt-get install make
+   sudo apt-get install perl python3 make
    sudo apt-get install g++  # Alternatively, clang
    sudo apt-get install libgz  # Non-Ubuntu (ignore if gives error)
    sudo apt-get install libfl2 libfl-dev zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
@@ -90,18 +89,16 @@ To build or run the following are optional but should be installed for
 good performance:
 
    sudo apt-get install ccache  # If present at build, needed for run
-   sudo apt-get install libgoogle-perftools-dev
+   sudo apt-get install libgoogle-perftools-dev numactl
 
 To build Verilator you will need to install these packages; these do not
 need to be present to run Verilator:
 
-   sudo apt-get install git
-   sudo apt-get install autoconf
-   sudo apt-get install flex bison
+   sudo apt-get install git autoconf flex bison
 
 Those developing Verilator itself may also want these (see internals.adoc):
 
-   sudo apt-get install gdb asciidoctor graphviz cmake
+   sudo apt-get install gdb asciidoctor graphviz cmake clang clang-format gprof
    cpan install Pod::Perldoc
    cpan install Unix::Processors
    cpan install Parallel::Forker
@@ -267,10 +264,9 @@ set in your environment; it is built into the executable.
 
 == Announcements
 
-To get notified of new releases, login to
-https://www.veripool.org[Veripool], and click the "watch" button near the
-top right under https://www.veripool.org/projects/verilator/news[Verilator
-News].
+To get notified of new releases, go to
+https://github.com/verilator/verilator-announce[Verilator announcement
+repository] and follow the instructions there.
 
 == Directory Structure
 

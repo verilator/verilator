@@ -204,6 +204,7 @@ private:
 
 public:
     void v3errorEnd(std::ostringstream& sstr) const;
+    void v3errorEndFatal(std::ostringstream& sstr) const VL_ATTR_NORETURN;
     void width(int width, bool sized = true) {
         // Set width.  Only set m_width here, as we need to tweak vector size
         if (width) {
@@ -269,7 +270,8 @@ public:
     bool isLt(const V3Number& rhs) const;  // operator<
     bool isLtXZ(const V3Number& rhs) const;  // operator< with XZ compared
     void isSigned(bool ssigned) { m_signed = ssigned; }
-    bool isUnknown() const;
+    bool isAnyX() const;
+    bool isAnyXZ() const;
     bool isMsbXZ() const { return bitIsXZ(m_width); }
     uint32_t toUInt() const;
     vlsint32_t toSInt() const;

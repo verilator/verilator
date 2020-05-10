@@ -460,6 +460,8 @@ CLANGFORMAT = clang-format
 CLANGFORMAT_FLAGS = -i
 
 clang-format:
+	@$(CLANGFORMAT) --version | egrep 10.0 > /dev/null \
+		|| echo "*** You are not using clang-format 10.0, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CPPCHECK_CPP) $(CPPCHECK_H)
 
 ftp: info

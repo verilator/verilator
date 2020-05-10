@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -15,7 +15,7 @@ compile(
     v_flags => ["--debug-sigsegv"],
     fails => 1,
     expect =>
-'%Error: Verilator internal fault, sorry.  Consider trying --debug --gdbbt
+'%Error: Verilator internal fault, sorry. Suggest trying --debug --gdbbt
 %Error: Command Failed.*',
     );
 

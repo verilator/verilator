@@ -829,6 +829,10 @@ private:
 
     virtual void visit(AstComment*) VL_OVERRIDE {}
 
+    virtual void visit(AstJumpBlock* nodep) VL_OVERRIDE {
+        if (jumpingOver(nodep)) return;
+        iterateChildren(nodep);
+    }
     virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         checkNodeInfo(nodep);
@@ -838,6 +842,8 @@ private:
         }
     }
     virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+        // This only supports forward jumps. That's all we make at present,
+        // AstJumpGo::broken uses brokeExistsBelow() to check this.
         if (jumpingOver(nodep)) return;
         checkNodeInfo(nodep);
         iterateChildren(nodep);

@@ -697,15 +697,18 @@ public:
         iterateAndNextNull(nodep->lhsp());
         puts(")");
     }
-    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
-        puts("goto __Vlabel" + cvtToStr(nodep->labelp()->labelNum()) + ";\n");
-    }
-    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+    virtual void visit(AstJumpBlock* nodep) VL_OVERRIDE {
         nodep->labelNum(++m_labelNum);
         puts("{\n");  // Make it visually obvious label jumps outside these
         iterateAndNextNull(nodep->stmtsp());
+        iterateAndNextNull(nodep->endStmtsp());
         puts("}\n");
-        puts("__Vlabel" + cvtToStr(nodep->labelNum()) + ": ;\n");
+    }
+    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
+        puts("goto __Vlabel" + cvtToStr(nodep->labelp()->blockp()->labelNum()) + ";\n");
+    }
+    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+        puts("__Vlabel" + cvtToStr(nodep->blockp()->labelNum()) + ": ;\n");
     }
     virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         iterateAndNextNull(nodep->precondsp());
@@ -3567,28 +3570,33 @@ class EmitCTrace : EmitCStmts {
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
         iterateAndNextNull(nodep->precondsp());
-        string full = ((m_funcp->funcType() == AstCFuncType::TRACE_FULL
-                        || m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB)
-                           ? "full"
-                           : "chg");
-        bool emitWidth = false;
+        const bool full = (m_funcp->funcType() == AstCFuncType::TRACE_FULL
+                           || m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB);
+        const string func = full ? "full" : "chg";
+        bool emitWidth = true;
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("vcdp->" + full + "Double");
+            puts("vcdp->" + func + "Double");
+            emitWidth = false;
         } else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
-            puts("vcdp->" + full + "Array");
-            emitWidth = true;
+            puts("vcdp->" + func + "WData");
         } else if (nodep->isQuad()) {
-            puts("vcdp->" + full + "Quad");
-            emitWidth = true;
+            puts("vcdp->" + func + "QData");
+        } else if (nodep->declp()->widthMin() > 16) {
+            puts("vcdp->" + func + "IData");
+        } else if (nodep->declp()->widthMin() > 8) {
+            puts("vcdp->" + func + "SData");
         } else if (nodep->declp()->widthMin() > 1) {
-            puts("vcdp->" + full + "Bus<" + cvtToStr(nodep->declp()->widthMin()) + ">");
+            puts("vcdp->" + func + "CData");
         } else {
-            puts("vcdp->" + full + "Bit");
+            puts("vcdp->" + func + "Bit");
+            emitWidth = false;
         }
 
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
         const uint32_t code = nodep->declp()->code() + offset;
-        puts("(oldp+" + cvtToStr(code - m_baseCode) + ",");
+        puts(v3Global.opt.trueTraceThreads() && !full ? "(base+" : "(oldp+");
+        puts(cvtToStr(code - m_baseCode));
+        puts(",");
         emitTraceValue(nodep, arrayindex);
         if (emitWidth) puts("," + cvtToStr(nodep->declp()->widthMin()));
         puts(");\n");
@@ -3667,8 +3675,14 @@ class EmitCTrace : EmitCStmts {
                     nodep->stmtsp()->v3fatalSrc("Trace sub function should contain AstTraceInc");
                 }
                 m_baseCode = stmtp->declp()->code();
-                puts("vluint32_t* oldp = vcdp->oldp(code+" + cvtToStr(m_baseCode) + ");\n");
-                puts("if (false && vcdp && oldp) {}  // Prevent unused\n");
+                if (v3Global.opt.trueTraceThreads()
+                    && nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
+                    puts("vluint32_t base = code+" + cvtToStr(m_baseCode) + ";\n");
+                    puts("if (false && vcdp && base) {}  // Prevent unused\n");
+                } else {
+                    puts("vluint32_t* oldp = vcdp->oldp(code+" + cvtToStr(m_baseCode) + ");\n");
+                    puts("if (false && vcdp && oldp) {}  // Prevent unused\n");
+                }
             } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
                 puts("int c = code;\n");
                 puts("if (false && vcdp && c) {}  // Prevent unused\n");

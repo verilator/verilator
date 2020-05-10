@@ -274,7 +274,7 @@ private:
             && !m_inBBox  // We may have falsely considered a SysIgnore as a driver
             && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
             && !varp->fileline()->warnIsOff(
-                   V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
+                V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
             nodep->v3warn(ALWCOMBORDER,
                           "Always_comb variable driven after use: " << nodep->prettyNameQ());
             varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER,

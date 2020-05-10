@@ -301,7 +301,8 @@ private:
                                    << " (IEEE 1800-2017 6.20.1): " << nodep->prettyNameQ());
                 } else {
                     V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
-                    if (!VN_IS(nodep->valuep(), Const)) {  // Complex init, like an array
+                    if (!VN_IS(nodep->valuep(), Const)
+                        && !VN_IS(nodep->valuep(), Unbounded)) {  // Complex init, like an array
                         // Make a new INITIAL to set the value.
                         // This allows the normal array/struct handling code to properly
                         // initialize the parameter.

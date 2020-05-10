@@ -16,9 +16,16 @@
 // V3LinkJump's Transformations:
 //
 // Each module:
-//      Look for BEGINs
-//          BEGIN(VAR...) -> VAR ... {renamed}
-//      FOR -> WHILEs
+//   Look for BEGINs
+//      BEGIN(VAR...) -> VAR ... {renamed}
+//   FOR -> WHILEs
+//
+//   Add JumpLabel which branches to after statements within JumpLabel
+//      RETURN -> JUMPBLOCK(statements with RETURN changed to JUMPGO, ..., JUMPLABEL)
+//      WHILE(... BREAK) -> JUMPBLOCK(WHILE(... statements with BREAK changed to JUMPGO),
+//                                    ... JUMPLABEL)
+//      WHILE(... CONTINUE) -> WHILE(JUMPBLOCK(... statements with CONTINUE changed to JUMPGO,
+//                                    ... JUMPPABEL))
 //
 //*************************************************************************
 
@@ -85,7 +92,9 @@ private:
         if (VN_IS(underp, JumpLabel)) {
             return VN_CAST(underp, JumpLabel);
         } else {  // Move underp stuff to be under a new label
-            AstJumpLabel* labelp = new AstJumpLabel(nodep->fileline(), NULL);
+            AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), NULL);
+            AstJumpLabel* labelp = new AstJumpLabel(nodep->fileline(), blockp);
+            blockp->labelp(labelp);
 
             AstNRelinker repHandle;
             if (under_and_next) {
@@ -93,14 +102,16 @@ private:
             } else {
                 underp->unlinkFrBack(&repHandle);
             }
-            repHandle.relink(labelp);
+            repHandle.relink(blockp);
 
-            labelp->addStmtsp(underp);
+            blockp->addStmtsp(underp);
             // Keep any AstVars under the function not under the new JumpLabel
             for (AstNode *nextp, *varp = underp; varp; varp = nextp) {
                 nextp = varp->nextp();
-                if (VN_IS(varp, Var)) labelp->addPrev(varp->unlinkFrBack());
+                if (VN_IS(varp, Var)) blockp->addPrev(varp->unlinkFrBack());
             }
+            // Label goes last
+            blockp->addEndStmtsp(labelp);
             return labelp;
         }
     }

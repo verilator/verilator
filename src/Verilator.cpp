@@ -23,8 +23,11 @@
 #include "V3AssertPre.h"
 #include "V3Begin.h"
 #include "V3Branch.h"
+#include "V3CCtors.h"
+#include "V3CUse.h"
 #include "V3Case.h"
 #include "V3Cast.h"
+#include "V3Cdc.h"
 #include "V3Changed.h"
 #include "V3Class.h"
 #include "V3Clean.h"
@@ -33,22 +36,19 @@
 #include "V3Const.h"
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
-#include "V3CCtors.h"
-#include "V3CUse.h"
 #include "V3Dead.h"
 #include "V3Delayed.h"
 #include "V3Depth.h"
 #include "V3DepthBlock.h"
 #include "V3Descope.h"
 #include "V3EmitC.h"
-#include "V3EmitCMake.h"
 #include "V3EmitCMain.h"
+#include "V3EmitCMake.h"
 #include "V3EmitMk.h"
 #include "V3EmitV.h"
 #include "V3EmitXml.h"
 #include "V3Expand.h"
 #include "V3File.h"
-#include "V3Cdc.h"
 #include "V3Gate.h"
 #include "V3GenClk.h"
 #include "V3Graph.h"
@@ -84,12 +84,12 @@
 #include "V3Stats.h"
 #include "V3String.h"
 #include "V3Subst.h"
+#include "V3TSP.h"
 #include "V3Table.h"
 #include "V3Task.h"
 #include "V3Trace.h"
 #include "V3TraceDecl.h"
 #include "V3Tristate.h"
-#include "V3TSP.h"
 #include "V3Undriven.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
@@ -502,9 +502,8 @@ static void verilate(const string& argString) {
     // Can we skip doing everything if times are ok?
     V3File::addSrcDepend(v3Global.opt.bin());
     if (v3Global.opt.skipIdentical().isTrue()
-        && V3File::checkTimes(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
-                                  + "__verFiles.dat",
-                              argString)) {
+        && V3File::checkTimes(
+            v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__verFiles.dat", argString)) {
         UINFO(1, "--skip-identical: No change to any source files, exiting\n");
         return;
     }
@@ -568,41 +567,28 @@ static void verilate(const string& argString) {
 
 static void execBuildJob() {
     UASSERT(v3Global.opt.build(), "--build is not specified.");
+    UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
+    UASSERT(!v3Global.opt.cmake(), "--build cannot use CMake.");
     UINFO(1, "Start Build\n");
 
-    std::stringstream cmd;
     const V3StringList& makeFlags = v3Global.opt.makeFlags();
     const int jobs = v3Global.opt.buildJobs();
     UASSERT(jobs >= 0, "-j option parser in V3Options.cpp filters out negative value");
-    if (v3Global.opt.gmake()) {  // If both gmake and cmake are chosen, use gmake to build.
-        cmd << v3Global.opt.getenvMAKE();
-        cmd << " -C " << v3Global.opt.makeDir();
-        cmd << " -f " << v3Global.opt.prefix() << ".mk";
-        if (jobs == 0) {
-            cmd << " -j";
-        } else if (jobs > 1) {
-            cmd << " -j " << jobs;
-        }
-        for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
-            cmd << ' ' << *it;
-        }
-    } else {
-        UASSERT(v3Global.opt.cmake(), "cmake or gmake must be chosen in V3Options.cpp");
-        cmd << "cd " << v3Global.opt.makeDir() << " && ";
-        cmd << "cmake";
-        for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
-            cmd << ' ' << *it;
-        }
-        cmd << ' ' << V3Os::getcwd() << " && ";
-        cmd << "cmake --build . ";
-        if (jobs == 0) {
-            cmd << " -j";
-        } else if (jobs > 1) {
-            cmd << " -j " << jobs;
-        }
-    }
-    const std::string cmdStr = cmd.str();
 
+    std::stringstream cmd;
+    cmd << v3Global.opt.getenvMAKE();
+    cmd << " -C " << v3Global.opt.makeDir();
+    cmd << " -f " << v3Global.opt.prefix() << ".mk";
+    if (jobs == 0) {
+        cmd << " -j";
+    } else if (jobs > 1) {
+        cmd << " -j " << jobs;
+    }
+    for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
+        cmd << ' ' << *it;
+    }
+
+    const std::string cmdStr = cmd.str();
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
         v3error(cmdStr << " exitted with " << exit_code << std::endl);

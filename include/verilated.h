@@ -1458,13 +1458,6 @@ static inline int _VL_CMPS_W(int lbits, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
 //=========================================================================
 // Math
 
-// Optimization bug in GCC 2.96 and presumably all-pre GCC 3 versions need this workaround,
-// we can't just
-//# define VL_NEGATE_I(data) (-(data))
-static inline IData VL_NEGATE_I(IData data) VL_PURE { return -data; }
-static inline QData VL_NEGATE_Q(QData data) VL_PURE { return -data; }
-static inline EData VL_NEGATE_E(EData data) VL_PURE { return -data; }
-
 static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp, WDataInP lwp) VL_MT_SAFE {
     EData carry = 1;
     for (int i = 0; i < words; ++i) {

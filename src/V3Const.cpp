@@ -102,7 +102,7 @@ private:
     bool m_doShort;  // Remove expressions that short circuit
     bool m_doV;  // Verilog, not C++ conversion
     bool m_doGenerate;  // Postpone width checking inside generate
-    bool m_hasJumpGo;  // JumpGo under this while
+    bool m_hasJumpDelay;  // JumpGo or Delay under this while
     AstNodeModule* m_modp;  // Current module
     AstArraySel* m_selp;  // Current select
     AstNode* m_scopep;  // Current scope
@@ -1637,6 +1637,11 @@ private:
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     did = true;
+                } else if (nodep->varp()->isParam() && VN_IS(valuep, Unbounded)) {
+                    AstNode* newp = valuep->cloneTree(false);
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    did = true;
                 }
             }
         }
@@ -1962,7 +1967,8 @@ private:
                         || VN_IS(nodep->condp(), LogNot))
                        && nodep->ifsp() && nodep->elsesp()) {
                 UINFO(4, "IF(NOT {x})  => IF(x) swapped if/else" << nodep << endl);
-                AstNode* condp = VN_CAST(nodep->condp(), Not)->lhsp()->unlinkFrBackWithNext();
+                AstNode* condp
+                    = VN_CAST(nodep->condp(), NodeUniop)->lhsp()->unlinkFrBackWithNext();
                 AstNode* ifsp = nodep->ifsp()->unlinkFrBackWithNext();
                 AstNode* elsesp = nodep->elsesp()->unlinkFrBackWithNext();
                 AstIf* ifp = new AstIf(nodep->fileline(), condp, elsesp, ifsp);
@@ -2121,11 +2127,11 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstWhile* nodep) VL_OVERRIDE {
-        bool oldHasJumpGo = m_hasJumpGo;
-        m_hasJumpGo = false;
+        bool oldHasJumpDelay = m_hasJumpDelay;
+        m_hasJumpDelay = false;
         { iterateChildren(nodep); }
-        bool thisWhileHasJumpGo = m_hasJumpGo;
-        m_hasJumpGo = thisWhileHasJumpGo || oldHasJumpGo;
+        bool thisWhileHasJumpDelay = m_hasJumpDelay;
+        m_hasJumpDelay = thisWhileHasJumpDelay || oldHasJumpDelay;
         if (m_doNConst) {
             if (nodep->condp()->isZero()) {
                 UINFO(4, "WHILE(0) => nop " << nodep << endl);
@@ -2136,7 +2142,7 @@ private:
                 }
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             } else if (nodep->condp()->isNeqZero()) {
-                if (!thisWhileHasJumpGo) {
+                if (!thisWhileHasJumpDelay) {
                     nodep->v3warn(INFINITELOOP, "Infinite loop (condition always true)");
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::INFINITELOOP,
                                                      true);  // Complain just once
@@ -2148,6 +2154,7 @@ private:
     }
     virtual void visit(AstInitArray* nodep) VL_OVERRIDE { iterateChildren(nodep); }
     virtual void visit(AstInitItem* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstUnbounded* nodep) VL_OVERRIDE { iterateChildren(nodep); }
     // These are converted by V3Param.  Don't constify as we don't want the
     // from() VARREF to disappear, if any.
     // If output of a presel didn't get consted, chances are V3Param didn't visit properly
@@ -2168,26 +2175,42 @@ private:
     //-----
     // Jump elimination
 
+    virtual void visit(AstDelay* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        m_hasJumpDelay = true;
+    }
     virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
-        m_hasJumpGo = true;
+        // Jump to label where label immediately follows label is not useful
+        if (nodep->labelp() == VN_CAST(nodep->nextp(), JumpLabel)) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            // Keep the label, might be other jumps pointing to it, gets cleaned later
+            return;
+        }
         if (m_doExpensive) {
+            // Any non-label statements (at this statement level) can never execute
+            while (nodep->nextp() && !VN_IS(nodep->nextp(), JumpLabel)) {
+                nodep->nextp()->unlinkFrBack()->deleteTree();
+            }
             // If last statement in a jump label we have JumpLabel(...., JumpGo)
             // Often caused by "return" in a Verilog function.  The Go is pointless, remove.
             if (!nodep->nextp()) {
-                if (AstJumpLabel* aboveLabelp = VN_CAST(nodep->abovep(), JumpLabel)) {
-                    if (aboveLabelp == nodep->labelp()) {
-                        UINFO(4, "JUMPGO => last remove " << nodep << endl);
-                        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                        return;
+                if (AstJumpBlock* aboveBlockp = VN_CAST(nodep->abovep(), JumpBlock)) {
+                    if (aboveBlockp == nodep->labelp()->blockp()) {
+                        if (aboveBlockp->endStmtsp() == nodep->labelp()) {
+                            UINFO(4, "JUMPGO => last remove " << nodep << endl);
+                            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                            return;
+                        }
                     }
                 }
             }
-            nodep->labelp()->user4(true);
+            nodep->labelp()->blockp()->user4(true);
         }
+        m_hasJumpDelay = true;
     }
 
-    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+    virtual void visit(AstJumpBlock* nodep) VL_OVERRIDE {
         // Because JumpLabels disable many optimizations,
         // remove JumpLabels that are not pointed to by any AstJumpGos
         // Note this assumes all AstJumpGos are underneath the given label; V3Broken asserts this
@@ -2202,6 +2225,7 @@ private:
             } else {
                 nodep->unlinkFrBack();
             }
+            nodep->labelp()->unlinkFrBack()->deleteTree();
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
@@ -2526,6 +2550,9 @@ private:
     TREEOPC("AstPutcN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
     TREEOPC("AstSubstrN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
     TREEOPC("AstCvtPackString{$lhsp.castConst}", "replaceConstString(nodep, VN_CAST(nodep->lhsp(), Const)->num().toString())");
+    // Custom
+    // Implied by AstIsUnbounded::numberOperate: V("AstIsUnbounded{$lhsp.castConst}", "replaceNum(nodep, 0)");
+    TREEOPV("AstIsUnbounded{$lhsp.castUnbounded}", "replaceNum(nodep, 1)");
     // clang-format on
 
     // Possible futures:
@@ -2574,7 +2601,7 @@ public:
         m_doShort = true;  // Presently always done
         m_doV = false;
         m_doGenerate = false;  // Inside generate conditionals
-        m_hasJumpGo = false;
+        m_hasJumpDelay = false;
         m_warn = false;
         m_wremove = true;  // Overridden in visitors
         m_modp = NULL;

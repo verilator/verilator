@@ -405,6 +405,15 @@ This sets indentation to the `cc-mode` defaults.  (Verilator predates a
 CC-mode change of several years ago which overrides the defaults with GNU
 style indentation; the `c-set-style` undoes that.)
 
+* Use "mixedCapsSymbols" instead of "underlined_symbols".
+
+* Uas a "p" suffix on variables that are pointers, e.g. "nodep".
+
+* Comment every member variable.
+
+Indentation is automatically maintained with "make clang-format" (using
+clang-format version 10.0.0).  For those manually formatting:
+
 * Use 4 spaces per level, and no tabs.
 
 * Use 2 spaces between the end of source and the beginning of a comment.
@@ -413,12 +422,6 @@ style indentation; the `c-set-style` undoes that.)
 
 * No spaces before semicolons, nor between a function's name and open
 parenthesis (only applies to functions; if/else has a following space).
-
-* Use "mixedCapsSymbols" instead of "underlined_symbols".
-
-* Uas a "p" suffix on variables that are pointers, e.g. "nodep".
-
-* Comment every member variable.
 
 === The `astgen` Script
 

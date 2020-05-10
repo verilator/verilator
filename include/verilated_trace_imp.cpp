@@ -23,6 +23,7 @@
 # error "This file should be included in trace format implementations"
 #endif
 
+#include "verilated_intrinsics.h"
 #include "verilated_trace.h"
 
 #if 0
@@ -101,8 +102,8 @@ public:  // This is in .cpp file so is not widely visible
 //=========================================================================
 // Buffer management
 
-template <> VerilatedTraceEntry* VerilatedTrace<VL_DERIVED_T>::getTraceBuffer() {
-    VerilatedTraceEntry* bufferp;
+template <> vluint32_t* VerilatedTrace<VL_DERIVED_T>::getTraceBuffer() {
+    vluint32_t* bufferp;
     // Some jitter is expected, so some number of alternative trace buffers are
     // required, but don't allocate more than 8 buffers.
     if (m_numTraceBuffers < 8) {
@@ -111,7 +112,7 @@ template <> VerilatedTraceEntry* VerilatedTrace<VL_DERIVED_T>::getTraceBuffer() 
             ++m_numTraceBuffers;
             // Note: over allocate a bit so pointer comparison is well defined
             // if we overflow only by a small amount
-            bufferp = new VerilatedTraceEntry[m_traceBufferSize + 16];
+            bufferp = new vluint32_t[m_traceBufferSize + 16];
         }
     } else {
         // Block until a buffer becomes available
@@ -120,10 +121,10 @@ template <> VerilatedTraceEntry* VerilatedTrace<VL_DERIVED_T>::getTraceBuffer() 
     return bufferp;
 }
 
-template <> void VerilatedTrace<VL_DERIVED_T>::waitForBuffer(const VerilatedTraceEntry* buffp) {
+template <> void VerilatedTrace<VL_DERIVED_T>::waitForBuffer(const vluint32_t* buffp) {
     // Slow path code only called on flush/shutdown, so use a simple algorithm.
     // Collect buffers from worker and stash them until we get the one we want.
-    std::deque<VerilatedTraceEntry*> stash;
+    std::deque<vluint32_t*> stash;
     do { stash.push_back(m_buffersFromWorker.get()); } while (stash.back() != buffp);
     // Now put them back in the queue, in the original order.
     while (!stash.empty()) {
@@ -136,100 +137,83 @@ template <> void VerilatedTrace<VL_DERIVED_T>::waitForBuffer(const VerilatedTrac
 // Worker thread
 
 template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
-    while (true) {
-        VerilatedTraceEntry* const bufferp = m_buffersToWorker.get();
+    bool shutdown = false;
+
+    do {
+        vluint32_t* const bufferp = m_buffersToWorker.get();
 
         VL_TRACE_THREAD_DEBUG("");
-        VL_TRACE_THREAD_DEBUG("Got buffer");
+        VL_TRACE_THREAD_DEBUG("Got buffer: " << bufferp);
 
-        const VerilatedTraceEntry* readp = bufferp;
-
-        vluint32_t cmd;
-        unsigned bits;
-        vluint32_t* oldp;
-        vluint64_t newBits;
+        const vluint32_t* readp = bufferp;
 
         while (true) {
-            cmd = (readp++)->cmd;
+            const vluint32_t cmd = readp[0];
+            const vluint32_t top = cmd >> 4;
+            // Always set this up, as it is almost always needed
+            vluint32_t* const oldp = m_sigs_oldvalp + readp[1];
+            // Note this increment needs to be undone on commands which do not
+            // actually contain a code, but those are the rare cases.
+            readp += 2;
 
-            switch (cmd & ~0xFFU) {
+            switch (cmd & 0xF) {
                 //===
                 // CHG_* commands
-            case VerilatedTraceCommand::CHG_BIT:
-                VL_TRACE_THREAD_DEBUG("Command CHG_BIT");
-                chgBitImpl((readp++)->oldp, cmd & 1);
+            case VerilatedTraceCommand::CHG_BIT_0:
+                VL_TRACE_THREAD_DEBUG("Command CHG_BIT_0 " << top);
+                chgBitImpl(oldp, 0);
                 continue;
-            case VerilatedTraceCommand::CHG_BUS:
-                VL_TRACE_THREAD_DEBUG("Command CHG_BUS");
-
-                oldp = (readp++)->oldp;
-                newBits = (readp++)->newBits;
-
+            case VerilatedTraceCommand::CHG_BIT_1:
+                VL_TRACE_THREAD_DEBUG("Command CHG_BIT_1 " << top);
+                chgBitImpl(oldp, 1);
+                continue;
+            case VerilatedTraceCommand::CHG_CDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_CDATA " << top);
                 // Bits stored in bottom byte of command
-                switch (cmd & 0xFFU) {
-                case 2: chgBusImpl<2>(oldp, newBits); continue;
-                case 3: chgBusImpl<3>(oldp, newBits); continue;
-                case 4: chgBusImpl<4>(oldp, newBits); continue;
-                case 5: chgBusImpl<5>(oldp, newBits); continue;
-                case 6: chgBusImpl<6>(oldp, newBits); continue;
-                case 7: chgBusImpl<7>(oldp, newBits); continue;
-                case 8: chgBusImpl<8>(oldp, newBits); continue;
-                case 9: chgBusImpl<9>(oldp, newBits); continue;
-                case 10: chgBusImpl<10>(oldp, newBits); continue;
-                case 11: chgBusImpl<11>(oldp, newBits); continue;
-                case 12: chgBusImpl<12>(oldp, newBits); continue;
-                case 13: chgBusImpl<13>(oldp, newBits); continue;
-                case 14: chgBusImpl<14>(oldp, newBits); continue;
-                case 15: chgBusImpl<15>(oldp, newBits); continue;
-                case 16: chgBusImpl<16>(oldp, newBits); continue;
-                case 17: chgBusImpl<17>(oldp, newBits); continue;
-                case 18: chgBusImpl<18>(oldp, newBits); continue;
-                case 19: chgBusImpl<19>(oldp, newBits); continue;
-                case 20: chgBusImpl<20>(oldp, newBits); continue;
-                case 21: chgBusImpl<21>(oldp, newBits); continue;
-                case 22: chgBusImpl<22>(oldp, newBits); continue;
-                case 23: chgBusImpl<23>(oldp, newBits); continue;
-                case 24: chgBusImpl<24>(oldp, newBits); continue;
-                case 25: chgBusImpl<25>(oldp, newBits); continue;
-                case 26: chgBusImpl<26>(oldp, newBits); continue;
-                case 27: chgBusImpl<27>(oldp, newBits); continue;
-                case 28: chgBusImpl<28>(oldp, newBits); continue;
-                case 29: chgBusImpl<29>(oldp, newBits); continue;
-                case 30: chgBusImpl<30>(oldp, newBits); continue;
-                case 31: chgBusImpl<31>(oldp, newBits); continue;
-                case 32: chgBusImpl<32>(oldp, newBits); continue;
-                }
-                VL_FATAL_MT(__FILE__, __LINE__, "", "Bad number of bits in CHG_BUS command");
-                break;
-            case VerilatedTraceCommand::CHG_QUAD:
-                VL_TRACE_THREAD_DEBUG("Command CHG_QUAD");
+                chgCDataImpl(oldp, *readp, top);
+                readp += 1;
+                continue;
+            case VerilatedTraceCommand::CHG_SDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_SDATA " << top);
                 // Bits stored in bottom byte of command
-                chgQuadImpl(readp[0].oldp, readp[1].newBits, cmd & 0xFF);
+                chgSDataImpl(oldp, *readp, top);
+                readp += 1;
+                continue;
+            case VerilatedTraceCommand::CHG_IDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_IDATA " << top);
+                // Bits stored in bottom byte of command
+                chgIDataImpl(oldp, *readp, top);
+                readp += 1;
+                continue;
+            case VerilatedTraceCommand::CHG_QDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_QDATA " << top);
+                // Bits stored in bottom byte of command
+                chgQDataImpl(oldp, *reinterpret_cast<const QData*>(readp), top);
                 readp += 2;
                 continue;
-            case VerilatedTraceCommand::CHG_ARRAY:
-                VL_TRACE_THREAD_DEBUG("Command CHG_CHG_ARRAY");
-                oldp = (readp++)->oldp;
-                bits = (readp++)->params;
-                chgArrayImpl(oldp, reinterpret_cast<const vluint32_t*>(readp), bits);
-                readp += (bits + 63) / 64;
+            case VerilatedTraceCommand::CHG_WDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_WDATA " << top);
+                chgWDataImpl(oldp, readp, top);
+                readp += VL_WORDS_I(top);
                 continue;
             case VerilatedTraceCommand::CHG_FLOAT:
-                VL_TRACE_THREAD_DEBUG("Command CHG_FLOAT");
-                chgFloatImpl(readp[0].oldp, readp[1].newFloat);
-                readp += 2;
+                VL_TRACE_THREAD_DEBUG("Command CHG_FLOAT " << top);
+                chgFloatImpl(oldp, *reinterpret_cast<const float*>(readp));
+                readp += 1;
                 continue;
             case VerilatedTraceCommand::CHG_DOUBLE:
-                VL_TRACE_THREAD_DEBUG("Command CHG_DOUBLE");
-                chgDoubleImpl(readp[0].oldp, readp[1].newDouble);
+                VL_TRACE_THREAD_DEBUG("Command CHG_DOUBLE " << top);
+                chgDoubleImpl(oldp, *reinterpret_cast<const double*>(readp));
                 readp += 2;
                 continue;
 
                 //===
                 // Rare commands
             case VerilatedTraceCommand::TIME_CHANGE:
-                VL_TRACE_THREAD_DEBUG("Command TIME_CHANGE");
-                emitTimeChange((readp++)->timeui);
+                VL_TRACE_THREAD_DEBUG("Command TIME_CHANGE " << top);
+                readp -= 1;  // No code in this command, undo increment
+                emitTimeChange(*reinterpret_cast<const vluint64_t*>(readp));
+                readp += 2;
                 continue;
 
                 //===
@@ -237,11 +221,13 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
             case VerilatedTraceCommand::END: VL_TRACE_THREAD_DEBUG("Command END"); break;
             case VerilatedTraceCommand::SHUTDOWN:
                 VL_TRACE_THREAD_DEBUG("Command SHUTDOWN");
+                shutdown = true;
                 break;
 
                 //===
                 // Unknown command
             default:
+                VL_TRACE_THREAD_DEBUG("Command UNKNOWN");
                 VL_PRINTF_MT("Trace command: 0x%08x\n", cmd);
                 VL_FATAL_MT(__FILE__, __LINE__, "", "Unknown trace command");
                 break;
@@ -256,10 +242,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
 
         // Return buffer
         m_buffersFromWorker.put(bufferp);
-
-        // Shut down if required
-        if (VL_UNLIKELY(cmd == VerilatedTraceCommand::SHUTDOWN)) return;
-    }
+    } while (VL_LIKELY(!shutdown));
 }
 
 template <> void VerilatedTrace<VL_DERIVED_T>::shutdownWorker() {
@@ -267,8 +250,8 @@ template <> void VerilatedTrace<VL_DERIVED_T>::shutdownWorker() {
     if (!m_workerThread) return;
 
     // Hand an buffer with a shutdown command to the worker thread
-    VerilatedTraceEntry* const bufferp = getTraceBuffer();
-    bufferp[0].cmd = VerilatedTraceCommand::SHUTDOWN;
+    vluint32_t* const bufferp = getTraceBuffer();
+    bufferp[0] = VerilatedTraceCommand::SHUTDOWN;
     m_buffersToWorker.put(bufferp);
     // Wait for it to return
     waitForBuffer(bufferp);
@@ -295,8 +278,8 @@ template <> void VerilatedTrace<VL_DERIVED_T>::close() {
 template <> void VerilatedTrace<VL_DERIVED_T>::flush() {
 #ifdef VL_TRACE_THREADED
     // Hand an empty buffer to the worker thread
-    VerilatedTraceEntry* const bufferp = getTraceBuffer();
-    bufferp[0].cmd = VerilatedTraceCommand::END;
+    vluint32_t* const bufferp = getTraceBuffer();
+    *bufferp = VerilatedTraceCommand::END;
     m_buffersToWorker.put(bufferp);
     // Wait for it to be returned. As the processing is in-order,
     // this ensures all previous buffers have been processed.
@@ -314,6 +297,7 @@ VerilatedTrace<VL_DERIVED_T>::VerilatedTrace()
     , m_fullDump(true)
     , m_nextCode(0)
     , m_numSignals(0)
+    , m_maxBits(0)
     , m_scopeEscape('.')
     , m_timeRes(1e-9)
     , m_timeUnit(1e-9)
@@ -348,6 +332,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
     const vluint32_t expectedCodes = nextCode();
     m_nextCode = 1;
     m_numSignals = 0;
+    m_maxBits = 0;
 
     // Call all initialize callbacks, which will call decl* for each signal.
     for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
@@ -368,10 +353,10 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
 #ifdef VL_TRACE_THREADED
     // Compute trace buffer size. we need to be able to store a new value for
     // each signal, which is 'nextCode()' entries after the init callbacks
-    // above have been run, plus up to 3 more words of metadata per signal,
-    // plus fixed overhead of 1 for a termination flag and 2 for a time stamp
+    // above have been run, plus up to 2 more words of metadata per signal,
+    // plus fixed overhead of 1 for a termination flag and 3 for a time stamp
     // update.
-    m_traceBufferSize = nextCode() + numSignals() * 3 + 3;
+    m_traceBufferSize = nextCode() + numSignals() * 2 + 4;
 
     // Start the worker thread
     m_workerThread.reset(new std::thread(&VerilatedTrace<VL_DERIVED_T>::workerThreadMain, this));
@@ -385,10 +370,11 @@ void VerilatedTrace<VL_DERIVED_T>::declCode(vluint32_t code, vluint32_t bits, bo
     }
     // Note: The tri-state flag is not used by Verilator, but is here for
     // compatibility with some foreign code.
-    int codesNeeded = (bits + 31) / 32;
+    int codesNeeded = VL_WORDS_I(bits);
     if (tri) codesNeeded *= 2;
     m_nextCode = std::max(m_nextCode, code + codesNeeded);
     ++m_numSignals;
+    m_maxBits = std::max(m_maxBits, bits);
 }
 
 //=========================================================================
@@ -441,18 +427,21 @@ template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
     }
 
 #ifdef VL_TRACE_THREADED
-    // Get the trace buffer we are about to fill
-    VerilatedTraceEntry* const bufferp = getTraceBuffer();
-    m_traceBufferWritep = bufferp;
-    m_traceBufferEndp = bufferp + m_traceBufferSize;
-
     // Currently only incremental dumps run on the worker thread
+    vluint32_t* bufferp = nullptr;
     if (VL_LIKELY(!m_fullDump)) {
+        // Get the trace buffer we are about to fill
+        bufferp = getTraceBuffer();
+        m_traceBufferWritep = bufferp;
+        m_traceBufferEndp = bufferp + m_traceBufferSize;
+
         // Tell worker to update time point
-        (m_traceBufferWritep++)->cmd = VerilatedTraceCommand::TIME_CHANGE;
-        (m_traceBufferWritep++)->timeui = timeui;
+        m_traceBufferWritep[0] = VerilatedTraceCommand::TIME_CHANGE;
+        *reinterpret_cast<vluint64_t*>(m_traceBufferWritep + 1) = timeui;
+        m_traceBufferWritep += 3;
     } else {
         // Update time point
+        flush();
         emitTimeChange(timeui);
     }
 #else
@@ -475,14 +464,16 @@ template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
     }
 
 #ifdef VL_TRACE_THREADED
-    // Mark end of the trace buffer we just filled
-    (m_traceBufferWritep++)->cmd = VerilatedTraceCommand::END;
+    if (VL_LIKELY(bufferp)) {
+        // Mark end of the trace buffer we just filled
+        *m_traceBufferWritep++ = VerilatedTraceCommand::END;
 
-    // Assert no buffer overflow
-    assert(m_traceBufferWritep - bufferp <= m_traceBufferSize);
+        // Assert no buffer overflow
+        assert(m_traceBufferWritep - bufferp <= m_traceBufferSize);
 
-    // Pass it to the worker thread
-    m_buffersToWorker.put(bufferp);
+        // Pass it to the worker thread
+        m_buffersToWorker.put(bufferp);
+    }
 #endif
 }
 
@@ -511,72 +502,139 @@ void VerilatedTrace<VL_DERIVED_T>::addCallback(callback_t initcb, callback_t ful
 // that this file must be included in the format specific implementation, so
 // the emit* functions can be inlined for performance.
 
-template <> void VerilatedTrace<VL_DERIVED_T>::fullBit(vluint32_t* oldp, vluint32_t newval) {
+template <> void VerilatedTrace<VL_DERIVED_T>::fullBit(vluint32_t* oldp, CData newval) {
     *oldp = newval;
     self()->emitBit(oldp - m_sigs_oldvalp, newval);
 }
 
-// We want these functions specialized for sizes to avoid hard to predict
-// branches, but we don't want them inlined, so we explicitly instantiate the
-// template for each size used by Verilator.
 template <>
-template <int T_Bits>
-void VerilatedTrace<VL_DERIVED_T>::fullBus(vluint32_t* oldp, vluint32_t newval) {
+void VerilatedTrace<VL_DERIVED_T>::fullCData(vluint32_t* oldp, CData newval, int bits) {
     *oldp = newval;
-    self()->emitBus<T_Bits>(oldp - m_sigs_oldvalp, newval);
+    self()->emitCData(oldp - m_sigs_oldvalp, newval, bits);
 }
 
-// Note: No specialization for width 1, covered by 'fullBit'
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<2>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<3>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<4>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<5>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<6>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<7>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<8>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<9>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<10>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<11>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<12>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<13>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<14>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<15>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<16>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<17>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<18>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<19>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<20>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<21>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<22>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<23>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<24>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<25>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<26>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<27>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<28>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<29>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<30>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<31>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<32>(vluint32_t* oldp, vluint32_t newval);
+template <>
+void VerilatedTrace<VL_DERIVED_T>::fullSData(vluint32_t* oldp, SData newval, int bits) {
+    *oldp = newval;
+    self()->emitSData(oldp - m_sigs_oldvalp, newval, bits);
+}
 
 template <>
-void VerilatedTrace<VL_DERIVED_T>::fullQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
-    *reinterpret_cast<vluint64_t*>(oldp) = newval;
-    self()->emitQuad(oldp - m_sigs_oldvalp, newval, bits);
+void VerilatedTrace<VL_DERIVED_T>::fullIData(vluint32_t* oldp, IData newval, int bits) {
+    *oldp = newval;
+    self()->emitIData(oldp - m_sigs_oldvalp, newval, bits);
 }
+
 template <>
-void VerilatedTrace<VL_DERIVED_T>::fullArray(vluint32_t* oldp, const vluint32_t* newvalp,
-                                             int bits) {
-    for (int i = 0; i < (bits + 31) / 32; ++i) oldp[i] = newvalp[i];
-    self()->emitArray(oldp - m_sigs_oldvalp, newvalp, bits);
+void VerilatedTrace<VL_DERIVED_T>::fullQData(vluint32_t* oldp, QData newval, int bits) {
+    *reinterpret_cast<QData*>(oldp) = newval;
+    self()->emitQData(oldp - m_sigs_oldvalp, newval, bits);
 }
+
+template <>
+void VerilatedTrace<VL_DERIVED_T>::fullWData(vluint32_t* oldp, const WData* newvalp, int bits) {
+    for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newvalp[i];
+    self()->emitWData(oldp - m_sigs_oldvalp, newvalp, bits);
+}
+
 template <> void VerilatedTrace<VL_DERIVED_T>::fullFloat(vluint32_t* oldp, float newval) {
     // cppcheck-suppress invalidPointerCast
     *reinterpret_cast<float*>(oldp) = newval;
     self()->emitFloat(oldp - m_sigs_oldvalp, newval);
 }
+
 template <> void VerilatedTrace<VL_DERIVED_T>::fullDouble(vluint32_t* oldp, double newval) {
     // cppcheck-suppress invalidPointerCast
     *reinterpret_cast<double*>(oldp) = newval;
     self()->emitDouble(oldp - m_sigs_oldvalp, newval);
 }
+
+//=========================================================================
+// Primitives converting binary values to strings...
+
+// All of these take a destination pointer where the string will be emitted,
+// and a value to convert. There are a couple of variants for efficiency.
+
+inline static void cvtCDataToStr(char* dstp, CData value) {
+#ifdef VL_HAVE_SSE2
+    // Similar to cvtSDataToStr but only the bottom 8 byte lanes are used
+    const __m128i a = _mm_cvtsi32_si128(value);
+    const __m128i b = _mm_unpacklo_epi8(a, a);
+    const __m128i c = _mm_shufflelo_epi16(b, 0);
+    const __m128i m = _mm_set1_epi64x(0x0102040810204080);
+    const __m128i d = _mm_cmpeq_epi8(_mm_and_si128(c, m), m);
+    const __m128i result = _mm_sub_epi8(_mm_set1_epi8('0'), d);
+    _mm_storel_epi64(reinterpret_cast<__m128i*>(dstp), result);
+#else
+    dstp[0] = '0' | static_cast<char>((value >> 7) & 1);
+    dstp[1] = '0' | static_cast<char>((value >> 6) & 1);
+    dstp[2] = '0' | static_cast<char>((value >> 5) & 1);
+    dstp[3] = '0' | static_cast<char>((value >> 4) & 1);
+    dstp[4] = '0' | static_cast<char>((value >> 3) & 1);
+    dstp[5] = '0' | static_cast<char>((value >> 2) & 1);
+    dstp[6] = '0' | static_cast<char>((value >> 1) & 1);
+    dstp[7] = '0' | static_cast<char>(value & 1);
+#endif
+}
+
+inline static void cvtSDataToStr(char* dstp, SData value) {
+#ifdef VL_HAVE_SSE2
+    // We want each bit in the 16-bit input value to end up in a byte lane
+    // within the 128-bit XMM register. Note that x86 is little-endian and we
+    // want the MSB of the input at the low address, so we will bit-reverse
+    // at the same time.
+
+    // Put value in bottom of 128-bit register a[15:0] = value
+    const __m128i a = _mm_cvtsi32_si128(value);
+    // Interleave bytes with themselves
+    // b[15: 0] = {2{a[ 7:0]}} == {2{value[ 7:0]}}
+    // b[31:16] = {2{a[15:8]}} == {2{value[15:8]}}
+    const __m128i b = _mm_unpacklo_epi8(a, a);
+    // Shuffle bottom 64 bits, note swapping high bytes with low bytes
+    // c[31: 0] = {2{b[31:16]}} == {4{value[15:8}}
+    // c[63:32] = {2{b[15: 0]}} == {4{value[ 7:0}}
+    const __m128i c = _mm_shufflelo_epi16(b, 0x05);
+    // Shuffle whole register
+    // d[ 63: 0] = {2{c[31: 0]}} == {8{value[15:8}}
+    // d[126:54] = {2{c[63:32]}} == {8{value[ 7:0}}
+    const __m128i d = _mm_shuffle_epi32(c, 0x50);
+    // Test each bit within the bytes, this sets each byte lane to 0
+    // if the bit for that lane is 0 and to 0xff if the bit is 1.
+    const __m128i m = _mm_set1_epi64x(0x0102040810204080);
+    const __m128i e = _mm_cmpeq_epi8(_mm_and_si128(d, m), m);
+    // Convert to ASCII by subtracting the masks from ASCII '0':
+    // '0' - 0 is '0', '0' - -1 is '1'
+    const __m128i result = _mm_sub_epi8(_mm_set1_epi8('0'), e);
+    // Store the 16 characters to the un-aligned buffer
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(dstp), result);
+#else
+    cvtCDataToStr(dstp, value >> 8);
+    cvtCDataToStr(dstp + 8, value);
+#endif
+}
+
+inline static void cvtIDataToStr(char* dstp, IData value) {
+#ifdef VL_HAVE_AVX2
+    // Similar to cvtSDataToStr but the bottom 16-bits are processed in the
+    // top half of the YMM registerss
+    const __m256i a = _mm256_insert_epi32(_mm256_undefined_si256(), value, 0);
+    const __m256i b = _mm256_permute4x64_epi64(a, 0);
+    const __m256i s = _mm256_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2,
+                                      2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3);
+    const __m256i c = _mm256_shuffle_epi8(b, s);
+    const __m256i m = _mm256_set1_epi64x(0x0102040810204080);
+    const __m256i d = _mm256_cmpeq_epi8(_mm256_and_si256(c, m), m);
+    const __m256i result = _mm256_sub_epi8(_mm256_set1_epi8('0'), d);
+    _mm256_storeu_si256(reinterpret_cast<__m256i*>(dstp), result);
+#else
+    cvtSDataToStr(dstp, value >> 16);
+    cvtSDataToStr(dstp + 16, value);
+#endif
+}
+
+inline static void cvtQDataToStr(char* dstp, QData value) {
+    cvtIDataToStr(dstp, value >> 32);
+    cvtIDataToStr(dstp + 32, value);
+}
+
+#define cvtEDataToStr cvtIDataToStr

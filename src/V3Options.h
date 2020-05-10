@@ -490,6 +490,9 @@ public:
     int traceMaxArray() const { return m_traceMaxArray; }
     int traceMaxWidth() const { return m_traceMaxWidth; }
     int traceThreads() const { return m_traceThreads; }
+    bool trueTraceThreads() const {
+        return traceThreads() == 0 ? 0 : traceThreads() - traceFormat().fst();
+    }
     int unrollCount() const { return m_unrollCount; }
     int unrollStmts() const { return m_unrollStmts; }
 

@@ -96,7 +96,7 @@ private:
             } else if (VN_IS(m_caseExprp, Case)
                        && (VN_CAST(m_caseExprp, Case)->casez()
                            || VN_CAST(m_caseExprp, Case)->caseInside())) {
-                if (nodep->num().isUnknown()) {
+                if (nodep->num().isAnyX()) {
                     nodep->v3warn(CASEWITHX, "Use of x constant in casez statement, "
                                              "(perhaps intended ?/z in constant)");
                 }
@@ -460,7 +460,7 @@ private:
         // Xs in case or casez are impossible due to two state simulations
         if (casep->casex()) {
         } else if (casep->casez() || casep->caseInside()) {
-            if (itemp->num().isUnknown()) return true;
+            if (itemp->num().isAnyX()) return true;
         } else {
             if (itemp->num().isFourState()) return true;
         }

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -10,9 +10,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-$Self->{make_main} = 0;
-$Self->{make_top_shell} = 0;
-
 compile (
     verilator_flags2 => ["--protect-lib",
                          "secret",
@@ -20,6 +17,8 @@ compile (
                          "SECRET_FAKE_KEY"],
     verilator_make_gcc => 0,
     verilator_make_gmake => 0,
+    make_main => 0,
+    make_top_shell => 0,
     );
 
 run(cmd=>["make",

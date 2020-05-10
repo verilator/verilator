@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <sstream>
 #include <tgmath.h>
 #include <sys/stat.h>  // mkdir
 
@@ -259,7 +260,7 @@ Verilated::NonSerialized::~NonSerialized() {
     }
 }
 
-size_t Verilated::serialized2Size() VL_PURE { return sizeof(VerilatedImp::m_ser); }
+size_t Verilated::serialized2Size() VL_PURE { return sizeof(VerilatedImp::s_s.m_ser); }
 void* Verilated::serialized2Ptr() VL_MT_UNSAFE { return &VerilatedImp::s_s.m_ser; }
 
 //===========================================================================
@@ -2444,12 +2445,12 @@ vluint32_t VerilatedVarProps::entSize() const {
 
 size_t VerilatedVarProps::totalSize() const {
     size_t size = entSize();
-    for (int dim = 1; dim <= dims(); ++dim) size *= m_unpacked[dim].elements();
+    for (int udim = 0; udim <= udims(); ++udim) size *= m_unpacked[udim].elements();
     return size;
 }
 
 void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const {
-    if (VL_UNLIKELY(dim <= 0 || dim > m_udims || dim > 3)) return NULL;
+    if (VL_UNLIKELY(dim <= 0 || dim > udims())) return NULL;
     if (VL_UNLIKELY(indx < low(dim) || indx > high(dim))) return NULL;
     int indxAdj = indx - low(dim);
     vluint8_t* bytep = reinterpret_cast<vluint8_t*>(datap);
@@ -2538,7 +2539,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
         if (i == 0) {
             var.m_packed.m_left = msb;
             var.m_packed.m_right = lsb;
-        } else if (i >= 1 && i <= 3) {
+        } else if (i >= 1 && i <= var.udims()) {
             var.m_unpacked[i - 1].m_left = msb;
             var.m_unpacked[i - 1].m_right = lsb;
         } else {

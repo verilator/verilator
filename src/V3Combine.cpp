@@ -86,11 +86,10 @@ public:
         } else {
             UINFO(4, "   Remove " << oldfuncp << endl);
         }
-        std::pair<CallMmap::iterator, CallMmap::iterator> eqrange
-            = m_callMmap.equal_range(oldfuncp);
-        for (CallMmap::iterator nextit = eqrange.first; nextit != eqrange.second;) {
-            CallMmap::iterator eqit = nextit++;
-            AstCCall* callp = eqit->second;
+        // Note: m_callMmap modified in loop, so not using equal_range.
+        for (CallMmap::iterator it = m_callMmap.find(oldfuncp); it != m_callMmap.end();
+             it = m_callMmap.find(oldfuncp)) {
+            AstCCall* callp = it->second;
             if (!callp->user3()) {  // !already done
                 UINFO(4, "     Called " << callp << endl);
                 UASSERT_OBJ(callp->funcp() == oldfuncp, callp,
@@ -105,8 +104,13 @@ public:
                 }
                 callp->user3(true);  // Dead now
                 VL_DO_DANGLING(pushDeletep(callp), callp);
-                m_callMmap.erase(eqit);  // Fix the table
             }
+            // It is safe to unconditionally remove this entry here as the above
+            // 'if' would never be entered again for this entry (we set user3).
+            // The only other place where m_callMmap is looked up is deleteCall
+            // below, but that is only ever called straight after an addCall
+            // of the node being deleted, so it won't miss this entry.
+            m_callMmap.erase(it);  // Fix the table
         }
     }
     // METHODS

@@ -593,6 +593,10 @@ void V3Options::notify() {
                 "--xml-only or --E option");
     }
 
+    if (m_build && (m_gmake || m_cmake)) {
+        cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
+    }
+
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_cmake) m_gmake = true;
 
@@ -631,10 +635,6 @@ void V3Options::notify() {
             && !v3Global.opt.lintOnly()  //
             && !v3Global.opt.preprocOnly()  //
             && !v3Global.opt.xmlOnly());
-    }
-
-    if (v3Global.opt.main() && v3Global.opt.systemC()) {
-        cmdfl->v3error("--main not usable with SystemC. Suggest see examples for sc_main().");
     }
 
     // --trace-threads implies --threads 1 unless explicitly specified

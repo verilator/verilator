@@ -23,10 +23,10 @@
                                                 : ... In instance t
    17 |       dim1[1][1][1] = 0;         
       |                 ^
-%Error: t/t_mem_multi_ref_bad.v:19:11: Illegal +: or -: select; type already selected, or bad dimension: data type is 'logic[1:0]$[1:0][1:0]'
-                                     : ... In instance t
+%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:19:19: Selection index out of range: 1 outside 0:0
+                                                : ... In instance t
    19 |       dim2[0 +: 1][1] = 0;       
-      |           ^
+      |                   ^
 %Error: t/t_mem_multi_ref_bad.v:23:16: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
                                      : ... In instance t
    23 |       dim0nv[1][1] = 0;          

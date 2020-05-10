@@ -587,6 +587,18 @@ public:
                 else if ((cellp && cellp->modp()->origName() == ident)
                          || (inlinep && inlinep->origModName() == ident)) {
                 }
+                // $root we walk up to Netlist
+                else if (ident == "$root") {
+                    lookupSymp = rootEntp();
+                    // We've added TOP module, now everything else is one lower
+                    if (!m_forPrearray) {
+                        VSymEnt* topSymp = lookupSymp->findIdFlat("TOP");
+                        if (!topSymp) {
+                            topSymp->nodep()->v3fatalSrc("TOP not found under netlist for $root");
+                        }
+                        lookupSymp = topSymp;
+                    }
+                }
                 // Move up and check cellname + modname
                 else {
                     bool crossedCell = false;  // Crossed a cell boundary
@@ -700,13 +712,13 @@ class LinkDotFindVisitor : public AstNVisitor {
     // METHODS
     int debug() { return LinkDotState::debug(); }
 
-    virtual AstConst* parseParamLiteral(FileLine* fl, const string& literal) {
+    AstConst* parseParamLiteral(FileLine* fl, const string& literal) const {
         bool success = false;
         if (literal[0] == '"') {
             // This is a string
             string v = literal.substr(1, literal.find('"', 1) - 1);
             return new AstConst(fl, AstConst::VerilogStringLiteral(), v);
-        } else if ((literal.find('.') != string::npos) || (literal.find('e') != string::npos)) {
+        } else if (literal.find_first_of(".eEpP") != string::npos) {
             // This may be a real
             double v = V3ParseImp::parseDouble(literal.c_str(), literal.length(), &success);
             if (success) return new AstConst(fl, AstConst::RealDouble(), v);
@@ -2079,6 +2091,7 @@ private:
             bool ok = false;
             if (!foundp) {
             } else if (VN_IS(foundp->nodep(), Cell) || VN_IS(foundp->nodep(), Begin)
+                       || VN_IS(foundp->nodep(), Netlist)  // for $root
                        || VN_IS(foundp->nodep(), Module)) {  // if top
                 if (allowScope) {
                     ok = true;

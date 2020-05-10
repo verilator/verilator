@@ -189,8 +189,8 @@ private:
     bool m_paramsOnly;  // Computing parameter value; limit operation
     AstRange* m_cellRangep;  // Range for arrayed instantiations, NULL for normal instantiations
     AstNodeFTask* m_ftaskp;  // Current function/task
+    AstNodeProcedure* m_procedurep;  // Current final/always
     AstFunc* m_funcp;  // Current function
-    AstInitial* m_initialp;  // Current initial block
     AstAttrOf* m_attrp;  // Current attribute
     bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables;  // Number of created data type tables
@@ -426,13 +426,12 @@ private:
         nodep->dtypeSetUInt64();  // A pointer, but not that it matters
     }
 
-    // Special cases.  So many....
     virtual void visit(AstNodeCond* nodep) VL_OVERRIDE {
-        // op=cond?expr1:expr2
-        // Signed: Output signed iff RHS & THS signed  (presumed, not in IEEE)
+        // op = cond ? expr1 : expr2
         // See IEEE-2012 11.4.11 and Table 11-21.
         //   LHS is self-determined
-        //   Width: max(RHS,THS)
+        //   Width: max(RHS, THS)
+        //   Signed: Output signed iff RHS & THS signed  (presumed, not in IEEE)
         //   Real: Output real if either expression is real, non-real argument gets converted
         if (m_vup->prelim()) {  // First stage evaluation
             // Just once, do the conditional, expect one bit out.
@@ -539,6 +538,17 @@ private:
         }
     }
     virtual void visit(AstDelay* nodep) VL_OVERRIDE {
+        if (VN_IS(m_procedurep, Final)) {
+            nodep->v3error("Delays are not legal in final blocks (IEEE 1800-2017 9.2.3)");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        if (VN_IS(m_ftaskp, Func)) {
+            nodep->v3error("Delays are not legal in functions. Suggest use a task "
+                           "(IEEE 1800-2017 13.4.4)");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
         nodep->v3warn(STMTDLY, "Unsupported: Ignoring delay on this delayed statement.");
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
@@ -1034,7 +1044,18 @@ private:
         }
     }
     virtual void visit(AstUnbounded* nodep) VL_OVERRIDE {
-        nodep->v3error("Unsupported/illegal unbounded ('$') in this context.");
+        nodep->dtypeSetSigned32();  // Used in int context
+        if (!VN_IS(nodep->backp(), IsUnbounded)
+            && !(VN_IS(nodep->backp(), Var)
+                 && VN_CAST(nodep->backp(), Var)->isParam())) {
+            nodep->v3error("Unsupported/illegal unbounded ('$') in this context.");
+        }
+    }
+    virtual void visit(AstIsUnbounded* nodep) VL_OVERRIDE {
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
+            nodep->dtypeSetLogicBool();
+        }
     }
     virtual void visit(AstUCFunc* nodep) VL_OVERRIDE {
         // Give it the size the user wants.
@@ -1673,7 +1694,8 @@ private:
         // if (debug() >= 9) nodep->dumpTree(cout, "  VRout ");
         if (nodep->lvalue() && nodep->varp()->direction() == VDirection::CONSTREF) {
             nodep->v3error("Assigning to const ref variable: " << nodep->prettyNameQ());
-        } else if (nodep->lvalue() && nodep->varp()->isConst() && !m_paramsOnly && !m_initialp) {
+        } else if (nodep->lvalue() && nodep->varp()->isConst() && !m_paramsOnly
+                   && !VN_IS(m_procedurep, Initial)) {
             // Too loose, but need to allow our generated first assignment
             // Move this to a property of the AstInitial block
             nodep->v3error("Assigning to const variable: " << nodep->prettyNameQ());
@@ -1934,6 +1956,7 @@ private:
             }
         } else if (VN_IS(fromDtp, EnumDType)  //
                    || VN_IS(fromDtp, AssocArrayDType)  //
+                   || VN_IS(fromDtp, UnpackArrayDType)  //
                    || VN_IS(fromDtp, DynArrayDType)  //
                    || VN_IS(fromDtp, QueueDType)  //
                    || VN_IS(fromDtp, BasicDType)) {
@@ -2410,7 +2433,7 @@ private:
         nodep->dtypeSetSigned32();  // Guess on error
     }
     void methodCallUnpack(AstMethodCall* nodep, AstUnpackArrayDType* adtypep) {
-        enum { UNKNOWN = 0, ARRAY_OR, ARRAY_AND, ARRAY_XOR } methodId;
+        enum { UNKNOWN = 0, ARRAY_OR, ARRAY_AND, ARRAY_XOR, ARRAY_SUM, ARRAY_PRODUCT } methodId;
 
         methodId = UNKNOWN;
         if (nodep->name() == "or") {
@@ -2419,6 +2442,10 @@ private:
             methodId = ARRAY_AND;
         } else if (nodep->name() == "xor") {
             methodId = ARRAY_XOR;
+        } else if (nodep->name() == "sum") {
+            methodId = ARRAY_SUM;
+        } else if (nodep->name() == "product") {
+            methodId = ARRAY_PRODUCT;
         }
 
         if (methodId) {
@@ -2435,6 +2462,8 @@ private:
                     case ARRAY_OR: newp = new AstOr(fl, newp, selector); break;
                     case ARRAY_AND: newp = new AstAnd(fl, newp, selector); break;
                     case ARRAY_XOR: newp = new AstXor(fl, newp, selector); break;
+                    case ARRAY_SUM: newp = new AstAdd(fl, newp, selector); break;
+                    case ARRAY_PRODUCT: newp = new AstMul(fl, newp, selector); break;
                     default: nodep->v3fatalSrc("bad case");
                     }
                 }
@@ -3531,13 +3560,13 @@ private:
                                    << exprSize << ".");
                     UINFO(1, "    Related lo: " << modDTypep->skipRefp() << endl);
                     UINFO(1, "    Related hi: " << exprDTypep->skipRefp() << endl);
-                } else if ((exprArrayp && !modArrayp && pinwidth != conwidth)
-                           || (!exprArrayp && modArrayp && pinwidth != conwidth)) {
+                } else if ((exprArrayp && !modArrayp) || (!exprArrayp && modArrayp)) {
                     nodep->v3error("Illegal " << nodep->prettyOperatorName() << ","
                                               << " mismatch between port which is"
                                               << (modArrayp ? "" : " not") << " an array,"
                                               << " and expression which is"
-                                              << (exprArrayp ? "" : " not") << " an array.");
+                                              << (exprArrayp ? "" : " not")
+                                              << " an array. (IEEE 1800-2017 7.6)");
                     UINFO(1, "    Related lo: " << modDTypep->skipRefp() << endl);
                     UINFO(1, "    Related hi: " << exprDTypep->skipRefp() << endl);
                 }
@@ -3775,11 +3804,11 @@ private:
         processFTaskRefArgs(nodep);
         nodep->didWidth(true);
     }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE {
         assertAtStatement(nodep);
-        m_initialp = nodep;
+        m_procedurep = nodep;
         userIterateChildren(nodep, NULL);
-        m_initialp = NULL;
+        m_procedurep = NULL;
     }
     virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         // Iterate modules backwards, in bottom-up order.  That's faster
@@ -4539,14 +4568,17 @@ private:
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
         } else if (expDTypep->isDouble() && !underp->isDouble()) {
+            AstNode* oldp = underp;  // Need FINAL on children; otherwise splice would block it
             underp = spliceCvtD(underp);
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP(SELF, FINAL).p());
         } else if (!expDTypep->isDouble() && underp->isDouble()) {
+            AstNode* oldp = underp;  // Need FINAL on children; otherwise splice would block it
             underp = spliceCvtS(underp, true, expDTypep->width());  // Round RHS
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP(SELF, FINAL).p());
         } else if (expDTypep->isString() && !underp->dtypep()->isString()) {
+            AstNode* oldp = underp;  // Need FINAL on children; otherwise splice would block it
             underp = spliceCvtString(underp);
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP(SELF, FINAL).p());
         } else {
             AstBasicDType* expBasicp = expDTypep->basicp();
             AstBasicDType* underBasicp = underp->dtypep()->basicp();
@@ -4701,9 +4733,9 @@ private:
                 // We convert to/from vlsint32 rather than use floor() as want to make sure is
                 // representable in integer's number of bits
                 if (constp->isDouble()
-                    && v3EpsilonEqual(constp->num().toDouble(),
-                                      static_cast<double>(
-                                          static_cast<vlsint32_t>(constp->num().toDouble())))) {
+                    && v3EpsilonEqual(
+                        constp->num().toDouble(),
+                        static_cast<double>(static_cast<vlsint32_t>(constp->num().toDouble())))) {
                     warnOn = false;
                 }
             }
@@ -5239,8 +5271,8 @@ public:
         m_paramsOnly = paramsOnly;
         m_cellRangep = NULL;
         m_ftaskp = NULL;
+        m_procedurep = NULL;
         m_funcp = NULL;
-        m_initialp = NULL;
         m_attrp = NULL;
         m_doGenerate = doGenerate;
         m_dtTables = 0;

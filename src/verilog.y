@@ -596,6 +596,7 @@ class AstSenTree;
 %token<fl>		yD_HYPOT	"$hypot"
 %token<fl>		yD_INCREMENT	"$increment"
 %token<fl>		yD_INFO		"$info"
+%token<fl>		yD_ISUNBOUNDED	"$isunbounded"
 %token<fl>		yD_ISUNKNOWN	"$isunknown"
 %token<fl>		yD_ITOR		"$itor"
 %token<fl>		yD_LEFT		"$left"
@@ -614,6 +615,7 @@ class AstSenTree;
 %token<fl>		yD_REALTOBITS	"$realtobits"
 %token<fl>		yD_REWIND	"$rewind"
 %token<fl>		yD_RIGHT	"$right"
+%token<fl>		yD_ROOT		"$root"
 %token<fl>		yD_RTOI		"$rtoi"
 %token<fl>		yD_SAMPLED	"$sampled"
 %token<fl>		yD_SFORMAT	"$sformat"
@@ -1970,6 +1972,8 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'	{ $$ = NULL; BBUNSUP($1, "Unsupported: SystemVerilog 2005 typedef in this context"); }
 	//			// Combines into above "data_type id" rule
 	//			// Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
+	//UNSUP			// Below should be idAny to allow duplicate forward defs; need to expand
+	//			// data_type to exclude IDs, or add id__SEMI rule
 	|	yTYPEDEF id ';'				{ $$ = NULL; $$ = new AstTypedefFwd($<fl>2, *$2); SYMP->reinsert($$); PARSEP->tagNodep($$); }
 	|	yTYPEDEF yENUM idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
 	|	yTYPEDEF ySTRUCT idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
@@ -2329,7 +2333,7 @@ delayExpr<nodep>:
 
 minTypMax<nodep>:		// IEEE: mintypmax_expression and constant_mintypmax_expression
 		delayExpr				{ $$ = $1; }
-	|	delayExpr ':' delayExpr ':' delayExpr	{ $$ = $1; DEL($3); DEL($5); }
+	|	delayExpr ':' delayExpr ':' delayExpr	{ $$ = $3; DEL($1); DEL($5); }
 	;
 
 netSigList<varp>:		// IEEE: list_of_port_identifiers
@@ -3413,7 +3417,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_HYPOT '(' expr ',' expr ')'		{ $$ = new AstHypotD($1,$3,$5); }
 	|	yD_INCREMENT '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_INCREMENT,$3,NULL); }
 	|	yD_INCREMENT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_INCREMENT,$3,$5); }
-	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1,$3); }
+	|	yD_ISUNBOUNDED '(' expr ')'		{ $$ = new AstIsUnbounded($1, $3); }
+	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1, $3); }
 	|	yD_ITOR '(' expr ')'			{ $$ = new AstIToRD($1,$3); }
 	|	yD_LEFT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_LEFT,$3,NULL); }
 	|	yD_LEFT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_LEFT,$3,$5); }
@@ -4014,6 +4019,7 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 	//			// See also varRefClassBit, which is the non-expr version of most of this
 		yTHIS					{ $$ = new AstConst($1, AstConst::LogicFalse());
 							  BBUNSUP($1, "Unsupported: this"); }
+	|	yD_ROOT					{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"); }
 	|	idArrayed				{ $$ = $1; }
 	|	package_scopeIdFollows idArrayed	{ $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
 	|	class_scopeIdFollows idArrayed		{ $$ = $2; BBUNSUP($<fl>1, "Unsupported: scoped class reference"); }
@@ -4269,6 +4275,8 @@ gateRangeE<nodep>:
 gateBuf<nodep>:
 		gateFront variable_lvalue ',' gatePinExpr ')'
 			{ $$ = new AstAssignW($<fl>1, $2, $4); DEL($1); }
+	// UNSUP			// IEEE: Multiple output variable_lvalues
+	// UNSUP			// Causes conflict - need to take in variable_lvalue or a gatePinExpr
 	;
 gateBufif0<nodep>:
 		gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
@@ -4281,6 +4289,8 @@ gateBufif1<nodep>:
 gateNot<nodep>:
 		gateFront variable_lvalue ',' gatePinExpr ')'
 			{ $$ = new AstAssignW($<fl>1, $2, new AstNot($<fl>1, $4)); DEL($1); }
+	// UNSUP			// IEEE: Multiple output variable_lvalues
+	// UNSUP			// Causes conflict - need to take in variable_lvalue or a gatePinExpr
 	;
 gateNotif0<nodep>:
 		gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
@@ -4477,8 +4487,9 @@ idClassSel<nodep>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged va
 	;
 
 idDotted<nodep>:
-	//UNSUP	yD_ROOT '.' idDottedMore		{ UNSUP }
-		idDottedMore		 		{ $$ = $1; }
+		yD_ROOT '.' idDottedMore
+			{ $$ = new AstDot($2, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"), $3); }
+	|	idDottedMore		 		{ $$ = $1; }
 	;
 
 idDottedMore<nodep>:

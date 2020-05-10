@@ -35,6 +35,8 @@
 # include <unistd.h>
 #endif
 
+#include "verilated_intrinsics.h"
+
 // SPDIFF_ON
 
 #ifndef O_LARGEFILE  // For example on WIN32
@@ -606,20 +608,19 @@ void VerilatedVcd::declTriArray(vluint32_t code, const char* name, bool array, i
 #endif  //  VL_TRACE_VCD_OLD_API
 
 //=============================================================================
-// Trace recording routines
+// Trace rendering prinitives
 
-//=============================================================================
-// Emit trace entries
-
-// Emit suffix, write back write pointer, check buffer
 void VerilatedVcd::finishLine(vluint32_t code, char* writep) {
     const char* const suffixp = m_suffixesp + code * VL_TRACE_SUFFIX_ENTRY_SIZE;
     // Copy the whole suffix (this avoid having hard to predict branches which
-    // helps a lot). Note suffixp could be aligned, so could load it in one go,
-    // but then we would be endiannes dependent which we don't have a way to
-    // test right now and probably would make little difference...
-    // Note: The maximum length of the suffix is
+    // helps a lot). Note: The maximum length of the suffix is
     // VL_TRACE_MAX_VCD_CODE_SIZE + 2 == 7, but we unroll this here for speed.
+#ifdef VL_X86_64
+    // Copy the whole 8 bytes in one go, this works on little-endian machines
+    // supporting unaligned stores.
+    *reinterpret_cast<vluint64_t*>(writep) = *reinterpret_cast<const vluint64_t*>(suffixp);
+#else
+    // Portable variant
     writep[0] = suffixp[0];
     writep[1] = suffixp[1];
     writep[2] = suffixp[2];
@@ -627,138 +628,78 @@ void VerilatedVcd::finishLine(vluint32_t code, char* writep) {
     writep[4] = suffixp[4];
     writep[5] = suffixp[5];
     writep[6] = '\n';  // The 6th index is always '\n' if it's relevant, no need to fetch it.
+#endif
     // Now write back the write pointer incremented by the actual size of the
     // suffix, which was stored in the last byte of the suffix buffer entry.
     m_writep = writep + suffixp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1];
     bufferCheck();
 }
 
-void VerilatedVcd::emitBit(vluint32_t code, vluint32_t newval) {
+//=============================================================================
+// emit* trace routines
+
+// Note: emit* are only ever called from one place (full* in
+// verilated_trace_imp.cpp, which is included in this file at the top),
+// so always inline them.
+
+VL_ATTR_ALWINLINE
+void VerilatedVcd::emitBit(vluint32_t code, CData newval) {
+    // Don't prefetch suffix as it's a bit too late;
     char* wp = m_writep;
     *wp++ = '0' | static_cast<char>(newval);
     finishLine(code, wp);
 }
 
-template <int T_Bits> void VerilatedVcd::emitBus(vluint32_t code, vluint32_t newval) {
+VL_ATTR_ALWINLINE
+void VerilatedVcd::emitCData(vluint32_t code, CData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    newval <<= 32 - T_Bits;
-    int bits = T_Bits;
-    do {
-        *wp++ = '0' | static_cast<char>(newval >> 31);
-        newval <<= 1;
-    } while (--bits);
-    finishLine(code, wp);
+    cvtCDataToStr(wp, newval << (VL_BYTESIZE - bits));
+    finishLine(code, wp + bits);
 }
 
-void VerilatedVcd::emitQuad(vluint32_t code, vluint64_t newval, int bits) {
+VL_ATTR_ALWINLINE
+void VerilatedVcd::emitSData(vluint32_t code, SData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    newval <<= 64 - bits;
-    // Handle the top 32 bits within the 64 bit input
-    const int bitsInTopHalf = bits - 32;
-    wp += bitsInTopHalf;
-    // clang-format off
-    switch (bitsInTopHalf) {
-    case 32: wp[-32] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 31: wp[-31] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 30: wp[-30] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 29: wp[-29] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 28: wp[-28] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 27: wp[-27] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 26: wp[-26] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 25: wp[-25] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 24: wp[-24] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 23: wp[-23] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 22: wp[-22] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 21: wp[-21] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 20: wp[-20] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 19: wp[-19] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 18: wp[-18] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 17: wp[-17] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 16: wp[-16] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 15: wp[-15] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 14: wp[-14] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 13: wp[-13] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 12: wp[-12] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 11: wp[-11] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 10: wp[-10] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 9:  wp[ -9] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 8:  wp[ -8] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 7:  wp[ -7] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 6:  wp[ -6] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 5:  wp[ -5] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 4:  wp[ -4] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 3:  wp[ -3] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 2:  wp[ -2] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 1:  wp[ -1] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    }
-    // clang-format on
-    // Handle the bottom 32 bits within the 64 bit input
-    int remaining = 32;
-    do {
-        *wp++ = '0' | static_cast<char>(newval >> 63);
-        newval <<= 1;
-    } while (--remaining);
-    finishLine(code, wp);
+    cvtSDataToStr(wp, newval << (VL_SHORTSIZE - bits));
+    finishLine(code, wp + bits);
 }
 
-void VerilatedVcd::emitArray(vluint32_t code, const vluint32_t* newvalp, int bits) {
-    int words = (bits + 31) / 32;
+VL_ATTR_ALWINLINE
+void VerilatedVcd::emitIData(vluint32_t code, IData newval, int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    cvtIDataToStr(wp, newval << (VL_IDATASIZE - bits));
+    finishLine(code, wp + bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcd::emitQData(vluint32_t code, QData newval, int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    cvtQDataToStr(wp, newval << (VL_QUADSIZE - bits));
+    finishLine(code, wp + bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcd::emitWData(vluint32_t code, const WData* newvalp, int bits) {
+    int words = VL_WORDS_I(bits);
     char* wp = m_writep;
     *wp++ = 'b';
     // Handle the most significant word
-    const int bitsInMSW = bits % 32 == 0 ? 32 : bits % 32;
-    vluint32_t val = newvalp[--words] << (32 - bitsInMSW);
+    const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
+    cvtEDataToStr(wp, newvalp[--words] << (VL_EDATASIZE - bitsInMSW));
     wp += bitsInMSW;
-    // clang-format off
-    switch (bitsInMSW) {
-    case 32: wp[-32] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 31: wp[-31] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 30: wp[-30] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 29: wp[-29] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 28: wp[-28] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 27: wp[-27] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 26: wp[-26] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 25: wp[-25] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 24: wp[-24] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 23: wp[-23] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 22: wp[-22] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 21: wp[-21] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 20: wp[-20] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 19: wp[-19] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 18: wp[-18] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 17: wp[-17] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 16: wp[-16] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 15: wp[-15] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 14: wp[-14] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 13: wp[-13] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 12: wp[-12] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 11: wp[-11] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 10: wp[-10] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 9:  wp[ -9] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 8:  wp[ -8] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 7:  wp[ -7] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 6:  wp[ -6] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 5:  wp[ -5] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 4:  wp[ -4] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 3:  wp[ -3] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 2:  wp[ -2] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 1:  wp[ -1] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    }
-    // clang-format on
     // Handle the remaining words
     while (words > 0) {
-        vluint32_t val = newvalp[--words];
-        int bits = 32;
-        do {
-            *wp++ = '0' | static_cast<char>(val >> 31);
-            val <<= 1;
-        } while (--bits);
+        cvtEDataToStr(wp, newvalp[--words]);
+        wp += VL_EDATASIZE;
     }
     finishLine(code, wp);
 }
 
+VL_ATTR_ALWINLINE
 void VerilatedVcd::emitFloat(vluint32_t code, float newval) {
     char* wp = m_writep;
     // Buffer can't overflow before sprintf; we sized during declaration
@@ -767,6 +708,7 @@ void VerilatedVcd::emitFloat(vluint32_t code, float newval) {
     finishLine(code, wp);
 }
 
+VL_ATTR_ALWINLINE
 void VerilatedVcd::emitDouble(vluint32_t code, double newval) {
     char* wp = m_writep;
     // Buffer can't overflow before sprintf; we sized during declaration
