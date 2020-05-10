@@ -952,33 +952,19 @@ int V3Number::widthMin() const {
 
 uint32_t V3Number::countBits(const V3Number& ctrl) const {
     int n = 0;
-
-    switch (ctrl.bitIs(0)) {
-        case '0': {
-        for (int bit = 0; bit < this->width(); bit++) {
-                if (bitIs0(bit)) n++;
-            }
+    for (int bit = 0; bit < this->width(); ++bit) {
+        switch (ctrl.bitIs(0)) {
+        case '0':
+            if (bitIs0(bit)) ++n;
             break;
-        }
-
-        case '1': {
-        for (int bit = 0; bit < this->width(); bit++) {
-                if (bitIs1(bit)) n++;
-            }
+        case '1':
+            if (bitIs1(bit)) ++n;
             break;
-        }
-
-        case 'x': {
-        for (int bit = 0; bit < this->width(); bit++) {
-                if (bitIsX(bit)) n++;
-            }
+        case 'x':
+            if (bitIsX(bit)) ++n;
             break;
-        }
-
-        case 'z': {
-        for (int bit = 0; bit < this->width(); bit++) {
-                if (bitIsZ(bit)) n++;
-            }
+        case 'z':
+            if (bitIsZ(bit)) ++n;
             break;
         }
     }
