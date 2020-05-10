@@ -3716,24 +3716,28 @@ array_methodNoRoot<nodep>:
 		yOR					{ $$ = new AstFuncRef($1, "or", NULL); }
 	|	yAND					{ $$ = new AstFuncRef($1, "and", NULL); }
 	|	yXOR					{ $$ = new AstFuncRef($1, "xor", NULL); }
-	//UNSUP	yUNIQUE					{ $$ = new AstFuncRef($1, "unique", NULL); }
+	|	yUNIQUE					{ $$ = new AstFuncRef($1, "unique", NULL); }
 	;
 
 dpi_import_export<nodep>:	// ==IEEE: dpi_import_export
 		yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE function_prototype ';'
-			{ $$ = $5; if (*$4!="") $5->cname(*$4); $5->dpiContext($3==iprop_CONTEXT); $5->pure($3==iprop_PURE);
+			{ $$ = $5; if (*$4 != "") $5->cname(*$4);
+			  $5->dpiContext($3==iprop_CONTEXT); $5->pure($3==iprop_PURE);
 			  $5->dpiImport(true); GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true);
 			  if ($$->prettyName()[0]=='$') SYMP->reinsert($$,NULL,$$->prettyName());  // For $SysTF overriding
 			  SYMP->reinsert($$); }
 	|	yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE task_prototype ';'
-			{ $$ = $5; if (*$4!="") $5->cname(*$4); $5->dpiContext($3==iprop_CONTEXT); $5->pure($3==iprop_PURE);
+			{ $$ = $5; if (*$4 != "") $5->cname(*$4);
+			  $5->dpiContext($3==iprop_CONTEXT); $5->pure($3==iprop_PURE);
 			  $5->dpiImport(true); $5->dpiTask(true); GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true);
 			  if ($$->prettyName()[0]=='$') SYMP->reinsert($$,NULL,$$->prettyName());  // For $SysTF overriding
 			  SYMP->reinsert($$); }
-	|	yEXPORT yaSTRING dpi_importLabelE yFUNCTION idAny ';'	{ $$ = new AstDpiExport($<fl>5, *$5, *$3);
-			  GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true); }
-	|	yEXPORT yaSTRING dpi_importLabelE yTASK     idAny ';'	{ $$ = new AstDpiExport($<fl>5, *$5, *$3);
-			  GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true); }
+	|	yEXPORT yaSTRING dpi_importLabelE yFUNCTION idAny ';'
+			{ $$ = new AstDpiExport($<fl>5, *$5, *$3);
+			  GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true); }
+	|	yEXPORT yaSTRING dpi_importLabelE yTASK     idAny ';'
+			{ $$ = new AstDpiExport($<fl>5, *$5, *$3);
+			  GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true); }
 	;
 
 dpi_importLabelE<strp>:		// IEEE: part of dpi_import_export
