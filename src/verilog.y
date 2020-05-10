@@ -1585,9 +1585,9 @@ casting_type<dtypep>:		// IEEE: casting_type
 	//
 	//			// IEEE: signing
 	//See where casting_type used
-	//^^	ySIGNED					{ $$ = new AstSigned($1,$3); }
-	//^^	yUNSIGNED				{ $$ = new AstUnsigned($1,$3); }
-	//UNSUP	ySTRING					{ $$ = $1; }
+	//^^	ySIGNED					{ in parent rule }
+	//^^	yUNSIGNED				{ in parent rule }
+	//^^	ySTRING					{ in parent rule }
 	//UNSUP	yCONST__ETC/*then `*/			{ $$ = $1; }
 	;
 
@@ -3889,8 +3889,9 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// IEEE: cast/constant_cast
 	|	casting_type yP_TICK '(' expr ')'	{ $$ = new AstCast($1->fileline(), $4, $1); }
 	//			// expanded from casting_type
-	|	ySIGNED	     yP_TICK '(' expr ')'	{ $$ = new AstSigned($1,$4); }
-	|	yUNSIGNED    yP_TICK '(' expr ')'	{ $$ = new AstUnsigned($1,$4); }
+	|	ySIGNED yP_TICK '(' expr ')'		{ $$ = new AstSigned($1, $4); }
+	|	yUNSIGNED yP_TICK '(' expr ')'		{ $$ = new AstUnsigned($1, $4); }
+	|	ySTRING yP_TICK '(' expr ')'		{ $$ = new AstCvtPackString($1, $4); }
 	//			// Spec only allows primary with addition of a type reference
 	//			// We'll be more general, and later assert LHS was a type.
 	|	~l~expr      yP_TICK '(' expr ')'	{ $$ = new AstCastParse($2,$4,$1); }
