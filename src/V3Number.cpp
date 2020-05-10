@@ -976,7 +976,7 @@ uint32_t V3Number::countBits(const V3Number& ctrl1, const V3Number& ctrl2,
     int n = countBits(ctrl1);
     if (ctrl2.bitIs(0) != ctrl1.bitIs(0)) n += countBits(ctrl2);
     if ((ctrl3.bitIs(0) != ctrl1.bitIs(0)) && (ctrl3.bitIs(0) != ctrl2.bitIs(0))) {
-        n += countBits(ctrl3);  // TODO check only bit 0
+        n += countBits(ctrl3);
     }
     return n;
 }
