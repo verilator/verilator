@@ -27,7 +27,7 @@
 #include <cstdarg>
 #include <iomanip>
 
-#define MAX_SPRINTF_DOUBLE_SIZE 100  // Maximum characters with a sprintf %e/%f/%g (probably < 30)
+#define MAX_SPRINTF_DOUBLE_SIZE 1100  // Maximum characters with a sprintf %e/%f/%g (really 1079)
 
 // Number operations build output in-place so can't call e.g. foo.opX(foo)
 #define NUM_ASSERT_OP_ARGS1(arg1) \
