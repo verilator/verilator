@@ -664,6 +664,14 @@ private:
         UINFO(4, "TRICONST -> " << num << endl);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
+    void replaceConst(AstNodeQuadop* nodep) {
+        V3Number num(nodep, nodep->width());
+        nodep->numberOperate(
+            num, VN_CAST(nodep->lhsp(), Const)->num(), VN_CAST(nodep->rhsp(), Const)->num(),
+            VN_CAST(nodep->thsp(), Const)->num(), VN_CAST(nodep->fhsp(), Const)->num());
+        UINFO(4, "QUADCONST -> " << num << endl);
+        VL_DO_DANGLING(replaceNum(nodep, num), nodep);
+    }
 
     void replaceConstString(AstNode* oldp, const string& num) {
         // Replace oldp node with a constant set to specified value
@@ -2258,6 +2266,7 @@ private:
     // Generic constants on both side.  Do this first to avoid other replacements
     TREEOPC("AstNodeBiop {$lhsp.castConst, $rhsp.castConst}",  "replaceConst(nodep)");
     TREEOPC("AstNodeUniop{$lhsp.castConst, !nodep->isOpaque()}",  "replaceConst(nodep)");
+    TREEOPC("AstNodeQuadop{$lhsp.castConst, $rhsp.castConst, $thsp.castConst, $fhsp.castConst}",  "replaceConst(nodep)");
     // Zero on one side or the other
     TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
     TREEOP ("AstAnd   {$lhsp.isZero, $rhsp, isTPure($rhsp)}",   "replaceZero(nodep)");  // Can't use replaceZeroChkPure as we make this pattern in ChkPure

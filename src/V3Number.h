@@ -284,6 +284,8 @@ public:
     uint32_t toHash() const;
     uint32_t edataWord(int eword) const;
     uint8_t dataByte(int byte) const;
+    uint32_t countBits(const V3Number& ctrl) const;
+    uint32_t countBits(const V3Number& ctrl1, const V3Number& ctrl2, const V3Number& ctrl3) const;
     uint32_t countOnes() const;
     uint32_t
     mostSetBitP1() const;  // Highest bit set plus one, IE for 16 return 5, for 0 return 0.
@@ -314,6 +316,8 @@ public:
     V3Number& opRedAnd(const V3Number& lhs);
     V3Number& opRedXor(const V3Number& lhs);
     V3Number& opRedXnor(const V3Number& lhs);
+    V3Number& opCountBits(const V3Number& expr, const V3Number& ctrl1, const V3Number& ctrl2,
+                          const V3Number& ctrl3);
     V3Number& opCountOnes(const V3Number& lhs);
     V3Number& opIsUnknown(const V3Number& lhs);
     V3Number& opOneHot(const V3Number& lhs);

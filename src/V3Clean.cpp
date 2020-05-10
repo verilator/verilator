@@ -160,6 +160,15 @@ private:
         if (nodep->cleanThs()) ensureClean(nodep->thsp());
         // no setClean.. must do it in each user routine.
     }
+    void operandQuadop(AstNodeQuadop* nodep) {
+        iterateChildren(nodep);
+        computeCppWidth(nodep);
+        if (nodep->cleanLhs()) { ensureClean(nodep->lhsp()); }
+        if (nodep->cleanRhs()) { ensureClean(nodep->rhsp()); }
+        if (nodep->cleanThs()) { ensureClean(nodep->thsp()); }
+        if (nodep->cleanFhs()) { ensureClean(nodep->fhsp()); }
+        // no setClean.. must do it in each user routine.
+    }
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
@@ -191,6 +200,10 @@ private:
     virtual void visit(AstOr* nodep) VL_OVERRIDE {
         operandBiop(nodep);
         setClean(nodep, isClean(nodep->lhsp()) && isClean(nodep->rhsp()));
+    }
+    virtual void visit(AstNodeQuadop* nodep) VL_OVERRIDE {
+        operandQuadop(nodep);
+        setClean(nodep, nodep->cleanOut());
     }
     virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {
         iterateChildren(nodep);

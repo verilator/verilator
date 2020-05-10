@@ -411,13 +411,15 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 
     // Operators
     virtual void emitVerilogFormat(AstNode* nodep, const string& format, AstNode* lhsp = NULL,
-                                   AstNode* rhsp = NULL, AstNode* thsp = NULL) {
+                                   AstNode* rhsp = NULL, AstNode* thsp = NULL,
+                                   AstNode* fhsp = NULL) {
         // Look at emitVerilog() format for term/uni/dual/triops,
         // and write out appropriate text.
         //      %f      Potential fileline-if-change and line break
         //      %l      lhsp - if appropriate
         //      %r      rhsp - if appropriate
         //      %t      thsp - if appropriate
+        //      %o      fhsp - if appropriate
         //      %d      dtypep - if appropriate
         //      %k      Potential line break
         bool inPct = false;
@@ -448,6 +450,11 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
                 case 't': {
                     UASSERT_OBJ(thsp, nodep, "emitVerilog() references undef node");
                     iterateAndNextNull(thsp);
+                    break;
+                }
+                case 'o': {
+                    UASSERT_OBJ(thsp, nodep, "emitVerilog() references undef node");
+                    iterateAndNextNull(fhsp);
                     break;
                 }
                 case 'd': {

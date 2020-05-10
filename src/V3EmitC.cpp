@@ -1000,6 +1000,26 @@ public:
         emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)", nodep->lhsp(),
                    nodep->rhsp(), NULL);
     }
+    virtual void visit(AstCountBits* nodep) {
+        putbs("VL_COUNTBITS_");
+        emitIQW(nodep->lhsp());
+        puts("(");
+        puts(cvtToStr(nodep->lhsp()->widthMin()));
+        puts(", ");
+        if (nodep->lhsp()->isWide()) {
+            puts(cvtToStr(nodep->lhsp()->widthWords()));  // Note argument width, not node width
+                                                          // (which is always 32)
+            puts(", ");
+        }
+        iterateAndNextNull(nodep->lhsp());
+        puts(", ");
+        iterateAndNextNull(nodep->rhsp());
+        puts(", ");
+        iterateAndNextNull(nodep->thsp());
+        puts(", ");
+        iterateAndNextNull(nodep->fhsp());
+        puts(")");
+    }
     // Terminals
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         puts(nodep->hiernameProtect());

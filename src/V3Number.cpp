@@ -38,6 +38,9 @@
 #define NUM_ASSERT_OP_ARGS3(arg1, arg2, arg3) \
     UASSERT((this != &(arg1) && this != &(arg2) && this != &(arg3)), \
             "Number operation called with same source and dest");
+#define NUM_ASSERT_OP_ARGS4(arg1, arg2, arg3, arg4) \
+    UASSERT((this != &(arg1) && this != &(arg2) && this != &(arg3) && this != &(arg4)), \
+            "Number operation called with same source and dest");
 
 #define NUM_ASSERT_LOGIC_ARGS1(arg1) \
     UASSERT((!(arg1).isDouble() && !(arg1).isString()), \
@@ -46,6 +49,12 @@
 #define NUM_ASSERT_LOGIC_ARGS2(arg1, arg2) \
     NUM_ASSERT_LOGIC_ARGS1(arg1); \
     NUM_ASSERT_LOGIC_ARGS1(arg2);
+
+#define NUM_ASSERT_LOGIC_ARGS4(arg1, arg2, arg3, arg4) \
+    NUM_ASSERT_LOGIC_ARGS1(arg1); \
+    NUM_ASSERT_LOGIC_ARGS1(arg2); \
+    NUM_ASSERT_LOGIC_ARGS1(arg3); \
+    NUM_ASSERT_LOGIC_ARGS1(arg4);
 
 #define NUM_ASSERT_STRING_ARGS1(arg1) \
     UASSERT((arg1).isString(), \
@@ -953,6 +962,37 @@ int V3Number::widthMin() const {
     return 1;  // one bit even if number is == 0
 }
 
+uint32_t V3Number::countBits(const V3Number& ctrl) const {
+    int n = 0;
+    for (int bit = 0; bit < this->width(); ++bit) {
+        switch (ctrl.bitIs(0)) {
+        case '0':
+            if (bitIs0(bit)) ++n;
+            break;
+        case '1':
+            if (bitIs1(bit)) ++n;
+            break;
+        case 'x':
+            if (bitIsX(bit)) ++n;
+            break;
+        case 'z':
+            if (bitIsZ(bit)) ++n;
+            break;
+        }
+    }
+    return n;
+}
+
+uint32_t V3Number::countBits(const V3Number& ctrl1, const V3Number& ctrl2,
+                             const V3Number& ctrl3) const {
+    int n = countBits(ctrl1);
+    if (ctrl2.bitIs(0) != ctrl1.bitIs(0)) n += countBits(ctrl2);
+    if ((ctrl3.bitIs(0) != ctrl1.bitIs(0)) && (ctrl3.bitIs(0) != ctrl2.bitIs(0))) {
+        n += countBits(ctrl3);
+    }
+    return n;
+}
+
 uint32_t V3Number::countOnes() const {
     int n = 0;
     for (int bit = 0; bit < this->width(); bit++) {
@@ -1095,6 +1135,15 @@ V3Number& V3Number::opRedXnor(const V3Number& lhs) {
     return setSingleBits(outc);
 }
 
+V3Number& V3Number::opCountBits(const V3Number& expr, const V3Number& ctrl1, const V3Number& ctrl2,
+                                const V3Number& ctrl3) {
+    NUM_ASSERT_OP_ARGS4(expr, ctrl1, ctrl2, ctrl3);
+    NUM_ASSERT_LOGIC_ARGS4(expr, ctrl1, ctrl2, ctrl3);
+    setZero();
+    m_value[0] = expr.countBits(ctrl1, ctrl2, ctrl3);
+    opCleanThis();
+    return *this;
+}
 V3Number& V3Number::opCountOnes(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);

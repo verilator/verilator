@@ -1999,6 +1999,43 @@ public:
     virtual bool same(const AstNode*) const { return true; }
 };
 
+class AstNodeQuadop : public AstNodeMath {
+    // Quaternary math
+public:
+    AstNodeQuadop(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths, AstNode* fhs)
+        : AstNodeMath(t, fl) {
+        setOp1p(lhs);
+        setOp2p(rhs);
+        setOp3p(ths);
+        setOp4p(fhs);
+    }
+    ASTNODE_BASE_FUNCS(NodeQuadop)
+    AstNode* lhsp() const { return op1p(); }
+    AstNode* rhsp() const { return op2p(); }
+    AstNode* thsp() const { return op3p(); }
+    AstNode* fhsp() const { return op4p(); }
+    void lhsp(AstNode* nodep) { return setOp1p(nodep); }
+    void rhsp(AstNode* nodep) { return setOp2p(nodep); }
+    void thsp(AstNode* nodep) { return setOp3p(nodep); }
+    void fhsp(AstNode* nodep) { return setOp4p(nodep); }
+    // METHODS
+    // Set out to evaluation of a AstConst'ed
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
+                               const V3Number& ths, const V3Number& fhs)
+        = 0;
+    virtual bool cleanLhs() const = 0;  // True if LHS must have extra upper bits zero
+    virtual bool cleanRhs() const = 0;  // True if RHS must have extra upper bits zero
+    virtual bool cleanThs() const = 0;  // True if THS must have extra upper bits zero
+    virtual bool cleanFhs() const = 0;  // True if THS must have extra upper bits zero
+    virtual bool sizeMattersLhs() const = 0;  // True if output result depends on lhs size
+    virtual bool sizeMattersRhs() const = 0;  // True if output result depends on rhs size
+    virtual bool sizeMattersThs() const = 0;  // True if output result depends on ths size
+    virtual bool sizeMattersFhs() const = 0;  // True if output result depends on ths size
+    virtual int instrCount() const { return widthInstrs(); }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode*) const { return true; }
+};
+
 class AstNodeBiCom : public AstNodeBiop {
     // Binary math with commutative properties
 public:
