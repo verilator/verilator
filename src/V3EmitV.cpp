@@ -408,7 +408,8 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 
     // Operators
     virtual void emitVerilogFormat(AstNode* nodep, const string& format, AstNode* lhsp = NULL,
-                                   AstNode* rhsp = NULL, AstNode* thsp = NULL, AstNode* fhsp = NULL) {
+                                   AstNode* rhsp = NULL, AstNode* thsp = NULL,
+                                   AstNode* fhsp = NULL) {
         // Look at emitVerilog() format for term/uni/dual/triops,
         // and write out appropriate text.
         //      %f      Potential fileline-if-change and line break

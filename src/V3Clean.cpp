@@ -163,19 +163,11 @@ private:
     void operandQuadop(AstNodeQuadop* nodep) {
         iterateChildren(nodep);
         computeCppWidth(nodep);
-        if (nodep->cleanLhs()) {
-            ensureClean(nodep->lhsp());
-        }
-        if (nodep->cleanRhs()) {
-            ensureClean(nodep->rhsp());
-        }
-        if (nodep->cleanThs()) {
-            ensureClean(nodep->thsp());
-        }
-        if (nodep->cleanFhs()) {
-            ensureClean(nodep->fhsp());
-        }
-        //no setClean.. must do it in each user routine.
+        if (nodep->cleanLhs()) { ensureClean(nodep->lhsp()); }
+        if (nodep->cleanRhs()) { ensureClean(nodep->rhsp()); }
+        if (nodep->cleanThs()) { ensureClean(nodep->thsp()); }
+        if (nodep->cleanFhs()) { ensureClean(nodep->fhsp()); }
+        // no setClean.. must do it in each user routine.
     }
 
     // VISITORS

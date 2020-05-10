@@ -544,8 +544,7 @@ private:
         checkNodeInfo(nodep);
         iterateChildren(nodep);
         if (!m_checkOnly && optimizable()) {
-            nodep->numberOperate(newConst(nodep)->num(),
-                                 fetchConst(nodep->lhsp())->num(),
+            nodep->numberOperate(newConst(nodep)->num(), fetchConst(nodep->lhsp())->num(),
                                  fetchConst(nodep->rhsp())->num(),
                                  fetchConst(nodep->thsp())->num(),
                                  fetchConst(nodep->fhsp())->num());

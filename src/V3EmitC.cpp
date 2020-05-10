@@ -1001,8 +1001,11 @@ public:
         putbs("VL_COUNTBITS_");
         emitIQW(nodep->lhsp());
         puts("(");
+        puts(cvtToStr(nodep->lhsp()->widthMin()));
+        puts(", ");
         if (nodep->lhsp()->isWide()) {
-            puts(cvtToStr(nodep->lhsp()->widthWords()));  // Note argument width, not node width (which is always 32)
+            puts(cvtToStr(nodep->lhsp()->widthWords()));  // Note argument width, not node width
+                                                          // (which is always 32)
             puts(", ");
         }
         iterateAndNextNull(nodep->lhsp());
@@ -1012,8 +1015,6 @@ public:
         iterateAndNextNull(nodep->thsp());
         puts(", ");
         iterateAndNextNull(nodep->fhsp());
-        puts(", ");
-        puts(cvtToStr(nodep->lhsp()->widthMin()));
         puts(")");
     }
     // Terminals

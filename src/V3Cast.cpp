@@ -130,10 +130,8 @@ private:
     }
     virtual void visit(AstNodeQuadop* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
-        nodep->user1(nodep->lhsp()->user1()
-                    | nodep->rhsp()->user1()
-                    | nodep->thsp()->user1()
-                    | nodep->fhsp()->user1());
+        nodep->user1(nodep->lhsp()->user1() | nodep->rhsp()->user1() | nodep->thsp()->user1()
+                     | nodep->fhsp()->user1());
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) ensureCast(nodep->rhsp());
         if (nodep->sizeMattersThs()) ensureCast(nodep->thsp());

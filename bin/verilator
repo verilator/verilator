@@ -3089,7 +3089,7 @@ uwire keyword.
 =head2 SystemVerilog 2005 (IEEE 1800-2005) Support
 
 Verilator supports ==? and !=? operators, ++ and -- in some contexts,
-$bits, $countones, $countbits, $error, $fatal, $info, $isunknown, $onehot,
+$bits, $countbits, $countones, $error, $fatal, $info, $isunknown, $onehot,
 $onehot0, $unit, $warning, always_comb, always_ff, always_latch, bit, byte,
 chandle, const, do-while, enum, export, final, import, int, interface,
 logic, longint, modport, package, program, shortint, struct, time, typedef,
@@ -3920,7 +3920,7 @@ All timing control statements are ignored.
 Verilator does not perform warning checking on uwires, it treats the uwire
 keyword as if it were the normal wire keyword.
 
-=item $bits, $countones, $countbits, $error, $fatal, $finish, $info,
+=item $bits, $countbits, $countones, $error, $fatal, $finish, $info,
 $isunknown, $onehot, $onehot0, $readmemb, $readmemh, $signed, $stime, $stop,
 $time, $unsigned, $warning.
 

@@ -665,12 +665,11 @@ private:
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
     void replaceConst(AstNodeQuadop* nodep) {
-        V3Number num (nodep, nodep->width());
-        nodep->numberOperate(num, VN_CAST(nodep->lhsp(), Const)->num(),
-                             VN_CAST(nodep->rhsp(), Const)->num(),
-                             VN_CAST(nodep->thsp(), Const)->num(),
-                             VN_CAST(nodep->fhsp(), Const)->num());
-        UINFO(4,"QUADCONST -> "<<num<<endl);
+        V3Number num(nodep, nodep->width());
+        nodep->numberOperate(
+            num, VN_CAST(nodep->lhsp(), Const)->num(), VN_CAST(nodep->rhsp(), Const)->num(),
+            VN_CAST(nodep->thsp(), Const)->num(), VN_CAST(nodep->fhsp(), Const)->num());
+        UINFO(4, "QUADCONST -> " << num << endl);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
 
