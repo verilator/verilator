@@ -1944,6 +1944,7 @@ private:
             }
         } else if (VN_IS(fromDtp, EnumDType)  //
                    || VN_IS(fromDtp, AssocArrayDType)  //
+                   || VN_IS(fromDtp, UnpackArrayDType)  //
                    || VN_IS(fromDtp, DynArrayDType)  //
                    || VN_IS(fromDtp, QueueDType)  //
                    || VN_IS(fromDtp, BasicDType)) {
@@ -2420,7 +2421,7 @@ private:
         nodep->dtypeSetSigned32();  // Guess on error
     }
     void methodCallUnpack(AstMethodCall* nodep, AstUnpackArrayDType* adtypep) {
-        enum { UNKNOWN = 0, ARRAY_OR, ARRAY_AND, ARRAY_XOR } methodId;
+        enum { UNKNOWN = 0, ARRAY_OR, ARRAY_AND, ARRAY_XOR, ARRAY_SUM, ARRAY_PRODUCT } methodId;
 
         methodId = UNKNOWN;
         if (nodep->name() == "or") {
@@ -2429,6 +2430,10 @@ private:
             methodId = ARRAY_AND;
         } else if (nodep->name() == "xor") {
             methodId = ARRAY_XOR;
+        } else if (nodep->name() == "sum") {
+            methodId = ARRAY_SUM;
+        } else if (nodep->name() == "product") {
+            methodId = ARRAY_PRODUCT;
         }
 
         if (methodId) {
@@ -2445,6 +2450,8 @@ private:
                     case ARRAY_OR: newp = new AstOr(fl, newp, selector); break;
                     case ARRAY_AND: newp = new AstAnd(fl, newp, selector); break;
                     case ARRAY_XOR: newp = new AstXor(fl, newp, selector); break;
+                    case ARRAY_SUM: newp = new AstAdd(fl, newp, selector); break;
+                    case ARRAY_PRODUCT: newp = new AstMul(fl, newp, selector); break;
                     default: nodep->v3fatalSrc("bad case");
                     }
                 }
