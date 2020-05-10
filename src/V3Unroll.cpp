@@ -389,6 +389,7 @@ private:
             if (nodep->backp()->nextp() == nodep) initp = nodep->backp();
             // Grab assignment
             AstNode* incp = NULL;  // Should be last statement
+            AstNode* bodysp = nodep->bodysp();
             if (nodep->incsp()) V3Const::constifyEdit(nodep->incsp());
             // cppcheck-suppress duplicateCondition
             if (nodep->incsp()) {
@@ -397,11 +398,12 @@ private:
                 for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}
                 if (incp) VL_DO_DANGLING(V3Const::constifyEdit(incp), incp);
                 // Again, as may have changed
+                bodysp = nodep->bodysp();
                 for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}
+                if (incp == bodysp) bodysp = NULL;
             }
             // And check it
-            if (forUnrollCheck(nodep, initp, nodep->precondsp(), nodep->condp(), incp,
-                               nodep->bodysp())) {
+            if (forUnrollCheck(nodep, initp, nodep->precondsp(), nodep->condp(), incp, bodysp)) {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Did replacement
             }
         }
