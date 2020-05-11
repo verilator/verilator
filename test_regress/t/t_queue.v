@@ -123,6 +123,7 @@ module t (/*AUTOARG*/
          v = q[2]; `checks(v, "b1");
          v = q[3]; `checks(v, "b2");
          v = q[4]; `checks(v, "");
+         //Unsup: `checkh(q[$], "b2");
 
          v = $sformatf("%p", q); `checks(v, "'{\"f2\", \"f1\", \"b1\", \"b2\"} ");
 
@@ -170,6 +171,7 @@ module t (/*AUTOARG*/
          q.delete(0);
          i = q.size(); `checkh(i, 1);
          `checks(q[0], "front");
+         //Unsup: `checks(q[$], "front");
 
       end
 
