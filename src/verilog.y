@@ -3433,7 +3433,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_PAST '(' expr ',' expr ',' expr ')'		{ $1->v3error("Unsupported: $past expr2 and clock arguments"); $$ = $3; }
 	|	yD_PAST '(' expr ',' expr ',' expr ',' expr')'	{ $1->v3error("Unsupported: $past expr2 and clock arguments"); $$ = $3; }
 	|	yD_POW '(' expr ',' expr ')'		{ $$ = new AstPowD($1,$3,$5); }
-	|	yD_RANDOM '(' expr ')'			{ $$ = NULL; $1->v3error("Unsupported: Seeding $random doesn't map to C++, use $c(\"srand\")"); }
+	//			// Seeding is unsupported as would be slow to invalidate all per-thread RNGs
+	|	yD_RANDOM '(' expr ')'			{ $$ = new AstRand($1); $1->v3error("Unsupported: Seed on $random. Suggest use +verilator+seed+ runtime flag"); }
 	|	yD_RANDOM parenE			{ $$ = new AstRand($1); }
 	|	yD_REALTIME parenE			{ $$ = new AstTimeD($1, VTimescale(VTimescale::NONE)); }
 	|	yD_REALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); }
