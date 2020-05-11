@@ -6,7 +6,7 @@
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive \
@@ -16,19 +16,16 @@ RUN apt-get update \
                         bison \
                         build-essential \
                         ca-certificates \
+                        clang \
                         cmake \
                         flex \
                         gdb \
-                        gcc-6 \
-                        gcc-5 \
-                        gcc-4.8 \
                         git \
                         gtkwave \
-                        g++-6 \
-                        g++-5 \
-                        g++-4.8 \
                         libfl2 \
                         libfl-dev \
+                        libsystemc \
+                        libsystemc-dev \
                         numactl \
                         perl \
                         python3 \
@@ -40,9 +37,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /tmp
-
-COPY build-systemc.sh /tmp/
-RUN ./build-systemc.sh
 
 RUN cpan install -fi Unix::Processors Parallel::Forker Bit::Vector
 
