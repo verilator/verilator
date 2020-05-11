@@ -10,15 +10,15 @@ FROM ubuntu:18.04
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
-                        autoconf=2.69-11 \
-                        bc=1.07.1-2 \
-                        bison=2:3.0.4.dfsg-1build1 \
-                        build-essential=12.4ubuntu1 \
-                        ca-certificates=20180409 \
+                        autoconf \
+                        bc \
+                        bison \
+                        build-essential \
+                        ca-certificates \
                         ccache \
-                        flex=2.6.4-6 \
+                        flex \
                         git \
-                        libfl-dev=2.6.4-6 \
+                        libfl-dev \
                         libgoogle-perftools-dev \
                         perl \
                         python3 \
