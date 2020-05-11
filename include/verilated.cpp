@@ -244,8 +244,8 @@ Verilated::Serialized::Serialized() {
     s_errorLimit = 1;
     s_randReset = 0;
     s_randSeed = 0;
-    s_timeunit = -VL_TIME_UNIT;  // Initial value until overriden by _Vconfigure
-    s_timeprecision = -VL_TIME_PRECISION;  // Initial value until overriden by _Vconfigure
+    s_timeunit = VL_TIME_UNIT;  // Initial value until overriden by _Vconfigure
+    s_timeprecision = VL_TIME_PRECISION;  // Initial value until overriden by _Vconfigure
 }
 
 Verilated::NonSerialized::NonSerialized() {
@@ -2007,14 +2007,13 @@ int VL_TIME_STR_CONVERT(const char* strp) {
 }
 static const char* vl_time_str(int scale) {
     static const char* const names[]
-        = {"1s",   "100ms", "10ms",  "1ms",  "100us", "10us",  "1us",  "100ns",
-           "10ns", "1ns",   "100ps", "10ps", "1ps",   "100fs", "10fs", "1fs"};
-    if (scale < 0) scale = -scale;
-    if (VL_UNLIKELY(scale > 15)) scale = 0;
-    return names[scale];
+        = {"100s",  "10s",  "1s",  "100ms", "10ms", "1ms", "100us", "10us", "1us",
+           "100ns", "10ns", "1ns", "100ps", "10ps", "1ps", "100fs", "10fs", "1fs"};
+    if (VL_UNLIKELY(scale > 2 || scale < -15)) scale = 0;
+    return names[2 - scale];
 }
 double vl_time_multiplier(int scale) {
-    // Return timescale multipler -15 to +15
+    // Return timescale multipler -18 to +18
     // For speed, this does not check for illegal values
     static double pow10[] = {1.0,
                              10.0,
@@ -2031,7 +2030,10 @@ double vl_time_multiplier(int scale) {
                              1000000000000.0,
                              10000000000000.0,
                              100000000000000.0,
-                             1000000000000000.0};
+                             1000000000000000.0,
+                             10000000000000000.0,
+                             100000000000000000.0,
+                             1000000000000000000.0};
     static double neg10[] = {1.0,
                              0.1,
                              0.01,
@@ -2047,7 +2049,10 @@ double vl_time_multiplier(int scale) {
                              0.000000000001,
                              0.0000000000001,
                              0.00000000000001,
-                             0.000000000000001};
+                             0.000000000000001,
+                             0.0000000000000001,
+                             0.00000000000000001,
+                             0.000000000000000001};
     if (scale < 0) {
         return neg10[-scale];
     } else {

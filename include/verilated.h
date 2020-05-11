@@ -386,8 +386,8 @@ class Verilated {
         bool s_assertOn;  ///< Assertions are enabled
         bool s_fatalOnVpiError;  ///< Stop on vpi error/unsupported
         // Slow path
-        unsigned s_timeunit : 4;  ///< Time unit as 0..15
-        unsigned s_timeprecision : 4;  ///< Time precision as 0..15
+        vlsint8_t s_timeunit;  ///< Time unit as 0..15
+        vlsint8_t s_timeprecision;  ///< Time precision as 0..15
         int s_errorCount;  ///< Number of errors
         int s_errorLimit;  ///< Stop on error number
         int s_randReset;  ///< Random reset: 0=all 0s, 1=all 1s, 2=random

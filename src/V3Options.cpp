@@ -125,7 +125,7 @@ VTimescale::VTimescale(const string& value, bool& badr)
     : m_e(VTimescale::NONE) {
     badr = true;
     string spaceless = VString::removeWhitespace(value);
-    for (int i = TS_1S; i < _ENUM_END; ++i) {
+    for (int i = TS_100S; i < _ENUM_END; ++i) {
         VTimescale ts(i);
         if (spaceless == ts.ascii()) {
             badr = false;

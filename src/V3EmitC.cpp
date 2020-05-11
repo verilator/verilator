@@ -2308,12 +2308,12 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
     puts("if (false && this->__VlSymsp) {}  // Prevent unused\n");
     if (v3Global.opt.coverage()) { puts(protect("_configure_coverage") + "(vlSymsp, first);\n"); }
     if (modp->isTop() && !v3Global.rootp()->timeunit().isNone()) {
-        puts("Verilated::timeunit(" + cvtToStr(v3Global.rootp()->timeunit().negativeInt())
+        puts("Verilated::timeunit(" + cvtToStr(v3Global.rootp()->timeunit().powerOfTen())
              + ");\n");
     }
     if (modp->isTop() && !v3Global.rootp()->timeprecision().isNone()) {
         puts("Verilated::timeprecision("
-             + cvtToStr(v3Global.rootp()->timeprecision().negativeInt()) + ");\n");
+             + cvtToStr(v3Global.rootp()->timeprecision().powerOfTen()) + ");\n");
     }
     puts("}\n");
     splitSizeInc(10);
