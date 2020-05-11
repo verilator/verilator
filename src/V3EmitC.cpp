@@ -1000,7 +1000,7 @@ public:
         emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)", nodep->lhsp(),
                    nodep->rhsp(), NULL);
     }
-    virtual void visit(AstCountBits* nodep) {
+    virtual void visit(AstCountBits* nodep) VL_OVERRIDE {
         putbs("VL_COUNTBITS_");
         emitIQW(nodep->lhsp());
         puts("(");
