@@ -73,7 +73,7 @@ public:
     void displayNode(AstNode* nodep, AstScopeName* scopenamep, const string& vformat,
                      AstNode* exprsp, bool isScan);
     void displayEmit(AstNode* nodep, bool isScan);
-    void displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt,
+    void displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt, bool ignore,
                     char fmtLetter);
 
     void emitVarDecl(const AstVar* nodep, const string& prefixIfImp);
@@ -2042,27 +2042,30 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
         ofp()->putsQuoted(emitDispState.m_format);
         // Arguments
         for (unsigned i = 0; i < emitDispState.m_argsp.size(); i++) {
-            puts(",");
             char fmt = emitDispState.m_argsChar[i];
             AstNode* argp = emitDispState.m_argsp[i];
             string func = emitDispState.m_argsFunc[i];
-            ofp()->indentInc();
-            ofp()->putbs("");
-            if (func != "") puts(func);
-            if (argp) {
-                if (isScan) {
-                    puts("&(");
-                } else if (fmt == '@') {
-                    puts("&(");
+            if (func != "" || argp) {
+                puts(",");
+                ofp()->indentInc();
+                ofp()->putbs("");
+                if (func != "") {
+                    puts(func);
+                } else if (argp) {
+                    if (isScan) {
+                        puts("&(");
+                    } else if (fmt == '@') {
+                        puts("&(");
+                    }
+                    iterate(argp);
+                    if (isScan) {
+                        puts(")");
+                    } else if (fmt == '@') {
+                        puts(")");
+                    }
                 }
-                iterate(argp);
-                if (isScan) {
-                    puts(")");
-                } else if (fmt == '@') {
-                    puts(")");
-                }
+                ofp()->indentDec();
             }
-            ofp()->indentDec();
         }
         // End
         puts(")");
@@ -2076,28 +2079,33 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 }
 
 void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt,
-                            char fmtLetter) {
+                            bool ignore, char fmtLetter) {
     // Print display argument, edits elistp
-    AstNode* argp = *elistp;
-    if (VL_UNCOVERABLE(!argp)) {
-        // expectDisplay() checks this first, so internal error if found here
-        dispp->v3error("Internal: Missing arguments for $display-like format");  // LCOV_EXCL_LINE
-        return;  // LCOV_EXCL_LINE
+    AstNode* argp = NULL;
+    if (!ignore) {
+        argp = *elistp;
+        // Prep for next parameter
+        *elistp = (*elistp)->nextp();
+        if (VL_UNCOVERABLE(!argp)) {
+            // expectDisplay() checks this first, so internal error if found here
+            dispp->v3error(
+                "Internal: Missing arguments for $display-like format");  // LCOV_EXCL_LINE
+            return;  // LCOV_EXCL_LINE
+        }
+        if (argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
+            dispp->v3error("Exceeded limit of " + cvtToStr(VL_VALUE_STRING_MAX_WIDTH)
+                           + " bits for any $display-like arguments");
+        }
+        if (argp->widthMin() > 8 && fmtLetter == 'c') {
+            // Technically legal, but surely not what the user intended.
+            argp->v3warn(WIDTH, dispp->verilogKwd() << "of %c format of > 8 bit value");
+        }
     }
-    if (argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
-        dispp->v3error("Exceeded limit of " + cvtToStr(VL_VALUE_STRING_MAX_WIDTH)
-                       + " bits for any $display-like arguments");
-    }
-    if (argp->widthMin() > 8 && fmtLetter == 'c') {
-        // Technically legal, but surely not what the user intended.
-        argp->v3warn(WIDTH, dispp->verilogKwd() << "of %c format of > 8 bit value");
-    }
-
     // string pfmt = "%"+displayFormat(argp, vfmt, fmtLetter)+fmtLetter;
     string pfmt;
     if ((fmtLetter == '#' || fmtLetter == 'd') && !isScan
         && vfmt == "") {  // Size decimal output.  Spec says leading spaces, not zeros
-        const double mantissabits = argp->widthMin() - ((fmtLetter == 'd') ? 1 : 0);
+        const double mantissabits = ignore ? 0 : (argp->widthMin() - ((fmtLetter == 'd') ? 1 : 0));
         // This is log10(2**mantissabits) as log2(2**mantissabits)/log2(10),
         // + 1.0 rounding bias.
         double dchars = mantissabits / 3.321928094887362 + 1.0;
@@ -2108,11 +2116,12 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const
         pfmt = string("%") + vfmt + fmtLetter;
     }
     emitDispState.pushFormat(pfmt);
-    emitDispState.pushArg(' ', NULL, cvtToStr(argp->widthMin()));
-    emitDispState.pushArg(fmtLetter, argp, "");
-
-    // Next parameter
-    *elistp = (*elistp)->nextp();
+    if (!ignore) {
+        emitDispState.pushArg(' ', NULL, cvtToStr(argp->widthMin()));
+        emitDispState.pushArg(fmtLetter, argp, "");
+    } else {
+        emitDispState.pushArg(fmtLetter, NULL, "");
+    }
 }
 
 void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep, const string& vformat,
@@ -2125,10 +2134,12 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep, const str
     string vfmt;
     string::const_iterator pos = vformat.begin();
     bool inPct = false;
+    bool ignore = false;
     for (; pos != vformat.end(); ++pos) {
         // UINFO(1, "Parse '" << *pos << "'  IP" << inPct << " List " << cvtToHex(elistp) << endl);
         if (!inPct && pos[0] == '%') {
             inPct = true;
+            ignore = false;
             vfmt = "";
         } else if (!inPct) {  // Normal text
             emitDispState.pushFormat(*pos);
@@ -2145,25 +2156,34 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep, const str
             case '%':
                 emitDispState.pushFormat("%%");  // We're printf'ing it, so need to quote the %
                 break;
+            case '*':
+                vfmt += pos[0];
+                inPct = true;  // Get more digits
+                ignore = true;
+                break;
             // Special codes
-            case '~': displayArg(nodep, &elistp, isScan, vfmt, 'd'); break;  // Signed decimal
+            case '~':
+                displayArg(nodep, &elistp, isScan, vfmt, ignore, 'd');
+                break;  // Signed decimal
             case '@':
-                displayArg(nodep, &elistp, isScan, vfmt, '@');
+                displayArg(nodep, &elistp, isScan, vfmt, ignore, '@');
                 break;  // Packed string
             // Spec: h d o b c l
-            case 'b': displayArg(nodep, &elistp, isScan, vfmt, 'b'); break;
-            case 'c': displayArg(nodep, &elistp, isScan, vfmt, 'c'); break;
-            case 't': displayArg(nodep, &elistp, isScan, vfmt, 't'); break;
-            case 'd': displayArg(nodep, &elistp, isScan, vfmt, '#'); break;  // Unsigned decimal
-            case 'o': displayArg(nodep, &elistp, isScan, vfmt, 'o'); break;
+            case 'b': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'b'); break;
+            case 'c': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'c'); break;
+            case 't': displayArg(nodep, &elistp, isScan, vfmt, ignore, 't'); break;
+            case 'd':
+                displayArg(nodep, &elistp, isScan, vfmt, ignore, '#');
+                break;  // Unsigned decimal
+            case 'o': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'o'); break;
             case 'h':  // FALLTHRU
-            case 'x': displayArg(nodep, &elistp, isScan, vfmt, 'x'); break;
-            case 's': displayArg(nodep, &elistp, isScan, vfmt, 's'); break;
-            case 'e': displayArg(nodep, &elistp, isScan, vfmt, 'e'); break;
-            case 'f': displayArg(nodep, &elistp, isScan, vfmt, 'f'); break;
-            case 'g': displayArg(nodep, &elistp, isScan, vfmt, 'g'); break;
-            case '^': displayArg(nodep, &elistp, isScan, vfmt, '^'); break;  // Realtime
-            case 'v': displayArg(nodep, &elistp, isScan, vfmt, 'v'); break;
+            case 'x': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'x'); break;
+            case 's': displayArg(nodep, &elistp, isScan, vfmt, ignore, 's'); break;
+            case 'e': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'e'); break;
+            case 'f': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'f'); break;
+            case 'g': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'g'); break;
+            case '^': displayArg(nodep, &elistp, isScan, vfmt, ignore, '^'); break;  // Realtime
+            case 'v': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'v'); break;
             case 'm': {
                 UASSERT_OBJ(scopenamep, nodep, "Display with %m but no AstScopeName");
                 string suffix = scopenamep->scopePrettySymName();
@@ -2312,8 +2332,8 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
              + ");\n");
     }
     if (modp->isTop() && !v3Global.rootp()->timeprecision().isNone()) {
-        puts("Verilated::timeprecision("
-             + cvtToStr(v3Global.rootp()->timeprecision().powerOfTen()) + ");\n");
+        puts("Verilated::timeprecision(" + cvtToStr(v3Global.rootp()->timeprecision().powerOfTen())
+             + ");\n");
     }
     puts("}\n");
     splitSizeInc(10);

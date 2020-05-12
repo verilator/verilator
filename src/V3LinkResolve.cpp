@@ -289,11 +289,13 @@ private:
         // Check display arguments, return new format string
         string newFormat;
         bool inPct = false;
+        bool inIgnore = false;
         string fmt;
         for (string::const_iterator it = format.begin(); it != format.end(); ++it) {
             char ch = *it;
             if (!inPct && ch == '%') {
                 inPct = true;
+                inIgnore = false;
                 fmt = ch;
             } else if (inPct && (isdigit(ch) || ch == '.' || ch == '-')) {
                 fmt += ch;
@@ -302,6 +304,10 @@ private:
                 fmt += ch;
                 switch (tolower(ch)) {
                 case '%':  // %% - just output a %
+                    break;
+                case '*':
+                    inPct = true;
+                    inIgnore = true;
                     break;
                 case 'm':  // %m - auto insert "name"
                     if (isScan) {
@@ -317,9 +323,9 @@ private:
                     if (m_modp) fmt = VString::quotePercent(m_modp->prettyName());
                     break;
                 default:  // Most operators, just move to next argument
-                    if (!V3Number::displayedFmtLegal(ch)) {
+                    if (!V3Number::displayedFmtLegal(ch, isScan)) {
                         nodep->v3error("Unknown $display-like format code: '%" << ch << "'");
-                    } else {
+                    } else if (!inIgnore) {
                         if (!argp) {
                             nodep->v3error("Missing arguments for $display-like format");
                         } else {
@@ -362,7 +368,7 @@ private:
                             case '.': inpercent = true; break;
                             case '%': break;
                             default:
-                                if (V3Number::displayedFmtLegal(c)) { skipCount++; }
+                                if (V3Number::displayedFmtLegal(c, isScan)) ++skipCount;
                             }
                         }
                     }

@@ -993,12 +993,14 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     int floc = fbits - 1;
     IData got = 0;
     bool inPct = false;
+    bool inIgnore = false;
     const char* pos = formatp;
     for (; *pos && !_vl_vsss_eof(fp, floc); ++pos) {
         // VL_DBG_MSGF("_vlscan fmt='"<<pos[0]<<"' floc="<<floc<<" file='"<<_vl_vsss_peek(fp, floc,
         // fromp, fstr)<<"'"<<endl);
         if (!inPct && pos[0] == '%') {
             inPct = true;
+            inIgnore = false;
         } else if (!inPct && isspace(pos[0])) {  // Format spaces
             while (isspace(pos[1])) pos++;
             _vl_vsss_skipspace(fp, floc, fromp, fstr);
@@ -1018,10 +1020,14 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 _vl_vsss_advance(fp, floc);
                 break;
             }
+            case '*':
+                inPct = true;
+                inIgnore = true;
+                break;
             default: {
                 // Deal with all read-and-scan somethings
                 // Note LSBs are preserved if there's an overflow
-                const int obits = va_arg(ap, int);
+                const int obits = inIgnore ? 0 : va_arg(ap, int);
                 WData qowp[VL_WQ_WORDS_E];
                 VL_SET_WQ(qowp, VL_ULL(0));
                 WDataOutP owp = qowp;
@@ -1108,9 +1114,10 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     break;
                 }  // switch
 
-                got++;
+                if (!inIgnore) ++got;
                 // Reload data if non-wide (if wide, we put it in the right place directly)
-                if (obits <= VL_BYTESIZE) {
+                if (obits == 0) {  // Due to inIgnore
+                } else if (obits <= VL_BYTESIZE) {
                     CData* p = va_arg(ap, CData*);
                     *p = owp[0];
                 } else if (obits <= VL_SHORTSIZE) {

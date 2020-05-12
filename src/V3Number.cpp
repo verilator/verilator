@@ -524,7 +524,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
     return out.str();
 }
 
-bool V3Number::displayedFmtLegal(char format) {
+bool V3Number::displayedFmtLegal(char format, bool isScan) {
     // Is this a valid format letter?
     switch (tolower(format)) {
     case 'b': return true;
@@ -544,6 +544,7 @@ bool V3Number::displayedFmtLegal(char format) {
     case 'z': return true;  // Packed 4-state
     case '@': return true;  // Packed string
     case '~': return true;  // Signed decimal
+    case '*': return isScan;  // $scan ignore argument
     default: return false;
     }
 }

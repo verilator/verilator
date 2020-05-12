@@ -231,7 +231,7 @@ public:
     // ACCESSORS
     string ascii(bool prefixed = true, bool cleanVerilog = false) const;
     string displayed(AstNode* nodep, const string& vformat) const;
-    static bool displayedFmtLegal(char format);  // Is this a valid format letter?
+    static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
     int width() const { return m_width; }
     int widthMin() const;  // Minimum width that can represent this number (~== log2(num)+1)
     bool sized() const { return m_sized; }
