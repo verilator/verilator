@@ -1839,6 +1839,7 @@ private:
     bool m_isDpiOpenArray : 1;  // DPI import open array
     bool m_noReset : 1;  // Do not do automated reset/randomization
     bool m_noSubst : 1;  // Do not substitute out references
+    bool m_overridenParam : 1;  // Overridden parameter by #(...) or defparam
     bool m_trace : 1;  // Trace this variable
     VLifetime m_lifetime;  // Lifetime
     VVarAttrClocker m_attrClocker;
@@ -1875,6 +1876,7 @@ private:
         m_isDpiOpenArray = false;
         m_noReset = false;
         m_noSubst = false;
+        m_overridenParam = false;
         m_trace = false;
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
@@ -2024,6 +2026,8 @@ public:
     bool noReset() const { return m_noReset; }
     void noSubst(bool flag) { m_noSubst = flag; }
     bool noSubst() const { return m_noSubst; }
+    void overriddenParam(bool flag) { m_overridenParam = flag; }
+    bool overriddenParam() const { return m_overridenParam; }
     void trace(bool flag) { m_trace = flag; }
     // METHODS
     virtual void name(const string& name) { m_name = name; }
