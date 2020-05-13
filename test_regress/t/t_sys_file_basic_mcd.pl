@@ -19,11 +19,11 @@ execute(
     );
 
 files_identical("$Self->{obj_dir}/t_sys_file_basic_mcd_test2_0.dat",
-                "t_sys_file_basic_mcd_test2_0.dat");
+                "$Self->{t_dir}/t_sys_file_basic_mcd_test2_0.dat");
 files_identical("$Self->{obj_dir}/t_sys_file_basic_mcd_test2_1.dat",
-                "t_sys_file_basic_mcd_test2_1.dat");
+                "$Self->{t_dir}/t_sys_file_basic_mcd_test2_1.dat");
 files_identical("$Self->{obj_dir}/t_sys_file_basic_mcd_test2_2.dat",
-                "t_sys_file_basic_mcd_test2_2.dat");
+                "$Self->{t_dir}/t_sys_file_basic_mcd_test2_2.dat");
 
 ok(1);
 1;
