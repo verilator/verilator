@@ -72,15 +72,15 @@ inline std::ostream& operator<<(std::ostream& os, const VOptionBool& rhs) {
 class VTimescale {
 public:
     enum en {
-        TS_1S = 0,
         // clang-format off
-        TS_100MS = 1, TS_10MS = 2, TS_1MS = 3,
-        TS_100US = 4, TS_10US = 5, TS_1US = 6,
-        TS_100NS = 7, TS_10NS = 8, TS_1NS = 9,
-        TS_100PS = 10, TS_10PS = 11, TS_1PS = 12,
-        TS_100FS = 13, TS_10FS = 14, TS_1FS = 15,
+        TS_100S = 0, TS_10S = 1, TS_1S = 2,
+        TS_100MS = 3, TS_10MS = 4, TS_1MS = 5,
+        TS_100US = 6, TS_10US = 7, TS_1US = 8,
+        TS_100NS = 9, TS_10NS = 10, TS_1NS = 11,
+        TS_100PS = 12, TS_10PS = 13, TS_1PS = 14,
+        TS_100FS = 15, TS_10FS = 16, TS_1FS = 17,
         // clang-format on
-        NONE = 16,
+        NONE = 18,
         _ENUM_END
     };
     enum { TS_DEFAULT = TS_1PS };
@@ -93,13 +93,14 @@ public:
         : m_e(_e) {}
     explicit inline VTimescale(int _e)
         : m_e(static_cast<en>(_e)) {}
-    int negativeInt() { return -static_cast<int>(m_e); }
     // Construct from string
     VTimescale(const string& value, bool& badr);
     VTimescale(double value, bool& badr) {
         badr = false;
         // clang-format off
-        if (value == 1e0) m_e = TS_1S;
+        if (value == 10e2) m_e = TS_100S;
+        else if (value == 1e1) m_e = TS_10S;
+        else if (value == 1e0) m_e = TS_1S;
         else if (value == 1e-1) m_e = TS_100MS;
         else if (value == 1e-2) m_e = TS_10MS;
         else if (value == 1e-3) m_e = TS_1MS;
@@ -127,13 +128,14 @@ public:
                              bool allowEmpty = false);
     const char* ascii() const {
         static const char* const names[]
-            = {"1s",  "100ms", "10ms", "1ms", "100us", "10us", "1us", "100ns", "10ns",
-               "1ns", "100ps", "10ps", "1ps", "100fs", "10fs", "1fs", "NONE"};
+            = {"100s", "10s", "1s",    "100ms", "10ms", "1ms",   "100us", "10us", "1us", "100ns",
+               "10ns", "1ns", "100ps", "10ps",  "1ps",  "100fs", "10fs",  "1fs",  "NONE"};
         return names[m_e];
     }
+    int powerOfTen() { return 2 - static_cast<int>(m_e); }
     double multiplier() const {
-        static double values[] = {1,    1e-1,  1e-2,  1e-3,  1e-4,  1e-5,  1e-6,  1e-7, 1e-8,
-                                  1e-9, 1e-10, 1e-11, 1e-12, 1e-13, 1e-14, 1e-15, 0};
+        static double values[] = {100,  10,   1,     1e-1,  1e-2,  1e-3,  1e-4,  1e-5,  1e-6, 1e-7,
+                                  1e-8, 1e-9, 1e-10, 1e-11, 1e-12, 1e-13, 1e-14, 1e-15, 0};
         return values[m_e];
     }
 };

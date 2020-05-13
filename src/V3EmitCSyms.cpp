@@ -292,7 +292,7 @@ class EmitCSyms : EmitCBaseVisitor {
             string type = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
             string name = nodep->scopep()->name() + "__DOT__" + nodep->name();
             string name_dedot = AstNode::dedotName(name);
-            int timeunit = m_modp->timeunit().negativeInt();
+            int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
                 make_pair(name, ScopeData(scopeSymString(name), name_dedot, timeunit, type)));
         }
@@ -305,7 +305,7 @@ class EmitCSyms : EmitCBaseVisitor {
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
             string name_dedot = AstNode::dedotName(nodep->shortName());
-            int timeunit = m_modp->timeunit().negativeInt();
+            int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
                 make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_dedot,
                                                    timeunit, "SCOPE_MODULE")));
@@ -315,7 +315,7 @@ class EmitCSyms : EmitCBaseVisitor {
         string name = nodep->scopeSymName();
         // UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()
         // <<" ss"<<name<<endl);
-        int timeunit = m_modp ? m_modp->timeunit().negativeInt() : 0;
+        int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
         if (m_scopeNames.find(name) == m_scopeNames.end()) {
             m_scopeNames.insert(make_pair(
                 name, ScopeData(name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER")));

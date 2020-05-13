@@ -8,15 +8,23 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-# Test that without --trace we get a message when turning on traces
-scenarios(vlt => 1);
+scenarios(simulator_st => 1);
+
+top_filename("t/t_time_vpi.v");
+
+$Self->{main_time_multiplier} = 100e0 / 10e-6;
 
 compile(
+    v_flags2 => ['+define+time_scale_units=100s +define+time_scale_prec=10ms',
+                 't/t_time_vpi_c.cpp'],
+    verilator_flags2 => ['--vpi'],
     );
 
 execute(
+    check_finished => 1,
     expect_filename => $Self->{golden_filename},
     );
 
 ok(1);
+
 1;

@@ -244,8 +244,8 @@ Verilated::Serialized::Serialized() {
     s_errorLimit = 1;
     s_randReset = 0;
     s_randSeed = 0;
-    s_timeunit = -VL_TIME_UNIT;  // Initial value until overriden by _Vconfigure
-    s_timeprecision = -VL_TIME_PRECISION;  // Initial value until overriden by _Vconfigure
+    s_timeunit = VL_TIME_UNIT;  // Initial value until overriden by _Vconfigure
+    s_timeprecision = VL_TIME_PRECISION;  // Initial value until overriden by _Vconfigure
 }
 
 Verilated::NonSerialized::NonSerialized() {
@@ -993,12 +993,14 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     int floc = fbits - 1;
     IData got = 0;
     bool inPct = false;
+    bool inIgnore = false;
     const char* pos = formatp;
     for (; *pos && !_vl_vsss_eof(fp, floc); ++pos) {
         // VL_DBG_MSGF("_vlscan fmt='"<<pos[0]<<"' floc="<<floc<<" file='"<<_vl_vsss_peek(fp, floc,
         // fromp, fstr)<<"'"<<endl);
         if (!inPct && pos[0] == '%') {
             inPct = true;
+            inIgnore = false;
         } else if (!inPct && isspace(pos[0])) {  // Format spaces
             while (isspace(pos[1])) pos++;
             _vl_vsss_skipspace(fp, floc, fromp, fstr);
@@ -1018,10 +1020,14 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 _vl_vsss_advance(fp, floc);
                 break;
             }
+            case '*':
+                inPct = true;
+                inIgnore = true;
+                break;
             default: {
                 // Deal with all read-and-scan somethings
                 // Note LSBs are preserved if there's an overflow
-                const int obits = va_arg(ap, int);
+                const int obits = inIgnore ? 0 : va_arg(ap, int);
                 WData qowp[VL_WQ_WORDS_E];
                 VL_SET_WQ(qowp, VL_ULL(0));
                 WDataOutP owp = qowp;
@@ -1108,9 +1114,10 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     break;
                 }  // switch
 
-                got++;
+                if (!inIgnore) ++got;
                 // Reload data if non-wide (if wide, we put it in the right place directly)
-                if (obits <= VL_BYTESIZE) {
+                if (obits == 0) {  // Due to inIgnore
+                } else if (obits <= VL_BYTESIZE) {
                     CData* p = va_arg(ap, CData*);
                     *p = owp[0];
                 } else if (obits <= VL_SHORTSIZE) {
@@ -2007,14 +2014,13 @@ int VL_TIME_STR_CONVERT(const char* strp) {
 }
 static const char* vl_time_str(int scale) {
     static const char* const names[]
-        = {"1s",   "100ms", "10ms",  "1ms",  "100us", "10us",  "1us",  "100ns",
-           "10ns", "1ns",   "100ps", "10ps", "1ps",   "100fs", "10fs", "1fs"};
-    if (scale < 0) scale = -scale;
-    if (VL_UNLIKELY(scale > 15)) scale = 0;
-    return names[scale];
+        = {"100s",  "10s",  "1s",  "100ms", "10ms", "1ms", "100us", "10us", "1us",
+           "100ns", "10ns", "1ns", "100ps", "10ps", "1ps", "100fs", "10fs", "1fs"};
+    if (VL_UNLIKELY(scale > 2 || scale < -15)) scale = 0;
+    return names[2 - scale];
 }
 double vl_time_multiplier(int scale) {
-    // Return timescale multipler -15 to +15
+    // Return timescale multipler -18 to +18
     // For speed, this does not check for illegal values
     static double pow10[] = {1.0,
                              10.0,
@@ -2031,7 +2037,10 @@ double vl_time_multiplier(int scale) {
                              1000000000000.0,
                              10000000000000.0,
                              100000000000000.0,
-                             1000000000000000.0};
+                             1000000000000000.0,
+                             10000000000000000.0,
+                             100000000000000000.0,
+                             1000000000000000000.0};
     static double neg10[] = {1.0,
                              0.1,
                              0.01,
@@ -2047,7 +2056,10 @@ double vl_time_multiplier(int scale) {
                              0.000000000001,
                              0.0000000000001,
                              0.00000000000001,
-                             0.000000000000001};
+                             0.000000000000001,
+                             0.0000000000000001,
+                             0.00000000000000001,
+                             0.000000000000000001};
     if (scale < 0) {
         return neg10[-scale];
     } else {

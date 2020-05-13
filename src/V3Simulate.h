@@ -1019,7 +1019,7 @@ private:
                 } else {  // Format character
                     inPct = false;
 
-                    if (V3Number::displayedFmtLegal(tolower(pos[0]))) {
+                    if (V3Number::displayedFmtLegal(tolower(pos[0]), false)) {
                         AstNode* argp = nextArgp;
                         nextArgp = nextArgp->nextp();
                         AstConst* constp = fetchConstNull(argp);

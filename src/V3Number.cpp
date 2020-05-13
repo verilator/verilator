@@ -27,7 +27,7 @@
 #include <cstdarg>
 #include <iomanip>
 
-#define MAX_SPRINTF_DOUBLE_SIZE 100  // Maximum characters with a sprintf %e/%f/%g (probably < 30)
+#define MAX_SPRINTF_DOUBLE_SIZE 1100  // Maximum characters with a sprintf %e/%f/%g (really 1079)
 
 // Number operations build output in-place so can't call e.g. foo.opX(foo)
 #define NUM_ASSERT_OP_ARGS1(arg1) \
@@ -524,7 +524,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
     return out.str();
 }
 
-bool V3Number::displayedFmtLegal(char format) {
+bool V3Number::displayedFmtLegal(char format, bool isScan) {
     // Is this a valid format letter?
     switch (tolower(format)) {
     case 'b': return true;
@@ -544,6 +544,7 @@ bool V3Number::displayedFmtLegal(char format) {
     case 'z': return true;  // Packed 4-state
     case '@': return true;  // Packed string
     case '~': return true;  // Signed decimal
+    case '*': return isScan;  // $scan ignore argument
     default: return false;
     }
 }
