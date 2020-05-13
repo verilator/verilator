@@ -32,6 +32,7 @@
 #include <deque>
 #include <set>
 #include <vector>
+#include <numeric>
 #ifdef VL_THREADED
 # include <functional>
 # include <queue>
@@ -229,17 +230,15 @@ protected:
     VerilatedMutex m_fdMutex;  ///< Protect m_fdps, m_fdFree
     std::vector<FILE*> m_fdps VL_GUARDED_BY(m_fdMutex);  ///< File descriptors
     /// List of free descriptors (SLOW - FOPEN/CLOSE only)
-    std::deque<IData> m_fdFree VL_GUARDED_BY(m_fdMutex);
+    std::vector<IData> m_fdFree VL_GUARDED_BY(m_fdMutex);
+    // List of free descriptors in the MCT region [4, 32)
+    std::vector<IData> m_fdFreeMct VL_GUARDED_BY(m_fdMutex);
 
 public:  // But only for verilated*.cpp
     // CONSTRUCTORS
     VerilatedImp()
         : m_argVecLoaded(false)
         , m_exportNext(0) {
-        m_fdps.resize(3);
-        m_fdps[0] = stdin;
-        m_fdps[1] = stdout;
-        m_fdps[2] = stderr;
     }
     ~VerilatedImp() {}
 
@@ -448,36 +447,105 @@ public:  // But only for verilated*.cpp
 
 public:  // But only for verilated*.cpp
     // METHODS - file IO
-    static IData fdNew(FILE* fp) VL_MT_SAFE {
+    static IData fdNewMcd(const char* filenamep) VL_MT_SAFE {
+        VerilatedLockGuard lock(s_s.m_fdMutex);
+        if (s_s.m_fdps.empty()) initialize_fp_table();
+        if (s_s.m_fdFreeMct.empty()) return 0;
+        IData idx = s_s.m_fdFreeMct.back();
+        s_s.m_fdFreeMct.pop_back();
+        s_s.m_fdps[idx] = fopen(filenamep, "w");
+        if(VL_UNLIKELY(!s_s.m_fdps[idx])) return 0;
+        return (1 << idx);
+    }
+    static IData fdNew(const char* filenamep, const char* modep) VL_MT_SAFE {
+        FILE* fp = fopen(filenamep, modep);
         if (VL_UNLIKELY(!fp)) return 0;
+        if (s_s.m_fdps.empty()) initialize_fp_table();
         // Bit 31 indicates it's a descriptor not a MCD
         VerilatedLockGuard lock(s_s.m_fdMutex);
         if (s_s.m_fdFree.empty()) {
             // Need to create more space in m_fdps and m_fdFree
-            size_t start = s_s.m_fdps.size();
-            s_s.m_fdps.resize(start * 2);
-            for (size_t i = start; i < start * 2; ++i) {
-                s_s.m_fdFree.push_back(static_cast<IData>(i));
-            }
+            const size_t start = std::max(31ul + 1ul + 3ul, s_s.m_fdps.size()), excess = 10;
+            s_s.m_fdps.resize(start + excess);
+            std::fill(s_s.m_fdps.begin() + start, s_s.m_fdps.end(), nullptr);
+            s_s.m_fdFree.resize(excess);
+            std::iota(s_s.m_fdFree.begin(), s_s.m_fdFree.end(), start);
         }
         IData idx = s_s.m_fdFree.back();
         s_s.m_fdFree.pop_back();
         s_s.m_fdps[idx] = fp;
         return (idx | (1UL << 31));  // bit 31 indicates not MCD
     }
-    static void fdDelete(IData fdi) VL_MT_SAFE {
-        IData idx = VL_MASK_I(31) & fdi;
+    static void fdFlush(IData fdi) VL_MT_SAFE {
+        FILE* fp[30];
         VerilatedLockGuard lock(s_s.m_fdMutex);
-        if (VL_UNLIKELY(!(fdi & (VL_ULL(1) << 31)) || idx >= s_s.m_fdps.size())) return;
-        if (VL_UNLIKELY(!s_s.m_fdps[idx])) return;  // Already free
-        s_s.m_fdps[idx] = NULL;
-        s_s.m_fdFree.push_back(idx);
+        const int n = VL_CVT_I_FP(fdi, fp, 30);
+        for (int i = 0; i < n; i++) fflush(fp[i]);
     }
-    static inline FILE* fdToFp(IData fdi) VL_MT_SAFE {
-        IData idx = VL_MASK_I(31) & fdi;
-        VerilatedLockGuard lock(s_s.m_fdMutex);  // This might get slow, if it does we can cache it
-        if (VL_UNLIKELY(!(fdi & (VL_ULL(1) << 31)) || idx >= s_s.m_fdps.size())) return NULL;
-        return s_s.m_fdps[idx];
+    static IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE {
+        FILE* fp;
+        VerilatedLockGuard lock(s_s.m_fdMutex);
+        const int n = fdToFp(fdi, &fp);
+        if(VL_UNLIKELY(!fp || (n != 1))) return 0;
+        return static_cast<IData>(fseek(fp, static_cast<long>(offset), static_cast<int>(origin)));
+    }
+    static IData fdTell(IData fdi) VL_MT_SAFE {
+        FILE* fp;
+        VerilatedLockGuard lock(s_s.m_fdMutex);
+        const int n = fdToFp(fdi, &fp);
+        if(VL_UNLIKELY(!fp || (n != 1))) return 0;
+        return static_cast<IData>(ftell(fp));
+    }
+    static void fdClose(IData fdi) VL_MT_SAFE {
+        VerilatedLockGuard lock(s_s.m_fdMutex);
+        if ((fdi & (1 << 31)) != 0) {
+            // Non-MCD case
+            IData idx = VL_MASK_I(31) & fdi;
+            if (VL_UNLIKELY(idx >= s_s.m_fdps.size())) return;
+            if (VL_UNLIKELY(!s_s.m_fdps[idx])) return;  // Already free
+            fclose(s_s.m_fdps[idx]);
+            s_s.m_fdps[idx] = nullptr;
+            s_s.m_fdFree.push_back(idx);
+        } else {
+            // MCD case
+            for (int i = 0; (fdi != 0) && (i < 31); i++, fdi >>= 1) {
+                if (fdi & VL_MASK_I(1)) {
+                    fclose(s_s.m_fdps[i]);
+                    s_s.m_fdps[i] = nullptr;
+                    s_s.m_fdFreeMct.push_back(i);
+                }
+            }
+        }
+    }
+    static inline int fdToFp(IData fdi, FILE** fp, std::size_t max = 1) VL_MT_SAFE {
+        if (VL_UNLIKELY(!fp || (max == 0))) return 0;
+        VerilatedLockGuard lock(s_s.m_fdMutex);
+        int out = 0;
+        if ((fdi & (1 << 31)) != 0) {
+            // Non-MCD case
+            IData idx = fdi & VL_MASK_I(31);
+            switch (idx) {
+            case 0: fp[out++] = stdin; break;
+            case 1: fp[out++] = stdout; break;
+            case 2: fp[out++] = stderr; break;
+            default:
+                if (VL_LIKELY(idx < s_s.m_fdps.size()))
+                    fp[out++] = s_s.m_fdps[idx];
+                break;
+            }
+        } else {
+            // MCD Case
+            for (int i = 0; (fdi != 0) && (out < max) && (i < 31); i++, fdi >>= 1)
+                if (fdi & VL_MASK_I(1)) fp[out++] = s_s.m_fdps[i];
+        }
+        return out;
+    }
+private:
+    static void initialize_fp_table() {
+        s_s.m_fdps.resize(31);
+        std::fill(s_s.m_fdps.begin(), s_s.m_fdps.end(), nullptr);
+        s_s.m_fdFreeMct.resize(30);
+        std::iota(s_s.m_fdFreeMct.begin(), s_s.m_fdFreeMct.end(), 1);
     }
 };
 

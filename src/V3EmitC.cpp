@@ -542,6 +542,18 @@ public:
         iterateAndNextNull(nodep->modep());
         puts(");\n");
     }
+    virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {
+        iterateAndNextNull(nodep->filep());
+        puts(" = VL_FOPEN_MCD_");
+        emitIQW(nodep->filenamep());
+        puts("(");
+        if (nodep->filenamep()->isWide()) {
+            puts(cvtToStr(nodep->filenamep()->widthWords()));
+            putbs(", ");
+        }
+        iterateAndNextNull(nodep->filenamep());
+        puts(");\n");
+    }
     virtual void visit(AstNodeReadWriteMem* nodep) VL_OVERRIDE {
         puts(nodep->cFuncPrefixp());
         puts("N(");
@@ -599,29 +611,29 @@ public:
         } else {
             puts("if (");
             iterateAndNextNull(nodep->filep());
-            puts(") { fflush(VL_CVT_I_FP(");
+            puts(") { VL_FFLUSH_I(");
             iterateAndNextNull(nodep->filep());
-            puts(")); }\n");
+            puts("); }\n");
         }
     }
     virtual void visit(AstFSeek* nodep) VL_OVERRIDE {
-        puts("(fseek(VL_CVT_I_FP(");
+        puts("(VL_FSEEK_I(");
         iterateAndNextNull(nodep->filep());
-        puts("),");
+        puts(",");
         iterateAndNextNull(nodep->offset());
         puts(",");
         iterateAndNextNull(nodep->operation());
         puts(")==-1?-1:0)");
     }
     virtual void visit(AstFTell* nodep) VL_OVERRIDE {
-        puts("ftell(VL_CVT_I_FP(");
+        puts("VL_FTELL_I(");
         iterateAndNextNull(nodep->filep());
-        puts("))");
+        puts(")");
     }
     virtual void visit(AstFRewind* nodep) VL_OVERRIDE {
-        puts("(fseek(VL_CVT_I_FP(");
+        puts("(VL_FSEEK_I(");
         iterateAndNextNull(nodep->filep());
-        puts("), 0, 0)==-1?-1:0)");
+        puts(", 0, 0)==-1?-1:0)");
     }
     virtual void visit(AstFRead* nodep) VL_OVERRIDE {
         puts("VL_FREAD_I(");

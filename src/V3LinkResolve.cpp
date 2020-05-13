@@ -397,6 +397,10 @@ private:
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
+    virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
+    }
     virtual void visit(AstFClose* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
