@@ -239,6 +239,10 @@ public:  // But only for verilated*.cpp
     VerilatedImp()
         : m_argVecLoaded(false)
         , m_exportNext(0) {
+        s_s.m_fdps.resize(31);
+        std::fill(s_s.m_fdps.begin(), s_s.m_fdps.end(), (FILE*)0);
+        s_s.m_fdFreeMct.resize(30);
+        std::iota(s_s.m_fdFreeMct.begin(), s_s.m_fdFreeMct.end(), 1);
     }
     ~VerilatedImp() {}
 
@@ -449,7 +453,6 @@ public:  // But only for verilated*.cpp
     // METHODS - file IO
     static IData fdNewMcd(const char* filenamep) VL_MT_SAFE {
         VerilatedLockGuard lock(s_s.m_fdMutex);
-        if (s_s.m_fdps.empty()) initialize_fp_table();
         if (s_s.m_fdFreeMct.empty()) return 0;
         IData idx = s_s.m_fdFreeMct.back();
         s_s.m_fdFreeMct.pop_back();
@@ -460,14 +463,14 @@ public:  // But only for verilated*.cpp
     static IData fdNew(const char* filenamep, const char* modep) VL_MT_SAFE {
         FILE* fp = fopen(filenamep, modep);
         if (VL_UNLIKELY(!fp)) return 0;
-        if (s_s.m_fdps.empty()) initialize_fp_table();
         // Bit 31 indicates it's a descriptor not a MCD
         VerilatedLockGuard lock(s_s.m_fdMutex);
         if (s_s.m_fdFree.empty()) {
             // Need to create more space in m_fdps and m_fdFree
-            const size_t start = std::max(31ul + 1ul + 3ul, s_s.m_fdps.size()), excess = 10;
+            const size_t start = std::max(31ul + 1ul + 3ul, s_s.m_fdps.size());
+            const size_t excess = 10;
             s_s.m_fdps.resize(start + excess);
-            std::fill(s_s.m_fdps.begin() + start, s_s.m_fdps.end(), nullptr);
+            std::fill(s_s.m_fdps.begin() + start, s_s.m_fdps.end(), (FILE*)0);
             s_s.m_fdFree.resize(excess);
             std::iota(s_s.m_fdFree.begin(), s_s.m_fdFree.end(), start);
         }
@@ -479,7 +482,7 @@ public:  // But only for verilated*.cpp
     static void fdFlush(IData fdi) VL_MT_SAFE {
         FILE* fp[30];
         VerilatedLockGuard lock(s_s.m_fdMutex);
-        const int n = VL_CVT_I_FP(fdi, fp, 30);
+        const int n = fdToFp(fdi, fp, 30);
         for (int i = 0; i < n; i++) fflush(fp[i]);
     }
     static IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE {
@@ -504,14 +507,14 @@ public:  // But only for verilated*.cpp
             if (VL_UNLIKELY(idx >= s_s.m_fdps.size())) return;
             if (VL_UNLIKELY(!s_s.m_fdps[idx])) return;  // Already free
             fclose(s_s.m_fdps[idx]);
-            s_s.m_fdps[idx] = nullptr;
+            s_s.m_fdps[idx] = (FILE*)0;
             s_s.m_fdFree.push_back(idx);
         } else {
             // MCD case
             for (int i = 0; (fdi != 0) && (i < 31); i++, fdi >>= 1) {
                 if (fdi & VL_MASK_I(1)) {
                     fclose(s_s.m_fdps[i]);
-                    s_s.m_fdps[i] = nullptr;
+                    s_s.m_fdps[i] = NULL;
                     s_s.m_fdFreeMct.push_back(i);
                 }
             }
@@ -538,13 +541,6 @@ public:  // But only for verilated*.cpp
                 if (fdi & VL_MASK_I(1)) fp[out++] = s_s.m_fdps[i];
         }
         return out;
-    }
-private:
-    static void initialize_fp_table() {
-        s_s.m_fdps.resize(31);
-        std::fill(s_s.m_fdps.begin(), s_s.m_fdps.end(), nullptr);
-        s_s.m_fdFreeMct.resize(30);
-        std::iota(s_s.m_fdFreeMct.begin(), s_s.m_fdFreeMct.end(), 1);
     }
 };
 

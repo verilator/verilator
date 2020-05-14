@@ -262,7 +262,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {
         putfs(nodep, nodep->verilogKwd());
-        putbs(" (");
+        putbs("(");
         iterateAndNextNull(nodep->filenamep());
         puts(");\n");
     }

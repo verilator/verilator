@@ -1148,11 +1148,6 @@ FILE* VL_CVT_I_FP(IData lhs) VL_MT_SAFE {
     VerilatedImp::fdToFp(lhs, fp, 1);
     return fp[0];
 }
-int VL_CVT_I_FP(IData lhs, FILE** fp, std::size_t max) VL_MT_SAFE {
-    // Returns upto max file handle descriptors from lhs, compatible with both the MCD
-    // non-MCD cases.
-    return VerilatedImp::fdToFp(lhs, fp, max);
-}
 
 void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) VL_MT_SAFE {
     // See also VL_DATA_TO_STRING_NW
@@ -1245,21 +1240,8 @@ IData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) VL_MT_SAFE {
 IData VL_FOPEN_S(const char* filenamep, const char* modep) VL_MT_SAFE {
     return VerilatedImp::fdNew(filenamep, modep);
 }
-IData VL_FOPEN_MCD_S(const char* filenamep) VL_MT_SAFE {
-    return VerilatedImp::fdNewMcd(filenamep);
-}
 IData VL_FOPEN_MCD_N(const std::string& filename) VL_MT_SAFE {
-    return VL_FOPEN_MCD_S(filename.c_str());
-}
-IData VL_FOPEN_MCD_W(int fnwords, WDataInP filenamep) VL_MT_SAFE {
-    char filenamez[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
-    _VL_VINT_TO_STRING(fnwords * VL_EDATASIZE, filenamez, filenamep);
-    return VL_FOPEN_MCD_S(filenamez);
-}
-IData VL_FOPEN_MCD_Q(QData filename) VL_MT_SAFE {
-    WData fnw[VL_WQ_WORDS_E];
-    VL_SET_WQ(fnw, filename);
-    return VL_FOPEN_MCD_W(VL_WQ_WORDS_E, fnw);
+    return VerilatedImp::fdNewMcd(filename.c_str());
 }
 
 void VL_FFLUSH_I(IData fdi) VL_MT_SAFE {
@@ -1374,8 +1356,8 @@ void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE {
     _vl_vsformat(output, formatp, ap);
     va_end(ap);
 
-    FILE* fp[31];
-    const int n = VL_CVT_I_FP(fpi, fp, 31);
+    FILE* fp[30];
+    const int n = VerilatedImp::fdToFp(fpi, fp, 30);
     for (std::size_t i = 0; i < n; i++) {
         if (VL_UNLIKELY(!fp[i])) continue;
         fputs(output.c_str(), fp[i]);

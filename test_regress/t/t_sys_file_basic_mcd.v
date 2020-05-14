@@ -10,6 +10,7 @@ module t;
 
   task automatic fail(string s); begin
     $display({"FAIL! Reason: ", s});
+    $stop;
   end endtask
 
   task automatic test1; begin
@@ -71,6 +72,19 @@ module t;
     $fwrite(32'h8000_0001, "Sean Connery was the best Bond.\n");
   end endtask
 
+  task automatic test4; begin
+    int fd;
+    // Small
+    fd = $fopen("a");
+    if (fd == 0) fail("Small filename could not be opened.");
+    $fclose(fd);
+    // Large
+    fd = $fopen({"some_very_large_filename_that_no_one_would_ever_use_",
+                 "except_to_purposefully_break_my_beautiful_code_",
+                 "in a regression setting.dat"});
+    if (fd == 0) fail("Long filename could not be opened.");
+    $fclose(fd);
+  end endtask
 
   initial begin
 
@@ -82,6 +96,9 @@ module t;
 
     // Test3: Validate explicit descriptor ID
     test3;
+
+    // Test4: Validate filename lengths
+    test4;
 
     $write("*-* All Finished *-*\n");
     $finish(0);  // Test arguments to finish

@@ -544,14 +544,8 @@ public:
     }
     virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {
         iterateAndNextNull(nodep->filep());
-        puts(" = VL_FOPEN_MCD_");
-        emitIQW(nodep->filenamep());
-        puts("(");
-        if (nodep->filenamep()->isWide()) {
-            puts(cvtToStr(nodep->filenamep()->widthWords()));
-            putbs(", ");
-        }
-        iterateAndNextNull(nodep->filenamep());
+        puts(" = VL_FOPEN_MCD_N(");
+        emitCvtPackStr(nodep->filenamep());
         puts(");\n");
     }
     virtual void visit(AstNodeReadWriteMem* nodep) VL_OVERRIDE {

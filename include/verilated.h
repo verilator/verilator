@@ -679,12 +679,6 @@ extern IData VL_FOPEN_QI(QData filename, IData mode);
 inline IData VL_FOPEN_II(IData filename, IData mode) VL_MT_SAFE {
     return VL_FOPEN_QI(filename, mode);
 }
-extern IData VL_FOPEN_MCD_S(const char* filenamep);
-extern IData VL_FOPEN_MCD_W(int fnwords, WDataInP filenamep);
-extern IData VL_FOPEN_MCD_Q(QData filename);
-inline IData VL_FOPEN_MCD_I(IData filename) VL_MT_SAFE {
-    return VL_FOPEN_MCD_Q(filename);
-}
 
 extern void VL_FFLUSH_I(IData fdi);
 extern IData VL_FSEEK_I(IData fdi, IData offset, IData origin);
@@ -747,7 +741,6 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 
 /// Return FILE* from IData
 extern FILE* VL_CVT_I_FP(IData lhs) VL_MT_SAFE;
-extern int VL_CVT_I_FP(IData lhs, FILE** fp, std::size_t max) VL_MT_SAFE;
 
 // clang-format off
 // Use a union to avoid cast-to-different-size warnings
