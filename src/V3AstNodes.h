@@ -3801,6 +3801,27 @@ public:
     AstNode* modep() const { return op3p(); }
 };
 
+class AstFOpenMcd : public AstNodeStmt {
+    // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
+public:
+    AstFOpenMcd(FileLine* fl, AstNode* filep, AstNode* filenamep)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(filep);
+        setOp2p(filenamep);
+    }
+    ASTNODE_NODE_FUNCS(FOpenMcd)
+    virtual string verilogKwd() const { return "$fopen"; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isPure() const { return false; }
+    virtual bool isOutputter() const { return true; }
+    virtual bool isUnlikely() const { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+    AstNode* filep() const { return op1p(); }
+    AstNode* filenamep() const { return op2p(); }
+};
+
 class AstFFlush : public AstNodeStmt {
     // Parents: stmtlist
     // Children: file which must be a varref

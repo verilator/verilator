@@ -3317,6 +3317,11 @@ private:
         userIterateAndNext(nodep->filenamep(), WidthVP(SELF, BOTH).p());
         userIterateAndNext(nodep->modep(), WidthVP(SELF, BOTH).p());
     }
+    virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {
+        assertAtStatement(nodep);
+        iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
+        userIterateAndNext(nodep->filenamep(), WidthVP(SELF, BOTH).p());
+    }
     virtual void visit(AstFClose* nodep) VL_OVERRIDE {
         assertAtStatement(nodep);
         iterateCheckFileDesc(nodep, nodep->filep(), BOTH);

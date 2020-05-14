@@ -1141,7 +1141,13 @@ done:
 //===========================================================================
 // File I/O
 
-FILE* VL_CVT_I_FP(IData lhs) VL_MT_SAFE { return VerilatedImp::fdToFp(lhs); }
+FILE* VL_CVT_I_FP(IData lhs) VL_MT_SAFE {
+    // Expected non-MCD case; returns ONLY the first file descriptor seen in lhs (which
+    // in the MCD case can result in descriptors being ignored).
+    FILE* fp[1] = {NULL};
+    VerilatedImp::fdToFp(lhs, fp, 1);
+    return fp[0];
+}
 
 void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) VL_MT_SAFE {
     // See also VL_DATA_TO_STRING_NW
@@ -1209,38 +1215,25 @@ IData VL_FERROR_IN(IData, std::string& outputr) VL_MT_SAFE {
     return ret;
 }
 
-IData VL_FOPEN_NI(const std::string& filename, IData mode) VL_MT_SAFE {
-    // While threadsafe, each thread can only access different file handles
-    char modez[5];
-    EData modee = mode;
-    _VL_VINT_TO_STRING(VL_IDATASIZE, modez, &modee);
-    return VL_FOPEN_S(filename.c_str(), modez);
+IData VL_FOPEN_NN(const std::string& filename, const std::string& mode) {
+    return VerilatedImp::fdNew(filename.c_str(), mode.c_str());
 }
-IData VL_FOPEN_QI(QData filename, IData mode) VL_MT_SAFE {
-    // While threadsafe, each thread can only access different file handles
-    WData fnw[VL_WQ_WORDS_E];
-    VL_SET_WQ(fnw, filename);
-    return VL_FOPEN_WI(VL_WQ_WORDS_E, fnw, mode);
-}
-IData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) VL_MT_SAFE {
-    // While threadsafe, each thread can only access different file handles
-    char filenamez[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
-    _VL_VINT_TO_STRING(fnwords * VL_EDATASIZE, filenamez, filenamep);
-    EData modee = mode;
-    char modez[5];
-    _VL_VINT_TO_STRING(4 * sizeof(char), modez, &modee);
-    return VL_FOPEN_S(filenamez, modez);
-}
-IData VL_FOPEN_S(const char* filenamep, const char* modep) VL_MT_SAFE {
-    return VerilatedImp::fdNew(fopen(filenamep, modep));
+IData VL_FOPEN_MCD_N(const std::string& filename) VL_MT_SAFE {
+    return VerilatedImp::fdNewMcd(filename.c_str());
 }
 
+void VL_FFLUSH_I(IData fdi) VL_MT_SAFE {
+    VerilatedImp::fdFlush(fdi);
+}
+IData VL_FSEEK_I(IData fdi, IData offset, IData origin) VL_MT_SAFE {
+    return VerilatedImp::fdSeek(fdi, offset, origin);
+}
+IData VL_FTELL_I(IData fdi) VL_MT_SAFE {
+    return VerilatedImp::fdTell(fdi);
+}
 void VL_FCLOSE_I(IData fdi) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
-    FILE* fp = VL_CVT_I_FP(fdi);
-    if (VL_UNLIKELY(!fp)) return;
-    fclose(fp);
-    VerilatedImp::fdDelete(fdi);
+    VerilatedImp::fdClose(fdi);
 }
 
 void VL_FFLUSH_ALL() VL_MT_SAFE { fflush(stdout); }
@@ -1335,15 +1328,18 @@ void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
     static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
-    FILE* fp = VL_CVT_I_FP(fpi);
-    if (VL_UNLIKELY(!fp)) return;
 
     va_list ap;
     va_start(ap, formatp);
     _vl_vsformat(output, formatp, ap);
     va_end(ap);
 
-    fputs(output.c_str(), fp);
+    FILE* fp[30];
+    const int n = VerilatedImp::fdToFp(fpi, fp, 30);
+    for (std::size_t i = 0; i < n; i++) {
+        if (VL_UNLIKELY(!fp[i])) continue;
+        fputs(output.c_str(), fp[i]);
+    }
 }
 
 IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) VL_MT_SAFE {

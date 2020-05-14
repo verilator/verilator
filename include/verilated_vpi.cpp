@@ -1937,7 +1937,7 @@ void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
 PLI_UINT32 vpi_mcd_open(PLI_BYTE8* filenamep) {
     VerilatedVpiImp::assertOneCheck();
     _VL_VPI_ERROR_RESET();
-    return VL_FOPEN_S(filenamep, "wb");
+    return VL_FOPEN_NN(filenamep, "wb");
 }
 
 PLI_UINT32 vpi_mcd_close(PLI_UINT32 mcd) {

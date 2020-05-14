@@ -673,13 +673,9 @@ extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP r
 /// File I/O
 extern IData VL_FGETS_IXI(int obits, void* destp, IData fpi);
 
-extern IData VL_FOPEN_S(const char* filenamep, const char* modep);
-extern IData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode);
-extern IData VL_FOPEN_QI(QData filename, IData mode);
-inline IData VL_FOPEN_II(IData filename, IData mode) VL_MT_SAFE {
-    return VL_FOPEN_QI(filename, mode);
-}
-
+extern void VL_FFLUSH_I(IData fdi);
+extern IData VL_FSEEK_I(IData fdi, IData offset, IData origin);
+extern IData VL_FTELL_I(IData fdi);
 extern void VL_FCLOSE_I(IData fdi);
 
 extern IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi,
@@ -737,7 +733,7 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 #define _VL_SET_QII(ld, rd) ((static_cast<QData>(ld) << VL_ULL(32)) | static_cast<QData>(rd))
 
 /// Return FILE* from IData
-extern FILE* VL_CVT_I_FP(IData lhs);
+extern FILE* VL_CVT_I_FP(IData lhs) VL_MT_SAFE;
 
 // clang-format off
 // Use a union to avoid cast-to-different-size warnings
