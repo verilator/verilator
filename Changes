@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.035 devel
 
+****  Support multi channel descriptor I/O (#2190) [Stephen Henry]
+
 ****  Support $countbits. (#2287) [Yossi Nivin]
 
 ****  Support $isunbounded and parameter $. (#2104)
