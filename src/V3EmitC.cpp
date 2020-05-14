@@ -526,20 +526,12 @@ public:
     }
     virtual void visit(AstFOpen* nodep) VL_OVERRIDE {
         iterateAndNextNull(nodep->filep());
-        puts(" = VL_FOPEN_");
-        emitIQW(nodep->filenamep());
-        emitIQW(nodep->modep());
+        puts(" = VL_FOPEN_NN(");
+        emitCvtPackStr(nodep->filenamep());
+        putbs(", ");
         if (nodep->modep()->width() > 4 * 8)
             nodep->modep()->v3error("$fopen mode should be <= 4 characters");
-        puts("(");
-        if (nodep->filenamep()->isWide()) {
-            puts(cvtToStr(nodep->filenamep()->widthWords()));
-            putbs(", ");
-        }
-        checkMaxWords(nodep->filenamep());
-        iterateAndNextNull(nodep->filenamep());
-        putbs(", ");
-        iterateAndNextNull(nodep->modep());
+        emitCvtPackStr(nodep->modep());
         puts(");\n");
     }
     virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {

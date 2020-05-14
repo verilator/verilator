@@ -1215,30 +1215,8 @@ IData VL_FERROR_IN(IData, std::string& outputr) VL_MT_SAFE {
     return ret;
 }
 
-IData VL_FOPEN_NI(const std::string& filename, IData mode) VL_MT_SAFE {
-    // While threadsafe, each thread can only access different file handles
-    char modez[5];
-    EData modee = mode;
-    _VL_VINT_TO_STRING(VL_IDATASIZE, modez, &modee);
-    return VL_FOPEN_S(filename.c_str(), modez);
-}
-IData VL_FOPEN_QI(QData filename, IData mode) VL_MT_SAFE {
-    // While threadsafe, each thread can only access different file handles
-    WData fnw[VL_WQ_WORDS_E];
-    VL_SET_WQ(fnw, filename);
-    return VL_FOPEN_WI(VL_WQ_WORDS_E, fnw, mode);
-}
-IData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) VL_MT_SAFE {
-    // While threadsafe, each thread can only access different file handles
-    char filenamez[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
-    _VL_VINT_TO_STRING(fnwords * VL_EDATASIZE, filenamez, filenamep);
-    EData modee = mode;
-    char modez[5];
-    _VL_VINT_TO_STRING(4 * sizeof(char), modez, &modee);
-    return VL_FOPEN_S(filenamez, modez);
-}
-IData VL_FOPEN_S(const char* filenamep, const char* modep) VL_MT_SAFE {
-    return VerilatedImp::fdNew(filenamep, modep);
+IData VL_FOPEN_NN(const std::string& filename, const std::string& mode) {
+    return VerilatedImp::fdNew(filename.c_str(), mode.c_str());
 }
 IData VL_FOPEN_MCD_N(const std::string& filename) VL_MT_SAFE {
     return VerilatedImp::fdNewMcd(filename.c_str());

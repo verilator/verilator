@@ -673,13 +673,6 @@ extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP r
 /// File I/O
 extern IData VL_FGETS_IXI(int obits, void* destp, IData fpi);
 
-extern IData VL_FOPEN_S(const char* filenamep, const char* modep);
-extern IData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode);
-extern IData VL_FOPEN_QI(QData filename, IData mode);
-inline IData VL_FOPEN_II(IData filename, IData mode) VL_MT_SAFE {
-    return VL_FOPEN_QI(filename, mode);
-}
-
 extern void VL_FFLUSH_I(IData fdi);
 extern IData VL_FSEEK_I(IData fdi, IData offset, IData origin);
 extern IData VL_FTELL_I(IData fdi);

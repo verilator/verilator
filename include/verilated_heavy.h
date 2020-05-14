@@ -427,7 +427,7 @@ extern std::string VL_TOLOWER_NN(const std::string& ld);
 extern std::string VL_TOUPPER_NN(const std::string& ld);
 
 extern IData VL_FERROR_IN(IData fpi, std::string& outputr) VL_MT_SAFE;
-extern IData VL_FOPEN_NI(const std::string& filename, IData mode) VL_MT_SAFE;
+extern IData VL_FOPEN_NN(const std::string& filename, const std::string& mode) VL_MT_SAFE;
 extern IData VL_FOPEN_MCD_N(const std::string& filename) VL_MT_SAFE;
 extern void VL_READMEM_N(bool hex, int bits, QData depth, int array_lsb,
                          const std::string& filename, void* memp, QData start,
