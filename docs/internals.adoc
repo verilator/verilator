@@ -996,6 +996,24 @@ function in `src/verilator.cpp`.
 To get your pass to build you'll need to add its binary filename to the
 list in `src/Makefile_obj.in` and reconfigure.
 
+=== "Never" features
+
+Verilator ideally would support all of IEEE, and has the goal to get close
+to full support. However the following IEEE sections and features are not
+anticipated to be ever implemented for the reasons indicated.
+
+[horizontal]
+IEEE 1800-2017 3.3 recursive modules:: Little/no tool support, and arguably not a good practice.
+IEEE 1800-2017 6.12 "shortreal":: Little/no tool support, and easily simply promoted to real.
+IEEE 1800-2017 11.11 Min, typ, max:: No SDF support so will always use typical.
+IEEE 1800-2017 11.12 "let":: Little/no tool support, makes difficult to implement parsers.
+IEEE 1800-2017 20.15 Probabilistic functions:: Little industry use.
+IEEE 1800-2017 20.16 Stochastic analysis:: Little industry use.
+IEEE 1800-2017 20.17 PLA modeling:: Little industry use and outdated technology.
+IEEE 1800-2017 31 Timing checks:: No longer relevant with static timing analysis tools.
+IEEE 1800-2017 32 SDF annotation:: No longer relevant with static timing analysis tools.
+IEEE 1800-2017 33 Config:: Little/no tool support or industry use.
+
 == Distribution
 
 Copyright 2008-2020 by Wilson Snyder.  Verilator is free software; you can
