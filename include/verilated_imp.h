@@ -519,7 +519,6 @@ public:  // But only for verilated*.cpp
     }
     static inline int fdToFp(IData fdi, FILE** fp, std::size_t max = 1) VL_MT_SAFE {
         if (VL_UNLIKELY(!fp || (max == 0))) return 0;
-        VerilatedLockGuard lock(s_s.m_fdMutex);
         int out = 0;
         if ((fdi & (1 << 31)) != 0) {
             // Non-MCD case
