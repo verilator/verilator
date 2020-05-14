@@ -74,14 +74,10 @@ module t;
 
   task automatic test4; begin
     int fd;
-    // Small
-    fd = $fopen("a");
-    if (fd == 0) fail("Small filename could not be opened.");
-    $fclose(fd);
-    // Large
-    fd = $fopen({"some_very_large_filename_that_no_one_would_ever_use_",
-                 "except_to_purposefully_break_my_beautiful_code_",
-                 "in a regression setting.dat"});
+    // Wide filename
+    fd = $fopen({`STR(`TEST_OBJ_DIR),
+                 "some_very_large_filename_that_no_one_would_ever_use_",
+                 "except_to_purposefully_break_my_beautiful_code.dat"});
     if (fd == 0) fail("Long filename could not be opened.");
     $fclose(fd);
   end endtask
