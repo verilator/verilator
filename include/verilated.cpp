@@ -844,25 +844,33 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                                    + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 2)) ? 4 : 0));
                     }
                     break;
-                case 'u':  // Packed 2-state
-                    output.reserve(output.size() + 4 * VL_WORDS_I(lbits));
-                    for (int i = 0; i < VL_WORDS_I(lbits); ++i) {
-                        output += static_cast<char>((lwp[i]) & 0xff);
-                        output += static_cast<char>((lwp[i] >> 8) & 0xff);
-                        output += static_cast<char>((lwp[i] >> 16) & 0xff);
-                        output += static_cast<char>((lwp[i] >> 24) & 0xff);
+                case 'u': { // Packed 2-state
+                    output.reserve(output.size() + VL_BYTES_I(lbits));
+                    int byte = 0, word = 0;
+                    for (int i = 0; i < VL_BYTES_I(lbits); i++) {
+                        output += static_cast<char>((lwp[word] >> (8 * byte)) & 0xff);
+                        if (++byte == 4) {
+                            byte = 0;
+                            ++word;
+                        }
                     }
                     break;
-                case 'z':  // Packed 4-state
-                    output.reserve(output.size() + 8 * VL_WORDS_I(lbits));
-                    for (int i = 0; i < VL_WORDS_I(lbits); ++i) {
-                        output += static_cast<char>((lwp[i]) & 0xff);
-                        output += static_cast<char>((lwp[i] >> 8) & 0xff);
-                        output += static_cast<char>((lwp[i] >> 16) & 0xff);
-                        output += static_cast<char>((lwp[i] >> 24) & 0xff);
-                        output += "\0\0\0\0";  // No tristate
+                }
+                case 'z': { // Packed 4-state
+                    output.reserve(output.size() + (2 * 4 * VL_WORDS_I(lbits)));
+                    int bytes = VL_BYTES_I(lbits);
+                    int word = 0;
+                    while (bytes > 0) {
+                        const int wb = std::min(4, bytes);
+                        int i = 0;
+                        for (i = 0; i < wb; i++)
+                            output += static_cast<char>((lwp[word] >> (8 * i)) & 0xff);
+                        output.append(8 - i, 0);
+                        bytes -= wb;
+                        word++;
                     }
                     break;
+                }
                 case 'v':  // Strength; assume always strong
                     for (lsb = lbits - 1; lsb >= 0; --lsb) {
                         if (VL_BITRSHIFT_W(lwp, lsb) & 1) {
@@ -930,8 +938,8 @@ static inline void _vl_vsss_skipspace(FILE* fp, int& floc, WDataInP fromp,
         _vl_vsss_advance(fp, floc);
     }
 }
-static inline void _vl_vsss_read(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr,
-                                 char* tmpp, const char* acceptp) VL_MT_SAFE {
+static inline void _vl_vsss_read_str(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr,
+                                    char* tmpp, const char* acceptp) VL_MT_SAFE {
     // Read into tmp, consisting of characters from acceptp list
     char* cp = tmpp;
     while (true) {
@@ -944,6 +952,20 @@ static inline void _vl_vsss_read(FILE* fp, int& floc, WDataInP fromp, const std:
     }
     *cp++ = '\0';
     // VL_DBG_MSGF(" _read got='"<<tmpp<<"'\n");
+}
+static inline char* _vl_vsss_read_bin(FILE* fp, int& floc, WDataInP fromp,
+                                      const std::string& fstr, char* beginp,
+                                      std::size_t n, bool inhibit = false) {
+    // Variant of _vl_vsss_read_str using the same underlying I/O functions but optimized
+    // specifically for block reads of N bytes (read operations are not demarcated by
+    // whitespace). In the fp case, except descriptor to have been opened in binary mode.
+    while (n-- > 0) {
+        const int c = _vl_vsss_peek(fp, floc, fromp, fstr);
+        if (c == EOF) return NULL;
+        if (!inhibit) *beginp++ = c;
+        _vl_vsss_advance(fp, floc);
+    }
+    return beginp;
 }
 static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits,
                                    IData ld) VL_MT_SAFE {
@@ -1043,7 +1065,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 }
                 case 's': {
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
-                    _vl_vsss_read(fp, floc, fromp, fstr, tmp, NULL);
+                    _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, NULL);
                     if (!tmp[0]) goto done;
                     int lpos = (static_cast<int>(strlen(tmp))) - 1;
                     int lsb = 0;
@@ -1055,7 +1077,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 }
                 case 'd': {  // Signed decimal
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
-                    _vl_vsss_read(fp, floc, fromp, fstr, tmp, "0123456789+-xXzZ?_");
+                    _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, "0123456789+-xXzZ?_");
                     if (!tmp[0]) goto done;
                     vlsint64_t ld;
                     sscanf(tmp, "%30" VL_PRI64 "d", &ld);
@@ -1066,7 +1088,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 case 'e':
                 case 'g': {  // Real number
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
-                    _vl_vsss_read(fp, floc, fromp, fstr, tmp, "+-.0123456789eE");
+                    _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, "+-.0123456789eE");
                     if (!tmp[0]) goto done;
                     // cppcheck-suppress unusedStructMember  // It's used
                     union {
@@ -1080,7 +1102,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 case 't':  // FALLTHRU  // Time
                 case '#': {  // Unsigned decimal
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
-                    _vl_vsss_read(fp, floc, fromp, fstr, tmp, "0123456789+-xXzZ?_");
+                    _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, "0123456789+-xXzZ?_");
                     if (!tmp[0]) goto done;
                     QData ld;
                     sscanf(tmp, "%30" VL_PRI64 "u", &ld);
@@ -1089,23 +1111,47 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 }
                 case 'b': {
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
-                    _vl_vsss_read(fp, floc, fromp, fstr, tmp, "01xXzZ?_");
+                    _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, "01xXzZ?_");
                     if (!tmp[0]) goto done;
                     _vl_vsss_based(owp, obits, 1, tmp, 0, strlen(tmp));
                     break;
                 }
                 case 'o': {
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
-                    _vl_vsss_read(fp, floc, fromp, fstr, tmp, "01234567xXzZ?_");
+                    _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, "01234567xXzZ?_");
                     if (!tmp[0]) goto done;
                     _vl_vsss_based(owp, obits, 3, tmp, 0, strlen(tmp));
                     break;
                 }
                 case 'x': {
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
-                    _vl_vsss_read(fp, floc, fromp, fstr, tmp, "0123456789abcdefABCDEFxXzZ?_");
+                    _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, "0123456789abcdefABCDEFxXzZ?_");
                     if (!tmp[0]) goto done;
                     _vl_vsss_based(owp, obits, 4, tmp, 0, strlen(tmp));
+                    break;
+                }
+                case 'u': {
+                    // Read packed 2-value binary data
+                    const int bytes = VL_BYTES_I(obits);
+                    char* out = reinterpret_cast<char*>(owp);
+                    if (!_vl_vsss_read_bin(fp, floc, fromp, fstr, out, bytes))
+                        goto done;
+                    break;
+                }
+                case 'z': {
+                    // Read packed 4-value binary data
+                    char* out = reinterpret_cast<char*>(owp);
+                    int bytes = VL_BYTES_I(obits);
+                    while (bytes > 0) {
+                        const int abytes = std::min(4, bytes);
+                        // aval (4B) read {0, 1} state
+                        out = _vl_vsss_read_bin(fp, floc, fromp, fstr, out, abytes);
+                        if (!out) goto done;
+                        // bval (4B) disregard {X, Z} state and align to new 8B boundary.
+                        out = _vl_vsss_read_bin(fp, floc, fromp, fstr, out, 8 - abytes, true);
+                        if (!out) goto done;
+                        bytes -= abytes;
+                    }
                     break;
                 }
                 default:
@@ -1334,7 +1380,7 @@ void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE {
     const int n = VerilatedImp::fdToFp(fpi, fp, 30);
     for (std::size_t i = 0; i < n; i++) {
         if (VL_UNLIKELY(!fp[i])) continue;
-        fputs(output.c_str(), fp[i]);
+        fwrite(output.c_str(), 1, output.size(), fp[i]);
     }
 }
 
