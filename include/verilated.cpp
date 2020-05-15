@@ -846,28 +846,20 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     break;
                 case 'u': { // Packed 2-state
                     output.reserve(output.size() + VL_BYTES_I(lbits));
-                    int byte = 0, word = 0;
-                    for (int i = 0; i < VL_BYTES_I(lbits); i++) {
-                        output += static_cast<char>((lwp[word] >> (8 * byte)) & 0xff);
-                        if (++byte == 4) {
-                            byte = 0;
-                            ++word;
-                        }
-                    }
+                    for (int bit = 0; bit < 8 * VL_BYTES_I(lbits); bit += 8)
+                        output += static_cast<char>(VL_BITRSHIFT_W(lwp, bit) & 0xff);
                     break;
                 }
                 case 'z': { // Packed 4-state
                     output.reserve(output.size() + (2 * 4 * VL_WORDS_I(lbits)));
-                    int bytes = VL_BYTES_I(lbits);
-                    int word = 0;
-                    while (bytes > 0) {
-                        const int wb = std::min(4, bytes);
-                        int i = 0;
-                        for (i = 0; i < wb; i++)
-                            output += static_cast<char>((lwp[word] >> (8 * i)) & 0xff);
-                        output.append(8 - i, 0);
-                        bytes -= wb;
-                        word++;
+                    int bytes_to_go = VL_BYTES_I(lbits);
+                    int bit = 0;
+                    while (bytes_to_go > 0) {
+                        const int wr_bytes = std::min(4, bytes_to_go);
+                        for (int byte = 0; byte < wr_bytes; byte++, bit += 8)
+                            output += static_cast<char>(VL_BITRSHIFT_W(lwp, bit) & 0xff);
+                        output.append(8 - wr_bytes, (char)0);
+                        bytes_to_go -= wr_bytes;
                     }
                     break;
                 }
