@@ -3396,7 +3396,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_COUNTBITS '(' expr ',' expr ',' expr ')'		{ $$ = new AstCountBits($1,$3,$5,$7); }
 	|	yD_COUNTBITS '(' expr ',' expr ',' expr ',' expr ')'	{ $$ = new AstCountBits($1,$3,$5,$7,$9); }
 	|	yD_COUNTBITS '(' expr ',' expr ',' expr ',' expr ',' exprList ')'
-			{$11->v3error("Unsupported: $countbits with more than 3 control fields"); }
+			{ $$ = new AstCountBits($1, $3, $5, $7, $9);
+			  $11->v3error("Unsupported: $countbits with more than 3 control fields"); }
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
 	|	yD_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_DIMENSIONS,$3); }
 	|	yD_EXP '(' expr ')'			{ $$ = new AstExpD($1,$3); }
