@@ -457,7 +457,7 @@ public:  // But only for verilated*.cpp
         IData idx = s_s.m_fdFreeMct.back();
         s_s.m_fdFreeMct.pop_back();
         s_s.m_fdps[idx] = fopen(filenamep, "w");
-        if(VL_UNLIKELY(!s_s.m_fdps[idx])) return 0;
+        if (VL_UNLIKELY(!s_s.m_fdps[idx])) return 0;
         return (1 << idx);
     }
     static IData fdNew(const char* filenamep, const char* modep) VL_MT_SAFE {
@@ -489,14 +489,14 @@ public:  // But only for verilated*.cpp
         FILE* fp;
         VerilatedLockGuard lock(s_s.m_fdMutex);
         const int n = fdToFp(fdi, &fp);
-        if(VL_UNLIKELY(!fp || (n != 1))) return 0;
+        if (VL_UNLIKELY(!fp || (n != 1))) return 0;
         return static_cast<IData>(fseek(fp, static_cast<long>(offset), static_cast<int>(origin)));
     }
     static IData fdTell(IData fdi) VL_MT_SAFE {
         FILE* fp;
         VerilatedLockGuard lock(s_s.m_fdMutex);
         const int n = fdToFp(fdi, &fp);
-        if(VL_UNLIKELY(!fp || (n != 1))) return 0;
+        if (VL_UNLIKELY(!fp || (n != 1))) return 0;
         return static_cast<IData>(ftell(fp));
     }
     static void fdClose(IData fdi) VL_MT_SAFE {
@@ -531,8 +531,7 @@ public:  // But only for verilated*.cpp
             case 1: fp[out++] = stdout; break;
             case 2: fp[out++] = stderr; break;
             default:
-                if (VL_LIKELY(idx < s_s.m_fdps.size()))
-                    fp[out++] = s_s.m_fdps[idx];
+                if (VL_LIKELY(idx < s_s.m_fdps.size())) fp[out++] = s_s.m_fdps[idx];
                 break;
             }
         } else {

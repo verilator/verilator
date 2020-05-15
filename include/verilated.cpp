@@ -1222,15 +1222,11 @@ IData VL_FOPEN_MCD_N(const std::string& filename) VL_MT_SAFE {
     return VerilatedImp::fdNewMcd(filename.c_str());
 }
 
-void VL_FFLUSH_I(IData fdi) VL_MT_SAFE {
-    VerilatedImp::fdFlush(fdi);
-}
+void VL_FFLUSH_I(IData fdi) VL_MT_SAFE { VerilatedImp::fdFlush(fdi); }
 IData VL_FSEEK_I(IData fdi, IData offset, IData origin) VL_MT_SAFE {
     return VerilatedImp::fdSeek(fdi, offset, origin);
 }
-IData VL_FTELL_I(IData fdi) VL_MT_SAFE {
-    return VerilatedImp::fdTell(fdi);
-}
+IData VL_FTELL_I(IData fdi) VL_MT_SAFE { return VerilatedImp::fdTell(fdi); }
 void VL_FCLOSE_I(IData fdi) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
     VerilatedImp::fdClose(fdi);
