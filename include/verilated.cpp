@@ -851,7 +851,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     break;
                 }
                 case 'z': { // Packed 4-state
-                    output.reserve(output.size() + (2 * 4 * VL_WORDS_I(lbits)));
+                    output.reserve(output.size() + (2 * VL_WORDS_I(lbits)));
                     int bytes_to_go = VL_BYTES_I(lbits);
                     int bit = 0;
                     while (bytes_to_go > 0) {
