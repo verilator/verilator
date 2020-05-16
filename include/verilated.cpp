@@ -312,7 +312,8 @@ vluint64_t vl_rand64() VL_MT_SAFE {
 
 IData VL_RANDOM_I(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_I(obits); }
 QData VL_RANDOM_Q(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_Q(obits); }
-// VL_RANDOM_W currently unused as $random always 32 bits
+// VL_RANDOM_W currently unused as $random always 32 bits, left for backwards compatibility
+// LCOV_EXCL_START
 WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(obits); ++i) {
         if (i < (VL_WORDS_I(obits) - 1)) {
@@ -323,6 +324,7 @@ WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     }
     return outwp;
 }
+// LCOV_EXCL_STOP
 
 IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
     if (Verilated::randReset() == 0) return 0;

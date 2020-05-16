@@ -330,7 +330,7 @@ void V3Options::fileNfsFlush(const string& filename) {
     // do a open or opendir on the filename.
     // Faster to just try both rather than check if a file is a dir.
     if (DIR* dirp = opendir(filename.c_str())) {
-        closedir(dirp);
+        closedir(dirp);  // LCOV_EXCL_LINE
     } else if (int fd = ::open(filename.c_str(), O_RDONLY)) {
         if (fd > 0) ::close(fd);
     }

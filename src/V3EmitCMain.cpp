@@ -33,7 +33,8 @@ class EmitCMain : EmitCBaseVisitor {
     // METHODS
 
     // VISITORS
-    virtual void visit(AstNode* nodep) { iterateChildren(nodep); }
+    // This visitor doesn't really iterate, but exist to appease base class
+    virtual void visit(AstNode* nodep) { iterateChildren(nodep); }  // LCOV_EXCL_LINE
 
 public:
     // CONSTRUCTORS

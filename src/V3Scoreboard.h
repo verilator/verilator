@@ -292,7 +292,7 @@ public:
         typename Key2Val::iterator kvit = m_keys.find(k);
         if (kvit != m_keys.end()) {
             if (kvit->second == v) {
-                return;  // Same value already present; stop.
+                return;  // LCOV_EXCL_LINE // Same value already present; stop.
             }
             // Must remove element from m_vals[oldValue]
             removeKeyFromOldVal(k, kvit->second);

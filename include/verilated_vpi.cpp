@@ -2072,11 +2072,11 @@ PLI_INT32 vpi_control(PLI_INT32 operation, ...) {
     _VL_VPI_ERROR_RESET();
     switch (operation) {
     case vpiFinish: {
-        VL_FINISH_MT(__FILE__, __LINE__, "*VPI*");
+        VL_FINISH_MT("", 0, "*VPI*");
         return 1;
     }
     case vpiStop: {
-        VL_STOP_MT(__FILE__, __LINE__, "*VPI*");
+        VL_STOP_MT("", 0, "*VPI*");
         return 1;
     }
     }

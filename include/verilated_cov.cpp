@@ -332,10 +332,10 @@ public:
                 m_insertp->m_keys[addKeynum] = valueIndex(key);
                 m_insertp->m_vals[addKeynum] = valueIndex(val);
                 addKeynum++;
-                if (!legalKey(key)) {
+                if (VL_UNCOVERABLE(!legalKey(key))) {
                     std::string msg
                         = ("%Error: Coverage keys of one character, or letter+digit are illegal: "
-                           + key);
+                           + key);  // LCOV_EXCL_LINE
                     VL_FATAL_MT("", 0, "", msg.c_str());
                 }
             }

@@ -161,9 +161,11 @@ public:
         for (int backs = 0; backs < 2;
              backs++) {  // Those with backp() are probably under one leaking without
             for (NodeMap::iterator it = s_nodes.begin(); it != s_nodes.end(); ++it) {
-                if ((it->second & FLAG_ALLOCATED) && !(it->second & FLAG_IN_TREE)
-                    && !(it->second & FLAG_LEAKED)
-                    && (it->first->backp() ? backs == 1 : backs == 0)) {
+                // LCOV_EXCL_START
+                if (VL_UNCOVERABLE((it->second & FLAG_ALLOCATED) && !(it->second & FLAG_IN_TREE)
+                                   && !(it->second & FLAG_LEAKED)
+                                   && (it->first->backp() ? backs == 1 : backs == 0))) {
+
                     // Use only AstNode::dump instead of the virtual one, as there
                     // may be varp() and other cross links that are bad.
                     if (v3Global.opt.debugCheck()) {
@@ -182,6 +184,7 @@ public:
                     }
                     it->second |= FLAG_LEAKED;
                 }
+                // LCOV_EXCL_STOP
             }
         }
     }

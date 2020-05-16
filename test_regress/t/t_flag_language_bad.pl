@@ -10,23 +10,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-$ENV{FOOBARTEST} = "gotit";
-
-run(
-    cmd => ["../bin/verilator --getenv FOOBARTEST"],
-    expect => 'gotit
-',
-    logfile => "$Self->{obj_dir}/simx.log",
-    verilator_run => 1,
+compile(
+    verilator_flags2 => ['--language 1-2-3-4'],
+    fails => 1,
     );
-
-foreach my $var (qw(MAKE PERL SYSTEMC SYSTEMC_ARCH SYSTEMC_LIBDIR VERILATOR_ROOT)) {
-    run(
-        cmd => ["../bin/verilator --getenv ${var}"],
-        logfile => "$Self->{obj_dir}/simx.log",
-        verilator_run => 1,
-        );
-}
 
 ok(1);
 1;

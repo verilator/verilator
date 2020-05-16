@@ -261,7 +261,7 @@ private:
 
     void castPtr(FileLine* fl, AstTextBlock* txtp) {
         txtp->addText(fl, m_topName
-                              + "_container* handlep__V = "
+                              + "_container* handlep__V = "  // LCOV_EXCL_LINE  // lcov bug
                                 "static_cast<"
                               + m_topName + "_container*>(vhandlep__V);\n");
     }

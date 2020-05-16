@@ -269,8 +269,8 @@ string V3Os::trueRandom(size_t size) {
     std::ifstream is("/dev/urandom", std::ios::in | std::ios::binary);
     // This read uses the size of the buffer.
     // Flawfinder: ignore
-    if (!is.read(data, size)) {
-        v3fatal("Could not open /dev/urandom, no source of randomness. "
+    if (VL_UNCOVERABLE(!is.read(data, size))) {
+        v3fatal("Could not open /dev/urandom, no source of randomness. "  // LCOV_EXCL_LINE
                 "Try specifying a key instead.");
     }
 #endif
@@ -313,15 +313,12 @@ uint64_t V3Os::memUsageBytes() {
     FILE* fp = fopen(statmFilename, "r");
     if (!fp) return 0;
     vluint64_t size, resident, share, text, lib, data, dt;  // All in pages
-    if (7
-        != fscanf(fp,
-                  "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64
-                  "u %" VL_PRI64 "u %" VL_PRI64 "u",
-                  &size, &resident, &share, &text, &lib, &data, &dt)) {
-        fclose(fp);
-        return 0;
-    }
+    int items = fscanf(fp,
+                       "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64
+                       "u %" VL_PRI64 "u %" VL_PRI64 "u",
+                       &size, &resident, &share, &text, &lib, &data, &dt);
     fclose(fp);
+    if (VL_UNCOVERABLE(7 != items)) return 0;
     return (text + data) * getpagesize();
 #endif
 }
