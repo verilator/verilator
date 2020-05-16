@@ -204,7 +204,7 @@ void VerilatedFst::declArray(vluint32_t code, const char* name, int dtypenum, fs
 }
 void VerilatedFst::declFloat(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                              fstVarType vartype, bool array, int arraynum) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 31, 0);
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 31, 0);  // LCOV_EXCL_LINE
 }
 void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                               fstVarType vartype, bool array, int arraynum) {
@@ -266,7 +266,7 @@ void VerilatedFst::emitWData(vluint32_t code, const WData* newvalp, int bits) {
 
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitFloat(vluint32_t code, float newval) {
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);  // LCOV_EXCL_LINE
 }
 
 VL_ATTR_ALWINLINE

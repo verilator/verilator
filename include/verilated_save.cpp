@@ -194,8 +194,8 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
         ssize_t got = ::write(m_fd, wp, remaining);
         if (got > 0) {
             wp += got;
-        } else if (got < 0) {
-            if (errno != EAGAIN && errno != EINTR) {
+        } else if (VL_UNCOVERABLE(got < 0)) {
+            if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
                 // write failed, presume error (perhaps out of disk space)
                 std::string msg = std::string(__FUNCTION__) + ": " + strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
@@ -223,8 +223,8 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
         ssize_t got = ::read(m_fd, m_endp, remaining);
         if (got > 0) {
             m_endp += got;
-        } else if (got < 0) {
-            if (errno != EAGAIN && errno != EINTR) {
+        } else if (VL_UNCOVERABLE(got < 0)) {
+            if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
                 // write failed, presume error (perhaps out of disk space)
                 std::string msg = std::string(__FUNCTION__) + ": " + strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
