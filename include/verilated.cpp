@@ -845,7 +845,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     }
                     break;
                 case 'u':
-                case 'z': { // Packed 4-state
+                case 'z': {  // Packed 4-state
                     const bool is_4_state = (fmt == 'z');
                     output.reserve(output.size() + ((is_4_state ? 2 : 1) * VL_WORDS_I(lbits)));
                     int bytes_to_go = VL_BYTES_I(lbits);
@@ -855,8 +855,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         for (int byte = 0; byte < wr_bytes; byte++, bit += 8)
                             output += static_cast<char>(VL_BITRSHIFT_W(lwp, bit) & 0xff);
                         output.append(4 - wr_bytes, (char)0);
-                        if (is_4_state)
-                            output.append(4, (char)0);
+                        if (is_4_state) output.append(4, (char)0);
                         bytes_to_go -= wr_bytes;
                     }
                     break;
@@ -929,7 +928,7 @@ static inline void _vl_vsss_skipspace(FILE* fp, int& floc, WDataInP fromp,
     }
 }
 static inline void _vl_vsss_read_str(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr,
-                                    char* tmpp, const char* acceptp) VL_MT_SAFE {
+                                     char* tmpp, const char* acceptp) VL_MT_SAFE {
     // Read into tmp, consisting of characters from acceptp list
     char* cp = tmpp;
     while (true) {
@@ -943,9 +942,8 @@ static inline void _vl_vsss_read_str(FILE* fp, int& floc, WDataInP fromp, const 
     *cp++ = '\0';
     // VL_DBG_MSGF(" _read got='"<<tmpp<<"'\n");
 }
-static inline char* _vl_vsss_read_bin(FILE* fp, int& floc, WDataInP fromp,
-                                      const std::string& fstr, char* beginp,
-                                      std::size_t n, bool inhibit = false) {
+static inline char* _vl_vsss_read_bin(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr,
+                                      char* beginp, std::size_t n, bool inhibit = false) {
     // Variant of _vl_vsss_read_str using the same underlying I/O functions but optimized
     // specifically for block reads of N bytes (read operations are not demarcated by
     // whitespace). In the fp case, except descriptor to have been opened in binary mode.
@@ -1124,10 +1122,10 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     // Read packed 2-value binary data
                     const int bytes = VL_BYTES_I(obits);
                     char* out = reinterpret_cast<char*>(owp);
-                    if (!_vl_vsss_read_bin(fp, floc, fromp, fstr, out, bytes))
-                        goto done;
+                    if (!_vl_vsss_read_bin(fp, floc, fromp, fstr, out, bytes)) goto done;
                     const int last = bytes % 4;
-                    if (last != 0 && !_vl_vsss_read_bin(fp, floc, fromp, fstr, out, 4 - last, true))
+                    if (last != 0
+                        && !_vl_vsss_read_bin(fp, floc, fromp, fstr, out, 4 - last, true))
                         goto done;
                     break;
                 }
