@@ -35,7 +35,9 @@ while (1) {
                 $secret_dir,
                 "--protect-lib",
                 $secret_prefix,
-                "t/t_prot_lib_secret.v"]);
+                "t/t_prot_lib_secret.v"],
+        verilator_run => 1,
+        );
     last if $Self->{errors};
 
     run(logfile => "$secret_dir/secret_gcc.log",

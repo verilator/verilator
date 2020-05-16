@@ -15,6 +15,7 @@ run(fails => 1,
             "t/t_NOT_FOUND",],
     logfile => $Self->{run_log_filename},
     expect_filename => $Self->{golden_filename},
+    verilator_run => 1,
     );
 
 ok(1);

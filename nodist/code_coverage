@@ -12,7 +12,10 @@ use Pod::Usage;
 use strict;
 use vars qw($Debug);
 
+our $Opt_Stop;
 our $Exclude_Line_Regexp;
+our $Remove_Gcda_Regexp;
+
 our @Remove_Sources;
 our @Source_Globs;
 
@@ -27,7 +30,8 @@ Getopt::Long::config("no_auto_abbrev");
 if (! GetOptions(
           "debug"       => sub { $Debug = 1; },
           "<>"          => sub { die "%Error: Unknown parameter: $_[0]\n"; },
-          "stage=i"     => \$Opt_Stage,
+          "stage=i"     => \$Opt_Stage,  # starting stage number
+          "stop!"       => \$Opt_Stop,  # stop/do not stop on error in tests
     )) {
     die "%Error: Bad usage, try 'install_test --help'\n";
 }
@@ -42,45 +46,85 @@ sub test {
     require "./nodist/code_coverage.dat";
 
     if ($Opt_Stage <= 0) {
+        travis_fold_start("configure");
         print "Stage 0: configure (coverage on)\n";
-        run("make distclean");
+        run("make distclean || true");
         run("./configure --enable-longtests CXX='g++ --coverage'");
         run("make -k");
         # The optimized versions will not collect good coverage, overwrite them
         run("cp bin/verilator_bin_dbg bin/verilator_bin");
         run("cp bin/verilator_coverage_bin_dbg bin/verilator_coverage_bin");
+        travis_fold_end();
     }
 
     if ($Opt_Stage <= 1) {
+        travis_fold_start("test");
         print "Stage 1: make examples (with coverage on)\n";
         run("make examples");
-        run("make test_regress");
+        run("make test_regress"
+            . ($Opt_Stop ? '' : ' || true'));
+        travis_fold_end();
     }
 
     my $cc_dir = "nodist/obj_dir/coverage";
     if ($Opt_Stage <= 2) {
+        travis_fold_start("info");
         print "Stage 2: Create info files under $cc_dir\n";
         mkpath($cc_dir);
         mkpath("$cc_dir/info");
         my $dats = `find . -print | grep .gcda`;
-        my %dirs;
+        my %dats;
         foreach my $dat (split '\n', $dats) {
-            $dat =~ s!/[^/]+$!!;
-            $dirs{$dat} = 1;
+            $dats{$dat} = 1;
+        }
+        my %dirs;
+        my %gcnos;
+        foreach my $dat (sort keys %dats) {
+            (my $gcno = $dat) =~ s!\.gcda$!.gcno!;
+            if ($dat =~ /$Remove_Gcda_Regexp/) {
+                # Remove .gcda/.gcno for files we don't care about before we slowly
+                # read them
+                unlink $dat;
+                unlink $gcno;
+                delete $dats{$dat};
+                next;
+            }
+            (my $gbase = $gcno) =~ s!.*/!!;
+            if (!$gcnos{$gbase} && -r $gcno) {
+                $gcnos{$gbase} = $gcno;
+            }
+        }
+        # We need a matching .gcno for every .gcda, try to find a matching file elsewhere
+        foreach my $dat (sort keys %dats) {
+            (my $gcno = $dat) =~ s!\.gcda$!.gcno!;
+            (my $gbase = $gcno) =~ s!.*/!!;
+            if (!-r $gcno) {
+                if ($gcnos{$gbase}) {
+                    cp($gcnos{$gbase}, $gcno);
+                } else {
+                    warn "MISSING .gcno for a .gcda: $gcno\n";
+                }
+            }
+            (my $dir = $dat) =~ s!/[^/]+$!!;
+            $dirs{$dir} = 1;
         }
         foreach my $dir (sort keys %dirs) {
             (my $outname = $dir) =~ s![^a-zA-Z0-9]+!_!g;
             run("cd $cc_dir/info ; lcov -c -d ../../../../$dir -o app_test_${outname}.info");
         }
+        travis_fold_end();
     }
 
     if ($Opt_Stage <= 3) {
+        travis_fold_start("clone");
         # lcov doesn't have a control file to override single lines, so replicate the sources
         print "Stage 3: Clone sources under $cc_dir\n";
         clone_sources($cc_dir);
+        travis_fold_end();
     }
 
     if ($Opt_Stage <= 4) {
+        travis_fold_start("copy");
         print "Stage 4: Copy .gcno files\n";
         my $dats = `find . -print | grep .gcno`;
         foreach my $dat (split '\n', $dats) {
@@ -89,9 +133,11 @@ sub test {
             #print "cp $dat, $outdat);\n";
             cp($dat, $outdat);
         }
+        travis_fold_end();
     }
 
     if ($Opt_Stage <= 5) {
+        travis_fold_start("combine");
         print "Stage 5: Combine data files\n";
         run("cd $cc_dir ; lcov -c -i -d src/obj_dbg -o app_base.info");
         run("cd $cc_dir ; lcov -a app_base.info -o app_total.info");
@@ -106,22 +152,35 @@ sub test {
                 $comb = "";
             }
         }
+        travis_fold_end();
     }
 
     if ($Opt_Stage <= 6) {
+        travis_fold_start("filter");
         print "Stage 6: Filter processed source files\n";
         my $cmd = '';
         foreach my $glob (@Remove_Sources) {
             $cmd .= " '$glob'";
         }
         run("cd $cc_dir ; lcov --remove app_total.info $cmd -o app_total.info");
+        travis_fold_end();
     }
 
-    if ($Opt_Stage <= 7) {
+    if ($Opt_Stage <= 8) {
+        travis_fold_start("report");
         print "Stage 7: Create HTML\n";
         cleanup_abs_paths($cc_dir, "$cc_dir/app_total.info", "$cc_dir/app_total.info");
         run("cd $cc_dir ; genhtml app_total.info --demangle-cpp"
             ." --rc lcov_branch_coverage=1 --rc genhtml_hi_limit=100 --output-directory html");
+        travis_fold_end();
+    }
+
+    if ($Opt_Stage <= 9) {
+        travis_fold_start("upload");
+        print "Stage 9: Upload\n";
+        my $cmd = 'bash <(curl -s https://codecov.io/bash) -f $cc_dir/app_total.info';
+        print "print: Not running: $cmd\n";
+        travis_fold_end();
     }
 
     if ($Opt_Stage <= 9) {
@@ -184,12 +243,13 @@ sub cleanup_abs_paths {
 sub exclude_line_regexp {
     $Exclude_Line_Regexp = shift;
 }
-
+sub remove_gcda_regexp {
+    $Remove_Gcda_Regexp = shift;
+}
 sub remove_source {
     my @srcs = @_;
     push @Remove_Sources, @srcs;
 }
-
 sub source_globs {
     my @dirs = @_;
     push @Source_Globs, @dirs;
@@ -204,6 +264,15 @@ sub run {
     system "$command";
     my $status = $?;
     ($status == 0) or die "%Error: Command Failed $command, $status, stopped";
+}
+
+our $_Travis_Action;
+sub travis_fold_start {
+    $_Travis_Action = shift;
+    print "travis_fold:start:$_Travis_Action\n";
+}
+sub travis_fold_end {
+    print "travis_fold:end:$_Travis_Action\n";
 }
 
 #######################################################################

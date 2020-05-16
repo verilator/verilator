@@ -16,7 +16,9 @@ run(cmd => ["../bin/verilator_coverage",
             "t/t_vlcov_data_b.dat",
             "t/t_vlcov_data_c.dat",
             "t/t_vlcov_data_d.dat",
-    ]);
+    ],
+    verilator_run => 1,
+    );
 
 # Older clib's didn't properly sort maps, but the coverage data doesn't
 # really care about ordering. So avoid false failures by sorting.

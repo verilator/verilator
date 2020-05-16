@@ -13,8 +13,9 @@ scenarios(vlt => 1);
 lint();
 
 foreach my $file (glob("$Self->{obj_dir}/*")) {
-    next if $file =~ /\.log/;  # Made by driver.pl, not Verilator
-    next if $file =~ /\.status/;  # Made by driver.pl, not Verilator
+    next if $file =~ /\.log/;  # Made by driver.pl, not Verilator sources
+    next if $file =~ /\.status/;  # Made by driver.pl, not Verilator sources
+    next if $file =~ /\.gcda/;  # Made by gcov, not Verilator sources
     error("%Error: Created $file, but --lint-only shouldn't create files");
 }
 

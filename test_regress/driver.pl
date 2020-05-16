@@ -306,6 +306,8 @@ sub new {
         skip_msgs => [],
         fail_msgs => [],
         fail_tests => [],
+        # Per-task identifiers
+        running_ids => {},
         @_};
     bless $self, $class;
     return $self;
@@ -322,14 +324,24 @@ sub one_test {
     $::Fork->schedule
         (
          test_pl_filename => $params{pl_filename},
+         run_pre_start => sub {
+             my $process = shift;
+             # Running in context of parent, before run_on_start
+             # Make an identifier that is unique across all current running jobs
+             my $i = 1; while (exists $self->{running_ids}{$i}) { ++$i; }
+             $process->{running_id} = $i;
+             $self->{running_ids}{$process->{running_id}} = 1;
+         },
          run_on_start => sub {
+             my $process = shift;
              # Running in context of child, so can't pass data to parent directly
              if ($self->{quiet}) {
                  open(STDOUT, ">/dev/null");
                  open(STDERR, ">&STDOUT");
              }
              print("="x70,"\n");
-             my $test = VTest->new(@params);
+             my $test = VTest->new(@params,
+                                   running_id => $process->{running_id});
              $test->oprint("="x50,"\n");
              unlink $test->{status_filename};
              $test->_prep;
@@ -340,7 +352,9 @@ sub one_test {
          },
          run_on_finish => sub {
              # Running in context of parent
-             my $test = VTest->new(@params);
+             my $process = shift;
+             my $test = VTest->new(@params,
+                                   running_id => $process->{running_id});
              $test->_read_status;
              if ($test->ok) {
                  $self->{ok_cnt}++;
@@ -374,6 +388,7 @@ sub one_test {
              }
              $self->{left_cnt}--;
              $self->print_summary;
+             delete $self->{running_ids}{$process->{running_id}};
          },
          )->ready();
 }
@@ -1062,6 +1077,7 @@ sub compile {
                         tee => $param{tee},
                         expect => $param{expect},
                         expect_filename => $param{expect_filename},
+                        verilator_run => 1,
                         cmd => \@vlt_cmd) if $::Opt_Verilation;
             return 1 if $self->errors || $self->skips || $self->unsupporteds;
         }
@@ -1077,6 +1093,7 @@ sub compile {
                         tee => $param{tee},
                         expect => $param{expect},
                         expect_filename => $param{expect_filename},
+                        verilator_run => 1,
                         cmd => ["cd \"".$self->{obj_dir}."\" && cmake",
                                 "\"".$self->{t_dir}."/..\"",
                                 "-DTEST_VERILATOR_ROOT=$ENV{VERILATOR_ROOT}",
@@ -1458,12 +1475,24 @@ sub _run {
     my $self = (ref $_[0]? shift : $Self);
     my %param = (tee => 1,
                  #entering =>  # Print entering directory information
+                 #verilator_run =>  # Move gcov data to parallel area
                  @_);
     my $command = join(' ',@{$param{cmd}});
     $command = "time $command" if $opt_benchmark && $command !~ /^cd /;
     print "\t$command";
     print "   > $param{logfile}" if $param{logfile};
     print "\n";
+
+    if ($param{verilator_run}) {
+        # Gcov fails when parallel jobs write same data file,
+        # so we make sure output dir is unique across all running jobs.
+        # We can't just put each one in obj_dir as it uses too much disk.
+        $ENV{GCOV_PREFIX_STRIP} = 99;
+        $ENV{GCOV_PREFIX} = "$self->{t_dir}/obj_dist/gcov_$self->{running_id}";
+    } else {
+        delete $ENV{GCOV_PREFIX_STRIP};
+        delete $ENV{GCOV_PREFIX};
+    }
 
     # Execute command redirecting output, keeping order between stderr and stdout.
     # Must do low-level IO so GCC interaction works (can't be line-based)
@@ -2271,6 +2300,7 @@ sub schedule {
     my $self = shift;
     my %params = (@_);
 
+    $params{run_pre_start}->($self);
     if (my $pid = fork()) {  # Parent
         waitpid($pid, 0);
     } else {  # Child

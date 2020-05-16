@@ -22,6 +22,7 @@ source_globs("src/*.cpp",
     );
 
 remove_source("/usr/include/*");
+remove_source("/usr/lib/*");
 remove_source("*/include/sysc/*");
 remove_source("*/V3ClkGater.cpp");
 remove_source("*/V3ClkGater.h");
@@ -37,7 +38,10 @@ remove_source("*include/gtkwave/*");
 remove_source("*test_regress/*");
 remove_source("*examples/*");
 
+# Remove collected coverage on each little test main file
+# Would just be removed with remove_source in later step
+remove_gcda_regexp(qr!test_regress/.*/(Vt_|Vtop_).*\.gcda!);
 
-exclude_line_regexp(qr/(\bv3fatalSrc\b|\bVL_UNCOVERABLE\b)/);
+exclude_line_regexp(qr/(\bv3fatalSrc\b|\bVL_UNCOVERABLE\b|\bVL_FATAL)/);
 
 1;
