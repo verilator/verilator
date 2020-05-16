@@ -84,7 +84,7 @@ maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
 	-rm -rf obj_* *.log *.dmp *.vpd core
 	-rm -f *.o *.d perlxsi.c *_gen_*
-	-rm -f *__gen*
+	-rm -f *__gen* obj_*
 	-rm -f .objcache*
 
 distclean maintainer-clean::
