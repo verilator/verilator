@@ -442,7 +442,8 @@ void EmitCSyms::emitSymHdr() {
     }
     if (v3Global.opt.trace()) {
         puts("bool __Vm_activity;  ///< Used by trace routines to determine change occurred\n");
-        puts("uint32_t __Vm_baseCode;  ///< Used by trace routines when tracing multiple models\n");
+        puts("uint32_t __Vm_baseCode;  "
+             "///< Used by trace routines when tracing multiple models\n");
     }
     puts("bool __Vm_didInit;\n");
 
