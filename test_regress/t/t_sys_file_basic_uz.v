@@ -107,10 +107,19 @@ module t;
     filename  = "t/t_sys_file_basic_uz.dat";
     fdin_bin  = $fopen(filename, "rb");
 
-    filename   = $sformatf("%s/t_sys_file_basic_uz_test.log",`STRINGIFY(`TEST_OBJ_DIR));
+`ifdef IVERILOG
+    filename  = $sformatf("%s/t_sys_file_basic_uz_test.log","obj_iv/t_sys_file_basic_uz");
+`else
+    filename  = $sformatf("%s/t_sys_file_basic_uz_test.log",`STRINGIFY(`TEST_OBJ_DIR));
+`endif
     fdout_txt  = $fopen(filename, "w");
 
-    filename   = $sformatf("%s/t_sys_file_basic_uz_test.bin",`STRINGIFY(`TEST_OBJ_DIR));
+`ifdef IVERILOG
+    filename  = $sformatf("%s/t_sys_file_basic_uz_test.bin","obj_iv/t_sys_file_basic_uz");
+`else
+    filename  = $sformatf("%s/t_sys_file_basic_uz_test.bin",`STRINGIFY(`TEST_OBJ_DIR));
+`endif
+    $display(filename);
     fdout_bin  = $fopen(filename, "wb");
 
     test1;
