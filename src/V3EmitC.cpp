@@ -2913,9 +2913,6 @@ void EmitCImp::emitIntTop(AstNodeModule* modp) {
         puts("#include \"verilated_cov.h\"\n");
         if (v3Global.opt.savable()) v3error("--coverage and --savable not supported together");
     }
-    if (v3Global.needHInlines()) {  // Set by V3EmitCInlines; should have been called before us
-        puts("#include \"" + topClassName() + "__Inlines.h\"\n");
-    }
     if (v3Global.dpi()) {
         // do this before including our main .h file so that any references to
         // types defined in svdpi.h are available

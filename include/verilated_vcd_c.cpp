@@ -906,7 +906,7 @@ void vcdInit(void*, VerilatedVcd* vcdp, vluint32_t) {
     /**/  // Note need to add 2 for next code.
     /**/ vcdp->declFloat(0x1e, "flo", -1, 0);
     /**/ vcdp->declArray(0x20, "q2", -1, 0, 95, 0);
-    /**/ // Note need to add 4 for next code.
+    /**/  // Note need to add 4 for next code.
 }
 
 void vcdFull(void*, VerilatedVcd* vcdp) {

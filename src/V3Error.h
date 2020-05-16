@@ -298,7 +298,7 @@ inline int debug() { return V3Error::debugDefault(); }
 inline void v3errorEnd(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
 inline void v3errorEndFatal(std::ostringstream& sstr) {
     V3Error::v3errorEnd(sstr);
-    assert(0);
+    assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE
 }
 

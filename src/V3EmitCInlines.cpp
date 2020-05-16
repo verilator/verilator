@@ -33,7 +33,6 @@ class EmitCInlines : EmitCBaseVisitor {
     // STATE
 
     // METHODS
-    void emitInt();
 
     // VISITORS
     virtual void visit(AstBasicDType* nodep) VL_OVERRIDE {
@@ -113,31 +112,8 @@ class EmitCInlines : EmitCBaseVisitor {
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
-    explicit EmitCInlines(AstNetlist* nodep) {
-        iterate(nodep);
-        if (v3Global.needHInlines()) emitInt();
-    }
+    explicit EmitCInlines(AstNetlist* nodep) { iterate(nodep); }
 };
-
-void EmitCInlines::emitInt() {
-    string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Inlines.h";
-    newCFile(filename, false /*slow*/, false /*source*/);
-    V3OutCFile hf(filename);
-    m_ofp = &hf;
-
-    ofp()->putsHeader();
-    ofp()->putsGuard();
-    puts("\n");
-
-    puts("#include \"verilated.h\"\n");
-
-    puts("\n//======================\n\n");
-
-    // Placeholder - v3Global.needHInlines(true) currently not used
-
-    puts("//======================\n\n");
-    ofp()->putsEndGuard();
-}
 
 //######################################################################
 // EmitC class functions

@@ -1145,7 +1145,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
 
 void AstNode::v3errorEndFatal(std::ostringstream& str) const {
     v3errorEnd(str);
-    assert(0);
+    assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE
 }
 

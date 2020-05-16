@@ -150,11 +150,12 @@ public:
     static void prepForTree() {
 #ifndef VL_LEAK_CHECKS
         s_nodes.clear();
-#endif
+#else
         for (NodeMap::iterator it = s_nodes.begin(); it != s_nodes.end(); ++it) {
             it->second &= ~FLAG_IN_TREE;
             it->second &= ~FLAG_LINKABLE;
         }
+#endif
     }
     static void doneWithTree() {
         for (int backs = 0; backs < 2;

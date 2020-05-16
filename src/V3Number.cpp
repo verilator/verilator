@@ -85,7 +85,7 @@ void V3Number::v3errorEnd(std::ostringstream& str) const {
 
 void V3Number::v3errorEndFatal(std::ostringstream& str) const {
     v3errorEnd(str);
-    assert(0);
+    assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE
 }
 
