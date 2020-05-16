@@ -31,5 +31,24 @@ run(cmd => ["../bin/verilator_coverage",
 
 files_identical("$Self->{obj_dir}/annotated/t_cover_line.v", "t/t_cover_line.out");
 
+# Also try lcov
+run(cmd => ["../bin/verilator_coverage",
+            "--write-info", "$Self->{obj_dir}/coverage.info",
+            "$Self->{obj_dir}/coverage.dat"],
+    verilator_run => 1,
+    );
+
+# If installed
+if (`lcov --help` !~ /Usage:/
+    || `genhtml --help` !~ /Usage:/) {
+    skip("lcov or genhtml not installed");
+} else {
+    run(cmd => ["genhtml",
+                "$Self->{obj_dir}/coverage.info",
+                "--output-directory $Self->{obj_dir}/html",
+        ]);
+}
+
+
 ok(1);
 1;

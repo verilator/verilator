@@ -42,6 +42,7 @@ class VlcOptions {
     bool m_rank;                // main switch: --rank
     bool m_unlink;              // main switch: --unlink
     string m_writeFile;         // main switch: --write
+    string m_writeInfoFile;     // main switch: --write-info
     // clang-format on
 
 private:
@@ -72,6 +73,7 @@ public:
     bool rank() const { return m_rank; }
     bool unlink() const { return m_unlink; }
     string writeFile() const { return m_writeFile; }
+    string writeInfoFile() const { return m_writeInfoFile; }
 
     // METHODS (from main)
     static string version();

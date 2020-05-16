@@ -108,6 +108,9 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
             } else if (!strcmp(sw, "-write") && (i + 1) < argc) {
                 shift;
                 m_writeFile = argv[i];
+            } else if (!strcmp(sw, "-write-info") && (i + 1) < argc) {
+                shift;
+                m_writeInfoFile = argv[i];
             } else {
                 v3fatal("Invalid option: " << argv[i]);
             }
@@ -170,8 +173,9 @@ int main(int argc, char** argv, char** /*env*/) {
         top.tests().dump(false);
     }
 
-    if (!top.opt.writeFile().empty()) {
-        top.writeCoverage(top.opt.writeFile());
+    if (!top.opt.writeFile().empty() || !top.opt.writeInfoFile().empty()) {
+        if (!top.opt.writeFile().empty()) top.writeCoverage(top.opt.writeFile());
+        if (!top.opt.writeInfoFile().empty()) top.writeInfo(top.opt.writeInfoFile());
         V3Error::abortIfWarnings();
         if (top.opt.unlink()) {
             const VlStringSet& readFiles = top.opt.readFiles();

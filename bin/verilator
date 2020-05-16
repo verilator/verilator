@@ -5171,6 +5171,10 @@ For an example, after running 'make test' in the Verilator distribution,
 see the examples/make_tracing_c/logs directory.  Grep for lines starting
 with '%' to see what lines Verilator believes need more coverage.
 
+Info files can be written by verilator_coverage for import to C<lcov>.
+This enables use of C<genhtml> for HTML reports and importing reports to
+sites such as L<https://codecov.io>.
+
 =item Where is the translate_off command?  (How do I ignore a construct?)
 
 Translate on/off pragmas are generally a bad idea, as it's easy to have
