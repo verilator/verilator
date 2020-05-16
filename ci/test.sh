@@ -12,6 +12,10 @@ set -e
 export DRIVER_FLAGS='-j 0 --quiet --rerun'
 
 case $1 in
+    coverage)
+        nodist/code_coverage
+        bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
+        ;;
     dist)
         make -C test_regress SCENARIOS=--dist
         ;;

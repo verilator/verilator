@@ -49,6 +49,7 @@ jobs:
 #     16.04 dist: xenial   cron           cron
 #     18.04 dist: bionic   cron
 #     20.04 dist: focal    !cron          cron
+#     20.04 coverage       cron
   include:
     - if: type != cron
       stage: "Build Verilator"
@@ -112,6 +113,13 @@ jobs:
       stage: "Build Verilator"
       name: "20.04 clang build+test"
       script: ci/test.sh all
+# Cron coverage runs
+    - if: type = cron
+      dist: focal
+      compiler: gcc
+      stage: "Build Verilator"
+      name: "Coverage"
+      script: ci/test.sh coverage
 
 notifications:
   email:
