@@ -123,8 +123,8 @@ void VerilatedSave::open(const char* filenamep) VL_MT_UNSAFE_ONE {
     if (isOpen()) return;
     VL_DEBUG_IF(VL_DBG_MSGF("- save: opening save file %s\n", filenamep););
 
-    if (filenamep[0] == '|') {
-        assert(0);  // Not supported yet.
+    if (VL_UNCOVERABLE(filenamep[0] == '|')) {
+        assert(0);  // LCOV_EXCL_LINE // Not supported yet.
     } else {
         // cppcheck-suppress duplicateExpression
         m_fd = ::open(filenamep,
@@ -146,8 +146,8 @@ void VerilatedRestore::open(const char* filenamep) VL_MT_UNSAFE_ONE {
     if (isOpen()) return;
     VL_DEBUG_IF(VL_DBG_MSGF("- restore: opening restore file %s\n", filenamep););
 
-    if (filenamep[0] == '|') {
-        assert(0);  // Not supported yet.
+    if (VL_UNCOVERABLE(filenamep[0] == '|')) {
+        assert(0);  // LCOV_EXCL_LINE // Not supported yet.
     } else {
         // cppcheck-suppress duplicateExpression
         m_fd = ::open(filenamep, O_CREAT | O_RDONLY | O_LARGEFILE | O_CLOEXEC, 0666);

@@ -203,8 +203,8 @@ void VerilatedVcd::openNext(bool incFilename) {
         }
         m_filename = name;
     }
-    if (m_filename[0] == '|') {
-        assert(0);  // Not supported yet.
+    if (VL_UNCOVERABLE(m_filename[0] == '|')) {
+        assert(0);  // LCOV_EXCL_LINE // Not supported yet.
     } else {
         // cppcheck-suppress duplicateExpression
         if (!m_filep->open(m_filename)) {
@@ -904,9 +904,9 @@ void vcdInit(void*, VerilatedVcd* vcdp, vluint32_t) {
     /**/  // Note need to add 6 for next code.
     /**/ vcdp->declDouble(0x1c, "doub", -1, 0);
     /**/  // Note need to add 2 for next code.
-    /**/ vcdp->declDouble(0x1e, "flo", -1, 0);
+    /**/ vcdp->declFloat(0x1e, "flo", -1, 0);
     /**/ vcdp->declArray(0x20, "q2", -1, 0, 95, 0);
-    // Note need to add 4 for next code.
+    /**/ // Note need to add 4 for next code.
 }
 
 void vcdFull(void*, VerilatedVcd* vcdp) {
@@ -948,6 +948,7 @@ void vcdTestMain(const char* filenamep) {
     doub = 0;
     {
         VerilatedVcdC* vcdp = new VerilatedVcdC;
+        vcdp->evcd(true);
         vcdp->spTrace()->addInitCb(&vcdInit, 0);
         vcdp->spTrace()->addFullCb(&vcdFull, 0);
         vcdp->spTrace()->addChgCb(&vcdChange, 0);

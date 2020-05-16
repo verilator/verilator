@@ -42,6 +42,6 @@ remove_source("*examples/*");
 # Would just be removed with remove_source in later step
 remove_gcda_regexp(qr!test_regress/.*/(Vt_|Vtop_).*\.gcda!);
 
-exclude_line_regexp(qr/(\bv3fatalSrc\b|\bVL_UNCOVERABLE\b|\bVL_FATAL)/);
+exclude_line_regexp(qr/(\bv3fatalSrc\b|\bVL_UNCOVERABLE\b|\bVL_FATAL|\bUASSERT\bERROR_RSVD_WORD)/);
 
 1;

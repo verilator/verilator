@@ -125,7 +125,7 @@ public:
                 // No more values but it's not defined to decrement an
                 // iterator past the beginning.
                 v3fatalSrc("Decremented iterator past beginning");
-                return;
+                return;  // LCOV_EXCL_LINE
             }
             --m_valIt;
             // Should find a value here, as Every value bucket is supposed

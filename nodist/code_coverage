@@ -178,7 +178,7 @@ sub test {
     if ($Opt_Stage <= 9) {
         travis_fold_start("upload");
         print "Stage 9: Upload\n";
-        my $cmd = 'bash <(curl -s https://codecov.io/bash) -f $cc_dir/app_total.info';
+        my $cmd = "bash <(curl -s https://codecov.io/bash) -f $cc_dir/app_total.info";
         print "print: Not running: $cmd\n";
         travis_fold_end();
     }

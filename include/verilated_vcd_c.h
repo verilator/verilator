@@ -336,8 +336,8 @@ public:
         }
     }
 
-protected:
     // METHODS
+    // Old/standalone API only
     void evcd(bool flag) { m_evcd = flag; }
 #endif  // VL_TRACE_VCD_OLD_API
 };
@@ -405,6 +405,15 @@ public:
 
     /// Internal class access
     inline VerilatedVcd* spTrace() { return &m_sptrace; }
+
+#ifdef VL_TRACE_VCD_OLD_API
+    //=========================================================================
+    // Note: These are only for testing for backward compatibility with foreign
+    // code and is not used by Verilator. Do not use these as there is no
+    // guarantee of functionality.
+    /// Use evcd format
+    void evcd(bool flag) VL_MT_UNSAFE_ONE { m_sptrace.evcd(flag); }
+#endif
 };
 
 #endif  // guard
