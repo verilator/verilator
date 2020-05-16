@@ -844,21 +844,19 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                                    + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 2)) ? 4 : 0));
                     }
                     break;
-                case 'u': { // Packed 2-state
-                    output.reserve(output.size() + VL_BYTES_I(lbits));
-                    for (int bit = 0; bit < 8 * VL_BYTES_I(lbits); bit += 8)
-                        output += static_cast<char>(VL_BITRSHIFT_W(lwp, bit) & 0xff);
-                    break;
-                }
+                case 'u':
                 case 'z': { // Packed 4-state
-                    output.reserve(output.size() + (2 * VL_WORDS_I(lbits)));
+                    const bool is_4_state = (fmt == 'z');
+                    output.reserve(output.size() + ((is_4_state ? 2 : 1) * VL_WORDS_I(lbits)));
                     int bytes_to_go = VL_BYTES_I(lbits);
                     int bit = 0;
                     while (bytes_to_go > 0) {
                         const int wr_bytes = std::min(4, bytes_to_go);
                         for (int byte = 0; byte < wr_bytes; byte++, bit += 8)
                             output += static_cast<char>(VL_BITRSHIFT_W(lwp, bit) & 0xff);
-                        output.append(8 - wr_bytes, (char)0);
+                        output.append(4 - wr_bytes, (char)0);
+                        if (is_4_state)
+                            output.append(4, (char)0);
                         bytes_to_go -= wr_bytes;
                     }
                     break;
@@ -1127,6 +1125,9 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     const int bytes = VL_BYTES_I(obits);
                     char* out = reinterpret_cast<char*>(owp);
                     if (!_vl_vsss_read_bin(fp, floc, fromp, fstr, out, bytes))
+                        goto done;
+                    const int last = bytes % 4;
+                    if (last != 0 && !_vl_vsss_read_bin(fp, floc, fromp, fstr, out, 4 - last, true))
                         goto done;
                     break;
                 }
