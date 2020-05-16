@@ -299,9 +299,7 @@ private:
             nextp = itp->verticesNextp();
             if (TraceActivityVertex* const vtxp = dynamic_cast<TraceActivityVertex*>(itp)) {
                 // Leave in the always vertex for later use.
-                if (vtxp != m_alwaysVtxp && !vtxp->outBeginp()) {
-                    vtxp->unlinkDelete(&m_graph);
-                }
+                if (vtxp != m_alwaysVtxp && !vtxp->outBeginp()) { vtxp->unlinkDelete(&m_graph); }
             }
         }
     }
@@ -387,8 +385,10 @@ private:
             for (; it != end && it->first == actSet; ++it) {
                 valueComparisons += it->second->nodep()->codeInc();
             }
+            // Leave alone always changing, never changing and signals only set in slow code
             if (actSet.count(TraceActivityVertex::ACTIVITY_ALWAYS)) continue;
             if (actSet.count(TraceActivityVertex::ACTIVITY_NEVER)) continue;
+            if (actSet.count(TraceActivityVertex::ACTIVITY_SLOW) && actSet.size() == 1) continue;
             // If the value comparisons are cheaper to perform than checking the
             // activity flags make the signals always traced. Note this cost
             // equation is heuristic.
