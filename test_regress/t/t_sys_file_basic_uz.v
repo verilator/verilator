@@ -9,12 +9,10 @@ module t;
   int fdin_bin, fdout_txt, fdout_bin;
 `define STRINGIFY(x) `"x`"
 
-  //
-  //
-  task automatic error(string msg); begin
-    $display({"FAIL! Reason: ", msg});
-    $stop;
-  end endtask
+`define checkh(gotv,expv) \
+  do if ((gotv) !== (expv)) begin\
+      $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv));\
+   end while(0)
 
   //
   //
@@ -23,38 +21,37 @@ module t;
       byte actual, expected;
       expected  = i[7:0];
       $fscanf(fdin_bin, "%u", actual);
-      if (actual != expected)
-        error($sformatf("Expected: %h Got: %h", expected, actual));
+      `checkh(actual, expected);
       $fdisplay(fdout_txt, "%h", actual);
       $fwrite(fdout_bin, "%u", actual);
     end
 
     for (int i = 0; i < 256; i++) begin
       shortint actual, expected;
-      expected  = {2{i[7:0]}};
+      for (int j = 0; j < 2; j++)
+        expected[(8 * j)+:8]  = i[7:0] + j[7:0];
       $fscanf(fdin_bin, "%u", actual);
-      if (actual != expected)
-        error($sformatf("Expected: %h Got: %h", expected, actual));
+      `checkh(actual, expected);
       $fdisplay(fdout_txt, "%h", actual);
       $fwrite(fdout_bin, "%u", actual);
     end
 
     for (int i = 0; i < 256; i++) begin
       int actual, expected;
-      expected  = {4{i[7:0]}};
+      for (int j = 0; j < 4; j++)
+        expected[(8 * j)+:8]  = i[7:0] + j[7:0];
       $fscanf(fdin_bin, "%u", actual);
-      if (actual != expected)
-        error($sformatf("Expected: %h Got: %h", expected, actual));
+      `checkh(actual, expected);
       $fdisplay(fdout_txt, "%h", actual);
       $fwrite(fdout_bin, "%u", actual);
     end
 
     for (int i = 0; i < 256; i++) begin
       longint actual, expected;
-      expected  = {8{i[7:0]}};
+      for (int j = 0; j < 8; j++)
+        expected[(8 * j)+:8]  = i[7:0] + j[7:0];
       $fscanf(fdin_bin, "%u", actual);
-      if (actual != expected)
-        error($sformatf("Expected: %h Got: %h", expected, actual));
+      `checkh(actual, expected);
       $fdisplay(fdout_txt, "%h", actual);
       $fwrite(fdout_bin, "%u", actual);
     end
@@ -67,38 +64,37 @@ module t;
       byte actual, expected;
       expected  = i[7:0];
       $fscanf(fdin_bin, "%z", actual);
-      if (actual != expected)
-        error($sformatf("Expected: %h Got: %h", expected, actual));
+      `checkh(actual, expected);
       $fdisplay(fdout_txt, "%h", actual);
       $fwrite(fdout_bin, "%z", actual);
     end
 
     for (int i = 0; i < 256; i++) begin
       shortint actual, expected;
-      expected  = {2{i[7:0]}};
+      for (int j = 0; j < 2; j++)
+        expected[(8 * j)+:8]  = i[7:0] + j[7:0];
       $fscanf(fdin_bin, "%z", actual);
-      if (actual != expected)
-        error($sformatf("Expected: %h Got: %h", expected, actual));
+      `checkh(actual, expected);
       $fdisplay(fdout_txt, "%h", actual);
       $fwrite(fdout_bin, "%z", actual);
     end
 
     for (int i = 0; i < 256; i++) begin
       int actual, expected;
-      expected  = {4{i[7:0]}};
+      for (int j = 0; j < 4; j++)
+        expected[(8 * j)+:8]  = i[7:0] + j[7:0];
       $fscanf(fdin_bin, "%z", actual);
-      if (actual != expected)
-        error($sformatf("Expected: %h Got: %h", expected, actual));
+      `checkh(actual, expected);
       $fdisplay(fdout_txt, "%h", actual);
       $fwrite(fdout_bin, "%z", actual);
     end
 
     for (int i = 0; i < 256; i++) begin
       longint actual, expected;
-      expected  = {8{i[7:0]}};
+      for (int j = 0; j < 8; j++)
+        expected[(8 * j)+:8]  = i[7:0] + j[7:0];
       $fscanf(fdin_bin, "%z", actual);
-      if (actual != expected)
-        error($sformatf("Expected: %h Got: %h", expected, actual));
+      `checkh(actual, expected);
       $fdisplay(fdout_txt, "%h", actual);
       $fwrite(fdout_bin, "%z", actual);
     end
@@ -110,15 +106,12 @@ module t;
 
     filename  = "t/t_sys_file_basic_uz.dat";
     fdin_bin  = $fopen(filename, "rb");
-    if (fdin_bin == 0) error($sformatf("Failed to open file: %s", filename));
 
-    filename   = $sformatf("%s/t_sys_file_basic_uz_test.log",`STRINGIFY(`TEST_OBJ_DIR));
+    filename   = $sformatf("%s/t_sys_file_basic_uz_test.log","obj_iv/t_sys_file_basic_uz");
     fdout_txt  = $fopen(filename, "w");
-    if (fdout_txt == 0) error($sformatf("Failed to open file: %s", filename));
 
-    filename   = $sformatf("%s/t_sys_file_basic_uz_test.bin",`STRINGIFY(`TEST_OBJ_DIR));
+    filename   = $sformatf("%s/t_sys_file_basic_uz_test.bin","obj_iv/t_sys_file_basic_uz");
     fdout_bin  = $fopen(filename, "wb");
-    if (fdout_bin == 0) error($sformatf("Failed to open file: %s", filename));
 
     test1;
     test2;

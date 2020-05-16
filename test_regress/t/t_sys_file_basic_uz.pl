@@ -12,9 +12,7 @@ scenarios(simulator => 1);
 
 unlink("$Self->{obj_dir}/t_sys_file_basic_uz_test.log");
 
-compile(
-    v_flags2 => ['+incdir+../include'],
-    );
+compile();
 
 execute(
     check_finished => 1,
