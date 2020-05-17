@@ -87,6 +87,7 @@ public:
     virtual string dotColor() const { return slow() ? "yellowGreen" : "green"; }
     vlsint32_t activityCode() const { return m_activityCode; }
     bool activityAlways() const { return activityCode() == ACTIVITY_ALWAYS; }
+    bool activitySlow() const { return activityCode() == ACTIVITY_SLOW; }
     void activityCode(vlsint32_t code) { m_activityCode = code; }
     bool slow() const { return m_slow; }
     void slow(bool flag) {
@@ -305,7 +306,7 @@ private:
     }
 
     uint32_t assignactivityNumbers() {
-        uint32_t activityNumber = 1;  // Note 0 indicates "slow"
+        uint32_t activityNumber = 1;  // Note 0 indicates "slow" only
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (TraceActivityVertex* const vvertexp = dynamic_cast<TraceActivityVertex*>(itp)) {
                 if (vvertexp != m_alwaysVtxp) {
@@ -353,11 +354,16 @@ private:
                     nFullCodes += inc;
                     if (!actSet.empty()) nChgCodes += inc;
                 }
-                // If a trace doesn't have activity, it's constant, and we
-                // don't need to track changes on it.
-                // We put constants and non-changers last, as then the
-                // prevvalue vector is more compacted
-                if (actSet.empty()) actSet.insert(TraceActivityVertex::ACTIVITY_NEVER);
+                if (actSet.empty()) {
+                    // If a trace doesn't have activity, it's constant, and we
+                    // don't need to track changes on it.
+                    actSet.insert(TraceActivityVertex::ACTIVITY_NEVER);
+                } else if (actSet.count(TraceActivityVertex::ACTIVITY_SLOW) && actSet.size() > 1) {
+                    // If a trace depends on the slow flag as well as other
+                    // flags, remove the dependency on the slow flag. We will
+                    // make slow routines set all activity flags.
+                    actSet.erase(TraceActivityVertex::ACTIVITY_SLOW);
+                }
                 traces.insert(make_pair(actSet, vtxp));
             }
         }
@@ -379,20 +385,31 @@ private:
         const TraceVec::iterator end = traces.end();
         while (it != end) {
             TraceVec::iterator head = it;
-            // Count the value comparisons in all traces under this activity set
-            uint32_t valueComparisons = 0;
+            // Approximate the complexity of the value change check
+            uint32_t complexity = 0;
             const ActCodeSet& actSet = it->first;
             for (; it != end && it->first == actSet; ++it) {
-                valueComparisons += it->second->nodep()->codeInc();
+                if (!it->second->duplicatep()) {
+                    uint32_t cost = 0;
+                    AstTraceDecl* const declp = it->second->nodep();
+                    // The number of comparisons required by tracep->chg*
+                    cost += declp->isWide() ? declp->codeInc() : 1;
+                    // Arrays are traced by element
+                    cost *= declp->arrayRange().ranged() ? declp->arrayRange().elements() : 1;
+                    // Note: Experiments factoring in the size of declp->valuep()
+                    // showed no benefit in tracing speed, even for large trees,
+                    // so we will leve those out for now.
+                    complexity += cost;
+                }
             }
             // Leave alone always changing, never changing and signals only set in slow code
             if (actSet.count(TraceActivityVertex::ACTIVITY_ALWAYS)) continue;
             if (actSet.count(TraceActivityVertex::ACTIVITY_NEVER)) continue;
-            if (actSet.count(TraceActivityVertex::ACTIVITY_SLOW) && actSet.size() == 1) continue;
+            if (actSet.count(TraceActivityVertex::ACTIVITY_SLOW)) continue;
             // If the value comparisons are cheaper to perform than checking the
             // activity flags make the signals always traced. Note this cost
             // equation is heuristic.
-            if (valueComparisons < actSet.size() * 2) {
+            if (complexity <= actSet.size() * 2) {
                 for (; head != it; ++head) {
                     new V3GraphEdge(&m_graph, m_alwaysVtxp, head->second, 1);
                 }
@@ -406,12 +423,25 @@ private:
         return new AstArraySel(flp, new AstVarRef(flp, m_activityVscp, lvalue), acode);
     }
 
+    void addActivitySetter(AstNode* insertp, uint32_t code) {
+        FileLine* const fl = insertp->fileline();
+        AstAssign* const setterp = new AstAssign(fl, selectActivity(fl, code, true),
+                                                 new AstConst(fl, AstConst::LogicTrue()));
+        if (AstCCall* const callp = VN_CAST(insertp, CCall)) {
+            callp->addNextHere(setterp);
+        } else if (AstCFunc* const funcp = VN_CAST(insertp, CFunc)) {
+            funcp->addStmtsp(setterp);
+        } else {
+            insertp->v3fatalSrc("Bad trace activity vertex");
+        }
+    }
+
     void createActivityFlags() {
         // Assign final activity numbers
         m_activityNumber = assignactivityNumbers();
 
         // Create an array of bytes, not a bit vector, as they can be set
-        // atomically by mtasks, and are cheaper to set (not need for
+        // atomically by mtasks, and are cheaper to set (no need for
         // read-modify-write on the C type), and the speed of the tracing code
         // is the same on largish designs.
         FileLine* const flp = m_topScopep->fileline();
@@ -432,19 +462,14 @@ private:
              itp = itp->verticesNextp()) {
             if (const TraceActivityVertex* const vtxp
                 = dynamic_cast<const TraceActivityVertex*>(itp)) {
-                if (!vtxp->activityAlways()) {
-                    FileLine* const fl = vtxp->insertp()->fileline();
-                    const uint32_t acode = vtxp->activityCode();
-                    AstAssign* const setterp
-                        = new AstAssign(fl, selectActivity(fl, acode, true),
-                                        new AstConst(fl, AstConst::LogicTrue()));
-                    if (AstCCall* const callp = VN_CAST(vtxp->insertp(), CCall)) {
-                        callp->addNextHere(setterp);
-                    } else if (AstCFunc* const funcp = VN_CAST(vtxp->insertp(), CFunc)) {
-                        funcp->addStmtsp(setterp);
-                    } else {
-                        vtxp->insertp()->v3fatalSrc("Bad trace activity vertex");
+                if (vtxp->activitySlow()) {
+                    // Just set all flags in slow code as it should be rare.
+                    // This will be rolled up into a loop by V3Reloop.
+                    for (uint32_t code = 0; code < m_activityNumber; ++code) {
+                        addActivitySetter(vtxp->insertp(), code);
                     }
+                } else if (!vtxp->activityAlways()) {
+                    addActivitySetter(vtxp->insertp(), vtxp->activityCode());
                 }
             }
         }
@@ -501,15 +526,6 @@ private:
         return funcp;
     }
 
-    void assignDeclCode(AstTraceDecl* nodep) {
-        if (!nodep->code()) {
-            nodep->code(m_code);
-            m_code += nodep->codeInc();
-            m_statUniqCodes += nodep->codeInc();
-            ++m_statUniqSigs;
-        }
-    }
-
     void createFullTraceFunction(const TraceVec& traces, uint32_t nAllCodes, uint32_t parallelism,
                                  AstCFunc* regFuncp) {
         const int splitLimit = v3Global.opt.outputSplitCTrace() ? v3Global.opt.outputSplitCTrace()
@@ -534,12 +550,18 @@ private:
                     AstTraceDecl* const canonDeclp = canonVtxp->nodep();
                     UASSERT_OBJ(!canonVtxp->duplicatep(), canonDeclp,
                                 "Canonical node is a duplicate");
-                    assignDeclCode(canonDeclp);
+                    UASSERT_OBJ(canonDeclp->code() != 0, canonDeclp,
+                                "Canonical node should have code assigned already");
                     declp->code(canonDeclp->code());
                 } else {
                     // This is a canonical trace node. Assign signal number and
                     // add a TraceInc node to the full dump function.
-                    assignDeclCode(declp);
+                    UASSERT_OBJ(declp->code() == 0, declp,
+                                "Canonical node should not have code assigned yet");
+                    declp->code(m_code);
+                    m_code += declp->codeInc();
+                    m_statUniqCodes += declp->codeInc();
+                    ++m_statUniqSigs;
 
                     // Create top function if not yet created
                     if (!topFuncp) {
