@@ -242,8 +242,7 @@ public:  // But only for verilated*.cpp
         s_s.m_fdps.resize(31);
         std::fill(s_s.m_fdps.begin(), s_s.m_fdps.end(), (FILE*)0);
         s_s.m_fdFreeMct.resize(30);
-        for (int i = 0, id = 1; i < s_s.m_fdFreeMct.size(); i++, id++)
-            s_s.m_fdFreeMct[i] = id;
+        for (int i = 0, id = 1; i < s_s.m_fdFreeMct.size(); i++, id++) { s_s.m_fdFreeMct[i] = id; }
     }
     ~VerilatedImp() {}
 
@@ -473,8 +472,9 @@ public:  // But only for verilated*.cpp
             s_s.m_fdps.resize(start + excess);
             std::fill(s_s.m_fdps.begin() + start, s_s.m_fdps.end(), (FILE*)0);
             s_s.m_fdFree.resize(excess);
-            for (int i = 0, id = start; i < s_s.m_fdFree.size(); i++, id++)
+            for (int i = 0, id = start; i < s_s.m_fdFree.size(); i++, id++) {
                 s_s.m_fdFree[i] = id;
+            }
         }
         IData idx = s_s.m_fdFree.back();
         s_s.m_fdFree.pop_back();
