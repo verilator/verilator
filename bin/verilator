@@ -3623,29 +3623,24 @@ declared.
 
 =head1 LANGUAGE LIMITATIONS
 
-There are some limitations and lack of features relative to a commercial
-simulator, by intent.  User beware.
-
-It is strongly recommended you use a lint tool before running this program.
-Verilator isn't designed to easily uncover common mistakes that a lint
-program will find for you.
+There are some limitations and lack of features relative to the major
+closed-source simulators, by intent.
 
 =head2 Synthesis Subset
 
-Verilator supports only the Synthesis subset with a few minor additions
-such as $stop, $finish and $display.  That is, you cannot use hierarchical
-references, events or similar features of the Verilog language.  It also
-simulates as Synopsys's Design Compiler would; namely a block of the form:
+Verilator supports the Synthesis subset with other verification constructs
+being added over time. Verilator also simulates events as Synopsys's Design
+Compiler would; namely given a block of the form:
 
         always @ (x)   y = x & z;
 
 This will recompute y when there is even a potential for change in x or a
 change in z, that is when the flops computing x or z evaluate (which is
 what Design Compiler will synthesize.)  A compliant simulator would only
-calculate y if x changes.  Use Verilog-Mode's /*AS*/ or Verilog 2001's
-always @* to reduce missing activity items.  Avoid putting $displays in
-combo blocks, as they may print multiple times when not desired, even on
-compliant simulators as event ordering is not specified.
+calculate y if x changes.  We recommend using always_comb to make the code
+run the same everywhere.  Also avoid putting $displays in combo blocks, as
+they may print multiple times when not desired, even on compliant
+simulators as event ordering is not specified.
 
 =head2 Signal Naming
 
@@ -3662,9 +3657,9 @@ path.
 
 =head2 Class
 
-Verilator class support is very limited and in active development.
-Verilator supports members, and methods. Verilator doe not support class
-static members, class extend, or class parameters.
+Verilator class support is limited but in active development.  Verilator
+supports members, and methods. Verilator doe not support class static
+members, class extend, or class parameters.
 
 =head2 Dotted cross-hierarchy references
 
@@ -3678,17 +3673,8 @@ specified in the Verilog standard; arrayed instances are named
 {cellName}[{instanceNumber}] in Verilog, which becomes
 {cellname}__BRA__{instanceNumber}__KET__ inside the generated C++ code.
 
-Verilator creates numbered "genblk" when a begin: name is not specified
-around a block inside a generate statement.  These numbers may differ
-between other simulators, but the Verilog specification does not allow
-users to use these names, so it should not matter.
-
 If you are having trouble determining where a dotted path goes wrong, note
 that Verilator will print a list of known scopes to help your debugging.
-
-=head2 Floating Point
-
-Short floating point (shortreal) numbers are converted to real.
 
 =head2 Latches
 
@@ -3791,12 +3777,6 @@ primary inputs to the model, or wires directly attached to primary inputs.
 For proper behavior clock enables may also need the /*verilator
 clock_enable*/ attribute.
 
-=head2 Ranges must be big-bit-endian
-
-Bit ranges must be numbered with the MSB being numbered greater or the same
-as the LSB.  Little-bit-endian buses [0:15] are not supported as they
-aren't easily made compatible with C++.
-
 =head2 Gate Primitives
 
 The 2-state gate primitives (and, buf, nand, nor, not, or, xnor, xor) are
@@ -3805,7 +3785,8 @@ primitives are not supported.  Tables are not supported.
 
 =head2 Specify blocks
 
-All specify blocks and timing checks are ignored.
+All specify blocks and timing checks are ignored. All min:typ:max delays
+use the typical value.
 
 =head2 Array Initialization
 
@@ -3834,7 +3815,6 @@ coverage section.
 
 Verilator does not support SEREs yet.  All assertion and coverage
 statements must be simple expressions that complete in one cycle.
-(Arguably SEREs are much of the point, but one must start somewhere.)
 
 =head2 Encrypted Verilog
 
@@ -3911,24 +3891,14 @@ Interfaces and modports, including with generated data types are supported.
 Generate blocks around modports are not supported, nor are virtual
 interfaces nor unnamed interfaces.
 
-=item priority if, unique if
+=item shortreal
 
-Priority and unique if's are treated as normal ifs and not asserted to be
-full nor unique.
+Short floating point (shortreal) numbers are converted to real. Most other
+simulators either do not support float, or convert likewise.
 
 =item specify specparam
 
 All specify blocks and timing checks are ignored.
-
-=item string
-
-String is supported only to the point that they can be assigned,
-concatenated, compared, and passed to DPI imports.  Standard method calls
-on strings are not supported.
-
-=item timeunit, timeprecision
-
-All timing control statements are ignored.
 
 =item uwire
 
@@ -3940,11 +3910,6 @@ $isunknown, $onehot, $onehot0, $readmemb, $readmemh, $signed, $stime, $stop,
 $time, $unsigned, $warning.
 
 Generally supported.
-
-=item $displayb, $displayh, $displayo, $writeb, $writeh, $writeo, etc
-
-The sized display functions are rarely used and so not supported.  Replace
-them with a $write with the appropriate format specifier.
 
 =item $dump/$dumpports and related
 
@@ -3982,6 +3947,11 @@ The formats %r, %v, and %z are not supported.
 $setup, $setuphold, $skew, $timeskew, $width
 
 All specify blocks and timing checks are ignored.
+
+=item $monitor, $strobe
+
+Monitor and strobe are not supported, convert to always_comb $display or
+similar.
 
 =item $random
 
@@ -4052,7 +4022,7 @@ the source line directly above.
 
 Warns that an always_comb block has a variable which is set after it is
 used.  This may cause simulation-synthesis mismatches, as not all
-commercial simulators allow this ordering.
+simulators allow this ordering.
 
     always_comb begin
        a = b;
@@ -4978,14 +4948,14 @@ Note people sometimes request binaries when they are having problems with
 their C++ compiler. Alas, binaries won't help this, as in the end a fully
 working C++ compiler is required to compile the output of Verilator.
 
-=item How can it be faster than (name-the-commercial-simulator)?
+=item How can it be faster than (name-a-big-3-closed-source-simulator)?
 
 Generally, the implied part is of the question is "... with all of the
 manpower they can put into developing it."
 
-Most commercial simulators have to be Verilog compliant, meaning event
-driven.  This prevents them from being able to reorder blocks and make
-netlist-style optimizations, which are where most of the gains come from.
+Most simulators have to be Verilog compliant, meaning event driven.  This
+prevents them from being able to reorder blocks and make netlist-style
+optimizations, which are where most of the gains come from.
 
 Non-compliance shouldn't be scary.  Your synthesis program isn't compliant,
 so your simulator shouldn't have to be -- and Verilator is closer to the
@@ -5024,8 +4994,8 @@ simulator in order to optimize it.  If it takes more than a minute or so
 (and you're not using --debug since debug is disk bound), see if your
 machine is paging; most likely you need to run it on a machine with more
 memory.  Verilator is a full 64-bit application and may use more than 4GB,
-but about 1GB is the maximum typically needed, and very large commercial
-designs have topped 16GB.
+but about 1GB is the maximum typically needed, and very large designs have
+topped 16GB.
 
 =item How do I generate waveforms (traces) in C++?
 
@@ -5128,10 +5098,10 @@ format instead.
 
 =item How do I view waveforms (aka dumps or traces)?
 
-Verilator makes standard VCD (Value Change Dump) and FST files.  VCD files are viewable
-with the public domain GTKWave (recommended) or Dinotrace (legacy)
-programs, or any of the many commercial offerings;
-FST is supported by GTKWave only.
+Verilator makes standard VCD (Value Change Dump) and FST files.  VCD files
+are viewable with the public domain GTKWave (recommended) or Dinotrace
+(legacy) programs, or any of the many closed-source offerings; FST is
+supported by GTKWave only.
 
 =item How do I reduce the size of large waveform (trace) files?
 
@@ -5372,7 +5342,7 @@ outputs.  Now, the following should fail:
     cd test_regress
     t/t_BUG.pl  # Run on Verilator
     t/t_BUG.pl --debug # Run on Verilator, passing --debug to Verilator
-    t/t_BUG.pl --vcs  # Run on a commercial simulator
+    t/t_BUG.pl --vcs  # Run on VCS simulator
     t/t_BUG.pl --nc|--iv|--ghdl  # Likewise on other simulators
 
 The test driver accepts a number of options, many of which mirror the main
@@ -5415,7 +5385,7 @@ In 2018, Verilator 4.000 was released with multithreaded support.
 
 Currently, various language features and performance enhancements are added
 as the need arises.  Verilator is now about 3x faster than in 2002, and is
-faster than many popular commercial simulators.
+faster than most (if not every) other simulator.
 
 
 =head1 AUTHORS
