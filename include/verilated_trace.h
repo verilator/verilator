@@ -95,7 +95,6 @@ public:
         CHG_IDATA = 0x4,
         CHG_QDATA = 0x5,
         CHG_WDATA = 0x6,
-        CHG_FLOAT = 0x7,
         CHG_DOUBLE = 0x8,
         // TODO: full..
         TIME_CHANGE = 0xd,
