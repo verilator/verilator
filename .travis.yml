@@ -87,31 +87,61 @@ jobs:
       dist: trusty
       compiler: gcc
       stage: "Build Verilator"
-      name: "14.04 gcc build+test"
+      name: "14.04 gcc build"
+      script: echo
+    - if: type = cron
+      dist: trusty
+      compiler: gcc
+      stage: test
+      name: "14.04 gcc test"
       script: ci/test.sh all
     - if: type = cron
       dist: xenial
       compiler: gcc
       stage: "Build Verilator"
-      name: "16.04 gcc build+test"
+      name: "16.04 gcc build"
+      script: echo
+    - if: type = cron
+      dist: xenial
+      compiler: gcc
+      stage: test
+      name: "16.04 gcc test"
       script: ci/test.sh all
     - if: type = cron
       dist: bionic
       compiler: gcc
       stage: "Build Verilator"
-      name: "18.04 gcc build+test"
+      name: "18.04 gcc build"
+      script: echo
+    - if: type = cron
+      dist: bionic
+      compiler: gcc
+      stage: test
+      name: "18.04 gcc test"
       script: ci/test.sh all
     - if: type = cron
       dist: xenial
       compiler: clang
       stage: "Build Verilator"
-      name: "16.04 clang build+test"
+      name: "16.04 clang build"
+      script: echo
+    - if: type = cron
+      dist: xenial
+      compiler: clang
+      stage: test
+      name: "16.04 clang test"
       script: ci/test.sh all
     - if: type = cron
       dist: focal
       compiler: clang
       stage: "Build Verilator"
-      name: "20.04 clang build+test"
+      name: "20.04 clang build"
+      script: echo
+    - if: type = cron
+      dist: focal
+      compiler: clang
+      stage: test
+      name: "20.04 clang test"
       script: ci/test.sh all
 # Cron coverage runs (two parts to avoid 50min timeout)
     - if: type = cron
