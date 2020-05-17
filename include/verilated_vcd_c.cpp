@@ -360,11 +360,13 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
             m_wroteBytes += got;
         } else if (VL_UNCOVERABLE(got < 0)) {
             if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
+                // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
                 std::string msg = std::string("VerilatedVcd::bufferFlush: ") + strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 closeErr();
                 break;
+                // LCOV_EXCL_END
             }
         }
     }
@@ -583,9 +585,6 @@ void VerilatedVcd::declArray(vluint32_t code, const char* name, bool array, int 
                              int lsb) {
     declare(code, name, "wire", array, arraynum, false, true, msb, lsb);
 }
-void VerilatedVcd::declFloat(vluint32_t code, const char* name, bool array, int arraynum) {
-    declare(code, name, "real", array, arraynum, false, false, 31, 0);
-}
 void VerilatedVcd::declDouble(vluint32_t code, const char* name, bool array, int arraynum) {
     declare(code, name, "real", array, arraynum, false, false, 63, 0);
 }
@@ -700,15 +699,6 @@ void VerilatedVcd::emitWData(vluint32_t code, const WData* newvalp, int bits) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedVcd::emitFloat(vluint32_t code, float newval) {
-    char* wp = m_writep;
-    // Buffer can't overflow before sprintf; we sized during declaration
-    sprintf(wp, "r%.16g", static_cast<double>(newval));
-    wp += strlen(wp);
-    finishLine(code, wp);
-}
-
-VL_ATTR_ALWINLINE
 void VerilatedVcd::emitDouble(vluint32_t code, double newval) {
     char* wp = m_writep;
     // Buffer can't overflow before sprintf; we sized during declaration
@@ -792,7 +782,7 @@ void VerilatedVcd::fullTriBus(vluint32_t code, const vluint32_t newval, const vl
     *m_writep++ = '\n';
     bufferCheck();
 }
-void VerilatedVcd::fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri,
+void VerilatedVcd::fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint64_t newtri,
                                int bits) {
     (*(reinterpret_cast<vluint64_t*>(oldp(code)))) = newval;
     (*(reinterpret_cast<vluint64_t*>(oldp(code + 1)))) = newtri;
@@ -834,33 +824,6 @@ void VerilatedVcd::fullDouble(vluint32_t code, const double newval) {
     *m_writep++ = '\n';
     bufferCheck();
 }
-void VerilatedVcd::fullFloat(vluint32_t code, const float newval) {
-    // cppcheck-suppress invalidPointerCast
-    (*(reinterpret_cast<float*>(oldp(code)))) = newval;
-    // Buffer can't overflow before sprintf; we sized during declaration
-    sprintf(m_writep, "r%.16g", static_cast<double>(newval));
-    m_writep += strlen(m_writep);
-    *m_writep++ = ' ';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullBitX(vluint32_t code) {
-    *m_writep++ = 'x';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullBusX(vluint32_t code, int bits) {
-    *m_writep++ = 'b';
-    for (int bit = bits - 1; bit >= 0; --bit) *m_writep++ = 'x';
-    *m_writep++ = ' ';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullQuadX(vluint32_t code, int bits) { fullBusX(code, bits); }
-void VerilatedVcd::fullArrayX(vluint32_t code, int bits) { fullBusX(code, bits); }
 
 #endif  // VL_TRACE_VCD_OLD_API
 
@@ -880,6 +843,8 @@ vluint32_t v1, v2, s1, s2[3];
 vluint32_t tri96[3];
 vluint32_t tri96__tri[3];
 vluint64_t quad96[2];
+vluint64_t tquad;
+vluint64_t tquad__tri;
 vluint8_t ch;
 vluint64_t timestamp = 1;
 double doub = 0.0;
@@ -904,8 +869,9 @@ void vcdInit(void*, VerilatedVcd* vcdp, vluint32_t) {
     /**/  // Note need to add 6 for next code.
     /**/ vcdp->declDouble(0x1c, "doub", -1, 0);
     /**/  // Note need to add 2 for next code.
-    /**/ vcdp->declFloat(0x1e, "flo", -1, 0);
     /**/ vcdp->declArray(0x20, "q2", -1, 0, 95, 0);
+    /**/  // Note need to add 4 for next code.
+    /**/ vcdp->declTriQuad(0x24, "tq", -1, 0, 63, 0);
     /**/  // Note need to add 4 for next code.
 }
 
@@ -919,8 +885,8 @@ void vcdFull(void*, VerilatedVcd* vcdp) {
     vcdp->fullTriBus(0x12, tri96[0] & 0x1f, tri96__tri[0] & 0x1f, 5);
     vcdp->fullTriArray(0x16, tri96, tri96__tri, 96);
     vcdp->fullDouble(0x1c, doub);
-    vcdp->fullFloat(0x1e, flo);
     vcdp->fullArray(0x20, &quad96[0], 96);
+    vcdp->fullTriQuad(0x24, tquad, tquad__tri, 64);
 }
 
 void vcdChange(void*, VerilatedVcd* vcdp) {
@@ -933,8 +899,8 @@ void vcdChange(void*, VerilatedVcd* vcdp) {
     vcdp->chgTriBus(0x12, tri96[0] & 0x1f, tri96__tri[0] & 0x1f, 5);
     vcdp->chgTriArray(0x16, tri96, tri96__tri, 96);
     vcdp->chgDouble(0x1c, doub);
-    vcdp->chgFloat(0x1e, flo);
     vcdp->chgArray(0x20, &quad96[0], 96);
+    vcdp->chgTriQuad(0x24, tquad, tquad__tri, 64);
 }
 
 // clang-format off
@@ -946,6 +912,7 @@ void vcdTestMain(const char* filenamep) {
     quad96[1] = quad96[0] = 0;
     ch = 0;
     doub = 0;
+    tquad = tquad__tri = 0;
     {
         VerilatedVcdC* vcdp = new VerilatedVcdC;
         vcdp->evcd(true);
@@ -968,6 +935,8 @@ void vcdTestMain(const char* filenamep) {
         quad96[1] = 0; quad96[0] = ~0;
         doub = -1.66e13;
         flo = 0.123f;
+        tquad = VL_ULL(0x00ff00ff00ff00ff);
+        tquad__tri = VL_ULL(0x0000fffff0000ffff);
         vcdp->dump(++timestamp);
         ch = 2;
         tri96[2] = ~4; tri96[1] = ~2; tri96[0] = ~1;

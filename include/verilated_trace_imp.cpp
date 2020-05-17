@@ -171,11 +171,6 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
                 chgWDataImpl(oldp, readp, top);
                 readp += VL_WORDS_I(top);
                 continue;
-            case VerilatedTraceCommand::CHG_FLOAT:
-                VL_TRACE_THREAD_DEBUG("Command CHG_FLOAT " << top);
-                chgFloatImpl(oldp, *reinterpret_cast<const float*>(readp));
-                readp += 1;
-                continue;
             case VerilatedTraceCommand::CHG_DOUBLE:
                 VL_TRACE_THREAD_DEBUG("Command CHG_DOUBLE " << top);
                 chgDoubleImpl(oldp, *reinterpret_cast<const double*>(readp));
@@ -527,12 +522,6 @@ template <>
 void VerilatedTrace<VL_DERIVED_T>::fullWData(vluint32_t* oldp, const WData* newvalp, int bits) {
     for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newvalp[i];
     self()->emitWData(oldp - m_sigs_oldvalp, newvalp, bits);
-}
-
-template <> void VerilatedTrace<VL_DERIVED_T>::fullFloat(vluint32_t* oldp, float newval) {
-    // cppcheck-suppress invalidPointerCast
-    *reinterpret_cast<float*>(oldp) = newval;
-    self()->emitFloat(oldp - m_sigs_oldvalp, newval);
 }
 
 template <> void VerilatedTrace<VL_DERIVED_T>::fullDouble(vluint32_t* oldp, double newval) {

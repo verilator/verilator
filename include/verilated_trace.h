@@ -282,7 +282,6 @@ public:
     // duck-typed void emitIData(vluint32_t code, IData newval, int bits) = 0;
     // duck-typed void emitQData(vluint32_t code, QData newval, int bits) = 0;
     // duck-typed void emitWData(vluint32_t code, const WData* newvalp, int bits) = 0;
-    // duck-typed void emitFloat(vluint32_t code, float newval) = 0;
     // duck-typed void emitDouble(vluint32_t code, double newval) = 0;
 
     vluint32_t* oldp(vluint32_t code) { return m_sigs_oldvalp + code; }
@@ -294,7 +293,6 @@ public:
     void fullIData(vluint32_t* oldp, IData newval, int bits);
     void fullQData(vluint32_t* oldp, QData newval, int bits);
     void fullWData(vluint32_t* oldp, const WData* newvalp, int bits);
-    void fullFloat(vluint32_t* oldp, float newval);
     void fullDouble(vluint32_t* oldp, double newval);
 
 #ifdef VL_TRACE_THREADED
@@ -338,14 +336,6 @@ public:
         m_traceBufferWritep[1] = code;
         m_traceBufferWritep += 2;
         for (int i = 0; i < (bits + 31) / 32; ++i) { *m_traceBufferWritep++ = newvalp[i]; }
-        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
-    }
-    inline void chgFloat(vluint32_t code, float newval) {
-        m_traceBufferWritep[0] = VerilatedTraceCommand::CHG_FLOAT;
-        m_traceBufferWritep[1] = code;
-        // cppcheck-suppress invalidPointerCast
-        *reinterpret_cast<float*>(m_traceBufferWritep + 2) = newval;
-        m_traceBufferWritep += 3;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
     inline void chgDouble(vluint32_t code, double newval) {
@@ -394,10 +384,6 @@ public:
                 return;
             }
         }
-    }
-    inline void CHG(Float)(vluint32_t* oldp, float newval) {
-        // cppcheck-suppress invalidPointerCast
-        if (VL_UNLIKELY(*reinterpret_cast<float*>(oldp) != newval)) fullFloat(oldp, newval);
     }
     inline void CHG(Double)(vluint32_t* oldp, double newval) {
         // cppcheck-suppress invalidPointerCast

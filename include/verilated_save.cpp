@@ -196,11 +196,13 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
             wp += got;
         } else if (VL_UNCOVERABLE(got < 0)) {
             if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
+                // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
                 std::string msg = std::string(__FUNCTION__) + ": " + strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
+                // LCOV_EXCL_END
             }
         }
     }
@@ -225,11 +227,13 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
             m_endp += got;
         } else if (VL_UNCOVERABLE(got < 0)) {
             if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
+                // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
                 std::string msg = std::string(__FUNCTION__) + ": " + strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
+                // LCOV_EXCL_END
             }
         } else {  // got==0, EOF
             // Fill buffer from here to end with NULLs so reader's don't
