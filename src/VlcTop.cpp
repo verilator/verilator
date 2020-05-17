@@ -170,8 +170,8 @@ void VlcTop::rank() {
     // solution and move up to larger subset of tests.  (Aka quick sort.)
     while (true) {
         if (debug()) {
-            UINFO(9, "Left on iter" << nextrank << ": ");
-            remaining.dump();
+            UINFO(9, "Left on iter" << nextrank << ": ");  // LCOV_EXCL_LINE
+            remaining.dump();  // LCOV_EXCL_LINE
         }
         VlcTest* bestTestp = NULL;
         vluint64_t bestRemain = 0;

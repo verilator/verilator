@@ -363,7 +363,7 @@ public:
     virtual void visit(AstIntfRef* nodep) VL_OVERRIDE {
         putsQuoted(VIdProtect::protectWordsIf(AstNode::vcdName(nodep->name()), nodep->protect()));
     }
-    virtual void visit(AstNodeCase* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCase* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         // In V3Case...
         nodep->v3fatalSrc("Case statements should have been reduced out");
     }

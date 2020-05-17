@@ -1335,7 +1335,7 @@ private:
         // Done the loop
         m_insStmtp = NULL;  // Next thing should be new statement
     }
-    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
     }
@@ -1506,12 +1506,12 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
         }
     }
 
-    if (debug() >= 9) {
+    if (debug() >= 9) {  // LCOV_EXCL_START
         nodep->dumpTree(cout, "-ftref-out: ");
         for (int i = 0; i < tpinnum; ++i) {
             UINFO(0, "   pin " << i << "  conn=" << cvtToHex(tconnects[i].second) << endl);
         }
-    }
+    }  // LCOV_EXCL_END
     return tconnects;
 }
 

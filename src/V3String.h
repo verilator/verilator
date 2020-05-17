@@ -74,8 +74,6 @@ public:
     static bool wildmatch(const char* s, const char* p);
     // Return true if p with ? or *'s matches s
     static bool wildmatch(const string& s, const string& p);
-    // Return true if this is a wildcard string (contains * or ?)
-    static bool isWildcard(const string& p);
     // Return {a}{dot}{b}, omitting dot if a or b are empty
     static string dot(const string& a, const string& dot, const string& b);
     // Convert string to lowercase (tolower)

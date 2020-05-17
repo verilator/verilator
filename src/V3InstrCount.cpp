@@ -139,10 +139,10 @@ private:
         iterateAndNextNull(nodep->lsbp());
         iterateAndNextNull(nodep->widthp());
     }
-    virtual void visit(AstSliceSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstSliceSel* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("AstSliceSel unhandled");
     }
-    virtual void visit(AstMemberSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstMemberSel* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("AstMemberSel unhandled");
     }
     virtual void visit(AstConcat* nodep) VL_OVERRIDE {

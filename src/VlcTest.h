@@ -74,7 +74,7 @@ public:
     void dump(bool bucketsToo) {
         if (testrun() || computrons() != 0.0) {  // currently unused // LCOV_EXCL_LINE
             cout << "  " << std::setw(8) << std::setfill('0') << testrun()  // LCOV_EXCL_LINE
-                 << ",  " << std::setw(7) << std::setfill(' ') << computrons()
+                 << ",  " << std::setw(7) << std::setfill(' ') << computrons()  // LCOV_EXCL_LINE
                  << ",";  // LCOV_EXCL_LINE
         }
         cout << "  " << std::setw(7) << std::setfill(' ') << bucketsCovered();

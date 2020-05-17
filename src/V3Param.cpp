@@ -486,7 +486,7 @@ private:
             m_generateHierName = rootHierName;
         }
     }
-    virtual void visit(AstGenFor* nodep) VL_OVERRIDE {
+    virtual void visit(AstGenFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("GENFOR should have been wrapped in BEGIN");
     }
     virtual void visit(AstGenCase* nodep) VL_OVERRIDE {

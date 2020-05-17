@@ -8,12 +8,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(linter => 1);
+scenarios(vlt => 1);
+top_filename("t/t_flag_make_cmake.v");
 
-lint(
-    verilator_flags2 => ["--lint-only --bbox-unsup"],
-    fails => $Self->{vlt_all},
-    expect_filename => $Self->{golden_filename},
+compile(
+    verilator_make_cmake => 0,
+    verilator_make_gmake => 0,
+    # Need --no-print-directory so golden file doesn't compare directory names
+    verilator_flags2 => ["--build --MAKEFLAGS --no-print-directory"
+                         ." --MAKEFLAGS illegal-flag-to-fail-make"],
+    fails => 1,
+    # Recursive make breaks the golden compare
+    #expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

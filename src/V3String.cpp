@@ -66,10 +66,6 @@ bool VString::wildmatch(const string& s, const string& p) {
     return wildmatch(s.c_str(), p.c_str());
 }
 
-bool VString::isWildcard(const string& p) {
-    return ((p.find('*') != string::npos) || (p.find('?') != string::npos));
-}
-
 string VString::dot(const string& a, const string& dot, const string& b) {
     if (b == "") return a;
     if (a == "") return b;
