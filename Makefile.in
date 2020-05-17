@@ -429,7 +429,7 @@ CPPCHECK = src/cppcheck_filtered
 CPPCHECK_FLAGS = --enable=all --inline-suppr \
 	--suppress=unusedScopedObject --suppress=cstyleCast --suppress=useInitializationList \
 	--suppress=nullPointerRedundantCheck
-CPPCHECK_FLAGS += --xml
+CPPCHECK_FLAGS += --xml --std=c++03
 CPPCHECK_DEP = $(subst .cpp,.cppcheck,$(CPPCHECK_CPP))
 CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
 
