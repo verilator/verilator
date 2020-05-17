@@ -12,9 +12,8 @@ set -e
 export DRIVER_FLAGS='-j 0 --quiet --rerun'
 
 case $1 in
-    coverage)
-        nodist/code_coverage
-        bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
+    all)
+        make -C test_regress
         ;;
     dist)
         make -C test_regress SCENARIOS=--dist
@@ -30,6 +29,13 @@ case $1 in
         ;;
     vltmt1)
         make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
+        ;;
+    coverage1)
+        nodist/code_coverage --stages 1-2
+        ;;
+    coverage2)
+        nodist/code_coverage
+        bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
         ;;
     *)
     echo "Usage: test.sh (dist|vlt|vltmt)"

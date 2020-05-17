@@ -113,13 +113,19 @@ jobs:
       stage: "Build Verilator"
       name: "20.04 clang build+test"
       script: ci/test.sh all
-# Cron coverage runs
+# Cron coverage runs (two parts to avoid 50min timeout)
     - if: type = cron
       dist: focal
       compiler: gcc
-      stage: "Build Verilator"
+      stage: "Coverage Build Verilator"
       name: "Coverage"
-      script: ci/test.sh coverage
+      script: ci/test.sh coverage1
+    - if: type = cron
+      dist: focal
+      compiler: gcc
+      stage: "Coverage Test Verilator"
+      name: "Coverage"
+      script: ci/test.sh coverage2
 
 notifications:
   email:

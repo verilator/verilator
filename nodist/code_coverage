@@ -91,7 +91,7 @@ sub test {
 
     if ($Opt_Stages{3}) {
         travis_fold_start("test");
-        print "Stage 3: make examples (with coverage on)\n";
+        print "Stage 3: make tests (with coverage on)\n";
         run("make examples");
         run("make test_regress"
             . ($Opt_Stop ? '' : ' || true'));
