@@ -2182,6 +2182,8 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep, const str
             case 'g': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'g'); break;
             case '^': displayArg(nodep, &elistp, isScan, vfmt, ignore, '^'); break;  // Realtime
             case 'v': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'v'); break;
+            case 'u': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'u'); break;
+            case 'z': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'z'); break;
             case 'm': {
                 UASSERT_OBJ(scopenamep, nodep, "Display with %m but no AstScopeName");
                 string suffix = scopenamep->scopePrettySymName();
