@@ -120,11 +120,15 @@ public:
 
 private:
     struct CallbackRecord {
-        const union {
+        // Note: would make these fields const, but some old STL implementations
+        // (the one in Ubuntu 14.04 with GCC 4.8.4 in particular) use the
+        // assignment operator on inserting into collections, so they don't work
+        // with const fields...
+        union {
             initCb_t m_initCb;  // The callback function
             dumpCb_t m_dumpCb;  // The callback function
         };
-        void* const m_userp;  // The user pointer to pass to the callback (the symbol table)
+        void* m_userp;  // The user pointer to pass to the callback (the symbol table)
         CallbackRecord(initCb_t cb, void* userp)
             : m_initCb(cb)
             , m_userp(userp) {}
