@@ -93,8 +93,15 @@ jobs:
       dist: trusty
       compiler: gcc
       stage: test
-      name: "14.04 gcc test"
-      script: ci/test.sh all
+      name: "14.04 gcc distvlt"
+      script: ci/test.sh distvlt
+    - if: type = cron
+      dist: trusty
+      compiler: gcc
+      stage: test
+      name: "14.04 gcc vltmt"
+      script: ci/test.sh vltmt
+#
     - if: type = cron
       dist: xenial
       compiler: gcc
@@ -105,8 +112,15 @@ jobs:
       dist: xenial
       compiler: gcc
       stage: test
-      name: "16.04 gcc test"
-      script: ci/test.sh all
+      name: "16.04 gcc distvlt"
+      script: ci/test.sh distvlt
+    - if: type = cron
+      dist: xenial
+      compiler: gcc
+      stage: test
+      name: "16.04 gcc vltmt"
+      script: ci/test.sh vltmt
+#
     - if: type = cron
       dist: bionic
       compiler: gcc
@@ -117,8 +131,15 @@ jobs:
       dist: bionic
       compiler: gcc
       stage: test
-      name: "18.04 gcc test"
-      script: ci/test.sh all
+      name: "18.04 gcc distvlt"
+      script: ci/test.sh distvlt
+    - if: type = cron
+      dist: bionic
+      compiler: gcc
+      stage: test
+      name: "18.04 gcc vltmt"
+      script: ci/test.sh vltmt
+#
     - if: type = cron
       dist: xenial
       compiler: clang
@@ -129,8 +150,15 @@ jobs:
       dist: xenial
       compiler: clang
       stage: test
-      name: "16.04 clang test"
-      script: ci/test.sh all
+      name: "16.04 clang distvlt"
+      script: ci/test.sh distvlt
+    - if: type = cron
+      dist: xenial
+      compiler: clang
+      stage: test
+      name: "16.04 clang vltmt"
+      script: ci/test.sh vltmt
+#
     - if: type = cron
       dist: focal
       compiler: clang
@@ -141,21 +169,40 @@ jobs:
       dist: focal
       compiler: clang
       stage: test
-      name: "20.04 clang test"
-      script: ci/test.sh all
+      name: "20.04 clang distvlt"
+      script: ci/test.sh distvlt
+    - if: type = cron
+      dist: focal
+      compiler: clang
+      stage: test
+      name: "20.04 clang vltmt"
+      script: ci/test.sh vltmt
+#
 # Cron coverage runs (two parts to avoid 50min timeout)
     - if: type = cron
       dist: focal
       compiler: gcc
-      stage: "Coverage Build Verilator"
+      stage: "Coverage Build"
       name: "Coverage"
-      script: ci/test.sh coverage1
+      script: ci/test.sh coverage-build
     - if: type = cron
       dist: focal
       compiler: gcc
-      stage: "Coverage Test Verilator"
+      stage: "Coverage dist"
       name: "Coverage"
-      script: ci/test.sh coverage2
+      script: ci/test.sh coverage-dist
+    - if: type = cron
+      dist: focal
+      compiler: gcc
+      stage: "Coverage vlt"
+      name: "Coverage"
+      script: ci/test.sh coverage-vlt
+    - if: type = cron
+      dist: focal
+      compiler: gcc
+      stage: "Coverage vltmt"
+      name: "Coverage"
+      script: ci/test.sh coverage-vltmt
 
 notifications:
   email:

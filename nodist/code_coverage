@@ -30,6 +30,7 @@ $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork && $Fork->in_parent; di
 
 our $Opt_Fastcov = 0;  # out of memory
 our $opt_stages = '';
+our $Opt_Scenarios;
 our %Opt_Stages;
 
 autoflush STDOUT 1;
@@ -38,10 +39,11 @@ Getopt::Long::config("no_auto_abbrev");
 if (! GetOptions(
           "debug"       => sub { $Debug = 1; },
           "<>"          => sub { die "%Error: Unknown parameter: $_[0]\n"; },
+          "scenarios=s" => \$Opt_Scenarios,  # driver.pl scenarios
           "stages=s"    => \$opt_stages,  # starting stage number
           "stop!"       => \$Opt_Stop,  # stop/do not stop on error in tests
     )) {
-    die "%Error: Bad usage, try 'install_test --help'\n";
+    die "%Error: Bad usage, try 'code_coverage --help'\n";
 }
 
 {
@@ -94,6 +96,7 @@ sub test {
         print "Stage 3: make tests (with coverage on)\n";
         run("make examples");
         run("make test_regress"
+            . ($Opt_Scenarios ? " SCENARIOS='".$Opt_Scenarios."'" : "")
             . ($Opt_Stop ? '' : ' || true'));
         travis_fold_end();
     }
@@ -377,9 +380,17 @@ This will rebuild the current object files.
 
 Displays this message and program version and exits.
 
-=item -stage I<stage>
+=item --scenarios I<scenarios>
 
-Runs a specific stage (see the script).
+Pass test scenarios onto driver.pl test harness.
+
+=item --stages I<stage>
+
+Runs a specific stage or range of stages (see the script).
+
+=item --stop
+
+Stop collecting data if tests fail.
 
 =back
 
