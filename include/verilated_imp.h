@@ -483,21 +483,21 @@ public:  // But only for verilated*.cpp
     }
     static void fdFlush(IData fdi) VL_MT_SAFE {
         FILE* fp[30];
-        VerilatedLockGuard lock(s_s.m_fdMutex);
         const int n = fdToFp(fdi, fp, 30);
+        VerilatedLockGuard lock(s_s.m_fdMutex);
         for (int i = 0; i < n; i++) fflush(fp[i]);
     }
     static IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE {
         FILE* fp;
-        VerilatedLockGuard lock(s_s.m_fdMutex);
         const int n = fdToFp(fdi, &fp);
+        VerilatedLockGuard lock(s_s.m_fdMutex);
         if (VL_UNLIKELY(!fp || (n != 1))) return 0;
         return static_cast<IData>(fseek(fp, static_cast<long>(offset), static_cast<int>(origin)));
     }
     static IData fdTell(IData fdi) VL_MT_SAFE {
         FILE* fp;
-        VerilatedLockGuard lock(s_s.m_fdMutex);
         const int n = fdToFp(fdi, &fp);
+        VerilatedLockGuard lock(s_s.m_fdMutex);
         if (VL_UNLIKELY(!fp || (n != 1))) return 0;
         return static_cast<IData>(ftell(fp));
     }
@@ -524,6 +524,7 @@ public:  // But only for verilated*.cpp
     }
     static inline int fdToFp(IData fdi, FILE** fp, std::size_t max = 1) VL_MT_SAFE {
         if (VL_UNLIKELY(!fp || (max == 0))) return 0;
+        VerilatedLockGuard lock(s_s.m_fdMutex);
         int out = 0;
         if ((fdi & (1 << 31)) != 0) {
             // Non-MCD case
