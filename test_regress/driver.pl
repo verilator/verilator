@@ -30,7 +30,7 @@ eval "use Parallel::Forker; \$Fork=Parallel::Forker->new(use_sig_child=>1); \$::
 $Fork = Forker->new(use_sig_child=>1) if !$Fork;
 my $forker_Min_Version = 1.258;
 if ($::Have_Forker && $Parallel::Forker::VERSION < $forker_Min_Version) {
-    print STDERR "Parallel::Forker version is too old () requires $forker_Min_Version or newer\n";
+    print STDERR "driver.pl: Parallel::Forker is older than $forker_Min_Version, suggest 'cpan install Parallel::Forker'\n";
     $::Have_Forker = 0;
 }
 $SIG{CHLD} = sub { $Fork->sig_child() if $Fork; };
