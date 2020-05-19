@@ -39,9 +39,11 @@ run(cmd => ["../bin/verilator_coverage",
     );
 
 # If installed
-if (`lcov --help` !~ /Usage:/
-    || `genhtml --help` !~ /Usage:/) {
+if (`lcov --version` !~ /version/i
+    || `genhtml --version` !~ /version ([0-9.]+)/i) {
     skip("lcov or genhtml not installed");
+} elsif ($1 < 1.14) {
+    skip("lcov or genhtml too old (version $1), need version >= 1.14");
 } else {
     run(cmd => ["genhtml",
                 "$Self->{obj_dir}/coverage.info",
