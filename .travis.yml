@@ -39,7 +39,7 @@ after_script:
   - ccache -s
 
 stages:
-  - "Build Verilator"
+  - vbuild
   - test
 
 jobs:
@@ -52,7 +52,7 @@ jobs:
 #     20.04 coverage       cron
   include:
     - if: type != cron
-      stage: "Build Verilator"
+      stage: vbuild
       name: "Build Verilator"
       dist: focal
       compiler: gcc
@@ -60,25 +60,25 @@ jobs:
 # Non-cron build will just run on whatever linux flavor we get
     - if: type != cron
       stage: test
-      name: "Dist test"
+      name: "Test Dist"
       dist: focal
       compiler: gcc
       script: ci/test.sh dist
     - if: type != cron
       stage: test
-      name: "Vlt test"
+      name: "Test Vlt"
       dist: focal
       compiler: gcc
       script: ci/test.sh vlt
     - if: type != cron
       stage: test
-      name: "Vltmt set 0 test"
+      name: "Test Vltmt set 0"
       dist: focal
       compiler: gcc
       script: ci/test.sh vltmt0
     - if: type != cron
       stage: test
-      name: "Vltmt set 1 test"
+      name: "Test Vltmt set 1"
       dist: focal
       compiler: gcc
       script: ci/test.sh vltmt1
@@ -86,7 +86,7 @@ jobs:
     - if: type = cron
       dist: trusty
       compiler: gcc
-      stage: "Build Verilator"
+      stage: vbuild
       name: "14.04 gcc build"
       script: echo
     - if: type = cron
@@ -105,7 +105,7 @@ jobs:
     - if: type = cron
       dist: xenial
       compiler: gcc
-      stage: "Build Verilator"
+      stage: vbuild
       name: "16.04 gcc build"
       script: echo
     - if: type = cron
@@ -124,7 +124,7 @@ jobs:
     - if: type = cron
       dist: bionic
       compiler: gcc
-      stage: "Build Verilator"
+      stage: vbuild
       name: "18.04 gcc build"
       script: echo
     - if: type = cron
@@ -143,7 +143,7 @@ jobs:
     - if: type = cron
       dist: xenial
       compiler: clang
-      stage: "Build Verilator"
+      stage: vbuild
       name: "16.04 clang build"
       script: echo
     - if: type = cron
@@ -162,7 +162,7 @@ jobs:
     - if: type = cron
       dist: focal
       compiler: clang
-      stage: "Build Verilator"
+      stage: vbuild
       name: "20.04 clang build"
       script: echo
     - if: type = cron
@@ -182,27 +182,39 @@ jobs:
     - if: type = cron
       dist: focal
       compiler: gcc
-      stage: "Coverage Build"
-      name: "Coverage"
+      stage: vbuild
+      name: "Coverage Build"
       script: ci/test.sh coverage-build
     - if: type = cron
       dist: focal
       compiler: gcc
-      stage: "Coverage dist"
-      name: "Coverage"
+      stage: test
+      name: "Coverage dist"
       script: ci/test.sh coverage-dist
     - if: type = cron
       dist: focal
       compiler: gcc
-      stage: "Coverage vlt"
-      name: "Coverage"
-      script: ci/test.sh coverage-vlt
+      stage: test
+      name: "Coverage vlt set 0"
+      script: ci/test.sh coverage-vlt0
     - if: type = cron
       dist: focal
       compiler: gcc
-      stage: "Coverage vltmt"
-      name: "Coverage"
-      script: ci/test.sh coverage-vltmt
+      stage: test
+      name: "Coverage vltmt set 0"
+      script: ci/test.sh coverage-vltmt0
+    - if: type = cron
+      dist: focal
+      compiler: gcc
+      stage: test
+      name: "Coverage vlt set 1"
+      script: ci/test.sh coverage-vlt1
+    - if: type = cron
+      dist: focal
+      compiler: gcc
+      stage: test
+      name: "Coverage vltmt set 1"
+      script: ci/test.sh coverage-vltmt1
 
 notifications:
   email:

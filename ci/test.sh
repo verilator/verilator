@@ -37,12 +37,20 @@ case $1 in
         nodist/code_coverage --scenarios=--dist
         bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
         ;;
-    coverage-vlt)
-        nodist/code_coverage --scenarios=--vlt
+    coverage-vlt0)
+        nodist/code_coverage --scenarios=--vlt --hashset=0/2
         bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
         ;;
-    coverage-vltmt)
-        nodist/code_coverage --scenarios=--vltmt
+    coverage-vlt1)
+        nodist/code_coverage --scenarios=--vlt --hashset=1/2
+        bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
+        ;;
+    coverage-vltmt0)
+        nodist/code_coverage --scenarios=--vltmt --hashset=0/2
+        bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
+        ;;
+    coverage-vltmt1)
+        nodist/code_coverage --scenarios=--vltmt --hashset=1/2
         bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
         ;;
     *)
