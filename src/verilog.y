@@ -5903,23 +5903,23 @@ vltOnFront<errcodeen>:
 	;
 
 vltDModuleE<strp>:
-		/* empty */					{ static string unit = "__024unit"; $$ = &unit; }
+		/* empty */				{ static string unit = "__024unit"; $$ = &unit; }
 	|	yVLT_D_MODULE str			{ $$ = $2; }
 	;
 
 vltDFTaskE<strp>:
-		/* empty */					{ static string empty = ""; $$ = &empty; }
+		/* empty */				{ static string empty = ""; $$ = &empty; }
 	|	yVLT_D_FUNCTION str			{ $$ = $2; }
 	|	yVLT_D_TASK str				{ $$ = $2; }
 	;
 
 vltInlineFront<cbool>:
-		yVLT_INLINE					{ $$ = true; }
+		yVLT_INLINE				{ $$ = true; }
 	|	yVLT_NO_INLINE				{ $$ = false; }
 	;
 
 vltVarAttrVarE<strp>:
-		/* empty */					{ static string empty = ""; $$ = &empty; }
+		/* empty */				{ static string empty = ""; $$ = &empty; }
 	|	yVLT_D_VAR str				{ $$ = $2; }
 	;
 
