@@ -1138,9 +1138,11 @@ void V3ParseImp::lexToken() {
             UINFO(7,"   lexToken: Found "<<scp<<endl);
             if (VN_IS(scp, Typedef)) token = yaID__aTYPE;
             else if (VN_IS(scp, TypedefFwd)) token = yaID__aTYPE;
-            else if (VN_IS(scp, Package)) token = yaID__aPACKAGE;
             else if (VN_IS(scp, Class)) token = yaID__aTYPE;
-            //UNSUP else if (VN_IS(scp, CoverGroup)) token = yaID__aCOVERGROUP;
+            // Packages we could alternatively determine by looking for
+            // an yaID__LEX followed by yP_COLONCOLON (but we can't lookahead
+            // after an yaID__LEX as described above.)
+            else if (VN_IS(scp, Package)) token = yaID__aPACKAGE;
             else token = yaID__ETC;
         } else {  // Not found
             yylval.scp = NULL;
@@ -1157,16 +1159,16 @@ int V3ParseImp::lexToBison() {
     m_prevBisonVal = m_curBisonVal;
     m_curBisonVal = yylval;
 
-    //yylval.scp = NULL;   // Symbol table not yet needed - no packages
-    if (debugFlex()>=6 || debugBison()>=6) {  // --debugi-flex and --debugi-bison
-        cout<<"   {"<<yylval.fl->filenameLetters()<<yylval.fl->asciiLineCol()
-            <<"} lexToBison  TOKEN="<<yylval.token<<" "<<tokenName(yylval.token);
-        if (yylval.token == yaID__ETC
-            || yylval.token == yaID__LEX
+    // yylval.scp = NULL;   // Symbol table not yet needed - no packages
+    if (debugFlex() >= 6 || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
+        cout << "   {" << yylval.fl->filenameLetters() << yylval.fl->asciiLineCol()
+             << "} lexToBison  TOKEN=" << yylval.token << " " << tokenName(yylval.token);
+        if (yylval.token == yaID__ETC  //
+            || yylval.token == yaID__LEX  //
             || yylval.token == yaID__aTYPE) {
-            cout<<"   strp='"<<*(yylval.strp)<<"'";
+            cout << "   strp='" << *(yylval.strp) << "'";
         }
-        cout<<endl;
+        cout << endl;
     }
     return yylval.token;
 }
