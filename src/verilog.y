@@ -4456,6 +4456,11 @@ idAny<strp>:			// Any kind of identifier
 	|	yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
+idNonPkg<strp>:			// Non-package identifier used by extents/implements
+		yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
+	|	yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
+	;
+
 idRefDType<refdtypep>:		// IEEE: class_identifier or other type identifier
 				// Used where reference is needed
 		yaID__aTYPE				{ $$ = new AstRefDType($<fl>1, *$1); }
@@ -5572,10 +5577,10 @@ classExtendsList<nodep>:	// IEEE: part of class_declaration
 	;
 
 classExtendsOne<nodep>:		// IEEE: part of class_declaration
-		class_typeWithoutId
+		class_typeExtImp
 			{ $$ = new AstClassExtends($1->fileline(), $1); }
 	//			// IEEE: Might not be legal to have more than one set of parameters in an extends
-	|	class_typeWithoutId '(' list_of_argumentsE ')'
+	|	class_typeExtImp '(' list_of_argumentsE ')'
 			{ $$ = new AstClassExtends($1->fileline(), $1);
 			  if ($3) BBUNSUP($3, "Unsupported: extends with parameters"); }
 	;
@@ -5588,8 +5593,32 @@ classImplementsE<nodep>:	// IEEE: part of class_declaration
 
 classImplementsList<nodep>:	// IEEE: part of class_declaration
 	//			// All 1800-2012
-		class_typeWithoutId				{ $$ = NULL; BBUNSUP($1, "Unsupported: implements class"); }
-	|	classImplementsList ',' class_typeWithoutId	{ $$ = AstNode::addNextNull($1, $3); }
+		class_typeExtImp				{ $$ = NULL; BBUNSUP($1, "Unsupported: implements class"); }
+	|	classImplementsList ',' class_typeExtImp	{ $$ = AstNode::addNextNull($1, $3); }
+	;
+
+class_typeExtImp<refdtypep>:	// as with class_typeWithoutId but from extends/implements
+	//			// and we thus don't need to resolve it in specified package
+		class_typeExtImpOneList				{ $$ = $1; }
+	|	package_scopeIdFollows class_typeExtImpOneList	{ $$ = $2; $2->packagep($1); }
+	;
+
+class_typeExtImpOneList<refdtypep>:	// IEEE: class_type: "id [ parameter_value_assignment ]"
+	//			// but allow yaID__aTYPE for extends/implements
+	//			// If you follow the rules down, class_type is really a list via ps_class_identifier
+	//			// Must propagate scp up for next id
+		class_typeExtImpOne			{ $$ = $1; }
+	|	class_typeExtImpOneList yP_COLONCOLON class_typeExtImpOne
+			{ $$ = $3; BBUNSUP($2, "Unsupported: Hierarchical class references"); }
+	;
+
+class_typeExtImpOne<refdtypep>:	// IEEE: class_type: "id [ parameter_value_assignment ]"
+	//			// but allow yaID__aTYPE for extends/implements
+	//			// If you follow the rules down, class_type is really a list via ps_class_identifier
+	//			// Not listed in IEEE, but see bug627 any parameter type maybe a class
+		idNonPkg parameter_value_assignmentE
+			{ $$ = new AstRefDType($<fl>1, *$1);
+			  if ($2) BBUNSUP($2->fileline(), "Unsupported: Parameterized classes"); }
 	;
 
 //=========
@@ -5608,12 +5637,8 @@ ps_type<refdtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
 	//			// Simplify typing - from ps_covergroup_identifier
 	;
 
-//=== Below rules assume special scoping per above
 
-class_typeWithoutId<refdtypep>:	// as with class_typeWithoutId but allow yaID__aTYPE
-	//			// and we thus don't need to resolve it in specified package
-		package_scopeIdFollowsE class_typeOneList	{ $$ = $2; $2->packagep($1); }
-	;
+//=== Below rules assume special scoping per above
 
 class_scopeWithoutId<nodep>:	// class_type standalone without following id
 	//			// and we thus don't need to resolve it in specified package
