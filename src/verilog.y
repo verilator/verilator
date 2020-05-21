@@ -917,13 +917,13 @@ package_import_itemList<nodep>:
 	;
 
 package_import_item<nodep>:	// ==IEEE: package_import_item
-		yaID__aPACKAGE yP_COLONCOLON package_import_itemObj
+		idAny/*package_identifier*/ yP_COLONCOLON package_import_itemObj
 			{ $$ = new AstPackageImport($<fl>2, VN_CAST($<scp>1, Package), *$3);
 			  SYMP->importItem($<scp>1,*$3); }
 	;
 
 package_import_itemObj<strp>:	// IEEE: part of package_import_item
-		idAny					{ $<fl>$=$<fl>1; $$=$1; }
+		idAny/*package_identifier*/		{ $<fl>$=$<fl>1; $$=$1; }
 	|	'*'					{ $<fl>$=$<fl>1; static string star="*"; $$=&star; }
 	;
 
@@ -938,7 +938,7 @@ package_export_itemList<nodep>:
 	;
 
 package_export_item<nodep>:	// ==IEEE: package_export_item
-		yaID__aPACKAGE yP_COLONCOLON package_import_itemObj
+		idAny yP_COLONCOLON package_import_itemObj
 			{ $$ = new AstPackageExport($<fl>3, VN_CAST($<scp>1, Package), *$3);
 			  SYMP->exportItem($<scp>1,*$3); }
 	;
@@ -5905,11 +5905,11 @@ vltOffFront<errcodeen>:
 		yVLT_COVERAGE_OFF			{ $$ = V3ErrorCode::I_COVERAGE; }
 	|	yVLT_TRACING_OFF			{ $$ = V3ErrorCode::I_TRACING; }
 	|	yVLT_LINT_OFF				{ $$ = V3ErrorCode::I_LINT; }
-	|	yVLT_LINT_OFF yVLT_D_MSG yaID__ETC
+	|	yVLT_LINT_OFF yVLT_D_MSG idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl); }
 			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."<<endl); }
-	|	yVLT_LINT_OFF yVLT_D_RULE yaID__ETC
+	|	yVLT_LINT_OFF yVLT_D_RULE idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
 	;
@@ -5918,11 +5918,11 @@ vltOnFront<errcodeen>:
 		yVLT_COVERAGE_ON			{ $$ = V3ErrorCode::I_COVERAGE; }
 	|	yVLT_TRACING_ON				{ $$ = V3ErrorCode::I_TRACING; }
 	|	yVLT_LINT_ON				{ $$ = V3ErrorCode::I_LINT; }
-	|	yVLT_LINT_ON yVLT_D_MSG yaID__ETC
+	|	yVLT_LINT_ON yVLT_D_MSG idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  }
 			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."<<endl); }
-	|	yVLT_LINT_ON yVLT_D_RULE yaID__ETC
+	|	yVLT_LINT_ON yVLT_D_RULE idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
 	;
