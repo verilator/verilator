@@ -1928,11 +1928,12 @@ private:
     }
     virtual void visit(AstClassExtends* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
-        if (nodep->childDTypep()) {
-            nodep->dtypep(moveChildDTypeEdit(nodep));  // data_type '{ pattern }
-        }
         nodep->v3error("Unsupported: class extends");  // Member/meth access breaks
-        userIterateChildren(nodep, NULL);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        // if (nodep->childDTypep()) {
+        //     nodep->dtypep(moveChildDTypeEdit(nodep));  // data_type '{ pattern }
+        // }
+        //userIterateChildren(nodep, NULL);
     }
     virtual void visit(AstMemberDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed

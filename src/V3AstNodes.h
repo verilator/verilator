@@ -345,19 +345,18 @@ public:
 };
 
 class AstClassExtends : public AstNode {
-    // Children: AstClassRefDType during early parse, then moves to dtype
+    // Children: List of AstParseRef for packages/classes
+    // during early parse, then moves to dtype
 public:
-    AstClassExtends(FileLine* fl, AstNodeDType* dtp)
+    AstClassExtends(FileLine* fl, AstNode* classOrPkgsp)
         : ASTGEN_SUPER(fl) {
-        childDTypep(dtp);  // Only for parser
+        setNOp1p(classOrPkgsp);  // Only for parser
     }
     ASTNODE_NODE_FUNCS(ClassExtends)
     virtual string verilogKwd() const { return "extends"; }
     virtual bool hasDType() const { return true; }
-    AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    // op1 = Type assigning to
-    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* classOrPkgsp() const { return VN_CAST(op1p(), NodeDType); }
+    void classOrPkgsp(AstNodeDType* nodep) { setOp1p(nodep); }
     AstClass* classp() const;  // Class being extended (after link)
 };
 

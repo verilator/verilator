@@ -1598,7 +1598,10 @@ simple_type<dtypep>:		// ==IEEE: simple_type
 	|	non_integer_type			{ $$ = $1; }
 	//			// IEEE: ps_type_identifier
 	//			// IEEE: ps_parameter_identifier (presumably a PARAMETER TYPE)
-	|	ps_type					{ $$ = $1; }
+				// Even though we looked up the type and have a AstNode* to it,
+				// we can't fully resolve it because it may have been just a forward definition.
+	|	package_scopeIdFollowsE idRefDType	{ $$ = $2; $2->packagep($1); }
+	//
 	//			// { generate_block_identifer ... } '.'
 	//			// Need to determine if generate_block_identifier can be lex-detected
 	;
@@ -2453,8 +2456,10 @@ list_of_defparam_assignments<nodep>:	//== IEEE: list_of_defparam_assignments
 	;
 
 defparam_assignment<nodep>:	// ==IEEE: defparam_assignment
-		id '.' id '=' expr 			{ $$ = new AstDefParam($4,*$1,*$3,$5); }
-	//UNSUP	More general dotted identifiers
+		idAny '.' idAny '=' expr 		{ $$ = new AstDefParam($4, *$1, *$3, $5); }
+	|	idAny '.' idAny '.'
+	 		{ $$ = NULL;
+			  BBUNSUP($4, "Unsupported: defparam with more than one dot"); }
 	;
 
 //************************************************
@@ -4456,11 +4461,6 @@ idAny<strp>:			// Any kind of identifier
 	|	yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
-idNonPkg<strp>:			// Non-package identifier used by extents/implements
-		yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
-	|	yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
-	;
-
 idRefDType<refdtypep>:		// IEEE: class_identifier or other type identifier
 				// Used where reference is needed
 		yaID__aTYPE				{ $$ = new AstRefDType($<fl>1, *$1); }
@@ -5577,10 +5577,10 @@ classExtendsList<nodep>:	// IEEE: part of class_declaration
 	;
 
 classExtendsOne<nodep>:		// IEEE: part of class_declaration
-		class_typeExtImp
+		class_typeExtImpList
 			{ $$ = new AstClassExtends($1->fileline(), $1); }
 	//			// IEEE: Might not be legal to have more than one set of parameters in an extends
-	|	class_typeExtImp '(' list_of_argumentsE ')'
+	|	class_typeExtImpList '(' list_of_argumentsE ')'
 			{ $$ = new AstClassExtends($1->fileline(), $1);
 			  if ($3) BBUNSUP($3, "Unsupported: extends with parameters"); }
 	;
@@ -5593,32 +5593,36 @@ classImplementsE<nodep>:	// IEEE: part of class_declaration
 
 classImplementsList<nodep>:	// IEEE: part of class_declaration
 	//			// All 1800-2012
-		class_typeExtImp				{ $$ = NULL; BBUNSUP($1, "Unsupported: implements class"); }
-	|	classImplementsList ',' class_typeExtImp	{ $$ = AstNode::addNextNull($1, $3); }
+		class_typeExtImpList			{ $$ = NULL; BBUNSUP($1, "Unsupported: implements class"); }
+	|	classImplementsList ',' class_typeExtImpList	{ $$ = AstNode::addNextNull($1, $3); }
 	;
 
-class_typeExtImp<refdtypep>:	// as with class_typeWithoutId but from extends/implements
-	//			// and we thus don't need to resolve it in specified package
-		class_typeExtImpOneList				{ $$ = $1; }
-	|	package_scopeIdFollows class_typeExtImpOneList	{ $$ = $2; $2->packagep($1); }
-	;
-
-class_typeExtImpOneList<refdtypep>:	// IEEE: class_type: "id [ parameter_value_assignment ]"
+class_typeExtImpList<nodep>:	// IEEE: class_type: "[package_scope] id [ parameter_value_assignment ]"
 	//			// but allow yaID__aTYPE for extends/implements
 	//			// If you follow the rules down, class_type is really a list via ps_class_identifier
-	//			// Must propagate scp up for next id
 		class_typeExtImpOne			{ $$ = $1; }
-	|	class_typeExtImpOneList yP_COLONCOLON class_typeExtImpOne
-			{ $$ = $3; BBUNSUP($2, "Unsupported: Hierarchical class references"); }
+	|	class_typeExtImpList yP_COLONCOLON class_typeExtImpOne
+			{ $$ = $3;
+			  // Cannot just add as next() as that breaks implements lists
+			  //UNSUP $$ = new AstColonColon($<fl>1, $1, $3);
+			  BBUNSUP($2, "Unsupported: Hierarchical class references"); }
 	;
 
-class_typeExtImpOne<refdtypep>:	// IEEE: class_type: "id [ parameter_value_assignment ]"
-	//			// but allow yaID__aTYPE for extends/implements
+class_typeExtImpOne<nodep>:	// part of IEEE: class_type, where we either get a package_scope component or class
 	//			// If you follow the rules down, class_type is really a list via ps_class_identifier
 	//			// Not listed in IEEE, but see bug627 any parameter type maybe a class
-		idNonPkg parameter_value_assignmentE
-			{ $$ = new AstRefDType($<fl>1, *$1);
+	//			// If idAny below is a class, parameter_value is legal
+	//			// If idAny below is a package, parameter_value is not legal
+	//			// If idAny below is otherwise, not legal
+		idAny parameter_value_assignmentE
+			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL);
 			  if ($2) BBUNSUP($2->fileline(), "Unsupported: Parameterized classes"); }
+	//			// package_sopeIdFollows expanded
+	|	yD_UNIT yP_COLONCOLON
+			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, "$unit", NULL, NULL); }
+	|	yLOCAL__COLONCOLON yP_COLONCOLON
+			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, "local", NULL, NULL);
+			  BBUNSUP($1, "Unsupported: Randomize 'local::'"); }
 	;
 
 //=========
@@ -5627,16 +5631,8 @@ class_typeExtImpOne<refdtypep>:	// IEEE: class_type: "id [ parameter_value_assig
 // Each of these must end with {symsPackageDone | symsClassDone}
 
 ps_id_etc<varrefp>:		// package_scope + general id
-		package_scopeIdFollowsE varRefBase		{ $$ = $2; $2->packagep($1); }
+		package_scopeIdFollowsE varRefBase	{ $$ = $2; $2->packagep($1); }
 	;
-
-ps_type<refdtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
-				// Even though we looked up the type and have a AstNode* to it,
-				// we can't fully resolve it because it may have been just a forward definition.
-		package_scopeIdFollowsE idRefDType	{ $$ = $2; $2->packagep($1); }
-	//			// Simplify typing - from ps_covergroup_identifier
-	;
-
 
 //=== Below rules assume special scoping per above
 
@@ -5680,13 +5676,15 @@ package_scopeIdFollowsE<packagep>:	// IEEE: [package_scope]
 
 package_scopeIdFollows<packagep>:	// IEEE: package_scope
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
+	//			// Also see class_typeExtImpOne which has these rules too
 	//			//vv mid rule action needed otherwise we might not have NextId in time to parse the id token
-		yD_UNIT        { SYMP->nextId(PARSEP->rootp()); }
-	/*cont*/	yP_COLONCOLON	{ $$ = GRAMMARP->unitPackage($<fl>1); }
-	|	yaID__aPACKAGE { SYMP->nextId($<scp>1); }
+		yaID__aPACKAGE { SYMP->nextId($<scp>1); }
 	/*cont*/	yP_COLONCOLON	{ $$ = VN_CAST($<scp>1, Package); }
-	//UNSUP	yLOCAL__COLONCOLON { PARSEP->symTableNextId($<scp>1); }
-	//UNSUP	/*cont*/	yP_COLONCOLON	{ UNSUP }
+	|	yD_UNIT yP_COLONCOLON
+			{ SYMP->nextId(PARSEP->rootp()); $$ = GRAMMARP->unitPackage($<fl>1); }
+	|	yLOCAL__COLONCOLON yP_COLONCOLON
+			{ BBUNSUP($1, "Unsupported: Randomize 'local::'");
+			  SYMP->nextId(PARSEP->rootp()); $$ = GRAMMARP->unitPackage($<fl>1); }
 	;
 
 //^^^=========
