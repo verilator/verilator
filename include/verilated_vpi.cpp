@@ -1907,6 +1907,7 @@ void vpi_put_value_array(vpiHandle /*object*/, p_vpi_arrayvalue /*arrayvalue_p*/
 
 void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
     VerilatedVpiImp::assertOneCheck();
+    _VL_VPI_ERROR_RESET();
     // cppcheck-suppress nullPointer
     if (VL_UNLIKELY(!time_p)) {
         _VL_VPI_WARNING(__FILE__, __LINE__, "Ignoring vpi_get_time with NULL value pointer");
