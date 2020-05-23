@@ -2491,11 +2491,39 @@ private:
                 } else if (VN_IS(nodep, New) && m_statep->forPrearray()) {
                     // Resolved in V3Width
                 } else if (nodep->dotted() == "") {
-                    string suggest = m_statep->suggestSymFallback(dotSymp, nodep->name(),
-                                                                  LinkNodeMatcherFTask());
-                    nodep->v3error("Can't find definition of task/function: "
-                                   << nodep->prettyNameQ() << endl
-                                   << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+                    if (nodep->pli()) {
+                        if (v3Global.opt.bboxSys()) {
+                            AstNode* newp;
+                            if (VN_IS(nodep, FuncRef)) {
+                                newp = new AstConst(nodep->fileline(), AstConst::StringToParse(),
+                                                    "'0");
+                            } else {
+                                AstNode* outp = NULL;
+                                while (nodep->pinsp()) {
+                                    AstNode* pinp = nodep->pinsp()->unlinkFrBack();
+                                    AstNode* addp = pinp;
+                                    if (AstArg* argp = VN_CAST(pinp, Arg)) {
+                                        addp = argp->exprp()->unlinkFrBack();
+                                        VL_DO_DANGLING(pinp->deleteTree(), pinp);
+                                    }
+                                    outp = AstNode::addNext(outp, addp);
+                                }
+                                newp = new AstSysIgnore(nodep->fileline(), outp);
+                            }
+                            nodep->replaceWith(newp);
+                            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                            return;
+                        } else {
+                            nodep->v3error("Unsupported or unknown PLI call: "
+                                           << nodep->prettyNameQ() << endl);
+                        }
+                    } else {
+                        string suggest = m_statep->suggestSymFallback(dotSymp, nodep->name(),
+                                                                      LinkNodeMatcherFTask());
+                        nodep->v3error("Can't find definition of task/function: "
+                                       << nodep->prettyNameQ() << endl
+                                       << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+                    }
                 } else {
                     string suggest = m_statep->suggestSymFallback(dotSymp, nodep->name(),
                                                                   LinkNodeMatcherFTask());

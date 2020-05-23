@@ -44,10 +44,6 @@ extern void yyerrorf(const char* format, ...);
 
 #define FL { FL_FWD; yylval.fl = CRELINE(); }
 
-#define RETURN_BBOX_SYS_OR_MSG(msg,yytext) {    \
-        if (!v3Global.opt.bboxSys()) { yyerrorf(msg, yytext); FL_BRK; }  \
-        return yaD_IGNORE; }
-
 #define ERROR_RSVD_WORD(language) \
         do { FL_FWD; \
              yyerrorf("Unsupported: " language " reserved word not implemented: '%s'", yytext); \
@@ -601,10 +597,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX>{
   "$"[a-zA-Z_$][a-zA-Z0-9_$]*   { string str (yytext, yyleng);
                                   yylval.strp = PARSEP->newString(AstNode::encodeName(str));
-                                  // Lookup unencoded name including the $, to avoid hitting normal signals
-                                  if (SYMP->symCurrentp()->findIdFallback(str)) {
-                                      FL; return yaD_DPI;
-                                  } else { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported or unknown PLI call: %s", yytext); }
+                                  FL; return yaD_PLI;
                                 }
 }
 

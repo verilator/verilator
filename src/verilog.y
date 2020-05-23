@@ -91,7 +91,7 @@ public:
     }
 
     // METHODS
-    void argWrapList(AstNodeFTaskRef* nodep);
+    AstNode* argWrapList(AstNode* nodep);
     bool allTracingOn(FileLine* fl) {
 	return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
@@ -311,8 +311,7 @@ class AstSenTree;
 %token<fl>		yVLT_D_TASK     "--task"
 %token<fl>		yVLT_D_VAR      "--var"
 
-%token<strp>		yaD_IGNORE	"${ignored-bbox-sys}"
-%token<strp>		yaD_DPI		"${dpi-sys}"
+%token<strp>		yaD_PLI		"${pli-system}"
 
 %token<fl>		yaT_RESETALL	"`resetall"
 
@@ -3264,12 +3263,7 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 
 system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	//
-		yaD_IGNORE  parenE			{ $$ = new AstSysIgnore($<fl>1,NULL); }
-	|	yaD_IGNORE  '(' exprList ')'		{ $$ = new AstSysIgnore($<fl>1,$3); }
-	//
-	|	yaD_DPI parenE				{ $$ = new AstTaskRef($<fl>1,*$1,NULL); }
-	|	yaD_DPI '(' exprList ')'		{ $$ = new AstTaskRef($<fl>1, *$1, $3);
-							  GRAMMARP->argWrapList(VN_CAST($$, TaskRef)); }
+		yaD_PLI systemDpiArgsE			{ $$ = new AstTaskRef($<fl>1, *$1, $2); VN_CAST($$, TaskRef)->pli(true); }
 	//
 	|	yD_DUMPPORTS '(' idDotted ',' expr ')'	{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::FILE, $5); DEL($3);
     							  $$->addNext(new AstDumpCtl($<fl>1, VDumpCtlType::VARS,
@@ -3369,16 +3363,17 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	;
 
 system_f_call<nodep>:		// IEEE: system_tf_call (as func)
-		yaD_IGNORE parenE			{ $$ = new AstConst($<fl>1, AstConst::StringToParse(), "'b0"); }  // Unsized 0
-	|	yaD_IGNORE '(' exprList ')'		{ $$ = new AstConst($<fl>1, AstConst::StringToParse(), "'b0"); }  // Unsized 0
-	//
-	|	yaD_DPI parenE				{ $$ = new AstFuncRef($<fl>1,*$1,NULL); }
-	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($<fl>1,*$1,$3); GRAMMARP->argWrapList(VN_CAST($$, FuncRef)); }
+		yaD_PLI systemDpiArgsE			{ $$ = new AstFuncRef($<fl>1, *$1, $2); VN_CAST($$, FuncRef)->pli(true); }
 	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCFunc($1,$3)); }
 	|	yD_SYSTEM  '(' expr ')'			{ $$ = new AstSystemF($1,$3); }
 	//
 	|	system_f_call_or_t			{ $$ = $1; }
+	;
+
+systemDpiArgsE<nodep>:		// IEEE: part of system_if_call for aruments of $dpi call
+		parenE					{ $$ = NULL; }
+	|	'(' exprList ')'			{ $$ = GRAMMARP->argWrapList($2); }
 	;
 
 system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)

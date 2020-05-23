@@ -2731,6 +2731,7 @@ private:
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
     AstNodeModule* m_packagep;  // Package hierarchy
+    bool m_pli;  // Pli system call ($name)
 public:
     AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
         : AstNodeStmt(t, fl, statement)
@@ -2767,6 +2768,8 @@ public:
     void dotted(const string& name) { m_dotted = name; }
     AstNodeModule* packagep() const { return m_packagep; }
     void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
+    bool pli() const { return m_pli; }
+    void pli(bool flag) { m_pli = flag; }
     // op1 = namep
     AstNode* namep() const { return op1p(); }
     // op2 = reserved for AstMethodCall

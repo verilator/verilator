@@ -65,15 +65,20 @@ void V3ParseImp::parserClear() {
 //======================================================================
 // V3ParseGrammar functions requiring bison state
 
-void V3ParseGrammar::argWrapList(AstNodeFTaskRef* nodep) {
+AstNode* V3ParseGrammar::argWrapList(AstNode* nodep) {
     // Convert list of expressions to list of arguments
+    if (!nodep) return NULL;
     AstNode* outp = NULL;
-    while (nodep->pinsp()) {
-        AstNode* exprp = nodep->pinsp()->unlinkFrBack();
+    AstBegin* tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
+    while (nodep) {
+        AstNode* nextp = nodep->nextp();
+        AstNode* exprp = nodep->unlinkFrBack();
+        nodep = nextp;
         // addNext can handle nulls:
         outp = AstNode::addNext(outp, new AstArg(exprp->fileline(), "", exprp));
     }
-    if (outp) nodep->addPinsp(outp);
+    VL_DO_DANGLING(tempp->deleteTree(), tempp);
+    return outp;
 }
 
 AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name, int value) {
