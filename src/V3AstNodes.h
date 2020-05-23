@@ -2866,9 +2866,11 @@ public:
 class AstDot : public AstNode {
     // A dot separating paths in an AstVarXRef, AstFuncRef or AstTaskRef
     // These are eliminated in the link stage
+    bool m_colon;  // Is a "::" instead of a "." (lhs must be package/class)
 public:
-    AstDot(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER(fl) {
+    AstDot(FileLine* fl, bool colon, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl)
+        , m_colon(colon) {
         setOp1p(lhsp);
         setOp2p(rhsp);
     }
@@ -2876,13 +2878,14 @@ public:
     // For parser, make only if non-null package
     static AstNode* newIfPkg(FileLine* fl, AstPackage* packagep, AstNode* rhsp) {
         if (!packagep) return rhsp;
-        return new AstDot(fl, new AstPackageRef(fl, packagep), rhsp);
+        return new AstDot(fl, true, new AstPackageRef(fl, packagep), rhsp);
     }
     virtual void dump(std::ostream& str) const;
     virtual string emitVerilog() { V3ERROR_NA_RETURN(""); }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     AstNode* lhsp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
+    bool colon() const { return m_colon; }
 };
 
 class AstUnbounded : public AstNodeMath {

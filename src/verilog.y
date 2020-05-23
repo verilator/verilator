@@ -2832,7 +2832,7 @@ statement_item<nodep>:		// IEEE: statement_item
 							  newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
 							  $$->fileline(newfl); }
 	|	yVOID yP_TICK '(' expr '.' task_subroutine_callNoMethod ')' ';'
-							{ $$ = new AstDot($5, $4, $6);
+							{ $$ = new AstDot($5, false, $4, $6);
 							  FileLine* newfl = new FileLine($6->fileline());
 							  newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
 							  $6->fileline(newfl); }
@@ -2840,7 +2840,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//			// Expr here must result in a subroutine_call
 	|	task_subroutine_callNoMethod ';'	{ $$ = $1; }
 	//UNSUP	fexpr '.' array_methodNoRoot ';'	{ UNSUP }
-	|	fexpr '.' task_subroutine_callNoMethod ';'	{ $$ = new AstDot($<fl>2,$1,$3); }
+	|	fexpr '.' task_subroutine_callNoMethod ';'	{ $$ = new AstDot($<fl>2, false, $1, $3); }
 	//UNSUP	fexprScope ';'				{ UNSUP }
 	//			// Not here in IEEE; from class_constructor_declaration
 	//			// Because we've joined class_constructor_declaration into generic functions
@@ -3222,7 +3222,8 @@ loop_variables<nodep>:		// IEEE: loop_variables
 taskRef<nodep>:			// IEEE: part of tf_call
 		id		 		{ $$ = new AstTaskRef($<fl>1,*$1,NULL); }
 	|	id '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef($<fl>1,*$1,$3); }
-	|	package_scopeIdFollows id '(' list_of_argumentsE ')'	{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstTaskRef($<fl>2,*$2,$4)); }
+	|	package_scopeIdFollows id '(' list_of_argumentsE ')'
+			{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstTaskRef($<fl>2,*$2,$4)); }
 	;
 
 funcRef<nodep>:			// IEEE: part of tf_call
@@ -3236,7 +3237,8 @@ funcRef<nodep>:			// IEEE: part of tf_call
 	//			//      let_expression		let_identifier		let_actual_arg
 	//
 		id '(' list_of_argumentsE ')'		{ $$ = new AstFuncRef($<fl>1, *$1, $3); }
-	|	package_scopeIdFollows id '(' list_of_argumentsE ')'	{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstFuncRef($<fl>2,*$2,$4)); }
+	|	package_scopeIdFollows id '(' list_of_argumentsE ')'
+			{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstFuncRef($<fl>2,*$2,$4)); }
 	//UNSUP list_of_argumentE should be pev_list_of_argumentE
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
@@ -3881,9 +3883,9 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	|	function_subroutine_callNoMethod	{ $$ = $1; }
 	//			// method_call
-	|	~l~expr '.' function_subroutine_callNoMethod	{ $$ = new AstDot($2,$1,$3); }
+	|	~l~expr '.' function_subroutine_callNoMethod	{ $$ = new AstDot($2, false, $1, $3); }
 	//			// method_call:array_method requires a '.'
-	|	~l~expr '.' array_methodNoRoot		{ $$ = new AstDot($2,$1,$3); }
+	|	~l~expr '.' array_methodNoRoot		{ $$ = new AstDot($2, false, $1, $3); }
 	//
 	//			// IEEE: let_expression
 	//			// see funcRef
@@ -4036,7 +4038,7 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 	|	idArrayed				{ $$ = $1; }
 	|	package_scopeIdFollows idArrayed	{ $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
 	|	class_scopeIdFollows idArrayed		{ $$ = $2; BBUNSUP($<fl>1, "Unsupported: scoped class reference"); }
-	|	~l~expr '.' idArrayed			{ $$ = new AstDot($<fl>2,$1,$3); }
+	|	~l~expr '.' idArrayed			{ $$ = new AstDot($<fl>2, false, $1, $3); }
 	//			// expr below must be a "yTHIS"
 	|	~l~expr '.' ySUPER			{ $$ = $1; BBUNSUP($3, "Unsupported: super"); }
 	//			// Part of implicit_class_handle
@@ -4509,13 +4511,13 @@ idClassSel<nodep>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged va
 
 idDotted<nodep>:
 		yD_ROOT '.' idDottedMore
-			{ $$ = new AstDot($2, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"), $3); }
+			{ $$ = new AstDot($2, false, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"), $3); }
 	|	idDottedMore		 		{ $$ = $1; }
 	;
 
 idDottedMore<nodep>:
 		idArrayed 				{ $$ = $1; }
-	|	idDottedMore '.' idArrayed	 	{ $$ = new AstDot($2,$1,$3); }
+	|	idDottedMore '.' idArrayed	 	{ $$ = new AstDot($2, false, $1, $3); }
 	;
 
 // Single component of dotted path, maybe [#].
@@ -4540,7 +4542,7 @@ idClassForeach<nodep>:
 
 idForeach<nodep>:
 		varRefBase				{ $$ = $1; }
-	|	idForeach '.' varRefBase	 	{ $$ = new AstDot($2,$1,$3); }
+	|	idForeach '.' varRefBase	 	{ $$ = new AstDot($2, false, $1, $3); }
 	;
 
 
@@ -5605,7 +5607,7 @@ class_typeExtImpList<nodep>:	// IEEE: class_type: "[package_scope] id [ paramete
 	|	class_typeExtImpList yP_COLONCOLON class_typeExtImpOne
 			{ $$ = $3;
 			  // Cannot just add as next() as that breaks implements lists
-			  //UNSUP $$ = new AstColonColon($<fl>1, $1, $3);
+			  //UNSUP $$ = new AstDot($<fl>1, true, $1, $3);
 			  BBUNSUP($2, "Unsupported: Hierarchical class references"); }
 	;
 

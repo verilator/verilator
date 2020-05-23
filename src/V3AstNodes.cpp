@@ -1459,7 +1459,10 @@ void AstPackageRef::dump(std::ostream& str) const {
         str << "UNLINKED";
     }
 }
-void AstDot::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstDot::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (colon()) str << "[::]";
+}
 void AstActive::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " => ";
