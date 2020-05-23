@@ -360,8 +360,8 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
         lstr << std::setw(ascii().length()) << " "
              << ": " << locationStr;
     }
-    if (warnIsOff(V3Error::errorCode())
-        || V3Config::waive(this, V3Error::errorCode(), sstr.str())) {
+    m_waive = V3Config::waive(this, V3Error::errorCode(), sstr.str());
+    if (warnIsOff(V3Error::errorCode()) || m_waive) {
         V3Error::suppressThisWarning();
     } else if (!V3Error::errorContexted()) {
         nsstr << warnContextPrimary();

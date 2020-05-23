@@ -816,7 +816,8 @@ private:
                 nodep->v3warn(UNOPT,
                               "Signal unoptimizable: Feedback to public clock or circular logic: "
                                   << nodep->prettyNameQ());
-                if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPT)) {
+                if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPT)
+                    && !nodep->fileline()->lastWarnWaived()) {
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPT,
                                                      true);  // Complain just once
                     // Give the user an example.
@@ -834,7 +835,8 @@ private:
                 nodep->v3warn(UNOPTFLAT,
                               "Signal unoptimizable: Feedback to clock or circular logic: "
                                   << nodep->prettyNameQ());
-                if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPTFLAT)) {
+                if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPTFLAT)
+                    && !nodep->fileline()->lastWarnWaived()) {
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT,
                                                      true);  // Complain just once
                     // Give the user an example.
