@@ -1599,7 +1599,9 @@ simple_type<dtypep>:		// ==IEEE: simple_type
 	//			// IEEE: ps_parameter_identifier (presumably a PARAMETER TYPE)
 				// Even though we looked up the type and have a AstNode* to it,
 				// we can't fully resolve it because it may have been just a forward definition.
-	|	package_scopeIdFollowsE idRefDType	{ $$ = $2; $2->packagep($1); }
+	|	package_scopeIdFollowsE idType
+			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2);
+			  refp->packagep($1); $$ = refp; }
 	//
 	//			// { generate_block_identifer ... } '.'
 	//			// Need to determine if generate_block_identifier can be lex-detected
@@ -1615,13 +1617,15 @@ data_type<dtypep>:		// ==IEEE: data_type
 	//			// IEEE: class_type
 	//			// IEEE: ps_covergroup_identifier
 	//			// Don't distinguish between types and classes so all these combined
-	|	package_scopeIdFollowsE idRefDType packed_dimensionListE
-			{ $2->packagep($1);
-			  $$ = GRAMMARP->createArray($2, $3, true); }
-	|	package_scopeIdFollowsE idRefDType parameter_value_assignmentClass packed_dimensionListE
-			{ $2->packagep($1);
+	|	package_scopeIdFollowsE idType packed_dimensionListE
+			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2);
+			  refp->packagep($1);
+			  $$ = GRAMMARP->createArray(refp, $3, true); }
+	|	package_scopeIdFollowsE idType parameter_value_assignmentClass packed_dimensionListE
+			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2);
+			  refp->packagep($1);
 			  BBUNSUP($3->fileline(), "Unsupported: Parameter classes");
-			  $$ = GRAMMARP->createArray($2, $4, true); }
+			  $$ = GRAMMARP->createArray(refp, $4, true); }
 	;
 
 data_typeBasic<dtypep>:		// IEEE: part of data_type
@@ -1832,8 +1836,10 @@ enum_base_typeE<dtypep>:	// IEEE: enum_base_type
 	//			// however other simulators allow [ class_scope | package_scope ] type_identifier
 	|	idAny rangeListE
 			{ $$ = GRAMMARP->createArray(new AstRefDType($<fl>1, *$1), $2, true); }
-	|	package_scopeIdFollows idRefDType rangeListE
-			{ $2->packagep($1); $$ = GRAMMARP->createArray($2, $3, true); }
+	|	package_scopeIdFollows idType rangeListE
+			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2);
+			  refp->packagep($1);
+			  $$ = GRAMMARP->createArray(refp, $3, true); }
 	;
 
 enum_nameList<nodep>:
@@ -3132,7 +3138,7 @@ patternKey<nodep>:		// IEEE: merge structure_pattern_key, array_pattern_key, ass
 	//			//   So for now we only allow a true constant number, or a identifier which we treat as a structure member name
 		yaINTNUM				{ $$ = new AstConst($<fl>1,*$1); }
 	|	yaFLOATNUM				{ $$ = new AstConst($<fl>1,AstConst::RealDouble(),$1); }
-	|	yaID__ETC				{ $$ = new AstText($<fl>1,*$1); }
+	|	id					{ $$ = new AstText($<fl>1,*$1); }
 	|	strAsInt				{ $$ = $1; }
 	;
 
@@ -4456,9 +4462,9 @@ idAny<strp>:			// Any kind of identifier
 	|	yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
-idRefDType<refdtypep>:		// IEEE: class_identifier or other type identifier
+idType<strp>:			// IEEE: class_identifier or other type identifier
 				// Used where reference is needed
-		yaID__aTYPE				{ $$ = new AstRefDType($<fl>1, *$1); }
+		yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
 idSVKwd<strp>:			// Warn about non-forward compatible Verilog 2001 code
@@ -5633,6 +5639,7 @@ ps_id_etc<varrefp>:		// package_scope + general id
 
 class_scopeWithoutId<nodep>:	// class_type standalone without following id
 	//			// and we thus don't need to resolve it in specified package
+	//			// Used only where declare "function <class_scope>::new"
 		class_scopeIdFollows			{ $$ = $1; }
 	;
 
@@ -5658,8 +5665,9 @@ class_typeOneList<refdtypep>:	// IEEE: class_type: "id [ parameter_value_assignm
 class_typeOne<refdtypep>:	// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
 	//			// If you follow the rules down, class_type is really a list via ps_class_identifier
 	//			// Not listed in IEEE, but see bug627 any parameter type maybe a class
-		idRefDType parameter_value_assignmentE
-			{ $$ = $1; if ($2) BBUNSUP($2->fileline(), "Unsupported: Parameterized classes"); }
+		idType parameter_value_assignmentE
+			{ $$ = new AstRefDType($<fl>1, *$1);
+			  if ($2) BBUNSUP($2->fileline(), "Unsupported: Parameterized classes"); }
 	;
 
 package_scopeIdFollowsE<packagep>:	// IEEE: [package_scope]
