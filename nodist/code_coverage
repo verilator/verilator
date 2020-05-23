@@ -14,7 +14,7 @@ use Pod::Usage;
 use strict;
 use vars qw($Debug);
 
-our $Opt_Stop;
+our $Opt_Stop = 1;
 our $Exclude_Line_Regexp;
 our $Remove_Gcda_Regexp;
 
@@ -96,10 +96,11 @@ sub test {
     if ($Opt_Stages{3}) {
         travis_fold_start("test");
         print "Stage 3: make tests (with coverage on)\n";
-        run("make examples");
+        run("make examples")
+            if !$Opt_Scenarios || $Opt_Scenarios =~ /dist/i;
         run("make test_regress"
             . ($Opt_Scenarios ? " SCENARIOS='".$Opt_Scenarios."'" : "")
-            . ($Opt_Hashset ? " DRIVER_HASHSET='".$Opt_Hashset."'" : "")
+            . ($Opt_Hashset ? " DRIVER_HASHSET='--hashset=".$Opt_Hashset."'" : "")
             . ($Opt_Stop ? '' : ' || true'));
         travis_fold_end();
     }
@@ -395,9 +396,9 @@ Pass test scenarios onto driver.pl test harness.
 
 Runs a specific stage or range of stages (see the script).
 
-=item --stop
+=item --no-stop
 
-Stop collecting data if tests fail.
+Do not stop collecting data if tests fail.
 
 =back
 
