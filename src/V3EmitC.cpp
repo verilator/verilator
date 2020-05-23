@@ -304,13 +304,7 @@ public:
         AstAssocArrayDType* adtypep = VN_CAST(nodep->fromp()->dtypep(), AssocArrayDType);
         UASSERT_OBJ(adtypep, nodep, "Associative select on non-associative type");
         if (adtypep->keyDTypep()->isWide()) {
-            // Container class must take non-C-array (pointer) argument, so convert
-            putbs("VL_CVT_W_A(");
-            iterateAndNextNull(nodep->bitp());
-            puts(", ");
-            iterateAndNextNull(nodep->fromp());
-            putbs(".atDefault()");  // Not accessed; only to get the proper type of values
-            puts(")");
+            emitCvtWideArray(nodep->bitp(), nodep->fromp());
         } else {
             iterateAndNextNull(nodep->bitp());
         }
@@ -351,10 +345,21 @@ public:
         bool comma = false;
         for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
-            iterate(subnodep);
+            // handle wide arguments to the queues
+            if (VN_IS(nodep->fromp()->dtypep(), QueueDType) && subnodep->dtypep()->isWide()) {
+                emitCvtWideArray(subnodep, nodep->fromp());
+            } else {
+                iterate(subnodep);
+            }
             comma = true;
         }
         puts(")");
+        // if there is a return value that is wide convert to array
+        if (nodep->dtypep()->isWide()
+            && (VN_IS(nodep->fromp()->dtypep(), QueueDType)
+                || VN_IS(nodep->fromp()->dtypep(), DynArrayDType))) {
+            puts(".data()");  // Access returned std::array as C array
+        }
         // Some are statements some are math.
         if (nodep->isStatement()) puts(";\n");
         UASSERT_OBJ(!nodep->isStatement() || VN_IS(nodep->dtypep(), VoidDType), nodep,
@@ -1041,6 +1046,14 @@ public:
             puts(")");
         }
     }
+    void emitCvtWideArray(AstNode* nodep, AstNode* fromp) {
+        putbs("VL_CVT_W_A(");
+        iterate(nodep);
+        puts(", ");
+        iterate(fromp);
+        putbs(".atDefault()");  // Not accessed; only to get the proper type of values
+        puts(")");
+    }
     void emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString) {
         // Put out constant set to the specified variable, or given variable in a string
         if (nodep->num().isFourState()) {
@@ -1638,17 +1651,22 @@ class EmitCImp : EmitCStmts {
         AstBasicDType* basicp = dtypep->basicp();
         // Returns string to do resetting, empty to do nothing (which caller should handle)
         if (AstAssocArrayDType* adtypep = VN_CAST(dtypep, AssocArrayDType)) {
-            string cvtarray
-                = (adtypep->subDTypep()->isWide() ? ".data()"
-                                                  : "");  // Access std::array as C array
+            // Access std::array as C array
+            string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
             return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
                                        ".atDefault()" + cvtarray);
         } else if (AstClassRefDType* adtypep = VN_CAST(dtypep, ClassRefDType)) {
             return "";  // Constructor does it
         } else if (AstDynArrayDType* adtypep = VN_CAST(dtypep, DynArrayDType)) {
-            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1, ".atDefault()");
+            // Access std::array as C array
+            string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
+            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
+                                       ".atDefault()" + cvtarray);
         } else if (AstQueueDType* adtypep = VN_CAST(dtypep, QueueDType)) {
-            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1, ".atDefault()");
+            // Access std::array as C array
+            string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
+            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
+                                       ".atDefault()" + cvtarray);
         } else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             UASSERT_OBJ(adtypep->msb() >= adtypep->lsb(), varp,
                         "Should have swapped msb & lsb earlier.");
