@@ -1129,6 +1129,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
                 *logsp << "No changes since last dump!\n";
             } else {
                 dumpTree(*logsp);
+                editCountSetLast();  // Next dump can indicate start from here
             }
         }
     }
@@ -1139,8 +1140,6 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
         // set by other steps if it is called in the middle of other operations
         if (AstNetlist* netp = VN_CAST(this, Netlist)) V3Broken::brokenAll(netp);
     }
-    // Next dump can indicate start from here
-    editCountSetLast();
 }
 
 void AstNode::v3errorEndFatal(std::ostringstream& str) const {
