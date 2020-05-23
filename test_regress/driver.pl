@@ -26,7 +26,7 @@ use Time::HiRes qw(usleep);
 $::Driver = 1;
 $::Have_Forker = 0;
 
-eval "use Parallel::Forker; \$Fork=Parallel::Forker->new(use_sig_child=>1); \$::Have_Forker=1;";
+eval "use Parallel::Forker; \$Fork=Parallel::Forker->new(use_sig_child=>1, poll_interval=>10*1000); \$::Have_Forker=1;";
 $Fork = Forker->new(use_sig_child=>1) if !$Fork;
 my $forker_Min_Version = 1.258;
 if ($::Have_Forker && $Parallel::Forker::VERSION < $forker_Min_Version) {

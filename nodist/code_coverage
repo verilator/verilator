@@ -9,6 +9,7 @@ use File::Path qw(mkpath);
 use FindBin qw($RealBin);
 use Getopt::Long;
 use Parallel::Forker;
+use Unix::Processors;
 use IO::File;
 use Pod::Usage;
 use strict;
@@ -21,7 +22,8 @@ our $Remove_Gcda_Regexp;
 our @Remove_Sources;
 our @Source_Globs;
 
-our $Fork = new Parallel::Forker (use_sig_child=>1);
+our $Fork = new Parallel::Forker(use_sig_child => 1, poll_interval => 10*1000);
+$Fork->max_proc(Unix::Processors->new->max_online * 1.5);
 $SIG{CHLD} = sub { Parallel::Forker::sig_child($Fork); };
 $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork && $Fork->in_parent; die "Quitting...\n"; };
 
@@ -259,6 +261,7 @@ sub test {
         travis_fold_start("upload");
         print "Stage 18: Upload\n";
         my $cmd = "bash <(curl -s https://codecov.io/bash) -f $cc_dir/app_total.info";
+        print "print: Not running: export CODECOV_TOKEN=<hidden>\n";
         print "print: Not running: $cmd\n";
         travis_fold_end();
     }
