@@ -28,6 +28,7 @@
 # include "V3Config.h"
 # include "V3File.h"
 #endif
+#include "V3Waiver.h"
 // clang-format on
 
 #include <algorithm>
@@ -366,6 +367,7 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
     } else if (!V3Error::errorContexted()) {
         nsstr << warnContextPrimary();
     }
+    if (!m_waive) { V3Waiver::addEntry(V3Error::errorCode(), filename(), sstr.str()); }
     V3Error::v3errorEnd(nsstr, lstr.str());
 }
 

@@ -93,6 +93,7 @@
 #include "V3Undriven.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
+#include "V3Waiver.h"
 #include "V3Width.h"
 
 #include <ctime>
@@ -542,6 +543,14 @@ static void verilate(const string& argString) {
 
     // Final steps
     V3Global::dumpCheckGlobalTree("final", 990, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+
+    V3Error::abortIfErrors();
+
+    if (v3Global.opt.isWaiverOutput()) {
+        // Create waiver output, must be just before we exit on warnings
+        V3Waiver::write(v3Global.opt.waiverOutput());
+    }
+
     V3Error::abortIfWarnings();
 
     if (v3Global.opt.makeDepend().isTrue()) {
