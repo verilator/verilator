@@ -366,7 +366,7 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 closeErr();
                 break;
-                // LCOV_EXCL_END
+                // LCOV_EXCL_STOP
             }
         }
     }

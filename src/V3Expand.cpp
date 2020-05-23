@@ -197,7 +197,8 @@ private:
         UINFO(8, "    Wordize ASSIGN(CONST) " << nodep << endl);
         // -> {for each_word{ ASSIGN(WORDSEL(wide,#),WORDSEL(CONST,#))}}
         if (rhsp->num().isFourState()) {
-            rhsp->v3error("Unsupported: 4-state numbers in this context");
+            rhsp->v3error(  // LCOV_EXCL_LINE  // impossible?
+                "Unsupported: 4-state numbers in this context");
         }
         for (int w = 0; w < nodep->widthWords(); w++) {
             addWordAssign(

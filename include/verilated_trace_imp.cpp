@@ -194,13 +194,14 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
                 shutdown = true;
                 break;
 
-                //===
-                // Unknown command
-            default:
+            //===
+            // Unknown command
+            default: {  // LCOV_EXCL_START
                 VL_TRACE_THREAD_DEBUG("Command UNKNOWN");
                 VL_PRINTF_MT("Trace command: 0x%08x\n", cmd);
                 VL_FATAL_MT(__FILE__, __LINE__, "", "Unknown trace command");
                 break;
+            }  // LCOV_EXCL_STOP
             }
 
             // The above switch will execute 'continue' when necessary,
@@ -376,12 +377,12 @@ template <> void VerilatedTrace<VL_DERIVED_T>::set_time_resolution(const std::st
 
 template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
     m_assertOne.check();
-    if (VL_UNLIKELY(m_timeLastDump && timeui <= m_timeLastDump)) {
+    if (VL_UNCOVERABLE(m_timeLastDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
         VL_PRINTF_MT("%%Warning: previous dump at t=%" VL_PRI64 "u, requesting t=%" VL_PRI64
                      "u, dump call ignored\n",
                      m_timeLastDump, timeui);
         return;
-    }
+    }  // LCOV_EXCL_STOP
     m_timeLastDump = timeui;
 
     Verilated::quiesce();
@@ -456,11 +457,11 @@ template <>
 void VerilatedTrace<VL_DERIVED_T>::addCallbackRecord(std::vector<CallbackRecord>& cbVec,
                                                      CallbackRecord& cbRec) {
     m_assertOne.check();
-    if (VL_UNLIKELY(timeLastDump() != 0)) {
+    if (VL_UNCOVERABLE(timeLastDump() != 0)) {  // LCOV_EXCL_START
         std::string msg = (std::string("Internal: ") + __FILE__ + "::" + __FUNCTION__
                            + " called with already open file");
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
-    }
+    }  // LCOV_EXCL_STOP
     cbVec.push_back(cbRec);
 }
 

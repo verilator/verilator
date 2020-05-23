@@ -508,7 +508,7 @@ private:
                 iterateAndNextNull(valuep);
                 if (optimizable()) newValue(nodep, fetchValue(valuep));
             } else {
-                clearOptimizable(nodep, "No value found for enum item");
+                clearOptimizable(nodep, "No value found for enum item");  // LCOV_EXCL_LINE
             }
         }
     }

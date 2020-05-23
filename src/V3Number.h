@@ -267,7 +267,6 @@ public:
     bool isEqOne() const;
     bool isEqAllOnes(int optwidth = 0) const;
     bool isCaseEq(const V3Number& rhs) const;  // operator==
-    bool isLt(const V3Number& rhs) const;  // operator<
     bool isLtXZ(const V3Number& rhs) const;  // operator< with XZ compared
     void isSigned(bool ssigned) { m_signed = ssigned; }
     bool isAnyX() const;

@@ -202,7 +202,7 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
-                // LCOV_EXCL_END
+                // LCOV_EXCL_STOP
             }
         }
     }
@@ -233,7 +233,7 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
-                // LCOV_EXCL_END
+                // LCOV_EXCL_STOP
             }
         } else {  // got==0, EOF
             // Fill buffer from here to end with NULLs so reader's don't

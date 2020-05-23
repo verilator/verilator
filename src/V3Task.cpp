@@ -1511,7 +1511,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
         for (int i = 0; i < tpinnum; ++i) {
             UINFO(0, "   pin " << i << "  conn=" << cvtToHex(tconnects[i].second) << endl);
         }
-    }  // LCOV_EXCL_END
+    }  // LCOV_EXCL_STOP
     return tconnects;
 }
 

@@ -10,4 +10,7 @@ module t (/*AUTOARG*/);
    parameter integer FOO3 = 32'd;
    parameter integer FOO4 = 32'h;
 
+   parameter integer FOO5 = 32'b2;
+   parameter integer FOO6 = 32'o8;
+
 endmodule

@@ -467,8 +467,8 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 
     if (isDouble()) {
         out.precision(17);
-        if (width() != 64) {
-            out << "%E-bad-width-double";
+        if (VL_UNCOVERABLE(width() != 64)) {
+            out << "%E-bad-width-double";  // LCOV_EXCL_LINE
         } else {
             out << toDouble();
         }
@@ -476,8 +476,8 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
     } else if (isString()) {
         return '"' + toString() + '"';
     } else {
-        if ((m_value[words() - 1] | m_valueX[words() - 1]) & ~hiWordMask()) {
-            out << "%E-hidden-bits";
+        if (VL_UNCOVERABLE((m_value[words() - 1] | m_valueX[words() - 1]) & ~hiWordMask())) {
+            out << "%E-hidden-bits";  // LCOV_EXCL_LINE
         }
     }
     if (prefixed) {
@@ -935,15 +935,6 @@ bool V3Number::isAnyXZ() const {
         if (bitIsX(bit) || bitIsZ(bit)) return true;
     }
     return false;
-}
-bool V3Number::isLt(const V3Number& rhs) const {
-    for (int bit = 0; bit < std::max(this->width(), rhs.width()); bit++) {
-        if (this->bitIs1(bit) && rhs.bitIs0(bit)) { return 1; }
-        if (rhs.bitIs1(bit) && this->bitIs0(bit)) { return 0; }
-        if (this->bitIsXZ(bit)) { return 0; }
-        if (rhs.bitIsXZ(bit)) { return 0; }
-    }
-    return 0;
 }
 bool V3Number::isLtXZ(const V3Number& rhs) const {
     // Include X/Z in comparisons for sort ordering

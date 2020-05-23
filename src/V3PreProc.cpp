@@ -549,7 +549,7 @@ void V3PreProcImp::unputString(const string& strg) {
     // However this can lead to "flex scanner push-back overflow"
     // so instead we scan from a temporary buffer, then on EOF return.
     // This is also faster than the old scheme, amazingly.
-    if (m_lexp->m_bufferState != m_lexp->currentBuffer()) {
+    if (VL_UNCOVERABLE(m_lexp->m_bufferState != m_lexp->currentBuffer())) {
         fatalSrc("bufferStack missing current buffer; will return incorrectly");
         // Hard to debug lost text as won't know till much later
     }
@@ -1087,7 +1087,7 @@ int V3PreProcImp::getStateToken() {
                     stateChange(ps_DEFFORM);
                     m_lexp->pushStateDefForm();
                     goto next_tok;
-                } else {
+                } else {  // LCOV_EXCL_LINE
                     fatalSrc("Bad case\n");
                 }
                 goto next_tok;
@@ -1174,7 +1174,9 @@ int V3PreProcImp::getStateToken() {
                 stateChange(ps_DEFARG);
                 goto next_tok;
             } else {
-                if (m_defRefs.empty()) fatalSrc("Shouldn't be in DEFPAREN w/o active defref");
+                if (VL_UNCOVERABLE(m_defRefs.empty())) {
+                    fatalSrc("Shouldn't be in DEFPAREN w/o active defref");
+                }
                 VDefineRef* refp = &(m_defRefs.top());
                 error(string("Expecting ( to begin argument list for define reference `")
                       + refp->name() + "\n");
@@ -1183,7 +1185,9 @@ int V3PreProcImp::getStateToken() {
             }
         }
         case ps_DEFARG: {
-            if (m_defRefs.empty()) fatalSrc("Shouldn't be in DEFARG w/o active defref");
+            if (VL_UNCOVERABLE(m_defRefs.empty())) {
+                fatalSrc("Shouldn't be in DEFARG w/o active defref");
+            }
             VDefineRef* refp = &(m_defRefs.top());
             refp->nextarg(refp->nextarg() + m_lexp->m_defValue);
             m_lexp->m_defValue = "";
@@ -1208,7 +1212,9 @@ int V3PreProcImp::getStateToken() {
                     statePop();
                     if (state()
                         == ps_JOIN) {  // Handle {left}```FOO(ARG) where `FOO(ARG) might be empty
-                        if (m_joinStack.empty()) fatalSrc("`` join stack empty, but in a ``");
+                        if (VL_UNCOVERABLE(m_joinStack.empty())) {
+                            fatalSrc("`` join stack empty, but in a ``");
+                        }
                         string lhs = m_joinStack.top();
                         m_joinStack.pop();
                         out.insert(0, lhs);
@@ -1295,7 +1301,9 @@ int V3PreProcImp::getStateToken() {
         }
         case ps_JOIN: {
             if (tok == VP_SYMBOL || tok == VP_TEXT) {
-                if (m_joinStack.empty()) fatalSrc("`` join stack empty, but in a ``");
+                if (VL_UNCOVERABLE(m_joinStack.empty())) {
+                    fatalSrc("`` join stack empty, but in a ``");
+                }
                 string lhs = m_joinStack.top();
                 m_joinStack.pop();
                 UINFO(5, "`` LHS:" << lhs << endl);
@@ -1429,7 +1437,9 @@ int V3PreProcImp::getStateToken() {
                     if (m_defRefs.empty()) {
                         // Just output the substitution
                         if (state() == ps_JOIN) {  // Handle {left}```FOO where `FOO might be empty
-                            if (m_joinStack.empty()) fatalSrc("`` join stack empty, but in a ``");
+                            if (VL_UNCOVERABLE(m_joinStack.empty())) {
+                                fatalSrc("`` join stack empty, but in a ``");
+                            }
                             string lhs = m_joinStack.top();
                             m_joinStack.pop();
                             out.insert(0, lhs);
@@ -1500,9 +1510,9 @@ int V3PreProcImp::getStateToken() {
         case VP_COMMENT:  // Handled at top of loop
         case VP_DEFFORM:  // Handled by state=ps_DEFFORM;
         case VP_DEFVALUE:  // Handled by state=ps_DEFVALUE;
-        default:
+        default:  // LCOV_EXCL_LINE
             fatalSrc(string("Internal error: Unexpected token ") + tokenName(tok) + "\n");
-            break;
+            break;  // LCOV_EXCL_LINE
         }
         return tok;
     }

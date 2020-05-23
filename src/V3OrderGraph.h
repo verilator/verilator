@@ -386,12 +386,12 @@ public:
     }
     virtual string name() const {
         string nm;
-        if (logicp()) {
+        if (VL_UNCOVERABLE(!logicp())) {  // Avoid crash when debugging
+            nm = "nul";  // LCOV_EXCL_LINE
+        } else {
             nm = logicp()->name();
             nm += (string("\\nMV:") + " d=" + cvtToHex(logicp()->domainp())
                    + " s=" + cvtToHex(logicp()->scopep()));
-        } else {
-            nm = "nul";
         }
         return nm;
     }

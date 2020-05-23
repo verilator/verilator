@@ -410,11 +410,9 @@ private:
             string index = AstNode::encodeNumber(constp->toSInt());
             string replacestr = nodep->name() + "__BRA__??__KET__";
             size_t pos = m_unlinkedTxt.find(replacestr);
-            if (pos == string::npos) {
-                nodep->v3error("Could not find array index in unlinked text: '"
-                               << m_unlinkedTxt << "' for node: " << nodep);
-                return;
-            }
+            UASSERT_OBJ(pos != string::npos, nodep,
+                        "Could not find array index in unlinked text: '"
+                            << m_unlinkedTxt << "' for node: " << nodep);
             m_unlinkedTxt.replace(pos, replacestr.length(),
                                   nodep->name() + "__BRA__" + index + "__KET__");
         } else {

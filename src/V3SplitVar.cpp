@@ -1275,7 +1275,7 @@ public:
                 reason = "it is not an aggregate type of bit nor logic";
             if (!reason) reason = cannotSplitVarCommonReason(nodep);
         } else {
-            reason = "its type is unknown";
+            reason = "its type is unknown";  // LCOV_EXCL_LINE
         }
         if (reason)
             UINFO(5,

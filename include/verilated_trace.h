@@ -40,7 +40,7 @@
 // Threaded tracing
 
 // A simple synchronized first in first out queue
-template <class T> class VerilatedThreadQueue {
+template <class T> class VerilatedThreadQueue {  // LCOV_EXCL_LINE  // lcov bug
 private:
     VerilatedMutex m_mutex;  // Protects m_queue
     std::condition_variable_any m_cv;
@@ -233,8 +233,8 @@ protected:
 
     // These hooks are called before a full or change based dump is produced.
     // The return value indicates whether to proceed with the dump.
-    virtual bool preFullDump() { return true; }
-    virtual bool preChangeDump() { return true; }
+    virtual bool preFullDump() = 0;
+    virtual bool preChangeDump() = 0;
 
 public:
     //=========================================================================

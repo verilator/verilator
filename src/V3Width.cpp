@@ -1933,7 +1933,7 @@ private:
         // if (nodep->childDTypep()) {
         //     nodep->dtypep(moveChildDTypeEdit(nodep));  // data_type '{ pattern }
         // }
-        //userIterateChildren(nodep, NULL);
+        // userIterateChildren(nodep, NULL);
     }
     virtual void visit(AstMemberDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed

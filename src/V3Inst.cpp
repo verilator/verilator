@@ -423,7 +423,7 @@ private:
                     }
                 }
                 if (!varNewp) {
-                    if (debug() >= 9) m_deModVars.dump();
+                    if (debug() >= 9) m_deModVars.dump();  // LCOV_EXCL_LINE
                     nodep->v3fatalSrc("Module dearray failed for "
                                       << AstNode::prettyNameQ(varNewName));
                 }
