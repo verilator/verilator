@@ -19,6 +19,13 @@ module t (/*AUTOARG*/
 
    integer i;
 
+   typedef integer q_t[$];
+
+   initial begin
+      q_t iq;
+      iq.push_back(42);
+   end
+
    always @ (posedge clk) begin
       cyc <= cyc + 1;
 
