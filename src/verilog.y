@@ -2574,17 +2574,14 @@ cellparamItemE<pinp>:		// IEEE: named_parameter_assignment + empty
 									  $$->svImplicit(true);}
 	|	'.' idAny '(' ')'			{ $$ = new AstPin($<fl>2,PINNUMINC(),*$2,NULL); }
 	//			// mintypmax is expanded here, as it might be a UDP or gate primitive
-	|	'.' idAny '(' expr ')'			{ $$ = new AstPin($<fl>2,PINNUMINC(),*$2,$4); }
-	//UNSUP	'.' idAny '(' expr ':' expr ')'		{ }
-	//UNSUP	'.' idAny '(' expr ':' expr ':' expr ')' { }
-	//			// For parameters
-	|	'.' idAny '(' data_type ')'		{ $$ = new AstPin($<fl>2, PINNUMINC(), *$2, $4); }
-	//			// For parameters
-	|	data_type				{ $$ = new AstPin($1->fileline(),PINNUMINC(),"",$1); }
-	//
-	|	expr					{ $$ = new AstPin($1->fileline(),PINNUMINC(),"",$1); }
-	//UNSUP	expr ':' expr				{ }
-	//UNSUP	expr ':' expr ':' expr			{ }
+	//			// data_type for 'parameter type' hookups
+	|	'.' idAny '(' exprOrDataType ')'	{ $$ = new AstPin($<fl>2, PINNUMINC(), *$2, $4); }
+	//UNSUP	'.' idAny '(' exprOrDataType/*expr*/ ':' expr ')'		{ }
+	//UNSUP	'.' idAny '(' exprOrDataType/*expr*/ ':' expr ':' expr ')'	{ }
+	//			// data_type for 'parameter type' hookups
+	|	exprOrDataType				{ $$ = new AstPin($1->fileline(), PINNUMINC(), "", $1); }
+	//UNSUP	exprOrDataType/*expr*/ ':' expr		{ }
+	//UNSUP	exprOrDataType/*expr*/ ':' expr ':' expr	{ }
 	;
 
 cellpinItemE<pinp>:		// IEEE: named_port_connection + empty
