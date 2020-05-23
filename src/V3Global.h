@@ -31,6 +31,7 @@
 #include "V3Options.h"
 
 #include <string>
+#include VL_INCLUDE_UNORDERED_MAP
 
 class AstNetlist;
 
@@ -78,6 +79,10 @@ class V3Global {
     bool m_needTraceDumper;  // Need __Vm_dumperp in symbols
     bool m_dpi;  // Need __Dpi include files
     bool m_useParallelBuild;  // Use parallel build for model
+
+    // Memory address to short string mapping (for debug)
+    typedef vl_unordered_map<const void*, std::string> PtrToIdMap;  // The map type
+    PtrToIdMap m_ptrToId;  // The actual 'address' <=> 'short string' bijection
 
 public:
     // Options
@@ -133,6 +138,7 @@ public:
     void dpi(bool flag) { m_dpi = flag; }
     void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useParallelBuild() const { return m_useParallelBuild; }
+    const std::string& ptrToId(const void* p);
 };
 
 extern V3Global v3Global;

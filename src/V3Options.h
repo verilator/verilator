@@ -276,6 +276,7 @@ private:
     int         m_buildJobs;    // main switch: -j
     int         m_convergeLimit;// main switch: --converge-limit
     int         m_dumpTree;     // main switch: --dump-tree
+    bool        m_dumpTreeAddrids;// main switch: --dump-tree-addrids
     int         m_gateStmts;    // main switch: --gate-stmts
     int         m_ifDepth;      // main switch: --if-depth
     int         m_inlineMult;   // main switch: --inline-mult
@@ -468,6 +469,7 @@ public:
     int buildJobs() const { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int dumpTree() const { return m_dumpTree; }
+    bool dumpTreeAddrids() const { return m_dumpTreeAddrids; }
     int gateStmts() const { return m_gateStmts; }
     int ifDepth() const { return m_ifDepth; }
     int inlineMult() const { return m_inlineMult; }

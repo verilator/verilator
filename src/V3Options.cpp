@@ -856,6 +856,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-dpi-hdr-only", flag/*ref*/)) { m_dpiHdrOnly = flag; }
             else if ( onoff (sw, "-dump-defines", flag/*ref*/)) { m_dumpDefines = flag; }
             else if ( onoff (sw, "-dump-tree", flag/*ref*/))    { m_dumpTree = flag ? 3 : 0; }  // Also see --dump-treei
+            else if ( onoff (sw, "-dump-tree-addrids", flag/*ref*/)){ m_dumpTreeAddrids = flag; }
             else if ( onoff (sw, "-exe", flag/*ref*/))          { m_exe = flag; }
             else if ( onoff (sw, "-flatten", flag/*ref*/))      { m_flatten = flag; }
             else if ( onoff (sw, "-ignc", flag/*ref*/))         { m_ignc = flag; }
@@ -1612,6 +1613,7 @@ V3Options::V3Options() {
     m_buildJobs = 1;
     m_convergeLimit = 100;
     m_dumpTree = 0;
+    m_dumpTreeAddrids = false;
     m_gateStmts = 100;
     m_ifDepth = 0;
     m_inlineMult = 2000;

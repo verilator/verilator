@@ -850,7 +850,10 @@ correspond directly to Verilog entities (for example `MODULE` and
 Address of the node::
 
 A hexadecimal address of the node in memory. Useful for examining with the
-debugger.
+debugger. If the actual address values are not important, then using the
+`--dump-tree-addrids` option will convert address values to short identifiers
+of the form `([A-Z]*)`, which is hopefully easier for the reader to cross
+reference throughout the dump.
 
 Last edit number::
 

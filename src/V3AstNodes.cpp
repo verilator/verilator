@@ -964,28 +964,37 @@ void AstWhile::addNextStmt(AstNode* newp, AstNode* belowp) {
 //======================================================================
 // Per-type Debugging
 
+// Render node address for dumps. By default this is just the address
+// printed as hex, but with --dump-tree-addrids we map addresses to short
+// strings with a bijection to aid human readability. Observe that this might
+// not actually be a unique identifier as the address can get reused after a
+// node has been freed.
+static std::string nodeAddr(const AstNode* nodep) {
+    return v3Global.opt.dumpTreeAddrids() ? v3Global.ptrToId(nodep) : cvtToHex(nodep);
+}
+
 void AstNode::dump(std::ostream& str) const {
     str << typeName() << " "
-        << cvtToHex(this)
-        //<<" "<<cvtToHex(this)->m_backp
+        << nodeAddr(this)
+        //<< " " << nodeAddr(m_backp)
         << " <e" << std::dec << editCount() << ((editCount() >= editCountLast()) ? "#>" : ">")
         << " {" << fileline()->filenameLetters() << std::dec << fileline()->lastLineno()
         << fileline()->firstColumnLetters() << "}";
-    if (user1p()) str << " u1=" << cvtToHex(user1p());
-    if (user2p()) str << " u2=" << cvtToHex(user2p());
-    if (user3p()) str << " u3=" << cvtToHex(user3p());
-    if (user4p()) str << " u4=" << cvtToHex(user4p());
-    if (user5p()) str << " u5=" << cvtToHex(user5p());
+    if (user1p()) str << " u1=" << nodeAddr(user1p());
+    if (user2p()) str << " u2=" << nodeAddr(user2p());
+    if (user3p()) str << " u3=" << nodeAddr(user3p());
+    if (user4p()) str << " u4=" << nodeAddr(user4p());
+    if (user5p()) str << " u5=" << nodeAddr(user5p());
     if (hasDType()) {
         // Final @ so less likely to by accident read it as a nodep
         if (dtypep() == this) {
             str << " @dt=this@";
         } else {
-            str << " @dt=" << cvtToHex(dtypep()) << "@";
+            str << " @dt=" << nodeAddr(dtypep()) << "@";
         }
         if (AstNodeDType* dtp = dtypep()) { dtp->dumpSmall(str); }
     } else {  // V3Broken will throw an error
-        if (dtypep()) str << " %Error-dtype-exp=null,got=" << cvtToHex(dtypep());
+        if (dtypep()) str << " %Error-dtype-exp=null,got=" << nodeAddr(dtypep());
     }
     if (name() != "") {
         if (VN_IS(this, Const)) {
@@ -1240,7 +1249,7 @@ void AstNodeDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (generic()) str << " [GENERIC]";
     if (AstNodeDType* dtp = virtRefDTypep()) {
-        str << " refdt=" << cvtToHex(dtp);
+        str << " refdt=" << nodeAddr(dtp);
         dtp->dumpSmall(str);
     }
 }
@@ -1385,7 +1394,7 @@ void AstVarScope::dump(std::ostream& str) const {
 }
 void AstVarXRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (packagep()) { str << " pkg=" << cvtToHex(packagep()); }
+    if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
     if (lvalue()) {
         str << " [LV] => ";
     } else {
@@ -1403,7 +1412,7 @@ void AstVarXRef::dump(std::ostream& str) const {
 }
 void AstVarRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (packagep()) { str << " pkg=" << cvtToHex(packagep()); }
+    if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
     if (lvalue()) {
         str << " [LV] => ";
     } else {
@@ -1455,7 +1464,7 @@ void AstParseRef::dump(std::ostream& str) const {
 }
 void AstPackageRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (packagep()) { str << " pkg=" << cvtToHex(packagep()); }
+    if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
     str << " -> ";
     if (packagep()) {
         packagep()->dump(str);
@@ -1478,7 +1487,7 @@ void AstActive::dump(std::ostream& str) const {
 }
 void AstNodeFTaskRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (packagep()) { str << " pkg=" << cvtToHex(packagep()); }
+    if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
     str << " -> ";
     if (dotted() != "") { str << ".=" << dotted() << " "; }
     if (taskp()) {

@@ -300,6 +300,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --dump-tree                 Enable dumping .tree files
     --dump-treei <level>        Enable dumping .tree files at a level
     --dump-treei-<srcfile> <level>  Enable dumping .tree file at a source file at a level
+    --dump-tree-addrids         Use short identifiers instead of addresses
      -E                         Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
@@ -811,6 +812,14 @@ globally to a specific dumping level or set the specified Verilator source
 file to the specified tree dumping level (e.g. C<--dump-treei-V3Order 9>).
 Level 0 disbles dumps and is equivalent to "--no-dump-tree".  Level 9
 enables dumping of every stage.
+
+=item --dump-tree-addrids
+
+Rarely needed - for developer use.  Replace AST node addresses with short
+identifiers in tree dumps to enhance readability.  Each unique pointer value
+is mapped to a unique identifier, but note that this is not necessarily
+unique per node instance as an address might get reused by a newly allocated
+node after a node with the same address has been dumped then freed.
 
 =item -E
 
