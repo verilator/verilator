@@ -197,6 +197,8 @@ private:
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
+        UASSERT_OBJ(!(m_elimCells && nodep->typedefp()), nodep,
+                    "RefDType should point to data type before typedefs removed");
         if (nodep->packagep()) {
             if (m_elimCells) {
                 nodep->packagep(NULL);

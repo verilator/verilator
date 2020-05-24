@@ -1215,12 +1215,16 @@ void AstRange::dump(std::ostream& str) const {
 }
 void AstRefDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
-    if (defp()) {
+    if (typedefp() || subDTypep()) {
         static bool s_recursing = false;
         if (!s_recursing) {  // Prevent infinite dump if circular typedefs
             s_recursing = true;
             str << " -> ";
-            defp()->dump(str);
+            if (typedefp()) {
+                typedefp()->dump(str);
+            } else if (subDTypep()) {
+                subDTypep()->dump(str);
+            }
             s_recursing = false;
         }
     } else {

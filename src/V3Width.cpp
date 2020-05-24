@@ -1437,18 +1437,21 @@ private:
             // Type comes from expression's type
             userIterateAndNext(nodep->typeofp(), WidthVP(SELF, BOTH).p());
             AstNode* typeofp = nodep->typeofp();
+            nodep->typedefp(NULL);
             nodep->refDTypep(typeofp->dtypep());
             VL_DO_DANGLING(typeofp->unlinkFrBack()->deleteTree(), typeofp);
             // We had to use AstRefDType for this construct as pointers to this type
             // in type table are still correct (which they wouldn't be if we replaced the node)
         }
         userIterateChildren(nodep, NULL);
-        if (nodep->subDTypep()) nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        if (nodep->subDTypep()) {
+            nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+            nodep->typedefp(NULL);  // Note until line above subDTypep() may have followed this
+        }
         // Effectively nodep->dtypeFrom(nodep->dtypeSkipRefp());
         // But might be recursive, so instead manually recurse into the referenced type
-        UASSERT_OBJ(nodep->defp(), nodep, "Unlinked");
-        nodep->dtypeFrom(nodep->defp());
-        userIterate(nodep->defp(), NULL);
+        UASSERT_OBJ(nodep->subDTypep(), nodep, "Unlinked");
+        nodep->dtypeFrom(nodep->subDTypep());
         nodep->widthFromSub(nodep->subDTypep());
         UINFO(4, "dtWidthed " << nodep << endl);
         nodep->doingWidth(false);

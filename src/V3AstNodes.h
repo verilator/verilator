@@ -1094,25 +1094,24 @@ public:
 
 class AstRefDType : public AstNodeDType {
 private:
+    // Pre-Width must reference the Typeref, not what it points to, as some child
+    // types like AstBracketArrayType will disappear and can't lose the handle
+    AstTypedef* m_typedefp;  // referenced type
+    // Post-width typedefs are removed and point to type directly
     AstNodeDType* m_refDTypep;  // data type pointed to, BELOW the AstTypedef
     string m_name;  // Name of an AstTypedef
     AstNodeModule* m_packagep;  // Package hierarchy
 public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl)
+        , m_typedefp(NULL)
         , m_refDTypep(NULL)
         , m_name(name)
         , m_packagep(NULL) {}
-    AstRefDType(FileLine* fl, AstNodeDType* defp)
-        : ASTGEN_SUPER(fl)
-        , m_refDTypep(defp)
-        , m_packagep(NULL) {
-        dtypeFrom(defp->dtypep());
-        widthFromSub(subDTypep());
-    }
     class FlagTypeOfExpr {};  // type(expr) for parser only
     AstRefDType(FileLine* fl, FlagTypeOfExpr, AstNode* typeofp)
         : ASTGEN_SUPER(fl)
+        , m_typedefp(NULL)
         , m_refDTypep(NULL)
         , m_packagep(NULL) {
         setOp2p(typeofp);
@@ -1120,47 +1119,53 @@ public:
     ASTNODE_NODE_FUNCS(RefDType)
     // METHODS
     virtual const char* broken() const {
+        BROKEN_RTN(m_typedefp && !m_typedefp->brokeExists());
         BROKEN_RTN(m_refDTypep && !m_refDTypep->brokeExists());
         return NULL;
     }
     virtual void cloneRelink() {
+        if (m_typedefp && m_typedefp->clonep()) { m_typedefp = m_typedefp->clonep(); }
         if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
     }
     virtual bool same(const AstNode* samep) const {
         const AstRefDType* asamep = static_cast<const AstRefDType*>(samep);
-        return (m_refDTypep == asamep->m_refDTypep && m_name == asamep->m_name
-                && m_packagep == asamep->m_packagep);
+        return (m_typedefp == asamep->m_typedefp && m_refDTypep == asamep->m_refDTypep
+                && m_name == asamep->m_name && m_packagep == asamep->m_packagep);
     }
     virtual bool similarDType(AstNodeDType* samep) const {
         return skipRefp()->similarDType(samep->skipRefp());
     }
-    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_refDTypep), V3Hash(m_packagep)); }
+    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_typedefp), V3Hash(m_packagep)); }
     virtual void dump(std::ostream& str = std::cout) const;
     virtual string name() const { return m_name; }
     virtual string prettyDTypeName() const {
         return subDTypep() ? subDTypep()->name() : prettyName();
     }
     virtual AstBasicDType* basicp() const { return subDTypep() ? subDTypep()->basicp() : NULL; }
+    AstNodeDType* subDTypep() const {
+        if (typedefp()) return typedefp()->subDTypep();
+        return refDTypep();  // Maybe NULL
+    }
     virtual AstNodeDType* skipRefp() const {
         // Skip past both the Ref and the Typedef
-        if (defp()) {
-            return defp()->skipRefp();
+        if (subDTypep()) {
+            return subDTypep()->skipRefp();
         } else {
             v3fatalSrc("Typedef not linked");
             return NULL;
         }
     }
     virtual AstNodeDType* skipRefToConstp() const {
-        if (defp()) {
-            return defp()->skipRefToConstp();
+        if (subDTypep()) {
+            return subDTypep()->skipRefToConstp();
         } else {
             v3fatalSrc("Typedef not linked");
             return NULL;
         }
     }
     virtual AstNodeDType* skipRefToEnump() const {
-        if (defp()) {
-            return defp()->skipRefToEnump();
+        if (subDTypep()) {
+            return subDTypep()->skipRefToEnump();
         } else {
             v3fatalSrc("Typedef not linked");
             return NULL;
@@ -1170,15 +1175,13 @@ public:
     virtual int widthTotalBytes() const { return dtypeSkipRefp()->widthTotalBytes(); }
     void name(const string& flag) { m_name = flag; }
     // op1 = Range of variable
-    AstNodeDType* dtypeSkipRefp() const { return defp()->skipRefp(); }
-    AstNodeDType* defp() const {
-        return m_refDTypep;
-    }  // Code backward compatibility name for refDTypep
+    AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }
+    AstTypedef* typedefp() const { return m_typedefp; }
+    void typedefp(AstTypedef* nodep) { m_typedefp = nodep; }
     AstNodeDType* refDTypep() const { return m_refDTypep; }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const { return refDTypep(); }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
-    virtual AstNodeDType* subDTypep() const { return m_refDTypep; }
     AstNodeModule* packagep() const { return m_packagep; }
     void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
     AstNode* typeofp() const { return op2p(); }

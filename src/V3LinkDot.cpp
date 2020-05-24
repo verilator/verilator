@@ -2674,7 +2674,7 @@ private:
             checkNoDot(nodep);
         }
         if (nodep->typeofp()) {  // Really is a typeof not a reference
-        } else if (!nodep->defp()) {
+        } else if (!nodep->typedefp() && !nodep->subDTypep()) {
             VSymEnt* foundp;
             if (nodep->packagep()) {
                 foundp = m_statep->getNodeSym(nodep->packagep())->findIdFlat(nodep->name());
@@ -2682,7 +2682,7 @@ private:
                 foundp = m_curSymp->findIdFallback(nodep->name());
             }
             if (AstTypedef* defp = foundp ? VN_CAST(foundp->nodep(), Typedef) : NULL) {
-                nodep->refDTypep(defp->subDTypep());
+                nodep->typedefp(defp);
                 nodep->packagep(foundp->packagep());
             } else if (AstParamTypeDType* defp
                        = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : NULL) {
