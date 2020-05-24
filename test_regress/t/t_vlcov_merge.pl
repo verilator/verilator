@@ -24,7 +24,7 @@ run(cmd => ["../bin/verilator_coverage",
 # really care about ordering. So avoid false failures by sorting.
 # Set LC_ALL as suggested in the sort manpage to avoid sort order
 # changes from the locale.
-$ENV{LC_ALL} = "C";
+setenv('LC_ALL', "C");
 run(cmd => ["sort",
             "$Self->{obj_dir}/coverage.dat",
             "> $Self->{obj_dir}/coverage-sort.dat",

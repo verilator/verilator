@@ -374,10 +374,12 @@ sub one_test {
                  $test->oprint("FAILED: $test->{errors}\n");
                  my $j = ($opt_jobs>1?" -j":"");
                  my $makecmd = $ENV{VERILATOR_MAKE} || "make$j &&";
+                 my $upperdir = (Cwd::getcwd() =~ /test_regress/
+                                 ? 'test_regress/' : '');
                  push @{$self->{fail_msgs}},
                      ("\t#".$test->soprint("%Error: $test->{errors}\n")
-                      ."\t\t$makecmd test_regress/"
-                      .$test->{pl_filename}
+                      ."\t\t$makecmd "
+                      .$upperdir.$test->{pl_filename}
                       ." ".join(' ', _manual_args())
                       ." --".$test->{scenario}."\n");
                  push @{$self->{fail_tests}}, $test;
@@ -1296,6 +1298,14 @@ sub execute {
     else {
         $self->error("No execute step for this simulator");
     }
+}
+
+sub setenv {
+    my $self = (ref $_[0]? shift : $Self);
+    my $var = shift;
+    my $val = shift;
+    print "\texport $var='$val'\n";
+    $ENV{$var} = $val;
 }
 
 sub inline_checks {
