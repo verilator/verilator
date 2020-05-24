@@ -21,6 +21,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix $isunknown with constant Z's.
 
+****  Fix queues and dynamic array wide ops. (#2352) [Vassilis Papaefstathiou]
+
 
 * Verilator 4.034 2020-05-03
 
