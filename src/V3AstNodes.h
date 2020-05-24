@@ -7774,11 +7774,10 @@ public:
     virtual bool cleanOut() const { V3ERROR_NA_RETURN(""); }
     virtual int instrCount() const { return widthInstrs(); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const {
-        return VN_CAST(op1p(), NodeDType);
-    }  // op1 = Type assigning to
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    // op1 = Type assigning to
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
+    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNode* itemsp() const { return op2p(); }  // op2 = AstPatReplicate, AstPatMember, etc
 };
 class AstPatMember : public AstNodeMath {

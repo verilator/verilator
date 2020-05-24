@@ -2374,9 +2374,8 @@ public:
     virtual AstNodeDType* skipRefToEnump() const = 0;
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthAlignBytes() const = 0;
-    virtual int
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
-    widthTotalBytes() const = 0;
+    virtual int widthTotalBytes() const = 0;
     virtual bool maybePointedTo() const { return true; }
     // Iff has a non-null refDTypep(), as generic node function
     virtual AstNodeDType* virtRefDTypep() const { return NULL; }
@@ -2533,10 +2532,8 @@ public:
     virtual V3Hash sameHash() const {
         return V3Hash(V3Hash(m_refDTypep), V3Hash(msb()), V3Hash(lsb()));
     }
-    AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const {
-        return VN_CAST(op1p(), NodeDType);
-    }  // op1 = Range of variable
+    virtual AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }

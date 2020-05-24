@@ -2371,9 +2371,10 @@ private:
     }
     virtual void visit(AstEnumDType* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
-        AstRefDType* refdtype = VN_CAST(nodep->childDTypep(), RefDType);
-        if (refdtype && (nodep == refdtype->refDTypep()))
-            refdtype->v3error("Self-referential enumerated type definition");
+        AstRefDType* refdtypep = VN_CAST(nodep->subDTypep(), RefDType);
+        if (refdtypep && (nodep == refdtypep->subDTypep())) {
+            refdtypep->v3error("Self-referential enumerated type definition");
+        }
     }
     virtual void visit(AstEnumItemRef* nodep) VL_OVERRIDE {
         // EnumItemRef may be under a dot.  Should already be resolved.
