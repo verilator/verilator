@@ -255,8 +255,20 @@ jobs:
       dist: focal
       compiler: gcc
       stage: test
+      name: "Coverage vltmt set 2"
+      script: ci/test.sh coverage-vltmt2
+    - if: type = cron
+      dist: focal
+      compiler: gcc
+      stage: test
       name: "Coverage vlt set 3"
       script: ci/test.sh coverage-vlt3
+    - if: type = cron
+      dist: focal
+      compiler: gcc
+      stage: test
+      name: "Coverage vltmt set 3"
+      script: ci/test.sh coverage-vltmt3
 
 notifications:
   email:

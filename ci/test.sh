@@ -54,11 +54,19 @@ case $1 in
         bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
         ;;
     coverage-vltmt0)
-        nodist/code_coverage --scenarios=--vltmt --hashset=0/2
+        nodist/code_coverage --scenarios=--vltmt --hashset=0/4
         bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
         ;;
     coverage-vltmt1)
-        nodist/code_coverage --scenarios=--vltmt --hashset=1/2
+        nodist/code_coverage --scenarios=--vltmt --hashset=1/4
+        bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
+        ;;
+    coverage-vltmt2)
+        nodist/code_coverage --scenarios=--vltmt --hashset=3/4
+        bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
+        ;;
+    coverage-vltmt3)
+        nodist/code_coverage --scenarios=--vltmt --hashset=4/4
         bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info 
         ;;
     *)

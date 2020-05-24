@@ -190,7 +190,8 @@ sub test {
         foreach my $dir (sort keys %dirs) {
             (my $outname = $dir) =~ s![^a-zA-Z0-9]+!_!g;
             $Fork->schedule(run_on_start => sub {
-                run("cd $cc_dir/info ; lcov -c -d ../../../../$dir --exclude /usr -o app_test_${outname}.info");
+                # .info may be empty, so ignore errors (unfortunately)
+                run("cd $cc_dir/info ; lcov -c -d ../../../../$dir --exclude /usr -o app_test_${outname}.info || true");
                             })->run;
         }
         $Fork->wait_all;
