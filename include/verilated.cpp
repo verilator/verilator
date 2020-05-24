@@ -1370,8 +1370,8 @@ void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE {
     va_end(ap);
 
     FILE* fp[30];
-    const int n = VerilatedImp::fdToFp(fpi, fp, 30);
-    for (std::size_t i = 0; i < n; i++) {
+    const std::size_t n = VerilatedImp::fdToFp(fpi, fp, 30);
+    for (std::size_t i = 0; i < n; ++i) {
         if (VL_UNLIKELY(!fp[i])) continue;
         fwrite(output.c_str(), 1, output.size(), fp[i]);
     }
