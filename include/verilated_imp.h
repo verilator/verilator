@@ -484,24 +484,24 @@ public:  // But only for verilated*.cpp
         return (idx | (1UL << 31));  // bit 31 indicates not MCD
     }
     static void fdFlush(IData fdi) VL_MT_SAFE {
-        FILE* fp[30];
-        const int n = fdToFp(fdi, fp, 30);
-        VerilatedLockGuard lock(s_s.m_fdMutex);
-        for (int i = 0; i < n; i++) fflush(fp[i]);
+        VerilatedFdList fdlist;
+        fdToFp(fdi, fdlist);
+        for (VerilatedFdList::iterator it = fdlist.begin(); it != fdlist.end(); ++it) {
+            fflush(*it);
+        }
     }
     static IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE {
-        FILE* fp;
-        const int n = fdToFp(fdi, &fp);
-        VerilatedLockGuard lock(s_s.m_fdMutex);
-        if (VL_UNLIKELY(!fp || (n != 1))) return 0;
-        return static_cast<IData>(fseek(fp, static_cast<long>(offset), static_cast<int>(origin)));
+        VerilatedFdList fdlist;
+        fdToFp(fdi, fdlist);
+        if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
+        return static_cast<IData>(fseek(*fdlist.begin(), static_cast<long>(offset),
+                                        static_cast<int>(origin)));
     }
     static IData fdTell(IData fdi) VL_MT_SAFE {
-        FILE* fp;
-        const int n = fdToFp(fdi, &fp);
-        VerilatedLockGuard lock(s_s.m_fdMutex);
-        if (VL_UNLIKELY(!fp || (n != 1))) return 0;
-        return static_cast<IData>(ftell(fp));
+        VerilatedFdList fdlist;
+        fdToFp(fdi, fdlist);
+        if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
+        return static_cast<IData>(ftell(*fdlist.begin()));
     }
     static void fdClose(IData fdi) VL_MT_SAFE {
         VerilatedLockGuard lock(s_s.m_fdMutex);
@@ -524,29 +524,26 @@ public:  // But only for verilated*.cpp
             }
         }
     }
-    static inline int fdToFp(IData fdi, FILE** fp, std::size_t max = 1) VL_MT_SAFE {
-        if (VL_UNLIKELY(!fp || (max == 0))) return 0;
+    static inline void fdToFp(IData fdi, VerilatedFdList& fd) VL_MT_SAFE {
         VerilatedLockGuard lock(s_s.m_fdMutex);
-        int out = 0;
         if ((fdi & (1 << 31)) != 0) {
             // Non-MCD case
             IData idx = fdi & VL_MASK_I(31);
             switch (idx) {
-            case 0: fp[out++] = stdin; break;
-            case 1: fp[out++] = stdout; break;
-            case 2: fp[out++] = stderr; break;
+            case 0: fd.append(stdin); break;
+            case 1: fd.append(stdout); break;
+            case 2: fd.append(stderr); break;
             default:
-                if (VL_LIKELY(idx < s_s.m_fdps.size())) fp[out++] = s_s.m_fdps[idx];
+                if (VL_LIKELY(idx < s_s.m_fdps.size())) fd.append(s_s.m_fdps[idx]);
                 break;
             }
         } else {
             // MCD Case
-            for (int i = 0; (fdi != 0) && (out < static_cast<int>(max)) && (i < 31);
-                 ++i, fdi >>= 1) {
-                if (fdi & VL_MASK_I(1)) fp[out++] = s_s.m_fdps[i];
+            for (int i = 0; (fdi != 0) && (i < fd.capacity()); ++i, fdi >>= 1) {
+                if (fdi & VL_MASK_I(1)) fd.append(s_s.m_fdps[i]);
             }
         }
-        return out;
+        fd.adopt_lock(lock.release());
     }
 };
 

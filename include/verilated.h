@@ -163,16 +163,26 @@ class VL_SCOPED_CAPABILITY VerilatedLockGuard {
     VL_UNCOPYABLE(VerilatedLockGuard);
 
 private:
-    VerilatedMutex& m_mutexr;
+    VerilatedMutex* m_mutexr;
 
 public:
-    explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr)
-        : m_mutexr(mutexr) {
-        m_mutexr.lock();
+    explicit VerilatedLockGuard()
+        : m_mutexr(NULL) {
     }
-    ~VerilatedLockGuard() VL_RELEASE() { m_mutexr.unlock(); }
-    void lock() VL_ACQUIRE() { m_mutexr.lock(); }
-    void unlock() VL_RELEASE() { m_mutexr.unlock(); }
+    explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr)
+        : m_mutexr(&mutexr) {
+        m_mutexr->lock();
+    }
+    ~VerilatedLockGuard() VL_RELEASE() { if (owns_lock()) m_mutexr->unlock(); }
+    void lock() VL_ACQUIRE() { if (owns_lock()) m_mutexr->lock(); }
+    void unlock() VL_RELEASE() { if (owns_lock()) m_mutexr->unlock(); }
+    bool owns_lock() const { return m_mutexr != NULL; }
+    void adopt(VerilatedMutex* mutexr) { unlock(); m_mutexr = mutexr; }
+    VerilatedMutex* release() {
+        VerilatedMutex* ret = m_mutexr;
+        m_mutexr = NULL;
+        return ret;
+    }
 };
 
 #else  // !VL_THREADED
@@ -189,13 +199,33 @@ class VerilatedLockGuard {
     VL_UNCOPYABLE(VerilatedLockGuard);
 
 public:
+    struct adopt_lock_t {};
+    explicit VerilatedLockGuard() {}
     explicit VerilatedLockGuard(VerilatedMutex&) {}
     ~VerilatedLockGuard() {}
     void lock() {}
     void unlock() {}
+    bool owns_lock() const { return false; }
+    void adopt(VerilatedMutex*) { }
+    VerilatedMutex* release() { return NULL; }
 };
 
 #endif  // VL_THREADED
+
+class VerilatedFdList {
+    FILE* m_fp[31];
+    VerilatedLockGuard m_lg;
+    std::size_t m_sz;
+public:
+    typedef FILE** iterator;
+    explicit VerilatedFdList() : m_sz(0) {}
+    iterator begin() { return m_fp; }
+    iterator end() { return m_fp + m_sz; }
+    std::size_t size() const { return m_sz; }
+    std::size_t capacity() const { return 31; }
+    void append(FILE* fd) { if (size() < capacity()) m_fp[m_sz++] = fd; }
+    void adopt_lock(VerilatedMutex* lock) { m_lg.adopt(lock); }
+};
 
 /// Remember the calling thread at construction time, and make sure later calls use same thread
 class VerilatedAssertOneThread {
