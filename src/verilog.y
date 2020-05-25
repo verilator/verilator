@@ -1387,13 +1387,13 @@ parameter_declaration<nodep>:	// IEEE: local_ or parameter_declaration
 
 parameter_declarationFront:	// IEEE: local_ or parameter_declaration w/o assignment
 	//			// Front must execute first so VARDTYPE is ready before list of vars
-		varParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	|	varParamReset data_type			{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
+		varParamReset implicit_typeE 		{ /*VARRESET-in-varParam*/ VARDTYPE($2); }
+	|	varParamReset data_type			{ /*VARRESET-in-varParam*/ VARDTYPE($2); }
 	;
 
 parameter_declarationTypeFront:	// IEEE: local_ or parameter_declaration w/o assignment
 	//			// Front must execute first so VARDTYPE is ready before list of vars
-		varParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+		varParamReset yTYPE			{ /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	;
 
 parameter_port_declarationFrontE: // IEEE: local_ or parameter_port_declaration w/o assignment
