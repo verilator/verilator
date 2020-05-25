@@ -319,6 +319,7 @@ public:
         , m_packagep(NULL) {}
     ASTNODE_NODE_FUNCS(Class)
     virtual string verilogKwd() const { return "class"; }
+    virtual bool isHeavy() const { return true; }
     virtual bool maybePointedTo() const { return true; }
     virtual void dump(std::ostream& str) const;
     virtual const char* broken() const {
@@ -540,6 +541,7 @@ public:
     virtual string prettyDTypeName() const;
     virtual void dumpSmall(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
+    virtual bool isHeavy() const { return true; }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
@@ -602,6 +604,7 @@ public:
     virtual string prettyDTypeName() const;
     virtual void dumpSmall(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
+    virtual bool isHeavy() const { return true; }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
@@ -814,6 +817,7 @@ public:
         BROKEN_RTN(dtypep() != this);
         return NULL;
     }
+    virtual bool isHeavy() const { return keyword() == AstBasicDTypeKwd::STRING; }
     AstRange* rangep() const { return VN_CAST(op1p(), Range); }  // op1 = Range of variable
     void rangep(AstRange* nodep) { setNOp1p(nodep); }
     void setSignedState(const VSigning& signst) {
@@ -831,8 +835,8 @@ public:
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthAlignBytes() const;
-    virtual int
-    widthTotalBytes() const;  // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
+    // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
+    virtual int widthTotalBytes() const;
     virtual bool isFourstate() const { return keyword().isFourstate(); }
     AstBasicDTypeKwd keyword() const {  // Avoid using - use isSomething accessors instead
         return m.m_keyword;
@@ -854,9 +858,8 @@ public:
     bool isDpiPrimitive() const {  // DPI uses a primitive type
         return !isDpiBitVec() && !isDpiLogicVec();
     }
-    const VNumRange& nrange() const {
-        return m.m_nrange;
-    }  // Generally the msb/lsb/etc funcs should be used instead
+    // Generally the msb/lsb/etc funcs should be used instead
+    const VNumRange& nrange() const { return m.m_nrange; }
     int msb() const { return (rangep() ? rangep()->msbConst() : m.m_nrange.hi()); }
     int lsb() const { return (rangep() ? rangep()->lsbConst() : m.m_nrange.lo()); }
     int left() const { return littleEndian() ? lsb() : msb(); }  // How to show a declaration
@@ -1066,6 +1069,7 @@ public:
     virtual void dumpSmall(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
     virtual string prettyDTypeName() const;
+    virtual bool isHeavy() const { return true; }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
@@ -3644,6 +3648,7 @@ public:
     virtual string emitVerilog() { return "%f" + verilogKwd() + "(%l)"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool isGateOptimizable() const { return false; }
+    virtual bool isHeavy() const { return true; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isOutputter() const { return true; }
     virtual bool cleanOut() const { return true; }
@@ -3795,6 +3800,7 @@ public:
     ASTNODE_NODE_FUNCS(FOpen)
     virtual string verilogKwd() const { return "$fopen"; }
     virtual bool isGateOptimizable() const { return false; }
+    virtual bool isHeavy() const { return true; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isPure() const { return false; }
     virtual bool isOutputter() const { return true; }
@@ -3817,6 +3823,7 @@ public:
     ASTNODE_NODE_FUNCS(FOpenMcd)
     virtual string verilogKwd() const { return "$fopen"; }
     virtual bool isGateOptimizable() const { return false; }
+    virtual bool isHeavy() const { return true; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isPure() const { return false; }
     virtual bool isOutputter() const { return true; }
@@ -4048,6 +4055,7 @@ public:
         setNOp4p(msbp);
     }
     virtual bool isGateOptimizable() const { return false; }
+    virtual bool isHeavy() const { return true; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isPure() const { return false; }
     virtual bool isOutputter() const { return true; }
@@ -4138,6 +4146,7 @@ public:
     virtual string emitVerilog() { return "%f$value$plusargs(%l, %k%r)"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool isGateOptimizable() const { return false; }
+    virtual bool isHeavy() const { return true; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool cleanOut() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -6069,6 +6078,7 @@ public:
     virtual bool cleanOut() const { return true; }
     virtual bool cleanLhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
+    virtual bool isHeavy() const { return true; }
     FmtType format() const { return m_fmt; }
 };
 
@@ -7602,6 +7612,7 @@ public:
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
     virtual bool sizeMattersThs() const { return false; }
+    virtual bool isHeavy() const { return true; }
 };
 
 class AstGetcN : public AstNodeBiop {
@@ -7627,6 +7638,7 @@ public:
     virtual bool cleanRhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
+    virtual bool isHeavy() const { return true; }
 };
 
 class AstGetcRefN : public AstNodeBiop {
@@ -7652,6 +7664,7 @@ public:
     virtual bool cleanRhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
+    virtual bool isHeavy() const { return true; }
 };
 
 class AstSubstrN : public AstNodeTriop {
@@ -7677,6 +7690,7 @@ public:
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
     virtual bool sizeMattersThs() const { return false; }
+    virtual bool isHeavy() const { return true; }
 };
 
 class AstCompareNN : public AstNodeBiop {
@@ -7709,6 +7723,7 @@ public:
     virtual bool cleanRhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
+    virtual bool isHeavy() const { return true; }
 };
 
 class AstPast : public AstNodeMath {

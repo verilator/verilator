@@ -1788,20 +1788,22 @@ public:
     static void dumpTreeFileGdb(const char* filenamep = NULL);
 
     // METHODS - queries
-    // Else a $display, etc, that must be ordered with other displays
-    virtual bool isPure() const { return true; }
     // Changes control flow, disable some optimizations
     virtual bool isBrancher() const { return false; }
     // Else a AstTime etc that can't be pushed out
     virtual bool isGateOptimizable() const { return true; }
     // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
     virtual bool isGateDedupable() const { return isGateOptimizable(); }
-    // Else a AstTime etc that can't be substituted out
-    virtual bool isSubstOptimizable() const { return true; }
-    // Else a AstTime etc which output can't be predicted from input
-    virtual bool isPredictOptimizable() const { return true; }
+    // Needs verilated_heavy.h (uses std::string or some others)
+    virtual bool isHeavy() const { return false; }
     // Else creates output or exits, etc, not unconsumed
     virtual bool isOutputter() const { return false; }
+    // Else a AstTime etc which output can't be predicted from input
+    virtual bool isPredictOptimizable() const { return true; }
+    // Else a $display, etc, that must be ordered with other displays
+    virtual bool isPure() const { return true; }
+    // Else a AstTime etc that can't be substituted out
+    virtual bool isSubstOptimizable() const { return true; }
     // isUnlikely handles $stop or similar statement which means an above IF
     // statement is unlikely to be taken
     virtual bool isUnlikely() const { return false; }
