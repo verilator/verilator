@@ -169,6 +169,24 @@ public:
 };
 #endif  // VL_THREADED
 
+// FILE* list constructed from a file-descriptor
+class VerilatedFpList {
+    FILE* m_fp[31];
+    std::size_t m_sz;
+
+public:
+    typedef FILE* const* const_iterator;
+    explicit VerilatedFpList()
+        : m_sz(0) {}
+    const_iterator begin() const { return m_fp; }
+    const_iterator end() const { return m_fp + m_sz; }
+    std::size_t size() const { return m_sz; }
+    std::size_t capacity() const { return 31; }
+    void push_back(FILE* fd) {
+        if (VL_LIKELY(size() < capacity())) m_fp[m_sz++] = fd;
+    }
+};
+
 //======================================================================
 // VerilatedImp
 
@@ -484,24 +502,32 @@ public:  // But only for verilated*.cpp
         return (idx | (1UL << 31));  // bit 31 indicates not MCD
     }
     static void fdFlush(IData fdi) VL_MT_SAFE {
-        VerilatedFdList fdlist;
-        fdToFp(fdi, fdlist);
-        for (VerilatedFdList::iterator it = fdlist.begin(); it != fdlist.end(); ++it) {
+        VerilatedLockGuard lock(s_s.m_fdMutex);
+        const VerilatedFpList fdlist = fdToFpList(fdi);
+        for (VerilatedFpList::const_iterator it = fdlist.begin(); it != fdlist.end(); ++it) {
             fflush(*it);
         }
     }
     static IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE {
-        VerilatedFdList fdlist;
-        fdToFp(fdi, fdlist);
+        VerilatedLockGuard lock(s_s.m_fdMutex);
+        const VerilatedFpList fdlist = fdToFpList(fdi);
         if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
         return static_cast<IData>(
             fseek(*fdlist.begin(), static_cast<long>(offset), static_cast<int>(origin)));
     }
     static IData fdTell(IData fdi) VL_MT_SAFE {
-        VerilatedFdList fdlist;
-        fdToFp(fdi, fdlist);
+        VerilatedLockGuard lock(s_s.m_fdMutex);
+        const VerilatedFpList fdlist = fdToFpList(fdi);
         if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
         return static_cast<IData>(ftell(*fdlist.begin()));
+    }
+    static void fdWrite(IData fdi, const std::string& output) VL_MT_SAFE {
+        VerilatedLockGuard lock(s_s.m_fdMutex);
+        const VerilatedFpList fdlist = fdToFpList(fdi);
+        for (VerilatedFpList::const_iterator it = fdlist.begin(); it != fdlist.end(); ++it) {
+            if (VL_UNLIKELY(!*it)) continue;
+            fwrite(output.c_str(), 1, output.size(), *it);
+        }
     }
     static void fdClose(IData fdi) VL_MT_SAFE {
         VerilatedLockGuard lock(s_s.m_fdMutex);
@@ -524,26 +550,34 @@ public:  // But only for verilated*.cpp
             }
         }
     }
-    static inline void fdToFp(IData fdi, VerilatedFdList& fd) VL_MT_SAFE {
+    static inline FILE* fdToFp(IData fdi) VL_MT_SAFE {
         VerilatedLockGuard lock(s_s.m_fdMutex);
+        const VerilatedFpList fdlist = fdToFpList(fdi);
+        if (VL_UNLIKELY(fdlist.size() != 1)) return NULL;
+        return *fdlist.begin();
+    }
+
+private:
+    static inline VerilatedFpList fdToFpList(IData fdi) {
+        VerilatedFpList fp;
         if ((fdi & (1 << 31)) != 0) {
             // Non-MCD case
-            IData idx = fdi & VL_MASK_I(31);
+            const IData idx = fdi & VL_MASK_I(31);
             switch (idx) {
-            case 0: fd.push_back(stdin); break;
-            case 1: fd.push_back(stdout); break;
-            case 2: fd.push_back(stderr); break;
+            case 0: fp.push_back(stdin); break;
+            case 1: fp.push_back(stdout); break;
+            case 2: fp.push_back(stderr); break;
             default:
-                if (VL_LIKELY(idx < s_s.m_fdps.size())) fd.push_back(s_s.m_fdps[idx]);
+                if (VL_LIKELY(idx < s_s.m_fdps.size())) fp.push_back(s_s.m_fdps[idx]);
                 break;
             }
         } else {
             // MCD Case
-            for (int i = 0; (fdi != 0) && (i < fd.capacity()); ++i, fdi >>= 1) {
-                if (fdi & VL_MASK_I(1)) fd.push_back(s_s.m_fdps[i]);
+            for (int i = 0; (fdi != 0) && (i < fp.capacity()); ++i, fdi >>= 1) {
+                if (fdi & VL_MASK_I(1)) fp.push_back(s_s.m_fdps[i]);
             }
         }
-        fd.adopt_lock(lock.release());
+        return fp;
     }
 };
 

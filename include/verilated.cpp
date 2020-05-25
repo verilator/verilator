@@ -1181,11 +1181,8 @@ done:
 // File I/O
 
 FILE* VL_CVT_I_FP(IData lhs) VL_MT_SAFE {
-    // Expected non-MCD case; returns ONLY the first file descriptor seen in lhs (which
-    // in the MCD case can result in descriptors being ignored).
-    VerilatedFdList fdlist;
-    VerilatedImp::fdToFp(lhs, fdlist);
-    return *fdlist.begin();
+    // Expected non-MCD case; returns null on MCD descriptors.
+    return VerilatedImp::fdToFp(lhs);
 }
 
 void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) VL_MT_SAFE {
@@ -1369,12 +1366,7 @@ void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE {
     _vl_vsformat(output, formatp, ap);
     va_end(ap);
 
-    VerilatedFdList fdlist;
-    VerilatedImp::fdToFp(fpi, fdlist);
-    for (VerilatedFdList::iterator it = fdlist.begin(); it != fdlist.end(); ++it) {
-        if (VL_UNLIKELY(!*it)) continue;
-        fwrite(output.c_str(), 1, output.size(), *it);
-    }
+    VerilatedImp::fdWrite(fpi, output);
 }
 
 IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) VL_MT_SAFE {
