@@ -14,7 +14,7 @@ top_filename("t/t_unopt_converge.v");
 #$Self->{verilated_debug} = 1;
 
 compile(
-    v_flags2 => ['+define+ALLOW_UNOPT'],
+    v_flags2 => ['+define+ALLOW_UNOPT --output-split 0'],
     make_flags => 'CPPFLAGS_ADD=-DVL_DEBUG',
     );
 

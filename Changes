@@ -23,6 +23,13 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix queues and dynamic array wide ops. (#2352) [Vassilis Papaefstathiou]
 
+****  --output-split is now on by default. VM_PARALLEL_BUILDS is set by
+      default iff the --output-split caused an actual file split to occur.
+      --output-split-cfuncs and --output-split-ctrace now default to the
+      value of --output-split. These changes should improve build times of
+      medium and large designs with default options. User makefiles may
+      require changes.
+
 
 * Verilator 4.034 2020-05-03
 

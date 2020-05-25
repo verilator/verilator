@@ -640,6 +640,10 @@ void V3Options::notify() {
     // --trace-threads implies --threads 1 unless explicitly specified
     if (traceThreads() && !threads()) m_threads = 1;
 
+    // Default split limits if not specified
+    if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
+    if (m_outputSplitCTrace < 0) m_outputSplitCTrace = m_outputSplit;
+
     if (v3Global.opt.main() && v3Global.opt.systemC()) {
         cmdfl->v3error("--main not usable with SystemC. Suggest see examples for sc_main().");
     }
@@ -1058,13 +1062,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (!strcmp(sw, "-output-split-cfuncs") && (i + 1) < argc) {
                 shift;
                 m_outputSplitCFuncs = atoi(argv[i]);
-                if (m_outputSplitCFuncs
-                    && (!m_outputSplitCTrace || m_outputSplitCTrace > m_outputSplitCFuncs)) {
-                    m_outputSplitCTrace = m_outputSplitCFuncs;
+                if (m_outputSplitCFuncs < 0) {
+                    fl->v3error("--output-split-cfuncs must be >= 0: " << argv[i]);
                 }
-            } else if (!strcmp(sw, "-output-split-ctrace")) {  // Undocumented optimization tweak
+            } else if (!strcmp(sw, "-output-split-ctrace")) {
                 shift;
                 m_outputSplitCTrace = atoi(argv[i]);
+                if (m_outputSplitCTrace < 0) {
+                    fl->v3error("--output-split-ctrace must be >= 0: " << argv[i]);
+                }
             } else if (!strcmp(sw, "-protect-lib") && (i + 1) < argc) {
                 shift;
                 m_protectLib = argv[i];
@@ -1605,9 +1611,9 @@ V3Options::V3Options() {
     m_inlineMult = 2000;
     m_maxNumWidth = 65536;
     m_moduleRecursion = 100;
-    m_outputSplit = 0;
-    m_outputSplitCFuncs = 0;
-    m_outputSplitCTrace = 0;
+    m_outputSplit = 20000;
+    m_outputSplitCFuncs = -1;
+    m_outputSplitCTrace = -1;
     m_traceDepth = 0;
     m_traceMaxArray = 32;
     m_traceMaxWidth = 256;

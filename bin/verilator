@@ -1122,17 +1122,15 @@ developers.
 
 Enables splitting the output .cpp files into multiple outputs.  When a C++
 file exceeds the specified number of operations, a new file will be created
-at the next function boundary.  In addition, any infrequently executed
-"cold" routines will be placed into __Slow files.  This accelerates
-compilation by as optimization can be disabled on the routines in __Slow,
-and the remaining files can be compiled on parallel machines.  Using
---output-split should have only a trivial impact on performance.  On one
-design --output-split 20000 resulted in splitting into approximately
-one-minute-compile chunks.
+at the next function boundary.  In addition, if the total output code size
+exceeds the specified value, VM_PARALLEL_BUILDS will be set to 1 by default
+in the generated make files, making parallel compilation possible. Using
+--output-split should have only a trivial impact on model performance. But
+can greatly improve C++ compilation speed. The use of I<ccache> (set for you
+if present at configure time) is also more effective with this option.
 
-Typically when using this, make with VM_PARALLEL_BUILDS=1 (set for you if
-using the default makefiles), and use I<ccache> (set for you if present at
-configure time).
+This option is on by default with a value of 20000. To disable, pass with a
+value of 0.
 
 =item --output-split-cfuncs I<statements>
 
@@ -1144,10 +1142,14 @@ worse with decreasing split values.  Note that this option is stronger than
 --output-split in the sense that --output-split will not split inside a
 function.
 
+Defaults to the value of --output-split, unless explicitly specified.
+
 =item --output-split-ctrace I<statements>
 
-Enables splitting trace functions in the output .cpp files into
-multiple functions.  Defaults to same setting as --output-split-cfuncs.
+Similar to --output-split-cfuncs, enables splitting trace functions in the
+output .cpp files into multiple functions.
+
+Defaults to the value of --output-split, unless explicitly specified.
 
 =item -P
 
@@ -2085,16 +2087,17 @@ line to make:
 
     make OPT_FAST="-Os -march=native -fno-stack-protector" -f Vour.mk Vour__ALL.a
 
-OPT_FAST specifies optimizations for those programs that are part of the
-fast path, mostly code that is executed every cycle.  OPT_SLOW specifies
-optimizations for slow-path files (plus tracing), which execute only
-rarely, yet take a long time to compile with optimization on.  OPT
-specifies overall optimization and affects all compiles, including those
-OPT_FAST and OPT_SLOW control.  For best results, use OPT="-Os
--march=native", and link with "-static".  Nearly the same results can be
-had with much better compile times with OPT_FAST="-O1 -fstrict-aliasing".
-Higher optimization such as "-O2" or "-O3" may help, but gcc compile times
-may be excessive under O3 on even medium sized designs.
+OPT_FAST specifies optimizations for those parts of the program that are on the
+fast path. This is mostly code that is executed every cycle.  OPT_SLOW
+specifies optimizations for slow-path files, which execute only rarely, yet
+take a long time to compile with optimization on.  OPT_SLOW is ignored if
+VM_PARALLEL_BUILDS is not 1, in which case all code is compliled with OPT_FAST.
+See also the C<--output-split> option.  OPT specifies overall optimization and
+affects all compiles, including those OPT_FAST and OPT_SLOW control.  For best
+results, use OPT="-Os -march=native", and link with "-static".  Nearly the same
+results can be had with much better compile times with OPT_FAST="-O1
+-fstrict-aliasing".  Higher optimization such as "-O2" or "-O3" may help, but
+gcc compile times may be excessive under O3 on even medium sized designs.
 
 Unfortunately, using the optimizer with SystemC files can result in
 compiles taking several minutes.  (The SystemC libraries have many little
@@ -5215,7 +5218,12 @@ test_regress/t/t_extend_class files show an example of how to do this.
 =item How do I get faster build times?
 
 When running make pass the make variable VM_PARALLEL_BUILDS=1 so that
-builds occur in parallel.
+builds occur in parallel. Note this is now set by default if the output
+code size exceeds the value of --output-split.
+
+Verilator emits any infrequently executed "cold" routines into separate
+__Slow.cpp files. This can accelerate compilation as optimization can be
+disabled on these routines. See the OPT_FAST and OPT_SLOW make variables.
 
 Use a recent compiler.  Newer compilers tend do be faster, with the
 now relatively old GCC 3.0 to 3.3 being horrible.
