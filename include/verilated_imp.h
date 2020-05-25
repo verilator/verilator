@@ -530,17 +530,17 @@ public:  // But only for verilated*.cpp
             // Non-MCD case
             IData idx = fdi & VL_MASK_I(31);
             switch (idx) {
-            case 0: fd.append(stdin); break;
-            case 1: fd.append(stdout); break;
-            case 2: fd.append(stderr); break;
+            case 0: fd.push_back(stdin); break;
+            case 1: fd.push_back(stdout); break;
+            case 2: fd.push_back(stderr); break;
             default:
-                if (VL_LIKELY(idx < s_s.m_fdps.size())) fd.append(s_s.m_fdps[idx]);
+                if (VL_LIKELY(idx < s_s.m_fdps.size())) fd.push_back(s_s.m_fdps[idx]);
                 break;
             }
         } else {
             // MCD Case
             for (int i = 0; (fdi != 0) && (i < fd.capacity()); ++i, fdi >>= 1) {
-                if (fdi & VL_MASK_I(1)) fd.append(s_s.m_fdps[i]);
+                if (fdi & VL_MASK_I(1)) fd.push_back(s_s.m_fdps[i]);
             }
         }
         fd.adopt_lock(lock.release());

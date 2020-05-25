@@ -233,7 +233,7 @@ public:
     iterator end() { return m_fp + m_sz; }
     std::size_t size() const { return m_sz; }
     std::size_t capacity() const { return 31; }
-    void append(FILE* fd) {
+    void push_back(FILE* fd) {
         if (size() < capacity()) m_fp[m_sz++] = fd;
     }
     void adopt_lock(VerilatedMutex* lock) { m_lg.adopt(lock); }
