@@ -173,6 +173,10 @@ private:
 
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         cleanFileline(nodep);
+        if (nodep->isParam() && !nodep->valuep()
+            && nodep->fileline()->language() < V3LangCode::L1800_2009) {
+            nodep->v3error("Parameter requires default value, or use IEEE 1800-2009 or later.");
+        }
         if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
             AstNodeDType* dtypep = VN_CAST(nodep->valuep(), NodeDType);

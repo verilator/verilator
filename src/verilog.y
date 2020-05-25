@@ -2431,12 +2431,14 @@ packed_dimension<rangep>:	// ==IEEE: packed_dimension
 param_assignment<varp>:		// ==IEEE: param_assignment
 	//			// IEEE: constant_param_expression
 	//			// constant_param_expression: '$' is in expr
-		id/*new-parameter*/ variable_dimensionListE sigAttrListE '=' expr
-	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); $$->valuep($5); }
-	|	id/*new-parameter*/ variable_dimensionListE sigAttrListE
-	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3);
-		          if ($<fl>1->language() < V3LangCode::L1800_2009) {
-			     $<fl>1->v3error("Parameter requires default value, or use IEEE 1800-2009 or later."); } }
+		id/*new-parameter*/ variable_dimensionListE sigAttrListE param_assignmentEqE
+			{ $$ = VARDONEA($<fl>1, *$1, $2, $3); if ($4) $$->valuep($4); }
+	;
+
+param_assignmentEqE<nodep>:	//IEEE: part of param_assignment ('=' expr or empty)
+	//			// constant_param_expression: '$' is in expr
+		/*empty*/				{ $$ = NULL; }
+	|	'=' expr				{ $$ = $2; }
 	;
 
 list_of_param_assignments<varp>:	// ==IEEE: list_of_param_assignments
@@ -2447,7 +2449,7 @@ list_of_param_assignments<varp>:	// ==IEEE: list_of_param_assignments
 type_assignment<varp>:		// ==IEEE: type_assignment
 	//			// note exptOrDataType being a data_type is only for yPARAMETER yTYPE
 		idAny/*new-parameter*/ sigAttrListE '=' data_type
-	/**/		{ $$ = VARDONEA($<fl>1,*$1, NULL, $2); $$->valuep($4); }
+			{ $$ = VARDONEA($<fl>1, *$1, NULL, $2); $$->valuep($4); }
 	;
 
 list_of_type_assignments<varp>:		// ==IEEE: list_of_type_assignments
