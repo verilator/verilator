@@ -111,7 +111,7 @@ sub check_gcc_flags {
         chomp $line;
         print ":log: $line\n" if $Self->{verbose};
         if ($line =~ /\.cpp/) {
-            my $filetype = ($line =~ /Slow/) ? "slow":"fast";
+            my $filetype = ($line =~ /Slow|Syms/) ? "slow":"fast";
             my $opt = ($line !~ /-O2/) ? "slow":"fast";
             print "$filetype, $opt, $line\n" if $Self->{verbose};
             if ($filetype ne $opt) {

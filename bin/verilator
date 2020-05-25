@@ -2004,7 +2004,7 @@ depending on the operating system.
     # Might be needed if SystemC 2.3.0
     export SYSTEMC_CXX_FLAGS=-pthread
 
-    g++ -L$SYSTEMC_LIBDIR ../sc_main.o Vour__ALL*.o verilated.o \
+    g++ -L$SYSTEMC_LIBDIR ../sc_main.o Vour__ALL.a verilated.o \
               -o Vour -lsystemc
 
 And now we run it
@@ -2187,8 +2187,7 @@ After running Make, the C++ compiler may produce the following:
     {mod_prefix}{misc}.o                // Intermediate objects
     {prefix}                            // Final executable (w/--exe argument)
     {prefix}__ALL.a                     // Library of all Verilated objects
-    {prefix}__ALLfast.cpp               // Include of hot code for single compile
-    {prefix}__ALLslow.cpp               // Include of slow code for single compile
+    {prefix}__ALL.cpp                   // Include of all code for single compile
     {prefix}{misc}.d                    // Intermediate dependencies
     {prefix}{misc}.o                    // Intermediate objects
 
@@ -2772,8 +2771,7 @@ underneath NC:
    cd obj_dir
    ncsc_run \
         sc_main.cpp \
-        Vour__ALLfast.cpp \
-        Vour__ALLslow.cpp \
+        Vour__ALL.cpp \
         verilated.cpp
 
 For larger designs you'll want to automate this using makefiles, which pull
