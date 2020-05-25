@@ -1454,7 +1454,7 @@ good value.
 
 Sets default timescale, timeunit and timeprecision for when `timescale does
 not occur in sources.  Default is "1ps/1ps" (to match SystemC).  This is
-overriden by C<--timescale-override>.
+overridden by C<--timescale-override>.
 
 =item --timescale-override I<timeunit>/I<timeprecision>
 
@@ -1542,7 +1542,7 @@ larger trace files.
 =item --trace-threads I<threads>
 
 Enable waveform tracing using separate threads. This is typically faster in
-simulation runtime but uses more total compute. This option is independend of,
+simulation runtime but uses more total compute. This option is independent of,
 and works with, both C<--trace> and C<--trace-fst>. Different trace formats can
 take advantage of more trace threads to varying degrees. Currently VCD tracing
 can utilize at most --trace-threads 1, and FST tracing can utilize at most
@@ -3079,7 +3079,7 @@ information.
 
 Break the variable into multiple pieces typically to resolve UNOPTFLAT
 performance issues. Typically the variables to attach this to are
-recommeded by Verilator itself, see UNOPTFLAT.
+recommended by Verilator itself, see UNOPTFLAT.
 
 Same as /*verilator split_var*/, see L</"LANGUAGE EXTENSIONS"> for more
 information.
@@ -3574,7 +3574,7 @@ for more information.
 
 Attached to a variable or a net declaration to break the variable into
 multiple pieces typically to resolve UNOPTFLAT performance issues.
-Typically the variables to attach this to are recommeded by Verilator
+Typically the variables to attach this to are recommended by Verilator
 itself, see UNOPTFLAT below.
 
 For example, Verilator will internally convert a variable with the
