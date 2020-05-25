@@ -521,6 +521,9 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
         return;
     }
 
+    // Splitting file, so using parallel build.
+    v3Global.useParallelBuild(true);
+
     m_numStmts = 0;
     string filename
         = v3Global.opt.makeDir() + "/" + symClassName() + "__" + cvtToStr(++m_funcNum) + ".cpp";

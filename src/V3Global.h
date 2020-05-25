@@ -77,6 +77,7 @@ class V3Global {
     bool m_needHeavy;  // Need verilated_heavy.h include
     bool m_needTraceDumper;  // Need __Vm_dumperp in symbols
     bool m_dpi;  // Need __Dpi include files
+    bool m_useParallelBuild;  // Use parallel build for model
 
 public:
     // Options
@@ -93,7 +94,8 @@ public:
         , m_needC11(false)
         , m_needHeavy(false)
         , m_needTraceDumper(false)
-        , m_dpi(false) {}
+        , m_dpi(false)
+        , m_useParallelBuild(false) {}
     AstNetlist* makeNetlist();
     void boot() {
         UASSERT(!m_rootp, "call once");
@@ -129,6 +131,8 @@ public:
     void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
     bool dpi() const { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
+    void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
+    bool useParallelBuild() const { return m_useParallelBuild; }
 };
 
 extern V3Global v3Global;

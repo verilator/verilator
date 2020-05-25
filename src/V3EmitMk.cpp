@@ -57,7 +57,7 @@ public:
         of.puts("\n");
         of.puts("# Parallel builds?  0/1 (from --output-split)\n");
         of.puts("VM_PARALLEL_BUILDS = ");
-        of.puts(v3Global.opt.outputSplit() ? "1" : "0");
+        of.puts(v3Global.useParallelBuild() ? "1" : "0");
         of.puts("\n");
         of.puts("# Threaded output mode?  0/1/N threads (from --threads)\n");
         of.puts("VM_THREADS = ");
