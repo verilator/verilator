@@ -494,8 +494,8 @@ public:  // But only for verilated*.cpp
         VerilatedFdList fdlist;
         fdToFp(fdi, fdlist);
         if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
-        return static_cast<IData>(fseek(*fdlist.begin(), static_cast<long>(offset),
-                                        static_cast<int>(origin)));
+        return static_cast<IData>(
+            fseek(*fdlist.begin(), static_cast<long>(offset), static_cast<int>(origin)));
     }
     static IData fdTell(IData fdi) VL_MT_SAFE {
         VerilatedFdList fdlist;
