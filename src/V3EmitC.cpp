@@ -1749,7 +1749,7 @@ public:
         m_fast = false;
     }
     virtual ~EmitCImp() {}
-    void mainImp(AstNodeModule* modp, bool slow, bool fast);
+    void mainImp(AstNodeModule* modp, bool slow);
     void mainInt(AstNodeModule* modp);
     void mainDoFunc(AstCFunc* nodep) { iterate(nodep); }
 };
@@ -3264,12 +3264,12 @@ void EmitCImp::mainInt(AstNodeModule* modp) {
     VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
 }
 
-void EmitCImp::mainImp(AstNodeModule* modp, bool slow, bool fast) {
+void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
     // Output a module
     AstNodeModule* fileModp = modp;  // Filename constructed using this module
     m_modp = modp;
     m_slow = slow;
-    m_fast = fast;
+    m_fast = !slow;
 
     UINFO(5, "  Emitting " << prefixNameProtect(modp) << endl);
 
@@ -3286,7 +3286,7 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow, bool fast) {
         m_modp = modp;
     }
 
-    if (fast && modp->isTop() && v3Global.opt.mtasks()) {
+    if (m_fast && modp->isTop() && v3Global.opt.mtasks()) {
         // Make a final pass and emit function definitions for the mtasks
         // in the ExecGraph
         AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
@@ -3773,12 +3773,8 @@ void V3EmitC::emitc() {
         if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
         // clang-format off
         { EmitCImp cint; cint.mainInt(nodep); }
-        if (v3Global.opt.outputSplit()) {
-            { EmitCImp fast; fast.mainImp(nodep, false, true); }
-            { EmitCImp slow; slow.mainImp(nodep, true, false); }
-        } else {
-            { EmitCImp both; both.mainImp(nodep, true, true); }
-        }
+        { EmitCImp slow; slow.mainImp(nodep, true); }
+        { EmitCImp fast; fast.mainImp(nodep, false); }
         // clang-format on
     }
 }
