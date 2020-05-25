@@ -894,7 +894,7 @@ package_or_generate_item_declaration<nodep>:	// ==IEEE: package_or_generate_item
 	//UNSUP	extern_constraint_declaration		{ $$ = $1; }
 	|	class_declaration			{ $$ = $1; }
 	//			// class_constructor_declaration is part of function_declaration
-	|	local_parameter_declaration ';'		{ $$ = $1; }
+	//			// local_parameter_declaration under parameter_declaration
 	|	parameter_declaration ';'		{ $$ = $1; }
 	//UNSUP	covergroup_declaration			{ $$ = $1; }
 	//UNSUP	assertion_item_declaration		{ $$ = $1; }
@@ -1375,14 +1375,7 @@ genvar_identifierDecl<varp>:		// IEEE: genvar_identifier (for declaration)
 			  $$ = VARDONEA($<fl>1, *$1, NULL, $2); }
 	;
 
-local_parameter_declaration<nodep>:	// IEEE: local_parameter_declaration
-	//			// See notes in parameter_declaration
-	//			// Front must execute first so VARDTYPE is ready before list of vars
-		local_parameter_declarationFront list_of_param_assignments	{ $$ = $2; }
-	|	local_parameter_declarationTypeFront list_of_type_assignments	{ $$ = $2; }
-	;
-
-parameter_declaration<nodep>:	// IEEE: parameter_declaration
+parameter_declaration<nodep>:	// IEEE: local_ or parameter_declaration
 	//			// IEEE: yPARAMETER yTYPE list_of_type_assignments ';'
 	//			// Instead of list_of_type_assignments
 	//			// we use list_of_param_assignments because for port handling
@@ -1392,47 +1385,33 @@ parameter_declaration<nodep>:	// IEEE: parameter_declaration
 	|	parameter_declarationTypeFront list_of_type_assignments		{ $$ = $2; }
 	;
 
-local_parameter_declarationFront: // IEEE: local_parameter_declaration w/o assignment
+parameter_declarationFront:	// IEEE: local_ or parameter_declaration w/o assignment
 	//			// Front must execute first so VARDTYPE is ready before list of vars
-		varLParamReset implicit_typeE 		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
-	|	varLParamReset data_type		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
+		varParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
+	|	varParamReset data_type			{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	;
 
-local_parameter_declarationTypeFront: // IEEE: local_parameter_declaration w/o assignment
+parameter_declarationTypeFront:	// IEEE: local_ or parameter_declaration w/o assignment
 	//			// Front must execute first so VARDTYPE is ready before list of vars
-		varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+		varParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	;
 
-parameter_declarationFront:	// IEEE: parameter_declaration w/o assignment
-	//			// Front must execute first so VARDTYPE is ready before list of vars
-		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	;
-
-parameter_declarationTypeFront:	// IEEE: parameter_declaration w/o assignment
-	//			// Front must execute first so VARDTYPE is ready before list of vars
-		varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
-	;
-
-parameter_port_declarationFrontE: // IEEE: parameter_port_declaration w/o assignment
+parameter_port_declarationFrontE: // IEEE: local_ or parameter_port_declaration w/o assignment
 	//			// IEEE: parameter_declaration (minus assignment)
 	//			// IEEE: local_parameter_declaration (minus assignment)
 	//			// Front must execute first so VARDTYPE is ready before list of vars
-		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	|	varLParamReset implicit_typeE 		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
-	|	varLParamReset data_type		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
-	|	implicit_typeE 				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
-	|	data_type				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
+		varParamReset implicit_typeE 		{ /*VARRESET-in-varParam*/ VARDTYPE($2); }
+	|	varParamReset data_type			{ /*VARRESET-in-varParam*/ VARDTYPE($2); }
+	|	implicit_typeE 				{ /*VARRESET-in-varParam*/ VARDTYPE($1); }
+	|	data_type				{ /*VARRESET-in-varParam*/ VARDTYPE($1); }
 	;
 
 parameter_port_declarationTypeFrontE: // IEEE: parameter_port_declaration w/o assignment
 	//			// IEEE: parameter_declaration (minus assignment)
 	//			// IEEE: local_parameter_declaration (minus assignment)
 	//			// Front must execute first so VARDTYPE is ready before list of vars
-		varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
-	|	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
-	|	yTYPE					{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($1)); }
+		varParamReset yTYPE			{ /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+	|	yTYPE					{ /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType($1)); }
 	;
 
 net_declaration<nodep>:		// IEEE: net_declaration - excluding implict
@@ -1481,12 +1460,9 @@ net_type:			// ==IEEE: net_type
 	|	yWREAL 					{ VARDECL(WREAL); }
 	;
 
-varGParamReset:
+varParamReset:
 		yPARAMETER				{ VARRESET_NONLIST(GPARAM); }
-	;
-
-varLParamReset:
-		yLOCALPARAM				{ VARRESET_NONLIST(LPARAM); }
+	|	yLOCALPARAM				{ VARRESET_NONLIST(LPARAM); }
 	;
 
 port_direction:			// ==IEEE: port_direction + tf_port_direction
@@ -2749,7 +2725,6 @@ block_item_declarationList<nodep>:	// IEEE: [ block_item_declaration ]
 
 block_item_declaration<nodep>:	// ==IEEE: block_item_declaration
 		data_declaration 			{ $$ = $1; }
-	|	local_parameter_declaration ';'		{ $$ = $1; }
 	|	parameter_declaration ';' 		{ $$ = $1; }
 	//UNSUP	let_declaration 			{ $$ = $1; }
 	;
@@ -5711,7 +5686,7 @@ class_item<nodep>:			// ==IEEE: class_item
 	|	class_declaration			{ $$ = NULL; BBUNSUP($1, "Unsupported: class within class"); }
 	|	timeunits_declaration			{ $$ = $1; }
 	//UNSUP	covergroup_declaration			{ $$ = $1; }
-	|	local_parameter_declaration ';'		{ $$ = $1; BBUNSUP($2, "Unsupported: class parameters"); }  // 1800-2009
+	//			// local_parameter_declaration under parameter_declaration
 	|	parameter_declaration ';'		{ $$ = $1; BBUNSUP($2, "Unsupported: class parameters"); }  // 1800-2009
 	|	';'					{ $$ = NULL; }
 	//
