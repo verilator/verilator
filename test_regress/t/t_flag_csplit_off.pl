@@ -10,6 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt_all => 1);
 
+top_filename("t/t_flag_csplit.v");
+
 while (1) {
     # Thi rule requires GNU make > 4.1 (or so, known broken in 3.81)
     #%__Slow.o: %__Slow.cpp
@@ -20,7 +22,7 @@ while (1) {
     }
 
     compile(
-        v_flags2 => ["--trace --output-split 1 --output-split-cfuncs 1 --exe ../$Self->{main_filename}"],
+        v_flags2 => ["--trace --output-split 0 --exe ../$Self->{main_filename}"],
         verilator_make_gmake => 0,
         );
 
@@ -45,10 +47,10 @@ while (1) {
         check_finished => 1,
         );
 
-    # Splitting should set VM_PARALLEL_BUILDS to 1 by default
-    file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}_classes.mk", qr/VM_PARALLEL_BUILDS\s*=\s*1/);
-    check_splits();
-    check_no_all_file();
+    # Never spliting, so should set VM_PARALLEL_BUILDS to 0 by default
+    file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}_classes.mk", qr/VM_PARALLEL_BUILDS\s*=\s*0/);
+    check_no_splits();
+    check_all_file();
     check_gcc_flags("$Self->{obj_dir}/vlt_gcc.log");
 
     ok(1);
@@ -56,53 +58,21 @@ while (1) {
 }
 1;
 
-sub check_splits {
-    my $got1;
-    my $gotSyms1;
+sub check_no_splits {
     foreach my $file (glob("$Self->{obj_dir}/*.cpp")) {
-        if ($file =~ /Syms__1/) {
-            $gotSyms1 = 1;
-        } elsif ($file =~ /__1/) {
-            $got1 = 1;
+        if ($file =~ qr/__\d/) {
+            error("Split file found: $file");
         }
-        check_cpp($file);
     }
-    $got1 or error("No __1 split file found");
-    $gotSyms1 or error("No Syms__1 split file found");
 }
 
-sub check_no_all_file {
+sub check_all_file {
     foreach my $file (glob("$Self->{obj_dir}/*.cpp")) {
         if ($file =~ qr/__ALL.cpp/) {
-            error("__ALL.cpp file found: $file");
+            return;
         }
     }
-}
-
-sub check_cpp {
-    my $filename = shift;
-    my $size = -s $filename;
-    printf "  File %6d  %s\n", $size, $filename if $Self->{verbose};
-    my $fh = IO::File->new("<$filename") or error("$! $filenme");
-    my @funcs;
-    while (defined (my $line = $fh->getline)) {
-        if ($line =~ /^(void|IData)\s+(.*::.*)/) {
-            my $func = $2;
-            $func =~ s/\(.*$//;
-            print "\tFunc $func\n" if $Self->{verbose};
-            if ($func !~ /::_eval_initial_loop$/
-                && $func !~ /::__Vconfigure$/
-                && $func !~ /::trace$/
-                && $func !~ /::traceInit$/
-                && $func !~ /::traceFull$/
-                ) {
-                push @funcs, $func;
-            }
-        }
-    }
-    if ($#funcs > 0) {
-        error("Split had multiple functions in $filename\n\t".join("\n\t",@funcs));
-    }
+    error("__ALL.cpp file not found");
 }
 
 sub check_gcc_flags {
@@ -111,13 +81,8 @@ sub check_gcc_flags {
     while (defined (my $line = $fh->getline)) {
         chomp $line;
         print ":log: $line\n" if $Self->{verbose};
-        if ($line =~ /\.cpp/) {
-            my $filetype = ($line =~ /Slow|Syms/) ? "slow":"fast";
-            my $opt = ($line !~ /-O2/) ? "slow":"fast";
-            print "$filetype, $opt, $line\n" if $Self->{verbose};
-            if ($filetype ne $opt) {
-                error("${filetype} file compiled as if was ${opt}: $line");
-            }
+        if ($line =~ /\.cpp/ && $line =~ qr/-O0/) {
+            error("File built as slow (should be in __ALL.cpp) : $line");
         }
     }
 }

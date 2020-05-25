@@ -1416,6 +1416,15 @@ sub have_sc {
     return 0;
 }
 
+sub make_version {
+    my $ver = `make --version`;
+    if ($ver =~ /make ([0-9]+\.[0-9]+)/i) {
+        return $1;
+    } else {
+        return -1;
+    }
+}
+
 sub have_cmake {
     return cmake_version() >= version->declare("3.8");
 }

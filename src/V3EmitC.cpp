@@ -3234,6 +3234,8 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 
 void EmitCImp::maybeSplit(AstNodeModule* fileModp) {
     if (splitNeeded()) {
+        // Splitting file, so using parallel build.
+        v3Global.useParallelBuild(true);
         // Close old file
         VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
         // Open a new file
@@ -3652,6 +3654,8 @@ class EmitCTrace : EmitCStmts {
             m_funcp = nodep;
 
             if (splitNeeded()) {
+                // Splitting file, so using parallel build.
+                v3Global.useParallelBuild(true);
                 // Close old file
                 VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
                 // Open a new file
