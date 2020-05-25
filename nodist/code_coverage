@@ -231,7 +231,8 @@ sub test {
             $comb .= " -a $info";
             # Need to batch them to avoid overrunning shell command length limit
             if (length($comb) > 10000 || $info eq $infos[$#infos]) {
-                run("cd $cc_dir ; lcov -a app_total.info $comb -o app_total.info");
+                # .info may be empty, so ignore errors (unfortunately)
+                run("cd $cc_dir ; lcov -a app_total.info $comb -o app_total.info || true");
                 $comb = "";
             }
         }
