@@ -33,6 +33,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
       medium and large designs with default options. User makefiles may
       require changes.
 
+****  The run-time library is now compiled with -Os by default. (#2369, #2373)
+
 
 * Verilator 4.034 2020-05-03
 
