@@ -1727,11 +1727,9 @@ list_of_tf_variable_identifiers<nodep>: // ==IEEE: list_of_tf_variable_identifie
 	;
 
 tf_variable_identifier<varp>:		// IEEE: part of list_of_tf_variable_identifiers
-		id variable_dimensionListE sigAttrListE
-			{ $$ = VARDONEA($<fl>1,*$1, $2, $3); }
-	|	id variable_dimensionListE sigAttrListE '=' expr
+		id variable_dimensionListE sigAttrListE exprEqE
 			{ $$ = VARDONEA($<fl>1,*$1, $2, $3);
-			  $$->addNext(new AstAssign($4, new AstVarRef($<fl>1, *$1, true), $5)); }
+			  if ($4) $$->addNext(new AstAssign($4->fileline(), new AstVarRef($<fl>1, *$1, true), $4)); }
 	;
 
 variable_declExpr<nodep>:		// IEEE: part of variable_decl_assignment - rhs of expr
@@ -2407,14 +2405,8 @@ packed_dimension<rangep>:	// ==IEEE: packed_dimension
 param_assignment<varp>:		// ==IEEE: param_assignment
 	//			// IEEE: constant_param_expression
 	//			// constant_param_expression: '$' is in expr
-		id/*new-parameter*/ variable_dimensionListE sigAttrListE param_assignmentEqE
+		id/*new-parameter*/ variable_dimensionListE sigAttrListE exprEqE
 			{ $$ = VARDONEA($<fl>1, *$1, $2, $3); if ($4) $$->valuep($4); }
-	;
-
-param_assignmentEqE<nodep>:	//IEEE: part of param_assignment ('=' expr or empty)
-	//			// constant_param_expression: '$' is in expr
-		/*empty*/				{ $$ = NULL; }
-	|	'=' expr				{ $$ = $2; }
 	;
 
 list_of_param_assignments<varp>:	// ==IEEE: list_of_param_assignments
@@ -3681,10 +3673,8 @@ tf_port_itemDir:		// IEEE: part of tf_port_item, direction
 	;
 
 tf_port_itemAssignment<varp>:	// IEEE: part of tf_port_item, which has assignment
-		id variable_dimensionListE sigAttrListE
-			{ $$ = VARDONEA($<fl>1, *$1, $2, $3); }
-	|	id variable_dimensionListE sigAttrListE '=' expr
-			{ $$ = VARDONEA($<fl>1, *$1, $2, $3); $$->valuep($5); }
+		id variable_dimensionListE sigAttrListE exprEqE
+			{ $$ = VARDONEA($<fl>1, *$1, $2, $3); if ($4) $$->valuep($4); }
 	;
 
 parenE:
@@ -3748,6 +3738,12 @@ dpi_tf_import_propertyE<iprop>:	// IEEE: [ dpi_function_import_property + dpi_ta
 //     it will get replaced by "", or "f"
 // ~p~ means this is a (p)arenthetized expression
 //     it will get replaced by "", or "s"equence
+
+exprEqE<nodep>:			// IEEE: optional '=' expression (part of param_assignment)
+	//			// constant_param_expression: '$' is in expr
+		/*empty*/				{ $$ = NULL; }
+	|	'=' expr				{ $$ = $2; }
+	;
 
 constExpr<nodep>:
 		expr					{ $$ = $1; }
@@ -4612,8 +4608,7 @@ clocking_declaration<nodep>:		// IEEE: clocking_declaration  (INCOMPLETE)
 //UNSUP	;
 
 //UNSUPclocking_decl_assign:  // ==IEEE: clocking_decl_assign
-//UNSUP		idAny/*new-signal_identifier*/		{ $$ = $1; }
-//UNSUP	|	idAny/*new-signal_identifier*/ '=' expr	{ }
+//UNSUP		idAny/*new-signal_identifier*/ exprEqE	{ $$ = $1; }
 //UNSUP	;
 
 //UNSUPclocking_skewE:  // IEEE: [clocking_skew]
