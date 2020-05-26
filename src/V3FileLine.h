@@ -103,6 +103,7 @@ class FileLine {
     VFileContent* m_contentp;  // Source text contents line is within
     FileLine* m_parent;  // Parent line that included this line
     std::bitset<V3ErrorCode::_ENUM_MAX> m_warnOn;
+    bool m_waive;  // Waive warning
 
 protected:
     // User routines should never need to change line numbers
@@ -134,7 +135,8 @@ public:
         , m_contentLineno(0)
         , m_contentp(NULL)
         , m_parent(NULL)
-        , m_warnOn(defaultFileLine().m_warnOn) {}
+        , m_warnOn(defaultFileLine().m_warnOn)
+        , m_waive(false) {}
     explicit FileLine(FileLine* fromp)
         : m_firstLineno(fromp->m_firstLineno)
         , m_firstColumn(fromp->m_firstColumn)
@@ -144,7 +146,8 @@ public:
         , m_contentLineno(fromp->m_contentLineno)
         , m_contentp(fromp->m_contentp)
         , m_parent(fromp->m_parent)
-        , m_warnOn(fromp->m_warnOn) {}
+        , m_warnOn(fromp->m_warnOn)
+        , m_waive(fromp->m_waive) {}
     struct EmptySecret {};  // Constructor selection
     explicit FileLine(EmptySecret);
     FileLine* copyOrSameFileLine();
@@ -213,6 +216,7 @@ public:
     void warnStyleOff(bool flag);
     void warnStateFrom(const FileLine& from) { m_warnOn = from.m_warnOn; }
     void warnResetDefault() { warnStateFrom(defaultFileLine()); }
+    bool lastWarnWaived() { return m_waive; }
 
     // Specific flag ACCESSORS/METHODS
     bool coverageOn() const { return m_warnOn.test(V3ErrorCode::I_COVERAGE); }
