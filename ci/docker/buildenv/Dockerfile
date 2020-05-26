@@ -16,6 +16,7 @@ RUN apt-get update \
                         bison \
                         build-essential \
                         ca-certificates \
+                        ccache \
                         clang \
                         cmake \
                         flex \
@@ -24,6 +25,7 @@ RUN apt-get update \
                         gtkwave \
                         libfl2 \
                         libfl-dev \
+                        libgoogle-perftools-dev \
                         libsystemc \
                         libsystemc-dev \
                         numactl \
@@ -48,5 +50,7 @@ RUN git clone https://github.com/veripool/vcddiff.git && \
 COPY build.sh /tmp/build.sh
 
 ENV VERILATOR_AUTHOR_SITE=1
+
+WORKDIR /work
 
 ENTRYPOINT [ "/tmp/build.sh" ]
