@@ -2772,7 +2772,7 @@ Optional. Set compiler flags for the fast path.
 =item OPT_GLOBAL
 
 Optional. Set compiler flags for the common run-time library used by verilated
-models. This should rarely need to be used, optimization is applied by default.
+models.
 
 =item DIRECTORY
 

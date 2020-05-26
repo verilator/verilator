@@ -158,10 +158,6 @@ function(verilate TARGET)
     list(APPEND VERILATOR_ARGS --cc)
   endif()
 
-  if (NOT VERILATE_OPT_GLOBAL)
-    set(VERILATE_OPT_GLOBAL "-Os")
-  endif()
-
   foreach(INC ${VERILATE_INCLUDE_DIRS})
     list(APPEND VERILATOR_ARGS -y "${INC}")
   endforeach()
