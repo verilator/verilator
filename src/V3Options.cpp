@@ -1197,6 +1197,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 parseOptsFile(fl, parseFileArg(optdir, argv[i]), false);
             } else if (!strcmp(sw, "-gdb")) {
                 // Used only in perl shell
+            } else if (!strcmp(sw, "-waiver-output") && (i + 1) < argc) {
+                shift;
+                m_waiverOutput = argv[i];
             } else if (!strcmp(sw, "-rr")) {
                 // Used only in perl shell
             } else if (!strcmp(sw, "-gdbbt")) {
@@ -1627,6 +1630,7 @@ V3Options::V3Options() {
     m_makeDir = "obj_dir";
     m_bin = "";
     m_flags = "";
+    m_waiverOutput = "";
     m_l2Name = "";
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";

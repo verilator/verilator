@@ -5,6 +5,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.035 devel
 
+**    Add --waiver-output flag that writes a verilator config file (.vlt) with
+      waivers to the warnings emitted during a Verilator run.
+
 ***   Support verilator_coverage --write-info for lcov HTML reports.
 
 ****  Support multi channel descriptor I/O (#2190) [Stephen Henry]

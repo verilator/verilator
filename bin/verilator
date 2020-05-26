@@ -399,6 +399,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
     --version                   Displays program version and exits
     --vpi                       Enable VPI compiles
+    --waiver-output <filename>  Create a waiver file based on the linter warnings
      -Wall                      Enable all style warnings
      -Werror-<message>          Convert warnings to errors
      -Wfuture-<message>         Disable unknown message warnings
@@ -1605,6 +1606,17 @@ Displays program version and exits.
 =item --vpi
 
 Enable use of VPI and linking against the verilated_vpi.cpp files.
+
+=item --waiver-output <filename>
+
+Generate a waiver file which contains all waiver statements to suppress the
+warnings emitted during this Verilator run. This is in particular useful as
+a starting point for solving linter warnings or suppressing them
+systematically.
+
+The generated file is in the Verilator Configuration format, see
+L</"CONFIGURATION FILES">, and can directly be consumed by Verilator. The
+standard file extension is .vlt.
 
 =item -Wall
 

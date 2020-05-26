@@ -317,6 +317,7 @@ private:
     string      m_protectLib;   // main switch: --protect-lib {lib_name}
     string      m_topModule;    // main switch: --top-module
     string      m_unusedRegexp; // main switch: --unused-regexp
+    string      m_waiverOutput;  // main switch: --waiver-output {filename}
     string      m_xAssign;      // main switch: --x-assign
     string      m_xInitial;     // main switch: --x-initial
     string      m_xmlOutput;    // main switch: --xml-output
@@ -522,6 +523,8 @@ public:
     }
     string topModule() const { return m_topModule; }
     string unusedRegexp() const { return m_unusedRegexp; }
+    string waiverOutput() const { return m_waiverOutput; }
+    bool isWaiverOutput() const { return !m_waiverOutput.empty(); }
     string xAssign() const { return m_xAssign; }
     string xInitial() const { return m_xInitial; }
     string xmlOutput() const { return m_xmlOutput; }
