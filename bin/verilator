@@ -2103,13 +2103,21 @@ OPT_FAST specifies optimizations for those parts of the program that are on the
 fast path. This is mostly code that is executed every cycle.  OPT_SLOW
 specifies optimizations for slow-path files, which execute only rarely, yet
 take a long time to compile with optimization on.  OPT_SLOW is ignored if
-VM_PARALLEL_BUILDS is not 1, in which case all code is compliled with OPT_FAST.
+VM_PARALLEL_BUILDS is not 1, in which case all code is compiled with OPT_FAST.
 See also the C<--output-split> option.  OPT specifies overall optimization and
 affects all compiles, including those OPT_FAST and OPT_SLOW control.  For best
 results, use OPT="-Os -march=native", and link with "-static".  Nearly the same
 results can be had with much better compile times with OPT_FAST="-O1
 -fstrict-aliasing".  Higher optimization such as "-O2" or "-O3" may help, but
 gcc compile times may be excessive under O3 on even medium sized designs.
+There is a third variable, OPT_GLOBAL, which applies to common code in the
+run-time library used by verilated models. This is set to "-Os" by default
+and there should rarely be a need to change it. As the run-time library is
+small in comparison to a lot of verilated models, disabling optimization on
+the run-time library should not have a serious effect on overall compilation
+time, but can have highly detrimental effect on run-time performance,
+especially with tracing. The OPT variable also applies to files that are
+controlled by OPT_GLOBAL.
 
 Unfortunately, using the optimizer with SystemC files can result in
 compiles taking several minutes.  (The SystemC libraries have many little
@@ -2670,7 +2678,7 @@ Verilator and add the generated C++ sources to the target specified.
     verilate(target SOURCES source ... [TOP_MODULE top] [PREFIX name]
              [TRACE] [TRACE_FST] [SYSTEMC] [COVERAGE]
              [INCLUDE_DIRS dir ...] [OPT_SLOW ...] [OPT_FAST ...]
-             [DIRECTORY dir] [VERILATOR_ARGS ...])
+             [OPT_GLOBAL ..] [DIRECTORY dir] [VERILATOR_ARGS ...])
 
 Lowercase and ... should be replaced with arguments, the uppercase parts
 delimit the arguments and can be passed in any order, or left out entirely
@@ -2760,6 +2768,11 @@ optimization level to improve compile times with large designs.
 =item OPT_FAST
 
 Optional. Set compiler flags for the fast path.
+
+=item OPT_GLOBAL
+
+Optional. Set compiler flags for the common run-time library used by verilated
+models. This should rarely need to be used, optimization is applied by default.
 
 =item DIRECTORY
 

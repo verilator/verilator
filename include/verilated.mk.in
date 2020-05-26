@@ -92,6 +92,11 @@ LDLIBS   += $(VM_USER_LDLIBS)
 #OPT_FAST = -Os -fstrict-aliasing
 #OPT_FAST = -O
 #OPT_FAST =
+# Optimization applied to the common run-time library used by verilated models.
+# For compatibility this is called OPT_GLOBAL even though it only applies to
+# files in the run-time library. Normally there should be no need for the user
+# to change this.
+OPT_GLOBAL = -Os
 
 #######################################################################
 ##### SystemC builds
@@ -170,6 +175,9 @@ VK_SLOW_OBJS = $(addsuffix .o, $(VM_SLOW))
 
 VK_USER_OBJS   = $(addsuffix .o, $(VM_USER_CLASSES))
 
+# Note VM_GLOBAL_FAST and VM_GLOBAL_SLOW holds the files required from the
+# run-time library. In practice everything is actually in VM_GLOBAL_FAST,
+# but keeping the distinction for compatibility for now.
 VK_GLOBAL_OBJS = $(addsuffix .o, $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW))
 
 ifneq ($(VM_PARALLEL_BUILDS),1)
@@ -197,15 +205,16 @@ $(VM_PREFIX)__ALL.a: $(VK_OBJS)
 ### Compile rules
 
 ifneq ($(VM_DEFAULT_RULES),0)
-$(VM_PREFIX)__ALL.o: $(VM_PREFIX)__ALL.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-
-# Anything not in $(VK_SLOW_OBJS), including verilated.o use this rule
+# Anything not in $(VK_SLOW_OBJS) or $(VK_GLOBAL_OBJS), including verilated.o
+# and user files passed on the Verilator command line use this rule.
 %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
 
 $(VK_SLOW_OBJS): %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
+
+$(VK_GLOBAL_OBJS): %.o: %.cpp
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_GLOBAL) -c -o $@ $<
 endif
 
 #Default rule embedded in make:
