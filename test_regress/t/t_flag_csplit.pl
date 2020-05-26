@@ -38,6 +38,7 @@ while (1) {
               ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
               "OPT_FAST=-O2",
               "OPT_SLOW=-O0",
+              "OPT_GLOBAL=-Os",
               ($param{make_flags}||""),
         ]);
 
@@ -111,13 +112,15 @@ sub check_gcc_flags {
     while (defined (my $line = $fh->getline)) {
         chomp $line;
         print ":log: $line\n" if $Self->{verbose};
-        if ($line =~ /\.cpp/) {
+        if ($line =~ /$Self->{VM_PREFIX}\S*\.cpp/) {
             my $filetype = ($line =~ /Slow|Syms/) ? "slow":"fast";
             my $opt = ($line !~ /-O2/) ? "slow":"fast";
             print "$filetype, $opt, $line\n" if $Self->{verbose};
             if ($filetype ne $opt) {
                 error("${filetype} file compiled as if was ${opt}: $line");
             }
+        } elsif ($line =~ /\.cpp/ and $line !~ /-Os/) {
+            error("library file not compiled with OPT_GLOBAL: $line");
         }
     }
 }
