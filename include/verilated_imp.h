@@ -558,7 +558,7 @@ public:  // But only for verilated*.cpp
     }
 
 private:
-    static inline VerilatedFpList fdToFpList(IData fdi) {
+    static inline VerilatedFpList fdToFpList(IData fdi) VL_REQUIRES(s_s.m_fdMutex) {
         VerilatedFpList fp;
         if ((fdi & (1 << 31)) != 0) {
             // Non-MCD case
