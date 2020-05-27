@@ -1112,6 +1112,7 @@ sub compile {
                                 "-DTEST_SYSTEMC=\"" .($self->sc ? 1 : 0). "\"",
                                 "-DCMAKE_PREFIX_PATH=\"".(($ENV{SYSTEMC_INCLUDE}||$ENV{SYSTEMC}||'')."/..\""),
                                 "-DTEST_OPT_FAST=\"" . ($param{benchmark} ? "-Os" : "") . "\"",
+                                "-DTEST_OPT_GLOBAL=\"" . ($param{benchmark} ? "-Os" : "-O0") . "\"",
                                 "-DTEST_VERILATION=\"" . $::Opt_Verilation . "\"",
                         ]);
             return 1 if $self->errors || $self->skips || $self->unsupporteds;
@@ -1130,6 +1131,7 @@ sub compile {
                                 "CPPFLAGS_DRIVER=-D".uc($self->{name}),
                                 ($self->{verbose} ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
                                 ($param{benchmark} ? "OPT_FAST=-Os" : ""),
+                                ($param{benchmark} ? "" : "OPT_GLOBAL=-O0"),
                                 "$self->{VM_PREFIX}",  # bypass default rule, as we don't need archive
                                 ($param{make_flags}||""),
                         ]);
