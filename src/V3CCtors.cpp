@@ -146,13 +146,11 @@ void V3CCtors::cctorsAll() {
          modp = VN_CAST(modp->nextp(), NodeModule)) {
         // Process each module in turn
         {
-            AstCFunc* varResetFuncp;
             V3CCtorsVisitor var_reset(
                 modp, "_ctor_var_reset",
                 (VN_IS(modp, Class) ? EmitCBaseVisitor::symClassVar() : ""),
                 (VN_IS(modp, Class) ? "vlSymsp" : ""),
                 (VN_IS(modp, Class) ? "if (false && vlSymsp) {}  // Prevent unused\n" : ""));
-            varResetFuncp = var_reset.builtFuncp();
 
             for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
                 if (AstVar* varp = VN_CAST(np, Var)) {

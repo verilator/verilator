@@ -1655,7 +1655,7 @@ class EmitCImp : EmitCStmts {
             string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
             return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
                                        ".atDefault()" + cvtarray);
-        } else if (AstClassRefDType* adtypep = VN_CAST(dtypep, ClassRefDType)) {
+        } else if (VN_IS(dtypep, ClassRefDType)) {
             return "";  // Constructor does it
         } else if (AstDynArrayDType* adtypep = VN_CAST(dtypep, DynArrayDType)) {
             // Access std::array as C array
