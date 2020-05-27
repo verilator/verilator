@@ -1004,7 +1004,11 @@ udpFront<modulep>:
 
 parameter_value_assignmentE<pinp>:	// IEEE: [ parameter_value_assignment ]
 		/* empty */				{ $$ = NULL; }
-	|	'#' '(' cellparamList ')'		{ $$ = $3; }
+	|	parameter_value_assignment		{ $$ = $1; }
+	;
+
+parameter_value_assignment<pinp>:	// IEEE: parameter_value_assignment
+		'#' '(' cellparamList ')'		{ $$ = $3; }
 	//			// Parentheses are optional around a single parameter
 	|	'#' yaINTNUM				{ $$ = new AstPin($<fl>2, 1, "", new AstConst($<fl>2, *$2)); }
 	|	'#' yaFLOATNUM				{ $$ = new AstPin($<fl>2, 1, "",
@@ -1137,7 +1141,7 @@ port<nodep>:			// ==IEEE: port
 			{ $$=$4; VARDTYPE($3); if (AstVar* vp=VARDONEP($$,$5,$6)) { $$->addNextNull(vp); vp->valuep($8); } }
 	|	portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE '=' constExpr
 			{ $$=$2; /*VARDTYPE-same*/ if (AstVar* vp=VARDONEP($$,$3,$4)) { $$->addNextNull(vp); vp->valuep($6); } }
- 	;
+	;
 
 portDirNetE:			// IEEE: part of port, optional net type and/or direction
 		/* empty */				{ }
@@ -1146,17 +1150,17 @@ portDirNetE:			// IEEE: part of port, optional net type and/or direction
 	|	port_direction					{ VARDECL(PORT); VARDTYPE_NDECL(NULL/*default_nettype*/); }
 	|	port_direction { VARDECL(PORT); } net_type	{ VARDTYPE_NDECL(NULL/*default_nettype*/); }  // net_type calls VARDECL
 	|	net_type					{ } // net_type calls VARDECL
- 	;
+	;
 
 port_declNetE:			// IEEE: part of port_declaration, optional net type
 		/* empty */				{ }
 	|	net_type				{ } // net_type calls VARDECL
- 	;
+	;
 
 portSig<nodep>:
 		id/*port*/				{ $$ = new AstPort($<fl>1,PINNUMINC(),*$1); }
 	|	idSVKwd					{ $$ = new AstPort($<fl>1,PINNUMINC(),*$1); }
- 	;
+	;
 
 //**********************************************************************
 // Interface headers
@@ -1552,19 +1556,6 @@ signing<signstate>:		// ==IEEE: signing
 
 //************************************************
 // Data Types
-
-casting_type<dtypep>:		// IEEE: casting_type
-		simple_type				{ $$ = $1; }
-	//			// IEEE: constant_primary
-	//			// In expr:cast this is expanded to just "expr"
-	//
-	//			// IEEE: signing
-	//See where casting_type used
-	//^^	ySIGNED					{ in parent rule }
-	//^^	yUNSIGNED				{ in parent rule }
-	//^^	ySTRING					{ in parent rule }
-	//UNSUP	yCONST__ETC/*then `*/			{ $$ = $1; }
-	;
 
 simple_type<dtypep>:		// ==IEEE: simple_type
 	//			// IEEE: integer_type
@@ -2291,7 +2282,13 @@ assignOne<nodep>:
 
 delayE:
 		/* empty */				{ }
-	|	delay_control				{ $1->v3warn(ASSIGNDLY,"Unsupported: Ignoring delay on this assignment/primitive."); DEL($1); } /* ignored */
+	|	delay					{ }
+	;
+
+delay:
+		delay_control
+			{ $1->v3warn(ASSIGNDLY, "Unsupported: Ignoring delay on this assignment/primitive.");
+			  DEL($1); }
 	;
 
 delay_control<nodep>:	//== IEEE: delay_control
@@ -3577,8 +3574,8 @@ funcId<ftaskp>:			// IEEE: function_data_type_or_implicit + part of function_bod
 			{ $$ = new AstFunc($<fl>2,*$<strp>2,NULL,$1);
 			  SYMP->pushNewUnder($$, NULL); }
 	//			// To verilator tasks are the same as void functions (we separately detect time passing)
-	|	yVOID			tfIdScoped
-			{ $$ = new AstTask($<fl>2,*$<strp>2,NULL);
+	|	yVOID tfIdScoped
+			{ $$ = new AstTask($<fl>2, *$<strp>2, NULL);
 			  SYMP->pushNewUnder($$, NULL); }
 	;
 
@@ -3870,11 +3867,12 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	'_' '(' expr ')'			{ $$ = $3; }	// Arbitrary Verilog inside PSL
 	//
 	//			// IEEE: cast/constant_cast
-	|	casting_type yP_TICK '(' expr ')'	{ $$ = new AstCast($1->fileline(), $4, $1); }
 	//			// expanded from casting_type
+	|	simple_type yP_TICK '(' expr ')'	{ $$ = new AstCast($1->fileline(), $4, $1); }
 	|	ySIGNED yP_TICK '(' expr ')'		{ $$ = new AstSigned($1, $4); }
 	|	yUNSIGNED yP_TICK '(' expr ')'		{ $$ = new AstUnsigned($1, $4); }
 	|	ySTRING yP_TICK '(' expr ')'		{ $$ = new AstCvtPackString($1, $4); }
+	//UNSUP	yCONST__ETC yP_TICK '(' expr ')'	{ UNSUP }
 	//			// Spec only allows primary with addition of a type reference
 	//			// We'll be more general, and later assert LHS was a type.
 	|	~l~expr      yP_TICK '(' expr ')'	{ $$ = new AstCastParse($2,$4,$1); }
@@ -4143,27 +4141,32 @@ streaming_concatenation<nodep>:	// ==IEEE: streaming_concatenation
 	//			// IEEE: "'{' yP_SL/R             stream_concatenation '}'"
 	//			// IEEE: "'{' yP_SL/R simple_type stream_concatenation '}'"
 	//			// IEEE: "'{' yP_SL/R constExpr	  stream_concatenation '}'"
-		'{' yP_SLEFT              stream_concOrExprOrType '}'	{ $$ = new AstStreamL($2, $3, new AstConst($2,1)); }
-	|	'{' yP_SRIGHT             stream_concOrExprOrType '}'	{ $$ = new AstStreamR($2, $3, new AstConst($2,1)); }
-	|	'{' yP_SLEFT  stream_concOrExprOrType stream_concatenation '}'	{ $$ = new AstStreamL($2, $4, $3); }
-	|	'{' yP_SRIGHT stream_concOrExprOrType stream_concatenation '}'	{ $$ = new AstStreamR($2, $4, $3); }
-	;
-
-stream_concOrExprOrType<nodep>:	// IEEE: stream_concatenation | slice_size:simple_type | slice_size:constExpr
-		cateList				{ $$ = $1; }
-	|	simple_type				{ $$ = $1; }
-	//			// stream_concatenation found via cateList:stream_expr:'{-normal-concat'
-	//			// simple_typeRef found via cateList:stream_expr:expr:id
-	//			// constant_expression found via cateList:stream_expr:expr
+		'{' yP_SLEFT  stream_concatenation '}'
+			{ $$ = new AstStreamL($2, $3, new AstConst($2, 1)); }
+	|	'{' yP_SRIGHT stream_concatenation '}'
+			{ $$ = new AstStreamR($2, $3, new AstConst($2, 1)); }
+	|	'{' yP_SLEFT  stream_expressionOrDataType stream_concatenation '}'
+			{ $$ = new AstStreamL($2, $4, $3); }
+	|	'{' yP_SRIGHT stream_expressionOrDataType stream_concatenation '}'
+			{ $$ = new AstStreamR($2, $4, $3); }
 	;
 
 stream_concatenation<nodep>:	// ==IEEE: stream_concatenation
+	//			// '{' { stream_expression } '}'
 		'{' cateList '}'			{ $$ = $2; }
 	;
 
 stream_expression<nodep>:	// ==IEEE: stream_expression
 	//			// IEEE: array_range_expression expanded below
 		expr					{ $$ = $1; }
+	//UNSUP	expr yWITH__BRA '[' expr ']'		{ UNSUP }
+	//UNSUP	expr yWITH__BRA '[' expr ':' expr ']'	{ UNSUP }
+	//UNSUP	expr yWITH__BRA '[' expr yP_PLUSCOLON  expr ']'	{ UNSUP }
+	//UNSUP	expr yWITH__BRA '[' expr yP_MINUSCOLON expr ']'	{ UNSUP }
+	;
+
+stream_expressionOrDataType<nodep>:	// IEEE: from streaming_concatenation
+		exprOrDataType				{ $$ = $1; }
 	//UNSUP	expr yWITH__BRA '[' expr ']'		{ UNSUP }
 	//UNSUP	expr yWITH__BRA '[' expr ':' expr ']'	{ UNSUP }
 	//UNSUP	expr yWITH__BRA '[' expr yP_PLUSCOLON  expr ']'	{ UNSUP }
@@ -4417,7 +4420,7 @@ specparam_declaration<nodep>:		// ==IEEE: specparam_declaration
 junkToSemiList:
 		junkToSemi 				{ } /* ignored */
 	|	junkToSemiList junkToSemi		{ } /* ignored */
- 	;
+	;
 
 junkToSemi:
 		BISONPRE_NOT(';',yENDSPECIFY,yENDMODULE)	{ }
