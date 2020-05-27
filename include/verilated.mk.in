@@ -84,18 +84,21 @@ CPPFLAGS += $(VM_USER_CFLAGS)
 LDFLAGS  += $(VM_USER_LDFLAGS)
 LDLIBS   += $(VM_USER_LDLIBS)
 
-# See the benchmarking section of bin/verilator.
-# Support class optimizations.  This includes the tracing and symbol table.
-# SystemC takes minutes to optimize, thus it is off by default.
-#OPT_SLOW =
-# Fast path optimizations.  Most time is spent in these classes.
-#OPT_FAST = -Os -fstrict-aliasing
-#OPT_FAST = -O
-#OPT_FAST =
+######################################################################
+# Optimization control.
+
+# See also the BENCHMARKING & OPTIMIZATION section of the manual.
+
+# Optimization flags for non performance-critical/rarely executed code.
+# No optimization by default, which improves compilation speed.
+OPT_SLOW =
+# Optimization for performance critical/hot code. Most time is spent in these
+# routines. Optimizing by default for improved execution speed.
+OPT_FAST = -Os
 # Optimization applied to the common run-time library used by verilated models.
 # For compatibility this is called OPT_GLOBAL even though it only applies to
 # files in the run-time library. Normally there should be no need for the user
-# to change this.
+# to change this as the library is small, but can have significant speed impact.
 OPT_GLOBAL = -Os
 
 #######################################################################
