@@ -3872,10 +3872,10 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	ySIGNED yP_TICK '(' expr ')'		{ $$ = new AstSigned($1, $4); }
 	|	yUNSIGNED yP_TICK '(' expr ')'		{ $$ = new AstUnsigned($1, $4); }
 	|	ySTRING yP_TICK '(' expr ')'		{ $$ = new AstCvtPackString($1, $4); }
-	//UNSUP	yCONST__ETC yP_TICK '(' expr ')'	{ UNSUP }
+	|	yCONST__ETC yP_TICK '(' expr ')'	{ $$ = $4; }  // Not linting const presently
 	//			// Spec only allows primary with addition of a type reference
 	//			// We'll be more general, and later assert LHS was a type.
-	|	~l~expr      yP_TICK '(' expr ')'	{ $$ = new AstCastParse($2,$4,$1); }
+	|	~l~expr yP_TICK '(' expr ')'		{ $$ = new AstCastParse($2,$4,$1); }
 	//
 	//			// IEEE: assignment_pattern_expression
 	//			// IEEE: streaming_concatenation
