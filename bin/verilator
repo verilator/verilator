@@ -2071,11 +2071,11 @@ distribution.
 
 =head1 BENCHMARKING & OPTIMIZATION
 
-For best performance, run Verilator with the "-O3 --x-assign fast
---x-initial fast --noassert" flags.  The -O3 flag will require longer
-compile times, and "--x-assign fast --x-initial fast" may increase the risk
-of reset bugs in trade for performance; see the above documentation for
-these flags.
+For best performance, run Verilator with the "-O3 --x-assign fast --x-initial
+fast --noassert" flags.  The -O3 flag will require longer time to run
+Verilator, and "--x-assign fast --x-initial fast" may increase the risk of
+reset bugs in trade for performance; see the above documentation for these
+flags.
 
 If using Verilated multithreaded, use C<numactl> to ensure you are using
 non-conflicting hardware resources. See L</"MULTITHREADING">.
@@ -2087,58 +2087,69 @@ simple change to a clock latch used to gate clocks and gained a 60%
 performance improvement.
 
 Beyond that, the performance of a Verilated model depends mostly on your
-C++ compiler and size of your CPU's caches.
+C++ compiler and size of your CPU's caches. Experience shows that large models
+are often limited by the size of the instruction cache, and as such reducing
+code size if possible can be beneficial.
 
-By default, the lib/verilated.mk file has optimization turned off.  This is
-for the benefit of new users, as it improves compile times at the cost of
-simulation runtimes.  To add optimization as the default, set one of three variables,
-OPT, OPT_FAST, or OPT_SLOW lib/verilated.mk.  Or, use the -CFLAGS and/or
--LDFLAGS option on the verilator command line to pass the flags directly to
-the compiler or linker.  Or, just for one run, pass them on the command
-line to make:
+The supplied $VERILATOR_ROOT/include/verilated.mk file uses the OPT, OPT_FAST,
+OPT_SLOW and OPT_GLOBAL variables to control optimization. You can set these
+when compiling the output of Verilator with Make, for example:
 
-    make OPT_FAST="-Os -march=native -fno-stack-protector" -f Vour.mk Vour__ALL.a
+    make OPT_FAST="-Os -march=native" -f Vour.mk Vour__ALL.a
 
-OPT_FAST specifies optimizations for those parts of the program that are on the
-fast path. This is mostly code that is executed every cycle.  OPT_SLOW
-specifies optimizations for slow-path files, which execute only rarely, yet
-take a long time to compile with optimization on.  OPT_SLOW is ignored if
-VM_PARALLEL_BUILDS is not 1, in which case all code is compiled with OPT_FAST.
-See also the C<--output-split> option.  OPT specifies overall optimization and
-affects all compiles, including those OPT_FAST and OPT_SLOW control.  For best
-results, use OPT="-Os -march=native", and link with "-static".  Nearly the same
-results can be had with much better compile times with OPT_FAST="-O1
--fstrict-aliasing".  Higher optimization such as "-O2" or "-O3" may help, but
-gcc compile times may be excessive under O3 on even medium sized designs.
-There is a third variable, OPT_GLOBAL, which applies to common code in the
-run-time library used by verilated models. This is set to "-Os" by default
-and there should rarely be a need to change it. As the run-time library is
-small in comparison to a lot of verilated models, disabling optimization on
-the run-time library should not have a serious effect on overall compilation
-time, but can have highly detrimental effect on run-time performance,
-especially with tracing. The OPT variable also applies to files that are
-controlled by OPT_GLOBAL.
+OPT_FAST specifies optimization flags for those parts of the model that are on
+the fast path. This is mostly code that is executed every cycle. OPT_SLOW
+applies to slow-path code, which executes rarely, often only once at the
+beginning or end of simulation. Note that OPT_SLOW is ignored if
+VM_PARALLEL_BUILDS is not 1, in which case all generated code will be compiled
+in a single compilation unit using OPT_FAST. See also the C<--output-split>
+option. The OPT_GLOBAL variable applies to common code in the run-time library
+used by verilated models (shipped in $VERILATOR_ROOT/include). Additional C++
+files passed on the verilator command line use OPT_FAST. The OPT variable
+applies to all compilation units in addition to the specific OPT_* variables
+described above.
 
-Unfortunately, using the optimizer with SystemC files can result in
-compiles taking several minutes.  (The SystemC libraries have many little
-inlined functions that drive the compiler nuts.)
+You can also use the -CFLAGS and/or -LDFLAGS options on the verilator command
+line to pass flags directly to the compiler or linker.
 
-For best results, use the latest clang compiler (about 10% faster than
-GCC).  Note the now fairly old GCC 3.2 and earlier have optimization bugs
-around pointer aliasing detection, which can result in 2x performance
-losses.
+The default values of the OPT_* variables are chosen to yield good simulation
+speed with reasonable C++ compilation times. To this end, OPT_FAST is set to
+"-Os" by default. Higher optimization such as "-O2" or "-O3" may help (though
+often they provide only a very small performance benefit), but compile times
+may be excessively large even with medium sized designs. Compilation times can
+be improved at the expense of simulation speed by reducing optimization, for
+example with OPT_FAST="-O0". Often good simulation speed can be achieved with
+OPT_FAST="-O1 -fstrict-aliasing" but with improved compilation times. Files
+controlled by OPT_SLOW have little effect on performance and therefore OPT_SLOW
+is empty by default (equivalent to "-O0") for improved compilation speed. In
+common use-cases there should be little benefit in changing OPT_SLOW.
+OPT_GLOBAL is set to "-Os" by default and there should rarely be a need to
+change it. As the run-time library is small in comparison to a lot of verilated
+models, disabling optimization on the run-time library should not have a
+serious effect on overall compilation time, but may have detrimental effect on
+simulation speed, especially with tracing. In addition to the above, for best
+results use OPT="-march=native", the latest Clang compiler (about 10% faster
+than GCC), and link statically.
 
-If you will be running many simulations on a single compile, investigate
-feedback driven compilation.  With GCC, using -fprofile-arcs, then
+Generally the answer to which optimization level gives the best user experience
+depends on the use case and some experimentation can pay dividends. For a
+speedy debug cycle during development, especially on large designs where C++
+compilation speed can dominate, consider using lower optimization to get to an
+executable faster. For throughput oriented use cases, for example regressions,
+it is usually worth spending extra compilation time to reduce total CPU time.
+
+If you will be running many simulations on a single model, you can investigate
+profile guided optimization. With GCC, using -fprofile-arcs, then
 -fbranch-probabilities will yield another 15% or so.
 
 Modern compilers also support link-time optimization (LTO), which can help
-especially if you link in DPI code.  To enable LTO on GCC, pass "-flto" in
-both compilation and link.  Note LTO may cause excessive compile times on
-large designs.
+especially if you link in DPI code. To enable LTO on GCC, pass "-flto" in both
+compilation and link. Note LTO may cause excessive compile times on large
+designs.
 
-Using profile driven compiler optimization, with feedback from a real
-design, can yield up to30% improvements.
+Unfortunately, using the optimizer with SystemC files can result in compilation
+taking several minutes. (The SystemC libraries have many little inlined
+functions that drive the compiler nuts.)
 
 If you are using your own makefiles, you may want to compile the Verilated
 code with -DVL_INLINE_OPT=inline. This will inline functions, however this
@@ -5243,15 +5254,15 @@ test_regress/t/t_extend_class files show an example of how to do this.
 =item How do I get faster build times?
 
 When running make pass the make variable VM_PARALLEL_BUILDS=1 so that
-builds occur in parallel. Note this is now set by default if the output
-code size exceeds the value of --output-split.
+builds occur in parallel. Note this is now set by default if an output
+file was large enough to be split due to the --output-split option.
 
 Verilator emits any infrequently executed "cold" routines into separate
 __Slow.cpp files. This can accelerate compilation as optimization can be
-disabled on these routines. See the OPT_FAST and OPT_SLOW make variables.
+disabled on these routines. See the OPT_FAST and OPT_SLOW make variables
+and the BENCHMARKING & OPTIMIZATION section of the manual.
 
-Use a recent compiler.  Newer compilers tend do be faster, with the
-now relatively old GCC 3.0 to 3.3 being horrible.
+Use a recent compiler.  Newer compilers tend to be faster.
 
 Compile in parallel on many machines and use caching; see the web for the
 ccache, distcc and icecream packages. ccache will skip GCC runs between
