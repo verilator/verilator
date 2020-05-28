@@ -52,13 +52,136 @@
 #include "V3Ast.h"
 #include "V3Case.h"
 #include "V3Const.h"
+#include "V3Parse.h"
 #include "V3Width.h"
 #include "V3Unroll.h"
 #include "V3Hashed.h"
 
 #include <deque>
 #include <map>
+#include <map>
 #include <vector>
+
+//######################################################################
+// Hierarchhy block and parameter db (modules without parameter is also handled)
+class ParameterizedHierBlocks {
+    typedef std::multimap<string, const V3HierarchyBlockOption*> HierBlockOptsByOrigName;
+    typedef HierBlockOptsByOrigName::const_iterator HierMapIt;
+    typedef std::map<string, AstNodeModule*> HierBlockModMap;
+    typedef std::map<string, AstConst*> ParamConstMap;
+    typedef std::map<const V3HierarchyBlockOption*, ParamConstMap> ParamsMap;
+
+    // key:Original module name, value:HiearchyBlockOption*
+    // If a module is parameterized, the module is uniquiefied to overridden parameters.
+    // This is why HierBlockOptsByOrigName is multimap.
+    HierBlockOptsByOrigName m_hierBlockOptsByOrigName;
+
+    // key:mangled module name, value:AstNodeModule*
+    HierBlockModMap m_hierBlockMod;
+
+    // Overridden parameters of the hierarchy block
+    ParamsMap m_params;
+
+    static bool areSame(AstVar* modvarp, AstConst* varp, AstConst* paramp) {
+        if (varp->isString()) { return varp->num().toString() == paramp->num().toString(); }
+        if (modvarp->declKwd() == AstBasicDTypeKwd::FLOAT
+            || modvarp->declKwd() == AstBasicDTypeKwd::DOUBLE) {
+            return v3EpsilonEqual(varp->num().toDouble(), paramp->num().toDouble());
+        }
+        // Now integer type is assumed
+        // bitwidth of paramp is accurate because V3Width already caluclated in the previous run.
+        // varp is before width analysis.
+        const int bitwidth = paramp->num().width();
+        V3Number varNum(varp, bitwidth);
+        if (varp->isSigned()) {
+            varNum.opExtendS(varp->num(), varp->num().width());
+        } else {
+            varNum.opAssign(varp->num());
+        }
+        V3Number isEq(static_cast<AstNode*>(NULL), 1);
+        isEq.opEq(varNum, paramp->num());
+        return isEq.isNeqZero();
+    }
+
+public:
+    ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep) {
+        for (V3HierBlockOptSet::const_iterator it = hierOpts.begin(); it != hierOpts.end(); ++it) {
+            m_hierBlockOptsByOrigName.insert(std::make_pair(it->second.origName(), &it->second));
+            const V3HierarchyBlockOption::ParamStrMap& params = it->second.params();
+            ParamConstMap& consts = m_params[&it->second];
+            for (V3HierarchyBlockOption::ParamStrMap::const_iterator pIt = params.begin();
+                 pIt != params.end(); ++pIt) {
+                AstConst* constp = AstConst::parseParamLiteral(
+                    new FileLine(FileLine::EmptySecret()), pIt->second);
+                UASSERT(constp, pIt->second << " is not a valid parameter literal");
+                const bool inserted = consts.insert(std::make_pair(pIt->first, constp)).second;
+                UASSERT(inserted, pIt->first << " is already added");
+            }
+        }
+        for (AstNodeModule* modp = nodep->modulesp(); modp;
+             modp = VN_CAST(modp->nextp(), NodeModule)) {
+            if (hierOpts.find(modp->prettyName()) != hierOpts.end()) {
+                m_hierBlockMod.insert(std::make_pair(modp->name(), modp));
+            }
+        }
+    }
+    ~ParameterizedHierBlocks() {
+        for (ParamsMap::iterator it = m_params.begin(); it != m_params.end(); ++it) {
+            for (ParamConstMap::const_iterator pIt = it->second.begin(); pIt != it->second.end();
+                 ++pIt) {
+                delete pIt->second;
+            }
+        }
+    }
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
+
+    AstNodeModule* findByParams(const string& origName, AstPin* firstPinp) {
+        if (m_hierBlockOptsByOrigName.find(origName) == m_hierBlockOptsByOrigName.end()) {
+            return NULL;
+        }
+        // This module is a hierarchy block. Need to replace it by the protect-lib wrapper.
+        const std::pair<HierMapIt, HierMapIt> candidates
+            = m_hierBlockOptsByOrigName.equal_range(origName);
+        HierMapIt hierIt;
+        for (hierIt = candidates.first; hierIt != candidates.second; ++hierIt) {
+            bool found = true;
+            size_t paramIdx = 0;
+            const ParamConstMap& params = m_params[hierIt->second];
+            UASSERT(params.size() == hierIt->second->params().size(), "not match");
+            for (AstPin* pinp = firstPinp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+                if (!pinp->exprp()) continue;
+                UASSERT_OBJ(!pinp->modPTypep(), pinp,
+                            "module with type parameter must not be a hierarchy block");
+                if (AstVar* modvarp = pinp->modVarp()) {
+                    AstConst* constp = VN_CAST(pinp->exprp(), Const);
+                    UASSERT_OBJ(constp, pinp,
+                                "parameter for a hierarchy block must have been constified");
+                    ParamConstMap::const_iterator pIt = params.find(modvarp->name());
+                    UASSERT(pIt != params.end(), "Parameter must exist");
+                    UINFO(5, "Comparing " << modvarp->name() << " " << constp << " and "
+                                          << pIt->second << std::endl);
+                    if (paramIdx >= params.size() || !areSame(modvarp, constp, pIt->second)) {
+                        found = false;
+                        break;
+                    }
+                    ++paramIdx;
+                }
+            }
+            if (found && paramIdx == hierIt->second->params().size()) break;
+        }
+        UASSERT_OBJ(hierIt != candidates.second, firstPinp, "No protect-lib wrapper found");
+        // parameter settings will be removed in the bottom of caller visitCell().
+        const HierBlockModMap::const_iterator modIt
+            = m_hierBlockMod.find(hierIt->second->mangledName());
+        UASSERT_OBJ(modIt != m_hierBlockMod.end(), firstPinp,
+                    hierIt->second->mangledName() << " is not found");
+
+        HierBlockModMap::const_iterator it = m_hierBlockMod.find(hierIt->second->mangledName());
+        if (it == m_hierBlockMod.end()) return NULL;
+        return it->second;
+    }
+};
 
 //######################################################################
 // Param state, as a visitor of each AstNode
@@ -113,6 +236,8 @@ private:
     UnrollStateful m_unroller;  // Loop unroller
 
     string m_generateHierName;  // Generate portion of hierarchical name
+
+    ParameterizedHierBlocks m_hierBlocks;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -225,6 +350,43 @@ private:
             } else {
                 pinp->v3fatalSrc("Not linked?");
             }
+        }
+    }
+    void relinkPinsByName(AstPin* startpinp, AstNodeModule* modp) {
+        std::map<string, AstVar*> nameToPin;
+        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* varp = VN_CAST(stmtp, Var)) {
+                if (varp->isIO() || varp->isGParam() || varp->isIfaceRef()) {
+                    nameToPin.insert(make_pair(varp->name(), varp));
+                }
+            }
+        }
+        for (AstPin* pinp = startpinp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            if (AstVar* varp = pinp->modVarp()) {
+                std::map<string, AstVar*>::const_iterator varIt = nameToPin.find(varp->name());
+                UASSERT_OBJ(varIt != nameToPin.end(), varp,
+                            "Not found in " << modp->prettyNameQ());
+                pinp->modVarp(varIt->second);
+            }
+        }
+    }
+    // Check if parameter setting during instantiation is simple enough for hierarchical verilation
+    void checkSupportedParam(AstNodeModule* modp, AstPin* pinp) const {
+        // InitArray and AstParamTypeDType are not supported because that can not be set via -G
+        // option.
+        if (pinp->modVarp()) {
+            bool supported = false;
+            if (AstConst* constp = VN_CAST(pinp->exprp(), Const)) {
+                supported = !constp->isOpaque();
+            }
+            if (!supported) {
+                pinp->v3error(modp->origName()
+                              << " has hier_block metacomment, hierarchical verilation"
+                              << " supports only integer/floating point/string parameters.");
+            }
+        } else if (VN_IS(pinp->modPTypep(), ParamTypeDType)) {
+            pinp->v3error(modp->origName() << " has hier_block metacomment, but type parameter "
+                                              "which is not supported is specified.");
         }
     }
     void visitCell(AstCell* nodep, const string& hierName);
@@ -554,7 +716,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit ParamVisitor(AstNetlist* nodep) {
+    explicit ParamVisitor(AstNetlist* nodep)
+        : m_hierBlocks(v3Global.opt.hierBlocks(), nodep) {
         m_longId = 0;
         m_modp = NULL;
         m_nextValue = 1;
@@ -722,12 +885,20 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
 
         if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
+        } else if (AstNodeModule* modp
+                   = m_hierBlocks.findByParams(srcModp->name(), nodep->paramsp())) {
+            nodep->modp(modp);
+            nodep->modName(modp->name());
+            modp->dead(false);
+            // We need to relink the pins to the new module
+            relinkPinsByName(nodep->pinsp(), modp);
         } else {
             // If the name is very long, we don't want to overwhelm the filename limit
             // We don't do this always, as it aids debugability to have intuitive naming.
             // TODO can use new V3Name hash replacement instead of this
+            // Shorter name is convenient for hierarchy block
             string newname = longname;
-            if (longname.length() > 30) {
+            if (longname.length() > 30 || srcModp->hierBlock()) {
                 LongMap::iterator iter = m_longMap.find(longname);
                 if (iter != m_longMap.end()) {
                     newname = iter->second;
@@ -754,6 +925,8 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
                 cellmodp->user5(false);  // We need to re-recurse this module once changed
                 cellmodp->recursive(false);
                 cellmodp->recursiveClone(false);
+                // Only the first generation of clone holds this property
+                cellmodp->hierBlock(srcModp->hierBlock() && !srcModp->recursiveClone());
                 nodep->recursive(false);
                 // Recursion may need level cleanups
                 if (cellmodp->level() <= m_modp->level()) cellmodp->level(m_modp->level() + 1);
@@ -796,17 +969,18 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
                     cloneIrefp->ifacep(pinIrefp->ifaceViaCellp());
                     UINFO(8, "     IfaceNew " << cloneIrefp << endl);
                 }
-
                 // Assign parameters to the constants specified
                 // DOES clone() so must be finished with module clonep() before here
                 for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
                     if (pinp->exprp()) {
+                        if (cellmodp->hierBlock()) checkSupportedParam(cellmodp, pinp);
                         if (AstVar* modvarp = pinp->modVarp()) {
                             AstNode* newp = pinp->exprp();  // Const or InitArray
                             // Remove any existing parameter
                             if (modvarp->valuep()) modvarp->valuep()->unlinkFrBack()->deleteTree();
                             // Set this parameter to value requested by cell
                             modvarp->valuep(newp->cloneTree(false));
+                            modvarp->overriddenParam(true);
                         } else if (AstParamTypeDType* modptp = pinp->modPTypep()) {
                             AstNodeDType* dtypep = VN_CAST(pinp->exprp(), NodeDType);
                             UASSERT_OBJ(dtypep, pinp, "unlinked param dtype");
