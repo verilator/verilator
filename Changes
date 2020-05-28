@@ -5,7 +5,10 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.035 devel
 
-**    Add --waiver-output flag that writes a verilator config file (.vlt) with
+**    OPT_FAST is now -Os by default. See the BENCHMARKING & OPTIMIZATION part
+      of the manual if you experience issues with compilation speed.
+
+***   Add --waiver-output flag that writes a verilator config file (.vlt) with
       waivers to the warnings emitted during a Verilator run.
 
 ***   Support verilator_coverage --write-info for lcov HTML reports.
@@ -34,9 +37,6 @@ The contributors that suggested a given feature are shown in []. Thanks!
       require changes.
 
 ****  The run-time library is now compiled with -Os by default. (#2369, #2373)
-
-****  OPT_FAST is now -Os by default. See the BENCHMARKING & OPTIMIZATION part
-      of the manual if you experience issues with compilation speed.
 
 
 * Verilator 4.034 2020-05-03
