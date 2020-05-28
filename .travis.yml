@@ -32,9 +32,14 @@ before_install:
   - sudo apt-get install gdb gtkwave lcov
   - sudo apt-get install libfl-dev || true
   - sudo apt-get install libgoogle-perftools-dev
+# Only works on 20.04
+  - sudo apt-get install libsystemc-dev || true
+
 before_script:
   - bash -x ci/build_vcddiff.sh
   - bash -x ci/build_verilator.sh
+  - bin/verilator -V || true
+
 after_script:
   - ccache -s
 
