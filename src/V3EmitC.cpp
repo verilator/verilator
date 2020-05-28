@@ -2162,7 +2162,16 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep, const str
         } else {  // Format character
             inPct = false;
             switch (tolower(pos[0])) {
-            case '0' ... '9':
+            case '0':  // FALLTHRU
+            case '1':  // FALLTHRU
+            case '2':  // FALLTHRU
+            case '3':  // FALLTHRU
+            case '4':  // FALLTHRU
+            case '5':  // FALLTHRU
+            case '6':  // FALLTHRU
+            case '7':  // FALLTHRU
+            case '8':  // FALLTHRU
+            case '9':  // FALLTHRU
             case '.':  // FALLTHRU
             case '-':
                 // Digits, like %5d, etc.

@@ -7657,7 +7657,7 @@ public:
         V3ERROR_NA;
     }
     virtual string emitVerilog() { return "%k%l[%r]"; }
-    virtual string emitC() { V3ERROR_NA; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() const { return true; }
     virtual bool cleanLhs() const { return true; }
