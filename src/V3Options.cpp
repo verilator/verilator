@@ -540,13 +540,6 @@ string V3Options::getenvSYSTEMC_INCLUDE() {
         string sc = getenvSYSTEMC();
         if (sc != "") var = sc + "/include";
     }
-    // Only correct or check it if we really need the value
-    if (v3Global.opt.usingSystemCLibs()) {
-        if (var == "") {
-            v3fatal("Need $SYSTEMC_INCLUDE in environment or when Verilator configured\n"
-                    "Probably System-C isn't installed, see http://www.systemc.org\n");
-        }
-    }
     return var;
 }
 
@@ -561,13 +554,6 @@ string V3Options::getenvSYSTEMC_LIBDIR() {
         string arch = getenvSYSTEMC_ARCH();
         if (sc != "" && arch != "") var = sc + "/lib-" + arch;
     }
-    // Only correct or check it if we really need the value
-    if (v3Global.opt.usingSystemCLibs()) {
-        if (var == "") {
-            v3fatal("Need $SYSTEMC_LIBDIR in environment or when Verilator configured\n"
-                    "Probably System-C isn't installed, see http://www.systemc.org\n");
-        }
-    }
     return var;
 }
 
@@ -579,6 +565,19 @@ string V3Options::getenvVERILATOR_ROOT() {
     }
     if (var == "") v3fatal("$VERILATOR_ROOT needs to be in environment\n");
     return var;
+}
+
+bool V3Options::systemCSystemWide() {
+#ifdef HAVE_SYSTEMC_H
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool V3Options::systemCFound() {
+    return (systemCSystemWide()
+            || (!getenvSYSTEMC_INCLUDE().empty() && !getenvSYSTEMC_LIBDIR().empty()));
 }
 
 //######################################################################
@@ -1514,6 +1513,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "    SYSTEMC_INCLUDE    = " << DEFENV_SYSTEMC_INCLUDE << endl;
     cout << "    SYSTEMC_LIBDIR     = " << DEFENV_SYSTEMC_LIBDIR << endl;
     cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT << endl;
+    cout << "    SystemC system-wide = " << cvtToStr(systemCSystemWide()) << endl;
 
     cout << endl;
     cout << "Environment:\n";
@@ -1526,6 +1526,10 @@ void V3Options::showVersion(bool verbose) {
     cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT", "") << endl;
     // wrapper uses this:
     cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN", "") << endl;
+
+    cout << endl;
+    cout << "Features (based on environment or compiled-in support):\n";
+    cout << "    SystemC found      = " << cvtToStr(systemCFound()) << endl;
 }
 
 //======================================================================

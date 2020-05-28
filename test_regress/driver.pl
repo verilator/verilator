@@ -1413,8 +1413,9 @@ sub sc {
 }
 
 sub have_sc {
-    #my $self = shift;
-    return 1 if (defined $ENV{SYSTEMC} || defined $ENV{SYSTEMC_INCLUDE});
+    my $self = (ref $_[0]? shift : $Self);
+    return 1 if (defined $ENV{SYSTEMC} || defined $ENV{SYSTEMC_INCLUDE} || $ENV{CFG_HAVE_SYSTEMC});
+    return 1 if $self->verilator_version =~ /systemc found *= *1/i;
     return 0;
 }
 
@@ -2030,8 +2031,9 @@ sub _read_inputs_vhdl {
 
 our $_Verilator_Version;
 sub verilator_version {
+    # Returns verbose version, line 1 contains actual version
     if (!defined $_Verilator_Version) {
-        my @args = ("perl", "$ENV{VERILATOR_ROOT}/bin/verilator", "--version");
+        my @args = ("perl", "$ENV{VERILATOR_ROOT}/bin/verilator", "-V");
         my $args = join(' ',@args);
         $_Verilator_Version = `$args`;
         $_Verilator_Version or die "can't fork: $! ".join(' ',@args);

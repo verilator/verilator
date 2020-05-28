@@ -37,8 +37,8 @@ endif
 # If you build your own rules from scratch, note you need to include
 # SystemC as follows (Vtop.mk file includes verilated.mk with these
 # already).
-# CPPFLAGS += $(SYSTEMC_CXX_FLAGS) -I$(SYSTEMC_INCLUDE)
-# LDFLAGS  += $(SYSTEMC_CXX_FLAGS) -L$(SYSTEMC_LIBDIR)
+# CPPFLAGS += $(SYSTEMC_CXX_FLAGS) $(addprefix -I, $(SYSTEMC_INCLUDE))
+# LDFLAGS  += $(SYSTEMC_CXX_FLAGS) $(addprefix -L, $(SYSTEMC_LIBDIR))
 
 # See the benchmarking section of bin/verilator.
 # Support class optimizations.  This includes the tracing and symbol table.

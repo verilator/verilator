@@ -8,6 +8,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 **    OPT_FAST is now -Os by default. See the BENCHMARKING & OPTIMIZATION part
       of the manual if you experience issues with compilation speed.
 
+***   Configure now enables SystemC if it is installed as a system headers,
+      e.g. with 'apt-get install systemc-dev'.
+
 ***   Add --waiver-output flag that writes a verilator config file (.vlt) with
       waivers to the warnings emitted during a Verilator run.
 

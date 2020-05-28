@@ -77,6 +77,10 @@ using std::make_pair;
 
 // Define if struct stat has st_mtim.tv_nsec (from configure)
 #undef HAVE_STAT_NSEC
+// Define if SystemC found
+// - If defined, the default search path has it, so support is always enabled.
+// - If undef, not system-wide, user can set SYSTEMC_INCLUDE.
+#undef HAVE_SYSTEMC_H
 
 //**********************************************************************
 //**** OS and compiler specifics
