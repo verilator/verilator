@@ -88,11 +88,11 @@ private:
 
 public:
     static void pushVcd(VerilatedVcd* vcdp) VL_EXCLUDES(singleton().s_vcdMutex) {
-        VerilatedLockGuard lock(singleton().s_vcdMutex);
+        const VerilatedLockGuard lock(singleton().s_vcdMutex);
         singleton().s_vcdVecp.push_back(vcdp);
     }
     static void removeVcd(const VerilatedVcd* vcdp) VL_EXCLUDES(singleton().s_vcdMutex) {
-        VerilatedLockGuard lock(singleton().s_vcdMutex);
+        const VerilatedLockGuard lock(singleton().s_vcdMutex);
         VcdVec::iterator pos
             = find(singleton().s_vcdVecp.begin(), singleton().s_vcdVecp.end(), vcdp);
         if (pos != singleton().s_vcdVecp.end()) { singleton().s_vcdVecp.erase(pos); }
@@ -101,7 +101,7 @@ public:
         // Thread safety: Although this function is protected by a mutex so
         // perhaps in the future we can allow tracing in separate threads,
         // vcdp->flush() assumes call from single thread
-        VerilatedLockGuard lock(singleton().s_vcdMutex);
+        const VerilatedLockGuard lock(singleton().s_vcdMutex);
         for (VcdVec::const_iterator it = singleton().s_vcdVecp.begin();
              it != singleton().s_vcdVecp.end(); ++it) {
             VerilatedVcd* vcdp = *it;

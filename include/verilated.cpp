@@ -284,7 +284,7 @@ vluint64_t vl_rand64() VL_MT_SAFE {
     if (VL_UNLIKELY(!t_seeded)) {
         t_seeded = true;
         {
-            VerilatedLockGuard lock(s_mutex);
+            const VerilatedLockGuard lock(s_mutex);
             if (Verilated::randSeed() != 0) {
                 t_state[0] = ((static_cast<vluint64_t>(Verilated::randSeed()) << 32)
                               ^ (static_cast<vluint64_t>(Verilated::randSeed())));
@@ -2130,7 +2130,7 @@ Verilated::ThreadLocal::ThreadLocal()
 Verilated::ThreadLocal::~ThreadLocal() {}
 
 void Verilated::debug(int level) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_s.s_debug = level;
     if (level) {
 #ifdef VL_DEBUG
@@ -2144,49 +2144,49 @@ void Verilated::debug(int level) VL_MT_SAFE {
     }
 }
 void Verilated::randReset(int val) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_s.s_randReset = val;
 }
 void Verilated::randSeed(int val) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_s.s_randSeed = val;
 }
 void Verilated::calcUnusedSigs(bool flag) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_s.s_calcUnusedSigs = flag;
 }
 void Verilated::errorCount(int val) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_s.s_errorCount = val;
 }
 void Verilated::errorCountInc() VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     ++s_s.s_errorCount;
 }
 void Verilated::errorLimit(int val) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_s.s_errorLimit = val;
 }
 void Verilated::gotFinish(bool flag) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_s.s_gotFinish = flag;
 }
 void Verilated::assertOn(bool flag) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_s.s_assertOn = flag;
 }
 void Verilated::fatalOnVpiError(bool flag) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_s.s_fatalOnVpiError = flag;
 }
 void Verilated::timeunit(int value) VL_MT_SAFE {
     if (value < 0) value = -value;  // Stored as 0..15
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_s.s_timeunit = value;
 }
 void Verilated::timeprecision(int value) VL_MT_SAFE {
     if (value < 0) value = -value;  // Stored as 0..15
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_s.s_timeprecision = value;
 #ifdef SYSTEMC_VERSION
     sc_time sc_res = sc_get_time_resolution();
@@ -2217,15 +2217,15 @@ void Verilated::timeprecision(int value) VL_MT_SAFE {
 #endif
 }
 void Verilated::profThreadsStart(vluint64_t flag) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_ns.s_profThreadsStart = flag;
 }
 void Verilated::profThreadsWindow(vluint64_t flag) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     s_ns.s_profThreadsWindow = flag;
 }
 void Verilated::profThreadsFilenamep(const char* flagp) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     if (s_ns.s_profThreadsFilenamep) free(const_cast<char*>(s_ns.s_profThreadsFilenamep));
     s_ns.s_profThreadsFilenamep = strdup(flagp);
 }
@@ -2248,7 +2248,7 @@ const char* Verilated::catName(const char* n1, const char* n2, const char* delim
 }
 
 void Verilated::flushCb(VerilatedVoidCb cb) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     if (s_flushCb == cb) {  // Ok - don't duplicate
     } else if (!s_flushCb) {
         s_flushCb = cb;
@@ -2260,7 +2260,7 @@ void Verilated::flushCb(VerilatedVoidCb cb) VL_MT_SAFE {
 }
 
 void Verilated::flushCall() VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock(m_mutex);
     if (s_flushCb) (*s_flushCb)();
     fflush(stderr);
     fflush(stdout);
@@ -2270,7 +2270,7 @@ const char* Verilated::productName() VL_PURE { return VERILATOR_PRODUCT; }
 const char* Verilated::productVersion() VL_PURE { return VERILATOR_VERSION; }
 
 void Verilated::commandArgs(int argc, const char** argv) VL_MT_SAFE {
-    VerilatedLockGuard lock(s_args.m_argMutex);
+    const VerilatedLockGuard lock(s_args.m_argMutex);
     s_args.argc = argc;
     s_args.argv = argv;
     VerilatedImp::commandArgs(argc, argv);
@@ -2346,11 +2346,11 @@ void Verilated::endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
 // VerilatedImp:: Methods
 
 std::string VerilatedImp::timeFormatSuffix() VL_MT_SAFE {
-    VerilatedLockGuard lock(s_s.m_sergMutex);
+    const VerilatedLockGuard lock(s_s.m_sergMutex);
     return s_s.m_serg.m_timeFormatSuffix;
 }
 void VerilatedImp::timeFormatSuffix(const std::string& value) VL_MT_SAFE {
-    VerilatedLockGuard lock(s_s.m_sergMutex);
+    const VerilatedLockGuard lock(s_s.m_sergMutex);
     s_s.m_serg.m_timeFormatSuffix = value;
 }
 void VerilatedImp::timeFormatUnits(int value) VL_MT_SAFE { s_s.m_ser.m_timeFormatUnits = value; }
@@ -2360,7 +2360,7 @@ void VerilatedImp::timeFormatPrecision(int value) VL_MT_SAFE {
 void VerilatedImp::timeFormatWidth(int value) VL_MT_SAFE { s_s.m_ser.m_timeFormatWidth = value; }
 
 void VerilatedImp::internalsDump() VL_MT_SAFE {
-    VerilatedLockGuard lock(s_s.m_argMutex);
+    const VerilatedLockGuard lock(s_s.m_argMutex);
     VL_PRINTF_MT("internalsDump:\n");
     versionDump();
     VL_PRINTF_MT("  Argv:");
@@ -2377,12 +2377,12 @@ void VerilatedImp::versionDump() VL_MT_SAFE {
 }
 
 void VerilatedImp::commandArgs(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex) {
-    VerilatedLockGuard lock(s_s.m_argMutex);
+    const VerilatedLockGuard lock(s_s.m_argMutex);
     s_s.m_argVec.clear();  // Always clear
     commandArgsAddGuts(argc, argv);
 }
 void VerilatedImp::commandArgsAdd(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex) {
-    VerilatedLockGuard lock(s_s.m_argMutex);
+    const VerilatedLockGuard lock(s_s.m_argMutex);
     commandArgsAddGuts(argc, argv);
 }
 void VerilatedImp::commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(s_s.m_argMutex) {

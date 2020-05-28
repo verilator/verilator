@@ -3370,7 +3370,7 @@ class EmitCTrace : EmitCStmts {
         if (v3Global.needTraceDumper() && !optSystemC()) {
             puts("void " + topClassName() + "::_traceDump() {\n");
             // Caller checked for __Vm_dumperp non-NULL
-            puts("VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
+            puts("const VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
             puts("__VlSymsp->__Vm_dumperp->dump(VL_TIME_Q());\n");
             puts("}\n");
             splitSizeInc(10);
@@ -3378,7 +3378,7 @@ class EmitCTrace : EmitCStmts {
 
         if (v3Global.needTraceDumper()) {
             puts("void " + topClassName() + "::_traceDumpOpen() {\n");
-            puts("VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
+            puts("const VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
             puts("if (VL_UNLIKELY(!__VlSymsp->__Vm_dumperp)) {\n");
             puts("__VlSymsp->__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
             puts("const char* cp = vl_dumpctl_filenamep();\n");
@@ -3391,7 +3391,7 @@ class EmitCTrace : EmitCStmts {
             splitSizeInc(10);
 
             puts("void " + topClassName() + "::_traceDumpClose() {\n");
-            puts("VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
+            puts("const VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
             puts("__VlSymsp->__Vm_dumping = false;\n");
             puts("VL_DO_CLEAR(delete __VlSymsp->__Vm_dumperp, __VlSymsp->__Vm_dumperp = NULL);\n");
             puts("}\n");
