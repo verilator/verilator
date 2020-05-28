@@ -18,6 +18,7 @@
 #include "verilatedos.h"
 
 #include "V3Global.h"
+#include "V3HierBlock.h"
 #include "V3Os.h"
 #include "V3EmitMk.h"
 #include "V3EmitCBase.h"
@@ -94,7 +95,10 @@ public:
                 of.puts(support == 2 ? "VM_GLOBAL" : support == 1 ? "VM_SUPPORT" : "VM_CLASSES");
                 of.puts(slow ? "_SLOW" : "_FAST");
                 of.puts(" += \\\n");
-                if (support == 2 && !slow) {
+                if (support == 2 && v3Global.opt.hierMode()) {
+                    // Do nothing because VM_GLOBAL is necessary per executable. Top module will
+                    // have them.
+                } else if (support == 2 && !slow) {
                     putMakeClassEntry(of, "verilated.cpp");
                     if (v3Global.dpi()) { putMakeClassEntry(of, "verilated_dpi.cpp"); }
                     if (v3Global.opt.vpi()) { putMakeClassEntry(of, "verilated_vpi.cpp"); }
@@ -224,6 +228,14 @@ public:
         of.puts("\n### Default rules...\n");
         of.puts("# Include list of all generated classes\n");
         of.puts("include " + v3Global.opt.prefix() + "_classes.mk\n");
+        const V3HierBlockOptSet& hierOptions = v3Global.opt.hierBlocks();
+        if (!v3Global.opt.hierMode() && !hierOptions.empty()) {  // Only in top module
+            of.puts("# Include rules for hierarchy blocks\n");
+            of.puts("include " + v3Global.opt.prefix() + "_hier.mk\n");
+            of.puts("VK_ARCHIVES = $(VK_HIER_LIBS)\n");
+        } else {
+            of.puts("VK_ARCHIVES =\n");
+        }
         of.puts("# Include global rules\n");
         of.puts("include $(VERILATOR_ROOT)/include/verilated.mk\n");
 
@@ -241,17 +253,27 @@ public:
 
             of.puts("\n### Link rules... (from --exe)\n");
             of.puts(v3Global.opt.exeName()
-                    + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a\n");
+                    + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a $(VK_HIER_LIBS)\n");
             of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) $(LIBS) $(SC_LIBS) -o $@\n");
             of.puts("\n");
         }
 
         if (!v3Global.opt.protectLib().empty()) {
-            const string protectLibDeps
-                = "$(VK_OBJS) $(VK_GLOBAL_OBJS) " + v3Global.opt.protectLib() + ".o";
+            const string protectLibDeps = "$(VK_OBJS) $(VK_GLOBAL_OBJS) "
+                                          + v3Global.opt.protectLib() + ".o $(VK_HIER_LIBS)";
             of.puts("\n### Library rules from --protect-lib\n");
             of.puts(v3Global.opt.protectLibName(false) + ": " + protectLibDeps + "\n");
-            of.puts("\tar rc $@ $^\n");
+            if (!v3Global.opt.hierMode() && !v3Global.opt.hierBlocks().empty()) {
+                const string tmpArchive = "lib" + v3Global.opt.protectLib() + "__tmp.a";
+                // Top module that loads hierarchy blocks needs to merge all archives (*.a)
+                of.puts("\t$(RM) -f " + tmpArchive + "\n");
+                of.puts("\t$(AR) rc " + tmpArchive + " $(filter-out %.a,$^)\n");
+                of.puts("\t$(AR) cqT $@ $(filter %.a,$^) " + tmpArchive + "\n");
+                of.puts("\tprintf \"create $@\\n addlib $@\\n save\\n end\" | $(AR) -M\n");
+                of.puts("\t$(RM) -f " + tmpArchive + "\n");
+            } else {
+                of.puts("\t$(AR) rc $@ $^\n");
+            }
             of.puts("\n");
             of.puts(v3Global.opt.protectLibName(true) + ": " + protectLibDeps + "\n");
             of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ $^\n");
@@ -274,9 +296,167 @@ public:
 };
 
 //######################################################################
+class EmitMkHierVerilation {
+    const V3HierBlockPlan* const m_planp;
+    void emitCommonOpts(V3OutMkFile& of) const {
+        const string cwd = V3Os::filenameRealPath(".");
+        of.puts("# Verilation of hierarchy blocks are executed in this directory\n");
+        of.puts("VM_HIER_RUN_DIR := " + cwd + "\n");
+        of.puts("# Common options for hierarchy blocks\n");
+        of.puts("VM_HIER_COMMON_OPTS := --cc " + v3Global.opt.allArgsStringForHierBlock(false)
+                + "\n");
+        of.puts("VM_HIER_TOP_OPTS := --cc " + v3Global.opt.allArgsStringForHierBlock(true) + "\n");
+        of.puts("VM_HIER_VERILATOR := " + v3Global.opt.getenvVERILATOR_ROOT()
+                + "/bin/verilator\n");
+        of.puts("VM_HIER_INPUT_FILES := \\\n");
+        const V3StringList& vFiles = v3Global.opt.vFiles();
+        for (V3StringList::const_iterator it = vFiles.begin(); it != vFiles.end(); ++it) {
+            of.puts("\t" + V3Os::filenameRealPath(*it) + " \\\n");
+        }
+        of.puts("\n");
+        const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
+        of.puts("VM_HIER_VERILOG_LIBS := \\\n");
+        for (V3StringSet::const_iterator it = libraryFiles.begin(); it != libraryFiles.end();
+             ++it) {
+            of.puts("\t" + V3Os::filenameRealPath(*it) + " \\\n");
+        }
+        of.puts("\n");
+    }
+    void emitOpts(V3OutMkFile& of, const V3StringList& opts) const {
+        for (V3StringList::const_iterator it = opts.begin(); it != opts.end(); ++it) {
+            of.puts("\t\t" + *it + " \\\n");
+        }
+    }
+    void emit(V3OutMkFile& of) const {
+        of.puts("# Hierarchical Verilation -*- Makefile -*-\n");
+        of.puts("# DESCRIPTION: Verilator output: Makefile for hierarchical verilatrion\n");
+        of.puts("#\n");
+        of.puts("# The main makefile " + v3Global.opt.prefix() + ".mk calls this makefile\n");
+        of.puts("\n");
+        of.puts("ifndef VM_HIER_VERILATION_INCLUDED\n");
+        of.puts("VM_HIER_VERILATION_INCLUDED = 1\n\n");
+
+        of.puts(".SUFFIXES:\n");
+        of.puts(".PHONY:hier_build hier_verilation\n");
+
+        of.puts("# Libraries of hierarchy blocks\n");
+        of.puts("VK_HIER_LIBS := \\\n");
+        for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end(); ++it) {
+            of.puts("\t" + it->second->hierLib(true) + " \\\n");
+        }
+        of.puts("\n");
+
+        // Build hierarchical libraries as soon as possible to get maximum parallelism
+        of.puts("hier_build:$(VK_HIER_LIBS) " + v3Global.opt.prefix() + ".mk\n");
+        of.puts("\t$(MAKE) -f " + v3Global.opt.prefix() + ".mk\n");
+        of.puts("hier_verilation:" + v3Global.opt.prefix() + ".mk\n");
+        emitCommonOpts(of);
+
+        // Top level module
+        {
+            of.puts("\n# Verilate the top module\n");
+            of.puts(v3Global.opt.prefix() + ".mk:$(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
+            for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end();
+                 ++it) {
+                of.puts(it->second->hierWrapper(true) + " ");
+            }
+            of.puts("\n");
+            of.puts("\tcd $(VM_HIER_RUN_DIR) && $(VM_HIER_VERILATOR) $(VM_HIER_TOP_OPTS) \\\n");
+            // Load wrappers first not to be overwritten by the original HDL
+            for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end();
+                 ++it) {
+                of.puts("\t\t" + v3Global.opt.makeDir() + "/" + it->second->hierWrapper(true)
+                        + " \\\n");
+            }
+            of.puts("\t\t$(VM_HIER_INPUT_FILES) \\\n");
+            of.puts("\t\t$(addprefix -v ,$(VM_HIER_VERILOG_LIBS)) \\\n");
+            of.puts("\t\t");
+            const V3StringSet& cppFiles = v3Global.opt.cppFiles();
+            for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
+                of.puts(*it + " ");
+            }
+            of.puts("\\\n");
+            for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end();
+                 ++it) {
+                emitOpts(of, it->second->hierBlockOptions(false));
+            }
+            of.puts("\t\t--top-module " + v3Global.rootp()->topModulep()->name());
+            of.puts("\t\t--prefix " + v3Global.opt.prefix() + " \\\n");
+            of.puts("\t\t-Mdir " + v3Global.opt.makeDir() + " \\\n");
+            of.puts("\t\t--mod-prefix " + v3Global.opt.modPrefix() + "\\");
+            if (!v3Global.opt.protectLib().empty()) {
+                of.puts("\n");
+                of.puts("\t\t--protect-lib " + v3Global.opt.protectLib() + "\\\n");
+                of.puts("\t\t--protect-key " + v3Global.opt.protectKeyDefaulted() + "\\");
+            }
+            of.puts("\n");
+        }
+
+        // Rules to process Hierarchy Blocks
+        of.puts("\n# Verilate hierarchy blocks\n");
+        for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end(); ++it) {
+            const string prefix = it->second->hierPrefix();
+            of.puts(it->second->hierGenerated(true));
+            of.puts(":$(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
+            const V3HierBlock::HierBlockSet& children = it->second->children();
+            for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
+                 child != children.end(); ++child) {
+                of.puts((*child)->hierWrapper(true) + " ");
+            }
+            of.puts("\n");
+            of.puts("\tcd $(VM_HIER_RUN_DIR) && $(VM_HIER_VERILATOR) $(VM_HIER_COMMON_OPTS) \\\n");
+            // Load wrappers first not to be overwritten by the original HDL
+            for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
+                 child != children.end(); ++child) {
+                of.puts("\t\t" + v3Global.opt.makeDir() + "/" + (*child)->hierWrapper(true)
+                        + " \\\n");
+            }
+            of.puts("\t\t$(VM_HIER_INPUT_FILES) \\\n");
+            of.puts("\t\t$(addprefix -v ,$(VM_HIER_VERILOG_LIBS)) \\\n");
+            emitOpts(of, it->second->commandOptions(false));
+            emitOpts(of, it->second->hierBlockOptions(false));
+            of.puts("\t\t-Mdir " + v3Global.opt.makeDir() + "/" + prefix + " \\\n");
+            for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
+                 child != children.end(); ++child) {
+                emitOpts(of, (*child)->hierBlockOptions(false));
+            }
+            of.puts("\n");
+
+            // Rule to build lib*.a
+            of.puts(it->second->hierLib(true));
+            of.puts(": ");
+            of.puts(it->second->hierMk(true));
+            of.puts(" ");
+            for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
+                 child != children.end(); ++child) {
+                of.puts((*child)->hierLib(true));
+                of.puts(" ");
+            }
+            of.puts("\n\t$(MAKE) -f " + it->second->hierMk(false) + " -C " + prefix);
+            of.puts(" VM_PREFIX=" + prefix);
+            of.puts("\n\n");
+        }
+        of.puts("endif # ifdef VM_HIER_VERILATION_INCLUDED\n");
+    }
+
+public:
+    explicit EmitMkHierVerilation(const V3HierBlockPlan* planp)
+        : m_planp(planp) {
+        V3OutMkFile of(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_hier.mk");
+        emit(of);
+    }
+    VL_DEBUG_FUNC;  // Declare debug()
+};
+
+//######################################################################
 // Gate class functions
 
 void V3EmitMk::emitmk() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     EmitMk emitter;
+}
+
+void V3EmitMk::emitHierVerilation(const V3HierBlockPlan* planp) {
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    EmitMkHierVerilation emitter(planp);
 }
