@@ -203,7 +203,16 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
         int got_01 = 0;
         for (const char* cp = value_startp; *cp; cp++) {
             switch (tolower(*cp)) {
-            case '0' ... '9': {
+            case '0':  // FALLTHRU
+            case '1':  // FALLTHRU
+            case '2':  // FALLTHRU
+            case '3':  // FALLTHRU
+            case '4':  // FALLTHRU
+            case '5':  // FALLTHRU
+            case '6':  // FALLTHRU
+            case '7':  // FALLTHRU
+            case '8':  // FALLTHRU
+            case '9': {
                 if (olen <= 7) {  // 10000000 fits in 32 bits, so ok
                     // Constants are common, so for speed avoid wide math until we need it
                     val = val * 10 + (*cp - '0');

@@ -681,7 +681,16 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
             inPct = false;
             char fmt = pos[0];
             switch (fmt) {
-            case '0' ... '9':
+            case '0':  // FALLTHRU
+            case '1':  // FALLTHRU
+            case '2':  // FALLTHRU
+            case '3':  // FALLTHRU
+            case '4':  // FALLTHRU
+            case '5':  // FALLTHRU
+            case '6':  // FALLTHRU
+            case '7':  // FALLTHRU
+            case '8':  // FALLTHRU
+            case '9':
                 inPct = true;  // Get more digits
                 widthSet = true;
                 width = width * 10 + (fmt - '0');
