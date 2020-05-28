@@ -2735,7 +2735,8 @@ public:
     AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
         : AstNodeStmt(t, fl, statement)
         , m_taskp(NULL)
-        , m_packagep(NULL) {
+        , m_packagep(NULL)
+        , m_pli(false) {
         setOp1p(namep);
         addNOp3p(pinsp);
     }
@@ -2743,7 +2744,8 @@ public:
         : AstNodeStmt(t, fl, statement)
         , m_taskp(NULL)
         , m_name(name)
-        , m_packagep(NULL) {
+        , m_packagep(NULL)
+        , m_pli(false) {
         addNOp3p(pinsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
