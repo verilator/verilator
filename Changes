@@ -21,6 +21,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support unpacked array .sum and .product.
 
+****  Support prefix/postfix increment/decrement. (#2223) [Maciej Sobkowski]
+
 ****  Fix FST tracing of little bit endian signals. [Geza Lore]
 
 ****  Fix +: and -: on unpacked arrays. (#2304) [engr248]
