@@ -7245,6 +7245,110 @@ public:
     virtual int instrCount() const { return widthInstrs() * instrCountMul() * 10; }
     virtual bool signedFlavor() const { return true; }
 };
+class AstPreAdd : public AstNodeTriop {
+    // Pre-increment/add
+    // Parents:  MATH
+    // Children: lhsp: AstConst (1) as currently support only ++ not +=
+    // Children: rhsp: tree with AstVarRef that is value to read before operation
+    // Children: thsp: tree with AstVarRef LValue that is stored after operation
+public:
+    AstPreAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {
+    }
+    ASTNODE_NODE_FUNCS(PreAdd)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
+                               const V3Number& ths) {
+        V3ERROR_NA; // Need to modify lhs
+    }
+    virtual string emitVerilog() { return "%k(++%r)"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool cleanRhs() const { return false; }
+    virtual bool cleanThs() const { return false; }
+    virtual bool sizeMattersLhs() const { return true; }
+    virtual bool sizeMattersRhs() const { return true; }
+    virtual bool sizeMattersThs() const { return true; }
+};
+class AstPreSub : public AstNodeTriop {
+    // Pre-decrement/subtract
+    // Parents:  MATH
+    // Children: lhsp: AstConst (1) as currently support only -- not -=
+    // Children: rhsp: tree with AstVarRef that is value to read before operation
+    // Children: thsp: tree with AstVarRef LValue that is stored after operation
+public:
+    AstPreSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {
+    }
+    ASTNODE_NODE_FUNCS(PreSub)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
+                               const V3Number& ths) {
+        V3ERROR_NA; // Need to modify lhs
+    }
+    virtual string emitVerilog() { return "%k(--%r)"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool cleanRhs() const { return false; }
+    virtual bool cleanThs() const { return false; }
+    virtual bool sizeMattersLhs() const { return true; }
+    virtual bool sizeMattersRhs() const { return true; }
+    virtual bool sizeMattersThs() const { return true; }
+};
+class AstPostAdd : public AstNodeTriop {
+    // Post-increment/add
+    // Parents:  MATH
+    // Children: lhsp: AstConst (1) as currently support only ++ not +=
+    // Children: rhsp: tree with AstVarRef that is value to read before operation
+    // Children: thsp: tree with AstVarRef LValue that is stored after operation
+public:
+    AstPostAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {
+    }
+    ASTNODE_NODE_FUNCS(PostAdd)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
+                               const V3Number& ths) {
+        V3ERROR_NA; // Need to modify lhs
+    }
+    virtual string emitVerilog() { return "%k(%r++)"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool cleanRhs() const { return false; }
+    virtual bool cleanThs() const { return false; }
+    virtual bool sizeMattersLhs() const { return true; }
+    virtual bool sizeMattersRhs() const { return true; }
+    virtual bool sizeMattersThs() const { return true; }
+};
+class AstPostSub : public AstNodeTriop {
+    // Post-decrement/subtract
+    // Parents:  MATH
+    // Children: lhsp: AstConst (1) as currently support only -- not -=
+    // Children: rhsp: tree with AstVarRef that is value to read before operation
+    // Children: thsp: tree with AstVarRef LValue that is stored after operation
+public:
+    AstPostSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {
+    }
+    ASTNODE_NODE_FUNCS(PostSub)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
+                               const V3Number& ths) {
+        V3ERROR_NA; // Need to modify lhs
+    }
+    virtual string emitVerilog() { return "%k(%r--)"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool cleanRhs() const { return false; }
+    virtual bool cleanThs() const { return false; }
+    virtual bool sizeMattersLhs() const { return true; }
+    virtual bool sizeMattersRhs() const { return true; }
+    virtual bool sizeMattersThs() const { return true; }
+};
 class AstEqCase : public AstNodeBiCom {
 public:
     AstEqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp)

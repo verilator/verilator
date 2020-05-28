@@ -2929,23 +2929,17 @@ foperator_assignment<nodep>:	// IEEE: operator_assignment (for first part of exp
 	//UNSUP	BISONPRE_COPY(operator_assignment,{s/~f~/f/g})	// {copied}
 	;
 
-//UNSUPinc_or_dec_expression<nodep>:  // ==IEEE: inc_or_dec_expression
-//UNSUP	//			// Need fexprScope instead of variable_lvalue to prevent conflict
-//UNSUP		~l~exprScope yP_PLUSPLUS		{ $<fl>$=$<fl>1; $$ = $1+$2; }
-//UNSUP	|	~l~exprScope yP_MINUSMINUS		{ $<fl>$=$<fl>1; $$ = $1+$2; }
-//UNSUP	//			// Need expr instead of variable_lvalue to prevent conflict
-//UNSUP	|	yP_PLUSPLUS	expr			{ $<fl>$=$<fl>1; $$ = $1+$2; }
-//UNSUP	|	yP_MINUSMINUS	expr			{ $<fl>$=$<fl>1; $$ = $1+$2; }
-//UNSUP	;
+inc_or_dec_expression<nodep>:	// ==IEEE: inc_or_dec_expression
+	//			// Need fexprScope instead of variable_lvalue to prevent conflict
+		~l~exprScope yP_PLUSPLUS		{ $<fl>$=$<fl>1; $$ = new AstPostAdd($2, new AstConst($2, AstConst::StringToParse(), "'b1"), $1, $1->cloneTree(true)); }
+	|	~l~exprScope yP_MINUSMINUS		{ $<fl>$=$<fl>1; $$ = new AstPostSub($2, new AstConst($2, AstConst::StringToParse(), "'b1"), $1, $1->cloneTree(true)); }
+	//			// Need expr instead of variable_lvalue to prevent conflict
+	|	yP_PLUSPLUS	expr			{ $<fl>$=$<fl>1; $$ = new AstPreAdd($1, new AstConst($1, AstConst::StringToParse(), "'b1"), $2, $2->cloneTree(true)); }
+	|	yP_MINUSMINUS	expr			{ $<fl>$=$<fl>1; $$ = new AstPreSub($1, new AstConst($1, AstConst::StringToParse(), "'b1"), $2, $2->cloneTree(true)); }
+	;
 
 finc_or_dec_expression<nodep>:	// ==IEEE: inc_or_dec_expression
-	//UNSUP: Generic scopes in incrementes, remove below
-		fexprLvalue yP_PLUSPLUS			{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),new AstConst($2, AstConst::StringToParse(), "'b1"))); }
-	|	fexprLvalue yP_MINUSMINUS		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),new AstConst($2, AstConst::StringToParse(), "'b1"))); }
-	|	yP_PLUSPLUS   fexprLvalue		{ $$ = new AstAssign($1,$2,new AstAdd    ($1,$2->cloneTree(true),new AstConst($1, AstConst::StringToParse(), "'b1"))); }
-	|	yP_MINUSMINUS fexprLvalue		{ $$ = new AstAssign($1,$2,new AstSub    ($1,$2->cloneTree(true),new AstConst($1, AstConst::StringToParse(), "'b1"))); }
-	//UNSUP: Generic scopes in incrementes, remove above
-	//UNSUP	BISONPRE_COPY(inc_or_dec_expression,{s/~l~/f/g})	// {copied}
+		BISONPRE_COPY(inc_or_dec_expression,{s/~l~/f/g})	// {copied}
 	;
 
 //UNSUPsinc_or_dec_expression<nodep>:  // IEEE: inc_or_dec_expression (for sequence_expression)
@@ -3762,7 +3756,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	yP_XNOR ~r~expr	%prec prREDUCTION	{ $$ = new AstRedXnor	($1,$2); }
 	//
 	//			// IEEE: inc_or_dec_expression
-	//UNSUP	~l~inc_or_dec_expression		{ UNSUP }
+	|	~l~inc_or_dec_expression		{ $<fl>$=$<fl>1; $$ = $1; }
 	//
 	//			// IEEE: '(' operator_assignment ')'
 	//			// Need exprScope of variable_lvalue to prevent conflict

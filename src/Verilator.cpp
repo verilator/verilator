@@ -59,6 +59,7 @@
 #include "V3LinkCells.h"
 #include "V3LinkDot.h"
 #include "V3LinkJump.h"
+#include "V3LinkInc.h"
 #include "V3LinkLValue.h"
 #include "V3LinkLevel.h"
 #include "V3LinkParse.h"
@@ -120,6 +121,8 @@ static void process() {
     V3LinkLValue::linkLValue(v3Global.rootp());
     // Convert return/continue/disable to jumps
     V3LinkJump::linkJump(v3Global.rootp());
+    // Convert --/++ to normal operations. Must be after LinkJump.
+    V3LinkInc::linkIncrements(v3Global.rootp());
     V3Error::abortIfErrors();
 
     if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
