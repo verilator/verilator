@@ -217,6 +217,7 @@ RAW_OBJS = \
 	V3LinkParse.o \
 	V3LinkResolve.o \
 	V3Localize.o \
+	V3MergeCond.o \
 	V3Name.o \
 	V3Number.o \
 	V3Options.o \

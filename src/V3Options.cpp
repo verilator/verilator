@@ -918,12 +918,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     case 'b': m_oCombine = flag; break;
                     case 'c': m_oConst = flag; break;
                     case 'd': m_oDedupe = flag; break;
-                    case 'm': m_oAssemble = flag; break;
                     case 'e': m_oCase = flag; break;
                     case 'g': m_oGate = flag; break;
                     case 'i': m_oInline = flag; break;
                     case 'k': m_oSubstConst = flag; break;
                     case 'l': m_oLife = flag; break;
+                    case 'm': m_oAssemble = flag; break;
                     case 'p':
                         m_public = !flag;
                         break;  // With -Op so flag=0, we want public on so few optimizations done
@@ -932,6 +932,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     case 't': m_oLifePost = flag; break;
                     case 'u': m_oSubst = flag; break;
                     case 'v': m_oReloop = flag; break;
+                    case 'w': m_oMergeCond = flag; break;
                     case 'x': m_oExpand = flag; break;
                     case 'y': m_oAcycSimp = flag; break;
                     case 'z': m_oLocalize = flag; break;
@@ -1708,23 +1709,24 @@ void V3Options::optimize(int level) {
     // Set all optimizations to on/off
     bool flag = level > 0;
     m_oAcycSimp = flag;
+    m_oAssemble = flag;
     m_oCase = flag;
     m_oCombine = flag;
     m_oConst = flag;
+    m_oDedupe = flag;
     m_oExpand = flag;
     m_oGate = flag;
     m_oInline = flag;
     m_oLife = flag;
     m_oLifePost = flag;
     m_oLocalize = flag;
+    m_oMergeCond = flag;
     m_oReloop = flag;
     m_oReorder = flag;
     m_oSplit = flag;
     m_oSubst = flag;
     m_oSubstConst = flag;
     m_oTable = flag;
-    m_oDedupe = flag;
-    m_oAssemble = flag;
     // And set specific optimization levels
     if (level >= 3) {
         m_inlineMult = -1;  // Maximum inlining

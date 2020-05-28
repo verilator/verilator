@@ -65,6 +65,7 @@
 #include "V3LinkParse.h"
 #include "V3LinkResolve.h"
 #include "V3Localize.h"
+#include "V3MergeCond.h"
 #include "V3Name.h"
 #include "V3Order.h"
 #include "V3Os.h"
@@ -423,13 +424,18 @@ static void process() {
         V3Dead::deadifyAll(v3Global.rootp());
     }
 
-    if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && v3Global.opt.oReloop()) {
-        // Reform loops to reduce code size
-        // Must be after all Sel/array index based optimizations
-        V3Reloop::reloopAll(v3Global.rootp());
-    }
-
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly()) {
+        if (v3Global.opt.oMergeCond()) {
+            // Merge conditionals
+            V3MergeCond::mergeAll(v3Global.rootp());
+        }
+
+        if (v3Global.opt.oReloop()) {
+            // Reform loops to reduce code size
+            // Must be after all Sel/array index based optimizations
+            V3Reloop::reloopAll(v3Global.rootp());
+        }
+
         // Fix very deep expressions
         // Mark evaluation functions as member functions, if needed.
         V3Depth::depthAll(v3Global.rootp());
