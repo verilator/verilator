@@ -142,8 +142,7 @@ private:
     virtual void visit(AstLogOr* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
     virtual void visit(AstLogEq* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
     virtual void visit(AstLogIf* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
-    virtual void visit(AstCond* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
-    virtual void visit(AstCondBound* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
+    virtual void visit(AstNodeCond* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
     void prepost_visit(AstNodeTriop* nodep) {
         // Check if we are underneath a statement
         if (!m_insStmtp) {
