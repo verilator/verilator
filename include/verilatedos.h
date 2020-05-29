@@ -155,7 +155,7 @@
 ///< After e.g. delete, set variable to NULL to indicate must not use later
 # define VL_DANGLING(var) \
     do { \
-        (var) = NULL; \
+        *const_cast<const void**>(reinterpret_cast<const void* const*>(&var)) = NULL; \
     } while (false)
 #endif
 
