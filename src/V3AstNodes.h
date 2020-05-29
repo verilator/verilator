@@ -7253,12 +7253,11 @@ class AstPreAdd : public AstNodeTriop {
     // Children: thsp: tree with AstVarRef LValue that is stored after operation
 public:
     AstPreAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
-        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {
-    }
+        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {}
     ASTNODE_NODE_FUNCS(PreAdd)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths) {
-        V3ERROR_NA; // Need to modify lhs
+        V3ERROR_NA;  // Need to modify lhs
     }
     virtual string emitVerilog() { return "%k(++%r)"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
@@ -7279,12 +7278,11 @@ class AstPreSub : public AstNodeTriop {
     // Children: thsp: tree with AstVarRef LValue that is stored after operation
 public:
     AstPreSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
-        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {
-    }
+        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {}
     ASTNODE_NODE_FUNCS(PreSub)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths) {
-        V3ERROR_NA; // Need to modify lhs
+        V3ERROR_NA;  // Need to modify lhs
     }
     virtual string emitVerilog() { return "%k(--%r)"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
@@ -7305,12 +7303,11 @@ class AstPostAdd : public AstNodeTriop {
     // Children: thsp: tree with AstVarRef LValue that is stored after operation
 public:
     AstPostAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
-        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {
-    }
+        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {}
     ASTNODE_NODE_FUNCS(PostAdd)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths) {
-        V3ERROR_NA; // Need to modify lhs
+        V3ERROR_NA;  // Need to modify lhs
     }
     virtual string emitVerilog() { return "%k(%r++)"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
@@ -7331,12 +7328,11 @@ class AstPostSub : public AstNodeTriop {
     // Children: thsp: tree with AstVarRef LValue that is stored after operation
 public:
     AstPostSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
-        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {
-    }
+        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {}
     ASTNODE_NODE_FUNCS(PostSub)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths) {
-        V3ERROR_NA; // Need to modify lhs
+        V3ERROR_NA;  // Need to modify lhs
     }
     virtual string emitVerilog() { return "%k(%r--)"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }

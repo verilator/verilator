@@ -330,7 +330,7 @@ private:
     }
     void go() {
         // Generate a pseudo-random graph
-        vluint64_t rngState[2] = {VL_ULL(0x12345678), VL_ULL(0x9abcdef0)};
+        vluint64_t rngState[2] = {0x12345678ULL, 0x9abcdef0ULL};
         // Create 50 vertices
         for (unsigned i = 0; i < 50; ++i) m_vx[i] = new V3GraphVertex(&m_graph);
         // Create 250 edges at random. Edges must go from

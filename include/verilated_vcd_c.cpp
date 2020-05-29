@@ -732,7 +732,7 @@ void VerilatedVcd::fullQuad(vluint32_t code, const vluint64_t newval, int bits) 
     (*(reinterpret_cast<vluint64_t*>(oldp(code)))) = newval;
     *m_writep++ = 'b';
     for (int bit = bits - 1; bit >= 0; --bit) {
-        *m_writep++ = ((newval & (VL_ULL(1) << bit)) ? '1' : '0');
+        *m_writep++ = ((newval & (1ULL << bit)) ? '1' : '0');
     }
     *m_writep++ = ' ';
     m_writep = writeCode(m_writep, code);
@@ -754,7 +754,7 @@ void VerilatedVcd::fullArray(vluint32_t code, const vluint64_t* newval, int bits
     for (int word = 0; word < (((bits - 1) / 64) + 1); ++word) { oldp(code)[word] = newval[word]; }
     *m_writep++ = 'b';
     for (int bit = bits - 1; bit >= 0; --bit) {
-        *m_writep++ = ((newval[(bit / 64)] & (VL_ULL(1) << (bit & 0x3f))) ? '1' : '0');
+        *m_writep++ = ((newval[(bit / 64)] & (1ULL << (bit & 0x3f))) ? '1' : '0');
     }
     *m_writep++ = ' ';
     m_writep = writeCode(m_writep, code);
@@ -788,8 +788,7 @@ void VerilatedVcd::fullTriQuad(vluint32_t code, const vluint64_t newval, const v
     (*(reinterpret_cast<vluint64_t*>(oldp(code + 1)))) = newtri;
     *m_writep++ = 'b';
     for (int bit = bits - 1; bit >= 0; --bit) {
-        *m_writep++
-            = "01zz"[((newval >> bit) & VL_ULL(1)) | (((newtri >> bit) & VL_ULL(1)) << VL_ULL(1))];
+        *m_writep++ = "01zz"[((newval >> bit) & 1ULL) | (((newtri >> bit) & 1ULL) << 1ULL)];
     }
     *m_writep++ = ' ';
     m_writep = writeCode(m_writep, code);
@@ -935,8 +934,8 @@ void vcdTestMain(const char* filenamep) {
         quad96[1] = 0; quad96[0] = ~0;
         doub = -1.66e13;
         flo = 0.123f;
-        tquad = VL_ULL(0x00ff00ff00ff00ff);
-        tquad__tri = VL_ULL(0x0000fffff0000ffff);
+        tquad = 0x00ff00ff00ff00ffULL;
+        tquad__tri = 0x0000fffff0000ffffULL;
         vcdp->dump(++timestamp);
         ch = 2;
         tri96[2] = ~4; tri96[1] = ~2; tri96[0] = ~1;
@@ -944,8 +943,8 @@ void vcdTestMain(const char* filenamep) {
         vcdp->dump(++timestamp);
         vcdp->dump(++timestamp);
 # ifdef VERILATED_VCD_TEST_64BIT
-        vluint64_t bytesPerDump = VL_ULL(15);
-        for (vluint64_t i = 0; i < ((VL_ULL(1) << 32) / bytesPerDump); i++) {
+        vluint64_t bytesPerDump = 15ULL;
+        for (vluint64_t i = 0; i < ((1ULL << 32) / bytesPerDump); i++) {
             v1 = i;
             vcdp->dump(++timestamp);
         }

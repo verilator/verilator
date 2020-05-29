@@ -337,7 +337,7 @@ IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
 }
 QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
     if (Verilated::randReset() == 0) return 0;
-    QData data = VL_ULL(~0);
+    QData data = ~0ULL;
     if (Verilated::randReset() != 1) {  // if 2, randomize
         data = VL_RANDOM_Q(obits);
     }
@@ -394,7 +394,7 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
         vluint64_t k = 0;
         for (int j = uw - 1; j >= 0; --j) {
-            vluint64_t unw64 = ((k << VL_ULL(32)) + static_cast<vluint64_t>(lwp[j]));
+            vluint64_t unw64 = ((k << 32ULL) + static_cast<vluint64_t>(lwp[j]));
             owp[j] = unw64 / static_cast<vluint64_t>(rwp[0]);
             k = unw64 - static_cast<vluint64_t>(owp[j]) * static_cast<vluint64_t>(rwp[0]);
         }
@@ -436,26 +436,25 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
     // Main loop
     for (int j = uw - vw; j >= 0; --j) {
         // Estimate
-        vluint64_t unw64 = (static_cast<vluint64_t>(un[j + vw]) << VL_ULL(32)
+        vluint64_t unw64 = (static_cast<vluint64_t>(un[j + vw]) << 32ULL
                             | static_cast<vluint64_t>(un[j + vw - 1]));
         vluint64_t qhat = unw64 / static_cast<vluint64_t>(vn[vw - 1]);
         vluint64_t rhat = unw64 - qhat * static_cast<vluint64_t>(vn[vw - 1]);
 
     again:
-        if (qhat >= VL_ULL(0x100000000)
-            || ((qhat * vn[vw - 2]) > ((rhat << VL_ULL(32)) + un[j + vw - 2]))) {
+        if (qhat >= 0x100000000ULL || ((qhat * vn[vw - 2]) > ((rhat << 32ULL) + un[j + vw - 2]))) {
             qhat = qhat - 1;
             rhat = rhat + vn[vw - 1];
-            if (rhat < VL_ULL(0x100000000)) goto again;
+            if (rhat < 0x100000000ULL) goto again;
         }
 
         vlsint64_t t = 0;  // Must be signed
         vluint64_t k = 0;
         for (int i = 0; i < vw; ++i) {
             vluint64_t p = qhat * vn[i];  // Multiply by estimate
-            t = un[i + j] - k - (p & VL_ULL(0xFFFFFFFF));  // Subtract
+            t = un[i + j] - k - (p & 0xFFFFFFFFULL);  // Subtract
             un[i + j] = t;
-            k = (p >> VL_ULL(32)) - (t >> VL_ULL(32));
+            k = (p >> 32ULL) - (t >> 32ULL);
         }
         t = un[j + vw] - k;
         un[j + vw] = t;
@@ -468,7 +467,7 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
             for (int i = 0; i < vw; ++i) {
                 t = static_cast<vluint64_t>(un[i + j]) + static_cast<vluint64_t>(vn[i]) + k;
                 un[i + j] = t;
-                k = t >> VL_ULL(32);
+                k = t >> 32ULL;
             }
             un[j + vw] = un[j + vw] + k;
         }
@@ -519,7 +518,7 @@ QData VL_POW_QQW(int, int, int rbits, QData lhs, WDataInP rwp) VL_MT_SAFE {
     // Skip check for rhs == 0, as short-circuit doesn't save time
     if (VL_UNLIKELY(lhs == 0)) return 0;
     QData power = lhs;
-    QData out = VL_ULL(1);
+    QData out = 1ULL;
     for (int bit = 0; bit < rbits; ++bit) {
         if (bit > 0) power = power * power;
         if (VL_BITISSET_W(rwp, bit)) out *= power;
@@ -1050,7 +1049,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 // Note LSBs are preserved if there's an overflow
                 const int obits = inIgnore ? 0 : va_arg(ap, int);
                 WData qowp[VL_WQ_WORDS_E];
-                VL_SET_WQ(qowp, VL_ULL(0));
+                VL_SET_WQ(qowp, 0ULL);
                 WDataOutP owp = qowp;
                 if (obits > VL_QUADSIZE) owp = va_arg(ap, WDataOutP);
                 for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
@@ -1815,7 +1814,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
         lastc = c;
     }
 
-    if (VL_UNLIKELY(m_end != ~VL_ULL(0) && m_addr <= m_end)) {
+    if (VL_UNLIKELY(m_end != ~0ULL && m_addr <= m_end)) {
         VL_FATAL_MT(m_filename.c_str(), m_linenum, "",
                     "$readmem file ended before specified final address (IEEE 2017 21.4)");
     }
@@ -1823,7 +1822,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
     return false;  // EOF
 }
 void VlReadMem::setData(void* valuep, const std::string& rhs) {
-    QData shift = m_hex ? VL_ULL(4) : VL_ULL(1);
+    QData shift = m_hex ? 4ULL : 1ULL;
     bool innum = false;
     // Shift value in
     for (std::string::const_iterator it = rhs.begin(); it != rhs.end(); ++it) {

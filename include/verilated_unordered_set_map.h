@@ -225,8 +225,7 @@ public:
         return end();
     }
     const_iterator end() const {
-        return iterator(VL_ULL(0xFFFFFFFFFFFFFFFF), const_cast<Bucket&>(m_emptyBucket).begin(),
-                        this);
+        return iterator(0xFFFFFFFFFFFFFFFFULL, const_cast<Bucket&>(m_emptyBucket).begin(), this);
     }
 
     bool empty() const { return m_numElements == 0; }
@@ -249,8 +248,7 @@ public:
         //   function further. This permits the use of very fast client
         //   hash funcs (like just returning the int or pointer value as
         //   is!) and tolerates crappy client hash functions pretty well.
-        size_t mult
-            = hashVal * ((sizeof(size_t) == 8) ? VL_ULL(11400714819323198485) : 2654435769lu);
+        size_t mult = hashVal * ((sizeof(size_t) == 8) ? 11400714819323198485ULL : 2654435769lu);
         size_t result = (mult >> (((sizeof(size_t) == 8) ? 64 : 32) - log2Buckets));
         return result;
     }
@@ -339,7 +337,7 @@ public:
     }
 
 private:
-    size_t numBuckets() const { return (VL_ULL(1) << m_log2Buckets); }
+    size_t numBuckets() const { return (1ULL << m_log2Buckets); }
 
     Bucket* getBucket(size_t idx) {
         initBuckets();
@@ -372,7 +370,7 @@ private:
             new_log2Buckets = m_log2Buckets - 2;
         }
 
-        size_t new_num_buckets = VL_ULL(1) << new_log2Buckets;
+        size_t new_num_buckets = 1ULL << new_log2Buckets;
         Bucket* new_bucketsp = new Bucket[new_num_buckets];
 
         for (size_t i = 0; i < numBuckets(); i++) {

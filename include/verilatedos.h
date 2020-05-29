@@ -144,14 +144,7 @@
 #define VL_MT_UNSAFE_ONE  ///< Comment tag that function is not threadsafe when VL_THREADED,
                           ///< protected to make sure single-caller
 
-#ifdef _MSC_VER
-# define VL_ULL(c) (c##ULL)  ///< Add appropriate suffix to 64-bit constant
-// Was "(c##ui64)". C++11 has standardized on ULL, and MSVC now supports this.
-// We propose to no longer require using this macro no sooner than June 2020.
-// File an issue ASAP if this breaks anything.
-#else
-# define VL_ULL(c) (c##ULL)  ///< Add appropriate suffix to 64-bit constant
-#endif
+#define VL_ULL(c) (c##ULL)  ///< Add appropriate suffix to 64-bit constant (deprecated)
 
 // This is not necessarily the same as #UL, depending on what the IData typedef is.
 #define VL_UL(c) (static_cast<IData>(c##UL))  ///< Add appropriate suffix to 32-bit constant
@@ -401,7 +394,7 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #define VL_MASK_I(nbits) (((nbits) & VL_SIZEBITS_I) ? ((1U << ((nbits) & VL_SIZEBITS_I)) - 1) : ~0)
 /// Mask for quads with 1's where relevant bits are (0=all bits)
 #define VL_MASK_Q(nbits) \
-    (((nbits) & VL_SIZEBITS_Q) ? ((VL_ULL(1) << ((nbits) & VL_SIZEBITS_Q)) - VL_ULL(1)) : VL_ULL(~0))
+    (((nbits) & VL_SIZEBITS_Q) ? ((1ULL << ((nbits) & VL_SIZEBITS_Q)) - 1ULL) : ~0ULL)
 /// Mask for EData with 1's where relevant bits are (0=all bits)
 #define VL_MASK_E(nbits) VL_MASK_I(nbits)
 #define VL_EUL(n) VL_UL(n)  ///< Make constant number EData sized

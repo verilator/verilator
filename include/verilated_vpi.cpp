@@ -450,7 +450,7 @@ public:
     static QData cbNextDeadline() {
         VpioTimedCbs::const_iterator it = s_s.m_timedCbs.begin();
         if (VL_LIKELY(it != s_s.m_timedCbs.end())) return it->first;
-        return ~VL_ULL(0);  // maxquad
+        return ~0ULL;  // maxquad
     }
     static bool callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE {
         VpioCbList& cbObjList = s_s.m_cbObjLists[reason];
@@ -1361,7 +1361,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
             }
             case VLVT_UINT64: {
                 QData data = *(reinterpret_cast<QData*>(vop->varDatap()));
-                out[1].aval = static_cast<IData>(data >> VL_ULL(32));
+                out[1].aval = static_cast<IData>(data >> 32ULL);
                 out[1].bval = 0;
                 out[0].aval = static_cast<IData>(data);
                 out[0].bval = 0;

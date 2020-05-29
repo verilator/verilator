@@ -585,7 +585,7 @@ public:
         if (nodep->msbp()) {
             iterateAndNextNull(nodep->msbp());
         } else {
-            puts("~VL_ULL(0)");
+            puts("~0ULL");
         }
         puts(");\n");
     }
@@ -1137,9 +1137,9 @@ public:
         } else if (nodep->isQuad()) {
             vluint64_t num = nodep->toUQuad();
             if (num < 10) {
-                ofp()->printf("VL_ULL(%" VL_PRI64 "u)", num);
+                ofp()->printf("%" VL_PRI64 "uULL", num);
             } else {
-                ofp()->printf("VL_ULL(0x%" VL_PRI64 "x)", num);
+                ofp()->printf("0x%" VL_PRI64 "xULL", num);
             }
         } else {
             uint32_t num = nodep->toUInt();
@@ -2440,7 +2440,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                     hash.insert(varp->dtypep()->width());
                 }
             }
-            ofp()->printf("vluint64_t __Vcheckval = VL_ULL(0x%" VL_PRI64 "x);\n",
+            ofp()->printf("vluint64_t __Vcheckval = 0x%" VL_PRI64 "xULL;\n",
                           static_cast<vluint64_t>(hash.digestUInt64()));
             if (de) {
                 puts("os.readAssert(__Vcheckval);\n");
