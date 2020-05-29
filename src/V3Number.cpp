@@ -2231,31 +2231,6 @@ V3Number& V3Number::opSelInto(const V3Number& lhs, int lsbval, int width) {
     return *this;
 }
 
-V3Number& V3Number::opCond(const V3Number& lhs, const V3Number& if1s, const V3Number& if0s) {
-    NUM_ASSERT_OP_ARGS3(lhs, if1s, if0s);
-    NUM_ASSERT_LOGIC_ARGS1(lhs);
-    V3Number lhstrue(&lhs);
-    lhstrue.opRedOr(lhs);
-    if (lhstrue.bitIs0(0)) {
-        this->opAssign(if0s);
-    } else if (lhstrue.bitIs1(0)) {
-        this->opAssign(if1s);
-    } else {  // select is "X/Z"
-        setZero();
-        NUM_ASSERT_LOGIC_ARGS2(if1s, if0s);
-        for (int bit = 0; bit < this->width(); bit++) {
-            if (if0s.bitIs1(bit) && if1s.bitIs1(bit)) {
-                setBit(bit, 1);
-            } else if (if0s.bitIs0(bit) && if1s.bitIs0(bit)) {
-                setBit(bit, 0);
-            } else {
-                setBit(bit, 'x');
-            }
-        }
-    }
-    return *this;
-}
-
 //======================================================================
 // Ops - Floating point
 

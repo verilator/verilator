@@ -341,9 +341,10 @@ void V3Os::u_sleep(int64_t usec) {
 int V3Os::system(const string& command) {
     UINFO(1, "Running system: " << command << endl);
     const int ret = ::system(command.c_str());
-    if (ret == -1) {
-        v3fatal("Failed to execute command:" << command << " " << strerror(errno));
-        return -1;
+    if (VL_UNCOVERABLE(ret == -1)) {
+        v3fatal("Failed to execute command:"  // LCOV_EXCL_LINE
+                << command << " " << strerror(errno));
+        return -1;  // LCOV_EXCL_LINE
     } else {
         UASSERT(WIFEXITED(ret), "system(" << command << ") returned unexpected value of " << ret);
         const int exit_code = WEXITSTATUS(ret);

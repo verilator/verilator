@@ -49,9 +49,6 @@ extern void yyerrorf(const char* format, ...);
              yyerrorf("Unsupported: " language " reserved word not implemented: '%s'", yytext); \
              FL_BRK; } while(0)
 
-// See V3Read.cpp
-//void V3ParseImp::statePop() { yy_pop_state(); }
-
 //======================================================================
 
 void yyerror(const char* errmsg) {

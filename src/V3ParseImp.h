@@ -227,7 +227,6 @@ public:
     // Interactions with lexer
     void lexNew();
     void lexDestroy();
-    void statePop();  // Parser -> lexer communication
     static int stateVerilogRecent();  // Parser -> lexer communication
     int prevLexToken() { return m_prevLexToken; }  // Parser -> lexer communication
     size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf, max_size); }

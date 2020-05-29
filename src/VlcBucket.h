@@ -41,10 +41,10 @@ private:
         m_dataSize *= 2;
         // UINFO(9, "Realloc "<<allocSize()<<" for "<<point<<"  "<<cvtToHex(m_datap)<<endl);
         vluint64_t* newp = static_cast<vluint64_t*>(realloc(m_datap, allocSize()));
-        if (!newp) {
+        if (VL_UNCOVERABLE(!newp)) {
             // cppcheck-suppress doubleFree  // cppcheck 1.90 bug - realloc doesn't free on fail
-            free(m_datap);
-            v3fatal("Out of memory increasing buckets");
+            free(m_datap);  // LCOV_EXCL_LINE
+            v3fatal("Out of memory increasing buckets");  // LCOV_EXCL_LINE
         }
         m_datap = newp;
         for (vluint64_t i = oldsize; i < m_dataSize; i += 64) m_datap[i / 64] = 0;

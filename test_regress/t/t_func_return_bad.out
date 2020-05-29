@@ -1,0 +1,10 @@
+%Error: t/t_func_return_bad.v:10:7: Return isn't underneath a task or function
+   10 |       return;   
+      |       ^~~~~~
+%Error: t/t_func_return_bad.v:11:7: continue isn't underneath a loop
+   11 |       continue;   
+      |       ^~~~~~~~
+%Error: t/t_func_return_bad.v:12:7: break isn't underneath a loop
+   12 |       break;   
+      |       ^~~~~
+%Error: Exiting due to

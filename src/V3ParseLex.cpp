@@ -43,15 +43,12 @@ public:
         : V3LexerBase(NULL) {}
     ~V3Lexer() {}
     // METHODS
-    void statePop() { yy_pop_state(); }
     void unputString(const char* textp, size_t length) {
         // Add characters to input stream in back-to-front order
         const char* cp = textp;
         for (cp += length - 1; length--; cp--) unput(*cp);
     }
 };
-
-void V3ParseImp::statePop() { parsep()->m_lexerp->statePop(); }
 
 void V3ParseImp::unputString(const char* textp, size_t length) {
     parsep()->m_lexerp->unputString(textp, length);

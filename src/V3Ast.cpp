@@ -1154,10 +1154,10 @@ string AstNode::locationStr() const {
     const AstNode* backp = this;
     int itmax = 10000;  // Max iterations before giving up on location search
     while (backp) {
-        if (--itmax < 0) {
+        if (VL_UNCOVERABLE(--itmax < 0)) {
             // Likely some circular back link, and V3Ast is trying to report a low-level error
             UINFO(1, "Ran out of iterations finding locationStr on " << backp << endl);
-            return "";
+            return "";  // LCOV_EXCL_LINE
         }
         const AstScope* scopep;
         if ((scopep = VN_CAST_CONST(backp, Scope))) {

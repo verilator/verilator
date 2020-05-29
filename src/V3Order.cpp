@@ -1532,14 +1532,16 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
                 } else if (domainp != fromVertexp->domainp()) {
                     // Make a domain that merges the two domains
                     bool ddebug = debug() >= 9;
-                    if (ddebug) {
+
+                    if (ddebug) {  // LCOV_EXCL_START
+
                         cout << endl;
                         UINFO(0, "      conflicting domain " << fromVertexp << endl);
                         UINFO(0, "         dorig=" << domainp << endl);
                         domainp->dumpTree(cout);
                         UINFO(0, "         d2   =" << fromVertexp->domainp() << endl);
                         fromVertexp->domainp()->dumpTree(cout);
-                    }
+                    }  // LCOV_EXCL_STOP
                     AstSenTree* newtreep = domainp->cloneTree(false);
                     AstNodeSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
                     UASSERT_OBJ(newtree2p, fromVertexp->domainp(),
@@ -1549,13 +1551,13 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
                     V3Const::constifyExpensiveEdit(newtreep);  // Remove duplicates
                     newtreep->multi(true);  // Comment that it was made from 2 clock domains
                     domainp = m_finder.getSenTree(domainp->fileline(), newtreep);
-                    if (ddebug) {
+                    if (ddebug) {  // LCOV_EXCL_START
                         UINFO(0, "         dnew =" << newtreep << endl);
                         newtreep->dumpTree(cout);
                         UINFO(0, "         find =" << domainp << endl);
                         domainp->dumpTree(cout);
                         cout << endl;
-                    }
+                    }  // LCOV_EXCL_STOP
                     VL_DO_DANGLING(newtreep->deleteTree(), newtreep);
                 }
             }

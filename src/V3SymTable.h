@@ -74,8 +74,8 @@ public:
         if (m_symPrefix != "") os << "  symPrefix=" << m_symPrefix;
         os << "  n=" << nodep();
         os << endl;
-        if (doneSymsr.find(this) != doneSymsr.end()) {
-            os << indent << "| ^ duplicate, so no children printed\n";
+        if (VL_UNCOVERABLE(doneSymsr.find(this) != doneSymsr.end())) {
+            os << indent << "| ^ duplicate, so no children printed\n";  // LCOV_EXCL_LINE
         } else {
             doneSymsr.insert(this);
             for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end();
