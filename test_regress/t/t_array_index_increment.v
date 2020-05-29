@@ -107,6 +107,14 @@ module t (/*AUTOARG*/
       if (i !== 4) $stop;
       if (val !== 4) $stop;
 
+
+      pos = 0;
+      if (1 == 1) begin
+         pos++;
+      end
+
+      if (pos != 1) $stop;
+
       $write("*-* All Finished *-*\n");
       $finish;
 
