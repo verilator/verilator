@@ -216,7 +216,7 @@ void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
     // Using VL_PRINTF not VL_PRINTF_MT so that we can call VL_DBG_MSGF
     // from within the guts of the thread execution machinery (and it goes
     // to the screen and not into the queues we're debugging)
-    VL_PRINTF("-V{t%d,%" VL_PRI64 "u}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
+    VL_PRINTF("-V{t%u,%" VL_PRI64 "u}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
 }
 
 #ifdef VL_THREADED
@@ -2053,47 +2053,47 @@ static const char* vl_time_str(int scale) {
 double vl_time_multiplier(int scale) {
     // Return timescale multipler -18 to +18
     // For speed, this does not check for illegal values
-    static double pow10[] = {1.0,
-                             10.0,
-                             100.0,
-                             1000.0,
-                             10000.0,
-                             100000.0,
-                             1000000.0,
-                             10000000.0,
-                             100000000.0,
-                             1000000000.0,
-                             10000000000.0,
-                             100000000000.0,
-                             1000000000000.0,
-                             10000000000000.0,
-                             100000000000000.0,
-                             1000000000000000.0,
-                             10000000000000000.0,
-                             100000000000000000.0,
-                             1000000000000000000.0};
-    static double neg10[] = {1.0,
-                             0.1,
-                             0.01,
-                             0.001,
-                             0.0001,
-                             0.00001,
-                             0.000001,
-                             0.0000001,
-                             0.00000001,
-                             0.000000001,
-                             0.0000000001,
-                             0.00000000001,
-                             0.000000000001,
-                             0.0000000000001,
-                             0.00000000000001,
-                             0.000000000000001,
-                             0.0000000000000001,
-                             0.00000000000000001,
-                             0.000000000000000001};
     if (scale < 0) {
+        static const double neg10[] = {1.0,
+                                       0.1,
+                                       0.01,
+                                       0.001,
+                                       0.0001,
+                                       0.00001,
+                                       0.000001,
+                                       0.0000001,
+                                       0.00000001,
+                                       0.000000001,
+                                       0.0000000001,
+                                       0.00000000001,
+                                       0.000000000001,
+                                       0.0000000000001,
+                                       0.00000000000001,
+                                       0.000000000000001,
+                                       0.0000000000000001,
+                                       0.00000000000000001,
+                                       0.000000000000000001};
         return neg10[-scale];
     } else {
+        static const double pow10[] = {1.0,
+                                       10.0,
+                                       100.0,
+                                       1000.0,
+                                       10000.0,
+                                       100000.0,
+                                       1000000.0,
+                                       10000000.0,
+                                       100000000.0,
+                                       1000000000.0,
+                                       10000000000.0,
+                                       100000000000.0,
+                                       1000000000000.0,
+                                       10000000000000.0,
+                                       100000000000000.0,
+                                       1000000000000000.0,
+                                       10000000000000000.0,
+                                       100000000000000000.0,
+                                       1000000000000000000.0};
         return pow10[scale];
     }
 }
@@ -2514,6 +2514,7 @@ VerilatedScope::VerilatedScope() {
     m_funcnumMax = 0;
     m_symsp = NULL;
     m_varsp = NULL;
+    m_timeunit = 0;
     m_type = SCOPE_OTHER;
 }
 

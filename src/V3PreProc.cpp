@@ -141,7 +141,7 @@ public:
         ps_STRIFY
     };
     static const char* procStateName(ProcState s) {
-        static const char* states[]
+        static const char* const states[]
             = {"ps_TOP",           "ps_DEFNAME_UNDEF",  "ps_DEFNAME_DEFINE",
                "ps_DEFNAME_IFDEF", "ps_DEFNAME_IFNDEF", "ps_DEFNAME_ELSIF",
                "ps_DEFFORM",       "ps_DEFVALUE",       "ps_DEFPAREN",

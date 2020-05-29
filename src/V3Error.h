@@ -136,7 +136,7 @@ public:
     operator en() const { return m_e; }
     const char* ascii() const {
         // clang-format off
-        const char* names[] = {
+        static const char* const names[] = {
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR",
             // Boolean
