@@ -124,6 +124,14 @@ private:
         iterateChildren(nodep);
         m_insStmtp = NULL;  // Next thing should be new statement
     }
+    virtual void visit(AstNodeBlock* nodep) VL_OVERRIDE {
+        AstNode* insStmtp_prev = m_insStmtp;
+        {
+            m_insStmtp = NULL;
+            iterateChildren(nodep);
+        }
+        m_insStmtp = insStmtp_prev;
+    }
     void unsupported_visit(AstNode* nodep) {
         m_unsupportedHere = true;
         UINFO(9, "Marking unsupported " << nodep << endl);
