@@ -1600,8 +1600,8 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
                       VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
         return;
     }
-    _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format %s", VL_FUNC,
-                  VerilatedVpiError::strFromVpiVal(value_p->format));
+
+    _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", VL_FUNC, object);
 }
 
 vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p, p_vpi_time /*time_p*/,
