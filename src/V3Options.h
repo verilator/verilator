@@ -329,17 +329,18 @@ private:
     // MEMBERS (optimizations)
     //                          // main switch: -Op: --public
     bool        m_oAcycSimp;    // main switch: -Oy: acyclic pre-optimizations
+    bool        m_oAssemble;    // main switch: -Om: assign assemble
     bool        m_oCase;        // main switch: -Oe: case tree conversion
     bool        m_oCombine;     // main switch: -Ob: common icode packing
     bool        m_oConst;       // main switch: -Oc: constant folding
     bool        m_oDedupe;      // main switch: -Od: logic deduplication
-    bool        m_oAssemble;    // main switch: -Om: assign assemble
     bool        m_oExpand;      // main switch: -Ox: expansion of C macros
     bool        m_oGate;        // main switch: -Og: gate wire elimination
+    bool        m_oInline;      // main switch: -Oi: module inlining
     bool        m_oLife;        // main switch: -Ol: variable lifetime
     bool        m_oLifePost;    // main switch: -Ot: delayed assignment elimination
     bool        m_oLocalize;    // main switch: -Oz: convert temps to local variables
-    bool        m_oInline;      // main switch: -Oi: module inlining
+    bool        m_oMergeCond;   // main switch: -Ob: merge conditionals
     bool        m_oReloop;      // main switch: -Ov: reform loops
     bool        m_oReorder;     // main switch: -Or: reorder assignments in blocks
     bool        m_oSplit;       // main switch: -Os: always assignment splitting
@@ -548,18 +549,18 @@ public:
 
     // ACCESSORS (optimization options)
     bool oAcycSimp() const { return m_oAcycSimp; }
+    bool oAssemble() const { return m_oAssemble; }
     bool oCase() const { return m_oCase; }
     bool oCombine() const { return m_oCombine; }
     bool oConst() const { return m_oConst; }
     bool oDedupe() const { return m_oDedupe; }
-    bool oAssemble() const { return m_oAssemble; }
     bool oExpand() const { return m_oExpand; }
     bool oGate() const { return m_oGate; }
-    bool oDup() const { return oLife(); }
+    bool oInline() const { return m_oInline; }
     bool oLife() const { return m_oLife; }
     bool oLifePost() const { return m_oLifePost; }
     bool oLocalize() const { return m_oLocalize; }
-    bool oInline() const { return m_oInline; }
+    bool oMergeCond() const { return m_oMergeCond; }
     bool oReloop() const { return m_oReloop; }
     bool oReorder() const { return m_oReorder; }
     bool oSplit() const { return m_oSplit; }
