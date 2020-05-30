@@ -1181,7 +1181,7 @@ private:
                         GateLogicVertex* consumeVertexp
                             = dynamic_cast<GateLogicVertex*>(outedgep->top());
                         AstNode* consumerp = consumeVertexp->nodep();
-                        m_graphp->dumpDotFilePrefixed("gate_preelim");
+                        // if (debug() >= 9) m_graphp->dumpDotFilePrefixed("gate_preelim");
                         UINFO(9,
                               "elim src vtx" << lvertexp << " node " << lvertexp->nodep() << endl);
                         UINFO(9,
