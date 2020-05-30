@@ -94,7 +94,6 @@
 #include "V3OrderGraph.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <deque>
 #include <iomanip>
 #include <map>

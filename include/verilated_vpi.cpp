@@ -30,7 +30,6 @@
 #include <list>
 #include <map>
 #include <set>
-#include <sstream>
 
 //======================================================================
 // Internal constants

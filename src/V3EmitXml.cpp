@@ -22,9 +22,6 @@
 #include "V3EmitXml.h"
 #include "V3EmitCBase.h"
 
-#include <algorithm>
-#include <cmath>
-#include <cstdarg>
 #include <map>
 #include <vector>
 

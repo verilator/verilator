@@ -21,7 +21,6 @@
 #include "V3File.h"
 #include "V3Graph.h"
 
-#include <cstdarg>
 #include <map>
 #include <memory>
 #include <vector>

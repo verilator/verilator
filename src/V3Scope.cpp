@@ -29,8 +29,6 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
-#include <iomanip>
 #include <map>
 #include VL_INCLUDE_UNORDERED_MAP
 #include VL_INCLUDE_UNORDERED_SET

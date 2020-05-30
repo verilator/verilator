@@ -24,7 +24,6 @@
 #include "V3PartitionGraph.h"  // Just for mtask dumping
 #include "V3EmitCBase.h"
 
-#include <cstdarg>
 #include <iomanip>
 #include <vector>
 

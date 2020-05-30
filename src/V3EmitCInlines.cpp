@@ -22,10 +22,7 @@
 #include "V3EmitCBase.h"
 #include "V3Stats.h"
 
-#include <cmath>
-#include <cstdarg>
 #include <map>
-#include <vector>
 
 //######################################################################
 

@@ -31,7 +31,6 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 // Clean state, as a visitor of each AstNode

@@ -60,14 +60,11 @@
 #include "V3Global.h"
 #include "V3Tristate.h"
 #include "V3Ast.h"
-#include "V3Const.h"
 #include "V3Stats.h"
 #include "V3Inst.h"
-#include "V3Stats.h"
 #include "V3Graph.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <map>
 
 //######################################################################

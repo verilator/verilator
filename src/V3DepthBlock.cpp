@@ -29,7 +29,6 @@
 #include "V3EmitCBase.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 

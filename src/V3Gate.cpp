@@ -33,11 +33,8 @@
 #include "V3Hashed.h"
 
 #include <algorithm>
-#include <cstdarg>
-#include <iomanip>
 #include <list>
 #include <map>
-#include <vector>
 #include VL_INCLUDE_UNORDERED_SET
 
 typedef std::list<AstNodeVarRef*> GateVarRefList;

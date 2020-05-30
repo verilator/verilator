@@ -29,10 +29,7 @@
 #include "V3Stats.h"
 #include "V3Ast.h"
 
-#include <algorithm>
-#include <cstdarg>
 #include <map>
-#include <vector>
 
 //######################################################################
 

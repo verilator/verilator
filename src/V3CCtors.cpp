@@ -32,10 +32,7 @@
 #include "V3CCtors.h"
 
 #include <algorithm>
-#include <cmath>
-#include <cstdarg>
 #include <map>
-#include <vector>
 
 class V3CCtorsVisitor {
 private:

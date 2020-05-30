@@ -42,8 +42,6 @@
 #include "V3Slice.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
-
 //*************************************************************************
 
 class SliceVisitor : public AstNVisitor {

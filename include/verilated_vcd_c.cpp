@@ -27,15 +27,12 @@
 #include <cerrno>
 #include <ctime>
 #include <fcntl.h>
-#include <sys/stat.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>
 #else
 # include <unistd.h>
 #endif
-
-#include "verilated_intrinsics.h"
 
 // SPDIFF_ON
 

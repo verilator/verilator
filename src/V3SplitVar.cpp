@@ -114,7 +114,6 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
-#include "V3Const.h"
 #include "V3Global.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"

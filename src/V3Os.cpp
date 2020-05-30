@@ -29,17 +29,13 @@
 #include "verilatedos.h"
 
 // Limited V3 headers here - this is a base class for Vlc etc
-#include "V3Global.h"
 #include "V3String.h"
 #include "V3Os.h"
 
 #include <cerrno>
-#include <climits>
 #include <cstdarg>
 #include <dirent.h>
-#include <fcntl.h>
 #include <fstream>
-#include <iomanip>
 #include <memory>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -54,7 +50,7 @@
 # include <thread>
 #else
 # include <sys/time.h>
-# include <sys/wait.h>
+# include <sys/wait.h> // Needed on FreeBSD for WIFEXITED
 # include <unistd.h>  // usleep
 #endif
 // clang-format on

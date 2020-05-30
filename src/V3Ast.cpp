@@ -23,7 +23,6 @@
 #include "V3Broken.h"
 #include "V3String.h"
 
-#include <cstdarg>
 #include <iomanip>
 #include <memory>
 

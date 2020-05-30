@@ -20,12 +20,10 @@
 #include "V3Global.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
-#include "V3File.h"
 
 // This visitor does not edit nodes, and is called at error-exit, so should use constant iterators
 #include "V3AstConstOnly.h"
 
-#include <cstdarg>
 #include <iomanip>
 #include <map>
 

@@ -34,8 +34,6 @@
 #include "V3PreShell.h"
 #include "V3LanguageWords.h"
 
-#include <cstdarg>
-#include <fstream>
 #include <sstream>
 
 //======================================================================

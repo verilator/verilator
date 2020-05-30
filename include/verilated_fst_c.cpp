@@ -36,17 +36,12 @@
 #include "gtkwave/lz4.c"
 
 #include <algorithm>
-#include <cerrno>
-#include <ctime>
-#include <fcntl.h>
 #include <iterator>
 #include <sstream>
-#include <sys/stat.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>
 #else
-# include <stdint.h>
 # include <unistd.h>
 #endif
 

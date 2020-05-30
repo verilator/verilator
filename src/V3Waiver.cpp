@@ -19,7 +19,6 @@
 #include "V3Waiver.h"
 
 #include <memory>
-#include <fstream>
 #include <sstream>
 
 void V3Waiver::addEntry(V3ErrorCode errorCode, const std::string& filename,

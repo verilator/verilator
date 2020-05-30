@@ -56,7 +56,6 @@
 #include "V3Unroll.h"
 #include "V3Hashed.h"
 
-#include <cstdarg>
 #include <deque>
 #include <map>
 #include <vector>

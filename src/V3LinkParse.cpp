@@ -27,7 +27,6 @@
 #include "V3Config.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <map>
 #include <set>
 #include <vector>

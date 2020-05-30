@@ -21,7 +21,6 @@
 #include "V3Graph.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <list>
 #include <vector>
 

@@ -38,7 +38,6 @@
 #include "V3Stats.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 

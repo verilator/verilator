@@ -33,8 +33,6 @@
 #include "V3Width.h"
 #include "V3Const.h"
 
-#include <cstdarg>
-
 //######################################################################
 // Width state, as a visitor of each AstNode
 

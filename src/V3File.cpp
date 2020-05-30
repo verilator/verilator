@@ -20,7 +20,6 @@
 #include "V3Global.h"
 #include "V3File.h"
 #include "V3Os.h"
-#include "V3PreShell.h"
 #include "V3String.h"
 #include "V3Ast.h"
 

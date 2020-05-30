@@ -28,17 +28,12 @@
 #include "V3Graph.h"
 #include "V3TSP.h"
 
-#include <cassert>
 #include <cmath>
-#include <fstream>
-#include <limits>
 #include <list>
-#include <map>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <string>
-#include <utility>
 #include <vector>
 #include VL_INCLUDE_UNORDERED_SET
 #include VL_INCLUDE_UNORDERED_MAP

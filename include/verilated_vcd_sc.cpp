@@ -17,7 +17,6 @@
 //=============================================================================
 // SPDIFF_OFF
 
-#include "verilatedos.h"
 #include "verilated_vcd_sc.h"
 
 // SPDIFF_ON

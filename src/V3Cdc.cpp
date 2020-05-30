@@ -33,12 +33,9 @@
 #include "V3File.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <deque>
 #include <iomanip>
-#include <list>
 #include <memory>
-#include <vector>
 
 #define CDC_WEIGHT_ASYNC 0x1000  // Weight for edges that feed async logic
 

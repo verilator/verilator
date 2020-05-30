@@ -35,7 +35,6 @@
 #include "V3Simulate.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 // Unroll state, as a visitor of each AstNode

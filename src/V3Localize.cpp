@@ -30,7 +30,6 @@
 #include "V3Stats.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
 #include <vector>
 
 //######################################################################
