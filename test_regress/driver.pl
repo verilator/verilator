@@ -907,9 +907,14 @@ sub compile_vlt_flags {
                    @{$param{v_flags2}},
                    # Flags from driver cmdline override default flags and
                    # flags from the test itself
-                   @Opt_Driver_Verilator_Flags,
+                   driver_verilator_flags(),
         );
     return @cmdargs;
+}
+
+sub driver_verilator_flags {
+    #my $self = (ref $_[0] ? shift : $Self);
+    return @Opt_Driver_Verilator_Flags
 }
 
 sub lint {
