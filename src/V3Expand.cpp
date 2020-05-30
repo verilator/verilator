@@ -152,22 +152,22 @@ private:
         return newp;
     }
 
-    AstNode* newSelBitWord(AstNode* lsbp, int wordAdder) {
+    AstNode* newWordSel(FileLine* fl, AstNode* fromp, AstNode* lsbp, int wordAdder) {
         // Return equation to get the VL_BITWORD of a constant or non-constant
+        AstNode* wordp;
         if (VN_IS(lsbp, Const)) {
-            return new AstConst(lsbp->fileline(),
-                                wordAdder + VL_BITWORD_E(VN_CAST(lsbp, Const)->toUInt()));
+            wordp = new AstConst(lsbp->fileline(),
+                                 wordAdder + VL_BITWORD_E(VN_CAST(lsbp, Const)->toUInt()));
         } else {
-            AstNode* shiftp
-                = new AstShiftR(lsbp->fileline(), lsbp->cloneTree(true),
-                                new AstConst(lsbp->fileline(), VL_EDATASIZE_LOG2), VL_EDATASIZE);
+            wordp = new AstShiftR(lsbp->fileline(), lsbp->cloneTree(true),
+                                  new AstConst(lsbp->fileline(), VL_EDATASIZE_LOG2), VL_EDATASIZE);
             if (wordAdder != 0) {
-                shiftp = new AstAdd(lsbp->fileline(),
-                                    // This is indexing a arraysel, so a 32 bit constant is fine
-                                    new AstConst(lsbp->fileline(), wordAdder), shiftp);
+                wordp = new AstAdd(lsbp->fileline(),
+                                   // This is indexing a arraysel, so a 32 bit constant is fine
+                                   new AstConst(lsbp->fileline(), wordAdder), wordp);
             }
-            return shiftp;
         }
+        return new AstWordSel(fl, fromp, wordp);
     }
 
     AstNode* dropCondBound(AstNode* nodep) {
@@ -335,9 +335,8 @@ private:
             // Selection amounts
             // Check for constant shifts & save some constification work later.
             // Grab lowest bit(s)
-            AstNode* lowwordp
-                = new AstWordSel(nodep->fromp()->fileline(), nodep->fromp()->cloneTree(true),
-                                 newSelBitWord(nodep->lsbp(), 0));
+            AstNode* lowwordp = newWordSel(nodep->fromp()->fileline(),
+                                           nodep->fromp()->cloneTree(true), nodep->lsbp(), 0);
             if (nodep->isQuad() && !lowwordp->isQuad()) {
                 lowwordp = new AstCCast(nodep->fileline(), lowwordp, nodep);
             }
@@ -348,8 +347,8 @@ private:
             V3Number zero(nodep, longOrQuadWidth(nodep));
             if (nodep->widthConst() > 1) {
                 AstNode* midwordp =  // SEL(from,[1+wordnum])
-                    new AstWordSel(nodep->fromp()->fileline(), nodep->fromp()->cloneTree(true),
-                                   newSelBitWord(nodep->lsbp(), 1));
+                    newWordSel(nodep->fromp()->fileline(), nodep->fromp()->cloneTree(true),
+                               nodep->lsbp(), 1);
                 if (nodep->isQuad() && !midwordp->isQuad()) {
                     midwordp = new AstCCast(nodep->fileline(), midwordp, nodep);
                 }
@@ -384,8 +383,8 @@ private:
             AstNode* hip = NULL;
             if (nodep->widthConst() > VL_EDATASIZE) {
                 AstNode* hiwordp =  // SEL(from,[2+wordnum])
-                    new AstWordSel(nodep->fromp()->fileline(), nodep->fromp()->cloneTree(true),
-                                   newSelBitWord(nodep->lsbp(), 2));
+                    newWordSel(nodep->fromp()->fileline(), nodep->fromp()->cloneTree(true),
+                               nodep->lsbp(), 2);
                 if (nodep->isQuad() && !hiwordp->isQuad()) {
                     hiwordp = new AstCCast(nodep->fileline(), hiwordp, nodep);
                 }
@@ -440,16 +439,15 @@ private:
             UINFO(8, "    Wordize ASSIGN(EXTRACT,misalign) " << nodep << endl);
             for (int w = 0; w < nodep->widthWords(); w++) {
                 // Grab lowest bits
-                AstNode* lowwordp
-                    = new AstWordSel(rhsp->fileline(), rhsp->fromp()->cloneTree(true),
-                                     newSelBitWord(rhsp->lsbp(), w));
+                AstNode* lowwordp = newWordSel(rhsp->fileline(), rhsp->fromp()->cloneTree(true),
+                                               rhsp->lsbp(), w);
                 AstNode* lowp = new AstShiftR(rhsp->fileline(), lowwordp,
                                               newSelBitBit(rhsp->lsbp()), VL_EDATASIZE);
                 // Upper bits
                 V3Number zero(nodep, VL_EDATASIZE, 0);
                 AstNode* midwordp =  // SEL(from,[1+wordnum])
-                    new AstWordSel(rhsp->fromp()->fileline(), rhsp->fromp()->cloneTree(true),
-                                   newSelBitWord(rhsp->lsbp(), w + 1));
+                    newWordSel(rhsp->fromp()->fileline(), rhsp->fromp()->cloneTree(true),
+                               rhsp->lsbp(), w + 1);
                 AstNode* midshiftp = new AstSub(
                     rhsp->lsbp()->fileline(), new AstConst(rhsp->lsbp()->fileline(), VL_EDATASIZE),
                     newSelBitBit(rhsp->lsbp()));
@@ -532,8 +530,8 @@ private:
                 UINFO(8, "    ASSIGNSEL(varlsb,wide,1bit) " << nodep << endl);
                 AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
                 AstNode* destp = lhsp->fromp()->unlinkFrBack();
-                AstNode* oldvalp = new AstWordSel(lhsp->fileline(), destp->cloneTree(true),
-                                                  newSelBitWord(lhsp->lsbp(), 0));
+                AstNode* oldvalp
+                    = newWordSel(lhsp->fileline(), destp->cloneTree(true), lhsp->lsbp(), 0);
                 fixCloneLvalue(oldvalp);
                 if (!ones) {
                     oldvalp = new AstAnd(
@@ -553,10 +551,8 @@ private:
                 AstNode* newp
                     = new AstOr(lhsp->fileline(), oldvalp,
                                 new AstShiftL(lhsp->fileline(), rhsp, shiftp, VL_EDATASIZE));
-                newp = new AstAssign(
-                    nodep->fileline(),
-                    new AstWordSel(nodep->fileline(), destp, newSelBitWord(lhsp->lsbp(), 0)),
-                    newp);
+                newp = new AstAssign(nodep->fileline(),
+                                     newWordSel(nodep->fileline(), destp, lhsp->lsbp(), 0), newp);
                 insertBefore(nodep, newp);
                 return true;
             } else if (destwide) {
