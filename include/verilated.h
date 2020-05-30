@@ -718,15 +718,15 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 /// Create two 32-bit words from quadword
 /// WData is always at least 2 words; does not clean upper bits
 #define VL_SET_WQ(owp, data) \
-    { \
+    do { \
         (owp)[0] = static_cast<IData>(data); \
         (owp)[1] = static_cast<IData>((data) >> VL_EDATASIZE); \
-    }
+    } while (false)
 #define VL_SET_WI(owp, data) \
-    { \
+    do { \
         (owp)[0] = static_cast<IData>(data); \
         (owp)[1] = 0; \
-    }
+    } while (false)
 #define VL_SET_QW(lwp) \
     ((static_cast<QData>((lwp)[0])) \
      | (static_cast<QData>((lwp)[1]) << (static_cast<QData>(VL_EDATASIZE))))

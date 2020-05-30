@@ -32,7 +32,7 @@ V3PreLex* V3PreLex::s_currentLexp = NULL;       // Current lexing point
 #define LEXP V3PreLex::s_currentLexp
 
 #define YY_INPUT(buf,result,max_size) \
-    result = LEXP->inputToLex(buf, max_size);
+    do { result = LEXP->inputToLex(buf, max_size); } while (false)
 
 // Accessors, because flex keeps changing the type of yyleng
 char* yyourtext() { return yytext; }
@@ -41,9 +41,9 @@ void yyourtext(const char* textp, size_t size) { yytext=(char*)textp; yyleng=siz
 
 // FL_FWD only tracks columns; preproc uses linenoInc() to track lines, so
 // insertion of a \n does not mess up line count
-#define FL_FWDC { LEXP->curFilelinep()->forwardToken(yytext, yyleng, false); }
+#define FL_FWDC (LEXP->curFilelinep()->forwardToken(yytext, yyleng, false))
 // Use this to break between tokens whereever not return'ing a token (e.g. skipping inside lexer)
-#define FL_BRK { LEXP->curFilelinep()->startToken(); }
+#define FL_BRK (LEXP->curFilelinep()->startToken())
 
 // Prevent conflicts from perl version
 static void linenoInc()  {LEXP->linenoInc();}

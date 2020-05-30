@@ -306,11 +306,10 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 // Note the commas are the comma operator, not separating arguments. These are needed to ensure
 // evaluation order as otherwise we couldn't ensure v3errorPrep is called first.
 #define v3warnCode(code, msg) \
-    v3errorEnd( \
-        (V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()));
+    v3errorEnd((V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()))
 #define v3warnCodeFatal(code, msg) \
     v3errorEndFatal( \
-        (V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()));
+        (V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()))
 #define v3warn(code, msg) v3warnCode(V3ErrorCode::code, msg)
 #define v3info(msg) v3warnCode(V3ErrorCode::EC_INFO, msg)
 #define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
@@ -323,28 +322,28 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
                     __FILE__ << ":" << std::dec << __LINE__ << ": " << msg)
 // Use this when normal v3fatal is called in static method that overrides fileline.
 #define v3fatalStatic(msg) \
-    ::v3errorEndFatal((V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), \
-                       (V3Error::v3errorStr() << msg), V3Error::v3errorStr()));
+    (::v3errorEndFatal((V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), \
+                        (V3Error::v3errorStr() << msg), V3Error::v3errorStr())))
 
 #define UINFO(level, stmsg) \
-    { \
+    do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { \
             cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; \
         } \
-    }
+    } while (false)
 #define UINFONL(level, stmsg) \
-    { \
+    do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { cout << stmsg; } \
-    }
+    } while (false)
 
 #ifdef VL_DEBUG
 #define UDEBUGONLY(stmts) \
-    { stmts }
+    do { stmts } while (false)
 #else
 #define UDEBUGONLY(stmts) \
-    { \
+    do { \
         if (false) { stmts } \
-    }
+    } while (false)
 #endif
 
 // Assertion without object, generally UOBJASSERT preferred

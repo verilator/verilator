@@ -1884,12 +1884,12 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp,
     string nextComma;
     bool needComma = false;
 #define COMMA \
-    { \
+    do { \
         if (!nextComma.empty()) { \
             puts(nextComma); \
             nextComma = ""; \
         } \
-    }
+    } while (false)
 
     putbs("");
     for (string::const_iterator pos = format.begin(); pos != format.end(); ++pos) {

@@ -257,7 +257,7 @@ public:
         case ET_HIGHEDGE: return ET_LOWEDGE;
         case ET_LOWEDGE: return ET_HIGHEDGE;
         default: UASSERT_STATIC(0, "Inverting bad edgeType()");
-        };
+        }
         return VEdgeType::ET_ILLEGAL;
     }
     const char* ascii() const {
@@ -1347,12 +1347,12 @@ public:
 // Prefetch a node.
 // The if() makes it faster, even though prefetch won't fault on null pointers
 #define ASTNODE_PREFETCH(nodep) \
-    { \
+    do { \
         if (nodep) { \
             VL_PREFETCH_RD(&((nodep)->m_nextp)); \
             VL_PREFETCH_RD(&((nodep)->m_iterpp)); \
         } \
-    }
+    } while (false)
 
 class AstNode {
     // v ASTNODE_PREFETCH depends on below ordering of members

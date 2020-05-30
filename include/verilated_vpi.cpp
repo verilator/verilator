@@ -50,7 +50,7 @@
 
 // Not supported yet
 #define _VL_VPI_UNIMP() \
-    _VL_VPI_ERROR(__FILE__, __LINE__, Verilated::catName("Unsupported VPI function: ", VL_FUNC));
+    (_VL_VPI_ERROR(__FILE__, __LINE__, Verilated::catName("Unsupported VPI function: ", VL_FUNC)))
 
 //======================================================================
 // Implementation
@@ -1026,7 +1026,7 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
         _VL_VPI_WARNING(__FILE__, __LINE__, "%s: Unsupported callback type %s", VL_FUNC,
                         VerilatedVpiError::strFromVpiCallbackReason(cb_data_p->reason));
         return NULL;
-    };
+    }
 }
 
 PLI_INT32 vpi_remove_cb(vpiHandle object) {

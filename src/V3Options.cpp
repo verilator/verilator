@@ -778,7 +778,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         addArg(argv[i]);  // -f's really should be inserted in the middle, but this is for debug
     }
 #define shift \
-    { ++i; }
+    do { ++i; } while (false)
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i] << endl);
         // + options

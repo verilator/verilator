@@ -71,7 +71,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
     // May be called recursively when there are -f files.
 #define shift \
-    { ++i; }
+    do { ++i; } while (false)
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i] << endl);
         if (argv[i][0] == '-') {

@@ -47,7 +47,7 @@
 // Function requires a "context" in the import declaration
 #define _VL_SVDPI_CONTEXT_WARN() \
     _VL_SVDPI_WARN("%%Warning: DPI C Function called by Verilog DPI import with missing " \
-                   "'context' keyword.\n");
+                   "'context' keyword.\n")
 
 //======================================================================
 //======================================================================

@@ -32,17 +32,18 @@ extern void yyerrorf(const char* format, ...);
 #define PARSEP V3ParseImp::parsep()
 #define SYMP PARSEP->symp()
 
-#define YY_INPUT(buf, result, max_size) result = PARSEP->flexPpInputToLex(buf, max_size);
+#define YY_INPUT(buf, result, max_size) \
+        do { result = PARSEP->flexPpInputToLex(buf, max_size); } while (false)
 
 //======================================================================
 
-#define FL_FWD { PARSEP->fileline()->forwardToken(yytext, yyleng, true); }
+#define FL_FWD (PARSEP->fileline()->forwardToken(yytext, yyleng, true))
 // Use this to break between tokens whereever not return'ing a token (e.g. skipping inside lexer)
-#define FL_BRK { PARSEP->fileline()->startToken(); }
+#define FL_BRK (PARSEP->fileline()->startToken())
 
 #define CRELINE() (PARSEP->copyOrSameFileLine())
 
-#define FL { FL_FWD; yylval.fl = CRELINE(); }
+#define FL do { FL_FWD; yylval.fl = CRELINE(); } while (false)
 
 #define ERROR_RSVD_WORD(language) \
         do { FL_FWD; \
