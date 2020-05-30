@@ -786,10 +786,10 @@ better viewers let us know; ZGRViewer isn't great for large graphs.
 Tree files are dumps of the AST Tree and are produced between every major
 algorithmic stage.  An example:
 
-     NETLIST 0x90fb00 <e1> {a0}
-    1: MODULE 0x912b20 <e8822> {a8}  top  L2 [P]
-   *1:2: VAR 0x91a780 <e74#> {a22} @dt=0xa2e640(w32)  out_wide [O] WIRE
-    1:2:1: BASICDTYPE 0xa2e640 <e2149> {e24} @dt=this(sw32)  integer kwd=integer range=[31:0]
+     NETLIST 0x90fb00 <e1> {a0ah}
+    1: MODULE 0x912b20 <e8822> {a8ah}  top  L2 [P]
+   *1:2: VAR 0x91a780 <e74#> {a22ah} @dt=0xa2e640(w32)  out_wide [O] WIRE
+    1:2:1: BASICDTYPE 0xa2e640 <e2149> {e24ah} @dt=this(sw32)  integer kwd=integer range=[31:0]
 
 The following summarizes the above example dump, with more detail on each
 field in the section below.
@@ -807,8 +807,9 @@ the `MODULE`, which in turn is the `op1p` pointer under the `NETLIST`
 | `<e74>` | means the 74th edit to the netlist was the last modification to
 this node.
 
-| `{a22}` | indicates this node is related to line 22 in the source filename
-"a", where "a" is the first file read, "z" the 26th, and "aa" the 27th.
+| `{a22ah}` | indicates this node is related to the source filename "a",
+where "a" is the first file read, "z" the 26th, and "aa" the 27th.  Then
+line 22 in that file, then column 8 (aa=0, az=25, ba=26, ...).
 
 | `@dt=0x...` | indicates the address of the data type this node contains.
 

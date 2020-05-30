@@ -276,6 +276,12 @@ const string FileLine::filebasenameNoExt() const {
     return name;
 }
 
+const string FileLine::firstColumnLetters() const {
+    char a = ((firstColumn() / 26) % 26) + 'a';
+    char b = (firstColumn() % 26) + 'a';
+    return string(1, a) + string(1, b);
+}
+
 const string FileLine::profileFuncname() const {
     // Return string that is OK as a function name - for profiling
     string name = filebasenameNoExt();

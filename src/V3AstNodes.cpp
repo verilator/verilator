@@ -970,7 +970,8 @@ void AstNode::dump(std::ostream& str) const {
         << cvtToHex(this)
         //<<" "<<cvtToHex(this)->m_backp
         << " <e" << std::dec << editCount() << ((editCount() >= editCountLast()) ? "#>" : ">")
-        << " {" << fileline()->filenameLetters() << std::dec << fileline()->lastLineno() << "}";
+        << " {" << fileline()->filenameLetters() << std::dec << fileline()->lastLineno()
+        << fileline()->firstColumnLetters() << "}";
     if (user1p()) str << " u1=" << cvtToHex(user1p());
     if (user2p()) str << " u2=" << cvtToHex(user2p());
     if (user3p()) str << " u3=" << cvtToHex(user3p());

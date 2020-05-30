@@ -200,6 +200,7 @@ public:
     const string filenameLetters() const { return singleton().filenameLetters(m_filenameno); }
     const string filebasename() const;
     const string filebasenameNoExt() const;
+    const string firstColumnLetters() const;
     const string profileFuncname() const;
     const string xml() const {
         return "fl=\"" + filenameLetters() + cvtToStr(lastLineno()) + "\"";
