@@ -681,6 +681,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix resolving inline nested interface names. (#1250) [Arjen Roodselaar]
 
+****  Fix GCC false warning on array bounds. (#2386)
+
 
 * Verilator 3.916 2017-11-25
 

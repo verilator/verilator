@@ -154,20 +154,30 @@ private:
 
     AstNode* newWordSel(FileLine* fl, AstNode* fromp, AstNode* lsbp, int wordAdder) {
         // Return equation to get the VL_BITWORD of a constant or non-constant
-        AstNode* wordp;
-        if (VN_IS(lsbp, Const)) {
-            wordp = new AstConst(lsbp->fileline(),
-                                 wordAdder + VL_BITWORD_E(VN_CAST(lsbp, Const)->toUInt()));
+        UASSERT_OBJ(fromp->isWide(), fromp, "Only need AstWordSel on wide from's");
+        if (wordAdder >= fromp->widthWords()) {
+            // e.g. "logic [95:0] var[0]; logic [0] sel; out = var[sel];"
+            // Squash before C++ to avoid getting a C++ compiler warning
+            // (even though code would be unreachable as presumably a
+            // AstCondBound is protecting above this node.
+            return new AstConst(fl, AstConst::SizedEData(), 0);
         } else {
-            wordp = new AstShiftR(lsbp->fileline(), lsbp->cloneTree(true),
-                                  new AstConst(lsbp->fileline(), VL_EDATASIZE_LOG2), VL_EDATASIZE);
-            if (wordAdder != 0) {
-                wordp = new AstAdd(lsbp->fileline(),
-                                   // This is indexing a arraysel, so a 32 bit constant is fine
-                                   new AstConst(lsbp->fileline(), wordAdder), wordp);
+            AstNode* wordp;
+            if (VN_IS(lsbp, Const)) {
+                wordp = new AstConst(lsbp->fileline(),
+                                     wordAdder + VL_BITWORD_E(VN_CAST(lsbp, Const)->toUInt()));
+            } else {
+                wordp = new AstShiftR(lsbp->fileline(), lsbp->cloneTree(true),
+                                      new AstConst(lsbp->fileline(), VL_EDATASIZE_LOG2),
+                                      VL_EDATASIZE);
+                if (wordAdder != 0) {
+                    wordp = new AstAdd(lsbp->fileline(),
+                                       // This is indexing a arraysel, so a 32 bit constant is fine
+                                       new AstConst(lsbp->fileline(), wordAdder), wordp);
+                }
             }
+            return new AstWordSel(fl, fromp, wordp);
         }
-        return new AstWordSel(fl, fromp, wordp);
     }
 
     AstNode* dropCondBound(AstNode* nodep) {
