@@ -264,7 +264,6 @@ private:
     bool        m_threadsDpiUnpure;  // main switch: --threads-dpi all
     bool        m_trace;        // main switch: --trace
     bool        m_traceCoverage;  // main switch: --trace-coverage
-    bool        m_traceDups;    // main switch: --trace-dups
     bool        m_traceParams;  // main switch: --trace-params
     bool        m_traceStructs; // main switch: --trace-structs
     bool        m_traceUnderscore;// main switch: --trace-underscore
@@ -437,7 +436,6 @@ public:
     bool threadsCoarsen() const { return m_threadsCoarsen; }
     bool trace() const { return m_trace; }
     bool traceCoverage() const { return m_traceCoverage; }
-    bool traceDups() const { return m_traceDups; }
     bool traceParams() const { return m_traceParams; }
     bool traceStructs() const { return m_traceStructs; }
     bool traceUnderscore() const { return m_traceUnderscore; }
