@@ -253,7 +253,6 @@ public:
     static string msgPrefix();  // returns %Error/%Warn
     static int errorCount() { return s_errCount; }
     static int warnCount() { return s_warnCount; }
-    static int errorOrWarnCount() { return errorCount() + warnCount(); }
     static bool errorContexted() { return s_errorContexted; }
     static void errorContexted(bool flag) { s_errorContexted = flag; }
     // METHODS

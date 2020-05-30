@@ -1080,9 +1080,6 @@ public:
 //          - Also used to allow parameter passing up/down iterate calls
 
 class WidthVP;
-class LinkVP;
-class OrderBlockNU;
-class OrderVarNU;
 class V3GraphVertex;
 class VSymEnt;
 
@@ -1104,14 +1101,10 @@ public:
     ~VNUser() {}
     // Casters
     WidthVP* c() { return ((WidthVP*)m_u.up); }
-    LinkVP* toLinkVP() { return ((LinkVP*)m_u.up); }
     VSymEnt* toSymEnt() { return ((VSymEnt*)m_u.up); }
     AstNode* toNodep() { return ((AstNode*)m_u.up); }
-    OrderBlockNU* toOrderBlock() { return ((OrderBlockNU*)m_u.up); }
-    OrderVarNU* toOrderVar() { return ((OrderVarNU*)m_u.up); }
     V3GraphVertex* toGraphVertex() { return ((V3GraphVertex*)m_u.up); }
     inline int toInt() { return m_u.ui; }
-    static inline VNUser fromZero() { return VNUser(0); }
     static inline VNUser fromInt(int i) { return VNUser(i); }
 };
 
