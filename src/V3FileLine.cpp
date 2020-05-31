@@ -22,9 +22,7 @@
 #include "V3FileLine.h"
 #include "V3String.h"
 #ifndef _V3ERROR_NO_GLOBAL_
-# include "V3Ast.h"
 # include "V3Global.h"
-# include "V3Stats.h"
 # include "V3Config.h"
 # include "V3File.h"
 #endif
@@ -32,7 +30,6 @@
 // clang-format on
 
 #include <algorithm>
-#include <cstdarg>
 #include <iomanip>
 #include VL_INCLUDE_UNORDERED_SET
 

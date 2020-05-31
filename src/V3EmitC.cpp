@@ -26,8 +26,6 @@
 #include "V3TSP.h"
 
 #include <algorithm>
-#include <cmath>
-#include <cstdarg>
 #include <map>
 #include <vector>
 #include VL_INCLUDE_UNORDERED_SET

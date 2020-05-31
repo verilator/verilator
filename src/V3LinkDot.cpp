@@ -71,7 +71,6 @@
 #include "V3String.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <map>
 #include <vector>
 

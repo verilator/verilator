@@ -45,7 +45,6 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 // Cast state, as a visitor of each AstNode

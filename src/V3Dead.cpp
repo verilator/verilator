@@ -41,7 +41,6 @@
 #include "V3Dead.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
 #include <map>
 #include <vector>
 

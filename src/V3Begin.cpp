@@ -30,12 +30,9 @@
 
 #include "V3Global.h"
 #include "V3Begin.h"
-#include "V3Inst.h"
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
-#include <vector>
 
 //######################################################################
 

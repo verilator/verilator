@@ -20,7 +20,6 @@
 #include "V3Os.h"
 #include "V3File.h"
 #include "V3GraphAlg.h"
-#include "V3GraphPathChecker.h"
 #include "V3GraphStream.h"
 #include "V3InstrCount.h"
 #include "V3Partition.h"

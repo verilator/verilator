@@ -33,7 +33,6 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 // Expand state, as a visitor of each AstNode

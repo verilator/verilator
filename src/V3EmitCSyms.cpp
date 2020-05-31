@@ -23,10 +23,7 @@
 #include "V3LanguageWords.h"
 
 #include <algorithm>
-#include <cmath>
-#include <cstdarg>
 #include <map>
-#include <set>
 #include <vector>
 
 //######################################################################

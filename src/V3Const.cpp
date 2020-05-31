@@ -31,7 +31,6 @@
 #include "V3Simulate.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <map>
 
 //######################################################################

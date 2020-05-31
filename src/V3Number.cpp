@@ -24,8 +24,6 @@
 #include <algorithm>
 #include <cerrno>
 #include <cmath>
-#include <cstdarg>
-#include <iomanip>
 
 #define MAX_SPRINTF_DOUBLE_SIZE 1100  // Maximum characters with a sprintf %e/%f/%g (really 1079)
 

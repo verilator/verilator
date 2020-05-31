@@ -31,7 +31,6 @@
 #include "V3Coverage.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
 #include <map>
 
 //######################################################################

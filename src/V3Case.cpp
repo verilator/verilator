@@ -43,7 +43,6 @@
 #include "V3Stats.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 #define CASE_OVERLAP_WIDTH 16  // Maximum width we can check for overlaps in
 #define CASE_BARF 999999  // Magic width when non-constant

@@ -21,7 +21,6 @@
 #include "V3GraphAlg.h"
 #include "V3GraphPathChecker.h"
 
-#include <cstdarg>
 #include <algorithm>
 #include <vector>
 #include <map>

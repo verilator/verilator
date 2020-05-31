@@ -56,7 +56,6 @@
 #include "V3Inst.h"
 #include "V3Life.h"
 #include "V3LifePost.h"
-#include "V3LinkCells.h"
 #include "V3LinkDot.h"
 #include "V3LinkJump.h"
 #include "V3LinkInc.h"
@@ -70,7 +69,6 @@
 #include "V3Order.h"
 #include "V3Os.h"
 #include "V3Param.h"
-#include "V3Parse.h"
 #include "V3ParseSym.h"
 #include "V3Partition.h"
 #include "V3PreShell.h"
@@ -99,7 +97,6 @@
 #include "V3Width.h"
 
 #include <ctime>
-#include <sys/stat.h>
 
 V3Global v3Global;
 

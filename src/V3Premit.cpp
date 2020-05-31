@@ -32,8 +32,6 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
-#include <list>
 
 //######################################################################
 // Structure for global state

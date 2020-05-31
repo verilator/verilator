@@ -36,7 +36,6 @@
 #include "V3EmitCBase.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 // Clock state, as a visitor of each AstNode

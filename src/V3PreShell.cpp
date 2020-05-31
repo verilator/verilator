@@ -25,10 +25,7 @@
 #include "V3Os.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <iostream>
-#include <list>
-#include <set>
 
 //######################################################################
 

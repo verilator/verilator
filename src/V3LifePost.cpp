@@ -34,7 +34,6 @@
 #include "V3Stats.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
 #include <memory>  // for vl_unique_ptr -> auto_ptr or unique_ptr
 #include VL_INCLUDE_UNORDERED_MAP
 

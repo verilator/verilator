@@ -32,7 +32,6 @@
 #include "V3AstConstOnly.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include VL_INCLUDE_UNORDERED_MAP
 
 //######################################################################

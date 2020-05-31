@@ -30,7 +30,6 @@
 #include "V3File.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <iomanip>
 #include <map>
 #include <memory>

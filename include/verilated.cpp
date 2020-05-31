@@ -30,7 +30,6 @@
 #include <cctype>
 #include <cerrno>
 #include <sstream>
-#include <tgmath.h>
 #include <sys/stat.h>  // mkdir
 
 // clang-format off

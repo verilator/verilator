@@ -17,12 +17,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Error.h"
-#include "V3Global.h"
-#include "V3File.h"
 #include "V3ParseImp.h"
 
-#include <cstdarg>
 #include <fstream>
 
 //======================================================================

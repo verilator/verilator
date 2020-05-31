@@ -74,7 +74,6 @@
 #include "V3Task.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 // More code; this file was getting too large; see actions there
 #define _V3WIDTH_CPP_

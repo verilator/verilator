@@ -26,7 +26,6 @@
 #include "V3PreShell.h"
 #include "V3String.h"
 
-#include <cstdarg>
 #include <cstdlib>
 #include <fstream>
 #include <stack>
