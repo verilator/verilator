@@ -9,6 +9,7 @@ BEGIN {
     if (!$ENV{VERILATOR_ROOT} && -x "../bin/verilator") {
         $ENV{VERILATOR_ROOT} = Cwd::getcwd()."/..";
     }
+    $ENV{MAKE} ||= "make"
 }
 
 use Getopt::Long;
@@ -373,7 +374,7 @@ sub one_test {
              } else {
                  $test->oprint("FAILED: $test->{errors}\n");
                  my $j = ($opt_jobs>1?" -j":"");
-                 my $makecmd = $ENV{VERILATOR_MAKE} || "make$j &&";
+                 my $makecmd = $ENV{VERILATOR_MAKE} || "$ENV{MAKE}$j &&";
                  my $upperdir = (Cwd::getcwd() =~ /test_regress/
                                  ? 'test_regress/' : '');
                  push @{$self->{fail_msgs}},
@@ -1127,7 +1128,7 @@ sub compile {
             $self->oprint("Running make (gmake)\n") if $self->{verbose};
             $self->_run(logfile => "$self->{obj_dir}/vlt_gcc.log",
                         entering => "$self->{obj_dir}",
-                        cmd => ["make",
+                        cmd => [$ENV{MAKE},
                                 "-C ".$self->{obj_dir},
                                 "-f ".$::RealBin."/Makefile_obj",
                                 ($self->{verbose} ? "" : "--no-print-directory"),
@@ -1425,7 +1426,7 @@ sub have_sc {
 }
 
 sub make_version {
-    my $ver = `make --version`;
+    my $ver = `$ENV{MAKE} --version`;
     if ($ver =~ /make ([0-9]+\.[0-9]+)/i) {
         return $1;
     } else {
@@ -2231,13 +2232,13 @@ sub _vcd_read {
 
 our $_Cxx_Version;
 sub cxx_version {
-    $_Cxx_Version ||= `make -C $ENV{VERILATOR_ROOT}/test_regress -f Makefile print-cxx-version`;
+    $_Cxx_Version ||= `$ENV{MAKE} -C $ENV{VERILATOR_ROOT}/test_regress -f Makefile print-cxx-version`;
     return $_Cxx_Version;
 }
 
 our $_Cfg_With_Threaded;
 sub cfg_with_threaded {
-    $_Cfg_With_Threaded ||= `make -C $ENV{VERILATOR_ROOT} -f Makefile print-cfg-with-threaded`;
+    $_Cfg_With_Threaded ||= `$ENV{MAKE} -C $ENV{VERILATOR_ROOT} -f Makefile print-cfg-with-threaded`;
     return ($_Cfg_With_Threaded =~ /yes/i) ? 1:0;
 }
 
