@@ -41,7 +41,7 @@ while (1) {
     last if $Self->{errors};
 
     run(logfile => "$secret_dir/secret_gcc.log",
-        cmd=>["make",
+        cmd=>[$ENV{MAKE},
               "-C",
               $secret_dir,
               "-f",

@@ -28,7 +28,7 @@ while (1) {
     # properly build
     run(logfile => "$Self->{obj_dir}/vlt_gcc.log",
         tee => $self->{verbose},
-        cmd=>["make",
+        cmd=>[$ENV{MAKE},
               "-C ".$Self->{obj_dir},
               "-f $Self->{VM_PREFIX}.mk",
               "-j 4",
