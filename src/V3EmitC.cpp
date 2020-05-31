@@ -400,7 +400,7 @@ public:
         puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", ");
-        puts(cvtToStr(nodep->column()));
+        puts(cvtToStr(nodep->fileline()->firstColumn()));
         puts(", ");
         putsQuoted((!nodep->hier().empty() ? "." : "")
                    + protectWordsIf(nodep->hier(), nodep->protect()));

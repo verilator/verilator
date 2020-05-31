@@ -40,7 +40,7 @@
 class CoverageVisitor : public AstNVisitor {
 private:
     // TYPES
-    typedef std::map<string, int> FileMap;
+    typedef std::map<string, int> VarNameMap;
 
     struct ToggleEnt {
         string m_comment;  // Comment for coverage dump
@@ -67,7 +67,7 @@ private:
     AstNodeModule* m_modp;  // Current module to add statement to
     bool m_inToggleOff;  // In function/task etc
     bool m_inModOff;  // In module with no coverage
-    FileMap m_fileps;  // Column counts for each fileline
+    VarNameMap m_varnames;  // Uniquification of inserted variable names
     string m_beginHier;  // AstBegin hier name for user coverage points
 
     // METHODS
@@ -98,13 +98,6 @@ private:
         // different types of coverage enabled.)
         string key = fl->filename() + "\001" + cvtToStr(fl->lineno()) + "\001" + hier + "\001"
                      + page_prefix + "\001" + comment;
-        int column = 0;
-        FileMap::iterator it = m_fileps.find(key);
-        if (it == m_fileps.end()) {
-            m_fileps.insert(make_pair(key, column + 1));
-        } else {
-            column = (it->second)++;
-        }
 
         // We could use the basename of the filename to the page, but seems
         // better for code from an include file to be listed under the
@@ -114,7 +107,7 @@ private:
         // Someday the user might be allowed to specify a different page suffix
         string page = page_prefix + "/" + m_modp->prettyName();
 
-        AstCoverDecl* declp = new AstCoverDecl(fl, column, page, comment);
+        AstCoverDecl* declp = new AstCoverDecl(fl, page, comment);
         declp->hier(hier);
         m_modp->addStmtp(declp);
 
@@ -135,8 +128,16 @@ private:
         return incp;
     }
     string traceNameForLine(AstNode* nodep, const string& type) {
-        return "vlCoverageLineTrace_" + nodep->fileline()->filebasenameNoExt() + "__"
-               + cvtToStr(nodep->fileline()->lineno()) + "_" + type;
+        string name = "vlCoverageLineTrace_" + nodep->fileline()->filebasenameNoExt() + "__"
+                      + cvtToStr(nodep->fileline()->lineno()) + "_" + type;
+        VarNameMap::iterator it = m_varnames.find(name);
+        if (it == m_varnames.end()) {
+            m_varnames.insert(make_pair(name, 1));
+        } else {
+            int suffix = (it->second)++;
+            name += "_" + cvtToStr(suffix);
+        }
+        return name;
     }
     // VISITORS - BOTH
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
@@ -145,7 +146,7 @@ private:
         {
             m_modp = nodep;
             m_inModOff = nodep->isTop();  // Ignore coverage on top module; it's a shell we created
-            m_fileps.clear();
+            if (!origModp) m_varnames.clear();
             iterateChildren(nodep);
         }
         m_modp = origModp;

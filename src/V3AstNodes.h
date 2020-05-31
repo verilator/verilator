@@ -3322,14 +3322,12 @@ private:
     string m_page;
     string m_text;
     string m_hier;
-    int m_column;
     int m_binNum;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
-    AstCoverDecl(FileLine* fl, int column, const string& page, const string& comment)
+    AstCoverDecl(FileLine* fl, const string& page, const string& comment)
         : ASTGEN_SUPER(fl) {
-        m_text = comment;
         m_page = page;
-        m_column = column;
+        m_text = comment;
         m_binNum = 0;
         m_dataDeclp = NULL;
     }
@@ -3347,7 +3345,6 @@ public:
     virtual void dump(std::ostream& str) const;
     virtual int instrCount() const { return 1 + 2 * instrCountLd(); }
     virtual bool maybePointedTo() const { return true; }
-    int column() const { return m_column; }
     void binNum(int flag) { m_binNum = flag; }
     int binNum() const { return m_binNum; }
     const string& comment() const { return m_text; }  // text to insert in code
@@ -3359,7 +3356,7 @@ public:
     virtual bool same(const AstNode* samep) const {
         const AstCoverDecl* asamep = static_cast<const AstCoverDecl*>(samep);
         return (fileline() == asamep->fileline() && hier() == asamep->hier()
-                && comment() == asamep->comment() && column() == asamep->column());
+                && comment() == asamep->comment());
     }
     virtual bool isPredictOptimizable() const { return false; }
     void dataDeclp(AstCoverDecl* nodep) { m_dataDeclp = nodep; }
