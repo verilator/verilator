@@ -3322,12 +3322,17 @@ private:
     string m_page;
     string m_text;
     string m_hier;
+    string m_linescov;
+    int m_offset;  // Offset column numbers to uniq-ify IFs
     int m_binNum;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
-    AstCoverDecl(FileLine* fl, const string& page, const string& comment)
+    AstCoverDecl(FileLine* fl, const string& page, const string& comment, const string& linescov,
+                 int offset)
         : ASTGEN_SUPER(fl) {
         m_page = page;
         m_text = comment;
+        m_linescov = linescov;
+        m_offset = offset;
         m_binNum = 0;
         m_dataDeclp = NULL;
     }
@@ -3347,7 +3352,9 @@ public:
     virtual bool maybePointedTo() const { return true; }
     void binNum(int flag) { m_binNum = flag; }
     int binNum() const { return m_binNum; }
+    int offset() const { return m_offset; }
     const string& comment() const { return m_text; }  // text to insert in code
+    const string& linescov() const { return m_linescov; }
     const string& page() const { return m_page; }
     const string& hier() const { return m_hier; }
     void hier(const string& flag) { m_hier = flag; }
@@ -3355,8 +3362,8 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const {
         const AstCoverDecl* asamep = static_cast<const AstCoverDecl*>(samep);
-        return (fileline() == asamep->fileline() && hier() == asamep->hier()
-                && comment() == asamep->comment());
+        return (fileline() == asamep->fileline() && linescov() == asamep->linescov()
+                && hier() == asamep->hier() && comment() == asamep->comment());
     }
     virtual bool isPredictOptimizable() const { return false; }
     void dataDeclp(AstCoverDecl* nodep) { m_dataDeclp = nodep; }

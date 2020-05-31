@@ -1519,6 +1519,8 @@ void AstBegin::dump(std::ostream& str) const {
 }
 void AstCoverDecl::dump(std::ostream& str) const {
     this->AstNode::dump(str);
+    if (!page().empty()) str << " page="<<page();
+    if (!linescov().empty()) str << " lc="<<linescov();
     if (this->dataDeclNullp()) {
         str << " -> ";
         this->dataDeclNullp()->dump(str);

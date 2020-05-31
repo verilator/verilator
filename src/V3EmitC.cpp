@@ -398,7 +398,7 @@ public:
         puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", ");
-        puts(cvtToStr(nodep->fileline()->firstColumn()));
+        puts(cvtToStr(nodep->offset() + nodep->fileline()->firstColumn()));
         puts(", ");
         putsQuoted((!nodep->hier().empty() ? "." : "")
                    + protectWordsIf(nodep->hier(), nodep->protect()));
@@ -406,6 +406,8 @@ public:
         putsQuoted(protectWordsIf(nodep->page(), nodep->protect()));
         puts(", ");
         putsQuoted(protectWordsIf(nodep->comment(), nodep->protect()));
+        puts(", ");
+        putsQuoted(nodep->linescov());
         puts(");\n");
     }
     virtual void visit(AstCoverInc* nodep) VL_OVERRIDE {
@@ -2249,7 +2251,8 @@ void EmitCImp::emitCoverageDecl(AstNodeModule* modp) {
         puts("void __vlCoverInsert(");
         puts(v3Global.opt.threads() ? "std::atomic<uint32_t>" : "uint32_t");
         puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
-        puts("const char* hierp, const char* pagep, const char* commentp);\n");
+        puts("const char* hierp, const char* pagep, const char* commentp, const char* "
+             "linescovp);\n");
     }
 }
 
@@ -2372,7 +2375,8 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
         puts("void " + prefixNameProtect(m_modp) + "::__vlCoverInsert(");
         puts(v3Global.opt.threads() ? "std::atomic<uint32_t>" : "uint32_t");
         puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
-        puts("const char* hierp, const char* pagep, const char* commentp) {\n");
+        puts("const char* hierp, const char* pagep, const char* commentp, const char* linescovp) "
+             "{\n");
         if (v3Global.opt.threads()) {
             puts("assert(sizeof(uint32_t) == sizeof(std::atomic<uint32_t>));\n");
             puts("uint32_t* count32p = reinterpret_cast<uint32_t*>(countp);\n");
@@ -2392,7 +2396,8 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
         // puts( "\"hier\",std::string(__VlSymsp->name())+hierp,");
         puts("\"hier\",std::string(name())+hierp,");
         puts("  \"page\",pagep,");
-        puts("  \"comment\",commentp);\n");
+        puts("  \"comment\",commentp,");
+        puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp);\n");
         puts("}\n");
         splitSizeInc(10);
     }

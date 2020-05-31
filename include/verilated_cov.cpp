@@ -475,11 +475,11 @@ void VerilatedCov::_insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8)
 }
 // Backward compatibility for Verilator
 void VerilatedCov::_insertp(A(0), A(1), K(2), int val2, K(3), int val3, K(4),
-                            const std::string& val4, A(5), A(6)) VL_MT_SAFE {
+                            const std::string& val4, A(5), A(6), A(7)) VL_MT_SAFE {
     std::string val2str = vlCovCvtToStr(val2);
     std::string val3str = vlCovCvtToStr(val3);
     _insertp(C(0), C(1), key2, val2str.c_str(), key3, val3str.c_str(), key4, val4.c_str(), C(5),
-             C(6), N(7), N(8), N(9), N(10), N(11), N(12), N(13), N(14), N(15), N(16), N(17), N(18),
+             C(6), C(7), N(8), N(9), N(10), N(11), N(12), N(13), N(14), N(15), N(16), N(17), N(18),
              N(19), N(20), N(21), N(22), N(23), N(24), N(25), N(26), N(27), N(28), N(29));
 }
 #undef A

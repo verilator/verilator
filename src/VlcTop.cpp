@@ -203,14 +203,38 @@ void VlcTop::annotateCalc() {
         string filename = point.filename();
         int lineno = point.lineno();
         if (!filename.empty() && lineno != 0) {
-            int column = point.column();
             VlcSource& source = sources().findNewSource(filename);
             string threshStr = point.thresh();
             unsigned thresh = (!threshStr.empty()) ? atoi(threshStr.c_str()) : opt.annotateMin();
             bool ok = (point.count() >= thresh);
-            UINFO(9,
-                  "AnnoCalc count " << filename << " " << lineno << " " << point.count() << endl);
-            source.incCount(lineno, column, point.count(), ok);
+            UINFO(9, "AnnoCalc count " << filename << ":" << lineno << ":" << point.column() << " "
+                                       << point.count() << " " << point.linescov() << endl);
+            // Base coverage
+            source.incCount(lineno, point.column(), point.count(), ok);
+            // Additional lines covered by this statement
+            bool range = false;
+            int start = 0;
+            int end = 0;
+            string linescov = point.linescov();
+            for (const char* covp = linescov.c_str(); true; ++covp) {
+                if (!*covp || *covp == ',') {  // Ending
+                    for (int lni = start; start && lni <= end; ++lni) {
+                        source.incCount(lni, point.column(), point.count(), ok);
+                    }
+                    if (!*covp) { break; }
+                    start = 0;  // Prep for next
+                    end = 0;
+                    range = false;
+                } else if (*covp == '-') {
+                    range = true;
+                } else if (isdigit(*covp)) {
+                    const char* digitsp = covp;
+                    while (isdigit(*covp)) ++covp;
+                    --covp;  // Will inc in for loop
+                    if (!range) start = atoi(digitsp);
+                    end = atoi(digitsp);
+                }
+            }
         }
     }
 }

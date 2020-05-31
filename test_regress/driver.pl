@@ -1331,10 +1331,10 @@ sub inline_checks {
     while (defined(my $line = $fh->getline)) {
         if ($line =~ /CHECK/) {
             if ($line =~ /CHECK_COVER *\( *([---0-9]+) *, *"([^"]+)" *, *("([^"]+)" *,|) *(\d+) *\)/) {
-                my $lineno=($. + $1); my $hier=$2; my $comment=$4; my $count=$5;
+                my $lineno = ($. + $1); my $hier=$2; my $comment=$4; my $count=$5;
                 my $regexp = "\001l\002".$lineno;
                 $regexp .= ".*\001o\002".quotemeta($comment) if $comment;
-                $regexp .= ".*\001h\002".quotemeta($hier);
+                $regexp .= ".*\001h\002".quotemeta($hier) if $hier;
                 $regexp .= ".*' ".$count;
                 if ($contents !~ /$regexp/) {
                     $self->error("CHECK_COVER: $covfn: Regexp not found: $regexp\n".
@@ -1342,7 +1342,7 @@ sub inline_checks {
                 }
             }
             elsif ($line =~ /CHECK_COVER_MISSING *\( *([---0-9]+) *\)/) {
-                my $lineno=($. + $1);
+                my $lineno = ($. + $1);
                 my $regexp = "\001l\002".$lineno;
                 if ($contents =~ /$regexp/) {
                     $self->error("CHECK_COVER_MISSING: $covfn: Regexp found: $regexp\n".

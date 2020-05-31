@@ -15,6 +15,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
       waivers to the warnings emitted during a Verilator run.
 
 ***   Support verilator_coverage --write-info for lcov HTML reports.
+      Line Coverage now tracks all statement lines, not just branch lines.
 
 ****  Support multi channel descriptor I/O (#2190) [Stephen Henry]
 

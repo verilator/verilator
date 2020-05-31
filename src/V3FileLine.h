@@ -164,7 +164,7 @@ public:
         m_lastLineno = num;
         m_firstColumn = m_lastColumn = 1;
     }
-    void language(V3LangCode lang) { singleton().numberToLang(m_filenameno, lang); }
+    void language(V3LangCode lang) { singleton().numberToLang(filenameno(), lang); }
     void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }
     void parent(FileLine* fileline) { m_parent = fileline; }
     void lineDirective(const char* textp, int& enterExitRef);
@@ -190,14 +190,15 @@ public:
     string source() const;
     string prettySource() const;  // Source, w/stripped unprintables and newlines
     FileLine* parent() const { return m_parent; }
-    V3LangCode language() const { return singleton().numberToLang(m_filenameno); }
+    V3LangCode language() const { return singleton().numberToLang(filenameno()); }
     string ascii() const;
     string asciiLineCol() const;
-    const string filename() const { return singleton().numberToName(m_filenameno); }
+    int filenameno() const { return m_filenameno; }
+    const string filename() const { return singleton().numberToName(filenameno()); }
     bool filenameIsGlobal() const {
         return (filename() == commandLineFilename() || filename() == builtInFilename());
     }
-    const string filenameLetters() const { return singleton().filenameLetters(m_filenameno); }
+    const string filenameLetters() const { return singleton().filenameLetters(filenameno()); }
     const string filebasename() const;
     const string filebasenameNoExt() const;
     const string firstColumnLetters() const;
