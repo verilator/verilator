@@ -1549,7 +1549,7 @@ private:
                     UINFO(9, "                   to - " << m_clk_vsp << endl);
                     AstNode* rhsp = assignp->rhsp();
                     rhsp->replaceWith(new AstVarRef(rhsp->fileline(), m_clk_vsp, false));
-                    for (V3GraphEdge* edgep = lvertexp->inBeginp(); edgep;) {
+                    while (V3GraphEdge* edgep = lvertexp->inBeginp()) {
                         VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
                     }
                     new V3GraphEdge(m_graphp, m_clk_vvertexp, lvertexp, 1);

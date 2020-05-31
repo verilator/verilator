@@ -149,7 +149,7 @@
 // This is not necessarily the same as #UL, depending on what the IData typedef is.
 #define VL_UL(c) (static_cast<IData>(c##UL))  ///< Add appropriate suffix to 32-bit constant
 
-#if defined(VL_CPPCHECK) || defined(__clang_analyzer__)
+#if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
 # define VL_DANGLING(var)
 #else
 ///< After e.g. delete, set variable to NULL to indicate must not use later
