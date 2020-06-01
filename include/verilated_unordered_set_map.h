@@ -55,6 +55,12 @@ inline size_t vl_hash_bytes(const void* vbufp, size_t nbytes) {
     return hash;
 }
 
+template <> inline size_t vl_hash<int>::operator()(const int& k) const { return k; }
+
+template <> inline bool vl_equal_to<int>::operator()(const int& a, const int& b) const {
+    return a == b;
+}
+
 template <> inline size_t vl_hash<unsigned int>::operator()(const unsigned int& k) const {
     return k;
 }
