@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # DESCRIPTION: Verilator: Travis CI build script
 #
 # Copyright 2019 by Todd Strader. This program is free software; you
@@ -19,6 +19,10 @@ set -e
 
 if [ -z "${VERILATOR_NUM_JOBS}" ]; then
     VERILATOR_NUM_JOBS=$(nproc)
+fi
+
+if [ -z "${MAKE}" ]; then
+    MAKE=make
 fi
 
 # Caching would be simpler if we installed without VERILATOR_ROOT, but
@@ -49,7 +53,7 @@ if [[ ! -f "${CACHED_REV_FILE}" || \
     fi
 
     cd "${VERILATOR_ROOT}"
-    autoconf && ./configure ${VERILATOR_CONFIG_FLAGS} && make -j ${VERILATOR_NUM_JOBS}
+    autoconf && ./configure ${VERILATOR_CONFIG_FLAGS} && ${MAKE} -j ${VERILATOR_NUM_JOBS}
     # Copy the Verilator build artifacts
     mkdir -p "${VERILATOR_CACHE}"
     rm -rf ${VERILATOR_CACHE}/*

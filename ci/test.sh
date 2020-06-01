@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # DESCRIPTION: Verilator: Travis CI test script
 #
 # Copyright 2019 by Todd Strader. This program is free software; you
@@ -9,26 +9,30 @@
 
 set -e
 
+if [ -z "${MAKE}" ]; then
+    MAKE=make
+fi
+
 export DRIVER_FLAGS='-j 0 --quiet --rerun'
 
 case $1 in
     dist)
-        make -C test_regress SCENARIOS=--dist
+        ${MAKE} -C test_regress SCENARIOS=--dist
         ;;
     vlt)
-        make -C test_regress SCENARIOS=--vlt
+        ${MAKE} -C test_regress SCENARIOS=--vlt
         ;;
     distvlt)
-        make -C test_regress SCENARIOS="--dist --vlt"
+        ${MAKE} -C test_regress SCENARIOS="--dist --vlt"
         ;;
     vltmt)
-        make -C test_regress SCENARIOS=--vltmt
+        ${MAKE} -C test_regress SCENARIOS=--vltmt
         ;;
     vltmt0)
-        make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
+        ${MAKE} -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
         ;;
     vltmt1)
-        make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
+        ${MAKE} -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
         ;;
     coverage-build)
         nodist/code_coverage --stages 1-2

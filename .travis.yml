@@ -8,7 +8,9 @@
 
 version: ~> 1.0
 
-os: linux
+os:
+  - linux
+  - freebsd
 language: cpp
 cache: ccache
 
@@ -25,15 +27,25 @@ cache:
     - $VERILATOR_CACHE
 
 before_install:
-# Perl modules needed for testing
-# Not listing Bit::Vector as slow to install, and only skips one test
-  - touch temp.cpp ; g++ -E -dM -c temp.cpp | sort ; rm -rf temp.cpp
-  - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
-  - sudo apt-get install gdb gtkwave lcov
-  - sudo apt-get install libfl-dev || true
-  - sudo apt-get install libgoogle-perftools-dev
-# Only works on 20.04
-  - sudo apt-get install libsystemc-dev || true
+  - |
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+      touch temp.cpp ; g++ -E -dM -c temp.cpp | sort ; rm -rf temp.cpp;
+      sudo apt-get install gdb gtkwave lcov;
+      sudo apt-get install libfl-dev || true;
+      sudo apt-get install libgoogle-perftools-dev;
+      # Only works on 20.04
+      sudo apt-get install libsystemc-dev || true;
+    fi
+  - |
+    if [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
+      sudo pkg install -y autoconf bison ccache gmake perl5 python3;
+      sudo pkg install -y gdb gtkwave;
+      export MAKE=gmake;
+      export VERILATOR_NUM_JOBS=$(sysctl -n hw.ncpu);
+    fi
+  # Perl modules needed for testing
+  # Not listing Bit::Vector as slow to install, and only skips one test
+  - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker;
 
 before_script:
   - bash -x ci/build_vcddiff.sh
@@ -54,11 +66,13 @@ jobs:
 #     16.04 dist: xenial   cron           cron
 #     18.04 dist: bionic   cron
 #     20.04 dist: focal    !cron          cron
+#     freebsd                             cron
 #     20.04 coverage       cron
   include:
     - if: type != cron
       stage: vbuild
       name: "Build Verilator"
+      os: linux
       dist: focal
       compiler: gcc
       script: echo "Done building Verilator"
@@ -66,47 +80,55 @@ jobs:
     - if: type != cron
       stage: test
       name: "Test Dist"
+      os: linux
       dist: focal
       compiler: gcc
       script: ci/test.sh dist
     - if: type != cron
       stage: test
       name: "Test Vlt"
+      os: linux
       dist: focal
       compiler: gcc
       script: ci/test.sh vlt
     - if: type != cron
       stage: test
       name: "Test Vltmt set 0"
+      os: linux
       dist: focal
       compiler: gcc
       script: ci/test.sh vltmt0
     - if: type != cron
       stage: test
       name: "Test Vltmt set 1"
+      os: linux
       dist: focal
       compiler: gcc
       script: ci/test.sh vltmt1
 # Cron builds try different OS/compiler combinations
     - if: type = cron
+      os: linux
       dist: trusty
       compiler: gcc
       stage: vbuild
       name: "14.04 gcc build"
       script: echo
     - if: type = cron
+      os: linux
       dist: trusty
       compiler: gcc
       stage: test
       name: "14.04 gcc distvlt"
       script: ci/test.sh distvlt
     - if: type = cron
+      os: linux
       dist: trusty
       compiler: gcc
       stage: test
       name: "14.04 gcc vltmt0"
       script: ci/test.sh vltmt0
     - if: type = cron
+      os: linux
       dist: trusty
       compiler: gcc
       stage: test
@@ -114,24 +136,28 @@ jobs:
       script: ci/test.sh vltmt1
 #
     - if: type = cron
+      os: linux
       dist: xenial
       compiler: gcc
       stage: vbuild
       name: "16.04 gcc build"
       script: echo
     - if: type = cron
+      os: linux
       dist: xenial
       compiler: gcc
       stage: test
       name: "16.04 gcc distvlt"
       script: ci/test.sh distvlt
     - if: type = cron
+      os: linux
       dist: xenial
       compiler: gcc
       stage: test
       name: "16.04 gcc vltmt0"
       script: ci/test.sh vltmt0
     - if: type = cron
+      os: linux
       dist: xenial
       compiler: gcc
       stage: test
@@ -139,24 +165,28 @@ jobs:
       script: ci/test.sh vltmt1
 #
     - if: type = cron
+      os: linux
       dist: bionic
       compiler: gcc
       stage: vbuild
       name: "18.04 gcc build"
       script: echo
     - if: type = cron
+      os: linux
       dist: bionic
       compiler: gcc
       stage: test
       name: "18.04 gcc distvlt"
       script: ci/test.sh distvlt
     - if: type = cron
+      os: linux
       dist: bionic
       compiler: gcc
       stage: test
       name: "18.04 gcc vltmt0"
       script: ci/test.sh vltmt0
     - if: type = cron
+      os: linux
       dist: bionic
       compiler: gcc
       stage: test
@@ -164,24 +194,28 @@ jobs:
       script: ci/test.sh vltmt1
 #
     - if: type = cron
+      os: linux
       dist: xenial
       compiler: clang
       stage: vbuild
       name: "16.04 clang build"
       script: echo
     - if: type = cron
+      os: linux
       dist: xenial
       compiler: clang
       stage: test
       name: "16.04 clang distvlt"
       script: ci/test.sh distvlt
     - if: type = cron
+      os: linux
       dist: xenial
       compiler: clang
       stage: test
       name: "16.04 clang vltmt0"
       script: ci/test.sh vltmt0
     - if: type = cron
+      os: linux
       dist: xenial
       compiler: clang
       stage: test
@@ -189,29 +223,40 @@ jobs:
       script: ci/test.sh vltmt1
 #
     - if: type = cron
+      os: linux
       dist: focal
       compiler: clang
       stage: vbuild
       name: "20.04 clang build"
       script: echo
     - if: type = cron
+      os: linux
       dist: focal
       compiler: clang
       stage: test
       name: "20.04 clang distvlt"
       script: ci/test.sh distvlt
     - if: type = cron
+      os: linux
       dist: focal
       compiler: clang
       stage: test
       name: "20.04 clang vltmt0"
       script: ci/test.sh vltmt0
     - if: type = cron
+      os: linux
       dist: focal
       compiler: clang
       stage: test
       name: "20.04 clang vltmt1"
       script: ci/test.sh vltmt1
+#
+    - if: type != cron
+      os: freebsd
+      compiler: clang
+      stage: vbuild
+      name: "freebsd clang build and examples"
+      script: gmake examples
 #
 # Cron coverage runs (two parts to avoid 50min timeout)
     - if: type = cron
