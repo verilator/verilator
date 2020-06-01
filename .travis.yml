@@ -8,272 +8,106 @@
 
 version: ~> 1.0
 
-os: linux
 language: cpp
-cache: ccache
-
-env:
-  global:
-    - VERILATOR_CACHE=$HOME/verilator_cache
-    - VERILATOR_ROOT=$PWD
-    - VERILATOR_NUM_JOBS=$(echo `nproc` + 1 | bc)
-    - VERILATOR_CONFIG_FLAGS="--enable-maintainer-mode --enable-longtests"
-    - VERILATOR_AUTHOR_SITE=1
 
 cache:
   directories:
-    - $VERILATOR_CACHE
+    - $HOME/.ccache
 
-before_install:
-# Perl modules needed for testing
-# Not listing Bit::Vector as slow to install, and only skips one test
-  - touch temp.cpp ; g++ -E -dM -c temp.cpp | sort ; rm -rf temp.cpp
-  - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
-  - sudo apt-get install gdb gtkwave lcov
-  - sudo apt-get install libfl-dev || true
-  - sudo apt-get install libgoogle-perftools-dev
-# Only works on 20.04
-  - sudo apt-get install libsystemc-dev || true
+env:
+  global:
+    - CCACHE_MAXSIZE=$(./ci/travis-ccache-size.bash)
+    - VERILATOR_ROOT=$TRAVIS_BUILD_DIR
 
-before_script:
-  - bash -x ci/build_vcddiff.sh
-  - bash -x ci/build_verilator.sh
-  - bin/verilator -V || true
-
-after_script:
-  - ccache -s
-
+# The list and order of build stages
 stages:
-  - vbuild
-  - test
+  - build # Build Verilator
+  - test  # Run tests
 
+# Dump info about the environment for debugging
+before_install:
+  # To dump the script that Travis itself is executing, add 'cat $0' here
+  - cd "$TRAVIS_BUILD_DIR" # Skipping the git clone in later stages requires this
+  - env | sort
+  - ls -lA .
+  - ls -lA bin
+  - g++ -E -dM -c -x c++ /dev/null | sort
+  - clang++ -E -dM -c -x c++ /dev/null | sort
+
+# Install all dependencies
+install:
+  - ./ci/travis-install.bash
+
+# ccache maintenance
+before_script:
+  - ./ci/travis-ccache-maint.bash
+before_cache:
+  - ccache -s -z
+
+# All jobs run the same script
+script: ./ci/travis-script.bash
+
+# Enumerate all the jobs
 jobs:
-#                          compiler: gcc  clang
-#     12.04 dist: precise  perl problem
-#     14.04 dist: trusty   cron
-#     16.04 dist: xenial   cron           cron
-#     18.04 dist: bionic   cron
-#     20.04 dist: focal    !cron          cron
-#     20.04 coverage       cron
   include:
-    - if: type != cron
-      stage: vbuild
-      name: "Build Verilator"
-      dist: focal
-      compiler: gcc
-      script: echo "Done building Verilator"
-# Non-cron build will just run on whatever linux flavor we get
-    - if: type != cron
-      stage: test
-      name: "Test Dist"
-      dist: focal
-      compiler: gcc
-      script: ci/test.sh dist
-    - if: type != cron
-      stage: test
-      name: "Test Vlt"
-      dist: focal
-      compiler: gcc
-      script: ci/test.sh vlt
-    - if: type != cron
-      stage: test
-      name: "Test Vltmt set 0"
-      dist: focal
-      compiler: gcc
-      script: ci/test.sh vltmt0
-    - if: type != cron
-      stage: test
-      name: "Test Vltmt set 1"
-      dist: focal
-      compiler: gcc
-      script: ci/test.sh vltmt1
-# Cron builds try different OS/compiler combinations
-    - if: type = cron
-      dist: trusty
-      compiler: gcc
-      stage: vbuild
-      name: "14.04 gcc build"
-      script: echo
-    - if: type = cron
-      dist: trusty
-      compiler: gcc
-      stage: test
-      name: "14.04 gcc distvlt"
-      script: ci/test.sh distvlt
-    - if: type = cron
-      dist: trusty
-      compiler: gcc
-      stage: test
-      name: "14.04 gcc vltmt0"
-      script: ci/test.sh vltmt0
-    - if: type = cron
-      dist: trusty
-      compiler: gcc
-      stage: test
-      name: "14.04 gcc vltmt1"
-      script: ci/test.sh vltmt1
-#
-    - if: type = cron
-      dist: xenial
-      compiler: gcc
-      stage: vbuild
-      name: "16.04 gcc build"
-      script: echo
-    - if: type = cron
-      dist: xenial
-      compiler: gcc
-      stage: test
-      name: "16.04 gcc distvlt"
-      script: ci/test.sh distvlt
-    - if: type = cron
-      dist: xenial
-      compiler: gcc
-      stage: test
-      name: "16.04 gcc vltmt0"
-      script: ci/test.sh vltmt0
-    - if: type = cron
-      dist: xenial
-      compiler: gcc
-      stage: test
-      name: "16.04 gcc vltmt1"
-      script: ci/test.sh vltmt1
-#
-    - if: type = cron
-      dist: bionic
-      compiler: gcc
-      stage: vbuild
-      name: "18.04 gcc build"
-      script: echo
-    - if: type = cron
-      dist: bionic
-      compiler: gcc
-      stage: test
-      name: "18.04 gcc distvlt"
-      script: ci/test.sh distvlt
-    - if: type = cron
-      dist: bionic
-      compiler: gcc
-      stage: test
-      name: "18.04 gcc vltmt0"
-      script: ci/test.sh vltmt0
-    - if: type = cron
-      dist: bionic
-      compiler: gcc
-      stage: test
-      name: "18.04 gcc vltmt1"
-      script: ci/test.sh vltmt1
-#
-    - if: type = cron
-      dist: xenial
-      compiler: clang
-      stage: vbuild
-      name: "16.04 clang build"
-      script: echo
-    - if: type = cron
-      dist: xenial
-      compiler: clang
-      stage: test
-      name: "16.04 clang distvlt"
-      script: ci/test.sh distvlt
-    - if: type = cron
-      dist: xenial
-      compiler: clang
-      stage: test
-      name: "16.04 clang vltmt0"
-      script: ci/test.sh vltmt0
-    - if: type = cron
-      dist: xenial
-      compiler: clang
-      stage: test
-      name: "16.04 clang vltmt1"
-      script: ci/test.sh vltmt1
-#
-    - if: type = cron
-      dist: focal
-      compiler: clang
-      stage: vbuild
-      name: "20.04 clang build"
-      script: echo
-    - if: type = cron
-      dist: focal
-      compiler: clang
-      stage: test
-      name: "20.04 clang distvlt"
-      script: ci/test.sh distvlt
-    - if: type = cron
-      dist: focal
-      compiler: clang
-      stage: test
-      name: "20.04 clang vltmt0"
-      script: ci/test.sh vltmt0
-    - if: type = cron
-      dist: focal
-      compiler: clang
-      stage: test
-      name: "20.04 clang vltmt1"
-      script: ci/test.sh vltmt1
-#
-# Cron coverage runs (two parts to avoid 50min timeout)
-    - if: type = cron
-      dist: focal
-      compiler: gcc
-      stage: vbuild
-      name: "Coverage Build"
-      script: ci/test.sh coverage-build
-    - if: type = cron
-      dist: focal
-      compiler: gcc
-      stage: test
-      name: "Coverage dist"
-      script: ci/test.sh coverage-dist
-    - if: type = cron
-      dist: focal
-      compiler: gcc
-      stage: test
-      name: "Coverage vlt set 0"
-      script: ci/test.sh coverage-vlt0
-    - if: type = cron
-      dist: focal
-      compiler: gcc
-      stage: test
-      name: "Coverage vltmt set 0"
-      script: ci/test.sh coverage-vltmt0
-    - if: type = cron
-      dist: focal
-      compiler: gcc
-      stage: test
-      name: "Coverage vlt set 1"
-      script: ci/test.sh coverage-vlt1
-    - if: type = cron
-      dist: focal
-      compiler: gcc
-      stage: test
-      name: "Coverage vltmt set 1"
-      script: ci/test.sh coverage-vltmt1
-    - if: type = cron
-      dist: focal
-      compiler: gcc
-      stage: test
-      name: "Coverage vlt set 2"
-      script: ci/test.sh coverage-vlt2
-    - if: type = cron
-      dist: focal
-      compiler: gcc
-      stage: test
-      name: "Coverage vltmt set 2"
-      script: ci/test.sh coverage-vltmt2
-    - if: type = cron
-      dist: focal
-      compiler: gcc
-      stage: test
-      name: "Coverage vlt set 3"
-      script: ci/test.sh coverage-vlt3
-    - if: type = cron
-      dist: focal
-      compiler: gcc
-      stage: test
-      name: "Coverage vltmt set 3"
-      script: ci/test.sh coverage-vltmt3
+    ############################################################################
+    # Jobs in the 'build' stage
+    ############################################################################
+    # GCC builds
+    - {stage: build, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {create: {name: trusty-gcc,   paths: .}}}
+    - {stage: build, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {create: {name: xenial-gcc,   paths: .}}}
+    - {stage: build, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {create: {name: bionic-gcc,   paths: .}}}
+    - {stage: build, if: type != cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {create: {name: focal-gcc,    paths: .}}}
+    # Clang builds
+    - {stage: build, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {create: {name: xenial-clang, paths: .}}}
+    - {stage: build, if: type != cron, os: linux, dist: focal,  compiler: clang, workspaces: {create: {name: focal-clang,  paths: .}}}
+    # Coverage build
+    - {stage: build, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {create: {name: coverage,     paths: .}}, env: COVERAGE=1}
+    ############################################################################
+    # Jobs in the 'test' stage
+    ############################################################################
+    # GCC tests
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=dist}
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=vlt0}
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=vlt1}
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=vltmt0}
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=vltmt1}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=dist}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=vlt0}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=vlt1}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=vltmt0}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=vltmt1}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=dist}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=vlt0}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=vlt1}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=vltmt0}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=vltmt1}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=dist}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=vlt0}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=vlt1}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=vltmt0}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=vltmt1}
+    # Clang tests
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=dist}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=vlt0}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=vlt1}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=vltmt0}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=vltmt1}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=dist}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=vlt0}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=vlt1}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=vltmt0}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=vltmt1}
+    # Coverage tests
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-dist}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt0}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt1}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt2}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt3}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt0}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt1}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt2}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt3}
 
 notifications:
   email:

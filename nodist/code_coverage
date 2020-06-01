@@ -89,7 +89,8 @@ sub test {
     if ($Opt_Stages{2}) {
         travis_fold_start("build");
         print "Stage 2: build\n";
-        run("make -k");
+        my $nproc = Unix::Processors->new->max_online;
+        run("make -k -j $nproc");
         # The optimized versions will not collect good coverage, overwrite them
         run("cp bin/verilator_bin_dbg bin/verilator_bin");
         run("cp bin/verilator_coverage_bin_dbg bin/verilator_coverage_bin");
