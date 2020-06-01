@@ -68,6 +68,7 @@ jobs:
       dist: focal
       compiler: gcc
       script: echo "Done building Verilator"
+      env: CACHE_NAME=build
 # Non-cron build will just run on whatever linux flavor we get
     - if: type != cron
       stage: test
@@ -75,24 +76,28 @@ jobs:
       dist: focal
       compiler: gcc
       script: ci/test.sh dist
+      env: CACHE_NAME=dist
     - if: type != cron
       stage: test
       name: "Test Vlt"
       dist: focal
       compiler: gcc
       script: ci/test.sh vlt
+      env: CACHE_NAME=vlt
     - if: type != cron
       stage: test
       name: "Test Vltmt set 0"
       dist: focal
       compiler: gcc
       script: ci/test.sh vltmt0
+      env: CACHE_NAME=vltmt-0
     - if: type != cron
       stage: test
       name: "Test Vltmt set 1"
       dist: focal
       compiler: gcc
       script: ci/test.sh vltmt1
+      env: CACHE_NAME=vltmt-1
 # Cron builds try different OS/compiler combinations
     - if: type = cron
       dist: trusty
