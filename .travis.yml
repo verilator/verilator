@@ -14,6 +14,7 @@ cache: ccache
 
 env:
   global:
+    - CCACHE_MAXSIZE=2G
     - VERILATOR_CACHE=$HOME/verilator_cache
     - VERILATOR_ROOT=$PWD
     - VERILATOR_NUM_JOBS=$(echo `nproc` + 1 | bc)
@@ -23,6 +24,7 @@ env:
 cache:
   directories:
     - $VERILATOR_CACHE
+    - $HOME/.ccache
 
 before_install:
 # Perl modules needed for testing
@@ -36,9 +38,13 @@ before_install:
   - sudo apt-get install libsystemc-dev || true
 
 before_script:
+  - ccache -s
+  - ccache -z
   - bash -x ci/build_vcddiff.sh
   - bash -x ci/build_verilator.sh
   - bin/verilator -V || true
+  - ccache -s
+  - ccache -z
 
 after_script:
   - ccache -s
