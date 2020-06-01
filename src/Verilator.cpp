@@ -454,7 +454,7 @@ static void process() {
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
         // Create AstCUse to determine what class forward declarations/#includes needed in C
         // Must be before V3EmitC
-        V3CUse::cUseAll(v3Global.rootp());
+        V3CUse::cUseAll();
 
         // emitcInlines is first, as it may set needHInlines which other emitters read
         V3EmitC::emitcInlines();

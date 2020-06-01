@@ -801,27 +801,6 @@ public:
 //######################################################################
 // EmitV class functions
 
-void V3EmitV::emitv() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
-    if (true) {
-        // All-in-one file
-        V3OutVFile of(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__Vout.v");
-        of.putsHeader();
-        of.puts("# DESCR"
-                "IPTION: Verilator output: Verilog representation of internal tree for debug\n");
-        EmitVFileVisitor visitor(v3Global.rootp(), &of);
-    } else {
-        // Process each module in turn
-        for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
-             modp = VN_CAST(modp->nextp(), NodeModule)) {
-            V3OutVFile of(v3Global.opt.makeDir() + "/" + EmitCBaseVisitor::prefixNameProtect(modp)
-                          + "__Vout.v");
-            of.putsHeader();
-            EmitVFileVisitor visitor(modp, &of);
-        }
-    }
-}
-
 void V3EmitV::verilogForTree(AstNode* nodep, std::ostream& os) { EmitVStreamVisitor(nodep, os); }
 
 void V3EmitV::verilogPrefixedTree(AstNode* nodep, std::ostream& os, const string& prefix,

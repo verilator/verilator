@@ -43,9 +43,6 @@ class EmitXmlFileVisitor : public AstNVisitor {
     // Outfile methods
     V3OutFile* ofp() const { return m_ofp; }
     virtual void puts(const string& str) { ofp()->puts(str); }
-    virtual void putbs(const string& str) { ofp()->putbs(str); }
-    virtual void putfs(AstNode*, const string& str) { putbs(str); }
-    virtual void putqs(AstNode*, const string& str) { putbs(str); }
     virtual void putsNoTracking(const string& str) { ofp()->putsNoTracking(str); }
     virtual void putsQuoted(const string& str) {
         // Quote \ and " for use inside C programs

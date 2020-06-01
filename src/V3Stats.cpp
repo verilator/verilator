@@ -43,7 +43,6 @@ private:
     bool m_fast;
 
     AstCFunc* m_cfuncp;  // Current CFUNC
-    VDouble0 m_statInstrLong;  // Instruction count
     bool m_counting;  // Currently counting
     double m_instrs;  // Current instr count (for determining branch direction)
     bool m_tracingCall;  // Iterating into a CCall to a CFunc

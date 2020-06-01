@@ -20,7 +20,6 @@
 //        MTaskMoveVertex
 //        OrderEitherVertex
 //          OrderInputsVertex
-//          OrderSettleVertex
 //          OrderLogicVertex
 //          OrderVarVertex
 //            OrderVarStdVertex
@@ -57,7 +56,6 @@ class OrderMoveDomScope;
 enum OrderWeights {
     WEIGHT_INPUT = 1,  // Low weight just so dot graph looks nice
     WEIGHT_COMBO = 1,  // Breakable combo logic
-    WEIGHT_LOOPBE = 1,  // Connection to loop begin/end
     WEIGHT_POST = 2,  // Post-delayed used var
     WEIGHT_PRE = 3,  // Breakable pre-delayed used var
     WEIGHT_MEDIUM = 8,  // Medium weight just so dot graph looks nice
@@ -68,7 +66,6 @@ struct OrderVEdgeType {
     enum en {
         VERTEX_UNKNOWN = 0,
         VERTEX_INPUTS,
-        VERTEX_SETTLE,
         VERTEX_LOGIC,
         VERTEX_VARSTD,
         VERTEX_VARPRE,
@@ -77,7 +74,6 @@ struct OrderVEdgeType {
         VERTEX_VARSETTLE,
         VERTEX_MOVE,
         EDGE_STD,
-        EDGE_CHANGEDET,
         EDGE_COMBOCUT,
         EDGE_PRECUT,
         EDGE_POSTCUT,
@@ -85,10 +81,10 @@ struct OrderVEdgeType {
     };
     const char* ascii() const {
         static const char* const names[]
-            = {"%E-vedge",         "VERTEX_INPUTS", "VERTEX_SETTLE",  "VERTEX_LOGIC",
-               "VERTEX_VARSTD",    "VERTEX_VARPRE", "VERTEX_VARPOST", "VERTEX_VARPORD",
-               "VERTEX_VARSETTLE", "VERTEX_MOVE",   "EDGE_STD",       "EDGE_CHANGEDET",
-               "EDGE_COMBOCUT",    "EDGE_PRECUT",   "EDGE_POSTCUT",   "_ENUM_END"};
+            = {"%E-vedge",      "VERTEX_INPUTS",  "VERTEX_LOGIC",   "VERTEX_VARSTD",
+               "VERTEX_VARPRE", "VERTEX_VARPOST", "VERTEX_VARPORD", "VERTEX_VARSETTLE",
+               "VERTEX_MOVE",   "EDGE_STD",       "EDGE_COMBOCUT",  "EDGE_PRECUT",
+               "EDGE_POSTCUT",  "_ENUM_END"};
         return names[m_e];
     }
     enum en m_e;
@@ -118,15 +114,6 @@ class OrderGraph : public V3Graph {
 public:
     OrderGraph() {}
     virtual ~OrderGraph() {}
-    // Methods
-    virtual void loopsVertexCb(V3GraphVertex* vertexp);
-};
-
-//! Graph for UNOPTFLAT loops
-class UnoptflatGraph : public OrderGraph {
-public:
-    UnoptflatGraph() {}
-    virtual ~UnoptflatGraph() {}
     // Methods
     virtual void loopsVertexCb(V3GraphVertex* vertexp);
 };
@@ -183,24 +170,6 @@ public:
     virtual string dotColor() const { return "green"; }
     virtual string dotName() const { return ""; }
     virtual bool domainMatters() { return false; }
-};
-
-class OrderSettleVertex : public OrderEitherVertex {
-    OrderSettleVertex(V3Graph* graphp, const OrderSettleVertex& old)
-        : OrderEitherVertex(graphp, old) {}
-
-public:
-    OrderSettleVertex(V3Graph* graphp, AstSenTree* domainp)
-        : OrderEitherVertex(graphp, NULL, domainp) {}
-    virtual ~OrderSettleVertex() {}
-    virtual OrderSettleVertex* clone(V3Graph* graphp) const {
-        return new OrderSettleVertex(graphp, *this);
-    }
-    virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_SETTLE; }
-    virtual string name() const { return "*SETTLE*"; }
-    virtual string dotColor() const { return "green"; }
-    virtual string dotName() const { return ""; }
-    virtual bool domainMatters() { return true; }
 };
 
 class OrderLogicVertex : public OrderEitherVertex {
@@ -422,7 +391,6 @@ class MTaskMoveVertex : public V3GraphVertex {
 
 protected:
     friend class OrderVisitor;
-    friend class MTaskMoveVertexMaker;
 
 public:
     MTaskMoveVertex(V3Graph* graphp, OrderLogicVertex* logicp, const OrderEitherVertex* varp,
@@ -487,16 +455,10 @@ public:
     // When ordering combo blocks with stronglyConnected, follow edges not
     // involving pre/pos variables
     virtual bool followComboConnected() const { return true; }
-    virtual bool followSequentConnected() const { return true; }
     static bool followComboConnected(const V3GraphEdge* edgep) {
         const OrderEdge* oedgep = dynamic_cast<const OrderEdge*>(edgep);
         if (!oedgep) v3fatalSrc("Following edge of non-OrderEdge type");
         return (oedgep->followComboConnected());
-    }
-    static bool followSequentConnected(const V3GraphEdge* edgep) {
-        const OrderEdge* oedgep = dynamic_cast<const OrderEdge*>(edgep);
-        if (!oedgep) v3fatalSrc("Following edge of non-OrderEdge type");
-        return (oedgep->followSequentConnected());
     }
 };
 
@@ -519,7 +481,6 @@ public:
     }
     virtual string dotColor() const { return "yellowGreen"; }
     virtual bool followComboConnected() const { return true; }
-    virtual bool followSequentConnected() const { return true; }
 };
 
 class OrderPostCutEdge : public OrderEdge {
@@ -541,7 +502,6 @@ public:
     }
     virtual string dotColor() const { return "PaleGreen"; }
     virtual bool followComboConnected() const { return false; }
-    virtual bool followSequentConnected() const { return true; }
 };
 
 class OrderPreCutEdge : public OrderEdge {
@@ -563,7 +523,6 @@ public:
     virtual ~OrderPreCutEdge() {}
     virtual string dotColor() const { return "khaki"; }
     virtual bool followComboConnected() const { return false; }
-    virtual bool followSequentConnected() const { return false; }
 };
 
 #endif  // Guard

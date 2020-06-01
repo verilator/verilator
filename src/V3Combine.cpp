@@ -185,7 +185,6 @@ private:
     CombineState m_state;  // Major state
     AstNodeModule* m_modp;  // Current module
     AstCFunc* m_funcp;  // Current function
-    V3Hash m_lowerHash;  // Hash of the statement we're building
     CombCallVisitor m_call;  // Tracking of function call users
     int m_modNFuncs;  // Number of functions made
     AstNode* m_walkLast1p;  // Final node that is the same in duplicate list

@@ -203,8 +203,6 @@ private:
     int m_instSelNum;  // Current instantiation count 0..N-1
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
 
-    typedef std::map<string, AstVar*> VarNameMap;
-
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS

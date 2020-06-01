@@ -40,7 +40,6 @@ class FileLine;
 class FileLineSingleton {
     // TYPES
     typedef std::map<string, int> FileNameNumMap;
-    typedef std::map<string, V3LangCode> FileLangNumMap;
     // MEMBERS
     FileNameNumMap m_namemap;  // filenameno for each filename
     std::deque<string> m_names;  // filename text for each filenameno
@@ -270,7 +269,6 @@ public:
     }
 
 private:
-    void v3errorEndFatalGuts(std::ostringstream& str);
     string warnContext(bool secondary) const;
 };
 std::ostream& operator<<(std::ostream& os, FileLine* fileline);

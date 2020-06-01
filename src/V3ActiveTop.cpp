@@ -89,7 +89,7 @@ private:
         }
         // Move the SENTREE for each active up to the global level.
         // This way we'll easily see what clock domains are identical
-        AstSenTree* wantp = m_finder.getSenTree(nodep->fileline(), sensesp);
+        AstSenTree* wantp = m_finder.getSenTree(sensesp);
         UINFO(4, "   lookdone\n");
         if (wantp != sensesp) {
             // Move the active's contents to the other active

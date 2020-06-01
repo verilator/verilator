@@ -46,8 +46,6 @@ void V3LinkLevel::modSortByLevel() {
 
     // level() was computed for us in V3LinkCells
 
-    typedef std::vector<AstNodeModule*> ModVec;
-
     ModVec mods;  // Modules
     ModVec tops;  // Top level modules
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;

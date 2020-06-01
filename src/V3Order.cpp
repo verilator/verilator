@@ -103,8 +103,6 @@
 #include VL_INCLUDE_UNORDERED_MAP
 #include VL_INCLUDE_UNORDERED_SET
 
-class OrderMoveDomScope;
-
 static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top);
 
 //######################################################################
@@ -665,9 +663,7 @@ private:
     SenTreeFinder m_finder;  // Find global sentree's and add them
     AstSenTree* m_comboDomainp;  // Combo activation tree
     AstSenTree* m_deleteDomainp;  // Delete this from tree
-    AstSenTree* m_settleDomainp;  // Initial activation tree
     OrderInputsVertex* m_inputsVxp;  // Top level vertex all inputs point from
-    OrderSettleVertex* m_settleVxp;  // Top level vertex all settlement vertexes point from
     OrderLogicVertex* m_logicVxp;  // Current statement being tracked, NULL=ignored
     AstTopScope* m_topScopep;  // Current top scope being processed
     AstScope* m_scopetopp;  // Scope under TOPSCOPE
@@ -976,13 +972,8 @@ private:
         AstSenTree* combp
             = new AstSenTree(nodep->fileline(),  // Gets cloned() so ok if goes out of scope
                              new AstSenItem(nodep->fileline(), AstSenItem::Combo()));
-        m_comboDomainp = m_finder.getSenTree(nodep->fileline(), combp);
+        m_comboDomainp = m_finder.getSenTree(combp);
         pushDeletep(combp);  // Cleanup when done
-        AstSenTree* settlep
-            = new AstSenTree(nodep->fileline(),  // Gets cloned() so ok if goes out of scope
-                             new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
-        m_settleDomainp = m_finder.getSenTree(nodep->fileline(), settlep);
-        pushDeletep(settlep);  // Cleanup when done
         // Fake AstSenTree we set domainp to indicate needs deletion
         m_deleteDomainp = new AstSenTree(nodep->fileline(),
                                          new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
@@ -1242,8 +1233,6 @@ public:
         m_inPre = m_inPost = false;
         m_comboDomainp = NULL;
         m_deleteDomainp = NULL;
-        m_settleDomainp = NULL;
-        m_settleVxp = NULL;
         m_inputsVxp = NULL;
         m_activeSenVxp = NULL;
         m_logicVxp = NULL;
@@ -1549,7 +1538,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
                     newtree2p = NULL;  // Below edit may replace it
                     V3Const::constifyExpensiveEdit(newtreep);  // Remove duplicates
                     newtreep->multi(true);  // Comment that it was made from 2 clock domains
-                    domainp = m_finder.getSenTree(domainp->fileline(), newtreep);
+                    domainp = m_finder.getSenTree(newtreep);
                     if (ddebug) {  // LCOV_EXCL_START
                         UINFO(0, "         dnew =" << newtreep << endl);
                         newtreep->dumpTree(cout);

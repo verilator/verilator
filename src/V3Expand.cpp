@@ -317,17 +317,6 @@ private:
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    bool expandWide(AstNodeAssign* nodep, AstExtend* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(EXTEND) " << nodep << endl);
-        int w = 0;
-        for (w = 0; w < rhsp->lhsp()->widthWords(); w++) {
-            addWordAssign(nodep, w, newAstWordSelClone(rhsp->lhsp(), w));
-        }
-        for (; w < nodep->widthWords(); w++) {
-            addWordAssign(nodep, w, new AstConst(rhsp->fileline(), AstConst::SizedEData(), 0));
-        }
-        return true;
-    }
 
     virtual void visit(AstSel* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once

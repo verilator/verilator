@@ -36,7 +36,6 @@ class VSymEnt;
 //######################################################################
 // Symbol table
 
-typedef std::set<VSymEnt*> VSymMap;
 typedef std::set<const VSymEnt*> VSymConstMap;
 
 class VSymEnt {

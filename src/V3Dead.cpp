@@ -95,7 +95,6 @@ private:
     AssignMap m_assignMap;  // List of all simple assignments for each variable
     bool m_elimUserVars;  // Allow removal of user's vars
     bool m_elimDTypes;  // Allow removal of DTypes
-    bool m_elimScopes;  // Allow removal of Scopes
     bool m_elimCells;  // Allow removal of Cells
     bool m_sideEffect;  // Side effects discovered in assign RHS
 
@@ -443,7 +442,6 @@ public:
         m_elimCells = elimCells;
         m_elimUserVars = elimUserVars;
         m_elimDTypes = elimDTypes;
-        m_elimScopes = elimScopes;
         m_sideEffect = false;
         // Prepare to remove some datatypes
         nodep->typeTablep()->clearCache();

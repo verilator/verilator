@@ -46,7 +46,6 @@ private:
     int m_funcNum;  // Function number being built
 
 public:
-    AstCFunc* builtFuncp() const { return m_tlFuncp; }
     void add(AstNode* nodep) {
         if (v3Global.opt.outputSplitCFuncs() && v3Global.opt.outputSplitCFuncs() < m_numStmts) {
             m_funcp = NULL;

@@ -52,8 +52,6 @@ private:
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     FileLineSet m_filelines;  // Filelines that have been seen
     bool m_inAlways;  // Inside an always
-    bool m_inGenerate;  // Inside a generate
-    bool m_needStart;  // Need start marker on lower AstParse
     AstNodeModule* m_valueModp;  // If set, move AstVar->valuep() initial values to this module
     AstNodeModule* m_modp;  // Current module
     AstNodeFTask* m_ftaskp;  // Current task
@@ -535,8 +533,6 @@ public:
         m_ftaskp = NULL;
         m_dtypep = NULL;
         m_inAlways = false;
-        m_inGenerate = false;
-        m_needStart = false;
         m_valueModp = NULL;
         iterate(rootp);
     }

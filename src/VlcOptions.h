@@ -29,7 +29,6 @@
 //######################################################################
 // V3Options - Command line options
 
-typedef std::vector<string> VlStringList;
 typedef std::set<string> VlStringSet;
 
 class VlcOptions {
@@ -59,7 +58,6 @@ public:
         m_unlink = false;
     }
     ~VlcOptions() {}
-    void setDebugMode(int level);
 
     // METHODS
     void parseOptsList(int argc, char** argv);

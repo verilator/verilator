@@ -87,8 +87,6 @@ private:
     bool m_inToggleOff;  // In function/task etc
     VarNameMap m_varnames;  // Uniquification of inserted variable names
     string m_beginHier;  // AstBegin hier name for user coverage points
-    typedef vl_unordered_map<string, int> NameMap;
-    NameMap m_varNames;  // Variable names made for uniq
     HandleLines m_handleLines;  // All line numbers for a given m_stateHandle
 
     // METHODS
