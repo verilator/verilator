@@ -36,7 +36,7 @@
 //######################################################################
 // FileLineSingleton class functions
 
-const string FileLineSingleton::filenameLetters(int fileno) {
+string FileLineSingleton::filenameLetters(int fileno) {
     const int size = 1 + (64 / 4);  // Each letter retires more than 4 bits of a > 64 bit number
     char out[size];
     char* op = out + size - 1;
@@ -165,7 +165,7 @@ void FileLine::newContent() {
     m_contentLineno = 1;
 }
 
-const string FileLine::xmlDetailedLocation() const {
+string FileLine::xmlDetailedLocation() const {
     return "loc=\"" + cvtToStr(filenameLetters()) + "," + cvtToStr(firstLineno()) + ","
            + cvtToStr(firstColumn()) + "," + cvtToStr(lastLineno()) + "," + cvtToStr(lastColumn())
            + "\"";
@@ -259,27 +259,27 @@ FileLine* FileLine::copyOrSameFileLine() {
     return newp;
 }
 
-const string FileLine::filebasename() const {
+string FileLine::filebasename() const {
     string name = filename();
     string::size_type pos;
     if ((pos = name.rfind('/')) != string::npos) name.erase(0, pos + 1);
     return name;
 }
 
-const string FileLine::filebasenameNoExt() const {
+string FileLine::filebasenameNoExt() const {
     string name = filebasename();
     string::size_type pos;
     if ((pos = name.find('.')) != string::npos) name = name.substr(0, pos);
     return name;
 }
 
-const string FileLine::firstColumnLetters() const {
+string FileLine::firstColumnLetters() const {
     char a = ((firstColumn() / 26) % 26) + 'a';
     char b = (firstColumn() % 26) + 'a';
     return string(1, a) + string(1, b);
 }
 
-const string FileLine::profileFuncname() const {
+string FileLine::profileFuncname() const {
     // Return string that is OK as a function name - for profiling
     string name = filebasenameNoExt();
     string::size_type pos;

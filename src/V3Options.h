@@ -97,27 +97,43 @@ public:
     VTimescale(const string& value, bool& badr);
     VTimescale(double value, bool& badr) {
         badr = false;
-        // clang-format off
-        if (value == 10e2) m_e = TS_100S;
-        else if (value == 1e1) m_e = TS_10S;
-        else if (value == 1e0) m_e = TS_1S;
-        else if (value == 1e-1) m_e = TS_100MS;
-        else if (value == 1e-2) m_e = TS_10MS;
-        else if (value == 1e-3) m_e = TS_1MS;
-        else if (value == 1e-4) m_e = TS_100US;
-        else if (value == 1e-5) m_e = TS_10US;
-        else if (value == 1e-6) m_e = TS_1US;
-        else if (value == 1e-7) m_e = TS_100NS;
-        else if (value == 1e-8) m_e = TS_10NS;
-        else if (value == 1e-9) m_e = TS_1NS;
-        else if (value == 1e-10) m_e = TS_100PS;
-        else if (value == 1e-11) m_e = TS_10PS;
-        else if (value == 1e-12) m_e = TS_1PS;
-        else if (value == 1e-13) m_e = TS_100FS;
-        else if (value == 1e-14) m_e = TS_10FS;
-        else if (value == 1e-15) m_e = TS_1FS;
-        // clang-format on
-        else {
+        if (value == 10e2) {
+            m_e = TS_100S;
+        } else if (value == 1e1) {
+            m_e = TS_10S;
+        } else if (value == 1e0) {
+            m_e = TS_1S;
+        } else if (value == 1e-1) {
+            m_e = TS_100MS;
+        } else if (value == 1e-2) {
+            m_e = TS_10MS;
+        } else if (value == 1e-3) {
+            m_e = TS_1MS;
+        } else if (value == 1e-4) {
+            m_e = TS_100US;
+        } else if (value == 1e-5) {
+            m_e = TS_10US;
+        } else if (value == 1e-6) {
+            m_e = TS_1US;
+        } else if (value == 1e-7) {
+            m_e = TS_100NS;
+        } else if (value == 1e-8) {
+            m_e = TS_10NS;
+        } else if (value == 1e-9) {
+            m_e = TS_1NS;
+        } else if (value == 1e-10) {
+            m_e = TS_100PS;
+        } else if (value == 1e-11) {
+            m_e = TS_10PS;
+        } else if (value == 1e-12) {
+            m_e = TS_1PS;
+        } else if (value == 1e-13) {
+            m_e = TS_100FS;
+        } else if (value == 1e-14) {
+            m_e = TS_10FS;
+        } else if (value == 1e-15) {
+            m_e = TS_1FS;
+        } else {
             m_e = NONE;
             badr = true;
         }
@@ -132,7 +148,7 @@ public:
                "10ns", "1ns", "100ps", "10ps",  "1ps",  "100fs", "10fs",  "1fs",  "NONE"};
         return names[m_e];
     }
-    int powerOfTen() { return 2 - static_cast<int>(m_e); }
+    int powerOfTen() const { return 2 - static_cast<int>(m_e); }
     double multiplier() const {
         static const double values[]
             = {100,  10,   1,     1e-1,  1e-2,  1e-3,  1e-4,  1e-5,  1e-6, 1e-7,

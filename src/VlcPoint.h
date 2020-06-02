@@ -108,7 +108,6 @@ public:
     ByName::iterator begin() { return m_nameMap.begin(); }
     ByName::iterator end() { return m_nameMap.end(); }
 
-public:
     // CONSTRUCTORS
     VlcPoints()
         : m_numPoints(0) {}

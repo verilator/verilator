@@ -158,7 +158,7 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
 
     V3Hash lasthash;
     int num_in_bucket = 0;
-    for (HashMmap::iterator it = begin(); 1; ++it) {
+    for (HashMmap::iterator it = begin(); true; ++it) {
         if (it == end() || lasthash != it->first) {
             if (it != end()) lasthash = it->first;
             if (num_in_bucket) {

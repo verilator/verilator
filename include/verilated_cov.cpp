@@ -94,7 +94,6 @@ private:
     typedef std::map<int, std::string> IndexValueMap;
     typedef std::deque<VerilatedCovImpItem*> ItemList;
 
-private:
     // MEMBERS
     VerilatedMutex m_mutex;  ///< Protects all members
     ValueIndexMap m_valueIndexes VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for values

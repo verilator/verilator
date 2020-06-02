@@ -350,7 +350,7 @@ private:
         }
     }
 
-    AstNode* varOrScope(AstVarRef* nodep) {
+    AstNode* varOrScope(AstVarRef* nodep) const {
         AstNode* vscp;
         if (m_scoped) {
             vscp = nodep->varScopep();

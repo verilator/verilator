@@ -24,7 +24,7 @@ int sc_main(int argc, char* argv[]) {
     // This is a more complicated example, please also see the simpler examples/make_hello_c.
 
     // Prevent unused variable warnings
-    if (0 && argc && argv) {}
+    if (false && argc && argv) {}
 
     // Set debug level, 0 is off, 9 is highest presently used
     // May be overridden by commandArgs

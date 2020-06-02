@@ -644,7 +644,7 @@ V3OutFormatter::V3OutFormatter(const string& filename, V3OutFormatter::Language 
 
 //----------------------------------------------------------------------
 
-const string V3OutFormatter::indentSpaces(int num) {
+string V3OutFormatter::indentSpaces(int num) {
     // Indent the specified number of spaces.  Use spaces.
     static char str[MAXSPACE + 20];
     char* cp = str;

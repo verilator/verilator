@@ -88,7 +88,6 @@ public:
     // Options
     V3Options opt;  // All options; let user see them directly
 
-public:
     // CONSTRUCTORS
     V3Global()
         : m_rootp(NULL)  // created by makeInitNetlist() so static constructors run first

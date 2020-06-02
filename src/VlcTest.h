@@ -103,7 +103,6 @@ public:
     ByName::iterator begin() { return m_tests.begin(); }
     ByName::iterator end() { return m_tests.end(); }
 
-public:
     // CONSTRUCTORS
     VlcTests() {}
     ~VlcTests() {

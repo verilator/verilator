@@ -1100,11 +1100,11 @@ public:
     explicit VNUser(void* p) { m_u.up = p; }
     ~VNUser() {}
     // Casters
-    WidthVP* c() { return ((WidthVP*)m_u.up); }
-    VSymEnt* toSymEnt() { return ((VSymEnt*)m_u.up); }
-    AstNode* toNodep() { return ((AstNode*)m_u.up); }
-    V3GraphVertex* toGraphVertex() { return ((V3GraphVertex*)m_u.up); }
-    inline int toInt() { return m_u.ui; }
+    WidthVP* c() const { return reinterpret_cast<WidthVP*>(m_u.up); }
+    VSymEnt* toSymEnt() const { return reinterpret_cast<VSymEnt*>(m_u.up); }
+    AstNode* toNodep() const { return reinterpret_cast<AstNode*>(m_u.up); }
+    V3GraphVertex* toGraphVertex() const { return reinterpret_cast<V3GraphVertex*>(m_u.up); }
+    int toInt() const { return m_u.ui; }
     static inline VNUser fromInt(int i) { return VNUser(i); }
 };
 
@@ -1310,7 +1310,7 @@ public:
     class FullValue {};  // for creator type-overload selection
     explicit V3Hash(Illegal) { m_both = 0; }
     // Saving and restoring inside a userp
-    explicit V3Hash(VNUser u) { m_both = u.toInt(); }
+    explicit V3Hash(const VNUser& u) { m_both = u.toInt(); }
     V3Hash operator+=(const V3Hash& rh) {
         setBoth(depth() + rh.depth(), (hshval() * 31 + rh.hshval()));
         return *this;
@@ -2474,9 +2474,8 @@ public:
     }  // op1 = AstMember list
     void addMembersp(AstNode* nodep) { addNOp1p(nodep); }
     bool packed() const { return m_packed; }
-    bool packedUnsup() const {
-        return true;
-    }  // packed() but as don't support unpacked, presently all structs
+    // packed() but as don't support unpacked, presently all structs
+    static bool packedUnsup() { return true; }
     void isFourstate(bool flag) { m_isFourstate = flag; }
     virtual bool isFourstate() const { return m_isFourstate; }
     void clearCache() { m_members.clear(); }
@@ -2485,7 +2484,7 @@ public:
         MemberNameMap::const_iterator it = m_members.find(name);
         return (it == m_members.end()) ? NULL : it->second;
     }
-    int lsb() const { return 0; }
+    static int lsb() { return 0; }
     int msb() const { return dtypep()->width() - 1; }  // Packed classes look like arrays
     VNumRange declRange() const { return VNumRange(msb(), lsb(), false); }
 };

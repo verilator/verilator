@@ -54,7 +54,7 @@ private:
                 nodep->editCountInc();
             } else if (VN_IS(nodep, CFunc) && VN_CAST(nodep, CFunc)->isConstructor()) {
             } else {
-                string rsvd = m_words.isKeyword(nodep->name());
+                string rsvd = V3LanguageWords::isKeyword(nodep->name());
                 if (rsvd != "") {
                     nodep->v3warn(SYMRSVDWORD,
                                   "Symbol matches " + rsvd + ": " << nodep->prettyNameQ());

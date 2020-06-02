@@ -345,7 +345,7 @@ private:
         // Grab statement bodies
         AstNRelinker relink1Handle;
         AstNRelinker relink2Handle;
-        for (AstNode *nextp, *walkp = node1p; 1; walkp = nextp) {
+        for (AstNode *nextp, *walkp = node1p; true; walkp = nextp) {
             nextp = walkp->nextp();
             if (walkp == node1p) {
                 walkp->unlinkFrBack(&relink1Handle);
@@ -355,7 +355,7 @@ private:
             }
             if (walkp == last1p) break;
         }
-        for (AstNode *nextp, *walkp = node2p; 1; walkp = nextp) {
+        for (AstNode *nextp, *walkp = node2p; true; walkp = nextp) {
             nextp = walkp->nextp();
             if (walkp == node2p) {
                 walkp->unlinkFrBack(&relink2Handle);

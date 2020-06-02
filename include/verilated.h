@@ -337,7 +337,7 @@ public:  // But internals only - called from VerilatedModule's
     VerilatedScope();
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                   const char* identifier, vlsint8_t timeunit, const Type type) VL_MT_UNSAFE;
+                   const char* identifier, vlsint8_t timeunit, const Type& type) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     void varInsert(int finalize, const char* namep, void* datap, VerilatedVarType vltype,
                    int vlflags, int dims, ...) VL_MT_UNSAFE;
@@ -365,7 +365,7 @@ public:  // But internals only - called from VerilatedModule's
 
 class VerilatedHierarchy {
 public:
-    void add(VerilatedScope* fromp, VerilatedScope* top);
+    static void add(VerilatedScope* fromp, VerilatedScope* top);
 };
 
 //===========================================================================
@@ -1909,7 +1909,8 @@ static inline IData VL_STREAML_FAST_III(int, int lbits, int, IData ld, IData rd_
     case 1: ret = ((ret >> 2) & VL_UL(0x33333333)) | ((ret & VL_UL(0x33333333)) << 2);  // FALLTHRU
     case 2: ret = ((ret >> 4) & VL_UL(0x0f0f0f0f)) | ((ret & VL_UL(0x0f0f0f0f)) << 4);  // FALLTHRU
     case 3: ret = ((ret >> 8) & VL_UL(0x00ff00ff)) | ((ret & VL_UL(0x00ff00ff)) << 8);  // FALLTHRU
-    case 4: ret = ((ret >> 16) | (ret << 16));
+    case 4: ret = ((ret >> 16) | (ret << 16));  // FALLTHRU
+    default:;
     }
     return ret >> (VL_IDATASIZE - lbits);
 }
@@ -1939,7 +1940,8 @@ static inline QData VL_STREAML_FAST_QQI(int, int lbits, int, QData ld, IData rd_
     case 4:
         ret = (((ret >> 16) & 0x0000ffff0000ffffULL)
                | ((ret & 0x0000ffff0000ffffULL) << 16));  // FALLTHRU
-    case 5: ret = ((ret >> 32) | (ret << 32));
+    case 5: ret = ((ret >> 32) | (ret << 32));  // FALLTHRU
+    default:;
     }
     return ret >> (VL_QUADSIZE - lbits);
 }

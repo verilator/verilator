@@ -39,7 +39,7 @@
 // Static utility functions
 
 static double timescaleToDouble(const char* unitp) {
-    char* endp;
+    char* endp = NULL;
     double value = strtod(unitp, &endp);
     // On error so we allow just "ns" to return 1e-9.
     if (value == 0.0 && endp == unitp) value = 1;

@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3FileLine_H_
-#define _V3FileLine_H_ 1
+#ifndef _V3FILELINE_H_
+#define _V3FILELINE_H_ 1
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -51,8 +51,8 @@ class FileLineSingleton {
 protected:
     friend class FileLine;
     int nameToNumber(const string& filename);
-    const string numberToName(int filenameno) const { return m_names[filenameno]; }
-    const V3LangCode numberToLang(int filenameno) const { return m_languages[filenameno]; }
+    string numberToName(int filenameno) const { return m_names[filenameno]; }
+    V3LangCode numberToLang(int filenameno) const { return m_languages[filenameno]; }
     void numberToLang(int filenameno, const V3LangCode& l) { m_languages[filenameno] = l; }
     void clear() {
         m_namemap.clear();
@@ -60,7 +60,7 @@ protected:
         m_languages.clear();
     }
     void fileNameNumMapDumpXml(std::ostream& os);
-    static const string filenameLetters(int fileno);
+    static string filenameLetters(int fileno);
 };
 
 //! All source lines from a file/stream, to enable errors to show sources
@@ -193,19 +193,17 @@ public:
     string ascii() const;
     string asciiLineCol() const;
     int filenameno() const { return m_filenameno; }
-    const string filename() const { return singleton().numberToName(filenameno()); }
+    string filename() const { return singleton().numberToName(filenameno()); }
     bool filenameIsGlobal() const {
         return (filename() == commandLineFilename() || filename() == builtInFilename());
     }
-    const string filenameLetters() const { return singleton().filenameLetters(filenameno()); }
-    const string filebasename() const;
-    const string filebasenameNoExt() const;
-    const string firstColumnLetters() const;
-    const string profileFuncname() const;
-    const string xml() const {
-        return "fl=\"" + filenameLetters() + cvtToStr(lastLineno()) + "\"";
-    }
-    const string xmlDetailedLocation() const;
+    string filenameLetters() const { return FileLineSingleton::filenameLetters(filenameno()); }
+    string filebasename() const;
+    string filebasenameNoExt() const;
+    string firstColumnLetters() const;
+    string profileFuncname() const;
+    string xml() const { return "fl=\"" + filenameLetters() + cvtToStr(lastLineno()) + "\""; }
+    string xmlDetailedLocation() const;
     string lineDirectiveStrg(int enterExit) const;
 
     // Turn on/off warning messages on this line.

@@ -31,8 +31,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3_UNORDERED_SET_MAP_H_
-#define _V3_UNORDERED_SET_MAP_H_
+#ifndef _VERILATED_UNORDERED_SET_MAP_H_
+#define _VERILATED_UNORDERED_SET_MAP_H_
 
 #include "verilatedos.h"
 

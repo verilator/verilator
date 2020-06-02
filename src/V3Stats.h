@@ -36,29 +36,29 @@ public:
     ~VDouble0() {}
 
     // Implicit conversion operators:
-    inline explicit VDouble0(const vluint64_t v)
+    explicit VDouble0(const vluint64_t v)
         : m_d(v) {}
-    inline operator double() const { return m_d; }
+    operator double() const { return m_d; }
 
     // Explicit operators:
-    inline VDouble0& operator++() {  // prefix
+    VDouble0& operator++() {  // prefix
         ++m_d;
         return *this;
     }
-    inline VDouble0 operator++(int) {  // postfix
+    VDouble0 operator++(int) {  // postfix
         VDouble0 old = *this;
         m_d++;
         return old;
     }
-    inline VDouble0& operator=(const double v) {
+    VDouble0& operator=(const double v) {
         m_d = v;
         return *this;
     }
-    inline VDouble0& operator+=(const double v) {
+    VDouble0& operator+=(const double v) {
         m_d += v;
         return *this;
     }
-    inline VDouble0& operator-=(const double v) {
+    VDouble0& operator-=(const double v) {
         m_d -= v;
         return *this;
     }

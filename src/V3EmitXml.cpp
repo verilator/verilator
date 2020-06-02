@@ -58,7 +58,8 @@ class EmitXmlFileVisitor : public AstNVisitor {
         if (!nodep->user1()) { nodep->user1(++m_id); }
         puts("\"" + cvtToStr(nodep->user1()) + "\"");
     }
-    void outputTag(AstNode* nodep, string tag) {
+    void outputTag(AstNode* nodep, const string& tagin) {
+        string tag = tagin;
         if (tag == "") tag = VString::downcase(nodep->typeName());
         puts("<" + tag + " " + nodep->fileline()->xml());
         puts(" " + nodep->fileline()->xmlDetailedLocation());
@@ -86,7 +87,8 @@ class EmitXmlFileVisitor : public AstNVisitor {
             }
         }
     }
-    void outputChildrenEnd(AstNode* nodep, string tag) {
+    void outputChildrenEnd(AstNode* nodep, const string& tagin) {
+        string tag = tagin;
         if (tag == "") tag = VString::downcase(nodep->typeName());
         if (nodep->op1p() || nodep->op2p() || nodep->op3p() || nodep->op4p()) {
             puts(">\n");

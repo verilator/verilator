@@ -726,7 +726,7 @@ void AstNode::deleteNode() {
     this->m_op4p = reinterpret_cast<AstNode*>(0x1);
     if (
 #if !defined(VL_DEBUG) || defined(VL_LEAK_CHECKS)
-        1
+        true
 #else
         !v3Global.opt.debugLeak()
 #endif

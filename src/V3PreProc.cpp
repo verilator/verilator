@@ -286,9 +286,9 @@ public:
         m_finFilelinep->lineno(1);
         // Create lexer
         m_lexp = new V3PreLex(this, filelinep);
-        m_lexp->m_keepComments = m_preprocp->keepComments();
-        m_lexp->m_keepWhitespace = m_preprocp->keepWhitespace();
-        m_lexp->m_pedantic = m_preprocp->pedantic();
+        m_lexp->m_keepComments = keepComments();
+        m_lexp->m_keepWhitespace = keepWhitespace();
+        m_lexp->m_pedantic = pedantic();
         m_lexp->debug(debug() >= 5 ? debug() : 0);  // See also V3PreProc::debug() method
     }
     ~V3PreProcImp() {
@@ -1527,7 +1527,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
     }
     int tok = m_finToken;
     buf = m_finBuf;
-    if (0 && debug() >= 5) {
+    if (false && debug() >= 5) {
         string bufcln = V3PreLex::cleanDbgStrg(buf);
         string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
         fprintf(stderr, "%s: FIN:      %-10s: %s\n", flcol.c_str(), tokenName(tok),

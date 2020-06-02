@@ -792,7 +792,7 @@ string V3Number::toDecimalU() const {
         if (bcd.bitsValue(lsb, 4)) break;
     }
     for (; lsb >= 0; lsb -= 4) {
-        output += ('0' + bcd.bitsValue(lsb, 4));  // 0..9
+        output += static_cast<char>('0' + bcd.bitsValue(lsb, 4));  // 0..9
     }
     return output;
 }
@@ -946,12 +946,12 @@ bool V3Number::isAnyXZ() const {
 bool V3Number::isLtXZ(const V3Number& rhs) const {
     // Include X/Z in comparisons for sort ordering
     for (int bit = 0; bit < std::max(this->width(), rhs.width()); bit++) {
-        if (this->bitIs1(bit) && rhs.bitIs0(bit)) { return 1; }
-        if (rhs.bitIs1(bit) && this->bitIs0(bit)) { return 0; }
-        if (this->bitIsXZ(bit)) { return 1; }
-        if (rhs.bitIsXZ(bit)) { return 0; }
+        if (this->bitIs1(bit) && rhs.bitIs0(bit)) { return true; }
+        if (rhs.bitIs1(bit) && this->bitIs0(bit)) { return false; }
+        if (this->bitIsXZ(bit)) { return true; }
+        if (rhs.bitIsXZ(bit)) { return false; }
     }
-    return 0;
+    return false;
 }
 
 int V3Number::widthMin() const {

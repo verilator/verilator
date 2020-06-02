@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3LINKSYMTABLE_H_
-#define _V3LINKSYMTABLE_H_ 1
+#ifndef _V3SYMTABLE_H_
+#define _V3SYMTABLE_H_ 1
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -189,7 +189,7 @@ private:
             reinsert(name, symp);
         }
     }
-    void exportOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) {
+    void exportOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) const {
         if (srcp->exported()) {
             if (VSymEnt* symp = findIdFlat(name)) {  // Should already exist in current table
                 if (!symp->exported()) symp->exported(true);
@@ -283,7 +283,6 @@ public:
         for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) delete (*it);
     }
 
-public:
     // METHODS
     VSymEnt* rootp() const { return m_symRootp; }
     // Debug

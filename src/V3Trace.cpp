@@ -375,7 +375,8 @@ private:
 
         // Sort the traces by activity sets
         TraceVec traces;
-        uint32_t unused1, unused2;
+        uint32_t unused1;
+        uint32_t unused2;
         sortTraces(traces, unused1, unused2);
 
         // For each activity set with only a small number of signals, make those

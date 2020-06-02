@@ -77,7 +77,7 @@ VerilatedImp VerilatedImp::s_s;
 
 #ifndef VL_USER_FINISH  ///< Define this to override this function
 void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
-    if (0 && hier) {}
+    if (false && hier) {}
     VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
         "- %s:%d: Verilog $finish\n", filename, linenum);
     if (Verilated::gotFinish()) {
@@ -100,7 +100,7 @@ void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
 
 #ifndef VL_USER_FATAL  ///< Define this to override this function
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
-    if (0 && hier) {}
+    if (false && hier) {}
     Verilated::gotFinish(true);
     if (filename && filename[0]) {
         // Not VL_PRINTF_MT, already on main thread
@@ -631,7 +631,7 @@ std::string _vl_vsformat_time(char* tmp, double ld, bool left, size_t width) {
     QData fracDiv = static_cast<QData>(vl_time_multiplier(fracDigits));
     QData whole = static_cast<QData>(scaled) / fracDiv;
     QData fraction = static_cast<QData>(scaled) % fracDiv;
-    int digits;
+    int digits = 0;
     if (!fracDigits) {
         digits = sprintf(tmp, "%" VL_PRI64 "u%s", whole, suffix.c_str());
     } else {
@@ -731,20 +731,14 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 const int lbits = va_arg(ap, int);
                 double d = va_arg(ap, double);
                 if (lbits) {}  // UNUSED - always 64
-                switch (fmt) {
-                case '^': {  // Realtime
+                if (fmt == '^') {  // Realtime
                     if (!widthSet) width = VerilatedImp::timeFormatWidth();
                     output += _vl_vsformat_time(tmp, d, left, width);
-                    break;
-                }
-                default: {
+                } else {
                     std::string fmt(pctp, pos - pctp + 1);
                     sprintf(tmp, fmt.c_str(), d);
                     output += tmp;
-                    break;
-                }  //
-                break;
-                }  // switch
+                }
                 break;
             }
             default: {
@@ -752,7 +746,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 const int lbits = va_arg(ap, int);
                 QData ld = 0;
                 WData qlwp[VL_WQ_WORDS_E];
-                WDataInP lwp;
+                WDataInP lwp = NULL;
                 if (lbits <= VL_QUADSIZE) {
                     ld = _VL_VA_ARG_Q(ap, lbits);
                     VL_SET_WQ(qlwp, ld);
@@ -768,7 +762,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 switch (fmt) {
                 case 'c': {
                     IData charval = ld & 0xff;
-                    output += charval;
+                    output += static_cast<char>(charval);
                     break;
                 }
                 case 's': {
@@ -784,7 +778,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     break;
                 }
                 case 'd': {  // Signed decimal
-                    int digits;
+                    int digits = 0;
                     std::string append;
                     if (lbits <= VL_QUADSIZE) {
                         digits = sprintf(tmp, "%" VL_PRI64 "d",
@@ -813,7 +807,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     break;
                 }
                 case '#': {  // Unsigned decimal
-                    int digits;
+                    int digits = 0;
                     std::string append;
                     if (lbits <= VL_QUADSIZE) {
                         digits = sprintf(tmp, "%" VL_PRI64 "u", ld);
@@ -848,9 +842,10 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         // Octal numbers may span more than one wide word,
                         // so we need to grab each bit separately and check for overrun
                         // Octal is rare, so we'll do it a slow simple way
-                        output += ('0' + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 0)) ? 1 : 0)
-                                   + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 1)) ? 2 : 0)
-                                   + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 2)) ? 4 : 0));
+                        output += static_cast<char>(
+                            '0' + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 0)) ? 1 : 0)
+                            + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 1)) ? 2 : 0)
+                            + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 2)) ? 4 : 0));
                     }
                     break;
                 case 'u':
@@ -863,8 +858,8 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         const int wr_bytes = std::min(4, bytes_to_go);
                         for (int byte = 0; byte < wr_bytes; byte++, bit += 8)
                             output += static_cast<char>(VL_BITRSHIFT_W(lwp, bit) & 0xff);
-                        output.append(4 - wr_bytes, (char)0);
-                        if (is_4_state) output.append(4, (char)0);
+                        output.append(4 - wr_bytes, static_cast<char>(0));
+                        if (is_4_state) output.append(4, static_cast<char>(0));
                         bytes_to_go -= wr_bytes;
                     }
                     break;
@@ -898,7 +893,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
 
 static inline bool _vl_vsss_eof(FILE* fp, int floc) VL_MT_SAFE {
     if (fp) {
-        return feof(fp) ? 1 : 0;  // 1:0 to prevent MSVC++ warning
+        return feof(fp) ? true : false;  // true : false to prevent MSVC++ warning
     } else {
         return floc < 0;
     }
@@ -1076,7 +1071,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, "0123456789+-xXzZ?_");
                     if (!tmp[0]) goto done;
-                    vlsint64_t ld;
+                    vlsint64_t ld = 0;
                     sscanf(tmp, "%30" VL_PRI64 "d", &ld);
                     VL_SET_WQ(owp, ld);
                     break;
@@ -1101,7 +1096,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, "0123456789+-xXzZ?_");
                     if (!tmp[0]) goto done;
-                    QData ld;
+                    QData ld = 0;
                     sscanf(tmp, "%30" VL_PRI64 "u", &ld);
                     VL_SET_WQ(owp, ld);
                     break;
@@ -1216,7 +1211,7 @@ void _VL_STRING_TO_VINT(int obits, void* destp, size_t srclen, const char* srcp)
     size_t bytes = VL_BYTES_I(obits);
     char* op = reinterpret_cast<char*>(destp);
     if (srclen > bytes) srclen = bytes;  // Don't overflow destination
-    size_t i;
+    size_t i = 0;
     for (i = 0; i < srclen; ++i) { *op++ = srcp[srclen - 1 - i]; }
     for (; i < bytes; ++i) { *op++ = 0; }
 }
@@ -1522,36 +1517,38 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
 
     VL_ZERO_RESET_W(rbits, rwp);
     switch (tolower(fmt)) {
-    case 'd':
-        vlsint64_t lld;
+    case 'd': {
+        vlsint64_t lld = 0;
         sscanf(dp, "%30" VL_PRI64 "d", &lld);
         VL_SET_WQ(rwp, lld);
         break;
+    }
     case 'b': _vl_vsss_based(rwp, rbits, 1, dp, 0, strlen(dp)); break;
     case 'o': _vl_vsss_based(rwp, rbits, 3, dp, 0, strlen(dp)); break;
     case 'h':  // FALLTHRU
     case 'x': _vl_vsss_based(rwp, rbits, 4, dp, 0, strlen(dp)); break;
-    case 's':  // string/no conversion
+    case 's': {  // string/no conversion
         for (int i = 0, lsb = 0, posp = static_cast<int>(strlen(dp)) - 1; i < rbits && posp >= 0;
              --posp) {
             _vl_vsss_setbit(rwp, rbits, lsb, 8, dp[posp]);
             lsb += 8;
         }
         break;
+    }
     case 'e': {
-        double temp = 0.f;
+        double temp = 0.F;
         sscanf(dp, "%le", &temp);
         VL_SET_WQ(rwp, VL_CVT_Q_D(temp));
         break;
     }
     case 'f': {
-        double temp = 0.f;
+        double temp = 0.F;
         sscanf(dp, "%lf", &temp);
         VL_SET_WQ(rwp, VL_CVT_Q_D(temp));
         break;
     }
     case 'g': {
-        double temp = 0.f;
+        double temp = 0.F;
         sscanf(dp, "%lg", &temp);
         VL_SET_WQ(rwp, VL_CVT_Q_D(temp));
         break;
@@ -1799,7 +1796,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
                     m_addr = (m_addr << 4) + value;
                 } else {
                     indata = true;
-                    valuer += c;
+                    valuer += static_cast<char>(c);
                     // printf(" Value width=%d  @%x = %c\n", width, m_addr, c);
                     if (VL_UNLIKELY(value > 1 && !m_hex)) {
                         VL_FATAL_MT(m_filename.c_str(), m_linenum, "",
@@ -1944,7 +1941,7 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
     VlReadMem rmem(hex, bits, filename, start, end);
     if (VL_UNLIKELY(!rmem.isOpen())) return;
     while (true) {
-        QData addr;
+        QData addr = 0;
         std::string value;
         if (rmem.get(addr /*ref*/, value /*ref*/)) {
             if (VL_UNLIKELY(addr < static_cast<QData>(array_lsb)
@@ -2528,7 +2525,7 @@ VerilatedScope::~VerilatedScope() {
 
 void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
                                const char* identifier, vlsint8_t timeunit,
-                               const Type type) VL_MT_UNSAFE {
+                               const Type& type) VL_MT_UNSAFE {
     // Slowpath - called once/scope at construction
     // We don't want the space and reference-count access overhead of strings.
     m_symsp = symsp;

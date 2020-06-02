@@ -228,10 +228,10 @@ public:
     void lexNew();
     void lexDestroy();
     static int stateVerilogRecent();  // Parser -> lexer communication
-    int prevLexToken() { return m_prevLexToken; }  // Parser -> lexer communication
+    int prevLexToken() const { return m_prevLexToken; }  // Parser -> lexer communication
     size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf, max_size); }
-    const V3ParseBisonYYSType curBisonVal() const { return m_curBisonVal; }
-    const V3ParseBisonYYSType prevBisonVal() const { return m_prevBisonVal; }
+    V3ParseBisonYYSType curBisonVal() const { return m_curBisonVal; }
+    V3ParseBisonYYSType prevBisonVal() const { return m_prevBisonVal; }
 
     //==== Symbol tables
     V3ParseSym* symp() { return m_symp; }

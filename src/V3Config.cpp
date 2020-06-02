@@ -335,7 +335,7 @@ public:
                 // UINFO(9, "     Hit " << *m_lastIt << endl);
                 filelinep->warnOn(m_lastIgnore.it->m_code, m_lastIgnore.it->m_on);
             }
-            if (0 && debug() >= 9) {
+            if (false && debug() >= 9) {
                 for (IgnLines::const_iterator it = m_lastIgnore.it; it != m_ignLines.end(); ++it) {
                     UINFO(9, "     NXT " << *it << endl);
                 }

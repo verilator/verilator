@@ -127,7 +127,7 @@ class EmitCSyms : EmitCBaseVisitor {
             && !(VN_IS(nodep, CFunc)
                  && (VN_CAST(nodep, CFunc)->isConstructor()
                      || VN_CAST(nodep, CFunc)->isDestructor()))) {
-            string rsvd = m_words.isKeyword(nodep->name());
+            string rsvd = V3LanguageWords::isKeyword(nodep->name());
             if (rsvd != "") {
                 // Generally V3Name should find all of these and throw SYMRSVDWORD.
                 // We'll still check here because the compiler errors

@@ -1908,11 +1908,11 @@ public:
     VDirection declDirection() const { return m_declDirection; }
     void varType(AstVarType type) { m_varType = type; }
     void varType2Out() {
-        m_tristate = 0;
+        m_tristate = false;
         m_direction = VDirection::OUTPUT;
     }
     void varType2In() {
-        m_tristate = 0;
+        m_tristate = false;
         m_direction = VDirection::INPUT;
     }
     AstBasicDTypeKwd declKwd() const { return m_declKwd; }

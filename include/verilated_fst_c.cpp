@@ -136,7 +136,8 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
     std::pair<Code2SymbolType::iterator, bool> p
         = m_code2symbol.insert(std::make_pair(code, static_cast<fstHandle>(NULL)));
     std::istringstream nameiss(name);
-    std::istream_iterator<std::string> beg(nameiss), end;
+    std::istream_iterator<std::string> beg(nameiss);
+    std::istream_iterator<std::string> end;
     std::list<std::string> tokens(beg, end);  // Split name
     std::string symbol_name(tokens.back());
     tokens.pop_back();  // Remove symbol name from hierarchy

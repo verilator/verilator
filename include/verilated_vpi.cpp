@@ -376,8 +376,8 @@ struct VerilatedVpiTimedCbsCmp {
     /// Ordering sets keyed by time, then callback descriptor
     bool operator()(const std::pair<QData, VerilatedVpioCb*>& a,
                     const std::pair<QData, VerilatedVpioCb*>& b) const {
-        if (a.first < b.first) return 1;
-        if (a.first > b.first) return 0;
+        if (a.first < b.first) return true;
+        if (a.first > b.first) return false;
         return a.second < b.second;
     }
 };
@@ -939,7 +939,7 @@ const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE {
 }
 
 #define CHECK_RESULT_CSTR(got, exp) \
-    if (strcmp((got), (exp))) { \
+    if (0 != strcmp((got), (exp))) { \
         std::string msg \
             = std::string("%Error: ") + "GOT = '" + got + "'" + "  EXP = '" + exp + "'"; \
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str()); \
@@ -2079,10 +2079,12 @@ PLI_INT32 vpi_control(PLI_INT32 operation, ...) {
         VL_STOP_MT("", 0, "*VPI*");
         return 1;
     }
+    default: {
+        _VL_VPI_WARNING(__FILE__, __LINE__, "%s: Unsupported type %s, ignoring", VL_FUNC,
+                        VerilatedVpiError::strFromVpiProp(operation));
+        return 0;
     }
-    _VL_VPI_WARNING(__FILE__, __LINE__, "%s: Unsupported type %s, ignoring", VL_FUNC,
-                    VerilatedVpiError::strFromVpiProp(operation));
-    return 0;
+    }
 }
 
 vpiHandle vpi_handle_by_multi_index(vpiHandle /*obj*/, PLI_INT32 /*num_index*/,

@@ -32,7 +32,6 @@ private:
     vluint64_t m_dataSize;  ///< Current entries in m_datap
     vluint64_t m_bucketsCovered;  ///< Num buckets with sufficient coverage
 
-private:
     static inline vluint64_t covBit(vluint64_t point) { return 1ULL << (point & 63); }
     inline vluint64_t allocSize() const { return sizeof(vluint64_t) * m_dataSize / 64; }
     void allocate(vluint64_t point) {

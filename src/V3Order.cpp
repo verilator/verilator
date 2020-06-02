@@ -1342,7 +1342,7 @@ void OrderVisitor::processInputs() {
 void OrderVisitor::processInputsInIterate(OrderEitherVertex* vertexp, VertexVec& todoVec) {
     // Propagate PrimaryIn through simple assignments
     if (vertexp->user()) return;  // Already processed
-    if (0 && debug() >= 9) {
+    if (false && debug() >= 9) {
         UINFO(9, " InIIter " << vertexp << endl);
         if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
             vvertexp->nodep()->dumpTree(cout, "-            TT: ");
@@ -2011,7 +2011,7 @@ void OrderVisitor::process() {
 
     // Dump data
     m_graph.dumpDotFilePrefixed("orderg_done");
-    if (0 && debug()) {
+    if (false && debug()) {
         string dfilename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_INT_order";
         const vl_unique_ptr<std::ofstream> logp(V3File::new_ofstream(dfilename));
         if (logp->fail()) v3fatal("Can't write " << dfilename);
