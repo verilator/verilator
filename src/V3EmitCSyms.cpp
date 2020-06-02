@@ -332,10 +332,7 @@ class EmitCSyms : EmitCBaseVisitor {
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         nameCheck(nodep);
         iterateChildren(nodep);
-        if (nodep->isSigUserRdPublic()
-            // The VPI functions require a pointer to allow modification,
-            // but parameters are constants
-            && !nodep->isParam()) {
+        if (nodep->isSigUserRdPublic()) {
             m_modVars.push_back(make_pair(m_modp, nodep));
         }
     }
@@ -794,16 +791,32 @@ void EmitCSyms::emitSymImp() {
             }
             puts(protect("__Vscope_" + it->second.m_scopeName) + ".varInsert(__Vfinal,");
             putsQuoted(protect(it->second.m_varBasePretty));
-            puts(", &(");
+
+            std::string varName;
             if (modp->isTop()) {
-                puts(protectIf(scopep->nameDotless() + "p", scopep->protect()));
-                puts("->");
+                varName += (protectIf(scopep->nameDotless() + "p", scopep->protect()) + "->");
             } else {
-                puts(protectIf(scopep->nameDotless(), scopep->protect()));
-                puts(".");
+                varName += (protectIf(scopep->nameDotless(), scopep->protect()) + ".");
             }
-            puts(varp->nameProtect());
-            puts("), ");
+
+            if (varp->isParam()) {
+                varName += protect("var_" + varp->name());
+            } else {
+                varName += protect(varp->name());
+            }
+
+            if (varp->isParam() && (varp->vlEnumType() == "VLVT_STRING")) {
+                puts(", const_cast<void*>(static_cast<const void*>(");
+                puts(varName.c_str());
+                puts(".c_str())), ");
+            } else {
+                puts(", const_cast<void*>(static_cast<const void*>(&(");
+                puts(varName.c_str());
+                puts("))), ");
+            }
+
+            puts(varp->isParam() ? "true" : "false");
+            puts(", ");
             puts(varp->vlEnumType());  // VLVT_UINT32 etc
             puts(",");
             puts(varp->vlEnumDir());  // VLVD_IN etc
