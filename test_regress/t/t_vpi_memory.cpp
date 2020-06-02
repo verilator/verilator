@@ -87,9 +87,6 @@ int _mon_check_range(TestVpiHandle& handle, int size, int left, int right) {
     // check size of object
     int vpisize = vpi_get(vpiSize, handle);
     CHECK_RESULT(vpisize, size);
-    // check size of range
-    vpisize = vpi_get(vpiSize, handle);
-    CHECK_RESULT(vpisize, size);
     // check left hand side of range
     left_h = vpi_handle(vpiLeftRange, handle);
     CHECK_RESULT_NZ(left_h);
@@ -110,7 +107,7 @@ int _mon_check_range(TestVpiHandle& handle, int size, int left, int right) {
 
 int _mon_check_memory() {
     int cnt;
-    TestVpiHandle mem_h, lcl_h;
+    TestVpiHandle mem_h, lcl_h, side_h;
     vpiHandle iter_h;  // Icarus does not like auto free of iterator handles
     s_vpi_value value = {.format = vpiIntVal, .value = {.integer = 0}};
     vpi_printf((PLI_BYTE8*)"Check memory vpi ...\n");
@@ -158,6 +155,21 @@ int _mon_check_memory() {
     CHECK_RESULT(should_be_NULL, 0);
     should_be_NULL = vpi_handle(vpiScope, iter_h);
     CHECK_RESULT(should_be_NULL, 0);
+
+    // check vpiRange
+    iter_h = vpi_iterate(vpiRange, mem_h);
+    CHECK_RESULT_NZ(iter_h);
+    lcl_h = vpi_scan(iter_h);
+    CHECK_RESULT_NZ(lcl_h);
+    side_h = vpi_handle(vpiLeftRange, lcl_h);
+    CHECK_RESULT_NZ(side_h);
+    vpi_get_value(side_h, &value);
+    CHECK_RESULT(value.value.integer, 16);
+    side_h = vpi_handle(vpiRightRange, lcl_h);
+    CHECK_RESULT_NZ(side_h);
+    vpi_get_value(side_h, &value);
+    CHECK_RESULT(value.value.integer, 1);
+
     return 0;  // Ok
 }
 
