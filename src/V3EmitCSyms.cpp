@@ -104,7 +104,6 @@ class EmitCSyms : EmitCBaseVisitor {
     ScopeVars m_scopeVars;  // Each {scope,public-var}
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
     ScopeNameHierarchy m_vpiScopeHierarchy;  // The actual hierarchy of scopes
-    V3LanguageWords m_words;  // Reserved word detector
     int m_coverBins;  // Coverage bin number
     bool m_dpiHdrOnly;  // Only emit the DPI header
     int m_numStmts;  // Number of statements output
