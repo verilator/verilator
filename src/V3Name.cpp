@@ -41,7 +41,6 @@ private:
 
     // STATE
     AstNodeModule* m_modp;
-    V3LanguageWords m_words;  // Reserved word detector
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
