@@ -135,7 +135,7 @@ public:
     static inline VerilatedVpioConst* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioConst*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiUndefined; }
+    virtual vluint32_t type() const { return vpiConstant; }
     vlsint32_t num() const { return m_num; }
 };
 
@@ -1134,16 +1134,28 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
     _VL_VPI_ERROR_RESET();
     switch (type) {
     case vpiLeftRange: {
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
-        if (VL_UNLIKELY(!vop)) return 0;
-        if (VL_UNLIKELY(!vop->rangep())) return 0;
-        return (new VerilatedVpioConst(vop->rangep()->left()))->castVpiHandle();
+        if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
+            if (VL_UNLIKELY(!vop->rangep())) return 0;
+            return (new VerilatedVpioConst(vop->rangep()->left()))->castVpiHandle();
+        } else if (VerilatedVpioRange* vop = VerilatedVpioRange::castp(object)) {
+            if (VL_UNLIKELY(!vop->rangep())) return 0;
+            return (new VerilatedVpioConst(vop->rangep()->left()))->castVpiHandle();
+        }
+        _VL_VPI_WARNING(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p) for type %s, nothing will be returned",
+                        VL_FUNC, object, VerilatedVpiError::strFromVpiMethod(type));
+        return 0;
     }
     case vpiRightRange: {
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
-        if (VL_UNLIKELY(!vop)) return 0;
-        if (VL_UNLIKELY(!vop->rangep())) return 0;
-        return (new VerilatedVpioConst(vop->rangep()->right()))->castVpiHandle();
+        if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
+            if (VL_UNLIKELY(!vop->rangep())) return 0;
+            return (new VerilatedVpioConst(vop->rangep()->right()))->castVpiHandle();
+        } else if (VerilatedVpioRange* vop = VerilatedVpioRange::castp(object)) {
+            if (VL_UNLIKELY(!vop->rangep())) return 0;
+            return (new VerilatedVpioConst(vop->rangep()->right()))->castVpiHandle();
+        }
+        _VL_VPI_WARNING(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p) for type %s, nothing will be returned",
+                        VL_FUNC, object, VerilatedVpiError::strFromVpiMethod(type));
+        return 0;
     }
     case vpiIndex: {
         VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
