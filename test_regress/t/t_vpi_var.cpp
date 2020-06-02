@@ -273,7 +273,7 @@ int _mon_check_var() {
         vpi_get_value(vh10, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer, 4);
         p = vpi_get_str(vpiType, vh10);
-        CHECK_RESULT_CSTR(p, "*undefined*");
+        CHECK_RESULT_CSTR(p, "vpiConstant");
     }
     {
         TestVpiHandle vh10 = vpi_handle(vpiRightRange, vh4);
@@ -281,7 +281,7 @@ int _mon_check_var() {
         vpi_get_value(vh10, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer, 3);
         p = vpi_get_str(vpiType, vh10);
-        CHECK_RESULT_CSTR(p, "*undefined*");
+        CHECK_RESULT_CSTR(p, "vpiConstant");
     }
     {
         TestVpiHandle vh10 = vpi_iterate(vpiMemoryWord, vh4);
@@ -297,13 +297,13 @@ int _mon_check_var() {
         vpi_get_value(vh12, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer, 2);
         p = vpi_get_str(vpiType, vh12);
-        CHECK_RESULT_CSTR(p, "*undefined*");
+        CHECK_RESULT_CSTR(p, "vpiConstant");
         TestVpiHandle vh13 = vpi_handle(vpiRightRange, vh11);
         CHECK_RESULT_NZ(vh13);
         vpi_get_value(vh13, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer, 1);
         p = vpi_get_str(vpiType, vh13);
-        CHECK_RESULT_CSTR(p, "*undefined*");
+        CHECK_RESULT_CSTR(p, "vpiConstant");
     }
 
     return 0;

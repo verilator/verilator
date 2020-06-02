@@ -135,7 +135,7 @@ public:
     static inline VerilatedVpioConst* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioConst*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiUndefined; }
+    virtual vluint32_t type() const { return vpiConstant; }
     vlsint32_t num() const { return m_num; }
 };
 
