@@ -16,7 +16,7 @@ cache:
 
 env:
   global:
-    - CCACHE_MAXSIZE=$(./ci/travis-ccache-size.bash)
+    - CCACHE_MAXSIZE=$($TRAVIS_BUILD_DIR/ci/travis-ccache-size.bash)
     - VERILATOR_ROOT=$TRAVIS_BUILD_DIR
 
 # The list and order of build stages
