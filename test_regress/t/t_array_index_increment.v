@@ -112,7 +112,10 @@ module t (/*AUTOARG*/
       if (1 == 1) begin
          pos++;
       end
+      if (pos != 1) $stop;
 
+      pos = 0;
+      if (1 == 1) pos++;
       if (pos != 1) $stop;
 
       $write("*-* All Finished *-*\n");
