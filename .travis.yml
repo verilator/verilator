@@ -37,6 +37,9 @@ before_install:
 # Install all dependencies
 install:
   - ./ci/travis-install.bash
+  # On Focal, set the SystemC installation location
+  - [ "$TRAVIS_DIST" != "focal" ] || export SYSTEMC_INCLUDE=/usr/include
+  - [ "$TRAVIS_DIST" != "focal" ] || export SYSTEMC_LIBDIR=/usr/lib/x86_64-linux-gnu
 
 # ccache maintenance
 before_script:
