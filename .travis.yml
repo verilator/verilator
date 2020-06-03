@@ -16,7 +16,6 @@ cache:
 
 env:
   global:
-    - CCACHE_MAXSIZE=$($TRAVIS_BUILD_DIR/ci/travis-ccache-size.bash)
     - VERILATOR_ROOT=$TRAVIS_BUILD_DIR
 
 # The list and order of build stages
@@ -28,6 +27,7 @@ stages:
 before_install:
   # To dump the script that Travis itself is executing, add 'cat $0' here
   - cd "$TRAVIS_BUILD_DIR" # Skipping the git clone in later stages requires this
+  - export CCACHE_MAXSIZE=$(ci/travis-ccache-size.bash) # Set here after the 'cd'
   - env | sort
   - ls -lA .
   - ls -lA bin
