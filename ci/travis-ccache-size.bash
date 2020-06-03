@@ -24,7 +24,7 @@ if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
   if [ "$COVERAGE" == 1 ]; then
     echo "1024M"
   else
-    echo "512M"
+    echo "768M"
   fi
 elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
   if [[ $TESTS == coverage-* ]]; then

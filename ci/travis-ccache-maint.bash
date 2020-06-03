@@ -15,9 +15,8 @@
 set -e
 set -x
 
-# Dump version/stats, then zero stats
+# Show version
 ccache --version
-ccache -s -z
 
 # Flush ccache if requested in commit message
 COMMIT="${TRAVIS_PULL_REQUEST_SHA:-$TRAVIS_COMMIT}"
@@ -25,3 +24,6 @@ if git log --format=%B -n 1 "$COMMIT" | grep -q -i "\[travis\s+ccache\s+clear\]"
   echo "Flushing ccache due to commit message"
   ccache -C
 fi
+
+# Dump stats, then zero stats
+ccache -s -z
