@@ -108,6 +108,14 @@ private:
         // Done the loop
         m_insStmtp = NULL;  // Next thing should be new statement
     }
+    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
+        m_insStmtp = nodep;
+        iterateAndNextNull(nodep->condp());
+        m_insStmtp = NULL;
+        iterateAndNextNull(nodep->ifsp());
+        iterateAndNextNull(nodep->elsesp());
+        m_insStmtp = NULL;
+    }
     virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
@@ -121,14 +129,6 @@ private:
         m_insStmtp = nodep;
         iterateChildren(nodep);
         m_insStmtp = NULL;  // Next thing should be new statement
-    }
-    virtual void visit(AstNodeBlock* nodep) VL_OVERRIDE {
-        AstNode* insStmtp_prev = m_insStmtp;
-        {
-            m_insStmtp = NULL;
-            iterateChildren(nodep);
-        }
-        m_insStmtp = insStmtp_prev;
     }
     void unsupported_visit(AstNode* nodep) {
         m_unsupportedHere = true;
