@@ -23,6 +23,7 @@ use version;
 use POSIX qw(strftime);
 use lib ".";
 use Time::HiRes qw(usleep);
+use Digest::MD5 qw(md5);
 
 $::Driver = 1;
 $::Have_Forker = 0;
@@ -275,10 +276,7 @@ sub _calc_hashset {
     my ($set, $nsets) = ($1, $2);
     my @new;
     foreach my $t (@opt_tests) {
-        my $checksum = do {
-            local $/;
-            unpack("%32W*", $t);
-        };
+        my $checksum = unpack('L', substr(md5($t), 0, 4));
         if (($set % $nsets) == ($checksum % $nsets)) {
             push @new, $t;
         }
