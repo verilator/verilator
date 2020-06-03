@@ -44,46 +44,43 @@ elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
   if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     # Run the specified test
     case $TESTS in
-      dist)
-        make -C test_regress SCENARIOS=--dist
+      dist-vlt-0)
+        make -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=0/2
         ;;
-      vlt0)
-        make -C test_regress SCENARIOS=--vlt DRIVER_HASHSET=--hashset=0/2
+      dist-vlt-1)
+        make -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=1/2
         ;;
-      vlt1)
-        make -C test_regress SCENARIOS=--vlt DRIVER_HASHSET=--hashset=1/2
-        ;;
-      vltmt0)
+      vltmt-0)
         make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
         ;;
-      vltmt1)
+      vltmt-1)
         make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
         ;;
       coverage-dist)
         nodist/code_coverage --stages 3- --scenarios=--dist
         ;;
-      coverage-vlt0)
+      coverage-vlt-0)
         nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=0/4
         ;;
-      coverage-vlt1)
+      coverage-vlt-1)
         nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=1/4
         ;;
-      coverage-vlt2)
+      coverage-vlt-2)
         nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=2/4
         ;;
-      coverage-vlt3)
+      coverage-vlt-3)
         nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=3/4
         ;;
-      coverage-vltmt0)
+      coverage-vltmt-0)
         nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=0/4
         ;;
-      coverage-vltmt1)
+      coverage-vltmt-1)
         nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=1/4
         ;;
-      coverage-vltmt2)
+      coverage-vltmt-2)
         nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=2/4
         ;;
-      coverage-vltmt3)
+      coverage-vltmt-3)
         nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=3/4
         ;;
       *)

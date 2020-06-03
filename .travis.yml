@@ -67,47 +67,41 @@ jobs:
     # Jobs in the 'test' stage
     ############################################################################
     # GCC tests
-    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=dist}
-    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=vlt0}
-    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=vlt1}
-    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=vltmt0}
-    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=vltmt1}
-    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=dist}
-    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=vlt0}
-    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=vlt1}
-    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=vltmt0}
-    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=vltmt1}
-    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=dist}
-    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=vlt0}
-    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=vlt1}
-    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=vltmt0}
-    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=vltmt1}
-    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=dist}
-    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=vlt0}
-    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=vlt1}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=vltmt0}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=vltmt1}
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=vltmt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=vltmt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=vltmt-1}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=vltmt-1}
     # Clang tests
-    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=dist}
-    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=vlt0}
-    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=vlt1}
-    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=vltmt0}
-    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=vltmt1}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=dist}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=vlt0}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=vlt1}
-    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=vltmt0}
-    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=vltmt1}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=vltmt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=vltmt-1}
     # Coverage tests
     - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-dist}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt0}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt1}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt2}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt3}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt0}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt1}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt2}
-    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt3}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt-2}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt-3}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt-2}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt-3}
 
 notifications:
   email:
