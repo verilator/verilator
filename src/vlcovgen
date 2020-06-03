@@ -65,7 +65,7 @@ sub lint {
     my $ok = 1;
     foreach my $itemref (@Items) {
         if ($shorts{$itemref->{short}}) {
-            warn "%Error: Duplicate short code: $itemref->{short},";
+            die "%Error: Duplicate short code: $itemref->{short},";
             $ok = 0;
         }
         $shorts{$itemref->{short}} = 1;

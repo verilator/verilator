@@ -396,7 +396,7 @@ sub one_test {
              }
              $self->{left_cnt}--;
              $self->print_summary;
-             delete $self->{running_ids}{$process->{running_id}};
+             delete $self->{running_ids}{$process->{running_id}} if $process->{running_id};
          },
          )->ready();
 }
