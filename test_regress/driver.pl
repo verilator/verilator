@@ -1075,6 +1075,15 @@ sub compile {
             return 1;
         }
 
+        if ($^O eq "freebsd") {
+            my $flags = join(' ', $self->compile_vlt_flags(%param));
+            if ($flags =~ /--trace-fst/ && $flags =~ /--trace-threads/) {
+                # See https://github.com/gtkwave/gtkwave/issues/24
+                $self->skip("Known fstapi.c threading issue on FreeBSD");
+                return 1;
+            }
+        }
+
         if (!$param{fails} && $param{make_main}) {
             $self->_make_main();
         }
@@ -2193,12 +2202,12 @@ sub fst2vcd {
     my $fn1 = shift;
     my $fn2 = shift;
     if (!-r $fn1) { $self->error("File does not exist $fn1\n"); return 0; }
-    my $cmd = qq{fst2vcd --help};
+    my $cmd = qq{fst2vcd -h};
     print "\t$cmd\n" if $::Debug;
     my $out = `$cmd`;
     if (!$out || $out !~ /Usage:/) { $self->skip("No fst2vcd installed\n"); return 1; }
 
-    $cmd = qq{fst2vcd -e "$fn1" -o "$fn2"};
+    $cmd = qq{fst2vcd -e -f "$fn1" -o "$fn2"};
     print "\t$cmd\n";  # Always print to help debug race cases
     $out = `$cmd`;
     return 1;
@@ -2208,6 +2217,7 @@ sub fst_identical {
     my $self = (ref $_[0]? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
+    return 0 if $self->errors || $self->skips || $self->unsupporteds;
     my $tmp = $fn1.".vcd";
     fst2vcd($fn1, $tmp);
     return vcd_identical($tmp, $fn2);

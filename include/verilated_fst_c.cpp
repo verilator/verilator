@@ -133,8 +133,6 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
     VerilatedTrace<VerilatedFst>::declCode(code, bits, false);
 
-    std::pair<Code2SymbolType::iterator, bool> p
-        = m_code2symbol.insert(std::make_pair(code, static_cast<fstHandle>(NULL)));
     std::istringstream nameiss(name);
     std::istream_iterator<std::string> beg(nameiss);
     std::istream_iterator<std::string> end;
@@ -174,11 +172,13 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
         fstEnumHandle enumNum = m_local2fstdtype[dtypenum];
         fstWriterEmitEnumTableRef(m_fst, enumNum);
     }
-    if (p.second) {  // New
-        p.first->second = fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), 0);
-        assert(p.first->second);
+
+    Code2SymbolType::const_iterator it = m_code2symbol.find(code);
+    if (it == m_code2symbol.end()) {  // New
+        m_code2symbol[code]
+            = fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), 0);
     } else {  // Alias
-        fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), p.first->second);
+        fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), it->second);
     }
 }
 

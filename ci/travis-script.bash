@@ -23,9 +23,14 @@ fatal() {
 }
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+  export MAKE=make
   NPROC=$(nproc)
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  export MAKE=make
   NPROC=$(sysctl -n hw.logicalcpu)
+elif [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
+  export MAKE=gmake
+  NPROC=$(sysctl -n hw.ncpu)
 else
   fatal "Unknown os: '$TRAVIS_OS_NAME'"
 fi
@@ -37,7 +42,7 @@ if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
   if [ "$COVERAGE" != 1 ]; then
     autoconf
     ./configure --enable-longtests --enable-ccwarn
-    make -j "$NPROC"
+    "$MAKE" -j "$NPROC"
     if [ "$TRAVIS_OS_NAME" = "osx" ]; then
       file bin/verilator_bin
       file bin/verilator_bin_dbg
@@ -67,22 +72,25 @@ elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
     # it as data rather than a Mach-O). Unclear if this is an OS X issue or
     # one for Travis. Remove the file and re-link...
     rm bin/verilator_bin_dbg
-    make -j "$NPROC"
+    "$MAKE" -j "$NPROC"
+  elif [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
+    export VERILATOR_TEST_NO_GDB=1 # Disable for now, ideally should run
+    export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable
   fi
 
   # Run the specified test
   case $TESTS in
     dist-vlt-0)
-      make -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=0/2
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=0/2
       ;;
     dist-vlt-1)
-      make -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=1/2
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=1/2
       ;;
     vltmt-0)
-      make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
+      "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
       ;;
     vltmt-1)
-      make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
+      "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
       ;;
     coverage-dist)
       nodist/code_coverage --stages 3- --scenarios=--dist

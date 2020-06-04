@@ -25,11 +25,21 @@ fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }
 
+if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+  MAKE=make
+elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  MAKE=make
+elif [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
+  MAKE=gmake
+else
+  fatal "Unknown os: '$TRAVIS_OS_NAME'"
+fi
+
 install-vcddiff() {
   TMP_DIR="$(mktemp -d)"
   git clone https://github.com/veripool/vcddiff "$TMP_DIR"
   git -C "${TMP_DIR}" checkout 5112f88b7ba8818dce9dfb72619e64a1fc19542c
-  make -C "${TMP_DIR}"
+  "$MAKE" -C "${TMP_DIR}"
   sudo cp "${TMP_DIR}/vcddiff" /usr/local/bin
 }
 
@@ -48,6 +58,8 @@ if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
   elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     brew update
     brew install ccache perl gperftools
+  elif [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
+    sudo pkg install -y autoconf bison ccache gmake perl5
   else
     fatal "Unknown os: '$TRAVIS_OS_NAME'"
   fi
@@ -69,6 +81,11 @@ elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
     brew update
     # brew cask install gtkwave # fst2vcd hangs at launch, so don't bother
     brew install ccache perl
+    yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
+    install-vcddiff
+  elif [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
+    # fst2vcd fails with "Could not open '<input file>', exiting."
+    sudo pkg install -y ccache gmake perl5 python3
     yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
     install-vcddiff
   else
