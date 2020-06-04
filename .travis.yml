@@ -64,10 +64,10 @@ jobs:
     - {stage: build, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {create: {name: trusty-gcc,   paths: .}}}
     - {stage: build, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {create: {name: xenial-gcc,   paths: .}}}
     - {stage: build, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {create: {name: bionic-gcc,   paths: .}}}
-    - {stage: build, if: type != cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {create: {name: focal-gcc,    paths: .}}}
+    - {stage: build,                   os: linux, dist: focal,  compiler: gcc,   workspaces: {create: {name: focal-gcc,    paths: .}}}
     # Clang builds
     - {stage: build, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {create: {name: xenial-clang, paths: .}}}
-    - {stage: build, if: type != cron, os: linux, dist: focal,  compiler: clang, workspaces: {create: {name: focal-clang,  paths: .}}}
+    - {stage: build,                   os: linux, dist: focal,  compiler: clang, workspaces: {create: {name: focal-clang,  paths: .}}}
     # Coverage build
     - {stage: build, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {create: {name: coverage,     paths: .}}, env: COVERAGE=1}
     ############################################################################
