@@ -192,7 +192,7 @@ private:
                                 : new AstConst(rhsp->fileline(), AstConst::LogicFalse());
             }
         }
-        rhsp->v3fatal("Don't know how to fold expression");
+        rhsp->v3fatalSrc("Don't know how to fold expression");
     }
 
     void mergeEnd() {
