@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 
 top_filename("t/t_multitop_sig.v");
 
-compile(
+lint(
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );
