@@ -390,14 +390,14 @@ string FileLine::warnOther() const {
 }
 
 string FileLine::source() const {
-    if (VL_UNCOVERABLE(!m_contentp)) {
+    if (VL_UNCOVERABLE(!m_contentp)) {  // LCOV_EXCL_START
         if (debug() || v3Global.opt.debugCheck()) {
             // The newline here is to work around the " <line#> | "
             return "\n%Error: internal tracking of file contents failed";
         } else {
             return "";
         }
-    }
+    }  // LCOV_EXCL_STOP
     return m_contentp->getLine(m_contentLineno);
 }
 string FileLine::prettySource() const {

@@ -18,6 +18,7 @@ use vars qw($Debug);
 
 our $Opt_Stop = 1;
 our $Opt_Fastcov = 1;
+our $Exclude_Branch_Regexp;
 our $Exclude_Line_Regexp;
 our $Remove_Gcda_Regexp;
 
@@ -312,6 +313,7 @@ sub test {
 sub clone_sources {
     my $cc_dir = shift;
     my $excluded_lines = 0;
+    my $excluded_br_lines = 0;
     foreach my $glob (@Source_Globs) {
         foreach my $infile (glob $glob) {
             $infile !~ m!^/!
@@ -334,10 +336,15 @@ sub clone_sources {
                 elsif ($line =~ /LCOV_EXCL_STOP/) {
                     $line .= " LCOV_EXCL_BR_STOP";
                 }
-                elsif ($line !~ m!// LCOV_EXCL_LINE!
-                    && $line =~ /$Exclude_Line_Regexp/) {
+                elsif ($line =~ /$Exclude_Line_Regexp/) {
                     $line .= "  //code_coverage: // LCOV_EXCL_LINE LCOV_EXCL_BR_LINE";
                     $excluded_lines++;
+                    $excluded_br_lines++;
+                    #print "$infile:$lineno: $line";
+                }
+                elsif ($line =~ /$Exclude_Branch_Regexp/) {
+                    $line .= "  //code_coverage: // LCOV_EXCL_BR_LINE";
+                    $excluded_br_lines++;
                     #print "$infile:$lineno: $line";
                 }
                 $ofh->print("$line\n");
@@ -345,6 +352,7 @@ sub clone_sources {
         }
     }
     print "Number of source lines automatically LCOV_EXCL_LINE'ed: $excluded_lines\n";
+    print "Number of source lines automatically LCOV_EXCL_BR_LINE'ed: $excluded_br_lines\n";
 }
 
 sub cleanup_abs_paths_info {
@@ -388,6 +396,9 @@ sub cleanup_abs_paths_json {
 #######################################################################
 # .dat file callbacks
 
+sub exclude_branch_regexp {
+    $Exclude_Branch_Regexp = shift;
+}
 sub exclude_line_regexp {
     $Exclude_Line_Regexp = shift;
 }

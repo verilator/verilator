@@ -280,13 +280,13 @@ private:
         //                      IF(msb-1, 01, 00))
         AstNode* cexprp = nodep->exprp()->unlinkFrBack();
 
-        if (debug() >= 9) {
+        if (debug() >= 9) {  // LCOV_EXCL_START
             for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
                 if (AstNode* itemp = m_valueItem[i]) {
                     UINFO(9, "Value " << std::hex << i << " " << itemp << endl);
                 }
             }
-        }
+        }  // LCOV_EXCL_STOP
 
         // Handle any assertions
         replaceCaseParallel(nodep, m_caseNoOverlapsAllCovered);

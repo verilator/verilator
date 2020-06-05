@@ -329,9 +329,9 @@ void V3Options::fileNfsFlush(const string& filename) {
     // NFS caches stat() calls so to get up-to-date information must
     // do a open or opendir on the filename.
     // Faster to just try both rather than check if a file is a dir.
-    if (DIR* dirp = opendir(filename.c_str())) {
+    if (DIR* dirp = opendir(filename.c_str())) {  // LCOV_EXCL_BR_LINE
         closedir(dirp);  // LCOV_EXCL_LINE
-    } else if (int fd = ::open(filename.c_str(), O_RDONLY)) {
+    } else if (int fd = ::open(filename.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
         if (fd > 0) ::close(fd);
     }
 }
@@ -667,13 +667,13 @@ string V3Options::protectKeyDefaulted() {
     return m_protectKey;
 }
 
-void V3Options::throwSigsegv() {
+void V3Options::throwSigsegv() {  // LCOV_EXCL_START
 #if !(defined(VL_CPPCHECK) || defined(__clang_analyzer__))
     // clang-format off
     { char* zp = NULL; *zp = 0; }  // Intentional core dump, ignore warnings here
     // clang-format on
 #endif
-}
+}  // LCOV_EXCL_STOP
 
 VTimescale V3Options::timeComputePrec(const VTimescale& flag) const {
     if (!timeOverridePrec().isNone()) {
