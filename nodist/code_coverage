@@ -6,6 +6,7 @@ use warnings;
 use Cwd;
 use File::Copy qw(cp);
 use File::Path qw(mkpath);
+use File::Spec;
 use FindBin qw($RealBin);
 use Getopt::Long;
 use Parallel::Forker;
@@ -16,7 +17,7 @@ use strict;
 use vars qw($Debug);
 
 our $Opt_Stop = 1;
-our $Opt_Fastcov = 0;
+our $Opt_Fastcov = 1;
 our $Exclude_Line_Regexp;
 our $Remove_Gcda_Regexp;
 
@@ -35,6 +36,7 @@ our $Opt_Hashset;
 our $opt_stages = '';
 our $Opt_Scenarios;
 our %Opt_Stages;
+our @Opt_Tests;
 
 autoflush STDOUT 1;
 autoflush STDERR 1;
@@ -45,8 +47,10 @@ if (! GetOptions(
           "<>"          => sub { die "%Error: Unknown parameter: $_[0]\n"; },
           "fastcov!"    => \$Opt_Fastcov,  # use fastcov, not documented, for debug
           "scenarios=s" => \$Opt_Scenarios,  # driver.pl scenarios
+          "stage=s"     => \$opt_stages,  # starting stage number
           "stages=s"    => \$opt_stages,  # starting stage number
           "stop!"       => \$Opt_Stop,  # stop/do not stop on error in tests
+          "test=s@"     => \@Opt_Tests,  # test name
     )) {
     die "%Error: Bad usage, try 'code_coverage --help'\n";
 }
@@ -82,7 +86,8 @@ sub test {
         print "Stage 1: configure (coverage on)\n";
         run("make distclean || true");
         run("autoconf");
-        run("./configure --enable-longtests CXX='g++ --coverage'");
+        # Exceptions can pollute the branch coverage data
+        run("./configure --enable-longtests CXX='g++ --coverage -fno-exceptions -DVL_GCOV'");
         travis_fold_end();
     }
 
@@ -90,7 +95,7 @@ sub test {
         travis_fold_start("build");
         print "Stage 2: build\n";
         my $nproc = Unix::Processors->new->max_online;
-        run("make -k -j $nproc");
+        run("make -k -j $nproc VERILATOR_NO_OPT_BUILD=1");
         # The optimized versions will not collect good coverage, overwrite them
         run("cp bin/verilator_bin_dbg bin/verilator_bin");
         run("cp bin/verilator_coverage_bin_dbg bin/verilator_coverage_bin");
@@ -100,12 +105,21 @@ sub test {
     if ($Opt_Stages{3}) {
         travis_fold_start("test");
         print "Stage 3: make tests (with coverage on)\n";
-        run("make examples")
-            if !$Opt_Scenarios || $Opt_Scenarios =~ /dist/i;
-        run("make test_regress"
-            . ($Opt_Scenarios ? " SCENARIOS='".$Opt_Scenarios."'" : "")
-            . ($Opt_Hashset ? " DRIVER_HASHSET='--hashset=".$Opt_Hashset."'" : "")
-            . ($Opt_Stop ? '' : ' || true'));
+        if ($#Opt_Tests < 0) {
+            run("make examples VERILATOR_NO_OPT_BUILD=1")
+                if !$Opt_Scenarios || $Opt_Scenarios =~ /dist/i;
+            run("make test_regress VERILATOR_NO_OPT_BUILD=1"
+                . ($Opt_Scenarios ? " SCENARIOS='".$Opt_Scenarios."'" : "")
+                . ($Opt_Hashset ? " DRIVER_HASHSET='--hashset=".$Opt_Hashset."'" : "")
+                . ($Opt_Stop ? '' : ' || true'));
+        } else {
+            foreach my $test (@Opt_Tests) {
+                if (! -f $test && -f "test_regress/t/${test}") {
+                    $test = "test_regress/t/${test}";
+                }
+                run($test);
+            }
+        }
         travis_fold_end();
     }
 
@@ -120,7 +134,6 @@ sub test {
         foreach my $dat (split '\n', $dats) {
             $dats{$dat} = 1;
         }
-        my %gcnos;
         foreach my $dat (sort keys %dats) {
             (my $gcno = $dat) =~ s!\.gcda$!.gcno!;
             if ($dat =~ /$Remove_Gcda_Regexp/) {
@@ -131,10 +144,12 @@ sub test {
                 delete $dats{$dat};
                 next;
             }
+        }
+        $dats = `find . -print | grep .gcno`;
+        my %gcnos;
+        foreach my $gcno (split '\n', $dats) {
             (my $gbase = $gcno) =~ s!.*/!!;
-            if (!$gcnos{$gbase} && -r $gcno) {
-                $gcnos{$gbase} = $gcno;
-            }
+            $gcnos{$gbase} = File::Spec->rel2abs($gcno);
         }
         # We need a matching .gcno for every .gcda, try to find a matching file elsewhere
         foreach my $dat (sort keys %dats) {
@@ -142,7 +157,8 @@ sub test {
             (my $gbase = $gcno) =~ s!.*/!!;
             if (!-r $gcno) {
                 if ($gcnos{$gbase}) {
-                    cp($gcnos{$gbase}, $gcno);
+                    symlink($gcnos{$gbase}, $gcno)
+                        or die "%Error: can't ln -s $gcnos{$gbase} $gcno,";
                 } else {
                     warn "MISSING .gcno for a .gcda: $gcno\n";
                 }
@@ -155,7 +171,12 @@ sub test {
         travis_fold_start("fastcov");
         # Must run in root directory to find all files
         mkpath($cc_dir);
-        run("${RealBin}/fastcov.py -X --lcov --exclude /usr -o ${cc_dir}/app_fastcov.info");
+        #run("${RealBin}/fastcov.py -b -c src/obj_dbg -X".
+        #    " --exclude /usr --exclude test_regress"
+        #    ." -o ${cc_dir}/app_total.json");
+        run("${RealBin}/fastcov.py -b -c src/obj_dbg -X --lcov".
+            " --exclude /usr --exclude test_regress"
+            ." -o ${cc_dir}/app_total.info");
         travis_fold_end();
     }
 
@@ -182,13 +203,14 @@ sub test {
 
     if ($Opt_Stages{6}) {
         travis_fold_start("clone");
-        # lcov doesn't have a control file to override single lines, so replicate the sources
+        # No control file to override single lines, so replicate the sources
+        # Also lets us see the insertion markers in the HTML source res
         print "Stage 6: Clone sources under $cc_dir\n";
         clone_sources($cc_dir);
         travis_fold_end();
     }
 
-    if ($Opt_Stages{8}) {
+    if ($Opt_Stages{8} && !$Opt_Fastcov) {
         travis_fold_start("copy");
         print "Stage 8: Copy .gcno files\n";
         my $dats = `find . -print | grep .gcno`;
@@ -201,14 +223,12 @@ sub test {
         travis_fold_end();
     }
 
-    if ($Opt_Stages{10}) {
+    if ($Opt_Stages{10} && !$Opt_Fastcov) {
         travis_fold_start("combine");
         print "Stage 10: Combine data files\n";
-        run("cd $cc_dir ; lcov -c -i -d src/obj_dbg -o app_base.info");
-        run("cd $cc_dir ; lcov -a app_base.info -o app_total.info");
-        if ($Opt_Fastcov) {
-            run("cd $cc_dir ; lcov -a app_base.info -a app_fastcov.info -o app_total.info");
-        } else {
+        {
+            run("cd $cc_dir ; lcov -c -i -d src/obj_dbg -o app_base.info");
+            run("cd $cc_dir ; lcov -a app_base.info -o app_total.info");
             my $infos = `cd $cc_dir ; find info -print | grep .info`;
             my $comb = "";
             my @infos = (sort (split /\n/, $infos));
@@ -228,25 +248,46 @@ sub test {
     if ($Opt_Stages{11}) {
         travis_fold_start("dirs");
         print "Stage 11: Cleanup paths\n";
-        cleanup_abs_paths($cc_dir, "$cc_dir/app_total.info", "$cc_dir/app_total.info");
+        if ($Opt_Fastcov) {
+            cleanup_abs_paths_info($cc_dir, "$cc_dir/app_total.info", "$cc_dir/app_total.info");
+            #cleanup_abs_paths_json($cc_dir, "$cc_dir/app_total.json", "$cc_dir/app_total.json");
+        } else {
+            cleanup_abs_paths_info($cc_dir, "$cc_dir/app_total.info", "$cc_dir/app_total.info");
+        }
         travis_fold_end();
     }
 
     if ($Opt_Stages{12}) {
         travis_fold_start("filter");
         print "Stage 12: Filter processed source files\n";
-        my $cmd = '';
-        foreach my $glob (@Remove_Sources) {
-            $cmd .= " '$glob'";
+        my $inc = '';
+        foreach my $glob (@Source_Globs) {
+            foreach my $infile (glob $glob) {
+                $inc .= " '$infile'";
+            }
         }
-        run("cd $cc_dir ; lcov --remove app_total.info $cmd -o app_total.info");
+        my $exc = '';
+        foreach my $glob (@Remove_Sources) {
+            # Fastcov does exact match not globbing at present
+            # Lcov requires whole path match so needs the glob
+            $glob =~ s!^\*!! if $Opt_Fastcov;
+            $glob =~ s!\*$!! if $Opt_Fastcov;
+            $exc .= " '$glob'";
+        }
+        if ($Opt_Fastcov) {
+            $inc = "--include ".$inc if $inc ne '';
+            $exc = "--exclude ".$exc if $exc ne '';
+            run("cd $cc_dir ; ${RealBin}/fastcov.py -C app_total.info ${inc} ${exc} -x --lcov -o app_total_f.info");
+        } else {
+            run("cd $cc_dir ; lcov --remove app_total.info $exc -o app_total_f.info");
+        }
         travis_fold_end();
     }
 
     if ($Opt_Stages{17}) {
         travis_fold_start("report");
         print "Stage 17: Create HTML\n";
-        run("cd $cc_dir ; genhtml app_total.info --demangle-cpp"
+        run("cd $cc_dir ; genhtml app_total_f.info --demangle-cpp"
             ." --rc lcov_branch_coverage=1 --rc genhtml_hi_limit=100 --output-directory html");
         travis_fold_end();
     }
@@ -262,6 +303,9 @@ sub test {
 
     if ($Opt_Stages{19}) {
         print "*-* All Finished *-*\n";
+        print "\n";
+        print "* See report in ${cc_dir}/html/index.html\n";
+        print "* Remember to make distclean && ./configure before working on non-coverage\n";
     }
 }
 
@@ -281,21 +325,29 @@ sub clone_sources {
             while (defined(my $line = $fh->getline)) {
                 $lineno++;
                 chomp $line;
-                if ($line !~ m!// LCOV_EXCL_LINE!
+                if ($line =~ /LCOV_EXCL_LINE/) {
+                    $line .= " LCOV_EXCL_BR_LINE";
+                }
+                elsif ($line =~ /LCOV_EXCL_START/) {
+                    $line .= " LCOV_EXCL_BR_START";
+                }
+                elsif ($line =~ /LCOV_EXCL_STOP/) {
+                    $line .= " LCOV_EXCL_BR_STOP";
+                }
+                elsif ($line !~ m!// LCOV_EXCL_LINE!
                     && $line =~ /$Exclude_Line_Regexp/) {
-                    $line .= "  //code_coverage: // LCOV_EXCL_LINE";
+                    $line .= "  //code_coverage: // LCOV_EXCL_LINE LCOV_EXCL_BR_LINE";
                     $excluded_lines++;
                     #print "$infile:$lineno: $line";
-                } else {
                 }
                 $ofh->print("$line\n");
             }
         }
     }
-    print "Source code lines automatically LCOV_EXCL_LINE'ed: $excluded_lines\n";
+    print "Number of source lines automatically LCOV_EXCL_LINE'ed: $excluded_lines\n";
 }
 
-sub cleanup_abs_paths {
+sub cleanup_abs_paths_info {
     my $cc_dir = shift;
     my $infile = shift;
     my $outfile = shift;
@@ -308,6 +360,25 @@ sub cleanup_abs_paths {
             $line =~ s!obj_dbg/verilog.y$!verilog.y!;
             #print "Remaining SF: ",$line;
         }
+        push @lines, $line;
+    }
+    my $ofh = IO::File->new(">$outfile") or die "%Error: $! $outfile,";
+    $ofh->print(@lines);
+}
+
+sub cleanup_abs_paths_json {
+    my $cc_dir = shift;
+    my $infile = shift;
+    my $outfile = shift;
+    # Handcrafted cleanup, alternative would be to deserialize/serialize JSON
+    # But JSON::Parse not installed by default
+    # JSON::PP more likely to be installed, but slower
+    my $fh = IO::File->new("<$infile") or die "%Error: $! $infile,";
+    my @lines;
+    while (defined(my $line = $fh->getline)) {
+        $line =~ s!"$ENV{VERILATOR_ROOT}/!"!g;
+        $line =~ s!"$cc_dir/!"!g;
+        $line =~ s!obj_dbg/verilog.y$!verilog.y!g;
         push @lines, $line;
     }
     my $ofh = IO::File->new(">$outfile") or die "%Error: $! $outfile,";
@@ -396,6 +467,11 @@ Runs a specific stage or range of stages (see the script).
 =item --no-stop
 
 Do not stop collecting data if tests fail.
+
+=item --test I<test_regress_test_name>
+
+Instead of normal regressions, run the specified test.  May be specified
+multiple times for multiple tests.
 
 =back
 
