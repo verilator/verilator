@@ -21,8 +21,8 @@ source_globs("src/*.cpp",
              "include/*/*.c",
     );
 
-remove_source("/usr/include/*");
-remove_source("/usr/lib/*");
+# Note *'s are removed when using fastcov
+remove_source("/usr/*");
 remove_source("*/include/sysc/*");
 remove_source("*/V3ClkGater.cpp");
 remove_source("*/V3ClkGater.h");
@@ -42,6 +42,13 @@ remove_source("*examples/*");
 # Would just be removed with remove_source in later step
 remove_gcda_regexp(qr!test_regress/.*/(Vt_|Vtop_).*\.gcda!);
 
-exclude_line_regexp(qr/(\bv3fatalSrc\b|\bfatalSrc\b|\bVL_UNCOVERABLE\b|\bVL_FATAL|\bUASSERT|\bERROR_RSVD_WORD\bV3ERROR_NA)/);
+exclude_line_regexp(qr/(\bv3fatalSrc\b
+                    |\bfatalSrc\b
+                    |\bVL_UNCOVERABLE\b
+                    |\bVL_FATAL
+                    |\bUASSERT
+                    |\bERROR_RSVD_WORD
+                    |\bV3ERROR_NA
+                    |\bUINFO\b)/x);
 
 1;

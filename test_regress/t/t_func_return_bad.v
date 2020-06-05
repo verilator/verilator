@@ -6,9 +6,19 @@
 
 module t (/*AUTOARG*/);
 
+   task t1;
+      return 1;  // Shouldn't return value
+   endtask
+   function int f1;
+      return;  // Should return value
+   endfunction
+
    initial begin
       return;  // Not under function
       continue;  // Not under loop
       break;  // Not under loop
+      begin : foo
+      end
+      disable foo;  // Disabling outside block
    end
 endmodule

@@ -10,12 +10,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-compile(
-    v_flags2 => ["-f t/t_flag_define.vc -DCMD_DEF -DCMD_UNDEF -UCMD_UNDEF +define+CMD_DEF2"],
-    );
-
-execute(
-    check_finished => 1,
+lint(
+    verilator_flags2 => ["--lint-only -f file_will_not_exist.vc"],
+    fails => 1,
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

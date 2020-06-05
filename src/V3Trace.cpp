@@ -511,7 +511,7 @@ private:
             } else if (type == AstCFuncType::TRACE_CHANGE) {
                 registration += "Chg";
             } else {
-                funcp->v3fatal("Don't know how to register this type of function");
+                funcp->v3fatalSrc("Don't know how to register this type of function");
             }
             registration += "Cb(&" + protect(name) + ", __VlSymsp);\n";
             AstCStmt* const stmtp = new AstCStmt(flp, registration);

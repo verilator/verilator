@@ -108,6 +108,16 @@ module t;
       $write("%%Error: Missing define\n"); $stop;
 `endif
 
+`ifndef CMD_DEF
+      $write("%%Error: Missing define\n"); $stop;
+`endif
+`ifndef CMD_DEF2
+      $write("%%Error: Missing define\n"); $stop;
+`endif
+`ifdef CMD_UNDEF
+      $write("%%Error: Extra define\n"); $stop;
+`endif
+
       $write("*-* All Finished *-*\n");
       $finish;
    end
