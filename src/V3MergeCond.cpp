@@ -153,17 +153,16 @@ private:
         return NULL;
     }
 
-    // Apply (_ & 1'b1), iff node is wider than 1 bit. This is necessary
-    // because this pass is after V3Clean, and sometimes we have an AstAnd with
-    // a 1-bit condition on one side, but a more than 1-bit value on the other
-    // side, so we need to keep only the LSB.
+    // Apply (_ & 1'b1). This is necessary because this pass is after V3Clean,
+    // and sometimes we have an AstAnd with a 1-bit condition on one side, but
+    // a more than 1-bit value on the other side, so we need to keep only the
+    // LSB. Ideally we would only do this iff the node is known not to be 1-bit
+    // wide, but working that out here is a bit difficult. As this masking is
+    // rarely required (only when trying to merge a "cond & value" with an
+    // earlier ternary), we will just always mask it for safety.
     AstNode* maskLsb(AstNode* nodep) {
-        if (nodep->width1()) {
-            return nodep;
-        } else {
-            AstNode* const maskp = new AstConst(nodep->fileline(), AstConst::LogicTrue());
-            return new AstAnd(nodep->fileline(), nodep, maskp);
-        }
+        AstNode* const maskp = new AstConst(nodep->fileline(), AstConst::LogicTrue());
+        return new AstAnd(nodep->fileline(), nodep, maskp);
     }
 
     // Fold the RHS expression assuming the given condition state. Unlink bits
