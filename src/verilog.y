@@ -917,8 +917,14 @@ package_import_itemList<nodep>:
 
 package_import_item<nodep>:	// ==IEEE: package_import_item
 		idAny/*package_identifier*/ yP_COLONCOLON package_import_itemObj
-			{ $$ = new AstPackageImport($<fl>2, VN_CAST($<scp>1, Package), *$3);
-			  SYMP->importItem($<scp>1,*$3); }
+			{
+			  if (!VN_CAST($<scp>1, Package)) {
+			      $$ = NULL;
+			      $<fl>1->v3error("Importing from missing package '" << *$<strp>1 << "'");
+			  } else {
+			      $$ = new AstPackageImport($<fl>2, VN_CAST($<scp>1, Package), *$3);
+			      SYMP->importItem($<scp>1,*$3);
+			  } }
 	;
 
 package_import_itemObj<strp>:	// IEEE: part of package_import_item
