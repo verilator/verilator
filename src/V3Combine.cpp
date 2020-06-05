@@ -56,15 +56,6 @@ protected:
     // METHODS
     virtual ~CombBaseVisitor() {}
     VL_DEBUG_FUNC;  // Declare debug()
-
-    //***** optimization levels
-    static bool emptyFunctionDeletion() { return true; }
-    static bool duplicateFunctionCombine() { return true; }
-    // Note this is disabled, it still needed work
-    // Also repair it for DPI functions; when make __common need to ensure proper
-    // flags get inherited from the old to new AstCFunc, and that AstText doesn't
-    // get split between functions causing the text to have a dangling reference.
-    bool statementCombine() { return false; }  // duplicateFunctionCombine();
 };
 
 //######################################################################
@@ -197,6 +188,7 @@ private:
         m_hashed.hashAndInsert(nodep);
         // UINFO(9, "  stmthash " << hex << nodep->user4() << "  " << nodep << endl);
     }
+#ifdef VL_COMBINE_STATEMENTS
     void hashFunctions(AstCFunc* nodep) {
         // Compute hash of all statement trees in the function
         CombineState oldState = m_state;
@@ -206,6 +198,7 @@ private:
         }
         m_state = oldState;
     }
+#endif
     void walkEmptyFuncs() {
         for (V3Hashed::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
             AstNode* node1p = it->second;
@@ -253,6 +246,8 @@ private:
         oldfuncp->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(oldfuncp), oldfuncp);
     }
+
+#ifdef VL_COMBINE_STATEMENTS
     void replaceOnlyCallFunc(AstCCall* nodep) {
         if (AstCFunc* oldfuncp = VN_CAST(nodep->backp(), CFunc)) {
             // oldfuncp->dumpTree(cout, "MAYDEL: ");
@@ -383,6 +378,7 @@ private:
         VL_DO_DANGLING(replaceOnlyCallFunc(call1p), call1p);
         VL_DO_DANGLING(replaceOnlyCallFunc(call2p), call2p);
     }
+#endif
 
     // VISITORS
     virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
@@ -406,15 +402,21 @@ private:
         m_state = STATE_IDLE;
         if (debug() >= 9) m_hashed.dumpFilePrefixed("combine");
         // Walk the hashes removing empty functions
-        if (emptyFunctionDeletion()) walkEmptyFuncs();
+        walkEmptyFuncs();
         // Walk the hashes looking for duplicate functions
-        if (duplicateFunctionCombine()) walkDupFuncs();
+        walkDupFuncs();
         // Walk the statements looking for large replicated code sections
-        if (statementCombine()) {
+        // Note this is disabled, it still needed work
+        // Also repair it for DPI functions; when make __common need to ensure proper
+        // flags get inherited from the old to new AstCFunc, and that AstText doesn't
+        // get split between functions causing the text to have a dangling reference.
+#ifdef VL_COMBINE_STATEMENTS
+        {
             m_state = STATE_DUP;
             iterateChildren(nodep);
             m_state = STATE_IDLE;
         }
+#endif
         m_modp = NULL;
     }
     virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
@@ -422,9 +424,12 @@ private:
         if (!nodep->dontCombine()) {
             if (m_state == STATE_HASH) {
                 hashStatement(nodep);  // Hash the entire function - it might be identical
-            } else if (m_state == STATE_DUP) {
+            }
+#ifdef VL_COMBINE_STATEMENTS
+            else if (m_state == STATE_DUP) {
                 iterateChildren(nodep);
             }
+#endif
         }
         m_funcp = NULL;
     }
@@ -435,9 +440,12 @@ private:
         }
         if (m_state == STATE_HASH && m_funcp) {
             hashStatement(nodep);
-        } else if (m_state == STATE_DUP && m_funcp) {
+        }
+#ifdef VL_COMBINE_STATEMENTS
+        else if (m_state == STATE_DUP && m_funcp) {
             walkDupCodeStart(nodep);
         }
+#endif
     }
 
     //--------------------
