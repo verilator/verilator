@@ -2257,21 +2257,12 @@ void Verilated::flushCb(VerilatedVoidCb cb) VL_MT_SAFE {
 // When running internal code coverage (gcc --coverage, as opposed to
 // verilator --coverage), dump coverage data to properly cover failing
 // tests.
-#ifdef VL_GCOV
-extern "C" {
-void __gcov_flush();  // gcc sources gcc/gcov-io.h has the prototype
-}
-void vl_gcov_flush() { __gcov_flush(); }
-#else
-void vl_gcov_flush() {}
-#endif
-
 void Verilated::flushCall() VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);
     if (s_flushCb) (*s_flushCb)();
     fflush(stderr);
     fflush(stdout);
-    vl_gcov_flush();
+    VL_GCOV_FLUSH();
 }
 
 const char* Verilated::productName() VL_PURE { return VERILATOR_PRODUCT; }

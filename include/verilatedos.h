@@ -152,15 +152,15 @@
 #if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
 # define VL_DANGLING(var)
 #else
-///< After e.g. delete, set variable to NULL to indicate must not use later
+/// After e.g. delete, set variable to NULL to indicate must not use later
 # define VL_DANGLING(var) \
     do { \
         *const_cast<const void**>(reinterpret_cast<const void* const*>(&var)) = NULL; \
     } while (false)
 #endif
 
-///< Perform an e.g. delete, then set variable to NULL to indicate must not use later.
-///< Unlike VL_DO_CLEAR the setting of the variable is only for debug reasons.
+/// Perform an e.g. delete, then set variable to NULL to indicate must not use later.
+/// Unlike VL_DO_CLEAR the setting of the variable is only for debug reasons.
 #define VL_DO_DANGLING(stmt, var) \
     do { \
         do { \
@@ -169,7 +169,7 @@
         VL_DANGLING(var); \
     } while (false)
 
-///< Perform an e.g. delete, then set variable to NULL as a requirement
+/// Perform an e.g. delete, then set variable to NULL as a requirement
 #define VL_DO_CLEAR(stmt, stmt2) \
     do { \
         do { \
@@ -215,6 +215,20 @@
 
 #ifndef VL_INLINE_OPT
 # define VL_INLINE_OPT  ///< "inline" if compiling all objects in single compiler run
+#endif
+
+//=========================================================================
+// Internal coverage
+
+#ifdef VL_GCOV
+extern "C" {
+void __gcov_flush();  // gcc sources gcc/gcov-io.h has the prototype
+}
+/// Flush internal code coverage data before e.g. abort()
+# define VL_GCOV_FLUSH() \
+    __gcov_flush()
+#else
+# define VL_GCOV_FLUSH()
 #endif
 
 //=========================================================================

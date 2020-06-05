@@ -238,7 +238,7 @@ private:
 
     V3Error() {
         std::cerr << ("Static class");
-        abort();
+        V3Error::vlAbort();
     }
 
 public:
@@ -287,6 +287,7 @@ public:
         s_errorSuppressed = false;
     }
     static std::ostringstream& v3errorStr() { return s_errorStr; }
+    static void vlAbortOrExit();
     static void vlAbort();
     // static, but often overridden in classes.
     static void v3errorEnd(std::ostringstream& sstr, const string& locationStr = "");
@@ -362,7 +363,7 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
         if (VL_UNCOVERABLE(!(condition))) { \
             std::cerr << "Internal Error: " << __FILE__ << ":" << std::dec << __LINE__ << ":" \
                       << (stmsg) << std::endl; \
-            abort(); \
+            V3Error::vlAbort(); \
         } \
     } while (false)
 // Check self test values for expected value.  Safe from side-effects.
