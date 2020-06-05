@@ -2121,6 +2121,20 @@ sub files_identical {
     }
 }
 
+sub files_identical_sorted {
+    my $self = (ref $_[0]? shift : $Self);
+    my $fn1 = shift;
+    my $fn2 = shift;
+    my $fn1_is_logfile = shift;
+    return 1 if $self->errors || $self->skips || $self->unsupporteds;
+    # Set LC_ALL as suggested in the sort manpage to avoid sort order
+    # changes from the locale.
+    setenv('LC_ALL', "C");
+    my $fn1sort = "$fn1.sort";
+    run(cmd => ["sort", "$fn1", "> $fn1sort"]);
+    return $self->files_identical($fn1sort, $fn2, $fn1_is_logfile);
+}
+
 sub copy_if_golden {
     my $self = (ref $_[0]? shift : $Self);
     my $fn1 = shift;
