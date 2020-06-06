@@ -2720,7 +2720,7 @@ cellparamItemE<pinp>:		// IEEE: named_parameter_assignment + empty
 	//UNSUP	'.' idAny '(' exprOrDataType/*expr*/ ':' expr ')'		{ }
 	//UNSUP	'.' idAny '(' exprOrDataType/*expr*/ ':' expr ':' expr ')'	{ }
 	//			// data_type for 'parameter type' hookups
-	|	exprOrDataType				{ $$ = new AstPin($1->fileline(), PINNUMINC(), "", $1); }
+	|	exprOrDataType				{ $$ = new AstPin(FILELINE_OR_CRE($1), PINNUMINC(), "", $1); }
 	//UNSUP	exprOrDataType/*expr*/ ':' expr		{ }
 	//UNSUP	exprOrDataType/*expr*/ ':' expr ':' expr	{ }
 	;
