@@ -1468,6 +1468,15 @@ private:
         nodep->dtypep(iterateEditDTypep(nodep, nodep->subDTypep()));
         nodep->widthFromSub(nodep->subDTypep());
     }
+    virtual void visit(AstCastDynamic* nodep) VL_OVERRIDE {
+        if (!v3Global.opt.bboxUnsup()) {
+            nodep->v3error("Unsupported: $cast. Suggest try static cast.");
+        }
+        AstNode* newp = new AstConst(nodep->fileline(), 1);
+        newp->dtypeSetSigned32();  // Spec says integer return
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     virtual void visit(AstCastParse* nodep) VL_OVERRIDE {
         // nodep->dtp could be data type, or a primary_constant
         // Don't iterate lhsp, will deal with that once convert the type

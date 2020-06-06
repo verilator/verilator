@@ -658,6 +658,7 @@ class AstSenTree;
 %token<fl>              yD_BITSTOREAL   "$bitstoreal"
 %token<fl>              yD_BITSTOSHORTREAL "$bitstoshortreal"
 %token<fl>              yD_C            "$c"
+%token<fl>              yD_CAST         "$cast"
 %token<fl>              yD_CEIL         "$ceil"
 %token<fl>              yD_CLOG2        "$clog2"
 %token<fl>              yD_COS          "$cos"
@@ -3507,6 +3508,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_BITS '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
 	|	yD_BITSTOREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); }
 	|	yD_BITSTOSHORTREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); UNSUPREAL($1); }
+	|	yD_CAST '(' expr ',' expr ')'		{ $$ = new AstCastDynamic($1, $3, $5); }
 	|	yD_CEIL '(' expr ')'			{ $$ = new AstCeilD($1,$3); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
 	|	yD_COS '(' expr ')'			{ $$ = new AstCosD($1,$3); }

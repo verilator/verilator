@@ -5595,6 +5595,29 @@ public:
     AstNodeDType* childDTypep() const { return VN_CAST(op2p(), NodeDType); }
 };
 
+class AstCastDynamic : public AstNodeBiop {
+public:
+    AstCastDynamic(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {}
+    ASTNODE_NODE_FUNCS(CastDynamic)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+        V3ERROR_NA;
+    }
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
+        return new AstCastDynamic(this->fileline(), lhsp, rhsp);
+    }
+    virtual string emitVerilog() { return "%f$cast(%r, %l)"; }
+    // Non-existent filehandle returns EOF
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return true; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool cleanRhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
+    virtual int instrCount() const { return widthInstrs() * 20; }
+    virtual bool isPure() const { return true; }
+};
+
 class AstCastParse : public AstNode {
     // Cast to appropriate type, where we haven't determined yet what the data type is
 public:

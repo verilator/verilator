@@ -193,6 +193,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$atanh"              { FL; return yD_ATANH; }
   "$bitstoreal"         { FL; return yD_BITSTOREAL; }
   "$bitstoshortreal"    { FL; return yD_BITSTOSHORTREAL; }
+  "$cast"               { FL; return yD_CAST; }
   "$ceil"               { FL; return yD_CEIL; }
   "$cos"                { FL; return yD_COS; }
   "$cosh"               { FL; return yD_COSH; }
