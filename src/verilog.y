@@ -3299,7 +3299,7 @@ for_initialization<nodep>:	// ==IEEE: for_initialization + for_variable_declarat
 
 for_initializationItemList<nodep>:	// IEEE: [for_variable_declaration...]
 		for_initializationItem			{ $$ = $1; }
-	|	for_initializationItemList ',' for_initializationItem	{ $$ = $1; $<fl>2->v3error("Unsupported: for loop initialization after the first comma"); }
+	|	for_initializationItemList ',' for_initializationItem	{ $$ = $1; BBUNSUP($2, "Unsupported: for loop initialization after the first comma"); }
 	;
 
 for_initializationItem<nodep>:		// IEEE: variable_assignment + for_variable_declaration
@@ -3325,7 +3325,7 @@ for_stepE<nodep>:		// IEEE: for_step + empty
 
 for_step<nodep>:		// IEEE: for_step
 		for_step_assignment			{ $$ = $1; }
-	|	for_step ',' for_step_assignment	{ $$ = $1; $<fl>1->v3error("Unsupported: for loop step after the first comma"); }
+	|	for_step ',' for_step_assignment	{ $$ = $1; BBUNSUP($2, "Unsupported: for loop step after the first comma"); }
 	;
 
 for_step_assignment<nodep>:  // ==IEEE: for_step_assignment

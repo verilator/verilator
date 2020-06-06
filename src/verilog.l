@@ -294,7 +294,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "always"              { FL; return yALWAYS; }
   "and"                 { FL; return yAND; }
   "assign"              { FL; return yASSIGN; }
-  "before"              { FL; return yBEFORE; }
   "begin"               { FL; return yBEGIN; }
   "buf"                 { FL; return yBUF; }
   "bufif0"              { FL; return yBUFIF0; }
@@ -468,7 +467,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "always_latch"        { FL; return yALWAYS_LATCH; }
   "assert"              { FL; return yASSERT; }
   "assume"              { FL; return yASSUME; }
-  "before"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "before"              { FL; return yBEFORE; }
   "bind"                { FL; return yBIND; }
   "bins"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "binsof"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
