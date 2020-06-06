@@ -294,6 +294,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "always"              { FL; return yALWAYS; }
   "and"                 { FL; return yAND; }
   "assign"              { FL; return yASSIGN; }
+  "before"              { FL; return yBEFORE; }
   "begin"               { FL; return yBEGIN; }
   "buf"                 { FL; return yBUF; }
   "bufif0"              { FL; return yBUFIF0; }
@@ -478,14 +479,14 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "class"               { FL; return yCLASS; }
   "clocking"            { FL; return yCLOCKING; }
   "const"               { FL; return yCONST__LEX; }
-  "constraint"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "constraint"          { FL; return yCONSTRAINT; }
   "context"             { FL; return yCONTEXT; }
   "continue"            { FL; return yCONTINUE; }
   "cover"               { FL; return yCOVER; }
   "covergroup"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "coverpoint"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "cross"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "dist"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "dist"                { FL; return yDIST; }
   "do"                  { FL; return yDO; }
   "endclass"            { FL; return yENDCLASS; }
   "endclocking"         { FL; return yENDCLOCKING; }
@@ -538,8 +539,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "sequence"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "shortint"            { FL; return ySHORTINT; }
   "shortreal"           { FL; return ySHORTREAL; }
-  "solve"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "static"              { FL; return ySTATIC__ETC; }
+  "solve"               { FL; return ySOLVE; }
+  "static"              { FL; return ySTATIC__LEX; }
   "string"              { FL; return ySTRING; }
   "struct"              { FL; return ySTRUCT; }
   "super"               { FL; return ySUPER; }
@@ -594,7 +595,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "implements"          { FL; return yIMPLEMENTS; }
   "interconnect"        { ERROR_RSVD_WORD("SystemVerilog 2012"); }
   "nettype"             { ERROR_RSVD_WORD("SystemVerilog 2012"); }
-  "soft"                { ERROR_RSVD_WORD("SystemVerilog 2012"); }
+  "soft"                { FL; return ySOFT; }
 }
 
   /* System Verilog 2017 */

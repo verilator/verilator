@@ -7,6 +7,31 @@
 class Packet;
    rand int header;
    rand int length;
+
+   extern constraint ex;
+
+   constraint a { header > 0 && header < 1000; }
+   constraint b {
+      if (64 > header) {
+         header < (64'h1 << length);
+      }
+   }
+   constraint b {
+      header >= length - 10;
+      header <= length;
+   }
+   constraint c {
+      foreach (in_use[i]) {
+         !(start_offset <= in_use[i].Xend_offsetX &&
+           start_offset + len - 1 >= in_use[i].Xstart_offsetX);
+      }
+   }
+   constraint order { solve length before header; }
+   constraint dis {
+      disable soft x;
+      x dist { [100:102] :/ 1, 200 := 2, 300 := 5};
+   }
+
 endclass
 
 module t (/*AUTOARG*/);

@@ -374,6 +374,7 @@ void V3ParseImp::lexToken() {
         || token == yGLOBAL__LEX  //
         || token == yLOCAL__LEX  //
         || token == yNEW__LEX  //
+        || token == ySTATIC__LEX  //
         || token == yVIRTUAL__LEX  //
         || token == yWITH__LEX  //
         // Never put yID_* here; below symbol table resolution would break
@@ -419,6 +420,12 @@ void V3ParseImp::lexToken() {
                 token = yNEW__PAREN;
             } else {
                 token = yNEW__ETC;
+            }
+        } else if (token == ySTATIC__LEX) {
+            if (nexttok == yCONSTRAINT) {
+                token = ySTATIC__CONSTRAINT;
+            } else {
+                token = ySTATIC__ETC;
             }
         } else if (token == yVIRTUAL__LEX) {
             if (nexttok == yCLASS) {

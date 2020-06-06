@@ -421,7 +421,7 @@ class AstSenTree;
 %token<fl>              yASSIGN         "assign"
 %token<fl>              yASSUME         "assume"
 %token<fl>              yAUTOMATIC      "automatic"
-//UNSUP %token<fl>      yBEFORE         "before"
+%token<fl>              yBEFORE         "before"
 %token<fl>              yBEGIN          "begin"
 %token<fl>              yBIND           "bind"
 //UNSUP %token<fl>      yBINS           "bins"
@@ -441,7 +441,7 @@ class AstSenTree;
 //UNSUP %token<fl>      yCLOCK          "clock"
 %token<fl>              yCLOCKING       "clocking"
 %token<fl>              yCMOS           "cmos"
-//UNSUP %token<fl>      yCONSTRAINT     "constraint"
+%token<fl>              yCONSTRAINT     "constraint"
 %token<fl>              yCONST__ETC     "const"
 %token<fl>              yCONST__LEX     "const-in-lex"
 //UNSUP %token<fl>      yCONST__LOCAL   "const-then-local"
@@ -456,7 +456,7 @@ class AstSenTree;
 %token<fl>              yDEFAULT        "default"
 %token<fl>              yDEFPARAM       "defparam"
 %token<fl>              yDISABLE        "disable"
-//UNSUP %token<fl>      yDIST           "dist"
+%token<fl>              yDIST           "dist"
 %token<fl>              yDO             "do"
 %token<fl>              yEDGE           "edge"
 %token<fl>              yELSE           "else"
@@ -584,13 +584,13 @@ class AstSenTree;
 %token<fl>              ySHORTINT       "shortint"
 %token<fl>              ySHORTREAL      "shortreal"
 %token<fl>              ySIGNED         "signed"
-//UNSUP %token<fl>      ySOFT           "soft"
-//UNSUP %token<fl>      ySOLVE          "solve"
+%token<fl>              ySOFT           "soft"
+%token<fl>              ySOLVE          "solve"
 %token<fl>              ySPECIFY        "specify"
 %token<fl>              ySPECPARAM      "specparam"
-//UNSUP %token<fl>      ySTATIC__CONSTRAINT "static-then-constraint"
+%token<fl>              ySTATIC__CONSTRAINT "static-then-constraint"
 %token<fl>              ySTATIC__ETC    "static"
-//UNSUP %token<fl>      ySTATIC__LEX    "static-in-lex"
+%token<fl>              ySTATIC__LEX    "static-in-lex"
 %token<fl>              ySTRING         "string"
 //UNSUP %token<fl>      ySTRONG         "strong"
 %token<fl>              ySTRUCT         "struct"
@@ -910,8 +910,7 @@ class AstSenTree;
 %left           '^' yP_XNOR
 %left           '&' yP_NAND
 %left           yP_EQUAL yP_NOTEQUAL yP_CASEEQUAL yP_CASENOTEQUAL yP_WILDEQUAL yP_WILDNOTEQUAL
-%left           '>' '<' yP_GTE yP_LTE yP_LTE__IGNORE yINSIDE
-//UNSUP yDIST in above
+%left           '>' '<' yP_GTE yP_LTE yP_LTE__IGNORE yINSIDE yDIST
 %left           yP_SLEFT yP_SRIGHT yP_SSRIGHT
 %left           '+' '-'
 %left           '*' '/' '%'
@@ -3403,9 +3402,8 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 	//			// IEEE: randomize_call
 	//			// We implement randomize as a normal funcRef, since randomize isn't a keyword
 	//			// Note yNULL is already part of expressions, so they come for free
-	//UNSUP	funcRef yWITH__CUR constraint_block	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with'"); }
-	//UNSUP remove the next line, temporary until have constraint_block (but enough for UVM parsing)
-	|	funcRef yWITH__CUR '{' '}'	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with'"); }
+	|	funcRef yWITH__CUR constraint_block	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with'"); }
+	|	funcRef yWITH__CUR '{' '}'		{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with'"); }
 	;
 
 system_t_call<nodep>:		// IEEE: system_tf_call (as task)
@@ -4094,7 +4092,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: expression_or_dist - here to avoid reduce problems
 	//			// "expr yDIST '{' dist_list '}'"
-	//UNSUP	~l~expr yDIST '{' dist_list '}'		{ UNSUP }
+	|	~l~expr yDIST '{' dist_list '}'		{ $$ = $1; BBUNSUP($2, "Unsupported: dist"); }
 	;
 
 fexpr<nodep>:			// For use as first part of statement (disambiguates <=)
@@ -5880,7 +5878,7 @@ class_itemList<nodep>:
 class_item<nodep>:			// ==IEEE: class_item
 		class_property				{ $$ = $1; }
 	|	class_method				{ $$ = $1; }
-	//UNSUP	class_constraint			{ $$ = $1; }
+	|	class_constraint			{ $$ = $1; }
 	//
 	|	class_declaration			{ $$ = NULL; BBUNSUP($1, "Unsupported: class within class"); }
 	|	timeunits_declaration			{ $$ = $1; }
@@ -5943,86 +5941,86 @@ memberQualOne<nodep>:			// IEEE: property_qualifier + method_qualifier
 //**********************************************************************
 // Constraints
 
-//UNSUPclass_constraint<nodep>:  // ==IEEE: class_constraint
-//UNSUP	//			// IEEE: constraint_declaration
-//UNSUP		constraintStaticE yCONSTRAINT idAny constraint_block	{ }
-//UNSUP	//			// IEEE: constraint_prototype + constraint_prototype_qualifier
-//UNSUP	|	constraintStaticE yCONSTRAINT idAny ';'		{ }
-//UNSUP	|	yEXTERN constraintStaticE yCONSTRAINT idAny ';'	{ }
-//UNSUP	|	yPURE constraintStaticE yCONSTRAINT idAny ';'	{ }
-//UNSUP	;
+class_constraint<nodep>:  // ==IEEE: class_constraint
+	//			// IEEE: constraint_declaration
+		constraintStaticE yCONSTRAINT idAny constraint_block	{ $$ = NULL; BBUNSUP($2, "Unsupported: constraint"); /*and audit all rules below for UNSUP*/ }
+	//			// IEEE: constraint_prototype + constraint_prototype_qualifier
+	|	constraintStaticE yCONSTRAINT idAny ';'		{ $$ = NULL; }
+	|	yEXTERN constraintStaticE yCONSTRAINT idAny ';'	{ $$ = NULL; BBUNSUP($1, "Unsupported: extern constraint"); }
+	|	yPURE constraintStaticE yCONSTRAINT idAny ';'	{ $$ = NULL; BBUNSUP($1, "Unsupported: pure constraint"); }
+	;
 
-//UNSUPconstraint_block<nodep>:  // ==IEEE: constraint_block
-//UNSUP		'{' constraint_block_itemList '}'	{ $$ = $1; }
-//UNSUP	;
+constraint_block<nodep>:  // ==IEEE: constraint_block
+		'{' constraint_block_itemList '}'		{ $$ = $2; }
+	;
 
-//UNSUPconstraint_block_itemList<nodep>:  // IEEE: { constraint_block_item }
-//UNSUP		constraint_block_item			{ $$ = $1; }
-//UNSUP	|	constraint_block_itemList constraint_block_item	{ $$ = AstNode::addNextNull($1, $2); }
-//UNSUP	;
+constraint_block_itemList<nodep>:  // IEEE: { constraint_block_item }
+		constraint_block_item				{ $$ = $1; }
+	|	constraint_block_itemList constraint_block_item	{ $$ = AstNode::addNextNull($1, $2); }
+	;
 
-//UNSUPconstraint_block_item:  // ==IEEE: constraint_block_item
-//UNSUP		ySOLVE solve_before_list yBEFORE solve_before_list ';'	{ }
-//UNSUP	|	constraint_expression			{ $$ = $1; }
-//UNSUP	;
+constraint_block_item<nodep>:  // ==IEEE: constraint_block_item
+		constraint_expression				{ $$ = $1; }
+	|	ySOLVE solve_before_list yBEFORE solve_before_list ';'	{ $$ = NULL; BBUNSUP($2, "Unsupported: solve before"); }
+	;
 
-//UNSUPsolve_before_list:  // ==IEEE: solve_before_list
-//UNSUP		constraint_primary			{ $$ = $1; }
-//UNSUP	|	solve_before_list ',' constraint_primary	{ }
-//UNSUP	;
+solve_before_list<nodep>:  // ==IEEE: solve_before_list
+		constraint_primary				{ $$ = $1; }
+	|	solve_before_list ',' constraint_primary	{ $$ = AstNode::addNextNull($1, $3); }
+	;
 
-//UNSUPconstraint_primary:  // ==IEEE: constraint_primary
-//UNSUP	//			// exprScope more general than: [ implicit_class_handle '.' | class_scope ] hierarchical_identifier select
-//UNSUP		exprScope				{ $$ = $1; }
-//UNSUP	;
+constraint_primary<nodep>:  // ==IEEE: constraint_primary
+	//			// exprScope more general than: [ implicit_class_handle '.' | class_scope ] hierarchical_identifier select
+		exprScope					{ $$ = $1; }
+	;
 
-//UNSUPconstraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
-//UNSUP		constraint_expression				{ $$ = $1; }
-//UNSUP	|	constraint_expressionList constraint_expression	{ $$ = AstNode::addNextNull($1, $2); }
-//UNSUP	;
+constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
+		constraint_expression				{ $$ = $1; }
+	|	constraint_expressionList constraint_expression	{ $$ = AstNode::addNextNull($1, $2); }
+	;
 
-//UNSUPconstraint_expression<nodep>:  // ==IEEE: constraint_expression
-//UNSUP		expr/*expression_or_dist*/ ';'		{ $$ = $1; }
-//UNSUP	//			// 1800-2012:
-//UNSUP	|	ySOFT expr/*expression_or_dist*/ ';'	{ }
-//UNSUP	//			// 1800-2012:
-//UNSUP	//			// IEEE: uniqueness_constraint ';'
-//UNSUP	|	yUNIQUE '{' open_range_list '}'		{ }
-//UNSUP	//			// IEEE: expr yP_MINUSGT constraint_set
-//UNSUP	//			// Conflicts with expr:"expr yP_MINUSGT expr"; rule moved there
-//UNSUP	//
-//UNSUP	|	yIF '(' expr ')' constraint_set	%prec prLOWER_THAN_ELSE	{ }
-//UNSUP	|	yIF '(' expr ')' constraint_set	yELSE constraint_set	{ }
-//UNSUP	//			// IEEE says array_identifier here, but dotted accepted in VMM + 1800-2009
-//UNSUP	|	yFOREACH '(' idClassForeach/*array_id[loop_variables]*/ ')' constraint_set	{ }
-//UNSUP	//			// soft is 1800-2012
-//UNSUP	|	yDISABLE ySOFT expr/*constraint_primary*/ ';'	{ }
-//UNSUP	;
+constraint_expression<nodep>:  // ==IEEE: constraint_expression
+		expr/*expression_or_dist*/ ';'		{ $$ = $1; }
+	//			// 1800-2012:
+	|	ySOFT expr/*expression_or_dist*/ ';'	{ $$ = NULL; /*UNSUP*/ }
+	//			// 1800-2012:
+	//			// IEEE: uniqueness_constraint ';'
+	|	yUNIQUE '{' open_range_list '}'		{ $$ = NULL; /*UNSUP*/ }
+	//			// IEEE: expr yP_MINUSGT constraint_set
+	//			// Conflicts with expr:"expr yP_MINUSGT expr"; rule moved there
+	//
+	|	yIF '(' expr ')' constraint_set	%prec prLOWER_THAN_ELSE	{ $$ = NULL; /*UNSUP*/ }
+	|	yIF '(' expr ')' constraint_set	yELSE constraint_set	{ $$ = NULL; /*UNSUP*/ }
+	//			// IEEE says array_identifier here, but dotted accepted in VMM + 1800-2009
+	|	yFOREACH '(' idClassForeach '[' loop_variables ']' ')' constraint_set	{ $$ = NULL; /*UNSUP*/ }
+	//			// soft is 1800-2012
+	|	yDISABLE ySOFT expr/*constraint_primary*/ ';'	{ $$ = NULL; /*UNSUP*/ }
+	;
 
-//UNSUPconstraint_set<nodep>:  // ==IEEE: constraint_set
-//UNSUP		constraint_expression			{ $$ = $1; }
-//UNSUP	|	'{' constraint_expressionList '}'	{ $$ = $2; }
-//UNSUP	;
+constraint_set<nodep>:  // ==IEEE: constraint_set
+		constraint_expression			{ $$ = $1; }
+	|	'{' constraint_expressionList '}'	{ $$ = $2; }
+	;
 
-//UNSUPdist_list<nodep>:  // ==IEEE: dist_list
-//UNSUP		dist_item				{ $$ = $1; }
-//UNSUP	|	dist_list ',' dist_item			{ $$ = AstNode::addNextNull($1, $3); }
-//UNSUP	;
+dist_list<nodep>:  // ==IEEE: dist_list
+		dist_item				{ $$ = $1; }
+	|	dist_list ',' dist_item			{ $$ = AstNode::addNextNull($1, $3); }
+	;
 
-//UNSUPdist_item:  // ==IEEE: dist_item + dist_weight
-//UNSUP		value_range				{ $$ = $1; }
-//UNSUP	|	value_range yP_COLONEQ  expr		{ }
-//UNSUP	|	value_range yP_COLONDIV expr		{ }
-//UNSUP	;
+dist_item<nodep>:  // ==IEEE: dist_item + dist_weight
+		value_range				{ $$ = $1; }
+	|	value_range yP_COLONEQ  expr		{ $$ = $1; BBUNSUP($1, "Unsupported: dist :="); }
+	|	value_range yP_COLONDIV expr		{ $$ = $1; BBUNSUP($1, "Unsupported: dist :/"); }
+	;
 
 //UNSUPextern_constraint_declaration:  // ==IEEE: extern_constraint_declaration
 //UNSUP		constraintStaticE yCONSTRAINT class_scope_id constraint_block	{ }
 //UNSUP	;
 
-//UNSUPconstraintStaticE<bool>:  // IEEE: part of extern_constraint_declaration
-//UNSUP		/* empty */				{ $$ = false; }
-//UNSUP	|	ySTATIC__CONSTRAINT			{ $$ = true; }
-//UNSUP	;
+constraintStaticE<cbool>:  // IEEE: part of extern_constraint_declaration
+		/* empty */				{ $$ = false; }
+	|	ySTATIC__CONSTRAINT			{ $$ = true; }
+	;
 
 //**********************************************************************
 // Constants
