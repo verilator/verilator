@@ -498,25 +498,56 @@ private:
     }
     virtual void visit(AstPrintTimeScale* nodep) VL_OVERRIDE {
         // Inlining may change hierarchy, so just save timescale where needed
+        cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->name(m_modp->name());
         nodep->timeunit(m_modp->timeunit());
     }
     virtual void visit(AstSFormatF* nodep) VL_OVERRIDE {
+        cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
     virtual void visit(AstTime* nodep) VL_OVERRIDE {
+        cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
     virtual void visit(AstTimeD* nodep) VL_OVERRIDE {
+        cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
     virtual void visit(AstTimeImport* nodep) VL_OVERRIDE {
+        cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
+    }
+    virtual void visit(AstTimingControl* nodep) VL_OVERRIDE {
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+        AstAlways* alwaysp = VN_CAST(nodep->backp(), Always);
+        if (alwaysp && alwaysp->keyword() == VAlwaysKwd::ALWAYS_COMB) {
+            alwaysp->v3error("Timing control statements not legal under always_comb\n"
+                             << nodep->warnMore() << "... Suggest use a normal 'always'");
+        } else if (alwaysp && !alwaysp->sensesp()) {
+            // Verilator is still ony supporting SenTrees under an always,
+            // so allow the parser to handle everything and shim to
+            // historical AST here
+            if (AstSenTree* sensesp = nodep->sensesp()) {
+                sensesp->unlinkFrBackWithNext();
+                alwaysp->sensesp(sensesp);
+            }
+            if (nodep->stmtsp()) alwaysp->addStmtp(nodep->stmtsp()->unlinkFrBackWithNext());
+        } else {
+            if (!v3Global.opt.bboxUnsup()) {
+                nodep->v3error("Unsupported: timing control statement in this location\n"
+                               << nodep->warnMore()
+                               << "... Suggest have one timing control statement "
+                               << "per procedure, at the top of the procedure");
+            }
+        }
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     virtual void visit(AstNode* nodep) VL_OVERRIDE {

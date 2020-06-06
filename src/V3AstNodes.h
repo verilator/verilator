@@ -3116,6 +3116,7 @@ public:
     //
     virtual void dump(std::ostream& str) const;
     AstSenTree* sensesp() const { return VN_CAST(op1p(), SenTree); }  // op1 = Sensitivity list
+    void sensesp(AstSenTree* nodep) { setOp1p(nodep); }
     VAlwaysKwd keyword() const { return m_keyword; }
 };
 
@@ -4801,6 +4802,26 @@ public:
     virtual bool sizeMattersLhs() const { return false; }
     virtual V3Hash sameHash() const { return V3Hash(fileline()->lineno()); }
     virtual bool same(const AstNode* samep) const { return fileline() == samep->fileline(); }
+};
+
+class AstTimingControl : public AstNodeStmt {
+    // Parents: stmtlist
+public:
+    AstTimingControl(FileLine* fl, AstSenTree* sensesp, AstNode* stmtsp)
+        : ASTGEN_SUPER(fl) {
+        setNOp1p(sensesp);
+        setNOp2p(stmtsp);
+    }
+    ASTNODE_NODE_FUNCS(TimingControl)
+    virtual string verilogKwd() const { return "@(%l) %r"; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isPure() const { return false; }
+    virtual bool isOutputter() const { return false; }
+    virtual int instrCount() const { return 0; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    AstSenTree* sensesp() const { return VN_CAST(op1p(), SenTree); }
+    AstNode* stmtsp() const { return op2p(); }
 };
 
 class AstTimeFormat : public AstNodeStmt {

@@ -2201,9 +2201,9 @@ module_common_item<nodep>:	// ==IEEE: module_common_item
 	|	final_construct				{ $$ = $1; }
 	//			// IEEE: always_construct
 	//			// Verilator only - event_control attached to always
-	|	yALWAYS       event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS, $2,$3); }
-	|	yALWAYS_FF    event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_FF, $2,$3); }
-	|	yALWAYS_LATCH event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_LATCH, $2,$3); }
+	|	yALWAYS       stmtBlock			{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS, NULL, $2); }
+	|	yALWAYS_FF    stmtBlock			{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_FF, NULL, $2); }
+	|	yALWAYS_LATCH stmtBlock			{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_LATCH, NULL, $2); }
 	|	yALWAYS_COMB  stmtBlock			{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_COMB, NULL, $2); }
 	//
 	|	loop_generate_construct			{ $$ = $1; }
@@ -2757,11 +2757,6 @@ attr_event_control<sentreep>:	// ==IEEE: event_control
 	|	'@' '*'					{ $$ = NULL; }
 	;
 
-event_controlE<sentreep>:
-		/* empty */				{ $$ = NULL; }
-	|	event_control				{ $$ = $1; }
-	;
-
 event_control<sentreep>:	// ==IEEE: event_control
 		'@' '(' event_expression ')'		{ $$ = new AstSenTree($1,$3); }
 	|	'@' '(' '*' ')'				{ $$ = NULL; }
@@ -2776,7 +2771,7 @@ event_control<sentreep>:	// ==IEEE: event_control
 	//			// 1995 delay with a sequence with parameters.
 	//			// Alternatively split this out of event_control, and delay_or_event_controlE
 	//			// and anywhere delay_or_event_controlE is called allow two expressions
-	//|	'@' idClassSel '(' list_of_argumentsE ')'	{ }
+	//UNSUP	'@' idClassSel '(' list_of_argumentsE ')'	{ }
 	;
 
 event_expression<senitemp>:	// IEEE: event_expression - split over several
@@ -3023,7 +3018,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	par_block				{ $$ = $1; }
 	//			// IEEE: procedural_timing_control_statement + procedural_timing_control
 	|	delay_control stmtBlock			{ $$ = new AstDelay($1->fileline(), $1); $$->addNextNull($2); }
-	//UNSUP	event_control stmtBlock			{ UNSUP }
+	|	event_control stmtBlock			{ $$ = new AstTimingControl(FILELINE_OR_CRE($1), $1, $2); }
 	//UNSUP	cycle_delay stmtBlock			{ UNSUP }
 	//
 	|	seq_block				{ $$ = $1; }
