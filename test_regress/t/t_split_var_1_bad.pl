@@ -13,12 +13,8 @@ scenarios(linter => 1);
 lint(
     fails => 1,
     verilator_flags2 => ['--stats'],
-    # When issue-2407 resolved, decomment and update golden file
-    #expect_filename => $Self->{golden_filename},
+    expect_filename => $Self->{golden_filename},
 );
-
-# When issue-2407 resolved, remove
-files_identical_sorted("$Self->{obj_dir}/vlt_compile.log", $Self->{golden_filename}, 1);
 
 ok(1);
 1;
