@@ -965,8 +965,8 @@ private:
         m_activep = NULL;
         m_topScopep = nodep;
         m_scopetopp = nodep->scopep();
-        // Find sentree's
-        m_finder.main(m_topScopep);
+        // Find global SenTrees
+        m_finder.init(m_topScopep);
         // ProcessDomainsIterate will use these when it needs to move
         // something to a combodomain.  This saves a ton of find() operations.
         AstSenTree* combp
