@@ -398,6 +398,7 @@ class AstSenTree;
 // for example yP_ for punctuation based operators.
 // Double underscores "yX__Y" means token X followed by Y,
 // and "yX__ETC" means X folled by everything but Y(s).
+//UNSUP %token<fl>      yACCEPT_ON      "accept_on"
 %token<fl>              yALIAS          "alias"
 %token<fl>              yALWAYS         "always"
 %token<fl>              yALWAYS_COMB    "always_comb"
@@ -408,8 +409,11 @@ class AstSenTree;
 %token<fl>              yASSIGN         "assign"
 %token<fl>              yASSUME         "assume"
 %token<fl>              yAUTOMATIC      "automatic"
+//UNSUP %token<fl>      yBEFORE         "before"
 %token<fl>              yBEGIN          "begin"
 %token<fl>              yBIND           "bind"
+//UNSUP %token<fl>      yBINS           "bins"
+//UNSUP %token<fl>      yBINSOF         "binsof"
 %token<fl>              yBIT            "bit"
 %token<fl>              yBREAK          "break"
 %token<fl>              yBUF            "buf"
@@ -420,43 +424,57 @@ class AstSenTree;
 %token<fl>              yCASEX          "casex"
 %token<fl>              yCASEZ          "casez"
 %token<fl>              yCHANDLE        "chandle"
+//UNSUP %token<fl>      yCHECKER        "checker"
 %token<fl>              yCLASS          "class"
+//UNSUP %token<fl>      yCLOCK          "clock"
 %token<fl>              yCLOCKING       "clocking"
 %token<fl>              yCMOS           "cmos"
+//UNSUP %token<fl>      yCONSTRAINT     "constraint"
 %token<fl>              yCONST__ETC     "const"
 %token<fl>              yCONST__LEX     "const-in-lex"
+//UNSUP %token<fl>      yCONST__LOCAL   "const-then-local"
 %token<fl>              yCONST__REF     "const-then-ref"
 %token<fl>              yCONTEXT        "context"
 %token<fl>              yCONTINUE       "continue"
 %token<fl>              yCOVER          "cover"
+//UNSUP %token<fl>      yCOVERGROUP     "covergroup"
+//UNSUP %token<fl>      yCOVERPOINT     "coverpoint"
+//UNSUP %token<fl>      yCROSS          "cross"
 %token<fl>              yDEASSIGN       "deassign"
 %token<fl>              yDEFAULT        "default"
 %token<fl>              yDEFPARAM       "defparam"
 %token<fl>              yDISABLE        "disable"
+//UNSUP %token<fl>      yDIST           "dist"
 %token<fl>              yDO             "do"
 %token<fl>              yEDGE           "edge"
 %token<fl>              yELSE           "else"
 %token<fl>              yEND            "end"
 %token<fl>              yENDCASE        "endcase"
+//UNSUP %token<fl>      yENDCHECKER     "endchecker"
 %token<fl>              yENDCLASS       "endclass"
 %token<fl>              yENDCLOCKING    "endclocking"
 %token<fl>              yENDFUNCTION    "endfunction"
 %token<fl>              yENDGENERATE    "endgenerate"
+//UNSUP %token<fl>      yENDGROUP       "endgroup"
 %token<fl>              yENDINTERFACE   "endinterface"
 %token<fl>              yENDMODULE      "endmodule"
 %token<fl>              yENDPACKAGE     "endpackage"
 %token<fl>              yENDPRIMITIVE   "endprimitive"
 %token<fl>              yENDPROGRAM     "endprogram"
 %token<fl>              yENDPROPERTY    "endproperty"
+//UNSUP %token<fl>      yENDSEQUENCE    "endsequence"
 %token<fl>              yENDSPECIFY     "endspecify"
 %token<fl>              yENDTABLE       "endtable"
 %token<fl>              yENDTASK        "endtask"
 %token<fl>              yENUM           "enum"
 %token<fl>              yEVENT          "event"
+//UNSUP %token<fl>      yEVENTUALLY     "eventually"
+//UNSUP %token<fl>      yEXPECT         "expect"
 %token<fl>              yEXPORT         "export"
 %token<fl>              yEXTENDS        "extends"
 %token<fl>              yEXTERN         "extern"
 %token<fl>              yFINAL          "final"
+//UNSUP %token<fl>      yFIRST_MATCH    "first_match"
 %token<fl>              yFOR            "for"
 %token<fl>              yFORCE          "force"
 %token<fl>              yFOREACH        "foreach"
@@ -464,6 +482,9 @@ class AstSenTree;
 %token<fl>              yFORK           "fork"
 %token<fl>              yFORKJOIN       "forkjoin"
 %token<fl>              yFUNCTION       "function"
+//UNSUP %token<fl>      yFUNCTION__ETC  "function"
+//UNSUP %token<fl>      yFUNCTION__LEX  "function-in-lex"
+//UNSUP %token<fl>      yFUNCTION__aPUREV "function-is-pure-virtual"
 %token<fl>              yGENERATE       "generate"
 %token<fl>              yGENVAR         "genvar"
 %token<fl>              yGLOBAL__CLOCKING "global-then-clocking"
@@ -471,7 +492,10 @@ class AstSenTree;
 %token<fl>              yGLOBAL__LEX    "global-in-lex"
 %token<fl>              yIF             "if"
 %token<fl>              yIFF            "iff"
+//UNSUP %token<fl>      yIGNORE_BINS    "ignore_bins"
+//UNSUP %token<fl>      yILLEGAL_BINS   "illegal_bins"
 %token<fl>              yIMPLEMENTS     "implements"
+//UNSUP %token<fl>      yIMPLIES        "implies"
 %token<fl>              yIMPORT         "import"
 %token<fl>              yINITIAL        "initial"
 %token<fl>              yINOUT          "inout"
@@ -479,23 +503,29 @@ class AstSenTree;
 %token<fl>              yINSIDE         "inside"
 %token<fl>              yINT            "int"
 %token<fl>              yINTEGER        "integer"
+//UNSUP %token<fl>      yINTERCONNECT   "interconnect"
 %token<fl>              yINTERFACE      "interface"
+//UNSUP %token<fl>      yINTERSECT      "intersect"
 %token<fl>              yJOIN           "join"
 %token<fl>              yJOIN_ANY       "join_any"
 %token<fl>              yJOIN_NONE      "join_none"
+//UNSUP %token<fl>      yLET            "let"
 %token<fl>              yLOCALPARAM     "localparam"
 %token<fl>              yLOCAL__COLONCOLON "local-then-::"
 %token<fl>              yLOCAL__ETC     "local"
 %token<fl>              yLOCAL__LEX     "local-in-lex"
 %token<fl>              yLOGIC          "logic"
 %token<fl>              yLONGINT        "longint"
+//UNSUP %token<fl>      yMATCHES        "matches"
 %token<fl>              yMODPORT        "modport"
 %token<fl>              yMODULE         "module"
 %token<fl>              yNAND           "nand"
 %token<fl>              yNEGEDGE        "negedge"
+//UNSUP %token<fl>      yNETTYPE        "nettype"
 %token<fl>              yNEW__ETC       "new"
 %token<fl>              yNEW__LEX       "new-in-lex"
 %token<fl>              yNEW__PAREN     "new-then-paren"
+//UNSUP %token<fl>      yNEXTTIME       "nexttime"
 %token<fl>              yNMOS           "nmos"
 %token<fl>              yNOR            "nor"
 %token<fl>              yNOT            "not"
@@ -520,11 +550,13 @@ class AstSenTree;
 %token<fl>              yRAND           "rand"
 %token<fl>              yRANDC          "randc"
 %token<fl>              yRANDCASE       "randcase"
+//UNSUP %token<fl>      yRANDSEQUENCE   "randsequence"
 %token<fl>              yRCMOS          "rcmos"
 %token<fl>              yREAL           "real"
 %token<fl>              yREALTIME       "realtime"
 %token<fl>              yREF            "ref"
 %token<fl>              yREG            "reg"
+//UNSUP %token<fl>      yREJECT_ON      "reject_on"
 %token<fl>              yRELEASE        "release"
 %token<fl>              yREPEAT         "repeat"
 %token<fl>              yRESTRICT       "restrict"
@@ -535,20 +567,38 @@ class AstSenTree;
 %token<fl>              yRTRANIF0       "rtranif0"
 %token<fl>              yRTRANIF1       "rtranif1"
 %token<fl>              ySCALARED       "scalared"
+//UNSUP %token<fl>      ySEQUENCE       "sequence"
 %token<fl>              ySHORTINT       "shortint"
 %token<fl>              ySHORTREAL      "shortreal"
 %token<fl>              ySIGNED         "signed"
+//UNSUP %token<fl>      ySOFT           "soft"
+//UNSUP %token<fl>      ySOLVE          "solve"
 %token<fl>              ySPECIFY        "specify"
 %token<fl>              ySPECPARAM      "specparam"
+//UNSUP %token<fl>      ySTATIC__CONSTRAINT "static-then-constraint"
 %token<fl>              ySTATIC__ETC    "static"
+//UNSUP %token<fl>      ySTATIC__LEX    "static-in-lex"
 %token<fl>              ySTRING         "string"
+//UNSUP %token<fl>      ySTRONG         "strong"
 %token<fl>              ySTRUCT         "struct"
 %token<fl>              ySUPER          "super"
 %token<fl>              ySUPPLY0        "supply0"
 %token<fl>              ySUPPLY1        "supply1"
+//UNSUP %token<fl>      ySYNC_ACCEPT_ON "sync_accept_on"
+//UNSUP %token<fl>      ySYNC_REJECT_ON "sync_reject_on"
+//UNSUP %token<fl>      yS_ALWAYS       "s_always"
+//UNSUP %token<fl>      yS_EVENTUALLY   "s_eventually"
+//UNSUP %token<fl>      yS_NEXTTIME     "s_nexttime"
+//UNSUP %token<fl>      yS_UNTIL        "s_until"
+//UNSUP %token<fl>      yS_UNTIL_WITH   "s_until_with"
 %token<fl>              yTABLE          "table"
+//UNSUP %token<fl>      yTAGGED         "tagged"
 %token<fl>              yTASK           "task"
+//UNSUP %token<fl>      yTASK__ETC      "task"
+//UNSUP %token<fl>      yTASK__LEX      "task-in-lex"
+//UNSUP %token<fl>      yTASK__aPUREV   "task-is-pure-virtual"
 %token<fl>              yTHIS           "this"
+//UNSUP %token<fl>      yTHROUGHOUT     "throughout"
 %token<fl>              yTIME           "time"
 %token<fl>              yTIMEPRECISION  "timeprecision"
 %token<fl>              yTIMEUNIT       "timeunit"
@@ -568,6 +618,9 @@ class AstSenTree;
 %token<fl>              yUNIQUE         "unique"
 %token<fl>              yUNIQUE0        "unique0"
 %token<fl>              yUNSIGNED       "unsigned"
+//UNSUP %token<fl>      yUNTIL          "until"
+//UNSUP %token<fl>      yUNTIL_WITH     "until_with"
+//UNSUP %token<fl>      yUNTYPED        "untyped"
 %token<fl>              yVAR            "var"
 %token<fl>              yVECTORED       "vectored"
 %token<fl>              yVIRTUAL__CLASS "virtual-then-class"
@@ -577,9 +630,18 @@ class AstSenTree;
 %token<fl>              yVIRTUAL__anyID "virtual-then-identifier"
 %token<fl>              yVOID           "void"
 %token<fl>              yWAIT           "wait"
+//UNSUP %token<fl>      yWAIT_ORDER     "wait_order"
 %token<fl>              yWAND           "wand"
+//UNSUP %token<fl>      yWEAK           "weak"
 %token<fl>              yWHILE          "while"
+//UNSUP %token<fl>      yWILDCARD       "wildcard"
 %token<fl>              yWIRE           "wire"
+//UNSUP %token<fl>      yWITHIN         "within"
+//UNSUP %token<fl>      yWITH__BRA      "with-then-["
+//UNSUP %token<fl>      yWITH__CUR      "with-then-{"
+//UNSUP %token<fl>      yWITH__ETC      "with"
+//UNSUP %token<fl>      yWITH__LEX      "with-in-lex"
+//UNSUP %token<fl>      yWITH__PAREN    "with-then-("
 %token<fl>              yWOR            "wor"
 %token<fl>              yWREAL          "wreal"
 %token<fl>              yXNOR           "xnor"
@@ -741,6 +803,7 @@ class AstSenTree;
 %token<fl>              yP_SSRIGHT      ">>>"
 %token<fl>              yP_POW          "**"
 
+//UNSUP %token<fl>      yP_PAR__IGNORE  "(-ignored"     // Used when sequence_expr:expr:( is ignored
 %token<fl>              yP_PAR__STRENGTH "(-for-strength"
 
 %token<fl>              yP_LTMINUSGT    "<->"
@@ -752,6 +815,8 @@ class AstSenTree;
 %token<fl>              yP_ASTGT        "*>"
 %token<fl>              yP_ANDANDAND    "&&&"
 %token<fl>              yP_POUNDPOUND   "##"
+//UNSUP %token<fl>      yP_POUNDMINUSPD "#-#"
+//UNSUP %token<fl>      yP_POUNDEQPD    "#=#"
 %token<fl>              yP_DOTSTAR      ".*"
 
 %token<fl>              yP_ATAT         "@@"
@@ -763,6 +828,7 @@ class AstSenTree;
 %token<fl>              yP_BRASTAR      "[*"
 %token<fl>              yP_BRAEQ        "[="
 %token<fl>              yP_BRAMINUSGT   "[->"
+//UNSUP %token<fl>      yP_BRAPLUSKET   "[+]"
 
 %token<fl>              yP_PLUSPLUS     "++"
 %token<fl>              yP_MINUSMINUS   "--"
@@ -783,11 +849,43 @@ class AstSenTree;
 // '( is not a operator, as "' (" is legal
 
 //********************
+// Verilog op precedence
+//UNSUP %token<fl>      prUNARYARITH
+//UNSUP %token<fl>      prREDUCTION
+//UNSUP %token<fl>      prNEGATION
+//UNSUP %token<fl>      prEVENTBEGIN
+//UNSUP %token<fl>      prTAGGED
+
 // These prevent other conflicts
 %left           yP_ANDANDAND
+//UNSUP %left   yMATCHES
+//UNSUP %left   prTAGGED
+//UNSUP %left   prSEQ_CLOCKING
 
 // PSL op precedence
+
+// Lowest precedence
+// These are in IEEE 17.7.1
+//UNSUP %nonassoc       yALWAYS yS_ALWAYS yEVENTUALLY yS_EVENTUALLY yACCEPT_ON yREJECT_ON ySYNC_ACCEPT_ON ySYNC_REJECT_ON
+
 %right          yP_ORMINUSGT yP_OREQGT
+//UNSUP %right          yP_ORMINUSGT yP_OREQGT yP_POUNDMINUSPD yP_POUNDEQPD
+//UNSUP %right          yUNTIL yS_UNTIL yUNTIL_WITH yS_UNTIL_WITH yIMPLIES
+//UNSUP %right          yIFF
+//UNSUP %left           yOR
+//UNSUP %left           yAND
+//UNSUP %nonassoc       yNOT yNEXTTIME yS_NEXTTIME
+//UNSUP %left           yINTERSECT
+//UNSUP %left           yWITHIN
+//UNSUP %right          yTHROUGHOUT
+//UNSUP %left           prPOUNDPOUND_MULTI
+//UNSUP %left           yP_POUNDPOUND
+//UNSUP %left           yP_BRASTAR yP_BRAEQ yP_BRAMINUSGT yP_BRAPLUSKET
+
+// Not specified, but needed higher than yOR, lower than normal non-pexpr expressions
+//UNSUP %left           yPOSEDGE yNEGEDGE yEDGE
+
+//UNSUP %left           '{' '}'
 
 // Verilog op precedence
 %right          yP_MINUSGT yP_LTMINUSGT
@@ -799,6 +897,7 @@ class AstSenTree;
 %left           '&' yP_NAND
 %left           yP_EQUAL yP_NOTEQUAL yP_CASEEQUAL yP_CASENOTEQUAL yP_WILDEQUAL yP_WILDNOTEQUAL
 %left           '>' '<' yP_GTE yP_LTE yP_LTE__IGNORE yINSIDE
+//UNSUP yDIST in above
 %left           yP_SLEFT yP_SRIGHT yP_SSRIGHT
 %left           '+' '-'
 %left           '*' '/' '%'

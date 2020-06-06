@@ -458,6 +458,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$unpacked_dimensions" { FL; return yD_UNPACKED_DIMENSIONS; }
   "$warning"            { FL; return yD_WARNING; }
   /*     SV2005 Keywords */
+  /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
   "$unit"               { FL; return yD_UNIT; }  /* Yes, a keyword, not task */
   "alias"               { FL; return yALIAS; }
   "always_comb"         { FL; return yALWAYS_COMB; }
@@ -465,7 +466,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "always_latch"        { FL; return yALWAYS_LATCH; }
   "assert"              { FL; return yASSERT; }
   "assume"              { FL; return yASSUME; }
+  "before"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "bind"                { FL; return yBIND; }
+  "bins"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "binsof"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "bit"                 { FL; return yBIT; }
   "break"               { FL; return yBREAK; }
   "byte"                { FL; return yBYTE; }
@@ -473,32 +477,45 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "class"               { FL; return yCLASS; }
   "clocking"            { FL; return yCLOCKING; }
   "const"               { FL; return yCONST__LEX; }
+  "constraint"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "context"             { FL; return yCONTEXT; }
   "continue"            { FL; return yCONTINUE; }
   "cover"               { FL; return yCOVER; }
+  "covergroup"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "coverpoint"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "cross"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "dist"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "do"                  { FL; return yDO; }
   "endclass"            { FL; return yENDCLASS; }
   "endclocking"         { FL; return yENDCLOCKING; }
+  "endgroup"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "endinterface"        { FL; return yENDINTERFACE; }
   "endpackage"          { FL; return yENDPACKAGE; }
   "endprogram"          { FL; return yENDPROGRAM; }
   "endproperty"         { FL; return yENDPROPERTY; }
+  "endsequence"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "enum"                { FL; return yENUM; }
+  "expect"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "export"              { FL; return yEXPORT; }
   "extends"             { FL; return yEXTENDS; }
   "extern"              { FL; return yEXTERN; }
   "final"               { FL; return yFINAL; }
+  "first_match"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "forkjoin"            { FL; return yFORKJOIN; }
   "iff"                 { FL; return yIFF; }
+  "ignore_bins"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "illegal_bins"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "import"              { FL; return yIMPORT; }
   "inside"              { FL; return yINSIDE; }
   "int"                 { FL; return yINT; }
   "interface"           { FL; return yINTERFACE; }
+  "intersect"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "join_any"            { FL; return yJOIN_ANY; }
   "join_none"           { FL; return yJOIN_NONE; }
   "local"               { FL; return yLOCAL__LEX; }
   "logic"               { FL; return yLOGIC; }
   "longint"             { FL; return yLONGINT; }
+  "matches"             { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "modport"             { FL; return yMODPORT; }
   "new"                 { FL; return yNEW__LEX; }
   "null"                { FL; return yNULL; }
@@ -512,16 +529,22 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "rand"                { FL; return yRAND; }
   "randc"               { FL; return yRANDC; }
   "randcase"            { FL; return yRANDCASE; }
+  "randomize"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "randsequence"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "ref"                 { FL; return yREF; }
   "restrict"            { FL; return yRESTRICT; }
   "return"              { FL; return yRETURN; }
+  "sequence"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "shortint"            { FL; return ySHORTINT; }
   "shortreal"           { FL; return ySHORTREAL; }
+  "solve"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "static"              { FL; return ySTATIC__ETC; }
   "string"              { FL; return ySTRING; }
   "struct"              { FL; return ySTRUCT; }
   "super"               { FL; return ySUPER; }
+  "tagged"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "this"                { FL; return yTHIS; }
+  "throughout"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "timeprecision"       { FL; return yTIMEPRECISION; }
   "timeunit"            { FL; return yTIMEUNIT; }
   "type"                { FL; return yTYPE; }
@@ -531,30 +554,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "var"                 { FL; return yVAR; }
   "virtual"             { FL; return yVIRTUAL__LEX; }
   "void"                { FL; return yVOID; }
-  /*     Generic unsupported warnings */
-  /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
-  "before"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "bins"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "binsof"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "constraint"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "covergroup"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "coverpoint"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "cross"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "dist"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "endgroup"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "endsequence"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "expect"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "first_match"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "ignore_bins"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "illegal_bins"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "intersect"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "matches"             { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "randomize"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "randsequence"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "sequence"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "solve"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "tagged"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "throughout"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "wait_order"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "wildcard"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "with"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
@@ -564,13 +563,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* SystemVerilog 2009 */
 <S09,S12,S17,SAX>{
   /*     Keywords */
-  "global"              { FL; return yGLOBAL__LEX; }
-  "unique0"             { FL; return yUNIQUE0; }
-  /*     Generic unsupported warnings */
   "accept_on"           { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "checker"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "endchecker"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "eventually"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "global"              { FL; return yGLOBAL__LEX; }
   "implies"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "let"                 { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "nexttime"            { ERROR_RSVD_WORD("SystemVerilog 2009"); }
@@ -583,6 +580,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "strong"              { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "sync_accept_on"      { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "sync_reject_on"      { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "unique0"             { FL; return yUNIQUE0; }
   "until"               { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "until_with"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "untyped"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
@@ -709,10 +707,18 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX>{
   "/*verilator"{ws}*"*/"                { FL_FWD; FL_BRK; }  /* Ignore empty comments, may be `endif // verilator */
   "/*verilator clock_enable*/"          { FL; return yVL_CLOCK_ENABLE; }
+  "/*verilator clocker*/"               { FL; return yVL_CLOCKER; }
   "/*verilator coverage_block_off*/"    { FL; return yVL_COVERAGE_BLOCK_OFF; }
+  "/*verilator coverage_off*/"          { FL_FWD; PARSEP->fileline()->coverageOn(false); FL_BRK; }
+  "/*verilator coverage_on*/"           { FL_FWD; PARSEP->fileline()->coverageOn(true); FL_BRK; }
   "/*verilator full_case*/"             { FL; return yVL_FULL_CASE; }
   "/*verilator inline_module*/"         { FL; return yVL_INLINE_MODULE; }
   "/*verilator isolate_assignments*/"   { FL; return yVL_ISOLATE_ASSIGNMENTS; }
+  "/*verilator lint_off"[^*]*"*/"       { FL_FWD; PARSEP->verilatorCmtLint(yytext, true); FL_BRK; }
+  "/*verilator lint_on"[^*]*"*/"        { FL_FWD; PARSEP->verilatorCmtLint(yytext, false); FL_BRK; }
+  "/*verilator lint_restore*/"          { FL_FWD; PARSEP->verilatorCmtLintRestore(); FL_BRK; }
+  "/*verilator lint_save*/"             { FL_FWD; PARSEP->verilatorCmtLintSave(); FL_BRK; }
+  "/*verilator no_clocker*/"            { FL; return yVL_NO_CLOCKER; }
   "/*verilator no_inline_module*/"      { FL; return yVL_NO_INLINE_MODULE; }
   "/*verilator no_inline_task*/"        { FL; return yVL_NO_INLINE_TASK; }
   "/*verilator parallel_case*/"         { FL; return yVL_PARALLEL_CASE; }
@@ -721,22 +727,14 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator public_flat_rd*/"        { FL; return yVL_PUBLIC_FLAT_RD; }
   "/*verilator public_flat_rw*/"        { FL; return yVL_PUBLIC_FLAT_RW; }  // The @(edge) is converted by the preproc
   "/*verilator public_module*/"         { FL; return yVL_PUBLIC_MODULE; }
-  "/*verilator split_var*/"             { FL; return yVL_SPLIT_VAR; }
-  "/*verilator sc_clock*/"              { FL; return yVL_CLOCK; }
-  "/*verilator clocker*/"               { FL; return yVL_CLOCKER; }
-  "/*verilator no_clocker*/"            { FL; return yVL_NO_CLOCKER; }
   "/*verilator sc_bv*/"                 { FL; return yVL_SC_BV; }
+  "/*verilator sc_clock*/"              { FL; return yVL_CLOCK; }
   "/*verilator sformat*/"               { FL; return yVL_SFORMAT; }
+  "/*verilator split_var*/"             { FL; return yVL_SPLIT_VAR; }
   "/*verilator systemc_clock*/"         { FL; return yVL_CLOCK; }
+  "/*verilator tag"[^*]*"*/"            { FL_FWD; PARSEP->tag(yytext); FL_BRK; }
   "/*verilator tracing_off*/"           { FL_FWD; PARSEP->fileline()->tracingOn(false); FL_BRK; }
   "/*verilator tracing_on*/"            { FL_FWD; PARSEP->fileline()->tracingOn(true); FL_BRK; }
-  "/*verilator coverage_off*/"          { FL_FWD; PARSEP->fileline()->coverageOn(false); FL_BRK; }
-  "/*verilator coverage_on*/"           { FL_FWD; PARSEP->fileline()->coverageOn(true); FL_BRK; }
-  "/*verilator lint_off"[^*]*"*/"       { FL_FWD; PARSEP->verilatorCmtLint(yytext, true); FL_BRK; }
-  "/*verilator lint_on"[^*]*"*/"        { FL_FWD; PARSEP->verilatorCmtLint(yytext, false); FL_BRK; }
-  "/*verilator lint_restore*/"          { FL_FWD; PARSEP->verilatorCmtLintRestore(); FL_BRK; }
-  "/*verilator lint_save*/"             { FL_FWD; PARSEP->verilatorCmtLintSave(); FL_BRK; }
-  "/*verilator tag"[^*]*"*/"            { FL_FWD; PARSEP->tag(yytext); FL_BRK; }
 
   "/**/"                                { FL_FWD; FL_BRK; }
   "/*"[^*]+"*/"                         { FL_FWD; PARSEP->verilatorCmtBad(yytext); FL_BRK; }
