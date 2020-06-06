@@ -3348,6 +3348,9 @@ taskRef<nodep>:			// IEEE: part of tf_call
 	|	id '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef($<fl>1,*$1,$3); }
 	|	package_scopeIdFollows id '(' list_of_argumentsE ')'
 			{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstTaskRef($<fl>2,*$2,$4)); }
+	|	class_scopeIdFollows id '(' list_of_argumentsE ')'
+			{ $$ = new AstTaskRef($<fl>2, *$2, $4);
+			  BBUNSUP($<fl>2, "Unsupported: Class-scoped tasks"); }
 	;
 
 funcRef<nodep>:			// IEEE: part of tf_call
@@ -3363,6 +3366,9 @@ funcRef<nodep>:			// IEEE: part of tf_call
 		id '(' list_of_argumentsE ')'		{ $$ = new AstFuncRef($<fl>1, *$1, $3); }
 	|	package_scopeIdFollows id '(' list_of_argumentsE ')'
 			{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstFuncRef($<fl>2,*$2,$4)); }
+	|	class_scopeIdFollows id '(' list_of_argumentsE ')'
+			{ $$ = new AstFuncRef($<fl>2, *$2, $4);
+			  BBUNSUP($<fl>2, "Unsupported: Class-scoped functions"); }
 	//UNSUP list_of_argumentE should be pev_list_of_argumentE
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
@@ -4170,7 +4176,7 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 	|	yD_ROOT					{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"); }
 	|	idArrayed				{ $$ = $1; }
 	|	package_scopeIdFollows idArrayed	{ $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
-	|	class_scopeIdFollows idArrayed		{ $$ = $2; BBUNSUP($<fl>1, "Unsupported: scoped class reference"); }
+	|	class_scopeIdFollows idArrayed		{ $$ = $2; BBUNSUP($<fl>2, "Unsupported: scoped class reference"); }
 	|	~l~expr '.' idArrayed			{ $$ = new AstDot($<fl>2, false, $1, $3); }
 	//			// expr below must be a "yTHIS"
 	|	~l~expr '.' ySUPER			{ $$ = $1; BBUNSUP($3, "Unsupported: super"); }
