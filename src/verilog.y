@@ -3450,11 +3450,11 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_STOP parenE				{ $$ = new AstStop($1, false); }
 	|	yD_STOP '(' expr ')'			{ $$ = new AstStop($1, false); DEL($3); }
 	//
-	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6); }
-	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6); }
-	|	yD_SWRITEB '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6, 'b'); }
-	|	yD_SWRITEH '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6, 'h'); }
-	|	yD_SWRITEO '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6, 'o'); }
+	|	yD_SFORMAT '(' expr ',' exprDispList ')'	{ $$ = new AstSFormat($1, $3, $5); }
+	|	yD_SWRITE  '(' expr ',' exprDispList ')'	{ $$ = new AstSFormat($1, $3, $5); }
+	|	yD_SWRITEB '(' expr ',' exprDispList ')'	{ $$ = new AstSFormat($1, $3, $5, 'b'); }
+	|	yD_SWRITEH '(' expr ',' exprDispList ')'	{ $$ = new AstSFormat($1, $3, $5, 'h'); }
+	|	yD_SWRITEO '(' expr ',' exprDispList ')'	{ $$ = new AstSFormat($1, $3, $5, 'o'); }
 	//
 	|	yD_DISPLAY  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, NULL); }
 	|	yD_DISPLAY  '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, $3); }

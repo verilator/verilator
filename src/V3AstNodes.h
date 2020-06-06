@@ -3708,6 +3708,11 @@ public:
         setOp1p(new AstSFormatF(fl, text, true, exprsp, missingArgChar));
         setOp3p(lhsp);
     }
+    AstSFormat(FileLine* fl, AstNode* lhsp, AstNode* exprsp, char missingArgChar = 'd')
+        : ASTGEN_SUPER(fl) {
+        setOp1p(new AstSFormatF(fl, AstSFormatF::NoFormat(), exprsp, missingArgChar));
+        setOp3p(lhsp);
+    }
     ASTNODE_NODE_FUNCS(SFormat)
     virtual const char* broken() const {
         BROKEN_RTN(!fmtp());

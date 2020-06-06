@@ -43,6 +43,11 @@ module t;
       $swrite(str2, "e=%f", r);
       $swrite(str2, "e=%g", r);
 
+      str3 = "hello";
+      $swrite(str2, {str3, str3});
+`ifdef TEST_VERBOSE  $display("str2=%0s",str2);  `endif
+      if (str2 !== "hellohello") $stop;
+
       r = 0.01;
       $swrite(str2, "e=%e f=%f g=%g", r, r, r);
 `ifdef TEST_VERBOSE  $display("str2=%0s",str2);  `endif
