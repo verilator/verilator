@@ -1257,10 +1257,10 @@ interface_item<nodep>:		// IEEE: interface_item + non_port_interface_item
 	//			// IEEE: generate_region
 	|	interface_generate_region		{ $$ = $1; }
 	|	interface_or_generate_item		{ $$ = $1; }
-	|	program_declaration			{ $$ = NULL; v3error("Unsupported: program decls within interface decls"); }
+	|	program_declaration			{ $$ = NULL; BBUNSUP(CRELINE(), "Unsupported: program decls within interface decls"); }
 	//			// IEEE 1800-2017: modport_item
 	//			// See instead old 2012 position in interface_or_generate_item
-	|	interface_declaration			{ $$ = NULL; v3error("Unsupported: interface decls within interface decls"); }
+	|	interface_declaration			{ $$ = NULL; BBUNSUP(CRELINE(), "Unsupported: interface decls within interface decls"); }
 	|	timeunits_declaration			{ $$ = $1; }
 	//			// See note in interface_or_generate item
 	|	module_common_item			{ $$ = $1; }
@@ -1283,7 +1283,7 @@ interface_or_generate_item<nodep>:  // ==IEEE: interface_or_generate_item
 
 anonymous_program<nodep>:	// ==IEEE: anonymous_program
 	//			// See the spec - this doesn't change the scope, items still go up "top"
-		yPROGRAM ';' anonymous_program_itemListE yENDPROGRAM	{ $<fl>1->v3error("Unsupported: Anonymous programs"); $$ = NULL; }
+		yPROGRAM ';' anonymous_program_itemListE yENDPROGRAM	{ BBUNSUP($<fl>1, "Unsupported: Anonymous programs"); $$ = NULL; }
 	;
 
 anonymous_program_itemListE<nodep>:	// IEEE: { anonymous_program_item }
@@ -1728,7 +1728,7 @@ member_decl_assignment<memberp>:	// Derived from IEEE: variable_decl_assignment
                           PARSEP->tagNodep($$);
                           }
 	|	id variable_dimensionListE '=' variable_declExpr
-			{ $4->v3error("Unsupported: Initial values in struct/union members.");
+			{ BBUNSUP($4, "Unsupported: Initial values in struct/union members.");
 			  // But still need error if packed according to IEEE 7.2.2
 			  $$ = NULL; }
 	|	idSVKwd					{ $$ = NULL; }
@@ -1804,8 +1804,8 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 								 		   new AstSub($1, $2, new AstConst($1, 1))); } }
 	//			// IEEE: associative_dimension
 	|	'[' data_type ']'			{ $$ = new AstAssocRange($1, $2); }
-	|	yP_BRASTAR ']'				{ $$ = NULL; v3error("Unsupported: [*] wildcard associative arrays"); }
-	|	'[' '*' ']'				{ $$ = NULL; v3error("Unsupported: [*] wildcard associative arrays"); }
+	|	yP_BRASTAR ']'				{ $$ = NULL; BBUNSUP($1, "Unsupported: [*] wildcard associative arrays"); }
+	|	'[' '*' ']'				{ $$ = NULL; BBUNSUP($2, "Unsupported: [*] wildcard associative arrays"); }
 	//			// IEEE: queue_dimension
 	//			// '[' '$' ']' -- $ is part of expr, see '[' constExpr ']'
 	//			// '[' '$' ':' expr ']' -- anyrange:expr:$
@@ -2047,9 +2047,9 @@ non_port_module_item<nodep>:	// ==IEEE: non_port_module_item
 	|	module_or_generate_item 		{ $$ = $1; }
 	|	specify_block 				{ $$ = $1; }
 	|	specparam_declaration			{ $$ = $1; }
-	|	program_declaration			{ $$ = NULL; v3error("Unsupported: program decls within module decls"); }
-	|	module_declaration			{ $$ = NULL; v3error("Unsupported: module decls within module decls"); }
-	|	interface_declaration			{ $$ = NULL; v3error("Unsupported: interface decls within module decls"); }
+	|	program_declaration			{ $$ = NULL; BBUNSUP(CRELINE(), "Unsupported: program decls within module decls"); }
+	|	module_declaration			{ $$ = NULL; BBUNSUP(CRELINE(), "Unsupported: module decls within module decls"); }
+	|	interface_declaration			{ $$ = NULL; BBUNSUP(CRELINE(), "Unsupported: interface decls within module decls"); }
 	|	timeunits_declaration			{ $$ = $1; }
 	//			// Verilator specific
 	|	yaSCHDR					{ $$ = new AstScHdr($<fl>1,*$1); }
@@ -2448,7 +2448,7 @@ packed_dimensionList<rangep>:	// IEEE: { packed_dimension }
 
 packed_dimension<rangep>:	// ==IEEE: packed_dimension
 		anyrange				{ $$ = $1; }
-	|	'[' ']'					{ $$ = NULL; $<fl>1->v3error("Unsupported: [] dimensions"); }
+	|	'[' ']'					{ $$ = NULL; BBUNSUP($<fl>1, "Unsupported: [] dimensions"); }
 	;
 
 //************************************************
@@ -3105,11 +3105,11 @@ caseCondList<nodep>:		// IEEE: part of case_item
 	;
 
 patternNoExpr<nodep>:		// IEEE: pattern **Excluding Expr*
-		'.' id/*variable*/			{ $$ = NULL; $1->v3error("Unsupported: '{} tagged patterns"); }
-	|	yP_DOTSTAR				{ $$ = NULL; $1->v3error("Unsupported: '{} tagged patterns"); }
+		'.' id/*variable*/			{ $$ = NULL; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
+	|	yP_DOTSTAR				{ $$ = NULL; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
 	//			// IEEE: "expr" excluded; expand in callers
 	//			// "yTAGGED id [expr]" Already part of expr
-	//UNSUP	yTAGGED id/*member_identifier*/ patternNoExpr		{ $$ = NULL; $1->v3error("Unsupported: '{} tagged patterns"); }
+	//UNSUP	yTAGGED id/*member_identifier*/ patternNoExpr		{ $$ = NULL; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
 	//			// "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
 	;
 
@@ -3131,10 +3131,10 @@ patternMemberList<nodep>:	// IEEE: part of pattern and assignment_pattern
 
 patternMemberOne<patmemberp>:	// IEEE: part of pattern and assignment_pattern
 		patternKey ':' expr			{ $$ = new AstPatMember($1->fileline(),$3,$1,NULL); }
-	|	patternKey ':' patternNoExpr		{ $$ = NULL; $2->v3error("Unsupported: '{} .* patterns"); }
+	|	patternKey ':' patternNoExpr		{ $$ = NULL; BBUNSUP($2, "Unsupported: '{} .* patterns"); }
 	//			// From assignment_pattern_key
 	|	yDEFAULT ':' expr			{ $$ = new AstPatMember($1,$3,NULL,NULL); $$->isDefault(true); }
-	|	yDEFAULT ':' patternNoExpr		{ $$ = NULL; $2->v3error("Unsupported: '{} .* patterns"); }
+	|	yDEFAULT ':' patternNoExpr		{ $$ = NULL; BBUNSUP($2, "Unsupported: '{} .* patterns"); }
 	;
 
 patternKey<nodep>:		// IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key
@@ -3417,7 +3417,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_COUNTBITS '(' expr ',' expr ',' expr ',' expr ')'	{ $$ = new AstCountBits($1,$3,$5,$7,$9); }
 	|	yD_COUNTBITS '(' expr ',' expr ',' expr ',' expr ',' exprList ')'
 			{ $$ = new AstCountBits($1, $3, $5, $7, $9);
-			  $11->v3error("Unsupported: $countbits with more than 3 control fields"); }
+			  BBUNSUP($11, "Unsupported: $countbits with more than 3 control fields"); }
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
 	|	yD_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_DIMENSIONS,$3); }
 	|	yD_EXP '(' expr ')'			{ $$ = new AstExpD($1,$3); }
@@ -3451,11 +3451,11 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_ONEHOT0 '(' expr ')'			{ $$ = new AstOneHot0($1,$3); }
 	|	yD_PAST '(' expr ')'			{ $$ = new AstPast($1,$3, NULL); }
 	|	yD_PAST '(' expr ',' expr ')'		{ $$ = new AstPast($1,$3, $5); }
-	|	yD_PAST '(' expr ',' expr ',' expr ')'		{ $1->v3error("Unsupported: $past expr2 and clock arguments"); $$ = $3; }
-	|	yD_PAST '(' expr ',' expr ',' expr ',' expr')'	{ $1->v3error("Unsupported: $past expr2 and clock arguments"); $$ = $3; }
+	|	yD_PAST '(' expr ',' expr ',' expr ')'		{ $$ = $3; BBUNSUP($1, "Unsupported: $past expr2 and clock arguments"); }
+	|	yD_PAST '(' expr ',' expr ',' expr ',' expr')'	{ $$ = $3; BBUNSUP($1, "Unsupported: $past expr2 and clock arguments"); }
 	|	yD_POW '(' expr ',' expr ')'		{ $$ = new AstPowD($1,$3,$5); }
 	//			// Seeding is unsupported as would be slow to invalidate all per-thread RNGs
-	|	yD_RANDOM '(' expr ')'			{ $$ = new AstRand($1); $1->v3error("Unsupported: Seed on $random. Suggest use +verilator+seed+ runtime flag"); }
+	|	yD_RANDOM '(' expr ')'			{ $$ = new AstRand($1); BBUNSUP($1, "Unsupported: Seed on $random. Suggest use +verilator+seed+ runtime flag"); }
 	|	yD_RANDOM parenE			{ $$ = new AstRand($1); }
 	|	yD_REALTIME parenE			{ $$ = new AstTimeD($1, VTimescale(VTimescale::NONE)); }
 	|	yD_REALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); }
@@ -3891,7 +3891,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: empty_queue (IEEE 1800-2017 empty_unpacked_array_concatenation)
 	|	'{' '}'					{ $$ = new AstConst($1, AstConst::LogicFalse());
-							  $<fl>1->v3error("Unsupported: empty queues (\"{ }\")"); }
+							  BBUNSUP($<fl>1, "Unsupported: empty queues (\"{ }\")"); }
 	//
 	//			// IEEE: concatenation/constant_concatenation
 	//			// Part of exprOkLvalue below

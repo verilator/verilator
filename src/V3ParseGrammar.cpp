@@ -173,7 +173,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
         if (GRAMMARP->m_varIO.isAny()) {
             type = AstVarType::PORT;
         } else {
-            fileline->v3fatalSrc("Unknown signal type declared");
+            fileline->v3fatalSrc("Unknown signal type declared: " << type.ascii());
         }
     }
     if (type == AstVarType::GENVAR) {
