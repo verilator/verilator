@@ -3,6 +3,9 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
+* Verilator 4.037 devel
+
+
 * Verilator 4.036 2020-06-06
 
 **    OPT_FAST is now -Os by default. See the BENCHMARKING & OPTIMIZATION part
