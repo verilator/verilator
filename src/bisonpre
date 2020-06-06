@@ -212,6 +212,8 @@ sub clean_output {
         $line =~ s!\(YY_\("!(YY_((char*)"!g;
         # Fix bison 2.3 glr-parser warning about yyerrorloc.YYTYPE::yydummy uninit
         $line =~ s!(YYLTYPE yyerrloc;)!$1 yyerrloc.yydummy=0;/*bisonpre*/!g;
+        # Fix bison 3.6.1 unexpected nested-comment
+        $line =~ s!/\* "/\*.*\*/"  \*/!!g;
         $fh->write($line);
     }
     $fh->close;

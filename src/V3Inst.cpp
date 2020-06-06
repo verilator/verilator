@@ -27,11 +27,9 @@
 #include "V3Global.h"
 #include "V3Inst.h"
 #include "V3Ast.h"
-#include "V3Changed.h"
 #include "V3Const.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 // Inst state, as a visitor of each AstNode
@@ -204,8 +202,6 @@ private:
     AstRange* m_cellRangep;  // Range for arrayed instantiations, NULL for normal instantiations
     int m_instSelNum;  // Current instantiation count 0..N-1
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
-
-    typedef std::map<string, AstVar*> VarNameMap;
 
     VL_DEBUG_FUNC;  // Declare debug()
 
@@ -423,7 +419,7 @@ private:
                     }
                 }
                 if (!varNewp) {
-                    if (debug() >= 9) m_deModVars.dump();
+                    if (debug() >= 9) m_deModVars.dump();  // LCOV_EXCL_LINE
                     nodep->v3fatalSrc("Module dearray failed for "
                                       << AstNode::prettyNameQ(varNewName));
                 }

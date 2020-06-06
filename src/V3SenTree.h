@@ -128,7 +128,7 @@ public:
         m_topscopep = NULL;
         m_trees.clear();
     }
-    AstSenTree* getSenTree(FileLine* fl, AstSenTree* sensesp) {
+    AstSenTree* getSenTree(AstSenTree* sensesp) {
         // Return a global sentree that matches given sense list.
         AstSenTree* treep = m_trees.find(sensesp);
         // Not found, form a new one

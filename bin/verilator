@@ -300,6 +300,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --dump-tree                 Enable dumping .tree files
     --dump-treei <level>        Enable dumping .tree files at a level
     --dump-treei-<srcfile> <level>  Enable dumping .tree file at a source file at a level
+    --dump-tree-addrids         Use short identifiers instead of addresses
      -E                         Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
@@ -399,6 +400,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
     --version                   Displays program version and exits
     --vpi                       Enable VPI compiles
+    --waiver-output <filename>  Create a waiver file based on the linter warnings
      -Wall                      Enable all style warnings
      -Werror-<message>          Convert warnings to errors
      -Wfuture-<message>         Disable unknown message warnings
@@ -811,6 +813,14 @@ file to the specified tree dumping level (e.g. C<--dump-treei-V3Order 9>).
 Level 0 disbles dumps and is equivalent to "--no-dump-tree".  Level 9
 enables dumping of every stage.
 
+=item --dump-tree-addrids
+
+Rarely needed - for developer use.  Replace AST node addresses with short
+identifiers in tree dumps to enhance readability.  Each unique pointer value
+is mapped to a unique identifier, but note that this is not necessarily
+unique per node instance as an address might get reused by a newly allocated
+node after a node with the same address has been dumped then freed.
+
 =item -E
 
 Preprocess the source code, but do not compile, as with 'gcc -E'.  Output
@@ -881,7 +891,10 @@ octal (0..) or binary (0b..) notation.
 
 =item Double literals
 
-Double literals must contain a dot (.) and/or an exponent (e).
+Double literals must be one of the following styles:
+  - contains a dot (.) (e.g. 1.23)
+  - contains an expornent (e/E) (e.g. 12e3)
+  - contains p/P for hexadecimal floating point in C99 (e.g. 0x123.ABCp1)
 
 =item Strings
 
@@ -1119,17 +1132,15 @@ developers.
 
 Enables splitting the output .cpp files into multiple outputs.  When a C++
 file exceeds the specified number of operations, a new file will be created
-at the next function boundary.  In addition, any infrequently executed
-"cold" routines will be placed into __Slow files.  This accelerates
-compilation by as optimization can be disabled on the routines in __Slow,
-and the remaining files can be compiled on parallel machines.  Using
---output-split should have only a trivial impact on performance.  On one
-design --output-split 20000 resulted in splitting into approximately
-one-minute-compile chunks.
+at the next function boundary.  In addition, if the total output code size
+exceeds the specified value, VM_PARALLEL_BUILDS will be set to 1 by default
+in the generated make files, making parallel compilation possible. Using
+--output-split should have only a trivial impact on model performance. But
+can greatly improve C++ compilation speed. The use of I<ccache> (set for you
+if present at configure time) is also more effective with this option.
 
-Typically when using this, make with VM_PARALLEL_BUILDS=1 (set for you if
-using the default makefiles), and use I<ccache> (set for you if present at
-configure time).
+This option is on by default with a value of 20000. To disable, pass with a
+value of 0.
 
 =item --output-split-cfuncs I<statements>
 
@@ -1141,10 +1152,14 @@ worse with decreasing split values.  Note that this option is stronger than
 --output-split in the sense that --output-split will not split inside a
 function.
 
+Defaults to the value of --output-split, unless explicitly specified.
+
 =item --output-split-ctrace I<statements>
 
-Enables splitting trace functions in the output .cpp files into
-multiple functions.  Defaults to same setting as --output-split-cfuncs.
+Similar to --output-split-cfuncs, enables splitting trace functions in the
+output .cpp files into multiple functions.
+
+Defaults to the value of --output-split, unless explicitly specified.
 
 =item -P
 
@@ -1451,7 +1466,7 @@ good value.
 
 Sets default timescale, timeunit and timeprecision for when `timescale does
 not occur in sources.  Default is "1ps/1ps" (to match SystemC).  This is
-overriden by C<--timescale-override>.
+overridden by C<--timescale-override>.
 
 =item --timescale-override I<timeunit>/I<timeprecision>
 
@@ -1539,7 +1554,7 @@ larger trace files.
 =item --trace-threads I<threads>
 
 Enable waveform tracing using separate threads. This is typically faster in
-simulation runtime but uses more total compute. This option is independend of,
+simulation runtime but uses more total compute. This option is independent of,
 and works with, both C<--trace> and C<--trace-fst>. Different trace formats can
 take advantage of more trace threads to varying degrees. Currently VCD tracing
 can utilize at most --trace-threads 1, and FST tracing can utilize at most
@@ -1600,6 +1615,17 @@ Displays program version and exits.
 =item --vpi
 
 Enable use of VPI and linking against the verilated_vpi.cpp files.
+
+=item --waiver-output <filename>
+
+Generate a waiver file which contains all waiver statements to suppress the
+warnings emitted during this Verilator run. This is in particular useful as
+a starting point for solving linter warnings or suppressing them
+systematically.
+
+The generated file is in the Verilator Configuration format, see
+L</"CONFIGURATION FILES">, and can directly be consumed by Verilator. The
+standard file extension is .vlt.
 
 =item -Wall
 
@@ -2001,7 +2027,7 @@ depending on the operating system.
     # Might be needed if SystemC 2.3.0
     export SYSTEMC_CXX_FLAGS=-pthread
 
-    g++ -L$SYSTEMC_LIBDIR ../sc_main.o Vour__ALL*.o verilated.o \
+    g++ -L$SYSTEMC_LIBDIR ../sc_main.o Vour__ALL.a verilated.o \
               -o Vour -lsystemc
 
 And now we run it
@@ -2054,11 +2080,11 @@ distribution.
 
 =head1 BENCHMARKING & OPTIMIZATION
 
-For best performance, run Verilator with the "-O3 --x-assign fast
---x-initial fast --noassert" flags.  The -O3 flag will require longer
-compile times, and "--x-assign fast --x-initial fast" may increase the risk
-of reset bugs in trade for performance; see the above documentation for
-these flags.
+For best performance, run Verilator with the "-O3 --x-assign fast --x-initial
+fast --noassert" flags.  The -O3 flag will require longer time to run
+Verilator, and "--x-assign fast --x-initial fast" may increase the risk of
+reset bugs in trade for performance; see the above documentation for these
+flags.
 
 If using Verilated multithreaded, use C<numactl> to ensure you are using
 non-conflicting hardware resources. See L</"MULTITHREADING">.
@@ -2070,49 +2096,69 @@ simple change to a clock latch used to gate clocks and gained a 60%
 performance improvement.
 
 Beyond that, the performance of a Verilated model depends mostly on your
-C++ compiler and size of your CPU's caches.
+C++ compiler and size of your CPU's caches. Experience shows that large models
+are often limited by the size of the instruction cache, and as such reducing
+code size if possible can be beneficial.
 
-By default, the lib/verilated.mk file has optimization turned off.  This is
-for the benefit of new users, as it improves compile times at the cost of
-simulation runtimes.  To add optimization as the default, set one of three variables,
-OPT, OPT_FAST, or OPT_SLOW lib/verilated.mk.  Or, use the -CFLAGS and/or
--LDFLAGS option on the verilator command line to pass the flags directly to
-the compiler or linker.  Or, just for one run, pass them on the command
-line to make:
+The supplied $VERILATOR_ROOT/include/verilated.mk file uses the OPT, OPT_FAST,
+OPT_SLOW and OPT_GLOBAL variables to control optimization. You can set these
+when compiling the output of Verilator with Make, for example:
 
-    make OPT_FAST="-Os -march=native -fno-stack-protector" -f Vour.mk Vour__ALL.a
+    make OPT_FAST="-Os -march=native" -f Vour.mk Vour__ALL.a
 
-OPT_FAST specifies optimizations for those programs that are part of the
-fast path, mostly code that is executed every cycle.  OPT_SLOW specifies
-optimizations for slow-path files (plus tracing), which execute only
-rarely, yet take a long time to compile with optimization on.  OPT
-specifies overall optimization and affects all compiles, including those
-OPT_FAST and OPT_SLOW control.  For best results, use OPT="-Os
--march=native", and link with "-static".  Nearly the same results can be
-had with much better compile times with OPT_FAST="-O1 -fstrict-aliasing".
-Higher optimization such as "-O2" or "-O3" may help, but gcc compile times
-may be excessive under O3 on even medium sized designs.
+OPT_FAST specifies optimization flags for those parts of the model that are on
+the fast path. This is mostly code that is executed every cycle. OPT_SLOW
+applies to slow-path code, which executes rarely, often only once at the
+beginning or end of simulation. Note that OPT_SLOW is ignored if
+VM_PARALLEL_BUILDS is not 1, in which case all generated code will be compiled
+in a single compilation unit using OPT_FAST. See also the C<--output-split>
+option. The OPT_GLOBAL variable applies to common code in the run-time library
+used by verilated models (shipped in $VERILATOR_ROOT/include). Additional C++
+files passed on the verilator command line use OPT_FAST. The OPT variable
+applies to all compilation units in addition to the specific OPT_* variables
+described above.
 
-Unfortunately, using the optimizer with SystemC files can result in
-compiles taking several minutes.  (The SystemC libraries have many little
-inlined functions that drive the compiler nuts.)
+You can also use the -CFLAGS and/or -LDFLAGS options on the verilator command
+line to pass flags directly to the compiler or linker.
 
-For best results, use the latest clang compiler (about 10% faster than
-GCC).  Note the now fairly old GCC 3.2 and earlier have optimization bugs
-around pointer aliasing detection, which can result in 2x performance
-losses.
+The default values of the OPT_* variables are chosen to yield good simulation
+speed with reasonable C++ compilation times. To this end, OPT_FAST is set to
+"-Os" by default. Higher optimization such as "-O2" or "-O3" may help (though
+often they provide only a very small performance benefit), but compile times
+may be excessively large even with medium sized designs. Compilation times can
+be improved at the expense of simulation speed by reducing optimization, for
+example with OPT_FAST="-O0". Often good simulation speed can be achieved with
+OPT_FAST="-O1 -fstrict-aliasing" but with improved compilation times. Files
+controlled by OPT_SLOW have little effect on performance and therefore OPT_SLOW
+is empty by default (equivalent to "-O0") for improved compilation speed. In
+common use-cases there should be little benefit in changing OPT_SLOW.
+OPT_GLOBAL is set to "-Os" by default and there should rarely be a need to
+change it. As the run-time library is small in comparison to a lot of verilated
+models, disabling optimization on the run-time library should not have a
+serious effect on overall compilation time, but may have detrimental effect on
+simulation speed, especially with tracing. In addition to the above, for best
+results use OPT="-march=native", the latest Clang compiler (about 10% faster
+than GCC), and link statically.
 
-If you will be running many simulations on a single compile, investigate
-feedback driven compilation.  With GCC, using -fprofile-arcs, then
+Generally the answer to which optimization level gives the best user experience
+depends on the use case and some experimentation can pay dividends. For a
+speedy debug cycle during development, especially on large designs where C++
+compilation speed can dominate, consider using lower optimization to get to an
+executable faster. For throughput oriented use cases, for example regressions,
+it is usually worth spending extra compilation time to reduce total CPU time.
+
+If you will be running many simulations on a single model, you can investigate
+profile guided optimization. With GCC, using -fprofile-arcs, then
 -fbranch-probabilities will yield another 15% or so.
 
 Modern compilers also support link-time optimization (LTO), which can help
-especially if you link in DPI code.  To enable LTO on GCC, pass "-flto" in
-both compilation and link.  Note LTO may cause excessive compile times on
-large designs.
+especially if you link in DPI code. To enable LTO on GCC, pass "-flto" in both
+compilation and link. Note LTO may cause excessive compile times on large
+designs.
 
-Using profile driven compiler optimization, with feedback from a real
-design, can yield up to30% improvements.
+Unfortunately, using the optimizer with SystemC files can result in compilation
+taking several minutes. (The SystemC libraries have many little inlined
+functions that drive the compiler nuts.)
 
 If you are using your own makefiles, you may want to compile the Verilated
 code with -DVL_INLINE_OPT=inline. This will inline functions, however this
@@ -2184,8 +2230,7 @@ After running Make, the C++ compiler may produce the following:
     {mod_prefix}{misc}.o                // Intermediate objects
     {prefix}                            // Final executable (w/--exe argument)
     {prefix}__ALL.a                     // Library of all Verilated objects
-    {prefix}__ALLfast.cpp               // Include of hot code for single compile
-    {prefix}__ALLslow.cpp               // Include of slow code for single compile
+    {prefix}__ALL.cpp                   // Include of all code for single compile
     {prefix}{misc}.d                    // Intermediate dependencies
     {prefix}{misc}.o                    // Intermediate objects
 
@@ -2653,7 +2698,7 @@ Verilator and add the generated C++ sources to the target specified.
     verilate(target SOURCES source ... [TOP_MODULE top] [PREFIX name]
              [TRACE] [TRACE_FST] [SYSTEMC] [COVERAGE]
              [INCLUDE_DIRS dir ...] [OPT_SLOW ...] [OPT_FAST ...]
-             [DIRECTORY dir] [VERILATOR_ARGS ...])
+             [OPT_GLOBAL ..] [DIRECTORY dir] [VERILATOR_ARGS ...])
 
 Lowercase and ... should be replaced with arguments, the uppercase parts
 delimit the arguments and can be passed in any order, or left out entirely
@@ -2744,6 +2789,11 @@ optimization level to improve compile times with large designs.
 
 Optional. Set compiler flags for the fast path.
 
+=item OPT_GLOBAL
+
+Optional. Set compiler flags for the common run-time library used by verilated
+models.
+
 =item DIRECTORY
 
 Optional. Set the verilator output directory. It is preferable to use the
@@ -2769,8 +2819,7 @@ underneath NC:
    cd obj_dir
    ncsc_run \
         sc_main.cpp \
-        Vour__ALLfast.cpp \
-        Vour__ALLslow.cpp \
+        Vour__ALL.cpp \
         verilated.cpp
 
 For larger designs you'll want to automate this using makefiles, which pull
@@ -3076,7 +3125,7 @@ information.
 
 Break the variable into multiple pieces typically to resolve UNOPTFLAT
 performance issues. Typically the variables to attach this to are
-recommeded by Verilator itself, see UNOPTFLAT.
+recommended by Verilator itself, see UNOPTFLAT.
 
 Same as /*verilator split_var*/, see L</"LANGUAGE EXTENSIONS"> for more
 information.
@@ -3101,11 +3150,11 @@ uwire keyword.
 =head2 SystemVerilog 2005 (IEEE 1800-2005) Support
 
 Verilator supports ==? and !=? operators, ++ and -- in some contexts,
-$bits, $countones, $error, $fatal, $info, $isunknown, $onehot, $onehot0,
-$unit, $warning, always_comb, always_ff, always_latch, bit, byte, chandle,
-const, do-while, enum, export, final, import, int, interface, logic,
-longint, modport, package, program, shortint, struct, time, typedef, union,
-var, void, priority case/if, and unique case/if.
+$bits, $countbits, $countones, $error, $fatal, $info, $isunknown, $onehot,
+$onehot0, $unit, $warning, always_comb, always_ff, always_latch, bit, byte,
+chandle, const, do-while, enum, export, final, import, int, interface,
+logic, longint, modport, package, program, shortint, struct, time, typedef,
+union, var, void, priority case/if, and unique case/if.
 
 It also supports .name and .* interconnection.
 
@@ -3571,7 +3620,7 @@ for more information.
 
 Attached to a variable or a net declaration to break the variable into
 multiple pieces typically to resolve UNOPTFLAT performance issues.
-Typically the variables to attach this to are recommeded by Verilator
+Typically the variables to attach this to are recommended by Verilator
 itself, see UNOPTFLAT below.
 
 For example, Verilator will internally convert a variable with the
@@ -3620,29 +3669,24 @@ declared.
 
 =head1 LANGUAGE LIMITATIONS
 
-There are some limitations and lack of features relative to a commercial
-simulator, by intent.  User beware.
-
-It is strongly recommended you use a lint tool before running this program.
-Verilator isn't designed to easily uncover common mistakes that a lint
-program will find for you.
+There are some limitations and lack of features relative to the major
+closed-source simulators, by intent.
 
 =head2 Synthesis Subset
 
-Verilator supports only the Synthesis subset with a few minor additions
-such as $stop, $finish and $display.  That is, you cannot use hierarchical
-references, events or similar features of the Verilog language.  It also
-simulates as Synopsys's Design Compiler would; namely a block of the form:
+Verilator supports the Synthesis subset with other verification constructs
+being added over time. Verilator also simulates events as Synopsys's Design
+Compiler would; namely given a block of the form:
 
         always @ (x)   y = x & z;
 
 This will recompute y when there is even a potential for change in x or a
 change in z, that is when the flops computing x or z evaluate (which is
 what Design Compiler will synthesize.)  A compliant simulator would only
-calculate y if x changes.  Use Verilog-Mode's /*AS*/ or Verilog 2001's
-always @* to reduce missing activity items.  Avoid putting $displays in
-combo blocks, as they may print multiple times when not desired, even on
-compliant simulators as event ordering is not specified.
+calculate y if x changes.  We recommend using always_comb to make the code
+run the same everywhere.  Also avoid putting $displays in combo blocks, as
+they may print multiple times when not desired, even on compliant
+simulators as event ordering is not specified.
 
 =head2 Signal Naming
 
@@ -3659,9 +3703,9 @@ path.
 
 =head2 Class
 
-Verilator class support is very limited and in active development.
-Verilator supports members, and methods. Verilator doe not support class
-static members, class extend, or class parameters.
+Verilator class support is limited but in active development.  Verilator
+supports members, and methods. Verilator doe not support class static
+members, class extend, or class parameters.
 
 =head2 Dotted cross-hierarchy references
 
@@ -3675,17 +3719,8 @@ specified in the Verilog standard; arrayed instances are named
 {cellName}[{instanceNumber}] in Verilog, which becomes
 {cellname}__BRA__{instanceNumber}__KET__ inside the generated C++ code.
 
-Verilator creates numbered "genblk" when a begin: name is not specified
-around a block inside a generate statement.  These numbers may differ
-between other simulators, but the Verilog specification does not allow
-users to use these names, so it should not matter.
-
 If you are having trouble determining where a dotted path goes wrong, note
 that Verilator will print a list of known scopes to help your debugging.
-
-=head2 Floating Point
-
-Short floating point (shortreal) numbers are converted to real.
 
 =head2 Latches
 
@@ -3788,12 +3823,6 @@ primary inputs to the model, or wires directly attached to primary inputs.
 For proper behavior clock enables may also need the /*verilator
 clock_enable*/ attribute.
 
-=head2 Ranges must be big-bit-endian
-
-Bit ranges must be numbered with the MSB being numbered greater or the same
-as the LSB.  Little-bit-endian buses [0:15] are not supported as they
-aren't easily made compatible with C++.
-
 =head2 Gate Primitives
 
 The 2-state gate primitives (and, buf, nand, nor, not, or, xnor, xor) are
@@ -3802,7 +3831,8 @@ primitives are not supported.  Tables are not supported.
 
 =head2 Specify blocks
 
-All specify blocks and timing checks are ignored.
+All specify blocks and timing checks are ignored. All min:typ:max delays
+use the typical value.
 
 =head2 Array Initialization
 
@@ -3831,7 +3861,6 @@ coverage section.
 
 Verilator does not support SEREs yet.  All assertion and coverage
 statements must be simple expressions that complete in one cycle.
-(Arguably SEREs are much of the point, but one must start somewhere.)
 
 =head2 Encrypted Verilog
 
@@ -3908,40 +3937,25 @@ Interfaces and modports, including with generated data types are supported.
 Generate blocks around modports are not supported, nor are virtual
 interfaces nor unnamed interfaces.
 
-=item priority if, unique if
+=item shortreal
 
-Priority and unique if's are treated as normal ifs and not asserted to be
-full nor unique.
+Short floating point (shortreal) numbers are converted to real. Most other
+simulators either do not support float, or convert likewise.
 
 =item specify specparam
 
 All specify blocks and timing checks are ignored.
-
-=item string
-
-String is supported only to the point that they can be assigned,
-concatenated, compared, and passed to DPI imports.  Standard method calls
-on strings are not supported.
-
-=item timeunit, timeprecision
-
-All timing control statements are ignored.
 
 =item uwire
 
 Verilator does not perform warning checking on uwires, it treats the uwire
 keyword as if it were the normal wire keyword.
 
-=item $bits, $countones, $error, $fatal, $finish, $info, $isunknown,
-$onehot, $onehot0, $readmemb, $readmemh, $signed, $stime, $stop, $time,
-$unsigned, $warning.
+=item $bits, $countbits, $countones, $error, $fatal, $finish, $info,
+$isunknown, $onehot, $onehot0, $readmemb, $readmemh, $signed, $stime, $stop,
+$time, $unsigned, $warning.
 
 Generally supported.
-
-=item $displayb, $displayh, $displayo, $writeb, $writeh, $writeo, etc
-
-The sized display functions are rarely used and so not supported.  Replace
-them with a $write with the appropriate format specifier.
 
 =item $dump/$dumpports and related
 
@@ -3979,6 +3993,11 @@ The formats %r, %v, and %z are not supported.
 $setup, $setuphold, $skew, $timeskew, $width
 
 All specify blocks and timing checks are ignored.
+
+=item $monitor, $strobe
+
+Monitor and strobe are not supported, convert to always_comb $display or
+similar.
 
 =item $random
 
@@ -4049,7 +4068,7 @@ the source line directly above.
 
 Warns that an always_comb block has a variable which is set after it is
 used.  This may cause simulation-synthesis mismatches, as not all
-commercial simulators allow this ordering.
+simulators allow this ordering.
 
     always_comb begin
        a = b;
@@ -4797,7 +4816,10 @@ correctly.
 Warns that unpacked structs and unions are not supported.
 
 Ignoring this warning will make Verilator treat the structure as packed,
-which may make Verilator simulations differ from other simulators.
+which may make Verilator simulations differ from other simulators. This
+downgrading may also result what would normally be a legal unpacked
+struct/array inside an unpacked struct/array becomming an illegal unpacked
+struct/array inside a packed struct/array.
 
 =item UNSIGNED
 
@@ -4975,14 +4997,14 @@ Note people sometimes request binaries when they are having problems with
 their C++ compiler. Alas, binaries won't help this, as in the end a fully
 working C++ compiler is required to compile the output of Verilator.
 
-=item How can it be faster than (name-the-commercial-simulator)?
+=item How can it be faster than (name-a-big-3-closed-source-simulator)?
 
 Generally, the implied part is of the question is "... with all of the
 manpower they can put into developing it."
 
-Most commercial simulators have to be Verilog compliant, meaning event
-driven.  This prevents them from being able to reorder blocks and make
-netlist-style optimizations, which are where most of the gains come from.
+Most simulators have to be Verilog compliant, meaning event driven.  This
+prevents them from being able to reorder blocks and make netlist-style
+optimizations, which are where most of the gains come from.
 
 Non-compliance shouldn't be scary.  Your synthesis program isn't compliant,
 so your simulator shouldn't have to be -- and Verilator is closer to the
@@ -5021,8 +5043,8 @@ simulator in order to optimize it.  If it takes more than a minute or so
 (and you're not using --debug since debug is disk bound), see if your
 machine is paging; most likely you need to run it on a machine with more
 memory.  Verilator is a full 64-bit application and may use more than 4GB,
-but about 1GB is the maximum typically needed, and very large commercial
-designs have topped 16GB.
+but about 1GB is the maximum typically needed, and very large designs have
+topped 16GB.
 
 =item How do I generate waveforms (traces) in C++?
 
@@ -5125,10 +5147,10 @@ format instead.
 
 =item How do I view waveforms (aka dumps or traces)?
 
-Verilator makes standard VCD (Value Change Dump) and FST files.  VCD files are viewable
-with the public domain GTKWave (recommended) or Dinotrace (legacy)
-programs, or any of the many commercial offerings;
-FST is supported by GTKWave only.
+Verilator makes standard VCD (Value Change Dump) and FST files.  VCD files
+are viewable with the public domain GTKWave (recommended) or Dinotrace
+(legacy) programs, or any of the many closed-source offerings; FST is
+supported by GTKWave only.
 
 =item How do I reduce the size of large waveform (trace) files?
 
@@ -5167,6 +5189,10 @@ annotated source code listing showing code coverage details.
 For an example, after running 'make test' in the Verilator distribution,
 see the examples/make_tracing_c/logs directory.  Grep for lines starting
 with '%' to see what lines Verilator believes need more coverage.
+
+Info files can be written by verilator_coverage for import to C<lcov>.
+This enables use of C<genhtml> for HTML reports and importing reports to
+sites such as L<https://codecov.io>.
 
 =item Where is the translate_off command?  (How do I ignore a construct?)
 
@@ -5240,10 +5266,15 @@ test_regress/t/t_extend_class files show an example of how to do this.
 =item How do I get faster build times?
 
 When running make pass the make variable VM_PARALLEL_BUILDS=1 so that
-builds occur in parallel.
+builds occur in parallel. Note this is now set by default if an output
+file was large enough to be split due to the --output-split option.
 
-Use a recent compiler.  Newer compilers tend do be faster, with the
-now relatively old GCC 3.0 to 3.3 being horrible.
+Verilator emits any infrequently executed "cold" routines into separate
+__Slow.cpp files. This can accelerate compilation as optimization can be
+disabled on these routines. See the OPT_FAST and OPT_SLOW make variables
+and the BENCHMARKING & OPTIMIZATION section of the manual.
+
+Use a recent compiler.  Newer compilers tend to be faster.
 
 Compile in parallel on many machines and use caching; see the web for the
 ccache, distcc and icecream packages. ccache will skip GCC runs between
@@ -5365,7 +5396,7 @@ outputs.  Now, the following should fail:
     cd test_regress
     t/t_BUG.pl  # Run on Verilator
     t/t_BUG.pl --debug # Run on Verilator, passing --debug to Verilator
-    t/t_BUG.pl --vcs  # Run on a commercial simulator
+    t/t_BUG.pl --vcs  # Run on VCS simulator
     t/t_BUG.pl --nc|--iv|--ghdl  # Likewise on other simulators
 
 The test driver accepts a number of options, many of which mirror the main
@@ -5408,7 +5439,7 @@ In 2018, Verilator 4.000 was released with multithreaded support.
 
 Currently, various language features and performance enhancements are added
 as the need arises.  Verilator is now about 3x faster than in 2002, and is
-faster than many popular commercial simulators.
+faster than most (if not every) other simulator.
 
 
 =head1 AUTHORS
@@ -5424,83 +5455,92 @@ Major concepts by Paul Wasson, Duane Galbi, John Coiner and Jie Xu.
 
 Many people have provided ideas and other assistance with Verilator.
 
-The major corporate sponsors of Verilator, by providing significant
-contributions of time or funds include include Atmel Corporation, Cavium
+Verilator is receiving major development support from the CHIPS Alliance.
+
+Previous major corporate sponsors of Verilator, by providing significant
+contributions of time or funds included include Atmel Corporation, Cavium
 Inc., Compaq Corporation, Digital Equipment Corporation, Embecosm Ltd.,
 Hicamp Systems, Intel Corporation, Mindspeed Technologies Inc., MicroTune
 Inc., picoChip Designs Ltd., Sun Microsystems Inc., Nauticus Networks Inc.,
 and SiCortex Inc.
 
 The people who have contributed major functionality are Byron Bradley,
-Jeremy Bennett, Lane Brooks, John Coiner, Duane Galbi, Todd Strader, Paul
-Wasson, Jie Xu, and Wilson Snyder.  Major testers included Jeff Dutton,
-Jonathon Donaldson, Ralf Karge, David Hewson, Iztok Jeras, Wim Michiels,
-Alex Solomatnikov, Sebastien Van Cauwenberghe, Gene Weber, and Clifford
-Wolf.
+Jeremy Bennett, Lane Brooks, John Coiner, Duane Galbi, Geza Lore, Todd
+Strader, Stefan Wallentowitz, Paul Wasson, Jie Xu, and Wilson Snyder.
+Major testers included Jeff Dutton, Jonathon Donaldson, Ralf Karge, David
+Hewson, Iztok Jeras, Wim Michiels, Alex Solomatnikov, Sebastien Van
+Cauwenberghe, Gene Weber, and Clifford Wolf.
 
-Some of the people who have provided ideas and feedback for Verilator
+Some of the people who have provided ideas, and feedback for Verilator
 include: David Addison, Tariq B. Ahmad, Nikana Anastasiadis, Hans Van
 Antwerpen, Vasu Arasanipalai, Jens Arm, Sharad Bagri, Matthew Ballance,
 Andrew Bardsley, Matthew Barr, Geoff Barrett, Julius Baxter, Jeremy
-Bennett, Michael Berman, Victor Besyakov, David Binderman, Piotr Binkowski,
-Johan Bjork, David Black, Tymoteusz Blazejczyk, Daniel Bone, Gregg
-Bouchard, Christopher Boumenot, Nick Bowler, Byron Bradley, Bryan Brady,
-Maarten De Braekeleer, Charlie Brej, J Briquet, Lane Brooks, John Brownlee,
-Jeff Bush, Lawrence Butcher, Tony Bybell, Ted Campbell, Chris Candler,
-Lauren Carlson, Donal Casey, Sebastien Van Cauwenberghe, Alex Chadwick,
-Terry Chen, Yi-Chung Chen, Enzo Chi, Robert A. Clark, Allan Cochrane, John
-Coiner, Gianfranco Costamagna, George Cuan, Joe DErrico, Lukasz Dalek,
-Laurens van Dam, Gunter Dannoritzer, Ashutosh Das, Bernard Deadman, John
-Demme, Mike Denio, John Deroo, Philip Derrick, John Dickol, Ruben Diez,
-Danny Ding, Jacko Dirks, Ivan Djordjevic, Jonathon Donaldson, Leendert van
-Doorn, Sebastian Dressler, Alex Duller, Jeff Dutton, Tomas Dzetkulic,
-Usuario Eda, Charles Eddleston, Chandan Egbert, Joe Eiler, Ahmed
-El-Mahmoudy, Trevor Elbourne, Robert Farrell, Eugen Fekete, Fabrizio
-Ferrandi, Udi Finkelstein, Brian Flachs, Andrea Foletto, Bob Fredieu, Duane
-Galbi, Benjamin Gartner, Christian Gelinek, Peter Gerst, Glen Gibb, Shankar
-Giri, Dan Gisselquist, Sam Gladstone, Amir Gonnen, Chitlesh Goorah, Sergi
-Granell, Al Grant, Xuan Guo, Driss Hafdi, Neil Hamilton, Oyvind Harboe,
+Bennett, Michael Berman, Victor Besyakov, Moinak Bhattacharyya, David
+Binderman, Piotr Binkowski, Johan Bjork, David Black, Tymoteusz Blazejczyk,
+Daniel Bone, Gregg Bouchard, Christopher Boumenot, Nick Bowler, Byron
+Bradley, Bryan Brady, Maarten De Braekeleer, Charlie Brej, J Briquet, Lane
+Brooks, John Brownlee, Jeff Bush, Lawrence Butcher, Tony Bybell, Ted
+Campbell, Chris Candler, Lauren Carlson, Donal Casey, Sebastien Van
+Cauwenberghe, Alex Chadwick, Terry Chen, Yi-Chung Chen, Enzo Chi, Robert
+A. Clark, Allan Cochrane, John Coiner, Gianfranco Costamagna, Sean Cross,
+George Cuan, Joe DErrico, Lukasz Dalek, Laurens van Dam, Gunter
+Dannoritzer, Ashutosh Das, Bernard Deadman, John Demme, Mike Denio, John
+Deroo, Philip Derrick, John Dickol, Ruben Diez, Danny Ding, Jacko Dirks,
+Ivan Djordjevic, Jonathon Donaldson, Leendert van Doorn, Sebastian
+Dressler, Alex Duller, Jeff Dutton, Tomas Dzetkulic, Usuario Eda, Charles
+Eddleston, Chandan Egbert, Joe Eiler, Ahmed El-Mahmoudy, Trevor Elbourne,
+Mats Engstrom, Robert Farrell, Eugen Fekete, Fabrizio Ferrandi, Udi
+Finkelstein, Brian Flachs, Andrea Foletto, Bob Fredieu, Duane Galbi,
+Benjamin Gartner, Christian Gelinek, Peter Gerst, Glen Gibb, Michael
+Gielda, Shankar Giri, Dan Gisselquist, Petr Gladkikh, Sam Gladstone, Amir
+Gonnen, Chitlesh Goorah, Kai Gossner, Sergi Granell, Al Grant, Alexander
+Grobman, Xuan Guo, Driss Hafdi, Neil Hamilton, James Hanlon, Oyvind Harboe,
 Jannis Harder, Junji Hashimoto, Thomas Hawkins, Mitch Hayenga, Robert
-Henry, David Hewson, Jamey Hicks, Joel Holdsworth, Andrew Holme, Hiroki
-Honda, Alex Hornung, David Horton, Jae Hossell, Alan Hunter, James
-Hutchinson, Jamie Iles, Ben Jackson, Shareef Jalloq, Krzysztof Jankowski,
-HyungKi Jeong, Iztok Jeras, James Johnson, Christophe Joly, Franck Jullien,
-James Jung, Mike Kagen, Arthur Kahlich, Kaalia Kahn, Guy-Armand Kamendje,
-Vasu Kandadi, Kanad Kanhere, Patricio Kaplan, Pieter Kapsenberg, Ralf
-Karge, Dan Katz, Sol Katzman, Jonathan Kimmitt, Olof Kindgren, Kevin
-Kiningham, Dan Kirkham, Sobhan Klnv, Gernot Koch, Soon Koh, Steve Kolecki,
-Brett Koonce, Will Korteland, Wojciech Koszek, Varun Koyyalagunta, David
-Kravitz, Roland Kruse, Sergey Kvachonok, Ed Lander, Steve Lang, Stephane
-Laurent, Walter Lavino, Christian Leber, Larry Lee, Igor Lesik, John Li,
-Eivind Liland, Yu Sheng Lin, Charlie Lind, Andrew Ling, Paul Liu, Derek
-Lockhart, Jake Longo, Arthur Low, Stefan Ludwig, Dan Lussier, Fred Ma,
-Duraid Madina, Affe Mao, Julien Margetts, Mark Marshall, Alfonso Martinez,
-Yves Mathieu, Patrick Maupin, Jason McMullan, Elliot Mednick, Wim Michiels,
-Miodrag Milanovic, Wai Sum Mong, Peter Monsson, Sean Moore, Dennis
-Muhlestein, John Murphy, Matt Myers, Richard Myers, Dimitris Nalbantis,
-Peter Nelson, Bob Newgard, Cong Van Nguyen, Paul Nitza, Yossi Nivin, Pete
-Nixon, Lisa Noack, Mark Nodine, Andreas Olofsson, Aleksander Osman, James
-Pallister, Brad Parker, Dan Petrisko, Maciej Piechotka, David Pierce,
-Dominic Plunkett, David Poole, Mike Popoloski, Roman Popov, Rich Porter,
-Niranjan Prabhu, Usha Priyadharshini, Mark Jackson Pulver, Prateek Puri,
-Marshal Qiao, Danilo Ramos, Chris Randall, Anton Rapp, Josh Redford, Odd
-Magne Reitan, Frederic Requin, Frederick Requin, Alberto Del Rio, Eric
-Rippey, Oleg Rodionov, Paul Rolfe, Arjen Roodselaar, Tobias Rosenkranz, Jan
-Egil Ruud, Denis Rystsov, John Sanguinetti, Galen Seitz, Salman Sheikh, Hao
-Shi, Mike Shinkarovsky, Rafael Shirakawa, Jeffrey Short, Anderson Ignacio
-Da Silva, Rodney Sinclair, Steven Slatter, Brian Small, Garrett Smith,
-Wilson Snyder, Stan Sokorac, Alex Solomatnikov, Wei Song, Art Stamness,
-John Stevenson, Patrick Stewart, Rob Stoddard, Todd Strader, John Stroebel,
-Sven Stucki, Howard Su, Emerson Suguimoto, Gene Sullivan, Renga
-Sundararajan, Rupert Swarbrick, Yutetsu Takatsukasa, Peter Tengstrand,
-Wesley Terpstra, Rui Terra, Stefan Thiede, Gary Thomas, Ian Thompson, Kevin
-Thompson, Mike Thyer, Hans Tichelaar, Viktor Tomov, Steve Tong, Michael
-Tresidder, Neil Turton, Bogdan Vukobratovic, Holger Waechtler, Philipp
-Wagner, Stefan Wallentowitz, Shawn Wang, Paul Wasson, Greg Waters, Thomas
-Watts, Eugene Weber, David Welch, Thomas J Whatson, Leon Wildman, Gerald
-Williams, Trevor Williams, Jeff Winston, Joshua Wise, Clifford Wolf, Johan
-Wouters, Junyi Xi, Ding Xiaoliang, Jie Xu, Mandy Xu, Luke Yang, and Amir
-Yazdanbakhsh.
+Henry, Stephen Henry, David Hewson, Jamey Hicks, Joel Holdsworth, Andrew
+Holme, Hiroki Honda, Alex Hornung, David Horton, Peter Horvath, Jae
+Hossell, Alan Hunter, James Hutchinson, Jamie Iles, Ben Jackson, Shareef
+Jalloq, Krzysztof Jankowski, HyungKi Jeong, Iztok Jeras, James Johnson,
+Christophe Joly, Franck Jullien, James Jung, Mike Kagen, Arthur Kahlich,
+Kaalia Kahn, Guy-Armand Kamendje, Vasu Kandadi, Kanad Kanhere, Patricio
+Kaplan, Pieter Kapsenberg, Ralf Karge, Dan Katz, Sol Katzman, Ian Kennedy,
+Jonathan Kimmitt, Olof Kindgren, Kevin Kiningham, Dan Kirkham, Sobhan Klnv,
+Gernot Koch, Soon Koh, Nathan Kohagen, Steve Kolecki, Brett Koonce, Will
+Korteland, Wojciech Koszek, Varun Koyyalagunta, David Kravitz, Roland
+Kruse, Sergey Kvachonok, Charles Eric LaForest, Ed Lander, Steve Lang,
+Stephane Laurent, Walter Lavino, Christian Leber, Larry Lee, Igor Lesik,
+John Li, Eivind Liland, Yu Sheng Lin, Charlie Lind, Andrew Ling, Jiuyang
+Liu, Paul Liu, Derek Lockhart, Jake Longo, Geza Lore, Arthur Low, Stefan
+Ludwig, Dan Lussier, Fred Ma, Duraid Madina, Affe Mao, Julien Margetts,
+Mark Marshall, Alfonso Martinez, Yves Mathieu, Patrick Maupin, Jason
+McMullan, Elliot Mednick, Wim Michiels, Miodrag Milanovic, Wai Sum Mong,
+Peter Monsson, Sean Moore, Dennis Muhlestein, John Murphy, Matt Myers,
+Nathan Myers, Richard Myers, Dimitris Nalbantis, Peter Nelson, Bob Newgard,
+Cong Van Nguyen, Paul Nitza, Yossi Nivin, Pete Nixon, Lisa Noack, Mark
+Nodine, Kuba Ober, Andreas Olofsson, Aleksander Osman, James Pallister,
+Vassilis Papaefstathiou, Brad Parker, Dan Petrisko, Maciej Piechotka, David
+Pierce, Dominic Plunkett, David Poole, Mike Popoloski, Roman Popov, Rich
+Porter, Niranjan Prabhu, Usha Priyadharshini, Mark Jackson Pulver, Prateek
+Puri, Marshal Qiao, Danilo Ramos, Chris Randall, Anton Rapp, Josh Redford,
+Odd Magne Reitan, Frederic Requin, Frederick Requin, Dustin Richmond,
+Alberto Del Rio, Eric Rippey, Oleg Rodionov, Ludwig Rogiers, Paul Rolfe,
+Arjen Roodselaar, Tobias Rosenkranz, Huang Rui, Jan Egil Ruud, Denis
+Rystsov, John Sanguinetti, Galen Seitz, Salman Sheikh, Hao Shi, Mike
+Shinkarovsky, Rafael Shirakawa, Jeffrey Short, Anderson Ignacio Da Silva,
+Rodney Sinclair, Steven Slatter, Brian Small, Garrett Smith, Tim Snyder,
+Maciej Sobkowski, Stan Sokorac, Alex Solomatnikov, Wei Song, Art Stamness,
+David Stanford, John Stevenson, Pete Stevenson, Patrick Stewart, Rob
+Stoddard, Todd Strader, John Stroebel, Sven Stucki, Howard Su, Emerson
+Suguimoto, Gene Sullivan, Qingyao Sun, Renga Sundararajan, Rupert
+Swarbrick, Yutetsu Takatsukasa, Peter Tengstrand, Wesley Terpstra, Rui
+Terra, Stefan Thiede, Gary Thomas, Ian Thompson, Kevin Thompson, Mike
+Thyer, Hans Tichelaar, Viktor Tomov, Steve Tong, Michael Tresidder, Neil
+Turton, Srini Vemuri, Yuri Victorovich, Bogdan Vukobratovic, Holger
+Waechtler, Philipp Wagner, Stefan Wallentowitz, Shawn Wang, Paul Wasson,
+Greg Waters, Thomas Watts, Eugene Weber, David Welch, Thomas J Whatson,
+Marco Widmer, Leon Wildman, Daniel Wilkerson, Gerald Williams, Trevor
+Williams, Jan Van Winkel, Jeff Winston, Joshua Wise, Clifford Wolf, Tobias
+Wolfel, Johan Wouters, Junyi Xi, Ding Xiaoliang, Jie Xu, Mandy Xu,
+Takatsukasa Y, Luke Yang, and Amir Yazdanbakhsh.
 
 Thanks to them, and all those we've missed including above, or wished to
 remain anonymous.

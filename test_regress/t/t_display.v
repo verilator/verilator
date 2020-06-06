@@ -144,8 +144,8 @@ module t;
       $display("hel", "lo, fr", "om a concatenated string.");
       $write("hel", "lo, fr", "om a concatenated format string [%0t].\n", $time);
       $display("extra argument: ", $time);
-      $display($time, ": pre argument");
-      $write("[%0t] Embedded \r return\n", $time);
+      $display($time,, ": pre argument",, "after");
+      $write("[%0t] Embedded tab '\t' and \r return\n", $time);
       $display("[%0t] Embedded\
 multiline", $time);
 

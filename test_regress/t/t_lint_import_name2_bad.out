@@ -1,0 +1,7 @@
+%Error: t/t_lint_import_name2_bad.v:7:8: Importing from missing package 'missing'
+    7 | import missing::sigs;
+      |        ^~~~~~~
+%Error: t/t_lint_import_name2_bad.v:9:8: Importing from missing package 'missing'
+    9 | import missing::*;
+      |        ^~~~~~~
+%Error: Exiting due to

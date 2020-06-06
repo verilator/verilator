@@ -34,8 +34,6 @@
 #include "V3PreShell.h"
 #include "V3LanguageWords.h"
 
-#include <cstdarg>
-#include <fstream>
 #include <sstream>
 
 //======================================================================
@@ -166,8 +164,8 @@ void V3ParseImp::errorPreprocDirective(const char* textp) {
     // Find all `preprocessor spelling candidates
     // Can't make this static as might get more defines later when read cells
     VSpellCheck speller;
-    V3LanguageWords words;
-    for (V3LanguageWords::const_iterator it = words.begin(); it != words.end(); ++it) {
+    for (V3LanguageWords::const_iterator it = V3LanguageWords::begin();
+         it != V3LanguageWords::end(); ++it) {
         string ppDirective = it->first;
         if (ppDirective[0] == '`') speller.pushCandidate(ppDirective);
     }

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Makes the test run with tracing enabled by default, can be overridden
 # with --notrace
 unshift(@ARGV, "--trace");
@@ -37,11 +37,13 @@ while (1) {
                 "-GGATED_CLK=1",
                 "--protect-lib",
                 $secret_prefix,
-                "t/t_prot_lib_secret.v"]);
+                "t/t_prot_lib_secret.v"],
+        verilator_run => 1,
+        );
     last if $Self->{errors};
 
     run(logfile => "$secret_dir/secret_gcc.log",
-        cmd=>["make",
+        cmd=>[$ENV{MAKE},
               "-C",
               $secret_dir,
               "-f",

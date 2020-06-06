@@ -13,7 +13,8 @@
 ######################################################################
 
 cmake_minimum_required(VERSION 3.8)
-set(TEST_REQUIRED_VARS NAME CSOURCES OPT_FAST VERILATOR_ROOT VERILATOR_ARGS
+set(TEST_REQUIRED_VARS NAME CSOURCES OPT_FAST OPT_GLOBAL
+                            VERILATOR_ROOT VERILATOR_ARGS
                             VERILATOR_SOURCES SYSTEMC VERBOSE VERILATION)
 foreach(var ${TEST_REQUIRED_VARS})
   if (NOT DEFINED TEST_${var})
@@ -73,6 +74,9 @@ if(TEST_PREFIX)
 endif()
 if(TEST_OPT_FAST)
   list(APPEND verilate_ARGS OPT_FAST ${TEST_OPT_FAST})
+endif()
+if(TEST_OPT_GLOBAL)
+  list(APPEND verilate_ARGS OPT_GLOBAL ${TEST_OPT_GLOBAL})
 endif()
 if(TEST_THREADS)
   list(APPEND verilate_ARGS THREADS ${TEST_THREADS})

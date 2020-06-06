@@ -43,7 +43,6 @@
 #include "V3Stats.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 #define CASE_OVERLAP_WIDTH 16  // Maximum width we can check for overlaps in
 #define CASE_BARF 999999  // Magic width when non-constant
@@ -96,7 +95,7 @@ private:
             } else if (VN_IS(m_caseExprp, Case)
                        && (VN_CAST(m_caseExprp, Case)->casez()
                            || VN_CAST(m_caseExprp, Case)->caseInside())) {
-                if (nodep->num().isUnknown()) {
+                if (nodep->num().isAnyX()) {
                     nodep->v3warn(CASEWITHX, "Use of x constant in casez statement, "
                                              "(perhaps intended ?/z in constant)");
                 }
@@ -281,13 +280,13 @@ private:
         //                      IF(msb-1, 01, 00))
         AstNode* cexprp = nodep->exprp()->unlinkFrBack();
 
-        if (debug() >= 9) {
+        if (debug() >= 9) {  // LCOV_EXCL_START
             for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
                 if (AstNode* itemp = m_valueItem[i]) {
                     UINFO(9, "Value " << std::hex << i << " " << itemp << endl);
                 }
             }
-        }
+        }  // LCOV_EXCL_STOP
 
         // Handle any assertions
         replaceCaseParallel(nodep, m_caseNoOverlapsAllCovered);
@@ -460,7 +459,7 @@ private:
         // Xs in case or casez are impossible due to two state simulations
         if (casep->casex()) {
         } else if (casep->casez() || casep->caseInside()) {
-            if (itemp->num().isUnknown()) return true;
+            if (itemp->num().isAnyX()) return true;
         } else {
             if (itemp->num().isFourState()) return true;
         }

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 
 top_filename("t/t_clk_latch.v");
 
-my $fail = ($Self->{vlt_all} && verilator_version() !~ /\(ord\)/);
+my $fail = $Self->{vlt_all};
 
 compile(
     v_flags2 => ['+define+EDGE_DETECT_STYLE'],

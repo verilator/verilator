@@ -33,11 +33,8 @@
 #include "V3Hashed.h"
 
 #include <algorithm>
-#include <cstdarg>
-#include <iomanip>
 #include <list>
 #include <map>
-#include <vector>
 #include VL_INCLUDE_UNORDERED_SET
 
 typedef std::list<AstNodeVarRef*> GateVarRefList;
@@ -516,8 +513,8 @@ private:
     virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {
         iterateNewStmt(nodep, "CoverToggle", "CoverToggle");
     }
-    virtual void visit(AstTraceInc* nodep) VL_OVERRIDE {
-        bool lastslow = m_inSlow;
+    virtual void visit(AstTraceDecl* nodep) VL_OVERRIDE {
+        const bool lastslow = m_inSlow;
         m_inSlow = true;
         iterateNewStmt(nodep, "Tracing", "Tracing");
         m_inSlow = lastslow;
@@ -1181,7 +1178,7 @@ private:
                         GateLogicVertex* consumeVertexp
                             = dynamic_cast<GateLogicVertex*>(outedgep->top());
                         AstNode* consumerp = consumeVertexp->nodep();
-                        m_graphp->dumpDotFilePrefixed("gate_preelim");
+                        // if (debug() >= 9) m_graphp->dumpDotFilePrefixed("gate_preelim");
                         UINFO(9,
                               "elim src vtx" << lvertexp << " node " << lvertexp->nodep() << endl);
                         UINFO(9,
@@ -1549,7 +1546,7 @@ private:
                     UINFO(9, "                   to - " << m_clk_vsp << endl);
                     AstNode* rhsp = assignp->rhsp();
                     rhsp->replaceWith(new AstVarRef(rhsp->fileline(), m_clk_vsp, false));
-                    for (V3GraphEdge* edgep = lvertexp->inBeginp(); edgep;) {
+                    while (V3GraphEdge* edgep = lvertexp->inBeginp()) {
                         VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
                     }
                     new V3GraphEdge(m_graphp, m_clk_vvertexp, lvertexp, 1);

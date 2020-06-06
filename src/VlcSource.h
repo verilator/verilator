@@ -118,7 +118,6 @@ public:
     NameMap::iterator begin() { return m_sources.begin(); }
     NameMap::iterator end() { return m_sources.end(); }
 
-public:
     // CONSTRUCTORS
     VlcSources() {}
     ~VlcSources() {}

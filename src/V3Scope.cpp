@@ -29,8 +29,6 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
-#include <iomanip>
 #include <map>
 #include VL_INCLUDE_UNORDERED_MAP
 #include VL_INCLUDE_UNORDERED_SET
@@ -189,21 +187,13 @@ private:
     virtual void visit(AstCellInline* nodep) VL_OVERRIDE {  //
         nodep->scopep(m_scopep);
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {
+    virtual void visit(AstActive* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Actives now made after scoping");
     }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE {
         // Add to list of blocks under this scope
         UINFO(4, "    Move " << nodep << endl);
-        AstInitial* clonep = nodep->cloneTree(false);
-        nodep->user2p(clonep);
-        m_scopep->addActivep(clonep);
-        iterateChildren(clonep);  // We iterate under the *clone*
-    }
-    virtual void visit(AstFinal* nodep) VL_OVERRIDE {
-        // Add to list of blocks under this scope
-        UINFO(4, "    Move " << nodep << endl);
-        AstFinal* clonep = nodep->cloneTree(false);
+        AstNode* clonep = nodep->cloneTree(false);
         nodep->user2p(clonep);
         m_scopep->addActivep(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
@@ -225,14 +215,6 @@ private:
         iterateChildren(clonep);  // We iterate under the *clone*
     }
     virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
-        // Add to list of blocks under this scope
-        UINFO(4, "    Move " << nodep << endl);
-        AstNode* clonep = nodep->cloneTree(false);
-        nodep->user2p(clonep);
-        m_scopep->addActivep(clonep);
-        iterateChildren(clonep);  // We iterate under the *clone*
-    }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         // Add to list of blocks under this scope
         UINFO(4, "    Move " << nodep << endl);
         AstNode* clonep = nodep->cloneTree(false);
@@ -380,12 +362,10 @@ private:
         }
     }
 
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
-    virtual void visit(AstFinal* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
+    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
     virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
     virtual void visit(AstAssignVarScope* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
     virtual void visit(AstAssignW* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
     virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
     virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }

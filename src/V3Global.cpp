@@ -36,10 +36,6 @@ AstNetlist* V3Global::makeNetlist() {
 
 void V3Global::checkTree() { rootp()->checkTree(); }
 
-void V3Global::clear() {
-    if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = NULL);
-}
-
 void V3Global::readFiles() {
     // NODE STATE
     //   AstNode::user4p()      // VSymEnt*    Package and typedef symbol names
@@ -79,4 +75,21 @@ void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool 
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename(stagename + ".tree", newNumber), false,
                                    doDump);
     if (v3Global.opt.stats()) V3Stats::statsStage(stagename);
+}
+
+const std::string& V3Global::ptrToId(const void* p) {
+    PtrToIdMap::iterator it = m_ptrToId.find(p);
+    if (it == m_ptrToId.end()) {
+        std::ostringstream os;
+        if (p) {
+            os << "(";
+            unsigned id = m_ptrToId.size();
+            do { os << static_cast<char>('A' + id % 26); } while (id /= 26);
+            os << ")";
+        } else {
+            os << "0";
+        }
+        it = m_ptrToId.insert(std::make_pair(p, os.str())).first;
+    }
+    return it->second;
 }

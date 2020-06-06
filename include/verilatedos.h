@@ -144,30 +144,23 @@
 #define VL_MT_UNSAFE_ONE  ///< Comment tag that function is not threadsafe when VL_THREADED,
                           ///< protected to make sure single-caller
 
-#ifdef _MSC_VER
-# define VL_ULL(c) (c##ULL)  ///< Add appropriate suffix to 64-bit constant
-// Was "(c##ui64)". C++11 has standardized on ULL, and MSVC now supports this.
-// We propose to no longer require using this macro no sooner than June 2020.
-// File an issue ASAP if this breaks anything.
-#else
-# define VL_ULL(c) (c##ULL)  ///< Add appropriate suffix to 64-bit constant
-#endif
+#define VL_ULL(c) (c##ULL)  ///< Add appropriate suffix to 64-bit constant (deprecated)
 
 // This is not necessarily the same as #UL, depending on what the IData typedef is.
 #define VL_UL(c) (static_cast<IData>(c##UL))  ///< Add appropriate suffix to 32-bit constant
 
-#if defined(VL_CPPCHECK) || defined(__clang_analyzer__)
+#if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
 # define VL_DANGLING(var)
 #else
-///< After e.g. delete, set variable to NULL to indicate must not use later
+/// After e.g. delete, set variable to NULL to indicate must not use later
 # define VL_DANGLING(var) \
     do { \
-        (var) = NULL; \
+        *const_cast<const void**>(reinterpret_cast<const void* const*>(&var)) = NULL; \
     } while (false)
 #endif
 
-///< Perform an e.g. delete, then set variable to NULL to indicate must not use later.
-///< Unlike VL_DO_CLEAR the setting of the variable is only for debug reasons.
+/// Perform an e.g. delete, then set variable to NULL to indicate must not use later.
+/// Unlike VL_DO_CLEAR the setting of the variable is only for debug reasons.
 #define VL_DO_DANGLING(stmt, var) \
     do { \
         do { \
@@ -176,7 +169,7 @@
         VL_DANGLING(var); \
     } while (false)
 
-///< Perform an e.g. delete, then set variable to NULL as a requirement
+/// Perform an e.g. delete, then set variable to NULL as a requirement
 #define VL_DO_CLEAR(stmt, stmt2) \
     do { \
         do { \
@@ -222,6 +215,20 @@
 
 #ifndef VL_INLINE_OPT
 # define VL_INLINE_OPT  ///< "inline" if compiling all objects in single compiler run
+#endif
+
+//=========================================================================
+// Internal coverage
+
+#ifdef VL_GCOV
+extern "C" {
+void __gcov_flush();  // gcc sources gcc/gcov-io.h has the prototype
+}
+/// Flush internal code coverage data before e.g. abort()
+# define VL_GCOV_FLUSH() \
+    __gcov_flush()
+#else
+# define VL_GCOV_FLUSH()
 #endif
 
 //=========================================================================
@@ -401,7 +408,7 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #define VL_MASK_I(nbits) (((nbits) & VL_SIZEBITS_I) ? ((1U << ((nbits) & VL_SIZEBITS_I)) - 1) : ~0)
 /// Mask for quads with 1's where relevant bits are (0=all bits)
 #define VL_MASK_Q(nbits) \
-    (((nbits) & VL_SIZEBITS_Q) ? ((VL_ULL(1) << ((nbits) & VL_SIZEBITS_Q)) - VL_ULL(1)) : VL_ULL(~0))
+    (((nbits) & VL_SIZEBITS_Q) ? ((1ULL << ((nbits) & VL_SIZEBITS_Q)) - 1ULL) : ~0ULL)
 /// Mask for EData with 1's where relevant bits are (0=all bits)
 #define VL_MASK_E(nbits) VL_MASK_I(nbits)
 #define VL_EUL(n) VL_UL(n)  ///< Make constant number EData sized

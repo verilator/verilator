@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -10,9 +10,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt_all} and unsupported("Verilator unsupported, bug1626");
 
-scenarios(simulator => 1);
+scenarios(linter => 1);
 
-compile(
+lint(
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

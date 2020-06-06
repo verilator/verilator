@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -16,19 +16,13 @@ run(cmd => ["../bin/verilator_coverage",
             "t/t_vlcov_data_b.dat",
             "t/t_vlcov_data_c.dat",
             "t/t_vlcov_data_d.dat",
-    ]);
+    ],
+    verilator_run => 1,
+    );
 
 # Older clib's didn't properly sort maps, but the coverage data doesn't
 # really care about ordering. So avoid false failures by sorting.
-# Set LC_ALL as suggested in the sort manpage to avoid sort order
-# changes from the locale.
-$ENV{LC_ALL} = "C";
-run(cmd => ["sort",
-            "$Self->{obj_dir}/coverage.dat",
-            "> $Self->{obj_dir}/coverage-sort.dat",
-    ]);
-
-files_identical("$Self->{obj_dir}/coverage-sort.dat", $Self->{golden_filename});
+files_identical_sorted("$Self->{obj_dir}/coverage.dat", $Self->{golden_filename});
 
 ok(1);
 1;

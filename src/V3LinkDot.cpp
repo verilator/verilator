@@ -71,7 +71,6 @@
 #include "V3String.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <map>
 #include <vector>
 
@@ -712,13 +711,13 @@ class LinkDotFindVisitor : public AstNVisitor {
     // METHODS
     int debug() { return LinkDotState::debug(); }
 
-    virtual AstConst* parseParamLiteral(FileLine* fl, const string& literal) {
+    AstConst* parseParamLiteral(FileLine* fl, const string& literal) const {
         bool success = false;
         if (literal[0] == '"') {
             // This is a string
             string v = literal.substr(1, literal.find('"', 1) - 1);
             return new AstConst(fl, AstConst::VerilogStringLiteral(), v);
-        } else if ((literal.find('.') != string::npos) || (literal.find('e') != string::npos)) {
+        } else if (literal.find_first_of(".eEpP") != string::npos) {
             // This may be a real
             double v = V3ParseImp::parseDouble(literal.c_str(), literal.length(), &success);
             if (success) return new AstConst(fl, AstConst::RealDouble(), v);
@@ -2369,6 +2368,13 @@ private:
             }
         }
     }
+    virtual void visit(AstEnumDType* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        AstRefDType* refdtypep = VN_CAST(nodep->subDTypep(), RefDType);
+        if (refdtypep && (nodep == refdtypep->subDTypep())) {
+            refdtypep->v3error("Self-referential enumerated type definition");
+        }
+    }
     virtual void visit(AstEnumItemRef* nodep) VL_OVERRIDE {
         // EnumItemRef may be under a dot.  Should already be resolved.
         iterateChildren(nodep);
@@ -2485,11 +2491,39 @@ private:
                 } else if (VN_IS(nodep, New) && m_statep->forPrearray()) {
                     // Resolved in V3Width
                 } else if (nodep->dotted() == "") {
-                    string suggest = m_statep->suggestSymFallback(dotSymp, nodep->name(),
-                                                                  LinkNodeMatcherFTask());
-                    nodep->v3error("Can't find definition of task/function: "
-                                   << nodep->prettyNameQ() << endl
-                                   << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+                    if (nodep->pli()) {
+                        if (v3Global.opt.bboxSys()) {
+                            AstNode* newp;
+                            if (VN_IS(nodep, FuncRef)) {
+                                newp = new AstConst(nodep->fileline(), AstConst::StringToParse(),
+                                                    "'0");
+                            } else {
+                                AstNode* outp = NULL;
+                                while (nodep->pinsp()) {
+                                    AstNode* pinp = nodep->pinsp()->unlinkFrBack();
+                                    AstNode* addp = pinp;
+                                    if (AstArg* argp = VN_CAST(pinp, Arg)) {
+                                        addp = argp->exprp()->unlinkFrBack();
+                                        VL_DO_DANGLING(pinp->deleteTree(), pinp);
+                                    }
+                                    outp = AstNode::addNext(outp, addp);
+                                }
+                                newp = new AstSysIgnore(nodep->fileline(), outp);
+                            }
+                            nodep->replaceWith(newp);
+                            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                            return;
+                        } else {
+                            nodep->v3error("Unsupported or unknown PLI call: "
+                                           << nodep->prettyNameQ() << endl);
+                        }
+                    } else {
+                        string suggest = m_statep->suggestSymFallback(dotSymp, nodep->name(),
+                                                                      LinkNodeMatcherFTask());
+                        nodep->v3error("Can't find definition of task/function: "
+                                       << nodep->prettyNameQ() << endl
+                                       << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+                    }
                 } else {
                     string suggest = m_statep->suggestSymFallback(dotSymp, nodep->name(),
                                                                   LinkNodeMatcherFTask());
@@ -2639,7 +2673,7 @@ private:
             checkNoDot(nodep);
         }
         if (nodep->typeofp()) {  // Really is a typeof not a reference
-        } else if (!nodep->defp()) {
+        } else if (!nodep->typedefp() && !nodep->subDTypep()) {
             VSymEnt* foundp;
             if (nodep->packagep()) {
                 foundp = m_statep->getNodeSym(nodep->packagep())->findIdFlat(nodep->name());
@@ -2647,7 +2681,7 @@ private:
                 foundp = m_curSymp->findIdFallback(nodep->name());
             }
             if (AstTypedef* defp = foundp ? VN_CAST(foundp->nodep(), Typedef) : NULL) {
-                nodep->refDTypep(defp->subDTypep());
+                nodep->typedefp(defp);
                 nodep->packagep(foundp->packagep());
             } else if (AstParamTypeDType* defp
                        = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : NULL) {

@@ -125,7 +125,7 @@ public:
                 // No more values but it's not defined to decrement an
                 // iterator past the beginning.
                 v3fatalSrc("Decremented iterator past beginning");
-                return;
+                return;  // LCOV_EXCL_LINE
             }
             --m_valIt;
             // Should find a value here, as Every value bucket is supposed
@@ -292,7 +292,7 @@ public:
         typename Key2Val::iterator kvit = m_keys.find(k);
         if (kvit != m_keys.end()) {
             if (kvit->second == v) {
-                return;  // Same value already present; stop.
+                return;  // LCOV_EXCL_LINE // Same value already present; stop.
             }
             // Must remove element from m_vals[oldValue]
             removeKeyFromOldVal(k, kvit->second);

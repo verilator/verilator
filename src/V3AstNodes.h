@@ -319,6 +319,7 @@ public:
         , m_packagep(NULL) {}
     ASTNODE_NODE_FUNCS(Class)
     virtual string verilogKwd() const { return "class"; }
+    virtual bool isHeavy() const { return true; }
     virtual bool maybePointedTo() const { return true; }
     virtual void dump(std::ostream& str) const;
     virtual const char* broken() const {
@@ -345,19 +346,18 @@ public:
 };
 
 class AstClassExtends : public AstNode {
-    // Children: AstClassRefDType during early parse, then moves to dtype
+    // Children: List of AstParseRef for packages/classes
+    // during early parse, then moves to dtype
 public:
-    AstClassExtends(FileLine* fl, AstNodeDType* dtp)
+    AstClassExtends(FileLine* fl, AstNode* classOrPkgsp)
         : ASTGEN_SUPER(fl) {
-        childDTypep(dtp);  // Only for parser
+        setNOp1p(classOrPkgsp);  // Only for parser
     }
     ASTNODE_NODE_FUNCS(ClassExtends)
     virtual string verilogKwd() const { return "extends"; }
     virtual bool hasDType() const { return true; }
-    AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    // op1 = Type assigning to
-    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* classOrPkgsp() const { return VN_CAST(op1p(), NodeDType); }
+    void classOrPkgsp(AstNodeDType* nodep) { setOp1p(nodep); }
     AstClass* classp() const;  // Class being extended (after link)
 };
 
@@ -541,6 +541,7 @@ public:
     virtual string prettyDTypeName() const;
     virtual void dumpSmall(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
+    virtual bool isHeavy() const { return true; }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
@@ -603,6 +604,7 @@ public:
     virtual string prettyDTypeName() const;
     virtual void dumpSmall(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
+    virtual bool isHeavy() const { return true; }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
@@ -815,6 +817,7 @@ public:
         BROKEN_RTN(dtypep() != this);
         return NULL;
     }
+    virtual bool isHeavy() const { return keyword() == AstBasicDTypeKwd::STRING; }
     AstRange* rangep() const { return VN_CAST(op1p(), Range); }  // op1 = Range of variable
     void rangep(AstRange* nodep) { setNOp1p(nodep); }
     void setSignedState(const VSigning& signst) {
@@ -832,8 +835,8 @@ public:
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthAlignBytes() const;
-    virtual int
-    widthTotalBytes() const;  // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
+    // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
+    virtual int widthTotalBytes() const;
     virtual bool isFourstate() const { return keyword().isFourstate(); }
     AstBasicDTypeKwd keyword() const {  // Avoid using - use isSomething accessors instead
         return m.m_keyword;
@@ -855,9 +858,8 @@ public:
     bool isDpiPrimitive() const {  // DPI uses a primitive type
         return !isDpiBitVec() && !isDpiLogicVec();
     }
-    const VNumRange& nrange() const {
-        return m.m_nrange;
-    }  // Generally the msb/lsb/etc funcs should be used instead
+    // Generally the msb/lsb/etc funcs should be used instead
+    const VNumRange& nrange() const { return m.m_nrange; }
     int msb() const { return (rangep() ? rangep()->msbConst() : m.m_nrange.hi()); }
     int lsb() const { return (rangep() ? rangep()->lsbConst() : m.m_nrange.lo()); }
     int left() const { return littleEndian() ? lsb() : msb(); }  // How to show a declaration
@@ -1067,6 +1069,7 @@ public:
     virtual void dumpSmall(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
     virtual string prettyDTypeName() const;
+    virtual bool isHeavy() const { return true; }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
@@ -1095,25 +1098,24 @@ public:
 
 class AstRefDType : public AstNodeDType {
 private:
+    // Pre-Width must reference the Typeref, not what it points to, as some child
+    // types like AstBracketArrayType will disappear and can't lose the handle
+    AstTypedef* m_typedefp;  // referenced type
+    // Post-width typedefs are removed and point to type directly
     AstNodeDType* m_refDTypep;  // data type pointed to, BELOW the AstTypedef
     string m_name;  // Name of an AstTypedef
     AstNodeModule* m_packagep;  // Package hierarchy
 public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl)
+        , m_typedefp(NULL)
         , m_refDTypep(NULL)
         , m_name(name)
         , m_packagep(NULL) {}
-    AstRefDType(FileLine* fl, AstNodeDType* defp)
-        : ASTGEN_SUPER(fl)
-        , m_refDTypep(defp)
-        , m_packagep(NULL) {
-        dtypeFrom(defp->dtypep());
-        widthFromSub(subDTypep());
-    }
     class FlagTypeOfExpr {};  // type(expr) for parser only
     AstRefDType(FileLine* fl, FlagTypeOfExpr, AstNode* typeofp)
         : ASTGEN_SUPER(fl)
+        , m_typedefp(NULL)
         , m_refDTypep(NULL)
         , m_packagep(NULL) {
         setOp2p(typeofp);
@@ -1121,47 +1123,53 @@ public:
     ASTNODE_NODE_FUNCS(RefDType)
     // METHODS
     virtual const char* broken() const {
+        BROKEN_RTN(m_typedefp && !m_typedefp->brokeExists());
         BROKEN_RTN(m_refDTypep && !m_refDTypep->brokeExists());
         return NULL;
     }
     virtual void cloneRelink() {
+        if (m_typedefp && m_typedefp->clonep()) { m_typedefp = m_typedefp->clonep(); }
         if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
     }
     virtual bool same(const AstNode* samep) const {
         const AstRefDType* asamep = static_cast<const AstRefDType*>(samep);
-        return (m_refDTypep == asamep->m_refDTypep && m_name == asamep->m_name
-                && m_packagep == asamep->m_packagep);
+        return (m_typedefp == asamep->m_typedefp && m_refDTypep == asamep->m_refDTypep
+                && m_name == asamep->m_name && m_packagep == asamep->m_packagep);
     }
     virtual bool similarDType(AstNodeDType* samep) const {
         return skipRefp()->similarDType(samep->skipRefp());
     }
-    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_refDTypep), V3Hash(m_packagep)); }
+    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_typedefp), V3Hash(m_packagep)); }
     virtual void dump(std::ostream& str = std::cout) const;
     virtual string name() const { return m_name; }
     virtual string prettyDTypeName() const {
         return subDTypep() ? subDTypep()->name() : prettyName();
     }
     virtual AstBasicDType* basicp() const { return subDTypep() ? subDTypep()->basicp() : NULL; }
+    AstNodeDType* subDTypep() const {
+        if (typedefp()) return typedefp()->subDTypep();
+        return refDTypep();  // Maybe NULL
+    }
     virtual AstNodeDType* skipRefp() const {
         // Skip past both the Ref and the Typedef
-        if (defp()) {
-            return defp()->skipRefp();
+        if (subDTypep()) {
+            return subDTypep()->skipRefp();
         } else {
             v3fatalSrc("Typedef not linked");
             return NULL;
         }
     }
     virtual AstNodeDType* skipRefToConstp() const {
-        if (defp()) {
-            return defp()->skipRefToConstp();
+        if (subDTypep()) {
+            return subDTypep()->skipRefToConstp();
         } else {
             v3fatalSrc("Typedef not linked");
             return NULL;
         }
     }
     virtual AstNodeDType* skipRefToEnump() const {
-        if (defp()) {
-            return defp()->skipRefToEnump();
+        if (subDTypep()) {
+            return subDTypep()->skipRefToEnump();
         } else {
             v3fatalSrc("Typedef not linked");
             return NULL;
@@ -1171,15 +1179,13 @@ public:
     virtual int widthTotalBytes() const { return dtypeSkipRefp()->widthTotalBytes(); }
     void name(const string& flag) { m_name = flag; }
     // op1 = Range of variable
-    AstNodeDType* dtypeSkipRefp() const { return defp()->skipRefp(); }
-    AstNodeDType* defp() const {
-        return m_refDTypep;
-    }  // Code backward compatibility name for refDTypep
+    AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }
+    AstTypedef* typedefp() const { return m_typedefp; }
+    void typedefp(AstTypedef* nodep) { m_typedefp = nodep; }
     AstNodeDType* refDTypep() const { return m_refDTypep; }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const { return refDTypep(); }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
-    virtual AstNodeDType* subDTypep() const { return m_refDTypep; }
     AstNodeModule* packagep() const { return m_packagep; }
     void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
     AstNode* typeofp() const { return op2p(); }
@@ -1902,11 +1908,11 @@ public:
     VDirection declDirection() const { return m_declDirection; }
     void varType(AstVarType type) { m_varType = type; }
     void varType2Out() {
-        m_tristate = 0;
+        m_tristate = false;
         m_direction = VDirection::OUTPUT;
     }
     void varType2In() {
-        m_tristate = 0;
+        m_tristate = false;
         m_direction = VDirection::INPUT;
     }
     AstBasicDTypeKwd declKwd() const { return m_declKwd; }
@@ -1918,7 +1924,7 @@ public:
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "") const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
-    string vlPropInit() const;  // Return VerilatorVarProps initializer
+    string vlPropDecl(string propName) const;  // Return VerilatorVarProps declaration
     void combineType(AstVarType type);
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     // op1 = Range of variable
@@ -2078,7 +2084,7 @@ public:
 private:
     class VlArgTypeRecursed;
     VlArgTypeRecursed vlArgTypeRecurse(bool forFunc, const AstNodeDType* dtypep,
-                                       bool arrayed) const;
+                                       bool compound = false) const;
 };
 
 class AstDefParam : public AstNode {
@@ -2867,9 +2873,11 @@ public:
 class AstDot : public AstNode {
     // A dot separating paths in an AstVarXRef, AstFuncRef or AstTaskRef
     // These are eliminated in the link stage
+    bool m_colon;  // Is a "::" instead of a "." (lhs must be package/class)
 public:
-    AstDot(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER(fl) {
+    AstDot(FileLine* fl, bool colon, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl)
+        , m_colon(colon) {
         setOp1p(lhsp);
         setOp2p(rhsp);
     }
@@ -2877,23 +2885,28 @@ public:
     // For parser, make only if non-null package
     static AstNode* newIfPkg(FileLine* fl, AstPackage* packagep, AstNode* rhsp) {
         if (!packagep) return rhsp;
-        return new AstDot(fl, new AstPackageRef(fl, packagep), rhsp);
+        return new AstDot(fl, true, new AstPackageRef(fl, packagep), rhsp);
     }
     virtual void dump(std::ostream& str) const;
     virtual string emitVerilog() { V3ERROR_NA_RETURN(""); }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     AstNode* lhsp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
+    bool colon() const { return m_colon; }
 };
 
-class AstUnbounded : public AstNode {
+class AstUnbounded : public AstNodeMath {
     // A $ in the parser, used for unbounded and queues
+    // Due to where is used, treated as Signed32
 public:
     explicit AstUnbounded(FileLine* fl)
-        : ASTGEN_SUPER(fl) {}
+        : ASTGEN_SUPER(fl) {
+        dtypeSetSigned32();
+    }
     ASTNODE_NODE_FUNCS(Unbounded)
     virtual string emitVerilog() { return "$"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return true; }
 };
 
 //######################################################################
@@ -3076,25 +3089,34 @@ public:
     bool hasCombo() const;  // Includes a COMBO SenItem
 };
 
-class AstAlways : public AstNode {
+class AstFinal : public AstNodeProcedure {
+public:
+    AstFinal(FileLine* fl, AstNode* bodysp)
+        : ASTGEN_SUPER(fl, bodysp) {}
+    ASTNODE_NODE_FUNCS(Final)
+};
+
+class AstInitial : public AstNodeProcedure {
+public:
+    AstInitial(FileLine* fl, AstNode* bodysp)
+        : ASTGEN_SUPER(fl, bodysp) {}
+    ASTNODE_NODE_FUNCS(Initial)
+};
+
+class AstAlways : public AstNodeProcedure {
     VAlwaysKwd m_keyword;
 
 public:
     AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sensesp, AstNode* bodysp)
-        : ASTGEN_SUPER(fl)
+        : ASTGEN_SUPER(fl, bodysp)
         , m_keyword(keyword) {
         addNOp1p(sensesp);
-        addNOp2p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Always)
     //
     virtual void dump(std::ostream& str) const;
     AstSenTree* sensesp() const { return VN_CAST(op1p(), SenTree); }  // op1 = Sensitivity list
-    AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
-    void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     VAlwaysKwd keyword() const { return m_keyword; }
-    // Special accessors
-    bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
 };
 
 class AstAlwaysPublic : public AstNodeStmt {
@@ -3300,14 +3322,17 @@ private:
     string m_page;
     string m_text;
     string m_hier;
-    int m_column;
+    string m_linescov;
+    int m_offset;  // Offset column numbers to uniq-ify IFs
     int m_binNum;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
-    AstCoverDecl(FileLine* fl, int column, const string& page, const string& comment)
+    AstCoverDecl(FileLine* fl, const string& page, const string& comment, const string& linescov,
+                 int offset)
         : ASTGEN_SUPER(fl) {
-        m_text = comment;
         m_page = page;
-        m_column = column;
+        m_text = comment;
+        m_linescov = linescov;
+        m_offset = offset;
         m_binNum = 0;
         m_dataDeclp = NULL;
     }
@@ -3325,10 +3350,11 @@ public:
     virtual void dump(std::ostream& str) const;
     virtual int instrCount() const { return 1 + 2 * instrCountLd(); }
     virtual bool maybePointedTo() const { return true; }
-    int column() const { return m_column; }
     void binNum(int flag) { m_binNum = flag; }
     int binNum() const { return m_binNum; }
+    int offset() const { return m_offset; }
     const string& comment() const { return m_text; }  // text to insert in code
+    const string& linescov() const { return m_linescov; }
     const string& page() const { return m_page; }
     const string& hier() const { return m_hier; }
     void hier(const string& flag) { m_hier = flag; }
@@ -3336,8 +3362,8 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const {
         const AstCoverDecl* asamep = static_cast<const AstCoverDecl*>(samep);
-        return (fileline() == asamep->fileline() && hier() == asamep->hier()
-                && comment() == asamep->comment() && column() == asamep->column());
+        return (fileline() == asamep->fileline() && linescov() == asamep->linescov()
+                && hier() == asamep->hier() && comment() == asamep->comment());
     }
     virtual bool isPredictOptimizable() const { return false; }
     void dataDeclp(AstCoverDecl* nodep) { m_dataDeclp = nodep; }
@@ -3626,6 +3652,7 @@ public:
     virtual string emitVerilog() { return "%f" + verilogKwd() + "(%l)"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool isGateOptimizable() const { return false; }
+    virtual bool isHeavy() const { return true; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isOutputter() const { return true; }
     virtual bool cleanOut() const { return true; }
@@ -3777,6 +3804,7 @@ public:
     ASTNODE_NODE_FUNCS(FOpen)
     virtual string verilogKwd() const { return "$fopen"; }
     virtual bool isGateOptimizable() const { return false; }
+    virtual bool isHeavy() const { return true; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isPure() const { return false; }
     virtual bool isOutputter() const { return true; }
@@ -3786,6 +3814,28 @@ public:
     AstNode* filep() const { return op1p(); }
     AstNode* filenamep() const { return op2p(); }
     AstNode* modep() const { return op3p(); }
+};
+
+class AstFOpenMcd : public AstNodeStmt {
+    // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
+public:
+    AstFOpenMcd(FileLine* fl, AstNode* filep, AstNode* filenamep)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(filep);
+        setOp2p(filenamep);
+    }
+    ASTNODE_NODE_FUNCS(FOpenMcd)
+    virtual string verilogKwd() const { return "$fopen"; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isHeavy() const { return true; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isPure() const { return false; }
+    virtual bool isOutputter() const { return true; }
+    virtual bool isUnlikely() const { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+    AstNode* filep() const { return op1p(); }
+    AstNode* filenamep() const { return op2p(); }
 };
 
 class AstFFlush : public AstNodeStmt {
@@ -4009,6 +4059,7 @@ public:
         setNOp4p(msbp);
     }
     virtual bool isGateOptimizable() const { return false; }
+    virtual bool isHeavy() const { return true; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isPure() const { return false; }
     virtual bool isOutputter() const { return true; }
@@ -4099,6 +4150,7 @@ public:
     virtual string emitVerilog() { return "%f$value$plusargs(%l, %k%r)"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool isGateOptimizable() const { return false; }
+    virtual bool isHeavy() const { return true; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool cleanOut() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -4283,44 +4335,81 @@ public:
     void priorityPragma(bool flag) { m_priorityPragma = flag; }
 };
 
-class AstJumpLabel : public AstNodeStmt {
-    // Jump point declaration
-    // Separate from AstJumpGo; as a declaration can't be deleted
+class AstJumpBlock : public AstNodeStmt {
+    // Block of code including a JumpGo and JumpLabel
     // Parents:  {statement list}
-    // Children: {statement list, with JumpGo below}
+    // Children: {statement list, with JumpGo and JumpLabel below}
 private:
+    AstJumpLabel* m_labelp;  // [After V3Jump] Pointer to declaration
     int m_labelNum;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
-    AstJumpLabel(FileLine* fl, AstNode* stmtsp)
+    // After construction must call ->labelp to associate with appropriate label
+    AstJumpBlock(FileLine* fl, AstNode* stmtsp)
         : ASTGEN_SUPER(fl)
         , m_labelNum(0) {
         addNOp1p(stmtsp);
     }
+    virtual const char* broken() const;
+    virtual void cloneRelink();
+    ASTNODE_NODE_FUNCS(JumpBlock)
     virtual int instrCount() const { return 0; }
-    ASTNODE_NODE_FUNCS(JumpLabel)
     virtual bool maybePointedTo() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
     // op1 = Statements
     AstNode* stmtsp() const { return op1p(); }  // op1 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
+    AstNode* endStmtsp() const { return op2p(); }  // op1 = List of end-of-block
+    void addEndStmtsp(AstNode* nodep) { addNOp2p(nodep); }
     int labelNum() const { return m_labelNum; }
     void labelNum(int flag) { m_labelNum = flag; }
+    AstJumpLabel* labelp() const { return m_labelp; }
+    void labelp(AstJumpLabel* labelp) { m_labelp = labelp; }
+};
+
+class AstJumpLabel : public AstNodeStmt {
+    // Jump point declaration
+    // Parents:  {statement list with JumpBlock above}
+    // Children: none
+private:
+    AstJumpBlock* m_blockp;  // [After V3Jump] Pointer to declaration
+public:
+    AstJumpLabel(FileLine* fl, AstJumpBlock* blockp)
+        : ASTGEN_SUPER(fl)
+        , m_blockp(blockp) {}
+    ASTNODE_NODE_FUNCS(JumpLabel)
+    virtual bool maybePointedTo() const { return true; }
+    virtual const char* broken() const {
+        BROKEN_RTN(!blockp()->brokeExistsAbove());
+        BROKEN_RTN(blockp()->labelp() != this);
+        return NULL;
+    }
+    virtual void cloneRelink() {
+        if (m_blockp->clonep()) m_blockp = m_blockp->clonep();
+    }
+    virtual void dump(std::ostream& str) const;
+    virtual int instrCount() const { return 0; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const {
+        return blockp() == static_cast<const AstJumpLabel*>(samep)->blockp();
+    }
+    AstJumpBlock* blockp() const { return m_blockp; }
 };
 
 class AstJumpGo : public AstNodeStmt {
-    // Jump point; branch up to the JumpLabel
-    // Parents:  {statement list}
+    // Jump point; branch down to a JumpLabel
+    // No support for backward jumps at present
+    // Parents:  {statement list with JumpBlock above}
+    // Children: none
 private:
     AstJumpLabel* m_labelp;  // [After V3Jump] Pointer to declaration
 public:
     AstJumpGo(FileLine* fl, AstJumpLabel* labelp)
-        : ASTGEN_SUPER(fl) {
-        m_labelp = labelp;
-    }
-    ASTNODE_NODE_FUNCS(JumpGo)
+        : ASTGEN_SUPER(fl)
+        , m_labelp(labelp) {}
+    ASTNODE_NODE_FUNCS(JumpGo);
     virtual const char* broken() const {
-        BROKEN_RTN(!labelp()->brokeExistsAbove());
+        BROKEN_RTN(!labelp()->brokeExistsBelow());
         return NULL;
     }
     virtual void cloneRelink() {
@@ -4330,7 +4419,6 @@ public:
     virtual int instrCount() const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(labelp()); }
     virtual bool same(const AstNode* samep) const {
-        // Also same if identical tree structure all the way down, but hard to detect
         return labelp() == static_cast<const AstJumpGo*>(samep)->labelp();
     }
     virtual bool isGateOptimizable() const { return false; }
@@ -4431,28 +4519,6 @@ public:
     virtual void dump(std::ostream& str) const;
     VJoinType joinType() const { return m_joinType; }
     void joinType(const VJoinType& flag) { m_joinType = flag; }
-};
-
-class AstInitial : public AstNode {
-public:
-    AstInitial(FileLine* fl, AstNode* bodysp)
-        : ASTGEN_SUPER(fl) {
-        addNOp1p(bodysp);
-    }
-    ASTNODE_NODE_FUNCS(Initial)
-    AstNode* bodysp() const { return op1p(); }  // op1 = Expressions to evaluate
-    // Special accessors
-    bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
-};
-
-class AstFinal : public AstNode {
-public:
-    AstFinal(FileLine* fl, AstNode* bodysp)
-        : ASTGEN_SUPER(fl) {
-        addNOp1p(bodysp);
-    }
-    ASTNODE_NODE_FUNCS(Final)
-    AstNode* bodysp() const { return op1p(); }  // op1 = Expressions to evaluate
 };
 
 class AstInside : public AstNodeMath {
@@ -4761,35 +4827,36 @@ class AstTraceDecl : public AstNodeStmt {
     // Trace point declaration
     // Separate from AstTraceInc; as a declaration can't be deleted
     // Parents:  {statement list}
-    // Children: none
+    // Children: expression being traced
 private:
-    string m_showname;  // Name of variable
     uint32_t m_code;  // Trace identifier code; converted to ASCII by trace routines
-    VNumRange m_bitRange;  // Property of var the trace details
-    VNumRange m_arrayRange;  // Property of var the trace details
-    uint32_t m_codeInc;  // Code increment
-    AstVarType m_varType;  // Type of variable (for localparam vs. param)
-    AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
-    VDirection m_declDirection;  // Declared direction input/output etc
-    bool m_isScoped;  // Uses run-time scope (for interfaces)
+    const string m_showname;  // Name of variable
+    const VNumRange m_bitRange;  // Property of var the trace details
+    const VNumRange m_arrayRange;  // Property of var the trace details
+    const uint32_t m_codeInc;  // Code increment
+    const AstVarType m_varType;  // Type of variable (for localparam vs. param)
+    const AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
+    const VDirection m_declDirection;  // Declared direction input/output etc
+    const bool m_isScoped;  // Uses run-time scope (for interfaces)
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
                  AstVar* varp,  // For input/output state etc
                  AstNode* valuep, const VNumRange& bitRange, const VNumRange& arrayRange,
                  bool isScoped)
         : ASTGEN_SUPER(fl)
+        , m_code(0)
         , m_showname(showname)
         , m_bitRange(bitRange)
         , m_arrayRange(arrayRange)
+        , m_codeInc(
+              ((arrayRange.ranged() ? arrayRange.elements() : 1) * valuep->dtypep()->widthWords()
+               * (VL_EDATASIZE / 32)))  // A code is always 32-bits
+        , m_varType(varp->varType())
+        , m_declKwd(varp->declKwd())
+        , m_declDirection(varp->declDirection())
         , m_isScoped(isScoped) {
         dtypeFrom(valuep);
-        m_code = 0;
-        m_codeInc
-            = ((arrayRange.ranged() ? arrayRange.elements() : 1) * valuep->dtypep()->widthWords()
-               * (VL_EDATASIZE / (8 * sizeof(uint32_t))));  // A code is always 32-bits
-        m_varType = varp->varType();
-        m_declKwd = varp->declKwd();
-        m_declDirection = varp->declDirection();
+        addNOp1p(valuep);
     }
     virtual int instrCount() const { return 100; }  // Large...
     ASTNODE_NODE_FUNCS(TraceDecl)
@@ -4808,20 +4875,25 @@ public:
     AstBasicDTypeKwd declKwd() const { return m_declKwd; }
     VDirection declDirection() const { return m_declDirection; }
     bool isScoped() const { return m_isScoped; }
+    AstNode* valuep() const { return op1p(); }
 };
 
 class AstTraceInc : public AstNodeStmt {
-    // Trace point; incremental change detect and dump
+    // Trace point dump
     // Parents:  {statement list}
-    // Children: incremental value
+    // Children: op1: things to emit before this node,
+    //           op2: expression being traced (from decl)
+
 private:
-    AstTraceDecl* m_declp;  // [After V3Trace] Pointer to declaration
+    AstTraceDecl* m_declp;  // Pointer to declaration
+    const bool m_full;  // Is this a full vs incremental dump
 public:
-    AstTraceInc(FileLine* fl, AstTraceDecl* declp, AstNode* valuep)
-        : ASTGEN_SUPER(fl) {
+    AstTraceInc(FileLine* fl, AstTraceDecl* declp, bool full)
+        : ASTGEN_SUPER(fl)
+        , m_declp(declp)
+        , m_full(full) {
         dtypeFrom(declp);
-        m_declp = declp;
-        addNOp2p(valuep);
+        addOp2p(declp->valuep()->cloneTree(true));
     }
     ASTNODE_NODE_FUNCS(TraceInc)
     virtual const char* broken() const {
@@ -4843,13 +4915,11 @@ public:
     virtual bool isOutputter() const { return true; }
     // but isPure()  true
     // op1 = Statements before the value
-    AstNode* precondsp() const {
-        return op1p();
-    }  // op1 = prepare statements for condition (exec every loop)
+    AstNode* precondsp() const { return op1p(); }
     void addPrecondsp(AstNode* newp) { addOp1p(newp); }
-    // op2 = Value to trace
-    AstTraceDecl* declp() const { return m_declp; }  // Where defined
     AstNode* valuep() const { return op2p(); }
+    AstTraceDecl* declp() const { return m_declp; }
+    bool full() const { return m_full; }
 };
 
 class AstActive : public AstNode {
@@ -5397,6 +5467,33 @@ public:
     virtual bool sizeMattersLhs() const { return false; }
     virtual int instrCount() const { return widthInstrs() * 16; }
 };
+class AstCountBits : public AstNodeQuadop {
+    // Number of bits set in vector
+public:
+    AstCountBits(FileLine* fl, AstNode* exprp, AstNode* ctrl1p)
+        : ASTGEN_SUPER(fl, exprp, ctrl1p, ctrl1p->cloneTree(false), ctrl1p->cloneTree(false)) {}
+    AstCountBits(FileLine* fl, AstNode* exprp, AstNode* ctrl1p, AstNode* ctrl2p)
+        : ASTGEN_SUPER(fl, exprp, ctrl1p, ctrl2p, ctrl2p->cloneTree(false)) {}
+    AstCountBits(FileLine* fl, AstNode* exprp, AstNode* ctrl1p, AstNode* ctrl2p, AstNode* ctrl3p)
+        : ASTGEN_SUPER(fl, exprp, ctrl1p, ctrl2p, ctrl3p) {}
+    ASTNODE_NODE_FUNCS(CountBits)
+    virtual void numberOperate(V3Number& out, const V3Number& expr, const V3Number& ctrl1,
+                               const V3Number& ctrl2, const V3Number& ctrl3) {
+        out.opCountBits(expr, ctrl1, ctrl2, ctrl3);
+    }
+    virtual string emitVerilog() { return "%f$countbits(%l, %r, %f, %o)"; }
+    virtual string emitC() { return ""; }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool cleanRhs() const { return true; }
+    virtual bool cleanThs() const { return true; }
+    virtual bool cleanFhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
+    virtual bool sizeMattersThs() const { return false; }
+    virtual bool sizeMattersFhs() const { return false; }
+    virtual int instrCount() const { return widthInstrs() * 16; }
+};
 class AstCountOnes : public AstNodeUniop {
     // Number of bits set in vector
 public:
@@ -5421,6 +5518,24 @@ public:
     ASTNODE_NODE_FUNCS(IsUnknown)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opIsUnknown(lhs); }
     virtual string emitVerilog() { return "%f$isunknown(%l)"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool sizeMattersLhs() const { return false; }
+};
+class AstIsUnbounded : public AstNodeUniop {
+    // True if is unmbounded ($)
+public:
+    AstIsUnbounded(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {
+        dtypeSetLogicBool();
+    }
+    ASTNODE_NODE_FUNCS(IsUnbounded)
+    virtual void numberOperate(V3Number& out, const V3Number&) {
+        // Any constant isn't unbounded
+        out.setZero();
+    }
+    virtual string emitVerilog() { return "%f$isunbounded(%l)"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return false; }
@@ -5967,6 +6082,7 @@ public:
     virtual bool cleanOut() const { return true; }
     virtual bool cleanLhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
+    virtual bool isHeavy() const { return true; }
     FmtType format() const { return m_fmt; }
 };
 
@@ -7133,6 +7249,106 @@ public:
     virtual int instrCount() const { return widthInstrs() * instrCountMul() * 10; }
     virtual bool signedFlavor() const { return true; }
 };
+class AstPreAdd : public AstNodeTriop {
+    // Pre-increment/add
+    // Parents:  MATH
+    // Children: lhsp: AstConst (1) as currently support only ++ not +=
+    // Children: rhsp: tree with AstVarRef that is value to read before operation
+    // Children: thsp: tree with AstVarRef LValue that is stored after operation
+public:
+    AstPreAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {}
+    ASTNODE_NODE_FUNCS(PreAdd)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
+                               const V3Number& ths) {
+        V3ERROR_NA;  // Need to modify lhs
+    }
+    virtual string emitVerilog() { return "%k(++%r)"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool cleanRhs() const { return false; }
+    virtual bool cleanThs() const { return false; }
+    virtual bool sizeMattersLhs() const { return true; }
+    virtual bool sizeMattersRhs() const { return true; }
+    virtual bool sizeMattersThs() const { return true; }
+};
+class AstPreSub : public AstNodeTriop {
+    // Pre-decrement/subtract
+    // Parents:  MATH
+    // Children: lhsp: AstConst (1) as currently support only -- not -=
+    // Children: rhsp: tree with AstVarRef that is value to read before operation
+    // Children: thsp: tree with AstVarRef LValue that is stored after operation
+public:
+    AstPreSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {}
+    ASTNODE_NODE_FUNCS(PreSub)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
+                               const V3Number& ths) {
+        V3ERROR_NA;  // Need to modify lhs
+    }
+    virtual string emitVerilog() { return "%k(--%r)"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool cleanRhs() const { return false; }
+    virtual bool cleanThs() const { return false; }
+    virtual bool sizeMattersLhs() const { return true; }
+    virtual bool sizeMattersRhs() const { return true; }
+    virtual bool sizeMattersThs() const { return true; }
+};
+class AstPostAdd : public AstNodeTriop {
+    // Post-increment/add
+    // Parents:  MATH
+    // Children: lhsp: AstConst (1) as currently support only ++ not +=
+    // Children: rhsp: tree with AstVarRef that is value to read before operation
+    // Children: thsp: tree with AstVarRef LValue that is stored after operation
+public:
+    AstPostAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {}
+    ASTNODE_NODE_FUNCS(PostAdd)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
+                               const V3Number& ths) {
+        V3ERROR_NA;  // Need to modify lhs
+    }
+    virtual string emitVerilog() { return "%k(%r++)"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool cleanRhs() const { return false; }
+    virtual bool cleanThs() const { return false; }
+    virtual bool sizeMattersLhs() const { return true; }
+    virtual bool sizeMattersRhs() const { return true; }
+    virtual bool sizeMattersThs() const { return true; }
+};
+class AstPostSub : public AstNodeTriop {
+    // Post-decrement/subtract
+    // Parents:  MATH
+    // Children: lhsp: AstConst (1) as currently support only -- not -=
+    // Children: rhsp: tree with AstVarRef that is value to read before operation
+    // Children: thsp: tree with AstVarRef LValue that is stored after operation
+public:
+    AstPostSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* thsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp, thsp) {}
+    ASTNODE_NODE_FUNCS(PostSub)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
+                               const V3Number& ths) {
+        V3ERROR_NA;  // Need to modify lhs
+    }
+    virtual string emitVerilog() { return "%k(%r--)"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool cleanRhs() const { return false; }
+    virtual bool cleanThs() const { return false; }
+    virtual bool sizeMattersLhs() const { return true; }
+    virtual bool sizeMattersRhs() const { return true; }
+    virtual bool sizeMattersThs() const { return true; }
+};
 class AstEqCase : public AstNodeBiCom {
 public:
     AstEqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
@@ -7500,6 +7716,7 @@ public:
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
     virtual bool sizeMattersThs() const { return false; }
+    virtual bool isHeavy() const { return true; }
 };
 
 class AstGetcN : public AstNodeBiop {
@@ -7525,6 +7742,7 @@ public:
     virtual bool cleanRhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
+    virtual bool isHeavy() const { return true; }
 };
 
 class AstGetcRefN : public AstNodeBiop {
@@ -7543,13 +7761,14 @@ public:
         V3ERROR_NA;
     }
     virtual string emitVerilog() { return "%k%l[%r]"; }
-    virtual string emitC() { V3ERROR_NA; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() const { return true; }
     virtual bool cleanLhs() const { return true; }
     virtual bool cleanRhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
+    virtual bool isHeavy() const { return true; }
 };
 
 class AstSubstrN : public AstNodeTriop {
@@ -7575,6 +7794,7 @@ public:
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
     virtual bool sizeMattersThs() const { return false; }
+    virtual bool isHeavy() const { return true; }
 };
 
 class AstCompareNN : public AstNodeBiop {
@@ -7607,6 +7827,7 @@ public:
     virtual bool cleanRhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
+    virtual bool isHeavy() const { return true; }
 };
 
 class AstPast : public AstNodeMath {
@@ -7675,11 +7896,10 @@ public:
     virtual bool cleanOut() const { V3ERROR_NA_RETURN(""); }
     virtual int instrCount() const { return widthInstrs(); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const {
-        return VN_CAST(op1p(), NodeDType);
-    }  // op1 = Type assigning to
-    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    // op1 = Type assigning to
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
+    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNode* itemsp() const { return op2p(); }  // op2 = AstPatReplicate, AstPatMember, etc
 };
 class AstPatMember : public AstNodeMath {

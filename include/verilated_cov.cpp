@@ -94,7 +94,6 @@ private:
     typedef std::map<int, std::string> IndexValueMap;
     typedef std::deque<VerilatedCovImpItem*> ItemList;
 
-private:
     // MEMBERS
     VerilatedMutex m_mutex;  ///< Protects all members
     ValueIndexMap m_valueIndexes VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for values
@@ -250,12 +249,12 @@ public:
     // PUBLIC METHODS
     void clear() VL_EXCLUDES(m_mutex) {
         Verilated::quiesce();
-        VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock(m_mutex);
         clearGuts();
     }
     void clearNonMatch(const char* matchp) VL_EXCLUDES(m_mutex) {
         Verilated::quiesce();
-        VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock(m_mutex);
         if (matchp && matchp[0]) {
             ItemList newlist;
             for (ItemList::iterator it = m_items.begin(); it != m_items.end(); ++it) {
@@ -271,7 +270,7 @@ public:
     }
     void zero() VL_EXCLUDES(m_mutex) {
         Verilated::quiesce();
-        VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock(m_mutex);
         for (ItemList::const_iterator it = m_items.begin(); it != m_items.end(); ++it) {
             (*it)->zero();
         }
@@ -279,17 +278,17 @@ public:
 
     // We assume there's always call to i/f/p in that order
     void inserti(VerilatedCovImpItem* itemp) VL_EXCLUDES(m_mutex) {
-        VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock(m_mutex);
         assert(!m_insertp);
         m_insertp = itemp;
     }
     void insertf(const char* filenamep, int lineno) VL_EXCLUDES(m_mutex) {
-        VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock(m_mutex);
         m_insertFilenamep = filenamep;
         m_insertLineno = lineno;
     }
     void insertp(const char* ckeyps[MAX_KEYS], const char* valps[MAX_KEYS]) VL_EXCLUDES(m_mutex) {
-        VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock(m_mutex);
         assert(m_insertp);
         // First two key/vals are filename
         ckeyps[0] = "filename";
@@ -332,10 +331,10 @@ public:
                 m_insertp->m_keys[addKeynum] = valueIndex(key);
                 m_insertp->m_vals[addKeynum] = valueIndex(val);
                 addKeynum++;
-                if (!legalKey(key)) {
+                if (VL_UNCOVERABLE(!legalKey(key))) {
                     std::string msg
                         = ("%Error: Coverage keys of one character, or letter+digit are illegal: "
-                           + key);
+                           + key);  // LCOV_EXCL_LINE
                     VL_FATAL_MT("", 0, "", msg.c_str());
                 }
             }
@@ -347,7 +346,7 @@ public:
 
     void write(const char* filename) VL_EXCLUDES(m_mutex) {
         Verilated::quiesce();
-        VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock(m_mutex);
 #ifndef VM_COVERAGE
         VL_FATAL_MT("", 0, "", "%Error: Called VerilatedCov::write when VM_COVERAGE disabled\n");
 #endif
@@ -475,11 +474,11 @@ void VerilatedCov::_insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8)
 }
 // Backward compatibility for Verilator
 void VerilatedCov::_insertp(A(0), A(1), K(2), int val2, K(3), int val3, K(4),
-                            const std::string& val4, A(5), A(6)) VL_MT_SAFE {
+                            const std::string& val4, A(5), A(6), A(7)) VL_MT_SAFE {
     std::string val2str = vlCovCvtToStr(val2);
     std::string val3str = vlCovCvtToStr(val3);
     _insertp(C(0), C(1), key2, val2str.c_str(), key3, val3str.c_str(), key4, val4.c_str(), C(5),
-             C(6), N(7), N(8), N(9), N(10), N(11), N(12), N(13), N(14), N(15), N(16), N(17), N(18),
+             C(6), C(7), N(8), N(9), N(10), N(11), N(12), N(13), N(14), N(15), N(16), N(17), N(18),
              N(19), N(20), N(21), N(22), N(23), N(24), N(25), N(26), N(27), N(28), N(29));
 }
 #undef A

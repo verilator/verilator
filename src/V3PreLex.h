@@ -18,8 +18,8 @@
 // It is not intended for user applications.
 //*************************************************************************
 
-#ifndef _VPREPROCLEX_H_  // Guard
-#define _VPREPROCLEX_H_ 1
+#ifndef _VPRELEX_H_  // Guard
+#define _VPRELEX_H_ 1
 
 #include "V3Error.h"
 #include "V3FileLine.h"

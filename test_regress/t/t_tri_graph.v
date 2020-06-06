@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Unsupported tristate constructur error
+// DESCRIPTION: Verilator: Unsupported tristate construct error
 //
 // This is a compile only regression test of tristate handling for bug514
 //

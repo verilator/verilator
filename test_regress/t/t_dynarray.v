@@ -27,6 +27,15 @@ module t (/*AUTOARG*/
    byte_t a[];
    byte_t b[];
 
+  // wide data array
+   typedef struct packed {
+     logic [15:0]  header;
+     logic [223:0] payload;
+     logic [15:0]  checksum;
+   } pck256_t;
+
+   pck256_t p256[];
+
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       begin
@@ -100,6 +109,33 @@ module t (/*AUTOARG*/
          `checkh(b[1], 0);
          `checkh(b[2], 0);
          `checkh(b[4], 0);
+
+         // test wide dynamic array
+         p256 = new [11];
+         `checkh(p256.size, 11);
+         `checkh(p256.size(), 11);
+
+         p256[1].header   = 16'hcafe;
+         p256[1].payload  = {14{16'hbabe}};
+         p256[1].checksum = 16'hdead;
+         `checkh(p256[1].header, 16'hcafe);
+         `checkh(p256[1], {16'hcafe,{14{16'hbabe}},16'hdead});
+
+         `checkh(p256[0], '0);
+
+         p256[5] = '1;
+         `checkh(p256[5], {32{8'hff}});
+
+         p256[5].header = 16'h2;
+         `checkh(p256[5], {16'h2,{30{8'hff}}});
+
+         p256[2] = ( p256[5].header == 2 ) ? p256[1] : p256[5];
+         `checkh(p256[2], {16'hcafe,{14{16'hbabe}},16'hdead});
+
+
+         p256.delete();
+         `checkh(p256.size, 0);
+
       end
 
       $write("*-* All Finished *-*\n");

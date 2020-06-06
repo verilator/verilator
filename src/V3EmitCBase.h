@@ -55,7 +55,7 @@ public:
     static string symClassName() { return v3Global.opt.prefix() + "_" + protect("_Syms"); }
     static string symClassVar() { return symClassName() + "* __restrict vlSymsp"; }
     static string symTopAssign() {
-        return v3Global.opt.prefix() + "* __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;";
+        return v3Global.opt.prefix() + "* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;";
     }
     static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp) {
         if (nodep->isConstructor()) {

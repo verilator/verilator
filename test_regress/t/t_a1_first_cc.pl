@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -16,7 +16,9 @@ scenarios(simulator => 1);
 
 $DEBUG_QUIET = "--debug --debugi 0 --gdbbt --no-dump-tree";
 
-run(cmd => ["perl", "../bin/verilator", $DEBUG_QUIET, "-V"]);
+run(cmd => ["perl", "../bin/verilator", $DEBUG_QUIET, "-V"],
+    verilator_run => 1,
+    );
 
 compile(
     verilator_flags2 => [$DEBUG_QUIET, "--trace"],

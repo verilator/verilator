@@ -9,6 +9,7 @@ BEGIN {
     if (!$ENV{VERILATOR_ROOT} && -x "../bin/verilator") {
         $ENV{VERILATOR_ROOT} = Cwd::getcwd()."/..";
     }
+    $ENV{MAKE} ||= "make"
 }
 
 use Getopt::Long;
@@ -22,12 +23,18 @@ use version;
 use POSIX qw(strftime);
 use lib ".";
 use Time::HiRes qw(usleep);
+use Digest::MD5 qw(md5);
 
 $::Driver = 1;
 $::Have_Forker = 0;
 
-eval "use Parallel::Forker; \$Fork=Parallel::Forker->new(use_sig_child=>1); \$::Have_Forker=1;";
+eval "use Parallel::Forker; \$Fork=Parallel::Forker->new(use_sig_child=>1, poll_interval=>10*1000); \$::Have_Forker=1;";
 $Fork = Forker->new(use_sig_child=>1) if !$Fork;
+my $forker_Min_Version = 1.258;
+if ($::Have_Forker && $Parallel::Forker::VERSION < $forker_Min_Version) {
+    print STDERR "driver.pl: Parallel::Forker is older than $forker_Min_Version, suggest 'cpan install Parallel::Forker'\n";
+    $::Have_Forker = 0;
+}
 $SIG{CHLD} = sub { $Fork->sig_child() if $Fork; };
 $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork; die "Quitting...\n"; };
 
@@ -269,10 +276,7 @@ sub _calc_hashset {
     my ($set, $nsets) = ($1, $2);
     my @new;
     foreach my $t (@opt_tests) {
-        my $checksum = do {
-            local $/;
-            unpack("%32W*", $t);
-        };
+        my $checksum = unpack('L', substr(md5($t), 0, 4));
         if (($set % $nsets) == ($checksum % $nsets)) {
             push @new, $t;
         }
@@ -306,6 +310,8 @@ sub new {
         skip_msgs => [],
         fail_msgs => [],
         fail_tests => [],
+        # Per-task identifiers
+        running_ids => {},
         @_};
     bless $self, $class;
     return $self;
@@ -322,14 +328,24 @@ sub one_test {
     $::Fork->schedule
         (
          test_pl_filename => $params{pl_filename},
+         run_pre_start => sub {
+             my $process = shift;
+             # Running in context of parent, before run_on_start
+             # Make an identifier that is unique across all current running jobs
+             my $i = 1; while (exists $self->{running_ids}{$i}) { ++$i; }
+             $process->{running_id} = $i;
+             $self->{running_ids}{$process->{running_id}} = 1;
+         },
          run_on_start => sub {
+             my $process = shift;
              # Running in context of child, so can't pass data to parent directly
              if ($self->{quiet}) {
                  open(STDOUT, ">/dev/null");
                  open(STDERR, ">&STDOUT");
              }
              print("="x70,"\n");
-             my $test = VTest->new(@params);
+             my $test = VTest->new(@params,
+                                   running_id => $process->{running_id});
              $test->oprint("="x50,"\n");
              unlink $test->{status_filename};
              $test->_prep;
@@ -340,7 +356,9 @@ sub one_test {
          },
          run_on_finish => sub {
              # Running in context of parent
-             my $test = VTest->new(@params);
+             my $process = shift;
+             my $test = VTest->new(@params,
+                                   running_id => $process->{running_id});
              $test->_read_status;
              if ($test->ok) {
                  $self->{ok_cnt}++;
@@ -354,11 +372,13 @@ sub one_test {
              } else {
                  $test->oprint("FAILED: $test->{errors}\n");
                  my $j = ($opt_jobs>1?" -j":"");
-                 my $makecmd = $ENV{VERILATOR_MAKE} || "make$j &&";
+                 my $makecmd = $ENV{VERILATOR_MAKE} || "$ENV{MAKE}$j &&";
+                 my $upperdir = (Cwd::getcwd() =~ /test_regress/
+                                 ? 'test_regress/' : '');
                  push @{$self->{fail_msgs}},
                      ("\t#".$test->soprint("%Error: $test->{errors}\n")
-                      ."\t\t$makecmd test_regress/"
-                      .$test->{pl_filename}
+                      ."\t\t$makecmd "
+                      .$upperdir.$test->{pl_filename}
                       ." ".join(' ', _manual_args())
                       ." --".$test->{scenario}."\n");
                  push @{$self->{fail_tests}}, $test;
@@ -374,6 +394,7 @@ sub one_test {
              }
              $self->{left_cnt}--;
              $self->print_summary;
+             delete $self->{running_ids}{$process->{running_id}} if $process->{running_id};
          },
          )->ready();
 }
@@ -444,7 +465,7 @@ sub sprint_summary {
 
     my $delta = time() - $::Start;
     my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
-    my $pct = int(100*($self->{left_cnt} / $self->{all_cnt}) + 0.999);
+    my $pct = int(100*($self->{left_cnt} / ($self->{all_cnt} + 0.001)) + 0.999);
     my $eta = ($self->{all_cnt}
                * ($delta / (($self->{all_cnt} - $self->{left_cnt})+0.001))) - $delta;
     $eta = 0 if $delta < 10;
@@ -885,9 +906,14 @@ sub compile_vlt_flags {
                    @{$param{v_flags2}},
                    # Flags from driver cmdline override default flags and
                    # flags from the test itself
-                   @Opt_Driver_Verilator_Flags,
+                   driver_verilator_flags(),
         );
     return @cmdargs;
+}
+
+sub driver_verilator_flags {
+    #my $self = (ref $_[0] ? shift : $Self);
+    return @Opt_Driver_Verilator_Flags
 }
 
 sub lint {
@@ -1062,6 +1088,7 @@ sub compile {
                         tee => $param{tee},
                         expect => $param{expect},
                         expect_filename => $param{expect_filename},
+                        verilator_run => 1,
                         cmd => \@vlt_cmd) if $::Opt_Verilation;
             return 1 if $self->errors || $self->skips || $self->unsupporteds;
         }
@@ -1077,6 +1104,7 @@ sub compile {
                         tee => $param{tee},
                         expect => $param{expect},
                         expect_filename => $param{expect_filename},
+                        verilator_run => 1,
                         cmd => ["cd \"".$self->{obj_dir}."\" && cmake",
                                 "\"".$self->{t_dir}."/..\"",
                                 "-DTEST_VERILATOR_ROOT=$ENV{VERILATOR_ROOT}",
@@ -1087,7 +1115,8 @@ sub compile {
                                 "-DTEST_VERBOSE=\"".($self->{verbose} ? 1 : 0)."\"",
                                 "-DTEST_SYSTEMC=\"" .($self->sc ? 1 : 0). "\"",
                                 "-DCMAKE_PREFIX_PATH=\"".(($ENV{SYSTEMC_INCLUDE}||$ENV{SYSTEMC}||'')."/..\""),
-                                "-DTEST_OPT_FAST=\"" . ($param{benchmark} ? "-Os" : "") . "\"",
+                                "-DTEST_OPT_FAST=\"" . ($param{benchmark} ? "-Os" : "-O0") . "\"",
+                                "-DTEST_OPT_GLOBAL=\"" . ($param{benchmark} ? "-Os" : "-O0") . "\"",
                                 "-DTEST_VERILATION=\"" . $::Opt_Verilation . "\"",
                         ]);
             return 1 if $self->errors || $self->skips || $self->unsupporteds;
@@ -1097,7 +1126,7 @@ sub compile {
             $self->oprint("Running make (gmake)\n") if $self->{verbose};
             $self->_run(logfile => "$self->{obj_dir}/vlt_gcc.log",
                         entering => "$self->{obj_dir}",
-                        cmd => ["make",
+                        cmd => [$ENV{MAKE},
                                 "-C ".$self->{obj_dir},
                                 "-f ".$::RealBin."/Makefile_obj",
                                 ($self->{verbose} ? "" : "--no-print-directory"),
@@ -1105,7 +1134,8 @@ sub compile {
                                 "TEST_OBJ_DIR=$self->{obj_dir}",
                                 "CPPFLAGS_DRIVER=-D".uc($self->{name}),
                                 ($self->{verbose} ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
-                                ($param{benchmark} ? "OPT_FAST=-Os" : ""),
+                                ($param{benchmark} ? "" : "OPT_FAST=-O0"),
+                                ($param{benchmark} ? "" : "OPT_GLOBAL=-O0"),
                                 "$self->{VM_PREFIX}",  # bypass default rule, as we don't need archive
                                 ($param{make_flags}||""),
                         ]);
@@ -1276,6 +1306,14 @@ sub execute {
     }
 }
 
+sub setenv {
+    my $self = (ref $_[0]? shift : $Self);
+    my $var = shift;
+    my $val = shift;
+    print "\texport $var='$val'\n";
+    $ENV{$var} = $val;
+}
+
 sub inline_checks {
     my $self = (ref $_[0]? shift : $Self);
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
@@ -1291,10 +1329,10 @@ sub inline_checks {
     while (defined(my $line = $fh->getline)) {
         if ($line =~ /CHECK/) {
             if ($line =~ /CHECK_COVER *\( *([---0-9]+) *, *"([^"]+)" *, *("([^"]+)" *,|) *(\d+) *\)/) {
-                my $lineno=($. + $1); my $hier=$2; my $comment=$4; my $count=$5;
+                my $lineno = ($. + $1); my $hier=$2; my $comment=$4; my $count=$5;
                 my $regexp = "\001l\002".$lineno;
                 $regexp .= ".*\001o\002".quotemeta($comment) if $comment;
-                $regexp .= ".*\001h\002".quotemeta($hier);
+                $regexp .= ".*\001h\002".quotemeta($hier) if $hier;
                 $regexp .= ".*' ".$count;
                 if ($contents !~ /$regexp/) {
                     $self->error("CHECK_COVER: $covfn: Regexp not found: $regexp\n".
@@ -1302,7 +1340,7 @@ sub inline_checks {
                 }
             }
             elsif ($line =~ /CHECK_COVER_MISSING *\( *([---0-9]+) *\)/) {
-                my $lineno=($. + $1);
+                my $lineno = ($. + $1);
                 my $regexp = "\001l\002".$lineno;
                 if ($contents =~ /$regexp/) {
                     $self->error("CHECK_COVER_MISSING: $covfn: Regexp found: $regexp\n".
@@ -1379,9 +1417,19 @@ sub sc {
 }
 
 sub have_sc {
-    #my $self = shift;
-    return 1 if (defined $ENV{SYSTEMC} || defined $ENV{SYSTEMC_INCLUDE});
+    my $self = (ref $_[0]? shift : $Self);
+    return 1 if (defined $ENV{SYSTEMC} || defined $ENV{SYSTEMC_INCLUDE} || $ENV{CFG_HAVE_SYSTEMC});
+    return 1 if $self->verilator_version =~ /systemc found *= *1/i;
     return 0;
+}
+
+sub make_version {
+    my $ver = `$ENV{MAKE} --version`;
+    if ($ver =~ /make ([0-9]+\.[0-9]+)/i) {
+        return $1;
+    } else {
+        return -1;
+    }
 }
 
 sub have_cmake {
@@ -1458,12 +1506,24 @@ sub _run {
     my $self = (ref $_[0]? shift : $Self);
     my %param = (tee => 1,
                  #entering =>  # Print entering directory information
+                 #verilator_run =>  # Move gcov data to parallel area
                  @_);
     my $command = join(' ',@{$param{cmd}});
     $command = "time $command" if $opt_benchmark && $command !~ /^cd /;
     print "\t$command";
     print "   > $param{logfile}" if $param{logfile};
     print "\n";
+
+    if ($param{verilator_run}) {
+        # Gcov fails when parallel jobs write same data file,
+        # so we make sure output dir is unique across all running jobs.
+        # We can't just put each one in obj_dir as it uses too much disk.
+        $ENV{GCOV_PREFIX_STRIP} = 99;
+        $ENV{GCOV_PREFIX} = "$self->{t_dir}/obj_dist/gcov_$self->{running_id}";
+    } else {
+        delete $ENV{GCOV_PREFIX_STRIP};
+        delete $ENV{GCOV_PREFIX};
+    }
 
     # Execute command redirecting output, keeping order between stderr and stdout.
     # Must do low-level IO so GCC interaction works (can't be line-based)
@@ -1975,8 +2035,9 @@ sub _read_inputs_vhdl {
 
 our $_Verilator_Version;
 sub verilator_version {
+    # Returns verbose version, line 1 contains actual version
     if (!defined $_Verilator_Version) {
-        my @args = ("perl", "$ENV{VERILATOR_ROOT}/bin/verilator", "--version");
+        my @args = ("perl", "$ENV{VERILATOR_ROOT}/bin/verilator", "-V");
         my $args = join(' ',@args);
         $_Verilator_Version = `$args`;
         $_Verilator_Version or die "can't fork: $! ".join(' ',@args);
@@ -2058,6 +2119,20 @@ sub files_identical {
         }
         return 1;
     }
+}
+
+sub files_identical_sorted {
+    my $self = (ref $_[0]? shift : $Self);
+    my $fn1 = shift;
+    my $fn2 = shift;
+    my $fn1_is_logfile = shift;
+    return 1 if $self->errors || $self->skips || $self->unsupporteds;
+    # Set LC_ALL as suggested in the sort manpage to avoid sort order
+    # changes from the locale.
+    setenv('LC_ALL', "C");
+    my $fn1sort = "$fn1.sort";
+    run(cmd => ["sort", "$fn1", "> $fn1sort"]);
+    return $self->files_identical($fn1sort, $fn2, $fn1_is_logfile);
 }
 
 sub copy_if_golden {
@@ -2169,13 +2244,13 @@ sub _vcd_read {
 
 our $_Cxx_Version;
 sub cxx_version {
-    $_Cxx_Version ||= `make -C $ENV{VERILATOR_ROOT}/test_regress -f Makefile print-cxx-version`;
+    $_Cxx_Version ||= `$ENV{MAKE} -C $ENV{VERILATOR_ROOT}/test_regress -f Makefile print-cxx-version`;
     return $_Cxx_Version;
 }
 
 our $_Cfg_With_Threaded;
 sub cfg_with_threaded {
-    $_Cfg_With_Threaded ||= `make -C $ENV{VERILATOR_ROOT} -f Makefile print-cfg-with-threaded`;
+    $_Cfg_With_Threaded ||= `$ENV{MAKE} -C $ENV{VERILATOR_ROOT} -f Makefile print-cfg-with-threaded`;
     return ($_Cfg_With_Threaded =~ /yes/i) ? 1:0;
 }
 
@@ -2271,6 +2346,7 @@ sub schedule {
     my $self = shift;
     my %params = (@_);
 
+    $params{run_pre_start}->($self);
     if (my $pid = fork()) {  # Parent
         waitpid($pid, 0);
     } else {  # Child

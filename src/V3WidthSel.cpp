@@ -33,8 +33,6 @@
 #include "V3Width.h"
 #include "V3Const.h"
 
-#include <cstdarg>
-
 //######################################################################
 // Width state, as a visitor of each AstNode
 
@@ -188,6 +186,13 @@ private:
                                         new AstRange(nodep->fileline(), newRange));
             v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
             return vardtypep;
+        }
+    }
+
+    void warnTri(AstNode* nodep) {
+        if (VN_IS(nodep, Const) && VN_CAST(nodep, Const)->num().isFourState()) {
+            nodep->v3error(
+                "Selection index is constantly unknown or tristated: " << nodep->name());
         }
     }
 
@@ -451,6 +456,8 @@ private:
         UINFO(6, "SELPLUS/MINUS " << nodep << endl);
         // Below 2 lines may change nodep->widthp()
         if (debug() >= 9) nodep->dumpTree(cout, "--SELPM0: ");
+        V3Width::widthParamsEdit(nodep->rhsp());  // constifyEdit doesn't ensure widths finished
+        V3Const::constifyEdit(nodep->rhsp());  // May relink pointed to node, ok if not const
         V3Const::constifyParamsEdit(nodep->thsp());  // May relink pointed to node
         checkConstantOrReplace(nodep->thsp(), "Width of :+ or :- bit extract isn't a constant");
         if (debug() >= 9) nodep->dumpTree(cout, "--SELPM3: ");
@@ -458,6 +465,7 @@ private:
         AstNode* fromp = nodep->lhsp()->unlinkFrBack();
         AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
         AstNode* widthp = nodep->thsp()->unlinkFrBack();
+        warnTri(rhsp);
         int width = VN_CAST(widthp, Const)->toSInt();
         if (width > (1 << 28)) {
             nodep->v3error("Width of :+ or :- is huge; vector of over 1billion bits: "
@@ -467,9 +475,35 @@ private:
         FromData fromdata = fromDataForArray(nodep, fromp);
         AstNodeDType* ddtypep = fromdata.m_dtypep;
         VNumRange fromRange = fromdata.m_fromRange;
-        if (VN_IS(ddtypep, BasicDType) || VN_IS(ddtypep, PackArrayDType)
-            || (VN_IS(ddtypep, NodeUOrStructDType)
-                && VN_CAST(ddtypep, NodeUOrStructDType)->packedUnsup())) {
+        if (VN_IS(ddtypep, UnpackArrayDType)) {
+            // Slice +: and -: extraction
+            if (fromRange.elements() == width && VN_IS(rhsp, Const)
+                && VN_CAST(rhsp, Const)->toSInt()
+                       == fromRange.lo()) {  // Extracting whole of original array
+                nodep->replaceWith(fromp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            } else if (fromRange.elements() == 1) {  // Extracting single element
+                AstArraySel* newp = new AstArraySel(nodep->fileline(), fromp, rhsp);
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            } else if (VN_IS(rhsp, Const)) {  // Slice
+                vlsint32_t rhs = VN_CAST(rhsp, Const)->toSInt();
+                // down array: lsb/lo +: width
+                // down array: msb/hi -: width
+                // up array:   msb/lo +: width
+                // up array:   lsb/hi -: width
+                vlsint32_t msb = VN_IS(nodep, SelPlus) ? rhs + width - 1 : rhs;
+                vlsint32_t lsb = VN_IS(nodep, SelPlus) ? rhs : rhs - width + 1;
+                AstSliceSel* newp = new AstSliceSel(nodep->fileline(), fromp,
+                                                    VNumRange(msb, lsb, fromRange.littleEndian()));
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            } else {
+                nodep->v3error("Unsupported: Slice of non-constant bounds");
+            }
+        } else if (VN_IS(ddtypep, BasicDType) || VN_IS(ddtypep, PackArrayDType)
+                   || (VN_IS(ddtypep, NodeUOrStructDType)
+                       && VN_CAST(ddtypep, NodeUOrStructDType)->packedUnsup())) {
             int elwidth = 1;
             AstNode* newwidthp = widthp;
             if (const AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {

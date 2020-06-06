@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -23,6 +23,7 @@ foreach my $prog (
                 "--help"],
         logfile => "$Self->{obj_dir}/t_help.log",
         tee => 0,
+        verilator_run => 1,
         );
     file_grep("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
 }

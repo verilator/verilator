@@ -27,7 +27,6 @@
 #include "V3Config.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <map>
 #include <set>
 #include <vector>
@@ -53,8 +52,6 @@ private:
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     FileLineSet m_filelines;  // Filelines that have been seen
     bool m_inAlways;  // Inside an always
-    bool m_inGenerate;  // Inside a generate
-    bool m_needStart;  // Need start marker on lower AstParse
     AstNodeModule* m_valueModp;  // If set, move AstVar->valuep() initial values to this module
     AstNodeModule* m_modp;  // Current module
     AstNodeFTask* m_ftaskp;  // Current task
@@ -173,6 +170,10 @@ private:
 
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         cleanFileline(nodep);
+        if (nodep->isParam() && !nodep->valuep()
+            && nodep->fileline()->language() < V3LangCode::L1800_2009) {
+            nodep->v3error("Parameter requires default value, or use IEEE 1800-2009 or later.");
+        }
         if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
             AstNodeDType* dtypep = VN_CAST(nodep->valuep(), NodeDType);
@@ -463,8 +464,7 @@ private:
         iterateChildren(nodep);
         m_valueModp = upperValueModp;
     }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE { visitIterateNoValueMod(nodep); }
-    virtual void visit(AstFinal* nodep) VL_OVERRIDE { visitIterateNoValueMod(nodep); }
+    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE { visitIterateNoValueMod(nodep); }
     virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         m_inAlways = true;
         visitIterateNoValueMod(nodep);
@@ -490,17 +490,6 @@ private:
             nodep->name("genblk");
         }
         iterateChildren(nodep);
-    }
-    virtual void visit(AstFork* nodep) VL_OVERRIDE {
-        if (v3Global.opt.bboxUnsup()) {
-            AstBegin* newp
-                = new AstBegin(nodep->fileline(), nodep->name(), nodep->stmtsp()->unlinkFrBack());
-            nodep->replaceWith(newp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        } else {
-            nodep->v3error("Unsupported: fork statements");
-            // TBD might support only normal join, if so complain about other join flavors
-        }
     }
     virtual void visit(AstCase* nodep) VL_OVERRIDE {
         V3Config::applyCase(nodep);
@@ -544,8 +533,6 @@ public:
         m_ftaskp = NULL;
         m_dtypep = NULL;
         m_inAlways = false;
-        m_inGenerate = false;
-        m_needStart = false;
         m_valueModp = NULL;
         iterate(rootp);
     }

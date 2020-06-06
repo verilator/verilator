@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -40,7 +40,9 @@ execute(
 run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_gantt",
             "$Self->{obj_dir}/profile_threads.dat",
             "--vcd $Self->{obj_dir}/profile_threads.vcd",
-            "> $Self->{obj_dir}/gantt.log"]);
+            "> $Self->{obj_dir}/gantt.log"],
+    verilator_run => 1,
+    );
 
 # We should have three lines of gantt chart, each with
 # an even number of mtask-bars (eg "[123--]")

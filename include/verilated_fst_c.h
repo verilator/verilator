@@ -55,8 +55,8 @@ private:
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
-    void declSymbol(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                    fstVarType vartype, bool array, int arraynum, vluint32_t len, vluint32_t bits);
+    void declare(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                 fstVarType vartype, bool array, int arraynum, int msb, int lsb);
 
 protected:
     //=========================================================================
@@ -77,7 +77,6 @@ protected:
     inline void emitIData(vluint32_t code, IData newval, int bits);
     inline void emitQData(vluint32_t code, QData newval, int bits);
     inline void emitWData(vluint32_t code, const WData* newvalp, int bits);
-    inline void emitFloat(vluint32_t code, float newval);
     inline void emitDouble(vluint32_t code, double newval);
 
 public:
@@ -112,8 +111,6 @@ public:
                   fstVarType vartype, bool array, int arraynum, int msb, int lsb);
     void declArray(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                    fstVarType vartype, bool array, int arraynum, int msb, int lsb);
-    void declFloat(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                   fstVarType vartype, bool array, int arraynum);
     void declDouble(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                     fstVarType vartype, bool array, int arraynum);
 };

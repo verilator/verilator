@@ -31,7 +31,6 @@
 #include "V3Ast.h"
 
 #include <cmath>
-#include <cstdarg>
 #include <deque>
 
 //######################################################################

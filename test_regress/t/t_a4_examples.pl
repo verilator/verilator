@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -14,7 +14,7 @@ $Self->{clean_command} = 'rm -rf ../examples/*/build ../examples/*/obj*';
 
 my @examples = sort(glob("../examples/*"));
 for my $example (@examples) {
-    run(cmd=>["make -C $example"]);
+    run(cmd=>["$ENV{MAKE} -C $example"]);
 }
 
 ok(1);

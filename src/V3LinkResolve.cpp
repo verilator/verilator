@@ -33,9 +33,7 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <map>
-#include <vector>
 
 //######################################################################
 // Link state, as a visitor of each AstNode
@@ -212,7 +210,7 @@ private:
             nodep->v3error("Unsupported: Complex statement in sensitivity list");
         }
     }
-    virtual void visit(AstSenGate* nodep) VL_OVERRIDE {
+    virtual void visit(AstSenGate* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("SenGates shouldn't be in tree yet");
     }
 
@@ -289,11 +287,13 @@ private:
         // Check display arguments, return new format string
         string newFormat;
         bool inPct = false;
+        bool inIgnore = false;
         string fmt;
         for (string::const_iterator it = format.begin(); it != format.end(); ++it) {
             char ch = *it;
             if (!inPct && ch == '%') {
                 inPct = true;
+                inIgnore = false;
                 fmt = ch;
             } else if (inPct && (isdigit(ch) || ch == '.' || ch == '-')) {
                 fmt += ch;
@@ -302,6 +302,10 @@ private:
                 fmt += ch;
                 switch (tolower(ch)) {
                 case '%':  // %% - just output a %
+                    break;
+                case '*':
+                    inPct = true;
+                    inIgnore = true;
                     break;
                 case 'm':  // %m - auto insert "name"
                     if (isScan) {
@@ -317,9 +321,9 @@ private:
                     if (m_modp) fmt = VString::quotePercent(m_modp->prettyName());
                     break;
                 default:  // Most operators, just move to next argument
-                    if (!V3Number::displayedFmtLegal(ch)) {
+                    if (!V3Number::displayedFmtLegal(ch, isScan)) {
                         nodep->v3error("Unknown $display-like format code: '%" << ch << "'");
-                    } else {
+                    } else if (!inIgnore) {
                         if (!argp) {
                             nodep->v3error("Missing arguments for $display-like format");
                         } else {
@@ -358,11 +362,20 @@ private:
                         } else if (inpercent) {
                             inpercent = 0;
                             switch (c) {
-                            case '0' ... '9':
+                            case '0':  // FALLTHRU
+                            case '1':  // FALLTHRU
+                            case '2':  // FALLTHRU
+                            case '3':  // FALLTHRU
+                            case '4':  // FALLTHRU
+                            case '5':  // FALLTHRU
+                            case '6':  // FALLTHRU
+                            case '7':  // FALLTHRU
+                            case '8':  // FALLTHRU
+                            case '9':  // FALLTHRU
                             case '.': inpercent = true; break;
                             case '%': break;
                             default:
-                                if (V3Number::displayedFmtLegal(c)) { skipCount++; }
+                                if (V3Number::displayedFmtLegal(c, isScan)) ++skipCount;
                             }
                         }
                     }
@@ -388,6 +401,10 @@ private:
     }
 
     virtual void visit(AstFOpen* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
+    }
+    virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }

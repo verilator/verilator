@@ -35,7 +35,6 @@
 #include "V3String.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <vector>
 #include VL_INCLUDE_UNORDERED_SET
 

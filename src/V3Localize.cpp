@@ -30,7 +30,6 @@
 #include "V3Stats.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
 #include <vector>
 
 //######################################################################
@@ -192,7 +191,8 @@ private:
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (!VarFlags(nodep->varp()).m_notOpt) {
             if (!m_cfuncp) {  // Not in function, can't optimize
-                clearOptimizable(nodep->varp(), "BVnofunc");
+                // Perhaps impossible, but better safe
+                clearOptimizable(nodep->varp(), "BVnofunc");  // LCOV_EXCL_LINE
             } else {
                 // If we're scoping down to it, it isn't really in the same block
                 if (!nodep->hierThis()) clearOptimizable(nodep->varp(), "HierRef");

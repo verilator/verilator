@@ -7,7 +7,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.034 2020-05-03],
+AC_INIT([Verilator],[4.036 2020-06-06],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -16,7 +16,10 @@ AC_INIT([Verilator],[4.034 2020-05-03],
 AC_CONFIG_HEADER(src/config_build.h)
 AC_CONFIG_FILES(Makefile docs/Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)
 
+# Version
 AC_MSG_RESULT([configuring for $PACKAGE_STRING])
+PACKAGE_VERSION_NUMBER=`AS_ECHO("$PACKAGE_VERSION") | sed 's/ .*//g'`
+AC_SUBST(PACKAGE_VERSION_NUMBER)
 
 # Ignore automake flags passed by Ubuntu builds
 AC_ARG_ENABLE([dependency-tracking],
@@ -416,6 +419,7 @@ AC_LINK_IFELSE(
 CFG_WITH_THREADED=$_my_result
 AC_SUBST(CFG_WITH_THREADED)
 AC_MSG_RESULT($CFG_WITH_THREADED)
+CXXFLAGS="$ACO_SAVE_CXXFLAGS"
 
 # Check compiler flag
 if test "$CFG_WITH_THREADED" = "no" ; then
@@ -437,6 +441,20 @@ fi
 AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],
     [AC_DEFINE([HAVE_STAT_NSEC],[1],[Defined if struct stat has st_mtim.tv_nsec])],
     [], [#include <sys/stat.h>])
+
+# HAVE_SYSTEMC
+# - If found the default search path has it, so support is always enabled.
+# - If not found or not system-wide, user can set SYSTEMC_INCLUDE.
+# AC_CHECK_HEADERS seems to not locate on Travis-CI but include does work.
+AC_MSG_CHECKING([whether SystemC is found (in system path)])
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([[#include <systemc.h>
+                     ]],[])],
+    [_my_result=yes
+     AC_DEFINE([HAVE_SYSTEMC_H],[1],[Defined if have systemc.h])],
+    [_my_result=no])
+AC_MSG_RESULT($_my_result)
+AC_SUBST(HAVE_SYSTEMC_H)
 
 # Checks for system services
 

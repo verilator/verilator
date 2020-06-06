@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3LINKSYMTABLE_H_
-#define _V3LINKSYMTABLE_H_ 1
+#ifndef _V3SYMTABLE_H_
+#define _V3SYMTABLE_H_ 1
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -36,7 +36,6 @@ class VSymEnt;
 //######################################################################
 // Symbol table
 
-typedef std::set<VSymEnt*> VSymMap;
 typedef std::set<const VSymEnt*> VSymConstMap;
 
 class VSymEnt {
@@ -74,8 +73,8 @@ public:
         if (m_symPrefix != "") os << "  symPrefix=" << m_symPrefix;
         os << "  n=" << nodep();
         os << endl;
-        if (doneSymsr.find(this) != doneSymsr.end()) {
-            os << indent << "| ^ duplicate, so no children printed\n";
+        if (VL_UNCOVERABLE(doneSymsr.find(this) != doneSymsr.end())) {
+            os << indent << "| ^ duplicate, so no children printed\n";  // LCOV_EXCL_LINE
         } else {
             doneSymsr.insert(this);
             for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end();
@@ -190,7 +189,7 @@ private:
             reinsert(name, symp);
         }
     }
-    void exportOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) {
+    void exportOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) const {
         if (srcp->exported()) {
             if (VSymEnt* symp = findIdFlat(name)) {  // Should already exist in current table
                 if (!symp->exported()) symp->exported(true);
@@ -284,7 +283,6 @@ public:
         for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) delete (*it);
     }
 
-public:
     // METHODS
     VSymEnt* rootp() const { return m_symRootp; }
     // Debug

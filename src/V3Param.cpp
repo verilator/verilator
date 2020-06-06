@@ -56,7 +56,6 @@
 #include "V3Unroll.h"
 #include "V3Hashed.h"
 
-#include <cstdarg>
 #include <deque>
 #include <map>
 #include <vector>
@@ -301,7 +300,8 @@ private:
                                    << " (IEEE 1800-2017 6.20.1): " << nodep->prettyNameQ());
                 } else {
                     V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
-                    if (!VN_IS(nodep->valuep(), Const)) {  // Complex init, like an array
+                    if (!VN_IS(nodep->valuep(), Const)
+                        && !VN_IS(nodep->valuep(), Unbounded)) {  // Complex init, like an array
                         // Make a new INITIAL to set the value.
                         // This allows the normal array/struct handling code to properly
                         // initialize the parameter.
@@ -409,11 +409,9 @@ private:
             string index = AstNode::encodeNumber(constp->toSInt());
             string replacestr = nodep->name() + "__BRA__??__KET__";
             size_t pos = m_unlinkedTxt.find(replacestr);
-            if (pos == string::npos) {
-                nodep->v3error("Could not find array index in unlinked text: '"
-                               << m_unlinkedTxt << "' for node: " << nodep);
-                return;
-            }
+            UASSERT_OBJ(pos != string::npos, nodep,
+                        "Could not find array index in unlinked text: '"
+                            << m_unlinkedTxt << "' for node: " << nodep);
             m_unlinkedTxt.replace(pos, replacestr.length(),
                                   nodep->name() + "__BRA__" + index + "__KET__");
         } else {
@@ -485,7 +483,7 @@ private:
             m_generateHierName = rootHierName;
         }
     }
-    virtual void visit(AstGenFor* nodep) VL_OVERRIDE {
+    virtual void visit(AstGenFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("GENFOR should have been wrapped in BEGIN");
     }
     virtual void visit(AstGenCase* nodep) VL_OVERRIDE {

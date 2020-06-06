@@ -50,7 +50,6 @@ protected:
 
 class ActiveNamer : public ActiveBaseVisitor {
 private:
-    typedef std::map<string, AstActive*> ActiveNameMap;
     // STATE
     AstScope* m_scopep;  // Current scope to add statement to
     AstActive* m_iActivep;  // For current scope, the IActive we're building

@@ -125,7 +125,7 @@ VTimescale::VTimescale(const string& value, bool& badr)
     : m_e(VTimescale::NONE) {
     badr = true;
     string spaceless = VString::removeWhitespace(value);
-    for (int i = TS_1S; i < _ENUM_END; ++i) {
+    for (int i = TS_100S; i < _ENUM_END; ++i) {
         VTimescale ts(i);
         if (spaceless == ts.ascii()) {
             badr = false;
@@ -329,9 +329,9 @@ void V3Options::fileNfsFlush(const string& filename) {
     // NFS caches stat() calls so to get up-to-date information must
     // do a open or opendir on the filename.
     // Faster to just try both rather than check if a file is a dir.
-    if (DIR* dirp = opendir(filename.c_str())) {
-        closedir(dirp);
-    } else if (int fd = ::open(filename.c_str(), O_RDONLY)) {
+    if (DIR* dirp = opendir(filename.c_str())) {  // LCOV_EXCL_BR_LINE
+        closedir(dirp);  // LCOV_EXCL_LINE
+    } else if (int fd = ::open(filename.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
         if (fd > 0) ::close(fd);
     }
 }
@@ -540,13 +540,6 @@ string V3Options::getenvSYSTEMC_INCLUDE() {
         string sc = getenvSYSTEMC();
         if (sc != "") var = sc + "/include";
     }
-    // Only correct or check it if we really need the value
-    if (v3Global.opt.usingSystemCLibs()) {
-        if (var == "") {
-            v3fatal("Need $SYSTEMC_INCLUDE in environment or when Verilator configured\n"
-                    "Probably System-C isn't installed, see http://www.systemc.org\n");
-        }
-    }
     return var;
 }
 
@@ -561,13 +554,6 @@ string V3Options::getenvSYSTEMC_LIBDIR() {
         string arch = getenvSYSTEMC_ARCH();
         if (sc != "" && arch != "") var = sc + "/lib-" + arch;
     }
-    // Only correct or check it if we really need the value
-    if (v3Global.opt.usingSystemCLibs()) {
-        if (var == "") {
-            v3fatal("Need $SYSTEMC_LIBDIR in environment or when Verilator configured\n"
-                    "Probably System-C isn't installed, see http://www.systemc.org\n");
-        }
-    }
     return var;
 }
 
@@ -579,6 +565,19 @@ string V3Options::getenvVERILATOR_ROOT() {
     }
     if (var == "") v3fatal("$VERILATOR_ROOT needs to be in environment\n");
     return var;
+}
+
+bool V3Options::systemCSystemWide() {
+#ifdef HAVE_SYSTEMC_H
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool V3Options::systemCFound() {
+    return (systemCSystemWide()
+            || (!getenvSYSTEMC_INCLUDE().empty() && !getenvSYSTEMC_LIBDIR().empty()));
 }
 
 //######################################################################
@@ -637,12 +636,12 @@ void V3Options::notify() {
             && !v3Global.opt.xmlOnly());
     }
 
-    if (v3Global.opt.main() && v3Global.opt.systemC()) {
-        cmdfl->v3error("--main not usable with SystemC. Suggest see examples for sc_main().");
-    }
-
     // --trace-threads implies --threads 1 unless explicitly specified
     if (traceThreads() && !threads()) m_threads = 1;
+
+    // Default split limits if not specified
+    if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
+    if (m_outputSplitCTrace < 0) m_outputSplitCTrace = m_outputSplit;
 
     if (v3Global.opt.main() && v3Global.opt.systemC()) {
         cmdfl->v3error("--main not usable with SystemC. Suggest see examples for sc_main().");
@@ -668,13 +667,13 @@ string V3Options::protectKeyDefaulted() {
     return m_protectKey;
 }
 
-void V3Options::throwSigsegv() {
+void V3Options::throwSigsegv() {  // LCOV_EXCL_START
 #if !(defined(VL_CPPCHECK) || defined(__clang_analyzer__))
     // clang-format off
     { char* zp = NULL; *zp = 0; }  // Intentional core dump, ignore warnings here
     // clang-format on
 #endif
-}
+}  // LCOV_EXCL_STOP
 
 VTimescale V3Options::timeComputePrec(const VTimescale& flag) const {
     if (!timeOverridePrec().isNone()) {
@@ -779,7 +778,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         addArg(argv[i]);  // -f's really should be inserted in the middle, but this is for debug
     }
 #define shift \
-    { ++i; }
+    do { ++i; } while (false)
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i] << endl);
         // + options
@@ -843,7 +842,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-coverage-underscore", flag/*ref*/)){ m_coverageUnderscore = flag; }
             else if ( onoff (sw, "-coverage-user", flag/*ref*/)){ m_coverageUser = flag; }
             else if ( onoff (sw, "-covsp", flag/*ref*/))        { }  // TBD
-            else if (!strcmp(sw, "-debug-abort")) { abort(); }  // Undocumented, see also --debug-sigsegv
+            else if (!strcmp(sw, "-debug-abort")) { V3Error::vlAbort(); }  // Undocumented, see also --debug-sigsegv
             else if ( onoff (sw, "-debug-check", flag/*ref*/))  { m_debugCheck = flag; }
             else if ( onoff (sw, "-debug-collision", flag/*ref*/)) { m_debugCollision = flag; }  // Undocumented
             else if ( onoff (sw, "-debug-leak", flag/*ref*/))   { m_debugLeak = flag; }
@@ -857,6 +856,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-dpi-hdr-only", flag/*ref*/)) { m_dpiHdrOnly = flag; }
             else if ( onoff (sw, "-dump-defines", flag/*ref*/)) { m_dumpDefines = flag; }
             else if ( onoff (sw, "-dump-tree", flag/*ref*/))    { m_dumpTree = flag ? 3 : 0; }  // Also see --dump-treei
+            else if ( onoff (sw, "-dump-tree-addrids", flag/*ref*/)){ m_dumpTreeAddrids = flag; }
             else if ( onoff (sw, "-exe", flag/*ref*/))          { m_exe = flag; }
             else if ( onoff (sw, "-flatten", flag/*ref*/))      { m_flatten = flag; }
             else if ( onoff (sw, "-ignc", flag/*ref*/))         { m_ignc = flag; }
@@ -892,7 +892,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-threads-coarsen", flag/*ref*/))   { m_threadsCoarsen = flag; }  // Undocumented, debug
             else if ( onoff (sw, "-trace", flag/*ref*/))             { m_trace = flag; }
             else if ( onoff (sw, "-trace-coverage", flag/*ref*/))    { m_traceCoverage = flag; }
-            else if ( onoff (sw, "-trace-dups", flag/*ref*/))        { m_traceDups = flag; }
             else if ( onoff (sw, "-trace-params", flag/*ref*/))      { m_traceParams = flag; }
             else if ( onoff (sw, "-trace-structs", flag/*ref*/))     { m_traceStructs = flag; }
             else if ( onoff (sw, "-trace-underscore", flag/*ref*/))  { m_traceUnderscore = flag; }
@@ -919,12 +918,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     case 'b': m_oCombine = flag; break;
                     case 'c': m_oConst = flag; break;
                     case 'd': m_oDedupe = flag; break;
-                    case 'm': m_oAssemble = flag; break;
                     case 'e': m_oCase = flag; break;
                     case 'g': m_oGate = flag; break;
                     case 'i': m_oInline = flag; break;
                     case 'k': m_oSubstConst = flag; break;
                     case 'l': m_oLife = flag; break;
+                    case 'm': m_oAssemble = flag; break;
                     case 'p':
                         m_public = !flag;
                         break;  // With -Op so flag=0, we want public on so few optimizations done
@@ -933,6 +932,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     case 't': m_oLifePost = flag; break;
                     case 'u': m_oSubst = flag; break;
                     case 'v': m_oReloop = flag; break;
+                    case 'w': m_oMergeCond = flag; break;
                     case 'x': m_oExpand = flag; break;
                     case 'y': m_oAcycSimp = flag; break;
                     case 'z': m_oLocalize = flag; break;
@@ -1062,13 +1062,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (!strcmp(sw, "-output-split-cfuncs") && (i + 1) < argc) {
                 shift;
                 m_outputSplitCFuncs = atoi(argv[i]);
-                if (m_outputSplitCFuncs
-                    && (!m_outputSplitCTrace || m_outputSplitCTrace > m_outputSplitCFuncs)) {
-                    m_outputSplitCTrace = m_outputSplitCFuncs;
+                if (m_outputSplitCFuncs < 0) {
+                    fl->v3error("--output-split-cfuncs must be >= 0: " << argv[i]);
                 }
-            } else if (!strcmp(sw, "-output-split-ctrace")) {  // Undocumented optimization tweak
+            } else if (!strcmp(sw, "-output-split-ctrace")) {
                 shift;
                 m_outputSplitCTrace = atoi(argv[i]);
+                if (m_outputSplitCTrace < 0) {
+                    fl->v3error("--output-split-ctrace must be >= 0: " << argv[i]);
+                }
             } else if (!strcmp(sw, "-protect-lib") && (i + 1) < argc) {
                 shift;
                 m_protectLib = argv[i];
@@ -1195,6 +1197,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 parseOptsFile(fl, parseFileArg(optdir, argv[i]), false);
             } else if (!strcmp(sw, "-gdb")) {
                 // Used only in perl shell
+            } else if (!strcmp(sw, "-waiver-output") && (i + 1) < argc) {
+                shift;
+                m_waiverOutput = argv[i];
             } else if (!strcmp(sw, "-rr")) {
                 // Used only in perl shell
             } else if (!strcmp(sw, "-gdbbt")) {
@@ -1509,6 +1514,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "    SYSTEMC_INCLUDE    = " << DEFENV_SYSTEMC_INCLUDE << endl;
     cout << "    SYSTEMC_LIBDIR     = " << DEFENV_SYSTEMC_LIBDIR << endl;
     cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT << endl;
+    cout << "    SystemC system-wide = " << cvtToStr(systemCSystemWide()) << endl;
 
     cout << endl;
     cout << "Environment:\n";
@@ -1521,6 +1527,10 @@ void V3Options::showVersion(bool verbose) {
     cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT", "") << endl;
     // wrapper uses this:
     cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN", "") << endl;
+
+    cout << endl;
+    cout << "Features (based on environment or compiled-in support):\n";
+    cout << "    SystemC found      = " << cvtToStr(systemCFound()) << endl;
 }
 
 //======================================================================
@@ -1589,7 +1599,6 @@ V3Options::V3Options() {
     m_threadsMaxMTasks = 0;
     m_trace = false;
     m_traceCoverage = false;
-    m_traceDups = false;
     m_traceFormat = TraceFormat::VCD;
     m_traceParams = true;
     m_traceStructs = false;
@@ -1604,14 +1613,15 @@ V3Options::V3Options() {
     m_buildJobs = 1;
     m_convergeLimit = 100;
     m_dumpTree = 0;
+    m_dumpTreeAddrids = false;
     m_gateStmts = 100;
     m_ifDepth = 0;
     m_inlineMult = 2000;
     m_maxNumWidth = 65536;
     m_moduleRecursion = 100;
-    m_outputSplit = 0;
-    m_outputSplitCFuncs = 0;
-    m_outputSplitCTrace = 0;
+    m_outputSplit = 20000;
+    m_outputSplitCFuncs = -1;
+    m_outputSplitCTrace = -1;
     m_traceDepth = 0;
     m_traceMaxArray = 32;
     m_traceMaxWidth = 256;
@@ -1625,6 +1635,7 @@ V3Options::V3Options() {
     m_makeDir = "obj_dir";
     m_bin = "";
     m_flags = "";
+    m_waiverOutput = "";
     m_l2Name = "";
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";
@@ -1698,23 +1709,24 @@ void V3Options::optimize(int level) {
     // Set all optimizations to on/off
     bool flag = level > 0;
     m_oAcycSimp = flag;
+    m_oAssemble = flag;
     m_oCase = flag;
     m_oCombine = flag;
     m_oConst = flag;
+    m_oDedupe = flag;
     m_oExpand = flag;
     m_oGate = flag;
     m_oInline = flag;
     m_oLife = flag;
     m_oLifePost = flag;
     m_oLocalize = flag;
+    m_oMergeCond = flag;
     m_oReloop = flag;
     m_oReorder = flag;
     m_oSplit = flag;
     m_oSubst = flag;
     m_oSubstConst = flag;
     m_oTable = flag;
-    m_oDedupe = flag;
-    m_oAssemble = flag;
     // And set specific optimization levels
     if (level >= 3) {
         m_inlineMult = -1;  // Maximum inlining

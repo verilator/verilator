@@ -22,10 +22,7 @@
 #include "V3EmitCBase.h"
 #include "V3EmitCMain.h"
 
-#include <cmath>
-#include <cstdarg>
 #include <map>
-#include <vector>
 
 //######################################################################
 
@@ -33,7 +30,8 @@ class EmitCMain : EmitCBaseVisitor {
     // METHODS
 
     // VISITORS
-    virtual void visit(AstNode* nodep) { iterateChildren(nodep); }
+    // This visitor doesn't really iterate, but exist to appease base class
+    virtual void visit(AstNode* nodep) { iterateChildren(nodep); }  // LCOV_EXCL_LINE
 
 public:
     // CONSTRUCTORS

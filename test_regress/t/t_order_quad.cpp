@@ -32,11 +32,11 @@ int main(int argc, char* argv[]) {
 
     topp->a0 = 0;
     topp->eval();
-    check(topp->y, VL_ULL(0x0));
+    check(topp->y, 0x0ULL);
 
     topp->a0 = 15;
     topp->eval();
-    check(topp->y, VL_ULL(0x3c00000000));
+    check(topp->y, 0x3c00000000ULL);
 
     topp->final();
     if (!fail) {

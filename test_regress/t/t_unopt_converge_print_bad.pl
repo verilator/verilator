@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -14,7 +14,7 @@ top_filename("t/t_unopt_converge.v");
 #$Self->{verilated_debug} = 1;
 
 compile(
-    v_flags2 => ['+define+ALLOW_UNOPT'],
+    v_flags2 => ['+define+ALLOW_UNOPT --output-split 0'],
     make_flags => 'CPPFLAGS_ADD=-DVL_DEBUG',
     );
 

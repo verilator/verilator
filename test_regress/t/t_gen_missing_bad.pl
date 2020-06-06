@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 
 top_filename("t/t_gen_missing.v");
 
-compile(
+lint(
     v_flags2 => ['+define+T_GEN_MISSING_BAD'],
     fails => 1,
     expect_filename => $Self->{golden_filename},

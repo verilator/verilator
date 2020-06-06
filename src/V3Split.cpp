@@ -87,7 +87,6 @@
 #include "V3Graph.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <map>
 #include <vector>
 #include VL_INCLUDE_UNORDERED_MAP

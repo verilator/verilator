@@ -114,7 +114,6 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
-#include "V3Const.h"
 #include "V3Global.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"
@@ -475,7 +474,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
             UINFO(4, "Skip " << nodep->prettyNameQ() << "\n");
             return;
         }
-        UASSERT_OBJ(!m_modp, m_modp, "Nested module declration");
+        UASSERT_OBJ(!m_modp, m_modp, "Nested module declaration");
         UASSERT_OBJ(m_refs.empty(), nodep, "The last module didn't finish split()");
         m_modp = nodep;
         iterateChildren(nodep);
@@ -990,7 +989,7 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
     // key:variable to be split. value:location where the variable is referenced.
     vl_unordered_map<AstVar*, PackedVarRef> m_refs;
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
-        UASSERT_OBJ(m_modp == NULL, m_modp, "Nested module declration");
+        UASSERT_OBJ(m_modp == NULL, m_modp, "Nested module declaration");
         if (!VN_IS(nodep, Module)) {
             UINFO(5, "Skip " << nodep->prettyNameQ() << "\n");
             return;
@@ -1275,7 +1274,7 @@ public:
                 reason = "it is not an aggregate type of bit nor logic";
             if (!reason) reason = cannotSplitVarCommonReason(nodep);
         } else {
-            reason = "its type is unknown";
+            reason = "its type is unknown";  // LCOV_EXCL_LINE
         }
         if (reason)
             UINFO(5,

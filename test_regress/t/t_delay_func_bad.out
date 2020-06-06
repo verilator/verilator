@@ -1,0 +1,9 @@
+%Error: t/t_delay_func_bad.v:10:8: Delays are not legal in functions. Suggest use a task (IEEE 1800-2017 13.4.4)
+                                 : ... In instance t
+   10 |       #1 $stop;
+      |        ^
+%Error: t/t_delay_func_bad.v:23:8: Delays are not legal in final blocks (IEEE 1800-2017 9.2.3)
+                                 : ... In instance t
+   23 |       #1;
+      |        ^
+%Error: Exiting due to

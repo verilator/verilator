@@ -40,7 +40,6 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <map>
 #include <vector>
 
@@ -57,15 +56,6 @@ protected:
     // METHODS
     virtual ~CombBaseVisitor() {}
     VL_DEBUG_FUNC;  // Declare debug()
-
-    //***** optimization levels
-    static bool emptyFunctionDeletion() { return true; }
-    static bool duplicateFunctionCombine() { return true; }
-    // Note this is disabled, it still needed work
-    // Also repair it for DPI functions; when make __common need to ensure proper
-    // flags get inherited from the old to new AstCFunc, and that AstText doesn't
-    // get split between functions causing the text to have a dangling reference.
-    bool statementCombine() { return false; }  // duplicateFunctionCombine();
 };
 
 //######################################################################
@@ -86,11 +76,10 @@ public:
         } else {
             UINFO(4, "   Remove " << oldfuncp << endl);
         }
-        std::pair<CallMmap::iterator, CallMmap::iterator> eqrange
-            = m_callMmap.equal_range(oldfuncp);
-        for (CallMmap::iterator nextit = eqrange.first; nextit != eqrange.second;) {
-            CallMmap::iterator eqit = nextit++;
-            AstCCall* callp = eqit->second;
+        // Note: m_callMmap modified in loop, so not using equal_range.
+        for (CallMmap::iterator it = m_callMmap.find(oldfuncp); it != m_callMmap.end();
+             it = m_callMmap.find(oldfuncp)) {
+            AstCCall* callp = it->second;
             if (!callp->user3()) {  // !already done
                 UINFO(4, "     Called " << callp << endl);
                 UASSERT_OBJ(callp->funcp() == oldfuncp, callp,
@@ -105,8 +94,13 @@ public:
                 }
                 callp->user3(true);  // Dead now
                 VL_DO_DANGLING(pushDeletep(callp), callp);
-                m_callMmap.erase(eqit);  // Fix the table
             }
+            // It is safe to unconditionally remove this entry here as the above
+            // 'if' would never be entered again for this entry (we set user3).
+            // The only other place where m_callMmap is looked up is deleteCall
+            // below, but that is only ever called straight after an addCall
+            // of the node being deleted, so it won't miss this entry.
+            m_callMmap.erase(it);  // Fix the table
         }
     }
     // METHODS
@@ -182,7 +176,6 @@ private:
     CombineState m_state;  // Major state
     AstNodeModule* m_modp;  // Current module
     AstCFunc* m_funcp;  // Current function
-    V3Hash m_lowerHash;  // Hash of the statement we're building
     CombCallVisitor m_call;  // Tracking of function call users
     int m_modNFuncs;  // Number of functions made
     AstNode* m_walkLast1p;  // Final node that is the same in duplicate list
@@ -195,6 +188,7 @@ private:
         m_hashed.hashAndInsert(nodep);
         // UINFO(9, "  stmthash " << hex << nodep->user4() << "  " << nodep << endl);
     }
+#ifdef VL_COMBINE_STATEMENTS
     void hashFunctions(AstCFunc* nodep) {
         // Compute hash of all statement trees in the function
         CombineState oldState = m_state;
@@ -204,6 +198,7 @@ private:
         }
         m_state = oldState;
     }
+#endif
     void walkEmptyFuncs() {
         for (V3Hashed::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
             AstNode* node1p = it->second;
@@ -251,6 +246,8 @@ private:
         oldfuncp->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(oldfuncp), oldfuncp);
     }
+
+#ifdef VL_COMBINE_STATEMENTS
     void replaceOnlyCallFunc(AstCCall* nodep) {
         if (AstCFunc* oldfuncp = VN_CAST(nodep->backp(), CFunc)) {
             // oldfuncp->dumpTree(cout, "MAYDEL: ");
@@ -343,7 +340,7 @@ private:
         // Grab statement bodies
         AstNRelinker relink1Handle;
         AstNRelinker relink2Handle;
-        for (AstNode *nextp, *walkp = node1p; 1; walkp = nextp) {
+        for (AstNode *nextp, *walkp = node1p; true; walkp = nextp) {
             nextp = walkp->nextp();
             if (walkp == node1p) {
                 walkp->unlinkFrBack(&relink1Handle);
@@ -353,7 +350,7 @@ private:
             }
             if (walkp == last1p) break;
         }
-        for (AstNode *nextp, *walkp = node2p; 1; walkp = nextp) {
+        for (AstNode *nextp, *walkp = node2p; true; walkp = nextp) {
             nextp = walkp->nextp();
             if (walkp == node2p) {
                 walkp->unlinkFrBack(&relink2Handle);
@@ -381,6 +378,7 @@ private:
         VL_DO_DANGLING(replaceOnlyCallFunc(call1p), call1p);
         VL_DO_DANGLING(replaceOnlyCallFunc(call2p), call2p);
     }
+#endif
 
     // VISITORS
     virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
@@ -404,15 +402,21 @@ private:
         m_state = STATE_IDLE;
         if (debug() >= 9) m_hashed.dumpFilePrefixed("combine");
         // Walk the hashes removing empty functions
-        if (emptyFunctionDeletion()) walkEmptyFuncs();
+        walkEmptyFuncs();
         // Walk the hashes looking for duplicate functions
-        if (duplicateFunctionCombine()) walkDupFuncs();
+        walkDupFuncs();
         // Walk the statements looking for large replicated code sections
-        if (statementCombine()) {
+        // Note this is disabled, it still needed work
+        // Also repair it for DPI functions; when make __common need to ensure proper
+        // flags get inherited from the old to new AstCFunc, and that AstText doesn't
+        // get split between functions causing the text to have a dangling reference.
+#ifdef VL_COMBINE_STATEMENTS
+        {
             m_state = STATE_DUP;
             iterateChildren(nodep);
             m_state = STATE_IDLE;
         }
+#endif
         m_modp = NULL;
     }
     virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
@@ -420,9 +424,12 @@ private:
         if (!nodep->dontCombine()) {
             if (m_state == STATE_HASH) {
                 hashStatement(nodep);  // Hash the entire function - it might be identical
-            } else if (m_state == STATE_DUP) {
+            }
+#ifdef VL_COMBINE_STATEMENTS
+            else if (m_state == STATE_DUP) {
                 iterateChildren(nodep);
             }
+#endif
         }
         m_funcp = NULL;
     }
@@ -433,9 +440,12 @@ private:
         }
         if (m_state == STATE_HASH && m_funcp) {
             hashStatement(nodep);
-        } else if (m_state == STATE_DUP && m_funcp) {
+        }
+#ifdef VL_COMBINE_STATEMENTS
+        else if (m_state == STATE_DUP && m_funcp) {
             walkDupCodeStart(nodep);
         }
+#endif
     }
 
     //--------------------

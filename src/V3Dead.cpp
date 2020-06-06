@@ -41,7 +41,6 @@
 #include "V3Dead.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
 #include <map>
 #include <vector>
 
@@ -96,7 +95,6 @@ private:
     AssignMap m_assignMap;  // List of all simple assignments for each variable
     bool m_elimUserVars;  // Allow removal of user's vars
     bool m_elimDTypes;  // Allow removal of DTypes
-    bool m_elimScopes;  // Allow removal of Scopes
     bool m_elimCells;  // Allow removal of Cells
     bool m_sideEffect;  // Side effects discovered in assign RHS
 
@@ -197,6 +195,8 @@ private:
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
+        UASSERT_OBJ(!(m_elimCells && nodep->typedefp()), nodep,
+                    "RefDType should point to data type before typedefs removed");
         if (nodep->packagep()) {
             if (m_elimCells) {
                 nodep->packagep(NULL);
@@ -442,7 +442,6 @@ public:
         m_elimCells = elimCells;
         m_elimUserVars = elimUserVars;
         m_elimDTypes = elimDTypes;
-        m_elimScopes = elimScopes;
         m_sideEffect = false;
         // Prepare to remove some datatypes
         nodep->typeTablep()->clearCache();

@@ -116,7 +116,7 @@ define_property(TARGET
 function(verilate TARGET)
   cmake_parse_arguments(VERILATE "COVERAGE;TRACE;TRACE_FST;SYSTEMC"
                                  "PREFIX;TOP_MODULE;THREADS;DIRECTORY"
-                                 "SOURCES;VERILATOR_ARGS;INCLUDE_DIRS;OPT_SLOW;OPT_FAST"
+                                 "SOURCES;VERILATOR_ARGS;INCLUDE_DIRS;OPT_SLOW;OPT_FAST;OPT_GLOBAL"
                                  ${ARGN})
   if (NOT VERILATE_SOURCES)
     message(FATAL_ERROR "Need at least one source")
@@ -288,6 +288,11 @@ function(verilate TARGET)
   foreach(VFAST ${${VERILATE_PREFIX}_CLASSES_FAST} ${${VERILATE_PREFIX}_SUPPORT_FAST})
     foreach(OPT_FAST ${VERILATE_OPT_FAST} ${${VERILATE_PREFIX}_USER_CFLAGS})
       set_property(SOURCE "${VFAST}" APPEND_STRING PROPERTY COMPILE_FLAGS " ${OPT_FAST}")
+    endforeach()
+  endforeach()
+  foreach(VGLOBAL ${${VERILATE_PREFIX}_GLOBAL})
+    foreach(OPT_GLOBAL ${VERILATE_OPT_GLOBAL} ${${VERILATE_PREFIX}_USER_CFLAGS})
+      set_property(SOURCE "${VGLOBAL}" APPEND_STRING PROPERTY COMPILE_FLAGS " ${OPT_GLOBAL}")
     endforeach()
   endforeach()
 

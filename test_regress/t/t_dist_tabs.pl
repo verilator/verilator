@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -12,7 +12,7 @@ scenarios(dist => 1);
 
 my $root = "..";
 
-my $Tabs_Exempt_Re = qr!(\.out$)|(/gtkwave)|(Makefile)|(\.mk$)!;
+my $Tabs_Exempt_Re = qr!(\.out$)|(/gtkwave)|(Makefile)|(\.mk$)|(nodist/fastcov.py)!;
 
 if (!-r "$root/.git") {
     skip("Not in a git repository");
@@ -68,7 +68,7 @@ if (!-r "$root/.git") {
                 }
                 my $len = length($1);
                 if ($len >= 100
-                    && $file !~ /\.out$/) {
+                    && $file !~ $Tabs_Exempt_Re) {
                     print"  Wide $line\n" if $Self->{verbose};
                     $summary = "File modification adds a new >100 column line:" if !$summary;
                     $warns{$file} = "File modification adds a new >100 column line: $file:$lineno";

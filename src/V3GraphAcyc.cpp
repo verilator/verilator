@@ -21,7 +21,6 @@
 #include "V3Graph.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <list>
 #include <vector>
 
@@ -80,9 +79,9 @@ public:
 
 struct GraphAcycEdgeCmp {
     inline bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
-        if (lhsp->weight() > rhsp->weight()) return 1;  // LHS goes first
-        if (lhsp->weight() < rhsp->weight()) return 0;  // RHS goes first
-        return 0;
+        if (lhsp->weight() > rhsp->weight()) return true;  // LHS goes first
+        if (lhsp->weight() < rhsp->weight()) return false;  // RHS goes first
+        return false;
     }
 };
 

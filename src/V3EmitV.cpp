@@ -22,8 +22,6 @@
 #include "V3EmitCBase.h"
 
 #include <algorithm>
-#include <cmath>
-#include <cstdarg>
 #include <map>
 #include <vector>
 
@@ -252,12 +250,16 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstFOpen* nodep) VL_OVERRIDE {
         putfs(nodep, nodep->verilogKwd());
-        putbs(" (");
-        if (nodep->filep()) iterateAndNextNull(nodep->filep());
+        putbs("(");
+        iterateAndNextNull(nodep->filenamep());
         putbs(",");
-        if (nodep->filenamep()) iterateAndNextNull(nodep->filenamep());
-        putbs(",");
-        if (nodep->modep()) iterateAndNextNull(nodep->modep());
+        iterateAndNextNull(nodep->modep());
+        puts(");\n");
+    }
+    virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {
+        putfs(nodep, nodep->verilogKwd());
+        putbs("(");
+        iterateAndNextNull(nodep->filenamep());
         puts(");\n");
     }
     virtual void visit(AstFClose* nodep) VL_OVERRIDE {
@@ -272,13 +274,16 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         if (nodep->filep()) iterateAndNextNull(nodep->filep());
         puts(");\n");
     }
-    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
-        putbs("disable " + cvtToHex(nodep->labelp()) + ";\n");
-    }
-    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
-        putbs("begin : " + cvtToHex(nodep) + "\n");
+    virtual void visit(AstJumpBlock* nodep) VL_OVERRIDE {
+        putbs("begin : label" + cvtToStr(nodep->labelNum()) + "\n");
         if (nodep->stmtsp()) iterateAndNextNull(nodep->stmtsp());
         puts("end\n");
+    }
+    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
+        putbs("disable label" + cvtToStr(nodep->labelp()->blockp()->labelNum()) + ";\n");
+    }
+    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+        putbs("// " + cvtToStr(nodep->blockp()) + ":\n");
     }
     virtual void visit(AstNodeReadWriteMem* nodep) VL_OVERRIDE {
         putfs(nodep, nodep->verilogKwd());
@@ -408,13 +413,15 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 
     // Operators
     virtual void emitVerilogFormat(AstNode* nodep, const string& format, AstNode* lhsp = NULL,
-                                   AstNode* rhsp = NULL, AstNode* thsp = NULL) {
+                                   AstNode* rhsp = NULL, AstNode* thsp = NULL,
+                                   AstNode* fhsp = NULL) {
         // Look at emitVerilog() format for term/uni/dual/triops,
         // and write out appropriate text.
         //      %f      Potential fileline-if-change and line break
         //      %l      lhsp - if appropriate
         //      %r      rhsp - if appropriate
         //      %t      thsp - if appropriate
+        //      %o      fhsp - if appropriate
         //      %d      dtypep - if appropriate
         //      %k      Potential line break
         bool inPct = false;
@@ -445,6 +452,11 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
                 case 't': {
                     UASSERT_OBJ(thsp, nodep, "emitVerilog() references undef node");
                     iterateAndNextNull(thsp);
+                    break;
+                }
+                case 'o': {
+                    UASSERT_OBJ(thsp, nodep, "emitVerilog() references undef node");
+                    iterateAndNextNull(fhsp);
                     break;
                 }
                 case 'd': {
@@ -788,27 +800,6 @@ public:
 
 //######################################################################
 // EmitV class functions
-
-void V3EmitV::emitv() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
-    if (true) {
-        // All-in-one file
-        V3OutVFile of(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__Vout.v");
-        of.putsHeader();
-        of.puts("# DESCR"
-                "IPTION: Verilator output: Verilog representation of internal tree for debug\n");
-        EmitVFileVisitor visitor(v3Global.rootp(), &of);
-    } else {
-        // Process each module in turn
-        for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
-             modp = VN_CAST(modp->nextp(), NodeModule)) {
-            V3OutVFile of(v3Global.opt.makeDir() + "/" + EmitCBaseVisitor::prefixNameProtect(modp)
-                          + "__Vout.v");
-            of.putsHeader();
-            EmitVFileVisitor visitor(modp, &of);
-        }
-    }
-}
 
 void V3EmitV::verilogForTree(AstNode* nodep, std::ostream& os) { EmitVStreamVisitor(nodep, os); }
 

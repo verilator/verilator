@@ -8,16 +8,17 @@ program t;
    parameter SIZE = 5;
 
    typedef vec_t;  // Forward
+   //UNSUP typedef vec_t;  // Multi-forward is ok
 
-   typedef reg [SIZE-1:0] vec_t ;
+   typedef reg [SIZE-1:0] vec_t;
    vec_t a; initial a =0;
 
-   typedef bit [SIZE-1:0] vec_bit_t ;
+   typedef bit [SIZE-1:0] vec_bit_t;
    vec_bit_t b; initial b =0;
 
-   typedef int array [3];
-   typedef array array2 [2];
-   array2 ar [1];
+   typedef int array_t [3];
+   typedef array_t array2_t [2];
+   array2_t ar [1];
 
    // Define before use
    // Not sure how well supported this is elsewhere

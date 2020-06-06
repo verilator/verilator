@@ -43,7 +43,7 @@ public:
     static void applyModule(AstNodeModule* modulep);
     static void applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp);
     static void applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp);
-    static bool waive(FileLine* filelinep, V3ErrorCode code, const string& match);
+    static bool waive(FileLine* filelinep, V3ErrorCode code, const string& message);
 };
 
 #endif  // Guard

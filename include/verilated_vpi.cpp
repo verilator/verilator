@@ -30,7 +30,6 @@
 #include <list>
 #include <map>
 #include <set>
-#include <sstream>
 
 //======================================================================
 // Internal constants
@@ -50,7 +49,7 @@
 
 // Not supported yet
 #define _VL_VPI_UNIMP() \
-    _VL_VPI_ERROR(__FILE__, __LINE__, Verilated::catName("Unsupported VPI function: ", VL_FUNC));
+    (_VL_VPI_ERROR(__FILE__, __LINE__, Verilated::catName("Unsupported VPI function: ", VL_FUNC)))
 
 //======================================================================
 // Implementation
@@ -136,7 +135,7 @@ public:
     static inline VerilatedVpioConst* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioConst*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiUndefined; }
+    virtual vluint32_t type() const { return vpiConstant; }
     vlsint32_t num() const { return m_num; }
 };
 
@@ -377,8 +376,8 @@ struct VerilatedVpiTimedCbsCmp {
     /// Ordering sets keyed by time, then callback descriptor
     bool operator()(const std::pair<QData, VerilatedVpioCb*>& a,
                     const std::pair<QData, VerilatedVpioCb*>& b) const {
-        if (a.first < b.first) return 1;
-        if (a.first > b.first) return 0;
+        if (a.first < b.first) return true;
+        if (a.first > b.first) return false;
         return a.second < b.second;
     }
 };
@@ -450,7 +449,7 @@ public:
     static QData cbNextDeadline() {
         VpioTimedCbs::const_iterator it = s_s.m_timedCbs.begin();
         if (VL_LIKELY(it != s_s.m_timedCbs.end())) return it->first;
-        return ~VL_ULL(0);  // maxquad
+        return ~0ULL;  // maxquad
     }
     static bool callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE {
         VpioCbList& cbObjList = s_s.m_cbObjLists[reason];
@@ -624,7 +623,7 @@ const char* VerilatedVpiError::strFromVpiVal(PLI_INT32 vpiVal) VL_MT_SAFE {
         "vpiRawFourStateVal",
     };
     // clang-format on
-    if (vpiVal < 0) return names[0];
+    if (VL_UNCOVERABLE(vpiVal < 0)) return names[0];
     return names[(vpiVal <= vpiRawFourStateVal) ? vpiVal : 0];
 }
 const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_MT_SAFE {
@@ -768,7 +767,7 @@ const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_MT_SAFE {
         "vpiGenVar"
     };
     // clang-format on
-    if (vpiVal < 0) return names[0];
+    if (VL_UNCOVERABLE(vpiVal < 0)) return names[0];
     return names[(vpiVal <= vpiGenVar) ? vpiVal : 0];
 }
 const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) VL_MT_SAFE {
@@ -851,7 +850,7 @@ const char* VerilatedVpiError::strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_MT_
         "cbAtEndOfSimTime"
     };
     // clang-format on
-    if (vpiVal < 0) return names[0];
+    if (VL_UNCOVERABLE(vpiVal < 0)) return names[0];
     return names[(vpiVal <= cbAtEndOfSimTime) ? vpiVal : 0];
 }
 
@@ -940,7 +939,7 @@ const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE {
 }
 
 #define CHECK_RESULT_CSTR(got, exp) \
-    if (strcmp((got), (exp))) { \
+    if (0 != strcmp((got), (exp))) { \
         std::string msg \
             = std::string("%Error: ") + "GOT = '" + got + "'" + "  EXP = '" + exp + "'"; \
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str()); \
@@ -1026,7 +1025,7 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
         _VL_VPI_WARNING(__FILE__, __LINE__, "%s: Unsupported callback type %s", VL_FUNC,
                         VerilatedVpiError::strFromVpiCallbackReason(cb_data_p->reason));
         return NULL;
-    };
+    }
 }
 
 PLI_INT32 vpi_remove_cb(vpiHandle object) {
@@ -1135,16 +1134,30 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
     _VL_VPI_ERROR_RESET();
     switch (type) {
     case vpiLeftRange: {
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
-        if (VL_UNLIKELY(!vop)) return 0;
-        if (VL_UNLIKELY(!vop->rangep())) return 0;
-        return (new VerilatedVpioConst(vop->rangep()->left()))->castVpiHandle();
+        if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
+            if (VL_UNLIKELY(!vop->rangep())) return 0;
+            return (new VerilatedVpioConst(vop->rangep()->left()))->castVpiHandle();
+        } else if (VerilatedVpioRange* vop = VerilatedVpioRange::castp(object)) {
+            if (VL_UNLIKELY(!vop->rangep())) return 0;
+            return (new VerilatedVpioConst(vop->rangep()->left()))->castVpiHandle();
+        }
+        _VL_VPI_WARNING(__FILE__, __LINE__,
+                        "%s: Unsupported vpiHandle (%p) for type %s, nothing will be returned",
+                        VL_FUNC, object, VerilatedVpiError::strFromVpiMethod(type));
+        return 0;
     }
     case vpiRightRange: {
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
-        if (VL_UNLIKELY(!vop)) return 0;
-        if (VL_UNLIKELY(!vop->rangep())) return 0;
-        return (new VerilatedVpioConst(vop->rangep()->right()))->castVpiHandle();
+        if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
+            if (VL_UNLIKELY(!vop->rangep())) return 0;
+            return (new VerilatedVpioConst(vop->rangep()->right()))->castVpiHandle();
+        } else if (VerilatedVpioRange* vop = VerilatedVpioRange::castp(object)) {
+            if (VL_UNLIKELY(!vop->rangep())) return 0;
+            return (new VerilatedVpioConst(vop->rangep()->right()))->castVpiHandle();
+        }
+        _VL_VPI_WARNING(__FILE__, __LINE__,
+                        "%s: Unsupported vpiHandle (%p) for type %s, nothing will be returned",
+                        VL_FUNC, object, VerilatedVpiError::strFromVpiMethod(type));
+        return 0;
     }
     case vpiIndex: {
         VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
@@ -1361,7 +1374,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
             }
             case VLVT_UINT64: {
                 QData data = *(reinterpret_cast<QData*>(vop->varDatap()));
-                out[1].aval = static_cast<IData>(data >> VL_ULL(32));
+                out[1].aval = static_cast<IData>(data >> 32ULL);
                 out[1].bval = 0;
                 out[0].aval = static_cast<IData>(data);
                 out[0].bval = 0;
@@ -1600,8 +1613,8 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
                       VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
         return;
     }
-    _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format %s", VL_FUNC,
-                  VerilatedVpiError::strFromVpiVal(value_p->format));
+
+    _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", VL_FUNC, object);
 }
 
 vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p, p_vpi_time /*time_p*/,
@@ -1907,6 +1920,7 @@ void vpi_put_value_array(vpiHandle /*object*/, p_vpi_arrayvalue /*arrayvalue_p*/
 
 void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
     VerilatedVpiImp::assertOneCheck();
+    _VL_VPI_ERROR_RESET();
     // cppcheck-suppress nullPointer
     if (VL_UNLIKELY(!time_p)) {
         _VL_VPI_WARNING(__FILE__, __LINE__, "Ignoring vpi_get_time with NULL value pointer");
@@ -1937,7 +1951,7 @@ void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
 PLI_UINT32 vpi_mcd_open(PLI_BYTE8* filenamep) {
     VerilatedVpiImp::assertOneCheck();
     _VL_VPI_ERROR_RESET();
-    return VL_FOPEN_S(filenamep, "wb");
+    return VL_FOPEN_NN(filenamep, "wb");
 }
 
 PLI_UINT32 vpi_mcd_close(PLI_UINT32 mcd) {
@@ -2072,17 +2086,19 @@ PLI_INT32 vpi_control(PLI_INT32 operation, ...) {
     _VL_VPI_ERROR_RESET();
     switch (operation) {
     case vpiFinish: {
-        VL_FINISH_MT(__FILE__, __LINE__, "*VPI*");
+        VL_FINISH_MT("", 0, "*VPI*");
         return 1;
     }
     case vpiStop: {
-        VL_STOP_MT(__FILE__, __LINE__, "*VPI*");
-        return 1;
+        VL_STOP_MT("", 0, "*VPI*");
+        return 1;  // LCOV_EXCL_LINE
+    }
+    default: {
+        _VL_VPI_WARNING(__FILE__, __LINE__, "%s: Unsupported type %s, ignoring", VL_FUNC,
+                        VerilatedVpiError::strFromVpiProp(operation));
+        return 0;
     }
     }
-    _VL_VPI_WARNING(__FILE__, __LINE__, "%s: Unsupported type %s, ignoring", VL_FUNC,
-                    VerilatedVpiError::strFromVpiProp(operation));
-    return 0;
 }
 
 vpiHandle vpi_handle_by_multi_index(vpiHandle /*obj*/, PLI_INT32 /*num_index*/,

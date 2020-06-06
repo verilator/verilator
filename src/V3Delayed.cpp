@@ -57,7 +57,6 @@
 #include "V3Stats.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <deque>
 #include <map>
 
@@ -457,7 +456,7 @@ private:
         }
     }
 
-    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin");
     }

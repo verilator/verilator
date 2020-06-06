@@ -25,7 +25,6 @@
 #include "V3Hashed.h"
 #include "V3Stats.h"
 
-#include <cstdarg>
 #include <vector>
 
 //######################################################################

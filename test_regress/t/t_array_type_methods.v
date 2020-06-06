@@ -13,14 +13,16 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   logic [2:0] foo [1:0];
+   logic [3:0] foo [1:0];
    initial begin
-      foo[0] = 3'b101;
-      foo[1] = 3'b011;
+      foo[0] = 4'b0101;
+      foo[1] = 4'b0011;
 
-      `checkh(foo.or, 3'b111);
-      `checkh(foo.and, 3'b001);
-      `checkh(foo.xor, 3'b110);
+      `checkh(foo.or, 4'b0111);
+      `checkh(foo.and, 4'b0001);
+      `checkh(foo.xor, 4'b0110);
+      `checkh(foo.sum, 4'b1000);
+      `checkh(foo.product, 4'b1111);
 
       $write("*-* All Finished *-*\n");
       $finish;

@@ -13,6 +13,7 @@ module submodule ();
    final begin
       $write("d");
    end
+   final ;  // Empty test
 endmodule
 
 module t ();

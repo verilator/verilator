@@ -12,12 +12,6 @@
 : "${CC:=gcc}"
 : "${CXX:=g++}"
 
-GCCVERSION=$(${CC} --version | grep gcc | awk '{print $4}')
-
-export SYSTEMC_INCLUDE="/usr/local/systemc-2.3.3-gcc${GCCVERSION}/include"
-export SYSTEMC_LIBDIR="/usr/local/systemc-2.3.3-gcc${GCCVERSION}/lib-linux64"
-export LD_LIBRARY_PATH=${SYSTEMC_LIBDIR}
-
 SRCS=$PWD/verilator
 
 git clone "$REPO" "$SRCS"

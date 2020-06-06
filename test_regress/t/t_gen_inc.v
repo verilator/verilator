@@ -39,7 +39,6 @@ module t (/*AUTOARG*/
       for (g=16; g>=8; g--) always @(posedge clk) gen_post_MINUSMINUS[g] = 1'b1;
       for (g=8; g<=16; g+=2) always @(posedge clk) gen_PLUSEQ[g] = 1'b1;
       for (g=16; g>=8; g-=2) always @(posedge clk) gen_MINUSEQ[g] = 1'b1;
-`ifndef verilator //UNSUPPORTED
       for (g=8; g<=16; g*=2) always @(posedge clk) gen_TIMESEQ[g] = 1'b1;
       for (g=16; g>=8; g/=2) always @(posedge clk) gen_DIVEQ[g] = 1'b1;
       for (g=15; g>8;  g%=8) always @(posedge clk) gen_MODEQ[g] = 1'b1;
@@ -49,7 +48,6 @@ module t (/*AUTOARG*/
       for (g=8; g<=16; g<<=2) always @(posedge clk) gen_SLEFTEQ[g] = 1'b1;
       for (g=16; g>=8; g>>=2) always @(posedge clk) gen_SRIGHTEQ[g] = 1'b1;
       for (g=16; g>=8; g>>>=2) always @(posedge clk) gen_SSRIGHTEQ[g] = 1'b1;
-`endif
    endgenerate
 
    always @ (posedge clk) begin
@@ -78,7 +76,6 @@ module t (/*AUTOARG*/
 	 if (gen_post_MINUSMINUS!== 32'b00000000000000011111111100000000) $stop;
 	 if (gen_PLUSEQ		!== 32'b00000000000000010101010100000000) $stop;
 	 if (gen_MINUSEQ	!== 32'b00000000000000010101010100000000) $stop;
-`ifndef verilator //UNSUPPORTED
 	 if (gen_TIMESEQ	!== 32'b00000000000000010000000100000000) $stop;
 	 if (gen_DIVEQ		!== 32'b00000000000000010000000100000000) $stop;
 	 if (gen_MODEQ		!== 32'b00000000000000001000000000000000) $stop;
@@ -88,7 +85,6 @@ module t (/*AUTOARG*/
 	 if (gen_SLEFTEQ	!== 32'b00000000000000000000000100000000) $stop;
 	 if (gen_SRIGHTEQ	!== 32'b00000000000000010000000000000000) $stop;
 	 if (gen_SSRIGHTEQ	!== 32'b00000000000000010000000000000000) $stop;
-`endif
 
 	 v=0; for (i=8; i<=16; ++i)  v[i] = 1'b1; if (v !== 32'b00000000000000011111111100000000) $stop;
 	 v=0; for (i=16; i>=8; --i)  v[i] = 1'b1; if (v !== 32'b00000000000000011111111100000000) $stop;
@@ -96,7 +92,6 @@ module t (/*AUTOARG*/
 	 v=0; for (i=16; i>=8; i--)  v[i] = 1'b1; if (v !== 32'b00000000000000011111111100000000) $stop;
 	 v=0; for (i=8; i<=16; i+=2) v[i] = 1'b1; if (v !== 32'b00000000000000010101010100000000) $stop;
 	 v=0; for (i=16; i>=8; i-=2) v[i] = 1'b1; if (v !== 32'b00000000000000010101010100000000) $stop;
-`ifndef verilator //UNSUPPORTED
 	 v=0; for (i=8; i<=16; i*=2) v[i] = 1'b1; if (v !== 32'b00000000000000010000000100000000) $stop;
 	 v=0; for (i=16; i>=8; i/=2) v[i] = 1'b1; if (v !== 32'b00000000000000010000000100000000) $stop;
 	 v=0; for (i=15; i>8;  i%=8) v[i] = 1'b1; if (v !== 32'b00000000000000001000000000000000) $stop;
@@ -106,7 +101,6 @@ module t (/*AUTOARG*/
 	 v=0; for (i=8; i<=16; i<<=2) v[i] =1'b1; if (v !== 32'b00000000000000000000000100000000) $stop;
 	 v=0; for (i=16; i>=8; i>>=2) v[i] =1'b1; if (v !== 32'b00000000000000010000000000000000) $stop;
 	 v=0; for (i=16; i>=8; i>>>=2) v[i]=1'b1; if (v !== 32'b00000000000000010000000000000000) $stop;
-`endif
 	 $write("*-* All Finished *-*\n");
 	 $finish;
       end

@@ -36,7 +36,6 @@
 #include "V3EmitCBase.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 // Clock state, as a visitor of each AstNode
@@ -47,9 +46,6 @@ private:
     // Cleared each Module:
     //  AstVarScope::user1p()   -> AstVarScope*.  Temporary signal that was created.
     AstUser1InUse m_inuser1;
-
-    // TYPES
-    enum { DOUBLE_OR_RATE = 10 };  // How many | per ||, Determined experimentally as best
 
     // STATE
     AstNodeModule* m_modp;  // Current module

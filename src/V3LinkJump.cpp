@@ -16,9 +16,16 @@
 // V3LinkJump's Transformations:
 //
 // Each module:
-//      Look for BEGINs
-//          BEGIN(VAR...) -> VAR ... {renamed}
-//      FOR -> WHILEs
+//   Look for BEGINs
+//      BEGIN(VAR...) -> VAR ... {renamed}
+//   FOR -> WHILEs
+//
+//   Add JumpLabel which branches to after statements within JumpLabel
+//      RETURN -> JUMPBLOCK(statements with RETURN changed to JUMPGO, ..., JUMPLABEL)
+//      WHILE(... BREAK) -> JUMPBLOCK(WHILE(... statements with BREAK changed to JUMPGO),
+//                                    ... JUMPLABEL)
+//      WHILE(... CONTINUE) -> WHILE(JUMPBLOCK(... statements with CONTINUE changed to JUMPGO,
+//                                    ... JUMPPABEL))
 //
 //*************************************************************************
 
@@ -30,7 +37,6 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <vector>
 
 //######################################################################
@@ -45,6 +51,7 @@ private:
     AstNodeFTask* m_ftaskp;  // Current function/task
     AstWhile* m_loopp;  // Current loop
     bool m_loopInc;  // In loop increment
+    bool m_inFork;  // Under fork
     int m_modRepeatNum;  // Repeat counter
     BlockStack m_blockStack;  // All begin blocks above current node
 
@@ -85,7 +92,9 @@ private:
         if (VN_IS(underp, JumpLabel)) {
             return VN_CAST(underp, JumpLabel);
         } else {  // Move underp stuff to be under a new label
-            AstJumpLabel* labelp = new AstJumpLabel(nodep->fileline(), NULL);
+            AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), NULL);
+            AstJumpLabel* labelp = new AstJumpLabel(nodep->fileline(), blockp);
+            blockp->labelp(labelp);
 
             AstNRelinker repHandle;
             if (under_and_next) {
@@ -93,14 +102,16 @@ private:
             } else {
                 underp->unlinkFrBack(&repHandle);
             }
-            repHandle.relink(labelp);
+            repHandle.relink(blockp);
 
-            labelp->addStmtsp(underp);
+            blockp->addStmtsp(underp);
             // Keep any AstVars under the function not under the new JumpLabel
             for (AstNode *nextp, *varp = underp; varp; varp = nextp) {
                 nextp = varp->nextp();
-                if (VN_IS(varp, Var)) labelp->addPrev(varp->unlinkFrBack());
+                if (VN_IS(varp, Var)) blockp->addPrev(varp->unlinkFrBack());
             }
+            // Label goes last
+            blockp->addEndStmtsp(labelp);
             return labelp;
         }
     }
@@ -125,9 +136,14 @@ private:
     }
     virtual void visit(AstNodeBlock* nodep) VL_OVERRIDE {
         UINFO(8, "  " << nodep << endl);
+        bool oldFork = m_inFork;
         m_blockStack.push_back(nodep);
-        iterateChildren(nodep);
+        {
+            m_inFork = m_inFork || VN_IS(nodep, Fork);
+            iterateChildren(nodep);
+        }
         m_blockStack.pop_back();
+        m_inFork = oldFork;
     }
     virtual void visit(AstRepeat* nodep) VL_OVERRIDE {
         // So later optimizations don't need to deal with them,
@@ -174,7 +190,11 @@ private:
     virtual void visit(AstReturn* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         AstFunc* funcp = VN_CAST(m_ftaskp, Func);
-        if (!m_ftaskp) {
+        if (m_inFork) {
+            nodep->v3error("Return isn't legal under fork (IEEE 1800-2017 9.2.3)");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        } else if (!m_ftaskp) {
             nodep->v3error("Return isn't underneath a task or function");
         } else if (funcp && !nodep->lhsp()) {
             nodep->v3error("Return underneath a function should have return value");
@@ -257,6 +277,7 @@ public:
     explicit LinkJumpVisitor(AstNetlist* nodep) {
         m_modp = NULL;
         m_ftaskp = NULL;
+        m_inFork = false;
         m_loopp = NULL;
         m_loopInc = false;
         m_modRepeatNum = 0;

@@ -139,8 +139,8 @@ module t;
 	 if (chars != 1) $stop;
 	 if (letterq != "ijklmnop") $stop;
 
-	 chars = $sscanf("xa=1f xb=12898971238912389712783490823_abcdef689_02348923",
-			 "xa=%x xb=%x", letterq, letterw);
+	 chars = $sscanf("xa=1f ign=22 xb=12898971238912389712783490823_abcdef689_02348923",
+			 "xa=%x ign=%*d xb=%x", letterq, letterw);
 	 if (`verbose) $write("c=%0d xa=%x xb=%x\n", chars, letterq, letterw);
 	 if (chars != 2) $stop;
 	 if (letterq != 64'h1f) $stop;
@@ -154,8 +154,8 @@ module t;
 	 if (letterw != 128'hd2a55) $stop;
 	 if (letterz != {"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0","2"}) $stop;
 
-	 chars = $sscanf("oa=23 ob=125634123615234123681236",
-			 "oa=%o ob=%o", letterq, letterw);
+	 chars = $sscanf("oa=23 oi=11 ob=125634123615234123681236",
+			 "oa=%o oi=%*o ob=%o", letterq, letterw);
 	 if (`verbose) $write("c=%0d oa=%x ob=%x\n", chars, letterq, letterw);
 	 if (chars != 2) $stop;
 	 if (letterq != 64'h13) $stop;

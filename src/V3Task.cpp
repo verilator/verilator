@@ -29,13 +29,11 @@
 #include "V3Global.h"
 #include "V3Const.h"
 #include "V3Task.h"
-#include "V3Inst.h"
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
 #include "V3LinkLValue.h"
 
-#include <cstdarg>
 #include <map>
 
 //######################################################################
@@ -875,12 +873,17 @@ private:
                     if (args != "") args += ", ";
 
                     if (portp->isDpiOpenArray()) {
+                        AstNodeDType* dtypep = portp->dtypep()->skipRefp();
+                        if (VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType)) {
+                            v3fatalSrc("Passing dynamic array or queue as actual argument to DPI "
+                                       "open array is not yet supported");
+                        }
+
                         // Ideally we'd make a table of variable
                         // characteristics, and reuse it wherever we can
                         // At least put them into the module's CTOR as static?
                         string propName = portp->name() + "__Vopenprops";
-                        string propCode = ("static const VerilatedVarProps " + propName + "("
-                                           + portp->vlPropInit() + ");\n");
+                        string propCode = portp->vlPropDecl(propName);
                         cfuncp->addStmtsp(new AstCStmt(portp->fileline(), propCode));
                         //
                         // At runtime we need the svOpenArrayHandle to
@@ -1330,7 +1333,7 @@ private:
         // Done the loop
         m_insStmtp = NULL;  // Next thing should be new statement
     }
-    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
     }
@@ -1501,12 +1504,12 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
         }
     }
 
-    if (debug() >= 9) {
+    if (debug() >= 9) {  // LCOV_EXCL_START
         nodep->dumpTree(cout, "-ftref-out: ");
         for (int i = 0; i < tpinnum; ++i) {
             UINFO(0, "   pin " << i << "  conn=" << cvtToHex(tconnects[i].second) << endl);
         }
-    }
+    }  // LCOV_EXCL_STOP
     return tconnects;
 }
 

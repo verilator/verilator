@@ -45,6 +45,7 @@ src/Makefile$
 src/Makefile_obj$
 include/verilated.mk$
 test_regress/.gdbinit$
+codecov.yml
 config.cache$
 config.status$
 verilator\.log

@@ -23,7 +23,6 @@
 #include "V3Broken.h"
 #include "V3String.h"
 
-#include <cstdarg>
 #include <iomanip>
 #include <memory>
 
@@ -727,7 +726,7 @@ void AstNode::deleteNode() {
     this->m_op4p = reinterpret_cast<AstNode*>(0x1);
     if (
 #if !defined(VL_DEBUG) || defined(VL_LEAK_CHECKS)
-        1
+        true
 #else
         !v3Global.opt.debugLeak()
 #endif
@@ -1129,6 +1128,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
                 *logsp << "No changes since last dump!\n";
             } else {
                 dumpTree(*logsp);
+                editCountSetLast();  // Next dump can indicate start from here
             }
         }
     }
@@ -1139,13 +1139,11 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
         // set by other steps if it is called in the middle of other operations
         if (AstNetlist* netp = VN_CAST(this, Netlist)) V3Broken::brokenAll(netp);
     }
-    // Next dump can indicate start from here
-    editCountSetLast();
 }
 
 void AstNode::v3errorEndFatal(std::ostringstream& str) const {
     v3errorEnd(str);
-    assert(0);
+    assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE
 }
 
@@ -1154,10 +1152,10 @@ string AstNode::locationStr() const {
     const AstNode* backp = this;
     int itmax = 10000;  // Max iterations before giving up on location search
     while (backp) {
-        if (--itmax < 0) {
+        if (VL_UNCOVERABLE(--itmax < 0)) {
             // Likely some circular back link, and V3Ast is trying to report a low-level error
             UINFO(1, "Ran out of iterations finding locationStr on " << backp << endl);
-            return "";
+            return "";  // LCOV_EXCL_LINE
         }
         const AstScope* scopep;
         if ((scopep = VN_CAST_CONST(backp, Scope))) {

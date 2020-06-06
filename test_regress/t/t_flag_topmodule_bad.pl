@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 
 top_filename("t/t_flag_topmodule.v");
 
-compile(
+lint(
     fails => 1,
     nc => 0,  # Need to get it not to give the prompt
     expect_filename => $Self->{golden_filename},

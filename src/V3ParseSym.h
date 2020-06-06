@@ -129,7 +129,7 @@ public:
         UINFO(1, "ParseSym Current: " << symCurrentp()->nodep() << endl);
     }
     void dump(std::ostream& os, const string& indent = "") { m_syms.dump(os, indent); }
-    AstNode* findEntUpward(const string& name) {
+    AstNode* findEntUpward(const string& name) const {
         // Lookup the given string as an identifier, return type of the id, scanning upward
         VSymEnt* foundp = symCurrentp()->findIdFallback(name);
         if (foundp) {

@@ -20,12 +20,10 @@
 #include "V3Global.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
-#include "V3File.h"
 
 // This visitor does not edit nodes, and is called at error-exit, so should use constant iterators
 #include "V3AstConstOnly.h"
 
-#include <cstdarg>
 #include <iomanip>
 #include <map>
 
@@ -45,7 +43,6 @@ private:
     bool m_fast;
 
     AstCFunc* m_cfuncp;  // Current CFUNC
-    VDouble0 m_statInstrLong;  // Instruction count
     bool m_counting;  // Currently counting
     double m_instrs;  // Current instr count (for determining branch direction)
     bool m_tracingCall;  // Iterating into a CCall to a CFunc

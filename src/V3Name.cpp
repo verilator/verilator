@@ -25,11 +25,7 @@
 #include "V3Global.h"
 #include "V3Name.h"
 #include "V3Ast.h"
-#include "V3File.h"
 #include "V3LanguageWords.h"
-
-#include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 // Name state, as a visitor of each AstNode
@@ -45,7 +41,6 @@ private:
 
     // STATE
     AstNodeModule* m_modp;
-    V3LanguageWords m_words;  // Reserved word detector
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -58,7 +53,7 @@ private:
                 nodep->editCountInc();
             } else if (VN_IS(nodep, CFunc) && VN_CAST(nodep, CFunc)->isConstructor()) {
             } else {
-                string rsvd = m_words.isKeyword(nodep->name());
+                string rsvd = V3LanguageWords::isKeyword(nodep->name());
                 if (rsvd != "") {
                     nodep->v3warn(SYMRSVDWORD,
                                   "Symbol matches " + rsvd + ": " << nodep->prettyNameQ());

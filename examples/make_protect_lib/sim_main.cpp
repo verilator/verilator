@@ -20,7 +20,7 @@ vluint64_t main_time = 0;
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    if (0 && argc && argv && env) {}
+    if (false && argc && argv && env) {}
 
     Verilated::debug(0);
     Verilated::randReset(2);

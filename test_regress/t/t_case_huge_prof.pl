@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -20,7 +20,7 @@ file_grep($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/i, 10);
 file_grep($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 10);
 
 unlink $_ foreach (glob "$Self->{obj_dir}/gmon.out.*");
-$ENV{GMON_OUT_PREFIX} = "$Self->{obj_dir}/gmon.out";
+setenv('GMON_OUT_PREFIX', "$Self->{obj_dir}/gmon.out");
 
 execute(
     check_finished => 1,

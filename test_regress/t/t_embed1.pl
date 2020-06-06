@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -29,7 +29,7 @@ mkdir $child_dir;
 
     run(logfile => "${child_dir}/vlt_gcc.log",
         cmd => ["cd ${child_dir} && ",
-                "make", "-f".getcwd()."/Makefile_obj",
+                $ENV{MAKE}, "-f".getcwd()."/Makefile_obj",
                 "CPPFLAGS_DRIVER=-D".uc($self->{name}),
                 ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
                 "VM_PREFIX=$self->{VM_PREFIX}_child",

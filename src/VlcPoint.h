@@ -58,6 +58,7 @@ public:
     string comment() const { return keyExtract(VL_CIK_COMMENT); }
     string type() const { return keyExtract(VL_CIK_TYPE); }
     string thresh() const { return keyExtract(VL_CIK_THRESH); }  // string as maybe ""
+    string linescov() const { return keyExtract(VL_CIK_LINESCOV); }
     int lineno() const { return atoi(keyExtract(VL_CIK_LINENO).c_str()); }
     int column() const { return atoi(keyExtract(VL_CIK_COLUMN).c_str()); }
     // METHODS
@@ -107,7 +108,6 @@ public:
     ByName::iterator begin() { return m_nameMap.begin(); }
     ByName::iterator end() { return m_nameMap.end(); }
 
-public:
     // CONSTRUCTORS
     VlcPoints()
         : m_numPoints(0) {}

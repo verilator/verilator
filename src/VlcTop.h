@@ -39,7 +39,6 @@ private:
     VlcSources m_sources;  //< List of all source files to annotate
 
     // METHODS
-    void createDir(const string& dirname);
     void annotateCalc();
     void annotateCalcNeeded();
     void annotateOutputFiles(const string& dirname);
@@ -58,6 +57,7 @@ public:
     void annotate(const string& dirname);
     void readCoverage(const string& filename, bool nonfatal = false);
     void writeCoverage(const string& filename);
+    void writeInfo(const string& filename);
 
     void rank();
 };

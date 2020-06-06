@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -48,7 +48,7 @@ compile(  # Don't call cmake nor gmake from driver.pl. Just build here
     verilator_make_gmake => 0,
     verilator_flags2 => ['--exe --cc --build --no-verilate',
                          '../' . $Self->{main_filename},
-                         '--debugi 1 --dump-tree'],
+                         '--debugi 1 --dump-tree --dump-tree-addrids'],
     );
 
 # The previous run must not verilated, only build is expected.

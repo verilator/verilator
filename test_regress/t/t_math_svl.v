@@ -47,6 +47,23 @@ module t (/*AUTOARG*/
       cyc_d1 <= cyc_com;
    end
 
+   initial begin
+      // Constification check
+      if ($countones(32'b11001011101) != 7) $stop;
+      if ($countones(32'b0) != 0) $stop;
+      if ($isunknown(32'b11101x11111) != 1) $stop;
+      if ($isunknown(32'b11101011111) != 0) $stop;
+      if ($isunknown(32'b10zzzzzzzzz) != 1) $stop;
+      if ($bits(0) != 32'd32) $stop;
+      if ($bits(lc) != 5) $stop;
+      if ($onehot(32'b00000001000000) != 1'b1) $stop;
+      if ($onehot(32'b00001001000000) != 1'b0) $stop;
+      if ($onehot(32'b0) != 1'b0) $stop;
+      if ($onehot0(32'b00000001000000) != 1'b1) $stop;
+      if ($onehot0(32'b00001001000000) != 1'b0) $stop;
+      if ($onehot0(32'b0) != 1'b1) $stop;
+   end
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
@@ -54,22 +71,6 @@ module t (/*AUTOARG*/
 	 //	cyc, l, lc, lo, l0,   q,qc,qo,q0,  w,wc,wo,w0);
 	 if (cyc_com != cyc_com) $stop;
 	 if (cyc_d1 != cyc-1) $stop;
-	 if (cyc==0) begin
-	    // Constification check
-	    if ($countones(32'b11001011101) != 7) $stop;
-	    if ($countones(32'b0) != 0) $stop;
-	    if ($isunknown(32'b11101x11111) != 1) $stop;
-	    if ($isunknown(32'b11101011111) != 0) $stop;
-	    if ($isunknown(32'b10zzzzzzzzz) != 0) $stop;
-	    if ($bits(0) != 32'd32) $stop;
-	    if ($bits(lc) != 5) $stop;
-	    if ($onehot(32'b00000001000000) != 1'b1) $stop;
-	    if ($onehot(32'b00001001000000) != 1'b0) $stop;
-	    if ($onehot(32'b0) != 1'b0) $stop;
-	    if ($onehot0(32'b00000001000000) != 1'b1) $stop;
-	    if ($onehot0(32'b00001001000000) != 1'b0) $stop;
-	    if ($onehot0(32'b0) != 1'b1) $stop;
-	 end
 	 if (cyc==1) begin
 	    l <= 16'b0;
 	    q <= 50'h0;
@@ -133,6 +134,13 @@ module t (/*AUTOARG*/
 	    $finish;
 	 end
       end
+   end
+
+   initial begin
+      if ($isunknown(4'b000x) !== 1'b1) $stop;
+      if ($isunknown(4'b000z) !== 1'b1) $stop;
+      if ($isunknown(4'b00xz) !== 1'b1) $stop;
+      if ($isunknown(4'b0000) !== 1'b0) $stop;
    end
 
    final begin

@@ -26,8 +26,6 @@
 #include "V3TSP.h"
 
 #include <algorithm>
-#include <cmath>
-#include <cstdarg>
 #include <map>
 #include <vector>
 #include VL_INCLUDE_UNORDERED_SET
@@ -73,7 +71,7 @@ public:
     void displayNode(AstNode* nodep, AstScopeName* scopenamep, const string& vformat,
                      AstNode* exprsp, bool isScan);
     void displayEmit(AstNode* nodep, bool isScan);
-    void displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt,
+    void displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt, bool ignore,
                     char fmtLetter);
 
     void emitVarDecl(const AstVar* nodep, const string& prefixIfImp);
@@ -304,13 +302,7 @@ public:
         AstAssocArrayDType* adtypep = VN_CAST(nodep->fromp()->dtypep(), AssocArrayDType);
         UASSERT_OBJ(adtypep, nodep, "Associative select on non-associative type");
         if (adtypep->keyDTypep()->isWide()) {
-            // Container class must take non-C-array (pointer) argument, so convert
-            putbs("VL_CVT_W_A(");
-            iterateAndNextNull(nodep->bitp());
-            puts(", ");
-            iterateAndNextNull(nodep->fromp());
-            putbs(".atDefault()");  // Not accessed; only to get the proper type of values
-            puts(")");
+            emitCvtWideArray(nodep->bitp(), nodep->fromp());
         } else {
             iterateAndNextNull(nodep->bitp());
         }
@@ -351,10 +343,21 @@ public:
         bool comma = false;
         for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
-            iterate(subnodep);
+            // handle wide arguments to the queues
+            if (VN_IS(nodep->fromp()->dtypep(), QueueDType) && subnodep->dtypep()->isWide()) {
+                emitCvtWideArray(subnodep, nodep->fromp());
+            } else {
+                iterate(subnodep);
+            }
             comma = true;
         }
         puts(")");
+        // if there is a return value that is wide convert to array
+        if (nodep->dtypep()->isWide()
+            && (VN_IS(nodep->fromp()->dtypep(), QueueDType)
+                || VN_IS(nodep->fromp()->dtypep(), DynArrayDType))) {
+            puts(".data()");  // Access returned std::array as C array
+        }
         // Some are statements some are math.
         if (nodep->isStatement()) puts(";\n");
         UASSERT_OBJ(!nodep->isStatement() || VN_IS(nodep->dtypep(), VoidDType), nodep,
@@ -363,7 +366,7 @@ public:
     virtual void visit(AstIntfRef* nodep) VL_OVERRIDE {
         putsQuoted(VIdProtect::protectWordsIf(AstNode::vcdName(nodep->name()), nodep->protect()));
     }
-    virtual void visit(AstNodeCase* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCase* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         // In V3Case...
         nodep->v3fatalSrc("Case statements should have been reduced out");
     }
@@ -395,7 +398,7 @@ public:
         puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", ");
-        puts(cvtToStr(nodep->column()));
+        puts(cvtToStr(nodep->offset() + nodep->fileline()->firstColumn()));
         puts(", ");
         putsQuoted((!nodep->hier().empty() ? "." : "")
                    + protectWordsIf(nodep->hier(), nodep->protect()));
@@ -403,6 +406,8 @@ public:
         putsQuoted(protectWordsIf(nodep->page(), nodep->protect()));
         puts(", ");
         putsQuoted(protectWordsIf(nodep->comment(), nodep->protect()));
+        puts(", ");
+        putsQuoted(nodep->linescov());
         puts(");\n");
     }
     virtual void visit(AstCoverInc* nodep) VL_OVERRIDE {
@@ -526,20 +531,18 @@ public:
     }
     virtual void visit(AstFOpen* nodep) VL_OVERRIDE {
         iterateAndNextNull(nodep->filep());
-        puts(" = VL_FOPEN_");
-        emitIQW(nodep->filenamep());
-        emitIQW(nodep->modep());
+        puts(" = VL_FOPEN_NN(");
+        emitCvtPackStr(nodep->filenamep());
+        putbs(", ");
         if (nodep->modep()->width() > 4 * 8)
             nodep->modep()->v3error("$fopen mode should be <= 4 characters");
-        puts("(");
-        if (nodep->filenamep()->isWide()) {
-            puts(cvtToStr(nodep->filenamep()->widthWords()));
-            putbs(", ");
-        }
-        checkMaxWords(nodep->filenamep());
-        iterateAndNextNull(nodep->filenamep());
-        putbs(", ");
-        iterateAndNextNull(nodep->modep());
+        emitCvtPackStr(nodep->modep());
+        puts(");\n");
+    }
+    virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {
+        iterateAndNextNull(nodep->filep());
+        puts(" = VL_FOPEN_MCD_N(");
+        emitCvtPackStr(nodep->filenamep());
         puts(");\n");
     }
     virtual void visit(AstNodeReadWriteMem* nodep) VL_OVERRIDE {
@@ -582,7 +585,7 @@ public:
         if (nodep->msbp()) {
             iterateAndNextNull(nodep->msbp());
         } else {
-            puts("~VL_ULL(0)");
+            puts("~0ULL");
         }
         puts(");\n");
     }
@@ -599,29 +602,29 @@ public:
         } else {
             puts("if (");
             iterateAndNextNull(nodep->filep());
-            puts(") { fflush(VL_CVT_I_FP(");
+            puts(") { VL_FFLUSH_I(");
             iterateAndNextNull(nodep->filep());
-            puts(")); }\n");
+            puts("); }\n");
         }
     }
     virtual void visit(AstFSeek* nodep) VL_OVERRIDE {
-        puts("(fseek(VL_CVT_I_FP(");
+        puts("(VL_FSEEK_I(");
         iterateAndNextNull(nodep->filep());
-        puts("),");
+        puts(",");
         iterateAndNextNull(nodep->offset());
         puts(",");
         iterateAndNextNull(nodep->operation());
         puts(")==-1?-1:0)");
     }
     virtual void visit(AstFTell* nodep) VL_OVERRIDE {
-        puts("ftell(VL_CVT_I_FP(");
+        puts("VL_FTELL_I(");
         iterateAndNextNull(nodep->filep());
-        puts("))");
+        puts(")");
     }
     virtual void visit(AstFRewind* nodep) VL_OVERRIDE {
-        puts("(fseek(VL_CVT_I_FP(");
+        puts("(VL_FSEEK_I(");
         iterateAndNextNull(nodep->filep());
-        puts("), 0, 0)==-1?-1:0)");
+        puts(", 0, 0)==-1?-1:0)");
     }
     virtual void visit(AstFRead* nodep) VL_OVERRIDE {
         puts("VL_FREAD_I(");
@@ -697,15 +700,18 @@ public:
         iterateAndNextNull(nodep->lhsp());
         puts(")");
     }
-    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
-        puts("goto __Vlabel" + cvtToStr(nodep->labelp()->labelNum()) + ";\n");
-    }
-    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+    virtual void visit(AstJumpBlock* nodep) VL_OVERRIDE {
         nodep->labelNum(++m_labelNum);
         puts("{\n");  // Make it visually obvious label jumps outside these
         iterateAndNextNull(nodep->stmtsp());
+        iterateAndNextNull(nodep->endStmtsp());
         puts("}\n");
-        puts("__Vlabel" + cvtToStr(nodep->labelNum()) + ": ;\n");
+    }
+    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
+        puts("goto __Vlabel" + cvtToStr(nodep->labelp()->blockp()->labelNum()) + ";\n");
+    }
+    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+        puts("__Vlabel" + cvtToStr(nodep->blockp()->labelNum()) + ": ;\n");
     }
     virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         iterateAndNextNull(nodep->precondsp());
@@ -997,6 +1003,26 @@ public:
         emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)", nodep->lhsp(),
                    nodep->rhsp(), NULL);
     }
+    virtual void visit(AstCountBits* nodep) VL_OVERRIDE {
+        putbs("VL_COUNTBITS_");
+        emitIQW(nodep->lhsp());
+        puts("(");
+        puts(cvtToStr(nodep->lhsp()->widthMin()));
+        puts(", ");
+        if (nodep->lhsp()->isWide()) {
+            puts(cvtToStr(nodep->lhsp()->widthWords()));  // Note argument width, not node width
+                                                          // (which is always 32)
+            puts(", ");
+        }
+        iterateAndNextNull(nodep->lhsp());
+        puts(", ");
+        iterateAndNextNull(nodep->rhsp());
+        puts(", ");
+        iterateAndNextNull(nodep->thsp());
+        puts(", ");
+        iterateAndNextNull(nodep->fhsp());
+        puts(")");
+    }
     // Terminals
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         puts(nodep->hiernameProtect());
@@ -1019,6 +1045,14 @@ public:
             iterateAndNextNull(nodep);
             puts(")");
         }
+    }
+    void emitCvtWideArray(AstNode* nodep, AstNode* fromp) {
+        putbs("VL_CVT_W_A(");
+        iterate(nodep);
+        puts(", ");
+        iterate(fromp);
+        putbs(".atDefault()");  // Not accessed; only to get the proper type of values
+        puts(")");
     }
     void emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString) {
         // Put out constant set to the specified variable, or given variable in a string
@@ -1103,9 +1137,9 @@ public:
         } else if (nodep->isQuad()) {
             vluint64_t num = nodep->toUQuad();
             if (num < 10) {
-                ofp()->printf("VL_ULL(%" VL_PRI64 "u)", num);
+                ofp()->printf("%" VL_PRI64 "uULL", num);
             } else {
-                ofp()->printf("VL_ULL(0x%" VL_PRI64 "x)", num);
+                ofp()->printf("0x%" VL_PRI64 "xULL", num);
             }
         } else {
             uint32_t num = nodep->toUInt();
@@ -1617,17 +1651,22 @@ class EmitCImp : EmitCStmts {
         AstBasicDType* basicp = dtypep->basicp();
         // Returns string to do resetting, empty to do nothing (which caller should handle)
         if (AstAssocArrayDType* adtypep = VN_CAST(dtypep, AssocArrayDType)) {
-            string cvtarray
-                = (adtypep->subDTypep()->isWide() ? ".data()"
-                                                  : "");  // Access std::array as C array
+            // Access std::array as C array
+            string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
             return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
                                        ".atDefault()" + cvtarray);
-        } else if (AstClassRefDType* adtypep = VN_CAST(dtypep, ClassRefDType)) {
+        } else if (VN_IS(dtypep, ClassRefDType)) {
             return "";  // Constructor does it
         } else if (AstDynArrayDType* adtypep = VN_CAST(dtypep, DynArrayDType)) {
-            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1, ".atDefault()");
+            // Access std::array as C array
+            string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
+            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
+                                       ".atDefault()" + cvtarray);
         } else if (AstQueueDType* adtypep = VN_CAST(dtypep, QueueDType)) {
-            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1, ".atDefault()");
+            // Access std::array as C array
+            string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
+            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
+                                       ".atDefault()" + cvtarray);
         } else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             UASSERT_OBJ(adtypep->msb() >= adtypep->lsb(), varp,
                         "Should have swapped msb & lsb earlier.");
@@ -1710,7 +1749,7 @@ public:
         m_fast = false;
     }
     virtual ~EmitCImp() {}
-    void mainImp(AstNodeModule* modp, bool slow, bool fast);
+    void mainImp(AstNodeModule* modp, bool slow);
     void mainInt(AstNodeModule* modp);
     void mainDoFunc(AstCFunc* nodep) { iterate(nodep); }
 };
@@ -1845,12 +1884,12 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp,
     string nextComma;
     bool needComma = false;
 #define COMMA \
-    { \
+    do { \
         if (!nextComma.empty()) { \
             puts(nextComma); \
             nextComma = ""; \
         } \
-    }
+    } while (false)
 
     putbs("");
     for (string::const_iterator pos = format.begin(); pos != format.end(); ++pos) {
@@ -2019,27 +2058,30 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
         ofp()->putsQuoted(emitDispState.m_format);
         // Arguments
         for (unsigned i = 0; i < emitDispState.m_argsp.size(); i++) {
-            puts(",");
             char fmt = emitDispState.m_argsChar[i];
             AstNode* argp = emitDispState.m_argsp[i];
             string func = emitDispState.m_argsFunc[i];
-            ofp()->indentInc();
-            ofp()->putbs("");
-            if (func != "") puts(func);
-            if (argp) {
-                if (isScan) {
-                    puts("&(");
-                } else if (fmt == '@') {
-                    puts("&(");
+            if (func != "" || argp) {
+                puts(",");
+                ofp()->indentInc();
+                ofp()->putbs("");
+                if (func != "") {
+                    puts(func);
+                } else if (argp) {
+                    if (isScan) {
+                        puts("&(");
+                    } else if (fmt == '@') {
+                        puts("&(");
+                    }
+                    iterate(argp);
+                    if (isScan) {
+                        puts(")");
+                    } else if (fmt == '@') {
+                        puts(")");
+                    }
                 }
-                iterate(argp);
-                if (isScan) {
-                    puts(")");
-                } else if (fmt == '@') {
-                    puts(")");
-                }
+                ofp()->indentDec();
             }
-            ofp()->indentDec();
         }
         // End
         puts(")");
@@ -2053,28 +2095,33 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 }
 
 void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt,
-                            char fmtLetter) {
+                            bool ignore, char fmtLetter) {
     // Print display argument, edits elistp
-    AstNode* argp = *elistp;
-    if (VL_UNCOVERABLE(!argp)) {
-        // expectDisplay() checks this first, so internal error if found here
-        dispp->v3error("Internal: Missing arguments for $display-like format");  // LCOV_EXCL_LINE
-        return;  // LCOV_EXCL_LINE
+    AstNode* argp = NULL;
+    if (!ignore) {
+        argp = *elistp;
+        // Prep for next parameter
+        *elistp = (*elistp)->nextp();
+        if (VL_UNCOVERABLE(!argp)) {
+            // expectDisplay() checks this first, so internal error if found here
+            dispp->v3error(
+                "Internal: Missing arguments for $display-like format");  // LCOV_EXCL_LINE
+            return;  // LCOV_EXCL_LINE
+        }
+        if (argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
+            dispp->v3error("Exceeded limit of " + cvtToStr(VL_VALUE_STRING_MAX_WIDTH)
+                           + " bits for any $display-like arguments");
+        }
+        if (argp->widthMin() > 8 && fmtLetter == 'c') {
+            // Technically legal, but surely not what the user intended.
+            argp->v3warn(WIDTH, dispp->verilogKwd() << "of %c format of > 8 bit value");
+        }
     }
-    if (argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
-        dispp->v3error("Exceeded limit of " + cvtToStr(VL_VALUE_STRING_MAX_WIDTH)
-                       + " bits for any $display-like arguments");
-    }
-    if (argp->widthMin() > 8 && fmtLetter == 'c') {
-        // Technically legal, but surely not what the user intended.
-        argp->v3warn(WIDTH, dispp->verilogKwd() << "of %c format of > 8 bit value");
-    }
-
     // string pfmt = "%"+displayFormat(argp, vfmt, fmtLetter)+fmtLetter;
     string pfmt;
     if ((fmtLetter == '#' || fmtLetter == 'd') && !isScan
         && vfmt == "") {  // Size decimal output.  Spec says leading spaces, not zeros
-        const double mantissabits = argp->widthMin() - ((fmtLetter == 'd') ? 1 : 0);
+        const double mantissabits = ignore ? 0 : (argp->widthMin() - ((fmtLetter == 'd') ? 1 : 0));
         // This is log10(2**mantissabits) as log2(2**mantissabits)/log2(10),
         // + 1.0 rounding bias.
         double dchars = mantissabits / 3.321928094887362 + 1.0;
@@ -2085,11 +2132,12 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const
         pfmt = string("%") + vfmt + fmtLetter;
     }
     emitDispState.pushFormat(pfmt);
-    emitDispState.pushArg(' ', NULL, cvtToStr(argp->widthMin()));
-    emitDispState.pushArg(fmtLetter, argp, "");
-
-    // Next parameter
-    *elistp = (*elistp)->nextp();
+    if (!ignore) {
+        emitDispState.pushArg(' ', NULL, cvtToStr(argp->widthMin()));
+        emitDispState.pushArg(fmtLetter, argp, "");
+    } else {
+        emitDispState.pushArg(fmtLetter, NULL, "");
+    }
 }
 
 void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep, const string& vformat,
@@ -2102,17 +2150,28 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep, const str
     string vfmt;
     string::const_iterator pos = vformat.begin();
     bool inPct = false;
+    bool ignore = false;
     for (; pos != vformat.end(); ++pos) {
         // UINFO(1, "Parse '" << *pos << "'  IP" << inPct << " List " << cvtToHex(elistp) << endl);
         if (!inPct && pos[0] == '%') {
             inPct = true;
+            ignore = false;
             vfmt = "";
         } else if (!inPct) {  // Normal text
             emitDispState.pushFormat(*pos);
         } else {  // Format character
             inPct = false;
             switch (tolower(pos[0])) {
-            case '0' ... '9':
+            case '0':  // FALLTHRU
+            case '1':  // FALLTHRU
+            case '2':  // FALLTHRU
+            case '3':  // FALLTHRU
+            case '4':  // FALLTHRU
+            case '5':  // FALLTHRU
+            case '6':  // FALLTHRU
+            case '7':  // FALLTHRU
+            case '8':  // FALLTHRU
+            case '9':  // FALLTHRU
             case '.':  // FALLTHRU
             case '-':
                 // Digits, like %5d, etc.
@@ -2122,25 +2181,36 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep, const str
             case '%':
                 emitDispState.pushFormat("%%");  // We're printf'ing it, so need to quote the %
                 break;
+            case '*':
+                vfmt += pos[0];
+                inPct = true;  // Get more digits
+                ignore = true;
+                break;
             // Special codes
-            case '~': displayArg(nodep, &elistp, isScan, vfmt, 'd'); break;  // Signed decimal
+            case '~':
+                displayArg(nodep, &elistp, isScan, vfmt, ignore, 'd');
+                break;  // Signed decimal
             case '@':
-                displayArg(nodep, &elistp, isScan, vfmt, '@');
+                displayArg(nodep, &elistp, isScan, vfmt, ignore, '@');
                 break;  // Packed string
             // Spec: h d o b c l
-            case 'b': displayArg(nodep, &elistp, isScan, vfmt, 'b'); break;
-            case 'c': displayArg(nodep, &elistp, isScan, vfmt, 'c'); break;
-            case 't': displayArg(nodep, &elistp, isScan, vfmt, 't'); break;
-            case 'd': displayArg(nodep, &elistp, isScan, vfmt, '#'); break;  // Unsigned decimal
-            case 'o': displayArg(nodep, &elistp, isScan, vfmt, 'o'); break;
+            case 'b': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'b'); break;
+            case 'c': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'c'); break;
+            case 't': displayArg(nodep, &elistp, isScan, vfmt, ignore, 't'); break;
+            case 'd':
+                displayArg(nodep, &elistp, isScan, vfmt, ignore, '#');
+                break;  // Unsigned decimal
+            case 'o': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'o'); break;
             case 'h':  // FALLTHRU
-            case 'x': displayArg(nodep, &elistp, isScan, vfmt, 'x'); break;
-            case 's': displayArg(nodep, &elistp, isScan, vfmt, 's'); break;
-            case 'e': displayArg(nodep, &elistp, isScan, vfmt, 'e'); break;
-            case 'f': displayArg(nodep, &elistp, isScan, vfmt, 'f'); break;
-            case 'g': displayArg(nodep, &elistp, isScan, vfmt, 'g'); break;
-            case '^': displayArg(nodep, &elistp, isScan, vfmt, '^'); break;  // Realtime
-            case 'v': displayArg(nodep, &elistp, isScan, vfmt, 'v'); break;
+            case 'x': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'x'); break;
+            case 's': displayArg(nodep, &elistp, isScan, vfmt, ignore, 's'); break;
+            case 'e': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'e'); break;
+            case 'f': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'f'); break;
+            case 'g': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'g'); break;
+            case '^': displayArg(nodep, &elistp, isScan, vfmt, ignore, '^'); break;  // Realtime
+            case 'v': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'v'); break;
+            case 'u': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'u'); break;
+            case 'z': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'z'); break;
             case 'm': {
                 UASSERT_OBJ(scopenamep, nodep, "Display with %m but no AstScopeName");
                 string suffix = scopenamep->scopePrettySymName();
@@ -2181,7 +2251,8 @@ void EmitCImp::emitCoverageDecl(AstNodeModule* modp) {
         puts("void __vlCoverInsert(");
         puts(v3Global.opt.threads() ? "std::atomic<uint32_t>" : "uint32_t");
         puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
-        puts("const char* hierp, const char* pagep, const char* commentp);\n");
+        puts("const char* hierp, const char* pagep, const char* commentp, const char* "
+             "linescovp);\n");
     }
 }
 
@@ -2285,12 +2356,12 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
     puts("if (false && this->__VlSymsp) {}  // Prevent unused\n");
     if (v3Global.opt.coverage()) { puts(protect("_configure_coverage") + "(vlSymsp, first);\n"); }
     if (modp->isTop() && !v3Global.rootp()->timeunit().isNone()) {
-        puts("Verilated::timeunit(" + cvtToStr(v3Global.rootp()->timeunit().negativeInt())
+        puts("Verilated::timeunit(" + cvtToStr(v3Global.rootp()->timeunit().powerOfTen())
              + ");\n");
     }
     if (modp->isTop() && !v3Global.rootp()->timeprecision().isNone()) {
-        puts("Verilated::timeprecision("
-             + cvtToStr(v3Global.rootp()->timeprecision().negativeInt()) + ");\n");
+        puts("Verilated::timeprecision(" + cvtToStr(v3Global.rootp()->timeprecision().powerOfTen())
+             + ");\n");
     }
     puts("}\n");
     splitSizeInc(10);
@@ -2304,7 +2375,8 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
         puts("void " + prefixNameProtect(m_modp) + "::__vlCoverInsert(");
         puts(v3Global.opt.threads() ? "std::atomic<uint32_t>" : "uint32_t");
         puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
-        puts("const char* hierp, const char* pagep, const char* commentp) {\n");
+        puts("const char* hierp, const char* pagep, const char* commentp, const char* linescovp) "
+             "{\n");
         if (v3Global.opt.threads()) {
             puts("assert(sizeof(uint32_t) == sizeof(std::atomic<uint32_t>));\n");
             puts("uint32_t* count32p = reinterpret_cast<uint32_t*>(countp);\n");
@@ -2324,7 +2396,8 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
         // puts( "\"hier\",std::string(__VlSymsp->name())+hierp,");
         puts("\"hier\",std::string(name())+hierp,");
         puts("  \"page\",pagep,");
-        puts("  \"comment\",commentp);\n");
+        puts("  \"comment\",commentp,");
+        puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp);\n");
         puts("}\n");
         splitSizeInc(10);
     }
@@ -2370,7 +2443,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                     hash.insert(varp->dtypep()->width());
                 }
             }
-            ofp()->printf("vluint64_t __Vcheckval = VL_ULL(0x%" VL_PRI64 "x);\n",
+            ofp()->printf("vluint64_t __Vcheckval = 0x%" VL_PRI64 "xULL;\n",
                           static_cast<vluint64_t>(hash.digestUInt64()));
             if (de) {
                 puts("os.readAssert(__Vcheckval);\n");
@@ -2872,9 +2945,6 @@ void EmitCImp::emitIntTop(AstNodeModule* modp) {
         puts("#include \"verilated_cov.h\"\n");
         if (v3Global.opt.savable()) v3error("--coverage and --savable not supported together");
     }
-    if (v3Global.needHInlines()) {  // Set by V3EmitCInlines; should have been called before us
-        puts("#include \"" + topClassName() + "__Inlines.h\"\n");
-    }
     if (v3Global.dpi()) {
         // do this before including our main .h file so that any references to
         // types defined in svdpi.h are available
@@ -3099,13 +3169,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     emitIntFuncDecls(modp, true);
 
     if (v3Global.opt.trace() && !VN_IS(modp, Class)) {
-        ofp()->putsPrivate(false);  // public:
-        puts("static void " + protect("traceInit") + "(" + v3Global.opt.traceClassBase()
-             + "* vcdp, void* userthis, uint32_t code);\n");
-        puts("static void " + protect("traceFull") + "(" + v3Global.opt.traceClassBase()
-             + "* vcdp, void* userthis, uint32_t code);\n");
-        puts("static void " + protect("traceChg") + "(" + v3Global.opt.traceClassBase()
-             + "* vcdp, void* userthis, uint32_t code);\n");
+        ofp()->putsPrivate(true);  // private:
+        puts("static void " + protect("traceInit") + "(void* userp, "
+             + v3Global.opt.traceClassBase() + "* tracep, uint32_t code) VL_ATTR_COLD;\n");
     }
     if (v3Global.opt.savable()) {
         ofp()->putsPrivate(false);  // public:
@@ -3180,6 +3246,8 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 
 void EmitCImp::maybeSplit(AstNodeModule* fileModp) {
     if (splitNeeded()) {
+        // Splitting file, so using parallel build.
+        v3Global.useParallelBuild(true);
         // Close old file
         VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
         // Open a new file
@@ -3210,12 +3278,12 @@ void EmitCImp::mainInt(AstNodeModule* modp) {
     VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
 }
 
-void EmitCImp::mainImp(AstNodeModule* modp, bool slow, bool fast) {
+void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
     // Output a module
     AstNodeModule* fileModp = modp;  // Filename constructed using this module
     m_modp = modp;
     m_slow = slow;
-    m_fast = fast;
+    m_fast = !slow;
 
     UINFO(5, "  Emitting " << prefixNameProtect(modp) << endl);
 
@@ -3232,7 +3300,7 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow, bool fast) {
         m_modp = modp;
     }
 
-    if (fast && modp->isTop() && v3Global.opt.mtasks()) {
+    if (m_fast && modp->isTop() && v3Global.opt.mtasks()) {
         // Make a final pass and emit function definitions for the mtasks
         // in the ExecGraph
         AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
@@ -3305,7 +3373,7 @@ class EmitCTrace : EmitCStmts {
         if (v3Global.needTraceDumper() && !optSystemC()) {
             puts("void " + topClassName() + "::_traceDump() {\n");
             // Caller checked for __Vm_dumperp non-NULL
-            puts("VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
+            puts("const VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
             puts("__VlSymsp->__Vm_dumperp->dump(VL_TIME_Q());\n");
             puts("}\n");
             splitSizeInc(10);
@@ -3313,7 +3381,7 @@ class EmitCTrace : EmitCStmts {
 
         if (v3Global.needTraceDumper()) {
             puts("void " + topClassName() + "::_traceDumpOpen() {\n");
-            puts("VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
+            puts("const VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
             puts("if (VL_UNLIKELY(!__VlSymsp->__Vm_dumperp)) {\n");
             puts("__VlSymsp->__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
             puts("const char* cp = vl_dumpctl_filenamep();\n");
@@ -3326,7 +3394,7 @@ class EmitCTrace : EmitCStmts {
             splitSizeInc(10);
 
             puts("void " + topClassName() + "::_traceDumpClose() {\n");
-            puts("VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
+            puts("const VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
             puts("__VlSymsp->__Vm_dumping = false;\n");
             puts("VL_DO_CLEAR(delete __VlSymsp->__Vm_dumperp, __VlSymsp->__Vm_dumperp = NULL);\n");
             puts("}\n");
@@ -3335,53 +3403,26 @@ class EmitCTrace : EmitCStmts {
 
         puts("void " + topClassName() + "::trace(");
         puts(v3Global.opt.traceClassBase() + "C* tfp, int, int) {\n");
-        puts("tfp->spTrace()->addCallback("
-             "&"
-             + topClassName() + "::" + protect("traceInit") + ", &" + topClassName()
-             + "::" + protect("traceFull") + ", &" + topClassName() + "::" + protect("traceChg")
-             + ", this);\n");
+        puts("tfp->spTrace()->addInitCb(&" + protect("traceInit") + ", __VlSymsp);\n");
+        puts(protect("traceRegister") + "(tfp->spTrace());\n");
         puts("}\n");
+        puts("\n");
         splitSizeInc(10);
 
-        puts("void " + topClassName() + "::" + protect("traceInit") + "("
-             + v3Global.opt.traceClassBase() + "* vcdp, void* userthis, uint32_t code) {\n");
-        putsDecoration("// Callback from vcd->open()\n");
-        puts(topClassName() + "* t = (" + topClassName() + "*)userthis;\n");
-        puts(EmitCBaseVisitor::symClassVar() + " = t->__VlSymsp;  // Setup global symbol table\n");
+        puts("void " + topClassName() + "::" + protect("traceInit") + "(void* userp, "
+             + v3Global.opt.traceClassBase() + "* tracep, uint32_t code) {\n");
+        putsDecoration("// Callback from tracep->open()\n");
+        puts(symClassVar() + " = static_cast<" + symClassName() + "*>(userp);\n");
         puts("if (!Verilated::calcUnusedSigs()) {\n");
         puts("VL_FATAL_MT(__FILE__, __LINE__, __FILE__,\n");
         puts("            \"Turning on wave traces requires Verilated::traceEverOn(true) call "
              "before time 0.\");\n");
         puts("}\n");
-        puts("vcdp->scopeEscape(' ');\n");
-        puts("t->" + protect("traceInitThis") + "(vlSymsp, vcdp, code);\n");
-        puts("vcdp->scopeEscape('.');\n");  // Restore so later traced files won't break
-        puts("}\n");
-        splitSizeInc(10);
-
-        puts("void " + topClassName() + "::" + protect("traceFull") + "("
-             + v3Global.opt.traceClassBase() + "* vcdp, void* userthis, uint32_t code) {\n");
-        putsDecoration("// Callback from vcd->dump()\n");
-        puts(topClassName() + "* t = (" + topClassName() + "*)userthis;\n");
-        puts(EmitCBaseVisitor::symClassVar() + " = t->__VlSymsp;  // Setup global symbol table\n");
-        puts("t->" + protect("traceFullThis") + "(vlSymsp, vcdp, code);\n");
-        puts("}\n");
-        splitSizeInc(10);
-
-        puts("\n//======================\n\n");
-    }
-
-    void emitTraceFast() {
-        puts("\n//======================\n\n");
-
-        puts("void " + topClassName() + "::" + protect("traceChg") + "("
-             + v3Global.opt.traceClassBase() + "* vcdp, void* userthis, uint32_t code) {\n");
-        putsDecoration("// Callback from vcd->dump()\n");
-        puts(topClassName() + "* t = (" + topClassName() + "*)userthis;\n");
-        puts(EmitCBaseVisitor::symClassVar() + " = t->__VlSymsp;  // Setup global symbol table\n");
-        puts("if (vlSymsp->getClearActivity()) {\n");
-        puts("t->" + protect("traceChgThis") + "(vlSymsp, vcdp, code);\n");
-        puts("}\n");
+        puts("vlSymsp->__Vm_baseCode = code;\n");
+        puts("tracep->module(vlSymsp->name());\n");
+        puts("tracep->scopeEscape(' ');\n");
+        puts(topClassName() + "::" + protect("traceInitTop") + "(vlSymsp, tracep);\n");
+        puts("tracep->scopeEscape('.');\n");  // Restore so later traced files won't break
         puts("}\n");
         splitSizeInc(10);
 
@@ -3389,21 +3430,21 @@ class EmitCTrace : EmitCStmts {
     }
 
     bool emitTraceIsScBv(AstTraceInc* nodep) {
-        const AstVarRef* varrefp = VN_CAST(nodep->valuep(), VarRef);
+        const AstVarRef* varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
         AstVar* varp = varrefp->varp();
         return varp->isSc() && varp->isScBv();
     }
 
     bool emitTraceIsScBigUint(AstTraceInc* nodep) {
-        const AstVarRef* varrefp = VN_CAST(nodep->valuep(), VarRef);
+        const AstVarRef* varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
         AstVar* varp = varrefp->varp();
         return varp->isSc() && varp->isScBigUint();
     }
 
     bool emitTraceIsScUint(AstTraceInc* nodep) {
-        const AstVarRef* varrefp = VN_CAST(nodep->valuep(), VarRef);
+        const AstVarRef* varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
         AstVar* varp = varrefp->varp();
         return varp->isSc() && varp->isScUint();
@@ -3411,15 +3452,15 @@ class EmitCTrace : EmitCStmts {
 
     void emitTraceInitOne(AstTraceDecl* nodep, int enumNum) {
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("vcdp->declDouble");
+            puts("tracep->declDouble");
         } else if (nodep->isWide()) {
-            puts("vcdp->declArray");
+            puts("tracep->declArray");
         } else if (nodep->isQuad()) {
-            puts("vcdp->declQuad");
+            puts("tracep->declQuad");
         } else if (nodep->bitRange().ranged()) {
-            puts("vcdp->declBus");
+            puts("tracep->declBus");
         } else {
-            puts("vcdp->declBit");
+            puts("tracep->declBit");
         }
 
         puts("(c+" + cvtToStr(nodep->code()));
@@ -3533,10 +3574,10 @@ class EmitCTrace : EmitCStmts {
                         putbs("\"" + constp->num().displayed(nodep, "%0b") + "\"");
                     }
                     puts("};\n");
-                    puts("vcdp->declDTypeEnum(" + cvtToStr(enumNum) + ", \"" + enump->prettyName()
-                         + "\", " + cvtToStr(nvals) + ", " + cvtToStr(enump->widthMin()) + ", "
-                         + protect("__VenumItemNames") + ", " + protect("__VenumItemValues")
-                         + ");\n");
+                    puts("tracep->declDTypeEnum(" + cvtToStr(enumNum) + ", \""
+                         + enump->prettyName() + "\", " + cvtToStr(nvals) + ", "
+                         + cvtToStr(enump->widthMin()) + ", " + protect("__VenumItemNames") + ", "
+                         + protect("__VenumItemValues") + ");\n");
                     puts("}\n");
                 }
                 return enumNum;
@@ -3547,31 +3588,29 @@ class EmitCTrace : EmitCStmts {
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
         iterateAndNextNull(nodep->precondsp());
-        const bool full = (m_funcp->funcType() == AstCFuncType::TRACE_FULL
-                           || m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB);
-        const string func = full ? "full" : "chg";
+        const string func = nodep->full() ? "full" : "chg";
         bool emitWidth = true;
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("vcdp->" + func + "Double");
+            puts("tracep->" + func + "Double");
             emitWidth = false;
         } else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
-            puts("vcdp->" + func + "WData");
+            puts("tracep->" + func + "WData");
         } else if (nodep->isQuad()) {
-            puts("vcdp->" + func + "QData");
+            puts("tracep->" + func + "QData");
         } else if (nodep->declp()->widthMin() > 16) {
-            puts("vcdp->" + func + "IData");
+            puts("tracep->" + func + "IData");
         } else if (nodep->declp()->widthMin() > 8) {
-            puts("vcdp->" + func + "SData");
+            puts("tracep->" + func + "SData");
         } else if (nodep->declp()->widthMin() > 1) {
-            puts("vcdp->" + func + "CData");
+            puts("tracep->" + func + "CData");
         } else {
-            puts("vcdp->" + func + "Bit");
+            puts("tracep->" + func + "Bit");
             emitWidth = false;
         }
 
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
         const uint32_t code = nodep->declp()->code() + offset;
-        puts(v3Global.opt.trueTraceThreads() && !full ? "(base+" : "(oldp+");
+        puts(v3Global.opt.trueTraceThreads() && !nodep->full() ? "(base+" : "(oldp+");
         puts(cvtToStr(code - m_baseCode));
         puts(",");
         emitTraceValue(nodep, arrayindex);
@@ -3579,8 +3618,7 @@ class EmitCTrace : EmitCStmts {
         puts(");\n");
     }
     void emitTraceValue(AstTraceInc* nodep, int arrayindex) {
-        if (VN_IS(nodep->valuep(), VarRef)) {
-            AstVarRef* varrefp = VN_CAST(nodep->valuep(), VarRef);
+        if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
             AstVar* varp = varrefp->varp();
             puts("(");
             if (emitTraceIsScBigUint(nodep)) {
@@ -3628,6 +3666,8 @@ class EmitCTrace : EmitCStmts {
             m_funcp = nodep;
 
             if (splitNeeded()) {
+                // Splitting file, so using parallel build.
+                v3Global.useParallelBuild(true);
                 // Close old file
                 VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
                 // Open a new file
@@ -3641,41 +3681,37 @@ class EmitCTrace : EmitCStmts {
             puts(" ");
             puts(topClassName() + "::" + nodep->nameProtect() + "(" + cFuncArgs(nodep) + ") {\n");
 
-            if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign() + "\n");
+            if (nodep->funcType() != AstCFuncType::TRACE_REGISTER) {
+                puts(symClassVar() + " = static_cast<" + symClassName() + "*>(userp);\n");
+            }
+
+            if (nodep->symProlog()) puts(symTopAssign() + "\n");
 
             m_baseCode = -1;
 
-            if (nodep->funcType() == AstCFuncType::TRACE_FULL_SUB
-                || nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
-                const AstTraceInc* const stmtp = VN_CAST_CONST(nodep->stmtsp(), TraceInc);
-                if (!stmtp) {
-                    nodep->stmtsp()->v3fatalSrc("Trace sub function should contain AstTraceInc");
-                }
-                m_baseCode = stmtp->declp()->code();
-                if (v3Global.opt.trueTraceThreads()
-                    && nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
-                    puts("vluint32_t base = code+" + cvtToStr(m_baseCode) + ";\n");
-                    puts("if (false && vcdp && base) {}  // Prevent unused\n");
+            if (nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
+                const AstNode* const stmtp = nodep->stmtsp();
+                const AstIf* const ifp = VN_CAST_CONST(stmtp, If);
+                const AstTraceInc* const tracep
+                    = VN_CAST_CONST(ifp ? ifp->ifsp() : stmtp, TraceInc);
+                // On rare occasions we can end up with an empty sub function
+                m_baseCode = tracep ? tracep->declp()->code() : 0;
+                if (v3Global.opt.trueTraceThreads()) {
+                    puts("const vluint32_t base = vlSymsp->__Vm_baseCode + " + cvtToStr(m_baseCode)
+                         + ";\n");
+                    puts("if (false && tracep && base) {}  // Prevent unused\n");
                 } else {
-                    puts("vluint32_t* oldp = vcdp->oldp(code+" + cvtToStr(m_baseCode) + ");\n");
-                    puts("if (false && vcdp && oldp) {}  // Prevent unused\n");
+                    puts("vluint32_t* const oldp = tracep->oldp(vlSymsp->__Vm_baseCode + "
+                         + cvtToStr(m_baseCode) + ");\n");
+                    puts("if (false && oldp) {}  // Prevent unused\n");
                 }
-            } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
-                puts("int c = code;\n");
-                puts("if (false && vcdp && c) {}  // Prevent unused\n");
-            } else {
-                puts("if (false && vcdp) {}  // Prevent unused\n");
-            }
-
-            if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
-                puts("vcdp->module(vlSymsp->name());  // Setup signal names\n");
-            } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
-            } else if (nodep->funcType() == AstCFuncType::TRACE_FULL) {
             } else if (nodep->funcType() == AstCFuncType::TRACE_FULL_SUB) {
-            } else if (nodep->funcType() == AstCFuncType::TRACE_CHANGE) {
-            } else if (nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
-            } else {
-                nodep->v3fatalSrc("Bad Case");
+                m_baseCode = 0;
+                puts("vluint32_t* const oldp = tracep->oldp(vlSymsp->__Vm_baseCode);\n");
+                puts("if (false && oldp) {}  // Prevent unused\n");
+            } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
+                puts("const int c = vlSymsp->__Vm_baseCode;\n");
+                puts("if (false && tracep && c) {}  // Prevent unused\n");
             }
 
             if (nodep->initsp()) {
@@ -3734,11 +3770,7 @@ public:
         // Put out the file
         newOutCFile(0);
 
-        if (m_slow) {
-            emitTraceSlow();
-        } else {
-            emitTraceFast();
-        }
+        if (m_slow) { emitTraceSlow(); }
 
         iterate(v3Global.rootp());
 
@@ -3757,12 +3789,8 @@ void V3EmitC::emitc() {
         if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
         // clang-format off
         { EmitCImp cint; cint.mainInt(nodep); }
-        if (v3Global.opt.outputSplit()) {
-            { EmitCImp fast; fast.mainImp(nodep, false, true); }
-            { EmitCImp slow; slow.mainImp(nodep, true, false); }
-        } else {
-            { EmitCImp both; both.mainImp(nodep, true, true); }
-        }
+        { EmitCImp slow; slow.mainImp(nodep, true); }
+        { EmitCImp fast; fast.mainImp(nodep, false); }
         // clang-format on
     }
 }

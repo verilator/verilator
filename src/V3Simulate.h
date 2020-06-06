@@ -350,7 +350,7 @@ private:
         }
     }
 
-    AstNode* varOrScope(AstVarRef* nodep) {
+    AstNode* varOrScope(AstVarRef* nodep) const {
         AstNode* vscp;
         if (m_scoped) {
             vscp = nodep->varScopep();
@@ -508,7 +508,7 @@ private:
                 iterateAndNextNull(valuep);
                 if (optimizable()) newValue(nodep, fetchValue(valuep));
             } else {
-                clearOptimizable(nodep, "No value found for enum item");
+                clearOptimizable(nodep, "No value found for enum item");  // LCOV_EXCL_LINE
             }
         }
     }
@@ -537,6 +537,17 @@ private:
             nodep->numberOperate(newConst(nodep)->num(), fetchConst(nodep->lhsp())->num(),
                                  fetchConst(nodep->rhsp())->num(),
                                  fetchConst(nodep->thsp())->num());
+        }
+    }
+    virtual void visit(AstNodeQuadop* nodep) VL_OVERRIDE {
+        if (!optimizable()) return;  // Accelerate
+        checkNodeInfo(nodep);
+        iterateChildren(nodep);
+        if (!m_checkOnly && optimizable()) {
+            nodep->numberOperate(newConst(nodep)->num(), fetchConst(nodep->lhsp())->num(),
+                                 fetchConst(nodep->rhsp())->num(),
+                                 fetchConst(nodep->thsp())->num(),
+                                 fetchConst(nodep->fhsp())->num());
         }
     }
     virtual void visit(AstLogAnd* nodep) VL_OVERRIDE {
@@ -818,6 +829,10 @@ private:
 
     virtual void visit(AstComment*) VL_OVERRIDE {}
 
+    virtual void visit(AstJumpBlock* nodep) VL_OVERRIDE {
+        if (jumpingOver(nodep)) return;
+        iterateChildren(nodep);
+    }
     virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         checkNodeInfo(nodep);
@@ -827,6 +842,8 @@ private:
         }
     }
     virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
+        // This only supports forward jumps. That's all we make at present,
+        // AstJumpGo::broken uses brokeExistsBelow() to check this.
         if (jumpingOver(nodep)) return;
         checkNodeInfo(nodep);
         iterateChildren(nodep);
@@ -1002,7 +1019,7 @@ private:
                 } else {  // Format character
                     inPct = false;
 
-                    if (V3Number::displayedFmtLegal(tolower(pos[0]))) {
+                    if (V3Number::displayedFmtLegal(tolower(pos[0]), false)) {
                         AstNode* argp = nextArgp;
                         nextArgp = nextArgp->nextp();
                         AstConst* constp = fetchConstNull(argp);

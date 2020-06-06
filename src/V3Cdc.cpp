@@ -33,12 +33,9 @@
 #include "V3File.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <deque>
 #include <iomanip>
-#include <list>
 #include <memory>
-#include <vector>
 
 #define CDC_WEIGHT_ASYNC 0x1000  // Weight for edges that feed async logic
 
@@ -258,7 +255,7 @@ private:
             iterateChildren(nodep);
             m_logicVertexp = NULL;
 
-            if (0 && debug() >= 9) {
+            if (false && debug() >= 9) {
                 UINFO(9, "Trace Logic:\n");
                 nodep->dumpTree(cout, "-log1: ");
             }
@@ -298,7 +295,7 @@ private:
         static bool told_file = false;
         nodep->v3warnCode(code, msg);
         if (!told_file) {
-            told_file = 1;
+            told_file = true;
             std::cerr << V3Error::msgPrefix() << "     See details in " << m_ofFilename << endl;
         }
         *m_ofp << "%Warning-" << code.ascii() << ": " << nodep->fileline() << " " << msg << endl;
@@ -732,7 +729,7 @@ private:
 
     // Ignores
     virtual void visit(AstInitial*) VL_OVERRIDE {}
-    virtual void visit(AstTraceInc*) VL_OVERRIDE {}
+    virtual void visit(AstTraceDecl*) VL_OVERRIDE {}
     virtual void visit(AstCoverToggle*) VL_OVERRIDE {}
     virtual void visit(AstNodeDType*) VL_OVERRIDE {}
 

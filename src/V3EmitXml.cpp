@@ -22,9 +22,6 @@
 #include "V3EmitXml.h"
 #include "V3EmitCBase.h"
 
-#include <algorithm>
-#include <cmath>
-#include <cstdarg>
 #include <map>
 #include <vector>
 
@@ -46,9 +43,6 @@ class EmitXmlFileVisitor : public AstNVisitor {
     // Outfile methods
     V3OutFile* ofp() const { return m_ofp; }
     virtual void puts(const string& str) { ofp()->puts(str); }
-    virtual void putbs(const string& str) { ofp()->putbs(str); }
-    virtual void putfs(AstNode*, const string& str) { putbs(str); }
-    virtual void putqs(AstNode*, const string& str) { putbs(str); }
     virtual void putsNoTracking(const string& str) { ofp()->putsNoTracking(str); }
     virtual void putsQuoted(const string& str) {
         // Quote \ and " for use inside C programs
@@ -64,7 +58,8 @@ class EmitXmlFileVisitor : public AstNVisitor {
         if (!nodep->user1()) { nodep->user1(++m_id); }
         puts("\"" + cvtToStr(nodep->user1()) + "\"");
     }
-    void outputTag(AstNode* nodep, string tag) {
+    void outputTag(AstNode* nodep, const string& tagin) {
+        string tag = tagin;
         if (tag == "") tag = VString::downcase(nodep->typeName());
         puts("<" + tag + " " + nodep->fileline()->xml());
         puts(" " + nodep->fileline()->xmlDetailedLocation());
@@ -92,7 +87,8 @@ class EmitXmlFileVisitor : public AstNVisitor {
             }
         }
     }
-    void outputChildrenEnd(AstNode* nodep, string tag) {
+    void outputChildrenEnd(AstNode* nodep, const string& tagin) {
+        string tag = tagin;
         if (tag == "") tag = VString::downcase(nodep->typeName());
         if (nodep->op1p() || nodep->op2p() || nodep->op3p() || nodep->op4p()) {
             puts(">\n");

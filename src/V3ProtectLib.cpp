@@ -20,7 +20,6 @@
 #include "V3Global.h"
 #include "V3String.h"
 #include "V3ProtectLib.h"
-#include "V3File.h"
 #include "V3Hashed.h"
 #include "V3Task.h"
 
@@ -261,7 +260,7 @@ private:
 
     void castPtr(FileLine* fl, AstTextBlock* txtp) {
         txtp->addText(fl, m_topName
-                              + "_container* handlep__V = "
+                              + "_container* handlep__V = "  // LCOV_EXCL_LINE  // lcov bug
                                 "static_cast<"
                               + m_topName + "_container*>(vhandlep__V);\n");
     }

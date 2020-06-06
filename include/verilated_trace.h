@@ -40,7 +40,7 @@
 // Threaded tracing
 
 // A simple synchronized first in first out queue
-template <class T> class VerilatedThreadQueue {
+template <class T> class VerilatedThreadQueue {  // LCOV_EXCL_LINE  // lcov bug
 private:
     VerilatedMutex m_mutex;  // Protects m_queue
     std::condition_variable_any m_cv;
@@ -73,7 +73,7 @@ public:
 
     // Non blocking get
     bool tryGet(T& result) {
-        VerilatedLockGuard lockGuard(m_mutex);
+        const VerilatedLockGuard lockGuard(m_mutex);
         if (m_queue.empty()) { return false; }
         result = m_queue.front();
         m_queue.pop_front();
@@ -95,7 +95,6 @@ public:
         CHG_IDATA = 0x4,
         CHG_QDATA = 0x5,
         CHG_WDATA = 0x6,
-        CHG_FLOAT = 0x7,
         CHG_DOUBLE = 0x8,
         // TODO: full..
         TIME_CHANGE = 0xd,
@@ -105,8 +104,6 @@ public:
 };
 #endif
 
-class VerilatedTraceCallInfo;
-
 //=============================================================================
 // VerilatedTrace
 
@@ -114,13 +111,38 @@ class VerilatedTraceCallInfo;
 // implementations in the format specific derived class, which must be passed
 // as the type parameter T_Derived
 template <class T_Derived> class VerilatedTrace {
-private:
+public:
     //=========================================================================
     // Generic tracing internals
 
+    typedef void (*initCb_t)(void*, T_Derived*, uint32_t);  // Type of init callbacks
+    typedef void (*dumpCb_t)(void*, T_Derived*);  // Type of all but init callbacks
+
+private:
+    struct CallbackRecord {
+        // Note: would make these fields const, but some old STL implementations
+        // (the one in Ubuntu 14.04 with GCC 4.8.4 in particular) use the
+        // assignment operator on inserting into collections, so they don't work
+        // with const fields...
+        union {
+            initCb_t m_initCb;  // The callback function
+            dumpCb_t m_dumpCb;  // The callback function
+        };
+        void* m_userp;  // The user pointer to pass to the callback (the symbol table)
+        CallbackRecord(initCb_t cb, void* userp)
+            : m_initCb(cb)
+            , m_userp(userp) {}
+        CallbackRecord(dumpCb_t cb, void* userp)
+            : m_dumpCb(cb)
+            , m_userp(userp) {}
+    };
+
     vluint32_t* m_sigs_oldvalp;  ///< Old value store
     vluint64_t m_timeLastDump;  ///< Last time we did a dump
-    std::vector<VerilatedTraceCallInfo*> m_callbacks;  ///< Routines to perform dumping
+    std::vector<CallbackRecord> m_initCbs;  ///< Routines to initialize traciong
+    std::vector<CallbackRecord> m_fullCbs;  ///< Routines to perform full dump
+    std::vector<CallbackRecord> m_chgCbs;  ///< Routines to perform incremental dump
+    std::vector<CallbackRecord> m_cleanupCbs;  ///< Routines to call at the end of dump
     bool m_fullDump;  ///< Whether a full dump is required on the next call to 'dump'
     vluint32_t m_nextCode;  ///< Next code number to assign
     vluint32_t m_numSignals;  ///< Number of distinct signals
@@ -129,6 +151,8 @@ private:
     char m_scopeEscape;
     double m_timeRes;  ///< Time resolution (ns/ms etc)
     double m_timeUnit;  ///< Time units (ns/ms etc)
+
+    void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord& cbRec);
 
     // Equivalent to 'this' but is of the sub-type 'T_Derived*'. Use 'self()->'
     // to access duck-typed functions to avoid a virtual function call.
@@ -209,8 +233,8 @@ protected:
 
     // These hooks are called before a full or change based dump is produced.
     // The return value indicates whether to proceed with the dump.
-    virtual bool preFullDump() { return true; }
-    virtual bool preChangeDump() { return true; }
+    virtual bool preFullDump() = 0;
+    virtual bool preChangeDump() = 0;
 
 public:
     //=========================================================================
@@ -232,12 +256,12 @@ public:
     //=========================================================================
     // Non-hot path internal interface to Verilator generated code
 
-    typedef void (*callback_t)(T_Derived* tracep, void* userthis, vluint32_t code);
+    void addInitCb(initCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
+    void addFullCb(dumpCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
+    void addChgCb(dumpCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
+    void addCleanupCb(dumpCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
 
     void changeThread() { m_assertOne.changeThread(); }
-
-    void addCallback(callback_t initcb, callback_t fullcb, callback_t changecb,
-                     void* userthis) VL_MT_UNSAFE_ONE;
 
     void module(const std::string& name) VL_MT_UNSAFE_ONE {
         m_assertOne.check();
@@ -261,7 +285,6 @@ public:
     // duck-typed void emitIData(vluint32_t code, IData newval, int bits) = 0;
     // duck-typed void emitQData(vluint32_t code, QData newval, int bits) = 0;
     // duck-typed void emitWData(vluint32_t code, const WData* newvalp, int bits) = 0;
-    // duck-typed void emitFloat(vluint32_t code, float newval) = 0;
     // duck-typed void emitDouble(vluint32_t code, double newval) = 0;
 
     vluint32_t* oldp(vluint32_t code) { return m_sigs_oldvalp + code; }
@@ -273,7 +296,6 @@ public:
     void fullIData(vluint32_t* oldp, IData newval, int bits);
     void fullQData(vluint32_t* oldp, QData newval, int bits);
     void fullWData(vluint32_t* oldp, const WData* newvalp, int bits);
-    void fullFloat(vluint32_t* oldp, float newval);
     void fullDouble(vluint32_t* oldp, double newval);
 
 #ifdef VL_TRACE_THREADED
@@ -317,14 +339,6 @@ public:
         m_traceBufferWritep[1] = code;
         m_traceBufferWritep += 2;
         for (int i = 0; i < (bits + 31) / 32; ++i) { *m_traceBufferWritep++ = newvalp[i]; }
-        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
-    }
-    inline void chgFloat(vluint32_t code, float newval) {
-        m_traceBufferWritep[0] = VerilatedTraceCommand::CHG_FLOAT;
-        m_traceBufferWritep[1] = code;
-        // cppcheck-suppress invalidPointerCast
-        *reinterpret_cast<float*>(m_traceBufferWritep + 2) = newval;
-        m_traceBufferWritep += 3;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
     inline void chgDouble(vluint32_t code, double newval) {
@@ -373,10 +387,6 @@ public:
                 return;
             }
         }
-    }
-    inline void CHG(Float)(vluint32_t* oldp, float newval) {
-        // cppcheck-suppress invalidPointerCast
-        if (VL_UNLIKELY(*reinterpret_cast<float*>(oldp) != newval)) fullFloat(oldp, newval);
     }
     inline void CHG(Double)(vluint32_t* oldp, double newval) {
         // cppcheck-suppress invalidPointerCast

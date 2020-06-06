@@ -94,7 +94,6 @@
 #include "V3OrderGraph.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <deque>
 #include <iomanip>
 #include <map>
@@ -103,8 +102,6 @@
 #include <vector>
 #include VL_INCLUDE_UNORDERED_MAP
 #include VL_INCLUDE_UNORDERED_SET
-
-class OrderMoveDomScope;
 
 static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top);
 
@@ -666,9 +663,7 @@ private:
     SenTreeFinder m_finder;  // Find global sentree's and add them
     AstSenTree* m_comboDomainp;  // Combo activation tree
     AstSenTree* m_deleteDomainp;  // Delete this from tree
-    AstSenTree* m_settleDomainp;  // Initial activation tree
     OrderInputsVertex* m_inputsVxp;  // Top level vertex all inputs point from
-    OrderSettleVertex* m_settleVxp;  // Top level vertex all settlement vertexes point from
     OrderLogicVertex* m_logicVxp;  // Current statement being tracked, NULL=ignored
     AstTopScope* m_topScopep;  // Current top scope being processed
     AstScope* m_scopetopp;  // Scope under TOPSCOPE
@@ -816,7 +811,8 @@ private:
                 nodep->v3warn(UNOPT,
                               "Signal unoptimizable: Feedback to public clock or circular logic: "
                                   << nodep->prettyNameQ());
-                if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPT)) {
+                if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPT)
+                    && !nodep->fileline()->lastWarnWaived()) {
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPT,
                                                      true);  // Complain just once
                     // Give the user an example.
@@ -834,7 +830,8 @@ private:
                 nodep->v3warn(UNOPTFLAT,
                               "Signal unoptimizable: Feedback to clock or circular logic: "
                                   << nodep->prettyNameQ());
-                if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPTFLAT)) {
+                if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPTFLAT)
+                    && !nodep->fileline()->lastWarnWaived()) {
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT,
                                                      true);  // Complain just once
                     // Give the user an example.
@@ -975,13 +972,8 @@ private:
         AstSenTree* combp
             = new AstSenTree(nodep->fileline(),  // Gets cloned() so ok if goes out of scope
                              new AstSenItem(nodep->fileline(), AstSenItem::Combo()));
-        m_comboDomainp = m_finder.getSenTree(nodep->fileline(), combp);
+        m_comboDomainp = m_finder.getSenTree(combp);
         pushDeletep(combp);  // Cleanup when done
-        AstSenTree* settlep
-            = new AstSenTree(nodep->fileline(),  // Gets cloned() so ok if goes out of scope
-                             new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
-        m_settleDomainp = m_finder.getSenTree(nodep->fileline(), settlep);
-        pushDeletep(settlep);  // Cleanup when done
         // Fake AstSenTree we set domainp to indicate needs deletion
         m_deleteDomainp = new AstSenTree(nodep->fileline(),
                                          new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
@@ -1241,8 +1233,6 @@ public:
         m_inPre = m_inPost = false;
         m_comboDomainp = NULL;
         m_deleteDomainp = NULL;
-        m_settleDomainp = NULL;
-        m_settleVxp = NULL;
         m_inputsVxp = NULL;
         m_activeSenVxp = NULL;
         m_logicVxp = NULL;
@@ -1352,7 +1342,7 @@ void OrderVisitor::processInputs() {
 void OrderVisitor::processInputsInIterate(OrderEitherVertex* vertexp, VertexVec& todoVec) {
     // Propagate PrimaryIn through simple assignments
     if (vertexp->user()) return;  // Already processed
-    if (0 && debug() >= 9) {
+    if (false && debug() >= 9) {
         UINFO(9, " InIIter " << vertexp << endl);
         if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
             vvertexp->nodep()->dumpTree(cout, "-            TT: ");
@@ -1530,14 +1520,16 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
                 } else if (domainp != fromVertexp->domainp()) {
                     // Make a domain that merges the two domains
                     bool ddebug = debug() >= 9;
-                    if (ddebug) {
+
+                    if (ddebug) {  // LCOV_EXCL_START
+
                         cout << endl;
                         UINFO(0, "      conflicting domain " << fromVertexp << endl);
                         UINFO(0, "         dorig=" << domainp << endl);
                         domainp->dumpTree(cout);
                         UINFO(0, "         d2   =" << fromVertexp->domainp() << endl);
                         fromVertexp->domainp()->dumpTree(cout);
-                    }
+                    }  // LCOV_EXCL_STOP
                     AstSenTree* newtreep = domainp->cloneTree(false);
                     AstNodeSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
                     UASSERT_OBJ(newtree2p, fromVertexp->domainp(),
@@ -1546,14 +1538,14 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
                     newtree2p = NULL;  // Below edit may replace it
                     V3Const::constifyExpensiveEdit(newtreep);  // Remove duplicates
                     newtreep->multi(true);  // Comment that it was made from 2 clock domains
-                    domainp = m_finder.getSenTree(domainp->fileline(), newtreep);
-                    if (ddebug) {
+                    domainp = m_finder.getSenTree(newtreep);
+                    if (ddebug) {  // LCOV_EXCL_START
                         UINFO(0, "         dnew =" << newtreep << endl);
                         newtreep->dumpTree(cout);
                         UINFO(0, "         find =" << domainp << endl);
                         domainp->dumpTree(cout);
                         cout << endl;
-                    }
+                    }  // LCOV_EXCL_STOP
                     VL_DO_DANGLING(newtreep->deleteTree(), newtreep);
                 }
             }
@@ -2019,7 +2011,7 @@ void OrderVisitor::process() {
 
     // Dump data
     m_graph.dumpDotFilePrefixed("orderg_done");
-    if (0 && debug()) {
+    if (false && debug()) {
         string dfilename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_INT_order";
         const vl_unique_ptr<std::ofstream> logp(V3File::new_ofstream(dfilename));
         if (logp->fail()) v3fatal("Can't write " << dfilename);

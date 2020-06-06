@@ -121,7 +121,7 @@ public:
                          D(22), D(23), D(24), D(25), D(26), D(27), D(28), D(29));
     // Backward compatibility for Verilator
     static void _insertp(A(0), A(1), K(2), int val2, K(3), int val3, K(4), const std::string& val4,
-                         A(5), A(6));
+                         A(5), A(6), A(7));
 
 #undef K
 #undef A
