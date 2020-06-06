@@ -13,10 +13,15 @@
  * SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
  *
  *************************************************************************/
+/* clang-format off */
 
 %option interactive c++ stack noyywrap
 %{
 /* %option nodefault */
+#ifdef NEVER_JUST_FOR_CLANG_FORMAT
+ }
+#endif
+// clang-format on
 
 #include "V3Number.h"
 #include "V3ParseImp.h"  // Defines YYTYPE; before including bison header
@@ -31,7 +36,7 @@ extern void yyerrorf(const char* format, ...);
 #define SYMP PARSEP->symp()
 
 #define YY_INPUT(buf, result, max_size) \
-        do { result = PARSEP->flexPpInputToLex(buf, max_size); } while (false)
+    do { result = PARSEP->flexPpInputToLex(buf, max_size); } while (false)
 
 //======================================================================
 
@@ -41,12 +46,18 @@ extern void yyerrorf(const char* format, ...);
 
 #define CRELINE() (PARSEP->copyOrSameFileLine())
 
-#define FL do { FL_FWD; yylval.fl = CRELINE(); } while (false)
+#define FL \
+    do { \
+        FL_FWD; \
+        yylval.fl = CRELINE(); \
+    } while (false)
 
 #define ERROR_RSVD_WORD(language) \
-        do { FL_FWD; \
-             yyerrorf("Unsupported: " language " reserved word not implemented: '%s'", yytext); \
-             FL_BRK; } while(0)
+    do { \
+        FL_FWD; \
+        yyerrorf("Unsupported: " language " reserved word not implemented: '%s'", yytext); \
+        FL_BRK; \
+    } while (0)
 
 //======================================================================
 
@@ -80,6 +91,7 @@ void yyerrorf(const char* format, ...) {
     yyerror(msg);
 }
 
+// clang-format off
 /**********************************************************************/
 %}
 
@@ -1039,149 +1051,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Catch all - absolutely last */
 <*>.|\n                 { FL_FWD; yyerrorf("Missing verilog.l rule: Default rule invoked in state %d: %s", YY_START, yytext); FL_BRK; }
 %%
+// Avoid code here as cl format misindents
+// For implementation functions see V3ParseImp.cpp
 
 int V3ParseImp::stateVerilogRecent() { return STATE_VERILOG_RECENT; }
-
-void V3ParseImp::lexToken() {
-    // called from lexToBison, has a "this"
-    // Fetch next token from prefetch or real lexer
-    int token;
-    if (m_ahead) {
-        // We prefetched an extra token, give it back
-        m_ahead = false;
-        token = m_aheadVal.token;
-        yylval = m_aheadVal;
-    } else {
-        // Parse new token
-        token = yylexReadTok();
-        // yylval // Set by yylexReadTok()
-    }
-    // If a paren, read another
-    if (token == '('  //
-        || token == yCONST__LEX  //
-        || token == yGLOBAL__LEX  //
-        || token == yLOCAL__LEX  //
-        || token == yNEW__LEX  //
-        || token == yVIRTUAL__LEX
-        // Never put yID_* here; below symbol table resolution would break
-    ) {
-        if (debugFlex() >= 6) {
-            cout << "   lexToken: reading ahead to find possible strength" << endl;
-        }
-        V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
-        int nexttok = yylexReadTok();
-        m_ahead = true;
-        m_aheadVal = yylval;
-        m_aheadVal.token = nexttok;
-        yylval = curValue;
-        // Now potentially munge the current token
-        if (token == '('
-            && (nexttok == ygenSTRENGTH || nexttok == ySUPPLY0 || nexttok == ySUPPLY1)) {
-            token = yP_PAR__STRENGTH;
-        } else if (token == yCONST__LEX) {
-            if (nexttok == yREF) {
-                token = yCONST__REF;
-            } else {
-                token = yCONST__ETC;
-            }
-        } else if (token == yGLOBAL__LEX) {
-            if (nexttok == yCLOCKING) {
-                token = yGLOBAL__CLOCKING;
-            } else if (v3Global.opt.pedantic()) {
-                token = yGLOBAL__ETC;
-            }
-            // Avoid 2009 "global" conflicting with old code when we can
-            else {
-                token = yaID__LEX;
-                yylval.strp = PARSEP->newString("global");
-            }
-        } else if (token == yLOCAL__LEX) {
-            if (nexttok == yP_COLONCOLON) {
-                token = yLOCAL__COLONCOLON;
-            } else {
-                token = yLOCAL__ETC;
-            }
-        } else if (token == yNEW__LEX) {
-            if (nexttok == '(') {
-                token = yNEW__PAREN;
-            } else {
-                token = yNEW__ETC;
-            }
-        } else if (token == yVIRTUAL__LEX) {
-            if (nexttok == yCLASS) {
-                token = yVIRTUAL__CLASS;
-            } else if (nexttok == yINTERFACE) {
-                token = yVIRTUAL__INTERFACE;
-            } else if (nexttok == yaID__ETC  //
-                       || nexttok == yaID__LEX) {
-                // || nexttok == yaID__aINTERFACE  // but we may not know interfaces yet.
-                token = yVIRTUAL__anyID;
-            } else {
-                token = yVIRTUAL__ETC;
-            }
-        }
-        // If add to above "else if", also add to "if (token" further above
-    }
-    // If an id, change the type based on symbol table
-    // Note above sometimes converts yGLOBAL to a yaID__LEX
-    if (token == yaID__LEX) {
-        VSymEnt* foundp;
-        if (VSymEnt* look_underp = SYMP->nextId()) {
-            UINFO(7, "   lexToken: next id lookup forced under " << look_underp << endl);
-            foundp = look_underp->findIdFallback(*(yylval.strp));
-            // "consume" it.  Must set again if want another token under temp scope
-            SYMP->nextId(NULL);
-        } else {
-            UINFO(7, "   lexToken: find upward " << SYMP->symCurrentp() << " for '"
-                                                 << *(yylval.strp) << "'" << endl);
-            // if (debug()>=9) SYMP->symCurrentp()->dump(cout,"     -findtree: ", true);
-            foundp = SYMP->symCurrentp()->findIdFallback(*(yylval.strp));
-        }
-        if (foundp) {
-            AstNode* scp = foundp->nodep();
-            yylval.scp = scp;
-            UINFO(7, "   lexToken: Found " << scp << endl);
-            if (VN_IS(scp, Typedef)) {
-                token = yaID__aTYPE;
-            } else if (VN_IS(scp, TypedefFwd)) {
-                token = yaID__aTYPE;
-            } else if (VN_IS(scp, Class)) {
-                token = yaID__aTYPE;
-            }
-            // Packages (and class static references) we could
-            // alternatively determine by looking for an yaID__LEX followed
-            // by yP_COLONCOLON (but we can't lookahead after an yaID__LEX
-            // as described above.)
-            else if (VN_IS(scp, Package)) {
-                token = yaID__aPACKAGE;
-            } else {
-                token = yaID__ETC;
-            }
-        } else {  // Not found
-            yylval.scp = NULL;
-            token = yaID__ETC;
-        }
-    }
-    yylval.token = token;
-    // effectively returns yylval
-}
-
-int V3ParseImp::lexToBison() {
-    // Called as global since bison doesn't have our pointer
-    lexToken();  // sets yylval
-    m_prevBisonVal = m_curBisonVal;
-    m_curBisonVal = yylval;
-
-    // yylval.scp = NULL;   // Symbol table not yet needed - no packages
-    if (debugFlex() >= 6 || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
-        cout << "   {" << yylval.fl->filenameLetters() << yylval.fl->asciiLineCol()
-             << "} lexToBison  TOKEN=" << yylval.token << " " << tokenName(yylval.token);
-        if (yylval.token == yaID__ETC  //
-            || yylval.token == yaID__LEX  //
-            || yylval.token == yaID__aTYPE) {
-            cout << "   strp='" << *(yylval.strp) << "'";
-        }
-        cout << endl;
-    }
-    return yylval.token;
-}

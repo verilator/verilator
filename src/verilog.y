@@ -15,8 +15,13 @@
 //*************************************************************************
 // Original code here by Paul Wasson and Duane Galbi
 //*************************************************************************
+// clang-format off
 
 %{
+#ifdef NEVER_JUST_FOR_CLANG_FORMAT
+ }
+#endif
+// clang-format on
 #include "V3Ast.h"
 #include "V3Global.h"
 #include "V3Config.h"
@@ -26,13 +31,17 @@
 #include <cstdarg>
 
 #define YYERROR_VERBOSE 1
-#define YYINITDEPTH 10000	// Older bisons ignore YYMAXDEPTH
+#define YYINITDEPTH 10000  // Older bisons ignore YYMAXDEPTH
 #define YYMAXDEPTH 10000
 
 // Pick up new lexer
 #define yylex PARSEP->lexToBison
-#define BBUNSUP(fl,msg) { if (!v3Global.opt.bboxUnsup()) { (fl)->v3error(msg); } }
-#define GATEUNSUP(fl,tok) { BBUNSUP((fl), "Unsupported: Verilog 1995 gate primitive: "<<(tok)); }
+#define BBUNSUP(fl, msg) \
+    { \
+        if (!v3Global.opt.bboxUnsup()) { (fl)->v3error(msg); } \
+    }
+#define GATEUNSUP(fl, tok) \
+    { BBUNSUP((fl), "Unsupported: Verilog 1995 gate primitive: " << (tok)); }
 
 extern void yyerror(const char* errmsg);
 extern void yyerrorf(const char* format, ...);
@@ -46,72 +55,76 @@ extern void yyerrorf(const char* format, ...);
 
 class V3ParseGrammar {
 public:
-    bool	m_impliedDecl;	// Allow implied wire declarations
-    AstVarType	m_varDecl;	// Type for next signal declaration (reg/wire/etc)
-    bool        m_varDeclTyped; // Var got reg/wire for dedup check
-    VDirection  m_varIO;        // Direction for next signal declaration (reg/wire/etc)
-    VLifetime   m_varLifetime;  // Static/Automatic for next signal
-    AstVar*	m_varAttrp;	// Current variable for attribute adding
-    AstRange*	m_gateRangep;	// Current range for gate declarations
-    AstCase*	m_caseAttrp;	// Current case statement for attribute adding
-    AstNodeDType* m_varDTypep;	// Pointer to data type for next signal declaration
-    AstNodeDType* m_memDTypep;	// Pointer to data type for next member declaration
-    AstNodeModule* m_modp;      // Last module for timeunits
-    bool        m_pinAnsi;      // In ANSI port list
-    int		m_pinNum;	// Pin number currently parsing
-    FileLine*   m_instModuleFl; // Fileline of module referenced for instantiations
-    string	m_instModule;	// Name of module referenced for instantiations
-    AstPin*	m_instParamp;	// Parameters for instantiations
-    bool	m_tracingParse;	// Tracing disable for parser
+    bool m_impliedDecl;  // Allow implied wire declarations
+    AstVarType m_varDecl;  // Type for next signal declaration (reg/wire/etc)
+    bool m_varDeclTyped;  // Var got reg/wire for dedup check
+    VDirection m_varIO;  // Direction for next signal declaration (reg/wire/etc)
+    VLifetime m_varLifetime;  // Static/Automatic for next signal
+    AstVar* m_varAttrp;  // Current variable for attribute adding
+    AstRange* m_gateRangep;  // Current range for gate declarations
+    AstCase* m_caseAttrp;  // Current case statement for attribute adding
+    AstNodeDType* m_varDTypep;  // Pointer to data type for next signal declaration
+    AstNodeDType* m_memDTypep;  // Pointer to data type for next member declaration
+    AstNodeModule* m_modp;  // Last module for timeunits
+    bool m_pinAnsi;  // In ANSI port list
+    int m_pinNum;  // Pin number currently parsing
+    FileLine* m_instModuleFl;  // Fileline of module referenced for instantiations
+    string m_instModule;  // Name of module referenced for instantiations
+    AstPin* m_instParamp;  // Parameters for instantiations
+    bool m_tracingParse;  // Tracing disable for parser
 
-    static int	s_modTypeImpNum; // Implicit type number, incremented each module
+    static int s_modTypeImpNum;  // Implicit type number, incremented each module
 
     // CONSTRUCTORS
     V3ParseGrammar() {
-	m_impliedDecl = false;
-	m_varDecl = AstVarType::UNKNOWN;
+        m_impliedDecl = false;
+        m_varDecl = AstVarType::UNKNOWN;
         m_varDeclTyped = false;
-	m_varIO = VDirection::NONE;
-	m_varDTypep = NULL;
-	m_gateRangep = NULL;
-	m_memDTypep = NULL;
-	m_modp = NULL;
-	m_pinAnsi = false;
-	m_pinNum = -1;
-	m_instModuleFl = NULL;
-	m_instModule = "";
-	m_instParamp = NULL;
-	m_varAttrp = NULL;
-	m_caseAttrp = NULL;
-	m_tracingParse = true;
+        m_varIO = VDirection::NONE;
+        m_varDTypep = NULL;
+        m_gateRangep = NULL;
+        m_memDTypep = NULL;
+        m_modp = NULL;
+        m_pinAnsi = false;
+        m_pinNum = -1;
+        m_instModuleFl = NULL;
+        m_instModule = "";
+        m_instParamp = NULL;
+        m_varAttrp = NULL;
+        m_caseAttrp = NULL;
+        m_tracingParse = true;
     }
     static V3ParseGrammar* singletonp() {
-	static V3ParseGrammar singleton;
-	return &singleton;
+        static V3ParseGrammar singleton;
+        return &singleton;
     }
 
     // METHODS
     AstNode* argWrapList(AstNode* nodep);
     bool allTracingOn(FileLine* fl) {
-	return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
+        return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
     AstRange* scrubRange(AstNodeRange* rangep);
     AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* rangep, bool isPacked);
-    AstVar*  createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp, AstNode* attrsp);
+    AstVar* createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp,
+                           AstNode* attrsp);
     AstNode* createSupplyExpr(FileLine* fileline, const string& name, int value);
     AstText* createTextQuoted(FileLine* fileline, const string& text) {
-	string newtext = deQuote(fileline, text);
-	return new AstText(fileline, newtext);
+        string newtext = deQuote(fileline, text);
+        return new AstText(fileline, newtext);
     }
     AstDisplay* createDisplayError(FileLine* fileline) {
-	AstDisplay* nodep = new AstDisplay(fileline, AstDisplayType::DT_ERROR, "", NULL, NULL);
-	nodep->addNext(new AstStop(fileline, true));
-	return nodep;
+        AstDisplay* nodep = new AstDisplay(fileline, AstDisplayType::DT_ERROR, "", NULL, NULL);
+        nodep->addNext(new AstStop(fileline, true));
+        return nodep;
     }
     AstNode* createGatePin(AstNode* exprp) {
-	AstRange* rangep = m_gateRangep;
-	if (!rangep) return exprp;
-	else return new AstGatePin(rangep->fileline(), exprp, rangep->cloneTree(true));
+        AstRange* rangep = m_gateRangep;
+        if (!rangep) {
+            return exprp;
+        } else {
+            return new AstGatePin(rangep->fileline(), exprp, rangep->cloneTree(true));
+        }
     }
     void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) {
         endLabel(fl, nodep->prettyName(), endnamep);
@@ -119,34 +132,35 @@ public:
     void endLabel(FileLine* fl, const string& name, string* endnamep) {
         if (fl && endnamep && *endnamep != "" && name != *endnamep
             && name != AstNode::prettyName(*endnamep)) {
-            fl->v3warn(ENDLABEL,"End label '"<<*endnamep<<"' does not match begin label '"<<name<<"'");
+            fl->v3warn(ENDLABEL, "End label '" << *endnamep << "' does not match begin label '"
+                                               << name << "'");
         }
     }
     void setVarDecl(AstVarType type) { m_varDecl = type; }
     void setDType(AstNodeDType* dtypep) {
-	if (m_varDTypep) VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep=NULL);  // It was cloned, so this is safe.
-	m_varDTypep = dtypep;
+        if (m_varDTypep) VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep = NULL);
+        m_varDTypep = dtypep;
     }
     AstPackage* unitPackage(FileLine* fl) {
-	// Find one made earlier?
-	VSymEnt* symp = SYMP->symRootp()->findIdFlat(AstPackage::dollarUnitName());
-	AstPackage* pkgp;
-	if (!symp) {
-	    pkgp = PARSEP->rootp()->dollarUnitPkgAddp();
-	    SYMP->reinsert(pkgp, SYMP->symRootp());  // Don't push/pop scope as they're global
-	} else {
-	    pkgp = VN_CAST(symp->nodep(), Package);
-	}
-	return pkgp;
+        // Find one made earlier?
+        VSymEnt* symp = SYMP->symRootp()->findIdFlat(AstPackage::dollarUnitName());
+        AstPackage* pkgp;
+        if (!symp) {
+            pkgp = PARSEP->rootp()->dollarUnitPkgAddp();
+            SYMP->reinsert(pkgp, SYMP->symRootp());  // Don't push/pop scope as they're global
+        } else {
+            pkgp = VN_CAST(symp->nodep(), Package);
+        }
+        return pkgp;
     }
     AstNodeDType* addRange(AstBasicDType* dtypep, AstNodeRange* rangesp, bool isPacked) {
-	// If dtypep isn't basic, don't use this, call createArray() instead
-	if (!rangesp) {
-	    return dtypep;
-	} else {
-	    // If rangesp is "wire [3:3][2:2][1:1] foo [5:5][4:4]"
-	    // then [1:1] becomes the basicdtype range; everything else is arraying
-	    // the final [5:5][4:4] will be passed in another call to createArray
+        // If dtypep isn't basic, don't use this, call createArray() instead
+        if (!rangesp) {
+            return dtypep;
+        } else {
+            // If rangesp is "wire [3:3][2:2][1:1] foo [5:5][4:4]"
+            // then [1:1] becomes the basicdtype range; everything else is arraying
+            // the final [5:5][4:4] will be passed in another call to createArray
             AstNodeRange* rangearraysp = NULL;
             if (dtypep->isRanged()) {
                 rangearraysp = rangesp;  // Already a range; everything is an array
@@ -160,26 +174,27 @@ public:
                 if (AstRange* finalRangep = VN_CAST(finalp, Range)) {  // not an UnsizedRange
                     if (dtypep->implicit()) {
                         // It's no longer implicit but a wire logic type
-                        AstBasicDType* newp = new AstBasicDType(dtypep->fileline(), AstBasicDTypeKwd::LOGIC,
-                                                                dtypep->numeric(), dtypep->width(), dtypep->widthMin());
+                        AstBasicDType* newp = new AstBasicDType(
+                            dtypep->fileline(), AstBasicDTypeKwd::LOGIC, dtypep->numeric(),
+                            dtypep->width(), dtypep->widthMin());
                         VL_DO_DANGLING(dtypep->deleteTree(), dtypep);
                         dtypep = newp;
                     }
                     dtypep->rangep(finalRangep);
                 }
-	    }
-	    return createArray(dtypep, rangearraysp, isPacked);
-	}
+            }
+            return createArray(dtypep, rangearraysp, isPacked);
+        }
     }
-    string   deQuote(FileLine* fileline, string text);
+    string deQuote(FileLine* fileline, string text);
     void checkDpiVer(FileLine* fileline, const string& str) {
-	if (str != "DPI-C" && !v3Global.opt.bboxSys()) {
-	    fileline->v3error("Unsupported DPI type '"<<str<<"': Use 'DPI-C'");
-	}
+        if (str != "DPI-C" && !v3Global.opt.bboxSys()) {
+            fileline->v3error("Unsupported DPI type '" << str << "': Use 'DPI-C'");
+        }
     }
 };
 
-const AstBasicDTypeKwd LOGIC = AstBasicDTypeKwd::LOGIC;	// Shorthand "LOGIC"
+const AstBasicDTypeKwd LOGIC = AstBasicDTypeKwd::LOGIC;  // Shorthand "LOGIC"
 const AstBasicDTypeKwd LOGIC_IMPLICIT = AstBasicDTypeKwd::LOGIC_IMPLICIT;
 
 int V3ParseGrammar::s_modTypeImpNum = 0;
@@ -187,53 +202,87 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 //======================================================================
 // Macro functions
 
-#define CRELINE() (PARSEP->copyOrSameFileLine())  // Only use in empty rules, so lines point at beginnings
+#define CRELINE() \
+    (PARSEP->copyOrSameFileLine())  // Only use in empty rules, so lines point at beginnings
 #define FILELINE_OR_CRE(nodep) ((nodep) ? (nodep)->fileline() : CRELINE())
 
-#define VARRESET_LIST(decl)    { GRAMMARP->m_pinNum=1; GRAMMARP->m_pinAnsi=false; \
-                                 VARRESET(); VARDECL(decl); }  // Start of pinlist
-#define VARRESET_NONLIST(decl) { GRAMMARP->m_pinNum=0; GRAMMARP->m_pinAnsi=false; \
-                                 VARRESET(); VARDECL(decl); }  // Not in a pinlist
-#define VARRESET() { VARDECL(UNKNOWN); VARIO(NONE); VARDTYPE_NDECL(NULL); \
-                     GRAMMARP->m_varLifetime = VLifetime::NONE; \
-                     GRAMMARP->m_varDeclTyped = false; }
-#define VARDECL(type) { GRAMMARP->setVarDecl(AstVarType::type); }
-#define VARIO(type) { GRAMMARP->m_varIO = VDirection::type; }
-#define VARLIFE(flag) { GRAMMARP->m_varLifetime = flag; }
-#define VARDTYPE(dtypep) { GRAMMARP->setDType(dtypep); GRAMMARP->m_varDeclTyped = true; }
-#define VARDTYPE_NDECL(dtypep) { GRAMMARP->setDType(dtypep); }  // Port that is range or signed only (not a decl)
+#define VARRESET_LIST(decl) \
+    { \
+        GRAMMARP->m_pinNum = 1; \
+        GRAMMARP->m_pinAnsi = false; \
+        VARRESET(); \
+        VARDECL(decl); \
+    }  // Start of pinlist
+#define VARRESET_NONLIST(decl) \
+    { \
+        GRAMMARP->m_pinNum = 0; \
+        GRAMMARP->m_pinAnsi = false; \
+        VARRESET(); \
+        VARDECL(decl); \
+    }  // Not in a pinlist
+#define VARRESET() \
+    { \
+        VARDECL(UNKNOWN); \
+        VARIO(NONE); \
+        VARDTYPE_NDECL(NULL); \
+        GRAMMARP->m_varLifetime = VLifetime::NONE; \
+        GRAMMARP->m_varDeclTyped = false; \
+    }
+#define VARDECL(type) \
+    { GRAMMARP->setVarDecl(AstVarType::type); }
+#define VARIO(type) \
+    { GRAMMARP->m_varIO = VDirection::type; }
+#define VARLIFE(flag) \
+    { GRAMMARP->m_varLifetime = flag; }
+#define VARDTYPE(dtypep) \
+    { \
+        GRAMMARP->setDType(dtypep); \
+        GRAMMARP->m_varDeclTyped = true; \
+    }
+#define VARDTYPE_NDECL(dtypep) \
+    { GRAMMARP->setDType(dtypep); }  // Port that is range or signed only (not a decl)
 
-#define VARDONEA(fl,name,array,attrs) GRAMMARP->createVariable((fl),(name),(array),(attrs))
-#define VARDONEP(portp,array,attrs) GRAMMARP->createVariable((portp)->fileline(),(portp)->name(),(array),(attrs))
+#define VARDONEA(fl, name, array, attrs) GRAMMARP->createVariable((fl), (name), (array), (attrs))
+#define VARDONEP(portp, array, attrs) \
+    GRAMMARP->createVariable((portp)->fileline(), (portp)->name(), (array), (attrs))
 #define PINNUMINC() (GRAMMARP->m_pinNum++)
 
-#define GATERANGE(rangep) { GRAMMARP->m_gateRangep = rangep; }
+#define GATERANGE(rangep) \
+    { GRAMMARP->m_gateRangep = rangep; }
 
-#define INSTPREP(modfl,modname,paramsp) { \
-	GRAMMARP->m_impliedDecl = true; \
-	GRAMMARP->m_instModuleFl = modfl; GRAMMARP->m_instModule = modname; \
-	GRAMMARP->m_instParamp = paramsp; }
+#define INSTPREP(modfl, modname, paramsp) \
+    { \
+        GRAMMARP->m_impliedDecl = true; \
+        GRAMMARP->m_instModuleFl = modfl; \
+        GRAMMARP->m_instModule = modname; \
+        GRAMMARP->m_instParamp = paramsp; \
+    }
 
-#define DEL(nodep) { if (nodep) nodep->deleteTree(); }
+#define DEL(nodep) \
+    { \
+        if (nodep) nodep->deleteTree(); \
+    }
 
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
     static int toldonce = 0;
-    fileline->v3error(string("Unexpected '")+tokname+"': '"+tokname
-                      +"' is a SystemVerilog keyword misused as an identifier."
-                      +(!toldonce++
-                        ? "\n"+V3Error::warnMore()
-                          +"... Suggest modify the Verilog-2001 code to avoid SV keywords,"
-                          +" or use `begin_keywords or --language."
-                        : ""));
+    fileline->v3error(
+        string("Unexpected '") + tokname + "': '" + tokname
+        + "' is a SystemVerilog keyword misused as an identifier."
+        + (!toldonce++ ? "\n" + V3Error::warnMore()
+                             + "... Suggest modify the Verilog-2001 code to avoid SV keywords,"
+                             + " or use `begin_keywords or --language."
+                       : ""));
 }
 
 static void UNSUPREAL(FileLine* fileline) {
-    fileline->v3warn(SHORTREAL, "Unsupported: shortreal being promoted to real (suggest use real instead)");
+    fileline->v3warn(SHORTREAL,
+                     "Unsupported: shortreal being promoted to real (suggest use real instead)");
 }
 
 //======================================================================
 
 class AstSenTree;
+// clang-format off
 %}
 
 // When writing Bison patterns we use yTOKEN instead of "token",
@@ -241,107 +290,107 @@ class AstSenTree;
 
 // Generic lexer tokens, for example a number
 // IEEE: real_number
-%token<cdouble>		yaFLOATNUM	"FLOATING-POINT NUMBER"
+%token<cdouble>         yaFLOATNUM      "FLOATING-POINT NUMBER"
 
 // IEEE: identifier, class_identifier, class_variable_identifier,
 // covergroup_variable_identifier, dynamic_array_variable_identifier,
 // enum_identifier, interface_identifier, interface_instance_identifier,
 // package_identifier, type_identifier, variable_identifier,
-%token<strp>		yaID__ETC	"IDENTIFIER"
-%token<strp>		yaID__LEX	"IDENTIFIER-in-lex"
-%token<strp>		yaID__aPACKAGE	"PACKAGE-IDENTIFIER"
-%token<strp>		yaID__aTYPE	"TYPE-IDENTIFIER"
-//			Can't predecode aFUNCTION, can declare after use
-//			Can't predecode aINTERFACE, can declare after use
-//			Can't predecode aTASK, can declare after use
+%token<strp>            yaID__ETC       "IDENTIFIER"
+%token<strp>            yaID__LEX       "IDENTIFIER-in-lex"
+%token<strp>            yaID__aPACKAGE  "PACKAGE-IDENTIFIER"
+%token<strp>            yaID__aTYPE     "TYPE-IDENTIFIER"
+//                      Can't predecode aFUNCTION, can declare after use
+//                      Can't predecode aINTERFACE, can declare after use
+//                      Can't predecode aTASK, can declare after use
 
 // IEEE: integral_number
-%token<nump>		yaINTNUM	"INTEGER NUMBER"
+%token<nump>            yaINTNUM        "INTEGER NUMBER"
 // IEEE: time_literal + time_unit
-%token<cdouble>		yaTIMENUM	"TIME NUMBER"
+%token<cdouble>         yaTIMENUM       "TIME NUMBER"
 // IEEE: string_literal
-%token<strp>		yaSTRING	"STRING"
-%token<strp>		yaSTRING__IGNORE "STRING-ignored"	// Used when expr:string not allowed
+%token<strp>            yaSTRING        "STRING"
+%token<strp>            yaSTRING__IGNORE "STRING-ignored"       // Used when expr:string not allowed
 
-%token<fl>		yaTIMINGSPEC	"TIMING SPEC ELEMENT"
+%token<fl>              yaTIMINGSPEC    "TIMING SPEC ELEMENT"
 
-%token<fl>		ygenSTRENGTH	"STRENGTH keyword (strong1/etc)"
+%token<fl>              ygenSTRENGTH    "STRENGTH keyword (strong1/etc)"
 
-%token<strp>		yaTABLELINE	"TABLE LINE"
+%token<strp>            yaTABLELINE     "TABLE LINE"
 
-%token<strp>		yaSCHDR		"`systemc_header BLOCK"
-%token<strp>		yaSCINT		"`systemc_ctor BLOCK"
-%token<strp>		yaSCIMP		"`systemc_dtor BLOCK"
-%token<strp>		yaSCIMPH	"`systemc_interface BLOCK"
-%token<strp>		yaSCCTOR	"`systemc_implementation BLOCK"
-%token<strp>		yaSCDTOR	"`systemc_imp_header BLOCK"
+%token<strp>            yaSCHDR         "`systemc_header BLOCK"
+%token<strp>            yaSCINT         "`systemc_ctor BLOCK"
+%token<strp>            yaSCIMP         "`systemc_dtor BLOCK"
+%token<strp>            yaSCIMPH        "`systemc_interface BLOCK"
+%token<strp>            yaSCCTOR        "`systemc_implementation BLOCK"
+%token<strp>            yaSCDTOR        "`systemc_imp_header BLOCK"
 
-%token<fl>		yVLT_CLOCKER                "clocker"
-%token<fl>		yVLT_CLOCK_ENABLE           "clock_enable"
-%token<fl>		yVLT_COVERAGE_BLOCK_OFF     "coverage_block_off"
-%token<fl>		yVLT_COVERAGE_OFF           "coverage_off"
-%token<fl>		yVLT_COVERAGE_ON            "coverage_on"
-%token<fl>		yVLT_FULL_CASE              "full_case"
-%token<fl>		yVLT_INLINE                 "inline"
-%token<fl>		yVLT_ISOLATE_ASSIGNMENTS    "isolate_assignments"
-%token<fl>		yVLT_LINT_OFF               "lint_off"
-%token<fl>		yVLT_LINT_ON                "lint_on"
-%token<fl>		yVLT_NO_CLOCKER             "no_clocker"
-%token<fl>		yVLT_NO_INLINE              "no_inline"
-%token<fl>		yVLT_PARALLEL_CASE          "parallel_case"
-%token<fl>		yVLT_PUBLIC                 "public"
-%token<fl>		yVLT_PUBLIC_FLAT            "public_flat"
-%token<fl>		yVLT_PUBLIC_FLAT_RD         "public_flat_rd"
-%token<fl>		yVLT_PUBLIC_FLAT_RW         "public_flat_rw"
-%token<fl>		yVLT_PUBLIC_MODULE          "public_module"
-%token<fl>		yVLT_SC_BV                  "sc_bv"
-%token<fl>		yVLT_SFORMAT                "sformat"
-%token<fl>		yVLT_SPLIT_VAR              "split_var"
-%token<fl>		yVLT_TRACING_OFF            "tracing_off"
-%token<fl>		yVLT_TRACING_ON             "tracing_on"
+%token<fl>              yVLT_CLOCKER                "clocker"
+%token<fl>              yVLT_CLOCK_ENABLE           "clock_enable"
+%token<fl>              yVLT_COVERAGE_BLOCK_OFF     "coverage_block_off"
+%token<fl>              yVLT_COVERAGE_OFF           "coverage_off"
+%token<fl>              yVLT_COVERAGE_ON            "coverage_on"
+%token<fl>              yVLT_FULL_CASE              "full_case"
+%token<fl>              yVLT_INLINE                 "inline"
+%token<fl>              yVLT_ISOLATE_ASSIGNMENTS    "isolate_assignments"
+%token<fl>              yVLT_LINT_OFF               "lint_off"
+%token<fl>              yVLT_LINT_ON                "lint_on"
+%token<fl>              yVLT_NO_CLOCKER             "no_clocker"
+%token<fl>              yVLT_NO_INLINE              "no_inline"
+%token<fl>              yVLT_PARALLEL_CASE          "parallel_case"
+%token<fl>              yVLT_PUBLIC                 "public"
+%token<fl>              yVLT_PUBLIC_FLAT            "public_flat"
+%token<fl>              yVLT_PUBLIC_FLAT_RD         "public_flat_rd"
+%token<fl>              yVLT_PUBLIC_FLAT_RW         "public_flat_rw"
+%token<fl>              yVLT_PUBLIC_MODULE          "public_module"
+%token<fl>              yVLT_SC_BV                  "sc_bv"
+%token<fl>              yVLT_SFORMAT                "sformat"
+%token<fl>              yVLT_SPLIT_VAR              "split_var"
+%token<fl>              yVLT_TRACING_OFF            "tracing_off"
+%token<fl>              yVLT_TRACING_ON             "tracing_on"
 
-%token<fl>		yVLT_D_BLOCK    "--block"
-%token<fl>		yVLT_D_FILE     "--file"
-%token<fl>		yVLT_D_FUNCTION "--function"
-%token<fl>		yVLT_D_LINES    "--lines"
-%token<fl>		yVLT_D_MODULE   "--module"
-%token<fl>		yVLT_D_MATCH    "--match"
-%token<fl>		yVLT_D_MSG      "--msg"
-%token<fl>		yVLT_D_RULE     "--rule"
-%token<fl>		yVLT_D_TASK     "--task"
-%token<fl>		yVLT_D_VAR      "--var"
+%token<fl>              yVLT_D_BLOCK    "--block"
+%token<fl>              yVLT_D_FILE     "--file"
+%token<fl>              yVLT_D_FUNCTION "--function"
+%token<fl>              yVLT_D_LINES    "--lines"
+%token<fl>              yVLT_D_MODULE   "--module"
+%token<fl>              yVLT_D_MATCH    "--match"
+%token<fl>              yVLT_D_MSG      "--msg"
+%token<fl>              yVLT_D_RULE     "--rule"
+%token<fl>              yVLT_D_TASK     "--task"
+%token<fl>              yVLT_D_VAR      "--var"
 
-%token<strp>		yaD_PLI		"${pli-system}"
+%token<strp>            yaD_PLI         "${pli-system}"
 
-%token<fl>		yaT_RESETALL	"`resetall"
+%token<fl>              yaT_RESETALL    "`resetall"
 
 // <fl> is the fileline, abbreviated to shorten "$<fl>1" references
-%token<fl>		'!'
-%token<fl>		'#'
-%token<fl>		'%'
-%token<fl>		'&'
-%token<fl>		'('
-%token<fl>		')'
-%token<fl>		'*'
-%token<fl>		'+'
-%token<fl>		','
-%token<fl>		'-'
-%token<fl>		'.'
-%token<fl>		'/'
-%token<fl>		':'
-%token<fl>		';'
-%token<fl>		'<'
-%token<fl>		'='
-%token<fl>		'>'
-%token<fl>		'?'
-%token<fl>		'@'
-%token<fl>		'['
-%token<fl>		']'
-%token<fl>		'^'
-%token<fl>		'{'
-%token<fl>		'|'
-%token<fl>		'}'
-%token<fl>		'~'
+%token<fl>              '!'
+%token<fl>              '#'
+%token<fl>              '%'
+%token<fl>              '&'
+%token<fl>              '('
+%token<fl>              ')'
+%token<fl>              '*'
+%token<fl>              '+'
+%token<fl>              ','
+%token<fl>              '-'
+%token<fl>              '.'
+%token<fl>              '/'
+%token<fl>              ':'
+%token<fl>              ';'
+%token<fl>              '<'
+%token<fl>              '='
+%token<fl>              '>'
+%token<fl>              '?'
+%token<fl>              '@'
+%token<fl>              '['
+%token<fl>              ']'
+%token<fl>              '^'
+%token<fl>              '{'
+%token<fl>              '|'
+%token<fl>              '}'
+%token<fl>              '~'
 
 // Specific keywords
 // yKEYWORD means match "keyword"
@@ -349,385 +398,385 @@ class AstSenTree;
 // for example yP_ for punctuation based operators.
 // Double underscores "yX__Y" means token X followed by Y,
 // and "yX__ETC" means X folled by everything but Y(s).
-%token<fl>		yALIAS		"alias"
-%token<fl>		yALWAYS		"always"
-%token<fl>		yALWAYS_COMB	"always_comb"
-%token<fl>		yALWAYS_FF	"always_ff"
-%token<fl>		yALWAYS_LATCH	"always_latch"
-%token<fl>		yAND		"and"
-%token<fl>		yASSERT		"assert"
-%token<fl>		yASSIGN		"assign"
-%token<fl>		yASSUME		"assume"
-%token<fl>		yAUTOMATIC	"automatic"
-%token<fl>		yBEGIN		"begin"
-%token<fl>		yBIND		"bind"
-%token<fl>		yBIT		"bit"
-%token<fl>		yBREAK		"break"
-%token<fl>		yBUF		"buf"
-%token<fl>		yBUFIF0		"bufif0"
-%token<fl>		yBUFIF1		"bufif1"
-%token<fl>		yBYTE		"byte"
-%token<fl>		yCASE		"case"
-%token<fl>		yCASEX		"casex"
-%token<fl>		yCASEZ		"casez"
-%token<fl>		yCHANDLE	"chandle"
-%token<fl>		yCLASS		"class"
-%token<fl>		yCLOCKING	"clocking"
-%token<fl>		yCMOS		"cmos"
-%token<fl>		yCONST__ETC	"const"
-%token<fl>		yCONST__LEX	"const-in-lex"
-%token<fl>		yCONST__REF	"const-then-ref"
-%token<fl>		yCONTEXT	"context"
-%token<fl>		yCONTINUE	"continue"
-%token<fl>		yCOVER		"cover"
-%token<fl>		yDEASSIGN	"deassign"
-%token<fl>		yDEFAULT	"default"
-%token<fl>		yDEFPARAM	"defparam"
-%token<fl>		yDISABLE	"disable"
-%token<fl>		yDO		"do"
-%token<fl>		yEDGE		"edge"
-%token<fl>		yELSE		"else"
-%token<fl>		yEND		"end"
-%token<fl>		yENDCASE	"endcase"
-%token<fl>		yENDCLASS	"endclass"
-%token<fl>		yENDCLOCKING	"endclocking"
-%token<fl>		yENDFUNCTION	"endfunction"
-%token<fl>		yENDGENERATE	"endgenerate"
-%token<fl>		yENDINTERFACE	"endinterface"
-%token<fl>		yENDMODULE	"endmodule"
-%token<fl>		yENDPACKAGE	"endpackage"
-%token<fl>		yENDPRIMITIVE	"endprimitive"
-%token<fl>		yENDPROGRAM	"endprogram"
-%token<fl>		yENDPROPERTY	"endproperty"
-%token<fl>		yENDSPECIFY	"endspecify"
-%token<fl>		yENDTABLE	"endtable"
-%token<fl>		yENDTASK	"endtask"
-%token<fl>		yENUM		"enum"
-%token<fl>		yEVENT		"event"
-%token<fl>		yEXPORT		"export"
-%token<fl>		yEXTENDS	"extends"
-%token<fl>		yEXTERN		"extern"
-%token<fl>		yFINAL		"final"
-%token<fl>		yFOR		"for"
-%token<fl>		yFORCE		"force"
-%token<fl>		yFOREACH	"foreach"
-%token<fl>		yFOREVER	"forever"
-%token<fl>		yFORK		"fork"
-%token<fl>		yFORKJOIN	"forkjoin"
-%token<fl>		yFUNCTION	"function"
-%token<fl>		yGENERATE	"generate"
-%token<fl>		yGENVAR		"genvar"
-%token<fl>		yGLOBAL__CLOCKING "global-then-clocking"
-%token<fl>		yGLOBAL__ETC	"global"
-%token<fl>		yGLOBAL__LEX	"global-in-lex"
-%token<fl>		yIF		"if"
-%token<fl>		yIFF		"iff"
-%token<fl>		yIMPLEMENTS	"implements"
-%token<fl>		yIMPORT		"import"
-%token<fl>		yINITIAL	"initial"
-%token<fl>		yINOUT		"inout"
-%token<fl>		yINPUT		"input"
-%token<fl>		yINSIDE		"inside"
-%token<fl>		yINT		"int"
-%token<fl>		yINTEGER	"integer"
-%token<fl>		yINTERFACE	"interface"
-%token<fl>		yJOIN		"join"
-%token<fl>		yJOIN_ANY	"join_any"
-%token<fl>		yJOIN_NONE	"join_none"
-%token<fl>		yLOCALPARAM	"localparam"
-%token<fl>		yLOCAL__COLONCOLON "local-then-::"
-%token<fl>		yLOCAL__ETC	"local"
-%token<fl>		yLOCAL__LEX	"local-in-lex"
-%token<fl>		yLOGIC		"logic"
-%token<fl>		yLONGINT	"longint"
-%token<fl>		yMODPORT	"modport"
-%token<fl>		yMODULE		"module"
-%token<fl>		yNAND		"nand"
-%token<fl>		yNEGEDGE	"negedge"
-%token<fl>		yNEW__ETC	"new"
-%token<fl>		yNEW__LEX	"new-in-lex"
-%token<fl>		yNEW__PAREN	"new-then-paren"
-%token<fl>		yNMOS		"nmos"
-%token<fl>		yNOR		"nor"
-%token<fl>		yNOT		"not"
-%token<fl>		yNOTIF0		"notif0"
-%token<fl>		yNOTIF1		"notif1"
-%token<fl>		yNULL		"null"
-%token<fl>		yOR		"or"
-%token<fl>		yOUTPUT		"output"
-%token<fl>		yPACKAGE	"package"
-%token<fl>		yPACKED		"packed"
-%token<fl>		yPARAMETER	"parameter"
-%token<fl>		yPMOS		"pmos"
-%token<fl>		yPOSEDGE	"posedge"
-%token<fl>		yPRIMITIVE	"primitive"
-%token<fl>		yPRIORITY	"priority"
-%token<fl>		yPROGRAM	"program"
-%token<fl>		yPROPERTY	"property"
-%token<fl>		yPROTECTED	"protected"
-%token<fl>		yPULLDOWN	"pulldown"
-%token<fl>		yPULLUP		"pullup"
-%token<fl>		yPURE		"pure"
-%token<fl>		yRAND		"rand"
-%token<fl>		yRANDC		"randc"
-%token<fl>		yRANDCASE	"randcase"
-%token<fl>		yRCMOS		"rcmos"
-%token<fl>		yREAL		"real"
-%token<fl>		yREALTIME	"realtime"
-%token<fl>		yREF		"ref"
-%token<fl>		yREG		"reg"
-%token<fl>		yRELEASE	"release"
-%token<fl>		yREPEAT		"repeat"
-%token<fl>		yRESTRICT	"restrict"
-%token<fl>		yRETURN		"return"
-%token<fl>		yRNMOS		"rnmos"
-%token<fl>		yRPMOS		"rpmos"
-%token<fl>		yRTRAN		"rtran"
-%token<fl>		yRTRANIF0	"rtranif0"
-%token<fl>		yRTRANIF1	"rtranif1"
-%token<fl>		ySCALARED	"scalared"
-%token<fl>		ySHORTINT	"shortint"
-%token<fl>		ySHORTREAL	"shortreal"
-%token<fl>		ySIGNED		"signed"
-%token<fl>		ySPECIFY	"specify"
-%token<fl>		ySPECPARAM	"specparam"
-%token<fl>		ySTATIC__ETC	"static"
-%token<fl>		ySTRING		"string"
-%token<fl>		ySTRUCT		"struct"
-%token<fl>		ySUPER		"super"
-%token<fl>		ySUPPLY0	"supply0"
-%token<fl>		ySUPPLY1	"supply1"
-%token<fl>		yTABLE		"table"
-%token<fl>		yTASK		"task"
-%token<fl>		yTHIS		"this"
-%token<fl>		yTIME		"time"
-%token<fl>		yTIMEPRECISION	"timeprecision"
-%token<fl>		yTIMEUNIT	"timeunit"
-%token<fl>		yTRAN		"tran"
-%token<fl>		yTRANIF0	"tranif0"
-%token<fl>		yTRANIF1	"tranif1"
-%token<fl>		yTRI		"tri"
-%token<fl>		yTRI0		"tri0"
-%token<fl>		yTRI1		"tri1"
-%token<fl>		yTRIAND 	"triand"
-%token<fl>		yTRIOR 		"trior"
-%token<fl>		yTRIREG 	"trireg"
-%token<fl>		yTRUE		"true"
-%token<fl>		yTYPE		"type"
-%token<fl>		yTYPEDEF	"typedef"
-%token<fl>		yUNION		"union"
-%token<fl>		yUNIQUE		"unique"
-%token<fl>		yUNIQUE0	"unique0"
-%token<fl>		yUNSIGNED	"unsigned"
-%token<fl>		yVAR		"var"
-%token<fl>		yVECTORED	"vectored"
-%token<fl>		yVIRTUAL__CLASS	"virtual-then-class"
-%token<fl>		yVIRTUAL__ETC	"virtual"
-%token<fl>		yVIRTUAL__INTERFACE	"virtual-then-interface"
-%token<fl>		yVIRTUAL__LEX	"virtual-in-lex"
-%token<fl>		yVIRTUAL__anyID	"virtual-then-identifier"
-%token<fl>		yVOID		"void"
-%token<fl>		yWAIT		"wait"
-%token<fl>		yWAND 		"wand"
-%token<fl>		yWHILE		"while"
-%token<fl>		yWIRE		"wire"
-%token<fl>		yWOR 		"wor"
-%token<fl>		yWREAL		"wreal"
-%token<fl>		yXNOR		"xnor"
-%token<fl>		yXOR		"xor"
+%token<fl>              yALIAS          "alias"
+%token<fl>              yALWAYS         "always"
+%token<fl>              yALWAYS_COMB    "always_comb"
+%token<fl>              yALWAYS_FF      "always_ff"
+%token<fl>              yALWAYS_LATCH   "always_latch"
+%token<fl>              yAND            "and"
+%token<fl>              yASSERT         "assert"
+%token<fl>              yASSIGN         "assign"
+%token<fl>              yASSUME         "assume"
+%token<fl>              yAUTOMATIC      "automatic"
+%token<fl>              yBEGIN          "begin"
+%token<fl>              yBIND           "bind"
+%token<fl>              yBIT            "bit"
+%token<fl>              yBREAK          "break"
+%token<fl>              yBUF            "buf"
+%token<fl>              yBUFIF0         "bufif0"
+%token<fl>              yBUFIF1         "bufif1"
+%token<fl>              yBYTE           "byte"
+%token<fl>              yCASE           "case"
+%token<fl>              yCASEX          "casex"
+%token<fl>              yCASEZ          "casez"
+%token<fl>              yCHANDLE        "chandle"
+%token<fl>              yCLASS          "class"
+%token<fl>              yCLOCKING       "clocking"
+%token<fl>              yCMOS           "cmos"
+%token<fl>              yCONST__ETC     "const"
+%token<fl>              yCONST__LEX     "const-in-lex"
+%token<fl>              yCONST__REF     "const-then-ref"
+%token<fl>              yCONTEXT        "context"
+%token<fl>              yCONTINUE       "continue"
+%token<fl>              yCOVER          "cover"
+%token<fl>              yDEASSIGN       "deassign"
+%token<fl>              yDEFAULT        "default"
+%token<fl>              yDEFPARAM       "defparam"
+%token<fl>              yDISABLE        "disable"
+%token<fl>              yDO             "do"
+%token<fl>              yEDGE           "edge"
+%token<fl>              yELSE           "else"
+%token<fl>              yEND            "end"
+%token<fl>              yENDCASE        "endcase"
+%token<fl>              yENDCLASS       "endclass"
+%token<fl>              yENDCLOCKING    "endclocking"
+%token<fl>              yENDFUNCTION    "endfunction"
+%token<fl>              yENDGENERATE    "endgenerate"
+%token<fl>              yENDINTERFACE   "endinterface"
+%token<fl>              yENDMODULE      "endmodule"
+%token<fl>              yENDPACKAGE     "endpackage"
+%token<fl>              yENDPRIMITIVE   "endprimitive"
+%token<fl>              yENDPROGRAM     "endprogram"
+%token<fl>              yENDPROPERTY    "endproperty"
+%token<fl>              yENDSPECIFY     "endspecify"
+%token<fl>              yENDTABLE       "endtable"
+%token<fl>              yENDTASK        "endtask"
+%token<fl>              yENUM           "enum"
+%token<fl>              yEVENT          "event"
+%token<fl>              yEXPORT         "export"
+%token<fl>              yEXTENDS        "extends"
+%token<fl>              yEXTERN         "extern"
+%token<fl>              yFINAL          "final"
+%token<fl>              yFOR            "for"
+%token<fl>              yFORCE          "force"
+%token<fl>              yFOREACH        "foreach"
+%token<fl>              yFOREVER        "forever"
+%token<fl>              yFORK           "fork"
+%token<fl>              yFORKJOIN       "forkjoin"
+%token<fl>              yFUNCTION       "function"
+%token<fl>              yGENERATE       "generate"
+%token<fl>              yGENVAR         "genvar"
+%token<fl>              yGLOBAL__CLOCKING "global-then-clocking"
+%token<fl>              yGLOBAL__ETC    "global"
+%token<fl>              yGLOBAL__LEX    "global-in-lex"
+%token<fl>              yIF             "if"
+%token<fl>              yIFF            "iff"
+%token<fl>              yIMPLEMENTS     "implements"
+%token<fl>              yIMPORT         "import"
+%token<fl>              yINITIAL        "initial"
+%token<fl>              yINOUT          "inout"
+%token<fl>              yINPUT          "input"
+%token<fl>              yINSIDE         "inside"
+%token<fl>              yINT            "int"
+%token<fl>              yINTEGER        "integer"
+%token<fl>              yINTERFACE      "interface"
+%token<fl>              yJOIN           "join"
+%token<fl>              yJOIN_ANY       "join_any"
+%token<fl>              yJOIN_NONE      "join_none"
+%token<fl>              yLOCALPARAM     "localparam"
+%token<fl>              yLOCAL__COLONCOLON "local-then-::"
+%token<fl>              yLOCAL__ETC     "local"
+%token<fl>              yLOCAL__LEX     "local-in-lex"
+%token<fl>              yLOGIC          "logic"
+%token<fl>              yLONGINT        "longint"
+%token<fl>              yMODPORT        "modport"
+%token<fl>              yMODULE         "module"
+%token<fl>              yNAND           "nand"
+%token<fl>              yNEGEDGE        "negedge"
+%token<fl>              yNEW__ETC       "new"
+%token<fl>              yNEW__LEX       "new-in-lex"
+%token<fl>              yNEW__PAREN     "new-then-paren"
+%token<fl>              yNMOS           "nmos"
+%token<fl>              yNOR            "nor"
+%token<fl>              yNOT            "not"
+%token<fl>              yNOTIF0         "notif0"
+%token<fl>              yNOTIF1         "notif1"
+%token<fl>              yNULL           "null"
+%token<fl>              yOR             "or"
+%token<fl>              yOUTPUT         "output"
+%token<fl>              yPACKAGE        "package"
+%token<fl>              yPACKED         "packed"
+%token<fl>              yPARAMETER      "parameter"
+%token<fl>              yPMOS           "pmos"
+%token<fl>              yPOSEDGE        "posedge"
+%token<fl>              yPRIMITIVE      "primitive"
+%token<fl>              yPRIORITY       "priority"
+%token<fl>              yPROGRAM        "program"
+%token<fl>              yPROPERTY       "property"
+%token<fl>              yPROTECTED      "protected"
+%token<fl>              yPULLDOWN       "pulldown"
+%token<fl>              yPULLUP         "pullup"
+%token<fl>              yPURE           "pure"
+%token<fl>              yRAND           "rand"
+%token<fl>              yRANDC          "randc"
+%token<fl>              yRANDCASE       "randcase"
+%token<fl>              yRCMOS          "rcmos"
+%token<fl>              yREAL           "real"
+%token<fl>              yREALTIME       "realtime"
+%token<fl>              yREF            "ref"
+%token<fl>              yREG            "reg"
+%token<fl>              yRELEASE        "release"
+%token<fl>              yREPEAT         "repeat"
+%token<fl>              yRESTRICT       "restrict"
+%token<fl>              yRETURN         "return"
+%token<fl>              yRNMOS          "rnmos"
+%token<fl>              yRPMOS          "rpmos"
+%token<fl>              yRTRAN          "rtran"
+%token<fl>              yRTRANIF0       "rtranif0"
+%token<fl>              yRTRANIF1       "rtranif1"
+%token<fl>              ySCALARED       "scalared"
+%token<fl>              ySHORTINT       "shortint"
+%token<fl>              ySHORTREAL      "shortreal"
+%token<fl>              ySIGNED         "signed"
+%token<fl>              ySPECIFY        "specify"
+%token<fl>              ySPECPARAM      "specparam"
+%token<fl>              ySTATIC__ETC    "static"
+%token<fl>              ySTRING         "string"
+%token<fl>              ySTRUCT         "struct"
+%token<fl>              ySUPER          "super"
+%token<fl>              ySUPPLY0        "supply0"
+%token<fl>              ySUPPLY1        "supply1"
+%token<fl>              yTABLE          "table"
+%token<fl>              yTASK           "task"
+%token<fl>              yTHIS           "this"
+%token<fl>              yTIME           "time"
+%token<fl>              yTIMEPRECISION  "timeprecision"
+%token<fl>              yTIMEUNIT       "timeunit"
+%token<fl>              yTRAN           "tran"
+%token<fl>              yTRANIF0        "tranif0"
+%token<fl>              yTRANIF1        "tranif1"
+%token<fl>              yTRI            "tri"
+%token<fl>              yTRI0           "tri0"
+%token<fl>              yTRI1           "tri1"
+%token<fl>              yTRIAND         "triand"
+%token<fl>              yTRIOR          "trior"
+%token<fl>              yTRIREG         "trireg"
+%token<fl>              yTRUE           "true"
+%token<fl>              yTYPE           "type"
+%token<fl>              yTYPEDEF        "typedef"
+%token<fl>              yUNION          "union"
+%token<fl>              yUNIQUE         "unique"
+%token<fl>              yUNIQUE0        "unique0"
+%token<fl>              yUNSIGNED       "unsigned"
+%token<fl>              yVAR            "var"
+%token<fl>              yVECTORED       "vectored"
+%token<fl>              yVIRTUAL__CLASS "virtual-then-class"
+%token<fl>              yVIRTUAL__ETC   "virtual"
+%token<fl>              yVIRTUAL__INTERFACE     "virtual-then-interface"
+%token<fl>              yVIRTUAL__LEX   "virtual-in-lex"
+%token<fl>              yVIRTUAL__anyID "virtual-then-identifier"
+%token<fl>              yVOID           "void"
+%token<fl>              yWAIT           "wait"
+%token<fl>              yWAND           "wand"
+%token<fl>              yWHILE          "while"
+%token<fl>              yWIRE           "wire"
+%token<fl>              yWOR            "wor"
+%token<fl>              yWREAL          "wreal"
+%token<fl>              yXNOR           "xnor"
+%token<fl>              yXOR            "xor"
 
-%token<fl>		yD_ACOS		"$acos"
-%token<fl>		yD_ACOSH	"$acosh"
-%token<fl>		yD_ASIN		"$asin"
-%token<fl>		yD_ASINH	"$asinh"
-%token<fl>		yD_ATAN		"$atan"
-%token<fl>		yD_ATAN2	"$atan2"
-%token<fl>		yD_ATANH	"$atanh"
-%token<fl>		yD_BITS		"$bits"
-%token<fl>		yD_BITSTOREAL	"$bitstoreal"
-%token<fl>		yD_BITSTOSHORTREAL "$bitstoshortreal"
-%token<fl>		yD_C		"$c"
-%token<fl>		yD_CEIL		"$ceil"
-%token<fl>		yD_CLOG2	"$clog2"
-%token<fl>		yD_COS		"$cos"
-%token<fl>		yD_COSH		"$cosh"
-%token<fl>		yD_COUNTBITS	"$countbits"
-%token<fl>		yD_COUNTONES	"$countones"
-%token<fl>		yD_DIMENSIONS	"$dimensions"
-%token<fl>		yD_DISPLAY	"$display"
-%token<fl>		yD_DISPLAYB	"$displayb"
-%token<fl>		yD_DISPLAYH	"$displayh"
-%token<fl>		yD_DISPLAYO	"$displayo"
-%token<fl>		yD_DUMPALL	"$dumpall"
-%token<fl>		yD_DUMPFILE	"$dumpfile"
-%token<fl>		yD_DUMPFLUSH	"$dumpflush"
-%token<fl>		yD_DUMPLIMIT	"$dumplimit"
-%token<fl>		yD_DUMPOFF	"$dumpoff"
-%token<fl>		yD_DUMPON	"$dumpon"
-%token<fl>		yD_DUMPPORTS	"$dumpports"
-%token<fl>		yD_DUMPVARS	"$dumpvars"
-%token<fl>		yD_ERROR	"$error"
-%token<fl>		yD_EXP		"$exp"
-%token<fl>		yD_FATAL	"$fatal"
-%token<fl>		yD_FCLOSE	"$fclose"
-%token<fl>		yD_FDISPLAY	"$fdisplay"
-%token<fl>		yD_FDISPLAYB	"$fdisplayb"
-%token<fl>		yD_FDISPLAYH	"$fdisplayh"
-%token<fl>		yD_FDISPLAYO	"$fdisplayo"
-%token<fl>		yD_FEOF		"$feof"
-%token<fl>		yD_FERROR	"$ferror"
-%token<fl>		yD_FFLUSH	"$fflush"
-%token<fl>		yD_FGETC	"$fgetc"
-%token<fl>		yD_FGETS	"$fgets"
-%token<fl>		yD_FINISH	"$finish"
-%token<fl>		yD_FLOOR	"$floor"
-%token<fl>		yD_FOPEN	"$fopen"
-%token<fl>		yD_FREAD	"$fread"
-%token<fl>		yD_FREWIND	"$frewind"
-%token<fl>		yD_FSCANF	"$fscanf"
-%token<fl>		yD_FSEEK	"$fseek"
-%token<fl>		yD_FTELL	"$ftell"
-%token<fl>		yD_FWRITE	"$fwrite"
-%token<fl>		yD_FWRITEB	"$fwriteb"
-%token<fl>		yD_FWRITEH	"$fwriteh"
-%token<fl>		yD_FWRITEO	"$fwriteo"
-%token<fl>		yD_HIGH		"$high"
-%token<fl>		yD_HYPOT	"$hypot"
-%token<fl>		yD_INCREMENT	"$increment"
-%token<fl>		yD_INFO		"$info"
-%token<fl>		yD_ISUNBOUNDED	"$isunbounded"
-%token<fl>		yD_ISUNKNOWN	"$isunknown"
-%token<fl>		yD_ITOR		"$itor"
-%token<fl>		yD_LEFT		"$left"
-%token<fl>		yD_LN		"$ln"
-%token<fl>		yD_LOG10	"$log10"
-%token<fl>		yD_LOW		"$low"
-%token<fl>		yD_ONEHOT	"$onehot"
-%token<fl>		yD_ONEHOT0	"$onehot0"
-%token<fl>		yD_PAST		"$past"
-%token<fl>		yD_POW		"$pow"
-%token<fl>		yD_PRINTTIMESCALE "$printtimescale"
-%token<fl>		yD_RANDOM	"$random"
-%token<fl>		yD_READMEMB	"$readmemb"
-%token<fl>		yD_READMEMH	"$readmemh"
-%token<fl>		yD_REALTIME	"$realtime"
-%token<fl>		yD_REALTOBITS	"$realtobits"
-%token<fl>		yD_REWIND	"$rewind"
-%token<fl>		yD_RIGHT	"$right"
-%token<fl>		yD_ROOT		"$root"
-%token<fl>		yD_RTOI		"$rtoi"
-%token<fl>		yD_SAMPLED	"$sampled"
-%token<fl>		yD_SFORMAT	"$sformat"
-%token<fl>		yD_SFORMATF	"$sformatf"
-%token<fl>		yD_SHORTREALTOBITS "$shortrealtobits"
-%token<fl>		yD_SIGNED	"$signed"
-%token<fl>		yD_SIN		"$sin"
-%token<fl>		yD_SINH		"$sinh"
-%token<fl>		yD_SIZE		"$size"
-%token<fl>		yD_SQRT		"$sqrt"
-%token<fl>		yD_SSCANF	"$sscanf"
-%token<fl>		yD_STIME	"$stime"
-%token<fl>		yD_STOP		"$stop"
-%token<fl>		yD_SWRITE	"$swrite"
-%token<fl>		yD_SWRITEB	"$swriteb"
-%token<fl>		yD_SWRITEH	"$swriteh"
-%token<fl>		yD_SWRITEO	"$swriteo"
-%token<fl>		yD_SYSTEM	"$system"
-%token<fl>		yD_TAN		"$tan"
-%token<fl>		yD_TANH		"$tanh"
-%token<fl>		yD_TESTPLUSARGS	"$test$plusargs"
-%token<fl>		yD_TIME		"$time"
-%token<fl>		yD_TIMEFORMAT	"$timeformat"
-%token<fl>		yD_TYPENAME	"$typename"
-%token<fl>		yD_UNGETC	"$ungetc"
-%token<fl>		yD_UNIT		"$unit"
-%token<fl>		yD_UNPACKED_DIMENSIONS "$unpacked_dimensions"
-%token<fl>		yD_UNSIGNED	"$unsigned"
-%token<fl>		yD_VALUEPLUSARGS "$value$plusargs"
-%token<fl>		yD_WARNING	"$warning"
-%token<fl>		yD_WRITE	"$write"
-%token<fl>		yD_WRITEB	"$writeb"
-%token<fl>		yD_WRITEH	"$writeh"
-%token<fl>		yD_WRITEMEMH	"$writememh"
-%token<fl>		yD_WRITEO	"$writeo"
+%token<fl>              yD_ACOS         "$acos"
+%token<fl>              yD_ACOSH        "$acosh"
+%token<fl>              yD_ASIN         "$asin"
+%token<fl>              yD_ASINH        "$asinh"
+%token<fl>              yD_ATAN         "$atan"
+%token<fl>              yD_ATAN2        "$atan2"
+%token<fl>              yD_ATANH        "$atanh"
+%token<fl>              yD_BITS         "$bits"
+%token<fl>              yD_BITSTOREAL   "$bitstoreal"
+%token<fl>              yD_BITSTOSHORTREAL "$bitstoshortreal"
+%token<fl>              yD_C            "$c"
+%token<fl>              yD_CEIL         "$ceil"
+%token<fl>              yD_CLOG2        "$clog2"
+%token<fl>              yD_COS          "$cos"
+%token<fl>              yD_COSH         "$cosh"
+%token<fl>              yD_COUNTBITS    "$countbits"
+%token<fl>              yD_COUNTONES    "$countones"
+%token<fl>              yD_DIMENSIONS   "$dimensions"
+%token<fl>              yD_DISPLAY      "$display"
+%token<fl>              yD_DISPLAYB     "$displayb"
+%token<fl>              yD_DISPLAYH     "$displayh"
+%token<fl>              yD_DISPLAYO     "$displayo"
+%token<fl>              yD_DUMPALL      "$dumpall"
+%token<fl>              yD_DUMPFILE     "$dumpfile"
+%token<fl>              yD_DUMPFLUSH    "$dumpflush"
+%token<fl>              yD_DUMPLIMIT    "$dumplimit"
+%token<fl>              yD_DUMPOFF      "$dumpoff"
+%token<fl>              yD_DUMPON       "$dumpon"
+%token<fl>              yD_DUMPPORTS    "$dumpports"
+%token<fl>              yD_DUMPVARS     "$dumpvars"
+%token<fl>              yD_ERROR        "$error"
+%token<fl>              yD_EXP          "$exp"
+%token<fl>              yD_FATAL        "$fatal"
+%token<fl>              yD_FCLOSE       "$fclose"
+%token<fl>              yD_FDISPLAY     "$fdisplay"
+%token<fl>              yD_FDISPLAYB    "$fdisplayb"
+%token<fl>              yD_FDISPLAYH    "$fdisplayh"
+%token<fl>              yD_FDISPLAYO    "$fdisplayo"
+%token<fl>              yD_FEOF         "$feof"
+%token<fl>              yD_FERROR       "$ferror"
+%token<fl>              yD_FFLUSH       "$fflush"
+%token<fl>              yD_FGETC        "$fgetc"
+%token<fl>              yD_FGETS        "$fgets"
+%token<fl>              yD_FINISH       "$finish"
+%token<fl>              yD_FLOOR        "$floor"
+%token<fl>              yD_FOPEN        "$fopen"
+%token<fl>              yD_FREAD        "$fread"
+%token<fl>              yD_FREWIND      "$frewind"
+%token<fl>              yD_FSCANF       "$fscanf"
+%token<fl>              yD_FSEEK        "$fseek"
+%token<fl>              yD_FTELL        "$ftell"
+%token<fl>              yD_FWRITE       "$fwrite"
+%token<fl>              yD_FWRITEB      "$fwriteb"
+%token<fl>              yD_FWRITEH      "$fwriteh"
+%token<fl>              yD_FWRITEO      "$fwriteo"
+%token<fl>              yD_HIGH         "$high"
+%token<fl>              yD_HYPOT        "$hypot"
+%token<fl>              yD_INCREMENT    "$increment"
+%token<fl>              yD_INFO         "$info"
+%token<fl>              yD_ISUNBOUNDED  "$isunbounded"
+%token<fl>              yD_ISUNKNOWN    "$isunknown"
+%token<fl>              yD_ITOR         "$itor"
+%token<fl>              yD_LEFT         "$left"
+%token<fl>              yD_LN           "$ln"
+%token<fl>              yD_LOG10        "$log10"
+%token<fl>              yD_LOW          "$low"
+%token<fl>              yD_ONEHOT       "$onehot"
+%token<fl>              yD_ONEHOT0      "$onehot0"
+%token<fl>              yD_PAST         "$past"
+%token<fl>              yD_POW          "$pow"
+%token<fl>              yD_PRINTTIMESCALE "$printtimescale"
+%token<fl>              yD_RANDOM       "$random"
+%token<fl>              yD_READMEMB     "$readmemb"
+%token<fl>              yD_READMEMH     "$readmemh"
+%token<fl>              yD_REALTIME     "$realtime"
+%token<fl>              yD_REALTOBITS   "$realtobits"
+%token<fl>              yD_REWIND       "$rewind"
+%token<fl>              yD_RIGHT        "$right"
+%token<fl>              yD_ROOT         "$root"
+%token<fl>              yD_RTOI         "$rtoi"
+%token<fl>              yD_SAMPLED      "$sampled"
+%token<fl>              yD_SFORMAT      "$sformat"
+%token<fl>              yD_SFORMATF     "$sformatf"
+%token<fl>              yD_SHORTREALTOBITS "$shortrealtobits"
+%token<fl>              yD_SIGNED       "$signed"
+%token<fl>              yD_SIN          "$sin"
+%token<fl>              yD_SINH         "$sinh"
+%token<fl>              yD_SIZE         "$size"
+%token<fl>              yD_SQRT         "$sqrt"
+%token<fl>              yD_SSCANF       "$sscanf"
+%token<fl>              yD_STIME        "$stime"
+%token<fl>              yD_STOP         "$stop"
+%token<fl>              yD_SWRITE       "$swrite"
+%token<fl>              yD_SWRITEB      "$swriteb"
+%token<fl>              yD_SWRITEH      "$swriteh"
+%token<fl>              yD_SWRITEO      "$swriteo"
+%token<fl>              yD_SYSTEM       "$system"
+%token<fl>              yD_TAN          "$tan"
+%token<fl>              yD_TANH         "$tanh"
+%token<fl>              yD_TESTPLUSARGS "$test$plusargs"
+%token<fl>              yD_TIME         "$time"
+%token<fl>              yD_TIMEFORMAT   "$timeformat"
+%token<fl>              yD_TYPENAME     "$typename"
+%token<fl>              yD_UNGETC       "$ungetc"
+%token<fl>              yD_UNIT         "$unit"
+%token<fl>              yD_UNPACKED_DIMENSIONS "$unpacked_dimensions"
+%token<fl>              yD_UNSIGNED     "$unsigned"
+%token<fl>              yD_VALUEPLUSARGS "$value$plusargs"
+%token<fl>              yD_WARNING      "$warning"
+%token<fl>              yD_WRITE        "$write"
+%token<fl>              yD_WRITEB       "$writeb"
+%token<fl>              yD_WRITEH       "$writeh"
+%token<fl>              yD_WRITEMEMH    "$writememh"
+%token<fl>              yD_WRITEO       "$writeo"
 
-%token<fl>		yVL_CLOCK		"/*verilator sc_clock*/"
-%token<fl>		yVL_CLOCKER		"/*verilator clocker*/"
-%token<fl>		yVL_NO_CLOCKER		"/*verilator no_clocker*/"
-%token<fl>		yVL_CLOCK_ENABLE	"/*verilator clock_enable*/"
-%token<fl>		yVL_COVERAGE_BLOCK_OFF	"/*verilator coverage_block_off*/"
-%token<fl>		yVL_FULL_CASE		"/*verilator full_case*/"
-%token<fl>		yVL_INLINE_MODULE	"/*verilator inline_module*/"
-%token<fl>		yVL_ISOLATE_ASSIGNMENTS	"/*verilator isolate_assignments*/"
-%token<fl>		yVL_NO_INLINE_MODULE	"/*verilator no_inline_module*/"
-%token<fl>		yVL_NO_INLINE_TASK	"/*verilator no_inline_task*/"
-%token<fl>		yVL_SC_BV		"/*verilator sc_bv*/"
-%token<fl>		yVL_SFORMAT		"/*verilator sformat*/"
-%token<fl>		yVL_PARALLEL_CASE	"/*verilator parallel_case*/"
-%token<fl>		yVL_PUBLIC		"/*verilator public*/"
-%token<fl>		yVL_PUBLIC_FLAT		"/*verilator public_flat*/"
-%token<fl>		yVL_PUBLIC_FLAT_RD	"/*verilator public_flat_rd*/"
-%token<fl>		yVL_PUBLIC_FLAT_RW	"/*verilator public_flat_rw*/"
-%token<fl>		yVL_PUBLIC_MODULE	"/*verilator public_module*/"
-%token<fl>		yVL_SPLIT_VAR		"/*verilator split_var*/"
+%token<fl>              yVL_CLOCK               "/*verilator sc_clock*/"
+%token<fl>              yVL_CLOCKER             "/*verilator clocker*/"
+%token<fl>              yVL_NO_CLOCKER          "/*verilator no_clocker*/"
+%token<fl>              yVL_CLOCK_ENABLE        "/*verilator clock_enable*/"
+%token<fl>              yVL_COVERAGE_BLOCK_OFF  "/*verilator coverage_block_off*/"
+%token<fl>              yVL_FULL_CASE           "/*verilator full_case*/"
+%token<fl>              yVL_INLINE_MODULE       "/*verilator inline_module*/"
+%token<fl>              yVL_ISOLATE_ASSIGNMENTS "/*verilator isolate_assignments*/"
+%token<fl>              yVL_NO_INLINE_MODULE    "/*verilator no_inline_module*/"
+%token<fl>              yVL_NO_INLINE_TASK      "/*verilator no_inline_task*/"
+%token<fl>              yVL_SC_BV               "/*verilator sc_bv*/"
+%token<fl>              yVL_SFORMAT             "/*verilator sformat*/"
+%token<fl>              yVL_PARALLEL_CASE       "/*verilator parallel_case*/"
+%token<fl>              yVL_PUBLIC              "/*verilator public*/"
+%token<fl>              yVL_PUBLIC_FLAT         "/*verilator public_flat*/"
+%token<fl>              yVL_PUBLIC_FLAT_RD      "/*verilator public_flat_rd*/"
+%token<fl>              yVL_PUBLIC_FLAT_RW      "/*verilator public_flat_rw*/"
+%token<fl>              yVL_PUBLIC_MODULE       "/*verilator public_module*/"
+%token<fl>              yVL_SPLIT_VAR           "/*verilator split_var*/"
 
-%token<fl>		yP_TICK		"'"
-%token<fl>		yP_TICKBRA	"'{"
-%token<fl>		yP_OROR		"||"
-%token<fl>		yP_ANDAND	"&&"
-%token<fl>		yP_NOR		"~|"
-%token<fl>		yP_XNOR		"^~"
-%token<fl>		yP_NAND		"~&"
-%token<fl>		yP_EQUAL	"=="
-%token<fl>		yP_NOTEQUAL	"!="
-%token<fl>		yP_CASEEQUAL	"==="
-%token<fl>		yP_CASENOTEQUAL	"!=="
-%token<fl>		yP_WILDEQUAL	"==?"
-%token<fl>		yP_WILDNOTEQUAL	"!=?"
-%token<fl>		yP_GTE		">="
-%token<fl>		yP_LTE		"<="
-%token<fl>		yP_LTE__IGNORE	"<=-ignored"	// Used when expr:<= means assignment
-%token<fl>		yP_SLEFT	"<<"
-%token<fl>		yP_SRIGHT	">>"
-%token<fl>		yP_SSRIGHT	">>>"
-%token<fl>		yP_POW		"**"
+%token<fl>              yP_TICK         "'"
+%token<fl>              yP_TICKBRA      "'{"
+%token<fl>              yP_OROR         "||"
+%token<fl>              yP_ANDAND       "&&"
+%token<fl>              yP_NOR          "~|"
+%token<fl>              yP_XNOR         "^~"
+%token<fl>              yP_NAND         "~&"
+%token<fl>              yP_EQUAL        "=="
+%token<fl>              yP_NOTEQUAL     "!="
+%token<fl>              yP_CASEEQUAL    "==="
+%token<fl>              yP_CASENOTEQUAL "!=="
+%token<fl>              yP_WILDEQUAL    "==?"
+%token<fl>              yP_WILDNOTEQUAL "!=?"
+%token<fl>              yP_GTE          ">="
+%token<fl>              yP_LTE          "<="
+%token<fl>              yP_LTE__IGNORE  "<=-ignored"    // Used when expr:<= means assignment
+%token<fl>              yP_SLEFT        "<<"
+%token<fl>              yP_SRIGHT       ">>"
+%token<fl>              yP_SSRIGHT      ">>>"
+%token<fl>              yP_POW          "**"
 
-%token<fl>		yP_PAR__STRENGTH "(-for-strength"
+%token<fl>              yP_PAR__STRENGTH "(-for-strength"
 
-%token<fl>		yP_LTMINUSGT	"<->"
-%token<fl>		yP_PLUSCOLON	"+:"
-%token<fl>		yP_MINUSCOLON	"-:"
-%token<fl>		yP_MINUSGT	"->"
-%token<fl>		yP_MINUSGTGT	"->>"
-%token<fl>		yP_EQGT		"=>"
-%token<fl>		yP_ASTGT	"*>"
-%token<fl>		yP_ANDANDAND	"&&&"
-%token<fl>		yP_POUNDPOUND	"##"
-%token<fl>		yP_DOTSTAR	".*"
+%token<fl>              yP_LTMINUSGT    "<->"
+%token<fl>              yP_PLUSCOLON    "+:"
+%token<fl>              yP_MINUSCOLON   "-:"
+%token<fl>              yP_MINUSGT      "->"
+%token<fl>              yP_MINUSGTGT    "->>"
+%token<fl>              yP_EQGT         "=>"
+%token<fl>              yP_ASTGT        "*>"
+%token<fl>              yP_ANDANDAND    "&&&"
+%token<fl>              yP_POUNDPOUND   "##"
+%token<fl>              yP_DOTSTAR      ".*"
 
-%token<fl>		yP_ATAT		"@@"
-%token<fl>		yP_COLONCOLON	"::"
-%token<fl>		yP_COLONEQ	":="
-%token<fl>		yP_COLONDIV	":/"
-%token<fl>		yP_ORMINUSGT	"|->"
-%token<fl>		yP_OREQGT	"|=>"
-%token<fl>		yP_BRASTAR	"[*"
-%token<fl>		yP_BRAEQ	"[="
-%token<fl>		yP_BRAMINUSGT	"[->"
+%token<fl>              yP_ATAT         "@@"
+%token<fl>              yP_COLONCOLON   "::"
+%token<fl>              yP_COLONEQ      ":="
+%token<fl>              yP_COLONDIV     ":/"
+%token<fl>              yP_ORMINUSGT    "|->"
+%token<fl>              yP_OREQGT       "|=>"
+%token<fl>              yP_BRASTAR      "[*"
+%token<fl>              yP_BRAEQ        "[="
+%token<fl>              yP_BRAMINUSGT   "[->"
 
-%token<fl>		yP_PLUSPLUS	"++"
-%token<fl>		yP_MINUSMINUS	"--"
-%token<fl>		yP_PLUSEQ	"+="
-%token<fl>		yP_MINUSEQ	"-="
-%token<fl>		yP_TIMESEQ	"*="
-%token<fl>		yP_DIVEQ	"/="
-%token<fl>		yP_MODEQ	"%="
-%token<fl>		yP_ANDEQ	"&="
-%token<fl>		yP_OREQ		"|="
-%token<fl>		yP_XOREQ	"^="
-%token<fl>		yP_SLEFTEQ	"<<="
-%token<fl>		yP_SRIGHTEQ	">>="
-%token<fl>		yP_SSRIGHTEQ	">>>="
+%token<fl>              yP_PLUSPLUS     "++"
+%token<fl>              yP_MINUSMINUS   "--"
+%token<fl>              yP_PLUSEQ       "+="
+%token<fl>              yP_MINUSEQ      "-="
+%token<fl>              yP_TIMESEQ      "*="
+%token<fl>              yP_DIVEQ        "/="
+%token<fl>              yP_MODEQ        "%="
+%token<fl>              yP_ANDEQ        "&="
+%token<fl>              yP_OREQ         "|="
+%token<fl>              yP_XOREQ        "^="
+%token<fl>              yP_SLEFTEQ      "<<="
+%token<fl>              yP_SRIGHTEQ     ">>="
+%token<fl>              yP_SSRIGHTEQ    ">>>="
 
 // [* is not a operator, as "[ * ]" is legal
 // [= and [-> could be repitition operators, but to match [* we don't add them.
@@ -735,30 +784,30 @@ class AstSenTree;
 
 //********************
 // These prevent other conflicts
-%left		yP_ANDANDAND
+%left           yP_ANDANDAND
 
 // PSL op precedence
-%right		yP_ORMINUSGT yP_OREQGT
+%right          yP_ORMINUSGT yP_OREQGT
 
 // Verilog op precedence
-%right		yP_MINUSGT yP_LTMINUSGT
-%right		'?' ':'
-%left		yP_OROR
-%left		yP_ANDAND
-%left		'|' yP_NOR
-%left		'^' yP_XNOR
-%left		'&' yP_NAND
-%left		yP_EQUAL yP_NOTEQUAL yP_CASEEQUAL yP_CASENOTEQUAL yP_WILDEQUAL yP_WILDNOTEQUAL
-%left		'>' '<' yP_GTE yP_LTE yP_LTE__IGNORE yINSIDE
-%left		yP_SLEFT yP_SRIGHT yP_SSRIGHT
-%left		'+' '-'
-%left		'*' '/' '%'
-%left		yP_POW
-%left		prUNARYARITH yP_MINUSMINUS yP_PLUSPLUS prREDUCTION prNEGATION
-%left		'.'
+%right          yP_MINUSGT yP_LTMINUSGT
+%right          '?' ':'
+%left           yP_OROR
+%left           yP_ANDAND
+%left           '|' yP_NOR
+%left           '^' yP_XNOR
+%left           '&' yP_NAND
+%left           yP_EQUAL yP_NOTEQUAL yP_CASEEQUAL yP_CASENOTEQUAL yP_WILDEQUAL yP_WILDNOTEQUAL
+%left           '>' '<' yP_GTE yP_LTE yP_LTE__IGNORE yINSIDE
+%left           yP_SLEFT yP_SRIGHT yP_SSRIGHT
+%left           '+' '-'
+%left           '*' '/' '%'
+%left           yP_POW
+%left           prUNARYARITH yP_MINUSMINUS yP_PLUSPLUS prREDUCTION prNEGATION
+%left           '.'
 // Not in IEEE, but need to avoid conflicts; TICK should bind tightly just lower than COLONCOLON
-%left		yP_TICK
-//%left		'(' ')' '[' ']' yP_COLONCOLON '.'
+%left           yP_TICK
+//%left         '(' ')' '[' ']' yP_COLONCOLON '.'
 
 %nonassoc prLOWER_THAN_ELSE
 %nonassoc yELSE
