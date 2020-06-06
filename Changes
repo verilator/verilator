@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
-* Verilator 4.035 devel
+* Verilator 4.036 2020-06-06
 
 **    OPT_FAST is now -Os by default. See the BENCHMARKING & OPTIMIZATION part
       of the manual if you experience issues with compilation speed.
@@ -16,6 +16,15 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support verilator_coverage --write-info for lcov HTML reports.
       Line Coverage now tracks all statement lines, not just branch lines.
+
+***   --output-split is now on by default. VM_PARALLEL_BUILDS is set by
+      default iff the --output-split caused an actual file split to occur.
+      --output-split-cfuncs and --output-split-ctrace now default to the
+      value of --output-split. These changes should improve build times of
+      medium and large designs with default options. User makefiles may
+      require changes.
+
+***   The run-time library is now compiled with -Os by default. (#2369, #2373)
 
 ****  Support multi channel descriptor I/O (#2190) [Stephen Henry]
 
@@ -34,15 +43,6 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix $isunknown with constant Z's.
 
 ****  Fix queues and dynamic array wide ops. (#2352) [Vassilis Papaefstathiou]
-
-****  --output-split is now on by default. VM_PARALLEL_BUILDS is set by
-      default iff the --output-split caused an actual file split to occur.
-      --output-split-cfuncs and --output-split-ctrace now default to the
-      value of --output-split. These changes should improve build times of
-      medium and large designs with default options. User makefiles may
-      require changes.
-
-****  The run-time library is now compiled with -Os by default. (#2369, #2373)
 
 
 * Verilator 4.034 2020-05-03
