@@ -1,0 +1,4 @@
+%Error: t/t_randomize.v:25:25: Unsupported: randomize() 'with'
+   25 |       v = p.randomize() with {};
+      |                         ^~~~
+%Error: Exiting due to

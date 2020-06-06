@@ -530,7 +530,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "rand"                { FL; return yRAND; }
   "randc"               { FL; return yRANDC; }
   "randcase"            { FL; return yRANDCASE; }
-  "randomize"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "randomize"           { FL; return yRANDOMIZE; }
   "randsequence"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "ref"                 { FL; return yREF; }
   "restrict"            { FL; return yRESTRICT; }

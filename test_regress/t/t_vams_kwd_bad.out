@@ -1,7 +1,7 @@
 %Error: t/t_vams_kwd_bad.v:12:8: Unsupported: AMS reserved word not implemented: 'above'
    12 |    int above;
       |        ^~~~~
-%Error: t/t_vams_kwd_bad.v:12:13: syntax error, unexpected ';', expecting IDENTIFIER
+%Error: t/t_vams_kwd_bad.v:12:13: syntax error, unexpected ';', expecting IDENTIFIER or randomize
    12 |    int above;
       |             ^
 %Error: t/t_vams_kwd_bad.v:13:8: Unsupported: AMS reserved word not implemented: 'abs'

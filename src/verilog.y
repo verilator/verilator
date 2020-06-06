@@ -562,6 +562,7 @@ class AstSenTree;
 %token<fl>              yRAND           "rand"
 %token<fl>              yRANDC          "randc"
 %token<fl>              yRANDCASE       "randcase"
+%token<fl>              yRANDOMIZE      "randomize"
 //UNSUP %token<fl>      yRANDSEQUENCE   "randsequence"
 %token<fl>              yRCMOS          "rcmos"
 %token<fl>              yREAL           "real"
@@ -3363,7 +3364,8 @@ funcRef<nodep>:			// IEEE: part of tf_call
 	//			//	sequence_instance	sequence_identifier	sequence_actual_arg
 	//			//      let_expression		let_identifier		let_actual_arg
 	//
-		id '(' list_of_argumentsE ')'		{ $$ = new AstFuncRef($<fl>1, *$1, $3); }
+		id '(' list_of_argumentsE ')'
+			{ $$ = new AstFuncRef($<fl>1, *$1, $3); }
 	|	package_scopeIdFollows id '(' list_of_argumentsE ')'
 			{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstFuncRef($<fl>2,*$2,$4)); }
 	|	class_scopeIdFollows id '(' list_of_argumentsE ')'
@@ -3401,7 +3403,9 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 	//			// IEEE: randomize_call
 	//			// We implement randomize as a normal funcRef, since randomize isn't a keyword
 	//			// Note yNULL is already part of expressions, so they come for free
-	//UNSUP	funcRef yWITH__CUR constraint_block	{ }
+	//UNSUP	funcRef yWITH__CUR constraint_block	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with'"); }
+	//UNSUP remove the next line, temporary until have constraint_block (but enough for UVM parsing)
+	|	funcRef yWITH__CUR '{' '}'	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with'"); }
 	;
 
 system_t_call<nodep>:		// IEEE: system_tf_call (as task)
@@ -4613,17 +4617,23 @@ junkToSemi:
 
 id<strp>:
 		yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
+	|	idRandomize				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
 idAny<strp>:			// Any kind of identifier
 		yaID__aPACKAGE				{ $$ = $1; $<fl>$=$<fl>1; }
 	|	yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
 	|	yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
+	|	idRandomize				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
 idType<strp>:			// IEEE: class_identifier or other type identifier
 	//			// Used where reference is needed
 		yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
+	;
+
+idRandomize<strp>:		// Keyword as an identifier
+		yRANDOMIZE				{ static string s = "randomize"; $$ = &s; $<fl>$ = $<fl>1; }
 	;
 
 idSVKwd<strp>:			// Warn about non-forward compatible Verilog 2001 code
