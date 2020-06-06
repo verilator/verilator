@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.037 devel
 
+****  With --bbox-unsup continue parsing on many (not all) UVM constructs.
+
 
 * Verilator 4.036 2020-06-06
 

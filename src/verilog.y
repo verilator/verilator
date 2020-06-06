@@ -649,11 +649,11 @@ class AstSenTree;
 //UNSUP %token<fl>      yWILDCARD       "wildcard"
 %token<fl>              yWIRE           "wire"
 //UNSUP %token<fl>      yWITHIN         "within"
-//UNSUP %token<fl>      yWITH__BRA      "with-then-["
-//UNSUP %token<fl>      yWITH__CUR      "with-then-{"
-//UNSUP %token<fl>      yWITH__ETC      "with"
-//UNSUP %token<fl>      yWITH__LEX      "with-in-lex"
-//UNSUP %token<fl>      yWITH__PAREN    "with-then-("
+%token<fl>              yWITH__BRA      "with-then-["
+%token<fl>              yWITH__CUR      "with-then-{"
+%token<fl>              yWITH__ETC      "with"
+%token<fl>              yWITH__LEX      "with-in-lex"
+%token<fl>              yWITH__PAREN    "with-then-("
 %token<fl>              yWOR            "wor"
 %token<fl>              yWREAL          "wreal"
 %token<fl>              yXNOR           "xnor"
@@ -3376,7 +3376,10 @@ funcRef<nodep>:			// IEEE: part of tf_call
 task_subroutine_callNoMethod<nodep>:	// function_subroutine_callNoMethod (as task)
 	//			// IEEE: tf_call
 		taskRef					{ $$ = $1; }
-	//UNSUP	funcRef yWITH__PAREN '(' expr ')'	{ /*UNSUP*/ }
+	//			// funcref below not task ref to avoid conflict, must later handle either
+	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = $1; BBUNSUP($2, "Unsupported: 'with' on task call"); }
+	//			// can call as method and yWITH without parenthesis
+	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstFuncRef($<fl>1, *$1, NULL); BBUNSUP($2, "Unsupported: 'with' on function call"); }
 	|	system_t_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
 	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3389,7 +3392,9 @@ task_subroutine_callNoMethod<nodep>:	// function_subroutine_callNoMethod (as tas
 function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as function)
 	//			// IEEE: tf_call
 		funcRef					{ $$ = $1; }
-	//UNSUP	funcRef yWITH__PAREN '(' expr ')'	{ /*UNSUP*/ }
+	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = $1; BBUNSUP($2, "Unsupported: 'with' on function call"); }
+	//			// can call as method and yWITH without parenthesis
+	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstFuncRef($<fl>1, *$1, NULL); BBUNSUP($2, "Unsupported: 'with' on function call"); }
 	|	system_f_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
 	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3861,6 +3866,14 @@ array_methodNoRoot<nodep>:
 	|	yUNIQUE					{ $$ = new AstFuncRef($1, "unique", NULL); }
 	;
 
+array_methodWith<nodep>:
+		array_methodNoRoot			{ $$ = $1; }
+	|	array_methodNoRoot parenE yWITH__PAREN '(' expr ')'
+			{ $$ = $1; BBUNSUP($5, "Unsupported: 'with' on method call"); }
+	|	array_methodNoRoot '(' expr ')' yWITH__PAREN '(' expr ')'
+			{ $$ = $1; BBUNSUP($7, "Unsupported: 'with' on method call"); }
+	;
+
 dpi_import_export<nodep>:	// ==IEEE: dpi_import_export
 		yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE function_prototype ';'
 			{ $$ = $5; if (*$4 != "") $5->cname(*$4);
@@ -4023,7 +4036,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// method_call
 	|	~l~expr '.' function_subroutine_callNoMethod	{ $$ = new AstDot($2, false, $1, $3); }
 	//			// method_call:array_method requires a '.'
-	|	~l~expr '.' array_methodNoRoot		{ $$ = new AstDot($2, false, $1, $3); }
+	|	~l~expr '.' array_methodWith		{ $$ = new AstDot($2, false, $1, $3); }
 	//
 	//			// IEEE: let_expression
 	//			// see funcRef

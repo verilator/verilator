@@ -557,7 +557,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "void"                { FL; return yVOID; }
   "wait_order"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "wildcard"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "with"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "with"                { FL; return yWITH__LEX; }
   "within"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
 }
 

@@ -374,7 +374,8 @@ void V3ParseImp::lexToken() {
         || token == yGLOBAL__LEX  //
         || token == yLOCAL__LEX  //
         || token == yNEW__LEX  //
-        || token == yVIRTUAL__LEX
+        || token == yVIRTUAL__LEX  //
+        || token == yWITH__LEX  //
         // Never put yID_* here; below symbol table resolution would break
     ) {
         if (debugFlex() >= 6) {
@@ -430,6 +431,16 @@ void V3ParseImp::lexToken() {
                 token = yVIRTUAL__anyID;
             } else {
                 token = yVIRTUAL__ETC;
+            }
+        } else if (token == yWITH__LEX) {
+            if (nexttok == '(') {
+                token = yWITH__PAREN;
+            } else if (nexttok == '[') {
+                token = yWITH__BRA;
+            } else if (nexttok == '{') {
+                token = yWITH__CUR;
+            } else {
+                token = yWITH__ETC;
             }
         }
         // If add to above "else if", also add to "if (token" further above
