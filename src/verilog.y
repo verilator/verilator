@@ -2569,8 +2569,15 @@ packed_dimension<rangep>:	// ==IEEE: packed_dimension
 param_assignment<varp>:		// ==IEEE: param_assignment
 	//			// IEEE: constant_param_expression
 	//			// constant_param_expression: '$' is in expr
-		id/*new-parameter*/ variable_dimensionListE sigAttrListE exprEqE
-			{ $$ = VARDONEA($<fl>1, *$1, $2, $3); if ($4) $$->valuep($4); }
+		id/*new-parameter*/ variable_dimensionListE sigAttrListE exprOrDataTypeEqE
+			{ // To handle  #(type A=int, B=A) and properly imply B
+                          // as a type (for parsing) we need to detect "A" is a type
+			  if (AstNodeDType* refp = VN_CAST($4, NodeDType)) {
+			    if (VSymEnt* foundp = SYMP->symCurrentp()->findIdFallback(refp->name())) {
+				UINFO(9, "declaring type via param assignment" << foundp->nodep() << endl);
+				VARDTYPE(new AstParseTypeDType($<fl>1))
+				SYMP->reinsert(foundp->nodep()->cloneTree(false), NULL, *$1); }}
+			  $$ = VARDONEA($<fl>1, *$1, $2, $3); if ($4) $$->valuep($4); }
 	;
 
 list_of_param_assignments<varp>:	// ==IEEE: list_of_param_assignments
@@ -3923,6 +3930,12 @@ exprEqE<nodep>:			// IEEE: optional '=' expression (part of param_assignment)
 	//			// constant_param_expression: '$' is in expr
 		/*empty*/				{ $$ = NULL; }
 	|	'=' expr				{ $$ = $2; }
+	;
+
+exprOrDataTypeEqE<nodep>:	// IEEE: optional '=' expression (part of param_assignment)
+	//			// constant_param_expression: '$' is in expr
+		/*empty*/				{ $$ = NULL; }
+	|	'=' exprOrDataType			{ $$ = $2; }
 	;
 
 constExpr<nodep>:

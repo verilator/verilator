@@ -73,13 +73,14 @@ module mod_typ #(
 
 endmodule
 
-module mod_typ2 #(
-   parameter int WIDTH1 = 0,
-   parameter int WIDTH2 = WIDTH1,
-   parameter type TYP1 = byte,
-   //UNSUP not needing 'parameter type' below and implying it
-   parameter type TYP2 = TYP1
-                  )();
+module mod_typ2
+  #(
+    parameter int WIDTH1 = 0,
+    parameter int WIDTH2 = WIDTH1,
+    parameter type TYP1 = byte,
+    // Below we need to imply that TYP2 is a type
+    TYP2 = TYP1
+    )();
 
    TYP1 t1;
    TYP2 t2;
