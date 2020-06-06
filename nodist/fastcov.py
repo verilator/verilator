@@ -40,6 +40,17 @@ START_TIME    = time.monotonic()
 GCOVS_TOTAL   = 0
 GCOVS_SKIPPED = 0
 
+# For when things go wrong...
+# Start error codes at 3 because 1-2 are special
+# See https://stackoverflow.com/a/1535733/2516916
+EXIT_CODE  = 0
+EXIT_CODES = {
+    "gcov_version": 3,
+    "python_version": 4,
+    "unsupported_coverage_format": 5,
+    "excl_not_found": 6,
+}
+
 # Disable all logging in case developers are using this as a module
 logging.disable(level=logging.CRITICAL)
 
@@ -53,6 +64,10 @@ def chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
         yield l[i:i + n]
+
+def setExitCode(key):
+    global EXIT_CODE
+    EXIT_CODE = EXIT_CODES[key]
 
 def incrementCounters(total, skipped):
     global GCOVS_TOTAL
@@ -273,65 +288,72 @@ def getSourceLines(source, fallback_encodings=[]):
     with open(source, errors="ignore") as f:
         return f.readlines()
 
-def exclMarkerWorker(fastcov_sources, chunk, exclude_branches_sw, include_branches_sw, fallback_encodings):
-    for source in chunk:
-        start_line = 0
-        end_line = 0
-        # Start enumeration at line 1 because the first line of the file is line 1 not 0
-        for i, line in enumerate(getSourceLines(source, fallback_encodings), 1):
-            # Cycle through test names (likely only 1)
-            for test_name in fastcov_sources[source]:
-                fastcov_data = fastcov_sources[source][test_name]
+def exclProcessSource(fastcov_sources, source, exclude_branches_sw, include_branches_sw, fallback_encodings):
+    start_line = 0
+    end_line = 0
+    # Start enumeration at line 1 because the first line of the file is line 1 not 0
+    for i, line in enumerate(getSourceLines(source, fallback_encodings), 1):
+        # Cycle through test names (likely only 1)
+        for test_name in fastcov_sources[source]:
+            fastcov_data = fastcov_sources[source][test_name]
 
-                # Build line to function dict so can quickly delete by line number
-                line_to_func = {}
-                for f in fastcov_data["functions"].keys():
-                    l = fastcov_data["functions"][f]["start_line"]
-                    if l not in line_to_func:
-                        line_to_func[l] = set()
-                    line_to_func[l].add(f)
+            # Build line to function dict so can quickly delete by line number
+            line_to_func = {}
+            for f in fastcov_data["functions"].keys():
+                l = fastcov_data["functions"][f]["start_line"]
+                if l not in line_to_func:
+                    line_to_func[l] = set()
+                line_to_func[l].add(f)
 
-                if i in fastcov_data["branches"]:
-                    del_exclude_br = exclude_branches_sw and any(line.lstrip().startswith(e) for e in exclude_branches_sw)
-                    del_include_br = include_branches_sw and all(not line.lstrip().startswith(e) for e in include_branches_sw)
-                    if del_exclude_br or del_include_br:
-                        del fastcov_data["branches"][i]
+            if i in fastcov_data["branches"]:
+                del_exclude_br = exclude_branches_sw and any(line.lstrip().startswith(e) for e in exclude_branches_sw)
+                del_include_br = include_branches_sw and all(not line.lstrip().startswith(e) for e in include_branches_sw)
+                if del_exclude_br or del_include_br:
+                    del fastcov_data["branches"][i]
 
-                if "LCOV_EXCL" not in line:
+            if "LCOV_EXCL" not in line:
+                continue
+
+            if "LCOV_EXCL_LINE" in line:
+                for key in ["lines", "branches"]:
+                    if i in fastcov_data[key]:
+                        del fastcov_data[key][i]
+                if i in line_to_func:
+                    for key in line_to_func[i]:
+                        if key in fastcov_data["functions"]:
+                            del fastcov_data["functions"][key]
+            elif "LCOV_EXCL_START" in line:
+                start_line = i
+            elif "LCOV_EXCL_STOP" in line:
+                end_line = i
+
+                if not start_line:
+                    end_line = 0
                     continue
 
-                if "LCOV_EXCL_LINE" in line:
-                    for key in ["lines", "branches"]:
-                        if i in fastcov_data[key]:
-                            del fastcov_data[key][i]
-                    if i in line_to_func:
-                        for key in line_to_func[i]:
+                for key in ["lines", "branches"]:
+                    for line_num in list(fastcov_data[key].keys()):
+                        if start_line <= line_num <= end_line:
+                            del fastcov_data[key][line_num]
+
+                for line_num in range(start_line, end_line):
+                    if line_num in line_to_func:
+                        for key in line_to_func[line_num]:
                             if key in fastcov_data["functions"]:
                                 del fastcov_data["functions"][key]
-                elif "LCOV_EXCL_START" in line:
-                    start_line = i
-                elif "LCOV_EXCL_STOP" in line:
-                    end_line = i
 
-                    if not start_line:
-                        end_line = 0
-                        continue
+                start_line = end_line = 0
+            elif "LCOV_EXCL_BR_LINE" in line:
+                if i in fastcov_data["branches"]:
+                    del fastcov_data["branches"][i]
 
-                    for key in ["lines", "branches"]:
-                        for line_num in list(fastcov_data[key].keys()):
-                            if start_line <= line_num <= end_line:
-                                del fastcov_data[key][line_num]
-
-                    for line_num in range(start_line, end_line):
-                        if line_num in line_to_func:
-                            for key in line_to_func[line_num]:
-                                if key in fastcov_data["functions"]:
-                                    del fastcov_data["functions"][key]
-
-                    start_line = end_line = 0
-                elif "LCOV_EXCL_BR_LINE" in line:
-                    if i in fastcov_data["branches"]:
-                        del fastcov_data["branches"][i]
+def exclMarkerWorker(fastcov_sources, chunk, exclude_branches_sw, include_branches_sw, fallback_encodings):
+    for source in chunk:
+        try:
+            exclProcessSource(fastcov_sources, source, exclude_branches_sw, include_branches_sw, fallback_encodings)
+        except FileNotFoundError:
+            logging.error("Could not find '%s' to scan for exclusion markers...", source)
+            setExitCode("excl_not_found") # Set exit code because of error
 
 def scanExclusionMarkers(fastcov_json, jobs, exclude_branches_sw, include_branches_sw, min_chunk_size, fallback_encodings):
     chunk_size = max(min_chunk_size, int(len(fastcov_json["sources"]) / jobs) + 1)
@@ -551,8 +573,8 @@ def parseAndCombine(paths):
         elif path.endswith(".info"):
             report = parseInfo(path)
         else:
-            sys.stderr.write("Currently only fastcov .json and lcov .info supported for combine operations, aborting due to {}...\n".format(path))
-            sys.exit(3)
+            logging.error("Currently only fastcov .json and lcov .info supported for combine operations, aborting due to %s...\n", path)
+            sys.exit(EXIT_CODES["unsupported_coverage_format"])
 
         # In order for sorting to work later when we serialize,
         # make sure integer keys are int
@@ -592,7 +614,7 @@ def getGcovCoverage(args):
     if args.zerocounters:
         removeFiles(coverage_files)
         logging.info("Removed {} .gcda files".format(len(coverage_files)))
-        sys.exit(0)
+        sys.exit()
 
     # Fire up one gcov per cpu and start processing gcdas
     gcov_filter_options = getGcovFilterOptions(args)
@@ -667,13 +689,13 @@ def checkPythonVersion(version):
     """Exit if the provided python version is less than the supported version."""
     if version < MINIMUM_PYTHON:
         sys.stderr.write("Minimum python version {} required, found {}\n".format(tupleToDotted(MINIMUM_PYTHON), tupleToDotted(version)))
-        sys.exit(1)
+        sys.exit(EXIT_CODES["python_version"])
 
 def checkGcovVersion(version):
     """Exit if the provided gcov version is less than the supported version."""
     if version < MINIMUM_GCOV:
         sys.stderr.write("Minimum gcov version {} required, found {}\n".format(tupleToDotted(MINIMUM_GCOV), tupleToDotted(version)))
-        sys.exit(2)
+        sys.exit(EXIT_CODES["gcov_version"])
 
 def setupLogging(quiet, verbose):
     handler = logging.StreamHandler()
@@ -710,6 +732,10 @@ def main():
 
     # Dump to desired file format
     dumpFile(fastcov_json, args)
+
+    # If there was an error along the way, but we still completed the pipeline...
+    if EXIT_CODE:
+        sys.exit(EXIT_CODE)
 
 # Set package version... it's way down here so that we can call tupleToDotted
 __version__ = tupleToDotted(FASTCOV_VERSION)
