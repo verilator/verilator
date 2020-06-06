@@ -4663,6 +4663,12 @@ idArrayed<nodep>:		// IEEE: id + select
 
 idClassForeach<nodep>:
 		idForeach				{ $$ = $1; }
+	//			// IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
+	|	yTHIS '.' idForeach			{ $$ = $3; BBUNSUP($1, "Unsupported: this"); }
+	|	ySUPER '.' idForeach			{ $$ = $3; BBUNSUP($1, "Unsupported: super"); }
+	|	yTHIS '.' ySUPER '.' idForeach		{ $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
+	//			// Expanded: package_scope idForeach
+	|	class_scopeIdFollows idForeach		{ $$ = $2; BBUNSUP($2, "Unsupported: package scoped id"); }
 	|	package_scopeIdFollows idForeach	{ $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
 	;
 
