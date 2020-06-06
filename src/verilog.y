@@ -1492,7 +1492,8 @@ modport_itemList<nodep>:		// IEEE: part of modport_declaration
 	;
 
 modport_item<nodep>:			// ==IEEE: modport_item
-		id/*new-modport*/ '(' { VARRESET_NONLIST(UNKNOWN); VARIO(INOUT); }
+		id/*new-modport*/ '('
+	/*mid*/		{ VARRESET_NONLIST(UNKNOWN); VARIO(INOUT); }
 	/*cont*/    modportPortsDeclList ')'		{ $$ = new AstModport($<fl>1, *$1, $4); }
 	;
 
@@ -1663,17 +1664,23 @@ port_declaration<nodep>:	// ==IEEE: port_declaration
 	//			// IEEE: input_declaration
 	//			// IEEE: output_declaration
 	//			// IEEE: ref_declaration
-		port_directionReset port_declNetE data_type          { VARDTYPE($3); }
+		port_directionReset port_declNetE data_type
+	/*mid*/		{ VARDTYPE($3); }
 	/*cont*/    list_of_variable_decl_assignments			{ $$ = $5; }
-	|	port_directionReset port_declNetE yVAR data_type     { VARDTYPE($4); }
+	|	port_directionReset port_declNetE yVAR data_type
+	/*mid*/		{ VARDTYPE($4); }
 	/*cont*/    list_of_variable_decl_assignments			{ $$ = $6; }
-	|	port_directionReset port_declNetE yVAR implicit_typeE { VARDTYPE($4); }
+	|	port_directionReset port_declNetE yVAR implicit_typeE
+	/*mid*/		{ VARDTYPE($4); }
 	/*cont*/    list_of_variable_decl_assignments			{ $$ = $6; }
-	|	port_directionReset port_declNetE signingE rangeList { VARDTYPE_NDECL(GRAMMARP->addRange(new AstBasicDType($4->fileline(), LOGIC_IMPLICIT, $3), $4, true)); }
+	|	port_directionReset port_declNetE signingE rangeList
+	/*mid*/		{ VARDTYPE_NDECL(GRAMMARP->addRange(new AstBasicDType($4->fileline(), LOGIC_IMPLICIT, $3), $4, true)); }
 	/*cont*/    list_of_variable_decl_assignments			{ $$ = $6; }
-	|	port_directionReset port_declNetE signing	     { VARDTYPE_NDECL(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $3)); }
+	|	port_directionReset port_declNetE signing
+	/*mid*/		{ VARDTYPE_NDECL(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $3)); }
 	/*cont*/    list_of_variable_decl_assignments			{ $$ = $5; }
-	|	port_directionReset port_declNetE /*implicit*/       { VARDTYPE_NDECL(NULL);/*default_nettype*/}
+	|	port_directionReset port_declNetE /*implicit*/
+	/*mid*/		{ VARDTYPE_NDECL(NULL);/*default_nettype*/}
 	/*cont*/    list_of_variable_decl_assignments			{ $$ = $4; }
 	//			// IEEE: interface_declaration
 	//			// Looks just like variable declaration unless has a period
@@ -1807,10 +1814,12 @@ type_reference<dtypep>:  	// ==IEEE: type_reference
 
 struct_unionDecl<uorstructp>:	// IEEE: part of data_type
 	//			// packedSigningE is NOP for unpacked
-		ySTRUCT        packedSigningE '{' 	{ $<uorstructp>$ = new AstStructDType($1, $2); SYMP->pushNew($<uorstructp>$); }
+		ySTRUCT        packedSigningE '{'
+	/*mid*/ 	{ $<uorstructp>$ = new AstStructDType($1, $2); SYMP->pushNew($<uorstructp>$); }
 	/*cont*/    struct_union_memberList '}'
 			{ $$=$<uorstructp>4; $$->addMembersp($5); SYMP->popScope($$); }
-	|	yUNION taggedE packedSigningE '{' 	{ $<uorstructp>$ = new AstUnionDType($1, $3); SYMP->pushNew($<uorstructp>$); }
+	|	yUNION taggedE packedSigningE '{'
+	/*mid*/		{ $<uorstructp>$ = new AstUnionDType($1, $3); SYMP->pushNew($<uorstructp>$); }
 	/*cont*/    struct_union_memberList '}'
 			{ $$=$<uorstructp>5; $$->addMembersp($6); SYMP->popScope($$); }
 	;
@@ -1822,7 +1831,7 @@ struct_union_memberList<nodep>:	// IEEE: { struct_union_member }
 
 struct_union_member<nodep>:	// ==IEEE: struct_union_member
 		random_qualifierE data_type_or_void
-			{ GRAMMARP->m_memDTypep = $2; }  // As a list follows, need to attach this dtype to each member.
+	/*mid*/		{ GRAMMARP->m_memDTypep = $2; }  // As a list follows, need to attach this dtype to each member.
 	/*cont*/    list_of_member_decl_assignments ';'		{ $$ = $4; GRAMMARP->m_memDTypep = NULL; }
 	;
 
@@ -2631,7 +2640,7 @@ instDecl<nodep>:
 			  } }
 	//			// IEEE: interface_identifier' .' modport_identifier list_of_interface_identifiers
 	|	id/*interface*/ '.' id/*modport*/
-			{ VARRESET_NONLIST(AstVarType::IFACEREF);
+	/*mid*/		{ VARRESET_NONLIST(AstVarType::IFACEREF);
 			  VARDTYPE(new AstIfaceRefDType($<fl>1, $<fl>3, "", *$1, *$3)); }
 	/*cont*/    mpInstnameList ';'
 			{ $$ = VARDONEP($5,NULL,NULL); }
@@ -3811,7 +3820,7 @@ tf_item_declarationVerilator<nodep>:	// Verilator extensions
 tf_port_listE<nodep>:		// IEEE: tf_port_list + empty
 	//			// Empty covered by tf_port_item
 		/*empty*/
-			{ VARRESET_LIST(UNKNOWN); VARIO(INPUT); }
+	/*mid*/		{ VARRESET_LIST(UNKNOWN); VARIO(INPUT); }
 	/*cont*/    tf_port_listList			{ $$ = $2; VARRESET_NONLIST(UNKNOWN); }
 	;
 
