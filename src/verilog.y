@@ -29,6 +29,7 @@
 
 #include <cstdlib>
 #include <cstdarg>
+#include <stack>
 
 #define YYERROR_VERBOSE 1
 #define YYINITDEPTH 10000  // Older bisons ignore YYMAXDEPTH
@@ -67,11 +68,13 @@ public:
     AstNodeDType* m_memDTypep;  // Pointer to data type for next member declaration
     AstNodeModule* m_modp;  // Last module for timeunits
     bool m_pinAnsi;  // In ANSI port list
-    int m_pinNum;  // Pin number currently parsing
     FileLine* m_instModuleFl;  // Fileline of module referenced for instantiations
     string m_instModule;  // Name of module referenced for instantiations
     AstPin* m_instParamp;  // Parameters for instantiations
     bool m_tracingParse;  // Tracing disable for parser
+
+    int m_pinNum;  // Pin number currently parsing
+    std::stack<int> m_pinStack;  // Queue of pin numbers being parsed
 
     static int s_modTypeImpNum;  // Implicit type number, incremented each module
 
@@ -140,6 +143,15 @@ public:
     void setDType(AstNodeDType* dtypep) {
         if (m_varDTypep) VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep = NULL);
         m_varDTypep = dtypep;
+    }
+    void pinPush() {
+        m_pinStack.push(m_pinNum);
+        m_pinNum = 1;
+    }
+    void pinPop(FileLine* fl) {
+        if (VL_UNCOVERABLE(m_pinStack.empty())) { fl->v3fatalSrc("Underflow of pin stack"); }
+        m_pinNum = m_pinStack.top();
+        m_pinStack.pop();
     }
     AstPackage* unitPackage(FileLine* fl) {
         // Find one made earlier?
@@ -2667,7 +2679,7 @@ instRange<rangep>:
 	;
 
 cellparamList<pinp>:
-		{VARRESET_LIST(UNKNOWN);} cellparamItList	{ $$ = $2; VARRESET_NONLIST(UNKNOWN); }
+		{ GRAMMARP->pinPush(); } cellparamItList	{ $$ = $2; GRAMMARP->pinPop(CRELINE()); }
 	;
 
 cellpinList<pinp>:
