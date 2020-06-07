@@ -218,6 +218,8 @@ public:
     bool lastWarnWaived() { return m_waive; }
 
     // Specific flag ACCESSORS/METHODS
+    bool celldefineOn() const { return m_warnOn.test(V3ErrorCode::I_CELLDEFINE); }
+    void celldefineOn(bool flag) { warnOn(V3ErrorCode::I_CELLDEFINE, flag); }
     bool coverageOn() const { return m_warnOn.test(V3ErrorCode::I_COVERAGE); }
     void coverageOn(bool flag) { warnOn(V3ErrorCode::I_COVERAGE, flag); }
     bool tracingOn() const { return m_warnOn.test(V3ErrorCode::I_TRACING); }

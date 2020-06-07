@@ -107,7 +107,6 @@ class V3ParseImp {
     static V3ParseImp* s_parsep;  // Current THIS, bison() isn't class based
     FileLine* m_fileline;  // Filename/linenumber currently active
 
-    bool m_inCellDefine;  // Inside a `celldefine
     bool m_inLibrary;  // Currently reading a library vs. regular file
     int m_inBeginKwd;  // Inside a `begin_keywords
     int m_lastVerilogState;  // Last LEX state in `begin_keywords
@@ -214,8 +213,6 @@ public:
     FileLine* fileline() const { return m_fileline; }
     AstNetlist* rootp() const { return m_rootp; }
     FileLine* copyOrSameFileLine() { return fileline()->copyOrSameFileLine(); }
-    bool inCellDefine() const { return m_inCellDefine; }
-    void inCellDefine(bool flag) { m_inCellDefine = flag; }
     bool inLibrary() const { return m_inLibrary; }
     VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
     void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
@@ -244,7 +241,6 @@ public:
         , m_symp(parserSymp) {
         m_fileline = NULL;
         m_lexerp = NULL;
-        m_inCellDefine = false;
         m_inLibrary = false;
         m_inBeginKwd = 0;
         m_lastVerilogState = stateVerilogRecent();

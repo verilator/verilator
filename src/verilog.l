@@ -929,7 +929,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
   "`accelerate"                         { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`autoexpand_vectornets"              { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
-  "`celldefine"                         { FL_FWD; PARSEP->inCellDefine(true); FL_BRK; }
+  "`celldefine"                         { FL_FWD; PARSEP->fileline()->celldefineOn(true); FL_BRK; }
   "`default_decay_time"{ws}+[^\n\r]*    { FL_FWD; FL_BRK; }  // Verilog spec - delays only
   "`default_nettype"{ws}+"wire"         { FL_FWD; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true); FL_BRK; }
   "`default_nettype"{ws}+"none"         { FL_FWD; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, false); FL_BRK; }
@@ -943,7 +943,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`delay_mode_zero"                    { FL_FWD; FL_BRK; }  // Verilog spec - delays only
   "`disable_portfaults"                 { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`enable_portfaults"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
-  "`endcelldefine"                      { FL_FWD; PARSEP->inCellDefine(false); FL_BRK; }
+  "`endcelldefine"                      { FL_FWD; PARSEP->fileline()->celldefineOn(false); FL_BRK; }
   "`endprotect"                         { FL_FWD; FL_BRK; }
   "`expand_vectornets"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`inline"                             { FL_FWD; FL_BRK; }

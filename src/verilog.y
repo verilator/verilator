@@ -1170,7 +1170,7 @@ modFront<modulep>:
 		yMODULE lifetimeE idAny
 			{ $$ = new AstModule($<fl>3,*$3);
 			  $$->lifetime($2);
-			  $$->inLibrary(PARSEP->inLibrary() || PARSEP->inCellDefine());
+			  $$->inLibrary(PARSEP->inLibrary() || $$->fileline()->celldefineOn());
 			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
 			  $$->timeunit(PARSEP->timeLastUnit());
 			  $$->unconnectedDrive(PARSEP->unconnectedDrive());
@@ -1463,7 +1463,7 @@ pgmFront<modulep>:
 		yPROGRAM lifetimeE idAny/*new_program*/
 			{ $$ = new AstModule($<fl>3,*$3);
 			  $$->lifetime($2);
-			  $$->inLibrary(PARSEP->inLibrary() || PARSEP->inCellDefine());
+			  $$->inLibrary(PARSEP->inLibrary() || $$->fileline()->celldefineOn());
 			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
 			  $$->timeunit(PARSEP->timeLastUnit());
 			  PARSEP->rootp()->addModulep($$);
