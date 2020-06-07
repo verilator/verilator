@@ -347,6 +347,31 @@ const V3ParseBisonYYSType* V3ParseImp::tokenPeekp(size_t depth) {
     return &m_tokensAhead.at(depth);
 }
 
+bool V3ParseImp::tokenPipeScanParam() {
+    // Search around IEEE parameter_value_assignment to see if :: follows
+    if (tokenPeekp(0)->token != '#') return false;
+    if (tokenPeekp(1)->token != '(') return false;
+    int depth = 2;  // Past the (
+    int parens = 1;  // Count first (
+    while (true) {
+        int tok = tokenPeekp(depth)->token;
+        if (tok == 0) {
+            UINFO(9, "tokenPipeScanParam hit EOF; probably syntax error to come");
+            break;
+        } else if (tok == '(') {
+            ++parens;
+        } else if (tok == ')') {
+            --parens;
+            if (parens == 0) {
+                ++depth;
+                break;
+            }
+        }
+        ++depth;
+    }
+    return tokenPeekp(depth)->token == yP_COLONCOLON;
+}
+
 void V3ParseImp::tokenPipeline() {
     // called from bison's "yylex", has a "this"
     if (m_tokensAhead.empty()) tokenPull();  // corrupts yylval
@@ -433,7 +458,15 @@ void V3ParseImp::tokenPipeline() {
                 token = yWITH__ETC;
             }
         } else if (token == yaID__LEX) {
-            if (nexttok == yP_COLONCOLON) { token = yaID__CC; }
+            if (nexttok == yP_COLONCOLON) {
+                token = yaID__CC;
+            } else if (nexttok == '#') {
+                V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
+                {
+                    if (tokenPipeScanParam()) { token = yaID__CC; }
+                }
+                yylval = curValue;
+            }
         }
         // If add to above "else if", also add to "if (token" further above
     }
@@ -450,6 +483,7 @@ void V3ParseImp::tokenPipelineSym() {
         VSymEnt* foundp;
         if (VSymEnt* look_underp = V3ParseImp::parsep()->symp()->nextId()) {
             UINFO(7, "   tokenPipelineSym: next id lookup forced under " << look_underp << endl);
+            // if (debug() >= 7) V3ParseImp::parsep()->symp()->dump(cout, " -symtree: ");
             foundp = look_underp->findIdFallback(*(yylval.strp));
             // "consume" it.  Must set again if want another token under temp scope
             V3ParseImp::parsep()->symp()->nextId(NULL);
@@ -457,8 +491,8 @@ void V3ParseImp::tokenPipelineSym() {
             UINFO(7, "   tokenPipelineSym: find upward "
                          << V3ParseImp::parsep()->symp()->symCurrentp() << " for '"
                          << *(yylval.strp) << "'" << endl);
-            // if (debug()>=9) V3ParseImp::parsep()->symp()->symCurrentp()->dump(cout," -findtree:
-            // ", true);
+            // if (debug()>=9) V3ParseImp::parsep()->symp()->symCurrentp()->dump(cout,
+            // " -findtree: ", true);
             foundp = V3ParseImp::parsep()->symp()->symCurrentp()->findIdFallback(*(yylval.strp));
         }
         if (foundp) {
@@ -470,7 +504,7 @@ void V3ParseImp::tokenPipelineSym() {
             } else if (VN_IS(scp, TypedefFwd)) {
                 token = (token == yaID__CC) ? yaID__CC : yaID__aTYPE;
             } else if (VN_IS(scp, Class)) {
-                token = (token == yaID__CC) ? yaID__aTYPE : yaID__aTYPE;
+                token = (token == yaID__CC) ? yaID__CC : yaID__aTYPE;
             } else if (VN_IS(scp, Package)) {
                 token = (token == yaID__CC) ? yaID__CC : yaID__ETC;
             } else {
@@ -511,8 +545,8 @@ int V3ParseImp::tokenToBison() {
 // V3ParseBisonYYSType functions
 
 std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) {
-    os << "TOKEN=" << rhs.token << " " << V3ParseImp::tokenName(rhs.token);
-    os << "  {" << rhs.fl->filenameLetters() << rhs.fl->asciiLineCol() << "}";
+    os << "TOKEN {" << rhs.fl->filenameLetters() << rhs.fl->asciiLineCol() << "}";
+    os << "=" << rhs.token << " " << V3ParseImp::tokenName(rhs.token);
     if (rhs.token == yaID__ETC  //
         || rhs.token == yaID__LEX  //
         || rhs.token == yaID__CC  //

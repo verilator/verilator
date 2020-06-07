@@ -26,6 +26,7 @@
 #include "V3Parse.h"
 #include "V3ParseSym.h"
 
+#include <algorithm>
 #include <deque>
 
 class V3Lexer;
@@ -138,7 +139,13 @@ public:
         if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel("flex");
         return level;
     }
-    static int debug() { return debugBison() ? debugFlex() : 0; }
+    static int debug() {
+        static int level = -1;
+        if (VL_UNLIKELY(level < 0))
+            level = std::max(std::max(debugBison(), debugFlex()),
+                             v3Global.opt.debugSrcLevel("V3ParseImp"));
+        return level;
+    }
 
     // Functions called by lex rules:
     int yylexThis();
@@ -267,6 +274,7 @@ private:
     void tokenPull();
     void tokenPipeline();  // Internal; called from tokenToBison
     void tokenPipelineSym();
+    bool tokenPipeScanParam();
     const V3ParseBisonYYSType* tokenPeekp(size_t depth);
     void preprocDumps(std::ostream& os);
 };

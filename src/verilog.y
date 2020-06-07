@@ -267,6 +267,17 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
         GRAMMARP->m_instParamp = paramsp; \
     }
 
+static AstPackage* CAST_PACKAGE_CLASS(AstNode* nodep) {
+    if (!nodep) {
+        return NULL;
+    } else if (AstPackage* pkgp = VN_CAST(nodep, Package)) {
+        return pkgp;
+    } else {
+        BBUNSUP(nodep->fileline(), "Unsupported class :: reference");
+        return NULL;
+    }
+}
+
 #define DEL(nodep) \
     { \
         if (nodep) nodep->deleteTree(); \
@@ -1770,7 +1781,7 @@ simple_type<dtypep>:		// ==IEEE: simple_type
 	//			// IEEE: ps_parameter_identifier (presumably a PARAMETER TYPE)
 	//			// Even though we looked up the type and have a AstNode* to it,
 	//			// we can't fully resolve it because it may have been just a forward definition.
-	|	package_scopeIdFollowsE idType
+	|	packageClassScopeE idType
 			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2);
 			  refp->packagep($1); $$ = refp; }
 	//
@@ -1788,11 +1799,11 @@ data_type<dtypep>:		// ==IEEE: data_type
 	//			// IEEE: class_type
 	//			// IEEE: ps_covergroup_identifier
 	//			// Don't distinguish between types and classes so all these combined
-	|	package_scopeIdFollowsE idType packed_dimensionListE
+	|	packageClassScopeE idType packed_dimensionListE
 			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2);
 			  refp->packagep($1);
 			  $$ = GRAMMARP->createArray(refp, $3, true); }
-	|	package_scopeIdFollowsE idType parameter_value_assignmentClass packed_dimensionListE
+	|	packageClassScopeE idType parameter_value_assignmentClass packed_dimensionListE
 			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2);
 			  refp->packagep($1);
 			  BBUNSUP($3->fileline(), "Unsupported: Parameter classes");
@@ -2008,7 +2019,7 @@ enum_base_typeE<dtypep>:	// IEEE: enum_base_type
 	//			// however other simulators allow [ class_scope | package_scope ] type_identifier
 	|	idAny rangeListE
 			{ $$ = GRAMMARP->createArray(new AstRefDType($<fl>1, *$1), $2, true); }
-	|	package_scopeIdFollows idType rangeListE
+	|	packageClassScope idAny rangeListE
 			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2);
 			  refp->packagep($1);
 			  $$ = GRAMMARP->createArray(refp, $3, true); }
@@ -2129,8 +2140,8 @@ data_declarationVarFrontClass:	// IEEE: part of data_declaration (for class_prop
 //UNSUPnet_type_declaration:		// IEEE: net_type_declaration
 //UNSUP		yNETTYPE data_type idAny/*net_type_identifier*/ ';' { }
 //UNSUP	//			// package_scope part of data_type
-//UNSUP	|	yNETTYPE data_type idAny yWITH__ETC package_scopeIdFollows id/*tf_identifier*/ ';' { }
-//UNSUP	|	yNETTYPE package_scopeIdFollows id/*net_type_identifier*/ idAny/*net_type_identifier*/ ';' { }
+//UNSUP	|	yNETTYPE data_type idAny yWITH__ETC packageClassScope id/*tf_identifier*/ ';' { }
+//UNSUP	|	yNETTYPE packageClassScope id/*net_type_identifier*/ idAny/*net_type_identifier*/ ';' { }
 //UNSUP	;
 
 implicit_typeE<dtypep>:		// IEEE: part of *data_type_or_implicit
@@ -3393,11 +3404,8 @@ loop_variables<nodep>:		// IEEE: loop_variables
 taskRef<nodep>:			// IEEE: part of tf_call
 		id		 		{ $$ = new AstTaskRef($<fl>1,*$1,NULL); }
 	|	id '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef($<fl>1,*$1,$3); }
-	|	package_scopeIdFollows id '(' list_of_argumentsE ')'
-			{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstTaskRef($<fl>2,*$2,$4)); }
-	|	class_scopeIdFollows id '(' list_of_argumentsE ')'
-			{ $$ = new AstTaskRef($<fl>2, *$2, $4);
-			  BBUNSUP($<fl>2, "Unsupported: Class-scoped tasks"); }
+	|	packageClassScope id '(' list_of_argumentsE ')'
+			{ $$ = AstDot::newIfPkg($<fl>2, CAST_PACKAGE_CLASS($1), new AstTaskRef($<fl>2, *$2, $4)); }
 	;
 
 funcRef<nodep>:			// IEEE: part of tf_call
@@ -3412,11 +3420,8 @@ funcRef<nodep>:			// IEEE: part of tf_call
 	//
 		id '(' list_of_argumentsE ')'
 			{ $$ = new AstFuncRef($<fl>1, *$1, $3); }
-	|	package_scopeIdFollows id '(' list_of_argumentsE ')'
-			{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstFuncRef($<fl>2,*$2,$4)); }
-	|	class_scopeIdFollows id '(' list_of_argumentsE ')'
-			{ $$ = new AstFuncRef($<fl>2, *$2, $4);
-			  BBUNSUP($<fl>2, "Unsupported: Class-scoped functions"); }
+	|	packageClassScope id '(' list_of_argumentsE ')'
+			{ $$ = AstDot::newIfPkg($<fl>2, CAST_PACKAGE_CLASS($1), new AstFuncRef($<fl>2, *$2, $4)); }
 	//UNSUP list_of_argumentE should be pev_list_of_argumentE
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
@@ -3810,7 +3815,7 @@ funcIdNew<ftaskp>:		// IEEE: from class_constructor_declaration
 			{ $$ = new AstFunc($<fl>1, "new", NULL, NULL);
 			  $$->isConstructor(true);
 			  SYMP->pushNewUnder($$, NULL); }
-	|	class_scopeWithoutId yNEW__PAREN
+	|	packageClassScopeNoId yNEW__PAREN
 			{ $$ = new AstFunc($<fl>2, "new", NULL, NULL);
 			  BBUNSUP($<fl>2, "Unsupported: scoped new constructor");
 			  $$->isConstructor(true);
@@ -3821,7 +3826,7 @@ tfIdScoped<strp>:		// IEEE: part of function_body_declaration/task_body_declarat
  	//			// IEEE: [ interface_identifier '.' | class_scope ] function_identifier
 		id					{ $<fl>$=$<fl>1; $<strp>$ = $1; }
 	|	id/*interface_identifier*/ '.' id	{ $<fl>$=$<fl>3; $<strp>$ = $3; BBUNSUP($2, "Unsupported: Out of block function declaration"); }
-	|	class_scopeIdFollows id			{ $<fl>$=$<fl>2; $<scp>$=$<scp>1; $<strp>$=$<strp>2;
+	|	packageClassScope id			{ $<fl>$=$<fl>2; $<scp>$=$<scp>1; $<strp>$=$<strp>2;
 							  BBUNSUP($<fl>1, "Unsupported: Out of class block function declaration"); }
 	;
 
@@ -4243,8 +4248,7 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 							  BBUNSUP($1, "Unsupported: this"); }
 	|	yD_ROOT					{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"); }
 	|	idArrayed				{ $$ = $1; }
-	|	package_scopeIdFollows idArrayed	{ $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
-	|	class_scopeIdFollows idArrayed		{ $$ = $2; BBUNSUP($<fl>2, "Unsupported: scoped class reference"); }
+	|	packageClassScope idArrayed		{ $$ = AstDot::newIfPkg($2->fileline(), CAST_PACKAGE_CLASS($1), $2); }
 	|	~l~expr '.' idArrayed			{ $$ = new AstDot($<fl>2, false, $1, $3); }
 	//			// expr below must be a "yTHIS"
 	|	~l~expr '.' ySUPER			{ $$ = $1; BBUNSUP($3, "Unsupported: super"); }
@@ -4722,8 +4726,7 @@ idClassSel<nodep>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged va
 	|	ySUPER '.' idDotted			{ $$ = $3; BBUNSUP($1, "Unsupported: super"); }
 	|	yTHIS '.' ySUPER '.' idDotted		{ $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
 	//			// Expanded: package_scope idDotted
-	|	class_scopeIdFollows idDotted		{ $$ = $2; BBUNSUP($2, "Unsupported: package scoped id"); }
-	|	package_scopeIdFollows idDotted		{ $$ = $2; BBUNSUP($2, "Unsupported: class scoped id"); }
+	|	packageClassScope idDotted		{ $$ = $2; BBUNSUP($2, "Unsupported: package scoped id"); }
 	;
 
 idDotted<nodep>:
@@ -4759,8 +4762,7 @@ idClassForeach<nodep>:
 	|	ySUPER '.' idForeach			{ $$ = $3; BBUNSUP($1, "Unsupported: super"); }
 	|	yTHIS '.' ySUPER '.' idForeach		{ $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
 	//			// Expanded: package_scope idForeach
-	|	class_scopeIdFollows idForeach		{ $$ = $2; BBUNSUP($2, "Unsupported: package scoped id"); }
-	|	package_scopeIdFollows idForeach	{ $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
+	|	packageClassScope idForeach		{ $$ = $2; BBUNSUP($2, "Unsupported: package/class scoped id"); }
 	;
 
 idForeach<nodep>:
@@ -5839,14 +5841,18 @@ class_typeExtImpOne<nodep>:	// part of IEEE: class_type, where we either get a p
 	//			// If idAny below is a class, parameter_value is legal
 	//			// If idAny below is a package, parameter_value is not legal
 	//			// If idAny below is otherwise, not legal
-		idAny parameter_value_assignmentE
+		idAny
+	/*mid*/		{ /* no nextId as not refing it above this*/ }
+	/*cont*/    parameter_value_assignmentE
 			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL);
-			  if ($2) BBUNSUP($2->fileline(), "Unsupported: Parameterized classes"); }
+			  if ($3) BBUNSUP($3->fileline(), "Unsupported: Parameterized classes"); }
 	//			// package_sopeIdFollows expanded
 	|	yD_UNIT yP_COLONCOLON
-			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, "$unit", NULL, NULL); }
+			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, "$unit", NULL, NULL);
+			  SYMP->nextId(PARSEP->rootp()); }
 	|	yLOCAL__COLONCOLON yP_COLONCOLON
 			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, "local", NULL, NULL);
+			  SYMP->nextId(PARSEP->rootp());
 			  BBUNSUP($1, "Unsupported: Randomize 'local::'"); }
 	;
 
@@ -5856,63 +5862,77 @@ class_typeExtImpOne<nodep>:	// part of IEEE: class_type, where we either get a p
 // Each of these must end with {symsPackageDone | symsClassDone}
 
 ps_id_etc<varrefp>:		// package_scope + general id
-		package_scopeIdFollowsE varRefBase	{ $$ = $2; $2->packagep($1); }
+		packageClassScopeE varRefBase		{ $$ = $2; $2->packagep($1); }
 	;
 
 //=== Below rules assume special scoping per above
 
-class_scopeWithoutId<nodep>:	// class_type standalone without following id
-	//			// and we thus don't need to resolve it in specified package
-	//			// Used only where declare "function <class_scope>::new"
-		class_scopeIdFollows			{ $$ = $1; }
+packageClassScopeNoId<packagep>:	// IEEE: [package_scope] not followed by yaID
+		packageClassScope			{ $$ = $1; SYMP->nextId(NULL); }
 	;
 
-class_scopeIdFollows<nodep>:	// IEEE: class_scope + type
+packageClassScopeE<packagep>:	// IEEE: [package_scope]
+	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
+	//			//     if not needed must use packageClassScopeNoId
+	//			// TODO: To support classes should return generic type, not packagep
+	//			// class_qualifier := [ yLOCAL '::'  ] [ implicit_class_handle '.'  class_scope ]
+		/* empty */				{ $$ = NULL; }
+	|	packageClassScope			{ $$ = $1; }
+	;
+
+packageClassScope<packagep>:	// IEEE: class_scope + type
 	//			// IEEE: "class_type yP_COLONCOLON"
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
-	//			// But class_type:'::' conflicts with class_scope:'::' so expand here
-		package_scopeIdFollowsE class_typeOneListColonIdFollows
-			{ $$ = NULL; BBUNSUP(CRELINE(), "Unsupported: scoped class reference"); }
+	//			//     if not needed must use packageClassScopeNoId
+	//			// In this parser <package_identifier>:: and <class_identifier>:: are indistinguishible
+		packageClassScopeList			{ $$ = $1; }
+	|	localNextId yP_COLONCOLON		{ $$ = $1; }
+	|	dollarUnitNextId yP_COLONCOLON		{ $$ = $1; }
+	|	dollarUnitNextId yP_COLONCOLON packageClassScopeList	{ $$ = $3; }
 	;
 
-class_typeOneListColonIdFollows: // IEEE: class_type :: but allow yaID__aTYPE
-		class_typeOneList yP_COLONCOLON 	{ BBUNSUP($2, "Unsupported: Hierarchical class references"); }
-	;
-
-class_typeOneList<refdtypep>:	// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
+packageClassScopeList<packagep>:	// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
+	//			// Or IEEE: [package_scope]
+	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
+	//			//     if not needed must use packageClassScopeNoId
+	//			// In this parser <package_identifier>:: and <class_identifier>:: are indistinguishible
 	//			// If you follow the rules down, class_type is really a list via ps_class_identifier
-	//			// Must propagate scp up for next id
-		class_typeOne					{ $$ = $1; }
-	|	class_typeOneListColonIdFollows class_typeOne	{ $$ = $2; /*UNSUP*/ }
+		packageClassScopeItem			{ $$ = $1; }
+	|	packageClassScopeList packageClassScopeItem	{ $$ = $2; BBUNSUP($2, "Unsupported: Nested :: references"); }
 	;
 
-class_typeOne<refdtypep>:	// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
-	//			// If you follow the rules down, class_type is really a list via ps_class_identifier
-	//			// Not listed in IEEE, but see bug627 any parameter type maybe a class
-		idType parameter_value_assignmentE
-			{ $$ = new AstRefDType($<fl>1, *$1);
+packageClassScopeItem<packagep>:	// IEEE: package_scope or [package_scope]::[class_scope]
+	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
+	//			//     if not needed must use packageClassScopeNoId
+	//			// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
+	//			//vv mid rule action needed otherwise we might not have NextId in time to parse the id token
+		yaID__CC
+	/*mid*/		{ SYMP->nextId($<scp>1); }
+	/*cont*/    yP_COLONCOLON
+			{ $$ = VN_CAST($<scp>1, Package); }  // UNSUP classes
+	//
+	|	yaID__CC parameter_value_assignment
+        /*mid*/		{ SYMP->nextId($<scp>1); }   // Change next *after* we handle parameters, not before
+	/*cont*/    yP_COLONCOLON
+			{ $$ = VN_CAST($<scp>1, Package);  // UNSUP classes
 			  if ($2) BBUNSUP($2->fileline(), "Unsupported: Parameterized classes"); }
 	;
 
-package_scopeIdFollowsE<packagep>:	// IEEE: [package_scope]
+dollarUnitNextId<packagep>:	// $unit
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
-	//			// class_qualifier := [ yLOCAL '::'  ] [ implicit_class_handle '.'  class_scope ]
-		/* empty */				{ $$ = NULL; }
-	|	package_scopeIdFollows			{ $$ = $1; }
+	//			//     if not needed must use packageClassScopeNoId
+	//			// Must call nextId without any additional tokens following
+		yD_UNIT
+			{ $$ = GRAMMARP->unitPackage($<fl>1); SYMP->nextId(PARSEP->rootp()); }
 	;
 
-package_scopeIdFollows<packagep>:	// IEEE: package_scope
+localNextId<packagep>:		// local
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
-	//			// Also see class_typeExtImpOne which has these rules too
-	//			//vv mid rule action needed otherwise we might not have NextId in time to parse the id token
-		yaID__CC { SYMP->nextId($<scp>1); }
-	/*cont*/    yP_COLONCOLON
-			{ $$ = VN_CAST($<scp>1, Package); }
-	|	yD_UNIT yP_COLONCOLON
-			{ SYMP->nextId(PARSEP->rootp()); $$ = GRAMMARP->unitPackage($<fl>1); }
-	|	yLOCAL__COLONCOLON yP_COLONCOLON
-			{ BBUNSUP($1, "Unsupported: Randomize 'local::'");
-			  SYMP->nextId(PARSEP->rootp()); $$ = GRAMMARP->unitPackage($<fl>1); }
+	//			//     if not needed must use packageClassScopeNoId
+	//			// Must call nextId without any additional tokens following
+		yLOCAL__COLONCOLON
+			{ $$ = GRAMMARP->unitPackage($<fl>1); SYMP->nextId(PARSEP->rootp());
+			  BBUNSUP($<fl>1, "Unsupported: Randomize 'local::'"); }
 	;
 
 //^^^=========
