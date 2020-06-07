@@ -1021,7 +1021,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Default rules - leave last */
 
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX,VLT>{
-  "`"[a-zA-Z_0-9]+      { FL_FWD; PARSEP->errorPreprocDirective(yytext); FL_BRK; }
+  "`"[a-zA-Z_0-9]+      { FL; PARSEP->errorPreprocDirective(yylval.fl, yytext); FL_BRK; }
   "//"[^\n]*            { FL_FWD; FL_BRK; }  /* throw away single line comments */
   .                     { FL; return yytext[0]; }       /* return single char ops. */
 }

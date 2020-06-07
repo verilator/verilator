@@ -89,7 +89,7 @@ void V3ParseImp::timescalePreproc(FileLine* fl, const char* textp) {
     VTimescale prec;
     VTimescale::parseSlashed(fl, textp, unit /*ref*/, prec /*ref*/);
     m_timeLastUnit = v3Global.opt.timeComputeUnit(unit);
-    v3Global.rootp()->timeprecisionMerge(fileline(), prec);
+    v3Global.rootp()->timeprecisionMerge(fl, prec);
 }
 void V3ParseImp::timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, double unitVal,
                               bool precSet, double precVal) {
@@ -118,7 +118,7 @@ void V3ParseImp::timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, d
             fl->v3error("timeunit/timeprecision not under a module");
         }
     }
-    v3Global.rootp()->timeprecisionMerge(fileline(), prec);
+    v3Global.rootp()->timeprecisionMerge(fl, prec);
 }
 
 void V3ParseImp::verilatorCmtLintSave() { m_lintState.push_back(*parsep()->fileline()); }
@@ -134,15 +134,16 @@ void V3ParseImp::verilatorCmtLintRestore(FileLine* fl) {
 
 void V3ParseImp::verilatorCmtLint(FileLine* fl, const char* textp, bool warnOff) {
     const char* sp = textp;
-    while (*sp && !isspace(*sp)) sp++;
-    while (*sp && isspace(*sp)) sp++;
-    while (*sp && !isspace(*sp)) sp++;
-    while (*sp && isspace(*sp)) sp++;
+    while (*sp && !isspace(*sp)) ++sp;
+    while (*sp && isspace(*sp)) ++sp;
+    while (*sp && !isspace(*sp)) ++sp;
+    while (*sp && isspace(*sp)) ++sp;
     string msg = sp;
     string::size_type pos;
     if ((pos = msg.find('*')) != string::npos) msg.erase(pos);
+    // Use parsep()->fileline() as want to affect later FileLine's warnings
     if (!(parsep()->fileline()->warnOff(msg, warnOff))) {
-        if (!parsep()->optFuture(msg)) {
+        if (!v3Global.opt.isFuture(msg)) {
             fl->v3error("Unknown verilator lint message code: '" << msg << "', in '" << textp
                                                                  << "'");
         }
@@ -157,10 +158,12 @@ void V3ParseImp::verilatorCmtBad(FileLine* fl, const char* textp) {
     while (isspace(cmtparse[0])) cmtparse.replace(0, 1, "");
     string cmtname;
     for (int i = 0; isalnum(cmtparse[i]); i++) { cmtname += cmtparse[i]; }
-    if (!parsep()->optFuture(cmtname)) fl->v3error("Unknown verilator comment: '" << textp << "'");
+    if (!v3Global.opt.isFuture(cmtname)) {
+        fl->v3error("Unknown verilator comment: '" << textp << "'");
+    }
 }
 
-void V3ParseImp::errorPreprocDirective(const char* textp) {
+void V3ParseImp::errorPreprocDirective(FileLine* fl, const char* textp) {
     // Find all `preprocessor spelling candidates
     // Can't make this static as might get more defines later when read cells
     VSpellCheck speller;
@@ -171,9 +174,9 @@ void V3ParseImp::errorPreprocDirective(const char* textp) {
     }
     V3PreShell::candidateDefines(&speller);
     string suggest = speller.bestCandidateMsg(textp);
-    fileline()->v3error("Define or directive not defined: '"
-                        << textp << "'\n"
-                        << (suggest.empty() ? "" : fileline()->warnMore() + suggest));
+    fl->v3error("Define or directive not defined: '"
+                << textp << "'\n"
+                << (suggest.empty() ? "" : fl->warnMore() + suggest));
 }
 
 void V3ParseImp::tag(const char* text) {
