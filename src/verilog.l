@@ -896,8 +896,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           return yaINTNUM;
                         }
   [0-9][_0-9]*(\.[_0-9]+)([eE][-+]?[_0-9]+)? {
-                          FL; bool ok;
-                          yylval.cdouble = lexParseDouble(yytext, yyleng);
+                          FL; yylval.cdouble = lexParseDouble(yytext, yyleng);
                           return yaFLOATNUM;
                         }
   [0-9][_0-9]*(\.[_0-9]+)?([eE][-+]?[_0-9]+) {
