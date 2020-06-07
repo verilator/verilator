@@ -401,7 +401,10 @@ class AstSenTree;
 
 %token<strp>            yaD_PLI         "${pli-system}"
 
+%token<fl>              yaT_NOUNCONNECTED  "`nounconnecteddrive"
 %token<fl>              yaT_RESETALL    "`resetall"
+%token<fl>              yaT_UNCONNECTED_PULL0  "`unconnected_drive pull0"
+%token<fl>              yaT_UNCONNECTED_PULL1  "`unconnected_drive pull1"
 
 // <fl> is the fileline, abbreviated to shorten "$<fl>1" references
 %token<fl>              '!'
@@ -1018,6 +1021,9 @@ description:			// ==IEEE: description
 	//	unsupported	// IEEE: config_declaration
 	//			// Verilator only
 	|	yaT_RESETALL				{ }  // Else, under design, and illegal based on IEEE 22.3
+	|	yaT_NOUNCONNECTED			{ PARSEP->unconnectedDrive(VOptionBool::OPT_DEFAULT_FALSE); }
+        |	yaT_UNCONNECTED_PULL0			{ PARSEP->unconnectedDrive(VOptionBool::OPT_FALSE); }
+        |	yaT_UNCONNECTED_PULL1			{ PARSEP->unconnectedDrive(VOptionBool::OPT_TRUE); }
 	|	vltItem					{ }
 	|	error					{ }
 	;
