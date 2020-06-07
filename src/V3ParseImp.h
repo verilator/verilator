@@ -92,6 +92,7 @@ struct V3ParseBisonYYSType {
         AstVarRef* varrefp;
     };
 };
+std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs);
 
 #define YYSTYPE V3ParseBisonYYSType
 
@@ -189,6 +190,7 @@ public:
 
     // TODO: Many of these functions are the old interface; they'd be better as non-static
     // and called as READP->newString(...) etc.
+    // These can be called by either parser or lexer, as not lex/parser-position aware
     string* newString(const string& text) {
         // Allocate a string, remembering it so we can reclaim storage at lex end
         string* strp = new string(text);

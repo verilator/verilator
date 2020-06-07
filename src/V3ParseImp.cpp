@@ -359,7 +359,8 @@ void V3ParseImp::lexToken() {
         || token == ySTATIC__LEX  //
         || token == yVIRTUAL__LEX  //
         || token == yWITH__LEX  //
-        // Never put yID_* here; below symbol table resolution would break
+        // Never put yID_* here; below symbol table resolution would break;
+        // parser will change symbol table affecting how next ID maybe interpreted
     ) {
         if (debugFlex() >= 6) {
             cout << "   lexToken: reading ahead to find possible strength" << endl;
@@ -488,16 +489,24 @@ int V3ParseImp::lexToBison() {
 
     // yylval.scp = NULL;   // Symbol table not yet needed - no packages
     if (debugFlex() >= 6 || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
-        cout << "   {" << yylval.fl->filenameLetters() << yylval.fl->asciiLineCol()
-             << "} lexToBison  TOKEN=" << yylval.token << " " << tokenName(yylval.token);
-        if (yylval.token == yaID__ETC  //
-            || yylval.token == yaID__LEX  //
-            || yylval.token == yaID__aPACKAGE || yylval.token == yaID__aTYPE) {
-            cout << "   strp='" << *(yylval.strp) << "'";
-        }
-        cout << endl;
+        cout << "lexToBison  " << yylval << endl;
     }
     return yylval.token;
+}
+
+//======================================================================
+// V3ParseBisonYYSType functions
+
+std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) {
+    os << "TOKEN=" << rhs.token << " " << V3ParseImp::tokenName(rhs.token);
+    os << "  {" << rhs.fl->filenameLetters() << rhs.fl->asciiLineCol() << "}";
+    if (rhs.token == yaID__ETC  //
+        || rhs.token == yaID__LEX  //
+        || rhs.token == yaID__aPACKAGE  //
+        || rhs.token == yaID__aTYPE) {
+        os << " strp='" << *(rhs.strp) << "'";
+    }
+    return os;
 }
 
 //======================================================================
