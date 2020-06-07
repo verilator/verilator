@@ -292,17 +292,7 @@ static void UNSUPREAL(FileLine* fileline) {
 
 void yyerror(const char* errmsg) {
     PARSEP->bisonLastFileline()->v3error(errmsg);
-    static const char* const colonmsg = "syntax error, unexpected ::, ";
-    // tokens;
-    if (0 == strncmp(errmsg, colonmsg, strlen(colonmsg)) && PARSEP->bisonValIdThenColon()) {
-        static int warned = false;
-        if (!warned++) {
-            std::cerr << PARSEP->bisonLastFileline()->warnMore()
-                      << ("... Perhaps '" + *PARSEP->bisonValPrev().strp
-                          + "' is a package which needs to be predeclared? (IEEE 1800-2017 26.3)")
-                      << std::endl;
-        }
-    }
+    static const char* const colonmsg = "syntax error, unexpected";
 }
 
 void yyerrorf(const char* format, ...) {
@@ -336,8 +326,8 @@ class AstSenTree;
 // enum_identifier, interface_identifier, interface_instance_identifier,
 // package_identifier, type_identifier, variable_identifier,
 %token<strp>            yaID__ETC       "IDENTIFIER"
+%token<strp>            yaID__CC        "IDENTIFIER-::"
 %token<strp>            yaID__LEX       "IDENTIFIER-in-lex"
-%token<strp>            yaID__aPACKAGE  "PACKAGE-IDENTIFIER"
 %token<strp>            yaID__aTYPE     "TYPE-IDENTIFIER"
 //                      Can't predecode aFUNCTION, can declare after use
 //                      Can't predecode aINTERFACE, can declare after use
@@ -1111,7 +1101,7 @@ package_import_itemList<nodep>:
 	;
 
 package_import_item<nodep>:	// ==IEEE: package_import_item
-		idAny/*package_identifier*/ yP_COLONCOLON package_import_itemObj
+		yaID__CC/*package_identifier*/ yP_COLONCOLON package_import_itemObj
 			{
 			  if (!VN_CAST($<scp>1, Package)) {
 			      $$ = NULL;
@@ -1138,7 +1128,7 @@ package_export_itemList<nodep>:
 	;
 
 package_export_item<nodep>:	// ==IEEE: package_export_item
-		idAny yP_COLONCOLON package_import_itemObj
+		yaID__CC yP_COLONCOLON package_import_itemObj
 			{ $$ = new AstPackageExport($<fl>3, VN_CAST($<scp>1, Package), *$3);
 			  SYMP->exportItem($<scp>1,*$3); }
 	;
@@ -4682,9 +4672,8 @@ id<strp>:
 	;
 
 idAny<strp>:			// Any kind of identifier
-		yaID__aPACKAGE				{ $$ = $1; $<fl>$=$<fl>1; }
+		yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
 	|	yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
-	|	yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
 	|	idRandomize				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
@@ -5916,7 +5905,7 @@ package_scopeIdFollows<packagep>:	// IEEE: package_scope
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
 	//			// Also see class_typeExtImpOne which has these rules too
 	//			//vv mid rule action needed otherwise we might not have NextId in time to parse the id token
-		yaID__aPACKAGE { SYMP->nextId($<scp>1); }
+		yaID__CC { SYMP->nextId($<scp>1); }
 	/*cont*/    yP_COLONCOLON
 			{ $$ = VN_CAST($<scp>1, Package); }
 	|	yD_UNIT yP_COLONCOLON

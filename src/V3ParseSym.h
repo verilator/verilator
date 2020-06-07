@@ -142,7 +142,7 @@ public:
         // Import from package::id_or_star to this
         VSymEnt* symp = getTable(packagep);
         UASSERT_OBJ(symp, packagep,
-                    // Internal problem, because we earlier found pkg to label it an ID__aPACKAGE
+                    // Internal problem, because we earlier found pkg in parsing
                     "Import package not found");
         // Walk old sym table and reinsert into current table
         // We let V3LinkDot report the error instead of us
@@ -152,7 +152,7 @@ public:
         // Export from this the remote package::id_or_star
         VSymEnt* symp = getTable(packagep);
         UASSERT_OBJ(symp, packagep,
-                    // Internal problem, because we earlier found pkg to label it an ID__aPACKAGE
+                    // Internal problem, because we earlier found pkg in parsing
                     "Export package not found");
         symCurrentp()->exportFromPackage(&m_syms, symp, id_or_star);
     }

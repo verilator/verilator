@@ -116,8 +116,6 @@ class V3ParseImp {
     VOptionBool m_unconnectedDrive;  // Last unconnected drive
 
     int m_lexPrevToken;  // previous parsed token (for lexer)
-    V3ParseBisonYYSType m_bisonValCur;  // current token for error reporting
-    V3ParseBisonYYSType m_bisonValPrev;  // previous token for error reporting
     std::deque<V3ParseBisonYYSType> m_tokensAhead;  // Tokens we parsed ahead of parser
 
     std::deque<string*> m_stringps;  // Created strings for later cleanup
@@ -233,9 +231,6 @@ public:
     static int stateVerilogRecent();  // Parser -> lexer communication
     int lexPrevToken() const { return m_lexPrevToken; }  // Parser -> lexer communication
     size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf, max_size); }
-    V3ParseBisonYYSType bisonValCur() const { return m_bisonValCur; }
-    V3ParseBisonYYSType bisonValPrev() const { return m_bisonValPrev; }
-    bool bisonValIdThenColon() const;
 
     //==== Symbol tables
     V3ParseSym* symp() { return m_symp; }
@@ -252,8 +247,6 @@ public:
         m_lexKwdDepth = 0;
         m_lexKwdLast = stateVerilogRecent();
         m_lexPrevToken = 0;
-        m_bisonValCur.token = 0;
-        m_bisonValPrev.token = 0;
         m_tagNodep = NULL;
         m_timeLastUnit = v3Global.opt.timeDefaultUnit();
     }

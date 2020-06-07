@@ -28,22 +28,4 @@
 %Error: t/t_class_unsup_bad.v:42:4: Unsupported: virtual class member qualifier
    42 |    virtual function uvm_root get_root();
       |    ^~~~~~~
-%Error: t/t_class_unsup_bad.v:43:15: Unsupported: Hierarchical class references
-   43 |       uvm_root::m_forward_task_call();
-      |               ^~
-%Error: t/t_class_unsup_bad.v:43:17: Unsupported: scoped class reference
-   43 |       uvm_root::m_forward_task_call();
-      |                 ^~~~~~~~~~~~~~~~~~~
-%Error: t/t_class_unsup_bad.v:43:17: Unsupported: Class-scoped tasks
-   43 |       uvm_root::m_forward_task_call();
-      |                 ^~~~~~~~~~~~~~~~~~~
-%Error: t/t_class_unsup_bad.v:44:22: Unsupported: Hierarchical class references
-   44 |       return uvm_root::m_uvm_get_root();
-      |                      ^~
-%Error: t/t_class_unsup_bad.v:44:24: Unsupported: scoped class reference
-   44 |       return uvm_root::m_uvm_get_root();
-      |                        ^~~~~~~~~~~~~~
-%Error: t/t_class_unsup_bad.v:44:24: Unsupported: Class-scoped functions
-   44 |       return uvm_root::m_uvm_get_root();
-      |                        ^~~~~~~~~~~~~~
 %Error: Exiting due to

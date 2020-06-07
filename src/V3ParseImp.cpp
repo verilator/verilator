@@ -332,10 +332,6 @@ void V3ParseImp::lexFile(const string& modname) {
     if (bisonParse()) v3fatal("Cannot continue\n");
 }
 
-bool V3ParseImp::bisonValIdThenColon() const {
-    return bisonValPrev().token == yaID__ETC && bisonValCur().token == yP_COLONCOLON;
-}
-
 void V3ParseImp::tokenPull() {
     // Pull token from lex into the pipeline
     // This corrupts yylval, must save/restore if required
@@ -366,6 +362,7 @@ void V3ParseImp::tokenPipeline() {
         || token == ySTATIC__LEX  //
         || token == yVIRTUAL__LEX  //
         || token == yWITH__LEX  //
+        || token == yaID__LEX  //
     ) {
         if (debugFlex() >= 6) {
             cout << "   tokenPipeline: reading ahead to find possible strength" << endl;
@@ -435,6 +432,8 @@ void V3ParseImp::tokenPipeline() {
             } else {
                 token = yWITH__ETC;
             }
+        } else if (token == yaID__LEX) {
+            if (nexttok == yP_COLONCOLON) { token = yaID__CC; }
         }
         // If add to above "else if", also add to "if (token" further above
     }
@@ -447,7 +446,7 @@ void V3ParseImp::tokenPipelineSym() {
     // Note above sometimes converts yGLOBAL to a yaID__LEX
     tokenPipeline();  // sets yylval
     int token = yylval.token;
-    if (token == yaID__LEX) {
+    if (token == yaID__LEX || token == yaID__CC) {
         VSymEnt* foundp;
         if (VSymEnt* look_underp = V3ParseImp::parsep()->symp()->nextId()) {
             UINFO(7, "   tokenPipelineSym: next id lookup forced under " << look_underp << endl);
@@ -467,24 +466,29 @@ void V3ParseImp::tokenPipelineSym() {
             yylval.scp = scp;
             UINFO(7, "   tokenPipelineSym: Found " << scp << endl);
             if (VN_IS(scp, Typedef)) {
-                token = yaID__aTYPE;
+                token = (token == yaID__CC) ? yaID__CC : yaID__aTYPE;
             } else if (VN_IS(scp, TypedefFwd)) {
-                token = yaID__aTYPE;
+                token = (token == yaID__CC) ? yaID__CC : yaID__aTYPE;
             } else if (VN_IS(scp, Class)) {
-                token = yaID__aTYPE;
-            }
-            // Packages (and class static references) we could
-            // alternatively determine by looking for an yaID__LEX followed
-            // by yP_COLONCOLON (but we can't lookahead after an yaID__LEX
-            // as described above.)
-            else if (VN_IS(scp, Package)) {
-                token = yaID__aPACKAGE;
+                token = (token == yaID__CC) ? yaID__aTYPE : yaID__aTYPE;
+            } else if (VN_IS(scp, Package)) {
+                token = (token == yaID__CC) ? yaID__CC : yaID__ETC;
             } else {
-                token = yaID__ETC;
+                token = (token == yaID__CC) ? yaID__CC : yaID__ETC;
             }
         } else {  // Not found
             yylval.scp = NULL;
-            token = yaID__ETC;
+            token = (token == yaID__CC) ? yaID__CC : yaID__ETC;
+            if (token == yaID__CC) {
+                // We'll get a parser error eventually but might not be obvious
+                // is missing package, and this confuses people
+                static int warned = false;
+                if (!warned++) {
+                    yylval.fl->v3error(
+                        "Package/class '" + *yylval.strp
+                        + "' not found, and needs to be predeclared (IEEE 1800-2017 26.3)");
+                }
+            }
         }
     }
     yylval.token = token;
@@ -494,8 +498,6 @@ void V3ParseImp::tokenPipelineSym() {
 int V3ParseImp::tokenToBison() {
     // Called as global since bison doesn't have our pointer
     tokenPipelineSym();  // sets yylval
-    m_bisonValPrev = m_bisonValCur;
-    m_bisonValCur = yylval;
     m_bisonLastFileline = yylval.fl;
 
     // yylval.scp = NULL;   // Symbol table not yet needed - no packages
@@ -513,7 +515,7 @@ std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) {
     os << "  {" << rhs.fl->filenameLetters() << rhs.fl->asciiLineCol() << "}";
     if (rhs.token == yaID__ETC  //
         || rhs.token == yaID__LEX  //
-        || rhs.token == yaID__aPACKAGE  //
+        || rhs.token == yaID__CC  //
         || rhs.token == yaID__aTYPE) {
         os << " strp='" << *(rhs.strp) << "'";
     }
