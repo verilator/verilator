@@ -709,7 +709,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator sformat*/"               { FL; return yVL_SFORMAT; }
   "/*verilator split_var*/"             { FL; return yVL_SPLIT_VAR; }
   "/*verilator systemc_clock*/"         { FL; return yVL_CLOCK; }
-  "/*verilator tag"[^*]*"*/"            { FL_FWD; PARSEP->tag(yytext); FL_BRK; }
+  "/*verilator tag"[^*]*"*/"            { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexParseTag(yytext));
+                                          return yVL_TAG; }
   "/*verilator tracing_off*/"           { FL_FWD; PARSEP->fileline()->tracingOn(false); FL_BRK; }
   "/*verilator tracing_on*/"            { FL_FWD; PARSEP->fileline()->tracingOn(true); FL_BRK; }
 

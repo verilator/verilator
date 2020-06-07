@@ -123,7 +123,6 @@ class V3ParseImp {
     std::deque<FileLine> m_lexLintState;  // Current lint state for save/restore
     std::deque<string> m_ppBuffers;  // Preprocessor->lex buffer of characters to process
 
-    string m_tag;  // Contents (if any) of current verilator tag
     AstNode* m_tagNodep;  // Points to the node to set to m_tag or NULL to not set.
     VTimescale m_timeLastUnit;  // Last `timescale's unit
 
@@ -146,7 +145,6 @@ public:
     static bool optFuture(const string& flag) { return v3Global.opt.isFuture(flag); }
 
     void linenoInc() { fileline()->linenoInc(); }
-    void tag(const char* text);
     void tagNodep(AstNode* nodep) { m_tagNodep = nodep; }
     AstNode* tagNodep() const { return m_tagNodep; }
     void lexTimescaleParse(FileLine* fl, const char* textp);
@@ -155,6 +153,7 @@ public:
     VTimescale timeLastUnit() const { return m_timeLastUnit; }
 
     static void lexErrorPreprocDirective(FileLine* fl, const char* textp);
+    static string lexParseTag(const char* textp);
     static double lexParseTimenum(const char* text);
     void lexPpline(const char* textp);
     void lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff);

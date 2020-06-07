@@ -179,13 +179,11 @@ void V3ParseImp::lexErrorPreprocDirective(FileLine* fl, const char* textp) {
                 << (suggest.empty() ? "" : fl->warnMore() + suggest));
 }
 
-void V3ParseImp::tag(const char* text) {
-    if (m_tagNodep) {
-        string tmp = text + strlen("/*verilator tag ");
-        string::size_type pos;
-        if ((pos = tmp.rfind("*/")) != string::npos) { tmp.erase(pos); }
-        m_tagNodep->tag(tmp);
-    }
+string V3ParseImp::lexParseTag(const char* textp) {
+    string tmp = textp + strlen("/*verilator tag ");
+    string::size_type pos;
+    if ((pos = tmp.rfind("*/")) != string::npos) { tmp.erase(pos); }
+    return tmp;
 }
 
 double V3ParseImp::lexParseTimenum(const char* textp) {

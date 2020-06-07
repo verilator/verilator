@@ -808,23 +808,24 @@ class AstSenTree;
 
 %token<fl>              yVL_CLOCK               "/*verilator sc_clock*/"
 %token<fl>              yVL_CLOCKER             "/*verilator clocker*/"
-%token<fl>              yVL_NO_CLOCKER          "/*verilator no_clocker*/"
 %token<fl>              yVL_CLOCK_ENABLE        "/*verilator clock_enable*/"
 %token<fl>              yVL_COVERAGE_BLOCK_OFF  "/*verilator coverage_block_off*/"
 %token<fl>              yVL_FULL_CASE           "/*verilator full_case*/"
 %token<fl>              yVL_INLINE_MODULE       "/*verilator inline_module*/"
 %token<fl>              yVL_ISOLATE_ASSIGNMENTS "/*verilator isolate_assignments*/"
+%token<fl>              yVL_NO_CLOCKER          "/*verilator no_clocker*/"
 %token<fl>              yVL_NO_INLINE_MODULE    "/*verilator no_inline_module*/"
 %token<fl>              yVL_NO_INLINE_TASK      "/*verilator no_inline_task*/"
-%token<fl>              yVL_SC_BV               "/*verilator sc_bv*/"
-%token<fl>              yVL_SFORMAT             "/*verilator sformat*/"
 %token<fl>              yVL_PARALLEL_CASE       "/*verilator parallel_case*/"
 %token<fl>              yVL_PUBLIC              "/*verilator public*/"
 %token<fl>              yVL_PUBLIC_FLAT         "/*verilator public_flat*/"
 %token<fl>              yVL_PUBLIC_FLAT_RD      "/*verilator public_flat_rd*/"
 %token<fl>              yVL_PUBLIC_FLAT_RW      "/*verilator public_flat_rw*/"
 %token<fl>              yVL_PUBLIC_MODULE       "/*verilator public_module*/"
+%token<fl>              yVL_SC_BV               "/*verilator sc_bv*/"
+%token<fl>              yVL_SFORMAT             "/*verilator sformat*/"
 %token<fl>              yVL_SPLIT_VAR           "/*verilator split_var*/"
+%token<strp>            yVL_TAG                 "/*verilator tag*/"
 
 %token<fl>              yP_TICK         "'"
 %token<fl>              yP_TICKBRA      "'{"
@@ -1246,19 +1247,25 @@ paramPortDeclOrArg<nodep>:	// IEEE: param_assignment + parameter_port_declaratio
 	//			// We combine the two as we can't tell which follows a comma
 		parameter_port_declarationFrontE param_assignment	{ $$ = $2; }
 	|	parameter_port_declarationTypeFrontE type_assignment	{ $$ = $2; }
+	|	vlTag					{ $$ = NULL; }
 	;
 
 portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + empty
-		/* empty */					{ $$ = NULL; }
-	|	'(' ')'						{ $$ = NULL; }
+		/* empty */				{ $$ = NULL; }
+	|	'(' ')'					{ $$ = NULL; }
 	//			// .* expanded from module_declaration
 	//UNSUP	'(' yP_DOTSTAR ')'				{ UNSUP }
 	|	'(' {VARRESET_LIST(PORT);} list_of_ports ')'	{ $$ = $3; VARRESET_NONLIST(UNKNOWN); }
 	;
 
 list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
+		portAndTag				{ $$ = $1; }
+	|	list_of_ports ',' portAndTag		{ $$ = $1->addNextNull($3); }
+	;
+
+portAndTag<nodep>:
 		port					{ $$ = $1; }
-	|	list_of_ports ',' port			{ $$ = $1->addNextNull($3); }
+	|	vlTag port				{ $$ = $2; }  // Tag will associate with previous port
 	;
 
 port<nodep>:			// ==IEEE: port
@@ -1866,6 +1873,7 @@ struct_union_member<nodep>:	// ==IEEE: struct_union_member
 		random_qualifierE data_type_or_void
 	/*mid*/		{ GRAMMARP->m_memDTypep = $2; }  // As a list follows, need to attach this dtype to each member.
 	/*cont*/    list_of_member_decl_assignments ';'		{ $$ = $4; GRAMMARP->m_memDTypep = NULL; }
+	|	vlTag					{ $$ = NULL; }
 	;
 
 list_of_member_decl_assignments<nodep>:	// Derived from IEEE: list_of_variable_decl_assignments
@@ -2053,6 +2061,7 @@ data_declaration<nodep>:	// ==IEEE: data_declaration
 	//			// Therefore the virtual_interface_declaration term isn't used
 	//			// 1800-2009:
 	//UNSUP	net_type_declaration			{ $$ = $1; }
+	|	vlTag					{ $$ = NULL; }
 	;
 
 class_property<nodep>:		// ==IEEE: class_property, which is {property_qualifier} data_declaration
@@ -2176,6 +2185,10 @@ dtypeAttrList<nodep>:
 
 dtypeAttr<nodep>:
 		yVL_PUBLIC				{ $$ = new AstAttrOf($1,AstAttrType::DT_PUBLIC); }
+	;
+
+vlTag:				// verilator tag handling
+		yVL_TAG					{ if (PARSEP->tagNodep()) PARSEP->tagNodep()->tag(*$1); }
 	;
 
 //************************************************
