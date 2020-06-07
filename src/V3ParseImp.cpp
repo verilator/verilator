@@ -330,6 +330,10 @@ void V3ParseImp::lexFile(const string& modname) {
     if (bisonParse()) v3fatal("Cannot continue\n");
 }
 
+bool V3ParseImp::bisonValIdThenColon() const {
+    return bisonValPrev().token == yaID__ETC && bisonValCur().token == yP_COLONCOLON;
+}
+
 void V3ParseImp::lexToken() {
     // called from lexToBison, has a "this"
     // Fetch next token from prefetch or real lexer
@@ -476,8 +480,8 @@ void V3ParseImp::lexToken() {
 int V3ParseImp::lexToBison() {
     // Called as global since bison doesn't have our pointer
     lexToken();  // sets yylval
-    m_prevBisonVal = m_curBisonVal;
-    m_curBisonVal = yylval;
+    m_bisonValPrev = m_bisonValCur;
+    m_bisonValCur = yylval;
 
     // yylval.scp = NULL;   // Symbol table not yet needed - no packages
     if (debugFlex() >= 6 || debugBison() >= 6) {  // --debugi-flex and --debugi-bison

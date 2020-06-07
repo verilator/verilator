@@ -44,9 +44,6 @@
 #define GATEUNSUP(fl, tok) \
     { BBUNSUP((fl), "Unsupported: Verilog 1995 gate primitive: " << (tok)); }
 
-extern void yyerror(const char* errmsg);
-extern void yyerrorf(const char* format, ...);
-
 //======================================================================
 // Statics (for here only)
 
@@ -289,6 +286,36 @@ static void ERRSVKWD(FileLine* fileline, const string& tokname) {
 static void UNSUPREAL(FileLine* fileline) {
     fileline->v3warn(SHORTREAL,
                      "Unsupported: shortreal being promoted to real (suggest use real instead)");
+}
+
+//======================================================================
+
+void yyerror(const char* errmsg) {
+    PARSEP->fileline()->v3error(errmsg);
+    static const char* const colonmsg = "syntax error, unexpected ::, ";
+    // tokens;
+    if (0 == strncmp(errmsg, colonmsg, strlen(colonmsg)) && PARSEP->bisonValIdThenColon()) {
+        static int warned = false;
+        if (!warned++) {
+            std::cerr << PARSEP->fileline()->warnMore()
+                      << ("... Perhaps '" + *PARSEP->bisonValPrev().strp
+                          + "' is a package which needs to be predeclared? (IEEE 1800-2017 26.3)")
+                      << std::endl;
+        }
+    }
+}
+
+void yyerrorf(const char* format, ...) {
+    const int maxlen = 2000;
+    char msg[maxlen];
+
+    va_list ap;
+    va_start(ap, format);
+    VL_VSNPRINTF(msg, maxlen, format, ap);
+    msg[maxlen - 1] = '\0';
+    va_end(ap);
+
+    yyerror(msg);
 }
 
 //======================================================================

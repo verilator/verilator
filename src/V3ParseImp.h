@@ -116,8 +116,8 @@ class V3ParseImp {
     int m_prevLexToken;  // previous parsed token (for lexer)
     bool m_ahead;  // aheadval is valid
     V3ParseBisonYYSType m_aheadVal;  // ahead token value
-    V3ParseBisonYYSType m_curBisonVal;  // current token for error reporting
-    V3ParseBisonYYSType m_prevBisonVal;  // previous token for error reporting
+    V3ParseBisonYYSType m_bisonValCur;  // current token for error reporting
+    V3ParseBisonYYSType m_bisonValPrev;  // previous token for error reporting
 
     std::deque<string*> m_stringps;  // Created strings for later cleanup
     std::deque<V3Number*> m_numberps;  // Created numbers for later cleanup
@@ -229,8 +229,9 @@ public:
     static int stateVerilogRecent();  // Parser -> lexer communication
     int prevLexToken() const { return m_prevLexToken; }  // Parser -> lexer communication
     size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf, max_size); }
-    V3ParseBisonYYSType curBisonVal() const { return m_curBisonVal; }
-    V3ParseBisonYYSType prevBisonVal() const { return m_prevBisonVal; }
+    V3ParseBisonYYSType bisonValCur() const { return m_bisonValCur; }
+    V3ParseBisonYYSType bisonValPrev() const { return m_bisonValPrev; }
+    bool bisonValIdThenColon() const;
 
     //==== Symbol tables
     V3ParseSym* symp() { return m_symp; }
@@ -249,8 +250,8 @@ public:
         m_lastVerilogState = stateVerilogRecent();
         m_prevLexToken = 0;
         m_ahead = false;
-        m_curBisonVal.token = 0;
-        m_prevBisonVal.token = 0;
+        m_bisonValCur.token = 0;
+        m_bisonValPrev.token = 0;
         // m_aheadVal not used as m_ahead = false, and not all compilers support initing it
         m_tagNodep = NULL;
         m_timeLastUnit = v3Global.opt.timeDefaultUnit();
