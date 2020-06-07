@@ -336,20 +336,27 @@ bool V3ParseImp::bisonValIdThenColon() const {
     return bisonValPrev().token == yaID__ETC && bisonValCur().token == yP_COLONCOLON;
 }
 
-void V3ParseImp::lexToken() {
-    // called from lexToBison, has a "this"
+void V3ParseImp::tokenPull() {
+    // Pull token from lex into the pipeline
+    // This corrupts yylval, must save/restore if required
     // Fetch next token from prefetch or real lexer
-    int token;
-    if (m_ahead) {
-        // We prefetched an extra token, give it back
-        m_ahead = false;
-        token = m_aheadVal.token;
-        yylval = m_aheadVal;
-    } else {
-        // Parse new token
-        token = yylexReadTok();
-        // yylval // Set by yylexReadTok()
-    }
+    yylexReadTok();  // sets yylval
+    m_tokensAhead.push_back(yylval);
+}
+
+const V3ParseBisonYYSType* V3ParseImp::tokenPeekp(size_t depth) {
+    // Look ahead "depth" number of tokens in the input stream
+    // Returns pointer to token, which is no longer valid after changing m_tokensAhead
+    while (m_tokensAhead.size() <= depth) tokenPull();
+    return &m_tokensAhead.at(depth);
+}
+
+void V3ParseImp::tokenPipeline() {
+    // called from bison's "yylex", has a "this"
+    if (m_tokensAhead.empty()) tokenPull();  // corrupts yylval
+    yylval = m_tokensAhead.front();
+    m_tokensAhead.pop_front();
+    int token = yylval.token;
     // If a paren, read another
     if (token == '('  //
         || token == yCONST__LEX  //
@@ -359,17 +366,13 @@ void V3ParseImp::lexToken() {
         || token == ySTATIC__LEX  //
         || token == yVIRTUAL__LEX  //
         || token == yWITH__LEX  //
-        // Never put yID_* here; below symbol table resolution would break;
-        // parser will change symbol table affecting how next ID maybe interpreted
     ) {
         if (debugFlex() >= 6) {
-            cout << "   lexToken: reading ahead to find possible strength" << endl;
+            cout << "   tokenPipeline: reading ahead to find possible strength" << endl;
         }
         V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
-        int nexttok = yylexReadTok();
-        m_ahead = true;
-        m_aheadVal = yylval;
-        m_aheadVal.token = nexttok;
+        const V3ParseBisonYYSType* nexttokp = tokenPeekp(0);
+        int nexttok = nexttokp->token;
         yylval = curValue;
         // Now potentially munge the current token
         if (token == '('
@@ -435,18 +438,26 @@ void V3ParseImp::lexToken() {
         }
         // If add to above "else if", also add to "if (token" further above
     }
+    yylval.token = token;
+    // effectively returns yylval
+}
+
+void V3ParseImp::tokenPipelineSym() {
     // If an id, change the type based on symbol table
     // Note above sometimes converts yGLOBAL to a yaID__LEX
+    tokenPipeline();  // sets yylval
+    int token = yylval.token;
     if (token == yaID__LEX) {
         VSymEnt* foundp;
         if (VSymEnt* look_underp = V3ParseImp::parsep()->symp()->nextId()) {
-            UINFO(7, "   lexToken: next id lookup forced under " << look_underp << endl);
+            UINFO(7, "   tokenPipelineSym: next id lookup forced under " << look_underp << endl);
             foundp = look_underp->findIdFallback(*(yylval.strp));
             // "consume" it.  Must set again if want another token under temp scope
             V3ParseImp::parsep()->symp()->nextId(NULL);
         } else {
-            UINFO(7, "   lexToken: find upward " << V3ParseImp::parsep()->symp()->symCurrentp()
-                                                 << " for '" << *(yylval.strp) << "'" << endl);
+            UINFO(7, "   tokenPipelineSym: find upward "
+                         << V3ParseImp::parsep()->symp()->symCurrentp() << " for '"
+                         << *(yylval.strp) << "'" << endl);
             // if (debug()>=9) V3ParseImp::parsep()->symp()->symCurrentp()->dump(cout," -findtree:
             // ", true);
             foundp = V3ParseImp::parsep()->symp()->symCurrentp()->findIdFallback(*(yylval.strp));
@@ -454,7 +465,7 @@ void V3ParseImp::lexToken() {
         if (foundp) {
             AstNode* scp = foundp->nodep();
             yylval.scp = scp;
-            UINFO(7, "   lexToken: Found " << scp << endl);
+            UINFO(7, "   tokenPipelineSym: Found " << scp << endl);
             if (VN_IS(scp, Typedef)) {
                 token = yaID__aTYPE;
             } else if (VN_IS(scp, TypedefFwd)) {
@@ -480,16 +491,16 @@ void V3ParseImp::lexToken() {
     // effectively returns yylval
 }
 
-int V3ParseImp::lexToBison() {
+int V3ParseImp::tokenToBison() {
     // Called as global since bison doesn't have our pointer
-    lexToken();  // sets yylval
+    tokenPipelineSym();  // sets yylval
     m_bisonValPrev = m_bisonValCur;
     m_bisonValCur = yylval;
     m_bisonLastFileline = yylval.fl;
 
     // yylval.scp = NULL;   // Symbol table not yet needed - no packages
     if (debugFlex() >= 6 || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
-        cout << "lexToBison  " << yylval << endl;
+        cout << "tokenToBison  " << yylval << endl;
     }
     return yylval.token;
 }

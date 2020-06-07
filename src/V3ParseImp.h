@@ -116,10 +116,9 @@ class V3ParseImp {
     VOptionBool m_unconnectedDrive;  // Last unconnected drive
 
     int m_lexPrevToken;  // previous parsed token (for lexer)
-    bool m_ahead;  // aheadval is valid
-    V3ParseBisonYYSType m_aheadVal;  // ahead token value
     V3ParseBisonYYSType m_bisonValCur;  // current token for error reporting
     V3ParseBisonYYSType m_bisonValPrev;  // previous token for error reporting
+    std::deque<V3ParseBisonYYSType> m_tokensAhead;  // Tokens we parsed ahead of parser
 
     std::deque<string*> m_stringps;  // Created strings for later cleanup
     std::deque<V3Number*> m_numberps;  // Created numbers for later cleanup
@@ -253,10 +252,8 @@ public:
         m_lexKwdDepth = 0;
         m_lexKwdLast = stateVerilogRecent();
         m_lexPrevToken = 0;
-        m_ahead = false;
         m_bisonValCur.token = 0;
         m_bisonValPrev.token = 0;
-        // m_aheadVal not used as m_ahead = false, and not all compilers support initing it
         m_tagNodep = NULL;
         m_timeLastUnit = v3Global.opt.timeDefaultUnit();
     }
@@ -266,15 +263,18 @@ public:
 
     // METHODS
     // Preprocess and read the Verilog file specified into the netlist database
-    int lexToBison();  // Pass token to bison
+    int tokenToBison();  // Pass token to bison
 
     void parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
                    const string& errmsg);
 
 private:
     void lexFile(const string& modname);
-    int yylexReadTok();
-    void lexToken();  // Internal; called from lexToBison
+    void yylexReadTok();
+    void tokenPull();
+    void tokenPipeline();  // Internal; called from tokenToBison
+    void tokenPipelineSym();
+    const V3ParseBisonYYSType* tokenPeekp(size_t depth);
     void preprocDumps(std::ostream& os);
 };
 

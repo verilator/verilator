@@ -36,7 +36,7 @@
 #define YYMAXDEPTH 10000
 
 // Pick up new lexer
-#define yylex PARSEP->lexToBison
+#define yylex PARSEP->tokenToBison
 #define BBUNSUP(fl, msg) \
     { \
         if (!v3Global.opt.bboxUnsup()) { (fl)->v3error(msg); } \
