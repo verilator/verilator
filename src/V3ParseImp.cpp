@@ -187,28 +187,6 @@ void V3ParseImp::tag(const char* text) {
     }
 }
 
-double V3ParseImp::parseDouble(const char* textp, size_t length, bool* successp) {
-    char* strgp = new char[length + 1];
-    char* dp = strgp;
-    if (successp) *successp = true;
-    for (const char* sp = textp; sp < (textp + length); ++sp) {
-        if (*sp != '_') *dp++ = *sp;
-    }
-    *dp++ = '\0';
-    char* endp = strgp;
-    double d = strtod(strgp, &endp);
-    size_t parsed_len = endp - strgp;
-    if (parsed_len != strlen(strgp)) {
-        if (successp) {
-            *successp = false;
-        } else {
-            yyerrorf("Syntax error parsing real: %s", strgp);
-        }
-    }
-    VL_DO_DANGLING(delete[] strgp, strgp);
-    return d;
-}
-
 double V3ParseImp::parseTimenum(const char* textp) {
     size_t length = strlen(textp);
     char* strgp = new char[length + 1];

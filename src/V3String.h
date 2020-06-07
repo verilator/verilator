@@ -89,6 +89,8 @@ public:
     static string removeWhitespace(const string& str);
     // Return true if only whitespace or ""
     static bool isWhitespace(const string& str);
+    // Return double by parsing string
+    static double parseDouble(const string& str, bool* successp);
 };
 
 //######################################################################

@@ -162,7 +162,6 @@ public:
     VTimescale timeLastUnit() const { return m_timeLastUnit; }
 
     static double parseTimenum(const char* text);
-    static double parseDouble(const char* text, size_t length, bool* successp = NULL);
     void pushBeginKeywords(int state) {
         m_inBeginKwd++;
         m_lastVerilogState = state;

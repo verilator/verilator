@@ -33,7 +33,6 @@ extern void yyerrorf(const char* format, ...);
 #define STATE_VERILOG_RECENT S17  // State name for most recent Verilog Version
 
 #define PARSEP V3ParseImp::parsep()
-#define SYMP PARSEP->symp()
 
 #define YY_INPUT(buf, result, max_size) \
     do { result = PARSEP->flexPpInputToLex(buf, max_size); } while (false)
@@ -89,6 +88,16 @@ void yyerrorf(const char* format, ...) {
     va_end(ap);
 
     yyerror(msg);
+}
+
+//======================================================================
+
+static double lexParseDouble(const char* textp, size_t length) {
+    string text = std::string(textp, length);
+    bool success = false;
+    double d = VString::parseDouble(text, &success);
+    if (!success) yyerrorf("Syntax error parsing real: %s", text.c_str());
+    return d;
 }
 
 // clang-format off
@@ -887,11 +896,12 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           return yaINTNUM;
                         }
   [0-9][_0-9]*(\.[_0-9]+)([eE][-+]?[_0-9]+)? {
-                          FL; yylval.cdouble = PARSEP->parseDouble(yytext, yyleng);
+                          FL; bool ok;
+                          yylval.cdouble = lexParseDouble(yytext, yyleng);
                           return yaFLOATNUM;
                         }
   [0-9][_0-9]*(\.[_0-9]+)?([eE][-+]?[_0-9]+) {
-                          FL; yylval.cdouble = PARSEP->parseDouble(yytext, yyleng);
+                          FL; yylval.cdouble = lexParseDouble(yytext, yyleng);
                           return yaFLOATNUM;
                         }
   [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s) {

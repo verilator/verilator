@@ -67,7 +67,6 @@
 #include "V3SymTable.h"
 #include "V3Graph.h"
 #include "V3Ast.h"
-#include "V3ParseImp.h"
 #include "V3String.h"
 
 #include <algorithm>
@@ -719,7 +718,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             return new AstConst(fl, AstConst::VerilogStringLiteral(), v);
         } else if (literal.find_first_of(".eEpP") != string::npos) {
             // This may be a real
-            double v = V3ParseImp::parseDouble(literal.c_str(), literal.length(), &success);
+            double v = VString::parseDouble(literal, &success);
             if (success) return new AstConst(fl, AstConst::RealDouble(), v);
         }
         if (!success) {
