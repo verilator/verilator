@@ -105,7 +105,9 @@ class V3ParseImp {
 
     V3Lexer* m_lexerp;  // Current FlexLexer
     static V3ParseImp* s_parsep;  // Current THIS, bison() isn't class based
-    FileLine* m_fileline;  // Filename/linenumber currently active
+    FileLine* m_lexFileline;  // Filename/linenumber currently active for lexing
+
+    FileLine* m_bisonLastFileline;  // Filename/linenumber of last token
 
     bool m_inLibrary;  // Currently reading a library vs. regular file
     int m_lexKwdDepth;  // Inside a `begin_keywords
@@ -144,7 +146,6 @@ public:
     int yylexThis();
     static bool optFuture(const string& flag) { return v3Global.opt.isFuture(flag); }
 
-    void linenoInc() { fileline()->linenoInc(); }
     void tagNodep(AstNode* nodep) { m_tagNodep = nodep; }
     AstNode* tagNodep() const { return m_tagNodep; }
     void lexTimescaleParse(FileLine* fl, const char* textp);
@@ -152,6 +153,8 @@ public:
                       bool precSet, double precVal);
     VTimescale timeLastUnit() const { return m_timeLastUnit; }
 
+    FileLine* lexFileline() const { return m_lexFileline; }
+    FileLine* lexCopyOrSameFileLine() { return lexFileline()->copyOrSameFileLine(); }
     static void lexErrorPreprocDirective(FileLine* fl, const char* textp);
     static string lexParseTag(const char* textp);
     static double lexParseTimenum(const char* text);
@@ -178,7 +181,7 @@ public:
 
     void ppPushText(const string& text) {
         m_ppBuffers.push_back(text);
-        if (fileline()->contentp()) fileline()->contentp()->pushText(text);
+        if (lexFileline()->contentp()) lexFileline()->contentp()->pushText(text);
     }
     size_t ppInputToLex(char* buf, size_t max_size);
 
@@ -209,10 +212,13 @@ public:
         return nump;
     }
 
+    // Bison sometimes needs error context without a token, so remember last token's line
+    // Only use this if do not have and cannot get a token-relevent fileline
+    FileLine* bisonLastFileline() const { return m_bisonLastFileline; }
+
     // Return next token, for bison, since bison isn't class based, use a global THIS
-    FileLine* fileline() const { return m_fileline; }
     AstNetlist* rootp() const { return m_rootp; }
-    FileLine* copyOrSameFileLine() { return fileline()->copyOrSameFileLine(); }
+    FileLine* copyOrSameFileLine() { return bisonLastFileline()->copyOrSameFileLine(); }
     bool inLibrary() const { return m_inLibrary; }
     VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
     void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
@@ -239,7 +245,7 @@ public:
         : m_rootp(rootp)
         , m_filterp(filterp)
         , m_symp(parserSymp) {
-        m_fileline = NULL;
+        m_lexFileline = NULL;
         m_lexerp = NULL;
         m_inLibrary = false;
         m_lexKwdDepth = 0;

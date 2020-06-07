@@ -36,11 +36,11 @@
 
 //======================================================================
 
-#define FL_FWD (PARSEP->fileline()->forwardToken(yytext, yyleng, true))
+#define FL_FWD (PARSEP->lexFileline()->forwardToken(yytext, yyleng, true))
 // Use this to break between tokens whereever not return'ing a token (e.g. skipping inside lexer)
-#define FL_BRK (PARSEP->fileline()->startToken())
+#define FL_BRK (PARSEP->lexFileline()->startToken())
 
-#define CRELINE() (PARSEP->copyOrSameFileLine())
+#define CRELINE() (PARSEP->lexCopyOrSameFileLine())
 
 #define FL \
     do { \
@@ -686,15 +686,15 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator clock_enable*/"          { FL; return yVL_CLOCK_ENABLE; }
   "/*verilator clocker*/"               { FL; return yVL_CLOCKER; }
   "/*verilator coverage_block_off*/"    { FL; return yVL_COVERAGE_BLOCK_OFF; }
-  "/*verilator coverage_off*/"          { FL_FWD; PARSEP->fileline()->coverageOn(false); FL_BRK; }
-  "/*verilator coverage_on*/"           { FL_FWD; PARSEP->fileline()->coverageOn(true); FL_BRK; }
+  "/*verilator coverage_off*/"          { FL_FWD; PARSEP->lexFileline()->coverageOn(false); FL_BRK; }
+  "/*verilator coverage_on*/"           { FL_FWD; PARSEP->lexFileline()->coverageOn(true); FL_BRK; }
   "/*verilator full_case*/"             { FL; return yVL_FULL_CASE; }
   "/*verilator inline_module*/"         { FL; return yVL_INLINE_MODULE; }
   "/*verilator isolate_assignments*/"   { FL; return yVL_ISOLATE_ASSIGNMENTS; }
   "/*verilator lint_off"[^*]*"*/"       { FL; PARSEP->lexVerilatorCmtLint(yylval.fl, yytext, true); FL_BRK; }
   "/*verilator lint_on"[^*]*"*/"        { FL; PARSEP->lexVerilatorCmtLint(yylval.fl, yytext, false); FL_BRK; }
-  "/*verilator lint_restore*/"          { FL; PARSEP->lexVerilatorCmtLintRestore(PARSEP->fileline()); FL_BRK; }
-  "/*verilator lint_save*/"             { FL; PARSEP->lexVerilatorCmtLintSave(PARSEP->fileline()); FL_BRK; }
+  "/*verilator lint_restore*/"          { FL; PARSEP->lexVerilatorCmtLintRestore(PARSEP->lexFileline()); FL_BRK; }
+  "/*verilator lint_save*/"             { FL; PARSEP->lexVerilatorCmtLintSave(PARSEP->lexFileline()); FL_BRK; }
   "/*verilator no_clocker*/"            { FL; return yVL_NO_CLOCKER; }
   "/*verilator no_inline_module*/"      { FL; return yVL_NO_INLINE_MODULE; }
   "/*verilator no_inline_task*/"        { FL; return yVL_NO_INLINE_TASK; }
@@ -711,8 +711,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator systemc_clock*/"         { FL; return yVL_CLOCK; }
   "/*verilator tag"[^*]*"*/"            { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexParseTag(yytext));
                                           return yVL_TAG; }
-  "/*verilator tracing_off*/"           { FL_FWD; PARSEP->fileline()->tracingOn(false); FL_BRK; }
-  "/*verilator tracing_on*/"            { FL_FWD; PARSEP->fileline()->tracingOn(true); FL_BRK; }
+  "/*verilator tracing_off*/"           { FL_FWD; PARSEP->lexFileline()->tracingOn(false); FL_BRK; }
+  "/*verilator tracing_on*/"            { FL_FWD; PARSEP->lexFileline()->tracingOn(true); FL_BRK; }
 
   "/**/"                                { FL_FWD; FL_BRK; }
   "/*"[^*]+"*/"                         { FL; V3ParseImp::lexVerilatorCmtBad(yylval.fl, yytext); FL_BRK; }
@@ -930,10 +930,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
   "`accelerate"                         { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`autoexpand_vectornets"              { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
-  "`celldefine"                         { FL_FWD; PARSEP->fileline()->celldefineOn(true); FL_BRK; }
+  "`celldefine"                         { FL_FWD; PARSEP->lexFileline()->celldefineOn(true); FL_BRK; }
   "`default_decay_time"{ws}+[^\n\r]*    { FL_FWD; FL_BRK; }  // Verilog spec - delays only
-  "`default_nettype"{ws}+"wire"         { FL_FWD; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true); FL_BRK; }
-  "`default_nettype"{ws}+"none"         { FL_FWD; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, false); FL_BRK; }
+  "`default_nettype"{ws}+"wire"         { FL_FWD; PARSEP->lexFileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true); FL_BRK; }
+  "`default_nettype"{ws}+"none"         { FL_FWD; PARSEP->lexFileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, false); FL_BRK; }
   "`default_nettype"{ws}+[a-zA-Z0-9]*   { FL; yylval.fl->v3error("Unsupported: `default_nettype of other than none or wire: '" << yytext << "'");
                                           FL_BRK; }
   "`default_trireg_strength"{ws}+[^\n\r]*   { FL; yylval.fl->v3error("Unsupported: Verilog optional directive not implemented: '" << yytext << "'");
@@ -944,7 +944,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`delay_mode_zero"                    { FL_FWD; FL_BRK; }  // Verilog spec - delays only
   "`disable_portfaults"                 { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`enable_portfaults"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
-  "`endcelldefine"                      { FL_FWD; PARSEP->fileline()->celldefineOn(false); FL_BRK; }
+  "`endcelldefine"                      { FL_FWD; PARSEP->lexFileline()->celldefineOn(false); FL_BRK; }
   "`endprotect"                         { FL_FWD; FL_BRK; }
   "`expand_vectornets"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`inline"                             { FL_FWD; FL_BRK; }
@@ -960,7 +960,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`protect"                            { FL_FWD; FL_BRK; }
   "`remove_gatenames"                   { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`remove_netnames"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
-  "`resetall"                           { FL; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true);
+  "`resetall"                           { FL; PARSEP->lexFileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true);
                                           return yaT_RESETALL; }  // Rest handled by preproc
   "`suppress_faults"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`timescale"{ws}+[^\n\r]*             { FL; PARSEP->lexTimescaleParse(yylval.fl,

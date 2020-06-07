@@ -291,13 +291,13 @@ static void UNSUPREAL(FileLine* fileline) {
 //======================================================================
 
 void yyerror(const char* errmsg) {
-    PARSEP->fileline()->v3error(errmsg);
+    PARSEP->bisonLastFileline()->v3error(errmsg);
     static const char* const colonmsg = "syntax error, unexpected ::, ";
     // tokens;
     if (0 == strncmp(errmsg, colonmsg, strlen(colonmsg)) && PARSEP->bisonValIdThenColon()) {
         static int warned = false;
         if (!warned++) {
-            std::cerr << PARSEP->fileline()->warnMore()
+            std::cerr << PARSEP->bisonLastFileline()->warnMore()
                       << ("... Perhaps '" + *PARSEP->bisonValPrev().strp
                           + "' is a package which needs to be predeclared? (IEEE 1800-2017 26.3)")
                       << std::endl;

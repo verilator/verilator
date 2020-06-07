@@ -73,13 +73,13 @@ void V3ParseImp::lexPpline(const char* textp) {
     // Handle lexer `line directive
     FileLine* prevFl = copyOrSameFileLine();
     int enterExit;
-    fileline()->lineDirective(textp, enterExit /*ref*/);
+    lexFileline()->lineDirective(textp, enterExit /*ref*/);
     if (enterExit == 1) {  // Enter
-        fileline()->parent(prevFl);
+        lexFileline()->parent(prevFl);
     } else if (enterExit == 2) {  // Exit
-        FileLine* upFl = fileline()->parent();
+        FileLine* upFl = lexFileline()->parent();
         if (upFl) upFl = upFl->parent();
-        if (upFl) fileline()->parent(upFl);
+        if (upFl) lexFileline()->parent(upFl);
     }
 }
 
@@ -141,8 +141,8 @@ void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnO
     string msg = sp;
     string::size_type pos;
     if ((pos = msg.find('*')) != string::npos) msg.erase(pos);
-    // Use parsep()->fileline() as want to affect later FileLine's warnings
-    if (!(parsep()->fileline()->warnOff(msg, warnOff))) {
+    // Use parsep()->lexFileline() as want to affect later FileLine's warnings
+    if (!(parsep()->lexFileline()->warnOff(msg, warnOff))) {
         if (!v3Global.opt.isFuture(msg)) {
             fl->v3error("Unknown verilator lint message code: '" << msg << "', in '" << textp
                                                                  << "'");
@@ -274,8 +274,9 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     string modname = V3Os::filenameNonExt(modfilename);
 
     UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : "") << endl);
-    m_fileline = new FileLine(fileline);
-    m_fileline->newContent();
+    m_lexFileline = new FileLine(fileline);
+    m_lexFileline->newContent();
+    m_bisonLastFileline = m_lexFileline;
     m_inLibrary = inLibrary;
 
     // Preprocess into m_ppBuffer
@@ -323,7 +324,7 @@ void V3ParseImp::lexFile(const string& modname) {
     // Prepare for lexing
     UINFO(3, "Lexing " << modname << endl);
     s_parsep = this;
-    fileline()->warnResetDefault();  // Reenable warnings on each file
+    lexFileline()->warnResetDefault();  // Reenable warnings on each file
     lexDestroy();  // Restart from clean slate.
     lexNew();
 
@@ -483,6 +484,7 @@ int V3ParseImp::lexToBison() {
     lexToken();  // sets yylval
     m_bisonValPrev = m_bisonValCur;
     m_bisonValCur = yylval;
+    m_bisonLastFileline = yylval.fl;
 
     // yylval.scp = NULL;   // Symbol table not yet needed - no packages
     if (debugFlex() >= 6 || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
@@ -490,7 +492,7 @@ int V3ParseImp::lexToBison() {
              << "} lexToBison  TOKEN=" << yylval.token << " " << tokenName(yylval.token);
         if (yylval.token == yaID__ETC  //
             || yylval.token == yaID__LEX  //
-            || yylval.token == yaID__aTYPE) {
+            || yylval.token == yaID__aPACKAGE || yylval.token == yaID__aTYPE) {
             cout << "   strp='" << *(yylval.strp) << "'";
         }
         cout << endl;
