@@ -45,9 +45,6 @@ V3ParseImp* V3ParseImp::s_parsep = NULL;
 
 int V3ParseSym::s_anonNum = 0;
 
-extern void yyerror(const char*);
-extern void yyerrorf(const char* format, ...);
-
 //######################################################################
 // Parser constructor
 
@@ -126,16 +123,16 @@ void V3ParseImp::timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, d
 
 void V3ParseImp::verilatorCmtLintSave() { m_lintState.push_back(*parsep()->fileline()); }
 
-void V3ParseImp::verilatorCmtLintRestore() {
+void V3ParseImp::verilatorCmtLintRestore(FileLine* fl) {
     if (m_lintState.empty()) {
-        yyerrorf("/*verilator lint_restore*/ without matching save.");
+        fl->v3error("/*verilator lint_restore*/ without matching save");
         return;
     }
-    parsep()->fileline()->warnStateFrom(m_lintState.back());
+    fl->warnStateFrom(m_lintState.back());
     m_lintState.pop_back();
 }
 
-void V3ParseImp::verilatorCmtLint(const char* textp, bool warnOff) {
+void V3ParseImp::verilatorCmtLint(FileLine* fl, const char* textp, bool warnOff) {
     const char* sp = textp;
     while (*sp && !isspace(*sp)) sp++;
     while (*sp && isspace(*sp)) sp++;
@@ -146,12 +143,13 @@ void V3ParseImp::verilatorCmtLint(const char* textp, bool warnOff) {
     if ((pos = msg.find('*')) != string::npos) msg.erase(pos);
     if (!(parsep()->fileline()->warnOff(msg, warnOff))) {
         if (!parsep()->optFuture(msg)) {
-            yyerrorf("Unknown verilator lint message code: %s, in %s", msg.c_str(), textp);
+            fl->v3error("Unknown verilator lint message code: '" << msg << "', in '" << textp
+                                                                 << "'");
         }
     }
 }
 
-void V3ParseImp::verilatorCmtBad(const char* textp) {
+void V3ParseImp::verilatorCmtBad(FileLine* fl, const char* textp) {
     string cmtparse = textp;
     if (cmtparse.substr(0, strlen("/*verilator")) == "/*verilator") {
         cmtparse.replace(0, strlen("/*verilator"), "");
@@ -159,7 +157,7 @@ void V3ParseImp::verilatorCmtBad(const char* textp) {
     while (isspace(cmtparse[0])) cmtparse.replace(0, 1, "");
     string cmtname;
     for (int i = 0; isalnum(cmtparse[i]); i++) { cmtname += cmtparse[i]; }
-    if (!parsep()->optFuture(cmtname)) yyerrorf("Unknown verilator comment: %s", textp);
+    if (!parsep()->optFuture(cmtname)) fl->v3error("Unknown verilator comment: '" << textp << "'");
 }
 
 void V3ParseImp::errorPreprocDirective(const char* textp) {

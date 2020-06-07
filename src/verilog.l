@@ -53,8 +53,9 @@ extern void yyerrorf(const char* format, ...);
 
 #define ERROR_RSVD_WORD(language) \
     do { \
-        FL_FWD; \
-        yyerrorf("Unsupported: " language " reserved word not implemented: '%s'", yytext); \
+        FL; \
+        yylval.fl->v3error("Unsupported: " << language << " reserved word not implemented: '" \
+                                           << yytext << "'"); \
         FL_BRK; \
     } while (0)
 
@@ -92,11 +93,11 @@ void yyerrorf(const char* format, ...) {
 
 //======================================================================
 
-static double lexParseDouble(const char* textp, size_t length) {
+static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
     string text = std::string(textp, length);
     bool success = false;
     double d = VString::parseDouble(text, &success);
-    if (!success) yyerrorf("Syntax error parsing real: %s", text.c_str());
+    if (!success) fl->v3error("Syntax error parsing real: '" << textp << "'");
     return d;
 }
 
@@ -323,7 +324,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "endmodule"           { FL; return yENDMODULE; }
   "endprimitive"        { FL; return yENDPRIMITIVE; }
   "endspecify"          { FL; return yENDSPECIFY; }
-  "endtable"            { FL_FWD; yyerrorf("Syntax error: ENDTABLE outside of TABLE"); FL_BRK; }
+  "endtable"            { FL; yylval.fl->v3error("Syntax error: ENDTABLE outside of TABLE"); FL_BRK; }
   "endtask"             { FL; return yENDTASK; }
   "event"               { FL; return yEVENT; }
   "for"                 { FL; return yFOR; }
@@ -428,7 +429,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "design"              { ERROR_RSVD_WORD("Verilog 2001-config"); }
   "endconfig"           { ERROR_RSVD_WORD("Verilog 2001-config"); }
   "incdir"              { ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "include"             { FL_FWD; yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented; suggest you want `include instead: %s", yytext); FL_BRK; }
+  "include"             { FL; yylval.fl->v3error("Unsupported: Verilog 2001-config reserved word not implemented; suggest you want `include instead: '" << yytext << "'");
+                          FL_BRK; }
   "instance"            { ERROR_RSVD_WORD("Verilog 2001-config"); }
   "liblist"             { ERROR_RSVD_WORD("Verilog 2001-config"); }
   "library"             { ERROR_RSVD_WORD("Verilog 2001-config"); }
@@ -724,10 +726,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator full_case*/"             { FL; return yVL_FULL_CASE; }
   "/*verilator inline_module*/"         { FL; return yVL_INLINE_MODULE; }
   "/*verilator isolate_assignments*/"   { FL; return yVL_ISOLATE_ASSIGNMENTS; }
-  "/*verilator lint_off"[^*]*"*/"       { FL_FWD; PARSEP->verilatorCmtLint(yytext, true); FL_BRK; }
-  "/*verilator lint_on"[^*]*"*/"        { FL_FWD; PARSEP->verilatorCmtLint(yytext, false); FL_BRK; }
-  "/*verilator lint_restore*/"          { FL_FWD; PARSEP->verilatorCmtLintRestore(); FL_BRK; }
-  "/*verilator lint_save*/"             { FL_FWD; PARSEP->verilatorCmtLintSave(); FL_BRK; }
+  "/*verilator lint_off"[^*]*"*/"       { FL; PARSEP->verilatorCmtLint(yylval.fl, yytext, true); FL_BRK; }
+  "/*verilator lint_on"[^*]*"*/"        { FL; PARSEP->verilatorCmtLint(yylval.fl, yytext, false); FL_BRK; }
+  "/*verilator lint_restore*/"          { FL; PARSEP->verilatorCmtLintRestore(PARSEP->fileline()); FL_BRK; }
+  "/*verilator lint_save*/"             { FL; PARSEP->verilatorCmtLintSave(); FL_BRK; }
   "/*verilator no_clocker*/"            { FL; return yVL_NO_CLOCKER; }
   "/*verilator no_inline_module*/"      { FL; return yVL_NO_INLINE_MODULE; }
   "/*verilator no_inline_task*/"        { FL; return yVL_NO_INLINE_TASK; }
@@ -747,7 +749,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator tracing_on*/"            { FL_FWD; PARSEP->fileline()->tracingOn(true); FL_BRK; }
 
   "/**/"                                { FL_FWD; FL_BRK; }
-  "/*"[^*]+"*/"                         { FL_FWD; PARSEP->verilatorCmtBad(yytext); FL_BRK; }
+  "/*"[^*]+"*/"                         { FL; PARSEP->verilatorCmtBad(yylval.fl, yytext); FL_BRK; }
 }
 
   /************************************************************************/
@@ -817,7 +819,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "-:"                  { FL; return yP_MINUSCOLON; }
   ".*"                  { FL; return yP_DOTSTAR; }
   ":+"                  { FL; yyless(1);
-                          PARSEP->fileline()->v3warn(COLONPLUS, "Perhaps instead of ':+' the intent was '+:'?");
+                          yylval.fl->v3warn(COLONPLUS, "Perhaps instead of ':+' the intent was '+:'?");
                           return ':'; }
 }
 
@@ -896,11 +898,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           return yaINTNUM;
                         }
   [0-9][_0-9]*(\.[_0-9]+)([eE][-+]?[_0-9]+)? {
-                          FL; yylval.cdouble = lexParseDouble(yytext, yyleng);
+                          FL; yylval.cdouble = lexParseDouble(yylval.fl, yytext, yyleng);
                           return yaFLOATNUM;
                         }
   [0-9][_0-9]*(\.[_0-9]+)?([eE][-+]?[_0-9]+) {
-                          FL; yylval.cdouble = lexParseDouble(yytext, yyleng);
+                          FL; yylval.cdouble = lexParseDouble(yylval.fl, yytext, yyleng);
                           return yaFLOATNUM;
                         }
   [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s) {
@@ -915,9 +917,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /************************************************************************/
   /* STRINGS */
-<STRING><<EOF>>         { FL_FWD; yyerrorf("EOF in unterminated string");
+<STRING><<EOF>>         { FL; yylval.fl->v3error("EOF in unterminated string");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
-<STRING>{crnl}          { FL_FWD; yyerrorf("Unterminated string"); FL_BRK; }
+<STRING>{crnl}          { FL; yylval.fl->v3error("Unterminated string");
+                          FL_BRK; }
 <STRING>\\{crnl}        { yymore(); }
 <STRING>\\.             { yymore(); }
 <STRING>\"              { yy_pop_state();
@@ -932,7 +935,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <ATTRMODE>"*)"          { FL_FWD; yy_pop_state(); FL_BRK; }
 <ATTRMODE>{word}        { yymore(); }
 <ATTRMODE>.             { yymore(); }
-<ATTRMODE><<EOF>>       { FL_FWD; yyerrorf("EOF in (*");
+<ATTRMODE><<EOF>>       { FL; yylval.fl->v3error("EOF in (*");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
 
   /************************************************************************/
@@ -950,7 +953,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <TABLE>"endtable"       { yy_pop_state(); FL; return yENDTABLE; }
 <TABLE>"`line"{ws}+[^\n\r]*{crnl}       { FL_FWD; PARSEP->ppline(yytext); FL_BRK; }
 <TABLE>.                { yymore(); }
-<TABLE><<EOF>>          { FL_FWD; yyerrorf("EOF in TABLE");
+<TABLE><<EOF>>          { FL; yylval.fl->v3error("EOF in TABLE");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
 
   /************************************************************************/
@@ -965,8 +968,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`default_decay_time"{ws}+[^\n\r]*    { FL_FWD; FL_BRK; }  // Verilog spec - delays only
   "`default_nettype"{ws}+"wire"         { FL_FWD; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true); FL_BRK; }
   "`default_nettype"{ws}+"none"         { FL_FWD; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, false); FL_BRK; }
-  "`default_nettype"{ws}+[a-zA-Z0-9]*   { FL_FWD; yyerrorf("Unsupported: `default_nettype of other than none or wire: %s", yytext); FL_BRK; }
-  "`default_trireg_strength"{ws}+[^\n\r]*       { FL_FWD; yyerrorf("Unsupported: Verilog optional directive not implemented: %s", yytext); FL_BRK; }
+  "`default_nettype"{ws}+[a-zA-Z0-9]*   { FL; yylval.fl->v3error("Unsupported: `default_nettype of other than none or wire: '" << yytext << "'");
+                                          FL_BRK; }
+  "`default_trireg_strength"{ws}+[^\n\r]*   { FL; yylval.fl->v3error("Unsupported: Verilog optional directive not implemented: '" << yytext << "'");
+                                          FL_BRK; }
   "`delay_mode_distributed"             { FL_FWD; FL_BRK; }  // Verilog spec - delays only
   "`delay_mode_path"                    { FL_FWD; FL_BRK; }  // Verilog spec - delays only
   "`delay_mode_unit"                    { FL_FWD; FL_BRK; }  // Verilog spec - delays only
@@ -992,12 +997,12 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`resetall"                           { FL; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true);
                                           return yaT_RESETALL; }  // Rest handled by preproc
   "`suppress_faults"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
-  "`timescale"{ws}+[^\n\r]*             { FL_FWD; PARSEP->timescalePreproc(PARSEP->fileline(),
-                                                                           yytext + strlen("`timescale"));
+  "`timescale"{ws}+[^\n\r]*             { FL; PARSEP->timescalePreproc(yylval.fl,
+                                                                       yytext + strlen("`timescale"));
                                           FL_BRK; }
   "`unconnected_drive"{ws}+"pull0"      { FL_FWD; PARSEP->unconnectedDrive(VOptionBool::OPT_FALSE); FL_BRK; }
   "`unconnected_drive"{ws}+"pull1"      { FL_FWD; PARSEP->unconnectedDrive(VOptionBool::OPT_TRUE); FL_BRK; }
-  "`unconnected_drive"                  { FL_FWD; yyerrorf("Bad `unconnected_drive syntax"); FL_BRK; }
+  "`unconnected_drive"                  { FL; yylval.fl->v3error("Bad `unconnected_drive syntax"); FL_BRK; }
   "`uselib"{ws}+[^\n\r]*                { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
 
   /* See also setLanguage below */
@@ -1011,8 +1016,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`begin_keywords"[ \t]*\"1800-2012\"          { FL_FWD; yy_push_state(S12); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
   "`begin_keywords"[ \t]*\"1800-2017\"          { FL_FWD; yy_push_state(S17); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
   "`begin_keywords"[ \t]*\"1800[+]VAMS\"        { FL_FWD; yy_push_state(SAX); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }  /*Latest SV*/
-  "`end_keywords"                               { FL_FWD; yy_pop_state();
-                                                  if (!PARSEP->popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block");
+  "`end_keywords"                               { FL; yy_pop_state();
+                                                  if (!PARSEP->popBeginKeywords()) yylval.fl->v3error("`end_keywords when not inside `begin_keywords block");
                                                   FL_BRK; }
 
   /* Verilator */
@@ -1026,9 +1031,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`verilog"                            { FL_FWD; BEGIN PARSEP->lastVerilogState(); FL_BRK; }
 
   /* Errors */
-  "<<<<<<<"[^\n\r]*                     { FL_FWD; yyerrorf("version control conflict marker in file"); FL_BRK; }
-  "======="[^\n\r]*                     { FL_FWD; yyerrorf("version control conflict marker in file"); FL_BRK; }
-  ">>>>>>>"[^\n\r]*                     { FL_FWD; yyerrorf("version control conflict marker in file"); FL_BRK; }
+  "<<<<<<<"[^\n\r]*                     { FL; yylval.fl->v3error("version control conflict marker in file"); FL_BRK; }
+  "======="[^\n\r]*                     { FL; yylval.fl->v3error("version control conflict marker in file"); FL_BRK; }
+  ">>>>>>>"[^\n\r]*                     { FL; yylval.fl->v3error("version control conflict marker in file"); FL_BRK; }
 
   /* If add to this list also add to V3LanguageWords.h */
 }
@@ -1057,7 +1062,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* Catch all - absolutely last */
-<*>.|\n                 { FL_FWD; yyerrorf("Missing verilog.l rule: Default rule invoked in state %d: %s", YY_START, yytext); FL_BRK; }
+<*>.|\n                 { FL; yylval.fl->v3error("Missing verilog.l rule: Default rule invoked in state "
+                                                 << YY_START << " '" << yytext << "'");
+                          FL_BRK; }
 %%
 // Avoid code here as cl format misindents
 // For implementation functions see V3ParseImp.cpp
