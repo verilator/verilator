@@ -46,7 +46,7 @@ public:
     }
 };
 
-void V3ParseImp::unputString(const char* textp, size_t length) {
+void V3ParseImp::lexUnputString(const char* textp, size_t length) {
     parsep()->m_lexerp->unputString(textp, length);
 }
 
@@ -54,7 +54,7 @@ int V3ParseImp::yylexReadTok() {
     // Call yylex() remembering last non-whitespace token
     parsep()->fileline()->startToken();
     int token = parsep()->m_lexerp->yylex();
-    m_prevLexToken = token;  // Save so can find '#' to parse following number
+    m_lexPrevToken = token;  // Save so can find '#' to parse following number
     return token;
 }
 

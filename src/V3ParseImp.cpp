@@ -69,8 +69,8 @@ V3ParseImp::~V3ParseImp() {
 //######################################################################
 // Parser utility methods
 
-void V3ParseImp::ppline(const char* textp) {
-    // Handle `line directive
+void V3ParseImp::lexPpline(const char* textp) {
+    // Handle lexer `line directive
     FileLine* prevFl = copyOrSameFileLine();
     int enterExit;
     fileline()->lineDirective(textp, enterExit /*ref*/);
@@ -83,7 +83,7 @@ void V3ParseImp::ppline(const char* textp) {
     }
 }
 
-void V3ParseImp::timescalePreproc(FileLine* fl, const char* textp) {
+void V3ParseImp::lexTimescaleParse(FileLine* fl, const char* textp) {
     // Parse `timescale of <number><units> / <number><units>
     VTimescale unit;
     VTimescale prec;
@@ -121,18 +121,18 @@ void V3ParseImp::timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, d
     v3Global.rootp()->timeprecisionMerge(fl, prec);
 }
 
-void V3ParseImp::verilatorCmtLintSave() { m_lintState.push_back(*parsep()->fileline()); }
+void V3ParseImp::lexVerilatorCmtLintSave(const FileLine* fl) { m_lexLintState.push_back(*fl); }
 
-void V3ParseImp::verilatorCmtLintRestore(FileLine* fl) {
-    if (m_lintState.empty()) {
+void V3ParseImp::lexVerilatorCmtLintRestore(FileLine* fl) {
+    if (m_lexLintState.empty()) {
         fl->v3error("/*verilator lint_restore*/ without matching save");
         return;
     }
-    fl->warnStateFrom(m_lintState.back());
-    m_lintState.pop_back();
+    fl->warnStateFrom(m_lexLintState.back());
+    m_lexLintState.pop_back();
 }
 
-void V3ParseImp::verilatorCmtLint(FileLine* fl, const char* textp, bool warnOff) {
+void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff) {
     const char* sp = textp;
     while (*sp && !isspace(*sp)) ++sp;
     while (*sp && isspace(*sp)) ++sp;
@@ -150,7 +150,7 @@ void V3ParseImp::verilatorCmtLint(FileLine* fl, const char* textp, bool warnOff)
     }
 }
 
-void V3ParseImp::verilatorCmtBad(FileLine* fl, const char* textp) {
+void V3ParseImp::lexVerilatorCmtBad(FileLine* fl, const char* textp) {
     string cmtparse = textp;
     if (cmtparse.substr(0, strlen("/*verilator")) == "/*verilator") {
         cmtparse.replace(0, strlen("/*verilator"), "");
@@ -163,7 +163,7 @@ void V3ParseImp::verilatorCmtBad(FileLine* fl, const char* textp) {
     }
 }
 
-void V3ParseImp::errorPreprocDirective(FileLine* fl, const char* textp) {
+void V3ParseImp::lexErrorPreprocDirective(FileLine* fl, const char* textp) {
     // Find all `preprocessor spelling candidates
     // Can't make this static as might get more defines later when read cells
     VSpellCheck speller;
@@ -188,7 +188,7 @@ void V3ParseImp::tag(const char* text) {
     }
 }
 
-double V3ParseImp::parseTimenum(const char* textp) {
+double V3ParseImp::lexParseTimenum(const char* textp) {
     size_t length = strlen(textp);
     char* strgp = new char[length + 1];
     char* dp = strgp;

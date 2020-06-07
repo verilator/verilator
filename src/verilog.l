@@ -691,10 +691,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator full_case*/"             { FL; return yVL_FULL_CASE; }
   "/*verilator inline_module*/"         { FL; return yVL_INLINE_MODULE; }
   "/*verilator isolate_assignments*/"   { FL; return yVL_ISOLATE_ASSIGNMENTS; }
-  "/*verilator lint_off"[^*]*"*/"       { FL; PARSEP->verilatorCmtLint(yylval.fl, yytext, true); FL_BRK; }
-  "/*verilator lint_on"[^*]*"*/"        { FL; PARSEP->verilatorCmtLint(yylval.fl, yytext, false); FL_BRK; }
-  "/*verilator lint_restore*/"          { FL; PARSEP->verilatorCmtLintRestore(PARSEP->fileline()); FL_BRK; }
-  "/*verilator lint_save*/"             { FL; PARSEP->verilatorCmtLintSave(); FL_BRK; }
+  "/*verilator lint_off"[^*]*"*/"       { FL; PARSEP->lexVerilatorCmtLint(yylval.fl, yytext, true); FL_BRK; }
+  "/*verilator lint_on"[^*]*"*/"        { FL; PARSEP->lexVerilatorCmtLint(yylval.fl, yytext, false); FL_BRK; }
+  "/*verilator lint_restore*/"          { FL; PARSEP->lexVerilatorCmtLintRestore(PARSEP->fileline()); FL_BRK; }
+  "/*verilator lint_save*/"             { FL; PARSEP->lexVerilatorCmtLintSave(PARSEP->fileline()); FL_BRK; }
   "/*verilator no_clocker*/"            { FL; return yVL_NO_CLOCKER; }
   "/*verilator no_inline_module*/"      { FL; return yVL_NO_INLINE_MODULE; }
   "/*verilator no_inline_task*/"        { FL; return yVL_NO_INLINE_TASK; }
@@ -714,7 +714,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator tracing_on*/"            { FL_FWD; PARSEP->fileline()->tracingOn(true); FL_BRK; }
 
   "/**/"                                { FL_FWD; FL_BRK; }
-  "/*"[^*]+"*/"                         { FL; PARSEP->verilatorCmtBad(yylval.fl, yytext); FL_BRK; }
+  "/*"[^*]+"*/"                         { FL; V3ParseImp::lexVerilatorCmtBad(yylval.fl, yytext); FL_BRK; }
 }
 
   /************************************************************************/
@@ -842,12 +842,12 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   \"                    { yy_push_state(STRING); yymore(); }
   {vnum}                {
                           /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
-                          if (PARSEP->prevLexToken()=='#') {
+                          if (PARSEP->lexPrevToken()=='#') {
                               int shortlen = 0;
                               while (isdigit(yytext[shortlen])) shortlen++;
                               if (shortlen) {
                                   // Push rest past numbers for later parse
-                                  PARSEP->unputString(yytext+shortlen, yyleng-shortlen);
+                                  PARSEP->lexUnputString(yytext+shortlen, yyleng-shortlen);
                                   // Return is stuff before the tick
                                   yyleng = shortlen;
                                   yytext[yyleng] = '\0';
@@ -871,7 +871,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           return yaFLOATNUM;
                         }
   [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s) {
-                          FL; yylval.cdouble = PARSEP->parseTimenum(yytext);
+                          FL; yylval.cdouble = V3ParseImp::lexParseTimenum(yytext);
                           return yaTIMENUM;
                         }
   1step                 {
@@ -916,7 +916,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <TABLE>{crnl}           { yymore(); }
 <TABLE>";"              { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLELINE; }
 <TABLE>"endtable"       { yy_pop_state(); FL; return yENDTABLE; }
-<TABLE>"`line"{ws}+[^\n\r]*{crnl}       { FL_FWD; PARSEP->ppline(yytext); FL_BRK; }
+<TABLE>"`line"{ws}+[^\n\r]*{crnl}       { FL_FWD; PARSEP->lexPpline(yytext); FL_BRK; }
 <TABLE>.                { yymore(); }
 <TABLE><<EOF>>          { FL; yylval.fl->v3error("EOF in TABLE");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
@@ -947,7 +947,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`endprotect"                         { FL_FWD; FL_BRK; }
   "`expand_vectornets"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`inline"                             { FL_FWD; FL_BRK; }
-  "`line"{ws}+[^\n\r]*{crnl}            { FL_FWD; PARSEP->ppline(yytext); FL_BRK; }
+  "`line"{ws}+[^\n\r]*{crnl}            { FL_FWD; PARSEP->lexPpline(yytext); FL_BRK; }
   "`noaccelerate"                       { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`noexpand_vectornets"                { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`noremove_gatenames"                 { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
@@ -962,8 +962,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`resetall"                           { FL; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true);
                                           return yaT_RESETALL; }  // Rest handled by preproc
   "`suppress_faults"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
-  "`timescale"{ws}+[^\n\r]*             { FL; PARSEP->timescalePreproc(yylval.fl,
-                                                                       yytext + strlen("`timescale"));
+  "`timescale"{ws}+[^\n\r]*             { FL; PARSEP->lexTimescaleParse(yylval.fl,
+                                                                        yytext + strlen("`timescale"));
                                           FL_BRK; }
   "`unconnected_drive"{ws}+"pull0"      { FL; return yaT_UNCONNECTED_PULL0; }
   "`unconnected_drive"{ws}+"pull1"      { FL; return yaT_UNCONNECTED_PULL1; }
@@ -971,18 +971,18 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`uselib"{ws}+[^\n\r]*                { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
 
   /* See also setLanguage below */
-  "`begin_keywords"[ \t]*\"1364-1995\"          { FL_FWD; yy_push_state(V95); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
-  "`begin_keywords"[ \t]*\"1364-2001\"          { FL_FWD; yy_push_state(V01); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
-  "`begin_keywords"[ \t]*\"1364-2001-noconfig\" { FL_FWD; yy_push_state(V01); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
-  "`begin_keywords"[ \t]*\"1364-2005\"          { FL_FWD; yy_push_state(V05); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
-  "`begin_keywords"[ \t]*\"VAMS[-0-9.]*\"       { FL_FWD; yy_push_state(VA5); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
-  "`begin_keywords"[ \t]*\"1800-2005\"          { FL_FWD; yy_push_state(S05); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
-  "`begin_keywords"[ \t]*\"1800-2009\"          { FL_FWD; yy_push_state(S09); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
-  "`begin_keywords"[ \t]*\"1800-2012\"          { FL_FWD; yy_push_state(S12); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
-  "`begin_keywords"[ \t]*\"1800-2017\"          { FL_FWD; yy_push_state(S17); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
-  "`begin_keywords"[ \t]*\"1800[+]VAMS\"        { FL_FWD; yy_push_state(SAX); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }  /*Latest SV*/
+  "`begin_keywords"[ \t]*\"1364-1995\"          { FL_FWD; yy_push_state(V95); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1364-2001\"          { FL_FWD; yy_push_state(V01); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1364-2001-noconfig\" { FL_FWD; yy_push_state(V01); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1364-2005\"          { FL_FWD; yy_push_state(V05); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"VAMS[-0-9.]*\"       { FL_FWD; yy_push_state(VA5); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1800-2005\"          { FL_FWD; yy_push_state(S05); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1800-2009\"          { FL_FWD; yy_push_state(S09); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1800-2012\"          { FL_FWD; yy_push_state(S12); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1800-2017\"          { FL_FWD; yy_push_state(S17); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1800[+]VAMS\"        { FL_FWD; yy_push_state(SAX); PARSEP->lexPushKeywords(YY_START); FL_BRK; }  /*Latest SV*/
   "`end_keywords"                               { FL; yy_pop_state();
-                                                  if (!PARSEP->popBeginKeywords()) yylval.fl->v3error("`end_keywords when not inside `begin_keywords block");
+                                                  if (!PARSEP->lexPopKeywords()) yylval.fl->v3error("`end_keywords when not inside `begin_keywords block");
                                                   FL_BRK; }
 
   /* Verilator */
@@ -993,7 +993,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`systemc_implementation"             { FL_FWD; BEGIN SYSCIMP; FL_BRK; }
   "`systemc_interface"                  { FL_FWD; BEGIN SYSCINT; FL_BRK; }
   "`verilator_config"                   { FL_FWD; BEGIN VLT; FL_BRK; }
-  "`verilog"                            { FL_FWD; BEGIN PARSEP->lastVerilogState(); FL_BRK; }
+  "`verilog"                            { FL_FWD; BEGIN PARSEP->lexKwdLastState(); FL_BRK; }
 
   /* Errors */
   "<<<<<<<"[^\n\r]*                     { FL; yylval.fl->v3error("version control conflict marker in file"); FL_BRK; }
@@ -1021,7 +1021,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Default rules - leave last */
 
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX,VLT>{
-  "`"[a-zA-Z_0-9]+      { FL; PARSEP->errorPreprocDirective(yylval.fl, yytext); FL_BRK; }
+  "`"[a-zA-Z_0-9]+      { FL; V3ParseImp::lexErrorPreprocDirective(yylval.fl, yytext); FL_BRK; }
   "//"[^\n]*            { FL_FWD; FL_BRK; }  /* throw away single line comments */
   .                     { FL; return yytext[0]; }       /* return single char ops. */
 }

@@ -108,11 +108,11 @@ class V3ParseImp {
     FileLine* m_fileline;  // Filename/linenumber currently active
 
     bool m_inLibrary;  // Currently reading a library vs. regular file
-    int m_inBeginKwd;  // Inside a `begin_keywords
-    int m_lastVerilogState;  // Last LEX state in `begin_keywords
+    int m_lexKwdDepth;  // Inside a `begin_keywords
+    int m_lexKwdLast;  // Last LEX state in `begin_keywords
     VOptionBool m_unconnectedDrive;  // Last unconnected drive
 
-    int m_prevLexToken;  // previous parsed token (for lexer)
+    int m_lexPrevToken;  // previous parsed token (for lexer)
     bool m_ahead;  // aheadval is valid
     V3ParseBisonYYSType m_aheadVal;  // ahead token value
     V3ParseBisonYYSType m_bisonValCur;  // current token for error reporting
@@ -120,7 +120,7 @@ class V3ParseImp {
 
     std::deque<string*> m_stringps;  // Created strings for later cleanup
     std::deque<V3Number*> m_numberps;  // Created numbers for later cleanup
-    std::deque<FileLine> m_lintState;  // Current lint state for save/restore
+    std::deque<FileLine> m_lexLintState;  // Current lint state for save/restore
     std::deque<string> m_ppBuffers;  // Preprocessor->lex buffer of characters to process
 
     string m_tag;  // Contents (if any) of current verilator tag
@@ -145,35 +145,36 @@ public:
     int yylexThis();
     static bool optFuture(const string& flag) { return v3Global.opt.isFuture(flag); }
 
-    void ppline(const char* textp);
     void linenoInc() { fileline()->linenoInc(); }
-    void verilatorCmtLint(FileLine* fl, const char* textp, bool warnOff);
-    void verilatorCmtLintSave();
-    void verilatorCmtLintRestore(FileLine* fl);
-    void verilatorCmtBad(FileLine* fl, const char* textp);
-    static void errorPreprocDirective(FileLine* fl, const char* textp);
     void tag(const char* text);
     void tagNodep(AstNode* nodep) { m_tagNodep = nodep; }
     AstNode* tagNodep() const { return m_tagNodep; }
-    void timescalePreproc(FileLine* fl, const char* textp);
+    void lexTimescaleParse(FileLine* fl, const char* textp);
     void timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, double unitVal,
                       bool precSet, double precVal);
     VTimescale timeLastUnit() const { return m_timeLastUnit; }
 
-    static double parseTimenum(const char* text);
-    void pushBeginKeywords(int state) {
-        m_inBeginKwd++;
-        m_lastVerilogState = state;
+    static void lexErrorPreprocDirective(FileLine* fl, const char* textp);
+    static double lexParseTimenum(const char* text);
+    void lexPpline(const char* textp);
+    void lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff);
+    void lexVerilatorCmtLintSave(const FileLine* fl);
+    void lexVerilatorCmtLintRestore(FileLine* fl);
+    static void lexVerilatorCmtBad(FileLine* fl, const char* textp);
+
+    void lexPushKeywords(int state) {
+        ++m_lexKwdDepth;
+        m_lexKwdLast = state;
     }
-    bool popBeginKeywords() {
-        if (m_inBeginKwd) {
-            m_inBeginKwd--;
+    bool lexPopKeywords() {
+        if (m_lexKwdDepth) {
+            --m_lexKwdDepth;
             return true;
         } else {
             return false;
         }
     }
-    int lastVerilogState() const { return m_lastVerilogState; }
+    int lexKwdLastState() const { return m_lexKwdLast; }
     static const char* tokenName(int tok);
 
     void ppPushText(const string& text) {
@@ -224,7 +225,7 @@ public:
     void lexNew();
     void lexDestroy();
     static int stateVerilogRecent();  // Parser -> lexer communication
-    int prevLexToken() const { return m_prevLexToken; }  // Parser -> lexer communication
+    int lexPrevToken() const { return m_lexPrevToken; }  // Parser -> lexer communication
     size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf, max_size); }
     V3ParseBisonYYSType bisonValCur() const { return m_bisonValCur; }
     V3ParseBisonYYSType bisonValPrev() const { return m_bisonValPrev; }
@@ -242,9 +243,9 @@ public:
         m_fileline = NULL;
         m_lexerp = NULL;
         m_inLibrary = false;
-        m_inBeginKwd = 0;
-        m_lastVerilogState = stateVerilogRecent();
-        m_prevLexToken = 0;
+        m_lexKwdDepth = 0;
+        m_lexKwdLast = stateVerilogRecent();
+        m_lexPrevToken = 0;
         m_ahead = false;
         m_bisonValCur.token = 0;
         m_bisonValPrev.token = 0;
@@ -254,7 +255,7 @@ public:
     }
     ~V3ParseImp();
     void parserClear();
-    void unputString(const char* textp, size_t length);
+    void lexUnputString(const char* textp, size_t length);
 
     // METHODS
     // Preprocess and read the Verilog file specified into the netlist database
