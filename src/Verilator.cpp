@@ -87,6 +87,7 @@
 #include "V3TSP.h"
 #include "V3Table.h"
 #include "V3Task.h"
+#include "V3Timing.h"
 #include "V3Trace.h"
 #include "V3TraceDecl.h"
 #include "V3Tristate.h"
@@ -281,6 +282,12 @@ static void process() {
         V3Const::constifyAll(v3Global.rootp());
         V3Dead::deadifyDTypesScoped(v3Global.rootp());
         v3Global.checkTree();
+
+        // Delays, fork and procedure handling
+        // Must be after V3Begin, V3LinkJump so loops are gone removed
+        // Must be after V3Task so don't need to call through to tasks
+        // Must be before ordering code
+        if (v3Global.opt.timing()) V3Timing::timingAll(v3Global.rootp());
 
         // Move assignments/sensitives into a SBLOCK for each unique sensitivity list
         // (May convert some ALWAYS to combo blocks, so should be before V3Gate step.)

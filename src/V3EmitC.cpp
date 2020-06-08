@@ -786,6 +786,13 @@ public:
         iterateAndNextNull(nodep->widthp());
         puts(");\n");
     }
+    virtual void visit(AstTimedEvent* nodep) VL_OVERRIDE {
+        puts("Verilated::timedQPush(vlSymsp, VL_TIME_Q() + ");
+        iterateAndNextNull(nodep->timep());
+        puts(", &(");
+        iterateAndNextNull(nodep->varrefp());
+        puts("));\n");
+    }
     virtual void visit(AstNodeSimpleText* nodep) VL_OVERRIDE {
         if (nodep->tracking() || m_trackText) {
             puts(nodep->text());
@@ -2618,6 +2625,10 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
          + "(vlSymsp);\n");
     if (v3Global.opt.inhibitSim()) puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");
 
+    putsDecoration("// Activate events\n");
+    //FIXME we should really see if there are any delayed statements and only put this out if are
+    if (v3Global.opt.timing()) puts("Verilated::timedQActivate(vlSymsp, VL_TIME_Q());\n");
+
     if (v3Global.opt.threads() == 1) {
         uint32_t mtaskId = 0;
         putsDecoration("// MTask " + cvtToStr(mtaskId) + " start\n");
@@ -2700,6 +2711,14 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
                    true);
     puts("}\n");
     splitSizeInc(10);
+
+    if (v3Global.opt.timing()) {
+        puts("\n");
+        puts("bool " + prefixNameProtect(modp)
+             + "::timeSlotsEmpty() { return Verilated::timedQEmpty(__VlSymsp); }\n");
+        puts("vluint64_t " + prefixNameProtect(modp)
+             + "::timeSlotsEarliestTime() { return Verilated::timedQEarliestTime(__VlSymsp); }\n");
+    }
 }
 
 //----------------------------------------------------------------------
@@ -3142,6 +3161,13 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
                  "must call on completion.\n");
         }
         puts("void final();\n");
+        if (v3Global.opt.timing()) {
+            // Calling this "time slots" matches IEEE nomenclature
+            puts("/// Return true if no more timed work to do. Application uses to exit.\n");
+            puts("bool timeSlotsEmpty();\n");
+            puts("/// Return earliest time slot. Application uses to advance time.\n");
+            puts("vluint64_t timeSlotsEarliestTime();\n");
+        }
         if (v3Global.opt.inhibitSim()) {
             puts("/// Disable evaluation of module (e.g. turn off)\n");
             puts("void inhibitSim(bool flag) { __Vm_inhibitSim = flag; }\n");

@@ -241,6 +241,7 @@ RAW_OBJS = \
 	V3Subst.o \
 	V3Table.o \
 	V3Task.o \
+	V3Timing.o \
 	V3Trace.o \
 	V3TraceDecl.o \
 	V3Tristate.o \

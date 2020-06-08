@@ -30,12 +30,12 @@
 #include "verilated_syms.h"
 
 #include <deque>
+#include <queue>
 #include <set>
 #include <vector>
 #include <numeric>
 #ifdef VL_THREADED
 # include <functional>
-# include <queue>
 #endif
 // clang-format on
 
@@ -186,6 +186,59 @@ public:
         if (VL_LIKELY(size() < capacity())) m_fp[m_sz++] = fd;
     }
 };
+
+//======================================================================
+// VerilatedTimedQueue
+
+#ifdef VL_TIMING
+/// A priority queue of events to activate at a given time
+class VerilatedTimedQueue {
+    typedef std::pair<vluint64_t, CData*> TimeEvent;  // time, eventp
+
+    struct CustomCompare {
+        bool operator()(const TimeEvent& lhs, const TimeEvent& rhs) {
+            return lhs.first > rhs.first;
+        }
+    };
+
+    typedef std::priority_queue<int, std::vector<TimeEvent>, CustomCompare> TimedQue;
+    VL_MUTABLE VerilatedMutex m_mutex;  // Mutex protecting m_timeq
+    TimedQue m_timeq VL_GUARDED_BY(m_mutex);  // Times, ordered by least at top()
+
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(VerilatedTimedQueue);
+
+public:
+    VerilatedTimedQueue() {}
+    ~VerilatedTimedQueue() {}
+
+    // METHODS
+    bool empty() const { return m_timeq.empty(); }
+    /// Top/earliest time in the queue; determines when to advance time to
+    vluint64_t earliestTime() const VL_EXCLUDES(m_mutex) VL_MT_SAFE {
+        VerilatedLockGuard lock(m_mutex);
+        if (VL_UNLIKELY(m_timeq.empty())) return VL_ULL(0xFFFFFFFFFFFFFFFF);
+        vluint64_t topTime = m_timeq.top().first;
+        return topTime;
+    }
+    /// Push to activate given event at given time
+    void push(vluint64_t time, CData* eventp) VL_EXCLUDES(m_mutex) VL_MT_SAFE {
+        VL_DEBUG_IF(if (VL_UNLIKELY(time < VL_TIME_Q())) Verilated::timeBackwardsError(););
+        VerilatedLockGuard lock(m_mutex);
+        m_timeq.push(std::make_pair(time, eventp));
+    }
+    /// Activate and pop all events earlier than given time
+    void activate(vluint64_t time) VL_EXCLUDES(m_mutex) VL_MT_SAFE {
+        VerilatedLockGuard lock(m_mutex);
+        while (VL_LIKELY(!m_timeq.empty() && m_timeq.top().first <= time)) {
+            CData* eventp = m_timeq.top().second;
+            *eventp = 1;
+            VL_DEBUG_IF(VL_DBG_MSGF("+    activate %p\n", eventp); );
+            m_timeq.pop();
+        }
+    }
+};
+#endif  // VL_TIMING
 
 //======================================================================
 // VerilatedImp

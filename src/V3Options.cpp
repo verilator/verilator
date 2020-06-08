@@ -646,6 +646,11 @@ void V3Options::notify() {
     if (v3Global.opt.main() && v3Global.opt.systemC()) {
         cmdfl->v3error("--main not usable with SystemC. Suggest see examples for sc_main().");
     }
+
+    if (v3Global.opt.timing() && v3Global.opt.savable()) {
+        // Verilated hasn't implemented save/restore of VerilatedTimingQueue
+        cmdfl->v3error("--timing not supported with --savable.");
+    }
 }
 
 //######################################################################
@@ -890,6 +895,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-structs-unpacked", flag/*ref*/))  { m_structsPacked = flag; }
             else if (!strcmp(sw, "-sv"))                             { m_defaultLanguage = V3LangCode::L1800_2005; }
             else if ( onoff (sw, "-threads-coarsen", flag/*ref*/))   { m_threadsCoarsen = flag; }  // Undocumented, debug
+            else if ( onoff (sw, "-timing", flag/*ref*/))            { m_timing = flag; }  // Undocumented, still experimental
             else if ( onoff (sw, "-trace", flag/*ref*/))             { m_trace = flag; }
             else if ( onoff (sw, "-trace-coverage", flag/*ref*/))    { m_traceCoverage = flag; }
             else if ( onoff (sw, "-trace-params", flag/*ref*/))      { m_traceParams = flag; }
@@ -1597,6 +1603,7 @@ V3Options::V3Options() {
     m_threadsDpiUnpure = false;
     m_threadsCoarsen = true;
     m_threadsMaxMTasks = 0;
+    m_timing = false;
     m_trace = false;
     m_traceCoverage = false;
     m_traceFormat = TraceFormat::VCD;

@@ -88,8 +88,8 @@ typedef void (*VerilatedVoidCb)(void);
 
 class SpTraceVcd;
 class SpTraceVcdCFile;
-class VerilatedEvalMsgQueue;
 class VerilatedScopeNameMap;
+class VerilatedTimedQueue;
 class VerilatedVar;
 class VerilatedVarNameMap;
 class VerilatedVcd;
@@ -306,6 +306,9 @@ class VerilatedSyms {
 public:  // But for internal use only
 #ifdef VL_THREADED
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
+#endif
+#ifdef VL_TIMING
+    VerilatedTimedQueue* __Vm_timedQp;
 #endif
     VerilatedSyms();
     ~VerilatedSyms();
@@ -547,6 +550,7 @@ public:
     // Internal: Throw signal assertion
     static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;
     static void overWidthError(const char* signame) VL_ATTR_NORETURN VL_MT_SAFE;
+    static void timeBackwardsError() VL_ATTR_NORETURN VL_MT_SAFE;
 
     // Internal: Find scope
     static const VerilatedScope* scopeFind(const char* namep) VL_MT_SAFE;
@@ -590,6 +594,14 @@ public:
         // if there are no transactions.
         endOfEvalGuts(evalMsgQp);
     }
+#endif
+
+#ifdef VL_TIMING
+    // Internal: Time Queue
+    static bool timedQEmpty(VerilatedSyms* symsp) VL_MT_SAFE;
+    static vluint64_t timedQEarliestTime(VerilatedSyms* symsp) VL_MT_SAFE;
+    static void timedQPush(VerilatedSyms* symsp, vluint64_t time, CData* eventp) VL_MT_SAFE;
+    static void timedQActivate(VerilatedSyms* symsp, vluint64_t time) VL_MT_SAFE;
 #endif
 
 private:

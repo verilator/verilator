@@ -675,6 +675,7 @@ private:
     bool m_inClkAss;  // Underneath AstAssign
     bool m_inPre;  // Underneath AstAssignPre
     bool m_inPost;  // Underneath AstAssignPost
+    bool m_inTimedEvent;  // Underneath TimedEvent
     OrderLogicVertex* m_activeSenVxp;  // Sensitivity vertex
     std::deque<OrderUser*> m_orderUserps;  // All created OrderUser's for later deletion.
     // STATE... for inside process
@@ -1033,7 +1034,10 @@ private:
         }
     }
     virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
-        if (m_scopep) {
+        if (m_inTimedEvent && nodep->lvalue()) {
+            // Ignore var being set under AstTimedEvent, it is being set in the
+            // "future" not in this time cycle
+        } else if (m_scopep) {
             AstVarScope* varscp = nodep->varScopep();
             UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
             if (m_inSenTree) {
@@ -1159,6 +1163,12 @@ private:
             }
         }
     }
+    virtual void visit(AstTimedEvent* nodep) VL_OVERRIDE {
+        iterateAndNextNull(nodep->timep());
+        m_inTimedEvent = true;
+        iterateAndNextNull(nodep->varrefp());
+        m_inTimedEvent = false;
+    }
     virtual void visit(AstSenTree* nodep) VL_OVERRIDE {
         // Having a node derived from the sentree isn't required for
         // correctness, it merely makes the graph better connected
@@ -1230,7 +1240,9 @@ public:
         m_inSenTree = false;
         m_inClocked = false;
         m_inClkAss = false;
-        m_inPre = m_inPost = false;
+        m_inPre = false;
+        m_inPost = false;
+        m_inTimedEvent = false;
         m_comboDomainp = NULL;
         m_deleteDomainp = NULL;
         m_inputsVxp = NULL;

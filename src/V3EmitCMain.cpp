@@ -73,11 +73,17 @@ private:
         puts("topp->eval();  // Evaluate\n");
 
         puts("// Simulate until $finish\n");
-        puts("while (!Verilated::gotFinish()) {\n");
+        puts("while (!Verilated::gotFinish()");
+        if (v3Global.opt.timing()) puts(" || topp->timeSlotsEmpty()");
+        puts(") {\n");
         puts(/**/ "// Evaluate model\n");
         puts(/**/ "topp->eval();\n");
         puts(/**/ "// Advance time\n");
-        puts(/**/ "++main_time;\n");
+        if (v3Global.opt.timing()) {
+            puts(/**/ "main_time = topp->timeSlotsEarliestTime();\n");
+        } else {
+            puts(/**/ "++main_time;\n");
+        }
         puts("}\n");
         puts("\n");
 

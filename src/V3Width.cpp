@@ -548,8 +548,13 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
-        nodep->v3warn(STMTDLY, "Unsupported: Ignoring delay on this delayed statement.");
-        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        if (!v3Global.opt.timing()) {
+            nodep->v3warn(STMTDLY, "Unsupported: Ignoring delay on this delayed statement.");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        AstNodeDType* expDTypep = nodep->findUInt64DType();
+        iterateCheck(nodep, "Delay", nodep->lhsp(), CONTEXT, FINAL, expDTypep, EXTEND_ZERO);
     }
     virtual void visit(AstFork* nodep) VL_OVERRIDE {
         if (VN_IS(m_ftaskp, Func) && !nodep->joinType().joinNone()) {

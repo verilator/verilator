@@ -275,6 +275,7 @@ private:
     bool        m_systemC;      // main switch: --sc: System C instead of simple C++
     bool        m_stats;        // main switch: --stats
     bool        m_statsVars;    // main switch: --stats-vars
+    bool        m_timing;       // main switch: --timing
     bool        m_threadsCoarsen;  // main switch: --threads-coarsen
     bool        m_threadsDpiPure;  // main switch: --threads-dpi all/pure
     bool        m_threadsDpiUnpure;  // main switch: --threads-dpi all
@@ -452,6 +453,7 @@ public:
     bool threadsDpiPure() const { return m_threadsDpiPure; }
     bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }
     bool threadsCoarsen() const { return m_threadsCoarsen; }
+    bool timing() const { return m_timing; }
     bool trace() const { return m_trace; }
     bool traceCoverage() const { return m_traceCoverage; }
     bool traceParams() const { return m_traceParams; }
