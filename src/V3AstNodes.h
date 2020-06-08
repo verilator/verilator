@@ -541,8 +541,9 @@ public:
     virtual string prettyDTypeName() const;
     virtual void dumpSmall(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
+    virtual AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    virtual AstNodeDType* getChild2DTypep() const { return keyChildDTypep(); }
     virtual bool isHeavy() const { return true; }
-    AstNodeDType* getChildDTypep() const { return childDTypep(); }
     // op1 = Range of variable
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
@@ -5619,6 +5620,7 @@ public:
     AstNode* lhsp() const { return op1p(); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return VN_CAST(op2p(), NodeDType); }
+    virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
 };
 
 class AstCastDynamic : public AstNodeBiop {
