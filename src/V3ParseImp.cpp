@@ -347,11 +347,13 @@ const V3ParseBisonYYSType* V3ParseImp::tokenPeekp(size_t depth) {
     return &m_tokensAhead.at(depth);
 }
 
-bool V3ParseImp::tokenPipeScanParam() {
+size_t V3ParseImp::tokenPipeScanParam(size_t depth) {
     // Search around IEEE parameter_value_assignment to see if :: follows
-    if (tokenPeekp(0)->token != '#') return false;
-    if (tokenPeekp(1)->token != '(') return false;
-    int depth = 2;  // Past the (
+    // Return location of following token, or input if not found
+    // yaID [ '#(' ... ')' ]
+    if (tokenPeekp(depth)->token != '#') return depth;
+    if (tokenPeekp(depth + 1)->token != '(') return depth;
+    depth += 2;  // Past the (
     int parens = 1;  // Count first (
     while (true) {
         int tok = tokenPeekp(depth)->token;
@@ -369,7 +371,7 @@ bool V3ParseImp::tokenPipeScanParam() {
         }
         ++depth;
     }
-    return tokenPeekp(depth)->token == yP_COLONCOLON;
+    return depth;
 }
 
 void V3ParseImp::tokenPipeline() {
@@ -463,7 +465,8 @@ void V3ParseImp::tokenPipeline() {
             } else if (nexttok == '#') {
                 V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
                 {
-                    if (tokenPipeScanParam()) { token = yaID__CC; }
+                    size_t depth = tokenPipeScanParam(0);
+                    if (tokenPeekp(depth)->token == yP_COLONCOLON) { token = yaID__CC; }
                 }
                 yylval = curValue;
             }
@@ -499,29 +502,36 @@ void V3ParseImp::tokenPipelineSym() {
             AstNode* scp = foundp->nodep();
             yylval.scp = scp;
             UINFO(7, "   tokenPipelineSym: Found " << scp << endl);
-            if (VN_IS(scp, Typedef)) {
-                token = (token == yaID__CC) ? yaID__CC : yaID__aTYPE;
-            } else if (VN_IS(scp, TypedefFwd)) {
-                token = (token == yaID__CC) ? yaID__CC : yaID__aTYPE;
-            } else if (VN_IS(scp, Class)) {
-                token = (token == yaID__CC) ? yaID__CC : yaID__aTYPE;
-            } else if (VN_IS(scp, Package)) {
-                token = (token == yaID__CC) ? yaID__CC : yaID__ETC;
-            } else {
-                token = (token == yaID__CC) ? yaID__CC : yaID__ETC;
+            if (token == yaID__LEX) {  // i.e. not yaID__CC
+                if (VN_IS(scp, Typedef)) {
+                    token = yaID__aTYPE;
+                } else if (VN_IS(scp, TypedefFwd)) {
+                    token = yaID__aTYPE;
+                } else if (VN_IS(scp, Class)) {
+                    token = yaID__aTYPE;
+                } else if (VN_IS(scp, Package)) {
+                    token = yaID__ETC;
+                } else {
+                    token = yaID__ETC;
+                }
             }
         } else {  // Not found
             yylval.scp = NULL;
-            token = (token == yaID__CC) ? yaID__CC : yaID__ETC;
             if (token == yaID__CC) {
-                // We'll get a parser error eventually but might not be obvious
-                // is missing package, and this confuses people
-                static int warned = false;
-                if (!warned++) {
-                    yylval.fl->v3error(
-                        "Package/class '" + *yylval.strp
-                        + "' not found, and needs to be predeclared (IEEE 1800-2017 26.3)");
+                // IEEE does require this, but we may relax this as UVM breaks it, so allow bbox
+                // for today
+                if (!v3Global.opt.bboxUnsup()) {
+                    // We'll get a parser error eventually but might not be obvious
+                    // is missing package, and this confuses people
+                    static int warned = false;
+                    if (!warned++) {
+                        yylval.fl->v3error(
+                            "Package/class '" + *yylval.strp
+                            + "' not found, and needs to be predeclared (IEEE 1800-2017 26.3)");
+                    }
                 }
+            } else if (token == yaID__LEX) {
+                token = yaID__ETC;
             }
         }
     }
@@ -548,8 +558,8 @@ std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) {
     os << "TOKEN {" << rhs.fl->filenameLetters() << rhs.fl->asciiLineCol() << "}";
     os << "=" << rhs.token << " " << V3ParseImp::tokenName(rhs.token);
     if (rhs.token == yaID__ETC  //
-        || rhs.token == yaID__LEX  //
         || rhs.token == yaID__CC  //
+        || rhs.token == yaID__LEX  //
         || rhs.token == yaID__aTYPE) {
         os << " strp='" << *(rhs.strp) << "'";
     }

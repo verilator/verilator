@@ -1112,7 +1112,7 @@ package_import_itemList<nodep>:
 	;
 
 package_import_item<nodep>:	// ==IEEE: package_import_item
-		yaID__CC/*package_identifier*/ yP_COLONCOLON package_import_itemObj
+		idCC/*package_identifier*/ yP_COLONCOLON package_import_itemObj
 			{
 			  if (!VN_CAST($<scp>1, Package)) {
 			      $$ = NULL;
@@ -1139,7 +1139,7 @@ package_export_itemList<nodep>:
 	;
 
 package_export_item<nodep>:	// ==IEEE: package_export_item
-		yaID__CC yP_COLONCOLON package_import_itemObj
+		idCC yP_COLONCOLON package_import_itemObj
 			{ $$ = new AstPackageExport($<fl>3, VN_CAST($<scp>1, Package), *$3);
 			  SYMP->exportItem($<scp>1,*$3); }
 	;
@@ -2679,6 +2679,9 @@ etcInst<nodep>:			// IEEE: module_instantiation + gate_instantiation + udp_insta
 	;
 
 instDecl<nodep>:
+	//      		// Currently disambiguated from data_declaration based on
+	//			// VARs being type, and cells non-type.
+	//			// IEEE requires a '(' to disambiguate, we need TODO force this
 		id parameter_value_assignmentE {INSTPREP($<fl>1,*$1,$2);} instnameList ';'
 			{ $$ = $4; GRAMMARP->m_impliedDecl=false;
 			  if (GRAMMARP->m_instParamp) {
@@ -4686,6 +4689,11 @@ idType<strp>:			// IEEE: class_identifier or other type identifier
 		yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
+idCC<strp>:			// IEEE: class/package then ::
+				// lexer matches this:  yaID_LEX [ '#' '(' ... ')' ] yP_COLONCOLON
+		yaID__CC				{ $$ = $1; $<fl>$=$<fl>1; }
+	;
+
 idRandomize<strp>:		// Keyword as an identifier
 		yRANDOMIZE				{ static string s = "randomize"; $$ = &s; $<fl>$ = $<fl>1; }
 	;
@@ -5906,13 +5914,13 @@ packageClassScopeItem<packagep>:	// IEEE: package_scope or [package_scope]::[cla
 	//			//     if not needed must use packageClassScopeNoId
 	//			// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
 	//			//vv mid rule action needed otherwise we might not have NextId in time to parse the id token
-		yaID__CC
+		idCC
 	/*mid*/		{ SYMP->nextId($<scp>1); }
 	/*cont*/    yP_COLONCOLON
 			{ $$ = VN_CAST($<scp>1, Package); }  // UNSUP classes
 	//
-	|	yaID__CC parameter_value_assignment
-        /*mid*/		{ SYMP->nextId($<scp>1); }   // Change next *after* we handle parameters, not before
+	|	idCC parameter_value_assignment
+	/*mid*/		{ SYMP->nextId($<scp>1); }   // Change next *after* we handle parameters, not before
 	/*cont*/    yP_COLONCOLON
 			{ $$ = VN_CAST($<scp>1, Package);  // UNSUP classes
 			  if ($2) BBUNSUP($2->fileline(), "Unsupported: Parameterized classes"); }
