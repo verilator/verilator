@@ -39,7 +39,7 @@ brief:
 #sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
 #sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
 
-git clone https://git.veripool.org/git/verilator   # Only first time
+git clone https://github.org/verilator/verilator   # Only first time
 ## Note the URL above is not a page you can see with a browser, it's for git only
 
 # Every time you need to build:
@@ -128,7 +128,7 @@ Downloads]; we presume you know how to use it, and is not described here.)
 
 Get the sources from the repository: (You need do this only once, ever.)
 
-   git clone https://git.veripool.org/git/verilator   # Only first time
+   git clone https://github.org/verilator/verilator   # Only first time
    ## Note the URL above is not a page you can see with a browser, it's for git only
 
 Enter the checkout and determine what version/branch to use:

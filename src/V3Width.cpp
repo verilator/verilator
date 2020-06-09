@@ -1337,9 +1337,8 @@ private:
     // DTYPES
     virtual void visit(AstNodeArrayDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         // Cleanup array size
         userIterateAndNext(nodep->rangep(), WidthVP(SELF, BOTH).p());
         nodep->dtypep(nodep);  // The array itself, not subDtype
@@ -1354,29 +1353,23 @@ private:
     }
     virtual void visit(AstAssocArrayDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
-        if (nodep->keyChildDTypep()) {
-            nodep->keyDTypep(moveDTypeEdit(nodep, nodep->keyChildDTypep()));
-        }
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
-        nodep->keyDTypep(iterateEditDTypep(nodep, nodep->keyDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
+        nodep->keyDTypep(iterateEditMoveDTypep(nodep, nodep->keyDTypep()));
         nodep->dtypep(nodep);  // The array itself, not subDtype
         UINFO(4, "dtWidthed " << nodep << endl);
     }
     virtual void visit(AstDynArrayDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);  // The array itself, not subDtype
         UINFO(4, "dtWidthed " << nodep << endl);
     }
     virtual void visit(AstQueueDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);  // The array itself, not subDtype
         if (VN_IS(nodep->boundp(), Unbounded)) {
             nodep->boundp()->unlinkFrBack()->deleteTree();  // NULL will represent unbounded
@@ -1385,9 +1378,8 @@ private:
     }
     virtual void visit(AstUnsizedArrayDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         // Cleanup array size
         nodep->dtypep(nodep);  // The array itself, not subDtype
         UINFO(4, "dtWidthed " << nodep << endl);
@@ -1417,12 +1409,8 @@ private:
     }
     virtual void visit(AstConstDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        // Move any childDTypep to instead be in global AstTypeTable.
-        // This way if this node gets deleted and some other dtype points to it
-        // it won't become a dead pointer.  This doesn't change the object pointed to.
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         userIterateChildren(nodep, NULL);
         nodep->dtypep(nodep);  // Should already be set, but be clear it's not the subDType
         nodep->widthFromSub(nodep->subDTypep());
@@ -1449,8 +1437,10 @@ private:
         }
         userIterateChildren(nodep, NULL);
         if (nodep->subDTypep()) {
-            nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+            nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
             nodep->typedefp(NULL);  // Note until line above subDTypep() may have followed this
+            // Widths are resolved, but special iterate to check for recurstion
+            userIterate(nodep->subDTypep(), NULL);
         }
         // Effectively nodep->dtypeFrom(nodep->dtypeSkipRefp());
         // But might be recursive, so instead manually recurse into the referenced type
@@ -1462,15 +1452,13 @@ private:
     }
     virtual void visit(AstTypedef* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
+        nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         userIterateChildren(nodep, NULL);
-        nodep->dtypep(iterateEditDTypep(nodep, nodep->subDTypep()));
     }
     virtual void visit(AstParamTypeDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
+        nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         userIterateChildren(nodep, NULL);
-        nodep->dtypep(iterateEditDTypep(nodep, nodep->subDTypep()));
         nodep->widthFromSub(nodep->subDTypep());
     }
     virtual void visit(AstCastDynamic* nodep) VL_OVERRIDE {
@@ -1499,8 +1487,7 @@ private:
         }
     }
     virtual void visit(AstCast* nodep) VL_OVERRIDE {
-        if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
-        nodep->dtypep(iterateEditDTypep(nodep, nodep->dtypep()));
+        nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         // if (debug()) nodep->dumpTree(cout, "  CastPre: ");
         userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
         // When more general casts are supported, the cast elimination will be done later.
@@ -1607,8 +1594,7 @@ private:
         }
         nodep->doingWidth(true);
         // Make sure dtype is sized
-        if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
-        nodep->dtypep(iterateEditDTypep(nodep, nodep->dtypep()));
+        nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype determined for var");
         if (AstUnsizedArrayDType* unsizedp = VN_CAST(nodep->dtypeSkipRefp(), UnsizedArrayDType)) {
             if (!(m_ftaskp && m_ftaskp->dpiImport())) {
@@ -1738,8 +1724,7 @@ private:
     virtual void visit(AstEnumDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         UINFO(5, "  ENUMDTYPE " << nodep << endl);
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);
         nodep->widthFromSub(nodep->subDTypep());
         // Assign widths
@@ -1942,20 +1927,23 @@ private:
         userIterateChildren(nodep, NULL);  // First size all members
         nodep->repairCache();
     }
+    virtual void visit(AstClassRefDType* nodep) VL_OVERRIDE {
+        if (nodep->didWidthAndSet()) return;
+        // TODO this maybe eventually required to properly resolve members,
+        // though causes problems with t_class_forward.v, so for now avoided
+        // userIterateChildren(nodep->classp(), NULL);
+    }
     virtual void visit(AstClassExtends* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
         nodep->v3error("Unsupported: class extends");  // Member/meth access breaks
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        // if (nodep->childDTypep()) {
-        //     nodep->dtypep(moveChildDTypeEdit(nodep));  // data_type '{ pattern }
-        // }
+        // nodep->dtypep(iterateEditMoveDTypep(nodep));  // data_type '{ pattern }
         // userIterateChildren(nodep, NULL);
     }
     virtual void visit(AstMemberDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);  // The member itself, not subDtype
         nodep->widthFromSub(nodep->subDTypep());
     }
@@ -2685,8 +2673,9 @@ private:
     virtual void visit(AstPattern* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
         UINFO(9, "PATTERN " << nodep << endl);
-        if (nodep->childDTypep())
-            nodep->dtypep(moveChildDTypeEdit(nodep));  // data_type '{ pattern }
+        if (nodep->childDTypep()) {  // data_type '{ pattern }
+            nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
+        }
         if (!nodep->dtypep() && m_vup->dtypeNullp()) {  // Get it from parent assignment/pin/etc
             nodep->dtypep(m_vup->dtypep());
         }
@@ -4962,31 +4951,44 @@ private:
     //----------------------------------------------------------------------
     // METHODS - data types
 
-    AstNodeDType* moveDTypeEdit(AstNode* nodep, AstNodeDType* dtnodep) {
-        // DTypes at parse time get added as a e.g. childDType to some node types such as AstVars.
-        // Move type to global scope, so removing/changing a variable won't lose the dtype.
-        UASSERT_OBJ(dtnodep, nodep, "Caller should check for NULL before calling moveDTypeEdit");
-        UINFO(9, "moveDTypeEdit  " << dtnodep << endl);
-        dtnodep->unlinkFrBack();  // Make non-child
-        v3Global.rootp()->typeTablep()->addTypesp(dtnodep);
+    AstNodeDType* iterateEditMoveDTypep(AstNode* parentp, AstNodeDType* dtnodep) {
+        UASSERT_OBJ(dtnodep, parentp, "Caller should check for NULL before computing dtype");
+        // Iterate into a data type to resolve that type.
+        // The data type may either:
+        // 1. Be a child (typically getChildDTypep() returns it)
+        //    DTypes at parse time get added as these to some node types
+        //    such as AstVars.
+        //    This function will move it to global scope (that is #2
+        //    will now apply).
+        // 2. Be under the Netlist and pointed to by an Ast member variable
+        //    (typically refDTypep() or dtypep() returns it)
+        //    so removing/changing a variable won't lose the dtype
+
+        // Case #1 above applies?
+        bool child1 = (parentp->getChildDTypep() == dtnodep);
+        bool child2 = (parentp->getChild2DTypep() == dtnodep);
+        if (child1 || child2) {
+            UINFO(9, "iterateEditMoveDTypep child iterating " << dtnodep << endl);
+            // Iterate, this might edit the dtypes which means dtnodep now lost
+            VL_DO_DANGLING(userIterate(dtnodep, NULL), dtnodep);
+            // Figure out the new dtnodep, remained a child of parent so find it there
+            dtnodep = child1 ? parentp->getChildDTypep() : parentp->getChild2DTypep();
+            UASSERT_OBJ(dtnodep, parentp, "iterateEditMoveDTypep lost pointer to child");
+            UASSERT_OBJ(dtnodep->didWidth(), parentp,
+                        "iterateEditMoveDTypep didn't get width resolution of "
+                            << dtnodep->prettyTypeName());
+            // Move to under netlist
+            UINFO(9, "iterateEditMoveDTypep child moving " << dtnodep << endl);
+            dtnodep->unlinkFrBack();
+            v3Global.rootp()->typeTablep()->addTypesp(dtnodep);
+        }
+        if (!dtnodep->didWidth()) {
+            UINFO(9, "iterateEditMoveDTypep pointer iterating " << dtnodep << endl);
+            userIterate(dtnodep, NULL);
+            UASSERT_OBJ(dtnodep->didWidth(), parentp,
+                        "iterateEditMoveDTypep didn't get width resolution");
+        }
         return dtnodep;
-    }
-    AstNodeDType* moveChildDTypeEdit(AstNode* nodep) {
-        return moveDTypeEdit(nodep, nodep->getChildDTypep());
-    }
-    AstNodeDType* iterateEditDTypep(AstNode* parentp, AstNodeDType* nodep) {
-        // Iterate into a data type to resolve that type. This process
-        // may eventually create a new data type, but not today
-        // it may make a new datatype, need subChildDType() to point to it;
-        // maybe we have user5p indicate a "replace me with" pointer.
-        // Need to be careful with "implicit" types though.
-        //
-        // Alternative is to have WidthVP return information.
-        // or have a call outside of normal visitor land.
-        // or have a m_return type (but need to return if width called multiple times)
-        UASSERT_OBJ(nodep, parentp, "Null dtype when widthing dtype");
-        userIterate(nodep, NULL);
-        return nodep;
     }
 
     AstConst* dimensionValue(FileLine* fileline, AstNodeDType* nodep, AstAttrType attrType,

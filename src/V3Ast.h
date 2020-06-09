@@ -1809,6 +1809,8 @@ public:
     virtual bool hasDType() const { return false; }
     // Iff has a non-null childDTypep(), as generic node function
     virtual AstNodeDType* getChildDTypep() const { return NULL; }
+    // Iff has a non-null child2DTypep(), as generic node function
+    virtual AstNodeDType* getChild2DTypep() const { return NULL; }
     // Another AstNode* may have a pointer into this node, other then normal front/back/etc.
     virtual bool maybePointedTo() const { return false; }
     virtual const char* broken() const { return NULL; }
