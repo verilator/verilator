@@ -845,6 +845,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if (!strcmp(sw, "-debug-abort")) { V3Error::vlAbort(); }  // Undocumented, see also --debug-sigsegv
             else if ( onoff (sw, "-debug-check", flag/*ref*/))  { m_debugCheck = flag; }
             else if ( onoff (sw, "-debug-collision", flag/*ref*/)) { m_debugCollision = flag; }  // Undocumented
+            else if ( onoff (sw, "-debug-exit-parse", flag/*ref*/)) { m_debugExitParse = flag; }  // Undocumented
             else if ( onoff (sw, "-debug-leak", flag/*ref*/))   { m_debugLeak = flag; }
             else if ( onoff (sw, "-debug-nondeterminism", flag/*ref*/)){ m_debugNondeterminism = flag; }
             else if ( onoff (sw, "-debug-partition", flag/*ref*/)){ m_debugPartition = flag; }  // Undocumented
@@ -1552,6 +1553,7 @@ V3Options::V3Options() {
     m_coverageUser = false;
     m_debugCheck = false;
     m_debugCollision = false;
+    m_debugExitParse = false;
     m_debugLeak = true;
     m_debugNondeterminism = false;
     m_debugPartition = false;

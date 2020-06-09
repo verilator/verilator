@@ -104,6 +104,10 @@ static void process() {
     // Sort modules by level so later algorithms don't need to care
     V3LinkLevel::modSortByLevel();
     V3Error::abortIfErrors();
+    if (v3Global.opt.debugExitParse()) {
+        cout << "--debug-exit-parse: Exiting after parse\n";
+        exit(0);
+    }
 
     // Convert parseref's to varrefs, and other directly post parsing fixups
     V3LinkParse::linkParse(v3Global.rootp());
