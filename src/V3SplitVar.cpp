@@ -231,10 +231,7 @@ struct AstNodeComparator {
     bool operator()(const AstNode* ap, const AstNode* bp) const {
         const int lineComp = ap->fileline()->operatorCompare(*bp->fileline());
         if (lineComp != 0) return lineComp < 0;
-        // V3SplitVar checks intra module. Comparison among cloned modules should not happen here.
-        // So fileline of each AstNode should differ.
-        // This name comparison is just in case.
-        return ap->name() < bp->name();
+        return ap < bp;
     }
 };
 
