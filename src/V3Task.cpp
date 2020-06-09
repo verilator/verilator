@@ -846,11 +846,12 @@ private:
                     newPortp->funcLocal(true);
                     dpip->addArgsp(newPortp);
                     if (!portp->basicp()) {
-                        portp->v3error(
+                        portp->v3warn(
+                            E_UNSUPPORTED,
                             "Unsupported: DPI argument of type "
-                            << portp->basicp()->prettyTypeName() << endl
-                            << portp->warnMore()
-                            << "... For best portability, use bit, byte, int, or longint");
+                                << portp->basicp()->prettyTypeName() << endl
+                                << portp->warnMore()
+                                << "... For best portability, use bit, byte, int, or longint");
                         // We don't warn on logic either, although the 4-stateness is lost.
                         // That's what other simulators do.
                     }
@@ -971,9 +972,10 @@ private:
                 }
             } else {
                 if (portp->isWide()) {
-                    nodep->v3error("Unsupported: Public functions with return > 64 bits wide.\n"
-                                   + V3Error::warnMore()
-                                   + "... Suggest make it an output argument instead?");
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Public functions with return > 64 bits wide.\n"
+                                      + V3Error::warnMore()
+                                      + "... Suggest make it an output argument instead?");
                 }
             }
 
@@ -1265,7 +1267,8 @@ private:
             if (v3Global.opt.protectIds() && nodep->taskPublic()) {
                 // We always call protect() on names, we don't check if public or not
                 // Hence any external references wouldn't be able to find the refed public object.
-                nodep->v3error("Unsupported: Using --protect-ids with public function");
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Using --protect-ids with public function");
             }
             if (modes > 1) {
                 nodep->v3error("Cannot mix DPI import, DPI export, class methods, and/or public "
@@ -1463,9 +1466,10 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                     // Problem otherwise is we might have a varref, task
                     // call, or something else that only makes sense in the
                     // domain of the function, not the callee.
-                    nodep->v3error("Unsupported: Non-constant default value in missing argument "
-                                   << portp->prettyNameQ() << " in function call to "
-                                   << nodep->taskp()->prettyTypeName());
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Non-constant default value in missing argument "
+                                      << portp->prettyNameQ() << " in function call to "
+                                      << nodep->taskp()->prettyTypeName());
                     newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
                 } else {
                     newvaluep = newvaluep->cloneTree(true);

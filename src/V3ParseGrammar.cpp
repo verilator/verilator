@@ -100,7 +100,7 @@ AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
     }
     if (nrangep && nrangep->nextp()) {
         // Not supported by at least 2 of big 3
-        nrangep->nextp()->v3error("Unsupported: Multidimensional cells/interfaces.");
+        nrangep->nextp()->v3warn(E_UNSUPPORTED, "Unsupported: Multidimensional cells/interfaces.");
         nrangep->nextp()->unlinkFrBackWithNext()->deleteTree();
     }
     return VN_CAST(nrangep, Range);
@@ -151,7 +151,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
                          << GRAMMARP->m_varIO << "  dt=" << (dtypep ? "set" : "") << endl);
     if (GRAMMARP->m_varIO == VDirection::NONE && GRAMMARP->m_varDecl == AstVarType::PORT) {
         // Just a port list with variable name (not v2k format); AstPort already created
-        if (dtypep) fileline->v3error("Unsupported: Ranges ignored in port-lists");
+        if (dtypep) fileline->v3warn(E_UNSUPPORTED, "Unsupported: Ranges ignored in port-lists");
         return NULL;
     }
     if (GRAMMARP->m_varDecl == AstVarType::WREAL) {

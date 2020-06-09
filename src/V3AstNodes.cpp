@@ -495,8 +495,8 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     }
     if (isWide()) {
         if (forReturn) {
-            v3error("Unsupported: Public functions with >64 bit outputs; "
-                    "make an output of a public task instead");
+            v3warn(E_UNSUPPORTED, "Unsupported: Public functions with >64 bit outputs; "
+                                  "make an output of a public task instead");
         }
         arg += " (& " + name();
         arg += ")[" + cvtToStr(widthWords()) + "]";

@@ -316,10 +316,8 @@ private:
 
         if (!combo && !sequent) combo = true;  // If no list, Verilog 2000: always @ (*)
         if (combo && sequent) {
-            if (!v3Global.opt.bboxUnsup()) {
-                nodep->v3error("Unsupported: Mixed edge (pos/negedge) and activity "
-                               "(no edge) sensitive activity list");
-            }
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Mixed edge (pos/negedge) and activity "
+                                         "(no edge) sensitive activity list");
             sequent = false;
         }
 
@@ -405,8 +403,9 @@ private:
         } else if (nodep->varrefp()) {
             // V3LinkResolve should have cleaned most of these up
             if (!nodep->varrefp()->width1()) {
-                nodep->v3error("Unsupported: Non-single bit wide signal pos/negedge sensitivity: "
-                               << nodep->varrefp()->prettyNameQ());
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Non-single bit wide signal pos/negedge sensitivity: "
+                                  << nodep->varrefp()->prettyNameQ());
             }
             m_itemSequent = true;
             nodep->varrefp()->varp()->usedClock(true);

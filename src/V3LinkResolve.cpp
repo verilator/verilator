@@ -108,7 +108,8 @@ private:
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (m_classp && !nodep->isParam()) nodep->varType(AstVarType::MEMBER);
-        if (m_classp && nodep->isParam()) nodep->v3error("Unsupported: class parameter");
+        if (m_classp && nodep->isParam())
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: class parameter");
         if (m_ftaskp) nodep->funcLocal(true);
         if (nodep->lifetime().isNone()) nodep->lifetime(m_lifetime);
         if (nodep->isSigModPublic()) {
@@ -167,8 +168,9 @@ private:
                     addwherep = addwherep->backp();
                 }
                 if (!VN_IS(addwherep, Always)) {  // Assertion perhaps?
-                    sensp->v3error("Unsupported: Non-single-bit pos/negedge clock statement under "
-                                   "some complicated block");
+                    sensp->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Non-single-bit pos/negedge clock statement under "
+                                  "some complicated block");
                     addwherep = m_modp;
                 }
                 addwherep->addNext(newvarp);
@@ -207,7 +209,7 @@ private:
             && !VN_IS(nodep->sensp(), EnumItemRef)  // V3Const will cleanup
             && !nodep->isIllegal()) {
             if (debug()) nodep->dumpTree(cout, "-tree: ");
-            nodep->v3error("Unsupported: Complex statement in sensitivity list");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Complex statement in sensitivity list");
         }
     }
     virtual void visit(AstSenGate* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
@@ -239,7 +241,7 @@ private:
             } else if (VN_IS(basefromp, Replicate)) {
                 // From {...}[...] syntax in IEEE 2017
                 if (basefromp) { UINFO(1, "    Related node: " << basefromp << endl); }
-                nodep->v3error("Unsupported: Select of concatenation");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Select of concatenation");
                 nodep = NULL;
             } else {
                 if (basefromp) { UINFO(1, "    Related node: " << basefromp << endl); }
@@ -309,13 +311,13 @@ private:
                     break;
                 case 'm':  // %m - auto insert "name"
                     if (isScan) {
-                        nodep->v3error("Unsupported: %m in $fscanf");
+                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: %m in $fscanf");
                         fmt = "";
                     }
                     break;
                 case 'l':  // %l - auto insert "library"
                     if (isScan) {
-                        nodep->v3error("Unsupported: %l in $fscanf");
+                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: %l in $fscanf");
                         fmt = "";
                     }
                     if (m_modp) fmt = VString::quotePercent(m_modp->prettyName());
@@ -395,7 +397,8 @@ private:
 
     void expectDescriptor(AstNode* nodep, AstNodeVarRef* filep) {
         if (!filep) {
-            nodep->v3error("Unsupported: $fopen/$fclose/$f* descriptor must be a simple variable");
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: $fopen/$fclose/$f* descriptor must be a simple variable");
         }
         if (filep && filep->varp()) filep->varp()->attrFileDescr(true);
     }

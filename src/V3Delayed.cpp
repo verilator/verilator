@@ -373,7 +373,8 @@ private:
         m_nextDlyp
             = VN_CAST(nodep->nextp(), AssignDly);  // Next assignment in same block, maybe NULL.
         if (m_cfuncp) {
-            nodep->v3error("Unsupported: Delayed assignment inside public function/task");
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Delayed assignment inside public function/task");
         }
         if (VN_IS(nodep->lhsp(), ArraySel)
             || (VN_IS(nodep->lhsp(), Sel)
@@ -385,7 +386,9 @@ private:
                                            "loops (non-delayed is ok - see docs)");
             }
             AstBasicDType* basicp = lhsp->dtypep()->basicp();
-            if (basicp && basicp->isEventValue()) nodep->v3error("Unsupported: event arrays");
+            if (basicp && basicp->isEventValue()) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: event arrays");
+            }
             if (newlhsp) {
                 nodep->lhsp(newlhsp);
             } else {

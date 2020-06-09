@@ -52,6 +52,7 @@ public:
         // Error codes:
         E_DETECTARRAY,  // Error: Unsupported: Can't detect changes on arrayed variable
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
+        E_UNSUPPORTED,  // Error: Unsupported (generally)
         E_TASKNSVAR,    // Error: Task I/O not simple
         //
         // Warning codes:
@@ -143,7 +144,7 @@ public:
             // Boolean
             " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
             // Errors
-            "DETECTARRAY", "PORTSHORT", "TASKNSVAR",
+            "DETECTARRAY", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",

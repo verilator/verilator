@@ -1,4 +1,4 @@
-%Error: t/t_class_member_bad.v:11:20: Unsupported: class extends
+%Error-UNSUPPORTED: t/t_class_member_bad.v:11:20: Unsupported: class extends
    11 | class Cls2 extends Base1;
       |                    ^~~~~
 %Error: t/t_class_member_bad.v:11:20: Found definition of 'Base1' as a CLASS but expected a variable

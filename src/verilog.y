@@ -37,10 +37,7 @@
 
 // Pick up new lexer
 #define yylex PARSEP->tokenToBison
-#define BBUNSUP(fl, msg) \
-    { \
-        if (!v3Global.opt.bboxUnsup()) { (fl)->v3error(msg); } \
-    }
+#define BBUNSUP(fl, msg) (fl)->v3warn(E_UNSUPPORTED, msg)
 #define GATEUNSUP(fl, tok) \
     { BBUNSUP((fl), "Unsupported: Verilog 1995 gate primitive: " << (tok)); }
 
@@ -3339,7 +3336,8 @@ assignment_pattern<patternp>:	// ==IEEE: assignment_pattern
 	//			// also IEEE "''{' array_pattern_key ':' ...
 	|	yP_TICKBRA patternMemberList '}'	{ $$ = new AstPattern($1,$2); }
 	//			// IEEE: Not in grammar, but in VMM
-	|	yP_TICKBRA '}'				{ $$ = new AstPattern($1, NULL); $1->v3error("Unsupported: Empty '{}"); }
+	|	yP_TICKBRA '}'
+			{ $$ = new AstPattern($1, NULL); $1->v3warn(E_UNSUPPORTED, "Unsupported: Empty '{}"); }
 	;
 
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal

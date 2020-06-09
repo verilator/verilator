@@ -1,16 +1,16 @@
-%Error: t/t_class_extends.v:13:21: Unsupported: class extends
+%Error-UNSUPPORTED: t/t_class_extends.v:13:21: Unsupported: class extends
    13 | class Base1 extends Base0;
       |                     ^~~~~
 %Error: t/t_class_extends.v:13:21: Found definition of 'Base0' as a CLASS but expected a variable
    13 | class Base1 extends Base0;
       |                     ^~~~~
-%Error: t/t_class_extends.v:17:21: Unsupported: class extends
+%Error-UNSUPPORTED: t/t_class_extends.v:17:21: Unsupported: class extends
    17 | class Base2 extends Base1;
       |                     ^~~~~
 %Error: t/t_class_extends.v:17:21: Found definition of 'Base1' as a CLASS but expected a variable
    17 | class Base2 extends Base1;
       |                     ^~~~~
-%Error: t/t_class_extends.v:21:19: Unsupported: class extends
+%Error-UNSUPPORTED: t/t_class_extends.v:21:19: Unsupported: class extends
    21 | class Cls extends Base2;
       |                   ^~~~~
 %Error: t/t_class_extends.v:21:19: Found definition of 'Base2' as a CLASS but expected a variable

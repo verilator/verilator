@@ -364,8 +364,8 @@ private:
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         if (!nodep->isIO()) return;
         if (VN_IS(nodep->dtypep(), UnpackArrayDType)) {
-            nodep->v3error("Unsupported: unpacked arrays with protect-lib on "
-                           << nodep->prettyNameQ());
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: unpacked arrays with protect-lib on "
+                                             << nodep->prettyNameQ());
         }
         if (nodep->direction() == VDirection::INPUT) {
             if (nodep->isUsedClock() || nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
@@ -376,8 +376,8 @@ private:
         } else if (nodep->direction() == VDirection::OUTPUT) {
             handleOutput(nodep);
         } else {
-            nodep->v3error(
-                "Unsupported: protect-lib port direction: " << nodep->direction().ascii());
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: protect-lib port direction: "
+                                             << nodep->direction().ascii());
         }
     }
 

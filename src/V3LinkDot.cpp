@@ -793,9 +793,10 @@ class LinkDotFindVisitor : public AstNVisitor {
         int oldBlockNum = m_blockNum;
         int oldModBlockNum = m_modBlockNum;
         if (doit && nodep->user2()) {
-            nodep->v3error("Unsupported: Identically recursive module (module instantiates "
-                           "itself, without changing parameters): "
-                           << AstNode::prettyNameQ(nodep->origName()));
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Identically recursive module (module instantiates "
+                          "itself, without changing parameters): "
+                              << AstNode::prettyNameQ(nodep->origName()));
         } else if (doit) {
             UINFO(4, "     Link Module: " << nodep << endl);
             UASSERT_OBJ(!nodep->dead(), nodep, "Module in cell tree mislabeled as dead?");
@@ -1035,7 +1036,8 @@ class LinkDotFindVisitor : public AstNVisitor {
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Var not under module?");
         iterateChildren(nodep);
         if (m_ftaskp && nodep->isParam()) {
-            nodep->v3error("Unsupported: Parameters in functions.");  // Big3 unsupported too
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Parameters in functions");  // Big3 unsupported too
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
@@ -1618,7 +1620,7 @@ class LinkDotIfaceVisitor : public AstNVisitor {
     virtual void visit(AstModportFTaskRef* nodep) VL_OVERRIDE {
         UINFO(5, "   fif: " << nodep << endl);
         iterateChildren(nodep);
-        if (nodep->isExport()) nodep->v3error("Unsupported: modport export");
+        if (nodep->isExport()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: modport export");
         VSymEnt* symp = m_curSymp->findIdFallback(nodep->name());
         if (!symp) {
             nodep->v3error("Modport item not found: " << nodep->prettyNameQ());
@@ -2626,7 +2628,7 @@ private:
             if (AstClassExtends* eitemp = VN_CAST(itemp, ClassExtends)) {
                 // Replace abstract reference with hard pointer
                 // Will need later resolution when deal with parameters
-                eitemp->v3error("Unsupported: class extends");
+                eitemp->v3warn(E_UNSUPPORTED, "Unsupported: class extends");
             }
         }
         VSymEnt* oldCurSymp = m_curSymp;

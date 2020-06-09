@@ -10,8 +10,8 @@
                            : ... In instance t
    11 |       x;  
       |       ^
-%Error: t/t_func_bad.v:11:7: Unsupported: Function output argument 'y' requires 1 bits, but connection's CONST '?32?h0' generates 32 bits.
-                           : ... In instance t
+%Error-UNSUPPORTED: t/t_func_bad.v:11:7: Unsupported: Function output argument 'y' requires 1 bits, but connection's CONST '?32?h0' generates 32 bits.
+                                       : ... In instance t
    11 |       x;  
       |       ^
 %Error: t/t_func_bad.v:14:17: No such argument 'no_such' in function call to FUNC 'f'

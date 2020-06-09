@@ -865,41 +865,51 @@ public:
     }
     virtual void visit(AstMulS* nodep) VL_OVERRIDE {
         if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-            nodep->v3error("Unsupported: Signed multiply of "
-                           << nodep->width()
-                           << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: Signed multiply of "
+                    << nodep->width()
+                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
         }
         visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstPow* nodep) VL_OVERRIDE {
         if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-            nodep->v3error("Unsupported: Power of "
-                           << nodep->width()
-                           << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: Power of "
+                    << nodep->width()
+                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
         }
         visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstPowSS* nodep) VL_OVERRIDE {
         if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-            nodep->v3error("Unsupported: Power of "
-                           << nodep->width()
-                           << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: Power of "
+                    << nodep->width()
+                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
         }
         visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstPowSU* nodep) VL_OVERRIDE {
         if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-            nodep->v3error("Unsupported: Power of "
-                           << nodep->width()
-                           << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: Power of "
+                    << nodep->width()
+                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
         }
         visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstPowUS* nodep) VL_OVERRIDE {
         if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-            nodep->v3error("Unsupported: Power of "
-                           << nodep->width()
-                           << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: Power of "
+                    << nodep->width()
+                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
         }
         visit(VN_CAST(nodep, NodeBiop));
     }
@@ -1057,7 +1067,7 @@ public:
     void emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString) {
         // Put out constant set to the specified variable, or given variable in a string
         if (nodep->num().isFourState()) {
-            nodep->v3error("Unsupported: 4-state numbers in this context");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 4-state numbers in this context");
         } else if (nodep->num().isString()) {
             putbs("std::string(");
             putsQuoted(nodep->num().toString());

@@ -228,8 +228,8 @@ private:
                     new AstInitial(fl, new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
                                                      nodep->valuep()->unlinkFrBack())));
             } else if (!m_ftaskp && nodep->isNonOutput()) {
-                nodep->v3error(
-                    "Unsupported: Default value on module input: " << nodep->prettyNameQ());
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Default value on module input: "
+                                                 << nodep->prettyNameQ());
                 nodep->valuep()->unlinkFrBack()->deleteTree();
             }  // 3. Under modules, it's an initial value to be loaded at time 0 via an AstInitial
             else if (m_valueModp) {
@@ -251,7 +251,7 @@ private:
             // What breaks later is we don't have a Scope/Cell representing
             // the interface to attach to
             if (m_modp->level() <= 2) {
-                nodep->v3error("Unsupported: Interfaced port on top level module");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Interfaced port on top level module");
             }
         }
     }
@@ -540,12 +540,10 @@ private:
             }
             if (nodep->stmtsp()) alwaysp->addStmtp(nodep->stmtsp()->unlinkFrBackWithNext());
         } else {
-            if (!v3Global.opt.bboxUnsup()) {
-                nodep->v3error("Unsupported: timing control statement in this location\n"
-                               << nodep->warnMore()
-                               << "... Suggest have one timing control statement "
-                               << "per procedure, at the top of the procedure");
-            }
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: timing control statement in this location\n"
+                                             << nodep->warnMore()
+                                             << "... Suggest have one timing control statement "
+                                             << "per procedure, at the top of the procedure");
         }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }

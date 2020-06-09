@@ -104,8 +104,9 @@ public:
                         putMakeClassEntry(of, v3Global.opt.traceSourceBase() + "_c.cpp");
                         if (v3Global.opt.systemC()) {
                             if (v3Global.opt.traceFormat() != TraceFormat::VCD) {
-                                v3error("Unsupported: This trace format is not supported "
-                                        "in SystemC, use VCD format.");
+                                v3warn(E_UNSUPPORTED,
+                                       "Unsupported: This trace format is not supported "
+                                       "in SystemC, use VCD format.");
                             } else {
                                 putMakeClassEntry(of, v3Global.opt.traceSourceLang() + ".cpp");
                             }

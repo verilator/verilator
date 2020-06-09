@@ -1,31 +1,31 @@
-%Error: t/t_class_unsup_bad.v:7:1: Unsupported: virtual interface
+%Error-UNSUPPORTED: t/t_class_unsup_bad.v:7:1: Unsupported: virtual interface
     7 | virtual interface vi_t vi;
       | ^~~~~~~
-%Error: t/t_class_unsup_bad.v:8:1: Unsupported: virtual data type
+%Error-UNSUPPORTED: t/t_class_unsup_bad.v:8:1: Unsupported: virtual data type
     8 | virtual vi_t vi2;
       | ^~~~~~~
-%Error: t/t_class_unsup_bad.v:14:26: Unsupported: class parameters
+%Error-UNSUPPORTED: t/t_class_unsup_bad.v:14:26: Unsupported: class parameters
    14 |    localparam LOCPAR = 10;
       |                          ^
-%Error: t/t_class_unsup_bad.v:25:4: Unsupported: virtual class member qualifier
+%Error-UNSUPPORTED: t/t_class_unsup_bad.v:25:4: Unsupported: virtual class member qualifier
    25 |    virtual function void func_virtual; endfunction
       |    ^~~~~~~
-%Error: t/t_class_unsup_bad.v:26:4: Unsupported: pure virtual class method
+%Error-UNSUPPORTED: t/t_class_unsup_bad.v:26:4: Unsupported: pure virtual class method
    26 |    pure virtual function void func_pure_virtual;
       |    ^~~~
-%Error: t/t_class_unsup_bad.v:27:4: Unsupported: automatic class member qualifier
+%Error-UNSUPPORTED: t/t_class_unsup_bad.v:27:4: Unsupported: automatic class member qualifier
    27 |    automatic function void func_automatic; endfunction
       |    ^~~~~~~~~
-%Error: t/t_class_unsup_bad.v:28:4: Unsupported: const class member qualifier
+%Error-UNSUPPORTED: t/t_class_unsup_bad.v:28:4: Unsupported: const class member qualifier
    28 |    const function void func_const; endfunction
       |    ^~~~~
-%Error: t/t_class_unsup_bad.v:29:4: Unsupported: extern class method prototype
+%Error-UNSUPPORTED: t/t_class_unsup_bad.v:29:4: Unsupported: extern class method prototype
    29 |    extern task exttask;
       |    ^~~~~~
-%Error: t/t_class_unsup_bad.v:32:1: Unsupported: virtual classes
+%Error-UNSUPPORTED: t/t_class_unsup_bad.v:32:1: Unsupported: virtual classes
    32 | virtual class VC;
       | ^~~~~~~
-%Error: t/t_class_unsup_bad.v:42:4: Unsupported: virtual class member qualifier
+%Error-UNSUPPORTED: t/t_class_unsup_bad.v:42:4: Unsupported: virtual class member qualifier
    42 |    virtual function uvm_root get_root();
       |    ^~~~~~~
 %Error: Exiting due to

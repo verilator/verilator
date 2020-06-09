@@ -59,7 +59,8 @@ private:
 
     // VISITORS
     bool cantUnroll(AstNode* nodep, const char* reason) {
-        if (m_generate) nodep->v3error("Unsupported: Can't unroll generate for; " << reason);
+        if (m_generate)
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Can't unroll generate for; " << reason);
         UINFO(3, "   Can't Unroll: " << reason << " :" << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "-cant-");
         V3Stats::addStatSum(string("Unrolling gave up, ") + reason, 1);

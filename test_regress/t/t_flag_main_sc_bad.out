@@ -1,2 +1,2 @@
-%Error: --main not usable with SystemC. Suggest see examples for sc_main().
+%Error-UNSUPPORTED: --main not usable with SystemC. Suggest see examples for sc_main().
 %Error: Exiting due to

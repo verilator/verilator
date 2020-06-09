@@ -260,7 +260,7 @@ private:
             AstJumpLabel* labelp = findAddLabel(beginp, false);
             nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
         } else {
-            nodep->v3error("Unsupported: disable fork");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disable fork");
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

@@ -603,8 +603,9 @@ void V3Options::notify() {
         if (allPublic()) {
             // We always call protect() on names, we don't check if public or not
             // Hence any external references wouldn't be able to find the refed public object.
-            cmdfl->v3error("Unsupported: Using --protect-ids with --public\n"  //
-                           + V3Error::warnMore() + "... Suggest remove --public.");
+            cmdfl->v3warn(E_UNSUPPORTED, "Unsupported: Using --protect-ids with --public\n"  //
+                                             + V3Error::warnMore()
+                                             + "... Suggest remove --public.");
         }
         if (trace()) {
             cmdfl->v3warn(INSECURE,
@@ -644,7 +645,8 @@ void V3Options::notify() {
     if (m_outputSplitCTrace < 0) m_outputSplitCTrace = m_outputSplit;
 
     if (v3Global.opt.main() && v3Global.opt.systemC()) {
-        cmdfl->v3error("--main not usable with SystemC. Suggest see examples for sc_main().");
+        cmdfl->v3warn(E_UNSUPPORTED,
+                      "--main not usable with SystemC. Suggest see examples for sc_main().");
     }
 }
 
@@ -839,6 +841,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (onoff(sw, "-bbox-sys", flag /*ref*/)) {
                 m_bboxSys = flag;
             } else if (onoff(sw, "-bbox-unsup", flag /*ref*/)) {
+                FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, true);
                 m_bboxUnsup = flag;
             } else if (!strcmp(sw, "-build")) {
                 m_build = true;

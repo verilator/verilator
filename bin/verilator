@@ -4829,6 +4829,14 @@ signed, for example "X < 0" will always be true when X is unsigned.
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
+=item UNSUPPORTED
+
+UNSUPPORTED is an error that the construct might be legal according to IEEE
+but is not currently supported.
+
+This error may be ignored with --bbox-unsup, however this will make the
+design simulate incorrectly; see the details under --bbox-unsup.
+
 =item UNUSED
 
 Warns that the specified signal is never used/consumed.  Verilator is

@@ -116,8 +116,8 @@ private:
     virtual void visit(AstUdpTable* nodep) VL_OVERRIDE {
         if (!v3Global.opt.bboxUnsup()) {
             // If we support primitives, update V3Undriven to remove special case
-            nodep->v3error("Unsupported: Verilog 1995 UDP Tables.  "
-                           "Use --bbox-unsup to ignore tables.");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Verilog 1995 UDP Tables. "
+                                         "Use --bbox-unsup to ignore tables.");
         }
     }
 
@@ -358,8 +358,8 @@ private:
                     && !VN_IS(exprp, VarRef)
                     // V3Const will collapse the SEL with the one we're about to make
                     && !VN_IS(exprp, Concat) && !VN_IS(exprp, Sel)) {
-                    nodep->v3error("Unsupported: Per-bit array instantiations with output "
-                                   "connections to non-wires.");
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Per-bit array instantiations "
+                                                 "with output connections to non-wires.");
                     // Note spec allows more complicated matches such as slices and such
                 }
                 exprp = new AstSel(exprp->fileline(), exprp, pinwidth * m_instSelNum, pinwidth);
@@ -375,7 +375,8 @@ private:
                 V3Const::constifyParamsEdit(arrselp->rhsp());
                 const AstConst* constp = VN_CAST(arrselp->rhsp(), Const);
                 if (!constp) {
-                    nodep->v3error(
+                    nodep->v3warn(
+                        E_UNSUPPORTED,
                         "Unsupported: Non-constant index when passing interface to module");
                     return;
                 }
