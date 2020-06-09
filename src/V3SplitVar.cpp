@@ -288,7 +288,7 @@ public:
     bool lvalue() const { return m_lvalue; }
     bool ftask() const { return m_ftask; }
     bool operator<(const UnpackRef& other) const {
-        return AstNodeComparator()(this->m_nodep, other.m_nodep);
+        return AstNodeComparator()(m_nodep, other.m_nodep);
     }
 };
 
