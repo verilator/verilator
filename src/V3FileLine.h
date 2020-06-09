@@ -268,13 +268,15 @@ public:
     // Returns -1 if (*this) should come before rhs after sorted. 1 for the opposite case. 0 for
     // equivalent.
     int operatorCompare(const FileLine& rhs) const {
-        if (m_filenameno != rhs.m_filenameno) return m_filenameno < rhs.m_filenameno ? -1 : 1;
-        if (m_firstLineno != rhs.m_firstLineno) return m_firstLineno < rhs.m_firstLineno ? -1 : 1;
-        if (m_firstColumn != rhs.m_firstColumn) return m_firstColumn < rhs.m_firstColumn ? -1 : 1;
-        if (m_lastLineno != rhs.m_lastLineno) return m_lastLineno < rhs.m_lastLineno ? -1 : 1;
-        if (m_lastColumn != rhs.m_lastColumn) return m_lastColumn < rhs.m_lastColumn ? -1 : 1;
+        if (m_filenameno != rhs.m_filenameno) return (m_filenameno < rhs.m_filenameno) ? -1 : 1;
+        if (m_firstLineno != rhs.m_firstLineno)
+            return (m_firstLineno < rhs.m_firstLineno) ? -1 : 1;
+        if (m_firstColumn != rhs.m_firstColumn)
+            return (m_firstColumn < rhs.m_firstColumn) ? -1 : 1;
+        if (m_lastLineno != rhs.m_lastLineno) return (m_lastLineno < rhs.m_lastLineno) ? -1 : 1;
+        if (m_lastColumn != rhs.m_lastColumn) return (m_lastColumn < rhs.m_lastColumn) ? -1 : 1;
         for (size_t i = 0; i < m_warnOn.size(); ++i) {
-            if (m_warnOn[i] != rhs.m_warnOn[i]) return m_warnOn[i] < rhs.m_warnOn[i] ? -1 : 1;
+            if (m_warnOn[i] != rhs.m_warnOn[i]) return (m_warnOn[i] < rhs.m_warnOn[i]) ? -1 : 1;
         }
         return 0;  // (*this) and rhs are equivalent
     }
