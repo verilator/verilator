@@ -100,6 +100,13 @@ public:
         reinsert(nodep, parentp);
         pushScope(symp);
     }
+    void pushNewUnderNodeOrCurrent(AstNode* nodep, AstNode* parentp) {
+        if (parentp) {
+            pushNewUnder(nodep, findNewTable(parentp));
+        } else {
+            pushNewUnder(nodep, NULL);
+        }
+    }
     void pushScope(VSymEnt* symp) {
         m_sympStack.push_back(symp);
         m_symCurrentp = symp;

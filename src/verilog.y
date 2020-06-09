@@ -3782,7 +3782,7 @@ lifetime<lifetime>:		// ==IEEE: lifetime
 taskId<ftaskp>:
 		tfIdScoped
 			{ $$ = new AstTask($<fl>1, *$<strp>1, NULL);
-			  SYMP->pushNewUnder($$, NULL); }
+			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
 	;
 
 funcId<ftaskp>:			// IEEE: function_data_type_or_implicit + part of function_body_declaration
@@ -3791,22 +3791,22 @@ funcId<ftaskp>:			// IEEE: function_data_type_or_implicit + part of function_bod
 		/**/			tfIdScoped
 			{ $$ = new AstFunc($<fl>1,*$<strp>1,NULL,
 					   new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
-			  SYMP->pushNewUnder($$, NULL); }
+			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
 	|	signingE rangeList	tfIdScoped
 			{ $$ = new AstFunc($<fl>3,*$<strp>3,NULL,
 					   GRAMMARP->addRange(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $1), $2,true));
-			  SYMP->pushNewUnder($$, NULL); }
+			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>3); }
 	|	signing			tfIdScoped
 			{ $$ = new AstFunc($<fl>2,*$<strp>2,NULL,
 					   new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $1));
-			  SYMP->pushNewUnder($$, NULL); }
+			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
 	|	data_type		tfIdScoped
 			{ $$ = new AstFunc($<fl>2,*$<strp>2,NULL,$1);
-			  SYMP->pushNewUnder($$, NULL); }
+			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
 	//			// To verilator tasks are the same as void functions (we separately detect time passing)
 	|	yVOID tfIdScoped
 			{ $$ = new AstTask($<fl>2, *$<strp>2, NULL);
-			  SYMP->pushNewUnder($$, NULL); }
+			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
 	;
 
 funcIdNew<ftaskp>:		// IEEE: from class_constructor_declaration
@@ -3822,7 +3822,7 @@ funcIdNew<ftaskp>:		// IEEE: from class_constructor_declaration
 			{ $$ = new AstFunc($<fl>2, "new", NULL, NULL);
 			  BBUNSUP($<fl>2, "Unsupported: scoped new constructor");
 			  $$->isConstructor(true);
-			  SYMP->pushNewUnder($$, NULL); }
+			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
 	;
 
 tfIdScoped<strp>:		// IEEE: part of function_body_declaration/task_body_declaration
@@ -5876,7 +5876,7 @@ ps_id_etc<varrefp>:		// package_scope + general id
 //=== Below rules assume special scoping per above
 
 packageClassScopeNoId<packagep>:	// IEEE: [package_scope] not followed by yaID
-		packageClassScope			{ $$ = $1; SYMP->nextId(NULL); }
+		packageClassScope			{ $$ = $1; $<scp>$ = $<scp>1; SYMP->nextId(NULL); }
 	;
 
 packageClassScopeE<packagep>:	// IEEE: [package_scope]
@@ -5884,8 +5884,8 @@ packageClassScopeE<packagep>:	// IEEE: [package_scope]
 	//			//     if not needed must use packageClassScopeNoId
 	//			// TODO: To support classes should return generic type, not packagep
 	//			// class_qualifier := [ yLOCAL '::'  ] [ implicit_class_handle '.'  class_scope ]
-		/* empty */				{ $$ = NULL; }
-	|	packageClassScope			{ $$ = $1; }
+		/* empty */				{ $$ = NULL; $<scp>$ = NULL; }
+	|	packageClassScope			{ $$ = $1; $<scp>$ = $<scp>1; }
 	;
 
 packageClassScope<packagep>:	// IEEE: class_scope + type
@@ -5893,10 +5893,10 @@ packageClassScope<packagep>:	// IEEE: class_scope + type
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
 	//			//     if not needed must use packageClassScopeNoId
 	//			// In this parser <package_identifier>:: and <class_identifier>:: are indistinguishible
-		packageClassScopeList			{ $$ = $1; }
-	|	localNextId yP_COLONCOLON		{ $$ = $1; }
-	|	dollarUnitNextId yP_COLONCOLON		{ $$ = $1; }
-	|	dollarUnitNextId yP_COLONCOLON packageClassScopeList	{ $$ = $3; }
+		packageClassScopeList			{ $$ = $1; $<scp>$ = $<scp>1; }
+	|	localNextId yP_COLONCOLON		{ $$ = $1; $<scp>$ = $<scp>1; }
+	|	dollarUnitNextId yP_COLONCOLON		{ $$ = $1; $<scp>$ = $<scp>1; }
+	|	dollarUnitNextId yP_COLONCOLON packageClassScopeList	{ $$ = $3; $<scp>$ = $<scp>3; }
 	;
 
 packageClassScopeList<packagep>:	// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
@@ -5905,8 +5905,8 @@ packageClassScopeList<packagep>:	// IEEE: class_type: "id [ parameter_value_assi
 	//			//     if not needed must use packageClassScopeNoId
 	//			// In this parser <package_identifier>:: and <class_identifier>:: are indistinguishible
 	//			// If you follow the rules down, class_type is really a list via ps_class_identifier
-		packageClassScopeItem			{ $$ = $1; }
-	|	packageClassScopeList packageClassScopeItem	{ $$ = $2; BBUNSUP($2, "Unsupported: Nested :: references"); }
+		packageClassScopeItem			{ $$ = $1; $<scp>$ = $<scp>1; }
+	|	packageClassScopeList packageClassScopeItem	{ $$ = $2; $<scp>$ = $<scp>2; BBUNSUP($2, "Unsupported: Nested :: references"); }
 	;
 
 packageClassScopeItem<packagep>:	// IEEE: package_scope or [package_scope]::[class_scope]
@@ -5917,12 +5917,12 @@ packageClassScopeItem<packagep>:	// IEEE: package_scope or [package_scope]::[cla
 		idCC
 	/*mid*/		{ SYMP->nextId($<scp>1); }
 	/*cont*/    yP_COLONCOLON
-			{ $$ = VN_CAST($<scp>1, Package); }  // UNSUP classes
+			{ $$ = VN_CAST($<scp>1, Package); $<scp>$ = $<scp>1; }  // UNSUP classes
 	//
 	|	idCC parameter_value_assignment
 	/*mid*/		{ SYMP->nextId($<scp>1); }   // Change next *after* we handle parameters, not before
 	/*cont*/    yP_COLONCOLON
-			{ $$ = VN_CAST($<scp>1, Package);  // UNSUP classes
+			{ $$ = VN_CAST($<scp>1, Package); $<scp>$ = $<scp>1;  // UNSUP classes
 			  if ($2) BBUNSUP($2->fileline(), "Unsupported: Parameterized classes"); }
 	;
 
