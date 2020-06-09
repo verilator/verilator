@@ -120,8 +120,6 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
             if (rangep && isPacked) {
                 arrayp
                     = new AstPackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep);
-            } else if (VN_IS(nrangep, QueueRange)) {
-                arrayp = new AstQueueDType(nrangep->fileline(), VFlagChildDType(), arrayp, NULL);
             } else if (rangep
                        && (VN_IS(rangep->leftp(), Unbounded)
                            || VN_IS(rangep->rightp(), Unbounded))) {
@@ -132,12 +130,11 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
                                                  rangep);
             } else if (VN_IS(nrangep, UnsizedRange)) {
                 arrayp = new AstUnsizedArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp);
-            } else if (VN_IS(nrangep, AssocRange)) {
-                AstAssocRange* arangep = VN_CAST(nrangep, AssocRange);
-                AstNodeDType* keyp = arangep->keyDTypep();
-                keyp->unlinkFrBack();
-                arrayp
-                    = new AstAssocArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp, keyp);
+            } else if (VN_IS(nrangep, BracketRange)) {
+                AstBracketRange* arangep = VN_CAST(nrangep, BracketRange);
+                AstNode* keyp = arangep->elementsp()->unlinkFrBack();
+                arrayp = new AstBracketArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp,
+                                                  keyp);
             } else {
                 UASSERT_OBJ(0, nrangep, "Expected range or unsized range");
             }

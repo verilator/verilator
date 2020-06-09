@@ -1061,7 +1061,7 @@ private:
     }
     virtual void visit(AstUnbounded* nodep) VL_OVERRIDE {
         nodep->dtypeSetSigned32();  // Used in int context
-        if (!VN_IS(nodep->backp(), IsUnbounded)
+        if (!VN_IS(nodep->backp(), IsUnbounded) && !VN_IS(nodep->backp(), BracketArrayDType)
             && !(VN_IS(nodep->backp(), Var) && VN_CAST(nodep->backp(), Var)->isParam())) {
             nodep->v3error("Unsupported/illegal unbounded ('$') in this context.");
         }
@@ -1354,6 +1354,35 @@ private:
         nodep->dtypep(nodep);  // The array itself, not subDtype
         UINFO(4, "dtWidthed " << nodep << endl);
     }
+    virtual void visit(AstBracketArrayDType* nodep) VL_OVERRIDE {
+        // Type inserted only because parser didn't know elementsp() type
+        // Resolve elementsp's type
+        userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+        // We must edit when dtype still under normal nodes and before type table
+        // See notes in iterateEditMoveDTypep
+        AstNodeDType* childp = nodep->childDTypep();
+        childp->unlinkFrBack();
+        AstNode* elementsp = nodep->elementsp()->unlinkFrBack();
+        AstNode* newp;
+        if (VN_IS(elementsp, Unbounded)) {
+            newp = new AstQueueDType(nodep->fileline(), VFlagChildDType(), childp, NULL);
+            VL_DO_DANGLING(elementsp->deleteTree(), elementsp);
+        } else if (AstNodeDType* keyp = VN_CAST(elementsp, NodeDType)) {
+            newp = new AstAssocArrayDType(nodep->fileline(), VFlagChildDType(), childp, keyp);
+        } else {
+            // Must be expression that is constant, but we'll determine that later
+            newp = new AstUnpackArrayDType(
+                nodep->fileline(), VFlagChildDType(), childp,
+                new AstRange(nodep->fileline(), new AstConst(elementsp->fileline(), 0),
+                             new AstSub(elementsp->fileline(), elementsp,
+                                        new AstConst(elementsp->fileline(), 1))));
+        }
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        // Normally parent's iteration would cover this, but we might have entered by a specific
+        // visit
+        VL_DO_DANGLING(userIterate(newp, NULL), newp);
+    }
     virtual void visit(AstDynArrayDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         // Iterate into subDTypep() to resolve that type and update pointer.
@@ -1432,6 +1461,10 @@ private:
         }
         userIterateChildren(nodep, NULL);
         if (nodep->subDTypep()) {
+            // Normally iterateEditMoveDTypep iterate would work, but the refs are under
+            // the TypeDef which will upset iterateEditMoveDTypep as it can't find it under
+            // this node's childDTypep
+            userIterate(nodep->subDTypep(), NULL);
             nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
             nodep->typedefp(NULL);  // Note until line above subDTypep() may have followed this
             // Widths are resolved, but special iterate to check for recurstion
@@ -4979,6 +5012,9 @@ private:
         }
         if (!dtnodep->didWidth()) {
             UINFO(9, "iterateEditMoveDTypep pointer iterating " << dtnodep << endl);
+            // See notes in visit(AstBracketArrayDType*)
+            UASSERT_OBJ(!VN_IS(dtnodep, BracketArrayDType), parentp,
+                        "Brackets should have been iterated as children");
             userIterate(dtnodep, NULL);
             UASSERT_OBJ(dtnodep->didWidth(), parentp,
                         "iterateEditMoveDTypep didn't get width resolution");

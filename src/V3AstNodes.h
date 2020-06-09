@@ -231,33 +231,23 @@ public:
     virtual bool same(const AstNode* samep) const { return true; }
 };
 
-class AstAssocRange : public AstNodeRange {
-    // Associative array range specification
-    // Only for early parsing - becomes AstAssocDType
+class AstBracketRange : public AstNodeRange {
+    // Parser only concept "[lhsp]", a AstUnknownRange, QueueRange or Range,
+    // unknown until lhsp type is determined
 public:
-    AstAssocRange(FileLine* fl, AstNodeDType* dtp)
+    AstBracketRange(FileLine* fl, AstNode* elementsp)
         : ASTGEN_SUPER(fl) {
-        setOp1p(dtp);
+        setOp1p(elementsp);
     }
-    ASTNODE_NODE_FUNCS(AssocRange)
+    ASTNODE_NODE_FUNCS(BracketRange)
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual string emitVerilog() { V3ERROR_NA_RETURN(""); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
-    AstNodeDType* keyDTypep() const { return VN_CAST(op1p(), NodeDType); }
-};
-
-class AstQueueRange : public AstNodeRange {
-    // Queue range specification
-    // Only for early parsing - becomes AstQueueDType
-public:
-    explicit AstQueueRange(FileLine* fl)
-        : ASTGEN_SUPER(fl) {}
-    ASTNODE_NODE_FUNCS(QueueRange)
-    virtual string emitC() { V3ERROR_NA_RETURN(""); }
-    virtual string emitVerilog() { V3ERROR_NA_RETURN(""); }
-    virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(const AstNode* samep) const { return true; }
+    // Will be removed in V3Width, which relies on this
+    // being a child not a dtype pointed node
+    virtual bool maybePointedTo() const { return false; }
+    AstNode* elementsp() const { return op1p(); }
 };
 
 class AstUnsizedRange : public AstNodeRange {
@@ -566,6 +556,36 @@ public:
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
+};
+
+class AstBracketArrayDType : public AstNodeDType {
+    // Associative/Queue/Normal array data type, ie "[dtype_or_expr]"
+    // only for early parsing then becomes another data type
+    // Children: DTYPE (moved to refDTypep() in V3Width)
+    // Children: DTYPE (the key)
+public:
+    AstBracketArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNode* elementsp)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(dtp);  // Only for parser
+        setOp2p(elementsp);  // Only for parser
+    }
+    ASTNODE_NODE_FUNCS(BracketArrayDType)
+    virtual bool similarDType(AstNodeDType* samep) const { V3ERROR_NA_RETURN(false); }
+    // op1 = Range of variable
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
+    virtual AstNodeDType* subDTypep() const { return childDTypep(); }
+    // op2 = Range of variable
+    AstNode* elementsp() const { return op2p(); }
+    // METHODS
+    // Will be removed in V3Width, which relies on this
+    // being a child not a dtype pointed node
+    virtual bool maybePointedTo() const { return false; }
+    virtual AstBasicDType* basicp() const { return NULL; }
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { V3ERROR_NA_RETURN(0); }
+    virtual int widthTotalBytes() const { V3ERROR_NA_RETURN(0); }
 };
 
 class AstDynArrayDType : public AstNodeDType {

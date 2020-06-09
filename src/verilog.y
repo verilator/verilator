@@ -1962,11 +1962,10 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 		'[' ']'					{ $$ = new AstUnsizedRange($1); }
 	//			// IEEE: unpacked_dimension
 	|	anyrange				{ $$ = $1; }
-	|	'[' constExpr ']'			{ if (VN_IS($2, Unbounded)) { $2->deleteTree(); $$ = new AstQueueRange($1); }
-							  else { $$ = new AstRange($1, new AstConst($1, 0),
-								 		   new AstSub($1, $2, new AstConst($1, 1))); } }
-	//			// IEEE: associative_dimension
-	|	'[' data_type ']'			{ $$ = new AstAssocRange($1, $2); }
+	//			// IEEE: unpacked_dimension (if const_expr)
+	//			// IEEE: associative_dimension (if data_type)
+	//			// Can't tell which until see if expr is data type or not
+	|	'[' exprOrDataType ']'			{ $$ = new AstBracketRange($1, $2); }
 	|	yP_BRASTAR ']'				{ $$ = NULL; BBUNSUP($1, "Unsupported: [*] wildcard associative arrays"); }
 	|	'[' '*' ']'				{ $$ = NULL; BBUNSUP($2, "Unsupported: [*] wildcard associative arrays"); }
 	//			// IEEE: queue_dimension

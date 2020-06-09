@@ -55,7 +55,6 @@
       </modport>
     </iface>
     <typetable fl="a0" loc="a,0,0,0,0">
-      <basicdtype fl="d31" loc="d,31,26,31,27" id="5" name="logic" left="31" right="0"/>
       <basicdtype fl="d8" loc="d,8,4,8,11" id="6" name="integer" left="31" right="0"/>
       <basicdtype fl="d14" loc="d,14,11,14,17" id="1" name="logic"/>
       <basicdtype fl="d21" loc="d,21,7,21,12" id="8" name="logic"/>
@@ -69,11 +68,12 @@
         <memberdtype fl="d24" loc="d,24,16,24,20" id="15" name="data" tag="data" sub_dtype_id="11"/>
       </structdtype>
       <ifacerefdtype fl="d29" loc="d,29,8,29,12" id="3" modportname=""/>
+      <basicdtype fl="d31" loc="d,31,27,31,28" id="5" name="logic" left="31" right="0"/>
       <refdtype fl="d31" loc="d,31,4,31,13" id="16" name="my_struct" sub_dtype_id="2"/>
       <unpackarraydtype fl="d31" loc="d,31,26,31,27" id="4" sub_dtype_id="2">
         <range fl="d31" loc="d,31,26,31,27">
-          <const fl="d31" loc="d,31,26,31,27" name="32&apos;h1" dtype_id="5"/>
-          <const fl="d31" loc="d,31,26,31,27" name="32&apos;h0" dtype_id="5"/>
+          <const fl="d31" loc="d,31,27,31,28" name="32&apos;h1" dtype_id="5"/>
+          <const fl="d31" loc="d,31,27,31,28" name="32&apos;h0" dtype_id="5"/>
         </range>
       </unpackarraydtype>
       <basicdtype fl="d35" loc="d,35,21,35,27" id="7" name="string"/>

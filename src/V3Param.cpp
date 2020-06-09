@@ -181,6 +181,12 @@ private:
         if (AstUnpackArrayDType* adtypep = VN_CAST(nodep, UnpackArrayDType)) {
             return adtypep->subDTypep();
         }
+        // We have not resolved parameter of the child yet, so still
+        // have BracketArrayDType's. We'll presume it'll end up as assignment
+        // compatible (or V3Width will complain).
+        if (AstBracketArrayDType* adtypep = VN_CAST(nodep, BracketArrayDType)) {
+            return adtypep->subDTypep();
+        }
         return NULL;
     }
     void collectPins(CloneMap* clonemapp, AstNodeModule* modp) {
