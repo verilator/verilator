@@ -3570,10 +3570,11 @@ public:
         addNOp1p(exprsp);
         addNOp2p(NULL);
     }
-    AstSFormatF(FileLine* fl, NoFormat, AstNode* exprsp, char missingArgChar = 'd')
+    AstSFormatF(FileLine* fl, NoFormat, AstNode* exprsp, char missingArgChar = 'd',
+                bool hidden = true)
         : ASTGEN_SUPER(fl)
         , m_text("")
-        , m_hidden(true)
+        , m_hidden(hidden)
         , m_hasFormat(false)
         , m_missingArgChar(missingArgChar) {
         dtypeSetString();

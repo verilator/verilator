@@ -3642,7 +3642,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_RIGHT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,$5); }
 	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
 	|	yD_SAMPLED '(' expr ')'			{ $$ = new AstSampled($1, $3); }
-	|	yD_SFORMATF '(' str commaEListE ')'	{ $$ = new AstSFormatF($1,*$3,false,$4); }
+	|	yD_SFORMATF '(' exprDispList ')'	{ $$ = new AstSFormatF($1, AstSFormatF::NoFormat(), $3, 'd', false); }
 	|	yD_SHORTREALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); UNSUPREAL($1); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
 	|	yD_SIN '(' expr ')'			{ $$ = new AstSinD($1,$3); }
@@ -4311,11 +4311,6 @@ exprDispList<nodep>:		// exprList for within $display
 	//			// ,, creates a space in $display
 	|	exprDispList ',' /*empty*/
 			{ $$ = $1; $1->addNext(new AstConst($<fl>2, AstConst::VerilogStringLiteral(), " ")); }
-	;
-
-commaEListE<nodep>:
-		/* empty */				{ $$ = NULL; }
-	|	',' exprList				{ $$ = $2; }
 	;
 
 vrdList<nodep>:

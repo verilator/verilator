@@ -62,11 +62,11 @@ module t;
       if (str2 !== "lib=t") $stop;
 
       str3 = $sformatf("u=%u", {"a","b","c","d"}); // Value selected so is printable
-`ifdef TEST_VERBOSE  $display("chku %s %s",str3,str3);  `endif
+`ifdef TEST_VERBOSE  $display("chku %s", str3);  `endif
       if (str3 !== "u=dcba") $stop;
 
       str3 = $sformatf("v=%v", {"a","b","c","d"}); // Value selected so is printable
-`ifdef TEST_VERBOSE  $display("chkv %s %s",str3,str3);  `endif
+`ifdef TEST_VERBOSE  $display("chkv %s", str3);  `endif
 
       $sformat(ochar,"%s","c");
       if (ochar != "c") $stop;
