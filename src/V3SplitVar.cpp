@@ -889,7 +889,7 @@ class PackedVarRef {
     bool m_dedupDone;
     static void dedupRefs(std::vector<PackedVarRefEntry>& refs) {
         // Use raw pointer to dedup
-        typedef std::map<AstNode*, size_t> NodeIndices;
+        typedef std::map<AstNode*, size_t, AstNodeComparator> NodeIndices;
         NodeIndices nodes;
         for (size_t i = 0; i < refs.size(); ++i) {
             nodes.insert(std::make_pair(refs[i].nodep(), i));
