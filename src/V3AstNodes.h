@@ -170,6 +170,9 @@ public:
     virtual int instrCount() const { return widthInstrs(); }
     bool isEqAllOnes() const { return num().isEqAllOnes(width()); }
     bool isEqAllOnesV() const { return num().isEqAllOnes(widthMinV()); }
+    // Parse string and create appropriate type of AstConst.
+    // May return NULL on parse failure.
+    static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
 };
 
 class AstRange : public AstNodeRange {

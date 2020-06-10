@@ -22,6 +22,7 @@
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3PartitionGraph.h"  // Just for mtask dumping
+#include "V3String.h"  // For VString::parseDouble
 #include "V3EmitCBase.h"
 
 #include <iomanip>
@@ -223,6 +224,36 @@ AstNode* AstInsideRange::newAndFromInside(AstNode* exprp, AstNode* lhsp, AstNode
     bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
     AstNode* newp = new AstAnd(fileline(), ap, bp);
     return newp;
+}
+
+AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
+    bool success = false;
+    if (literal[0] == '"') {
+        // This is a string
+        string v = literal.substr(1, literal.find('"', 1) - 1);
+        return new AstConst(fl, AstConst::VerilogStringLiteral(), v);
+    } else if (literal.find_first_of(".eEpP") != string::npos) {
+        // This may be a real
+        double v = VString::parseDouble(literal, &success);
+        if (success) return new AstConst(fl, AstConst::RealDouble(), v);
+    }
+    if (!success) {
+        // This is either an integer or an error
+        // We first try to convert it as C literal. If strtol returns
+        // 0 this is either an error or 0 was parsed. But in any case
+        // we will try to parse it as a verilog literal, hence having
+        // the false negative for 0 is okay. If anything remains in
+        // the string after the number, this is invalid C and we try
+        // the Verilog literal parser.
+        char* endp;
+        int v = strtol(literal.c_str(), &endp, 0);
+        if ((v != 0) && (endp[0] == 0)) {  // C literal
+            return new AstConst(fl, AstConst::WidthedValue(), 32, v);
+        } else {  // Try a Verilog literal (fatals if not)
+            return new AstConst(fl, AstConst::StringToParse(), literal.c_str());
+        }
+    }
+    return NULL;
 }
 
 void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
