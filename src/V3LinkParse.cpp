@@ -385,11 +385,50 @@ private:
         // FOREACH(array,loopvars,body)
         // -> BEGIN(declare vars, loopa=lowest; WHILE(loopa<=highest, ... body))
         // nodep->dumpTree(cout, "-foreach-old:");
-        AstNode* newp = nodep->bodysp()->unlinkFrBackWithNext();
-        AstNode* arrayp = nodep->arrayp();
-        int dimension = 1;
+        UINFO(9, "FOREACH " << nodep << endl);
+        // nodep->dumpTree(cout, "-foreach-in:");
+        AstNode* newp = nodep->bodysp();
+        if (newp) newp->unlinkFrBackWithNext();
+        // Separate iteration vars from base from variable
+        // Input:
+        //      v--- arrayp
+        //   1. DOT(DOT(first, second), ASTSELLOOPVARS(third, var0..var1))
+        // Separated:
+        //   bracketp = ASTSELLOOPVARS(...)
+        //   arrayp = DOT(DOT(first, second), third)
+        //   firstVarp = var0..var1
+        // Other examples
+        //   2. ASTSELBIT(first, var0))
+        //   3. ASTSELLOOPVARS(first, var0..var1))
+        //   4. DOT(DOT(first, second), ASTSELBIT(third, var0))
+        AstNode* bracketp = nodep->arrayp();
+        AstNode* firstVarsp = NULL;
+        while (AstDot* dotp = VN_CAST(bracketp, Dot)) { bracketp = dotp->rhsp(); }
+        if (AstSelBit* selp = VN_CAST(bracketp, SelBit)) {
+            firstVarsp = selp->rhsp()->unlinkFrBackWithNext();
+            selp->replaceWith(selp->fromp()->unlinkFrBack());
+            VL_DO_DANGLING(selp->deleteTree(), selp);
+        } else if (AstSelLoopVars* selp = VN_CAST(bracketp, SelLoopVars)) {
+            firstVarsp = selp->elementsp()->unlinkFrBackWithNext();
+            selp->replaceWith(selp->fromp()->unlinkFrBack());
+            VL_DO_DANGLING(selp->deleteTree(), selp);
+        } else {
+            nodep->v3error(
+                "Syntax error; foreach missing bracketed index variable (IEEE 1800-2017 12.7.3)");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        AstNode* arrayp = nodep->arrayp();  // Maybe different node since bracketp looked
+        if (!VN_IS(arrayp, ParseRef)) {
+            // Code below needs to use other then attributes to figure out the bounds
+            // Also need to deal with queues, etc
+            arrayp->v3warn(E_UNSUPPORTED, "Unsupported: foreach on non-simple variable reference");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        // Split into for loop
         // Must do innermost (last) variable first
-        AstNode* firstVarsp = nodep->varsp()->unlinkFrBackWithNext();
+        int dimension = 1;
         AstNode* lastVarsp = firstVarsp;
         while (lastVarsp->nextp()) {
             lastVarsp = lastVarsp->nextp();

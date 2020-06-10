@@ -3062,7 +3062,7 @@ statement_item<nodep>:		// IEEE: statement_item
 							  }
 							  else $$ = new AstWhile($1,$5,NULL); }
 	//			// IEEE says array_identifier here, but dotted accepted in VMM and 1800-2009
-	|	yFOREACH '(' idClassForeach '[' loop_variables ']' ')' stmtBlock	{ $$ = new AstForeach($1,$3,$5,$8); }
+	|	yFOREACH '(' idClassSelForeach ')' stmtBlock	{ $$ = new AstForeach($1, $3, $5); }
 	//
 	//			// IEEE: jump_statement
 	|	yRETURN ';'				{ $$ = new AstReturn($1); }
@@ -4735,15 +4735,36 @@ idClassSel<nodep>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged va
 	|	packageClassScope idDotted		{ $$ = $2; BBUNSUP($2, "Unsupported: package scoped id"); }
 	;
 
+idClassSelForeach<nodep>:
+		idDottedForeach				{ $$ = $1; }
+	//			// IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
+	|	yTHIS '.' idDottedForeach		{ $$ = $3; BBUNSUP($1, "Unsupported: this"); }
+	|	ySUPER '.' idDottedForeach		{ $$ = $3; BBUNSUP($1, "Unsupported: super"); }
+	|	yTHIS '.' ySUPER '.' idDottedForeach	{ $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
+	//			// Expanded: package_scope idForeach
+	|	packageClassScope idDottedForeach	{ $$ = $2; BBUNSUP($2, "Unsupported: package/class scoped id"); }
+	;
+
 idDotted<nodep>:
 		yD_ROOT '.' idDottedMore
 			{ $$ = new AstDot($2, false, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"), $3); }
 	|	idDottedMore		 		{ $$ = $1; }
 	;
 
+idDottedForeach<nodep>:
+		yD_ROOT '.' idDottedMoreForeach
+			{ $$ = new AstDot($2, false, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"), $3); }
+	|	idDottedMoreForeach	 		{ $$ = $1; }
+	;
+
 idDottedMore<nodep>:
 		idArrayed 				{ $$ = $1; }
 	|	idDottedMore '.' idArrayed	 	{ $$ = new AstDot($2, false, $1, $3); }
+	;
+
+idDottedMoreForeach<nodep>:
+		idArrayedForeach 			{ $$ = $1; }
+	|	idDottedMoreForeach '.' idArrayedForeach	{ $$ = new AstDot($2, false, $1, $3); }
 	;
 
 // Single component of dotted path, maybe [#].
@@ -4752,30 +4773,28 @@ idDottedMore<nodep>:
 // id below includes:
 //	 enum_identifier
 idArrayed<nodep>:		// IEEE: id + select
-		id						{ $$ = new AstParseRef($<fl>1,VParseRefExp::PX_TEXT,*$1,NULL,NULL); }
+		id						{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL); }
 	//			// IEEE: id + part_select_range/constant_part_select_range
-	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2,$1,$3); }  // Or AstArraySel, don't know yet.
-	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2,$1,$3,$5); }
+	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2, $1, $3); }  // Or AstArraySel, don't know yet.
+	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2, $1, $3, $5); }
 	//			// IEEE: id + indexed_range/constant_indexed_range
-	|	idArrayed '[' expr yP_PLUSCOLON  constExpr ']'	{ $$ = new AstSelPlus($2,$1,$3,$5); }
-	|	idArrayed '[' expr yP_MINUSCOLON constExpr ']'	{ $$ = new AstSelMinus($2,$1,$3,$5); }
+	|	idArrayed '[' expr yP_PLUSCOLON  constExpr ']'	{ $$ = new AstSelPlus($2, $1, $3, $5); }
+	|	idArrayed '[' expr yP_MINUSCOLON constExpr ']'	{ $$ = new AstSelMinus($2, $1, $3, $5); }
 	;
 
-idClassForeach<nodep>:
-		idForeach				{ $$ = $1; }
-	//			// IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
-	|	yTHIS '.' idForeach			{ $$ = $3; BBUNSUP($1, "Unsupported: this"); }
-	|	ySUPER '.' idForeach			{ $$ = $3; BBUNSUP($1, "Unsupported: super"); }
-	|	yTHIS '.' ySUPER '.' idForeach		{ $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
-	//			// Expanded: package_scope idForeach
-	|	packageClassScope idForeach		{ $$ = $2; BBUNSUP($2, "Unsupported: package/class scoped id"); }
+idArrayedForeach<nodep>:	// IEEE: id + select (under foreach expression)
+		id						{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL); }
+	//			// IEEE: id + part_select_range/constant_part_select_range
+	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2, $1, $3); }  // Or AstArraySel, don't know yet.
+	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2, $1, $3, $5); }
+	//			// IEEE: id + indexed_range/constant_indexed_range
+	|	idArrayed '[' expr yP_PLUSCOLON  constExpr ']'	{ $$ = new AstSelPlus($2, $1, $3, $5); }
+	|	idArrayed '[' expr yP_MINUSCOLON constExpr ']'	{ $$ = new AstSelMinus($2, $1, $3, $5); }
+	//			// IEEE: loop_variables (under foreach expression)
+	//			// To avoid conflicts we allow expr as first element, must post-check
+	|	idArrayed '[' expr ',' loop_variables ']'
+			{ $3 = AstNode::addNextNull($3, $5); $$ = new AstSelLoopVars($2, $1, $3); }
 	;
-
-idForeach<nodep>:
-		varRefBase				{ $$ = $1; }
-	|	idForeach '.' varRefBase	 	{ $$ = new AstDot($2, false, $1, $3); }
-	;
-
 
 // VarRef without any dots or vectorizaion
 varRefBase<varrefp>:
@@ -6079,7 +6098,7 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
 	|	yIF '(' expr ')' constraint_set	%prec prLOWER_THAN_ELSE	{ $$ = NULL; /*UNSUP*/ }
 	|	yIF '(' expr ')' constraint_set	yELSE constraint_set	{ $$ = NULL; /*UNSUP*/ }
 	//			// IEEE says array_identifier here, but dotted accepted in VMM + 1800-2009
-	|	yFOREACH '(' idClassForeach '[' loop_variables ']' ')' constraint_set	{ $$ = NULL; /*UNSUP*/ }
+	|	yFOREACH '(' idClassSelForeach ')' constraint_set	{ $$ = NULL; /*UNSUP*/ }
 	//			// soft is 1800-2012
 	|	yDISABLE ySOFT expr/*constraint_primary*/ ';'	{ $$ = NULL; /*UNSUP*/ }
 	;

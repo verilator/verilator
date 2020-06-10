@@ -1560,6 +1560,25 @@ public:
     virtual bool same(const AstNode* samep) const { return true; }
 };
 
+class AstSelLoopVars : public AstNode {
+    // Parser only concept "[id, id, id]" for a foreach statement
+    // Unlike normal selects elements is a list
+public:
+    AstSelLoopVars(FileLine* fl, AstNode* fromp, AstNode* elementsp)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(fromp);
+        addNOp2p(elementsp);
+    }
+    ASTNODE_NODE_FUNCS(SelLoopVars)
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitVerilog() { V3ERROR_NA_RETURN(""); }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+    virtual bool maybePointedTo() const { return false; }
+    AstNode* fromp() const { return op1p(); }
+    AstNode* elementsp() const { return op2p(); }
+};
+
 class AstSelExtract : public AstNodePreSel {
     // Range extraction, gets replaced with AstSel
 public:
@@ -4224,15 +4243,13 @@ public:
 
 class AstForeach : public AstNodeStmt {
 public:
-    AstForeach(FileLine* fl, AstNode* arrayp, AstNode* varsp, AstNode* bodysp)
+    AstForeach(FileLine* fl, AstNode* arrayp, AstNode* bodysp)
         : ASTGEN_SUPER(fl) {
         setOp1p(arrayp);
-        addNOp2p(varsp);
         addNOp4p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Foreach)
-    AstNode* arrayp() const { return op1p(); }  // op1 = array
-    AstNode* varsp() const { return op2p(); }  // op2 = variable index list
+    AstNode* arrayp() const { return op1p(); }  // op1 = array and index vars
     AstNode* bodysp() const { return op4p(); }  // op4 = body of loop
     virtual bool isGateOptimizable() const { return false; }
     virtual int instrCount() const { return instrCountBranch(); }
