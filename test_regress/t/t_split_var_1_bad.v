@@ -34,10 +34,14 @@ module t();
    endfunction
 
    initial begin
+      logic [7:0] loop_idx /*verilator split_var*/;
       addr = 0;
       addr = 1;
       i_sub0.cannot_split1[0] = 0;
       i_sub0.cannot_split1[1] = bad_func(addr, rd_data0);
+      for (loop_idx = 0; loop_idx < 8'd4; loop_idx = loop_idx + 2) begin
+          addr += 1;
+      end
       $finish;
    end
 

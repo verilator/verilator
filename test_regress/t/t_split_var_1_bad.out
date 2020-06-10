@@ -11,28 +11,28 @@
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:12:16: 'should_show_warning_ifs1' has split_var metacomment, but will not be split because it is not declared in a module.
    12 |    logic [7:0] should_show_warning_ifs1 [1:0] /*verilator split_var*/ ;
       |                ^~~~~~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:39:14: 'cannot_split1' has split_var metacomment but will not be split because it is accessed from another module via a dot.
-   39 |       i_sub0.cannot_split1[0] = 0;
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:40:14: 'cannot_split1' has split_var metacomment but will not be split because it is accessed from another module via a dot.
+   40 |       i_sub0.cannot_split1[0] = 0;
       |              ^~~~~~~~~~~~~
-%Warning-SELRANGE: t/t_split_var_1_bad.v:84:33: Selection index out of range: 13 outside 12:10
+%Warning-SELRANGE: t/t_split_var_1_bad.v:88:33: Selection index out of range: 13 outside 12:10
                                               : ... In instance t.i_sub3
-   84 |    assign outwires[12] = inwires[13];   
+   88 |    assign outwires[12] = inwires[13];   
       |                                 ^
-%Warning-WIDTH: t/t_split_var_1_bad.v:40:31: Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's FUNCREF 'bad_func' generates 32 bits.
+%Warning-WIDTH: t/t_split_var_1_bad.v:41:31: Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's FUNCREF 'bad_func' generates 32 bits.
                                            : ... In instance t
-   40 |       i_sub0.cannot_split1[1] = bad_func(addr, rd_data0);
+   41 |       i_sub0.cannot_split1[1] = bad_func(addr, rd_data0);
       |                               ^
-%Error: t/t_split_var_1_bad.v:73:16: Illegal assignment of constant to unpacked array
+%Error: t/t_split_var_1_bad.v:77:16: Illegal assignment of constant to unpacked array
                                    : ... In instance t.i_sub2
-   73 |    assign b = a[0];   
+   77 |    assign b = a[0];   
       |                ^
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:52:31: 'cannot_split0' has split_var metacomment but will not be split because index cannot be determined statically.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:56:31: 'cannot_split0' has split_var metacomment but will not be split because index cannot be determined statically.
                                               : ... In instance t.i_sub0
-   52 |       rd_data = cannot_split0[addr];
+   56 |       rd_data = cannot_split0[addr];
       |                               ^~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:84:34: 'inwires' has split_var metacomment but will not be split because index is out of range.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:88:34: 'inwires' has split_var metacomment but will not be split because index is out of range.
                                               : ... In instance t.i_sub3
-   84 |    assign outwires[12] = inwires[13];   
+   88 |    assign outwires[12] = inwires[13];   
       |                                  ^~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:17:9: 'should_show_warning0' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic
                                              : ... In instance t
@@ -58,12 +58,16 @@
                                               : ... In instance t
    32 |                          ref logic [7:0] ref_port /*verilator split_var*/ );
       |                                          ^~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:58:11: 'cannot_split_genvar' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:37:19: 'loop_idx' has split_var metacomment but will not be split because it is used as a loop variable
+                                              : ... In instance t
+   37 |       logic [7:0] loop_idx /*verilator split_var*/ ;
+      |                   ^~~~~~~~
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:62:11: 'cannot_split_genvar' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic
                                               : ... In instance t.i_sub1
-   58 |    genvar cannot_split_genvar /*verilator split_var*/ ;
+   62 |    genvar cannot_split_genvar /*verilator split_var*/ ;
       |           ^~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:61:29: 'cannot_split' has split_var metacomment but will not be split because its bit range cannot be determined statically.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:65:29: 'cannot_split' has split_var metacomment but will not be split because its bit range cannot be determined statically.
                                               : ... In instance t.i_sub1
-   61 |       rd_data = cannot_split[addr];
+   65 |       rd_data = cannot_split[addr];
       |                             ^
 %Error: Exiting due to
