@@ -978,19 +978,6 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
     int m_numSplit;  // Total number of split variables
     // key:variable to be split. value:location where the variable is referenced.
     PackedVarRefMap m_refs;
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
-        UASSERT_OBJ(m_modp == NULL, m_modp, "Nested module declaration");
-        if (!VN_IS(nodep, Module)) {
-            UINFO(5, "Skip " << nodep->prettyNameQ() << "\n");
-            return;
-        }
-        UASSERT_OBJ(m_refs.empty(), nodep, "The last module didn't finish split()");
-        m_modp = nodep;
-        UINFO(3, "Start analyzing module " << nodep->prettyName() << '\n');
-        iterateChildren(nodep);
-        split();
-        m_modp = NULL;
-    }
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         if (!cannotSplitTaskReason(nodep)) iterateChildren(nodep);
     }
@@ -1235,7 +1222,7 @@ public:
         , m_modp(NULL)
         , m_numSplit(0) {
         // If you want ignore refs and walk the tne entire AST,
-        // just call iterate(nodep) and disable the following for-loop.
+        // just call iterateChildren(m_modp) and split() for each module
         for (SplitVarRefsMap::iterator it = refs.begin(), it_end = refs.end(); it != it_end;
              ++it) {
             m_modp = it->first;
