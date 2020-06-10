@@ -710,35 +710,6 @@ class LinkDotFindVisitor : public AstNVisitor {
     // METHODS
     int debug() { return LinkDotState::debug(); }
 
-    AstConst* parseParamLiteral(FileLine* fl, const string& literal) const {
-        bool success = false;
-        if (literal[0] == '"') {
-            // This is a string
-            string v = literal.substr(1, literal.find('"', 1) - 1);
-            return new AstConst(fl, AstConst::VerilogStringLiteral(), v);
-        } else if (literal.find_first_of(".eEpP") != string::npos) {
-            // This may be a real
-            double v = VString::parseDouble(literal, &success);
-            if (success) return new AstConst(fl, AstConst::RealDouble(), v);
-        }
-        if (!success) {
-            // This is either an integer or an error
-            // We first try to convert it as C literal. If strtol returns
-            // 0 this is either an error or 0 was parsed. But in any case
-            // we will try to parse it as a verilog literal, hence having
-            // the false negative for 0 is okay. If anything remains in
-            // the string after the number, this is invalid C and we try
-            // the Verilog literal parser.
-            char* endp;
-            int v = strtol(literal.c_str(), &endp, 0);
-            if ((v != 0) && (endp[0] == 0)) {  // C literal
-                return new AstConst(fl, AstConst::WidthedValue(), 32, v);
-            } else {  // Try a Verilog literal (fatals if not)
-                return new AstConst(fl, AstConst::StringToParse(), literal.c_str());
-            }
-        }
-        return NULL;
-    }
     void makeImplicitNew(AstClass* nodep) {
         AstFunc* newp = new AstFunc(nodep->fileline(), "new", NULL, NULL);
         newp->isConstructor(true);
@@ -1130,7 +1101,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                             = new AstVar(nodep->fileline(), AstVarType(AstVarType::GPARAM),
                                          nodep->name(), nodep);
                         string svalue = v3Global.opt.parameter(nodep->name());
-                        if (AstNode* valuep = parseParamLiteral(nodep->fileline(), svalue)) {
+                        if (AstNode* valuep = AstConst::parseParamLiteral(nodep->fileline(), svalue)) {
                             newp->valuep(valuep);
                             UINFO(9, "       replace parameter " << nodep << endl);
                             UINFO(9, "       with " << newp << endl);
