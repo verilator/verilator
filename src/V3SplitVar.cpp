@@ -173,10 +173,7 @@ struct SplitVarImpl {
         if (const char* reason = cannotSplitVarTypeReason(varp->varType())) return reason;
         if (const char* reason = cannotSplitVarDirectionReason(varp->direction())) return reason;
         if (varp->isSigPublic()) return "it is public";
-        if (varp->isInoutish()) return "it is bidirectional";
         if (varp->isUsedLoopIdx()) return "it is used as a loop variable";
-        if (varp->isGenVar()) return "it is genvar";
-        if (varp->isParam()) return "it is parameter";
         return NULL;
     }
 
