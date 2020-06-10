@@ -20,6 +20,7 @@ module t();
 
    logic [3:0] addr;
    logic [7:0] rd_data0, rd_data1, rd_data2;
+   logic [1:0] public_signal /*verilator public*/ /*verilator split_var*/;
 
    sub0 i_sub0(.addr(addr), .rd_data(rd_data0));
    sub1 i_sub1(.addr(addr), .rd_data(rd_data2));
