@@ -2519,7 +2519,7 @@ delay_control<nodep>:	//== IEEE: delay_control
 
 delay_value<nodep>:		// ==IEEE:delay_value
 	//			// IEEE: ps_identifier
-		ps_id_etc				{ $$ = $1; }
+		packageClassScopeE varRefBase		{ $$ = $2; $2->packagep($1); }
 	|	yaINTNUM 				{ $$ = new AstConst($<fl>1, *$1); }
 	|	yaFLOATNUM 				{ $$ = new AstConst($<fl>1, AstConst::RealDouble(), $1); }
 	|	timeNumAdjusted				{ $$ = $1; }
@@ -3824,10 +3824,16 @@ funcIdNew<ftaskp>:		// IEEE: from class_constructor_declaration
 
 tfIdScoped<strp>:		// IEEE: part of function_body_declaration/task_body_declaration
  	//			// IEEE: [ interface_identifier '.' | class_scope ] function_identifier
-		id					{ $<fl>$=$<fl>1; $<strp>$ = $1; }
-	|	id/*interface_identifier*/ '.' id	{ $<fl>$=$<fl>3; $<strp>$ = $3; BBUNSUP($2, "Unsupported: Out of block function declaration"); }
-	|	packageClassScope id			{ $<fl>$=$<fl>2; $<scp>$=$<scp>1; $<strp>$=$<strp>2;
-							  BBUNSUP($<fl>1, "Unsupported: Out of class block function declaration"); }
+		id
+			{ $<fl>$ = $<fl>1; $<scp>$ = NULL; $<strp>$ = $1; }
+	//
+	|	id/*interface_identifier*/ '.' id
+			{ $<fl>$ = $<fl>3; $<scp>$ = NULL; $<strp>$ = $3;
+			  BBUNSUP($2, "Unsupported: Out of block function declaration"); }
+	//
+	|	packageClassScope id
+			{ $<fl>$ = $<fl>2; $<scp>$ = $<scp>1; $<strp>$ = $<strp>2;
+			  BBUNSUP($<fl>1, "Unsupported: Out of class block function declaration"); }
 	;
 
 tfGuts<nodep>:
@@ -5762,13 +5768,16 @@ class_declaration<nodep>:	// ==IEEE: part of class_declaration
 	//			// The classExtendsE rule relys on classFront having the
 	//			// new class scope correct via classFront
 		classFront parameter_port_listE classExtendsE classImplementsE ';'
+	/*mid*/		{ // Allow resolving types declared in base extends class
+			  if ($<scp>3) SYMP->importExtends($<scp>3);
+			}
 	/*cont*/    class_itemListE yENDCLASS endLabelE
 			{ $$ = $1; $1->addMembersp($2);
 			  $1->extendsp($3);
 			  $1->addMembersp($4);
-			  $1->addMembersp($6);
+			  $1->addMembersp($7);
 			  SYMP->popScope($$);
-			  GRAMMARP->endLabel($<fl>7, $1, $8); }
+			  GRAMMARP->endLabel($<fl>7, $1, $9); }
 	;
 
 classFront<classp>:		// IEEE: part of class_declaration
@@ -5792,23 +5801,26 @@ classVirtualE:
 classExtendsE<nodep>:		// IEEE: part of class_declaration
 	//			// The classExtendsE rule relys on classFront having the
 	//			// new class scope correct via classFront
-		/* empty */				{ $$ = NULL; }
-	|	yEXTENDS classExtendsList		{ $$ = $2; }
+		/* empty */				{ $$ = NULL; $<scp>$ = NULL; }
+	|	yEXTENDS classExtendsList		{ $$ = $2; $<scp>$ = $<scp>2; }
 	;
 
 classExtendsList<nodep>:	// IEEE: part of class_declaration
-		classExtendsOne				{ $$ = $1; }
+		classExtendsOne				{ $$ = $1; $<scp>$ = $<scp>1; }
 	|	classExtendsList ',' classExtendsOne
-			{ $$ = $3; BBUNSUP($3, "Multiple inheritance illegal on non-interface classes (IEEE 1800-2017 8.13)"
-					       ", and unsupported for interface classes."); }
+			{ $$ = $3; $<scp>$ = $<scp>3;
+			  BBUNSUP($3, "Multiple inheritance illegal on non-interface classes (IEEE 1800-2017 8.13), "
+				      "and unsupported for interface classes."); }
 	;
 
 classExtendsOne<nodep>:		// IEEE: part of class_declaration
 		class_typeExtImpList
-			{ $$ = new AstClassExtends($1->fileline(), $1); }
-	//			// IEEE: Might not be legal to have more than one set of parameters in an extends
+			{ $$ = new AstClassExtends($1->fileline(), $1);
+                          $<scp>$ = $<scp>1; }
+	//
 	|	class_typeExtImpList '(' list_of_argumentsE ')'
 			{ $$ = new AstClassExtends($1->fileline(), $1);
+                          $<scp>$ = $<scp>1;
 			  if ($3) BBUNSUP($3, "Unsupported: extends with parameters"); }
 	;
 
@@ -5827,9 +5839,9 @@ classImplementsList<nodep>:	// IEEE: part of class_declaration
 class_typeExtImpList<nodep>:	// IEEE: class_type: "[package_scope] id [ parameter_value_assignment ]"
 	//			// but allow yaID__aTYPE for extends/implements
 	//			// If you follow the rules down, class_type is really a list via ps_class_identifier
-		class_typeExtImpOne			{ $$ = $1; }
+		class_typeExtImpOne			{ $$ = $1; $<scp>$ = $<scp>1; }
 	|	class_typeExtImpList yP_COLONCOLON class_typeExtImpOne
-			{ $$ = $3;
+			{ $$ = $3; $<scp>$ = $<scp>1;
 			  // Cannot just add as next() as that breaks implements lists
 			  //UNSUP $$ = new AstDot($<fl>1, true, $1, $3);
 			  BBUNSUP($2, "Unsupported: Hierarchical class references"); }
@@ -5845,13 +5857,18 @@ class_typeExtImpOne<nodep>:	// part of IEEE: class_type, where we either get a p
 	/*mid*/		{ /* no nextId as not refing it above this*/ }
 	/*cont*/    parameter_value_assignmentE
 			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL);
+			  $<scp>$ = $<scp>1;
 			  if ($3) BBUNSUP($3->fileline(), "Unsupported: Parameterized classes"); }
+	//
 	//			// package_sopeIdFollows expanded
 	|	yD_UNIT yP_COLONCOLON
 			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, "$unit", NULL, NULL);
+                          $<scp>$ = NULL;  // No purpose otherwise, every symtab can see root
 			  SYMP->nextId(PARSEP->rootp()); }
+	//
 	|	yLOCAL__COLONCOLON yP_COLONCOLON
 			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, "local", NULL, NULL);
+                          $<scp>$ = NULL;  // UNSUP
 			  SYMP->nextId(PARSEP->rootp());
 			  BBUNSUP($1, "Unsupported: Randomize 'local::'"); }
 	;
@@ -5860,10 +5877,6 @@ class_typeExtImpOne<nodep>:	// part of IEEE: class_type, where we either get a p
 // Package scoping - to traverse the symbol table properly, the final identifer
 // must be included in the rules below.
 // Each of these must end with {symsPackageDone | symsClassDone}
-
-ps_id_etc<varrefp>:		// package_scope + general id
-		packageClassScopeE varRefBase		{ $$ = $2; $2->packagep($1); }
-	;
 
 //=== Below rules assume special scoping per above
 
@@ -5885,6 +5898,7 @@ packageClassScope<packagep>:	// IEEE: class_scope + type
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
 	//			//     if not needed must use packageClassScopeNoId
 	//			// In this parser <package_identifier>:: and <class_identifier>:: are indistinguishible
+	//			// This copies <scp> to document it is important
 		packageClassScopeList			{ $$ = $1; $<scp>$ = $<scp>1; }
 	|	localNextId yP_COLONCOLON		{ $$ = $1; $<scp>$ = $<scp>1; }
 	|	dollarUnitNextId yP_COLONCOLON		{ $$ = $1; $<scp>$ = $<scp>1; }

@@ -4,16 +4,25 @@
 %Error: t/t_class_extends.v:13:21: Found definition of 'Base0' as a CLASS but expected a variable
    13 | class Base1 extends Base0;
       |                     ^~~~~
-%Error-UNSUPPORTED: t/t_class_extends.v:17:21: Unsupported: class extends
-   17 | class Base2 extends Base1;
+%Error-UNSUPPORTED: t/t_class_extends.v:18:21: Unsupported: class extends
+   18 | class Base2 extends Base1;
       |                     ^~~~~
-%Error: t/t_class_extends.v:17:21: Found definition of 'Base1' as a CLASS but expected a variable
-   17 | class Base2 extends Base1;
+%Error: t/t_class_extends.v:18:21: Found definition of 'Base1' as a CLASS but expected a variable
+   18 | class Base2 extends Base1;
       |                     ^~~~~
-%Error-UNSUPPORTED: t/t_class_extends.v:21:19: Unsupported: class extends
-   21 | class Cls extends Base2;
+%Error-UNSUPPORTED: t/t_class_extends.v:22:19: Unsupported: class extends
+   22 | class Cls extends Base2;
       |                   ^~~~~
-%Error: t/t_class_extends.v:21:19: Found definition of 'Base2' as a CLASS but expected a variable
-   21 | class Cls extends Base2;
+%Error: t/t_class_extends.v:22:19: Found definition of 'Base2' as a CLASS but expected a variable
+   22 | class Cls extends Base2;
       |                   ^~~~~
+%Error: t/t_class_extends.v:25:4: Can't find typedef: 'T'
+   25 |    T imemberc;
+      |    ^
+%Error-UNSUPPORTED: t/t_class_extends.v:33:43: Unsupported: class extends
+   33 | class uvm__registry #(type T=int) extends uvm_object_wrapper;
+      |                                           ^~~~~~~~~~~~~~~~~~
+%Error: t/t_class_extends.v:33:43: Found definition of 'uvm_object_wrapper' as a CLASS but expected a variable
+   33 | class uvm__registry #(type T=int) extends uvm_object_wrapper;
+      |                                           ^~~~~~~~~~~~~~~~~~
 %Error: Exiting due to
