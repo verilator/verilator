@@ -158,6 +158,11 @@ private:
     // to access duck-typed functions to avoid a virtual function call.
     T_Derived* self() { return static_cast<T_Derived*>(this); }
 
+    // Flush any remaining data for this file
+    static void onFlush(void* selfp) VL_MT_UNSAFE_ONE;
+    // Close the file on termination
+    static void onExit(void* selfp) VL_MT_UNSAFE_ONE;
+
 #ifdef VL_TRACE_THREADED
     // Number of total trace buffers that have been allocated
     vluint32_t m_numTraceBuffers;

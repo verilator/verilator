@@ -2005,7 +2005,7 @@ PLI_INT32 vpi_mcd_vprintf(PLI_UINT32 mcd, PLI_BYTE8* format, va_list ap) {
 PLI_INT32 vpi_flush(void) {
     VerilatedVpiImp::assertOneCheck();
     _VL_VPI_ERROR_RESET();
-    Verilated::flushCall();
+    Verilated::runFlushCallbacks();
     return 0;
 }
 

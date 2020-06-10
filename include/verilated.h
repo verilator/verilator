@@ -84,10 +84,6 @@ typedef EData        WData;     ///< Verilated pack data, >64 bits, as an array
 typedef const WData* WDataInP;  ///< Array input to a function
 typedef WData* WDataOutP;  ///< Array output from a function
 
-typedef void (*VerilatedVoidCb)(void);
-
-class SpTraceVcd;
-class SpTraceVcdCFile;
 class VerilatedEvalMsgQueue;
 class VerilatedScopeNameMap;
 class VerilatedVar;
@@ -376,8 +372,6 @@ class Verilated {
     // Slow path variables
     static VerilatedMutex m_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
 
-    static VerilatedVoidCb s_flushCb;  ///< Flush callback function
-
     static struct Serialized {  // All these members serialized/deserialized
         // Fast path
         int s_debug;  ///< See accessors... only when VL_DEBUG set
@@ -501,9 +495,15 @@ public:
     static void profThreadsFilenamep(const char* flagp) VL_MT_SAFE;
     static const char* profThreadsFilenamep() VL_MT_SAFE { return s_ns.s_profThreadsFilenamep; }
 
-    /// Flush callback for VCD waves
-    static void flushCb(VerilatedVoidCb cb) VL_MT_SAFE;
-    static void flushCall() VL_MT_SAFE;
+    typedef void (*VoidPCb)(void*);  // Callback type for below
+    /// Callbacks to run on global flush
+    static void addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void runFlushCallbacks() VL_MT_SAFE;
+    /// Callbacks to run prior to termination
+    static void addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void runExitCallbacks() VL_MT_SAFE;
 
     /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs,
     /// and for parsing +verilator+ run-time arguments.
