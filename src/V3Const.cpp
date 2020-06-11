@@ -588,6 +588,9 @@ private:
         }
         return false;
     }
+    bool operandsSameSize(AstNode* lhsp, AstNode* rhsp) {
+        return lhsp->width() == rhsp->width();
+    }
 
     //----------------------------------------
     // Constant Replacement functions.
@@ -2322,7 +2325,7 @@ private:
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstDiv   {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
     TREEOP ("AstDivS  {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
-    TREEOP ("AstMul   {operandIsPowTwo($lhsp), $rhsp}", "replaceMulShift(nodep)");  // a*2^n -> a<<n
+    TREEOP ("AstMul   {operandIsPowTwo($lhsp), operandsSameSize($lhsp,,$rhsp)}", "replaceMulShift(nodep)");  // a*2^n -> a<<n
     TREEOP ("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}", "replaceDivShift(nodep)");  // a/2^n -> a>>n
     TREEOP ("AstModDiv{$lhsp, operandIsPowTwo($rhsp)}", "replaceModAnd(nodep)");  // a % 2^n -> a&(2^n-1)
     TREEOP ("AstPow   {operandIsTwo($lhsp), $rhsp}",    "replacePowShift(nodep)");  // 2**a == 1<<a
