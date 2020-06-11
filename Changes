@@ -9,7 +9,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  With --bbox-unsup continue parsing on many (not all) UVM constructs.
 
-****  Flush FST trace on termination due to $stop or assertion failure.
+****  Fix to flush FST trace on termination due to $stop or assertion failure.
+
+****  Fix part select error when multipling by power-of-two (#2413). [Conor McCullough]
 
 
 * Verilator 4.036 2020-06-06
