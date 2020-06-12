@@ -3053,6 +3053,10 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
                 // support them.  They also cause problems with GDB under GCC2.95.
                 if (varp->isWide()) {  // Unsupported for output
                     putsDecoration("// enum WData " + varp->nameProtect() + "  //wide");
+                } else if (varp->isString()) {
+                    puts("const std::string " + protect("var_" + varp->name()) + " = ");
+                    iterateAndNextNull(varp->valuep());
+                    puts(";");
                 } else if (!VN_IS(varp->valuep(), Const)) {  // Unsupported for output
                     // putsDecoration("// enum ..... "+varp->nameProtect()
                     //               +"not simple value, see variable above instead");
@@ -3060,11 +3064,16 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
                            && VN_CAST(varp->dtypep(), BasicDType)
                                   ->isOpaque()) {  // Can't put out e.g. doubles
                 } else {
-                    puts("enum ");
-                    puts(varp->isQuad() ? "_QData" : "_IData");
+                    // enum
+                    puts(varp->isQuad() ? "enum _QData" : "enum _IData");
                     puts("" + varp->nameProtect() + " { " + varp->nameProtect() + " = ");
                     iterateAndNextNull(varp->valuep());
-                    puts("};");
+                    puts("};\n");
+                    // var
+                    puts(varp->isQuad() ? "const QData" : "const IData");
+                    puts(" var_" + varp->nameProtect() + " = ");
+                    iterateAndNextNull(varp->valuep());
+                    puts(";");
                 }
                 puts("\n");
             }

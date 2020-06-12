@@ -81,7 +81,9 @@ unsigned int main_time = 0;
 #define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
 static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int scalar, int type) {
-    s_vpi_value value = {.format = vpiIntVal, .value = {.integer = 0}};
+    s_vpi_value value;
+    value.format = vpiIntVal;
+    value.value.integer = 0;
     // check size of object
     int vpisize = vpi_get(vpiSize, handle);
     CHECK_RESULT(vpisize, size);

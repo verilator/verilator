@@ -16,11 +16,11 @@
 
 #else
 
-#include "Vt_vpi_memory.h"
+#include "Vt_vpi_param.h"
 #include "verilated.h"
 #include "svdpi.h"
 
-#include "Vt_vpi_memory__Dpi.h"
+#include "Vt_vpi_param__Dpi.h"
 
 #include "verilated_vpi.h"
 #include "verilated_vcd_c.h"
@@ -35,7 +35,7 @@
 #include "TestVpi.h"
 
 // __FILE__ is too long
-#define FILENM "t_vpi_memory.cpp"
+#define FILENM "t_vpi_param.cpp"
 
 #define DEBUG \
     if (0) printf
@@ -80,111 +80,113 @@ unsigned int main_time = 0;
 
 #define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
-int _mon_check_range(TestVpiHandle& handle, int size, int left, int right) {
-    TestVpiHandle iter_h, left_h, right_h;
-    s_vpi_value value;
-    value.format = vpiIntVal;
-    value.value.integer = 0;
-    // check size of object
-    int vpisize = vpi_get(vpiSize, handle);
-    CHECK_RESULT(vpisize, size);
-    // check left hand side of range
-    left_h = vpi_handle(vpiLeftRange, handle);
-    CHECK_RESULT_NZ(left_h);
-    vpi_get_value(left_h, &value);
-    CHECK_RESULT(value.value.integer, left);
-    int coherency = value.value.integer;
-    // check right hand side of range
-    right_h = vpi_handle(vpiRightRange, handle);
-    CHECK_RESULT_NZ(right_h);
-    vpi_get_value(right_h, &value);
-    CHECK_RESULT(value.value.integer, right);
-    coherency -= value.value.integer;
-    // calculate size & check
-    coherency = abs(coherency) + 1;
-    CHECK_RESULT(coherency, size);
-    return 0;  // Ok
-}
 
-int _mon_check_memory() {
-    int cnt;
-    TestVpiHandle mem_h, lcl_h, side_h;
-    vpiHandle iter_h;  // Icarus does not like auto free of iterator handles
+int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verbose) {
+    int vpi_type;
+    TestVpiHandle param_h;
     s_vpi_value value;
-    value.format = vpiIntVal;
+    value.format = format;
     value.value.integer = 0;
     s_vpi_error_info e;
+    const char* p;
 
-    vpi_printf((PLI_BYTE8*)"Check memory vpi ...\n");
-    mem_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted("mem0"), NULL);
-    CHECK_RESULT_NZ(mem_h);
-    // check type
-    int vpitype = vpi_get(vpiType, mem_h);
-    CHECK_RESULT(vpitype, vpiMemory);
-    if (int status = _mon_check_range(mem_h, 16, 16, 1)) return status;
-    // iterate and store
-    iter_h = vpi_iterate(vpiMemoryWord, mem_h);
-    cnt = 0;
-    while ((lcl_h = vpi_scan(iter_h))) {
-        value.value.integer = ++cnt;
-        vpi_put_value(lcl_h, &value, NULL, vpiNoDelay);
-        // check size and range
-        if (int status = _mon_check_range(lcl_h, 32, 31, 0)) return status;
-    }
-    CHECK_RESULT(cnt, 16);  // should be 16 addresses
-    // iterate and accumulate
-    iter_h = vpi_iterate(vpiMemoryWord, mem_h);
-    cnt = 0;
-    while ((lcl_h = vpi_scan(iter_h))) {
-        ++cnt;
-        vpi_get_value(lcl_h, &value);
-        CHECK_RESULT(value.value.integer, cnt);
-    }
-    CHECK_RESULT(cnt, 16);  // should be 16 addresses
-    // don't care for non verilator
-    // (crashes on Icarus)
-    if (TestSimulator::is_icarus()) {
-        vpi_printf((PLI_BYTE8*)"Skipping property checks for simulator %s\n",
-                   TestSimulator::get_info().product);
-        return 0;  // Ok
-    }
-    // make sure trying to get properties that don't exist
-    // doesn't crash
-    int should_be_0 = vpi_get(vpiSize, iter_h);
-    CHECK_RESULT(should_be_0, 0);
-    should_be_0 = vpi_get(vpiIndex, iter_h);
-    CHECK_RESULT(should_be_0, 0);
-    vpiHandle should_be_NULL = vpi_handle(vpiLeftRange, iter_h);
-    CHECK_RESULT(should_be_NULL, 0);
-    should_be_NULL = vpi_handle(vpiRightRange, iter_h);
-    CHECK_RESULT(should_be_NULL, 0);
-    should_be_NULL = vpi_handle(vpiScope, iter_h);
-    CHECK_RESULT(should_be_NULL, 0);
+    vpi_printf((PLI_BYTE8*)"Check parameter %s vpi ...\n", name.c_str());
+    param_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name.c_str()), NULL);
+    CHECK_RESULT_NZ(param_h);
+    vpi_type = vpi_get(vpiType, param_h);
+    CHECK_RESULT(vpi_type, vpiParameter);
+    if (verbose) {vpi_printf((PLI_BYTE8*)"  vpiType: %s (%d)\n", vpi_get_str(vpiType, param_h), vpi_type); }
 
-    // check vpiRange
-    iter_h = vpi_iterate(vpiRange, mem_h);
-    CHECK_RESULT_NZ(iter_h);
-    lcl_h = vpi_scan(iter_h);
-    CHECK_RESULT_NZ(lcl_h);
-    side_h = vpi_handle(vpiLeftRange, lcl_h);
-    CHECK_RESULT_NZ(side_h);
-    vpi_get_value(side_h, &value);
-    CHECK_RESULT(value.value.integer, 16);
-    side_h = vpi_handle(vpiRightRange, lcl_h);
-    CHECK_RESULT_NZ(side_h);
-    vpi_get_value(side_h, &value);
-    CHECK_RESULT(value.value.integer, 1);
-
-    // check writing to vpiConstant
-    vpi_put_value(side_h, &value, NULL, vpiNoDelay);
+    // attributes
+    p = vpi_get_str(vpiName, param_h);
+    CHECK_RESULT_CSTR(p, name.c_str());
+    p = vpi_get_str(vpiFullName, param_h);
+    CHECK_RESULT_CSTR(p, std::string("t." + name).c_str());
+    p = vpi_get_str(vpiType, param_h);
+    CHECK_RESULT_CSTR(p, "vpiParameter");
+    vpi_type = vpi_get(vpiLocalParam, param_h);
     CHECK_RESULT_NZ(vpi_chk_error(&e));
+    if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
 
-    return 0;  // Ok
+    // values
+    if (verbose) {vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str()); }
+    value.value.integer = exp_value;
+    vpi_put_value(param_h, &value, NULL, vpiNoDelay);
+    CHECK_RESULT_NZ(vpi_chk_error(&e));
+    if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
+
+    if (verbose) {vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str()); }
+    vpi_get_value(param_h, &value);
+    CHECK_RESULT_NZ(!vpi_chk_error(&e));
+    if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
+    if (verbose) {vpi_printf((PLI_BYTE8*)"    value of %s: %d\n", name.c_str(), value.value.integer); }
+    CHECK_RESULT(value.value.integer, exp_value);
+
+    return 0;
+}
+
+int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, bool verbose) {
+    int vpi_type;
+    TestVpiHandle param_h;
+    s_vpi_value value;
+    value.format = format;
+    value.value.integer = 0;
+    s_vpi_error_info e;
+    const char* p;
+
+    vpi_printf((PLI_BYTE8*)"Check parameter %s vpi ...\n", name.c_str());
+    param_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name.c_str()), NULL);
+    CHECK_RESULT_NZ(param_h);
+    vpi_type = vpi_get(vpiType, param_h);
+    CHECK_RESULT(vpi_type, vpiParameter);
+    if (verbose) {vpi_printf((PLI_BYTE8*)"  vpiType: %s (%d)\n", vpi_get_str(vpiType, param_h), vpi_type); }
+
+    // attributes
+    p = vpi_get_str(vpiName, param_h);
+    CHECK_RESULT_CSTR(p, name.c_str());
+    p = vpi_get_str(vpiFullName, param_h);
+    CHECK_RESULT_CSTR(p, std::string("t." + name).c_str());
+    p = vpi_get_str(vpiType, param_h);
+    CHECK_RESULT_CSTR(p, "vpiParameter");
+    vpi_type = vpi_get(vpiLocalParam, param_h);
+    CHECK_RESULT_NZ(vpi_chk_error(&e));
+    if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
+
+    // values
+    if (verbose) {vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str()); }
+    value.value.str = (PLI_BYTE8*) exp_value.c_str();
+    vpi_put_value(param_h, &value, NULL, vpiNoDelay);
+    CHECK_RESULT_NZ(vpi_chk_error(&e));
+    if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
+
+    if (verbose) {vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str()); }
+    vpi_get_value(param_h, &value);
+    CHECK_RESULT_NZ(!vpi_chk_error(&e));
+    if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
+    if (verbose) {vpi_printf((PLI_BYTE8*)"    value of %s: %s\n", name.c_str(), value.value.str); }
+    CHECK_RESULT_CSTR(value.value.str, exp_value.c_str());
+
+    return 0;
+}
+
+int _mon_check_param() {
+    int status = 0;
+#ifdef TEST_VERBOSE
+    bool verbose = true;
+#else
+    bool verbose = false;
+#endif
+
+    status += check_param_int("WIDTH", vpiIntVal, 32, verbose);
+    status += check_param_int("DEPTH", vpiIntVal, 16, verbose);
+    status += check_param_str("PARAM_LONG", vpiHexStrVal, "fedcba9876543210", verbose);
+    status += check_param_str("PARAM_STR", vpiStringVal, "'some string value'", verbose);
+    return status;
 }
 
 int mon_check() {
     // Callback from initial block in monitor
-    if (int status = _mon_check_memory()) return status;
+    if (int status = _mon_check_param()) return status;
     return 0;  // Ok
 }
 
