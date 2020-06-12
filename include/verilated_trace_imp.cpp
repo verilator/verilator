@@ -259,6 +259,19 @@ template <> void VerilatedTrace<VL_DERIVED_T>::flush() {
 }
 
 //=============================================================================
+// Callbacks to run on global events
+
+template <> void VerilatedTrace<VL_DERIVED_T>::onFlush(void* selfp) {
+    // Note this calls 'flush' on the derived class
+    reinterpret_cast<VL_DERIVED_T*>(selfp)->flush();
+}
+
+template <> void VerilatedTrace<VL_DERIVED_T>::onExit(void* selfp) {
+    // Note this calls 'close' on the derived class
+    reinterpret_cast<VL_DERIVED_T*>(selfp)->close();
+}
+
+//=============================================================================
 // VerilatedTrace
 
 template <>
@@ -282,6 +295,8 @@ VerilatedTrace<VL_DERIVED_T>::VerilatedTrace()
 
 template <> VerilatedTrace<VL_DERIVED_T>::~VerilatedTrace() {
     if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = NULL);
+    Verilated::removeFlushCb(VerilatedTrace<VL_DERIVED_T>::onFlush, this);
+    Verilated::removeExitCb(VerilatedTrace<VL_DERIVED_T>::onExit, this);
 #ifdef VL_TRACE_THREADED
     close();
 #endif
@@ -317,6 +332,10 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
     // Now that we know the number of codes, allocate space for the buffer
     // holding previous signal values.
     if (!m_sigs_oldvalp) m_sigs_oldvalp = new vluint32_t[nextCode()];
+
+    // Set callback so flush/abort will flush this file
+    Verilated::addFlushCb(VerilatedTrace<VL_DERIVED_T>::onFlush, this);
+    Verilated::addExitCb(VerilatedTrace<VL_DERIVED_T>::onExit, this);
 
 #ifdef VL_TRACE_THREADED
     // Compute trace buffer size. we need to be able to store a new value for

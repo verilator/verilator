@@ -31,6 +31,8 @@
 #include <cerrno>
 #include <sstream>
 #include <sys/stat.h>  // mkdir
+#include <list>
+#include <utility>
 
 // clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)
@@ -59,7 +61,6 @@ typedef union {
 
 // Slow path variables
 VerilatedMutex Verilated::m_mutex;
-VerilatedVoidCb Verilated::s_flushCb = NULL;
 
 // Keep below together in one cache line
 Verilated::Serialized Verilated::s_s;
@@ -83,7 +84,8 @@ void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE
     if (Verilated::gotFinish()) {
         VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
             "- %s:%d: Second verilog $finish, exiting\n", filename, linenum);
-        Verilated::flushCall();
+        Verilated::runFlushCallbacks();
+        Verilated::runExitCallbacks();
         exit(0);
     }
     Verilated::gotFinish(true);
@@ -93,7 +95,7 @@ void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE
 #ifndef VL_USER_STOP  ///< Define this to override this function
 void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
     Verilated::gotFinish(true);
-    Verilated::flushCall();
+    Verilated::runFlushCallbacks();
     vl_fatal(filename, linenum, hier, "Verilog $stop");
 }
 #endif
@@ -108,10 +110,15 @@ void vl_fatal(const char* filename, int linenum, const char* hier, const char* m
     } else {
         VL_PRINTF("%%Error: %s\n", msg);
     }
-    Verilated::flushCall();
+    Verilated::runFlushCallbacks();
 
     VL_PRINTF("Aborting...\n");  // Not VL_PRINTF_MT, already on main thread
-    Verilated::flushCall();  // Second flush in case VL_PRINTF does something needing a flush
+
+    // Second flush in case VL_PRINTF does something needing a flush
+    Verilated::runFlushCallbacks();
+
+    // Callbacks prior to termination
+    Verilated::runExitCallbacks();
     abort();
 }
 #endif
@@ -2242,27 +2249,58 @@ const char* Verilated::catName(const char* n1, const char* n2, const char* delim
     return strp;
 }
 
-void Verilated::flushCb(VerilatedVoidCb cb) VL_MT_SAFE {
-    const VerilatedLockGuard lock(m_mutex);
-    if (s_flushCb == cb) {  // Ok - don't duplicate
-    } else if (!s_flushCb) {
-        s_flushCb = cb;
-    } else {  // LCOV_EXCL_LINE
-        // Someday we may allow multiple callbacks ala atexit(), but until then
-        VL_FATAL_MT("unknown", 0, "",  // LCOV_EXCL_LINE
-                    "Verilated::flushCb called twice with different callbacks");
-    }
+//=========================================================================
+// Flush and exit callbacks
+
+// Keeping these out of class Verilated to avoid having to include <list>
+// in verilated.h (for compilation speed)
+typedef std::list<std::pair<Verilated::VoidPCb, void*> > VoidPCbList;
+static VoidPCbList g_flushCbs;
+static VoidPCbList g_exitCbs;
+
+static void addCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
+    std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
+    cbs.remove(pair);  // Just in case it's a duplicate
+    cbs.push_back(pair);
+}
+static void removeCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
+    std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
+    cbs.remove(pair);
+}
+static void runCallbacks(VoidPCbList& cbs) VL_MT_SAFE {
+    for (VoidPCbList::iterator it = cbs.begin(); it != cbs.end(); ++it) { it->first(it->second); }
 }
 
-// When running internal code coverage (gcc --coverage, as opposed to
-// verilator --coverage), dump coverage data to properly cover failing
-// tests.
-void Verilated::flushCall() VL_MT_SAFE {
+void Verilated::addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);
-    if (s_flushCb) (*s_flushCb)();
+    addCb(cb, datap, g_flushCbs);
+}
+void Verilated::removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
+    const VerilatedLockGuard lock(m_mutex);
+    removeCb(cb, datap, g_flushCbs);
+}
+void Verilated::runFlushCallbacks() VL_MT_SAFE {
+    const VerilatedLockGuard lock(m_mutex);
+    runCallbacks(g_flushCbs);
     fflush(stderr);
     fflush(stdout);
+    // When running internal code coverage (gcc --coverage, as opposed to
+    // verilator --coverage), dump coverage data to properly cover failing
+    // tests.
     VL_GCOV_FLUSH();
+}
+
+void Verilated::addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
+    const VerilatedLockGuard lock(m_mutex);
+    addCb(cb, datap, g_exitCbs);
+}
+void Verilated::removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
+    const VerilatedLockGuard lock(m_mutex);
+    removeCb(cb, datap, g_exitCbs);
+}
+void Verilated::runExitCallbacks() VL_MT_SAFE {
+    const VerilatedLockGuard lock(m_mutex);
+    runCallbacks(g_exitCbs);
 }
 
 const char* Verilated::productName() VL_PURE { return VERILATOR_PRODUCT; }

@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  With --bbox-unsup continue parsing on many (not all) UVM constructs.
 
+****  Flush FST trace on termination due to $stop or assertion failure.
+
 
 * Verilator 4.036 2020-06-06
 
