@@ -4818,7 +4818,7 @@ Warns that unpacked structs and unions are not supported.
 Ignoring this warning will make Verilator treat the structure as packed,
 which may make Verilator simulations differ from other simulators. This
 downgrading may also result what would normally be a legal unpacked
-struct/array inside an unpacked struct/array becomming an illegal unpacked
+struct/array inside an unpacked struct/array becoming an illegal unpacked
 struct/array inside a packed struct/array.
 
 =item UNSIGNED
