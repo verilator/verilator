@@ -288,14 +288,6 @@ public:
 
 class UnpackRefMap {
 public:
-    struct Hash {
-        size_t operator()(const UnpackRef& r) const { return reinterpret_cast<size_t>(r.nodep()); }
-    };
-    struct Compare {
-        bool operator()(const UnpackRef& a, const UnpackRef& b) const {
-            return a.nodep() == b.nodep();
-        }
-    };
     typedef std::map<AstVar*, std::set<UnpackRef>, AstNodeComparator> MapType;
     typedef MapType::iterator MapIt;
     typedef MapType::value_type::second_type::iterator SetIt;
