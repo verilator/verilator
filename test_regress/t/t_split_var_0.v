@@ -180,7 +180,7 @@ module barshift_2d_packed_array #(parameter DEPTH = 2, localparam WIDTH = 2**DEP
 
    generate
       for(genvar i = 0; i < DEPTH; ++i) begin
-         always_comb
+         always @(shift or tmp)
            /*verilator lint_off ALWCOMBORDER*/
            if (shift[i]) begin
               tmp[i+1+OFFSET] = {tmp[i+OFFSET][(1 << i)-1:0], tmp[i+OFFSET][WIDTH-1:(2**i)]};

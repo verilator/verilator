@@ -173,10 +173,7 @@ struct SplitVarImpl {
         if (const char* reason = cannotSplitVarTypeReason(varp->varType())) return reason;
         if (const char* reason = cannotSplitVarDirectionReason(varp->direction())) return reason;
         if (varp->isSigPublic()) return "it is public";
-        if (varp->isInoutish()) return "it is bidirectional";
         if (varp->isUsedLoopIdx()) return "it is used as a loop variable";
-        if (varp->isGenVar()) return "it is genvar";
-        if (varp->isParam()) return "it is parameter";
         return NULL;
     }
 
@@ -291,14 +288,6 @@ public:
 
 class UnpackRefMap {
 public:
-    struct Hash {
-        size_t operator()(const UnpackRef& r) const { return reinterpret_cast<size_t>(r.nodep()); }
-    };
-    struct Compare {
-        bool operator()(const UnpackRef& a, const UnpackRef& b) const {
-            return a.nodep() == b.nodep();
-        }
-    };
     typedef std::map<AstVar*, std::set<UnpackRef>, AstNodeComparator> MapType;
     typedef MapType::iterator MapIt;
     typedef MapType::value_type::second_type::iterator SetIt;
@@ -981,19 +970,6 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
     int m_numSplit;  // Total number of split variables
     // key:variable to be split. value:location where the variable is referenced.
     PackedVarRefMap m_refs;
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
-        UASSERT_OBJ(m_modp == NULL, m_modp, "Nested module declaration");
-        if (!VN_IS(nodep, Module)) {
-            UINFO(5, "Skip " << nodep->prettyNameQ() << "\n");
-            return;
-        }
-        UASSERT_OBJ(m_refs.empty(), nodep, "The last module didn't finish split()");
-        m_modp = nodep;
-        UINFO(3, "Start analyzing module " << nodep->prettyName() << '\n');
-        iterateChildren(nodep);
-        split();
-        m_modp = NULL;
-    }
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         if (!cannotSplitTaskReason(nodep)) iterateChildren(nodep);
     }
@@ -1238,7 +1214,7 @@ public:
         , m_modp(NULL)
         , m_numSplit(0) {
         // If you want ignore refs and walk the tne entire AST,
-        // just call iterate(nodep) and disable the following for-loop.
+        // just call iterateChildren(m_modp) and split() for each module
         for (SplitVarRefsMap::iterator it = refs.begin(), it_end = refs.end(); it != it_end;
              ++it) {
             m_modp = it->first;
