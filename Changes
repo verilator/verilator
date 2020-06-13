@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.037 devel
 
+*** Support VPI access to parameters and localparam. [Ludwig Rogiers]
+
 ****  Add new UNSUPPORTED error code to replace most previous Unsupported: messages.
 
 ****  With --bbox-unsup continue parsing on many (not all) UVM constructs.
