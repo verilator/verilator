@@ -332,9 +332,7 @@ class EmitCSyms : EmitCBaseVisitor {
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         nameCheck(nodep);
         iterateChildren(nodep);
-        if (nodep->isSigUserRdPublic()) {
-            m_modVars.push_back(make_pair(m_modp, nodep));
-        }
+        if (nodep->isSigUserRdPublic()) { m_modVars.push_back(make_pair(m_modp, nodep)); }
     }
     virtual void visit(AstCoverDecl* nodep) VL_OVERRIDE {
         // Assign numbers to all bins, so we know how big of an array to use
@@ -805,14 +803,20 @@ void EmitCSyms::emitSymImp() {
                 varName += protect(varp->name());
             }
 
-            if (varp->isParam() && (varp->vlEnumType() == "VLVT_STRING")) {
-                puts(", const_cast<void*>(static_cast<const void*>(");
-                puts(varName.c_str());
-                puts(".c_str())), ");
+            if (varp->isParam()) {
+                if (varp->vlEnumType() == "VLVT_STRING") {
+                    puts(", const_cast<void*>(static_cast<const void*>(");
+                    puts(varName.c_str());
+                    puts(".c_str())), ");
+                } else {
+                    puts(", const_cast<void*>(static_cast<const void*>(&(");
+                    puts(varName.c_str());
+                    puts("))), ");
+                }
             } else {
-                puts(", const_cast<void*>(static_cast<const void*>(&(");
+                puts(", &(");
                 puts(varName.c_str());
-                puts("))), ");
+                puts("), ");
             }
 
             puts(varp->isParam() ? "true" : "false");

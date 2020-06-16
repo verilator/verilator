@@ -154,6 +154,58 @@ public:
         }
     }
 
+    void emitParams(AstNodeModule* modp, bool init, bool* firstp, string& sectionr) {
+        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstVar* varp = VN_CAST(nodep, Var)) {
+                if (varp->isParam() && (varp->isUsedParam() || varp->isSigPublic())) {
+                    if (!init && sectionr != "") {
+                        puts(sectionr);
+                        sectionr = "";
+                    }
+                    UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
+                    // These should be static const values, however microsloth VC++ doesn't
+                    // support them.  They also cause problems with GDB under GCC2.95.
+                    if (varp->isWide()) {  // Unsupported for output
+                        if (!init) {
+                            putsDecoration("// enum WData " + varp->nameProtect() + "  //wide");
+                        }
+                    } else if (varp->isString()) {
+                        if (init) {
+                            emitCtorSep(firstp);
+                            puts(protect("var_" + varp->name()) + " (");
+                            iterateAndNextNull(varp->valuep());
+                            puts(")");
+                        } else {
+                            puts("const std::string " + protect("var_" + varp->name()) + ";\n");
+                        }
+                    } else if (!VN_IS(varp->valuep(), Const)) {  // Unsupported for output
+                        // putsDecoration("// enum ..... "+varp->nameProtect()
+                        //               +"not simple value, see variable above instead");
+                    } else if (VN_IS(varp->dtypep(), BasicDType)
+                               && VN_CAST(varp->dtypep(), BasicDType)
+                                      ->isOpaque()) {  // Can't put out e.g. doubles
+                    } else {
+                        if (init) {
+                            emitCtorSep(firstp);
+                            puts(protect("var_" + varp->name()) + " (");
+                            iterateAndNextNull(varp->valuep());
+                            puts(")");
+                        } else {
+                            // enum
+                            puts(varp->isQuad() ? "enum _QData" : "enum _IData");
+                            puts("" + varp->nameProtect() + " { " + varp->nameProtect() + " = ");
+                            iterateAndNextNull(varp->valuep());
+                            puts("};\n");
+                            // var
+                            puts(varp->isQuad() ? "const QData " : "const IData ");
+                            puts(protect("var_" + varp->name()) + ";\n");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     struct CmpName {
         inline bool operator()(const AstNode* lhsp, const AstNode* rhsp) const {
             return lhsp->name() < rhsp->name();
@@ -2311,6 +2363,8 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     }
     emitVarCtors(&first);
     if (modp->isTop() && v3Global.opt.mtasks()) emitMTaskVertexCtors(&first);
+    string section("");
+    emitParams(modp, true, &first, section /*ref*/);
     puts(" {\n");
     emitCellCtors(modp);
     emitSensitives();
@@ -3041,44 +3095,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     ofp()->putsPrivate(false);  // public:
     emitVarList(modp->stmtsp(), EVL_CLASS_PAR, "",
                 section /*ref*/);  // Only those that are non-CONST
-    for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        if (const AstVar* varp = VN_CAST(nodep, Var)) {
-            if (varp->isParam() && (varp->isUsedParam() || varp->isSigPublic())) {
-                if (section != "") {
-                    puts(section);
-                    section = "";
-                }
-                UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
-                // These should be static const values, however microsloth VC++ doesn't
-                // support them.  They also cause problems with GDB under GCC2.95.
-                if (varp->isWide()) {  // Unsupported for output
-                    putsDecoration("// enum WData " + varp->nameProtect() + "  //wide");
-                } else if (varp->isString()) {
-                    puts("const std::string " + protect("var_" + varp->name()) + " = ");
-                    iterateAndNextNull(varp->valuep());
-                    puts(";");
-                } else if (!VN_IS(varp->valuep(), Const)) {  // Unsupported for output
-                    // putsDecoration("// enum ..... "+varp->nameProtect()
-                    //               +"not simple value, see variable above instead");
-                } else if (VN_IS(varp->dtypep(), BasicDType)
-                           && VN_CAST(varp->dtypep(), BasicDType)
-                                  ->isOpaque()) {  // Can't put out e.g. doubles
-                } else {
-                    // enum
-                    puts(varp->isQuad() ? "enum _QData" : "enum _IData");
-                    puts("" + varp->nameProtect() + " { " + varp->nameProtect() + " = ");
-                    iterateAndNextNull(varp->valuep());
-                    puts("};\n");
-                    // var
-                    puts(varp->isQuad() ? "const QData" : "const IData");
-                    puts(" var_" + varp->nameProtect() + " = ");
-                    iterateAndNextNull(varp->valuep());
-                    puts(";");
-                }
-                puts("\n");
-            }
-        }
-    }
+    bool first = true;
+    emitParams(modp, false, &first, section /*ref*/);
 
     if (!VN_IS(modp, Class)) {
         puts("\n// CONSTRUCTORS\n");
