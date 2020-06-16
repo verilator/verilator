@@ -584,12 +584,7 @@ static void verilate(const string& argString) {
     FileLine::deleteAllRemaining();
 }
 
-static void execBuildJob() {
-    UASSERT(v3Global.opt.build(), "--build is not specified.");
-    UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
-    UASSERT(!v3Global.opt.cmake(), "--build cannot use CMake.");
-    UINFO(1, "Start Build\n");
-
+static string buildMakeCmd(const string& makefile, const string& target) {
     const V3StringList& makeFlags = v3Global.opt.makeFlags();
     const int jobs = v3Global.opt.buildJobs();
     UASSERT(jobs >= 0, "-j option parser in V3Options.cpp filters out negative value");
@@ -597,7 +592,7 @@ static void execBuildJob() {
     std::stringstream cmd;
     cmd << v3Global.opt.getenvMAKE();
     cmd << " -C " << v3Global.opt.makeDir();
-    cmd << " -f " << v3Global.opt.prefix() << ".mk";
+    cmd << " -f " << makefile;
     if (jobs == 0) {
         cmd << " -j";
     } else if (jobs > 1) {
@@ -606,8 +601,18 @@ static void execBuildJob() {
     for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
         cmd << ' ' << *it;
     }
+    cmd << ' ' << target;
 
-    const std::string cmdStr = cmd.str();
+    return cmd.str();
+}
+
+static void execBuildJob() {
+    UASSERT(v3Global.opt.build(), "--build is not specified.");
+    UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
+    UASSERT(!v3Global.opt.cmake(), "--build cannot use CMake.");
+    UINFO(1, "Start Build\n");
+
+    const string cmdStr = buildMakeCmd(v3Global.opt.prefix() + ".mk", "");
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
         v3error(cmdStr << " exitted with " << exit_code << std::endl);
