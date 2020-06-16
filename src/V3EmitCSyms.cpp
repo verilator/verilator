@@ -805,14 +805,20 @@ void EmitCSyms::emitSymImp() {
                 varName += protect(varp->name());
             }
 
-            if (varp->isParam() && (varp->vlEnumType() == "VLVT_STRING")) {
-                puts(", const_cast<void*>(static_cast<const void*>(");
-                puts(varName.c_str());
-                puts(".c_str())), ");
+            if (varp->isParam()) {
+                if (varp->vlEnumType() == "VLVT_STRING") {
+                    puts(", const_cast<void*>(static_cast<const void*>(");
+                    puts(varName.c_str());
+                    puts(".c_str())), ");
+                } else {
+                    puts(", const_cast<void*>(static_cast<const void*>(&(");
+                    puts(varName.c_str());
+                    puts("))), ");
+                }
             } else {
-                puts(", const_cast<void*>(static_cast<const void*>(&(");
-                puts(varName.c_str());
-                puts("))), ");
+                    puts(", &(");
+                    puts(varName.c_str());
+                    puts("), ");
             }
 
             puts(varp->isParam() ? "true" : "false");
