@@ -777,9 +777,10 @@ output, for example:
 You can then print a.ps.  You may prefer gif format, which doesn't get
 scaled so can be more useful with large graphs.
 
-For dynamic graph viewing consider
+For interactive graph viewing consider
+https://github.com/jrfonseca/xdot.py[xdot] or
 http://zvtm.sourceforge.net/zgrviewer.html[ZGRViewer].  If you know of
-better viewers let us know; ZGRViewer isn't great for large graphs.
+better viewers (especially for large graphs) please let us know.
 
 === .tree Output
 
