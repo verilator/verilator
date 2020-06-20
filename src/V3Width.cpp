@@ -782,7 +782,27 @@ private:
                 = nodep->findLogicDType(selwidth, selwidth, nodep->lsbp()->dtypep()->numeric());
             userIterateAndNext(nodep->fromp(), WidthVP(SELF, FINAL).p());
             userIterateAndNext(nodep->lsbp(), WidthVP(SELF, FINAL).p());
-            if (widthBad(nodep->lsbp(), selwidthDTypep) && nodep->lsbp()->width() != 32) {
+            if (VN_IS(nodep->lsbp(), Const)) {
+                if (nodep->msbConst() > frommsb) {
+                    // See also warning in V3Const
+                    // We need to check here, because the widthCheckSized may silently
+                    // add another SEL which will lose the out-of-range check
+                    //
+                    // We don't want to trigger an error here if we are just
+                    // evaluating type sizes for a generate block condition. We
+                    // should only trigger the error if the out-of-range access is
+                    // actually generated.
+                    if (m_doGenerate) {
+                        UINFO(5, "Selection index out of range inside generate." << endl);
+                    } else {
+                        nodep->v3warn(SELRANGE, "Selection index out of range: "
+                                                    << nodep->msbConst() << ":"
+                                                    << nodep->lsbConst() << " outside " << frommsb
+                                                    << ":" << fromlsb);
+                        UINFO(1, "    Related node: " << nodep << endl);
+                    }
+                }
+            } else if (widthBad(nodep->lsbp(), selwidthDTypep) && nodep->lsbp()->width() != 32) {
                 if (!nodep->fileline()->warnIsOff(V3ErrorCode::WIDTH)) {
                     nodep->v3warn(WIDTH,
                                   "Bit extraction of var["
@@ -793,24 +813,6 @@ private:
                                               ? " or " + cvtToStr(nodep->lsbp()->widthMin() / elw)
                                               : "")
                                       << " bits.");
-                    UINFO(1, "    Related node: " << nodep << endl);
-                }
-            }
-            if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() > frommsb) {
-                // See also warning in V3Const
-                // We need to check here, because the widthCheckSized may silently
-                // add another SEL which will lose the out-of-range check
-                //
-                // We don't want to trigger an error here if we are just
-                // evaluating type sizes for a generate block condition. We
-                // should only trigger the error if the out-of-range access is
-                // actually generated.
-                if (m_doGenerate) {
-                    UINFO(5, "Selection index out of range inside generate." << endl);
-                } else {
-                    nodep->v3warn(SELRANGE, "Selection index out of range: "
-                                                << nodep->msbConst() << ":" << nodep->lsbConst()
-                                                << " outside " << frommsb << ":" << fromlsb);
                     UINFO(1, "    Related node: " << nodep << endl);
                 }
             }
