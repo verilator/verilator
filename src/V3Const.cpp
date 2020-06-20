@@ -1935,9 +1935,12 @@ private:
                 if (constp->isZero()) {
                     UINFO(4, "IF(0,{any},{x}) => {x}: " << nodep << endl);
                     keepp = nodep->elsesp();
-                } else {
+                } else if (!m_doV || constp->isNeqZero()) {  // Might be X in Verilog
                     UINFO(4, "IF(!0,{x},{any}) => {x}: " << nodep << endl);
                     keepp = nodep->ifsp();
+                } else {
+                    UINFO(4, "IF condition is X, retaining: " << nodep << endl);
+                    return;
                 }
                 if (keepp) {
                     keepp->unlinkFrBackWithNext();
