@@ -28,6 +28,19 @@ compile(
                  "t_flag_ldflags_so.so",],
     );
 
+
+# On OS X, LD_LIBRARY_PATH is ignored, so set rpath of the exe to find the .so
+if ($^O eq "darwin") {
+  run(cmd => ["cd $Self->{obj_dir}"
+              ." && install_name_tool -add_rpath \@executable_path/."
+              ." $Self->{VM_PREFIX}"],
+      check_finished => 0);
+  run(cmd => ["cd $Self->{obj_dir}"
+              ." && install_name_tool -change t_flag_ldflags_so.so"
+              ." \@rpath/t_flag_ldflags_so.so $Self->{VM_PREFIX}"],
+      check_finished => 0);
+}
+
 execute(
     check_finished => 1,
     run_env => "LD_LIBRARY_PATH=$Self->{obj_dir}",
