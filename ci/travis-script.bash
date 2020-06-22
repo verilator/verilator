@@ -30,7 +30,6 @@ else
   fatal "Unknown os: '$TRAVIS_OS_NAME'"
 fi
 
-
 if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
   ##############################################################################
   # Build verilator
