@@ -39,12 +39,15 @@ if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
   # build Verilator
 
   if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    time sudo apt-get update
+    sudo apt-get update
     sudo apt-get install libfl-dev
     sudo apt-get install libgoogle-perftools-dev
     if [ "$COVERAGE" = 1 ]; then
       yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
     fi
+  elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+    brew update
+    brew install ccache perl gperftools
   else
     fatal "Unknown os: '$TRAVIS_OS_NAME'"
   fi
@@ -61,6 +64,12 @@ elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
     fi
     yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
     # Not listing Bit::Vector as slow to install, and only skips one test
+    install-vcddiff
+  elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+    brew update
+    # brew cask install gtkwave # fst2vcd hangs at launch, so don't bother
+    brew install ccache perl
+    yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
     install-vcddiff
   else
     fatal "Unknown os: '$TRAVIS_OS_NAME'"

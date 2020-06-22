@@ -22,77 +22,85 @@ fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }
 
+if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+  NPROC=$(nproc)
+elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  NPROC=$(sysctl -n hw.logicalcpu)
+else
+  fatal "Unknown os: '$TRAVIS_OS_NAME'"
+fi
+
 if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
   ##############################################################################
   # Build verilator
 
-  if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    if [ "$COVERAGE" != 1 ]; then
-      autoconf
-      ./configure --enable-longtests --enable-ccwarn
-      make -j $(nproc)
-    else
-      nodist/code_coverage --stages 1-2
-    fi
+  if [ "$COVERAGE" != 1 ]; then
+    autoconf
+    ./configure --enable-longtests --enable-ccwarn
+    make -j "$NPROC"
+    file bin/verilator_bin
+    file bin/verilator_bin_dbg
   else
-    fatal "Unknown os: '$TRAVIS_OS_NAME'"
+    nodist/code_coverage --stages 1-2
   fi
 elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
   ##############################################################################
   # Run tests
 
-  if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    # Run the specified test
-    case $TESTS in
-      dist-vlt-0)
-        make -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=0/2
-        ;;
-      dist-vlt-1)
-        make -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=1/2
-        ;;
-      vltmt-0)
-        make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
-        ;;
-      vltmt-1)
-        make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
-        ;;
-      coverage-dist)
-        nodist/code_coverage --stages 3- --scenarios=--dist
-        ;;
-      coverage-vlt-0)
-        nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=0/4
-        ;;
-      coverage-vlt-1)
-        nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=1/4
-        ;;
-      coverage-vlt-2)
-        nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=2/4
-        ;;
-      coverage-vlt-3)
-        nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=3/4
-        ;;
-      coverage-vltmt-0)
-        nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=0/4
-        ;;
-      coverage-vltmt-1)
-        nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=1/4
-        ;;
-      coverage-vltmt-2)
-        nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=2/4
-        ;;
-      coverage-vltmt-3)
-        nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=3/4
-        ;;
-      *)
-        fatal "Unknown test: $TESTS"
-        ;;
-    esac
-    # Upload coverage data to codecov.io
-    if [[ $TESTS == coverage-* ]]; then
-      bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info
-    fi
-  else
-    fatal "Unknown os: '$TRAVIS_OS_NAME'"
+  if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+    export VERILATOR_TEST_NO_GDB=1 # Pain to get GDB to work on OS X
+    export VERILATOR_TEST_NO_GPROF=1 # Apple Clang has no -pg
+    # export PATH="/Applications/gtkwave.app/Contents/Resources/bin:$PATH" # fst2vcd
+  fi
+
+  # Run the specified test
+  case $TESTS in
+    dist-vlt-0)
+      make -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=0/2
+      ;;
+    dist-vlt-1)
+      make -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=1/2
+      ;;
+    vltmt-0)
+      make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
+      ;;
+    vltmt-1)
+      make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
+      ;;
+    coverage-dist)
+      nodist/code_coverage --stages 3- --scenarios=--dist
+      ;;
+    coverage-vlt-0)
+      nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=0/4
+      ;;
+    coverage-vlt-1)
+      nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=1/4
+      ;;
+    coverage-vlt-2)
+      nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=2/4
+      ;;
+    coverage-vlt-3)
+      nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=3/4
+      ;;
+    coverage-vltmt-0)
+      nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=0/4
+      ;;
+    coverage-vltmt-1)
+      nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=1/4
+      ;;
+    coverage-vltmt-2)
+      nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=2/4
+      ;;
+    coverage-vltmt-3)
+      nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=3/4
+      ;;
+    *)
+      fatal "Unknown test: $TESTS"
+      ;;
+  esac
+  # Upload coverage data to codecov.io
+  if [[ $TESTS == coverage-* ]]; then
+    bash <(curl -s https://codecov.io/bash) -f nodist/obj_dir/coverage/app_total.info
   fi
 else
   ##############################################################################
