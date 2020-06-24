@@ -128,6 +128,12 @@ AC_ARG_ENABLE([prec11],
 AC_SUBST(CFG_WITH_PREC11)
 AC_MSG_RESULT($CFG_WITH_PREC11)
 
+# Compiler flags (set them to non-empty string to avoid configure defaults)
+CFLAGS=" "
+CPPFLAGS=" "
+CXXFLAGS=" "
+LDFLAGS=" "
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CXX
