@@ -38,8 +38,14 @@ if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
     autoconf
     ./configure --enable-longtests --enable-ccwarn
     make -j "$NPROC"
-    file bin/verilator_bin
-    file bin/verilator_bin_dbg
+    if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+      file bin/verilator_bin
+      file bin/verilator_bin_dbg
+      md5 bin/verilator_bin
+      md5 bin/verilator_bin_dbg
+      stat bin/verilator_bin
+      stat bin/verilator_bin_dbg
+    fi
   else
     nodist/code_coverage --stages 1-2
   fi
@@ -51,6 +57,17 @@ elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
     export VERILATOR_TEST_NO_GDB=1 # Pain to get GDB to work on OS X
     export VERILATOR_TEST_NO_GPROF=1 # Apple Clang has no -pg
     # export PATH="/Applications/gtkwave.app/Contents/Resources/bin:$PATH" # fst2vcd
+    file bin/verilator_bin
+    file bin/verilator_bin_dbg
+    md5 bin/verilator_bin
+    md5 bin/verilator_bin_dbg
+    stat bin/verilator_bin
+    stat bin/verilator_bin_dbg
+    # For some reason, the dbg exe is corrupted by this point ('file' reports
+    # it as data rather than a Mach-O). Unclear if this is an OS X issue or
+    # one for Travis. Remove the file and re-link...
+    rm bin/verilator_bin_dbg
+    make -j "$NPROC"
   fi
 
   # Run the specified test
