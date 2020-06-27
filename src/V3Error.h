@@ -80,6 +80,7 @@ public:
         DEPRECATED,     // Feature will be deprecated
         ENDLABEL,       // End lable name mismatch
         GENCLK,         // Generated Clock
+        HIERBLOCK,      // Ignored hierarchy block setting
         IFDEPTH,        // If statements too deep
         IGNOREDRETURN,  // Ignoring return value (function as task)
         IMPERFECTSCH,   // Imperfect schedule (disabled by default)
@@ -152,7 +153,7 @@ public:
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
             "DEFPARAM", "DECLFILENAME", "DEPRECATED",
-            "ENDLABEL", "GENCLK",
+            "ENDLABEL", "GENCLK", "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
