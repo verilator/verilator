@@ -9,7 +9,8 @@ BEGIN {
     if (!$ENV{VERILATOR_ROOT} && -x "../bin/verilator") {
         $ENV{VERILATOR_ROOT} = Cwd::getcwd()."/..";
     }
-    $ENV{MAKE} ||= "make"
+    $ENV{MAKE} ||= "make";
+    $ENV{CXX} ||= "c++";
 }
 
 use Getopt::Long;
@@ -1165,7 +1166,7 @@ sub compile {
 
     if ($param{make_pli}) {
         $self->oprint("Compile vpi\n") if $self->{verbose};
-        my @cmd = ('c++', @{$param{pli_flags}}, "-DIS_VPI",
+        my @cmd = ($ENV{CXX}, @{$param{pli_flags}}, "-DIS_VPI",
                    "$self->{t_dir}/$self->{pli_filename}");
 
         $self->_run(logfile=>"$self->{obj_dir}/pli_compile.log",
