@@ -568,7 +568,7 @@ string V3Options::getenvVERILATOR_ROOT() {
 }
 
 bool V3Options::systemCSystemWide() {
-#ifdef HAVE_SYSTEMC_H
+#ifdef HAVE_SYSTEMC
     return true;
 #else
     return false;

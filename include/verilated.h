@@ -843,7 +843,7 @@ inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_sta
 // Optimized assuming scale is always constant.
 // Can't use multiply in Q flavor, as might lose precision
 #define VL_TIME_UNITED_Q(scale) (VL_TIME_Q() / static_cast<QData>(scale))
-#define VL_TIME_UNITED_D(scale) (VL_TIME_D() * (1.0 / (scale)))
+#define VL_TIME_UNITED_D(scale) (VL_TIME_D() / static_cast<double>(scale))
 /// Time imported from units to time precision
 double vl_time_multiplier(int scale);
 

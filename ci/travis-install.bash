@@ -55,6 +55,9 @@ if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
     if [ "$COVERAGE" = 1 ]; then
       yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
     fi
+    if [ "$M32" = 1 ]; then
+      sudo apt-get install gcc-multilib g++-multilib
+    fi
   elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     brew update
     brew install ccache perl gperftools
@@ -73,6 +76,9 @@ elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
     sudo apt-get install gdb gtkwave lcov
     if [ "$TRAVIS_DIST" = "focal" ]; then
       sudo apt-get install libsystemc-dev
+    fi
+    if [ "$M32" = 1 ]; then
+      sudo apt-get install lib32z1-dev gcc-multilib g++-multilib
     fi
     yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
     # Not listing Bit::Vector as slow to install, and only skips one test
