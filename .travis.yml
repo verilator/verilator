@@ -17,8 +17,6 @@ cache:
 env:
   global:
     - VERILATOR_ROOT=$TRAVIS_BUILD_DIR
-    # Hack around debug mode issues on FreeBSD
-    - ENV_HACK=$([ ! -e $TRAVIS_BUILD_DIR/ci/travis-env-hack.bash ] || $TRAVIS_BUILD_DIR/ci/travis-env-hack.bash)
 
 # The list and order of build stages
 stages:
@@ -122,11 +120,11 @@ jobs:
     - {stage: test, if: type  = cron, os: osx, osx_image: xcode11.6, compiler: clang, workspaces: {use: osx-xcode11.6},  git: {clone: false}, env: TESTS=dist-vlt-1}
     - {stage: test, if: type  = cron, os: osx, osx_image: xcode11.6, compiler: clang, workspaces: {use: osx-xcode11.6},  git: {clone: false}, env: TESTS=vltmt-0}
     - {stage: test, if: type  = cron, os: osx, osx_image: xcode11.6, compiler: clang, workspaces: {use: osx-xcode11.6},  git: {clone: false}, env: TESTS=vltmt-1}
-    # FreeBSD tests - Note these need the git clone in order to pick up the ENV_HACK
-    - {stage: test, if: type  = cron, os: freebsd, compiler: clang, workspaces: {use: freebsd}, git: {clone: true}, env: TESTS=dist-vlt-0}
-    - {stage: test, if: type  = cron, os: freebsd, compiler: clang, workspaces: {use: freebsd}, git: {clone: true}, env: TESTS=dist-vlt-1}
-    - {stage: test, if: type  = cron, os: freebsd, compiler: clang, workspaces: {use: freebsd}, git: {clone: true}, env: TESTS=vltmt-0}
-    - {stage: test, if: type  = cron, os: freebsd, compiler: clang, workspaces: {use: freebsd}, git: {clone: true}, env: TESTS=vltmt-1}
+    # FreeBSD tests
+    - {stage: test, if: type  = cron, os: freebsd, compiler: clang, workspaces: {use: freebsd}, git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: freebsd, compiler: clang, workspaces: {use: freebsd}, git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: freebsd, compiler: clang, workspaces: {use: freebsd}, git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: freebsd, compiler: clang, workspaces: {use: freebsd}, git: {clone: false}, env: TESTS=vltmt-1}
 
 notifications:
   email:
