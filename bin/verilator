@@ -224,6 +224,7 @@ __END__
 
 Verilator - Translate and simulate SystemVerilog code using C++/SystemC
 
+
 =head1 SYNOPSIS
 
     verilator --help
@@ -232,30 +233,43 @@ Verilator - Translate and simulate SystemVerilog code using C++/SystemC
     verilator --sc [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
     verilator --lint-only -Wall [source_files.v]...
 
+
 =head1 DESCRIPTION
 
-Verilator converts synthesizable or limited behavioral Verilog, some
-SystemVerilog, a small subset of Verilog AMS and some Synthesis directives into
-a C++ or SystemC model.  It is not a traditional simulator, but a compiler.
+The "Verilator" package converts all synthesizable, and many behavioral,
+Verilog and SystemVerilog designs into a C++ or SystemC model that after
+compiling can be executed.  Verilator is not a traditional simulator, but a
+compiler.
 
-Verilator is invoked with parameters similar to GCC, Cadence
-Verilog-XL/NC-Verilog, or Synopsys VCS.  It reads the specified Verilog code,
-lints it, optionally adds coverage and waveform tracing support, and compiles
-the design into a source level C++ or SystemC model of the top-level module.
-The resulting C++ or SystemC code is output as .cpp and .h files.
+Verilator is typically used as follows:
 
-The files created by Verilator are then compiled with a C++ compiler.  For
-simulation, a small user written C++ wrapper file is required.  This wrapper
-defines `main` and instantiates the Verilated model of the top-level module.
-The resulting executable will perform the actual simulation.
+1. The C<verilator> executable is invoked with parameters similar to GCC,
+Cadence Verilog-XL/NC-Verilog, or Synopsys VCS.  C<verilator> reads the
+specified user's SystemVerilog code, lints it, optionally adds coverage and
+waveform tracing support, and compiles the design into a source level C++
+or SystemC "model".  The resulting model's C++ or SystemC code is output as
+.cpp and .h files. This is referred to as "verilating" and the process is
+"to verilate"; the output is a "verilated" model.
+
+2. For simulation, a small user written C++ wrapper file is required, the
+"wrapper".  This wrapper defines the C++ function `main()` which
+instantiates the Verilated model as a C++/SystemC object.
+
+3. The user main wrapper, the files created by Verilator, a "runtime
+library" provided by Verilator, and if applicable the SystemC libraries are
+then compiled using a C++ compiler to create a simulation executable.
+
+4. The resulting executable will perform the actual simulation, during
+"simulation runtime".
 
 To get started, jump down to the L</"EXAMPLE C++ EXECUTION"> section.
 
 
 =head1 ARGUMENT SUMMARY
 
-This is a short summary of the arguments to Verilator itself.  See the
-detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
+This is a short summary of the arguments to the "verilator" executable.
+See L</"VERILATION ARGUMENTS"> for the detailed descriptions of these
+arguments.
 
     {file.v}                    Verilog package, module and top module filenames
     {file.c/cc/cpp}             Optional C++ files to compile in
@@ -274,7 +288,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --bbox-unsup                Blackbox unsupported language features
     --bin <filename>            Override Verilator binary
     --build                     Build model executable/library after Verilation
-     -CFLAGS <flags>            C++ Compiler flags for makefile
+     -CFLAGS <flags>            C++ compiler flags for makefile
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
     --clk <signal-name>         Mark specified signal as clock
@@ -307,7 +321,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
      -f <file>                  Parse options from a file
      -FI <file>                 Force include of a file
     --flatten                   Force inlining of all modules, tasks and functions
-     -G<name>=<value>           Overwrite toplevel parameter
+     -G<name>=<value>           Overwrite top-level parameter
     --gdb                       Run Verilator under GDB interactively
     --gdbbt                     Run Verilator under GDB for backtrace
     --generate-key              Create random key for --protect-key
@@ -416,9 +430,9 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --xml-output                XML output filename
      -y <dir>                   Directory to search for modules
 
-This is a short summary of the arguments to simulation runtime Verilated
-arguments.  detailed descriptions in L</"SIMULATION RUNTIME ARGUMENTS"> for
-more information.
+This is a short summary of the simulation runtime arguments, i.e. for the
+final Verilated simulation runtime models.  See L</"SIMULATION RUNTIME
+ARGUMENTS"> for the detailed description of these arguments.
 
      +verilator+debug                  Enable debugging
      +verilator+debugi+<value>         Enable debugging at a level
@@ -435,7 +449,8 @@ more information.
 
 =head1 VERILATION ARGUMENTS
 
-The following are the arguments that may be passed to Verilator itself.
+The following are the arguments that may be passed to the "verilator"
+executable.
 
 =over 4
 
@@ -617,7 +632,7 @@ flags, but it may in the future.
 =item clang
 
 Tune for clang.  This may reduce execution speed as it enables several
-workarounds to avoid silly hardcoded limits in clang.  This includes
+workarounds to avoid silly hard-coded limits in clang.  This includes
 breaking deep structures as for msvc as described below.
 
 =item gcc
@@ -628,7 +643,7 @@ compliant C++ compiler.  Currently the default.
 =item msvc
 
 Tune for Microsoft Visual C++.  This may reduce execution speed as it
-enables several workarounds to avoid silly hardcoded limits in MSVC++.
+enables several workarounds to avoid silly hard-coded limits in MSVC++.
 This includes breaking deeply nested parenthesized expressions into
 sub-expressions to avoid error C1009, and breaking deep blocks into
 functions to avoid error C1061.
@@ -1061,7 +1076,7 @@ Prevent the specified signal from being marked as clock. See C<--clk>.
 
 =item --no-decoration
 
-When creating output Verilated code, minimize comments, whitespace, symbol
+When creating output Verilated code, minimize comments, white space, symbol
 names and other decorative items, at the cost of greatly reduced
 readability. This may assist C++ compile times. This will not typically
 change the ultimate model's performance, but may in some cases.
@@ -1733,14 +1748,14 @@ whatever is best for performance.  C<--x-assign 0> converts all Xs to 0s, and
 is also fast.  C<--x-assign 1> converts all Xs to 1s, this is nearly as fast as
 0, but more likely to find reset bugs as active high logic will fire. Using
 C<--x-assign unique> will result in all explicit Xs being replaced by a
-constant value determined at run-time. The value is determined by calling a
+constant value determined at runtime. The value is determined by calling a
 function at initialization time. This enables randomization of Xs with
 different seeds on different executions. This method is the slowest, but safest
 for finding reset bugs.
 
 If using --x-assign unique, you may want to seed your random number generator
 such that each regression run gets a different randomization sequence. The
-simplest is to use the +verilator+seed run-time option.  Alternatively use the
+simplest is to use the +verilator+seed runtime option.  Alternatively use the
 system's srand48() or for Windows srand() function to do this.  You'll probably
 also want to print any seeds selected, and code to enable rerunning with that
 same seed so you can reproduce bugs.
@@ -2120,7 +2135,7 @@ applies to slow-path code, which executes rarely, often only once at the
 beginning or end of simulation. Note that OPT_SLOW is ignored if
 VM_PARALLEL_BUILDS is not 1, in which case all generated code will be compiled
 in a single compilation unit using OPT_FAST. See also the C<--output-split>
-option. The OPT_GLOBAL variable applies to common code in the run-time library
+option. The OPT_GLOBAL variable applies to common code in the runtime library
 used by Verilated models (shipped in $VERILATOR_ROOT/include). Additional C++
 files passed on the verilator command line use OPT_FAST. The OPT variable
 applies to all compilation units in addition to the specific OPT_* variables
@@ -2141,8 +2156,8 @@ controlled by OPT_SLOW have little effect on performance and therefore OPT_SLOW
 is empty by default (equivalent to "-O0") for improved compilation speed. In
 common use-cases there should be little benefit in changing OPT_SLOW.
 OPT_GLOBAL is set to "-Os" by default and there should rarely be a need to
-change it. As the run-time library is small in comparison to a lot of Verilated
-models, disabling optimization on the run-time library should not have a
+change it. As the runtime library is small in comparison to a lot of Verilated
+models, disabling optimization on the runtime library should not have a
 serious effect on overall compilation time, but may have detrimental effect on
 simulation speed, especially with tracing. In addition to the above, for best
 results use OPT="-march=native", the latest Clang compiler (about 10% faster
@@ -2324,7 +2339,7 @@ Specifies the directory containing the distribution kit.  This is used to
 find the executable, Perl library, and include files.  If not specified, it
 will come from a default optionally specified at configure time (before
 Verilator was compiled).  It should not be specified if using a pre-compiled
-Verilator package as the hardcoded value should be correct.
+Verilator package as the hard-coded value should be correct.
 
 =back
 
@@ -2738,9 +2753,9 @@ the SystemC include an library path.
   (same as above).
 
 - When using Accellera's SystemC with CMake support, a CMake target is
-available that will easen above steps. This will only work if the SystemC
-installation can be found by CMake. This can be configured by setting the
-CMAKE_PREFIX_PATH variable during CMake configuration.
+available that simplifies the above steps. This will only work if the
+SystemC installation can be found by CMake. This can be configured by
+setting the CMAKE_PREFIX_PATH variable during CMake configuration.
 
 Don't forget to set the same C++ standard for the Verilated sources as the
 SystemC library. This can be specified using the SYSTEMC_CXX_FLAGS environment
@@ -2759,10 +2774,10 @@ List of Verilog files to Verilate. Must have at least one file.
 =item PREFIX
 
 Optional. Sets the Verilator output prefix. Defaults to the name of the
-first hdl source with a "V" prepended. Must be unique in each call to
+first source file with a "V" prepended. Must be unique in each call to
 verilate(), so this is necessary if you build a module multiple times with
 different parameters. Must be a valid C++ identifier, i.e. contains no
-whitespace and only characters A-Z, a-z, 0-9 or _.
+white space and only characters A-Z, a-z, 0-9 or _.
 
 =item TOP_MODULE
 
@@ -2800,7 +2815,7 @@ Optional. Set compiler flags for the fast path.
 
 =item OPT_GLOBAL
 
-Optional. Set compiler flags for the common run-time library used by Verilated
+Optional. Set compiler flags for the common runtime library used by Verilated
 models.
 
 =item DIRECTORY
@@ -2814,6 +2829,7 @@ Optional. Extra arguments to Verilator. Do not specify --Mdir or --prefix
 here, use DIRECTORY or PREFIX.
 
 =back
+
 
 =head1 MULTITHREADING
 
@@ -2915,6 +2931,7 @@ multithreaded, Verilator requires all VPI calls are only made from the main
 thread.
 
 =back
+
 
 =head1 CONFIGURATION FILES
 
@@ -3732,13 +3749,14 @@ side is a constant.  This may make the expression yield a different result
 compared to a four state simulator.  An === comparison to X will always be
 false, so that Verilog code which checks for uninitialized logic will not fire.
 
-Assigning X to a variable will actually assign a constant value as determined
-by the --x-assign switch.  This allows run-time randomization, thus if the
-value is actually used, the random value should cause downstream errors.
-Integers also get randomized, even though the Verilog 2001 specification says
-they initialize to zero.  Note however that randomization happens at
-initialziation time and hence during a single simulation run, the same constant
-(but random) value will be used every time the assignment is executed.
+Assigning X to a variable will actually assign a constant value as
+determined by the --x-assign switch.  This allows runtime randomization,
+thus if the value is actually used, the random value should cause
+downstream errors.  Integers also get randomized, even though the Verilog
+2001 specification says they initialize to zero.  Note however that
+randomization happens at initialization time and hence during a single
+simulation run, the same constant (but random) value will be used every
+time the assignment is executed.
 
 All variables, depending on --x-initial setting, are typically randomly
 initialized using a function.  By running several random simulation runs
@@ -4147,7 +4165,7 @@ simulators.
 
 Warns that a backslash is followed by a space then a newline. Likely the
 intent was to have a backslash directly followed by a newline (e.g. when
-making a `define) and there's accidentally whitespace at the end of the
+making a `define) and there's accidentally white space at the end of the
 line.  If the space is not accidental, suggest removing the backslash in
 the code as it serves no function.
 
@@ -5546,6 +5564,7 @@ All Verilog and C++/SystemC code quoted within this documentation file are
 released as Creative Commons Public Domain (CC0).  Many example files and
 test files are likewise released under CC0 into effectively the Public
 Domain as described in the files themselves.
+
 
 =head1 SEE ALSO
 
