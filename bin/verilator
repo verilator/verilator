@@ -5597,3 +5597,6 @@ and docs/internals.adoc in the distribution.
 =cut
 
 ######################################################################
+# Local Variables:
+# fill-column: 75
+# End:
