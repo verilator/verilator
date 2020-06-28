@@ -89,7 +89,7 @@ To build or run the following are optional but should be installed for
 good performance:
 
    sudo apt-get install ccache  # If present at build, needed for run
-   sudo apt-get install libgoogle-perftools-dev numactl
+   sudo apt-get install libgoogle-perftools-dev numactl perl-doc
 
 To build Verilator you will need to install these packages; these do not
 need to be present to run Verilator:
