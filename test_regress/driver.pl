@@ -1076,15 +1076,6 @@ sub compile {
             return 1;
         }
 
-        if ($^O eq "freebsd") {
-            my $flags = join(' ', $self->compile_vlt_flags(%param));
-            if ($flags =~ /--trace-fst/ && $flags =~ /--trace-threads/) {
-                # See https://github.com/gtkwave/gtkwave/issues/24
-                $self->skip("Known fstapi.c threading issue on FreeBSD");
-                return 1;
-            }
-        }
-
         if (!$param{fails} && $param{make_main}) {
             $self->_make_main();
         }
