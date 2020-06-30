@@ -3376,7 +3376,7 @@ for_stepE<nodep>:		// IEEE: for_step + empty
 
 for_step<nodep>:		// IEEE: for_step
 		for_step_assignment			{ $$ = $1; }
-	|	for_step ',' for_step_assignment	{ $$ = $1; BBUNSUP($2, "Unsupported: for loop step after the first comma"); }
+	|	for_step ',' for_step_assignment	{ $$ = AstNode::addNextNull($1, $3); }
 	;
 
 for_step_assignment<nodep>:  // ==IEEE: for_step_assignment

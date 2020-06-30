@@ -113,7 +113,7 @@ private:
         // Assignment of next value check
         AstAssign* incAssp = VN_CAST(incp, Assign);
         if (!incAssp) return cantUnroll(nodep, "no increment assignment");
-        UASSERT_OBJ(!incAssp->nextp(), nodep, "increment shouldn't be a list");
+        if (incAssp->nextp()) return cantUnroll(nodep, "multiple increments");
 
         m_forVarp = VN_CAST(initAssp->lhsp(), VarRef)->varp();
         m_forVscp = VN_CAST(initAssp->lhsp(), VarRef)->varScopep();
