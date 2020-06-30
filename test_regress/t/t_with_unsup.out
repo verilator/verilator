@@ -7,7 +7,7 @@
 %Error-UNSUPPORTED: t/t_with_unsup.v:24:28: Unsupported: 'with' on function call
    24 |       found = aliases.find with (item == i);
       |                            ^~~~
-%Error-UNSUPPORTED: t/t_with_unsup.v:25:20: Unsupported: 'with' on function call
+%Error-UNSUPPORTED: t/t_with_unsup.v:25:20: Unsupported: 'with' on task call
    25 |       aliases.find with (item == i);
       |                    ^~~~
 %Error-UNSUPPORTED: t/t_with_unsup.v:29:36: Unsupported: 'with' on method call

@@ -2033,6 +2033,14 @@ private:
             m_ds.init(m_curSymp);
             // Note m_ds.m_dot remains NULL; this is a reference not under a dot
         }
+        if (nodep->name() == "this") {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: this");
+            m_ds.m_dotErr = true;
+        }
+        else if (nodep->name() == "super") {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
+            m_ds.m_dotErr = true;
+        }
         if (m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is membership.  {scope}.{var}.HERE {member}
             AstNode* varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();

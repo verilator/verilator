@@ -3432,7 +3432,7 @@ task_subroutine_callNoMethod<nodep>:	// function_subroutine_callNoMethod (as tas
 	//			// funcref below not task ref to avoid conflict, must later handle either
 	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = $1; BBUNSUP($2, "Unsupported: 'with' on task call"); }
 	//			// can call as method and yWITH without parenthesis
-	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstFuncRef($<fl>1, *$1, NULL); BBUNSUP($2, "Unsupported: 'with' on function call"); }
+	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstFuncRef($<fl>1, *$1, NULL); BBUNSUP($2, "Unsupported: 'with' on task call"); }
 	|	system_t_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
 	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3454,7 +3454,7 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 	//			// IEEE: randomize_call
 	//			// We implement randomize as a normal funcRef, since randomize isn't a keyword
 	//			// Note yNULL is already part of expressions, so they come for free
-	|	funcRef yWITH__CUR constraint_block	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with'"); }
+	|	funcRef yWITH__CUR constraint_block	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with' constraint"); }
 	|	funcRef yWITH__CUR '{' '}'		{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with'"); }
 	;
 
@@ -4250,8 +4250,7 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 	//			// IEEE: [ implicit_class_handle . | class_scope | package_scope ] hierarchical_identifier select
 	//			// Or method_call_body without parenthesis
 	//			// See also varRefClassBit, which is the non-expr version of most of this
-		yTHIS					{ $$ = new AstConst($1, AstConst::LogicFalse());
-							  BBUNSUP($1, "Unsupported: this"); }
+		yTHIS					{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "this"); }
 	|	yD_ROOT					{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"); }
 	|	idArrayed				{ $$ = $1; }
 	|	packageClassScope idArrayed		{ $$ = AstDot::newIfPkg($2->fileline(), CAST_PACKAGE_CLASS($1), $2); }
@@ -4259,8 +4258,7 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 	//			// expr below must be a "yTHIS"
 	|	~l~expr '.' ySUPER			{ $$ = $1; BBUNSUP($3, "Unsupported: super"); }
 	//			// Part of implicit_class_handle
-	|	ySUPER					{ $$ = new AstConst($1, AstConst::LogicFalse());
-							  BBUNSUP($1, "Unsupported: super"); }
+	|	ySUPER					{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "super"); }
 	;
 
 fexprScope<nodep>:		// exprScope, For use as first part of statement (disambiguates <=)
@@ -4728,8 +4726,10 @@ variable_lvalueConcList<nodep>:	// IEEE: part of variable_lvalue: '{' variable_l
 idClassSel<nodep>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
 		idDotted				{ $$ = $1; }
 	//			// IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
-	|	yTHIS '.' idDotted			{ $$ = $3; BBUNSUP($1, "Unsupported: this"); }
-	|	ySUPER '.' idDotted			{ $$ = $3; BBUNSUP($1, "Unsupported: super"); }
+	|	yTHIS '.' idDotted
+			{ $$ = new AstDot($2, false, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "this"), $3); }
+	|	ySUPER '.' idDotted
+			{ $$ = new AstDot($2, false, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "super"), $3); }
 	|	yTHIS '.' ySUPER '.' idDotted		{ $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
 	//			// Expanded: package_scope idDotted
 	|	packageClassScope idDotted		{ $$ = $2; BBUNSUP($2, "Unsupported: package scoped id"); }
@@ -4738,8 +4738,10 @@ idClassSel<nodep>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged va
 idClassSelForeach<nodep>:
 		idDottedForeach				{ $$ = $1; }
 	//			// IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
-	|	yTHIS '.' idDottedForeach		{ $$ = $3; BBUNSUP($1, "Unsupported: this"); }
-	|	ySUPER '.' idDottedForeach		{ $$ = $3; BBUNSUP($1, "Unsupported: super"); }
+	|	yTHIS '.' idDottedForeach
+			{ $$ = new AstDot($2, false, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "this"), $3); }
+	|	ySUPER '.' idDottedForeach
+			{ $$ = new AstDot($2, false, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "super"), $3); }
 	|	yTHIS '.' ySUPER '.' idDottedForeach	{ $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
 	//			// Expanded: package_scope idForeach
 	|	packageClassScope idDottedForeach	{ $$ = $2; BBUNSUP($2, "Unsupported: package/class scoped id"); }
