@@ -45,7 +45,7 @@ before_script:
   - ulimit -c 0
   # On Focal, set the SystemC installation location
   - |
-    if [ "$TRAVIS_DIST" = "focal" ]; then
+    if [ "$TRAVIS_DIST" = "focal" ] && [ "$M32" != "1" ]; then
       export SYSTEMC_INCLUDE=/usr/include
       export SYSTEMC_LIBDIR=/usr/lib/x86_64-linux-gnu
     fi
