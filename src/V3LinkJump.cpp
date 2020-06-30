@@ -173,6 +173,17 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
+    virtual void visit(AstWait* nodep) VL_OVERRIDE {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: wait statements");
+        // Statements we'll just execute immediately; equivalent to if they followed this
+        if (AstNode* bodysp = nodep->bodysp()) {
+            bodysp->unlinkFrBackWithNext();
+            nodep->replaceWith(bodysp);
+        } else {
+            nodep->unlinkFrBack();
+        }
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
     virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         // Don't need to track AstRepeat/AstFor as they have already been converted
         AstWhile* lastLoopp = m_loopp;

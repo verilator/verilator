@@ -3079,7 +3079,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	seq_block				{ $$ = $1; }
 	//
 	//			// IEEE: wait_statement
-	|	yWAIT '(' expr ')' stmtBlock		{ $$ = NULL; BBUNSUP($1, "Unsupported: wait statements"); }
+	|	yWAIT '(' expr ')' stmtBlock		{ $$ = new AstWait($1, $3, $5); }
 	|	yWAIT yFORK ';'				{ $$ = new AstWaitFork($1); }
 	//UNSUP	yWAIT_ORDER '(' hierarchical_identifierList ')' action_block	{ UNSUP }
 	//

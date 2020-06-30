@@ -4273,6 +4273,17 @@ public:
     virtual bool same(const AstNode* samep) const { return true; }
 };
 
+class AstWait : public AstNodeStmt {
+public:
+    AstWait(FileLine* fl, AstNode* condp, AstNode* bodysp)
+        : ASTGEN_SUPER(fl) {
+        setOp2p(condp);
+        addNOp3p(bodysp);
+    }
+    ASTNODE_NODE_FUNCS(Wait)
+    AstNode* bodysp() const { return op3p(); }  // op3 = body of loop
+};
+
 class AstWhile : public AstNodeStmt {
 public:
     AstWhile(FileLine* fl, AstNode* condp, AstNode* bodysp, AstNode* incsp = NULL)

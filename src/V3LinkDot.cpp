@@ -2036,8 +2036,7 @@ private:
         if (nodep->name() == "this") {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: this");
             m_ds.m_dotErr = true;
-        }
-        else if (nodep->name() == "super") {
+        } else if (nodep->name() == "super") {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
             m_ds.m_dotErr = true;
         }
