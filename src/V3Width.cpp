@@ -568,6 +568,14 @@ private:
             // TBD might support only normal join, if so complain about other join flavors
         }
     }
+    virtual void visit(AstDisableFork* nodep) VL_OVERRIDE {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: disable fork statements");
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+    virtual void visit(AstWaitFork* nodep) VL_OVERRIDE {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: wait fork statements");
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
     virtual void visit(AstToLowerN* nodep) VL_OVERRIDE {
         if (m_vup->prelim()) {
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);

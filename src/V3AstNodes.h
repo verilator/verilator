@@ -4337,6 +4337,22 @@ public:
     }
 };
 
+class AstDisableFork : public AstNodeStmt {
+    // A "disable fork" statement
+public:
+    AstDisableFork(FileLine* fl)
+        : ASTGEN_SUPER(fl) {}
+    ASTNODE_NODE_FUNCS(DisableFork)
+};
+
+class AstWaitFork : public AstNodeStmt {
+    // A "wait fork" statement
+public:
+    AstWaitFork(FileLine* fl)
+        : ASTGEN_SUPER(fl) {}
+    ASTNODE_NODE_FUNCS(WaitFork)
+};
+
 class AstReturn : public AstNodeStmt {
 public:
     explicit AstReturn(FileLine* fl, AstNode* lhsp = NULL)

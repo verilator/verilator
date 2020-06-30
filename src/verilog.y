@@ -3039,7 +3039,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//
 	//			// IEEE: disable_statement
 	|	yDISABLE idAny/*hierarchical_identifier-task_or_block*/ ';'	{ $$ = new AstDisable($1,*$2); }
-	|	yDISABLE yFORK ';'			{ $$ = NULL; BBUNSUP($1, "Unsupported: disable fork statements"); }
+	|	yDISABLE yFORK ';'			{ $$ = new AstDisableFork($1); }
 	//			// IEEE: event_trigger
 	|	yP_MINUSGT idDotted/*hierarchical_identifier-event*/ ';'
 			{ // AssignDly because we don't have stratified queue, and need to
@@ -3080,7 +3080,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//
 	//			// IEEE: wait_statement
 	|	yWAIT '(' expr ')' stmtBlock		{ $$ = NULL; BBUNSUP($1, "Unsupported: wait statements"); }
-	|	yWAIT yFORK ';'				{ $$ = NULL; BBUNSUP($1, "Unsupported: wait fork statements"); }
+	|	yWAIT yFORK ';'				{ $$ = new AstWaitFork($1); }
 	//UNSUP	yWAIT_ORDER '(' hierarchical_identifierList ')' action_block	{ UNSUP }
 	//
 	//			// IEEE: procedural_assertion_statement
