@@ -1962,6 +1962,7 @@ private:
     virtual void visit(AstClass* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
         userIterateChildren(nodep, NULL);  // First size all members
+        if (nodep->isVirtual()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: virtual class");
         nodep->repairCache();
     }
     virtual void visit(AstClassRefDType* nodep) VL_OVERRIDE {

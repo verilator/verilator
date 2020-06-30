@@ -22,9 +22,6 @@
 %Error-UNSUPPORTED: t/t_class_unsup_bad.v:29:4: Unsupported: extern class method prototype
    29 |    extern task exttask;
       |    ^~~~~~
-%Error-UNSUPPORTED: t/t_class_unsup_bad.v:32:1: Unsupported: virtual classes
-   32 | virtual class VC;
-      | ^~~~~~~
 %Error-UNSUPPORTED: t/t_class_unsup_bad.v:42:4: Unsupported: virtual class member qualifier
    42 |    virtual function uvm_root get_root();
       |    ^~~~~~~

@@ -301,6 +301,7 @@ class AstClass : public AstNodeModule {
     // MEMBERS
     MemberNameMap m_members;  // Members or method children
     AstClassPackage* m_packagep;  // Class package this is under
+    bool m_virtual;  // Virtual class
     void insertCache(AstNode* nodep);
 
 public:
@@ -333,6 +334,8 @@ public:
         MemberNameMap::const_iterator it = m_members.find(name);
         return (it == m_members.end()) ? NULL : it->second;
     }
+    bool isVirtual() const { return m_virtual; }
+    void isVirtual(bool flag) { m_virtual = flag; }
 };
 
 class AstClassExtends : public AstNode {

@@ -5804,6 +5804,7 @@ class_declaration<nodep>:	// ==IEEE: part of class_declaration
 classFront<classp>:		// IEEE: part of class_declaration
 		classVirtualE yCLASS lifetimeE idAny/*class_identifier*/
 			{ $$ = new AstClass($2, *$4);
+			  $$->isVirtual($1);
 			  $$->lifetime($3);
 			  SYMP->pushNew($<classp>$); }
 	//			// IEEE: part of interface_class_declaration
@@ -5814,9 +5815,9 @@ classFront<classp>:		// IEEE: part of class_declaration
 			  BBUNSUP($2, "Unsupported: interface classes");  }
 	;
 
-classVirtualE:
-		/* empty */				{ }
-	|	yVIRTUAL__CLASS				{ BBUNSUP($1, "Unsupported: virtual classes"); }
+classVirtualE<cbool>:
+		/* empty */				{ $$ = false; }
+	|	yVIRTUAL__CLASS				{ $$ = true; }
 	;
 
 classExtendsE<nodep>:		// IEEE: part of class_declaration

@@ -1,6 +1,3 @@
-%Error-UNSUPPORTED: t/t_class_vparam_unsup.v:12:1: Unsupported: virtual classes
-   12 | virtual class vclass #(type CTYPE_t = arg_class_t);
-      | ^~~~~~~
 %Error-UNSUPPORTED: t/t_class_vparam_unsup.v:13:58: Unsupported: Parameter classes
    13 |    pure virtual function void funcname(paramed_class_t #(CTYPE_t) v);
       |                                                          ^~~~~~~
