@@ -1868,10 +1868,10 @@ if(xc->parallel_enabled)
         xc->section_header_only = 0;
         xc->secnum++;
 
-	while (xc->in_pthread)
-		{
-		pthread_mutex_lock(&xc->mutex);
-		pthread_mutex_unlock(&xc->mutex);
+	while (xc->in_pthread) 
+		{ 
+		pthread_mutex_lock(&xc->mutex); 
+		pthread_mutex_unlock(&xc->mutex); 
 		};
 
         pthread_mutex_lock(&xc->mutex);
@@ -1959,10 +1959,10 @@ if(xc && !xc->already_in_close && !xc->already_in_flush)
                         pthread_mutex_lock(&xc->mutex);
                         pthread_mutex_unlock(&xc->mutex);
 
-			while (xc->in_pthread)
-				{
-				pthread_mutex_lock(&xc->mutex);
-				pthread_mutex_unlock(&xc->mutex);
+			while (xc->in_pthread) 
+				{ 
+				pthread_mutex_lock(&xc->mutex); 
+				pthread_mutex_unlock(&xc->mutex); 
 				};
 #endif
                         }
