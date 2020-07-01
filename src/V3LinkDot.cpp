@@ -2400,6 +2400,11 @@ private:
         }
         m_ds = lastStates;
     }
+    virtual void visit(AstWith* nodep) VL_OVERRIDE {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: with statements");
+        nodep->replaceWith(nodep->funcrefp()->unlinkFrBack());
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         checkNoDot(nodep);
         iterateChildren(nodep);
