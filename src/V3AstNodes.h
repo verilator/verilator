@@ -3015,6 +3015,21 @@ public:
     void cname(const string& cname) { m_cname = cname; }
 };
 
+class AstWith : public AstNodeStmt {
+public:
+    AstWith(FileLine* fl, bool stmt, AstNode* funcrefp, AstNode* argsp)
+        : ASTGEN_SUPER(fl) {
+        statement(stmt);
+        setOp1p(funcrefp);
+        addNOp2p(argsp);
+    }
+    ASTNODE_NODE_FUNCS(With)
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+    //
+    AstNode* funcrefp() const { return op1p(); }
+};
+
 //######################################################################
 
 class AstSenItem : public AstNodeSenItem {

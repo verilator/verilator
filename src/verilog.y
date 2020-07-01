@@ -3430,9 +3430,9 @@ task_subroutine_callNoMethod<nodep>:	// function_subroutine_callNoMethod (as tas
 	//			// IEEE: tf_call
 		taskRef					{ $$ = $1; }
 	//			// funcref below not task ref to avoid conflict, must later handle either
-	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = $1; BBUNSUP($2, "Unsupported: 'with' on task call"); }
+	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWith($2, true, $1, $4); }
 	//			// can call as method and yWITH without parenthesis
-	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstFuncRef($<fl>1, *$1, NULL); BBUNSUP($2, "Unsupported: 'with' on task call"); }
+	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWith($2, true, new AstFuncRef($<fl>1, *$1, NULL), $4); }
 	|	system_t_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
 	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3445,9 +3445,9 @@ task_subroutine_callNoMethod<nodep>:	// function_subroutine_callNoMethod (as tas
 function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as function)
 	//			// IEEE: tf_call
 		funcRef					{ $$ = $1; }
-	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = $1; BBUNSUP($2, "Unsupported: 'with' on function call"); }
+	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWith($2, false, $1, $4); }
 	//			// can call as method and yWITH without parenthesis
-	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstFuncRef($<fl>1, *$1, NULL); BBUNSUP($2, "Unsupported: 'with' on function call"); }
+	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWith($2, false, new AstFuncRef($<fl>1, *$1, NULL), $4); }
 	|	system_f_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
 	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3919,7 +3919,7 @@ parenE:
 //				// IEEE: built_in_method_call
 //				//   method_call_root not needed, part of expr resolution
 //				// What's left is below array_methodNoRoot
-array_methodNoRoot<nodep>:
+array_methodNoRoot<ftaskrefp>:
 		yOR					{ $$ = new AstFuncRef($1, "or", NULL); }
 	|	yAND					{ $$ = new AstFuncRef($1, "and", NULL); }
 	|	yXOR					{ $$ = new AstFuncRef($1, "xor", NULL); }
@@ -3929,9 +3929,9 @@ array_methodNoRoot<nodep>:
 array_methodWith<nodep>:
 		array_methodNoRoot			{ $$ = $1; }
 	|	array_methodNoRoot parenE yWITH__PAREN '(' expr ')'
-			{ $$ = $1; BBUNSUP($5, "Unsupported: 'with' on method call"); }
+			{ $$ = new AstWith($3, false, $1, $5); }
 	|	array_methodNoRoot '(' expr ')' yWITH__PAREN '(' expr ')'
-			{ $$ = $1; BBUNSUP($7, "Unsupported: 'with' on method call"); }
+			{ $$ = new AstWith($5, false, $1, $7); $1->addPinsp($3); }
 	;
 
 dpi_import_export<nodep>:	// ==IEEE: dpi_import_export
