@@ -3036,7 +3036,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//			// Because we've joined class_constructor_declaration into generic functions
 	//			// Way over-permissive;
 	//			// IEEE: [ ySUPER '.' yNEW [ '(' list_of_arguments ')' ] ';' ]
-	|	fexpr '.' class_new ';'			{ $$ = NULL; BBUNSUP($1, "Unsupported: dotted new"); }
+	|	fexpr '.' class_new ';'			{ $$ = new AstDot($<fl>2, false, $1, $3); }
 	//
 	|	statementVerilatorPragmas		{ $$ = $1; }
 	//
