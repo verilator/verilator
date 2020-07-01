@@ -265,6 +265,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$writeb"             { FL; return yD_WRITEB; }
   "$writeh"             { FL; return yD_WRITEH; }
   "$writeo"             { FL; return yD_WRITEO; }
+  "$writememb"          { FL; return yD_WRITEMEMB; }
   "$writememh"          { FL; return yD_WRITEMEMH; }
   /*     Keywords */
   "always"              { FL; return yALWAYS; }

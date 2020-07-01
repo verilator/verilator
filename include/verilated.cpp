@@ -1707,7 +1707,7 @@ const char* vl_dumpctl_filenamep(bool setit, const std::string& filename) VL_MT_
 static const char* memhFormat(int nBits) {
     assert((nBits >= 1) && (nBits <= 32));
 
-    static char buf[32];
+    static VL_THREAD_LOCAL char buf[32];
     switch ((nBits - 1) / 4) {
     case 0: VL_SNPRINTF(buf, 32, "%%01x"); break;
     case 1: VL_SNPRINTF(buf, 32, "%%02x"); break;
@@ -1719,6 +1719,18 @@ static const char* memhFormat(int nBits) {
     case 7: VL_SNPRINTF(buf, 32, "%%08x"); break;
     default: assert(false); break;  // LCOV_EXCL_LINE
     }
+    return buf;
+}
+
+static const char* formatBinary(int nBits, vluint32_t bits) {
+    assert((nBits >= 1) && (nBits <= 32));
+
+    static VL_THREAD_LOCAL char buf[64];
+    for (int i = 0; i < nBits; i++) {
+        bool isOne = bits & (1 << (nBits - 1 - i));
+        buf[i] = (isOne ? '1' : '0');
+    }
+    buf[nBits] = '\0';
     return buf;
 }
 
@@ -1859,14 +1871,9 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
 }
 
 VlWriteMem::VlWriteMem(bool hex, int bits, const std::string& filename, QData start, QData end)
-    : m_bits(bits)
+    : m_hex(hex)
+    , m_bits(bits)
     , m_addr(0) {
-    if (VL_UNLIKELY(!hex)) {
-        VL_FATAL_MT(filename.c_str(), 0, "",
-                    "Unsupported: $writemem binary format (suggest hex format)");
-        return;
-    }
-
     if (VL_UNLIKELY(start > end)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "$writemem invalid address range");
         return;
@@ -1893,23 +1900,40 @@ void VlWriteMem::print(QData addr, bool addrstamp, const void* valuep) {
     m_addr = addr + 1;
     if (m_bits <= 8) {
         const CData* datap = reinterpret_cast<const CData*>(valuep);
-        fprintf(m_fp, memhFormat(m_bits), VL_MASK_I(m_bits) & *datap);
-        fprintf(m_fp, "\n");
+        if (m_hex) {
+            fprintf(m_fp, memhFormat(m_bits), VL_MASK_I(m_bits) & *datap);
+            fprintf(m_fp, "\n");
+        } else {
+            fprintf(m_fp, "%s\n", formatBinary(m_bits, *datap));
+        }
     } else if (m_bits <= 16) {
         const SData* datap = reinterpret_cast<const SData*>(valuep);
-        fprintf(m_fp, memhFormat(m_bits), VL_MASK_I(m_bits) & *datap);
-        fprintf(m_fp, "\n");
+        if (m_hex) {
+            fprintf(m_fp, memhFormat(m_bits), VL_MASK_I(m_bits) & *datap);
+            fprintf(m_fp, "\n");
+        } else {
+            fprintf(m_fp, "%s\n", formatBinary(m_bits, *datap));
+        }
     } else if (m_bits <= 32) {
         const IData* datap = reinterpret_cast<const IData*>(valuep);
-        fprintf(m_fp, memhFormat(m_bits), VL_MASK_I(m_bits) & *datap);
-        fprintf(m_fp, "\n");
+        if (m_hex) {
+            fprintf(m_fp, memhFormat(m_bits), VL_MASK_I(m_bits) & *datap);
+            fprintf(m_fp, "\n");
+        } else {
+            fprintf(m_fp, "%s\n", formatBinary(m_bits, *datap));
+        }
     } else if (m_bits <= 64) {
         const QData* datap = reinterpret_cast<const QData*>(valuep);
         vluint64_t value = VL_MASK_Q(m_bits) & *datap;
         vluint32_t lo = value & 0xffffffff;
         vluint32_t hi = value >> 32;
-        fprintf(m_fp, memhFormat(m_bits - 32), hi);
-        fprintf(m_fp, "%08x\n", lo);
+        if (m_hex) {
+            fprintf(m_fp, memhFormat(m_bits - 32), hi);
+            fprintf(m_fp, "%08x\n", lo);
+        } else {
+            fprintf(m_fp, "%s", formatBinary(m_bits - 32, hi));
+            fprintf(m_fp, "%s\n", formatBinary(32, lo));
+        }
     } else {
         WDataInP datap = reinterpret_cast<WDataInP>(valuep);
         // output as a sequence of VL_EDATASIZE'd words
@@ -1922,9 +1946,17 @@ void VlWriteMem::print(QData addr, bool addrstamp, const void* valuep) {
             if (first) {
                 data &= VL_MASK_E(m_bits);
                 int top_word_nbits = VL_BITBIT_E(m_bits - 1) + 1;
-                fprintf(m_fp, memhFormat(top_word_nbits), data);
+                if (m_hex) {
+                    fprintf(m_fp, memhFormat(top_word_nbits), data);
+                } else {
+                    fprintf(m_fp, "%s", formatBinary(top_word_nbits, data));
+                }
             } else {
-                fprintf(m_fp, "%08x", data);
+                if (m_hex) {
+                    fprintf(m_fp, "%08x", data);
+                } else {
+                    fprintf(m_fp, "%s", formatBinary(32, data));
+                }
             }
             word_idx--;
             first = false;
