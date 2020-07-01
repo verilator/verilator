@@ -13,6 +13,7 @@ typedef interface class ic;
 class C #(parameter P=1);
    localparam LOCPAR = 10;
    int  imember;
+   static int istatic;
 
    local int loc;
    protected int prot;

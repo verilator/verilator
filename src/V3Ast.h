@@ -2646,6 +2646,7 @@ private:
     bool m_dpiTask : 1;  // DPI import task (vs. void function)
     bool m_isConstructor : 1;  // Class constructor
     bool m_pure : 1;  // DPI import pure (vs. virtual pure)
+    bool m_virtual : 1;  // Virtual method in class
     VLifetime m_lifetime;  // Lifetime
 public:
     AstNodeFTask(AstType t, FileLine* fl, const string& name, AstNode* stmtsp)
@@ -2662,7 +2663,8 @@ public:
         , m_dpiOpenChild(false)
         , m_dpiTask(false)
         , m_isConstructor(false)
-        , m_pure(false) {
+        , m_pure(false)
+        , m_virtual(false) {
         addNOp3p(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
@@ -2711,6 +2713,8 @@ public:
     bool isConstructor() const { return m_isConstructor; }
     void pure(bool flag) { m_pure = flag; }
     bool pure() const { return m_pure; }
+    void isVirtual(bool flag) { m_virtual = flag; }
+    bool isVirtual() const { return m_virtual; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
 };

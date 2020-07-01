@@ -1041,6 +1041,9 @@ class LinkDotFindVisitor : public AstNVisitor {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
+        if (nodep->isClassMember() && nodep->lifetime().isStatic()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' class members");
+        }
         if (!m_statep->forScopeCreation()) {
             // Find under either a task or the module's vars
             VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());
@@ -2029,8 +2032,7 @@ private:
                     "ParseRefs should no longer exist");
         if (nodep->name() == "this") {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: this");
-        }
-        else if (nodep->name() == "super") {
+        } else if (nodep->name() == "super") {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
         }
         DotStates lastStates = m_ds;
@@ -2630,6 +2632,9 @@ private:
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
+        if (nodep->classMethod() && nodep->lifetime().isStatic()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' class method");
+        }
         VSymEnt* oldCurSymp = m_curSymp;
         {
             m_ftaskp = nodep;

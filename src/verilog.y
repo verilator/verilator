@@ -1868,6 +1868,7 @@ struct_union_memberList<nodep>:	// IEEE: { struct_union_member }
 	;
 
 struct_union_member<nodep>:	// ==IEEE: struct_union_member
+	//			// UNSUP random_qualifer not propagagted until have randomize support
 		random_qualifierE data_type_or_void
 	/*mid*/		{ GRAMMARP->m_memDTypep = $2; }  // As a list follows, need to attach this dtype to each member.
 	/*cont*/    list_of_member_decl_assignments ';'		{ $$ = $4; GRAMMARP->m_memDTypep = NULL; }
@@ -1904,9 +1905,9 @@ member_decl_assignment<memberp>:	// Derived from IEEE: variable_decl_assignment
 	|	'=' class_new				{ NULL; BBUNSUP($1, "Unsupported: member declaration assignment with new()"); }
 	;
 
-list_of_variable_decl_assignments<nodep>:	// ==IEEE: list_of_variable_decl_assignments
+list_of_variable_decl_assignments<varp>:	// ==IEEE: list_of_variable_decl_assignments
 		variable_decl_assignment		{ $$ = $1; }
-	|	list_of_variable_decl_assignments ',' variable_decl_assignment	{ $$ = $1->addNextNull($3); }
+	|	list_of_variable_decl_assignments ',' variable_decl_assignment	{ $$ = VN_CAST($1->addNextNull($3), Var); }
 	;
 
 variable_decl_assignment<varp>:	// ==IEEE: variable_decl_assignment
@@ -1970,14 +1971,14 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 	//			// '[' '$' ':' expr ']' -- anyrange:expr:$
 	;
 
-random_qualifierE:		// IEEE: random_qualifier + empty
-		/*empty*/				{ }
-	|	random_qualifier			{ }
+random_qualifierE<qualifiers>:	// IEEE: random_qualifier + empty
+		/*empty*/				{ $$ = VMemberQualifiers::none(); }
+	|	random_qualifier			{ $$ = $1; }
 	;
 
-random_qualifier:		// ==IEEE: random_qualifier
-		yRAND					{ }  // Ignored until we support randomize()
-	|	yRANDC					{ }  // Ignored until we support randomize()
+random_qualifier<qualifiers>:	// ==IEEE: random_qualifier
+		yRAND					{ $$ = VMemberQualifiers::none(); $$.m_rand = true; }
+	|	yRANDC					{ $$ = VMemberQualifiers::none(); $$.m_randc = true; }
 	;
 
 taggedE:
@@ -2062,20 +2063,22 @@ data_declaration<nodep>:	// ==IEEE: data_declaration
 	;
 
 class_property<nodep>:		// ==IEEE: class_property, which is {property_qualifier} data_declaration
-		memberQualResetListE data_declarationVarClass		{ $$ = $2; }
-	|	memberQualResetListE type_declaration			{ $$ = $2; }
-	|	memberQualResetListE package_import_declaration		{ $$ = $2; }
+		memberQualListE data_declarationVarClass		{ $$ = $2; $1.applyToNodes($2); }
+	//			// UNSUP: Import needs to apply local/protected from memberQualList, and error on others
+	|	memberQualListE type_declaration			{ $$ = $2; }
+	//			// UNSUP: Import needs to apply local/protected from memberQualList, and error on others
+	|	memberQualListE package_import_declaration		{ $$ = $2; }
 	//			// IEEE: virtual_interface_declaration
 	//			// "yVIRTUAL yID yID" looks just like a data_declaration
 	//			// Therefore the virtual_interface_declaration term isn't used
 	;
 
-data_declarationVar<nodep>:	// IEEE: part of data_declaration
+data_declarationVar<varp>:	// IEEE: part of data_declaration
 	//			// The first declaration has complications between assuming what's the type vs ID declaring
 		data_declarationVarFront list_of_variable_decl_assignments ';'	{ $$ = $2; }
 	;
 
-data_declarationVarClass<nodep>: // IEEE: part of data_declaration (for class_property)
+data_declarationVarClass<varp>: // IEEE: part of data_declaration (for class_property)
 	//			// The first declaration has complications between assuming what's the type vs ID declaring
 		data_declarationVarFrontClass list_of_variable_decl_assignments ';'	{ $$ = $2; }
 	;
@@ -6000,51 +6003,47 @@ class_item<nodep>:			// ==IEEE: class_item
 	;
 
 class_method<nodep>:		// ==IEEE: class_method
-		memberQualResetListE task_declaration		{ $$ = $2; }
-	|	memberQualResetListE function_declaration	{ $$ = $2; }
-	|	yPURE yVIRTUAL__ETC memberQualResetListE method_prototype ';'
+		memberQualListE task_declaration	{ $$ = $2; $1.applyToNodes($2); }
+	|	memberQualListE function_declaration	{ $$ = $2; $1.applyToNodes($2); }
+	|	yPURE yVIRTUAL__ETC memberQualListE method_prototype ';'
 			{ $$ = NULL; BBUNSUP($1, "Unsupported: pure virtual class method"); }
-	|	yEXTERN memberQualResetListE method_prototype ';'
+	|	yEXTERN memberQualListE method_prototype ';'
 			{ $$ = NULL; BBUNSUP($1, "Unsupported: extern class method prototype"); }
 	//			// IEEE: "method_qualifierE class_constructor_declaration"
 	//			// part of function_declaration
-	|	yEXTERN memberQualResetListE class_constructor_prototype
+	|	yEXTERN memberQualListE class_constructor_prototype
 			{ $$ = NULL; BBUNSUP($1, "Unsupported: extern class"); }
 	;
 
 // IEEE: class_constructor_prototype
 // See function_declaration
 
-class_item_qualifier<nodep>:	// IEEE: class_item_qualifier minus ySTATIC
-	//			// IMPORTANT: yPROTECTED | yLOCAL is in a lex rule
-		yPROTECTED				{ $$ = NULL; }  // Ignoring protected until warning implemented
-	|	yLOCAL__ETC				{ $$ = NULL; }  // Ignoring local until warning implemented
-	|	ySTATIC__ETC				{ $$ = NULL; BBUNSUP($1, "Unsupported: 'static' class item"); }
-	;
-
-memberQualResetListE<nodep>:	// Called from class_property for all qualifiers before yVAR
+memberQualListE<qualifiers>:	// Called from class_property for all qualifiers before yVAR
 	//			// Also before method declarations, to prevent grammar conflict
 	//			// Thus both types of qualifiers (method/property) are here
-		/*empty*/				{ $$ = NULL; }
+		/*empty*/				{ $$ = VMemberQualifiers::none(); }
 	|	memberQualList				{ $$ = $1; }
 	;
 
-memberQualList<nodep>:
+memberQualList<qualifiers>:
 		memberQualOne				{ $$ = $1; }
-	|	memberQualList memberQualOne		{ $$ = AstNode::addNextNull($1, $2); }
+	|	memberQualList memberQualOne		{ $$ = VMemberQualifiers::combine($1, $2); }
 	;
 
-memberQualOne<nodep>:			// IEEE: property_qualifier + method_qualifier
+memberQualOne<qualifiers>:			// IEEE: property_qualifier + method_qualifier
 	//			// Part of method_qualifier and property_qualifier
-		class_item_qualifier			{ $$ = $1; }
+	//			// IMPORTANT: yPROTECTED | yLOCAL is in a lex rule
+		yPROTECTED				{ $$ = VMemberQualifiers::none(); $$.m_protected = true; }
+	|	yLOCAL__ETC				{ $$ = VMemberQualifiers::none(); $$.m_local = true; }
+	|	ySTATIC__ETC				{ $$ = VMemberQualifiers::none(); $$.m_static = true; }
 	//			// Part of method_qualifier only
-	|	yVIRTUAL__ETC				{ $$ = NULL; BBUNSUP($1, "Unsupported: virtual class member qualifier"); }
+	|	yVIRTUAL__ETC				{ $$ = VMemberQualifiers::none(); $$.m_virtual = true; }
 	//			// Part of property_qualifier only
-	|	random_qualifier			{ $$ = NULL; }
+	|	random_qualifier			{ $$ = $1; }
 	//			// Part of lifetime, but here as ySTATIC can be in different positions
-	|	yAUTOMATIC		 		{ $$ = NULL; BBUNSUP($1, "Unsupported: automatic class member qualifier"); }
+	|	yAUTOMATIC		 		{ $$ = VMemberQualifiers::none(); $$.m_automatic = true; }
 	//			// Part of data_declaration, but not in data_declarationVarFrontClass
-	|	yCONST__ETC				{ $$ = NULL; BBUNSUP($1, "Unsupported: const class member qualifier"); }
+	|	yCONST__ETC				{ $$ = VMemberQualifiers::none(); $$.m_const = true; }
 	;
 
 //**********************************************************************

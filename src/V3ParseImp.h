@@ -42,6 +42,62 @@ typedef enum { uniq_NONE, uniq_UNIQUE, uniq_UNIQUE0, uniq_PRIORITY } V3UniqState
 typedef enum { iprop_NONE, iprop_CONTEXT, iprop_PURE } V3ImportProperty;
 
 //============================================================================
+// Member qualifiers
+
+struct VMemberQualifiers {
+    union {
+        uint32_t m_flags;
+        struct {
+            uint32_t m_local : 1;  // Local class item (ignored until warning implemented)
+            uint32_t m_protected : 1;  // Protected class item (ignored until warning implemented)
+            uint32_t m_rand : 1;  // Rand property/member qualifier (ignored until supported)
+            uint32_t m_randc : 1;  // Randc property/member qualifier (ignored until supported)
+            uint32_t m_virtual : 1;  // Virtual property/method qualifier
+            uint32_t m_automatic : 1;  // Automatic property/method qualifier
+            uint32_t m_const : 1;  // Const property/method qualifier
+            uint32_t m_static : 1;  // Static class method
+        };
+    };
+    static VMemberQualifiers none() {
+        VMemberQualifiers q;
+        q.m_flags = 0;
+        return q;
+    }
+    static VMemberQualifiers combine(const VMemberQualifiers& a, const VMemberQualifiers& b) {
+        VMemberQualifiers q;
+        q.m_flags = a.m_flags | b.m_flags;
+        return q;
+    }
+    void applyToNodes(AstNodeFTask* nodesp) const {
+        for (AstNodeFTask* nodep = nodesp; nodep; nodep = VN_CAST(nodep->nextp(), NodeFTask)) {
+            // Ignored for now: m_local
+            // Ignored for now: m_protected
+            if (m_virtual) nodep->isVirtual(true);
+            if (m_automatic) nodep->lifetime(VLifetime::AUTOMATIC);
+            if (m_static) nodep->lifetime(VLifetime::STATIC);
+            if (m_const || m_rand || m_randc) {
+                nodep->v3error("Syntax error: 'const'/'rand'/'randc' not allowed before "
+                               "function/task declaration");
+            }
+        }
+    }
+    void applyToNodes(AstVar* nodesp) const {
+        for (AstVar* nodep = nodesp; nodep; nodep = VN_CAST(nodep->nextp(), Var)) {
+            // Ignored for now: m_local
+            // Ignored for now: m_protected
+            // Ignored for now: m_rand
+            // Ignored for now: m_randc
+            if (m_automatic) nodep->lifetime(VLifetime::AUTOMATIC);
+            if (m_static) nodep->lifetime(VLifetime::STATIC);
+            if (m_const) nodep->isConst(true);
+            if (m_virtual) {
+                nodep->v3error("Syntax error: 'virtual' not allowed before var declaration");
+            }
+        }
+    }
+};
+
+//============================================================================
 // Parser YYSType, e.g. for parser's yylval
 // We can't use bison's %union as we want to pass the fileline with all tokens
 
@@ -55,6 +111,7 @@ struct V3ParseBisonYYSType {
         int cint;
         double cdouble;
         bool cbool;
+        VMemberQualifiers qualifiers;
         V3UniqState uniqstate;
         V3ImportProperty iprop;
         VSigning::en signstate;

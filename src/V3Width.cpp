@@ -3700,6 +3700,9 @@ private:
             nodep->didWidth(true);
             return;
         }
+        if (nodep->isVirtual()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'virtual' class method");
+        }
         // Function hasn't been widthed, so make it so.
         // Would use user1 etc, but V3Width called from too many places to spend a user
         nodep->doingWidth(true);
