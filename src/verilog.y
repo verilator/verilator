@@ -3459,7 +3459,7 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 	//			// We implement randomize as a normal funcRef, since randomize isn't a keyword
 	//			// Note yNULL is already part of expressions, so they come for free
 	|	funcRef yWITH__CUR constraint_block	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with' constraint"); }
-	|	funcRef yWITH__CUR '{' '}'		{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with'"); }
+	|	funcRef yWITH__CUR '{' '}'		{ $$ = new AstWith($2, false, $1, NULL); }
 	;
 
 system_t_call<nodep>:		// IEEE: system_tf_call (as task)

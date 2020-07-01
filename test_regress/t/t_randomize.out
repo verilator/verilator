@@ -34,7 +34,4 @@
 %Error-UNSUPPORTED: t/t_randomize.v:30:4: Unsupported: constraint
    30 |    constraint dis {
       |    ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize.v:50:25: Unsupported: randomize() 'with'
-   50 |       v = p.randomize() with {};
-      |                         ^~~~
 %Error: Exiting due to
