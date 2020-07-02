@@ -3700,7 +3700,7 @@ private:
             nodep->didWidth(true);
             return;
         }
-        if (nodep->isVirtual()) {
+        if (nodep->isVirtual() || nodep->pureVirtual()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'virtual' class method");
         }
         // Function hasn't been widthed, so make it so.

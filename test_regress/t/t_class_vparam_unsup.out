@@ -1,7 +1,4 @@
 %Error-UNSUPPORTED: t/t_class_vparam_unsup.v:13:58: Unsupported: Parameter classes
    13 |    pure virtual function void funcname(paramed_class_t #(CTYPE_t) v);
       |                                                          ^~~~~~~
-%Error-UNSUPPORTED: t/t_class_vparam_unsup.v:13:4: Unsupported: pure virtual class method
-   13 |    pure virtual function void funcname(paramed_class_t #(CTYPE_t) v);
-      |    ^~~~
 %Error: Exiting due to

@@ -7,13 +7,7 @@
 %Error-UNSUPPORTED: t/t_class_unsup_bad.v:14:26: Unsupported: class parameters
    14 |    localparam LOCPAR = 10;
       |                          ^
-%Error-UNSUPPORTED: t/t_class_unsup_bad.v:27:4: Unsupported: pure virtual class method
-   27 |    pure virtual function void func_pure_virtual;
-      |    ^~~~
 %Error: t/t_class_unsup_bad.v:29:24: Syntax error: 'const'/'rand'/'randc' not allowed before function/task declaration
    29 |    const function void func_const; endfunction
       |                        ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_class_unsup_bad.v:30:4: Unsupported: extern class method prototype
-   30 |    extern task exttask;
-      |    ^~~~~~
 %Error: Exiting due to

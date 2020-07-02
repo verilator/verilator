@@ -2606,6 +2606,9 @@ private:
         if (nodep->classMethod() && nodep->lifetime().isStatic()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' class method");
         }
+        if (nodep->isExtern()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: extern class methods");
+        }
         VSymEnt* oldCurSymp = m_curSymp;
         {
             m_ftaskp = nodep;

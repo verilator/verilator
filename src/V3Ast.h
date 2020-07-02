@@ -2638,6 +2638,7 @@ private:
     bool m_taskPublic : 1;  // Public task
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_classMethod : 1;  // Class method
+    bool m_extern : 1;  // Extern prototype
     bool m_prototype : 1;  // Just a prototype
     bool m_dpiExport : 1;  // DPI exported
     bool m_dpiImport : 1;  // DPI imported
@@ -2646,6 +2647,7 @@ private:
     bool m_dpiTask : 1;  // DPI import task (vs. void function)
     bool m_isConstructor : 1;  // Class constructor
     bool m_pure : 1;  // DPI import pure (vs. virtual pure)
+    bool m_pureVirtual : 1;  // Pure virtual
     bool m_virtual : 1;  // Virtual method in class
     VLifetime m_lifetime;  // Lifetime
 public:
@@ -2656,6 +2658,7 @@ public:
         , m_taskPublic(false)
         , m_attrIsolateAssign(false)
         , m_classMethod(false)
+        , m_extern(false)
         , m_prototype(false)
         , m_dpiExport(false)
         , m_dpiImport(false)
@@ -2664,6 +2667,7 @@ public:
         , m_dpiTask(false)
         , m_isConstructor(false)
         , m_pure(false)
+        , m_pureVirtual(false)
         , m_virtual(false) {
         addNOp3p(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
@@ -2697,6 +2701,8 @@ public:
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     void classMethod(bool flag) { m_classMethod = flag; }
     bool classMethod() const { return m_classMethod; }
+    void isExtern(bool flag) { m_extern = flag; }
+    bool isExtern() const { return m_extern; }
     void prototype(bool flag) { m_prototype = flag; }
     bool prototype() const { return m_prototype; }
     void dpiExport(bool flag) { m_dpiExport = flag; }
@@ -2713,6 +2719,8 @@ public:
     bool isConstructor() const { return m_isConstructor; }
     void pure(bool flag) { m_pure = flag; }
     bool pure() const { return m_pure; }
+    void pureVirtual(bool flag) { m_pureVirtual = flag; }
+    bool pureVirtual() const { return m_pureVirtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
     bool isVirtual() const { return m_virtual; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }

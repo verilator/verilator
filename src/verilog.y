@@ -3767,9 +3767,9 @@ funcIsolateE<cint>:
 	|	yVL_ISOLATE_ASSIGNMENTS			{ $$ = 1; }
 	;
 
-method_prototype:
-		task_prototype				{ }
-	|	function_prototype			{ }
+method_prototype<ftaskp>:
+		task_prototype				{ $$ = $1; }
+	|	function_prototype			{ $$ = $1; }
 	;
 
 lifetimeE<lifetime>:		// IEEE: [lifetime]
@@ -6010,13 +6010,13 @@ class_method<nodep>:		// ==IEEE: class_method
 		memberQualListE task_declaration	{ $$ = $2; $1.applyToNodes($2); }
 	|	memberQualListE function_declaration	{ $$ = $2; $1.applyToNodes($2); }
 	|	yPURE yVIRTUAL__ETC memberQualListE method_prototype ';'
-			{ $$ = NULL; BBUNSUP($1, "Unsupported: pure virtual class method"); }
+			{ $$ = $4; $3.applyToNodes($4); $4->pureVirtual(true); $4->isVirtual(true); }
 	|	yEXTERN memberQualListE method_prototype ';'
-			{ $$ = NULL; BBUNSUP($1, "Unsupported: extern class method prototype"); }
+			{ $$ = $3; $2.applyToNodes($3); $3->isExtern(true); }
 	//			// IEEE: "method_qualifierE class_constructor_declaration"
 	//			// part of function_declaration
 	|	yEXTERN memberQualListE class_constructor_prototype
-			{ $$ = NULL; BBUNSUP($1, "Unsupported: extern class"); }
+			{ $$ = $3; $2.applyToNodes($3); $3->isExtern(true); }
 	;
 
 // IEEE: class_constructor_prototype
