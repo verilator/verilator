@@ -6055,7 +6055,9 @@ memberQualOne<qualifiers>:			// IEEE: property_qualifier + method_qualifier
 
 class_constraint<nodep>:  // ==IEEE: class_constraint
 	//			// IEEE: constraint_declaration
-		constraintStaticE yCONSTRAINT idAny constraint_block	{ $$ = NULL; BBUNSUP($2, "Unsupported: constraint"); /*and audit all rules below for UNSUP*/ }
+	//			// UNSUP: We have the unsupported warning on the randomize() call, so don't bother on
+	//			// constraint blocks. When we support randomize we need to make AST nodes for below rules
+		constraintStaticE yCONSTRAINT idAny constraint_block	{ $$ = NULL; /*UNSUP*/ }
 	//			// IEEE: constraint_prototype + constraint_prototype_qualifier
 	|	constraintStaticE yCONSTRAINT idAny ';'		{ $$ = NULL; }
 	|	yEXTERN constraintStaticE yCONSTRAINT idAny ';'	{ $$ = NULL; BBUNSUP($1, "Unsupported: extern constraint"); }
@@ -6094,19 +6096,19 @@ constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
 constraint_expression<nodep>:  // ==IEEE: constraint_expression
 		expr/*expression_or_dist*/ ';'		{ $$ = $1; }
 	//			// 1800-2012:
-	|	ySOFT expr/*expression_or_dist*/ ';'	{ $$ = NULL; /*UNSUP*/ }
+	|	ySOFT expr/*expression_or_dist*/ ';'	{ $$ = NULL; /*UNSUP-no-UVM*/ }
 	//			// 1800-2012:
 	//			// IEEE: uniqueness_constraint ';'
-	|	yUNIQUE '{' open_range_list '}'		{ $$ = NULL; /*UNSUP*/ }
+	|	yUNIQUE '{' open_range_list '}'		{ $$ = NULL; /*UNSUP-no-UVM*/ }
 	//			// IEEE: expr yP_MINUSGT constraint_set
 	//			// Conflicts with expr:"expr yP_MINUSGT expr"; rule moved there
 	//
-	|	yIF '(' expr ')' constraint_set	%prec prLOWER_THAN_ELSE	{ $$ = NULL; /*UNSUP*/ }
-	|	yIF '(' expr ')' constraint_set	yELSE constraint_set	{ $$ = NULL; /*UNSUP*/ }
+	|	yIF '(' expr ')' constraint_set	%prec prLOWER_THAN_ELSE	{ $$ = NULL; /*UNSUP-UVM*/ }
+	|	yIF '(' expr ')' constraint_set	yELSE constraint_set	{ $$ = NULL; /*UNSUP-UVM*/ }
 	//			// IEEE says array_identifier here, but dotted accepted in VMM + 1800-2009
-	|	yFOREACH '(' idClassSelForeach ')' constraint_set	{ $$ = NULL; /*UNSUP*/ }
+	|	yFOREACH '(' idClassSelForeach ')' constraint_set	{ $$ = NULL; /*UNSUP-UVM*/ }
 	//			// soft is 1800-2012
-	|	yDISABLE ySOFT expr/*constraint_primary*/ ';'	{ $$ = NULL; /*UNSUP*/ }
+	|	yDISABLE ySOFT expr/*constraint_primary*/ ';'	{ $$ = NULL; /*UNSUP-no-UVM*/ }
 	;
 
 constraint_set<nodep>:  // ==IEEE: constraint_set
