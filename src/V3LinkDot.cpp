@@ -710,35 +710,6 @@ class LinkDotFindVisitor : public AstNVisitor {
     // METHODS
     int debug() { return LinkDotState::debug(); }
 
-    AstConst* parseParamLiteral(FileLine* fl, const string& literal) const {
-        bool success = false;
-        if (literal[0] == '"') {
-            // This is a string
-            string v = literal.substr(1, literal.find('"', 1) - 1);
-            return new AstConst(fl, AstConst::VerilogStringLiteral(), v);
-        } else if (literal.find_first_of(".eEpP") != string::npos) {
-            // This may be a real
-            double v = VString::parseDouble(literal, &success);
-            if (success) return new AstConst(fl, AstConst::RealDouble(), v);
-        }
-        if (!success) {
-            // This is either an integer or an error
-            // We first try to convert it as C literal. If strtol returns
-            // 0 this is either an error or 0 was parsed. But in any case
-            // we will try to parse it as a verilog literal, hence having
-            // the false negative for 0 is okay. If anything remains in
-            // the string after the number, this is invalid C and we try
-            // the Verilog literal parser.
-            char* endp;
-            int v = strtol(literal.c_str(), &endp, 0);
-            if ((v != 0) && (endp[0] == 0)) {  // C literal
-                return new AstConst(fl, AstConst::WidthedValue(), 32, v);
-            } else {  // Try a Verilog literal (fatals if not)
-                return new AstConst(fl, AstConst::StringToParse(), literal.c_str());
-            }
-        }
-        return NULL;
-    }
     void makeImplicitNew(AstClass* nodep) {
         AstFunc* newp = new AstFunc(nodep->fileline(), "new", NULL, NULL);
         newp->isConstructor(true);
@@ -793,9 +764,10 @@ class LinkDotFindVisitor : public AstNVisitor {
         int oldBlockNum = m_blockNum;
         int oldModBlockNum = m_modBlockNum;
         if (doit && nodep->user2()) {
-            nodep->v3error("Unsupported: Identically recursive module (module instantiates "
-                           "itself, without changing parameters): "
-                           << AstNode::prettyNameQ(nodep->origName()));
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Identically recursive module (module instantiates "
+                          "itself, without changing parameters): "
+                              << AstNode::prettyNameQ(nodep->origName()));
         } else if (doit) {
             UINFO(4, "     Link Module: " << nodep << endl);
             UASSERT_OBJ(!nodep->dead(), nodep, "Module in cell tree mislabeled as dead?");
@@ -1035,9 +1007,15 @@ class LinkDotFindVisitor : public AstNVisitor {
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Var not under module?");
         iterateChildren(nodep);
         if (m_ftaskp && nodep->isParam()) {
-            nodep->v3error("Unsupported: Parameters in functions.");  // Big3 unsupported too
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Parameters in functions");  // Big3 unsupported too
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
+        }
+        if (nodep->isFuncLocal() && nodep->lifetime().isStatic()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' function/task variables");
+        } else if (nodep->isClassMember() && nodep->lifetime().isStatic()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' class members");
         }
         if (!m_statep->forScopeCreation()) {
             // Find under either a task or the module's vars
@@ -1128,7 +1106,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                             = new AstVar(nodep->fileline(), AstVarType(AstVarType::GPARAM),
                                          nodep->name(), nodep);
                         string svalue = v3Global.opt.parameter(nodep->name());
-                        if (AstNode* valuep = parseParamLiteral(nodep->fileline(), svalue)) {
+                        if (AstNode* valuep = AstConst::parseParamLiteral(nodep->fileline(), svalue)) {
                             newp->valuep(valuep);
                             UINFO(9, "       replace parameter " << nodep << endl);
                             UINFO(9, "       with " << newp << endl);
@@ -1618,7 +1596,7 @@ class LinkDotIfaceVisitor : public AstNVisitor {
     virtual void visit(AstModportFTaskRef* nodep) VL_OVERRIDE {
         UINFO(5, "   fif: " << nodep << endl);
         iterateChildren(nodep);
-        if (nodep->isExport()) nodep->v3error("Unsupported: modport export");
+        if (nodep->isExport()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: modport export");
         VSymEnt* symp = m_curSymp->findIdFallback(nodep->name());
         if (!symp) {
             nodep->v3error("Modport item not found: " << nodep->prettyNameQ());
@@ -2025,11 +2003,23 @@ private:
         // Generally resolved during Primay, but might be at param time under AstUnlinkedRef
         UASSERT_OBJ(m_statep->forPrimary() || m_statep->forPrearray(), nodep,
                     "ParseRefs should no longer exist");
+        if (nodep->name() == "this") {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: this");
+        } else if (nodep->name() == "super") {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
+        }
         DotStates lastStates = m_ds;
         bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         if (start) {
             m_ds.init(m_curSymp);
             // Note m_ds.m_dot remains NULL; this is a reference not under a dot
+        }
+        if (nodep->name() == "this") {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: this");
+            m_ds.m_dotErr = true;
+        } else if (nodep->name() == "super") {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
+            m_ds.m_dotErr = true;
         }
         if (m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is membership.  {scope}.{var}.HERE {member}
@@ -2387,6 +2377,11 @@ private:
         }
         m_ds = lastStates;
     }
+    virtual void visit(AstWith* nodep) VL_OVERRIDE {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: with statements");
+        nodep->replaceWith(nodep->funcrefp()->unlinkFrBack());
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         checkNoDot(nodep);
         iterateChildren(nodep);
@@ -2610,6 +2605,12 @@ private:
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
+        if (nodep->classMethod() && nodep->lifetime().isStatic()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' class method");
+        }
+        if (nodep->isExtern()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: extern class methods");
+        }
         VSymEnt* oldCurSymp = m_curSymp;
         {
             m_ftaskp = nodep;
@@ -2626,7 +2627,7 @@ private:
             if (AstClassExtends* eitemp = VN_CAST(itemp, ClassExtends)) {
                 // Replace abstract reference with hard pointer
                 // Will need later resolution when deal with parameters
-                eitemp->v3error("Unsupported: class extends");
+                eitemp->v3warn(E_UNSUPPORTED, "Unsupported: class extends");
             }
         }
         VSymEnt* oldCurSymp = m_curSymp;

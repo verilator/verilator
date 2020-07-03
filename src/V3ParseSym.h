@@ -100,6 +100,13 @@ public:
         reinsert(nodep, parentp);
         pushScope(symp);
     }
+    void pushNewUnderNodeOrCurrent(AstNode* nodep, AstNode* parentp) {
+        if (parentp) {
+            pushNewUnder(nodep, findNewTable(parentp));
+        } else {
+            pushNewUnder(nodep, NULL);
+        }
+    }
     void pushScope(VSymEnt* symp) {
         m_sympStack.push_back(symp);
         m_symCurrentp = symp;
@@ -138,11 +145,19 @@ public:
             return NULL;
         }
     }
+    void importExtends(AstNode* classp) {
+        // Import from package::id_or_star to this
+        VSymEnt* symp = getTable(classp);
+        UASSERT_OBJ(symp, classp,  // Internal problem, because we earlier found it
+                    "Extends class package not found");
+        // Walk old sym table and reinsert into current table
+        // We let V3LinkDot report the error instead of us
+        symCurrentp()->importFromClass(&m_syms, symp);
+    }
     void importItem(AstNode* packagep, const string& id_or_star) {
         // Import from package::id_or_star to this
         VSymEnt* symp = getTable(packagep);
-        UASSERT_OBJ(symp, packagep,
-                    // Internal problem, because we earlier found pkg in parsing
+        UASSERT_OBJ(symp, packagep,  // Internal problem, because we earlier found it
                     "Import package not found");
         // Walk old sym table and reinsert into current table
         // We let V3LinkDot report the error instead of us
@@ -151,8 +166,7 @@ public:
     void exportItem(AstNode* packagep, const string& id_or_star) {
         // Export from this the remote package::id_or_star
         VSymEnt* symp = getTable(packagep);
-        UASSERT_OBJ(symp, packagep,
-                    // Internal problem, because we earlier found pkg in parsing
+        UASSERT_OBJ(symp, packagep,  // Internal problem, because we earlier found it
                     "Export package not found");
         symCurrentp()->exportFromPackage(&m_syms, symp, id_or_star);
     }

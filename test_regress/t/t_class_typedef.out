@@ -1,4 +1,4 @@
-%Error: t/t_class_typedef.v:14:24: Unsupported: Parameterized classes
+%Error-UNSUPPORTED: t/t_class_typedef.v:14:24: Unsupported: Parameterized classes
    14 |    uvm_resource_types#(1,2,3)::rsrc_q_t rtab_paramed [string];
       |                        ^
 %Error: Exiting due to

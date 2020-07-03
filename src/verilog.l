@@ -51,8 +51,9 @@
 #define ERROR_RSVD_WORD(language) \
     do { \
         FL; \
-        yylval.fl->v3error("Unsupported: " << language << " reserved word not implemented: '" \
-                                           << yytext << "'"); \
+        yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: " << language \
+                                                         << " reserved word not implemented: '" \
+                                                         << yytext << "'"); \
         FL_BRK; \
     } while (0)
 
@@ -264,6 +265,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$writeb"             { FL; return yD_WRITEB; }
   "$writeh"             { FL; return yD_WRITEH; }
   "$writeo"             { FL; return yD_WRITEO; }
+  "$writememb"          { FL; return yD_WRITEMEMB; }
   "$writememh"          { FL; return yD_WRITEMEMH; }
   /*     Keywords */
   "always"              { FL; return yALWAYS; }
@@ -394,7 +396,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "design"              { ERROR_RSVD_WORD("Verilog 2001-config"); }
   "endconfig"           { ERROR_RSVD_WORD("Verilog 2001-config"); }
   "incdir"              { ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "include"             { FL; yylval.fl->v3error("Unsupported: Verilog 2001-config reserved word not implemented; suggest you want `include instead: '" << yytext << "'");
+  "include"             { FL; yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: Verilog 2001-config reserved word not implemented;"
+                                                " suggest you want `include instead: '" << yytext << "'");
                           FL_BRK; }
   "instance"            { ERROR_RSVD_WORD("Verilog 2001-config"); }
   "liblist"             { ERROR_RSVD_WORD("Verilog 2001-config"); }
@@ -934,9 +937,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`default_decay_time"{ws}+[^\n\r]*    { FL_FWD; FL_BRK; }  // Verilog spec - delays only
   "`default_nettype"{ws}+"wire"         { FL_FWD; PARSEP->lexFileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true); FL_BRK; }
   "`default_nettype"{ws}+"none"         { FL_FWD; PARSEP->lexFileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, false); FL_BRK; }
-  "`default_nettype"{ws}+[a-zA-Z0-9]*   { FL; yylval.fl->v3error("Unsupported: `default_nettype of other than none or wire: '" << yytext << "'");
+  "`default_nettype"{ws}+[a-zA-Z0-9]*   { FL; yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: `default_nettype of other than none or wire: '"
+                                                                << yytext << "'");
                                           FL_BRK; }
-  "`default_trireg_strength"{ws}+[^\n\r]*   { FL; yylval.fl->v3error("Unsupported: Verilog optional directive not implemented: '" << yytext << "'");
+  "`default_trireg_strength"{ws}+[^\n\r]*   { FL; yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: Verilog optional directive not implemented: '"
+                                                                    << yytext << "'");
                                           FL_BRK; }
   "`delay_mode_distributed"             { FL_FWD; FL_BRK; }  // Verilog spec - delays only
   "`delay_mode_path"                    { FL_FWD; FL_BRK; }  // Verilog spec - delays only

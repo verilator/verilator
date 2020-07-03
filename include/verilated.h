@@ -88,6 +88,7 @@ typedef void (*VerilatedVoidCb)(void);
 
 class SpTraceVcd;
 class SpTraceVcdCFile;
+class VerilatedEvalMsgQueue;
 class VerilatedScopeNameMap;
 class VerilatedTimedQueue;
 class VerilatedVar;
@@ -342,8 +343,8 @@ public:  // But internals only - called from VerilatedModule's
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
                    const char* identifier, vlsint8_t timeunit, const Type& type) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
-    void varInsert(int finalize, const char* namep, void* datap, VerilatedVarType vltype,
-                   int vlflags, int dims, ...) VL_MT_UNSAFE;
+    void varInsert(int finalize, const char* namep, void* datap, bool isParam,
+                   VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const { return m_namep; }
     const char* identifier() const { return m_identifierp; }
@@ -378,8 +379,6 @@ class Verilated {
     // MEMBERS
     // Slow path variables
     static VerilatedMutex m_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
-
-    static VerilatedVoidCb s_flushCb;  ///< Flush callback function
 
     static struct Serialized {  // All these members serialized/deserialized
         // Fast path
@@ -504,9 +503,15 @@ public:
     static void profThreadsFilenamep(const char* flagp) VL_MT_SAFE;
     static const char* profThreadsFilenamep() VL_MT_SAFE { return s_ns.s_profThreadsFilenamep; }
 
-    /// Flush callback for VCD waves
-    static void flushCb(VerilatedVoidCb cb) VL_MT_SAFE;
-    static void flushCall() VL_MT_SAFE;
+    typedef void (*VoidPCb)(void*);  // Callback type for below
+    /// Callbacks to run on global flush
+    static void addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void runFlushCallbacks() VL_MT_SAFE;
+    /// Callbacks to run prior to termination
+    static void addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void runExitCallbacks() VL_MT_SAFE;
 
     /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs,
     /// and for parsing +verilator+ run-time arguments.
@@ -855,7 +860,7 @@ inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_sta
 // Optimized assuming scale is always constant.
 // Can't use multiply in Q flavor, as might lose precision
 #define VL_TIME_UNITED_Q(scale) (VL_TIME_Q() / static_cast<QData>(scale))
-#define VL_TIME_UNITED_D(scale) (VL_TIME_D() * (1.0 / (scale)))
+#define VL_TIME_UNITED_D(scale) (VL_TIME_D() / static_cast<double>(scale))
 /// Time imported from units to time precision
 double vl_time_multiplier(int scale);
 

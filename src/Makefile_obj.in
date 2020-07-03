@@ -279,7 +279,6 @@ V3__CONCAT.cpp: $(addsuffix .cpp, $(basename $(RAW_OBJS)))
 
 $(TGT): $(PREDEP_H) $(OBJS)
 	@echo "      Linking $@..."
-	-rm -rf $@ $@.exe
 	${LINK} ${LDFLAGS} -o $@ $(OBJS) $(CCMALLOC) ${LIBS}
 
 V3Number_test: V3Number_test.o

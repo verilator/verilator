@@ -34,6 +34,7 @@ foreach my $file (sort keys %files) {
         my $eol_ws_exempt = ($file =~ /(\.txt|\.html)$/
                              || $file =~ m!^README$!
                              || $file =~ m!/gtkwave/!);
+        next if $eol_ws_exempt;
         if ($ENV{HARNESS_UPDATE_GOLDEN}) {
             my $changes = undef;
             $changes = 1 if ($contents =~ s/[ \t]+\n/\n/g);

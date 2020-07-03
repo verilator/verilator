@@ -540,8 +540,8 @@ public:  // But only for verilated*.cpp
         const VerilatedLockGuard lock(s_s.m_fdMutex);
         if (s_s.m_fdFree.empty()) {
             // Need to create more space in m_fdps and m_fdFree
-            const size_t start = std::max(31ul + 1ul + 3ul, s_s.m_fdps.size());
-            const size_t excess = 10;
+            const std::size_t start = std::max<std::size_t>(31UL + 1UL + 3UL, s_s.m_fdps.size());
+            const std::size_t excess = 10;
             s_s.m_fdps.resize(start + excess);
             std::fill(s_s.m_fdps.begin() + start, s_s.m_fdps.end(), (FILE*)0);
             s_s.m_fdFree.resize(excess);

@@ -105,9 +105,6 @@ private:
 
     void finishLine(vluint32_t code, char* writep);
 
-    /// Flush any remaining data from all files
-    static void flush_all() VL_MT_UNSAFE_ONE;
-
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcd);
 

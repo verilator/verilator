@@ -479,8 +479,8 @@ private:
                 && (VN_IS(vdtypep, AssocArrayDType)  //
                     || VN_IS(vdtypep, DynArrayDType)  //
                     || VN_IS(vdtypep, QueueDType))) {
-                nodep->v3error("Unsupported: Concatenation to form " << vdtypep->prettyDTypeNameQ()
-                                                                     << "data type");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Concatenation to form "
+                                                 << vdtypep->prettyDTypeNameQ() << "data type");
             }
 
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
@@ -569,9 +569,17 @@ private:
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
-            nodep->v3error("Unsupported: fork statements");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: fork statements");
             // TBD might support only normal join, if so complain about other join flavors
         }
+    }
+    virtual void visit(AstDisableFork* nodep) VL_OVERRIDE {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: disable fork statements");
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+    virtual void visit(AstWaitFork* nodep) VL_OVERRIDE {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: wait fork statements");
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstToLowerN* nodep) VL_OVERRIDE {
         if (m_vup->prelim()) {
@@ -594,8 +602,8 @@ private:
             if (vdtypep
                 && (VN_IS(vdtypep, AssocArrayDType) || VN_IS(vdtypep, DynArrayDType)
                     || VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, UnpackArrayDType))) {
-                nodep->v3error("Unsupported: Replication to form " << vdtypep->prettyDTypeNameQ()
-                                                                   << " data type");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Replication to form "
+                                                 << vdtypep->prettyDTypeNameQ() << " data type");
             }
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
@@ -751,8 +759,8 @@ private:
             int width = nodep->widthConst();
             UASSERT_OBJ(nodep->dtypep(), nodep, "dtype wasn't set");  // by V3WidthSel
             if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() < nodep->lsbConst()) {
-                nodep->v3error("Unsupported: MSB < LSB of bit extract: "
-                               << nodep->msbConst() << "<" << nodep->lsbConst());
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: MSB < LSB of bit extract: "
+                                                 << nodep->msbConst() << "<" << nodep->lsbConst());
                 width = (nodep->lsbConst() - nodep->msbConst() + 1);
                 nodep->dtypeSetLogicSized(width, VSigning::UNSIGNED);
                 nodep->widthp()->replaceWith(new AstConst(nodep->widthp()->fileline(), width));
@@ -1066,9 +1074,9 @@ private:
     }
     virtual void visit(AstUnbounded* nodep) VL_OVERRIDE {
         nodep->dtypeSetSigned32();  // Used in int context
-        if (!VN_IS(nodep->backp(), IsUnbounded)
+        if (!VN_IS(nodep->backp(), IsUnbounded) && !VN_IS(nodep->backp(), BracketArrayDType)
             && !(VN_IS(nodep->backp(), Var) && VN_CAST(nodep->backp(), Var)->isParam())) {
-            nodep->v3error("Unsupported/illegal unbounded ('$') in this context.");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");
         }
     }
     virtual void visit(AstIsUnbounded* nodep) VL_OVERRIDE {
@@ -1088,7 +1096,7 @@ private:
             AstNodeDType* expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
             nodep->dtypeFrom(expDTypep);  // Assume user knows the rules; go with the flow
             if (nodep->width() > 64) {
-                nodep->v3error("Unsupported: $c can't generate wider than 64 bits");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: $c can't generate wider than 64 bits");
             }
         }
     }
@@ -1272,7 +1280,7 @@ private:
                     break;
                 }
                 case AstAttrType::DIM_BITS: {
-                    nodep->v3error("Unsupported: $bits for queue");
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: $bits for queue");
                     break;
                 }
                 default: nodep->v3error("Unhandled attribute type");
@@ -1359,6 +1367,35 @@ private:
         nodep->dtypep(nodep);  // The array itself, not subDtype
         UINFO(4, "dtWidthed " << nodep << endl);
     }
+    virtual void visit(AstBracketArrayDType* nodep) VL_OVERRIDE {
+        // Type inserted only because parser didn't know elementsp() type
+        // Resolve elementsp's type
+        userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+        // We must edit when dtype still under normal nodes and before type table
+        // See notes in iterateEditMoveDTypep
+        AstNodeDType* childp = nodep->childDTypep();
+        childp->unlinkFrBack();
+        AstNode* elementsp = nodep->elementsp()->unlinkFrBack();
+        AstNode* newp;
+        if (VN_IS(elementsp, Unbounded)) {
+            newp = new AstQueueDType(nodep->fileline(), VFlagChildDType(), childp, NULL);
+            VL_DO_DANGLING(elementsp->deleteTree(), elementsp);
+        } else if (AstNodeDType* keyp = VN_CAST(elementsp, NodeDType)) {
+            newp = new AstAssocArrayDType(nodep->fileline(), VFlagChildDType(), childp, keyp);
+        } else {
+            // Must be expression that is constant, but we'll determine that later
+            newp = new AstUnpackArrayDType(
+                nodep->fileline(), VFlagChildDType(), childp,
+                new AstRange(nodep->fileline(), new AstConst(elementsp->fileline(), 0),
+                             new AstSub(elementsp->fileline(), elementsp,
+                                        new AstConst(elementsp->fileline(), 1))));
+        }
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        // Normally parent's iteration would cover this, but we might have entered by a specific
+        // visit
+        VL_DO_DANGLING(userIterate(newp, NULL), newp);
+    }
     virtual void visit(AstDynArrayDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         // Iterate into subDTypep() to resolve that type and update pointer.
@@ -1437,6 +1474,10 @@ private:
         }
         userIterateChildren(nodep, NULL);
         if (nodep->subDTypep()) {
+            // Normally iterateEditMoveDTypep iterate would work, but the refs are under
+            // the TypeDef which will upset iterateEditMoveDTypep as it can't find it under
+            // this node's childDTypep
+            userIterate(nodep->subDTypep(), NULL);
             nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
             nodep->typedefp(NULL);  // Note until line above subDTypep() may have followed this
             // Widths are resolved, but special iterate to check for recurstion
@@ -1462,9 +1503,7 @@ private:
         nodep->widthFromSub(nodep->subDTypep());
     }
     virtual void visit(AstCastDynamic* nodep) VL_OVERRIDE {
-        if (!v3Global.opt.bboxUnsup()) {
-            nodep->v3error("Unsupported: $cast. Suggest try static cast.");
-        }
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: $cast. Suggest try static cast.");
         AstNode* newp = new AstConst(nodep->fileline(), 1);
         newp->dtypeSetSigned32();  // Spec says integer return
         nodep->replaceWith(newp);
@@ -1482,7 +1521,8 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             userIterate(newp, m_vup);
         } else {
-            nodep->v3error("Unsupported: Cast to " << nodep->dtp()->prettyTypeName());
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Cast to " << nodep->dtp()->prettyTypeName());
             nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
         }
     }
@@ -1539,7 +1579,8 @@ private:
             AstBasicDType* underDtp = VN_CAST(nodep->lhsp()->dtypep(), BasicDType);
             if (!underDtp) underDtp = nodep->lhsp()->dtypep()->basicp();
             if (!underDtp) {
-                nodep->v3error("Unsupported: Size-changing cast on non-basic data type");
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Size-changing cast on non-basic data type");
                 underDtp = VN_CAST(nodep->findLogicBoolDType(), BasicDType);
             }
             // A cast propagates its size to the lower expression and is included in the maximum
@@ -1608,7 +1649,8 @@ private:
                    && !(VN_IS(nodep->dtypeSkipRefp(), BasicDType)
                         || VN_IS(nodep->dtypeSkipRefp(), NodeArrayDType)
                         || VN_IS(nodep->dtypeSkipRefp(), NodeUOrStructDType))) {
-            nodep->v3error("Unsupported: Inputs and outputs must be simple data types");
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Inputs and outputs must be simple data types");
         }
         if (VN_IS(nodep->dtypep()->skipRefToConstp(), ConstDType)) nodep->isConst(true);
         // Parameters if implicit untyped inherit from what they are assigned to
@@ -1925,6 +1967,7 @@ private:
     virtual void visit(AstClass* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
         userIterateChildren(nodep, NULL);  // First size all members
+        if (nodep->isVirtual()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: virtual class");
         nodep->repairCache();
     }
     virtual void visit(AstClassRefDType* nodep) VL_OVERRIDE {
@@ -1935,7 +1978,7 @@ private:
     }
     virtual void visit(AstClassExtends* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
-        nodep->v3error("Unsupported: class extends");  // Member/meth access breaks
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: class extends");  // Member/meth access breaks
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         // nodep->dtypep(iterateEditMoveDTypep(nodep));  // data_type '{ pattern }
         // userIterateChildren(nodep, NULL);
@@ -2086,9 +2129,10 @@ private:
         } else if (basicp && basicp->isString()) {
             methodCallString(nodep, basicp);
         } else {
-            nodep->v3error("Unsupported: Member call on object '"
-                           << nodep->fromp()->prettyTypeName() << "' which is a '"
-                           << nodep->fromp()->dtypep()->prettyTypeName() << "'");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Member call on object '"
+                                             << nodep->fromp()->prettyTypeName()
+                                             << "' which is a '"
+                                             << nodep->fromp()->dtypep()->prettyTypeName() << "'");
         }
     }
     void methodOkArguments(AstMethodCall* nodep, int minArg, int maxArg) {
@@ -2202,7 +2246,8 @@ private:
                     if (vconstp->toUQuad() >= msbdim) msbdim = vconstp->toUQuad();
                 }
                 if (adtypep->itemsp()->width() > 64 || msbdim >= (1 << 16)) {
-                    nodep->v3error("Unsupported: enum next/prev method on enum with > 10 bits");
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: enum next/prev method on enum with > 10 bits");
                     return;
                 }
             }
@@ -2287,8 +2332,8 @@ private:
     void methodCallLValue(AstMethodCall* nodep, AstNode* childp, bool lvalue) {
         AstNodeVarRef* varrefp = VN_CAST(childp, NodeVarRef);
         if (!varrefp) {
-            nodep->v3error("Unsupported: Non-variable on LHS of built-in method '"
-                           << nodep->prettyName() << "'");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Non-variable on LHS of built-in method '"
+                                             << nodep->prettyName() << "'");
         } else {
             if (lvalue) varrefp->lvalue(true);
         }
@@ -2317,8 +2362,8 @@ private:
                                       NULL);
             newp->makeStatement();
         } else {
-            nodep->v3error("Unsupported/unknown built-in dynamic array method "
-                           << nodep->prettyNameQ());
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported/unknown built-in dynamic array method "
+                                             << nodep->prettyNameQ());
         }
         if (newp) {
             newp->didWidth(true);
@@ -2362,8 +2407,9 @@ private:
                     newp->didWidth(true);
                     newp->makeStatement();
                 } else {
-                    nodep->v3error("Unsupported: Queue .delete(index) method, as is O(n) "
-                                   "complexity and slow.");
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Queue .delete(index) method, as is O(n) "
+                                  "complexity and slow.");
                     newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                               "erase", index_exprp->unlinkFrBack());
                     newp->protect(false);
@@ -2382,7 +2428,8 @@ private:
                 newp->protect(false);
                 newp->makeStatement();
             } else {
-                nodep->v3error(
+                nodep->v3warn(
+                    E_UNSUPPORTED,
                     "Unsupported: Queue .insert method, as is O(n) complexity and slow.");
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           nodep->name(), index_exprp->unlinkFrBack());
@@ -2409,8 +2456,8 @@ private:
             newp->protect(false);
             newp->makeStatement();
         } else {
-            nodep->v3error("Unsupported/unknown built-in associative array method "
-                           << nodep->prettyNameQ());
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported/unknown built-in associative array method "
+                                             << nodep->prettyNameQ());
         }
         if (newp) {
             newp->didWidth(true);
@@ -2681,9 +2728,9 @@ private:
         }
         AstNodeDType* dtypep = nodep->dtypep();
         if (!dtypep) {
-            nodep->v3error("Unsupported/Illegal: Assignment pattern"
-                           " member not underneath a supported construct: "
-                           << nodep->backp()->prettyTypeName());
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported/Illegal: Assignment pattern"
+                                         " member not underneath a supported construct: "
+                                             << nodep->backp()->prettyTypeName());
             return;
         }
         {
@@ -2740,9 +2787,10 @@ private:
             } else if (VN_IS(dtypep, BasicDType) && VN_CAST(dtypep, BasicDType)->isRanged()) {
                 VL_DO_DANGLING(patternBasic(nodep, dtypep, defaultp), nodep);
             } else {
-                nodep->v3error(
+                nodep->v3warn(
+                    E_UNSUPPORTED,
                     "Unsupported: Assignment pattern applies against non struct/union data type: "
-                    << dtypep->prettyDTypeNameQ());
+                        << dtypep->prettyDTypeNameQ());
             }
         }
     }
@@ -3116,7 +3164,7 @@ private:
         if (AstBasicDType* basicp = nodep->rhsp()->dtypep()->basicp()) {
             if (basicp->isEventValue()) {
                 // see t_event_copy.v for commentary on the mess involved
-                nodep->v3error("Unsupported: assignment of event data type");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
             }
         }
         if (AstNewDynamic* dynp = VN_CAST(nodep->rhsp(), NewDynamic)) {
@@ -3445,15 +3493,17 @@ private:
                    = VN_CAST(nodep->memp()->dtypep()->skipRefp(), UnpackArrayDType)) {
             subp = adtypep->subDTypep();
         } else {
-            nodep->memp()->v3error("Unsupported: "
-                                   << nodep->verilogKwd()
-                                   << " into other than unpacked or associative array");
+            nodep->memp()->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: "
+                                      << nodep->verilogKwd()
+                                      << " into other than unpacked or associative array");
         }
         if (subp
             && (!subp->skipRefp()->basicp()
                 || !subp->skipRefp()->basicp()->keyword().isIntNumeric())) {
-            nodep->memp()->v3error("Unsupported: " << nodep->verilogKwd()
-                                                   << " array values must be integral");
+            nodep->memp()->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: " << nodep->verilogKwd()
+                                                  << " array values must be integral");
         }
         userIterateAndNext(nodep->lsbp(), WidthVP(SELF, BOTH).p());
         userIterateAndNext(nodep->msbp(), WidthVP(SELF, BOTH).p());
@@ -3549,11 +3599,12 @@ private:
                                    << conDTypep->prettyDTypeNameQ() << " data type." << endl);
                 } else if (nodep->modVarp()->isTristate()) {
                     if (pinwidth != conwidth) {
-                        nodep->v3error("Unsupported: " << ucfirst(nodep->prettyOperatorName())
-                                                       << " to inout signal requires " << pinwidth
-                                                       << " bits, but connection's "
-                                                       << nodep->exprp()->prettyTypeName()
-                                                       << " generates " << conwidth << " bits.");
+                        nodep->v3warn(E_UNSUPPORTED,
+                                      "Unsupported: " << ucfirst(nodep->prettyOperatorName())
+                                                      << " to inout signal requires " << pinwidth
+                                                      << " bits, but connection's "
+                                                      << nodep->exprp()->prettyTypeName()
+                                                      << " generates " << conwidth << " bits.");
                         // otherwise would need some mess to force both sides to proper size
                     }
                 }
@@ -3649,10 +3700,13 @@ private:
         // Grab width from the output variable (if it's a function)
         if (nodep->didWidth()) return;
         if (nodep->doingWidth()) {
-            nodep->v3error("Unsupported: Recursive function or task call");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function or task call");
             nodep->dtypeSetLogicBool();
             nodep->didWidth(true);
             return;
+        }
+        if (nodep->isVirtual() || nodep->pureVirtual()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'virtual' class method");
         }
         // Function hasn't been widthed, so make it so.
         // Would use user1 etc, but V3Width called from too many places to spend a user
@@ -3805,10 +3859,11 @@ private:
                                   << portp->prettyTypeName() << " but connection is "
                                   << pinp->prettyTypeName() << ".");
                 } else if (portp->isWritable() && pinp->width() != portp->width()) {
-                    pinp->v3error("Unsupported: Function output argument "
-                                  << portp->prettyNameQ() << " requires " << portp->width()
-                                  << " bits, but connection's " << pinp->prettyTypeName()
-                                  << " generates " << pinp->width() << " bits.");
+                    pinp->v3warn(E_UNSUPPORTED, "Unsupported: Function output argument "
+                                                    << portp->prettyNameQ() << " requires "
+                                                    << portp->width() << " bits, but connection's "
+                                                    << pinp->prettyTypeName() << " generates "
+                                                    << pinp->width() << " bits.");
                     // otherwise would need some mess to force both sides to proper size
                     // (get an ASSIGN with EXTEND on the lhs instead of rhs)
                 }
@@ -4984,6 +5039,9 @@ private:
         }
         if (!dtnodep->didWidth()) {
             UINFO(9, "iterateEditMoveDTypep pointer iterating " << dtnodep << endl);
+            // See notes in visit(AstBracketArrayDType*)
+            UASSERT_OBJ(!VN_IS(dtnodep, BracketArrayDType), parentp,
+                        "Brackets should have been iterated as children");
             userIterate(dtnodep, NULL);
             UASSERT_OBJ(dtnodep->didWidth(), parentp,
                         "iterateEditMoveDTypep didn't get width resolution");

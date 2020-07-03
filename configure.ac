@@ -128,11 +128,11 @@ AC_ARG_ENABLE([prec11],
 AC_SUBST(CFG_WITH_PREC11)
 AC_MSG_RESULT($CFG_WITH_PREC11)
 
-# Compiler flags
-CFLAGS+=" -I${includedir}"
-CPPFLAGS+=" -I${includedir}"
-CXXFLAGS+=" -I${includedir}"
-LDFLAGS+=" -L${libdir}"
+# Compiler flags (ensure they are not empty to avoid configure defaults)
+CFLAGS+=" "
+CPPFLAGS+=" "
+CXXFLAGS+=" "
+LDFLAGS+=" "
 
 # Checks for programs.
 AC_PROG_CC
@@ -447,14 +447,18 @@ AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],
 # - If not found or not system-wide, user can set SYSTEMC_INCLUDE.
 # AC_CHECK_HEADERS seems to not locate on Travis-CI but include does work.
 AC_MSG_CHECKING([whether SystemC is found (in system path)])
-AC_COMPILE_IFELSE(
+ACO_SAVE_LIBS="$LIBS"
+LIBS="$LIBS -lsystemc"
+AC_LINK_IFELSE(
     [AC_LANG_PROGRAM([[#include <systemc.h>
-                     ]],[])],
+                     extern "C" int sc_main(int argc, char* argv[]) {}
+                     ]],[[sc_version()]])],
     [_my_result=yes
-     AC_DEFINE([HAVE_SYSTEMC_H],[1],[Defined if have systemc.h])],
+     AC_DEFINE([HAVE_SYSTEMC],[1],[Defined if have SystemC library])],
     [_my_result=no])
 AC_MSG_RESULT($_my_result)
-AC_SUBST(HAVE_SYSTEMC_H)
+LIBS="$ACO_SAVE_LIBS"
+AC_SUBST(HAVE_SYSTEMC)
 
 # Checks for system services
 

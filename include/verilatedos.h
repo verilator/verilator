@@ -435,7 +435,7 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 // Performance counters
 
 /// The vluint64_t argument is loaded with a high-performance counter for profiling
-/// or 0x0 if not implemeted on this platform
+/// or 0x0 if not implemented on this platform
 #if defined(__i386__) || defined(__x86_64__)
 #define VL_RDTSC(val) \
     { \

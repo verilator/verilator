@@ -1,0 +1,49 @@
+%Error-UNSUPPORTED: t/t_class_extends_this.v:13:11: Unsupported: this
+   13 |       if (this.value != 1) $stop;
+      |           ^~~~
+%Error: t/t_class_extends_this.v:13:11: Can't find definition of scope/variable: 'this'
+   13 |       if (this.value != 1) $stop;
+      |           ^~~~
+%Error-UNSUPPORTED: t/t_class_extends_this.v:17:19: Unsupported: class extends
+   17 | class Cls extends Base;
+      |                   ^~~~
+%Error: t/t_class_extends_this.v:17:19: Found definition of 'Base' as a CLASS but expected a variable
+   17 | class Cls extends Base;
+      |                   ^~~~
+%Error-UNSUPPORTED: t/t_class_extends_this.v:21:11: Unsupported: this
+   21 |       if (this.value != 2) $stop;
+      |           ^~~~
+%Error: t/t_class_extends_this.v:21:11: Can't find definition of scope/variable: 'this'
+   21 |       if (this.value != 2) $stop;
+      |           ^~~~
+%Error-UNSUPPORTED: t/t_class_extends_this.v:22:11: Unsupported: super
+   22 |       if (super.value != 1) $stop;
+      |           ^~~~~
+%Error: t/t_class_extends_this.v:22:11: Can't find definition of scope/variable: 'super'
+   22 |       if (super.value != 1) $stop;
+      |           ^~~~~
+%Error-UNSUPPORTED: t/t_class_extends_this.v:23:7: Unsupported: super
+   23 |       super.test();
+      |       ^~~~~
+%Error: t/t_class_extends_this.v:23:7: Can't find definition of scope/variable: 'super'
+   23 |       super.test();
+      |       ^~~~~
+%Error-UNSUPPORTED: t/t_class_extends_this.v:24:7: Unsupported: super
+   24 |       super.value = 10;
+      |       ^~~~~
+%Error: t/t_class_extends_this.v:24:7: Can't find definition of scope/variable: 'super'
+   24 |       super.value = 10;
+      |       ^~~~~
+%Error-UNSUPPORTED: t/t_class_extends_this.v:25:7: Unsupported: this
+   25 |       this.value = 20;
+      |       ^~~~
+%Error: t/t_class_extends_this.v:25:7: Can't find definition of scope/variable: 'this'
+   25 |       this.value = 20;
+      |       ^~~~
+%Error-UNSUPPORTED: t/t_class_extends_this.v:26:11: Unsupported: super
+   26 |       if (super.value != 10) $stop;
+      |           ^~~~~
+%Error: t/t_class_extends_this.v:26:11: Can't find definition of scope/variable: 'super'
+   26 |       if (super.value != 10) $stop;
+      |           ^~~~~
+%Error: Exiting due to

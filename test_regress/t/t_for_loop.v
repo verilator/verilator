@@ -101,6 +101,13 @@ module t (/*AUTOARG*/
 	 if (i != 20) $stop;
 	 for (i=30; i<10; i++) ;
 	 if (i != 30) $stop;
+	 // Comma
+	 loops = 0;
+	 for (i=0; i<20; ++i, ++loops);
+	 if (loops !== 20) $stop;
+	 loops = 0;
+	 for (i=0; i<20; ++loops, ++i);
+	 if (loops !== 20) $stop;
 	 //
 	 $write("*-* All Finished *-*\n");
 	 $finish;

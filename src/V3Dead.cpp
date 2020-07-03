@@ -326,11 +326,11 @@ private:
         }
     }
     bool mightElimVar(AstVar* nodep) {
-        return (!nodep->isSigPublic()  // Can't elim publics!
-                && !nodep->isIO() && !nodep->isClassMember()
-                && ((nodep->isTemp() && !nodep->isTrace())
-                    || (nodep->isParam() && !nodep->isTrace() && !v3Global.opt.xmlOnly())
-                    || m_elimUserVars));  // Post-Trace can kill most anything
+        if (nodep->isSigPublic()) return false;  // Can't elim publics!
+        if (nodep->isIO() || nodep->isClassMember()) return false;
+        if (nodep->isTemp() && !nodep->isTrace()) return true;
+        if (nodep->isParam() && !nodep->isTrace() && !v3Global.opt.xmlOnly()) return true;
+        return m_elimUserVars;  // Post-Trace can kill most anything
     }
 
     void deadCheckScope() {

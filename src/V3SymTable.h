@@ -181,8 +181,10 @@ public:
     }
 
 private:
-    void importOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) {
-        if (srcp->exported() && !findIdFlat(name)) {  // Don't insert over existing entry
+    void importOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp,
+                         bool honorExport) {
+        if ((!honorExport || srcp->exported())
+            && !findIdFlat(name)) {  // Don't insert over existing entry
             VSymEnt* symp = new VSymEnt(graphp, srcp);
             symp->exported(false);  // Can't reimport an import without an export
             symp->imported(true);
@@ -198,15 +200,25 @@ private:
     }
 
 public:
+    void importFromClass(VSymGraph* graphp, const VSymEnt* srcp) {
+        // Import tokens from source symbol table into this symbol table
+        // Used for classes in early parsing only to handle "extends"
+        for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
+             it != srcp->m_idNameMap.end(); ++it) {
+            importOneSymbol(graphp, it->first, it->second, false);
+        }
+    }
     void importFromPackage(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
         // Import tokens from source symbol table into this symbol table
         if (id_or_star != "*") {
             IdNameMap::const_iterator it = srcp->m_idNameMap.find(id_or_star);
-            if (it != srcp->m_idNameMap.end()) importOneSymbol(graphp, it->first, it->second);
+            if (it != srcp->m_idNameMap.end()) {
+                importOneSymbol(graphp, it->first, it->second, true);
+            }
         } else {
             for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
                  it != srcp->m_idNameMap.end(); ++it) {
-                importOneSymbol(graphp, it->first, it->second);
+                importOneSymbol(graphp, it->first, it->second, true);
             }
         }
     }

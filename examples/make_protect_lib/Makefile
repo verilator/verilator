@@ -68,7 +68,7 @@ run:
 	@echo " library (libverilated_secret.a) generated from the previous"
 	@echo " step"
 	@echo "---------------------------------------------------------------"
-	$(VERILATOR) $(TOP_VERILATOR_FLAGS) --exe -LDFLAGS '-L../obj_dir_secret -lverilated_secret -static' top.v obj_dir_secret/verilated_secret.sv sim_main.cpp
+	$(VERILATOR) $(TOP_VERILATOR_FLAGS) --exe -LDFLAGS '../obj_dir_secret/libverilated_secret.a' top.v obj_dir_secret/verilated_secret.sv sim_main.cpp
 
 	@echo
 	@echo "-- COMPILE entire design --------------------------------------"

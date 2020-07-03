@@ -33,6 +33,7 @@
 #include "V3Os.h"
 
 #include <cerrno>
+#include <climits>  // PATH_MAX (especially on FreeBSD)
 #include <cstdarg>
 #include <dirent.h>
 #include <fstream>

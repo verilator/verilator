@@ -67,47 +67,6 @@
 #undef VL_DERIVED_T
 
 //=============================================================================
-// VerilatedVcdImp
-/// Base class to hold some static state
-/// This is an internally used class
-
-class VerilatedVcdSingleton {
-private:
-    typedef std::vector<VerilatedVcd*> VcdVec;
-    struct Singleton {
-        VerilatedMutex s_vcdMutex;  ///< Protect the singleton
-        VcdVec s_vcdVecp VL_GUARDED_BY(s_vcdMutex);  ///< List of all created traces
-    };
-    static Singleton& singleton() {
-        static Singleton s;
-        return s;
-    }
-
-public:
-    static void pushVcd(VerilatedVcd* vcdp) VL_EXCLUDES(singleton().s_vcdMutex) {
-        const VerilatedLockGuard lock(singleton().s_vcdMutex);
-        singleton().s_vcdVecp.push_back(vcdp);
-    }
-    static void removeVcd(const VerilatedVcd* vcdp) VL_EXCLUDES(singleton().s_vcdMutex) {
-        const VerilatedLockGuard lock(singleton().s_vcdMutex);
-        VcdVec::iterator pos
-            = find(singleton().s_vcdVecp.begin(), singleton().s_vcdVecp.end(), vcdp);
-        if (pos != singleton().s_vcdVecp.end()) { singleton().s_vcdVecp.erase(pos); }
-    }
-    static void flush_all() VL_EXCLUDES(singleton().s_vcdMutex) VL_MT_UNSAFE_ONE {
-        // Thread safety: Although this function is protected by a mutex so
-        // perhaps in the future we can allow tracing in separate threads,
-        // vcdp->flush() assumes call from single thread
-        const VerilatedLockGuard lock(singleton().s_vcdMutex);
-        for (VcdVec::const_iterator it = singleton().s_vcdVecp.begin();
-             it != singleton().s_vcdVecp.end(); ++it) {
-            VerilatedVcd* vcdp = *it;
-            vcdp->flush();
-        }
-    }
-};
-
-//=============================================================================
 //=============================================================================
 //=============================================================================
 // VerilatedVcdFile
@@ -152,13 +111,7 @@ void VerilatedVcd::open(const char* filename) {
 
     // Set member variables
     m_filename = filename;  // "" is ok, as someone may overload open
-    VerilatedVcdSingleton::pushVcd(this);
 
-    // SPDIFF_OFF
-    // Set callback so an early exit will flush us
-    Verilated::flushCb(&flush_all);
-
-    // SPDIFF_ON
     openNext(m_rolloverMB != 0);
     if (!isOpen()) return;
 
@@ -266,7 +219,6 @@ VerilatedVcd::~VerilatedVcd() {
     if (m_wrBufp) VL_DO_CLEAR(delete[] m_wrBufp, m_wrBufp = NULL);
     deleteNameMap();
     if (m_filep && m_fileNewed) VL_DO_CLEAR(delete m_filep, m_filep = NULL);
-    VerilatedVcdSingleton::removeVcd(this);
 }
 
 void VerilatedVcd::closePrev() {
@@ -822,11 +774,6 @@ void VerilatedVcd::fullDouble(vluint32_t code, const double newval) {
 }
 
 #endif  // VL_TRACE_VCD_OLD_API
-
-//======================================================================
-// Static members
-
-void VerilatedVcd::flush_all() VL_MT_UNSAFE_ONE { VerilatedVcdSingleton::flush_all(); }
 
 //======================================================================
 //======================================================================

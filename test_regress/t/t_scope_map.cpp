@@ -14,8 +14,6 @@
 
 #include "Vt_scope_map.h"
 
-using namespace std;
-
 unsigned long long main_time = 0;
 double sc_time_stamp() { return (double)main_time; }
 
