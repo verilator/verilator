@@ -1012,7 +1012,9 @@ class LinkDotFindVisitor : public AstNVisitor {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        if (nodep->isClassMember() && nodep->lifetime().isStatic()) {
+        if (nodep->isFuncLocal() && nodep->lifetime().isStatic()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' function/task variables");
+        } else if (nodep->isClassMember() && nodep->lifetime().isStatic()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' class members");
         }
         if (!m_statep->forScopeCreation()) {

@@ -117,6 +117,9 @@ public:
 inline bool operator==(const VLifetime& lhs, const VLifetime& rhs) { return lhs.m_e == rhs.m_e; }
 inline bool operator==(const VLifetime& lhs, VLifetime::en rhs) { return lhs.m_e == rhs; }
 inline bool operator==(VLifetime::en lhs, const VLifetime& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 

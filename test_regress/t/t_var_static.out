@@ -1,22 +1,17 @@
-%Error-UNSUPPORTED: t/t_var_static.v:20:7: Unsupported: Static in this context
+%Error-UNSUPPORTED: t/t_var_static.v:20:18: Unsupported: 'static' function/task variables
+                                          : ... In instance t
    20 |       static int st = 2; st++; return st;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_var_static.v:26:13: Unsupported: Static in this context
-   26 |    function static int f_st_no ();
-      |             ^~~~~~
-%Error-UNSUPPORTED: t/t_var_static.v:29:13: Unsupported: Static in this context
-   29 |    function static int f_st_st ();
-      |             ^~~~~~
-%Error-UNSUPPORTED: t/t_var_static.v:30:7: Unsupported: Static in this context
+      |                  ^~
+%Error-UNSUPPORTED: t/t_var_static.v:27:11: Unsupported: 'static' function/task variables
+                                          : ... In instance t
+   27 |       int st = 2; st++; return st;
+      |           ^~
+%Error-UNSUPPORTED: t/t_var_static.v:30:18: Unsupported: 'static' function/task variables
+                                          : ... In instance t
    30 |       static int st = 2; st++; return st;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_var_static.v:32:13: Unsupported: Static in this context
-   32 |    function static int f_st_au ();
-      |             ^~~~~~
-%Error-UNSUPPORTED: t/t_var_static.v:40:7: Unsupported: Static in this context
+      |                  ^~
+%Error-UNSUPPORTED: t/t_var_static.v:40:18: Unsupported: 'static' function/task variables
+                                          : ... In instance t
    40 |       static int st = 2; st++; return st;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_var_static.v:73:7: Unsupported: Static in this context
-   73 |       static int ist2;
-      |       ^~~~~~
+      |                  ^~
 %Error: Exiting due to

@@ -3779,7 +3779,7 @@ lifetimeE<lifetime>:		// IEEE: [lifetime]
 
 lifetime<lifetime>:		// ==IEEE: lifetime
 	//			// Note lifetime used by members is instead under memberQual
-		ySTATIC__ETC		 		{ $$ = VLifetime::STATIC; BBUNSUP($1, "Unsupported: Static in this context"); }
+		ySTATIC__ETC		 		{ $$ = VLifetime::STATIC; }
 	|	yAUTOMATIC		 		{ $$ = VLifetime::AUTOMATIC; }
 	;
 
