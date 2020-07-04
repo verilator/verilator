@@ -3112,9 +3112,7 @@ print an "Assertion failed" error message.
 
 =item hier_block -module "<modulename>"
 
-Specifies that the module is a unit of hierarchical Verilation to reduce the
-runtime and the memory consumption for Verilation.
-
+Specifies that the module is a unit of hierarchical Verilation.
 See L</"HIERARCHICAL VERILATION"> for more information.
 
 =item inline -module "<modulename>"
