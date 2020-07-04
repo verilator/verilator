@@ -93,8 +93,7 @@ public:
     // CONSTRUCTORS
     V3Global()
         : m_rootp(NULL)  // created by makeInitNetlist() so static constructors run first
-        , m_hierPlanp(NULL)  // Set via hierPlanp(V3HierBlockPlan*). Stay NULL unless hier_block
-                             // pragma appears
+        , m_hierPlanp(NULL)  // Set via hierPlanp(V3HierBlockPlan*) when use hier_block
         , m_widthMinUsage(VWidthMinUsage::LINT_WIDTH)
         , m_debugFileNumber(0)
         , m_assertDTypesResolved(false)
