@@ -443,7 +443,6 @@ private:
                 string newname = varrefp->name() + "__BRA__" + cvtToStr(i + offset) + "__KET__";
                 AstVarXRef* newVarXRefp = new AstVarXRef(nodep->fileline(), newname, "", true);
                 newVarXRefp->varp(newp->modVarp());
-                newVarXRefp->dtypep(newp->modVarp()->dtypep());
                 newp->exprp()->unlinkFrBack()->deleteTree();
                 newp->exprp(newVarXRefp);
                 if (!prevPinp) {

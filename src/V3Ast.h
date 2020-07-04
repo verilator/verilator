@@ -2269,29 +2269,26 @@ private:
     string m_name;  // Name of variable
     string m_hiername;  // Scope converted into name-> for emitting
     bool m_hierThis;  // Hiername points to "this" function
-    void init();
 
 public:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, bool lvalue)
         : AstNodeMath(t, fl)
         , m_lvalue(lvalue)
-        , m_varp(NULL)
         , m_varScopep(NULL)
         , m_packagep(NULL)
         , m_name(name)
         , m_hierThis(false) {
-        init();
+        this->varp(NULL);
     }
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, AstVar* varp, bool lvalue)
         : AstNodeMath(t, fl)
         , m_lvalue(lvalue)
-        , m_varp(varp)
         , m_varScopep(NULL)
         , m_packagep(NULL)
         , m_name(name)
         , m_hierThis(false) {
         // May have varp==NULL
-        init();
+        this->varp(varp);
     }
     ASTNODE_BASE_FUNCS(NodeVarRef)
     virtual bool hasDType() const { return true; }
@@ -2303,7 +2300,7 @@ public:
     bool lvalue() const { return m_lvalue; }
     void lvalue(bool lval) { m_lvalue = lval; }  // Avoid using this; Set in constructor
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
-    void varp(AstVar* varp) { m_varp = varp; }
+    void varp(AstVar* varp);
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
     string hiername() const { return m_hiername; }
@@ -2943,8 +2940,9 @@ inline bool AstNode::sameGateTree(const AstNode* node2p) const {
     return sameTreeIter(this, node2p, true, true);
 }
 
-inline void AstNodeVarRef::init() {
-    if (m_varp) dtypep(m_varp->dtypep());
+inline void AstNodeVarRef::varp(AstVar* varp) {
+    m_varp = varp;
+    dtypeFrom(varp);
 }
 
 inline bool AstNodeDType::isFourstate() const { return basicp()->isFourstate(); }
