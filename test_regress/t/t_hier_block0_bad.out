@@ -1,8 +1,8 @@
-%Error: t/t_hier_block_bad0.v:19:11: sub0 has hier_block metacomment, hierarchical verilation supports only integer/floating point/string parameters.
+%Error: t/t_hier_block0_bad.v:19:11: sub0 has hier_block metacomment, hierarchical verilation supports only integer/floating point/string parameters.
                                    : ... In instance t
    19 |    sub0 #(UNPACKED) i_sub0(.clk(clk), .in(count), .out(out0));
       |           ^~~~~~~~
-%Error: t/t_hier_block_bad0.v:23:42: Cannot access inside hierarchy block
+%Error: t/t_hier_block0_bad.v:23:42: Cannot access inside hierarchy block
    23 |       $display("%d %d %d", count, i_sub0.ff, out0);
       |                                          ^~
 %Error: Exiting due to
