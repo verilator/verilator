@@ -298,7 +298,7 @@ private:
             } else {
                 // In hierarchical verilation mode, non-top module can be the top module of this
                 // run.
-                pushDeletep(nodep->unlinkFrBack());
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }
         }
