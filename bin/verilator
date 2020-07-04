@@ -2208,7 +2208,7 @@ For --make gmake, it creates:
 
     {prefix}.mk                         // Make include file for compiling
     {prefix}_classes.mk                 // Make include file with class names
-    {prefix}_hier.mk                    // Verilate hierarchical blocks specified by "hier_block"
+    {prefix}_hier.mk                    // Make file for hierarchical blocks
 
 For --make cmake, it creates:
 
