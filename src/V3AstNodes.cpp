@@ -22,7 +22,7 @@
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3PartitionGraph.h"  // Just for mtask dumping
-#include "V3String.h"  // For VString::parseDouble
+#include "V3String.h"
 #include "V3EmitCBase.h"
 
 #include <iomanip>
