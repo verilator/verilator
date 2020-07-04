@@ -4425,9 +4425,8 @@ a clock.
 
 =item HIERBLOCK
 
-This warning tells that the top module is marked as a hierarchy block
-by hier_block metacomment.  The setting for the top module will be ignored.
-
+Warns that the top module is marked as a hierarchy block
+by hier_block metacomment, which is not legal.  This setting on the top module will be ignored.
 =item IFDEPTH
 
 Warns that if/if else statements have exceeded the depth specified with
