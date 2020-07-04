@@ -3472,7 +3472,6 @@ The module will not be inlined nor uniquified for each instance.
 
 See L</"HIERARCHICAL VERILATION"> for more information.
 
-
 =item /*verilator inline_module*/
 
 Specifies the module the comment appears in may be inlined into any modules
