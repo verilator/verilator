@@ -343,7 +343,7 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
 
     vl_unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan());
     { Visitor visitor(planp.get(), nodep); }
-    V3Stats::addStat("HierBlock, Hierarchy block", v3Global.opt.hierBlocks().size());
+    V3Stats::addStat("HierBlock, Hierarchy blocks", v3Global.opt.hierBlocks().size());
 
     // No hierarchy block is found, nothing to do.
     if (planp->empty()) return;
