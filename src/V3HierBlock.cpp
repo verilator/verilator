@@ -45,8 +45,7 @@
 //    3-2) If the top module of the run b) or c) instantiates other hierarchy blocks that is
 //         parameterized,
 //         module and task names are renamed to the original name to be compatible with the
-//         following behavior or Verilator. (The following behavior has been there regardless of
-//         hierarchy block)
+//         hier module to be called.
 //
 //         Parameterized modules have unique name by V3Param.cpp. The unique name contains '__' and
 //         Verilator encodes '__' when loading such symbols.
