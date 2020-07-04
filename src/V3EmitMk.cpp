@@ -392,7 +392,7 @@ class EmitMkHierVerilation {
             of.puts("\n");
         }
 
-        // Rules to process Hierarchy Blocks
+        // Rules to process hierarchy blocks
         of.puts("\n# Verilate hierarchy blocks\n");
         for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end(); ++it) {
             const string prefix = it->second->hierPrefix();
