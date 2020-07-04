@@ -436,7 +436,7 @@ class EmitMkHierVerilation {
             of.puts(" VM_PREFIX=" + prefix);
             of.puts("\n\n");
         }
-        of.puts("endif # ifdef VM_HIER_VERILATION_INCLUDED\n");
+        of.puts("endif  # Guard\n");
     }
 
 public:
