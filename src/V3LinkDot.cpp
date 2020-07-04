@@ -539,8 +539,8 @@ private:
     }
 
 public:
-    VSymEnt* findDotted(VSymEnt* lookupSymp, const string& dotname, string& baddot,
-                        VSymEnt*& okSymp, FileLine* /*refLocationp*/) {
+    VSymEnt* findDotted(FileLine* /*refLocationp*/, VSymEnt* lookupSymp, const string& dotname,
+                        string& baddot, VSymEnt*& okSymp) {
         // Given a dotted hierarchy name, return where in scope it is
         // Note when dotname=="" we just fall through and return lookupSymp
         UINFO(8, "    dottedFind se" << cvtToHex(lookupSymp) << " '" << dotname << "'" << endl);
@@ -875,7 +875,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             string scope = origname.substr(0, pos);
             string baddot;
             VSymEnt* okSymp;
-            aboveSymp = m_statep->findDotted(aboveSymp, scope, baddot, okSymp, nodep->fileline());
+            aboveSymp = m_statep->findDotted(nodep->fileline(), aboveSymp, scope, baddot, okSymp);
             UASSERT_OBJ(aboveSymp, nodep,
                         "Can't find cell insertion point at " << AstNode::prettyNameQ(baddot)
                                                               << " in: " << nodep->prettyNameQ());
@@ -906,7 +906,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             string ident = dottedname.substr(pos + strlen("__DOT__"));
             string baddot;
             VSymEnt* okSymp;
-            aboveSymp = m_statep->findDotted(aboveSymp, dotted, baddot, okSymp, nodep->fileline());
+            aboveSymp = m_statep->findDotted(nodep->fileline(), aboveSymp, dotted, baddot, okSymp);
             UASSERT_OBJ(aboveSymp, nodep,
                         "Can't find cellinline insertion point at "
                             << AstNode::prettyNameQ(baddot) << " in: " << nodep->prettyNameQ());
@@ -1458,15 +1458,15 @@ class LinkDotScopeVisitor : public AstNVisitor {
                 string ifcellname = dtypep->cellName();
                 string baddot;
                 VSymEnt* okSymp;
-                VSymEnt* cellSymp = m_statep->findDotted(m_modSymp, ifcellname, baddot, okSymp,
-                                                         nodep->fileline());
+                VSymEnt* cellSymp = m_statep->findDotted(nodep->fileline(), m_modSymp, ifcellname,
+                                                         baddot, okSymp);
                 UASSERT_OBJ(cellSymp, nodep,
                             "No symbol for interface cell: " << nodep->prettyNameQ(ifcellname));
                 UINFO(5, "       Found interface cell: se" << cvtToHex(cellSymp) << " "
                                                            << cellSymp->nodep() << endl);
                 if (dtypep->modportName() != "") {
-                    VSymEnt* mpSymp = m_statep->findDotted(m_modSymp, ifcellname, baddot, okSymp,
-                                                           nodep->fileline());
+                    VSymEnt* mpSymp = m_statep->findDotted(nodep->fileline(), m_modSymp,
+                                                           ifcellname, baddot, okSymp);
                     UASSERT_OBJ(mpSymp, nodep,
                                 "No symbol for interface modport: "
                                     << nodep->prettyNameQ(dtypep->modportName()));
@@ -1515,8 +1515,8 @@ class LinkDotScopeVisitor : public AstNVisitor {
                     = refp ? refp->name() : (inl.size() ? (inl + xrefp->name()) : xrefp->name());
                 string baddot;
                 VSymEnt* okSymp;
-                symp = m_statep->findDotted(m_modSymp, scopename, baddot, okSymp,
-                                            nodep->rhsp()->fileline());
+                symp = m_statep->findDotted(nodep->rhsp()->fileline(), m_modSymp, scopename,
+                                            baddot, okSymp);
                 if (inl == "") break;
                 inl = LinkDotState::removeLastInlineScope(inl);
             }
@@ -1539,8 +1539,8 @@ class LinkDotScopeVisitor : public AstNVisitor {
             string scopename = refp ? refp->varp()->name() : xrefp->dotted() + "." + xrefp->name();
             string baddot;
             VSymEnt* okSymp;
-            VSymEnt* symp = m_statep->findDotted(m_modSymp, scopename, baddot, okSymp,
-                                                 nodep->lhsp()->fileline());
+            VSymEnt* symp = m_statep->findDotted(nodep->lhsp()->fileline(), m_modSymp, scopename,
+                                                 baddot, okSymp);
             UASSERT_OBJ(symp, nodep, "No symbol for interface alias lhs");
             UINFO(5, "       Found a linked scope LHS: " << scopename << "  se" << cvtToHex(symp)
                                                          << " " << symp->nodep() << endl);
@@ -2069,8 +2069,8 @@ private:
             string baddot;
             VSymEnt* okSymp = NULL;
             if (allowScope) {
-                foundp = m_statep->findDotted(m_ds.m_dotSymp, nodep->name(), baddot, okSymp,
-                                              nodep->fileline());  // Maybe NULL
+                foundp = m_statep->findDotted(nodep->fileline(), m_ds.m_dotSymp, nodep->name(),
+                                              baddot, okSymp);  // Maybe NULL
             } else {
                 foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
             }
@@ -2303,13 +2303,13 @@ private:
                 // ignore (t_math_divw)
                 dotSymp = m_modSymp;
                 string inl = AstNode::dedotName(nodep->inlinedDots());
-                dotSymp = m_statep->findDotted(dotSymp, inl, baddot, okSymp, nodep->fileline());
+                dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, inl, baddot, okSymp);
                 UASSERT_OBJ(dotSymp, nodep,
                             "Couldn't resolve inlined scope " << AstNode::prettyNameQ(baddot)
                                                               << " in: " << nodep->inlinedDots());
             }
-            dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(), baddot, okSymp,
-                                           nodep->fileline());  // Maybe NULL
+            dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
+                                           okSymp);  // Maybe NULL
             if (!m_statep->forScopeCreation()) {
                 VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
                 AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->lvalue()) : NULL;
@@ -2458,7 +2458,7 @@ private:
                     string inl = AstNode::dedotName(nodep->inlinedDots());
                     UINFO(8, "    Inlined " << inl << endl);
                     dotSymp
-                        = m_statep->findDotted(dotSymp, inl, baddot, okSymp, nodep->fileline());
+                        = m_statep->findDotted(nodep->fileline(), dotSymp, inl, baddot, okSymp);
                     if (!dotSymp) {
                         okSymp->cellErrorScopes(nodep);
                         nodep->v3fatalSrc("Couldn't resolve inlined scope "
@@ -2466,8 +2466,8 @@ private:
                                           << " in: " << nodep->inlinedDots());
                     }
                 }
-                dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(), baddot, okSymp,
-                                               nodep->fileline());  // Maybe NULL
+                dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
+                                               okSymp);  // Maybe NULL
             }
             VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
             AstNodeFTask* taskp
