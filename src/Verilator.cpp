@@ -144,7 +144,7 @@ static void process() {
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly()) {
         V3HierBlockPlan::createPlan(v3Global.rootp());
         // If a plan is created, further analysis is not necessary.
-        // The actual verilation will be done based on this plan.
+        // The actual Verilation will be done based on this plan.
         if (v3Global.hierPlanp()) return;
     }
 
