@@ -108,6 +108,7 @@ public:
         UASSERT(!m_rootp, "call once");
         m_rootp = makeNetlist();
     }
+    void shutdown();  // Release allocated resorces
     // ACCESSORS (general)
     AstNetlist* rootp() const { return m_rootp; }
     VWidthMinUsage widthMinUsage() const { return m_widthMinUsage; }

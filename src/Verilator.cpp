@@ -691,5 +691,8 @@ int main(int argc, char** argv, char** env) {
         execBuildJob();
     }
 
+    // Explicitly release resources
+    v3Global.shutdown();
+
     UINFO(1, "Done, Exiting...\n");
 }
