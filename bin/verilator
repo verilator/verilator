@@ -3465,8 +3465,8 @@ appropriate --coverage flags are passed) after being disabled earlier with
 
 =item /*verilator hier_block*/
 
-Specifies that the module is a unit of hierarchical Verilation to reduce the
-runtime and the memory consumption. This metacomment must be between
+Specifies that the module is a unit of hierarchical Verilation .
+This metacomment must be between
  "module module_name(...);" and "endmodule".
 The module will not be inlined nor uniquified for each instance.
 
