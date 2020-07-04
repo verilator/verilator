@@ -12,17 +12,20 @@ module t (/*AUTOARG*/
    input clk;
 
    wire [7:0] out0;
+   wire [7:0] out1;
    int count = 0;
 
    // unpacked array cannot be passed to hierarchical block
    localparam logic UNPACKED[0:1] = '{1'b1, 1'b0};
-   sub0 #(UNPACKED) i_sub0(.clk(clk), .in(count), .out(out0));
+   sub0 #(UNPACKED) i_sub0(.clk(clk), .in(8'(count)), .out(out0));
+   // Passing type parameter is not supported
+   sub1 #(.T(logic[7:0])) i_sub1(.in(out0), .out(out1));
 
    always_ff @(posedge clk) begin
       // dotted access under hierarchical block is not allowed
-      $display("%d %d %d", count, i_sub0.ff, out0);
+      $display("%d %d %d", count, i_sub0.ff, out1);
       if (count == 16) begin
-         if (out0 == 15) begin
+         if (out1 == 15) begin
              $write("*-* All Finished *-*\n");
              $finish;
          end else begin
@@ -46,4 +49,11 @@ module sub0 #(
 
    always_ff @(posedge clk) ff <= in;
    assign out = ff;
+endmodule
+
+module sub1 #(
+   parameter type T = logic
+   ) (
+    input wire T in, output wire T out); `HIER_BLOCK
+   assign out = in;
 endmodule
