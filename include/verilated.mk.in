@@ -200,17 +200,24 @@ else
   VK_OBJS += $(VK_FAST_OBJS) $(VK_SLOW_OBJS)
 endif
 
-$(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VK_ARCHIVES)
-ifeq ($(words $(VK_ARCHIVES)),0)
-	$(AR) -cr $@ $^
-	$(RANLIB) $@
-else
-	$(RM) -f $(VM_PREFIX)__ALL__tmp.a
-	$(AR) -cr $(VM_PREFIX)__ALL__tmp.a  $(VK_OBJS)
-	$(AR) -cqT $@  $(VM_PREFIX)__ALL__tmp.a $(VK_ARCHIVES)
-	printf "create $@\n addlib $@\n save\\n end" | $(AR) -M
-	$(RM) -f $(VM_PREFIX)__ALL__tmp.a
-endif
+# When archiving just objects (.o), single $(AR) run is enough.
+# When merging objects (.o) and archives (.a), the following step is taken.
+#   1. create a temporary archive ($*__tmp.a) which contains only .o
+#   2. create a thin archive that refers all archives including $*__tmp.a
+#   3. convert the thin archive to the ordinal archive
+%.a:
+	if test $(words $(filter %.a,$^)) -eq 0; then \
+		$(AR) -cr $@ $^; \
+		$(RANLIB) $@; \
+	else \
+		$(RM) -f $*__tmp.a; \
+		$(AR) -cr $*__tmp.a  $(filter-out %.a,$^); \
+		$(AR) -cqT $@  $*__tmp.a $(filter %.a,$^); \
+		printf "create $@\n addlib $@\n save\\n end" | $(AR) -M; \
+		$(RM) -f $*__tmp.a; \
+	fi
+
+$(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
 
 
 ######################################################################

@@ -232,9 +232,6 @@ public:
         if (!v3Global.opt.hierMode() && !hierOptions.empty()) {  // Only in top module
             of.puts("# Include rules for hierarchy blocks\n");
             of.puts("include " + v3Global.opt.prefix() + "_hier.mk\n");
-            of.puts("VK_ARCHIVES = $(VK_HIER_LIBS)\n");
-        } else {
-            of.puts("VK_ARCHIVES =\n");
         }
         of.puts("# Include global rules\n");
         of.puts("include $(VERILATOR_ROOT)/include/verilated.mk\n");
@@ -253,27 +250,17 @@ public:
 
             of.puts("\n### Link rules... (from --exe)\n");
             of.puts(v3Global.opt.exeName()
-                    + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a $(VK_HIER_LIBS)\n");
+                    + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a $(VM_HIER_LIBS)\n");
             of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) $(LIBS) $(SC_LIBS) -o $@\n");
             of.puts("\n");
         }
 
         if (!v3Global.opt.protectLib().empty()) {
             const string protectLibDeps = "$(VK_OBJS) $(VK_GLOBAL_OBJS) "
-                                          + v3Global.opt.protectLib() + ".o $(VK_HIER_LIBS)";
+                                          + v3Global.opt.protectLib() + ".o $(VM_HIER_LIBS)";
             of.puts("\n### Library rules from --protect-lib\n");
+            // The rule to create .a is defined in verilated.mk, so just define dependency here.
             of.puts(v3Global.opt.protectLibName(false) + ": " + protectLibDeps + "\n");
-            if (!v3Global.opt.hierMode() && !v3Global.opt.hierBlocks().empty()) {
-                const string tmpArchive = "lib" + v3Global.opt.protectLib() + "__tmp.a";
-                // Top module that loads hierarchy blocks needs to merge all archives (*.a)
-                of.puts("\t$(RM) -f " + tmpArchive + "\n");
-                of.puts("\t$(AR) rc " + tmpArchive + " $(filter-out %.a,$^)\n");
-                of.puts("\t$(AR) cqT $@ $(filter %.a,$^) " + tmpArchive + "\n");
-                of.puts("\tprintf \"create $@\\n addlib $@\\n save\\n end\" | $(AR) -M\n");
-                of.puts("\t$(RM) -f " + tmpArchive + "\n");
-            } else {
-                of.puts("\t$(AR) rc $@ $^\n");
-            }
             of.puts("\n");
             of.puts(v3Global.opt.protectLibName(true) + ": " + protectLibDeps + "\n");
             of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ $^\n");
@@ -338,25 +325,26 @@ class EmitMkHierVerilation {
         of.puts("VM_HIER_VERILATION_INCLUDED = 1\n\n");
 
         of.puts(".SUFFIXES:\n");
-        of.puts(".PHONY:hier_build hier_verilation\n");
+        of.puts(".PHONY: hier_build hier_verilation\n");
 
         of.puts("# Libraries of hierarchy blocks\n");
-        of.puts("VK_HIER_LIBS := \\\n");
+        of.puts("VM_HIER_LIBS := \\\n");
         for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end(); ++it) {
             of.puts("\t" + it->second->hierLib(true) + " \\\n");
         }
         of.puts("\n");
 
         // Build hierarchical libraries as soon as possible to get maximum parallelism
-        of.puts("hier_build:$(VK_HIER_LIBS) " + v3Global.opt.prefix() + ".mk\n");
+        of.puts("hier_build: $(VM_HIER_LIBS) " + v3Global.opt.prefix() + ".mk\n");
         of.puts("\t$(MAKE) -f " + v3Global.opt.prefix() + ".mk\n");
-        of.puts("hier_verilation:" + v3Global.opt.prefix() + ".mk\n");
+        of.puts("hier_verilation: " + v3Global.opt.prefix() + ".mk\n");
         emitCommonOpts(of);
 
         // Top level module
         {
             of.puts("\n# Verilate the top module\n");
-            of.puts(v3Global.opt.prefix() + ".mk:$(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
+            of.puts(v3Global.opt.prefix()
+                    + ".mk: $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
             for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end();
                  ++it) {
                 of.puts(it->second->hierWrapper(true) + " ");
@@ -398,7 +386,7 @@ class EmitMkHierVerilation {
         for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end(); ++it) {
             const string prefix = it->second->hierPrefix();
             of.puts(it->second->hierGenerated(true));
-            of.puts(":$(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
+            of.puts(": $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
             const V3HierBlock::HierBlockSet& children = it->second->children();
             for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
                  child != children.end(); ++child) {
