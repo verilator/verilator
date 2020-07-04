@@ -28,7 +28,7 @@ execute(
 file_grep($Self->{obj_dir} . "/Vsub0/sub0.sv", /^module\s+(\S+)\s+/, "sub0");
 file_grep($Self->{obj_dir} . "/Vsub1/sub1.sv", /^module\s+(\S+)\s+/, "sub1");
 file_grep($Self->{obj_dir} . "/Vsub2/sub2.sv", /^module\s+(\S+)\s+/, "sub2");
-file_grep($Self->{stats}, qr/HierBlock,\s+Hierarchy block\s+(\d+)/i, 7);
+file_grep($Self->{stats}, qr/HierBlock,\s+Hierarchy blocks\s+(\d+)/i, 7);
 
 ok(1);
 1;

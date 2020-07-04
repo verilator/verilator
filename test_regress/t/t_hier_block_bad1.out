@@ -1,5 +1,6 @@
-%Warning-HIERBLOCK: t/t_hier_block_bad1.v:8:8: Top module is marked hierachy block. Ignore the setting.
+%Warning-HIERBLOCK: t/t_hier_block_bad1.v:8:8: Top module illegally marked hierarchy block, ignoring marking
                                              : ... In instance t
+                    ... Suggest remove verilator hier_block on this module
     8 | module t ( 
       |        ^
                     ... Use "/* verilator lint_off HIERBLOCK */" and lint_on around source to disable this message.
