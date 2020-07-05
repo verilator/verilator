@@ -21,6 +21,9 @@ module t (/*AUTOARG*/
 `endif
    input clk;
 
+`ifdef PROTLIB_TOP
+   secret i_secred(.clk(clk));
+`else
    wire [7:0] out0;
    wire [7:0] out1;
    wire [7:0] out2;
@@ -51,6 +54,7 @@ module t (/*AUTOARG*/
       end
       count <= count + 1;
    end
+`endif  // PROTLIB_TOP
 
 endmodule
 

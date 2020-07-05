@@ -10,6 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # stats will be deleted but generation will be skipped if libs of hierarchy blocks exist.
 clean_objs();
 
+top_filename("t/t_hier_block.v");
+
 scenarios(
     vlt => 1,
     xsim => 1,
@@ -41,6 +43,8 @@ while (1) {
 
     compile(
         verilator_flags2 => ["$secret_dir/secret.sv",
+                             "-DPROTLIB_TOP",
+                             "--top-module t",
                              "-LDFLAGS",
                              "'-L$secret_prefix -lsecret -static'"],
         );
