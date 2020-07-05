@@ -802,6 +802,7 @@ class AstSenTree;
 %token<fl>              yD_WRITE        "$write"
 %token<fl>              yD_WRITEB       "$writeb"
 %token<fl>              yD_WRITEH       "$writeh"
+%token<fl>              yD_WRITEMEMB    "$writememb"
 %token<fl>              yD_WRITEMEMH    "$writememh"
 %token<fl>              yD_WRITEO       "$writeo"
 
@@ -1870,6 +1871,7 @@ struct_union_memberList<nodep>:	// IEEE: { struct_union_member }
 	;
 
 struct_union_member<nodep>:	// ==IEEE: struct_union_member
+	//			// UNSUP random_qualifer not propagagted until have randomize support
 		random_qualifierE data_type_or_void
 	/*mid*/		{ GRAMMARP->m_memDTypep = $2; }  // As a list follows, need to attach this dtype to each member.
 	/*cont*/    list_of_member_decl_assignments ';'		{ $$ = $4; GRAMMARP->m_memDTypep = NULL; }
@@ -1906,9 +1908,9 @@ member_decl_assignment<memberp>:	// Derived from IEEE: variable_decl_assignment
 	|	'=' class_new				{ NULL; BBUNSUP($1, "Unsupported: member declaration assignment with new()"); }
 	;
 
-list_of_variable_decl_assignments<nodep>:	// ==IEEE: list_of_variable_decl_assignments
+list_of_variable_decl_assignments<varp>:	// ==IEEE: list_of_variable_decl_assignments
 		variable_decl_assignment		{ $$ = $1; }
-	|	list_of_variable_decl_assignments ',' variable_decl_assignment	{ $$ = $1->addNextNull($3); }
+	|	list_of_variable_decl_assignments ',' variable_decl_assignment	{ $$ = VN_CAST($1->addNextNull($3), Var); }
 	;
 
 variable_decl_assignment<varp>:	// ==IEEE: variable_decl_assignment
@@ -1972,14 +1974,14 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 	//			// '[' '$' ':' expr ']' -- anyrange:expr:$
 	;
 
-random_qualifierE:		// IEEE: random_qualifier + empty
-		/*empty*/				{ }
-	|	random_qualifier			{ }
+random_qualifierE<qualifiers>:	// IEEE: random_qualifier + empty
+		/*empty*/				{ $$ = VMemberQualifiers::none(); }
+	|	random_qualifier			{ $$ = $1; }
 	;
 
-random_qualifier:		// ==IEEE: random_qualifier
-		yRAND					{ }  // Ignored until we support randomize()
-	|	yRANDC					{ }  // Ignored until we support randomize()
+random_qualifier<qualifiers>:	// ==IEEE: random_qualifier
+		yRAND					{ $$ = VMemberQualifiers::none(); $$.m_rand = true; }
+	|	yRANDC					{ $$ = VMemberQualifiers::none(); $$.m_randc = true; }
 	;
 
 taggedE:
@@ -2064,20 +2066,22 @@ data_declaration<nodep>:	// ==IEEE: data_declaration
 	;
 
 class_property<nodep>:		// ==IEEE: class_property, which is {property_qualifier} data_declaration
-		memberQualResetListE data_declarationVarClass		{ $$ = $2; }
-	|	memberQualResetListE type_declaration			{ $$ = $2; }
-	|	memberQualResetListE package_import_declaration		{ $$ = $2; }
+		memberQualListE data_declarationVarClass		{ $$ = $2; $1.applyToNodes($2); }
+	//			// UNSUP: Import needs to apply local/protected from memberQualList, and error on others
+	|	memberQualListE type_declaration			{ $$ = $2; }
+	//			// UNSUP: Import needs to apply local/protected from memberQualList, and error on others
+	|	memberQualListE package_import_declaration		{ $$ = $2; }
 	//			// IEEE: virtual_interface_declaration
 	//			// "yVIRTUAL yID yID" looks just like a data_declaration
 	//			// Therefore the virtual_interface_declaration term isn't used
 	;
 
-data_declarationVar<nodep>:	// IEEE: part of data_declaration
+data_declarationVar<varp>:	// IEEE: part of data_declaration
 	//			// The first declaration has complications between assuming what's the type vs ID declaring
 		data_declarationVarFront list_of_variable_decl_assignments ';'	{ $$ = $2; }
 	;
 
-data_declarationVarClass<nodep>: // IEEE: part of data_declaration (for class_property)
+data_declarationVarClass<varp>: // IEEE: part of data_declaration (for class_property)
 	//			// The first declaration has complications between assuming what's the type vs ID declaring
 		data_declarationVarFrontClass list_of_variable_decl_assignments ';'	{ $$ = $2; }
 	;
@@ -3036,7 +3040,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//			// Because we've joined class_constructor_declaration into generic functions
 	//			// Way over-permissive;
 	//			// IEEE: [ ySUPER '.' yNEW [ '(' list_of_arguments ')' ] ';' ]
-	|	fexpr '.' class_new ';'			{ $$ = NULL; BBUNSUP($1, "Unsupported: dotted new"); }
+	|	fexpr '.' class_new ';'			{ $$ = new AstDot($<fl>2, false, $1, $3); }
 	//
 	|	statementVerilatorPragmas		{ $$ = $1; }
 	//
@@ -3458,7 +3462,7 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 	//			// We implement randomize as a normal funcRef, since randomize isn't a keyword
 	//			// Note yNULL is already part of expressions, so they come for free
 	|	funcRef yWITH__CUR constraint_block	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with' constraint"); }
-	|	funcRef yWITH__CUR '{' '}'		{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with'"); }
+	|	funcRef yWITH__CUR '{' '}'		{ $$ = new AstWith($2, false, $1, NULL); }
 	;
 
 system_t_call<nodep>:		// IEEE: system_tf_call (as task)
@@ -3554,9 +3558,12 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_READMEMH '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
 	|	yD_READMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
 	//
-	|	yD_WRITEMEMH '(' expr ',' idClassSel ')'			{ $$ = new AstWriteMem($1,$3,$5,NULL,NULL); }
-	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstWriteMem($1,$3,$5,$7,NULL); }
-	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstWriteMem($1,$3,$5,$7,$9); }
+	|	yD_WRITEMEMB '(' expr ',' idClassSel ')'			{ $$ = new AstWriteMem($1, false, $3, $5, NULL, NULL); }
+	|	yD_WRITEMEMB '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstWriteMem($1, false, $3, $5, $7, NULL); }
+	|	yD_WRITEMEMB '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstWriteMem($1, false, $3, $5, $7, $9); }
+	|	yD_WRITEMEMH '(' expr ',' idClassSel ')'			{ $$ = new AstWriteMem($1, true,  $3, $5, NULL, NULL); }
+	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstWriteMem($1, true,  $3, $5, $7, NULL); }
+	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstWriteMem($1, true,  $3, $5, $7, $9); }
 	//
 	// Any system function as a task
 	|	system_f_call_or_t			{ $$ = new AstSysFuncAsTask($<fl>1, $1); }
@@ -3763,9 +3770,9 @@ funcIsolateE<cint>:
 	|	yVL_ISOLATE_ASSIGNMENTS			{ $$ = 1; }
 	;
 
-method_prototype:
-		task_prototype				{ }
-	|	function_prototype			{ }
+method_prototype<ftaskp>:
+		task_prototype				{ $$ = $1; }
+	|	function_prototype			{ $$ = $1; }
 	;
 
 lifetimeE<lifetime>:		// IEEE: [lifetime]
@@ -3775,7 +3782,7 @@ lifetimeE<lifetime>:		// IEEE: [lifetime]
 
 lifetime<lifetime>:		// ==IEEE: lifetime
 	//			// Note lifetime used by members is instead under memberQual
-		ySTATIC__ETC		 		{ $$ = VLifetime::STATIC; BBUNSUP($1, "Unsupported: Static in this context"); }
+		ySTATIC__ETC		 		{ $$ = VLifetime::STATIC; }
 	|	yAUTOMATIC		 		{ $$ = VLifetime::AUTOMATIC; }
 	;
 
@@ -6003,51 +6010,47 @@ class_item<nodep>:			// ==IEEE: class_item
 	;
 
 class_method<nodep>:		// ==IEEE: class_method
-		memberQualResetListE task_declaration		{ $$ = $2; }
-	|	memberQualResetListE function_declaration	{ $$ = $2; }
-	|	yPURE yVIRTUAL__ETC memberQualResetListE method_prototype ';'
-			{ $$ = NULL; BBUNSUP($1, "Unsupported: pure virtual class method"); }
-	|	yEXTERN memberQualResetListE method_prototype ';'
-			{ $$ = NULL; BBUNSUP($1, "Unsupported: extern class method prototype"); }
+		memberQualListE task_declaration	{ $$ = $2; $1.applyToNodes($2); }
+	|	memberQualListE function_declaration	{ $$ = $2; $1.applyToNodes($2); }
+	|	yPURE yVIRTUAL__ETC memberQualListE method_prototype ';'
+			{ $$ = $4; $3.applyToNodes($4); $4->pureVirtual(true); $4->isVirtual(true); }
+	|	yEXTERN memberQualListE method_prototype ';'
+			{ $$ = $3; $2.applyToNodes($3); $3->isExtern(true); }
 	//			// IEEE: "method_qualifierE class_constructor_declaration"
 	//			// part of function_declaration
-	|	yEXTERN memberQualResetListE class_constructor_prototype
-			{ $$ = NULL; BBUNSUP($1, "Unsupported: extern class"); }
+	|	yEXTERN memberQualListE class_constructor_prototype
+			{ $$ = $3; $2.applyToNodes($3); $3->isExtern(true); }
 	;
 
 // IEEE: class_constructor_prototype
 // See function_declaration
 
-class_item_qualifier<nodep>:	// IEEE: class_item_qualifier minus ySTATIC
-	//			// IMPORTANT: yPROTECTED | yLOCAL is in a lex rule
-		yPROTECTED				{ $$ = NULL; }  // Ignoring protected until warning implemented
-	|	yLOCAL__ETC				{ $$ = NULL; }  // Ignoring local until warning implemented
-	|	ySTATIC__ETC				{ $$ = NULL; BBUNSUP($1, "Unsupported: 'static' class item"); }
-	;
-
-memberQualResetListE<nodep>:	// Called from class_property for all qualifiers before yVAR
+memberQualListE<qualifiers>:	// Called from class_property for all qualifiers before yVAR
 	//			// Also before method declarations, to prevent grammar conflict
 	//			// Thus both types of qualifiers (method/property) are here
-		/*empty*/				{ $$ = NULL; }
+		/*empty*/				{ $$ = VMemberQualifiers::none(); }
 	|	memberQualList				{ $$ = $1; }
 	;
 
-memberQualList<nodep>:
+memberQualList<qualifiers>:
 		memberQualOne				{ $$ = $1; }
-	|	memberQualList memberQualOne		{ $$ = AstNode::addNextNull($1, $2); }
+	|	memberQualList memberQualOne		{ $$ = VMemberQualifiers::combine($1, $2); }
 	;
 
-memberQualOne<nodep>:			// IEEE: property_qualifier + method_qualifier
+memberQualOne<qualifiers>:			// IEEE: property_qualifier + method_qualifier
 	//			// Part of method_qualifier and property_qualifier
-		class_item_qualifier			{ $$ = $1; }
+	//			// IMPORTANT: yPROTECTED | yLOCAL is in a lex rule
+		yPROTECTED				{ $$ = VMemberQualifiers::none(); $$.m_protected = true; }
+	|	yLOCAL__ETC				{ $$ = VMemberQualifiers::none(); $$.m_local = true; }
+	|	ySTATIC__ETC				{ $$ = VMemberQualifiers::none(); $$.m_static = true; }
 	//			// Part of method_qualifier only
-	|	yVIRTUAL__ETC				{ $$ = NULL; BBUNSUP($1, "Unsupported: virtual class member qualifier"); }
+	|	yVIRTUAL__ETC				{ $$ = VMemberQualifiers::none(); $$.m_virtual = true; }
 	//			// Part of property_qualifier only
-	|	random_qualifier			{ $$ = NULL; }
+	|	random_qualifier			{ $$ = $1; }
 	//			// Part of lifetime, but here as ySTATIC can be in different positions
-	|	yAUTOMATIC		 		{ $$ = NULL; BBUNSUP($1, "Unsupported: automatic class member qualifier"); }
+	|	yAUTOMATIC		 		{ $$ = VMemberQualifiers::none(); $$.m_automatic = true; }
 	//			// Part of data_declaration, but not in data_declarationVarFrontClass
-	|	yCONST__ETC				{ $$ = NULL; BBUNSUP($1, "Unsupported: const class member qualifier"); }
+	|	yCONST__ETC				{ $$ = VMemberQualifiers::none(); $$.m_const = true; }
 	;
 
 //**********************************************************************
@@ -6055,7 +6058,9 @@ memberQualOne<nodep>:			// IEEE: property_qualifier + method_qualifier
 
 class_constraint<nodep>:  // ==IEEE: class_constraint
 	//			// IEEE: constraint_declaration
-		constraintStaticE yCONSTRAINT idAny constraint_block	{ $$ = NULL; BBUNSUP($2, "Unsupported: constraint"); /*and audit all rules below for UNSUP*/ }
+	//			// UNSUP: We have the unsupported warning on the randomize() call, so don't bother on
+	//			// constraint blocks. When we support randomize we need to make AST nodes for below rules
+		constraintStaticE yCONSTRAINT idAny constraint_block	{ $$ = NULL; /*UNSUP*/ }
 	//			// IEEE: constraint_prototype + constraint_prototype_qualifier
 	|	constraintStaticE yCONSTRAINT idAny ';'		{ $$ = NULL; }
 	|	yEXTERN constraintStaticE yCONSTRAINT idAny ';'	{ $$ = NULL; BBUNSUP($1, "Unsupported: extern constraint"); }
@@ -6094,19 +6099,19 @@ constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
 constraint_expression<nodep>:  // ==IEEE: constraint_expression
 		expr/*expression_or_dist*/ ';'		{ $$ = $1; }
 	//			// 1800-2012:
-	|	ySOFT expr/*expression_or_dist*/ ';'	{ $$ = NULL; /*UNSUP*/ }
+	|	ySOFT expr/*expression_or_dist*/ ';'	{ $$ = NULL; /*UNSUP-no-UVM*/ }
 	//			// 1800-2012:
 	//			// IEEE: uniqueness_constraint ';'
-	|	yUNIQUE '{' open_range_list '}'		{ $$ = NULL; /*UNSUP*/ }
+	|	yUNIQUE '{' open_range_list '}'		{ $$ = NULL; /*UNSUP-no-UVM*/ }
 	//			// IEEE: expr yP_MINUSGT constraint_set
 	//			// Conflicts with expr:"expr yP_MINUSGT expr"; rule moved there
 	//
-	|	yIF '(' expr ')' constraint_set	%prec prLOWER_THAN_ELSE	{ $$ = NULL; /*UNSUP*/ }
-	|	yIF '(' expr ')' constraint_set	yELSE constraint_set	{ $$ = NULL; /*UNSUP*/ }
+	|	yIF '(' expr ')' constraint_set	%prec prLOWER_THAN_ELSE	{ $$ = NULL; /*UNSUP-UVM*/ }
+	|	yIF '(' expr ')' constraint_set	yELSE constraint_set	{ $$ = NULL; /*UNSUP-UVM*/ }
 	//			// IEEE says array_identifier here, but dotted accepted in VMM + 1800-2009
-	|	yFOREACH '(' idClassSelForeach ')' constraint_set	{ $$ = NULL; /*UNSUP*/ }
+	|	yFOREACH '(' idClassSelForeach ')' constraint_set	{ $$ = NULL; /*UNSUP-UVM*/ }
 	//			// soft is 1800-2012
-	|	yDISABLE ySOFT expr/*constraint_primary*/ ';'	{ $$ = NULL; /*UNSUP*/ }
+	|	yDISABLE ySOFT expr/*constraint_primary*/ ';'	{ $$ = NULL; /*UNSUP-no-UVM*/ }
 	;
 
 constraint_set<nodep>:  // ==IEEE: constraint_set

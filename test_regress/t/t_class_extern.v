@@ -4,15 +4,18 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-class Cls #(type REQ=int);
-  extern virtual function void extfunc();
+class Cls;
+  extern function void extfunc();
 endclass
 
 function void Cls::extfunc();
-   REQ t;  // Declared in class when externed, so must be found there
+   $write("*-* All Finished *-*\n");
+   $finish;
 endfunction
 
-module f;
-   function void normal();
-   endfunction
+module t (/*AUTOARG*/);
+   initial begin
+      Cls c;
+      c.extfunc();
+   end
 endmodule

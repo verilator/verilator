@@ -162,32 +162,73 @@ module t (/*AUTOARG*/
 
    // Things not to merge
    always @(posedge clk) begin
-      reg  x;
-      reg  y;
-      reg  z;
-      reg  w;
+      reg bits [63:0];
+
+      reg x;
+      reg y;
+      reg z;
+      reg w;
+
+      // Unpack these to test core algorithm
+      for (int i = 0; i < 64; i = i + 1) begin
+         bits[i] = crc[i];
+      end
 
       // Do not merge if condition appears in an LVALUE
-      x = crc[0];
-      y = x ? crc[2] : crc[1];
-      x = x ? crc[3] : crc[4];
-      x = x ? crc[5] : crc[6];
+      x = bits[0];
+      y = x ? bits[2] : bits[1];
+      x = x ? bits[3] : bits[4];
+      x = x ? bits[5] : bits[6];
 
-      `check(x, (crc[0] ? crc[3] : crc[4]) ? crc[5] : crc[6]);
-      `check(y, crc[0] ? crc[2] : crc[1]);
+      `check(x, (bits[0] ? bits[3] : bits[4]) ? bits[5] : bits[6]);
+      `check(y, bits[0] ? bits[2] : bits[1]);
+
+      // However do merge when starting a new list in the same block with the
+      // previous condition variable, but without the condition being an LVALUE
+      x = cond2 ? bits[0] : bits[1];
+      y = cond2 & bits[2];
+      z = cond2 & bits[3];
+      w = cond2 & bits[4];
+
+      `check(x, cond2 ? bits[0] : bits[1]);
+      `check(y, cond2 & bits[2]);
+      `check(z, cond2 & bits[3]);
+      `check(w, cond2 & bits[4]);
 
       // Do not merge if condition is not a pure expression
       $c("int _cnt = 0;");
-      x = $c("_cnt++") ? crc[0] : crc[1];
-      y = $c("_cnt++") ? crc[2] : crc[3];
-      z = $c("_cnt++") ? crc[4] : crc[5];
-      w = $c("_cnt++") ? crc[6] : crc[7];
+      x = $c("_cnt++") ? bits[0] : bits[1];
+      y = $c("_cnt++") ? bits[2] : bits[3];
+      z = $c("_cnt++") ? bits[4] : bits[5];
+      w = $c("_cnt++") ? bits[6] : bits[7];
       $c("if (_cnt != 4) abort();");
 
-      `check(x, crc[1]);
-      `check(y, crc[2]);
-      `check(z, crc[4]);
-      `check(w, crc[6]);
+      `check(x, bits[1]);
+      `check(y, bits[2]);
+      `check(z, bits[4]);
+      `check(w, bits[6]);
+
+      // Do not merge with assignment under other statement
+      x = cond2 ? bits[0] : bits[1];
+      if (bits[1]) begin
+         y = cond2 ? bits[2] : bits[3];
+      end
+
+      `check(x, cond2 ? bits[0] : bits[1]);
+      if (bits[1]) begin
+         `check(y, cond2 ? bits[2] : bits[3]);
+      end
+
+      // Do not merge with assignment under other statement
+      x = cond2 ? bits[0] : bits[1];
+      if (bits[1]) begin
+         y = cond2 & bits[2];
+      end
+
+      `check(x, cond2 ? bits[0] : bits[1]);
+      if (bits[1]) begin
+         `check(y, cond2 & bits[2]);
+      end
    end
 
 endmodule

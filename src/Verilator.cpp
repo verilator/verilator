@@ -608,7 +608,7 @@ static string buildMakeCmd(const string& makefile, const string& target) {
     const int jobs = v3Global.opt.buildJobs();
     UASSERT(jobs >= 0, "-j option parser in V3Options.cpp filters out negative value");
 
-    std::stringstream cmd;
+    std::ostringstream cmd;
     cmd << v3Global.opt.getenvMAKE();
     cmd << " -C " << v3Global.opt.makeDir();
     cmd << " -f " << makefile;
@@ -620,7 +620,7 @@ static string buildMakeCmd(const string& makefile, const string& target) {
     for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
         cmd << ' ' << *it;
     }
-    cmd << ' ' << target;
+    if (!target.empty()) { cmd << ' ' << target; }
 
     return cmd.str();
 }

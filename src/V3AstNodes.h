@@ -4160,8 +4160,9 @@ public:
 
 class AstWriteMem : public AstNodeReadWriteMem {
 public:
-    AstWriteMem(FileLine* fl, AstNode* filenamep, AstNode* memp, AstNode* lsbp, AstNode* msbp)
-        : ASTGEN_SUPER(fl, true, filenamep, memp, lsbp, msbp) {}
+    AstWriteMem(FileLine* fl, bool hex, AstNode* filenamep, AstNode* memp, AstNode* lsbp,
+                AstNode* msbp)
+        : ASTGEN_SUPER(fl, hex, filenamep, memp, lsbp, msbp) {}
     ASTNODE_NODE_FUNCS(WriteMem)
     virtual string verilogKwd() const { return (isHex() ? "$writememh" : "$writememb"); }
     virtual const char* cFuncPrefixp() const { return "VL_WRITEMEM_"; }

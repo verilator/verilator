@@ -111,7 +111,13 @@ private:
         if (m_classp && nodep->isParam())
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: class parameter");
         if (m_ftaskp) nodep->funcLocal(true);
-        if (nodep->lifetime().isNone()) nodep->lifetime(m_lifetime);
+        if (nodep->lifetime().isNone()) {
+            if (nodep->isFuncLocal() && nodep->isIO()) {
+                nodep->lifetime(VLifetime::AUTOMATIC);
+            } else {
+                nodep->lifetime(m_lifetime);
+            }
+        }
         if (nodep->isSigModPublic()) {
             nodep->sigModPublic(false);  // We're done with this attribute
             m_modp->modPublic(true);  // Avoid flattening if signals are exposed
@@ -130,7 +136,7 @@ private:
         if (m_classp) nodep->classMethod(true);
         VLifetime origLifetime = m_lifetime;
         {
-            if (!nodep->lifetime().isNone()) m_lifetime = nodep->lifetime();
+            m_lifetime = nodep->lifetime();
             if (m_lifetime.isNone()) m_lifetime = VLifetime::AUTOMATIC;
             m_ftaskp = nodep;
             iterateChildren(nodep);

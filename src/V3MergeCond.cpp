@@ -108,11 +108,11 @@ private:
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildrenConst(nodep); }
 
 public:
-    // Set user1 on all referenced AstVar
-    void operator()(AstNode* node) {
-        AstNode::user1ClearTree();
-        iterate(node);
-    }
+    // Remove marks from AstVars (clear user1)
+    void clear() { AstNode::user1ClearTree(); }
+
+    // Mark all AstVars referenced by setting user1
+    void mark(AstNode* node) { iterate(node); }
 };
 
 class MergeCondVisitor : public AstNVisitor {
@@ -239,6 +239,7 @@ private:
         m_mgCondp = NULL;
         m_mgLastp = NULL;
         m_mgNextp = NULL;
+        m_markVars.clear();
     }
 
     void addToList(AstNode* nodep, AstNode* condp) {
@@ -248,7 +249,7 @@ private:
             m_mgFirstp = nodep;
             m_mgCondp = condp;
             m_listLenght = 0;
-            m_markVars(condp);
+            m_markVars.mark(condp);
         }
         // Add node
         ++m_listLenght;
@@ -268,9 +269,14 @@ private:
         if (AstNodeCond* const condp = extractCond(rhsp)) {
             if (!m_checkMergeable(nodep)) {
                 // Node not mergeable.
-                // Finish current list if any, do not start a new one.
-                if (m_mgFirstp) mergeEnd();
-                return;
+                // If no current list, then this node is just special, move on.
+                if (!m_mgFirstp) return;
+                // Otherwise finish current list
+                mergeEnd();
+                // Finishing the list might make the node mergeable again, e.g.
+                // if the reason we could not merge was due to the condition
+                // being assigned, so check again and stop only if still no.
+                if (!m_checkMergeable(nodep)) return;
             }
             if (m_mgFirstp && (m_mgNextp != nodep || !condp->condp()->sameTree(m_mgCondp))) {
                 // Node in different list, or has different condition.
@@ -282,7 +288,7 @@ private:
         } else if (m_mgFirstp) {
             // RHS is not a conditional, but we already started a list.
             // If it's a 1-bit signal, and a mergeable assignment, try reduced forms
-            if (rhsp->widthMin() == 1 && m_checkMergeable(nodep)) {
+            if (m_mgNextp == nodep && rhsp->widthMin() == 1 && m_checkMergeable(nodep)) {
                 // Is it a 'lhs = cond & value' or 'lhs = value & cond'?
                 if (AstAnd* const andp = VN_CAST(rhsp, And)) {
                     if (andp->lhsp()->sameTree(m_mgCondp) || andp->rhsp()->sameTree(m_mgCondp)) {
@@ -320,6 +326,7 @@ public:
         m_mgLastp = NULL;
         m_mgNextp = NULL;
         m_listLenght = 0;
+        m_markVars.clear();
         iterate(nodep);
     }
     virtual ~MergeCondVisitor() {

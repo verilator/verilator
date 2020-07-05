@@ -62,6 +62,7 @@ public:
 };
 
 class VlWriteMem {
+    bool m_hex;  // Hex format
     int m_bits;  // Bit width of values
     FILE* m_fp;  // File handle for filename
     QData m_addr;  // Next address to write

@@ -1,0 +1,7 @@
+%Error-UNSUPPORTED: t/t_class_virtual_pure.v:8:22: Unsupported: 'virtual' class method
+    8 |    pure virtual task hello();
+      |                      ^~~~~
+%Error-UNSUPPORTED: t/t_class_virtual_pure.v:7:9: Unsupported: virtual class
+    7 | virtual class VC;
+      |         ^~~~~
+%Error: Exiting due to

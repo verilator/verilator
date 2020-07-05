@@ -1,24 +1,9 @@
 %Error-UNSUPPORTED: t/t_randomize.v:11:4: Unsupported: extern constraint
    11 |    extern constraint ex;
       |    ^~~~~~
-%Error-UNSUPPORTED: t/t_randomize.v:13:4: Unsupported: constraint
-   13 |    constraint a { header > 0 && header < 1000; }
-      |    ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize.v:14:4: Unsupported: constraint
-   14 |    constraint b {
-      |    ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize.v:19:4: Unsupported: constraint
-   19 |    constraint b {
-      |    ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize.v:23:4: Unsupported: constraint
-   23 |    constraint c {
-      |    ^~~~~~~~~~
 %Error-UNSUPPORTED: t/t_randomize.v:29:29: Unsupported: solve before
    29 |    constraint order { solve length before header; }
       |                             ^~~~~~
-%Error-UNSUPPORTED: t/t_randomize.v:29:4: Unsupported: constraint
-   29 |    constraint order { solve length before header; }
-      |    ^~~~~~~~~~
 %Error-UNSUPPORTED: t/t_randomize.v:32:16: Unsupported: dist :/
    32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5};
       |                ^
@@ -31,10 +16,4 @@
 %Error-UNSUPPORTED: t/t_randomize.v:32:9: Unsupported: dist
    32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5};
       |         ^~~~
-%Error-UNSUPPORTED: t/t_randomize.v:30:4: Unsupported: constraint
-   30 |    constraint dis {
-      |    ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize.v:50:25: Unsupported: randomize() 'with'
-   50 |       v = p.randomize() with {};
-      |                         ^~~~
 %Error: Exiting due to
