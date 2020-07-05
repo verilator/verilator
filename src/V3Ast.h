@@ -2246,19 +2246,6 @@ public:
     void addNotParallelp(AstNode* nodep) { setOp3p(nodep); }
 };
 
-class AstNodeSenItem : public AstNode {
-    // An AstSenItem or AstSenGate
-public:
-    AstNodeSenItem(AstType t, FileLine* fl)
-        : AstNode(t, fl) {}
-    ASTNODE_BASE_FUNCS(NodeSenItem)
-    virtual bool isClocked() const = 0;
-    virtual bool isCombo() const = 0;
-    virtual bool isInitial() const = 0;
-    virtual bool isSettle() const = 0;
-    virtual bool isNever() const = 0;
-};
-
 class AstNodeVarRef : public AstNodeMath {
     // An AstVarRef or AstVarXRef
 private:

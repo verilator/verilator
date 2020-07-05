@@ -1530,7 +1530,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
                         fromVertexp->domainp()->dumpTree(cout);
                     }  // LCOV_EXCL_STOP
                     AstSenTree* newtreep = domainp->cloneTree(false);
-                    AstNodeSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
+                    AstSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
                     UASSERT_OBJ(newtree2p, fromVertexp->domainp(),
                                 "No senitem found under clocked domain");
                     newtreep->addSensesp(newtree2p);

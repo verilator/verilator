@@ -3035,9 +3035,9 @@ public:
 
 //######################################################################
 
-class AstSenItem : public AstNodeSenItem {
+class AstSenItem : public AstNode {
     // Parents:  SENTREE
-    // Children: (optional) VARREF SENGATE
+    // Children: (optional) VARREF
 private:
     VEdgeType m_edgeType;  // Edge type
 public:
@@ -3087,12 +3087,12 @@ public:
         return VN_CAST(op1p(), NodeVarRef);
     }  // op1 = Signal sensitized
     //
-    virtual bool isClocked() const { return edgeType().clockedStmt(); }
-    virtual bool isCombo() const { return edgeType() == VEdgeType::ET_COMBO; }
-    virtual bool isInitial() const { return edgeType() == VEdgeType::ET_INITIAL; }
-    virtual bool isIllegal() const { return edgeType() == VEdgeType::ET_ILLEGAL; }
-    virtual bool isSettle() const { return edgeType() == VEdgeType::ET_SETTLE; }
-    virtual bool isNever() const { return edgeType() == VEdgeType::ET_NEVER; }
+    bool isClocked() const { return edgeType().clockedStmt(); }
+    bool isCombo() const { return edgeType() == VEdgeType::ET_COMBO; }
+    bool isInitial() const { return edgeType() == VEdgeType::ET_INITIAL; }
+    bool isIllegal() const { return edgeType() == VEdgeType::ET_ILLEGAL; }
+    bool isSettle() const { return edgeType() == VEdgeType::ET_SETTLE; }
+    bool isNever() const { return edgeType() == VEdgeType::ET_NEVER; }
     bool hasVar() const { return !(isCombo() || isInitial() || isSettle() || isNever()); }
 };
 
@@ -3103,7 +3103,7 @@ class AstSenTree : public AstNode {
 private:
     bool m_multi;  // Created from combo logic by ORing multiple clock domains
 public:
-    AstSenTree(FileLine* fl, AstNodeSenItem* sensesp)
+    AstSenTree(FileLine* fl, AstSenItem* sensesp)
         : ASTGEN_SUPER(fl)
         , m_multi(false) {
         addNOp1p(sensesp);
@@ -3114,8 +3114,8 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     bool isMulti() const { return m_multi; }
     // op1 = Sensitivity list
-    AstNodeSenItem* sensesp() const { return VN_CAST(op1p(), NodeSenItem); }
-    void addSensesp(AstNodeSenItem* nodep) { addOp1p(nodep); }
+    AstSenItem* sensesp() const { return VN_CAST(op1p(), SenItem); }
+    void addSensesp(AstSenItem* nodep) { addOp1p(nodep); }
     void multi(bool flag) { m_multi = true; }
     // METHODS
     bool hasClocked() const;  // Includes a clocked statement
@@ -8052,14 +8052,14 @@ class AstClocking : public AstNode {
     // Parents:  MODULE
     // Children: Assertions
 public:
-    AstClocking(FileLine* fl, AstNodeSenItem* sensesp, AstNode* bodysp)
+    AstClocking(FileLine* fl, AstSenItem* sensesp, AstNode* bodysp)
         : ASTGEN_SUPER(fl) {
         addOp1p(sensesp);
         addNOp2p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Clocking)
     // op1 = Sensitivity list
-    AstNodeSenItem* sensesp() const { return VN_CAST(op1p(), NodeSenItem); }
+    AstSenItem* sensesp() const { return VN_CAST(op1p(), SenItem); }
     AstNode* bodysp() const { return op2p(); }  // op2 = Body
 };
 
@@ -8071,7 +8071,7 @@ class AstPropClocked : public AstNode {
     // Parents:  ASSERT|COVER (property)
     // Children: SENITEM, Properties
 public:
-    AstPropClocked(FileLine* fl, AstNodeSenItem* sensesp, AstNode* disablep, AstNode* propp)
+    AstPropClocked(FileLine* fl, AstSenItem* sensesp, AstNode* disablep, AstNode* propp)
         : ASTGEN_SUPER(fl) {
         addNOp1p(sensesp);
         addNOp2p(disablep);
@@ -8079,8 +8079,8 @@ public:
     }
     ASTNODE_NODE_FUNCS(PropClocked)
     virtual bool hasDType() const { return true; }  // Used under Cover, which expects a bool child
-    AstNodeSenItem* sensesp() const {
-        return VN_CAST(op1p(), NodeSenItem);
+    AstSenItem* sensesp() const {
+        return VN_CAST(op1p(), SenItem);
     }  // op1 = Sensitivity list
     AstNode* disablep() const { return op2p(); }  // op2 = disable
     AstNode* propp() const { return op3p(); }  // op3 = property
