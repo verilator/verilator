@@ -380,16 +380,12 @@ string V3Options::allArgsStringForHierBlock(bool forTop) const {
         } else if (it->length() >= 1 && (*it)[0] == '-') {
             skip = 1;
         }
-        if (skip > 0) {  // *it is a option
+        if (skip > 0) {  // *it is an option
             const string opt = it->substr(skip);  // Remove '-' in the beginning
-            if (opt == "Mdir" || opt == "clk" || opt == "f" || opt == "j" || opt == "l2-name"
-                || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib"
-                || opt == "protect-key" || opt == "top-module" || opt == "v") {
-                ++it;  // Skip value too
-                continue;
-            }
-            if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
-                || (opt.length() > 2 && opt.substr(0, 2) == "G=")) {
+            const int numStrip = stripOptionsForChildRun(opt, forTop);
+            if (numStrip) {
+                UASSERT(0 <= numStrip && numStrip <= 2, "should be one of 0, 1, 2");
+                if (numStrip == 2) ++it;
                 continue;
             }
         } else {  // Not an option
@@ -481,6 +477,23 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
         }
     }
     return "";
+}
+
+// Checks if a option needs to be stripped for child run of hierarchical Verilation.
+// 0: Keep the option including its argument
+// 1: Delete the option which has no argument
+// 2: Delete the option and its argument
+int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) const {
+    if (opt == "Mdir" || opt == "clk" || opt == "f" || opt == "j" || opt == "l2-name"
+        || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib" || opt == "protect-key"
+        || opt == "top-module" || opt == "v") {
+        return 2;
+    }
+    if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
+        || (opt.length() > 2 && opt.substr(0, 2) == "G=")) {
+        return 1;
+    }
+    return 0;
 }
 
 string V3Options::filePath(FileLine* fl, const string& modname, const string& lastpath,
