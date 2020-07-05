@@ -573,7 +573,8 @@ static void verilate(const string& argString) {
     V3Error::abortIfWarnings();
 
     if (v3Global.hierPlanp()) {  // This run is for just write a makefile
-        UASSERT(!v3Global.opt.hierMode(), "this is child run");
+        UASSERT(v3Global.opt.hierarchical(), "must be set");
+        UASSERT(!v3Global.opt.hierChild(), "must not be a child run");
         UASSERT(v3Global.opt.hierBlocks().empty(), "Must not set");
         if (v3Global.opt.gmake()) { V3EmitMk::emitHierVerilation(v3Global.hierPlanp()); }
         if (v3Global.opt.cmake()) { V3EmitCMake::emit(); }
@@ -586,10 +587,10 @@ static void verilate(const string& argString) {
                                      + "__idmap.xml");
         }
     }
-    // Verilation for the top module (when hierMode() == false && hierBlocks is not empty) must
-    // not save the dependency file to avoid overwriting the files generated in the initial run.
+    // Verilation for the top module must not save the dependency file
+    // to avoid overwriting the files generated in the initial run.
     if ((v3Global.opt.skipIdentical().isTrue() || v3Global.opt.makeDepend().isTrue())
-        && !(!v3Global.opt.hierMode() && !v3Global.opt.hierBlocks().empty())) {
+        && !v3Global.opt.hierTop()) {
         V3File::writeTimes(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__verFiles.dat",
                            argString);
     }

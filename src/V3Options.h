@@ -204,8 +204,7 @@ public:
     typedef std::map<string, string> ParamStrMap;
 
 private:
-    // module name
-    string m_origName;
+    string m_origName;  // module name
     // module name after uniquified
     // same as m_origName for non-parameterized module
     string m_mangledName;
@@ -322,7 +321,8 @@ private:
     int         m_dumpTree;     // main switch: --dump-tree
     bool        m_dumpTreeAddrids;// main switch: --dump-tree-addrids
     int         m_gateStmts;    // main switch: --gate-stmts
-    bool        m_hierMode;     // main switch: --hierarchical-mode
+    bool        m_hierarchical; // main switch: --hierarchical
+    bool        m_hierChild;    // main switch: --hierarchical-child
     int         m_ifDepth;      // main switch: --if-depth
     int         m_inlineMult;   // main switch: --inline-mult
     VOptionBool m_makeDepend;  // main switch: -MMD
@@ -624,7 +624,9 @@ public:
         return m_traceFormat.sourceName() + (systemC() ? "_sc" : "_c");
     }
 
-    bool hierMode() const { return m_hierMode; }
+    bool hierarchical() const { return m_hierarchical; }
+    bool hierChild() const { return m_hierChild; }
+    bool hierTop() const { return !m_hierChild && !m_hierBlocks.empty(); }
     const V3HierBlockOptSet& hierBlocks() const { return m_hierBlocks; }
 
     // METHODS (from main)

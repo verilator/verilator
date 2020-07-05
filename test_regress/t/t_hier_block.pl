@@ -17,7 +17,7 @@ scenarios(simulator => 1);
 # So use 6 threads here though it's not optimal in performace wise, but ok.
 
 compile(
-    verilator_flags2 => ['--stats', ($Self->{vltmt} ? ' --threads 6' : '')],
+    verilator_flags2 => ['--stats', ($Self->{vltmt} ? ' --threads 6' : ''), '--hierarchical'],
     );
 
 execute(

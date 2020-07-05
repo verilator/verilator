@@ -11,7 +11,7 @@ scenarios(linter => 1);
 
 lint(
     fails => 1,
-    verilator_flags2 => ['--stats'],
+    verilator_flags2 => ['--stats', '--hierarchical'],
     expect_filename => $Self->{golden_filename},
 );
 

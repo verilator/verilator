@@ -184,13 +184,20 @@ V3HierarchyBlockOption::V3HierarchyBlockOption(const string& opts) {
         }
     }
     if (!cur.empty()) vals.push_back(cur);
-    UASSERT(vals.size() >= 2, "at least two entries (origName and mangledName) are necessary");
-    UASSERT((vals.size() % 2) == 0, "the number of entries must be even");
-    m_origName = vals[0];
-    m_mangledName = vals[1];
+    FileLine cmdfl(FileLine::commandLineFilename());
+    if (vals.size() >= 2) {
+        if (vals.size() % 2) {
+            cmdfl.v3error(
+                "--hierarchy-block option requires that the number of entries must be even");
+        }
+        m_origName = vals[0];
+        m_mangledName = vals[1];
+    } else {
+        cmdfl.v3error("--hierarchy-block option requires at least two comma-separated values");
+    }
     for (size_t i = 2; i < vals.size(); i += 2) {
         const bool inserted = m_parameters.insert(std::make_pair(vals[i], vals[i + 1])).second;
-        UASSERT(inserted, vals[i] << " is duplicated");
+        if (!inserted) { cmdfl.v3error(vals[i] + " is duplicated in --hierarchy-block option"); }
     }
 }
 
@@ -490,7 +497,7 @@ int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) const {
         return 2;
     }
     if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
-        || (opt.length() > 2 && opt.substr(0, 2) == "G=")) {
+        || opt == "hierarchical" || (opt.length() > 2 && opt.substr(0, 2) == "G=")) {
         return 1;
     }
     return 0;
@@ -711,6 +718,14 @@ void V3Options::notify() {
 
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_cmake) m_gmake = true;
+
+    if (m_hierarchical && (m_hierChild || !m_hierBlocks.empty())) {
+        cmdfl->v3error(
+            "--hierarchical must not be set with --hierarchical-child or --hierarchy-block");
+    }
+    if (m_hierChild && m_hierBlocks.empty()) {
+        cmdfl->v3error("--hierarchy-block must be set when --hierarchical-child is set");
+    }
 
     if (protectIds()) {
         if (allPublic()) {
@@ -1009,8 +1024,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 m_exe = flag;
             } else if (onoff(sw, "-flatten", flag /*ref*/)) {
                 m_flatten = flag;
-            } else if (onoff(sw, "-hierarchical-mode", flag /*ref*/)) {
-                m_hierMode = flag;
+            } else if (onoff(sw, "-hierarchical", flag /*ref*/)) {
+                m_hierarchical = flag;
+            } else if (onoff(sw, "-hierarchical-child", flag /*ref*/)) {
+                m_hierChild = flag;
             } else if (onoff(sw, "-ignc", flag /*ref*/)) {
                 m_ignc = flag;
             } else if (onoff(sw, "-inhibit-sim", flag /*ref*/)) {
@@ -1767,10 +1784,12 @@ V3Options::V3Options() {
     m_dumpDefines = false;
     m_exe = false;
     m_flatten = false;
+    m_gmake = false;
+    m_hierarchical = false;
+    m_hierChild = false;
     m_ignc = false;
     m_inhibitSim = false;
     m_lintOnly = false;
-    m_gmake = false;
     m_makePhony = false;
     m_main = false;
     m_orderClockDly = true;
@@ -1846,8 +1865,6 @@ V3Options::V3Options() {
     m_xAssign = "fast";
 
     m_defaultLanguage = V3LangCode::mostRecent();
-
-    m_hierMode = false;
 
     VName::maxLength(128);  // Linux filename limits 256; leave half for prefix
 

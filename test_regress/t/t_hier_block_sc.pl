@@ -18,7 +18,7 @@ top_filename("t/t_hier_block.v");
 scenarios(simulator => 1);
 
 compile(
-    verilator_flags2 => ['--sc', '--stats', ($Self->{vltmt} ? ' --threads 6' : '')],
+    verilator_flags2 => ['--sc', '--stats', '--hierarchical', ($Self->{vltmt} ? ' --threads 6' : '')],
     );
 
 execute(

@@ -30,6 +30,7 @@ while (1) {
         cmd => ["perl",
                 "$ENV{VERILATOR_ROOT}/bin/verilator",
                 "-cc",
+                "--hierarchical",
                 "-Mdir",
                 $secret_dir,
                 "--protect-lib",

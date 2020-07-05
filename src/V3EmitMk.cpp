@@ -95,7 +95,7 @@ public:
                 of.puts(support == 2 ? "VM_GLOBAL" : support == 1 ? "VM_SUPPORT" : "VM_CLASSES");
                 of.puts(slow ? "_SLOW" : "_FAST");
                 of.puts(" += \\\n");
-                if (support == 2 && v3Global.opt.hierMode()) {
+                if (support == 2 && v3Global.opt.hierChild()) {
                     // Do nothing because VM_GLOBAL is necessary per executable. Top module will
                     // have them.
                 } else if (support == 2 && !slow) {
@@ -229,7 +229,7 @@ public:
         of.puts("# Include list of all generated classes\n");
         of.puts("include " + v3Global.opt.prefix() + "_classes.mk\n");
         const V3HierBlockOptSet& hierOptions = v3Global.opt.hierBlocks();
-        if (!v3Global.opt.hierMode() && !hierOptions.empty()) {  // Only in top module
+        if (v3Global.opt.hierTop()) {
             of.puts("# Include rules for hierarchy blocks\n");
             of.puts("include " + v3Global.opt.prefix() + "_hier.mk\n");
         }

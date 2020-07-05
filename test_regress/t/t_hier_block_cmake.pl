@@ -7,6 +7,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+# If a test fails, broken .cmake may distrub the next run
+clean_objs();
+
 scenarios(simulator => 1);
 top_filename("t/t_hier_block.v");
 
@@ -17,6 +20,7 @@ compile(
     verilator_make_gmake => 0,
     verilator_make_cmake => 1,
     verilator_flags2 => ['--stats',
+                         '--hierarchical',
                          '--make cmake',
                          ($Self->{vltmt} ? ' --threads 6' : '')],
     );

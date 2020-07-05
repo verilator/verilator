@@ -291,7 +291,7 @@ private:
         // m_mod, if 0 never did it, if !=, it is an unprocessed clone
         bool cloned = (nodep->user1p() && nodep->user1p() != m_modp);
         if (nodep->user1p() == m_modp) return;  // AstBind and AstNodeModule may call a cell twice
-        if (v3Global.opt.hierMode() && nodep->modName() == m_origTopModuleName) {
+        if (v3Global.opt.hierChild() && nodep->modName() == m_origTopModuleName) {
             if (nodep->modName() == m_modp->origName()) {
                 // Only the root of the recursive instantiation can be a hierarhcical block.
                 nodep->modName(m_modp->name());
@@ -468,12 +468,12 @@ private:
         // mangled_name, BlockOptions
         const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
         V3HierBlockOptSet::const_iterator hierIt = hierBlocks.find(v3Global.opt.topModule());
-        if (v3Global.opt.hierMode())
+        if (v3Global.opt.hierChild())
             UASSERT(hierIt != hierBlocks.end(), "information of the top module must exist");
         // Look at all modules, and store pointers to all module names
         for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
             nextp = VN_CAST(nodep->nextp(), NodeModule);
-            if (v3Global.opt.hierMode() && nodep->name() == hierIt->second.origName()) {
+            if (v3Global.opt.hierChild() && nodep->name() == hierIt->second.origName()) {
                 nodep->name(hierIt->first);  // Change name of this module to be mangled name
                                              // considering parameter
             }
@@ -529,7 +529,7 @@ public:
         m_modp = NULL;
         m_libVertexp = NULL;
         m_topVertexp = NULL;
-        if (v3Global.opt.hierMode()) {
+        if (v3Global.opt.hierChild()) {
             const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
             UASSERT(!v3Global.opt.topModule().empty(),
                     "top module must be explicityly specified in hierarchical mode");

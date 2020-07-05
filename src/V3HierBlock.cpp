@@ -60,7 +60,7 @@
 // 8) In V3EmitMk.cpp, ${prefix}_hier.mk is created in run a).
 //
 // There are two hidden command options.
-//   --hierarchical-mode is added to Verilator run b).
+//   --hierarchical-child is added to Verilator run b).
 //   --hierarchy-block module_name,mangled_name,name0,value0,name1,value1,...
 //       module_name  :The original modulename
 //       mangled_name :Mangled name of parameterized modules (named in V3Param.cpp).
@@ -195,7 +195,7 @@ V3StringList V3HierBlock::commandOptions(bool forCMake) const {
     opts.push_back(" --top-module " + modp()->name());
     opts.push_back(" --protect-lib " + modp()->name());  // mangled name
     opts.push_back(" --protect-key " + v3Global.opt.protectKeyDefaulted());
-    opts.push_back(" --hierarchical-mode");
+    opts.push_back(" --hierarchical-child");
 
     const StrGParams gparamsStr = stringifyParams(gparams(), forCMake, true);
     for (StrGParams::const_iterator paramIt = gparamsStr.begin(); paramIt != gparamsStr.end();
@@ -332,7 +332,7 @@ void V3HierBlockPlan::registerUsage(const AstNodeModule* parentp, const AstNodeM
 
 void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
     // When processing a hierarchy block, no need to create a plan anymore.
-    if (v3Global.opt.hierMode()) return;
+    if (v3Global.opt.hierChild()) return;
 
     AstNodeModule* modp = nodep->topModulep();
     if (modp->hierBlock()) {

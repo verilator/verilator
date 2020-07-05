@@ -18,6 +18,7 @@ top_filename("t/t_hier_block.v");
 # So use 6 threads here though it's not optimal in performace wise, but ok.
 compile(
     verilator_flags2 => ['--stats',
+                         '--hierarchical',
                          '+define+USE_VLT', 't/t_hier_block_vlt.vlt',
                          ($Self->{vltmt} ? ' --threads 6' : '')],
     );
