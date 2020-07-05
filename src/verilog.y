@@ -2836,11 +2836,11 @@ event_control<sentreep>:	// ==IEEE: event_control
 event_expression<senitemp>:	// IEEE: event_expression - split over several
 	//UNSUP			// Below are all removed
 		senitem					{ $$ = $1; }
-	|	event_expression yOR senitem		{ $$ = VN_CAST($1->addNextNull($3), NodeSenItem); }
-	|	event_expression ',' senitem		{ $$ = VN_CAST($1->addNextNull($3), NodeSenItem); }	/* Verilog 2001 */
+	|	event_expression yOR senitem		{ $$ = VN_CAST($1->addNextNull($3), SenItem); }
+	|	event_expression ',' senitem		{ $$ = VN_CAST($1->addNextNull($3), SenItem); }	/* Verilog 2001 */
 	//UNSUP			// Above are all removed, replace with:
 	//UNSUP	ev_expr					{ $$ = $1; }
-	//UNSUP	event_expression ',' ev_expr %prec yOR	{ $$ = VN_CAST($1->addNextNull($3), NodeSenItem); }
+	//UNSUP	event_expression ',' ev_expr %prec yOR	{ $$ = VN_CAST($1->addNextNull($3), SenItem); }
 	;
 
 senitem<senitemp>:		// IEEE: part of event_expression, non-'OR' ',' terms

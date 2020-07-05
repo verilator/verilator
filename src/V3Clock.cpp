@@ -136,23 +136,11 @@ private:
         }
         return newp;
     }
-    AstNode* createSenGateEquation(AstSenGate* nodep) {
-        AstNode* newp = new AstAnd(nodep->fileline(), createSenseEquation(nodep->sensesp()),
-                                   nodep->rhsp()->cloneTree(true));
-        return newp;
-    }
-    AstNode* createSenseEquation(AstNodeSenItem* nodesp) {
+    AstNode* createSenseEquation(AstSenItem* nodesp) {
         // Nodep may be a list of elements; we need to walk it
         AstNode* senEqnp = NULL;
-        for (AstNodeSenItem* senp = nodesp; senp; senp = VN_CAST(senp->nextp(), NodeSenItem)) {
-            AstNode* senOnep = NULL;
-            if (AstSenItem* itemp = VN_CAST(senp, SenItem)) {
-                senOnep = createSenItemEquation(itemp);
-            } else if (AstSenGate* itemp = VN_CAST(senp, SenGate)) {
-                senOnep = createSenGateEquation(itemp);
-            } else {
-                senp->v3fatalSrc("Strange node under sentree");
-            }
+        for (AstSenItem* senp = nodesp; senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+            AstNode*const senOnep = createSenItemEquation(senp);
             if (senEqnp) {
                 // Add new OR to the sensitivity list equation
                 senEqnp = new AstOr(senp->fileline(), senEqnp, senOnep);

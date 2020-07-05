@@ -376,14 +376,6 @@ private:
         // if (debug() >= 9) nodep->dumpTree(cout, "  Alw: ");
         visitAlways(nodep, nodep->sensesp(), VAlwaysKwd::ALWAYS);
     }
-    virtual void visit(AstSenGate* nodep) VL_OVERRIDE {
-        AstSenItem* subitemp = nodep->sensesp();
-        UASSERT_OBJ(subitemp->edgeType() == VEdgeType::ET_ANYEDGE
-                        || subitemp->edgeType() == VEdgeType::ET_POSEDGE
-                        || subitemp->edgeType() == VEdgeType::ET_NEGEDGE,
-                    nodep, "Strange activity type under SenGate");
-        iterateChildren(nodep);
-    }
     virtual void visit(AstSenItem* nodep) VL_OVERRIDE {
         if (nodep->varrefp()) {
             if (AstBasicDType* basicp = nodep->varrefp()->dtypep()->basicp()) {

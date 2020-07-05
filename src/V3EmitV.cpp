@@ -160,9 +160,6 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         }
         puts(")");
     }
-    virtual void visit(AstSenGate* nodep) VL_OVERRIDE {
-        emitVerilogFormat(nodep, nodep->emitVerilog(), nodep->sensesp(), nodep->rhsp());
-    }
     virtual void visit(AstSenItem* nodep) VL_OVERRIDE {
         putfs(nodep, "");
         puts(nodep->edgeType().verilogKwd());
