@@ -1282,8 +1282,7 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
 
     const AstSenItem* fromSenListp = VN_CAST(fromp->sensesp(), SenItem);
     const AstSenItem* toSenListp = VN_CAST(top->sensesp(), SenItem);
-    // If clk gating is ever reenabled, we may need to update this to handle
-    // AstSenGate also.
+
     UASSERT_OBJ(fromSenListp, fromp, "sensitivity list item is not an AstSenItem");
     UASSERT_OBJ(toSenListp, top, "sensitivity list item is not an AstSenItem");
 

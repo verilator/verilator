@@ -3096,32 +3096,6 @@ public:
     bool hasVar() const { return !(isCombo() || isInitial() || isSettle() || isNever()); }
 };
 
-class AstSenGate : public AstNodeSenItem {
-    // Parents:  SENTREE
-    // Children: SENITEM expr
-    // AND as applied to a sensitivity list and a gating expression
-    // Performing this gating is optional; it may be removed by later optimizations
-public:
-    AstSenGate(FileLine* fl, AstSenItem* sensesp, AstNode* rhsp)
-        : ASTGEN_SUPER(fl) {
-        dtypeSetLogicBool();
-        addOp1p(sensesp);
-        setOp2p(rhsp);
-    }
-    ASTNODE_NODE_FUNCS(SenGate)
-    virtual string emitVerilog() { return "(%l) %f&& (%r)"; }
-    AstSenItem* sensesp() const { return VN_CAST(op1p(), SenItem); }
-    AstNode* rhsp() const { return op2p(); }
-    void sensesp(AstSenItem* nodep) { addOp1p(nodep); }
-    void rhsp(AstNode* nodep) { setOp2p(nodep); }
-    //
-    virtual bool isClocked() const { return true; }
-    virtual bool isCombo() const { return false; }
-    virtual bool isInitial() const { return false; }
-    virtual bool isSettle() const { return false; }
-    virtual bool isNever() const { return false; }
-};
-
 class AstSenTree : public AstNode {
     // A list of senitems
     // Parents:  MODULE | SBLOCK

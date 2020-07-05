@@ -1723,25 +1723,6 @@ private:
                         "Null sensitivity variable");
         }
     }
-    virtual void visit(AstSenGate* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-        if (AstConst* constp = VN_CAST(nodep->rhsp(), Const)) {
-            if (constp->isZero()) {
-                UINFO(4, "SENGATE(...,0)->NEVER" << endl);
-                if (onlySenItemInSenTree(nodep)) {
-                    nodep->replaceWith(new AstSenItem(nodep->fileline(), AstSenItem::Never()));
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                } else {
-                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                }
-            } else {
-                UINFO(4, "SENGATE(SENITEM,0)->ALWAYS SENITEM" << endl);
-                AstNode* senitemp = nodep->sensesp()->unlinkFrBack();
-                nodep->replaceWith(senitemp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            }
-        }
-    }
 
     struct SenItemCmp {
         inline bool operator()(AstNodeSenItem* lhsp, AstNodeSenItem* rhsp) const {
@@ -1798,24 +1779,6 @@ private:
                     if (AstSenItem* itemp = VN_CAST(senp, SenItem)) {
                         if (itemp->varrefp() && itemp->varrefp()->varScopep()) {
                             itemp->varrefp()->varScopep()->user4(1);
-                        }
-                    }
-                }
-                // Find x in SENTREE(SENITEM(x))
-                for (AstNodeSenItem *nextp, *senp = VN_CAST(nodep->sensesp(), NodeSenItem); senp;
-                     senp = nextp) {
-                    nextp = VN_CAST(senp->nextp(), NodeSenItem);
-                    if (AstSenGate* gatep = VN_CAST(senp, SenGate)) {
-                        if (AstSenItem* itemp = VN_CAST(gatep->sensesp(), SenItem)) {
-                            if (itemp->varrefp() && itemp->varrefp()->varScopep()) {
-                                if (itemp->varrefp()->varScopep()->user4()) {
-                                    // Found, push this item up to the top
-                                    itemp->unlinkFrBack();
-                                    nodep->addSensesp(itemp);
-                                    VL_DO_DANGLING(gatep->unlinkFrBack()->deleteTree(), gatep);
-                                    VL_DANGLING(senp);
-                                }
-                            }
                         }
                     }
                 }

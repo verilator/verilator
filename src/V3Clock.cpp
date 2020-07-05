@@ -136,11 +136,6 @@ private:
         }
         return newp;
     }
-    AstNode* createSenGateEquation(AstSenGate* nodep) {
-        AstNode* newp = new AstAnd(nodep->fileline(), createSenseEquation(nodep->sensesp()),
-                                   nodep->rhsp()->cloneTree(true));
-        return newp;
-    }
     AstNode* createSenseEquation(AstNodeSenItem* nodesp) {
         // Nodep may be a list of elements; we need to walk it
         AstNode* senEqnp = NULL;
@@ -148,8 +143,6 @@ private:
             AstNode* senOnep = NULL;
             if (AstSenItem* itemp = VN_CAST(senp, SenItem)) {
                 senOnep = createSenItemEquation(itemp);
-            } else if (AstSenGate* itemp = VN_CAST(senp, SenGate)) {
-                senOnep = createSenGateEquation(itemp);
             } else {
                 senp->v3fatalSrc("Strange node under sentree");
             }

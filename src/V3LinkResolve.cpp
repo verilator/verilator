@@ -218,9 +218,6 @@ private:
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Complex statement in sensitivity list");
         }
     }
-    virtual void visit(AstSenGate* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc("SenGates shouldn't be in tree yet");
-    }
 
     virtual void visit(AstNodePreSel* nodep) VL_OVERRIDE {
         if (!nodep->attrp()) {

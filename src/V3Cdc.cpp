@@ -694,8 +694,6 @@ private:
         m_inDly = false;
     }
     virtual void visit(AstSenItem* nodep) VL_OVERRIDE {
-        // Note we look at only AstSenItems, not AstSenGate's
-        // The gating term of a AstSenGate is normal logic
         m_inSenItem = true;
         iterateChildren(nodep);
         m_inSenItem = false;
@@ -705,11 +703,6 @@ private:
         // CDC doesn't care about public variables
     }
     virtual void visit(AstCFunc* nodep) VL_OVERRIDE { iterateNewStmt(nodep); }
-    virtual void visit(AstSenGate* nodep) VL_OVERRIDE {
-        // First handle the clock part will be handled in a minute by visit AstSenItem
-        // The logic gating term is dealt with as logic
-        iterateNewStmt(nodep);
-    }
     virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE { iterateNewStmt(nodep); }
     virtual void visit(AstAssignW* nodep) VL_OVERRIDE { iterateNewStmt(nodep); }
 
