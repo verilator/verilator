@@ -69,13 +69,16 @@ public:
 
     // For emitting Makefile and CMakeLists.txt
     V3StringList commandOptions(bool forCMake) const;
-    V3StringList hierBlockOptions(bool forCMake) const;
+    V3StringList hierBlockOptions() const;
     string hierPrefix() const;
     string hierSomeFile(bool withDir, const char* prefix, const char* suffix) const;
     string hierWrapper(bool withDir) const;
     string hierMk(bool withDir) const;
     string hierLib(bool withDir) const;
     string hierGenerated(bool withDir) const;
+    // Write command line opriont to .f file for this hierarchy block
+    void writeCommandFile(bool forCMake) const;
+    string commandFileName(bool forCMake) const;
 };
 
 //######################################################################
@@ -106,6 +109,10 @@ public:
     // Returns all hierarchy blocks that sorted in leaf-first order.
     // Latter block refers only already appeared hierarchy blocks.
     HierVector hierBlocksSorted() const;
+
+    // Write command line opriont to .f files for child Verilation run
+    void writeCommandFiles(bool forCMake) const;
+    string topCommandFileName(bool forCMake) const;
 
     static void createPlan(AstNetlist* nodep);
 };

@@ -78,12 +78,12 @@
 
 #include "V3Ast.h"
 #include "V3Error.h"
+#include "V3File.h"
 #include "V3HierBlock.h"
-#include "V3Stats.h"
 
 typedef std::vector<std::pair<string, string> > StrGParams;
 
-static string escapeIntegerForShell(const string& str) {
+static string escapeInteger(const string& str) {
     string result;
     result.reserve(str.size() + 1);
     for (size_t i = 0; i < str.size(); ++i) {
@@ -93,58 +93,34 @@ static string escapeIntegerForShell(const string& str) {
     return result;
 }
 
-static string escapeStringForShell(const string& str) {
+static string escapeString(const string& str) {
     string result;
-    const char squoate = '\'';
-    const char dquoate = '"';
-    result.reserve(str.size() + 2);
-    // String literal for -G option must be surrounded by double quote (")
-    result.push_back(squoate);
-    result.push_back(dquoate);
-    result.push_back(squoate);
-
-    result.push_back(squoate);
-    for (size_t i = 0; i < str.size(); ++i) {
-        if (str[i] == squoate) {
-            result.push_back(squoate);  // terminate
-            result.push_back(dquoate);  // "
-            result.push_back(squoate);  // str[i]
-            result.push_back(dquoate);  // "
-            result.push_back(squoate);  // start
-        } else {
-            result.push_back(str[i]);
-        }
+    const char dquote = '"';
+    const char escape = '\\';
+    result.push_back(dquote);  // Start quoted string
+    result.push_back(escape);
+    result.push_back(dquote);  // "
+    for (string::const_iterator it = str.begin(); it != str.end(); ++it) {
+        if (*it == dquote || *it == escape) { result.push_back(escape); }
+        result.push_back(*it);
     }
-    result.push_back(squoate);
-
-    result.push_back(squoate);
-    result.push_back(dquoate);
-    result.push_back(squoate);
+    result.push_back(escape);
+    result.push_back(dquote);  // "
+    result.push_back(dquote);  // Terminate quoted string
     return result;
 }
 
-static string escapeEscape(const string& s) {
+static string escapeEscape(const string& str) {
     string result;
-    result.reserve(s.length());
-    for (string::const_iterator it = s.begin(); it != s.end(); ++it) {
-        if (*it == '\\') result.push_back(*it);
+    const char escape = '\\';
+    for (string::const_iterator it = str.begin(); it != str.end(); ++it) {
+        if (*it == escape) { result.push_back(escape); }
         result.push_back(*it);
     }
     return result;
 }
 
-static string escapeStringForCMake(const string& str) {
-    int num_eq = 0;
-    for (string::size_type i = 0; i < str.length(); ++i) {
-        if (str[i] == '=') ++num_eq;
-    }
-    string eq;
-    eq.resize(num_eq, '=');
-    return '[' + eq + '[' + str + ']' + eq + ']';
-}
-
-static StrGParams stringifyParams(const V3HierBlock::GParams& gparams, bool forCMake,
-                                  bool forGOption) {
+static StrGParams stringifyParams(const V3HierBlock::GParams& gparams, bool forGOption) {
     StrGParams strParams;
     for (V3HierBlock::GParams::const_iterator gparamIt = gparams.begin();
          gparamIt != gparams.end(); ++gparamIt) {
@@ -163,17 +139,35 @@ static StrGParams stringifyParams(const V3HierBlock::GParams& gparams, bool forC
                 strParams.push_back(std::make_pair((*gparamIt)->name(), hexFpStr.data()));
             } else if (constp->isString()) {
                 string s = constp->num().toString();
-                if (!forGOption) { s = escapeEscape(s); }
-                s = forCMake ? ('"' + s + '"') : escapeStringForShell(s);
+                if (!forGOption) s = escapeEscape(s);
+                s = escapeString(s);
                 strParams.push_back(std::make_pair((*gparamIt)->name(), s));
             } else {  // Either signed or unsigned integer.
                 string s = constp->num().ascii(true, true);
-                if (!forCMake) s = escapeIntegerForShell(s);
+                s = escapeInteger(s);
                 strParams.push_back(std::make_pair((*gparamIt)->name(), s));
             }
         }
     }
     return strParams;
+}
+
+static string hierCommandFileName(const string& prefix, bool forCMake) {
+    return v3Global.opt.makeDir() + "/" + prefix
+           + (forCMake ? "_hierCMakeCmd.f" : "_hierMkCmd.f");
+}
+
+static void writeCommonInputs(std::ostream* of, bool forCMake) {
+    if (!forCMake) {
+        const V3StringList& vFiles = v3Global.opt.vFiles();
+        for (V3StringList::const_iterator it = vFiles.begin(); it != vFiles.end(); ++it) {
+            *of << *it << "\n";
+        }
+    }
+    const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
+    for (V3StringSet::const_iterator it = libraryFiles.begin(); it != libraryFiles.end(); ++it) {
+        *of << "-v " << *it << "\n";
+    }
 }
 
 //######################################################################
@@ -190,25 +184,26 @@ V3HierBlock::~V3HierBlock() {
 V3StringList V3HierBlock::commandOptions(bool forCMake) const {
     V3StringList opts;
     const string prefix = "V" + modp()->name();
-    opts.push_back(" --prefix " + prefix);
-    opts.push_back(" --mod-prefix " + prefix);
-    opts.push_back(" --top-module " + modp()->name());
+    if (!forCMake) {
+        opts.push_back(" --prefix " + prefix);
+        opts.push_back(" --mod-prefix " + prefix);
+        opts.push_back(" --top-module " + modp()->name());
+    }
     opts.push_back(" --protect-lib " + modp()->name());  // mangled name
     opts.push_back(" --protect-key " + v3Global.opt.protectKeyDefaulted());
     opts.push_back(" --hierarchical-child");
 
-    const StrGParams gparamsStr = stringifyParams(gparams(), forCMake, true);
+    const StrGParams gparamsStr = stringifyParams(gparams(), true);
     for (StrGParams::const_iterator paramIt = gparamsStr.begin(); paramIt != gparamsStr.end();
          ++paramIt) {
         opts.push_back("-G" + paramIt->first + "=" + paramIt->second + "");
-        if (forCMake) opts.back() = escapeStringForCMake(opts.back());
     }
     return opts;
 }
 
-V3StringList V3HierBlock::hierBlockOptions(bool forCMake) const {
+V3StringList V3HierBlock::hierBlockOptions() const {
     V3StringList opts;
-    const StrGParams gparamsStr = stringifyParams(gparams(), forCMake, false);
+    const StrGParams gparamsStr = stringifyParams(gparams(), false);
     opts.push_back("--hierarchy-block ");
     string s = modp()->origName();  // origName
     s += "," + modp()->name();  // mangledName
@@ -217,7 +212,6 @@ V3StringList V3HierBlock::hierBlockOptions(bool forCMake) const {
         s += "," + paramIt->first;
         s += "," + paramIt->second;
     }
-    if (forCMake) s = escapeStringForCMake(s);
     opts.back() += s;
     return opts;
 }
@@ -241,6 +235,34 @@ string V3HierBlock::hierGenerated(bool withDir) const {
     return hierWrapper(withDir) + ' ' + hierMk(withDir);
 }
 
+void V3HierBlock::writeCommandFile(bool forCMake) const {
+    vl_unique_ptr<std::ofstream> of(V3File::new_ofstream(commandFileName(forCMake)));
+    *of << "--cc\n";
+
+    if (!forCMake) {
+        for (V3HierBlock::HierBlockSet::const_iterator child = m_children.begin();
+             child != m_children.end(); ++child) {
+            *of << v3Global.opt.makeDir() << "/" << (*child)->hierWrapper(true) << "\n";
+        }
+    }
+    *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
+    writeCommonInputs(of.get(), forCMake);
+    const V3StringList& commandOpts = commandOptions(false);
+    for (V3StringList::const_iterator it = commandOpts.begin(); it != commandOpts.end(); ++it) {
+        *of << (*it) << "\n";
+    }
+    *of << hierBlockOptions().front() << "\n";
+    for (HierBlockSet::const_iterator child = m_children.begin(); child != m_children.end();
+         ++child) {
+        *of << hierBlockOptions().front() << "\n";
+    }
+    *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
+}
+
+string V3HierBlock::commandFileName(bool forCMake) const {
+    return hierCommandFileName(hierPrefix(), forCMake);
+}
+
 //######################################################################
 class V3HierBlockPlan::Visitor : public AstNVisitor {
     typedef std::set<const AstModule*> ModuleSet;
@@ -250,7 +272,6 @@ class V3HierBlockPlan::Visitor : public AstNVisitor {
     ModuleSet m_checked;  // Modules that are already checked;
     V3HierBlock::GParams m_gparams;  // list of variables that is AstVarType::GPARAM
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
     virtual void visit(AstModule* nodep) VL_OVERRIDE {
         // Don't visit twice
         if (m_checked.find(nodep) != m_checked.end()) return;
@@ -289,6 +310,9 @@ class V3HierBlockPlan::Visitor : public AstNVisitor {
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         if (nodep->isGParam() && nodep->overriddenParam()) m_gparams.push_back(nodep);
     }
+
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     Visitor(V3HierBlockPlan* planp, AstNetlist* netlist)
@@ -344,7 +368,6 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
 
     vl_unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan());
     { Visitor visitor(planp.get(), nodep); }
-    V3Stats::addStat("HierBlock, Hierarchy blocks", v3Global.opt.hierBlocks().size());
 
     // No hierarchy block is found, nothing to do.
     if (planp->empty()) return;
@@ -388,4 +411,43 @@ V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
         }
     }
     return sorted;
+}
+
+void V3HierBlockPlan::writeCommandFiles(bool forCMake) const {
+    for (const_iterator it = begin(); it != end(); ++it) {
+        it->second->writeCommandFile(forCMake);
+    }
+    // For the top module
+    vl_unique_ptr<std::ofstream> of(V3File::new_ofstream(topCommandFileName(forCMake)));
+    if (!forCMake) {
+        // Load wrappers first not to be overwritten by the original HDL
+        for (const_iterator it = begin(); it != end(); ++it) {
+            *of << it->second->hierWrapper(true) << "\n";
+        }
+    }
+    writeCommonInputs(of.get(), forCMake);
+    if (!forCMake) {
+        const V3StringSet& cppFiles = v3Global.opt.cppFiles();
+        for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
+            *of << *it << "\n";
+        }
+        *of << "--top-module " << v3Global.rootp()->topModulep()->name() << "\n";
+        *of << "--prefix " << v3Global.opt.prefix() << "\n";
+        *of << "-Mdir " << v3Global.opt.makeDir() << "\n";
+        *of << "--mod-prefix " << v3Global.opt.modPrefix() << "\n";
+    }
+    for (const_iterator it = begin(); it != end(); ++it) {
+        *of << it->second->hierBlockOptions().front() << "\n";
+    }
+
+    if (!v3Global.opt.protectLib().empty()) {
+        *of << "--protect-lib " << v3Global.opt.protectLib() << "\n";
+        *of << "--protect-key " << v3Global.opt.protectKeyDefaulted() << "\n";
+    }
+    *of << (v3Global.opt.systemC() ? "--sc" : "--cc") << "\n";
+    *of << v3Global.opt.allArgsStringForHierBlock(true) << "\n";
+}
+
+string V3HierBlockPlan::topCommandFileName(bool forCMake) const {
+    return hierCommandFileName(v3Global.opt.prefix(), forCMake);
 }

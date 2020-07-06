@@ -36,16 +36,16 @@ class CMakeEmitter {
     // STATIC FUNCTIONS
 
     // Concatenate all strings in 'strs' with ' ' between them.
-    template <typename List> static string cmake_list(const List& strs, bool quote = true) {
+    template <typename List> static string cmake_list(const List& strs) {
         string s;
         if (strs.begin() != strs.end()) {
-            if (quote) s.append("\"");
+            s.append("\"");
             s.append(*strs.begin());
-            if (quote) s.append("\"");
+            s.append("\"");
             for (typename List::const_iterator it = ++strs.begin(); it != strs.end(); ++it) {
-                s.append(quote ? " \"" : " ");
+                s.append(" \"");
                 s.append(*it);
-                if (quote) s.append("\"");
+                s.append("\"");
             }
         }
         return s;
@@ -230,11 +230,9 @@ class CMakeEmitter {
                     *of << V3Os::filenameRealPath(*it);
                 }
                 *of << " VERILATOR_ARGS ";
-                *of << " " << cmake_list(hblockp->commandOptions(true), false) << " "
-                    << cmake_list(hblockp->hierBlockOptions(true), false) << " "
-                    << v3Global.opt.allArgsStringForHierBlock(false) << " "
-                    << "-CFLAGS -fPIC"  // hierarchy block will be static, but may be linked with
-                                        // .so
+                *of << "-f " << deslash(hblockp->commandFileName(true))
+                    << " -CFLAGS -fPIC"  // hierarchy block will be static, but may be linked with
+                                         // .so
                     << ")\n";
             }
             *of << "\n# Verilate the top module that refers protect-lib wrappers of above\n";
@@ -245,14 +243,8 @@ class CMakeEmitter {
                 *of << deslash(" ${CMAKE_CURRENT_BINARY_DIR}/" + it->second->hierWrapper(true));
             }
             *of << " " << deslash(cmake_list(v3Global.opt.vFiles()));
-            *of << " VERILATOR_ARGS " << v3Global.opt.allArgsStringForHierBlock(true);
-            for (V3HierBlockPlan::const_iterator it = planp->begin(); it != planp->end(); ++it) {
-                *of << " " << cmake_list(it->second->hierBlockOptions(true), false);
-            }
-            if (!v3Global.opt.protectLib().empty()) {
-                *of << " --protect-lib " << v3Global.opt.protectLib() << " --protect-key "
-                    << v3Global.opt.protectKeyDefaulted();
-            }
+            *of << " VERILATOR_ARGS ";
+            *of << "-f " << deslash(planp->topCommandFileName(true));
             *of << ")\n";
         }
     }

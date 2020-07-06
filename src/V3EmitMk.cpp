@@ -228,7 +228,6 @@ public:
         of.puts("\n### Default rules...\n");
         of.puts("# Include list of all generated classes\n");
         of.puts("include " + v3Global.opt.prefix() + "_classes.mk\n");
-        const V3HierBlockOptSet& hierOptions = v3Global.opt.hierBlocks();
         if (v3Global.opt.hierTop()) {
             of.puts("# Include rules for hierarchy blocks\n");
             of.puts("include " + v3Global.opt.prefix() + "_hier.mk\n");
@@ -290,9 +289,6 @@ class EmitMkHierVerilation {
         of.puts("# Verilation of hierarchy blocks are executed in this directory\n");
         of.puts("VM_HIER_RUN_DIR := " + cwd + "\n");
         of.puts("# Common options for hierarchy blocks\n");
-        of.puts("VM_HIER_COMMON_OPTS := --cc " + v3Global.opt.allArgsStringForHierBlock(false)
-                + "\n");
-        of.puts("VM_HIER_TOP_OPTS := --cc " + v3Global.opt.allArgsStringForHierBlock(true) + "\n");
         of.puts("VM_HIER_VERILATOR := " + v3Global.opt.getenvVERILATOR_ROOT()
                 + "/bin/verilator\n");
         of.puts("VM_HIER_INPUT_FILES := \\\n");
@@ -350,34 +346,8 @@ class EmitMkHierVerilation {
                 of.puts(it->second->hierWrapper(true) + " ");
             }
             of.puts("\n");
-            of.puts("\tcd $(VM_HIER_RUN_DIR) && $(VM_HIER_VERILATOR) $(VM_HIER_TOP_OPTS) \\\n");
-            // Load wrappers first not to be overwritten by the original HDL
-            for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end();
-                 ++it) {
-                of.puts("\t\t" + v3Global.opt.makeDir() + "/" + it->second->hierWrapper(true)
-                        + " \\\n");
-            }
-            of.puts("\t\t$(VM_HIER_INPUT_FILES) \\\n");
-            of.puts("\t\t$(addprefix -v ,$(VM_HIER_VERILOG_LIBS)) \\\n");
-            of.puts("\t\t");
-            const V3StringSet& cppFiles = v3Global.opt.cppFiles();
-            for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
-                of.puts(*it + " ");
-            }
-            of.puts("\\\n");
-            for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end();
-                 ++it) {
-                emitOpts(of, it->second->hierBlockOptions(false));
-            }
-            of.puts("\t\t--top-module " + v3Global.rootp()->topModulep()->name());
-            of.puts("\t\t--prefix " + v3Global.opt.prefix() + " \\\n");
-            of.puts("\t\t-Mdir " + v3Global.opt.makeDir() + " \\\n");
-            of.puts("\t\t--mod-prefix " + v3Global.opt.modPrefix() + "\\");
-            if (!v3Global.opt.protectLib().empty()) {
-                of.puts("\n");
-                of.puts("\t\t--protect-lib " + v3Global.opt.protectLib() + "\\\n");
-                of.puts("\t\t--protect-key " + v3Global.opt.protectKeyDefaulted() + "\\");
-            }
+            of.puts("\tcd $(VM_HIER_RUN_DIR) && $(VM_HIER_VERILATOR) ");
+            of.puts("-f " + v3Global.hierPlanp()->topCommandFileName(false));
             of.puts("\n");
         }
 
@@ -393,23 +363,8 @@ class EmitMkHierVerilation {
                 of.puts((*child)->hierWrapper(true) + " ");
             }
             of.puts("\n");
-            of.puts("\tcd $(VM_HIER_RUN_DIR) && $(VM_HIER_VERILATOR) $(VM_HIER_COMMON_OPTS) \\\n");
-            // Load wrappers first not to be overwritten by the original HDL
-            for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
-                 child != children.end(); ++child) {
-                of.puts("\t\t" + v3Global.opt.makeDir() + "/" + (*child)->hierWrapper(true)
-                        + " \\\n");
-            }
-            of.puts("\t\t$(VM_HIER_INPUT_FILES) \\\n");
-            of.puts("\t\t$(addprefix -v ,$(VM_HIER_VERILOG_LIBS)) \\\n");
-            emitOpts(of, it->second->commandOptions(false));
-            emitOpts(of, it->second->hierBlockOptions(false));
-            of.puts("\t\t-Mdir " + v3Global.opt.makeDir() + "/" + prefix + " \\\n");
-            for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
-                 child != children.end(); ++child) {
-                emitOpts(of, (*child)->hierBlockOptions(false));
-            }
-            of.puts("\n");
+            of.puts("\tcd $(VM_HIER_RUN_DIR) && $(VM_HIER_VERILATOR) ");
+            of.puts("-f " + it->second->commandFileName(false) + "\n");
 
             // Rule to build lib*.a
             of.puts(it->second->hierLib(true));

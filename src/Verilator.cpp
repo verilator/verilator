@@ -576,8 +576,14 @@ static void verilate(const string& argString) {
         UASSERT(v3Global.opt.hierarchical(), "must be set");
         UASSERT(!v3Global.opt.hierChild(), "must not be a child run");
         UASSERT(v3Global.opt.hierBlocks().empty(), "Must not set");
-        if (v3Global.opt.gmake()) { V3EmitMk::emitHierVerilation(v3Global.hierPlanp()); }
-        if (v3Global.opt.cmake()) { V3EmitCMake::emit(); }
+        if (v3Global.opt.gmake()) {
+            v3Global.hierPlanp()->writeCommandFiles(false);
+            V3EmitMk::emitHierVerilation(v3Global.hierPlanp());
+        }
+        if (v3Global.opt.cmake()) {
+            v3Global.hierPlanp()->writeCommandFiles(true);
+            V3EmitCMake::emit();
+        }
     } else {
         if (v3Global.opt.makeDepend().isTrue()) {
             V3File::writeDepend(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__ver.d");
