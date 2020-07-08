@@ -1764,7 +1764,6 @@ AstActive* OrderVisitor::processMoveOneLogic(const OrderLogicVertex* lvertexp,
         if (!newFuncpr && domainp != m_deleteDomainp) {
             string name = cfuncName(modp, domainp, scopep, nodep);
             newFuncpr = new AstCFunc(nodep->fileline(), name, scopep);
-            newFuncpr->proc(true);
             newFuncpr->argTypes(EmitCBaseVisitor::symClassVar());
             newFuncpr->symProlog(true);
             newStmtsr = 0;
@@ -1773,9 +1772,9 @@ AstActive* OrderVisitor::processMoveOneLogic(const OrderLogicVertex* lvertexp,
             // Where will we be adding the call?
             activep = new AstActive(nodep->fileline(), name, domainp);
             // Add a top call to it
-            AstCTrigger* triggerp = new AstCTrigger(nodep->fileline(), newFuncpr);
-            triggerp->argTypes("vlSymsp");
-            activep->addStmtsp(triggerp);
+            AstCCall* callp = new AstCCall(nodep->fileline(), newFuncpr);
+            callp->argTypes("vlSymsp");
+            activep->addStmtsp(callp);
             UINFO(6, "      New " << newFuncpr << endl);
         }
 
