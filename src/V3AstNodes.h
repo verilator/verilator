@@ -8349,6 +8349,7 @@ private:
     bool m_dpiExportWrapper : 1;  // From dpi export; static function with dispatch table
     bool m_dpiImport : 1;  // From dpi import
     bool m_dpiImportWrapper : 1;  // Wrapper from dpi import
+    bool m_proc : 1;
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER(fl) {
@@ -8376,6 +8377,7 @@ public:
         m_dpiExportWrapper = false;
         m_dpiImport = false;
         m_dpiImportWrapper = false;
+        m_proc = false;
     }
     ASTNODE_NODE_FUNCS(CFunc)
     virtual string name() const { return m_name; }
@@ -8449,6 +8451,8 @@ public:
     void dpiImport(bool flag) { m_dpiImport = flag; }
     bool dpiImportWrapper() const { return m_dpiImportWrapper; }
     void dpiImportWrapper(bool flag) { m_dpiImportWrapper = flag; }
+    bool proc() const { return m_proc; }
+    void proc(bool flag) { m_proc = flag; }
     //
     // If adding node accessors, see below emptyBody
     AstNode* argsp() const { return op1p(); }
@@ -8477,6 +8481,20 @@ public:
     AstCCall(AstCCall* oldp, AstCFunc* funcp)
         : ASTGEN_SUPER(oldp, funcp) {}
     ASTNODE_NODE_FUNCS(CCall)
+};
+
+class AstCTrigger : public AstNodeCCall {
+    // C++ function call
+    // Parents:  Anything above a statement
+    // Children: Args to the function
+public:
+    AstCTrigger(FileLine* fl, AstCFunc* funcp, AstNode* argsp = NULL)
+        : ASTGEN_SUPER(fl, funcp, argsp) {}
+    // Replacement form for V3Combine
+    // Note this removes old attachments from the oldp
+    AstCTrigger(AstCTrigger* oldp, AstCFunc* funcp)
+        : ASTGEN_SUPER(oldp, funcp) {}
+    ASTNODE_NODE_FUNCS(CTrigger)
 };
 
 class AstCMethodCall : public AstNodeCCall {

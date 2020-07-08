@@ -363,7 +363,7 @@ public:
             puts(".data()");  // Access returned std::array as C array
         }
     }
-    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
+    virtual void visit_call(AstNodeCCall* nodep) {
         if (AstCMethodCall* ccallp = VN_CAST(nodep, CMethodCall)) {
             // make this a Ast type for future opt
             iterate(ccallp->fromp());
@@ -386,6 +386,18 @@ public:
         } else {
             puts(");\n");
         }
+    }
+    virtual void visit(AstCTrigger* nodep) VL_OVERRIDE {
+        AstCFunc* funcp = nodep->funcp();
+        if (funcp->proc()) {
+            puts(funcp->nameProtect() + "__ready = true;\n");
+            puts(funcp->nameProtect() + "__cv.notify_all();\n");
+        } else {
+            visit_call(nodep);
+        }
+    }
+    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
+        visit_call(nodep);
     }
     virtual void visit(AstCMethodHard* nodep) VL_OVERRIDE {
         iterate(nodep->fromp());
@@ -1497,31 +1509,7 @@ class EmitCImp : EmitCStmts {
 
     //---------------------------------------
     // VISITORS
-    using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warning
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
-        // TRACE_* and DPI handled elsewhere
-        if (nodep->funcType().isTrace()) return;
-        if (nodep->dpiImport()) return;
-        if (!(nodep->slow() ? m_slow : m_fast)) return;
-
-        m_blkChangeDetVec.clear();
-
-        splitSizeInc(nodep);
-
-        puts("\n");
-        if (nodep->ifdef() != "") puts("#ifdef " + nodep->ifdef() + "\n");
-        if (nodep->isInline()) puts("VL_INLINE_OPT ");
-        if (!nodep->isConstructor() && !nodep->isDestructor()) {
-            puts(nodep->rtnTypeVoid());
-            puts(" ");
-        }
-
-        if (nodep->isMethod()) puts(prefixNameProtect(m_modp) + "::");
-        puts(funcNameProtect(nodep, m_modp));
-        puts("(" + cFuncArgs(nodep) + ")");
-        if (nodep->isConst().trueKnown()) puts(" const");
-        puts(" {\n");
-
+    void put_cfunc_body(AstCFunc* nodep) {
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
         for (int i = 0; i < m_modp->level(); ++i) { puts("  "); }
@@ -1551,6 +1539,62 @@ class EmitCImp : EmitCStmts {
         //
 
         if (!m_blkChangeDetVec.empty()) puts("return __req;\n");
+    }
+    using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warning
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+        // TRACE_* and DPI handled elsewhere
+        if (nodep->funcType().isTrace()) return;
+        if (nodep->dpiImport()) return;
+        if (!(nodep->slow() ? m_slow : m_fast)) return;
+
+        m_blkChangeDetVec.clear();
+
+        splitSizeInc(nodep);
+
+        puts("\n");
+        if (nodep->ifdef() != "") puts("#ifdef " + nodep->ifdef() + "\n");
+
+        if (nodep->proc()) {
+            // definie condition variable for unlocking the thread (eval step)
+            puts("std::condition_variable ");
+            puts(funcEvalBlockNameProtect(nodep, m_modp) + ";\n");
+
+            // define mutex to use for condition waiting
+            puts("std::mutex ");
+            puts(funcNameProtect(nodep, m_modp) + "__mtx;\n");
+
+            // define bool that will be checked in the loop
+            puts("bool ");
+            puts(funcNameProtect(nodep, m_modp) + "__ready = false;\n");
+        }
+
+        if (nodep->isInline()) puts("VL_INLINE_OPT ");
+        if (!nodep->isConstructor() && !nodep->isDestructor()) {
+            puts(nodep->rtnTypeVoid());
+            puts(" ");
+        }
+
+        if (nodep->isMethod()) puts(prefixNameProtect(m_modp) + "::");
+        puts(funcNameProtect(nodep, m_modp));
+        puts("(" + cFuncArgs(nodep) + ")");
+        if (nodep->isConst().trueKnown()) puts(" const");
+        puts(" {\n");
+
+        if (!nodep->proc()) {
+            put_cfunc_body(nodep);
+        } else {
+            puts("std::unique_lock<std::mutex> lck(");
+            puts(funcNameProtect(nodep, m_modp) + "__mtx");
+            puts(");\n");
+            puts("do {\n");
+            puts("while(!");
+            puts(funcNameProtect(nodep, m_modp) + "__ready) {\n");
+            puts(funcEvalBlockNameProtect(nodep, m_modp));
+            puts(".wait(lck);\n}\n");
+            put_cfunc_body(nodep);
+            puts(funcNameProtect(nodep, m_modp) + "__ready = false;\n");
+            puts("} while (0 /* FIXME change to !finished for timed blocks */);\n");
+        }
 
         // puts("__Vm_activity = true;\n");
         puts("}\n");
@@ -2678,6 +2722,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts(protect("_eval_debug_assertions") + "();\n");
     puts("#endif  // VL_DEBUG\n");
     putsDecoration("// Initialize\n");
+    putsDecoration("// XXX start the threads here first\n");
     puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) " + protect("_eval_initial_loop")
          + "(vlSymsp);\n");
     if (v3Global.opt.inhibitSim()) puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");

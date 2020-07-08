@@ -66,6 +66,9 @@ public:
             return nodep->nameProtect();
         }
     }
+    static string funcEvalBlockNameProtect(const AstCFunc* nodep, const AstNodeModule* modp) {
+        return funcNameProtect(nodep, modp) + "__cv";
+    }
     static string prefixNameProtect(const AstNode* nodep) {  // C++ name with prefix
         const AstNodeModule* modp = VN_CAST_CONST(nodep, NodeModule);
         if (modp && modp->isTop()) {
