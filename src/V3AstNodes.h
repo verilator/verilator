@@ -2429,11 +2429,14 @@ public:
 
 class AstModule : public AstNodeModule {
     // A module declaration
+private:
+    bool m_isProgram; // Module represents a program
 public:
-    AstModule(FileLine* fl, const string& name)
-        : ASTGEN_SUPER(fl, name) {}
+    AstModule(FileLine* fl, const string& name, bool program = false)
+        : ASTGEN_SUPER(fl, name)
+        , m_isProgram(program) {}
     ASTNODE_NODE_FUNCS(Module)
-    virtual string verilogKwd() const { return "module"; }
+    virtual string verilogKwd() const { return m_isProgram ? "program" : "module"; }
 };
 
 class AstNotFoundModule : public AstNodeModule {
