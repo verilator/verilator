@@ -98,7 +98,7 @@ class ParameterizedHierBlocks {
         } else {
             varNum.opAssign(varp->num());
         }
-        V3Number isEq(static_cast<AstNode*>(NULL), 1);
+        V3Number isEq(varp, 1);
         isEq.opEq(varNum, paramp->num());
         return isEq.isNeqZero();
     }
