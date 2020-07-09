@@ -85,7 +85,6 @@ public:
 
 // Holds relashonship between AstNodeModule and V3HierBlock
 class V3HierBlockPlan {
-    class Visitor;
     typedef std::map<const AstNodeModule*, V3HierBlock*> HierMap;
     HierMap m_blocks;
 

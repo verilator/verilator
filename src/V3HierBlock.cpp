@@ -264,17 +264,22 @@ string V3HierBlock::commandFileName(bool forCMake) const {
 }
 
 //######################################################################
-class V3HierBlockPlan::Visitor : public AstNVisitor {
+// Collect how hierarchy blocks are used
+class HierBlockUsageCollectVisitor : public AstNVisitor {
+    // NODE STATE
+    // AstNode::user1()            -> bool. Processed
+    AstUser1InUse m_inuser1;
+
+    // STATE
     typedef std::set<const AstModule*> ModuleSet;
     V3HierBlockPlan* const m_planp;
     AstModule* m_modp;
     ModuleSet m_referred;  // Modules that have hier_block pragma
-    ModuleSet m_checked;  // Modules that are already checked;
     V3HierBlock::GParams m_gparams;  // list of variables that is AstVarType::GPARAM
 
     virtual void visit(AstModule* nodep) VL_OVERRIDE {
         // Don't visit twice
-        if (m_checked.find(nodep) != m_checked.end()) return;
+        if (nodep->user1SetOnce()) return;
         UINFO(5, "Checking " << nodep->prettyNameQ() << " from "
                              << (m_modp ? m_modp->prettyNameQ() : string("null")) << std::endl);
         AstModule* const prevModulep = m_modp;
@@ -297,7 +302,6 @@ class V3HierBlockPlan::Visitor : public AstNVisitor {
             m_referred.swap(prevReferred);
         }
         m_gparams.swap(prevGParams);
-        m_checked.insert(nodep);
     }
     virtual void visit(AstCell* nodep) VL_OVERRIDE {
         // Visit used module here to know that the module is hier_block or not.
@@ -315,7 +319,7 @@ class V3HierBlockPlan::Visitor : public AstNVisitor {
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
-    Visitor(V3HierBlockPlan* planp, AstNetlist* netlist)
+    HierBlockUsageCollectVisitor(V3HierBlockPlan* planp, AstNetlist* netlist)
         : m_planp(planp)
         , m_modp(NULL) {
 
@@ -367,7 +371,7 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
     }
 
     vl_unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan());
-    { Visitor visitor(planp.get(), nodep); }
+    { HierBlockUsageCollectVisitor visitor(planp.get(), nodep); }
 
     // No hierarchy block is found, nothing to do.
     if (planp->empty()) return;
