@@ -141,12 +141,13 @@ static void process() {
     v3Global.checkTree();
 
     // Create a hierarchical verilation plan
-    if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly()) {
+    if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && v3Global.opt.hierarchical()) {
         V3HierBlockPlan::createPlan(v3Global.rootp());
         // If a plan is created, further analysis is not necessary.
         // The actual Verilation will be done based on this plan.
         if (v3Global.hierPlanp()) return;
     }
+    V3Stats::addStat("HierBlock, Hierarchy blocks", v3Global.opt.hierBlocks().size());
 
     // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
     V3Width::width(v3Global.rootp());
