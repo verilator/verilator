@@ -89,6 +89,26 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
 }
 
 //######################################################################
+// Rename encoded names to pretty name
+
+class RestorePrettyNameVisitor : public AstNVisitor {
+    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+        nodep->cname(nodep->prettyName());
+        nodep->name(nodep->prettyName());
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstModule* nodep) VL_OVERRIDE {
+        nodep->name(nodep->prettyName());
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+        nodep->name(nodep->prettyName());
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+};
+
+//######################################################################
 // Link state, as a visitor of each AstNode
 
 class LinkCellsVisitor : public AstNVisitor {
@@ -481,22 +501,7 @@ private:
             if (hierModIt != hierBlocks.end() && nodep->name() != nodep->prettyName()) {
                 // If nodep is a protect-lib wrapper for a hierarchy block with parameters,
                 // the module name is encoded. Restore the original name here.
-                struct Visitor : public AstNVisitor {
-                    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
-                        nodep->cname(nodep->prettyName());
-                        nodep->name(nodep->prettyName());
-                        iterateChildren(nodep);
-                    }
-                    virtual void visit(AstModule* nodep) VL_OVERRIDE {
-                        nodep->name(nodep->prettyName());
-                        iterateChildren(nodep);
-                    }
-                    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
-                        nodep->name(nodep->prettyName());
-                        iterateChildren(nodep);
-                    }
-                    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
-                } v;
+                RestorePrettyNameVisitor v;
                 v.iterate(nodep);
             }
             AstNodeModule* foundp = findModuleSym(nodep->name());
