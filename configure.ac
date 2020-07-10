@@ -153,14 +153,20 @@ AC_PATH_PROG(PERL,perl)
 if test "x$PERL" = "x" ; then
    AC_MSG_ERROR([Cannot find "perl" in your PATH, please install it])
 fi
+
 AC_PATH_PROG(LEX,flex)
 if test "x$LEX" = "x" ; then
    AC_MSG_ERROR([Cannot find "flex" in your PATH, please install it])
 fi
+flex_version=$($LEX --version | head -1)
+AC_MSG_RESULT([$LEX --version = $flex_version])
+
 AC_PATH_PROG(YACC,bison)
 if test "x$YACC" = "x" ; then
    AC_MSG_ERROR([Cannot find "bison" in your PATH, please install it])
 fi
+bison_version=$($YACC --version | head -1)
+AC_MSG_RESULT([$YACC --version = $bison_version])
 
 AC_CHECK_PROG(OBJCACHE,ccache,ccache)
 if test "x$OBJCACHE" != "x" ; then
