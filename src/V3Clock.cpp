@@ -140,7 +140,7 @@ private:
         // Nodep may be a list of elements; we need to walk it
         AstNode* senEqnp = NULL;
         for (AstSenItem* senp = nodesp; senp; senp = VN_CAST(senp->nextp(), SenItem)) {
-            AstNode*const senOnep = createSenItemEquation(senp);
+            AstNode* const senOnep = createSenItemEquation(senp);
             if (senEqnp) {
                 // Add new OR to the sensitivity list equation
                 senEqnp = new AstOr(senp->fileline(), senEqnp, senOnep);

@@ -8079,9 +8079,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(PropClocked)
     virtual bool hasDType() const { return true; }  // Used under Cover, which expects a bool child
-    AstSenItem* sensesp() const {
-        return VN_CAST(op1p(), SenItem);
-    }  // op1 = Sensitivity list
+    AstSenItem* sensesp() const { return VN_CAST(op1p(), SenItem); }  // op1 = Sensitivity list
     AstNode* disablep() const { return op2p(); }  // op2 = disable
     AstNode* propp() const { return op3p(); }  // op3 = property
 };

@@ -1807,8 +1807,8 @@ private:
             for (AstSenItem *nextp, *senp = VN_CAST(nodep->sensesp(), SenItem); senp;
                  senp = nextp) {
                 nextp = VN_CAST(senp->nextp(), SenItem);
-                AstSenItem*const litemp = senp;
-                AstSenItem*const ritemp = nextp;
+                AstSenItem* const litemp = senp;
+                AstSenItem* const ritemp = nextp;
                 if (ritemp) {
                     if ((litemp->varrefp() && ritemp->varrefp()
                          && litemp->varrefp()->sameGateTree(ritemp->varrefp()))
