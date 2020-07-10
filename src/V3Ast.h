@@ -94,6 +94,35 @@ inline std::ostream& operator<<(std::ostream& os, const AstType& rhs) { return o
 
 //######################################################################
 
+class VRegion {
+public:
+    enum en { NONE, ACTIVE, INACTIVE, NBA, OBSERVED, REACTIVE, REINACTIVE, RENBA, MAX };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[] = {"NONE", "ACTIVE", "INACTIVE", "NBA", "OBSERVED", "REACTIVE", "REINACTIVE", "RENBA", "MAX"};
+        return names[m_e];
+    }
+    inline VRegion()
+        : m_e(NONE) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VRegion(en _e)
+        : m_e(_e) {}
+    explicit inline VRegion(int _e)
+        : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+    bool isNone() const { return m_e == NONE; }
+    bool isActive() const { return (m_e == ACTIVE || m_e == INACTIVE || m_e == NBA); }
+    bool isReactive() const { return (m_e == REACTIVE || m_e == REINACTIVE || m_e == RENBA); }
+};
+inline bool operator==(const VRegion& lhs, const VRegion& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VRegion& lhs, VRegion::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VRegion::en lhs, const VRegion& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VRegion& rhs) {
+    return os << rhs.ascii();
+}
+
+//######################################################################
+
 class VLifetime {
 public:
     enum en { NONE, AUTOMATIC, STATIC };
@@ -2129,6 +2158,7 @@ public:
 
 class AstNodeProcedure : public AstNode {
     // IEEE procedure: initial, final, always
+    VRegion m_region;  // Region
 public:
     AstNodeProcedure(AstType t, FileLine* fl, AstNode* bodysp)
         : AstNode(t, fl) {
@@ -2136,6 +2166,8 @@ public:
     }
     ASTNODE_BASE_FUNCS(NodeProcedure)
     // METHODS
+    void region(const VRegion& flag) { m_region = flag; }
+    VRegion region() const { return m_region; }
     AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
@@ -2144,6 +2176,7 @@ public:
 class AstNodeStmt : public AstNode {
     // Statement -- anything that's directly under a function
     bool m_statement;  // Really a statement (e.g. not a function with return)
+    VRegion m_region;  // Region
 public:
     AstNodeStmt(AstType t, FileLine* fl, bool statement = true)
         : AstNode(t, fl)
@@ -2152,6 +2185,8 @@ public:
     // METHODS
     bool isStatement() const { return m_statement; }  // Really a statement
     void statement(bool flag) { m_statement = flag; }
+    void region(const VRegion& flag) { m_region = flag; }
+    VRegion region() const { return m_region; }
     virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
     virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
 };
