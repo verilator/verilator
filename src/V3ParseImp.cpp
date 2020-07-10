@@ -515,6 +515,12 @@ void V3ParseImp::tokenPipelineSym() {
                     token = yaID__ETC;
                 }
             }
+        } else if ((token == yaID__LEX || token == yaID__CC)
+                   && (*(yylval.strp) == "mailbox"  // IEEE-standard class
+                       || *(yylval.strp) == "process"  // IEEE-standard class
+                       || *(yylval.strp) == "semaphore")) {  // IEEE-standard class
+            yylval.scp = NULL;
+            if (token == yaID__LEX) token = yaID__aTYPE;
         } else {  // Not found
             yylval.scp = NULL;
             if (token == yaID__CC) {
