@@ -7,11 +7,19 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support VPI access to parameters and localparam. [Ludwig Rogiers]
 
+***   Support parsing (not elaboration, yet) of UVM.
+
 ****  Add new UNSUPPORTED error code to replace most previous Unsupported: messages.
 
 ****  With --bbox-unsup continue parsing on many (not all) UVM constructs.
 
 ****  Support for-loop increments with commas.
+
+****  Support $swrite with arbitrary arguments.
+
+****  Support $writememb (#2450). [Fan Shupei]
+
+****  Fix OS X, Free BSD, and -m32 portability issues. [Geza Lore]
 
 ****  Fix to flush FST trace on termination due to $stop or assertion failure.
 
