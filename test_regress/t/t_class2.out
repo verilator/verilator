@@ -1,4 +1,7 @@
-%Error: t/t_class2.v:35:16: Can't find definition of variable: 'ENUM_VAL'
+%Error-UNSUPPORTED: t/t_class2.v:35:16: Unsupported: Class '::' references: 'Cls'
    35 |       if (Cls::ENUM_VAL != 22) $stop;
       |                ^~~~~~~~
-%Error: Exiting due to
+%Error: Internal Error: t/t_class2.v:35:11: ../V3LinkDot.cpp:#: Bad package link
+   35 |       if (Cls::ENUM_VAL != 22) $stop;
+      |           ^~~
+                        ... See the manual and https://verilator.org for more assistance.

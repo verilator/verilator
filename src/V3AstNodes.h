@@ -1139,6 +1139,15 @@ public:
         , m_refDTypep(NULL)
         , m_name(name)
         , m_packagep(NULL) {}
+    AstRefDType(FileLine* fl, const string& name, AstNode* classOrPackagep, AstNode* paramsp)
+        : ASTGEN_SUPER(fl)
+        , m_typedefp(NULL)
+        , m_refDTypep(NULL)
+        , m_name(name)
+        , m_packagep(NULL) {
+        setNOp3p(classOrPackagep);
+        addNOp4p(paramsp);
+    }
     class FlagTypeOfExpr {};  // type(expr) for parser only
     AstRefDType(FileLine* fl, FlagTypeOfExpr, AstNode* typeofp)
         : ASTGEN_SUPER(fl)
@@ -1216,6 +1225,8 @@ public:
     AstNodeModule* packagep() const { return m_packagep; }
     void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
     AstNode* typeofp() const { return op2p(); }
+    AstNode* classOrPackagep() const { return op3p(); }
+    AstPin* paramsp() const { return VN_CAST(op4p(), Pin); }
 };
 
 class AstStructDType : public AstNodeUOrStructDType {
@@ -2893,15 +2904,20 @@ public:
 
 class AstClassOrPackageRef : public AstNode {
 private:
+    string m_name;
     AstNode* m_classOrPackagep;  // Package hierarchy
 public:
-    AstClassOrPackageRef(FileLine* fl, AstNode* classOrPackagep)
+    AstClassOrPackageRef(FileLine* fl, const string& name, AstNode* classOrPackagep,
+                         AstNode* paramsp)
         : ASTGEN_SUPER(fl)
-        , m_classOrPackagep(classOrPackagep) {}
+        , m_name(name)
+        , m_classOrPackagep(classOrPackagep) {
+        addNOp4p(paramsp);
+    }
     ASTNODE_NODE_FUNCS(ClassOrPackageRef)
     // METHODS
     virtual const char* broken() const {
-        BROKEN_RTN(!m_classOrPackagep || !m_classOrPackagep->brokeExists());
+        BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
         return NULL;
     }
     virtual void cloneRelink() {
@@ -2915,9 +2931,11 @@ public:
     }
     virtual V3Hash sameHash() const { return V3Hash(m_classOrPackagep); }
     virtual void dump(std::ostream& str = std::cout) const;
+    virtual string name() const { return m_name; }  // * = Var name
     AstNode* classOrPackagep() const { return m_classOrPackagep; }
     AstPackage* packagep() const { return VN_CAST(classOrPackagep(), Package); }
     void classOrPackagep(AstNode* nodep) { m_classOrPackagep = nodep; }
+    AstPin* paramsp() const { return VN_CAST(op4p(), Pin); }
 };
 
 class AstDot : public AstNode {
@@ -2933,9 +2951,9 @@ public:
     }
     ASTNODE_NODE_FUNCS(Dot)
     // For parser, make only if non-null package
-    static AstNode* newIfPkg(FileLine* fl, AstPackage* packagep, AstNode* rhsp) {
-        if (!packagep) return rhsp;
-        return new AstDot(fl, true, new AstClassOrPackageRef(fl, packagep), rhsp);
+    static AstNode* newIfPkg(FileLine* fl, AstNode* packageOrClassp, AstNode* rhsp) {
+        if (!packageOrClassp) return rhsp;
+        return new AstDot(fl, true, packageOrClassp, rhsp);
     }
     virtual void dump(std::ostream& str) const;
     virtual string emitVerilog() { V3ERROR_NA_RETURN(""); }
