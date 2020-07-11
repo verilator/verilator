@@ -4935,14 +4935,14 @@ The following deprecated items are scheduled for future removal:
 =item Pre-C++11 compiler support
 
 Verilator supports pre-C++11 compilers for non-threaded models when
-configured with --enable-prec11.  This flag will be removed and C++11
-compilers will be required for both compiling Verilator and compiling
-Verilated models no sooner than September 2020.
+configured with --enable-prec11/--enable-prec11-final.  This flag will be
+removed and C++11 compilers will be required for both compiling Verilator
+and compiling Verilated models no sooner than September 2020.
 
 =item SystemC 2.2 and earlier support
 
 Support for SystemC versions 2.2 and earlier including the related sc_clock
-variable attribute will be removed no sooner than August 2020.  The
+variable attribute will be removed no sooner than September 2020.  The
 supported versions will be SystemC 2.3.0 (SYSTEMC_VERSION 20111121) and
 later (presently 2.3.0, 2.3.1, 2.3.2, 2.3.3).
 

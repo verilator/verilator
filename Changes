@@ -5,6 +5,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.037 devel
 
+**    Versions 4.038 and 4.040 are planned to be the final versions that will
+      support pre-C++11 compilers. Please move to C++11 or newer compilers.
+
 ***   Support VPI access to parameters and localparam. [Ludwig Rogiers]
 
 ***   Support parsing (not elaboration, yet) of UVM.
