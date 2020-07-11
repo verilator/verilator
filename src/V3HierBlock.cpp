@@ -28,9 +28,9 @@
 // 3) Call child Verilator process via ${prefix}_hier.mk
 //
 // There are 3 kinds of Verilator run.
-// a) To create ${prefix}_hier.mk
-// b) To create protect-lib for each hierarchy block
-// c) To load wrappers and Verilate the top module
+// a) To create ${prefix}_hier.mk (--hierarchical)
+// b) To create protect-lib for each hierarchy block (--hierarchical-child)
+// c) To load wrappers and Verilate the top module (... what primary flags?)
 //
 // Then user can build Verilated module as usual.
 //
