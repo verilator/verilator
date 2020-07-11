@@ -106,6 +106,9 @@ class RestorePrettyNameVisitor : public AstNVisitor {
         iterateChildren(nodep);
     }
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
+public:
+    explicit RestorePrettyNameVisitor(AstNodeModule* modp) { iterate(modp); }
 };
 
 //######################################################################
@@ -501,8 +504,7 @@ private:
             if (hierModIt != hierBlocks.end() && nodep->name() != nodep->prettyName()) {
                 // If nodep is a protect-lib wrapper for a hierarchy block with parameters,
                 // the module name is encoded. Restore the original name here.
-                RestorePrettyNameVisitor v;
-                v.iterate(nodep);
+                RestorePrettyNameVisitor v(nodep);
             }
             AstNodeModule* foundp = findModuleSym(nodep->name());
             if (foundp && foundp != nodep) {
