@@ -488,8 +488,9 @@ private:
         // mangled_name, BlockOptions
         const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
         V3HierBlockOptSet::const_iterator hierIt = hierBlocks.find(v3Global.opt.topModule());
-        if (v3Global.opt.hierChild())
+        if (v3Global.opt.hierChild()) {
             UASSERT(hierIt != hierBlocks.end(), "information of the top module must exist");
+        }
         // Look at all modules, and store pointers to all module names
         for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
             nextp = VN_CAST(nodep->nextp(), NodeModule);
