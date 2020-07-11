@@ -228,8 +228,9 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                         varp->primaryIO(true);
                     }
                     if (varp->direction().isRefOrConstRef()) {
-                        varp->v3error("Unsupported: ref/const ref as primary input/output: "
-                                      << varp->prettyNameQ());
+                        varp->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: ref/const ref as primary input/output: "
+                                         << varp->prettyNameQ());
                     }
                     if (varp->isIO() && v3Global.opt.systemC()) {
                         varp->sc(true);

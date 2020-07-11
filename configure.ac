@@ -7,7 +7,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.036 2020-06-06],
+AC_INIT([Verilator],[4.038 2020-07-11],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -114,25 +114,25 @@ AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 
 # CFG_WITH_PREC11
 AC_MSG_CHECKING(whether allow pre-C++11)
-AC_ARG_ENABLE([prec11],
-              [AS_HELP_STRING([--enable-prec11],
+AC_ARG_ENABLE([prec11-final],
+              [AS_HELP_STRING([--enable-prec11-final],
                               [enable pre-C++11 compilers for Verilator binary
                                and Verilated makefiles])],
               [case "${enableval}" in
                 yes) CFG_WITH_PREC11=yes ;;
                 no)  CFG_WITH_PREC11=no ;;
-                *)   AC_MSG_ERROR([bad value ${enableval} for --enable-prec11]) ;;
+                *)   AC_MSG_ERROR([bad value ${enableval} for --enable-prec11-final]) ;;
                esac],
               [CFG_WITH_PREC11=no;]
               )
 AC_SUBST(CFG_WITH_PREC11)
 AC_MSG_RESULT($CFG_WITH_PREC11)
 
-# Compiler flags
-CFLAGS+=" -I${includedir}"
-CPPFLAGS+=" -I${includedir}"
-CXXFLAGS+=" -I${includedir}"
-LDFLAGS+=" -L${libdir}"
+# Compiler flags (ensure they are not empty to avoid configure defaults)
+CFLAGS+=" "
+CPPFLAGS+=" "
+CXXFLAGS+=" "
+LDFLAGS+=" "
 
 # Checks for programs.
 AC_PROG_CC
@@ -153,14 +153,20 @@ AC_PATH_PROG(PERL,perl)
 if test "x$PERL" = "x" ; then
    AC_MSG_ERROR([Cannot find "perl" in your PATH, please install it])
 fi
+
 AC_PATH_PROG(LEX,flex)
 if test "x$LEX" = "x" ; then
    AC_MSG_ERROR([Cannot find "flex" in your PATH, please install it])
 fi
+flex_version=$($LEX --version | head -1)
+AC_MSG_RESULT([$LEX --version = $flex_version])
+
 AC_PATH_PROG(YACC,bison)
 if test "x$YACC" = "x" ; then
    AC_MSG_ERROR([Cannot find "bison" in your PATH, please install it])
 fi
+bison_version=$($YACC --version | head -1)
+AC_MSG_RESULT([$YACC --version = $bison_version])
 
 AC_CHECK_PROG(OBJCACHE,ccache,ccache)
 if test "x$OBJCACHE" != "x" ; then
@@ -427,12 +433,11 @@ if test "$CFG_WITH_THREADED" = "no" ; then
       AC_MSG_NOTICE([[]])
       AC_MSG_ERROR([[the $CXX compiler appears to not support C++11.
 
-Verilator plans to require a C++11 or newer compiler in a future release,
-unless sufficient people report problems. Therefore, if you do not have a
-C++11 compiler, please post a message to
-https://www.veripool.org/boards/3/topics/2580-Verilator-Requiring-C-11-compiler
-indicating your OS and when you think C++11 might be ok, and then rerun
-configure with the --enable-prec11 argument. Thanks.]])
+Verilator will require a C++11 or newer compiler for all releases starting
+September 2020.  Please investigate a C++11 build environment now so you
+will be ready.  Until then you may rerun configure with the
+--enable-prec11-final argument to enable reduced functionality with such
+older compilers. Thanks.]])
 
    fi
 fi
@@ -447,14 +452,18 @@ AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],
 # - If not found or not system-wide, user can set SYSTEMC_INCLUDE.
 # AC_CHECK_HEADERS seems to not locate on Travis-CI but include does work.
 AC_MSG_CHECKING([whether SystemC is found (in system path)])
-AC_COMPILE_IFELSE(
+ACO_SAVE_LIBS="$LIBS"
+LIBS="$LIBS -lsystemc"
+AC_LINK_IFELSE(
     [AC_LANG_PROGRAM([[#include <systemc.h>
-                     ]],[])],
+                     extern "C" int sc_main(int argc, char* argv[]) {}
+                     ]],[[sc_version()]])],
     [_my_result=yes
-     AC_DEFINE([HAVE_SYSTEMC_H],[1],[Defined if have systemc.h])],
+     AC_DEFINE([HAVE_SYSTEMC],[1],[Defined if have SystemC library])],
     [_my_result=no])
 AC_MSG_RESULT($_my_result)
-AC_SUBST(HAVE_SYSTEMC_H)
+LIBS="$ACO_SAVE_LIBS"
+AC_SUBST(HAVE_SYSTEMC)
 
 # Checks for system services
 

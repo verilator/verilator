@@ -54,7 +54,7 @@ private:
     // VISITORS
     virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
         m_topscopep = nodep;
-        m_finder.main(m_topscopep);
+        m_finder.init(m_topscopep);
         iterateChildren(nodep);
         m_topscopep = NULL;
     }

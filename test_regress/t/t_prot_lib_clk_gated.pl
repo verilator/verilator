@@ -54,7 +54,7 @@ while (1) {
         verilator_flags2 => ["$secret_dir/secret.sv",
                              "-GGATED_CLK=1",
                              "-LDFLAGS",
-                             "'-L$secret_prefix -lsecret -static'"],
+                             "$secret_prefix/libsecret.a"],
         xsim_flags2 => ["$secret_dir/secret.sv"],
         );
 

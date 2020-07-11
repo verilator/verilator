@@ -965,8 +965,8 @@ private:
         m_activep = NULL;
         m_topScopep = nodep;
         m_scopetopp = nodep->scopep();
-        // Find sentree's
-        m_finder.main(m_topScopep);
+        // Find global SenTrees
+        m_finder.init(m_topScopep);
         // ProcessDomainsIterate will use these when it needs to move
         // something to a combodomain.  This saves a ton of find() operations.
         AstSenTree* combp
@@ -1282,8 +1282,7 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
 
     const AstSenItem* fromSenListp = VN_CAST(fromp->sensesp(), SenItem);
     const AstSenItem* toSenListp = VN_CAST(top->sensesp(), SenItem);
-    // If clk gating is ever reenabled, we may need to update this to handle
-    // AstSenGate also.
+
     UASSERT_OBJ(fromSenListp, fromp, "sensitivity list item is not an AstSenItem");
     UASSERT_OBJ(toSenListp, top, "sensitivity list item is not an AstSenItem");
 
@@ -1531,7 +1530,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
                         fromVertexp->domainp()->dumpTree(cout);
                     }  // LCOV_EXCL_STOP
                     AstSenTree* newtreep = domainp->cloneTree(false);
-                    AstNodeSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
+                    AstSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
                     UASSERT_OBJ(newtree2p, fromVertexp->domainp(),
                                 "No senitem found under clocked domain");
                     newtreep->addSensesp(newtree2p);

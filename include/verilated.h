@@ -84,10 +84,6 @@ typedef EData        WData;     ///< Verilated pack data, >64 bits, as an array
 typedef const WData* WDataInP;  ///< Array input to a function
 typedef WData* WDataOutP;  ///< Array output from a function
 
-typedef void (*VerilatedVoidCb)(void);
-
-class SpTraceVcd;
-class SpTraceVcdCFile;
 class VerilatedEvalMsgQueue;
 class VerilatedScopeNameMap;
 class VerilatedVar;
@@ -339,8 +335,8 @@ public:  // But internals only - called from VerilatedModule's
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
                    const char* identifier, vlsint8_t timeunit, const Type& type) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
-    void varInsert(int finalize, const char* namep, void* datap, VerilatedVarType vltype,
-                   int vlflags, int dims, ...) VL_MT_UNSAFE;
+    void varInsert(int finalize, const char* namep, void* datap, bool isParam,
+                   VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const { return m_namep; }
     const char* identifier() const { return m_identifierp; }
@@ -375,8 +371,6 @@ class Verilated {
     // MEMBERS
     // Slow path variables
     static VerilatedMutex m_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
-
-    static VerilatedVoidCb s_flushCb;  ///< Flush callback function
 
     static struct Serialized {  // All these members serialized/deserialized
         // Fast path
@@ -501,9 +495,15 @@ public:
     static void profThreadsFilenamep(const char* flagp) VL_MT_SAFE;
     static const char* profThreadsFilenamep() VL_MT_SAFE { return s_ns.s_profThreadsFilenamep; }
 
-    /// Flush callback for VCD waves
-    static void flushCb(VerilatedVoidCb cb) VL_MT_SAFE;
-    static void flushCall() VL_MT_SAFE;
+    typedef void (*VoidPCb)(void*);  // Callback type for below
+    /// Callbacks to run on global flush
+    static void addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void runFlushCallbacks() VL_MT_SAFE;
+    /// Callbacks to run prior to termination
+    static void addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void runExitCallbacks() VL_MT_SAFE;
 
     /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs,
     /// and for parsing +verilator+ run-time arguments.
@@ -843,7 +843,7 @@ inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_sta
 // Optimized assuming scale is always constant.
 // Can't use multiply in Q flavor, as might lose precision
 #define VL_TIME_UNITED_Q(scale) (VL_TIME_Q() / static_cast<QData>(scale))
-#define VL_TIME_UNITED_D(scale) (VL_TIME_D() * (1.0 / (scale)))
+#define VL_TIME_UNITED_D(scale) (VL_TIME_D() / static_cast<double>(scale))
 /// Time imported from units to time precision
 double vl_time_multiplier(int scale);
 
@@ -1571,24 +1571,30 @@ static inline WDataOutP VL_MULS_WWW(int, int lbits, int, WDataOutP owp, WDataInP
 
 static inline IData VL_DIVS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs == 0)) return 0;
+    // -MAX / -1 cannot be represented in twos complement, and will cause SIGFPE
+    if (VL_UNLIKELY(lhs == 0x80000000 && rhs == 0xffffffff)) return 0;
     vlsint32_t lhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, lhs);
     vlsint32_t rhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, rhs);
     return lhs_signed / rhs_signed;
 }
 static inline QData VL_DIVS_QQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs == 0)) return 0;
+    // -MAX / -1 cannot be represented in twos complement, and will cause SIGFPE
+    if (VL_UNLIKELY(lhs == 0x8000000000000000ULL && rhs == 0xffffffffffffffffULL)) return 0;
     vlsint64_t lhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, lhs);
     vlsint64_t rhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, rhs);
     return lhs_signed / rhs_signed;
 }
 static inline IData VL_MODDIVS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs == 0)) return 0;
+    if (VL_UNLIKELY(lhs == 0x80000000 && rhs == 0xffffffff)) return 0;
     vlsint32_t lhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, lhs);
     vlsint32_t rhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, rhs);
     return lhs_signed % rhs_signed;
 }
 static inline QData VL_MODDIVS_QQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs == 0)) return 0;
+    if (VL_UNLIKELY(lhs == 0x8000000000000000ULL && rhs == 0xffffffffffffffffULL)) return 0;
     vlsint64_t lhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, lhs);
     vlsint64_t rhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, rhs);
     return lhs_signed % rhs_signed;

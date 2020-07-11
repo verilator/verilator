@@ -220,20 +220,19 @@ private:
     }
     static void selftest() VL_MT_SAFE {
         // Little selftest
-#define VL_CST_CHECK(got, exp) \
+#define SELF_CHECK(got, exp) \
     do { \
         if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest\n"); \
     } while (0)
-
-        VL_CST_CHECK(combineHier("a.b.c", "a.b.c"), "a.b.c");
-        VL_CST_CHECK(combineHier("a.b.c", "a.b"), "a.b*");
-        VL_CST_CHECK(combineHier("a.x.c", "a.y.c"), "a.*.c");
-        VL_CST_CHECK(combineHier("a.z.z.z.c", "a.b.c"), "a.*.c");
-        VL_CST_CHECK(combineHier("z", "a"), "*");
-        VL_CST_CHECK(combineHier("q.a", "q.b"), "q.*");
-        VL_CST_CHECK(combineHier("q.za", "q.zb"), "q.z*");
-        VL_CST_CHECK(combineHier("1.2.3.a", "9.8.7.a"), "*.a");
-#undef VL_CST_CHECK
+        SELF_CHECK(combineHier("a.b.c", "a.b.c"), "a.b.c");
+        SELF_CHECK(combineHier("a.b.c", "a.b"), "a.b*");
+        SELF_CHECK(combineHier("a.x.c", "a.y.c"), "a.*.c");
+        SELF_CHECK(combineHier("a.z.z.z.c", "a.b.c"), "a.*.c");
+        SELF_CHECK(combineHier("z", "a"), "*");
+        SELF_CHECK(combineHier("q.a", "q.b"), "q.*");
+        SELF_CHECK(combineHier("q.za", "q.zb"), "q.z*");
+        SELF_CHECK(combineHier("1.2.3.a", "9.8.7.a"), "*.a");
+#undef SELF_CHECK
     }
     void clearGuts() VL_REQUIRES(m_mutex) {
         for (ItemList::const_iterator it = m_items.begin(); it != m_items.end(); ++it) {

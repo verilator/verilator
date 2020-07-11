@@ -483,8 +483,6 @@ private:
         iterateNewStmt(nodep, "User C Function", "User C Function");
     }
     virtual void visit(AstSenItem* nodep) VL_OVERRIDE {
-        // Note we look at only AstSenItems, not AstSenGate's
-        // The gating term of a AstSenGate is normal logic
         m_inSenItem = true;
         if (m_logicVertexp) {  // Already under logic; presumably a SenGate
             iterateChildren(nodep);
@@ -492,11 +490,6 @@ private:
             iterateNewStmt(nodep, NULL, NULL);
         }
         m_inSenItem = false;
-    }
-    virtual void visit(AstSenGate* nodep) VL_OVERRIDE {
-        // First handle the clock part will be handled in a minute by visit AstSenItem
-        // The logic gating term is dealt with as logic
-        iterateNewStmt(nodep, "Clock gater", "Clock gater");
     }
     virtual void visit(AstInitial* nodep) VL_OVERRIDE {
         bool lastslow = m_inSlow;

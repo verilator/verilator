@@ -425,6 +425,9 @@ CPPCHECK_CPP = $(wildcard \
 CPPCHECK_H = $(wildcard \
 	$(srcdir)/include/*.h \
 	$(srcdir)/src/*.h )
+CPPCHECK_YL = $(wildcard \
+	$(srcdir)/src/*.y \
+	$(srcdir)/src/*.l )
 CPPCHECK = src/cppcheck_filtered
 CPPCHECK_FLAGS = --enable=all --inline-suppr \
 	--suppress=unusedScopedObject --suppress=cstyleCast --suppress=useInitializationList \
@@ -462,7 +465,7 @@ CLANGFORMAT_FLAGS = -i
 clang-format:
 	@$(CLANGFORMAT) --version | egrep 10.0 > /dev/null \
 		|| echo "*** You are not using clang-format 10.0, indents may differ from master's ***"
-	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CPPCHECK_CPP) $(CPPCHECK_H)
+	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CPPCHECK_CPP) $(CPPCHECK_H) $(CPPCHECK_YL)
 
 ftp: info
 

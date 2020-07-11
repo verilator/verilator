@@ -9,7 +9,8 @@ BEGIN {
     if (!$ENV{VERILATOR_ROOT} && -x "../bin/verilator") {
         $ENV{VERILATOR_ROOT} = Cwd::getcwd()."/..";
     }
-    $ENV{MAKE} ||= "make"
+    $ENV{MAKE} ||= "make";
+    $ENV{CXX} ||= "c++";
 }
 
 use Getopt::Long;
@@ -1156,7 +1157,7 @@ sub compile {
 
     if ($param{make_pli}) {
         $self->oprint("Compile vpi\n") if $self->{verbose};
-        my @cmd = ('c++', @{$param{pli_flags}}, "-DIS_VPI",
+        my @cmd = ($ENV{CXX}, @{$param{pli_flags}}, "-DIS_VPI",
                    "$self->{t_dir}/$self->{pli_filename}");
 
         $self->_run(logfile=>"$self->{obj_dir}/pli_compile.log",
@@ -2193,12 +2194,12 @@ sub fst2vcd {
     my $fn1 = shift;
     my $fn2 = shift;
     if (!-r $fn1) { $self->error("File does not exist $fn1\n"); return 0; }
-    my $cmd = qq{fst2vcd --help};
+    my $cmd = qq{fst2vcd -h};
     print "\t$cmd\n" if $::Debug;
     my $out = `$cmd`;
     if (!$out || $out !~ /Usage:/) { $self->skip("No fst2vcd installed\n"); return 1; }
 
-    $cmd = qq{fst2vcd -e "$fn1" -o "$fn2"};
+    $cmd = qq{fst2vcd -e -f "$fn1" -o "$fn2"};
     print "\t$cmd\n";  # Always print to help debug race cases
     $out = `$cmd`;
     return 1;
@@ -2208,6 +2209,7 @@ sub fst_identical {
     my $self = (ref $_[0]? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
+    return 0 if $self->errors || $self->skips || $self->unsupporteds;
     my $tmp = $fn1.".vcd";
     fst2vcd($fn1, $tmp);
     return vcd_identical($tmp, $fn2);

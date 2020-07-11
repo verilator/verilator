@@ -232,13 +232,15 @@ class VerilatedVar : public VerilatedVarProps {
     void* m_datap;  // Location of data
     const char* m_namep;  // Name - slowpath
 protected:
+    bool m_isParam;
     friend class VerilatedScope;
     // CONSTRUCTORS
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
-                 VerilatedVarFlags vlflags, int dims)
+                 VerilatedVarFlags vlflags, int dims, bool isParam)
         : VerilatedVarProps(vltype, vlflags, (dims > 0 ? 1 : 0), ((dims > 1) ? dims - 1 : 0))
         , m_datap(datap)
-        , m_namep(namep) {}
+        , m_namep(namep)
+        , m_isParam(isParam) {}
 
 public:
     ~VerilatedVar() {}
@@ -247,6 +249,7 @@ public:
     const VerilatedRange& range() const { return packed(); }  // Deprecated
     const VerilatedRange& array() const { return unpacked(); }  // Deprecated
     const char* name() const { return m_namep; }
+    bool isParam() const { return m_isParam; }
 };
 
 #endif  // Guard

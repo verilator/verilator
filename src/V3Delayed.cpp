@@ -171,8 +171,8 @@ private:
             UINFO(4, "  Act: " << m_activep << endl);
             UINFO(4, "  Act: " << oldactivep << endl);
             // Make a new sensitivity list, which is the combination of both blocks
-            AstNodeSenItem* sena = m_activep->sensesp()->sensesp()->cloneTree(true);
-            AstNodeSenItem* senb = oldactivep->sensesp()->sensesp()->cloneTree(true);
+            AstSenItem* sena = m_activep->sensesp()->sensesp()->cloneTree(true);
+            AstSenItem* senb = oldactivep->sensesp()->sensesp()->cloneTree(true);
             AstSenTree* treep = new AstSenTree(m_activep->fileline(), sena);
             if (senb) treep->addSensesp(senb);
             if (AstSenTree* storep = oldactivep->sensesStorep()) {
@@ -373,7 +373,8 @@ private:
         m_nextDlyp
             = VN_CAST(nodep->nextp(), AssignDly);  // Next assignment in same block, maybe NULL.
         if (m_cfuncp) {
-            nodep->v3error("Unsupported: Delayed assignment inside public function/task");
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Delayed assignment inside public function/task");
         }
         if (VN_IS(nodep->lhsp(), ArraySel)
             || (VN_IS(nodep->lhsp(), Sel)
@@ -385,7 +386,9 @@ private:
                                            "loops (non-delayed is ok - see docs)");
             }
             AstBasicDType* basicp = lhsp->dtypep()->basicp();
-            if (basicp && basicp->isEventValue()) nodep->v3error("Unsupported: event arrays");
+            if (basicp && basicp->isEventValue()) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: event arrays");
+            }
             if (newlhsp) {
                 nodep->lhsp(newlhsp);
             } else {

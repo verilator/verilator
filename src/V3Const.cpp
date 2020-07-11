@@ -588,6 +588,7 @@ private:
         }
         return false;
     }
+    bool operandsSameSize(AstNode* lhsp, AstNode* rhsp) { return lhsp->width() == rhsp->width(); }
 
     //----------------------------------------
     // Constant Replacement functions.
@@ -1678,7 +1679,7 @@ private:
     // Not constant propagated (for today) because AstNodeMath::isOpaque is set
     // Someday if lower is constant, convert to quoted "string".
 
-    bool onlySenItemInSenTree(AstNodeSenItem* nodep) {
+    bool onlySenItemInSenTree(AstSenItem* nodep) {
         // Only one if it's not in a list
         return (!nodep->nextp() && nodep->backp()->nextp() != nodep);
     }
@@ -1722,56 +1723,29 @@ private:
                         "Null sensitivity variable");
         }
     }
-    virtual void visit(AstSenGate* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-        if (AstConst* constp = VN_CAST(nodep->rhsp(), Const)) {
-            if (constp->isZero()) {
-                UINFO(4, "SENGATE(...,0)->NEVER" << endl);
-                if (onlySenItemInSenTree(nodep)) {
-                    nodep->replaceWith(new AstSenItem(nodep->fileline(), AstSenItem::Never()));
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                } else {
-                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                }
-            } else {
-                UINFO(4, "SENGATE(SENITEM,0)->ALWAYS SENITEM" << endl);
-                AstNode* senitemp = nodep->sensesp()->unlinkFrBack();
-                nodep->replaceWith(senitemp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            }
-        }
-    }
 
     struct SenItemCmp {
-        inline bool operator()(AstNodeSenItem* lhsp, AstNodeSenItem* rhsp) const {
+        inline bool operator()(const AstSenItem* lhsp, const AstSenItem* rhsp) const {
             if (lhsp->type() < rhsp->type()) return true;
             if (lhsp->type() > rhsp->type()) return false;
-            const AstSenItem* litemp = VN_CAST_CONST(lhsp, SenItem);
-            const AstSenItem* ritemp = VN_CAST_CONST(rhsp, SenItem);
-            if (litemp && ritemp) {
-                // Looks visually better if we keep sorted by name
-                if (!litemp->varrefp() && ritemp->varrefp()) return true;
-                if (litemp->varrefp() && !ritemp->varrefp()) return false;
-                if (litemp->varrefp() && ritemp->varrefp()) {
-                    if (litemp->varrefp()->name() < ritemp->varrefp()->name()) return true;
-                    if (litemp->varrefp()->name() > ritemp->varrefp()->name()) return false;
-                    // But might be same name with different scopes
-                    if (litemp->varrefp()->varScopep() < ritemp->varrefp()->varScopep()) {
-                        return true;
-                    }
-                    if (litemp->varrefp()->varScopep() > ritemp->varrefp()->varScopep()) {
-                        return false;
-                    }
-                    // Or rarely, different data types
-                    if (litemp->varrefp()->dtypep() < ritemp->varrefp()->dtypep()) return true;
-                    if (litemp->varrefp()->dtypep() > ritemp->varrefp()->dtypep()) return false;
-                }
-                // Sort by edge, AFTER variable, as we want multiple edges for same var adjacent.
-                // note the SenTree optimizer requires this order (more
-                // general first, less general last)
-                if (litemp->edgeType() < ritemp->edgeType()) return true;
-                if (litemp->edgeType() > ritemp->edgeType()) return false;
+            // Looks visually better if we keep sorted by name
+            if (!lhsp->varrefp() && rhsp->varrefp()) return true;
+            if (lhsp->varrefp() && !rhsp->varrefp()) return false;
+            if (lhsp->varrefp() && rhsp->varrefp()) {
+                if (lhsp->varrefp()->name() < rhsp->varrefp()->name()) return true;
+                if (lhsp->varrefp()->name() > rhsp->varrefp()->name()) return false;
+                // But might be same name with different scopes
+                if (lhsp->varrefp()->varScopep() < rhsp->varrefp()->varScopep()) { return true; }
+                if (lhsp->varrefp()->varScopep() > rhsp->varrefp()->varScopep()) { return false; }
+                // Or rarely, different data types
+                if (lhsp->varrefp()->dtypep() < rhsp->varrefp()->dtypep()) return true;
+                if (lhsp->varrefp()->dtypep() > rhsp->varrefp()->dtypep()) return false;
             }
+            // Sort by edge, AFTER variable, as we want multiple edges for same var adjacent.
+            // note the SenTree optimizer requires this order (more
+            // general first, less general last)
+            if (lhsp->edgeType() < rhsp->edgeType()) return true;
+            if (lhsp->edgeType() > rhsp->edgeType()) return false;
             return false;
         }
     };
@@ -1792,30 +1766,10 @@ private:
             {
                 AstUser4InUse m_inuse4;
                 // Mark x in SENITEM(x)
-                for (AstNodeSenItem* senp = VN_CAST(nodep->sensesp(), NodeSenItem); senp;
-                     senp = VN_CAST(senp->nextp(), NodeSenItem)) {
-                    if (AstSenItem* itemp = VN_CAST(senp, SenItem)) {
-                        if (itemp->varrefp() && itemp->varrefp()->varScopep()) {
-                            itemp->varrefp()->varScopep()->user4(1);
-                        }
-                    }
-                }
-                // Find x in SENTREE(SENITEM(x))
-                for (AstNodeSenItem *nextp, *senp = VN_CAST(nodep->sensesp(), NodeSenItem); senp;
-                     senp = nextp) {
-                    nextp = VN_CAST(senp->nextp(), NodeSenItem);
-                    if (AstSenGate* gatep = VN_CAST(senp, SenGate)) {
-                        if (AstSenItem* itemp = VN_CAST(gatep->sensesp(), SenItem)) {
-                            if (itemp->varrefp() && itemp->varrefp()->varScopep()) {
-                                if (itemp->varrefp()->varScopep()->user4()) {
-                                    // Found, push this item up to the top
-                                    itemp->unlinkFrBack();
-                                    nodep->addSensesp(itemp);
-                                    VL_DO_DANGLING(gatep->unlinkFrBack()->deleteTree(), gatep);
-                                    VL_DANGLING(senp);
-                                }
-                            }
-                        }
+                for (AstSenItem* senp = VN_CAST(nodep->sensesp(), SenItem); senp;
+                     senp = VN_CAST(senp->nextp(), SenItem)) {
+                    if (senp->varrefp() && senp->varrefp()->varScopep()) {
+                        senp->varrefp()->varScopep()->user4(1);
                     }
                 }
             }
@@ -1823,25 +1777,25 @@ private:
             // Sort the sensitivity names so "posedge a or b" and "posedge b or a" end up together.
             // Also, remove duplicate assignments, and fold POS&NEGs into ANYEDGEs
             // Make things a little faster; check first if we need a sort
-            for (AstNodeSenItem *nextp, *senp = VN_CAST(nodep->sensesp(), NodeSenItem); senp;
+            for (AstSenItem *nextp, *senp = VN_CAST(nodep->sensesp(), SenItem); senp;
                  senp = nextp) {
-                nextp = VN_CAST(senp->nextp(), NodeSenItem);
+                nextp = VN_CAST(senp->nextp(), SenItem);
                 // cppcheck-suppress unassignedVariable  // cppcheck bug
                 SenItemCmp cmp;
                 if (nextp && !cmp(senp, nextp)) {
                     // Something's out of order, sort it
                     senp = NULL;
-                    std::vector<AstNodeSenItem*> vec;
-                    for (AstNodeSenItem* senp = VN_CAST(nodep->sensesp(), NodeSenItem); senp;
-                         senp = VN_CAST(senp->nextp(), NodeSenItem)) {
+                    std::vector<AstSenItem*> vec;
+                    for (AstSenItem* senp = VN_CAST(nodep->sensesp(), SenItem); senp;
+                         senp = VN_CAST(senp->nextp(), SenItem)) {
                         vec.push_back(senp);
                     }
                     stable_sort(vec.begin(), vec.end(), SenItemCmp());
-                    for (std::vector<AstNodeSenItem*>::iterator it = vec.begin(); it != vec.end();
+                    for (std::vector<AstSenItem*>::iterator it = vec.begin(); it != vec.end();
                          ++it) {
                         (*it)->unlinkFrBack();
                     }
-                    for (std::vector<AstNodeSenItem*>::iterator it = vec.begin(); it != vec.end();
+                    for (std::vector<AstSenItem*>::iterator it = vec.begin(); it != vec.end();
                          ++it) {
                         nodep->addSensesp(*it);
                     }
@@ -1850,13 +1804,12 @@ private:
             }
 
             // Pass2, remove dup edges
-            for (AstNodeSenItem *nextp, *senp = VN_CAST(nodep->sensesp(), NodeSenItem); senp;
+            for (AstSenItem *nextp, *senp = VN_CAST(nodep->sensesp(), SenItem); senp;
                  senp = nextp) {
-                nextp = VN_CAST(senp->nextp(), NodeSenItem);
-                AstNodeSenItem* cmpp = nextp;
-                AstSenItem* litemp = VN_CAST(senp, SenItem);
-                AstSenItem* ritemp = VN_CAST(cmpp, SenItem);
-                if (litemp && ritemp) {
+                nextp = VN_CAST(senp->nextp(), SenItem);
+                AstSenItem* const litemp = senp;
+                AstSenItem* const ritemp = nextp;
+                if (ritemp) {
                     if ((litemp->varrefp() && ritemp->varrefp()
                          && litemp->varrefp()->sameGateTree(ritemp->varrefp()))
                         || (!litemp->varrefp() && !ritemp->varrefp())) {
@@ -1876,7 +1829,7 @@ private:
                                 litemp->edgeType(VEdgeType::ET_BOTHEDGE);
                             // Remove redundant node
                             VL_DO_DANGLING(ritemp->unlinkFrBack()->deleteTree(), ritemp);
-                            VL_DANGLING(cmpp);
+                            VL_DANGLING(ritemp);
                             // Try to collapse again
                             nextp = litemp;
                         }
@@ -1934,9 +1887,12 @@ private:
                 if (constp->isZero()) {
                     UINFO(4, "IF(0,{any},{x}) => {x}: " << nodep << endl);
                     keepp = nodep->elsesp();
-                } else {
+                } else if (!m_doV || constp->isNeqZero()) {  // Might be X in Verilog
                     UINFO(4, "IF(!0,{x},{any}) => {x}: " << nodep << endl);
                     keepp = nodep->ifsp();
+                } else {
+                    UINFO(4, "IF condition is X, retaining: " << nodep << endl);
+                    return;
                 }
                 if (keepp) {
                     keepp->unlinkFrBackWithNext();
@@ -2322,7 +2278,7 @@ private:
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstDiv   {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
     TREEOP ("AstDivS  {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
-    TREEOP ("AstMul   {operandIsPowTwo($lhsp), $rhsp}", "replaceMulShift(nodep)");  // a*2^n -> a<<n
+    TREEOP ("AstMul   {operandIsPowTwo($lhsp), operandsSameSize($lhsp,,$rhsp)}", "replaceMulShift(nodep)");  // a*2^n -> a<<n
     TREEOP ("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}", "replaceDivShift(nodep)");  // a/2^n -> a>>n
     TREEOP ("AstModDiv{$lhsp, operandIsPowTwo($rhsp)}", "replaceModAnd(nodep)");  // a % 2^n -> a&(2^n-1)
     TREEOP ("AstPow   {operandIsTwo($lhsp), $rhsp}",    "replacePowShift(nodep)");  // 2**a == 1<<a

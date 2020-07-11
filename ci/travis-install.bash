@@ -25,11 +25,21 @@ fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }
 
+if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+  MAKE=make
+elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  MAKE=make
+elif [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
+  MAKE=gmake
+else
+  fatal "Unknown os: '$TRAVIS_OS_NAME'"
+fi
+
 install-vcddiff() {
   TMP_DIR="$(mktemp -d)"
   git clone https://github.com/veripool/vcddiff "$TMP_DIR"
   git -C "${TMP_DIR}" checkout 5112f88b7ba8818dce9dfb72619e64a1fc19542c
-  make -C "${TMP_DIR}"
+  "$MAKE" -C "${TMP_DIR}"
   sudo cp "${TMP_DIR}/vcddiff" /usr/local/bin
 }
 
@@ -39,12 +49,20 @@ if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
   # build Verilator
 
   if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    time sudo apt-get update
+    sudo apt-get update
     sudo apt-get install libfl-dev
     sudo apt-get install libgoogle-perftools-dev
     if [ "$COVERAGE" = 1 ]; then
       yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
     fi
+    if [ "$M32" = 1 ]; then
+      sudo apt-get install gcc-multilib g++-multilib
+    fi
+  elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+    brew update
+    brew install ccache perl gperftools
+  elif [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
+    sudo pkg install -y autoconf bison ccache gmake perl5
   else
     fatal "Unknown os: '$TRAVIS_OS_NAME'"
   fi
@@ -59,8 +77,22 @@ elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
     if [ "$TRAVIS_DIST" = "focal" ]; then
       sudo apt-get install libsystemc-dev
     fi
+    if [ "$M32" = 1 ]; then
+      sudo apt-get install lib32z1-dev gcc-multilib g++-multilib
+    fi
     yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
     # Not listing Bit::Vector as slow to install, and only skips one test
+    install-vcddiff
+  elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+    brew update
+    # brew cask install gtkwave # fst2vcd hangs at launch, so don't bother
+    brew install ccache perl
+    yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
+    install-vcddiff
+  elif [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
+    # fst2vcd fails with "Could not open '<input file>', exiting."
+    sudo pkg install -y ccache gmake perl5 python3
+    yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
     install-vcddiff
   else
     fatal "Unknown os: '$TRAVIS_OS_NAME'"

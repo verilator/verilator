@@ -3,6 +3,7 @@
       |             ^
                    ... Use "/* verilator lint_off UNPACKED */" and lint_on around source to disable this message.
 %Warning-UNPACKED: t/t_struct_unpacked2.v:9:12: Unsupported: Unpacked struct/union
+                                              : ... In instance x
     9 |    typedef struct {
       |            ^~~~~~
 %Error: Exiting due to

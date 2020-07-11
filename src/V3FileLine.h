@@ -218,6 +218,8 @@ public:
     bool lastWarnWaived() { return m_waive; }
 
     // Specific flag ACCESSORS/METHODS
+    bool celldefineOn() const { return m_warnOn.test(V3ErrorCode::I_CELLDEFINE); }
+    void celldefineOn(bool flag) { warnOn(V3ErrorCode::I_CELLDEFINE, flag); }
     bool coverageOn() const { return m_warnOn.test(V3ErrorCode::I_COVERAGE); }
     void coverageOn(bool flag) { warnOn(V3ErrorCode::I_COVERAGE, flag); }
     bool tracingOn() const { return m_warnOn.test(V3ErrorCode::I_TRACING); }
@@ -264,6 +266,21 @@ public:
         return (m_firstLineno == rhs.m_firstLineno && m_firstColumn == rhs.m_firstColumn
                 && m_lastLineno == rhs.m_lastLineno && m_lastColumn == rhs.m_lastColumn
                 && m_filenameno == rhs.m_filenameno && m_warnOn == rhs.m_warnOn);
+    }
+    // Returns -1 if (*this) should come before rhs after sorted. 1 for the opposite case. 0 for
+    // equivalent.
+    int operatorCompare(const FileLine& rhs) const {
+        if (m_filenameno != rhs.m_filenameno) return (m_filenameno < rhs.m_filenameno) ? -1 : 1;
+        if (m_firstLineno != rhs.m_firstLineno)
+            return (m_firstLineno < rhs.m_firstLineno) ? -1 : 1;
+        if (m_firstColumn != rhs.m_firstColumn)
+            return (m_firstColumn < rhs.m_firstColumn) ? -1 : 1;
+        if (m_lastLineno != rhs.m_lastLineno) return (m_lastLineno < rhs.m_lastLineno) ? -1 : 1;
+        if (m_lastColumn != rhs.m_lastColumn) return (m_lastColumn < rhs.m_lastColumn) ? -1 : 1;
+        for (size_t i = 0; i < m_warnOn.size(); ++i) {
+            if (m_warnOn[i] != rhs.m_warnOn[i]) return (m_warnOn[i] < rhs.m_warnOn[i]) ? -1 : 1;
+        }
+        return 0;  // (*this) and rhs are equivalent
     }
 
 private:

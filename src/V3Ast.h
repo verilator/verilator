@@ -117,6 +117,9 @@ public:
 inline bool operator==(const VLifetime& lhs, const VLifetime& rhs) { return lhs.m_e == rhs.m_e; }
 inline bool operator==(const VLifetime& lhs, VLifetime::en rhs) { return lhs.m_e == rhs; }
 inline bool operator==(VLifetime::en lhs, const VLifetime& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 
@@ -1809,6 +1812,8 @@ public:
     virtual bool hasDType() const { return false; }
     // Iff has a non-null childDTypep(), as generic node function
     virtual AstNodeDType* getChildDTypep() const { return NULL; }
+    // Iff has a non-null child2DTypep(), as generic node function
+    virtual AstNodeDType* getChild2DTypep() const { return NULL; }
     // Another AstNode* may have a pointer into this node, other then normal front/back/etc.
     virtual bool maybePointedTo() const { return false; }
     virtual const char* broken() const { return NULL; }
@@ -2241,19 +2246,6 @@ public:
     void addNotParallelp(AstNode* nodep) { setOp3p(nodep); }
 };
 
-class AstNodeSenItem : public AstNode {
-    // An AstSenItem or AstSenGate
-public:
-    AstNodeSenItem(AstType t, FileLine* fl)
-        : AstNode(t, fl) {}
-    ASTNODE_BASE_FUNCS(NodeSenItem)
-    virtual bool isClocked() const = 0;
-    virtual bool isCombo() const = 0;
-    virtual bool isInitial() const = 0;
-    virtual bool isSettle() const = 0;
-    virtual bool isNever() const = 0;
-};
-
 class AstNodeVarRef : public AstNodeMath {
     // An AstVarRef or AstVarXRef
 private:
@@ -2264,29 +2256,26 @@ private:
     string m_name;  // Name of variable
     string m_hiername;  // Scope converted into name-> for emitting
     bool m_hierThis;  // Hiername points to "this" function
-    void init();
 
 public:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, bool lvalue)
         : AstNodeMath(t, fl)
         , m_lvalue(lvalue)
-        , m_varp(NULL)
         , m_varScopep(NULL)
         , m_packagep(NULL)
         , m_name(name)
         , m_hierThis(false) {
-        init();
+        this->varp(NULL);
     }
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, AstVar* varp, bool lvalue)
         : AstNodeMath(t, fl)
         , m_lvalue(lvalue)
-        , m_varp(varp)
         , m_varScopep(NULL)
         , m_packagep(NULL)
         , m_name(name)
         , m_hierThis(false) {
         // May have varp==NULL
-        init();
+        this->varp(varp);
     }
     ASTNODE_BASE_FUNCS(NodeVarRef)
     virtual bool hasDType() const { return true; }
@@ -2298,7 +2287,7 @@ public:
     bool lvalue() const { return m_lvalue; }
     void lvalue(bool lval) { m_lvalue = lval; }  // Avoid using this; Set in constructor
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
-    void varp(AstVar* varp) { m_varp = varp; }
+    void varp(AstVar* varp);
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
     string hiername() const { return m_hiername; }
@@ -2636,6 +2625,7 @@ private:
     bool m_taskPublic : 1;  // Public task
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_classMethod : 1;  // Class method
+    bool m_extern : 1;  // Extern prototype
     bool m_prototype : 1;  // Just a prototype
     bool m_dpiExport : 1;  // DPI exported
     bool m_dpiImport : 1;  // DPI imported
@@ -2644,6 +2634,8 @@ private:
     bool m_dpiTask : 1;  // DPI import task (vs. void function)
     bool m_isConstructor : 1;  // Class constructor
     bool m_pure : 1;  // DPI import pure (vs. virtual pure)
+    bool m_pureVirtual : 1;  // Pure virtual
+    bool m_virtual : 1;  // Virtual method in class
     VLifetime m_lifetime;  // Lifetime
 public:
     AstNodeFTask(AstType t, FileLine* fl, const string& name, AstNode* stmtsp)
@@ -2653,6 +2645,7 @@ public:
         , m_taskPublic(false)
         , m_attrIsolateAssign(false)
         , m_classMethod(false)
+        , m_extern(false)
         , m_prototype(false)
         , m_dpiExport(false)
         , m_dpiImport(false)
@@ -2660,7 +2653,9 @@ public:
         , m_dpiOpenChild(false)
         , m_dpiTask(false)
         , m_isConstructor(false)
-        , m_pure(false) {
+        , m_pure(false)
+        , m_pureVirtual(false)
+        , m_virtual(false) {
         addNOp3p(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
@@ -2693,6 +2688,8 @@ public:
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     void classMethod(bool flag) { m_classMethod = flag; }
     bool classMethod() const { return m_classMethod; }
+    void isExtern(bool flag) { m_extern = flag; }
+    bool isExtern() const { return m_extern; }
     void prototype(bool flag) { m_prototype = flag; }
     bool prototype() const { return m_prototype; }
     void dpiExport(bool flag) { m_dpiExport = flag; }
@@ -2709,6 +2706,10 @@ public:
     bool isConstructor() const { return m_isConstructor; }
     void pure(bool flag) { m_pure = flag; }
     bool pure() const { return m_pure; }
+    void pureVirtual(bool flag) { m_pureVirtual = flag; }
+    bool pureVirtual() const { return m_pureVirtual; }
+    void isVirtual(bool flag) { m_virtual = flag; }
+    bool isVirtual() const { return m_virtual; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
 };
@@ -2926,8 +2927,9 @@ inline bool AstNode::sameGateTree(const AstNode* node2p) const {
     return sameTreeIter(this, node2p, true, true);
 }
 
-inline void AstNodeVarRef::init() {
-    if (m_varp) dtypep(m_varp->dtypep());
+inline void AstNodeVarRef::varp(AstVar* varp) {
+    m_varp = varp;
+    dtypeFrom(varp);
 }
 
 inline bool AstNodeDType::isFourstate() const { return basicp()->isFourstate(); }

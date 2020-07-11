@@ -178,7 +178,7 @@ private:
 
         AstNodeVarRef* varrefp;
         if (m_unsupportedHere || !(varrefp = VN_CAST(nodep->rhsp(), VarRef))) {
-            nodep->v3error("Unsupported: Incrementation in this context.");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Incrementation in this context.");
             return;
         }
 

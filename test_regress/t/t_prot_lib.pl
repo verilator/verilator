@@ -51,7 +51,7 @@ while (1) {
     compile(
         verilator_flags2 => ["$secret_dir/secret.sv",
                              "-LDFLAGS",
-                             "'-L$secret_prefix -lsecret -static'"],
+                             "$secret_prefix/libsecret.a"],
         xsim_flags2 => ["$secret_dir/secret.sv"],
         );
 

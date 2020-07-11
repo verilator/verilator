@@ -239,6 +239,7 @@ private:
     bool        m_coverageUser; // main switch: --coverage-func
     bool        m_debugCheck;   // main switch: --debug-check
     bool        m_debugCollision;  // main switch: --debug-collision
+    bool        m_debugExitParse;  // main switch: --debug-exit-parse
     bool        m_debugLeak;    // main switch: --debug-leak
     bool        m_debugNondeterminism;  // main switch: --debug-nondeterminism
     bool        m_debugPartition;  // main switch: --debug-partition
@@ -438,6 +439,7 @@ public:
     bool coverageUser() const { return m_coverageUser; }
     bool debugCheck() const { return m_debugCheck; }
     bool debugCollision() const { return m_debugCollision; }
+    bool debugExitParse() const { return m_debugExitParse; }
     bool debugLeak() const { return m_debugLeak; }
     bool debugNondeterminism() const { return m_debugNondeterminism; }
     bool debugPartition() const { return m_debugPartition; }
@@ -596,7 +598,7 @@ public:
     // METHODS (from main)
     static string version();
     static string argString(int argc, char** argv);  ///< Return list of arguments as simple string
-    string allArgsString();  ///< Return all passed arguments as simple string
+    string allArgsString() const;  ///< Return all passed arguments as simple string
     void bin(const string& flag) { m_bin = flag; }
     void parseOpts(FileLine* fl, int argc, char** argv);
     void parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv);

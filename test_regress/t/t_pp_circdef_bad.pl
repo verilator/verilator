@@ -12,7 +12,8 @@ scenarios(vlt => 1);
 
 lint(
     fails => 1,
-    expect_filename => $Self->{golden_filename},
+    # EOF result varies with Bison version, so can't use .out
+    expect => qr/define or other nested inclusion/,
     );
 
 ok(1);

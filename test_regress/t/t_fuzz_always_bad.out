@@ -4,7 +4,7 @@
 %Error: t/t_fuzz_always_bad.v:10:19: Can't find definition of task/function: 'h'
    10 |    always @ c.a c:h;
       |                   ^
-%Error: t/t_fuzz_always_bad.v:10:14: Unsupported: Complex statement in sensitivity list
+%Error-UNSUPPORTED: t/t_fuzz_always_bad.v:10:14: Unsupported: Complex statement in sensitivity list
    10 |    always @ c.a c:h;
       |              ^
 %Error: Exiting due to

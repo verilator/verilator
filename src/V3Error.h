@@ -44,6 +44,7 @@ public:
         EC_FATALSRC,    // Kill the program, for internal source errors
         EC_ERROR,       // General error out, can't suppress
         // Boolean information we track per-line, but aren't errors
+        I_CELLDEFINE,   // Inside cell define from `celldefine/`endcelldefine
         I_COVERAGE,     // Coverage is on/off from /*verilator coverage_on/off*/
         I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
         I_LINT,         // All lint messages
@@ -51,6 +52,7 @@ public:
         // Error codes:
         E_DETECTARRAY,  // Error: Unsupported: Can't detect changes on arrayed variable
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
+        E_UNSUPPORTED,  // Error: Unsupported (generally)
         E_TASKNSVAR,    // Error: Task I/O not simple
         //
         // Warning codes:
@@ -140,9 +142,9 @@ public:
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR",
             // Boolean
-            " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
+            " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
             // Errors
-            "DETECTARRAY", "PORTSHORT", "TASKNSVAR",
+            "DETECTARRAY", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
@@ -170,7 +172,9 @@ public:
         return names[m_e];
     }
     // Warnings that default to off
-    bool defaultsOff() const { return (m_e == IMPERFECTSCH || styleError()); }
+    bool defaultsOff() const {
+        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || styleError());
+    }
     // Warnings that warn about nasty side effects
     bool dangerous() const { return (m_e == COMBDLY); }
     // Warnings we'll present to the user as errors
