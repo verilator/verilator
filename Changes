@@ -25,6 +25,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix part select error when multipling by power-of-two (#2413). [Conor McCullough]
 
+****  Fix division exception (#2460) [Kuoping Hsu]
+
 
 * Verilator 4.036 2020-06-06
 
