@@ -1794,7 +1794,6 @@ data_type<dtypep>:		// ==IEEE: data_type
 			  $$ = GRAMMARP->createArray(refp, $3, true); }
 	|	packageClassScopeE idType parameter_value_assignmentClass packed_dimensionListE
 			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2, $1, $3);
-			  BBUNSUP($3->fileline(), "Unsupported: Parameter classes");
 			  $$ = GRAMMARP->createArray(refp, $4, true); }
 	;
 
@@ -4729,7 +4728,7 @@ idClassSel<nodep>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged va
 			{ $$ = new AstDot($2, false, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "super"), $3); }
 	|	yTHIS '.' ySUPER '.' idDotted		{ $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
 	//			// Expanded: package_scope idDotted
-	|	packageClassScope idDotted		{ $$ = $2; BBUNSUP($2, "Unsupported: package scoped id"); }
+	|	packageClassScope idDotted		{ $$ = new AstDot($<fl>2, true, $1, $2); }
 	;
 
 idClassSelForeach<nodep>:
@@ -4741,7 +4740,7 @@ idClassSelForeach<nodep>:
 			{ $$ = new AstDot($2, false, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "super"), $3); }
 	|	yTHIS '.' ySUPER '.' idDottedForeach	{ $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
 	//			// Expanded: package_scope idForeach
-	|	packageClassScope idDottedForeach	{ $$ = $2; BBUNSUP($2, "Unsupported: package/class scoped id"); }
+	|	packageClassScope idDottedForeach	{ $$ = new AstDot($<fl>2, true, $1, $2); }
 	;
 
 idDotted<nodep>:
@@ -4772,7 +4771,8 @@ idDottedMoreForeach<nodep>:
 // id below includes:
 //	 enum_identifier
 idArrayed<nodep>:		// IEEE: id + select
-		id						{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL); }
+		id
+			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL); }
 	//			// IEEE: id + part_select_range/constant_part_select_range
 	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2, $1, $3); }  // Or AstArraySel, don't know yet.
 	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2, $1, $3, $5); }
@@ -4782,7 +4782,8 @@ idArrayed<nodep>:		// IEEE: id + select
 	;
 
 idArrayedForeach<nodep>:	// IEEE: id + select (under foreach expression)
-		id						{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL); }
+		id
+			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL); }
 	//			// IEEE: id + part_select_range/constant_part_select_range
 	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2, $1, $3); }  // Or AstArraySel, don't know yet.
 	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2, $1, $3, $5); }

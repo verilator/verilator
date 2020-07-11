@@ -2697,6 +2697,8 @@ private:
                                   "Unsupported: Multiple '::' package/class reference");
             }
             VL_DO_DANGLING(cpackagep->unlinkFrBack()->deleteTree(), cpackagep);
+        } else if (nodep->paramsp()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
         }
         if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
