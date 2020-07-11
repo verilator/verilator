@@ -80,45 +80,9 @@
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3HierBlock.h"
+#include "V3String.h"
 
 typedef std::vector<std::pair<string, string> > StrGParams;
-
-static string escapeInteger(const string& str) {
-    string result;
-    result.reserve(str.size() + 1);
-    for (size_t i = 0; i < str.size(); ++i) {
-        if (str[i] == '\'') result.push_back('\\');
-        result.push_back(str[i]);
-    }
-    return result;
-}
-
-static string escapeString(const string& str) {
-    string result;
-    const char dquote = '"';
-    const char escape = '\\';
-    result.push_back(dquote);  // Start quoted string
-    result.push_back(escape);
-    result.push_back(dquote);  // "
-    for (string::const_iterator it = str.begin(); it != str.end(); ++it) {
-        if (*it == dquote || *it == escape) { result.push_back(escape); }
-        result.push_back(*it);
-    }
-    result.push_back(escape);
-    result.push_back(dquote);  // "
-    result.push_back(dquote);  // Terminate quoted string
-    return result;
-}
-
-static string escapeEscape(const string& str) {
-    string result;
-    const char escape = '\\';
-    for (string::const_iterator it = str.begin(); it != str.end(); ++it) {
-        if (*it == escape) { result.push_back(escape); }
-        result.push_back(*it);
-    }
-    return result;
-}
 
 static StrGParams stringifyParams(const V3HierBlock::GParams& gparams, bool forGOption) {
     StrGParams strParams;
@@ -139,12 +103,12 @@ static StrGParams stringifyParams(const V3HierBlock::GParams& gparams, bool forG
                 strParams.push_back(std::make_pair((*gparamIt)->name(), hexFpStr.data()));
             } else if (constp->isString()) {
                 string s = constp->num().toString();
-                if (!forGOption) s = escapeEscape(s);
-                s = escapeString(s);
+                if (!forGOption) s = VString::quoteBackslash(s);
+                s = VString::quoteStringLiteralForShell(s);
                 strParams.push_back(std::make_pair((*gparamIt)->name(), s));
             } else {  // Either signed or unsigned integer.
                 string s = constp->num().ascii(true, true);
-                s = escapeInteger(s);
+                s = VString::quoteAny(s, '\'', '\\');
                 strParams.push_back(std::make_pair((*gparamIt)->name(), s));
             }
         }
@@ -153,8 +117,7 @@ static StrGParams stringifyParams(const V3HierBlock::GParams& gparams, bool forG
 }
 
 static string hierCommandFileName(const string& prefix, bool forCMake) {
-    return v3Global.opt.makeDir() + "/" + prefix
-           + (forCMake ? "_hierCMakeCmd.f" : "_hierMkCmd.f");
+    return v3Global.opt.makeDir() + "/" + prefix + (forCMake ? "_hierCMakeCmd.f" : "_hierMkCmd.f");
 }
 
 static void writeCommonInputs(std::ostream* of, bool forCMake) {
