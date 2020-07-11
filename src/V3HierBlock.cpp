@@ -52,7 +52,7 @@
 // 4) V3LinkDot.cpp checks dotted access across hierarchy block boundary.
 // 5) In V3Dead.cpp, some parameters of parameterized modules are protected not to be deleted even
 //    if the parameter is not referred. This protection is necessary to match step 6) below.
-// 6) In V3Param.cpp, use protect-lib wrapper of parameterized module in b) and c).
+// 6) In V3Param.cpp, use protect-lib wrapper of parameterized module made in b) and c).
 //    If a hierarchy block is a parameterized module and instantiated in multiple locations,
 //    all parameters must exactly match.
 // 7) In V3HierBlock.cpp, relationship among hierarchy blocks are checked in run a).
