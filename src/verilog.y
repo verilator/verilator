@@ -31,7 +31,7 @@
 #include <cstdarg>
 #include <stack>
 
-#define YYERROR_VERBOSE 1
+#define YYERROR_VERBOSE 1  // For prior to Bison 3.6
 #define YYINITDEPTH 10000  // Older bisons ignore YYMAXDEPTH
 #define YYMAXDEPTH 10000
 
@@ -321,6 +321,9 @@ void yyerrorf(const char* format, ...) {
 class AstSenTree;
 // clang-format off
 %}
+
+// Bison 3.0 and newer
+BISONPRE_VERSION(3.0,%define parse.error verbose)
 
 // When writing Bison patterns we use yTOKEN instead of "token",
 // so Bison will error out on unknown "token"s.
