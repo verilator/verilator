@@ -2891,29 +2891,33 @@ public:
     void ftaskrefp(AstNodeFTaskRef* nodep) { setNOp2p(nodep); }  // op2 = Function/task reference
 };
 
-class AstPackageRef : public AstNode {
+class AstClassOrPackageRef : public AstNode {
 private:
-    AstPackage* m_packagep;  // Package hierarchy
+    AstNode* m_classOrPackagep;  // Package hierarchy
 public:
-    AstPackageRef(FileLine* fl, AstPackage* packagep)
+    AstClassOrPackageRef(FileLine* fl, AstNode* classOrPackagep)
         : ASTGEN_SUPER(fl)
-        , m_packagep(packagep) {}
-    ASTNODE_NODE_FUNCS(PackageRef)
+        , m_classOrPackagep(classOrPackagep) {}
+    ASTNODE_NODE_FUNCS(ClassOrPackageRef)
     // METHODS
     virtual const char* broken() const {
-        BROKEN_RTN(!m_packagep || !m_packagep->brokeExists());
+        BROKEN_RTN(!m_classOrPackagep || !m_classOrPackagep->brokeExists());
         return NULL;
     }
     virtual void cloneRelink() {
-        if (m_packagep && m_packagep->clonep()) { m_packagep = m_packagep->clonep(); }
+        if (m_classOrPackagep && m_classOrPackagep->clonep()) {
+            m_classOrPackagep = m_classOrPackagep->clonep();
+        }
     }
     virtual bool same(const AstNode* samep) const {
-        return (m_packagep == static_cast<const AstPackageRef*>(samep)->m_packagep);
+        return (m_classOrPackagep
+                == static_cast<const AstClassOrPackageRef*>(samep)->m_classOrPackagep);
     }
-    virtual V3Hash sameHash() const { return V3Hash(m_packagep); }
+    virtual V3Hash sameHash() const { return V3Hash(m_classOrPackagep); }
     virtual void dump(std::ostream& str = std::cout) const;
-    AstPackage* packagep() const { return m_packagep; }
-    void packagep(AstPackage* nodep) { m_packagep = nodep; }
+    AstNode* classOrPackagep() const { return m_classOrPackagep; }
+    AstPackage* packagep() const { return VN_CAST(classOrPackagep(), Package); }
+    void classOrPackagep(AstNode* nodep) { m_classOrPackagep = nodep; }
 };
 
 class AstDot : public AstNode {
@@ -2931,7 +2935,7 @@ public:
     // For parser, make only if non-null package
     static AstNode* newIfPkg(FileLine* fl, AstPackage* packagep, AstNode* rhsp) {
         if (!packagep) return rhsp;
-        return new AstDot(fl, true, new AstPackageRef(fl, packagep), rhsp);
+        return new AstDot(fl, true, new AstClassOrPackageRef(fl, packagep), rhsp);
     }
     virtual void dump(std::ostream& str) const;
     virtual string emitVerilog() { V3ERROR_NA_RETURN(""); }

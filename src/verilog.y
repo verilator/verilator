@@ -2526,7 +2526,7 @@ delay_control<nodep>:	//== IEEE: delay_control
 
 delay_value<nodep>:		// ==IEEE:delay_value
 	//			// IEEE: ps_identifier
-		packageClassScopeE varRefBase		{ $$ = $2; $2->packagep($1); }
+		packageClassScopeE varRefBase		{ $$ = AstDot::newIfPkg($<fl>2, CAST_PACKAGE_CLASS($1), $2); }
 	|	yaINTNUM 				{ $$ = new AstConst($<fl>1, *$1); }
 	|	yaFLOATNUM 				{ $$ = new AstConst($<fl>1, AstConst::RealDouble(), $1); }
 	|	timeNumAdjusted				{ $$ = $1; }
