@@ -5876,18 +5876,17 @@ class_typeExtImpOne<nodep>:	// part of IEEE: class_type, where we either get a p
 		idAny
 	/*mid*/		{ /* no nextId as not refing it above this*/ }
 	/*cont*/    parameter_value_assignmentE
-			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL);
-			  $<scp>$ = $<scp>1;
-			  if ($3) BBUNSUP($3->fileline(), "Unsupported: Parameterized classes"); }
+			{ $$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, $3);
+			  $<scp>$ = $<scp>1; }
 	//
 	//			// package_sopeIdFollows expanded
 	|	yD_UNIT yP_COLONCOLON
-			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, "$unit", NULL, NULL);
+			{ $$ = new AstClassOrPackageRef($<fl>1, "$unit", NULL, NULL);
                           $<scp>$ = NULL;  // No purpose otherwise, every symtab can see root
 			  SYMP->nextId(PARSEP->rootp()); }
 	//
 	|	yLOCAL__COLONCOLON yP_COLONCOLON
-			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, "local", NULL, NULL);
+			{ $$ = new AstClassOrPackageRef($<fl>1, "local::", NULL, NULL);
                           $<scp>$ = NULL;  // UNSUP
 			  SYMP->nextId(PARSEP->rootp());
 			  BBUNSUP($1, "Unsupported: Randomize 'local::'"); }
