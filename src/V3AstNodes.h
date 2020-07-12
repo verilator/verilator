@@ -448,6 +448,7 @@ public:
     ASTNODE_NODE_FUNCS(TypedefFwd)
     // METHODS
     virtual string name() const { return m_name; }
+    virtual bool maybePointedTo() const { return true; }
 };
 
 class AstDefImplicitDType : public AstNodeDType {

@@ -1505,7 +1505,7 @@ void AstClassOrPackageRef::dump(std::ostream& str) const {
 }
 void AstDot::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (colon()) str << "[::]";
+    if (colon()) str << " [::]";
 }
 void AstActive::dump(std::ostream& str) const {
     this->AstNode::dump(str);
