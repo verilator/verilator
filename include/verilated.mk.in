@@ -258,7 +258,6 @@ debug-make::
 	@echo VM_GLOBAL_FAST: $(VM_GLOBAL_FAST)
 	@echo VM_GLOBAL_SLOW: $(VM_GLOBAL_SLOW)
 	@echo VK_OBJS: $(VK_OBJS)
-	@echo VK_ARCHIVES: $(VK_ARCHIVES)
 	@echo
 
 ######################################################################
