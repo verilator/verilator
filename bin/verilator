@@ -2236,6 +2236,10 @@ For -cc and -sc mode, it also creates:
     {prefix}{each_verilog_module}{__n}.cpp   // Additional lower C++ files (--output-split)
 
 For --hierarchy mode, it creates:
+    {prefix}__hierVer.d                 // Make dependencies of the top module in the
+                                           hierarchical Verilation
+    {prefix}__hier.dir/                 // Directory to store .dot, .vpp, .tree of the
+                                           top module in the hierarchical Verilation
     V{hier_block}/                      // Directory to Verilate each hierarchy block
 
 In certain debug and other modes, it also creates:

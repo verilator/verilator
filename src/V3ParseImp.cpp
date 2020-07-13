@@ -292,7 +292,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     if (v3Global.opt.preprocOnly() || v3Global.opt.keepTempFiles()) {
         // Create output file with all the preprocessor output we buffered up
         string vppfilename
-            = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_" + modname + ".vpp";
+            = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix() + "_" + modname + ".vpp";
         std::ofstream* ofp = NULL;
         std::ostream* osp;
         if (v3Global.opt.preprocOnly()) {

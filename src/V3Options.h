@@ -628,6 +628,11 @@ public:
     bool hierChild() const { return m_hierChild; }
     bool hierTop() const { return !m_hierChild && !m_hierBlocks.empty(); }
     const V3HierBlockOptSet& hierBlocks() const { return m_hierBlocks; }
+    // Directory to save .tree, .dot, .dat, .vpp for hierarchy top
+    // Returns makeDir() unless top module of hierarchical verilation.
+    string hierTopDataDir() const {
+        return hierTop() ? (makeDir() + '/' + prefix() + "__hier.dir") : makeDir();
+    }
 
     // METHODS (from main)
     static string version();

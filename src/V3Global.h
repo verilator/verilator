@@ -128,7 +128,7 @@ public:
         if (newNumber) m_debugFileNumber = newNumber;
         char digits[100];
         sprintf(digits, "%03d", m_debugFileNumber);
-        return opt.makeDir() + "/" + opt.prefix() + "_" + digits + "_" + nameComment;
+        return opt.hierTopDataDir() + "/" + opt.prefix() + "_" + digits + "_" + nameComment;
     }
     bool needC11() const { return m_needC11; }
     void needC11(bool flag) { m_needC11 = flag; }

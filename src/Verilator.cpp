@@ -523,8 +523,9 @@ static void verilate(const string& argString) {
     // Can we skip doing everything if times are ok?
     V3File::addSrcDepend(v3Global.opt.bin());
     if (v3Global.opt.skipIdentical().isTrue()
-        && V3File::checkTimes(
-            v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__verFiles.dat", argString)) {
+        && V3File::checkTimes(v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
+                                  + "__verFiles.dat",
+                              argString)) {
         UINFO(1, "--skip-identical: No change to any source files, exiting\n");
         return;
     }
@@ -537,9 +538,9 @@ static void verilate(const string& argString) {
     //--FRONTEND------------------
 
     // Cleanup
-    V3Os::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix() + "_*.tree");
-    V3Os::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix() + "_*.dot");
-    V3Os::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix() + "_*.txt");
+    V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.tree");
+    V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.dot");
+    V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.txt");
 
     // Internal tests (after option parsing as need debug() setting,
     // and after removing files as may make debug output)
@@ -585,20 +586,20 @@ static void verilate(const string& argString) {
             v3Global.hierPlanp()->writeCommandFiles(true);
             V3EmitCMake::emit();
         }
-    } else {
-        if (v3Global.opt.makeDepend().isTrue()) {
-            V3File::writeDepend(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__ver.d");
-        }
-        if (v3Global.opt.protectIds()) {
-            VIdProtect::writeMapFile(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
-                                     + "__idmap.xml");
-        }
     }
-    // Verilation for the top module must not save the dependency file
-    // to avoid overwriting the files generated in the initial run.
-    if ((v3Global.opt.skipIdentical().isTrue() || v3Global.opt.makeDepend().isTrue())
-        && !v3Global.opt.hierTop()) {
-        V3File::writeTimes(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__verFiles.dat",
+    if (v3Global.opt.makeDepend().isTrue()) {
+        string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix();
+        filename += v3Global.opt.hierTop() ? "__hierVer.d" : "__ver.d";
+        V3File::writeDepend(filename);
+    }
+    if (v3Global.opt.protectIds()) {
+        VIdProtect::writeMapFile(v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
+                                 + "__idmap.xml");
+    }
+
+    if (v3Global.opt.skipIdentical().isTrue() || v3Global.opt.makeDepend().isTrue()) {
+        V3File::writeTimes(v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
+                               + "__verFiles.dat",
                            argString);
     }
 
