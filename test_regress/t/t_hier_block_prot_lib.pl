@@ -7,9 +7,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-# stats will be deleted but generation will be skipped if libs of hierarchy blocks exist.
-clean_objs();
-
 top_filename("t/t_hier_block.v");
 
 scenarios(
