@@ -40,6 +40,7 @@ while (1) {
     last if $Self->{errors};
 
     compile(
+        v_flags2 => ['t/t_hier_block.cpp'],
         verilator_flags2 => ["$secret_dir/secret.sv",
                              "-DPROTLIB_TOP",
                              "--top-module t",

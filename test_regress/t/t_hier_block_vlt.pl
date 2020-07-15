@@ -17,6 +17,7 @@ top_filename("t/t_hier_block.v");
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
 # So use 6 threads here though it's not optimal in performace wise, but ok.
 compile(
+    v_flags2 => ['t/t_hier_block.cpp'],
     verilator_flags2 => ['--stats',
                          '--hierarchical',
                          '+define+USE_VLT', 't/t_hier_block_vlt.vlt',

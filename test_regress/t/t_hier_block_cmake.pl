@@ -19,6 +19,7 @@ top_filename("t/t_hier_block.v");
 compile(
     verilator_make_gmake => 0,
     verilator_make_cmake => 1,
+    v_flags2 => ['t/t_hier_block.cpp'],
     verilator_flags2 => ['--stats',
                          '--hierarchical',
                          '--make cmake',

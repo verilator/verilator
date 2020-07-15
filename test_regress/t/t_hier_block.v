@@ -96,7 +96,15 @@ module sub2(
 
    logic [7:0] ff;
 
-   always_ff @(posedge clk) ff <= in + 2;
+  // dpi_import_func returns (dpi_eport_func() -1)
+   import "DPI-C" context function int dpi_import_func();
+   export "DPI-C" function dpi_export_func;
+
+   function int dpi_export_func();
+       return {{(32 - 8){1'b0}}, in} + 1;
+   endfunction
+
+   always_ff @(posedge clk) ff <= 8'(dpi_import_func()) + 2;  // in + 2
 
    non_hier_sub3 i_sub3(.clk(clk), .in(ff), .out(out));
 
