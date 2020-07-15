@@ -576,8 +576,8 @@ static void verilate(const string& argString) {
 
     if (v3Global.hierPlanp()) {  // This run is for just write a makefile
         UASSERT(v3Global.opt.hierarchical(), "hierarchical must be set");
-        UASSERT(!v3Global.opt.hierChild(), "must not be a child run");
-        UASSERT(v3Global.opt.hierBlocks().empty(), "Must not set");
+        UASSERT(!v3Global.opt.hierChild(), "This must not be a hierarhcical-child run");
+        UASSERT(v3Global.opt.hierBlocks().empty(), "hierarchical-block must not be set");
         if (v3Global.opt.gmake()) {
             v3Global.hierPlanp()->writeCommandFiles(false);
             V3EmitMk::emitHierVerilation(v3Global.hierPlanp());
