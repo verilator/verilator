@@ -575,7 +575,7 @@ static void verilate(const string& argString) {
     V3Error::abortIfWarnings();
 
     if (v3Global.hierPlanp()) {  // This run is for just write a makefile
-        UASSERT(v3Global.opt.hierarchical(), "must be set");
+        UASSERT(v3Global.opt.hierarchical(), "hierarchical must be set");
         UASSERT(!v3Global.opt.hierChild(), "must not be a child run");
         UASSERT(v3Global.opt.hierBlocks().empty(), "Must not set");
         if (v3Global.opt.gmake()) {
