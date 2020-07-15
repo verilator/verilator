@@ -2216,14 +2216,12 @@ For --make gmake, it creates:
     {prefix}.mk                         // Make include file for compiling
     {prefix}_classes.mk                 // Make include file with class names
     {prefix}_hier.mk                    // Make file for hierarchy blocks
-    {prefix}_hierMkCmd.f                // Command line arguments for hierarchical
-                                           Verilation.
+    {prefix}_hierMkCmd.f                // Arguments for hierarchical Verilation.
 
 For --make cmake, it creates:
 
     {prefix}.cmake                      // CMake include script for compiling
-    {prefix}_hierCMakeCmd.f             // Command line arguments for hierarchical
-                                           Verilation.
+    {prefix}_hierCMakeCmd.f             // Arguments for hierarchical Verilation.
 
 For -cc and -sc mode, it also creates:
 
