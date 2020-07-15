@@ -2448,15 +2448,6 @@ public:
     virtual string verilogKwd() const { return "module"; }
 };
 
-class AstProgram : public AstNodeModule {
-    // A program declaration
-public:
-    AstProgram(FileLine* fl, const string& name)
-        : ASTGEN_SUPER(fl, name) {}
-    ASTNODE_NODE_FUNCS(Program)
-    virtual string verilogKwd() const { return "program"; }
-};
-
 class AstNotFoundModule : public AstNodeModule {
     // A missing module declaration
 public:
