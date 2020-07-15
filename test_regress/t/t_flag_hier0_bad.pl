@@ -16,7 +16,20 @@ lint(
     verilator_flags2 => ['--hierarchy-block',
                          'modName,mangledName,param0,"paramValue0",param0,"paramValue1",param1,2,param3',
                          '--hierarchy-block',
-                         'modName'],
+                         'modName',
+                         '--hierarchy-block',
+                         'mod0,mod1,\'"str\\\'', # end with backslash
+                         '--hierarchy-block',
+                         'mod2,mod3,\'"str\\a\'', # unexpected 'a' after backslash
+                         '--hierarchy-block',
+                         'mod4,mod5,\'"str"abc\',', # not end with "
+                         '--hierarchy-block',
+                         'mod6,mod7,\'"str"\',', # end with ,
+                         '--hierarchy-block',
+                         'mod8,mod9,\'s"tr"\',', # unexpected "
+                         '--hierarchy-block',
+                         'modA,modB,param,', # end with ,
+                     ],
     expect_filename => $Self->{golden_filename},
     );
 

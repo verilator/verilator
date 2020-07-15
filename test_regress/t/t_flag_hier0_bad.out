@@ -1,4 +1,9 @@
-%Error: --hierarchy-block option requires that the number of entries must be even
-%Error: 'param0' is duplicated in --hierarchy-block option
-%Error: --hierarchy-block option requires at least two comma-separated values
+%Error: --hierarchy-block requires the number of entries to be even
+%Error: Module name 'param0' is duplicated in --hierarchy-block
+%Error: --hierarchy-block requires at least two comma-separated values
+%Error: --hierarchy-block must not end with \
+%Error: --hierarchy-block does not allow 'a' after \
+%Error: --hierarchy-block expects ',', but 'a' is passed
+%Error: --hierarchy-block must not end with ','
+%Error: --hierarchy-block does not allow '"' in the middle of literal
 %Error: Exiting due to

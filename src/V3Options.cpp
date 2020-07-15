@@ -144,13 +144,21 @@ V3HierarchyBlockOption::V3HierarchyBlockOption(const string& opts) {
     V3StringList vals;
     bool inStr = false;
     string cur;
+    static const string hierBlock("--hierarchy-block");
+    FileLine cmdfl(FileLine::commandLineFilename());
     // Split by ','. If ',' appears between "", that is not a separator.
     for (string::const_iterator it = opts.begin(); it != opts.end();) {
         if (inStr) {
             if (*it == '\\') {
                 ++it;
-                UASSERT(it != opts.end(), " must not end with \\");
-                UASSERT(*it == '"' || *it == '\\', *it << " can not appear");
+                if (it == opts.end()) {
+                    cmdfl.v3error(hierBlock + " must not end with \\");
+                    break;
+                }
+                if (*it != '"' && *it != '\\') {
+                    cmdfl.v3error(hierBlock + " does not allow '" + *it + "' after \\");
+                    break;
+                }
                 cur.push_back(*it);
                 ++it;
             } else if (*it == '"') {  // end of string
@@ -159,9 +167,15 @@ V3HierarchyBlockOption::V3HierarchyBlockOption(const string& opts) {
                 cur.clear();
                 ++it;
                 if (it != opts.end()) {
-                    UASSERT(*it == ',', *it << " must be ','");
+                    if (*it != ',') {
+                        cmdfl.v3error(hierBlock + " expects ',', but '" + *it + "' is passed");
+                        break;
+                    }
                     ++it;
-                    UASSERT(it != opts.end(), "option must not end with ','");
+                    if (it == opts.end()) {
+                        cmdfl.v3error(hierBlock + " must not end with ','");
+                        break;
+                    }
                     inStr = *it == '"';
                     cur.push_back(*it);
                     ++it;
@@ -171,12 +185,18 @@ V3HierarchyBlockOption::V3HierarchyBlockOption(const string& opts) {
                 ++it;
             }
         } else {
-            UASSERT(*it != '"', *it << " must not be doublequote");
+            if (*it == '"') {
+                cmdfl.v3error(hierBlock + " does not allow '\"' in the middle of literal");
+                break;
+            }
             if (*it == ',') {  // end of this parameter
                 vals.push_back(cur);
                 cur.clear();
                 ++it;
-                UASSERT(it != opts.end(), "option must not end with ','");
+                if (it == opts.end()) {
+                    cmdfl.v3error(hierBlock + " must not end with ','");
+                    break;
+                }
                 inStr = *it == '"';
             }
             cur.push_back(*it);
@@ -184,20 +204,20 @@ V3HierarchyBlockOption::V3HierarchyBlockOption(const string& opts) {
         }
     }
     if (!cur.empty()) vals.push_back(cur);
-    FileLine cmdfl(FileLine::commandLineFilename());
     if (vals.size() >= 2) {
         if (vals.size() % 2) {
-            cmdfl.v3error(
-                "--hierarchy-block option requires that the number of entries must be even");
+            cmdfl.v3error(hierBlock + " requires the number of entries to be even");
         }
         m_origName = vals[0];
         m_mangledName = vals[1];
     } else {
-        cmdfl.v3error("--hierarchy-block option requires at least two comma-separated values");
+        cmdfl.v3error(hierBlock + " requires at least two comma-separated values");
     }
-    for (size_t i = 2; i < vals.size(); i += 2) {
+    for (size_t i = 2; i + 1 < vals.size(); i += 2) {
         const bool inserted = m_parameters.insert(std::make_pair(vals[i], vals[i + 1])).second;
-        if (!inserted) { cmdfl.v3error("'" + vals[i] + "' is duplicated in --hierarchy-block option"); }
+        if (!inserted) {
+            cmdfl.v3error("Module name '" + vals[i] + "' is duplicated in " + hierBlock);
+        }
     }
 }
 
