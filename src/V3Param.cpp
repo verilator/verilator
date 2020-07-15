@@ -63,7 +63,7 @@
 #include <vector>
 
 //######################################################################
-// Hierarchhy block and parameter db (modules without parameter is also handled)
+// Hierarchical block and parameter db (modules without parameter is also handled)
 class ParameterizedHierBlocks {
     typedef std::multimap<string, const V3HierarchyBlockOption*> HierBlockOptsByOrigName;
     typedef HierBlockOptsByOrigName::const_iterator HierMapIt;
