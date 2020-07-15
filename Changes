@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.039 devel
 
+***   Fix arrayed interfaces, broke in 4.038 (#2468). [Josh Redford]
+
 
 * Verilator 4.038 2020-07-11
 
