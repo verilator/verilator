@@ -1,4 +1,4 @@
 %Error: --hierarchy-block option requires that the number of entries must be even
-%Error: param0 is duplicated in --hierarchy-block option
+%Error: 'param0' is duplicated in --hierarchy-block option
 %Error: --hierarchy-block option requires at least two comma-separated values
 %Error: Exiting due to
