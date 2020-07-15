@@ -117,7 +117,8 @@ static StrGParams stringifyParams(const V3HierBlock::GParams& gparams, bool forG
 }
 
 static string hierCommandFileName(const string& prefix, bool forCMake) {
-    return v3Global.opt.makeDir() + "/" + prefix + (forCMake ? "_hierCMakeCmd.f" : "_hierMkCmd.f");
+    return v3Global.opt.makeDir() + "/" + prefix
+           + (forCMake ? "_hierCMakeArgs.f" : "_hierMkArgs.f");
 }
 
 static void writeCommonInputs(std::ostream* of, bool forCMake) {
