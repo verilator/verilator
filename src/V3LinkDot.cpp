@@ -1008,12 +1008,6 @@ class LinkDotFindVisitor : public AstNVisitor {
         // Var: Remember its name for later resolution
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Var not under module?");
         iterateChildren(nodep);
-        if (m_ftaskp && nodep->isParam()) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Parameters in functions");  // Big3 unsupported too
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            return;
-        }
         if (nodep->isFuncLocal() && nodep->lifetime().isStatic()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' function/task variables");
         } else if (nodep->isClassMember() && nodep->lifetime().isStatic()) {

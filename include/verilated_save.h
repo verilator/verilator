@@ -55,7 +55,7 @@ public:
     }
     virtual ~VerilatedSerialize() {
         close();
-        if (m_bufp) VL_DO_CLEAR(delete [] m_bufp, m_bufp = NULL);
+        if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = NULL);
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }
@@ -118,7 +118,7 @@ public:
     }
     virtual ~VerilatedDeserialize() {
         close();
-        if (m_bufp) VL_DO_CLEAR(delete [] m_bufp, m_bufp = NULL);
+        if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = NULL);
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }

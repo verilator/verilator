@@ -1,7 +1,5 @@
-%Error-UNSUPPORTED: t/t_param_in_func_bad.v:24:26: Unsupported: Parameters in functions
+%Error-UNSUPPORTED: t/t_param_in_func_bad.v:24:26: Unsupported: Parameters in functions with complex assign
+                                                 : ... In instance t
    24 |    localparam logic[7:0] digits[10]
       |                          ^~~~~~
-%Error: t/t_param_in_func_bad.v:28:11: Can't find definition of variable: 'digits'
-   28 |    return digits[d];
-      |           ^~~~~~
 %Error: Exiting due to

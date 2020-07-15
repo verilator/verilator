@@ -106,6 +106,8 @@ private:
     typedef std::deque<AstCell*> CellList;
     CellList m_cellps;  // Cells left to process (in this module)
 
+    AstNodeFTask* m_ftaskp;  // Function/task reference
+
     AstNodeModule* m_modp;  // Current module being processed
 
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
@@ -302,6 +304,11 @@ private:
         nodep->user5p(genHierNamep);
         m_cellps.push_back(nodep);
     }
+    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+        m_ftaskp = nodep;
+        iterateChildren(nodep);
+        m_ftaskp = NULL;
+    }
 
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
@@ -323,6 +330,16 @@ private:
                             new AstAssign(nodep->fileline(),
                                           new AstVarRef(nodep->fileline(), nodep, true),
                                           nodep->valuep()->cloneTree(true))));
+                        if (m_ftaskp) {
+                            // We put the initial in wrong place under a function.  We
+                            // should move the parameter out of the function and to the
+                            // module, with appropriate dotting, but this confuses LinkDot
+                            // (as then name isn't found later), so punt - probably can
+                            // treat as static function variable when that is supported.
+                            nodep->v3warn(
+                                E_UNSUPPORTED,
+                                "Unsupported: Parameters in functions with complex assign");
+                        }
                     }
                 }
             }
@@ -556,6 +573,7 @@ public:
     // CONSTRUCTORS
     explicit ParamVisitor(AstNetlist* nodep) {
         m_longId = 0;
+        m_ftaskp = NULL;
         m_modp = NULL;
         m_nextValue = 1;
         //
