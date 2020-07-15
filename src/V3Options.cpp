@@ -197,7 +197,7 @@ V3HierarchyBlockOption::V3HierarchyBlockOption(const string& opts) {
     }
     for (size_t i = 2; i < vals.size(); i += 2) {
         const bool inserted = m_parameters.insert(std::make_pair(vals[i], vals[i + 1])).second;
-        if (!inserted) { cmdfl.v3error(vals[i] + " is duplicated in --hierarchy-block option"); }
+        if (!inserted) { cmdfl.v3error("'" vals[i] + "' is duplicated in --hierarchy-block option"); }
     }
 }
 
