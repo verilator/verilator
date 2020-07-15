@@ -1465,7 +1465,7 @@ program_declaration:		// IEEE: program_declaration + program_nonansi_header + pr
 
 pgmFront<modulep>:
 		yPROGRAM lifetimeE idAny/*new_program*/
-			{ $$ = new AstModule($<fl>3,*$3);
+			{ $$ = new AstProgram($<fl>3,*$3);
 			  $$->lifetime($2);
 			  $$->inLibrary(PARSEP->inLibrary() || $$->fileline()->celldefineOn());
 			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
