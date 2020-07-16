@@ -380,13 +380,14 @@ private:
                 supported = !constp->isOpaque();
             }
             if (!supported) {
-                pinp->v3error(modp->origName()
+                pinp->v3error(AstNode::prettyNameQ(modp->origName())
                               << " has hier_block metacomment, hierarchical verilation"
                               << " supports only integer/floating point/string parameters.");
             }
         } else if (VN_IS(pinp->modPTypep(), ParamTypeDType)) {
-            pinp->v3error(modp->origName() << " has hier_block metacomment, but type parameter "
-                                              "which is not supported is specified.");
+            pinp->v3error(AstNode::prettyNameQ(modp->origName())
+                          << " has hier_block metacomment, but type parameter "
+                             "which is not supported is specified.");
         }
     }
     void visitCell(AstCell* nodep, const string& hierName);
