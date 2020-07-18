@@ -48,7 +48,7 @@ module t (/*AUTOARG*/
       if (out3 != out3_2) $stop;
       $display("%d out0:%d %d %d %d %d %d", count, out0, out1, out2, out3, out4, out5);
       if (count == 16) begin
-         if (out5 == 21) begin
+         if (out5 == 15) begin
              $write("*-* All Finished *-*\n");
              $finish;
          end else begin
@@ -100,15 +100,15 @@ module sub2(
 
    logic [7:0] ff;
 
-  // dpi_import_func returns (dpi_eport_func() -1)
-   import "DPI-C" context function int dpi_import_func();
+  // dpi_import_func returns (dpi_eport_func(v) -1)
+   import "DPI-C" context function int dpi_import_func(int v);
    export "DPI-C" function dpi_export_func;
 
-   function int dpi_export_func();
-       return {{(32 - 8){1'b0}}, in} + 1;
+   function int dpi_export_func(int v);
+       return v + 1;
    endfunction
 
-   always_ff @(posedge clk) ff <= 8'(dpi_import_func()) + 2;  // in + 2
+   always_ff @(posedge clk) ff <= 8'(dpi_import_func({24'b0, in})) + 8'd2;
 
    non_hier_sub3 i_sub3(.clk(clk), .in(ff), .out(out));
 
@@ -159,11 +159,11 @@ module delay #(
    input wire[WIDTH-1:0] in,
    output wire [WIDTH-1:0]out); `HIER_BLOCK
 
-    reg [WIDTH-1:0] tmp;
-    always_ff @(posedge clk) tmp <= in;
-    if (N > 1) begin
-        delay #(.N(N - 1), WIDTH) i_delay(clk, tmp, out);
-    end else begin
-        assign out = tmp;
-    end
+   reg [WIDTH-1:0] tmp;
+   always_ff @(posedge clk) tmp <= in;
+   if (N > 1) begin
+      delay #(.N(N - 1), WIDTH) i_delay(clk, tmp, out);
+   end else begin
+      assign out = tmp;
+   end
 endmodule
