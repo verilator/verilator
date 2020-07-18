@@ -101,6 +101,13 @@
 
 V3Global v3Global;
 
+static void reportStatsIfEnabled() {
+    if (v3Global.opt.stats()) {
+        V3Stats::statsFinalAll(v3Global.rootp());
+        V3Stats::statsReport();
+    }
+}
+
 static void process() {
     // Sort modules by level so later algorithms don't need to care
     V3LinkLevel::modSortByLevel();
@@ -145,7 +152,10 @@ static void process() {
         V3HierBlockPlan::createPlan(v3Global.rootp());
         // If a plan is created, further analysis is not necessary.
         // The actual Verilation will be done based on this plan.
-        if (v3Global.hierPlanp()) return;
+        if (v3Global.hierPlanp()) {
+            reportStatsIfEnabled();
+            return;
+        }
     }
     V3Stats::addStat("HierBlock, Hierarchy blocks", v3Global.opt.hierBlocks().size());
 
@@ -502,10 +512,7 @@ static void process() {
     }
 
     // Statistics
-    if (v3Global.opt.stats()) {
-        V3Stats::statsFinalAll(v3Global.rootp());
-        V3Stats::statsReport();
-    }
+    reportStatsIfEnabled();
 
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
         // Makefile must be after all other emitters
