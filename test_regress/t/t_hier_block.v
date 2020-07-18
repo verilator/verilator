@@ -9,6 +9,12 @@
 `define HIER_BLOCK /*verilator hier_block*/
 `endif
 
+interface byte_ifs(input clk);
+   logic [7:0] data;
+   modport sender(input clk, output data);
+   modport receiver(input clk, input data);
+endinterface;
+
 `ifdef AS_PROT_LIB
 module secret (
    clk
@@ -110,29 +116,35 @@ module sub2(
 
    always_ff @(posedge clk) ff <= 8'(dpi_import_func({24'b0, in})) + 8'd2;
 
-   non_hier_sub3 i_sub3(.clk(clk), .in(ff), .out(out));
+   byte_ifs in_ifs(.clk(clk));
+   byte_ifs out_ifs(.clk(clk));
+   assign in_ifs.data = ff;
+   assign out = out_ifs.data;
+   non_hier_sub3 i_sub3(.in(in_ifs), .out(out_ifs));
 
    always @(posedge clk)
       // dotted access within a hierarchical block should be OK
-      if (i_sub3.in != ff) begin
+      if (i_sub3.in_wire != ff) begin
          $display("Error mismatch in %m");
          $stop;
       end
 endmodule
 
 module non_hier_sub3(
-   input wire clk,
-   input wire [7:0] in,
-   output wire [7:0] out);
+   byte_ifs.receiver in,
+   byte_ifs.sender out);
 
-   wire [7:0] out_2;
+   wire [7:0] in_wire, out_1, out_2;
+   assign in_wire = in.data;
    localparam string sparam = "single quote escape comma:'\\,";
    // Parameter appears in the different order from module declaration
-   sub3 #(.STR(sparam), .UNUSED(-16'sd3), .P0(8'd3)) i_sub3(.clk(clk), .in(in), .out(out));
+   sub3 #(.STR(sparam), .UNUSED(-16'sd3), .P0(8'd3)) i_sub3(.clk(in.clk), .in(in.data), .out(out_1));
    // Instantiate again, should use the same wrapper
-   sub3 #(.STR(sparam), .UNUSED(-16'sd3), .P0(8'd3)) i_sub3_2(.clk(clk), .in(in), .out(out_2));
-   always @(posedge clk)
-      if (out != out_2) $stop;
+   sub3 #(.STR(sparam), .UNUSED(-16'sd3), .P0(8'd3)) i_sub3_2(.clk(in.clk), .in(in.data), .out(out_2));
+   always @(posedge in.clk)
+      if (out_1 != out_2) $stop;
+
+   assign out.data = out_1;
 endmodule
 
 module sub3 #(

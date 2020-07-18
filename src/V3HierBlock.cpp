@@ -237,7 +237,8 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
     // STATE
     typedef std::set<const AstModule*> ModuleSet;
     V3HierBlockPlan* const m_planp;
-    AstModule* m_modp;
+    AstModule* m_modp;  // The current module
+    AstModule* m_hierBlockp;  // The nearest parent module that is a hierarchical block
     ModuleSet m_referred;  // Modules that have hier_block pragma
     V3HierBlock::GParams m_gparams;  // list of variables that is AstVarType::GPARAM
 
@@ -245,12 +246,14 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
         // Don't visit twice
         if (nodep->user1SetOnce()) return;
         UINFO(5, "Checking " << nodep->prettyNameQ() << " from "
-                             << (m_modp ? m_modp->prettyNameQ() : string("null")) << std::endl);
-        AstModule* const prevModulep = m_modp;
+                             << (m_hierBlockp ? m_hierBlockp->prettyNameQ() : string("null")) << std::endl);
+        AstModule* const prevModp = m_modp;
+        AstModule* const prevHierBlockp = m_hierBlockp;
         ModuleSet prevReferred;
         V3HierBlock::GParams prevGParams;
+        m_modp = nodep;
         if (nodep->hierBlock()) {
-            m_modp = nodep;
+            m_hierBlockp = nodep;
             prevReferred.swap(m_referred);
         }
         prevGParams.swap(m_gparams);
@@ -262,9 +265,10 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
             for (ModuleSet::const_iterator it = m_referred.begin(); it != m_referred.end(); ++it) {
                 m_planp->registerUsage(nodep, *it);
             }
-            m_modp = prevModulep;
+            m_hierBlockp = prevHierBlockp;
             m_referred.swap(prevReferred);
         }
+        m_modp = prevModp;
         m_gparams.swap(prevGParams);
     }
     virtual void visit(AstCell* nodep) VL_OVERRIDE {
@@ -274,8 +278,13 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
             iterate(modp);
             m_referred.insert(modp);
         }
+        // Nothing to do for interface because hierarchical block does not exist
+        // beyond interface.
     }
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
+        if (m_modp && m_modp->hierBlock() && nodep->isIfaceRef() && !nodep->isIfaceParent()) {
+            nodep->v3error("Modport cannot be used at the hierarchical block boundary");
+        }
         if (nodep->isGParam() && nodep->overriddenParam()) m_gparams.push_back(nodep);
     }
 
@@ -285,7 +294,8 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
 public:
     HierBlockUsageCollectVisitor(V3HierBlockPlan* planp, AstNetlist* netlist)
         : m_planp(planp)
-        , m_modp(NULL) {
+        , m_modp(NULL)
+        , m_hierBlockp(NULL) {
 
         iterateChildren(netlist);
     }
