@@ -2882,6 +2882,7 @@ Because hierarchy blocks are Verilated to protect-lib, they have some
 
    The block cannot be accessed using dot (.) from upper module.
    Signals in the block cannot be traced.
+   Modport cannot be used at the hirarchical block boundary.
 
 On the other hand, the following usage is supported.
 
