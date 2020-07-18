@@ -48,7 +48,7 @@ module t (/*AUTOARG*/
       if (out3 != out3_2) $stop;
       $display("%d out0:%d %d %d %d %d %d", count, out0, out1, out2, out3, out4, out5);
       if (count == 16) begin
-         if (out5 == 15) begin
+         if (out5 == 21) begin
              $write("*-* All Finished *-*\n");
              $finish;
          end else begin
