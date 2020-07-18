@@ -136,7 +136,8 @@ public:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    AstNodeModule* findByParams(const string& origName, AstPin* firstPinp) {
+    AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,
+                                const AstNodeModule* modp) {
         if (m_hierBlockOptsByOrigName.find(origName) == m_hierBlockOptsByOrigName.end()) {
             return NULL;
         }
@@ -158,13 +159,14 @@ public:
                     UASSERT_OBJ(constp, pinp,
                                 "parameter for a hierarchy block must have been constified");
                     ParamConstMap::const_iterator pIt = params.find(modvarp->name());
-                    UASSERT(pIt != params.end(), "Parameter must exist");
-                    UINFO(5, "Comparing " << modvarp->name() << " " << constp << " and "
-                                          << pIt->second << std::endl);
-                    if (paramIdx >= params.size() || !areSame(modvarp, constp, pIt->second)) {
+                    UINFO(5, "Comparing " << modvarp->name() << " " << constp << std::endl);
+                    if (pIt == params.end() || paramIdx >= params.size()
+                        || !areSame(modvarp, constp, pIt->second)) {
                         found = false;
                         break;
                     }
+                    UINFO(5, "Matched " << modvarp->name() << " " << constp << " and "
+                                        << pIt->second << std::endl);
                     ++paramIdx;
                 }
             }
@@ -887,7 +889,7 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
         if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
         } else if (AstNodeModule* modp
-                   = m_hierBlocks.findByParams(srcModp->name(), nodep->paramsp())) {
+                   = m_hierBlocks.findByParams(srcModp->name(), nodep->paramsp(), m_modp)) {
             nodep->modp(modp);
             nodep->modName(modp->name());
             modp->dead(false);

@@ -29,6 +29,7 @@ module t (/*AUTOARG*/
    wire [7:0] out2;
    /* verilator lint_off UNOPTFLAT */
    wire [7:0] out3;
+   wire [7:0] out3_2;
    /* verilator lint_on UNOPTFLAT */
    wire [7:0] out4;
    wire [7:0] out5;
@@ -38,10 +39,13 @@ module t (/*AUTOARG*/
    sub1 i_sub1(.clk(clk), .in(out0), .out(out1));
    sub2 i_sub2(.clk(clk), .in(out1), .out(out2));
    sub3 #(.P0(1)) i_sub3(.clk(clk), .in(out2), .out(out3));
+   // Must not use the same wrapper
+   sub3 #(.STR("abc"), .P0(1)) i_sub3_2(.clk(clk), .in(out2), .out(out3_2));
    delay #(.N(2), 8) i_delay0(clk, out3, out4);
    delay #(.N(3), 8) i_delay1(clk, out4, out5);
 
    always_ff @(posedge clk) begin
+      if (out3 != out3_2) $stop;
       $display("%d out0:%d %d %d %d %d %d", count, out0, out1, out2, out3, out4, out5);
       if (count == 16) begin
          if (out5 == 15) begin
