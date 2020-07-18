@@ -85,6 +85,9 @@ module t (/*AUTOARG*/
       // bug
       r = 32'bxz000_111;  // 7 accoding to IEEE
       if (r != 7) $stop;
+      // bug
+      b = 64'h7fe8000000000000;
+      $display("%6.3f", $bitstoreal(b));
    end
 
    // Test loop

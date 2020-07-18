@@ -1,0 +1,9 @@
+%Error-UNSUPPORTED: t/t_castdyn.v:12:11: Unsupported: $cast. Suggest try static cast.
+                                       : ... In instance t
+   12 |       i = $cast(a, b);
+      |           ^~~~~
+%Error-UNSUPPORTED: t/t_castdyn.v:14:7: Unsupported: $cast. Suggest try static cast.
+                                      : ... In instance t
+   14 |       $cast(a, b);
+      |       ^~~~~
+%Error: Exiting due to

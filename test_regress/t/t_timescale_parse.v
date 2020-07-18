@@ -12,38 +12,42 @@ module modname; \
     task check; t = 1ns; $write("%m %0t\n", t); endtask \
 endmodule
 
+`timescale 100s/1fs
+`testmod(sp2)
+`timescale 10s/1fs
+`testmod(sp1)
 `timescale 1s/1fs
-`testmod(s0)
+`testmod(sp0)
 `timescale 100ms/1fs
-`testmod(s1)
+`testmod(sm1)
 `timescale 10ms/1fs
-`testmod(s2)
+`testmod(sm2)
 `timescale 1ms/1fs
-`testmod(s3)
+`testmod(sm3)
 `timescale 100us/1fs
-`testmod(s4)
+`testmod(sm4)
 `timescale 10us/1fs
-`testmod(s5)
+`testmod(sm5)
 `timescale 1us/1fs
-`testmod(s6)
+`testmod(sm6)
 `timescale 100ns/1fs
-`testmod(s7)
+`testmod(sm7)
 `timescale 10ns/1fs
-`testmod(s8)
+`testmod(sm8)
 `timescale 1ns/1fs
-`testmod(s9)
+`testmod(sm9)
 `timescale 100ps/1fs
-`testmod(s10)
+`testmod(sm10)
 `timescale 10ps/1fs
-`testmod(s11)
+`testmod(sm11)
 `timescale 1ps/1fs
-`testmod(s12)
+`testmod(sm12)
 `timescale 100 fs/1fs
-`testmod(s13)
+`testmod(sm13)
 `timescale 10fs/1 fs
-`testmod(s14)
+`testmod(sm14)
 `timescale 1 fs / 1 fs  // Comment
-`testmod(s15)
+`testmod(sm15)
 
 
 module r0;
@@ -58,43 +62,47 @@ module r1;
 endmodule
 
 module t;
-   s0 s0();
-   s1 s1();
-   s2 s2();
-   s3 s3();
-   s4 s4();
-   s5 s5();
-   s6 s6();
-   s7 s7();
-   s8 s8();
-   s9 s9();
-   s10 s10();
-   s11 s11();
-   s12 s12();
-   s13 s13();
-   s14 s14();
-   s15 s15();
+   sp2 sp2();
+   sp1 sp1();
+   sp0 sp0();
+   sm1 sm1();
+   sm2 sm2();
+   sm3 sm3();
+   sm4 sm4();
+   sm5 sm5();
+   sm6 sm6();
+   sm7 sm7();
+   sm8 sm8();
+   sm9 sm9();
+   sm10 sm10();
+   sm11 sm11();
+   sm12 sm12();
+   sm13 sm13();
+   sm14 sm14();
+   sm15 sm15();
 
    r0 r0();
    r1 r1();
 
    final begin
-      s0.check();
-      s1.check();
-      s2.check();
-      s3.check();
-      s4.check();
-      s5.check();
-      s6.check();
-      s7.check();
-      s8.check();
-      s9.check();
-      s10.check();
-      s11.check();
-      s12.check();
-      s13.check();
-      s14.check();
-      s15.check();
+      sp2.check();
+      sp1.check();
+      sp0.check();
+      sm1.check();
+      sm2.check();
+      sm3.check();
+      sm4.check();
+      sm5.check();
+      sm6.check();
+      sm7.check();
+      sm8.check();
+      sm9.check();
+      sm10.check();
+      sm11.check();
+      sm12.check();
+      sm13.check();
+      sm14.check();
+      sm15.check();
       r0.check();
       r1.check();
       $write("*-* All Finished *-*\n");

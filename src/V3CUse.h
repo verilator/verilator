@@ -27,7 +27,7 @@
 
 class V3CUse {
 public:
-    static void cUseAll(AstNetlist* nodep);
+    static void cUseAll();
 };
 
 #endif  // Guard

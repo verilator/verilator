@@ -23,9 +23,6 @@
 #include "V3Global.h"
 #include "V3AssertPre.h"
 
-#include <cstdarg>
-#include <iomanip>
-
 //######################################################################
 // Assert class functions
 
@@ -37,11 +34,11 @@ private:
     // NODE STATE/TYPES
     // STATE
     // Reset each module:
-    AstNodeSenItem* m_seniDefaultp;  // Default sensitivity (from AstDefClock)
+    AstSenItem* m_seniDefaultp;  // Default sensitivity (from AstDefClock)
     // Reset each assertion:
-    AstNodeSenItem* m_senip;  // Last sensitivity
+    AstSenItem* m_senip;  // Last sensitivity
     // Reset each always:
-    AstNodeSenItem* m_seniAlwaysp;  // Last sensitivity in always
+    AstSenItem* m_seniAlwaysp;  // Last sensitivity in always
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -50,11 +47,11 @@ private:
         // Create sentree based on clocked or default clock
         // Return NULL for always
         AstSenTree* newp = NULL;
-        AstNodeSenItem* senip = m_senip;
+        AstSenItem* senip = m_senip;
         if (!senip) senip = m_seniDefaultp;
         if (!senip) senip = m_seniAlwaysp;
         if (!senip) {
-            nodep->v3error("Unsupported: Unclocked assertion");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Unclocked assertion");
             newp = new AstSenTree(nodep->fileline(), NULL);
         } else {
             newp = new AstSenTree(nodep->fileline(), senip->cloneTree(true));
@@ -100,7 +97,8 @@ private:
     virtual void visit(AstPropClocked* nodep) VL_OVERRIDE {
         // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
-        if (m_senip) nodep->v3error("Unsupported: Only one PSL clock allowed per assertion");
+        if (m_senip)
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Only one PSL clock allowed per assertion");
         // Block is the new expression to evaluate
         AstNode* blockp = nodep->propp()->unlinkFrBack();
         if (nodep->disablep()) {

@@ -1,0 +1,13 @@
+%Error-UNSUPPORTED: t/t_wait.v:12:7: Unsupported: wait statements
+   12 |       wait (value == 1);
+      |       ^~~~
+%Error-UNSUPPORTED: t/t_wait.v:14:7: Unsupported: wait statements
+   14 |       wait (0);
+      |       ^~~~
+%Error-UNSUPPORTED: t/t_wait.v:17:7: Unsupported: wait statements
+   17 |       wait (value == 2);
+      |       ^~~~
+%Error-UNSUPPORTED: t/t_wait.v:20:7: Unsupported: wait statements
+   20 |       wait (value == 3) if (value != 3) $stop;
+      |       ^~~~
+%Error: Exiting due to

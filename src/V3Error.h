@@ -44,6 +44,7 @@ public:
         EC_FATALSRC,    // Kill the program, for internal source errors
         EC_ERROR,       // General error out, can't suppress
         // Boolean information we track per-line, but aren't errors
+        I_CELLDEFINE,   // Inside cell define from `celldefine/`endcelldefine
         I_COVERAGE,     // Coverage is on/off from /*verilator coverage_on/off*/
         I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
         I_LINT,         // All lint messages
@@ -51,6 +52,7 @@ public:
         // Error codes:
         E_DETECTARRAY,  // Error: Unsupported: Can't detect changes on arrayed variable
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
+        E_UNSUPPORTED,  // Error: Unsupported (generally)
         E_TASKNSVAR,    // Error: Task I/O not simple
         //
         // Warning codes:
@@ -136,13 +138,13 @@ public:
     operator en() const { return m_e; }
     const char* ascii() const {
         // clang-format off
-        const char* names[] = {
+        static const char* const names[] = {
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR",
             // Boolean
-            " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
+            " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
             // Errors
-            "DETECTARRAY", "PORTSHORT", "TASKNSVAR",
+            "DETECTARRAY", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
@@ -170,7 +172,9 @@ public:
         return names[m_e];
     }
     // Warnings that default to off
-    bool defaultsOff() const { return (m_e == IMPERFECTSCH || styleError()); }
+    bool defaultsOff() const {
+        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || styleError());
+    }
     // Warnings that warn about nasty side effects
     bool dangerous() const { return (m_e == COMBDLY); }
     // Warnings we'll present to the user as errors
@@ -238,7 +242,7 @@ private:
 
     V3Error() {
         std::cerr << ("Static class");
-        abort();
+        V3Error::vlAbort();
     }
 
 public:
@@ -253,7 +257,6 @@ public:
     static string msgPrefix();  // returns %Error/%Warn
     static int errorCount() { return s_errCount; }
     static int warnCount() { return s_warnCount; }
-    static int errorOrWarnCount() { return errorCount() + warnCount(); }
     static bool errorContexted() { return s_errorContexted; }
     static void errorContexted(bool flag) { s_errorContexted = flag; }
     // METHODS
@@ -288,6 +291,7 @@ public:
         s_errorSuppressed = false;
     }
     static std::ostringstream& v3errorStr() { return s_errorStr; }
+    static void vlAbortOrExit();
     static void vlAbort();
     // static, but often overridden in classes.
     static void v3errorEnd(std::ostringstream& sstr, const string& locationStr = "");
@@ -298,7 +302,7 @@ inline int debug() { return V3Error::debugDefault(); }
 inline void v3errorEnd(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
 inline void v3errorEndFatal(std::ostringstream& sstr) {
     V3Error::v3errorEnd(sstr);
-    assert(0);
+    assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE
 }
 
@@ -307,11 +311,10 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 // Note the commas are the comma operator, not separating arguments. These are needed to ensure
 // evaluation order as otherwise we couldn't ensure v3errorPrep is called first.
 #define v3warnCode(code, msg) \
-    v3errorEnd( \
-        (V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()));
+    v3errorEnd((V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()))
 #define v3warnCodeFatal(code, msg) \
     v3errorEndFatal( \
-        (V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()));
+        (V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()))
 #define v3warn(code, msg) v3warnCode(V3ErrorCode::code, msg)
 #define v3info(msg) v3warnCode(V3ErrorCode::EC_INFO, msg)
 #define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
@@ -324,28 +327,28 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
                     __FILE__ << ":" << std::dec << __LINE__ << ": " << msg)
 // Use this when normal v3fatal is called in static method that overrides fileline.
 #define v3fatalStatic(msg) \
-    ::v3errorEndFatal((V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), \
-                       (V3Error::v3errorStr() << msg), V3Error::v3errorStr()));
+    (::v3errorEndFatal((V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), \
+                        (V3Error::v3errorStr() << msg), V3Error::v3errorStr())))
 
 #define UINFO(level, stmsg) \
-    { \
+    do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { \
             cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; \
         } \
-    }
+    } while (false)
 #define UINFONL(level, stmsg) \
-    { \
+    do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { cout << stmsg; } \
-    }
+    } while (false)
 
 #ifdef VL_DEBUG
 #define UDEBUGONLY(stmts) \
-    { stmts }
+    do { stmts } while (false)
 #else
 #define UDEBUGONLY(stmts) \
-    { \
+    do { \
         if (false) { stmts } \
-    }
+    } while (false)
 #endif
 
 // Assertion without object, generally UOBJASSERT preferred
@@ -364,7 +367,7 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
         if (VL_UNCOVERABLE(!(condition))) { \
             std::cerr << "Internal Error: " << __FILE__ << ":" << std::dec << __LINE__ << ":" \
                       << (stmsg) << std::endl; \
-            abort(); \
+            V3Error::vlAbort(); \
         } \
     } while (false)
 // Check self test values for expected value.  Safe from side-effects.

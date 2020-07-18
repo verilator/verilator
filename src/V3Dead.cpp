@@ -25,7 +25,7 @@
 // The following nodes have package pointers and are cleaned up here:
 // AstRefDType, AstEnumItemRef, AstNodeVarRef, AstNodeFTask
 // These have packagep but will not exist at this stage
-// AstPackageImport, AstDot, AstPackageRef
+// AstPackageImport, AstDot, AstClassOrPackageRef
 //
 // Note on packagep: After the V3Scope/V3LinkDotScoped stage, package links
 // are no longer used, but their presence prevents us from removing empty
@@ -41,7 +41,6 @@
 #include "V3Dead.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
 #include <map>
 #include <vector>
 
@@ -96,7 +95,6 @@ private:
     AssignMap m_assignMap;  // List of all simple assignments for each variable
     bool m_elimUserVars;  // Allow removal of user's vars
     bool m_elimDTypes;  // Allow removal of DTypes
-    bool m_elimScopes;  // Allow removal of Scopes
     bool m_elimCells;  // Allow removal of Cells
     bool m_sideEffect;  // Side effects discovered in assign RHS
 
@@ -197,6 +195,8 @@ private:
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
+        UASSERT_OBJ(!(m_elimCells && nodep->typedefp()), nodep,
+                    "RefDType should point to data type before typedefs removed");
         if (nodep->packagep()) {
             if (m_elimCells) {
                 nodep->packagep(NULL);
@@ -326,11 +326,11 @@ private:
         }
     }
     bool mightElimVar(AstVar* nodep) {
-        return (!nodep->isSigPublic()  // Can't elim publics!
-                && !nodep->isIO() && !nodep->isClassMember()
-                && ((nodep->isTemp() && !nodep->isTrace())
-                    || (nodep->isParam() && !nodep->isTrace() && !v3Global.opt.xmlOnly())
-                    || m_elimUserVars));  // Post-Trace can kill most anything
+        if (nodep->isSigPublic()) return false;  // Can't elim publics!
+        if (nodep->isIO() || nodep->isClassMember()) return false;
+        if (nodep->isTemp() && !nodep->isTrace()) return true;
+        if (nodep->isParam() && !nodep->isTrace() && !v3Global.opt.xmlOnly()) return true;
+        return m_elimUserVars;  // Post-Trace can kill most anything
     }
 
     void deadCheckScope() {
@@ -442,7 +442,6 @@ public:
         m_elimCells = elimCells;
         m_elimUserVars = elimUserVars;
         m_elimDTypes = elimDTypes;
-        m_elimScopes = elimScopes;
         m_sideEffect = false;
         // Prepare to remove some datatypes
         nodep->typeTablep()->clearCache();

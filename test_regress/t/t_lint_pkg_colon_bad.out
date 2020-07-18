@@ -1,8 +1,7 @@
-%Error: t/t_lint_pkg_colon_bad.v:7:23: syntax error, unexpected ::, expecting ')' or ','
+%Error: t/t_lint_pkg_colon_bad.v:7:17: Package/class 'mispkg' not found, and needs to be predeclared (IEEE 1800-2017 26.3)
     7 | module t (input mispkg::foo_t a);
-      |                       ^~
-                                     : ... Perhaps 'mispkg' is a package which needs to be predeclared? (IEEE 1800-2017 26.3)
-%Error: t/t_lint_pkg_colon_bad.v:8:15: syntax error, unexpected ::, expecting ',' or ';'
-    8 |    reg mispkgb::bar_t b;
-      |               ^~
+      |                 ^~~~~~
+%Error: t/t_lint_pkg_colon_bad.v:7:25: syntax error, unexpected IDENTIFIER, expecting TYPE-IDENTIFIER
+    7 | module t (input mispkg::foo_t a);
+      |                         ^~~~~
 %Error: Exiting due to

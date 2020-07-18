@@ -54,7 +54,7 @@ private:
     // VISITORS
     virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
         m_topscopep = nodep;
-        m_finder.main(m_topscopep);
+        m_finder.init(m_topscopep);
         iterateChildren(nodep);
         m_topscopep = NULL;
     }
@@ -89,7 +89,7 @@ private:
         }
         // Move the SENTREE for each active up to the global level.
         // This way we'll easily see what clock domains are identical
-        AstSenTree* wantp = m_finder.getSenTree(nodep->fileline(), sensesp);
+        AstSenTree* wantp = m_finder.getSenTree(sensesp);
         UINFO(4, "   lookdone\n");
         if (wantp != sensesp) {
             // Move the active's contents to the other active

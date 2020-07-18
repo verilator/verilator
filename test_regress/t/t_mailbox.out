@@ -1,0 +1,4 @@
+%Error: t/t_mailbox.v:20:4: Can't find typedef: 'mailbox'
+   20 |    mailbox m;
+      |    ^~~~~~~
+%Error: Exiting due to

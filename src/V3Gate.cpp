@@ -33,11 +33,8 @@
 #include "V3Hashed.h"
 
 #include <algorithm>
-#include <cstdarg>
-#include <iomanip>
 #include <list>
 #include <map>
-#include <vector>
 #include VL_INCLUDE_UNORDERED_SET
 
 typedef std::list<AstNodeVarRef*> GateVarRefList;
@@ -486,8 +483,6 @@ private:
         iterateNewStmt(nodep, "User C Function", "User C Function");
     }
     virtual void visit(AstSenItem* nodep) VL_OVERRIDE {
-        // Note we look at only AstSenItems, not AstSenGate's
-        // The gating term of a AstSenGate is normal logic
         m_inSenItem = true;
         if (m_logicVertexp) {  // Already under logic; presumably a SenGate
             iterateChildren(nodep);
@@ -495,11 +490,6 @@ private:
             iterateNewStmt(nodep, NULL, NULL);
         }
         m_inSenItem = false;
-    }
-    virtual void visit(AstSenGate* nodep) VL_OVERRIDE {
-        // First handle the clock part will be handled in a minute by visit AstSenItem
-        // The logic gating term is dealt with as logic
-        iterateNewStmt(nodep, "Clock gater", "Clock gater");
     }
     virtual void visit(AstInitial* nodep) VL_OVERRIDE {
         bool lastslow = m_inSlow;
@@ -516,8 +506,8 @@ private:
     virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {
         iterateNewStmt(nodep, "CoverToggle", "CoverToggle");
     }
-    virtual void visit(AstTraceInc* nodep) VL_OVERRIDE {
-        bool lastslow = m_inSlow;
+    virtual void visit(AstTraceDecl* nodep) VL_OVERRIDE {
+        const bool lastslow = m_inSlow;
         m_inSlow = true;
         iterateNewStmt(nodep, "Tracing", "Tracing");
         m_inSlow = lastslow;
@@ -1181,7 +1171,7 @@ private:
                         GateLogicVertex* consumeVertexp
                             = dynamic_cast<GateLogicVertex*>(outedgep->top());
                         AstNode* consumerp = consumeVertexp->nodep();
-                        m_graphp->dumpDotFilePrefixed("gate_preelim");
+                        // if (debug() >= 9) m_graphp->dumpDotFilePrefixed("gate_preelim");
                         UINFO(9,
                               "elim src vtx" << lvertexp << " node " << lvertexp->nodep() << endl);
                         UINFO(9,
@@ -1549,7 +1539,7 @@ private:
                     UINFO(9, "                   to - " << m_clk_vsp << endl);
                     AstNode* rhsp = assignp->rhsp();
                     rhsp->replaceWith(new AstVarRef(rhsp->fileline(), m_clk_vsp, false));
-                    for (V3GraphEdge* edgep = lvertexp->inBeginp(); edgep;) {
+                    while (V3GraphEdge* edgep = lvertexp->inBeginp()) {
                         VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
                     }
                     new V3GraphEdge(m_graphp, m_clk_vvertexp, lvertexp, 1);

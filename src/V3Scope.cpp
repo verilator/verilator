@@ -29,8 +29,6 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
-#include <iomanip>
 #include <map>
 #include VL_INCLUDE_UNORDERED_MAP
 #include VL_INCLUDE_UNORDERED_SET
@@ -189,7 +187,7 @@ private:
     virtual void visit(AstCellInline* nodep) VL_OVERRIDE {  //
         nodep->scopep(m_scopep);
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {
+    virtual void visit(AstActive* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Actives now made after scoping");
     }
     virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE {

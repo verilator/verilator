@@ -30,7 +30,6 @@
 #include "V3Branch.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
 #include <map>
 
 //######################################################################

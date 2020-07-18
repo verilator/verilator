@@ -21,7 +21,6 @@
 
 #include <algorithm>
 #include <fstream>
-#include <sys/stat.h>
 
 //######################################################################
 
@@ -77,6 +76,61 @@ void VlcTop::writeCoverage(const string& filename) {
     }
 }
 
+void VlcTop::writeInfo(const string& filename) {
+    UINFO(2, "writeInfo " << filename << endl);
+
+    std::ofstream os(filename.c_str());
+    if (!os) {
+        v3fatal("Can't write " << filename);
+        return;
+    }
+
+    annotateCalc();
+
+    // See 'man lcov' for format details
+    // TN:<trace_file_name>
+    // Source file:
+    //   SF:<absolute_path_to_source_file>
+    //   FN:<line_number_of_function_start>,<function_name>
+    //   FNDA:<execution_count>,<function_name>
+    //   FNF:<number_functions_found>
+    //   FNH:<number_functions_hit>
+    // Branches:
+    //   BRDA:<line_number>,<block_number>,<branch_number>,<taken_count_or_-_for_zero>
+    //   BRF:<number_of_branches_found>
+    //   BRH:<number_of_branches_hit>
+    // Line counts:
+    //   DA:<line_number>,<execution_count>
+    //   LF:<number_of_lines_found>
+    //   LH:<number_of_lines_hit>
+    // Section ending:
+    //   end_of_record
+
+    os << "TN:verilator_coverage\n";
+    for (VlcSources::NameMap::iterator sit = m_sources.begin(); sit != m_sources.end(); ++sit) {
+        VlcSource& source = sit->second;
+        os << "SF:" << source.name() << endl;
+        VlcSource::LinenoMap& lines = source.lines();
+        for (VlcSource::LinenoMap::iterator lit = lines.begin(); lit != lines.end(); ++lit) {
+            int lineno = lit->first;
+            VlcSource::ColumnMap& cmap = lit->second;
+            bool first = true;
+            vluint64_t min_count = 0;  // Minimum across all columns on line
+            for (VlcSource::ColumnMap::iterator cit = cmap.begin(); cit != cmap.end(); ++cit) {
+                VlcSourceCount& col = cit->second;
+                if (first) {
+                    min_count = col.count();
+                    first = false;
+                } else {
+                    min_count = std::min(min_count, col.count());
+                }
+            }
+            os << "DA:" << lineno << "," << min_count << "\n";
+        }
+        os << "end_of_record\n";
+    }
+}
+
 //********************************************************************
 
 struct CmpComputrons {
@@ -115,8 +169,8 @@ void VlcTop::rank() {
     // solution and move up to larger subset of tests.  (Aka quick sort.)
     while (true) {
         if (debug()) {
-            UINFO(9, "Left on iter" << nextrank << ": ");
-            remaining.dump();
+            UINFO(9, "Left on iter" << nextrank << ": ");  // LCOV_EXCL_LINE
+            remaining.dump();  // LCOV_EXCL_LINE
         }
         VlcTest* bestTestp = NULL;
         vluint64_t bestRemain = 0;
@@ -149,14 +203,38 @@ void VlcTop::annotateCalc() {
         string filename = point.filename();
         int lineno = point.lineno();
         if (!filename.empty() && lineno != 0) {
-            int column = point.column();
             VlcSource& source = sources().findNewSource(filename);
             string threshStr = point.thresh();
             unsigned thresh = (!threshStr.empty()) ? atoi(threshStr.c_str()) : opt.annotateMin();
             bool ok = (point.count() >= thresh);
-            UINFO(9,
-                  "AnnoCalc count " << filename << " " << lineno << " " << point.count() << endl);
-            source.incCount(lineno, column, point.count(), ok);
+            UINFO(9, "AnnoCalc count " << filename << ":" << lineno << ":" << point.column() << " "
+                                       << point.count() << " " << point.linescov() << endl);
+            // Base coverage
+            source.incCount(lineno, point.column(), point.count(), ok);
+            // Additional lines covered by this statement
+            bool range = false;
+            int start = 0;
+            int end = 0;
+            string linescov = point.linescov();
+            for (const char* covp = linescov.c_str(); true; ++covp) {
+                if (!*covp || *covp == ',') {  // Ending
+                    for (int lni = start; start && lni <= end; ++lni) {
+                        source.incCount(lni, point.column(), point.count(), ok);
+                    }
+                    if (!*covp) { break; }
+                    start = 0;  // Prep for next
+                    end = 0;
+                    range = false;
+                } else if (*covp == '-') {
+                    range = true;
+                } else if (isdigit(*covp)) {
+                    const char* digitsp = covp;
+                    while (isdigit(*covp)) ++covp;
+                    --covp;  // Will inc in for loop
+                    if (!range) start = atoi(digitsp);
+                    end = atoi(digitsp);
+                }
+            }
         }
     }
 }

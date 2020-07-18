@@ -1,0 +1,4 @@
+%Error: t/t_lint_restore_prag_bad.v:10:4: /*verilator lint_restore*/ without matching save
+   10 |    /*verilator lint_restore*/ 
+      |    ^~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to

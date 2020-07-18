@@ -69,22 +69,23 @@ dbg: ../bin/verilator_bin_dbg ../bin/verilator_coverage_bin_dbg
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj serial_vlcov
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj
 
+ifneq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... don't rebuild each commit
+ ifneq ($(UNDER_GIT),)	# If local git tree... else don't burden users
+GIT_CHANGE_DEP = ${srcdir}/../.git/logs/HEAD
+ endif
+endif
+
 prefiles::
 prefiles:: config_rev.h
-ifneq ($(UNDER_GIT),)	# If local git tree... Else don't burden users
 # This output goes into srcdir if locally configured, as we need to distribute it as part of the kit.
-config_rev.h:	${srcdir}/config_rev.pl ${srcdir}/../.git/logs/HEAD
+config_rev.h:	${srcdir}/config_rev.pl $(GIT_CHANGE_DEP)
 	$(PERL) ${srcdir}/config_rev.pl ${srcdir} >$@
-else
-config_rev.h:	${srcdir}/config_rev.pl
-	$(PERL) ${srcdir}/config_rev.pl ${srcdir} >$@
-endif
 
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
 	-rm -rf obj_* *.log *.dmp *.vpd core
 	-rm -f *.o *.d perlxsi.c *_gen_*
-	-rm -f *__gen*
+	-rm -f *__gen* obj_*
 	-rm -f .objcache*
 
 distclean maintainer-clean::

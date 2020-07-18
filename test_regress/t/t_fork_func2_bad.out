@@ -1,0 +1,5 @@
+%Error: t/t_fork_func2_bad.v:10:7: Only fork .. join_none is legal in functions. (IEEE 1800-2017 13.4.4)
+                                 : ... In instance t
+   10 |       fork
+      |       ^~~~
+%Error: Exiting due to

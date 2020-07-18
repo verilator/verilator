@@ -777,19 +777,20 @@ output, for example:
 You can then print a.ps.  You may prefer gif format, which doesn't get
 scaled so can be more useful with large graphs.
 
-For dynamic graph viewing consider
+For interactive graph viewing consider
+https://github.com/jrfonseca/xdot.py[xdot] or
 http://zvtm.sourceforge.net/zgrviewer.html[ZGRViewer].  If you know of
-better viewers let us know; ZGRViewer isn't great for large graphs.
+better viewers (especially for large graphs) please let us know.
 
 === .tree Output
 
 Tree files are dumps of the AST Tree and are produced between every major
 algorithmic stage.  An example:
 
-     NETLIST 0x90fb00 <e1> {a0}
-    1: MODULE 0x912b20 <e8822> {a8}  top  L2 [P]
-   *1:2: VAR 0x91a780 <e74#> {a22} @dt=0xa2e640(w32)  out_wide [O] WIRE
-    1:2:1: BASICDTYPE 0xa2e640 <e2149> {e24} @dt=this(sw32)  integer kwd=integer range=[31:0]
+     NETLIST 0x90fb00 <e1> {a0ah}
+    1: MODULE 0x912b20 <e8822> {a8ah}  top  L2 [P]
+   *1:2: VAR 0x91a780 <e74#> {a22ah} @dt=0xa2e640(w32)  out_wide [O] WIRE
+    1:2:1: BASICDTYPE 0xa2e640 <e2149> {e24ah} @dt=this(sw32)  integer kwd=integer range=[31:0]
 
 The following summarizes the above example dump, with more detail on each
 field in the section below.
@@ -807,8 +808,9 @@ the `MODULE`, which in turn is the `op1p` pointer under the `NETLIST`
 | `<e74>` | means the 74th edit to the netlist was the last modification to
 this node.
 
-| `{a22}` | indicates this node is related to line 22 in the source filename
-"a", where "a" is the first file read, "z" the 26th, and "aa" the 27th.
+| `{a22ah}` | indicates this node is related to the source filename "a",
+where "a" is the first file read, "z" the 26th, and "aa" the 27th.  Then
+line 22 in that file, then column 8 (aa=0, az=25, ba=26, ...).
 
 | `@dt=0x...` | indicates the address of the data type this node contains.
 
@@ -849,7 +851,10 @@ correspond directly to Verilog entities (for example `MODULE` and
 Address of the node::
 
 A hexadecimal address of the node in memory. Useful for examining with the
-debugger.
+debugger. If the actual address values are not important, then using the
+`--dump-tree-addrids` option will convert address values to short identifiers
+of the form `([A-Z]*)`, which is hopefully easier for the reader to cross
+reference throughout the dump.
 
 Last edit number::
 
@@ -995,6 +1000,24 @@ function in `src/verilator.cpp`.
 
 To get your pass to build you'll need to add its binary filename to the
 list in `src/Makefile_obj.in` and reconfigure.
+
+=== "Never" features
+
+Verilator ideally would support all of IEEE, and has the goal to get close
+to full support. However the following IEEE sections and features are not
+anticipated to be ever implemented for the reasons indicated.
+
+[horizontal]
+IEEE 1800-2017 3.3 recursive modules:: Little/no tool support, and arguably not a good practice.
+IEEE 1800-2017 6.12 "shortreal":: Little/no tool support, and easily simply promoted to real.
+IEEE 1800-2017 11.11 Min, typ, max:: No SDF support so will always use typical.
+IEEE 1800-2017 11.12 "let":: Little/no tool support, makes difficult to implement parsers.
+IEEE 1800-2017 20.15 Probabilistic functions:: Little industry use.
+IEEE 1800-2017 20.16 Stochastic analysis:: Little industry use.
+IEEE 1800-2017 20.17 PLA modeling:: Little industry use and outdated technology.
+IEEE 1800-2017 31 Timing checks:: No longer relevant with static timing analysis tools.
+IEEE 1800-2017 32 SDF annotation:: No longer relevant with static timing analysis tools.
+IEEE 1800-2017 33 Config:: Little/no tool support or industry use.
 
 == Distribution
 

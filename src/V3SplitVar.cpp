@@ -114,7 +114,6 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
-#include "V3Const.h"
 #include "V3Global.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"
@@ -123,8 +122,6 @@
 #include <map>
 #include <set>
 #include <vector>
-#include VL_INCLUDE_UNORDERED_MAP
-#include VL_INCLUDE_UNORDERED_SET
 
 struct SplitVarImpl {
     static AstNodeAssign* newAssign(FileLine* fileline, AstNode* lhsp, AstNode* rhsp,
@@ -176,10 +173,7 @@ struct SplitVarImpl {
         if (const char* reason = cannotSplitVarTypeReason(varp->varType())) return reason;
         if (const char* reason = cannotSplitVarDirectionReason(varp->direction())) return reason;
         if (varp->isSigPublic()) return "it is public";
-        if (varp->isInoutish()) return "it is bidirectional";
         if (varp->isUsedLoopIdx()) return "it is used as a loop variable";
-        if (varp->isGenVar()) return "it is genvar";
-        if (varp->isParam()) return "it is parameter";
         return NULL;
     }
 
@@ -228,6 +222,15 @@ const char* const SplitVarImpl::notSplitMsg
 // AstArraySel  -> Just replace with the AstVarRef for the split variable
 // AstVarRef    -> Create a temporary variable and refer the variable
 // AstSliceSel  -> Create a temporary variable and refer the variable
+
+// Compare AstNode* to get deterministic ordering when showing messages.
+struct AstNodeComparator {
+    bool operator()(const AstNode* ap, const AstNode* bp) const {
+        const int lineComp = ap->fileline()->operatorCompare(*bp->fileline());
+        if (lineComp != 0) return lineComp < 0;
+        return ap < bp;
+    }
+};
 
 class UnpackRef {
     // m_nodep is called in this context (AstNodeStmt, AstCell, AstNodeFTask, or AstAlways)
@@ -278,19 +281,14 @@ public:
     }
     bool lvalue() const { return m_lvalue; }
     bool ftask() const { return m_ftask; }
+    bool operator<(const UnpackRef& other) const {
+        return AstNodeComparator()(m_nodep, other.m_nodep);
+    }
 };
 
 class UnpackRefMap {
 public:
-    struct Hash {
-        size_t operator()(const UnpackRef& r) const { return reinterpret_cast<size_t>(r.nodep()); }
-    };
-    struct Compare {
-        bool operator()(const UnpackRef& a, const UnpackRef& b) const {
-            return a.nodep() == b.nodep();
-        }
-    };
-    typedef std::map<AstVar*, vl_unordered_set<UnpackRef, Hash, Compare> > MapType;
+    typedef std::map<AstVar*, std::set<UnpackRef>, AstNodeComparator> MapType;
     typedef MapType::iterator MapIt;
     typedef MapType::value_type::second_type::iterator SetIt;
 
@@ -337,30 +335,14 @@ public:
     MapIt end() { return m_map.end(); }
 };
 
-// Compare AstNode* to get deterministic ordering when showing messages.
-struct AstNodeComparator {
-    bool operator()(const AstNode* ap, const AstNode* bp) const {
-        const FileLine* afp = ap->fileline();
-        const FileLine* bfp = bp->fileline();
-        if (afp->firstLineno() != bfp->firstLineno())
-            return afp->firstLineno() < bfp->firstLineno();
-        if (afp->firstColumn() != bfp->firstColumn())
-            return afp->firstColumn() < bfp->firstColumn();
-        // Don't comapre its filename because it is expensive.
-        // Line number and column is practically enough.
-        // The comparison of raw pointer here is just in case.
-        // The comparison of this pointer may differ on different run,
-        // but this is just warning message order. (mostly for CI)
-        // Verilated result is same anyway.
-        return ap < bp;
-    }
-};
-
 // Found nodes for SplitPackedVarVisitor
 struct RefsInModule {
-    std::set<AstVar*> m_vars;
-    std::set<AstVarRef*> m_refs;
-    std::set<AstSel*> m_sels;
+    typedef std::set<AstVar*, AstNodeComparator> VarSet;
+    typedef std::set<AstVarRef*, AstNodeComparator> VarRefSet;
+    typedef std::set<AstSel*, AstNodeComparator> SelSet;
+    VarSet m_vars;
+    VarRefSet m_refs;
+    SelSet m_sels;
 
 public:
     void add(AstVar* nodep) { m_vars.insert(nodep); }
@@ -382,12 +364,10 @@ public:
         v.iterate(nodep);
     }
     void visit(AstNVisitor* visitor) {
-        for (std::set<AstVar*>::iterator it = m_vars.begin(), it_end = m_vars.end(); it != it_end;
-             ++it) {
+        for (VarSet::iterator it = m_vars.begin(), it_end = m_vars.end(); it != it_end; ++it) {
             visitor->iterate(*it);
         }
-        for (std::set<AstSel*>::iterator it = m_sels.begin(), it_end = m_sels.end(); it != it_end;
-             ++it) {
+        for (SelSet::iterator it = m_sels.begin(), it_end = m_sels.end(); it != it_end; ++it) {
             // If m_refs includes VarRef from ArraySel, remove it
             // because the VarRef would not be visited in SplitPackedVarVisitor::visit(AstSel*).
             if (AstVarRef* refp = VN_CAST((*it)->fromp(), VarRef)) {
@@ -400,8 +380,7 @@ public:
             UASSERT_OBJ(reinterpret_cast<uintptr_t>((*it)->op1p()) != 1, *it, "stale");
             visitor->iterate(*it);
         }
-        for (std::set<AstVarRef*>::iterator it = m_refs.begin(), it_end = m_refs.end();
-             it != it_end; ++it) {
+        for (VarRefSet::iterator it = m_refs.begin(), it_end = m_refs.end(); it != it_end; ++it) {
             UASSERT_OBJ(reinterpret_cast<uintptr_t>((*it)->op1p()) != 1, *it, "stale");
             visitor->iterate(*it);
         }
@@ -475,7 +454,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
             UINFO(4, "Skip " << nodep->prettyNameQ() << "\n");
             return;
         }
-        UASSERT_OBJ(!m_modp, m_modp, "Nested module declration");
+        UASSERT_OBJ(!m_modp, m_modp, "Nested module declaration");
         UASSERT_OBJ(m_refs.empty(), nodep, "The last module didn't finish split()");
         m_modp = nodep;
         iterateChildren(nodep);
@@ -895,15 +874,16 @@ class PackedVarRef {
     AstBasicDType* m_basicp;  // Cache the ptr since varp->dtypep()->basicp() is expensive
     bool m_dedupDone;
     static void dedupRefs(std::vector<PackedVarRefEntry>& refs) {
-        vl_unordered_map<AstNode*, size_t> nodes;
+        // Use raw pointer to dedup
+        typedef std::map<AstNode*, size_t, AstNodeComparator> NodeIndices;
+        NodeIndices nodes;
         for (size_t i = 0; i < refs.size(); ++i) {
             nodes.insert(std::make_pair(refs[i].nodep(), i));
         }
         std::vector<PackedVarRefEntry> vect;
         vect.reserve(nodes.size());
-        for (vl_unordered_map<AstNode*, size_t>::const_iterator it = nodes.begin(),
-                                                                it_end = nodes.end();
-             it != it_end; ++it) {
+        for (NodeIndices::const_iterator it = nodes.begin(), it_end = nodes.end(); it != it_end;
+             ++it) {
             vect.push_back(refs[it->second]);
         }
         refs.swap(vect);
@@ -984,24 +964,12 @@ public:
 };
 
 class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
+    typedef std::map<AstVar*, PackedVarRef, AstNodeComparator> PackedVarRefMap;
     AstNetlist* m_netp;
     AstNodeModule* m_modp;  // Current module (just for log)
     int m_numSplit;  // Total number of split variables
     // key:variable to be split. value:location where the variable is referenced.
-    vl_unordered_map<AstVar*, PackedVarRef> m_refs;
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
-        UASSERT_OBJ(m_modp == NULL, m_modp, "Nested module declration");
-        if (!VN_IS(nodep, Module)) {
-            UINFO(5, "Skip " << nodep->prettyNameQ() << "\n");
-            return;
-        }
-        UASSERT_OBJ(m_refs.empty(), nodep, "The last module didn't finish split()");
-        m_modp = nodep;
-        UINFO(3, "Start analyzing module " << nodep->prettyName() << '\n');
-        iterateChildren(nodep);
-        split();
-        m_modp = NULL;
-    }
+    PackedVarRefMap m_refs;
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         if (!cannotSplitTaskReason(nodep)) iterateChildren(nodep);
     }
@@ -1018,7 +986,7 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         AstVar* varp = nodep->varp();
         visit(varp);
-        vl_unordered_map<AstVar*, PackedVarRef>::iterator refit = m_refs.find(varp);
+        PackedVarRefMap::iterator refit = m_refs.find(varp);
         if (refit == m_refs.end()) return;  // variable without split_var metacomment
         UASSERT_OBJ(varp->attrSplitVar(), varp, "split_var attribute must be attached");
         UASSERT_OBJ(!nodep->packagep(), nodep,
@@ -1037,7 +1005,7 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
         }
 
         AstVar* varp = vrefp->varp();
-        vl_unordered_map<AstVar*, PackedVarRef>::iterator refit = m_refs.find(varp);
+        PackedVarRefMap::iterator refit = m_refs.find(varp);
         if (refit == m_refs.end()) {
             iterateChildren(nodep);
             return;  // Variable without split_var metacomment
@@ -1199,9 +1167,8 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
     }
     // Do the actual splitting operation
     void split() {
-        for (vl_unordered_map<AstVar*, PackedVarRef>::iterator it = m_refs.begin(),
-                                                               it_end = m_refs.end();
-             it != it_end; ++it) {
+        for (PackedVarRefMap::iterator it = m_refs.begin(), it_end = m_refs.end(); it != it_end;
+             ++it) {
             it->second.dedup();
             AstVar* varp = it->first;
             UINFO(3, "In module " << m_modp->name() << " var " << varp->prettyNameQ()
@@ -1247,7 +1214,7 @@ public:
         , m_modp(NULL)
         , m_numSplit(0) {
         // If you want ignore refs and walk the tne entire AST,
-        // just call iterate(nodep) and disable the following for-loop.
+        // just call iterateChildren(m_modp) and split() for each module
         for (SplitVarRefsMap::iterator it = refs.begin(), it_end = refs.end(); it != it_end;
              ++it) {
             m_modp = it->first;
@@ -1275,7 +1242,7 @@ public:
                 reason = "it is not an aggregate type of bit nor logic";
             if (!reason) reason = cannotSplitVarCommonReason(nodep);
         } else {
-            reason = "its type is unknown";
+            reason = "its type is unknown";  // LCOV_EXCL_LINE
         }
         if (reason)
             UINFO(5,

@@ -20,7 +20,6 @@
 #include "V3Global.h"
 #include "V3String.h"
 #include "V3ProtectLib.h"
-#include "V3File.h"
 #include "V3Hashed.h"
 #include "V3Task.h"
 
@@ -261,7 +260,7 @@ private:
 
     void castPtr(FileLine* fl, AstTextBlock* txtp) {
         txtp->addText(fl, m_topName
-                              + "_container* handlep__V = "
+                              + "_container* handlep__V = "  // LCOV_EXCL_LINE  // lcov bug
                                 "static_cast<"
                               + m_topName + "_container*>(vhandlep__V);\n");
     }
@@ -365,8 +364,8 @@ private:
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         if (!nodep->isIO()) return;
         if (VN_IS(nodep->dtypep(), UnpackArrayDType)) {
-            nodep->v3error("Unsupported: unpacked arrays with protect-lib on "
-                           << nodep->prettyNameQ());
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: unpacked arrays with protect-lib on "
+                                             << nodep->prettyNameQ());
         }
         if (nodep->direction() == VDirection::INPUT) {
             if (nodep->isUsedClock() || nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
@@ -377,8 +376,8 @@ private:
         } else if (nodep->direction() == VDirection::OUTPUT) {
             handleOutput(nodep);
         } else {
-            nodep->v3error(
-                "Unsupported: protect-lib port direction: " << nodep->direction().ascii());
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: protect-lib port direction: "
+                                             << nodep->direction().ascii());
         }
     }
 

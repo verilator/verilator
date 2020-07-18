@@ -38,7 +38,6 @@
 #include "V3Stats.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 
@@ -211,8 +210,8 @@ private:
             AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
             AstNode* newp;
             if (!VN_IS(rhsp, Const)) {
-                nodep->v3error("Unsupported: RHS of ==? or !=? must be "
-                               "constant to be synthesizable");  // Says spec.
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: RHS of ==? or !=? must be "
+                                             "constant to be synthesizable");  // Says spec.
                 // Replace with anything that won't cause more errors
                 newp = new AstEq(nodep->fileline(), lhsp, rhsp);
             } else {

@@ -163,8 +163,9 @@ class CMakeEmitter {
                              + "_c.cpp");
             if (v3Global.opt.systemC()) {
                 if (v3Global.opt.traceFormat() != TraceFormat::VCD) {
-                    v3error("Unsupported: This trace format is not supported in SystemC, "
-                            "use VCD format.");
+                    v3warn(E_UNSUPPORTED,
+                           "Unsupported: This trace format is not supported in SystemC, "
+                           "use VCD format.");
                 }
                 global.push_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceLang()
                                  + ".cpp");

@@ -74,7 +74,6 @@
 #include "V3Task.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 // More code; this file was getting too large; see actions there
 #define _V3WIDTH_CPP_
@@ -426,13 +425,12 @@ private:
         nodep->dtypeSetUInt64();  // A pointer, but not that it matters
     }
 
-    // Special cases.  So many....
     virtual void visit(AstNodeCond* nodep) VL_OVERRIDE {
-        // op=cond?expr1:expr2
-        // Signed: Output signed iff RHS & THS signed  (presumed, not in IEEE)
+        // op = cond ? expr1 : expr2
         // See IEEE-2012 11.4.11 and Table 11-21.
         //   LHS is self-determined
-        //   Width: max(RHS,THS)
+        //   Width: max(RHS, THS)
+        //   Signed: Output signed iff RHS & THS signed  (presumed, not in IEEE)
         //   Real: Output real if either expression is real, non-real argument gets converted
         if (m_vup->prelim()) {  // First stage evaluation
             // Just once, do the conditional, expect one bit out.
@@ -481,8 +479,8 @@ private:
                 && (VN_IS(vdtypep, AssocArrayDType)  //
                     || VN_IS(vdtypep, DynArrayDType)  //
                     || VN_IS(vdtypep, QueueDType))) {
-                nodep->v3error("Unsupported: Concatenation to form " << vdtypep->prettyDTypeNameQ()
-                                                                     << "data type");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Concatenation to form "
+                                                 << vdtypep->prettyDTypeNameQ() << "data type");
             }
 
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
@@ -540,18 +538,43 @@ private:
     }
     virtual void visit(AstDelay* nodep) VL_OVERRIDE {
         if (VN_IS(m_procedurep, Final)) {
-            nodep->v3error("Delays are not legal in final blocks. IEEE 1800-2017 9.2.3");
+            nodep->v3error("Delays are not legal in final blocks (IEEE 1800-2017 9.2.3)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
         if (VN_IS(m_ftaskp, Func)) {
-            nodep->v3error("Delays are not legal in functions. Suggest use a task. "
-                           "IEEE 1800-2017 13.4.4");
+            nodep->v3error("Delays are not legal in functions. Suggest use a task "
+                           "(IEEE 1800-2017 13.4.4)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
         nodep->v3warn(STMTDLY, "Unsupported: Ignoring delay on this delayed statement.");
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+    virtual void visit(AstFork* nodep) VL_OVERRIDE {
+        if (VN_IS(m_ftaskp, Func) && !nodep->joinType().joinNone()) {
+            nodep->v3error("Only fork .. join_none is legal in functions. "
+                           "(IEEE 1800-2017 13.4.4)");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        if (v3Global.opt.bboxUnsup()) {
+            AstBegin* newp
+                = new AstBegin(nodep->fileline(), nodep->name(), nodep->stmtsp()->unlinkFrBack());
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: fork statements");
+            // TBD might support only normal join, if so complain about other join flavors
+        }
+    }
+    virtual void visit(AstDisableFork* nodep) VL_OVERRIDE {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: disable fork statements");
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+    virtual void visit(AstWaitFork* nodep) VL_OVERRIDE {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: wait fork statements");
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstToLowerN* nodep) VL_OVERRIDE {
         if (m_vup->prelim()) {
@@ -574,8 +597,8 @@ private:
             if (vdtypep
                 && (VN_IS(vdtypep, AssocArrayDType) || VN_IS(vdtypep, DynArrayDType)
                     || VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, UnpackArrayDType))) {
-                nodep->v3error("Unsupported: Replication to form " << vdtypep->prettyDTypeNameQ()
-                                                                   << " data type");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Replication to form "
+                                                 << vdtypep->prettyDTypeNameQ() << " data type");
             }
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
@@ -731,8 +754,8 @@ private:
             int width = nodep->widthConst();
             UASSERT_OBJ(nodep->dtypep(), nodep, "dtype wasn't set");  // by V3WidthSel
             if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() < nodep->lsbConst()) {
-                nodep->v3error("Unsupported: MSB < LSB of bit extract: "
-                               << nodep->msbConst() << "<" << nodep->lsbConst());
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: MSB < LSB of bit extract: "
+                                                 << nodep->msbConst() << "<" << nodep->lsbConst());
                 width = (nodep->lsbConst() - nodep->msbConst() + 1);
                 nodep->dtypeSetLogicSized(width, VSigning::UNSIGNED);
                 nodep->widthp()->replaceWith(new AstConst(nodep->widthp()->fileline(), width));
@@ -1045,7 +1068,17 @@ private:
         }
     }
     virtual void visit(AstUnbounded* nodep) VL_OVERRIDE {
-        nodep->v3error("Unsupported/illegal unbounded ('$') in this context.");
+        nodep->dtypeSetSigned32();  // Used in int context
+        if (!VN_IS(nodep->backp(), IsUnbounded) && !VN_IS(nodep->backp(), BracketArrayDType)
+            && !(VN_IS(nodep->backp(), Var) && VN_CAST(nodep->backp(), Var)->isParam())) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");
+        }
+    }
+    virtual void visit(AstIsUnbounded* nodep) VL_OVERRIDE {
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
+            nodep->dtypeSetLogicBool();
+        }
     }
     virtual void visit(AstUCFunc* nodep) VL_OVERRIDE {
         // Give it the size the user wants.
@@ -1058,7 +1091,7 @@ private:
             AstNodeDType* expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
             nodep->dtypeFrom(expDTypep);  // Assume user knows the rules; go with the flow
             if (nodep->width() > 64) {
-                nodep->v3error("Unsupported: $c can't generate wider than 64 bits");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: $c can't generate wider than 64 bits");
             }
         }
     }
@@ -1129,6 +1162,18 @@ private:
         // nothing to do in this function
         userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
         userIterateAndNext(nodep->rhsp(), WidthVP(SELF, BOTH).p());
+    }
+    virtual void visit(AstCountBits* nodep) VL_OVERRIDE {
+        if (m_vup->prelim()) {
+            iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
+            iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
+            iterateCheckSizedSelf(nodep, "THS", nodep->thsp(), SELF, BOTH);
+            iterateCheckSizedSelf(nodep, "FHS", nodep->fhsp(), SELF, BOTH);
+            // If it's a 32 bit number, we need a 6 bit number as we need to return '32'.
+            int selwidth = V3Number::log2b(nodep->lhsp()->width()) + 1;
+            nodep->dtypeSetLogicSized(selwidth,
+                                      VSigning::UNSIGNED);  // Spec doesn't indicate if an integer
+        }
     }
     virtual void visit(AstCountOnes* nodep) VL_OVERRIDE {
         if (m_vup->prelim()) {
@@ -1230,7 +1275,7 @@ private:
                     break;
                 }
                 case AstAttrType::DIM_BITS: {
-                    nodep->v3error("Unsupported: $bits for queue");
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: $bits for queue");
                     break;
                 }
                 default: nodep->v3error("Unhandled attribute type");
@@ -1295,9 +1340,8 @@ private:
     // DTYPES
     virtual void visit(AstNodeArrayDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         // Cleanup array size
         userIterateAndNext(nodep->rangep(), WidthVP(SELF, BOTH).p());
         nodep->dtypep(nodep);  // The array itself, not subDtype
@@ -1312,29 +1356,52 @@ private:
     }
     virtual void visit(AstAssocArrayDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
-        if (nodep->keyChildDTypep()) {
-            nodep->keyDTypep(moveDTypeEdit(nodep, nodep->keyChildDTypep()));
-        }
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
-        nodep->keyDTypep(iterateEditDTypep(nodep, nodep->keyDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
+        nodep->keyDTypep(iterateEditMoveDTypep(nodep, nodep->keyDTypep()));
         nodep->dtypep(nodep);  // The array itself, not subDtype
         UINFO(4, "dtWidthed " << nodep << endl);
     }
+    virtual void visit(AstBracketArrayDType* nodep) VL_OVERRIDE {
+        // Type inserted only because parser didn't know elementsp() type
+        // Resolve elementsp's type
+        userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+        // We must edit when dtype still under normal nodes and before type table
+        // See notes in iterateEditMoveDTypep
+        AstNodeDType* childp = nodep->childDTypep();
+        childp->unlinkFrBack();
+        AstNode* elementsp = nodep->elementsp()->unlinkFrBack();
+        AstNode* newp;
+        if (VN_IS(elementsp, Unbounded)) {
+            newp = new AstQueueDType(nodep->fileline(), VFlagChildDType(), childp, NULL);
+            VL_DO_DANGLING(elementsp->deleteTree(), elementsp);
+        } else if (AstNodeDType* keyp = VN_CAST(elementsp, NodeDType)) {
+            newp = new AstAssocArrayDType(nodep->fileline(), VFlagChildDType(), childp, keyp);
+        } else {
+            // Must be expression that is constant, but we'll determine that later
+            newp = new AstUnpackArrayDType(
+                nodep->fileline(), VFlagChildDType(), childp,
+                new AstRange(nodep->fileline(), new AstConst(elementsp->fileline(), 0),
+                             new AstSub(elementsp->fileline(), elementsp,
+                                        new AstConst(elementsp->fileline(), 1))));
+        }
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        // Normally parent's iteration would cover this, but we might have entered by a specific
+        // visit
+        VL_DO_DANGLING(userIterate(newp, NULL), newp);
+    }
     virtual void visit(AstDynArrayDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);  // The array itself, not subDtype
         UINFO(4, "dtWidthed " << nodep << endl);
     }
     virtual void visit(AstQueueDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);  // The array itself, not subDtype
         if (VN_IS(nodep->boundp(), Unbounded)) {
             nodep->boundp()->unlinkFrBack()->deleteTree();  // NULL will represent unbounded
@@ -1343,9 +1410,8 @@ private:
     }
     virtual void visit(AstUnsizedArrayDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         // Cleanup array size
         nodep->dtypep(nodep);  // The array itself, not subDtype
         UINFO(4, "dtWidthed " << nodep << endl);
@@ -1375,12 +1441,8 @@ private:
     }
     virtual void visit(AstConstDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        // Move any childDTypep to instead be in global AstTypeTable.
-        // This way if this node gets deleted and some other dtype points to it
-        // it won't become a dead pointer.  This doesn't change the object pointed to.
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         userIterateChildren(nodep, NULL);
         nodep->dtypep(nodep);  // Should already be set, but be clear it's not the subDType
         nodep->widthFromSub(nodep->subDTypep());
@@ -1399,34 +1461,48 @@ private:
             // Type comes from expression's type
             userIterateAndNext(nodep->typeofp(), WidthVP(SELF, BOTH).p());
             AstNode* typeofp = nodep->typeofp();
+            nodep->typedefp(NULL);
             nodep->refDTypep(typeofp->dtypep());
             VL_DO_DANGLING(typeofp->unlinkFrBack()->deleteTree(), typeofp);
             // We had to use AstRefDType for this construct as pointers to this type
             // in type table are still correct (which they wouldn't be if we replaced the node)
         }
         userIterateChildren(nodep, NULL);
-        if (nodep->subDTypep()) nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        if (nodep->subDTypep()) {
+            // Normally iterateEditMoveDTypep iterate would work, but the refs are under
+            // the TypeDef which will upset iterateEditMoveDTypep as it can't find it under
+            // this node's childDTypep
+            userIterate(nodep->subDTypep(), NULL);
+            nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
+            nodep->typedefp(NULL);  // Note until line above subDTypep() may have followed this
+            // Widths are resolved, but special iterate to check for recurstion
+            userIterate(nodep->subDTypep(), NULL);
+        }
         // Effectively nodep->dtypeFrom(nodep->dtypeSkipRefp());
         // But might be recursive, so instead manually recurse into the referenced type
-        UASSERT_OBJ(nodep->defp(), nodep, "Unlinked");
-        nodep->dtypeFrom(nodep->defp());
-        userIterate(nodep->defp(), NULL);
+        UASSERT_OBJ(nodep->subDTypep(), nodep, "Unlinked");
+        nodep->dtypeFrom(nodep->subDTypep());
         nodep->widthFromSub(nodep->subDTypep());
         UINFO(4, "dtWidthed " << nodep << endl);
         nodep->doingWidth(false);
     }
     virtual void visit(AstTypedef* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
+        nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         userIterateChildren(nodep, NULL);
-        nodep->dtypep(iterateEditDTypep(nodep, nodep->subDTypep()));
     }
     virtual void visit(AstParamTypeDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
+        nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         userIterateChildren(nodep, NULL);
-        nodep->dtypep(iterateEditDTypep(nodep, nodep->subDTypep()));
         nodep->widthFromSub(nodep->subDTypep());
+    }
+    virtual void visit(AstCastDynamic* nodep) VL_OVERRIDE {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: $cast. Suggest try static cast.");
+        AstNode* newp = new AstConst(nodep->fileline(), 1);
+        newp->dtypeSetSigned32();  // Spec says integer return
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     virtual void visit(AstCastParse* nodep) VL_OVERRIDE {
         // nodep->dtp could be data type, or a primary_constant
@@ -1440,13 +1516,13 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             userIterate(newp, m_vup);
         } else {
-            nodep->v3error("Unsupported: Cast to " << nodep->dtp()->prettyTypeName());
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Cast to " << nodep->dtp()->prettyTypeName());
             nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
         }
     }
     virtual void visit(AstCast* nodep) VL_OVERRIDE {
-        if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
-        nodep->dtypep(iterateEditDTypep(nodep, nodep->dtypep()));
+        nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         // if (debug()) nodep->dumpTree(cout, "  CastPre: ");
         userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
         // When more general casts are supported, the cast elimination will be done later.
@@ -1498,7 +1574,8 @@ private:
             AstBasicDType* underDtp = VN_CAST(nodep->lhsp()->dtypep(), BasicDType);
             if (!underDtp) underDtp = nodep->lhsp()->dtypep()->basicp();
             if (!underDtp) {
-                nodep->v3error("Unsupported: Size-changing cast on non-basic data type");
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Size-changing cast on non-basic data type");
                 underDtp = VN_CAST(nodep->findLogicBoolDType(), BasicDType);
             }
             // A cast propagates its size to the lower expression and is included in the maximum
@@ -1553,8 +1630,7 @@ private:
         }
         nodep->doingWidth(true);
         // Make sure dtype is sized
-        if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
-        nodep->dtypep(iterateEditDTypep(nodep, nodep->dtypep()));
+        nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype determined for var");
         if (AstUnsizedArrayDType* unsizedp = VN_CAST(nodep->dtypeSkipRefp(), UnsizedArrayDType)) {
             if (!(m_ftaskp && m_ftaskp->dpiImport())) {
@@ -1568,7 +1644,8 @@ private:
                    && !(VN_IS(nodep->dtypeSkipRefp(), BasicDType)
                         || VN_IS(nodep->dtypeSkipRefp(), NodeArrayDType)
                         || VN_IS(nodep->dtypeSkipRefp(), NodeUOrStructDType))) {
-            nodep->v3error("Unsupported: Inputs and outputs must be simple data types");
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Inputs and outputs must be simple data types");
         }
         if (VN_IS(nodep->dtypep()->skipRefToConstp(), ConstDType)) nodep->isConst(true);
         // Parameters if implicit untyped inherit from what they are assigned to
@@ -1684,8 +1761,7 @@ private:
     virtual void visit(AstEnumDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         UINFO(5, "  ENUMDTYPE " << nodep << endl);
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);
         nodep->widthFromSub(nodep->subDTypep());
         // Assign widths
@@ -1886,21 +1962,26 @@ private:
     virtual void visit(AstClass* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
         userIterateChildren(nodep, NULL);  // First size all members
+        if (nodep->isVirtual()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: virtual class");
         nodep->repairCache();
+    }
+    virtual void visit(AstClassRefDType* nodep) VL_OVERRIDE {
+        if (nodep->didWidthAndSet()) return;
+        // TODO this maybe eventually required to properly resolve members,
+        // though causes problems with t_class_forward.v, so for now avoided
+        // userIterateChildren(nodep->classp(), NULL);
     }
     virtual void visit(AstClassExtends* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
-        if (nodep->childDTypep()) {
-            nodep->dtypep(moveChildDTypeEdit(nodep));  // data_type '{ pattern }
-        }
-        nodep->v3error("Unsupported: class extends");  // Member/meth access breaks
-        userIterateChildren(nodep, NULL);
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: class extends");  // Member/meth access breaks
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        // nodep->dtypep(iterateEditMoveDTypep(nodep));  // data_type '{ pattern }
+        // userIterateChildren(nodep, NULL);
     }
     virtual void visit(AstMemberDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
         // Iterate into subDTypep() to resolve that type and update pointer.
-        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);  // The member itself, not subDtype
         nodep->widthFromSub(nodep->subDTypep());
     }
@@ -1934,6 +2015,7 @@ private:
             }
         } else if (VN_IS(fromDtp, EnumDType)  //
                    || VN_IS(fromDtp, AssocArrayDType)  //
+                   || VN_IS(fromDtp, UnpackArrayDType)  //
                    || VN_IS(fromDtp, DynArrayDType)  //
                    || VN_IS(fromDtp, QueueDType)  //
                    || VN_IS(fromDtp, BasicDType)) {
@@ -2042,9 +2124,10 @@ private:
         } else if (basicp && basicp->isString()) {
             methodCallString(nodep, basicp);
         } else {
-            nodep->v3error("Unsupported: Member call on object '"
-                           << nodep->fromp()->prettyTypeName() << "' which is a '"
-                           << nodep->fromp()->dtypep()->prettyTypeName() << "'");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Member call on object '"
+                                             << nodep->fromp()->prettyTypeName()
+                                             << "' which is a '"
+                                             << nodep->fromp()->dtypep()->prettyTypeName() << "'");
         }
     }
     void methodOkArguments(AstMethodCall* nodep, int minArg, int maxArg) {
@@ -2158,12 +2241,13 @@ private:
                     if (vconstp->toUQuad() >= msbdim) msbdim = vconstp->toUQuad();
                 }
                 if (adtypep->itemsp()->width() > 64 || msbdim >= (1 << 16)) {
-                    nodep->v3error("Unsupported: enum next/prev method on enum with > 10 bits");
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: enum next/prev method on enum with > 10 bits");
                     return;
                 }
             }
             int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
-            AstVar* varp = enumVarp(adtypep, attrType, (VL_ULL(1) << selwidth) - 1);
+            AstVar* varp = enumVarp(adtypep, attrType, (1ULL << selwidth) - 1);
             AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
             varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
             AstNode* newp = new AstArraySel(
@@ -2243,8 +2327,8 @@ private:
     void methodCallLValue(AstMethodCall* nodep, AstNode* childp, bool lvalue) {
         AstNodeVarRef* varrefp = VN_CAST(childp, NodeVarRef);
         if (!varrefp) {
-            nodep->v3error("Unsupported: Non-variable on LHS of built-in method '"
-                           << nodep->prettyName() << "'");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Non-variable on LHS of built-in method '"
+                                             << nodep->prettyName() << "'");
         } else {
             if (lvalue) varrefp->lvalue(true);
         }
@@ -2273,8 +2357,8 @@ private:
                                       NULL);
             newp->makeStatement();
         } else {
-            nodep->v3error("Unsupported/unknown built-in dynamic array method "
-                           << nodep->prettyNameQ());
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported/unknown built-in dynamic array method "
+                                             << nodep->prettyNameQ());
         }
         if (newp) {
             newp->didWidth(true);
@@ -2318,8 +2402,9 @@ private:
                     newp->didWidth(true);
                     newp->makeStatement();
                 } else {
-                    nodep->v3error("Unsupported: Queue .delete(index) method, as is O(n) "
-                                   "complexity and slow.");
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Queue .delete(index) method, as is O(n) "
+                                  "complexity and slow.");
                     newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                               "erase", index_exprp->unlinkFrBack());
                     newp->protect(false);
@@ -2338,7 +2423,8 @@ private:
                 newp->protect(false);
                 newp->makeStatement();
             } else {
-                nodep->v3error(
+                nodep->v3warn(
+                    E_UNSUPPORTED,
                     "Unsupported: Queue .insert method, as is O(n) complexity and slow.");
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           nodep->name(), index_exprp->unlinkFrBack());
@@ -2365,8 +2451,8 @@ private:
             newp->protect(false);
             newp->makeStatement();
         } else {
-            nodep->v3error("Unsupported/unknown built-in associative array method "
-                           << nodep->prettyNameQ());
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported/unknown built-in associative array method "
+                                             << nodep->prettyNameQ());
         }
         if (newp) {
             newp->didWidth(true);
@@ -2410,7 +2496,7 @@ private:
         nodep->dtypeSetSigned32();  // Guess on error
     }
     void methodCallUnpack(AstMethodCall* nodep, AstUnpackArrayDType* adtypep) {
-        enum { UNKNOWN = 0, ARRAY_OR, ARRAY_AND, ARRAY_XOR } methodId;
+        enum { UNKNOWN = 0, ARRAY_OR, ARRAY_AND, ARRAY_XOR, ARRAY_SUM, ARRAY_PRODUCT } methodId;
 
         methodId = UNKNOWN;
         if (nodep->name() == "or") {
@@ -2419,6 +2505,10 @@ private:
             methodId = ARRAY_AND;
         } else if (nodep->name() == "xor") {
             methodId = ARRAY_XOR;
+        } else if (nodep->name() == "sum") {
+            methodId = ARRAY_SUM;
+        } else if (nodep->name() == "product") {
+            methodId = ARRAY_PRODUCT;
         }
 
         if (methodId) {
@@ -2435,6 +2525,8 @@ private:
                     case ARRAY_OR: newp = new AstOr(fl, newp, selector); break;
                     case ARRAY_AND: newp = new AstAnd(fl, newp, selector); break;
                     case ARRAY_XOR: newp = new AstXor(fl, newp, selector); break;
+                    case ARRAY_SUM: newp = new AstAdd(fl, newp, selector); break;
+                    case ARRAY_PRODUCT: newp = new AstMul(fl, newp, selector); break;
                     default: nodep->v3fatalSrc("bad case");
                     }
                 }
@@ -2623,16 +2715,17 @@ private:
     virtual void visit(AstPattern* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
         UINFO(9, "PATTERN " << nodep << endl);
-        if (nodep->childDTypep())
-            nodep->dtypep(moveChildDTypeEdit(nodep));  // data_type '{ pattern }
+        if (nodep->childDTypep()) {  // data_type '{ pattern }
+            nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
+        }
         if (!nodep->dtypep() && m_vup->dtypeNullp()) {  // Get it from parent assignment/pin/etc
             nodep->dtypep(m_vup->dtypep());
         }
         AstNodeDType* dtypep = nodep->dtypep();
         if (!dtypep) {
-            nodep->v3error("Unsupported/Illegal: Assignment pattern"
-                           " member not underneath a supported construct: "
-                           << nodep->backp()->prettyTypeName());
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported/Illegal: Assignment pattern"
+                                         " member not underneath a supported construct: "
+                                             << nodep->backp()->prettyTypeName());
             return;
         }
         {
@@ -2689,9 +2782,10 @@ private:
             } else if (VN_IS(dtypep, BasicDType) && VN_CAST(dtypep, BasicDType)->isRanged()) {
                 VL_DO_DANGLING(patternBasic(nodep, dtypep, defaultp), nodep);
             } else {
-                nodep->v3error(
+                nodep->v3warn(
+                    E_UNSUPPORTED,
                     "Unsupported: Assignment pattern applies against non struct/union data type: "
-                    << dtypep->prettyDTypeNameQ());
+                        << dtypep->prettyDTypeNameQ());
             }
         }
     }
@@ -3065,7 +3159,7 @@ private:
         if (AstBasicDType* basicp = nodep->rhsp()->dtypep()->basicp()) {
             if (basicp->isEventValue()) {
                 // see t_event_copy.v for commentary on the mess involved
-                nodep->v3error("Unsupported: assignment of event data type");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
             }
         }
         if (AstNewDynamic* dynp = VN_CAST(nodep->rhsp(), NewDynamic)) {
@@ -3272,6 +3366,11 @@ private:
         userIterateAndNext(nodep->filenamep(), WidthVP(SELF, BOTH).p());
         userIterateAndNext(nodep->modep(), WidthVP(SELF, BOTH).p());
     }
+    virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {
+        assertAtStatement(nodep);
+        iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
+        userIterateAndNext(nodep->filenamep(), WidthVP(SELF, BOTH).p());
+    }
     virtual void visit(AstFClose* nodep) VL_OVERRIDE {
         assertAtStatement(nodep);
         iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
@@ -3389,15 +3488,17 @@ private:
                    = VN_CAST(nodep->memp()->dtypep()->skipRefp(), UnpackArrayDType)) {
             subp = adtypep->subDTypep();
         } else {
-            nodep->memp()->v3error("Unsupported: "
-                                   << nodep->verilogKwd()
-                                   << " into other than unpacked or associative array");
+            nodep->memp()->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: "
+                                      << nodep->verilogKwd()
+                                      << " into other than unpacked or associative array");
         }
         if (subp
             && (!subp->skipRefp()->basicp()
                 || !subp->skipRefp()->basicp()->keyword().isIntNumeric())) {
-            nodep->memp()->v3error("Unsupported: " << nodep->verilogKwd()
-                                                   << " array values must be integral");
+            nodep->memp()->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: " << nodep->verilogKwd()
+                                                  << " array values must be integral");
         }
         userIterateAndNext(nodep->lsbp(), WidthVP(SELF, BOTH).p());
         userIterateAndNext(nodep->msbp(), WidthVP(SELF, BOTH).p());
@@ -3493,11 +3594,12 @@ private:
                                    << conDTypep->prettyDTypeNameQ() << " data type." << endl);
                 } else if (nodep->modVarp()->isTristate()) {
                     if (pinwidth != conwidth) {
-                        nodep->v3error("Unsupported: " << ucfirst(nodep->prettyOperatorName())
-                                                       << " to inout signal requires " << pinwidth
-                                                       << " bits, but connection's "
-                                                       << nodep->exprp()->prettyTypeName()
-                                                       << " generates " << conwidth << " bits.");
+                        nodep->v3warn(E_UNSUPPORTED,
+                                      "Unsupported: " << ucfirst(nodep->prettyOperatorName())
+                                                      << " to inout signal requires " << pinwidth
+                                                      << " bits, but connection's "
+                                                      << nodep->exprp()->prettyTypeName()
+                                                      << " generates " << conwidth << " bits.");
                         // otherwise would need some mess to force both sides to proper size
                     }
                 }
@@ -3593,10 +3695,13 @@ private:
         // Grab width from the output variable (if it's a function)
         if (nodep->didWidth()) return;
         if (nodep->doingWidth()) {
-            nodep->v3error("Unsupported: Recursive function or task call");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function or task call");
             nodep->dtypeSetLogicBool();
             nodep->didWidth(true);
             return;
+        }
+        if (nodep->isVirtual() || nodep->pureVirtual()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'virtual' class method");
         }
         // Function hasn't been widthed, so make it so.
         // Would use user1 etc, but V3Width called from too many places to spend a user
@@ -3749,10 +3854,11 @@ private:
                                   << portp->prettyTypeName() << " but connection is "
                                   << pinp->prettyTypeName() << ".");
                 } else if (portp->isWritable() && pinp->width() != portp->width()) {
-                    pinp->v3error("Unsupported: Function output argument "
-                                  << portp->prettyNameQ() << " requires " << portp->width()
-                                  << " bits, but connection's " << pinp->prettyTypeName()
-                                  << " generates " << pinp->width() << " bits.");
+                    pinp->v3warn(E_UNSUPPORTED, "Unsupported: Function output argument "
+                                                    << portp->prettyNameQ() << " requires "
+                                                    << portp->width() << " bits, but connection's "
+                                                    << pinp->prettyTypeName() << " generates "
+                                                    << pinp->width() << " bits.");
                     // otherwise would need some mess to force both sides to proper size
                     // (get an ASSIGN with EXTEND on the lhs instead of rhs)
                 }
@@ -4539,14 +4645,17 @@ private:
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
         } else if (expDTypep->isDouble() && !underp->isDouble()) {
+            AstNode* oldp = underp;  // Need FINAL on children; otherwise splice would block it
             underp = spliceCvtD(underp);
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP(SELF, FINAL).p());
         } else if (!expDTypep->isDouble() && underp->isDouble()) {
+            AstNode* oldp = underp;  // Need FINAL on children; otherwise splice would block it
             underp = spliceCvtS(underp, true, expDTypep->width());  // Round RHS
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP(SELF, FINAL).p());
         } else if (expDTypep->isString() && !underp->dtypep()->isString()) {
+            AstNode* oldp = underp;  // Need FINAL on children; otherwise splice would block it
             underp = spliceCvtString(underp);
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP(SELF, FINAL).p());
         } else {
             AstBasicDType* expBasicp = expDTypep->basicp();
             AstBasicDType* underBasicp = underp->dtypep()->basicp();
@@ -4892,31 +5001,47 @@ private:
     //----------------------------------------------------------------------
     // METHODS - data types
 
-    AstNodeDType* moveDTypeEdit(AstNode* nodep, AstNodeDType* dtnodep) {
-        // DTypes at parse time get added as a e.g. childDType to some node types such as AstVars.
-        // Move type to global scope, so removing/changing a variable won't lose the dtype.
-        UASSERT_OBJ(dtnodep, nodep, "Caller should check for NULL before calling moveDTypeEdit");
-        UINFO(9, "moveDTypeEdit  " << dtnodep << endl);
-        dtnodep->unlinkFrBack();  // Make non-child
-        v3Global.rootp()->typeTablep()->addTypesp(dtnodep);
+    AstNodeDType* iterateEditMoveDTypep(AstNode* parentp, AstNodeDType* dtnodep) {
+        UASSERT_OBJ(dtnodep, parentp, "Caller should check for NULL before computing dtype");
+        // Iterate into a data type to resolve that type.
+        // The data type may either:
+        // 1. Be a child (typically getChildDTypep() returns it)
+        //    DTypes at parse time get added as these to some node types
+        //    such as AstVars.
+        //    This function will move it to global scope (that is #2
+        //    will now apply).
+        // 2. Be under the Netlist and pointed to by an Ast member variable
+        //    (typically refDTypep() or dtypep() returns it)
+        //    so removing/changing a variable won't lose the dtype
+
+        // Case #1 above applies?
+        bool child1 = (parentp->getChildDTypep() == dtnodep);
+        bool child2 = (parentp->getChild2DTypep() == dtnodep);
+        if (child1 || child2) {
+            UINFO(9, "iterateEditMoveDTypep child iterating " << dtnodep << endl);
+            // Iterate, this might edit the dtypes which means dtnodep now lost
+            VL_DO_DANGLING(userIterate(dtnodep, NULL), dtnodep);
+            // Figure out the new dtnodep, remained a child of parent so find it there
+            dtnodep = child1 ? parentp->getChildDTypep() : parentp->getChild2DTypep();
+            UASSERT_OBJ(dtnodep, parentp, "iterateEditMoveDTypep lost pointer to child");
+            UASSERT_OBJ(dtnodep->didWidth(), parentp,
+                        "iterateEditMoveDTypep didn't get width resolution of "
+                            << dtnodep->prettyTypeName());
+            // Move to under netlist
+            UINFO(9, "iterateEditMoveDTypep child moving " << dtnodep << endl);
+            dtnodep->unlinkFrBack();
+            v3Global.rootp()->typeTablep()->addTypesp(dtnodep);
+        }
+        if (!dtnodep->didWidth()) {
+            UINFO(9, "iterateEditMoveDTypep pointer iterating " << dtnodep << endl);
+            // See notes in visit(AstBracketArrayDType*)
+            UASSERT_OBJ(!VN_IS(dtnodep, BracketArrayDType), parentp,
+                        "Brackets should have been iterated as children");
+            userIterate(dtnodep, NULL);
+            UASSERT_OBJ(dtnodep->didWidth(), parentp,
+                        "iterateEditMoveDTypep didn't get width resolution");
+        }
         return dtnodep;
-    }
-    AstNodeDType* moveChildDTypeEdit(AstNode* nodep) {
-        return moveDTypeEdit(nodep, nodep->getChildDTypep());
-    }
-    AstNodeDType* iterateEditDTypep(AstNode* parentp, AstNodeDType* nodep) {
-        // Iterate into a data type to resolve that type. This process
-        // may eventually create a new data type, but not today
-        // it may make a new datatype, need subChildDType() to point to it;
-        // maybe we have user5p indicate a "replace me with" pointer.
-        // Need to be careful with "implicit" types though.
-        //
-        // Alternative is to have WidthVP return information.
-        // or have a call outside of normal visitor land.
-        // or have a m_return type (but need to return if width called multiple times)
-        UASSERT_OBJ(nodep, parentp, "Null dtype when widthing dtype");
-        userIterate(nodep, NULL);
-        return nodep;
     }
 
     AstConst* dimensionValue(FileLine* fileline, AstNodeDType* nodep, AstAttrType attrType,

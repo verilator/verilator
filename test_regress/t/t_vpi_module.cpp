@@ -30,7 +30,6 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-using namespace std;
 
 #include "TestSimulator.h"
 #include "TestVpi.h"

@@ -27,7 +27,6 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <map>
 #include <vector>
 
@@ -46,8 +45,6 @@ void V3LinkLevel::modSortByLevel() {
     UINFO(2, "modSortByLevel()\n");
 
     // level() was computed for us in V3LinkCells
-
-    typedef std::vector<AstNodeModule*> ModVec;
 
     ModVec mods;  // Modules
     ModVec tops;  // Top level modules
@@ -231,8 +228,9 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                         varp->primaryIO(true);
                     }
                     if (varp->direction().isRefOrConstRef()) {
-                        varp->v3error("Unsupported: ref/const ref as primary input/output: "
-                                      << varp->prettyNameQ());
+                        varp->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: ref/const ref as primary input/output: "
+                                         << varp->prettyNameQ());
                     }
                     if (varp->isIO() && v3Global.opt.systemC()) {
                         varp->sc(true);

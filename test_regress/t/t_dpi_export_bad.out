@@ -1,0 +1,4 @@
+%Error: t/t_dpi_export_bad.v:10:24: Can't find definition of exported task/function: 'dpix_bad_missing'
+   10 |    export "DPI-C" task dpix_bad_missing;
+      |                        ^~~~~~~~~~~~~~~~
+%Error: Exiting due to

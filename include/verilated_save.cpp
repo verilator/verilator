@@ -123,13 +123,13 @@ void VerilatedSave::open(const char* filenamep) VL_MT_UNSAFE_ONE {
     if (isOpen()) return;
     VL_DEBUG_IF(VL_DBG_MSGF("- save: opening save file %s\n", filenamep););
 
-    if (filenamep[0] == '|') {
-        assert(0);  // Not supported yet.
+    if (VL_UNCOVERABLE(filenamep[0] == '|')) {
+        assert(0);  // LCOV_EXCL_LINE // Not supported yet.
     } else {
         // cppcheck-suppress duplicateExpression
         m_fd = ::open(filenamep,
                       O_CREAT | O_WRONLY | O_TRUNC | O_LARGEFILE | O_NONBLOCK | O_CLOEXEC, 0666);
-        if (m_fd < 0) {
+        if (VL_UNLIKELY(m_fd < 0)) {
             // User code can check isOpen()
             m_isOpen = false;
             return;
@@ -146,12 +146,12 @@ void VerilatedRestore::open(const char* filenamep) VL_MT_UNSAFE_ONE {
     if (isOpen()) return;
     VL_DEBUG_IF(VL_DBG_MSGF("- restore: opening restore file %s\n", filenamep););
 
-    if (filenamep[0] == '|') {
-        assert(0);  // Not supported yet.
+    if (VL_UNCOVERABLE(filenamep[0] == '|')) {
+        assert(0);  // LCOV_EXCL_LINE // Not supported yet.
     } else {
         // cppcheck-suppress duplicateExpression
         m_fd = ::open(filenamep, O_CREAT | O_RDONLY | O_LARGEFILE | O_CLOEXEC, 0666);
-        if (m_fd < 0) {
+        if (VL_UNLIKELY(m_fd < 0)) {
             // User code can check isOpen()
             m_isOpen = false;
             return;
@@ -194,13 +194,15 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
         ssize_t got = ::write(m_fd, wp, remaining);
         if (got > 0) {
             wp += got;
-        } else if (got < 0) {
-            if (errno != EAGAIN && errno != EINTR) {
+        } else if (VL_UNCOVERABLE(got < 0)) {
+            if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
+                // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
                 std::string msg = std::string(__FUNCTION__) + ": " + strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
+                // LCOV_EXCL_STOP
             }
         }
     }
@@ -223,13 +225,15 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
         ssize_t got = ::read(m_fd, m_endp, remaining);
         if (got > 0) {
             m_endp += got;
-        } else if (got < 0) {
-            if (errno != EAGAIN && errno != EINTR) {
+        } else if (VL_UNCOVERABLE(got < 0)) {
+            if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
+                // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
                 std::string msg = std::string(__FUNCTION__) + ": " + strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 close();
                 break;
+                // LCOV_EXCL_STOP
             }
         } else {  // got==0, EOF
             // Fill buffer from here to end with NULLs so reader's don't

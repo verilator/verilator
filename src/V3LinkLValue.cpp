@@ -25,10 +25,7 @@
 #include "V3LinkLValue.h"
 #include "V3Ast.h"
 
-#include <algorithm>
-#include <cstdarg>
 #include <map>
-#include <vector>
 
 //######################################################################
 // Link state, as a visitor of each AstNode
@@ -88,6 +85,16 @@ private:
             m_setRefLvalue = false;
             iterateAndNextNull(nodep->filenamep());
             iterateAndNextNull(nodep->modep());
+        }
+        m_setRefLvalue = last_setRefLvalue;
+    }
+    virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
+            iterateAndNextNull(nodep->filep());
+            m_setRefLvalue = false;
+            iterateAndNextNull(nodep->filenamep());
         }
         m_setRefLvalue = last_setRefLvalue;
     }
@@ -205,6 +212,21 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
+    void prepost_visit(AstNodeTriop* nodep) {
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = false;
+            iterateAndNextNull(nodep->lhsp());
+            iterateAndNextNull(nodep->rhsp());
+            m_setRefLvalue = true;
+            iterateAndNextNull(nodep->thsp());
+        }
+        m_setRefLvalue = last_setRefLvalue;
+    }
+    virtual void visit(AstPreAdd* nodep) VL_OVERRIDE { prepost_visit(nodep); }
+    virtual void visit(AstPostAdd* nodep) VL_OVERRIDE { prepost_visit(nodep); }
+    virtual void visit(AstPreSub* nodep) VL_OVERRIDE { prepost_visit(nodep); }
+    virtual void visit(AstPostSub* nodep) VL_OVERRIDE { prepost_visit(nodep); }
 
     // Nodes that change LValue state
     virtual void visit(AstSel* nodep) VL_OVERRIDE {

@@ -57,7 +57,7 @@ public:
         of.puts("\n");
         of.puts("# Parallel builds?  0/1 (from --output-split)\n");
         of.puts("VM_PARALLEL_BUILDS = ");
-        of.puts(v3Global.opt.outputSplit() ? "1" : "0");
+        of.puts(v3Global.useParallelBuild() ? "1" : "0");
         of.puts("\n");
         of.puts("# Threaded output mode?  0/1/N threads (from --threads)\n");
         of.puts("VM_THREADS = ");
@@ -104,8 +104,9 @@ public:
                         putMakeClassEntry(of, v3Global.opt.traceSourceBase() + "_c.cpp");
                         if (v3Global.opt.systemC()) {
                             if (v3Global.opt.traceFormat() != TraceFormat::VCD) {
-                                v3error("Unsupported: This trace format is not supported "
-                                        "in SystemC, use VCD format.");
+                                v3warn(E_UNSUPPORTED,
+                                       "Unsupported: This trace format is not supported "
+                                       "in SystemC, use VCD format.");
                             } else {
                                 putMakeClassEntry(of, v3Global.opt.traceSourceLang() + ".cpp");
                             }
@@ -159,6 +160,13 @@ public:
         of.puts(string("SYSTEMC_INCLUDE ?= ") + V3Options::getenvSYSTEMC_INCLUDE() + "\n");
         of.puts("# SystemC library directory with libsystemc.a (from $SYSTEMC_LIBDIR)\n");
         of.puts(string("SYSTEMC_LIBDIR ?= ") + V3Options::getenvSYSTEMC_LIBDIR() + "\n");
+
+        // Only check it if we really need the value
+        if (v3Global.opt.usingSystemCLibs() && !V3Options::systemCFound()) {
+            v3fatal("Need $SYSTEMC_INCLUDE in environment or when Verilator configured,\n"
+                    "and need $SYSTEMC_LIBDIR in environment or when Verilator configured\n"
+                    "Probably System-C isn't installed, see http://www.systemc.org\n");
+        }
 
         of.puts("\n### Switches...\n");
         of.puts("# SystemC output mode?  0/1 (from --sc)\n");
@@ -234,7 +242,7 @@ public:
             of.puts("\n### Link rules... (from --exe)\n");
             of.puts(v3Global.opt.exeName()
                     + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a\n");
-            of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) $(SC_LIBS)\n");
+            of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) $(LIBS) $(SC_LIBS) -o $@\n");
             of.puts("\n");
         }
 

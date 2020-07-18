@@ -22,23 +22,21 @@
 #include "V3FileLine.h"
 #include "V3String.h"
 #ifndef _V3ERROR_NO_GLOBAL_
-# include "V3Ast.h"
 # include "V3Global.h"
-# include "V3Stats.h"
 # include "V3Config.h"
 # include "V3File.h"
 #endif
+#include "V3Waiver.h"
 // clang-format on
 
 #include <algorithm>
-#include <cstdarg>
 #include <iomanip>
 #include VL_INCLUDE_UNORDERED_SET
 
 //######################################################################
 // FileLineSingleton class functions
 
-const string FileLineSingleton::filenameLetters(int fileno) {
+string FileLineSingleton::filenameLetters(int fileno) {
     const int size = 1 + (64 / 4);  // Each letter retires more than 4 bits of a > 64 bit number
     char out[size];
     char* op = out + size - 1;
@@ -167,7 +165,7 @@ void FileLine::newContent() {
     m_contentLineno = 1;
 }
 
-const string FileLine::xmlDetailedLocation() const {
+string FileLine::xmlDetailedLocation() const {
     return "loc=\"" + cvtToStr(filenameLetters()) + "," + cvtToStr(firstLineno()) + ","
            + cvtToStr(firstColumn()) + "," + cvtToStr(lastLineno()) + "," + cvtToStr(lastColumn())
            + "\"";
@@ -261,21 +259,27 @@ FileLine* FileLine::copyOrSameFileLine() {
     return newp;
 }
 
-const string FileLine::filebasename() const {
+string FileLine::filebasename() const {
     string name = filename();
     string::size_type pos;
     if ((pos = name.rfind('/')) != string::npos) name.erase(0, pos + 1);
     return name;
 }
 
-const string FileLine::filebasenameNoExt() const {
+string FileLine::filebasenameNoExt() const {
     string name = filebasename();
     string::size_type pos;
     if ((pos = name.find('.')) != string::npos) name = name.substr(0, pos);
     return name;
 }
 
-const string FileLine::profileFuncname() const {
+string FileLine::firstColumnLetters() const {
+    char a = ((firstColumn() / 26) % 26) + 'a';
+    char b = (firstColumn() % 26) + 'a';
+    return string(1, a) + string(1, b);
+}
+
+string FileLine::profileFuncname() const {
     // Return string that is OK as a function name - for profiling
     string name = filebasenameNoExt();
     string::size_type pos;
@@ -360,12 +364,13 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
         lstr << std::setw(ascii().length()) << " "
              << ": " << locationStr;
     }
-    if (warnIsOff(V3Error::errorCode())
-        || V3Config::waive(this, V3Error::errorCode(), sstr.str())) {
+    m_waive = V3Config::waive(this, V3Error::errorCode(), sstr.str());
+    if (warnIsOff(V3Error::errorCode()) || m_waive) {
         V3Error::suppressThisWarning();
     } else if (!V3Error::errorContexted()) {
         nsstr << warnContextPrimary();
     }
+    if (!m_waive) { V3Waiver::addEntry(V3Error::errorCode(), filename(), sstr.str()); }
     V3Error::v3errorEnd(nsstr, lstr.str());
 }
 
@@ -385,14 +390,14 @@ string FileLine::warnOther() const {
 }
 
 string FileLine::source() const {
-    if (VL_UNCOVERABLE(!m_contentp)) {
+    if (VL_UNCOVERABLE(!m_contentp)) {  // LCOV_EXCL_START
         if (debug() || v3Global.opt.debugCheck()) {
             // The newline here is to work around the " <line#> | "
             return "\n%Error: internal tracking of file contents failed";
         } else {
             return "";
         }
-    }
+    }  // LCOV_EXCL_STOP
     return m_contentp->getLine(m_contentLineno);
 }
 string FileLine::prettySource() const {

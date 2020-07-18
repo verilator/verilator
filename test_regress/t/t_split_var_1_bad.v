@@ -20,6 +20,7 @@ module t();
 
    logic [3:0] addr;
    logic [7:0] rd_data0, rd_data1, rd_data2;
+   logic [1:0] public_signal /*verilator public*/ /*verilator split_var*/;
 
    sub0 i_sub0(.addr(addr), .rd_data(rd_data0));
    sub1 i_sub1(.addr(addr), .rd_data(rd_data2));
@@ -33,10 +34,14 @@ module t();
    endfunction
 
    initial begin
+      logic [7:0] loop_idx /*verilator split_var*/;
       addr = 0;
       addr = 1;
       i_sub0.cannot_split1[0] = 0;
       i_sub0.cannot_split1[1] = bad_func(addr, rd_data0);
+      for (loop_idx = 0; loop_idx < 8'd4; loop_idx = loop_idx + 2) begin
+          addr += 1;
+      end
       $finish;
    end
 
@@ -55,9 +60,11 @@ endmodule
 
 module sub1(input [3:0]addr, output logic [7:0] rd_data);
    genvar cannot_split_genvar /*verilator split_var*/;
-   logic [15:0] [7:0] cannot_split  /*verilator split_var*/;
-   always_comb
-      rd_data = cannot_split[addr];
+   logic [15:0] [8:0] cannot_split  /*verilator split_var*/;
+   always_comb begin
+      logic [8:0] rd_tmp /*verilator split_var*/ = cannot_split[addr];
+      rd_data = rd_tmp[{3'b0, addr[0]}+:8];
+   end
 
 endmodule
 

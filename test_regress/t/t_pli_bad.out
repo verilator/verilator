@@ -1,0 +1,13 @@
+%Error: t/t_pli_bad.v:10:7: Unsupported or unknown PLI call: '$unknown_pli_task'
+   10 |       $unknown_pli_task;
+      |       ^~~~~~~~~~~~~~~~~
+%Error: t/t_pli_bad.v:11:7: Unsupported or unknown PLI call: '$unknown_pli_task'
+   11 |       $unknown_pli_task("arg", i);
+      |       ^~~~~~~~~~~~~~~~~
+%Error: t/t_pli_bad.v:12:11: Unsupported or unknown PLI call: '$unknown_pli_function'
+   12 |       i = $unknown_pli_function;
+      |           ^~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_pli_bad.v:13:11: Unsupported or unknown PLI call: '$unknown_pli_function'
+   13 |       i = $unknown_pli_function("arg", i);
+      |           ^~~~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to

@@ -31,6 +31,7 @@
 #include "V3Options.h"
 
 #include <string>
+#include VL_INCLUDE_UNORDERED_MAP
 
 class AstNetlist;
 
@@ -74,16 +75,19 @@ class V3Global {
     bool m_assertDTypesResolved;  // Tree should have dtypep()'s
     bool m_constRemoveXs;  // Const needs to strip any Xs
     bool m_needC11;  // Need C++11
-    bool m_needHInlines;  // Need __Inlines file
     bool m_needHeavy;  // Need verilated_heavy.h include
     bool m_needTraceDumper;  // Need __Vm_dumperp in symbols
     bool m_dpi;  // Need __Dpi include files
+    bool m_useParallelBuild;  // Use parallel build for model
+
+    // Memory address to short string mapping (for debug)
+    typedef vl_unordered_map<const void*, std::string> PtrToIdMap;  // The map type
+    PtrToIdMap m_ptrToId;  // The actual 'address' <=> 'short string' bijection
 
 public:
     // Options
     V3Options opt;  // All options; let user see them directly
 
-public:
     // CONSTRUCTORS
     V3Global()
         : m_rootp(NULL)  // created by makeInitNetlist() so static constructors run first
@@ -92,16 +96,15 @@ public:
         , m_assertDTypesResolved(false)
         , m_constRemoveXs(false)
         , m_needC11(false)
-        , m_needHInlines(false)
         , m_needHeavy(false)
         , m_needTraceDumper(false)
-        , m_dpi(false) {}
+        , m_dpi(false)
+        , m_useParallelBuild(false) {}
     AstNetlist* makeNetlist();
     void boot() {
         UASSERT(!m_rootp, "call once");
         m_rootp = makeNetlist();
     }
-    void clear();
     // ACCESSORS (general)
     AstNetlist* rootp() const { return m_rootp; }
     VWidthMinUsage widthMinUsage() const { return m_widthMinUsage; }
@@ -125,14 +128,15 @@ public:
     }
     bool needC11() const { return m_needC11; }
     void needC11(bool flag) { m_needC11 = flag; }
-    bool needHInlines() const { return m_needHInlines; }
-    void needHInlines(bool flag) { m_needHInlines = flag; }
     bool needHeavy() const { return m_needHeavy; }
     void needHeavy(bool flag) { m_needHeavy = flag; }
     bool needTraceDumper() const { return m_needTraceDumper; }
     void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
     bool dpi() const { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
+    void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
+    bool useParallelBuild() const { return m_useParallelBuild; }
+    const std::string& ptrToId(const void* p);
 };
 
 extern V3Global v3Global;

@@ -33,8 +33,6 @@
 #include "V3Width.h"
 #include "V3Const.h"
 
-#include <cstdarg>
-
 //######################################################################
 // Width state, as a visitor of each AstNode
 
@@ -278,7 +276,9 @@ private:
         } else if (VN_IS(ddtypep, BasicDType) && ddtypep->isString()) {
             // SELBIT(string, index) -> GETC(string, index)
             AstNodeVarRef* varrefp = VN_CAST(fromp, NodeVarRef);
-            if (!varrefp) nodep->v3error("Unsupported: String array operation on non-variable");
+            if (!varrefp)
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: String array operation on non-variable");
             AstNode* newp;
             if (varrefp && varrefp->lvalue()) {
                 newp = new AstGetcRefN(nodep->fileline(), fromp, rhsp);
@@ -458,6 +458,7 @@ private:
         UINFO(6, "SELPLUS/MINUS " << nodep << endl);
         // Below 2 lines may change nodep->widthp()
         if (debug() >= 9) nodep->dumpTree(cout, "--SELPM0: ");
+        V3Width::widthParamsEdit(nodep->rhsp());  // constifyEdit doesn't ensure widths finished
         V3Const::constifyEdit(nodep->rhsp());  // May relink pointed to node, ok if not const
         V3Const::constifyParamsEdit(nodep->thsp());  // May relink pointed to node
         checkConstantOrReplace(nodep->thsp(), "Width of :+ or :- bit extract isn't a constant");
@@ -500,7 +501,7 @@ private:
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {
-                nodep->v3error("Unsupported: Slice of non-constant bounds");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Slice of non-constant bounds");
             }
         } else if (VN_IS(ddtypep, BasicDType) || VN_IS(ddtypep, PackArrayDType)
                    || (VN_IS(ddtypep, NodeUOrStructDType)

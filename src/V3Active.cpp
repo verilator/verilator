@@ -50,7 +50,6 @@ protected:
 
 class ActiveNamer : public ActiveBaseVisitor {
 private:
-    typedef std::map<string, AstActive*> ActiveNameMap;
     // STATE
     AstScope* m_scopep;  // Current scope to add statement to
     AstActive* m_iActivep;  // For current scope, the IActive we're building
@@ -317,10 +316,8 @@ private:
 
         if (!combo && !sequent) combo = true;  // If no list, Verilog 2000: always @ (*)
         if (combo && sequent) {
-            if (!v3Global.opt.bboxUnsup()) {
-                nodep->v3error("Unsupported: Mixed edge (pos/negedge) and activity "
-                               "(no edge) sensitive activity list");
-            }
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Mixed edge (pos/negedge) and activity "
+                                         "(no edge) sensitive activity list");
             sequent = false;
         }
 
@@ -379,14 +376,6 @@ private:
         // if (debug() >= 9) nodep->dumpTree(cout, "  Alw: ");
         visitAlways(nodep, nodep->sensesp(), VAlwaysKwd::ALWAYS);
     }
-    virtual void visit(AstSenGate* nodep) VL_OVERRIDE {
-        AstSenItem* subitemp = nodep->sensesp();
-        UASSERT_OBJ(subitemp->edgeType() == VEdgeType::ET_ANYEDGE
-                        || subitemp->edgeType() == VEdgeType::ET_POSEDGE
-                        || subitemp->edgeType() == VEdgeType::ET_NEGEDGE,
-                    nodep, "Strange activity type under SenGate");
-        iterateChildren(nodep);
-    }
     virtual void visit(AstSenItem* nodep) VL_OVERRIDE {
         if (nodep->varrefp()) {
             if (AstBasicDType* basicp = nodep->varrefp()->dtypep()->basicp()) {
@@ -406,8 +395,9 @@ private:
         } else if (nodep->varrefp()) {
             // V3LinkResolve should have cleaned most of these up
             if (!nodep->varrefp()->width1()) {
-                nodep->v3error("Unsupported: Non-single bit wide signal pos/negedge sensitivity: "
-                               << nodep->varrefp()->prettyNameQ());
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Non-single bit wide signal pos/negedge sensitivity: "
+                                  << nodep->varrefp()->prettyNameQ());
             }
             m_itemSequent = true;
             nodep->varrefp()->varp()->usedClock(true);

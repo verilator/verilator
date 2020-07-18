@@ -26,8 +26,6 @@
 #include "V3GenClk.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
-
 //######################################################################
 // GenClk state, as a visitor of each AstNode
 

@@ -56,7 +56,6 @@
 #include "V3Unroll.h"
 #include "V3Hashed.h"
 
-#include <cstdarg>
 #include <deque>
 #include <map>
 #include <vector>
@@ -106,6 +105,8 @@ private:
 
     typedef std::deque<AstCell*> CellList;
     CellList m_cellps;  // Cells left to process (in this module)
+
+    AstNodeFTask* m_ftaskp;  // Function/task reference
 
     AstNodeModule* m_modp;  // Current module being processed
 
@@ -176,6 +177,19 @@ private:
             m_valueMap[hash] = make_pair(num, key);
         }
         return string("z") + cvtToStr(num);
+    }
+    AstNodeDType* arraySubDTypep(AstNodeDType* nodep) {
+        // If an unpacked array, return the subDTypep under it
+        if (AstUnpackArrayDType* adtypep = VN_CAST(nodep, UnpackArrayDType)) {
+            return adtypep->subDTypep();
+        }
+        // We have not resolved parameter of the child yet, so still
+        // have BracketArrayDType's. We'll presume it'll end up as assignment
+        // compatible (or V3Width will complain).
+        if (AstBracketArrayDType* adtypep = VN_CAST(nodep, BracketArrayDType)) {
+            return adtypep->subDTypep();
+        }
+        return NULL;
     }
     void collectPins(CloneMap* clonemapp, AstNodeModule* modp) {
         // Grab all I/O so we can remap our pins later
@@ -290,6 +304,11 @@ private:
         nodep->user5p(genHierNamep);
         m_cellps.push_back(nodep);
     }
+    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+        m_ftaskp = nodep;
+        iterateChildren(nodep);
+        m_ftaskp = NULL;
+    }
 
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
@@ -301,7 +320,8 @@ private:
                                    << " (IEEE 1800-2017 6.20.1): " << nodep->prettyNameQ());
                 } else {
                     V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
-                    if (!VN_IS(nodep->valuep(), Const)) {  // Complex init, like an array
+                    if (!VN_IS(nodep->valuep(), Const)
+                        && !VN_IS(nodep->valuep(), Unbounded)) {  // Complex init, like an array
                         // Make a new INITIAL to set the value.
                         // This allows the normal array/struct handling code to properly
                         // initialize the parameter.
@@ -310,6 +330,16 @@ private:
                             new AstAssign(nodep->fileline(),
                                           new AstVarRef(nodep->fileline(), nodep, true),
                                           nodep->valuep()->cloneTree(true))));
+                        if (m_ftaskp) {
+                            // We put the initial in wrong place under a function.  We
+                            // should move the parameter out of the function and to the
+                            // module, with appropriate dotting, but this confuses LinkDot
+                            // (as then name isn't found later), so punt - probably can
+                            // treat as static function variable when that is supported.
+                            nodep->v3warn(
+                                E_UNSUPPORTED,
+                                "Unsupported: Parameters in functions with complex assign");
+                        }
                     }
                 }
             }
@@ -409,11 +439,9 @@ private:
             string index = AstNode::encodeNumber(constp->toSInt());
             string replacestr = nodep->name() + "__BRA__??__KET__";
             size_t pos = m_unlinkedTxt.find(replacestr);
-            if (pos == string::npos) {
-                nodep->v3error("Could not find array index in unlinked text: '"
-                               << m_unlinkedTxt << "' for node: " << nodep);
-                return;
-            }
+            UASSERT_OBJ(pos != string::npos, nodep,
+                        "Could not find array index in unlinked text: '"
+                            << m_unlinkedTxt << "' for node: " << nodep);
             m_unlinkedTxt.replace(pos, replacestr.length(),
                                   nodep->name() + "__BRA__" + index + "__KET__");
         } else {
@@ -485,7 +513,7 @@ private:
             m_generateHierName = rootHierName;
         }
     }
-    virtual void visit(AstGenFor* nodep) VL_OVERRIDE {
+    virtual void visit(AstGenFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("GENFOR should have been wrapped in BEGIN");
     }
     virtual void visit(AstGenCase* nodep) VL_OVERRIDE {
@@ -545,6 +573,7 @@ public:
     // CONSTRUCTORS
     explicit ParamVisitor(AstNetlist* nodep) {
         m_longId = 0;
+        m_ftaskp = NULL;
         m_modp = NULL;
         m_nextValue = 1;
         //
@@ -587,7 +616,7 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
                     pinp->v3error("Attempted parameter setting of non-parameter: Param "
                                   << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                 } else if (VN_IS(pinp->exprp(), InitArray)
-                           && VN_IS(modvarp->subDTypep(), UnpackArrayDType)) {
+                           && arraySubDTypep(modvarp->subDTypep())) {
                     // Array assigned to array
                     AstNode* exprp = pinp->exprp();
                     longname += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
@@ -649,10 +678,8 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
             AstVar* modvarp = pinp->modVarp();
             if (modvarp->isIfaceRef()) {
                 AstIfaceRefDType* portIrefp = VN_CAST(modvarp->subDTypep(), IfaceRefDType);
-                if (!portIrefp && VN_IS(modvarp->subDTypep(), UnpackArrayDType)) {
-                    portIrefp
-                        = VN_CAST(VN_CAST(modvarp->subDTypep(), UnpackArrayDType)->subDTypep(),
-                                  IfaceRefDType);
+                if (!portIrefp && arraySubDTypep(modvarp->subDTypep())) {
+                    portIrefp = VN_CAST(arraySubDTypep(modvarp->subDTypep()), IfaceRefDType);
                 }
 
                 AstIfaceRefDType* pinIrefp = NULL;
@@ -664,34 +691,20 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
                 } else if (exprp && exprp->op1p() && VN_IS(exprp->op1p(), VarRef)
                            && VN_CAST(exprp->op1p(), VarRef)->varp()
                            && VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()
-                           && VN_CAST(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep(),
-                                      UnpackArrayDType)
-                           && VN_CAST(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep(),
-                                      UnpackArrayDType)
-                                  ->subDTypep()
-                           && VN_CAST(VN_CAST(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep(),
-                                              UnpackArrayDType)
-                                          ->subDTypep(),
-                                      IfaceRefDType)) {
-                    pinIrefp = VN_CAST(VN_CAST(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep(),
-                                               UnpackArrayDType)
-                                           ->subDTypep(),
-                                       IfaceRefDType);
+                           && arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep())
+                           && VN_CAST(
+                               arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()),
+                               IfaceRefDType)) {
+                    pinIrefp = VN_CAST(
+                        arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()),
+                        IfaceRefDType);
                 } else if (exprp && VN_IS(exprp, VarRef) && VN_CAST(exprp, VarRef)->varp()
                            && VN_CAST(exprp, VarRef)->varp()->subDTypep()
-                           && VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(),
-                                      UnpackArrayDType)
-                           && VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(),
-                                      UnpackArrayDType)
-                                  ->subDTypep()
-                           && VN_CAST(VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(),
-                                              UnpackArrayDType)
-                                          ->subDTypep(),
+                           && arraySubDTypep(VN_CAST(exprp, VarRef)->varp()->subDTypep())
+                           && VN_CAST(arraySubDTypep(VN_CAST(exprp, VarRef)->varp()->subDTypep()),
                                       IfaceRefDType)) {
-                    pinIrefp = VN_CAST(
-                        VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(), UnpackArrayDType)
-                            ->subDTypep(),
-                        IfaceRefDType);
+                    pinIrefp = VN_CAST(arraySubDTypep(VN_CAST(exprp, VarRef)->varp()->subDTypep()),
+                                       IfaceRefDType);
                 }
 
                 UINFO(9, "     portIfaceRef " << portIrefp << endl);

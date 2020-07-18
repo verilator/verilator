@@ -120,13 +120,13 @@ void VlThreadPool::setupProfilingClientThread() {
     // try not to malloc while collecting profiling.
     t_profilep->reserve(4096);
     {
-        VerilatedLockGuard lk(m_mutex);
+        const VerilatedLockGuard lk(m_mutex);
         m_allProfiles.insert(t_profilep);
     }
 }
 
 void VlThreadPool::profileAppendAll(const VlProfileRec& rec) {
-    VerilatedLockGuard lk(m_mutex);
+    const VerilatedLockGuard lk(m_mutex);
     for (ProfileSet::iterator it = m_allProfiles.begin(); it != m_allProfiles.end(); ++it) {
         // Every thread's profile trace gets a copy of rec.
         (*it)->emplace_back(rec);
@@ -134,7 +134,7 @@ void VlThreadPool::profileAppendAll(const VlProfileRec& rec) {
 }
 
 void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
-    VerilatedLockGuard lk(m_mutex);
+    const VerilatedLockGuard lk(m_mutex);
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+threads writing to '%s'\n", filenamep););
 
     FILE* fp = fopen(filenamep, "w");

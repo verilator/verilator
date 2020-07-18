@@ -36,17 +36,12 @@
 #include "gtkwave/lz4.c"
 
 #include <algorithm>
-#include <cerrno>
-#include <ctime>
-#include <fcntl.h>
 #include <iterator>
 #include <sstream>
-#include <sys/stat.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>
 #else
-# include <stdint.h>
 # include <unistd.h>
 #endif
 
@@ -138,10 +133,9 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
     VerilatedTrace<VerilatedFst>::declCode(code, bits, false);
 
-    std::pair<Code2SymbolType::iterator, bool> p
-        = m_code2symbol.insert(std::make_pair(code, static_cast<fstHandle>(NULL)));
     std::istringstream nameiss(name);
-    std::istream_iterator<std::string> beg(nameiss), end;
+    std::istream_iterator<std::string> beg(nameiss);
+    std::istream_iterator<std::string> end;
     std::list<std::string> tokens(beg, end);  // Split name
     std::string symbol_name(tokens.back());
     tokens.pop_back();  // Remove symbol name from hierarchy
@@ -178,11 +172,13 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
         fstEnumHandle enumNum = m_local2fstdtype[dtypenum];
         fstWriterEmitEnumTableRef(m_fst, enumNum);
     }
-    if (p.second) {  // New
-        p.first->second = fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), 0);
-        assert(p.first->second);
+
+    Code2SymbolType::const_iterator it = m_code2symbol.find(code);
+    if (it == m_code2symbol.end()) {  // New
+        m_code2symbol[code]
+            = fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), 0);
     } else {  // Alias
-        fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), p.first->second);
+        fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), it->second);
     }
 }
 
@@ -201,10 +197,6 @@ void VerilatedFst::declQuad(vluint32_t code, const char* name, int dtypenum, fst
 void VerilatedFst::declArray(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                              fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
-}
-void VerilatedFst::declFloat(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                             fstVarType vartype, bool array, int arraynum) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 31, 0);
 }
 void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                               fstVarType vartype, bool array, int arraynum) {
@@ -262,11 +254,6 @@ void VerilatedFst::emitWData(vluint32_t code, const WData* newvalp, int bits) {
         wp += VL_EDATASIZE;
     }
     fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbuf);
-}
-
-VL_ATTR_ALWINLINE
-void VerilatedFst::emitFloat(vluint32_t code, float newval) {
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
 }
 
 VL_ATTR_ALWINLINE

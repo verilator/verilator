@@ -20,6 +20,7 @@ foreach my $basename ("t_vlcov_data_a.dat",
                 "--debugi 9",
         ],
         tee => $Self->{verbose},
+        verilator_run => 1,
         );
 }
 

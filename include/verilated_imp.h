@@ -32,6 +32,7 @@
 #include <deque>
 #include <set>
 #include <vector>
+#include <numeric>
 #ifdef VL_THREADED
 # include <functional>
 # include <queue>
@@ -95,7 +96,7 @@ public:
     // METHODS
     //// Add message to queue (called by producer)
     void post(const VerilatedMsg& msg) VL_EXCLUDES(m_mutex) {
-        VerilatedLockGuard lock(m_mutex);
+        const VerilatedLockGuard lock(m_mutex);
         m_queue.insert(msg);  // Pass by value to copy the message into queue
         ++m_depth;
     }
@@ -168,6 +169,24 @@ public:
 };
 #endif  // VL_THREADED
 
+// FILE* list constructed from a file-descriptor
+class VerilatedFpList {
+    FILE* m_fp[31];
+    std::size_t m_sz;
+
+public:
+    typedef FILE* const* const_iterator;
+    explicit VerilatedFpList()
+        : m_sz(0) {}
+    const_iterator begin() const { return m_fp; }
+    const_iterator end() const { return m_fp + m_sz; }
+    std::size_t size() const { return m_sz; }
+    std::size_t capacity() const { return 31; }
+    void push_back(FILE* fd) {
+        if (VL_LIKELY(size() < capacity())) m_fp[m_sz++] = fd;
+    }
+};
+
 //======================================================================
 // VerilatedImp
 
@@ -229,17 +248,21 @@ protected:
     VerilatedMutex m_fdMutex;  ///< Protect m_fdps, m_fdFree
     std::vector<FILE*> m_fdps VL_GUARDED_BY(m_fdMutex);  ///< File descriptors
     /// List of free descriptors (SLOW - FOPEN/CLOSE only)
-    std::deque<IData> m_fdFree VL_GUARDED_BY(m_fdMutex);
+    std::vector<IData> m_fdFree VL_GUARDED_BY(m_fdMutex);
+    // List of free descriptors in the MCT region [4, 32)
+    std::vector<IData> m_fdFreeMct VL_GUARDED_BY(m_fdMutex);
 
 public:  // But only for verilated*.cpp
     // CONSTRUCTORS
     VerilatedImp()
         : m_argVecLoaded(false)
         , m_exportNext(0) {
-        m_fdps.resize(3);
-        m_fdps[0] = stdin;
-        m_fdps[1] = stdout;
-        m_fdps[2] = stderr;
+        s_s.m_fdps.resize(31);
+        std::fill(s_s.m_fdps.begin(), s_s.m_fdps.end(), (FILE*)0);
+        s_s.m_fdFreeMct.resize(30);
+        for (std::size_t i = 0, id = 1; i < s_s.m_fdFreeMct.size(); ++i, ++id) {
+            s_s.m_fdFreeMct[i] = id;
+        }
     }
     ~VerilatedImp() {}
 
@@ -256,7 +279,7 @@ public:
     static void commandArgs(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex);
     static void commandArgsAdd(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex);
     static std::string argPlusMatch(const char* prefixp) VL_EXCLUDES(s_s.m_argMutex) {
-        VerilatedLockGuard lock(s_s.m_argMutex);
+        const VerilatedLockGuard lock(s_s.m_argMutex);
         // Note prefixp does not include the leading "+"
         size_t len = strlen(prefixp);
         if (VL_UNLIKELY(!s_s.m_argVecLoaded)) {
@@ -285,7 +308,7 @@ public:
     // There's often many more scopes than userdata's and thus having a ~48byte
     // per map overhead * N scopes would take much more space and cache thrashing.
     static inline void userInsert(const void* scopep, void* userKey, void* userData) VL_MT_SAFE {
-        VerilatedLockGuard lock(s_s.m_userMapMutex);
+        const VerilatedLockGuard lock(s_s.m_userMapMutex);
         UserMap::iterator it = s_s.m_userMap.find(std::make_pair(scopep, userKey));
         if (it != s_s.m_userMap.end()) {
             it->second = userData;
@@ -294,7 +317,7 @@ public:
         }
     }
     static inline void* userFind(const void* scopep, void* userKey) VL_MT_SAFE {
-        VerilatedLockGuard lock(s_s.m_userMapMutex);
+        const VerilatedLockGuard lock(s_s.m_userMapMutex);
         UserMap::const_iterator it = s_s.m_userMap.find(std::make_pair(scopep, userKey));
         if (VL_UNLIKELY(it == s_s.m_userMap.end())) return NULL;
         return it->second;
@@ -304,7 +327,7 @@ private:
     /// Symbol table destruction cleans up the entries for each scope.
     static void userEraseScope(const VerilatedScope* scopep) VL_MT_SAFE {
         // Slow ok - called once/scope on destruction, so we simply iterate.
-        VerilatedLockGuard lock(s_s.m_userMapMutex);
+        const VerilatedLockGuard lock(s_s.m_userMapMutex);
         for (UserMap::iterator it = s_s.m_userMap.begin(); it != s_s.m_userMap.end();) {
             if (it->first.first == scopep) {
                 s_s.m_userMap.erase(it++);
@@ -314,7 +337,7 @@ private:
         }
     }
     static void userDump() VL_MT_SAFE {
-        VerilatedLockGuard lock(s_s.m_userMapMutex);  // Avoid it changing in middle of dump
+        const VerilatedLockGuard lock(s_s.m_userMapMutex);  // Avoid it changing in middle of dump
         bool first = true;
         for (UserMap::const_iterator it = s_s.m_userMap.begin(); it != s_s.m_userMap.end(); ++it) {
             if (first) {
@@ -330,14 +353,14 @@ public:  // But only for verilated*.cpp
     // METHODS - scope name
     static void scopeInsert(const VerilatedScope* scopep) VL_MT_SAFE {
         // Slow ok - called once/scope at construction
-        VerilatedLockGuard lock(s_s.m_nameMutex);
+        const VerilatedLockGuard lock(s_s.m_nameMutex);
         VerilatedScopeNameMap::iterator it = s_s.m_nameMap.find(scopep->name());
         if (it == s_s.m_nameMap.end()) {
             s_s.m_nameMap.insert(it, std::make_pair(scopep->name(), scopep));
         }
     }
     static inline const VerilatedScope* scopeFind(const char* namep) VL_MT_SAFE {
-        VerilatedLockGuard lock(s_s.m_nameMutex);
+        const VerilatedLockGuard lock(s_s.m_nameMutex);
         // If too slow, can assume this is only VL_MT_SAFE_POSINIT
         VerilatedScopeNameMap::const_iterator it = s_s.m_nameMap.find(namep);
         if (VL_UNLIKELY(it == s_s.m_nameMap.end())) return NULL;
@@ -345,13 +368,13 @@ public:  // But only for verilated*.cpp
     }
     static void scopeErase(const VerilatedScope* scopep) VL_MT_SAFE {
         // Slow ok - called once/scope at destruction
-        VerilatedLockGuard lock(s_s.m_nameMutex);
+        const VerilatedLockGuard lock(s_s.m_nameMutex);
         userEraseScope(scopep);
         VerilatedScopeNameMap::iterator it = s_s.m_nameMap.find(scopep->name());
         if (it != s_s.m_nameMap.end()) s_s.m_nameMap.erase(it);
     }
     static void scopesDump() VL_MT_SAFE {
-        VerilatedLockGuard lock(s_s.m_nameMutex);
+        const VerilatedLockGuard lock(s_s.m_nameMutex);
         VL_PRINTF_MT("  scopesDump:\n");
         for (VerilatedScopeNameMap::const_iterator it = s_s.m_nameMap.begin();
              it != s_s.m_nameMap.end(); ++it) {
@@ -369,7 +392,7 @@ public:  // But only for verilated*.cpp
     // METHODS - hierarchy
     static void hierarchyAdd(const VerilatedScope* fromp, const VerilatedScope* top) VL_MT_SAFE {
         // Slow ok - called at construction for VPI accessible elements
-        VerilatedLockGuard lock(s_s.m_hierMapMutex);
+        const VerilatedLockGuard lock(s_s.m_hierMapMutex);
         s_s.m_hierMap[fromp].push_back(top);
     }
     static const VerilatedHierarchyMap* hierarchyMap() VL_MT_SAFE_POSTINIT {
@@ -388,7 +411,7 @@ public:  // But only for verilated*.cpp
     // miss at the cost of a multiply, and all lookups move to slowpath.
     static int exportInsert(const char* namep) VL_MT_SAFE {
         // Slow ok - called once/function at creation
-        VerilatedLockGuard lock(s_s.m_exportMutex);
+        const VerilatedLockGuard lock(s_s.m_exportMutex);
         ExportNameMap::iterator it = s_s.m_exportMap.find(namep);
         if (it == s_s.m_exportMap.end()) {
             s_s.m_exportMap.insert(it, std::make_pair(namep, s_s.m_exportNext++));
@@ -398,7 +421,7 @@ public:  // But only for verilated*.cpp
         }
     }
     static int exportFind(const char* namep) VL_MT_SAFE {
-        VerilatedLockGuard lock(s_s.m_exportMutex);
+        const VerilatedLockGuard lock(s_s.m_exportMutex);
         ExportNameMap::const_iterator it = s_s.m_exportMap.find(namep);
         if (VL_LIKELY(it != s_s.m_exportMap.end())) return it->second;
         std::string msg = (std::string("%Error: Testbench C called ") + namep
@@ -408,7 +431,7 @@ public:  // But only for verilated*.cpp
     }
     static const char* exportName(int funcnum) VL_MT_SAFE {
         // Slowpath; find name for given export; errors only so no map to reverse-map it
-        VerilatedLockGuard lock(s_s.m_exportMutex);
+        const VerilatedLockGuard lock(s_s.m_exportMutex);
         for (ExportNameMap::const_iterator it = s_s.m_exportMap.begin();
              it != s_s.m_exportMap.end(); ++it) {
             if (it->second == funcnum) return it->first;
@@ -416,7 +439,7 @@ public:  // But only for verilated*.cpp
         return "*UNKNOWN*";
     }
     static void exportsDump() VL_MT_SAFE {
-        VerilatedLockGuard lock(s_s.m_exportMutex);
+        const VerilatedLockGuard lock(s_s.m_exportMutex);
         bool first = true;
         for (ExportNameMap::const_iterator it = s_s.m_exportMap.begin();
              it != s_s.m_exportMap.end(); ++it) {
@@ -448,16 +471,29 @@ public:  // But only for verilated*.cpp
 
 public:  // But only for verilated*.cpp
     // METHODS - file IO
-    static IData fdNew(FILE* fp) VL_MT_SAFE {
+    static IData fdNewMcd(const char* filenamep) VL_MT_SAFE {
+        const VerilatedLockGuard lock(s_s.m_fdMutex);
+        if (s_s.m_fdFreeMct.empty()) return 0;
+        IData idx = s_s.m_fdFreeMct.back();
+        s_s.m_fdFreeMct.pop_back();
+        s_s.m_fdps[idx] = fopen(filenamep, "w");
+        if (VL_UNLIKELY(!s_s.m_fdps[idx])) return 0;
+        return (1 << idx);
+    }
+    static IData fdNew(const char* filenamep, const char* modep) VL_MT_SAFE {
+        FILE* fp = fopen(filenamep, modep);
         if (VL_UNLIKELY(!fp)) return 0;
         // Bit 31 indicates it's a descriptor not a MCD
-        VerilatedLockGuard lock(s_s.m_fdMutex);
+        const VerilatedLockGuard lock(s_s.m_fdMutex);
         if (s_s.m_fdFree.empty()) {
             // Need to create more space in m_fdps and m_fdFree
-            size_t start = s_s.m_fdps.size();
-            s_s.m_fdps.resize(start * 2);
-            for (size_t i = start; i < start * 2; ++i) {
-                s_s.m_fdFree.push_back(static_cast<IData>(i));
+            const std::size_t start = std::max<std::size_t>(31UL + 1UL + 3UL, s_s.m_fdps.size());
+            const std::size_t excess = 10;
+            s_s.m_fdps.resize(start + excess);
+            std::fill(s_s.m_fdps.begin() + start, s_s.m_fdps.end(), (FILE*)0);
+            s_s.m_fdFree.resize(excess);
+            for (std::size_t i = 0, id = start; i < s_s.m_fdFree.size(); ++i, ++id) {
+                s_s.m_fdFree[i] = id;
             }
         }
         IData idx = s_s.m_fdFree.back();
@@ -465,19 +501,83 @@ public:  // But only for verilated*.cpp
         s_s.m_fdps[idx] = fp;
         return (idx | (1UL << 31));  // bit 31 indicates not MCD
     }
-    static void fdDelete(IData fdi) VL_MT_SAFE {
-        IData idx = VL_MASK_I(31) & fdi;
-        VerilatedLockGuard lock(s_s.m_fdMutex);
-        if (VL_UNLIKELY(!(fdi & (VL_ULL(1) << 31)) || idx >= s_s.m_fdps.size())) return;
-        if (VL_UNLIKELY(!s_s.m_fdps[idx])) return;  // Already free
-        s_s.m_fdps[idx] = NULL;
-        s_s.m_fdFree.push_back(idx);
+    static void fdFlush(IData fdi) VL_MT_SAFE {
+        const VerilatedLockGuard lock(s_s.m_fdMutex);
+        const VerilatedFpList fdlist = fdToFpList(fdi);
+        for (VerilatedFpList::const_iterator it = fdlist.begin(); it != fdlist.end(); ++it) {
+            fflush(*it);
+        }
+    }
+    static IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE {
+        const VerilatedLockGuard lock(s_s.m_fdMutex);
+        const VerilatedFpList fdlist = fdToFpList(fdi);
+        if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
+        return static_cast<IData>(
+            fseek(*fdlist.begin(), static_cast<long>(offset), static_cast<int>(origin)));
+    }
+    static IData fdTell(IData fdi) VL_MT_SAFE {
+        const VerilatedLockGuard lock(s_s.m_fdMutex);
+        const VerilatedFpList fdlist = fdToFpList(fdi);
+        if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
+        return static_cast<IData>(ftell(*fdlist.begin()));
+    }
+    static void fdWrite(IData fdi, const std::string& output) VL_MT_SAFE {
+        const VerilatedLockGuard lock(s_s.m_fdMutex);
+        const VerilatedFpList fdlist = fdToFpList(fdi);
+        for (VerilatedFpList::const_iterator it = fdlist.begin(); it != fdlist.end(); ++it) {
+            if (VL_UNLIKELY(!*it)) continue;
+            fwrite(output.c_str(), 1, output.size(), *it);
+        }
+    }
+    static void fdClose(IData fdi) VL_MT_SAFE {
+        const VerilatedLockGuard lock(s_s.m_fdMutex);
+        if ((fdi & (1 << 31)) != 0) {
+            // Non-MCD case
+            IData idx = VL_MASK_I(31) & fdi;
+            if (VL_UNLIKELY(idx >= s_s.m_fdps.size())) return;
+            if (VL_UNLIKELY(!s_s.m_fdps[idx])) return;  // Already free
+            fclose(s_s.m_fdps[idx]);
+            s_s.m_fdps[idx] = (FILE*)0;
+            s_s.m_fdFree.push_back(idx);
+        } else {
+            // MCD case
+            for (int i = 0; (fdi != 0) && (i < 31); i++, fdi >>= 1) {
+                if (fdi & VL_MASK_I(1)) {
+                    fclose(s_s.m_fdps[i]);
+                    s_s.m_fdps[i] = NULL;
+                    s_s.m_fdFreeMct.push_back(i);
+                }
+            }
+        }
     }
     static inline FILE* fdToFp(IData fdi) VL_MT_SAFE {
-        IData idx = VL_MASK_I(31) & fdi;
-        VerilatedLockGuard lock(s_s.m_fdMutex);  // This might get slow, if it does we can cache it
-        if (VL_UNLIKELY(!(fdi & (VL_ULL(1) << 31)) || idx >= s_s.m_fdps.size())) return NULL;
-        return s_s.m_fdps[idx];
+        const VerilatedLockGuard lock(s_s.m_fdMutex);
+        const VerilatedFpList fdlist = fdToFpList(fdi);
+        if (VL_UNLIKELY(fdlist.size() != 1)) return NULL;
+        return *fdlist.begin();
+    }
+
+private:
+    static inline VerilatedFpList fdToFpList(IData fdi) VL_REQUIRES(s_s.m_fdMutex) {
+        VerilatedFpList fp;
+        if ((fdi & (1 << 31)) != 0) {
+            // Non-MCD case
+            const IData idx = fdi & VL_MASK_I(31);
+            switch (idx) {
+            case 0: fp.push_back(stdin); break;
+            case 1: fp.push_back(stdout); break;
+            case 2: fp.push_back(stderr); break;
+            default:
+                if (VL_LIKELY(idx < s_s.m_fdps.size())) fp.push_back(s_s.m_fdps[idx]);
+                break;
+            }
+        } else {
+            // MCD Case
+            for (int i = 0; (fdi != 0) && (i < fp.capacity()); ++i, fdi >>= 1) {
+                if (fdi & VL_MASK_I(1)) fp.push_back(s_s.m_fdps[i]);
+            }
+        }
+        return fp;
     }
 };
 

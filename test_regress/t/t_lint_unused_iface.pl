@@ -12,7 +12,6 @@ scenarios(vlt => 1);
 
 lint(
     verilator_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME"],
-    fails => 0,
     );
 
 ok(1);

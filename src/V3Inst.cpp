@@ -27,11 +27,9 @@
 #include "V3Global.h"
 #include "V3Inst.h"
 #include "V3Ast.h"
-#include "V3Changed.h"
 #include "V3Const.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 // Inst state, as a visitor of each AstNode
@@ -118,8 +116,8 @@ private:
     virtual void visit(AstUdpTable* nodep) VL_OVERRIDE {
         if (!v3Global.opt.bboxUnsup()) {
             // If we support primitives, update V3Undriven to remove special case
-            nodep->v3error("Unsupported: Verilog 1995 UDP Tables.  "
-                           "Use --bbox-unsup to ignore tables.");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Verilog 1995 UDP Tables. "
+                                         "Use --bbox-unsup to ignore tables.");
         }
     }
 
@@ -204,8 +202,6 @@ private:
     AstRange* m_cellRangep;  // Range for arrayed instantiations, NULL for normal instantiations
     int m_instSelNum;  // Current instantiation count 0..N-1
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
-
-    typedef std::map<string, AstVar*> VarNameMap;
 
     VL_DEBUG_FUNC;  // Declare debug()
 
@@ -362,8 +358,8 @@ private:
                     && !VN_IS(exprp, VarRef)
                     // V3Const will collapse the SEL with the one we're about to make
                     && !VN_IS(exprp, Concat) && !VN_IS(exprp, Sel)) {
-                    nodep->v3error("Unsupported: Per-bit array instantiations with output "
-                                   "connections to non-wires.");
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Per-bit array instantiations "
+                                                 "with output connections to non-wires.");
                     // Note spec allows more complicated matches such as slices and such
                 }
                 exprp = new AstSel(exprp->fileline(), exprp, pinwidth * m_instSelNum, pinwidth);
@@ -379,7 +375,8 @@ private:
                 V3Const::constifyParamsEdit(arrselp->rhsp());
                 const AstConst* constp = VN_CAST(arrselp->rhsp(), Const);
                 if (!constp) {
-                    nodep->v3error(
+                    nodep->v3warn(
+                        E_UNSUPPORTED,
                         "Unsupported: Non-constant index when passing interface to module");
                     return;
                 }
@@ -423,7 +420,7 @@ private:
                     }
                 }
                 if (!varNewp) {
-                    if (debug() >= 9) m_deModVars.dump();
+                    if (debug() >= 9) m_deModVars.dump();  // LCOV_EXCL_LINE
                     nodep->v3fatalSrc("Module dearray failed for "
                                       << AstNode::prettyNameQ(varNewName));
                 }
@@ -446,7 +443,6 @@ private:
                 string newname = varrefp->name() + "__BRA__" + cvtToStr(i + offset) + "__KET__";
                 AstVarXRef* newVarXRefp = new AstVarXRef(nodep->fileline(), newname, "", true);
                 newVarXRefp->varp(newp->modVarp());
-                newVarXRefp->dtypep(newp->modVarp()->dtypep());
                 newp->exprp()->unlinkFrBack()->deleteTree();
                 newp->exprp(newVarXRefp);
                 if (!prevPinp) {

@@ -1,4 +1,5 @@
 %Warning-LITENDIAN: t/t_select_bad_msb.v:12:8: Little bit endian vector: MSB < LSB of bit range: 0:22
+                                             : ... In instance t
    12 |    reg [0:22] backwd;
       |        ^
                     ... Use "/* verilator lint_off LITENDIAN */" and lint_on around source to disable this message.

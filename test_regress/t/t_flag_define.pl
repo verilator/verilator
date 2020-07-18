@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 compile(
-    v_flags2 => ["-f t/t_flag_define.vc"],
+    v_flags2 => ["-f t/t_flag_define.vc -DCMD_DEF -DCMD_UNDEF -UCMD_UNDEF +define+CMD_DEF2"],
     );
 
 execute(

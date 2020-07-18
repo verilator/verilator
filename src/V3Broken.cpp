@@ -32,7 +32,6 @@
 #include "V3AstConstOnly.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include VL_INCLUDE_UNORDERED_MAP
 
 //######################################################################
@@ -150,19 +149,22 @@ public:
     static void prepForTree() {
 #ifndef VL_LEAK_CHECKS
         s_nodes.clear();
-#endif
+#else
         for (NodeMap::iterator it = s_nodes.begin(); it != s_nodes.end(); ++it) {
             it->second &= ~FLAG_IN_TREE;
             it->second &= ~FLAG_LINKABLE;
         }
+#endif
     }
     static void doneWithTree() {
         for (int backs = 0; backs < 2;
              backs++) {  // Those with backp() are probably under one leaking without
             for (NodeMap::iterator it = s_nodes.begin(); it != s_nodes.end(); ++it) {
-                if ((it->second & FLAG_ALLOCATED) && !(it->second & FLAG_IN_TREE)
-                    && !(it->second & FLAG_LEAKED)
-                    && (it->first->backp() ? backs == 1 : backs == 0)) {
+                // LCOV_EXCL_START
+                if (VL_UNCOVERABLE((it->second & FLAG_ALLOCATED) && !(it->second & FLAG_IN_TREE)
+                                   && !(it->second & FLAG_LEAKED)
+                                   && (it->first->backp() ? backs == 1 : backs == 0))) {
+
                     // Use only AstNode::dump instead of the virtual one, as there
                     // may be varp() and other cross links that are bad.
                     if (v3Global.opt.debugCheck()) {
@@ -181,6 +183,7 @@ public:
                     }
                     it->second |= FLAG_LEAKED;
                 }
+                // LCOV_EXCL_STOP
             }
         }
     }

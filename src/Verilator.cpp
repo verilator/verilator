@@ -23,8 +23,11 @@
 #include "V3AssertPre.h"
 #include "V3Begin.h"
 #include "V3Branch.h"
+#include "V3CCtors.h"
+#include "V3CUse.h"
 #include "V3Case.h"
 #include "V3Cast.h"
+#include "V3Cdc.h"
 #include "V3Changed.h"
 #include "V3Class.h"
 #include "V3Clean.h"
@@ -33,22 +36,19 @@
 #include "V3Const.h"
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
-#include "V3CCtors.h"
-#include "V3CUse.h"
 #include "V3Dead.h"
 #include "V3Delayed.h"
 #include "V3Depth.h"
 #include "V3DepthBlock.h"
 #include "V3Descope.h"
 #include "V3EmitC.h"
-#include "V3EmitCMake.h"
 #include "V3EmitCMain.h"
+#include "V3EmitCMake.h"
 #include "V3EmitMk.h"
 #include "V3EmitV.h"
 #include "V3EmitXml.h"
 #include "V3Expand.h"
 #include "V3File.h"
-#include "V3Cdc.h"
 #include "V3Gate.h"
 #include "V3GenClk.h"
 #include "V3Graph.h"
@@ -56,19 +56,19 @@
 #include "V3Inst.h"
 #include "V3Life.h"
 #include "V3LifePost.h"
-#include "V3LinkCells.h"
 #include "V3LinkDot.h"
 #include "V3LinkJump.h"
+#include "V3LinkInc.h"
 #include "V3LinkLValue.h"
 #include "V3LinkLevel.h"
 #include "V3LinkParse.h"
 #include "V3LinkResolve.h"
 #include "V3Localize.h"
+#include "V3MergeCond.h"
 #include "V3Name.h"
 #include "V3Order.h"
 #include "V3Os.h"
 #include "V3Param.h"
-#include "V3Parse.h"
 #include "V3ParseSym.h"
 #include "V3Partition.h"
 #include "V3PreShell.h"
@@ -84,19 +84,19 @@
 #include "V3Stats.h"
 #include "V3String.h"
 #include "V3Subst.h"
+#include "V3TSP.h"
 #include "V3Table.h"
 #include "V3Task.h"
 #include "V3Trace.h"
 #include "V3TraceDecl.h"
 #include "V3Tristate.h"
-#include "V3TSP.h"
 #include "V3Undriven.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
+#include "V3Waiver.h"
 #include "V3Width.h"
 
 #include <ctime>
-#include <sys/stat.h>
 
 V3Global v3Global;
 
@@ -104,6 +104,10 @@ static void process() {
     // Sort modules by level so later algorithms don't need to care
     V3LinkLevel::modSortByLevel();
     V3Error::abortIfErrors();
+    if (v3Global.opt.debugExitParse()) {
+        cout << "--debug-exit-parse: Exiting after parse\n";
+        exit(0);
+    }
 
     // Convert parseref's to varrefs, and other directly post parsing fixups
     V3LinkParse::linkParse(v3Global.rootp());
@@ -119,6 +123,8 @@ static void process() {
     V3LinkLValue::linkLValue(v3Global.rootp());
     // Convert return/continue/disable to jumps
     V3LinkJump::linkJump(v3Global.rootp());
+    // Convert --/++ to normal operations. Must be after LinkJump.
+    V3LinkInc::linkIncrements(v3Global.rootp());
     V3Error::abortIfErrors();
 
     if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
@@ -419,13 +425,18 @@ static void process() {
         V3Dead::deadifyAll(v3Global.rootp());
     }
 
-    if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && v3Global.opt.oReloop()) {
-        // Reform loops to reduce code size
-        // Must be after all Sel/array index based optimizations
-        V3Reloop::reloopAll(v3Global.rootp());
-    }
-
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly()) {
+        if (v3Global.opt.oMergeCond()) {
+            // Merge conditionals
+            V3MergeCond::mergeAll(v3Global.rootp());
+        }
+
+        if (v3Global.opt.oReloop()) {
+            // Reform loops to reduce code size
+            // Must be after all Sel/array index based optimizations
+            V3Reloop::reloopAll(v3Global.rootp());
+        }
+
         // Fix very deep expressions
         // Mark evaluation functions as member functions, if needed.
         V3Depth::depthAll(v3Global.rootp());
@@ -447,7 +458,7 @@ static void process() {
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
         // Create AstCUse to determine what class forward declarations/#includes needed in C
         // Must be before V3EmitC
-        V3CUse::cUseAll(v3Global.rootp());
+        V3CUse::cUseAll();
 
         // emitcInlines is first, as it may set needHInlines which other emitters read
         V3EmitC::emitcInlines();
@@ -542,6 +553,14 @@ static void verilate(const string& argString) {
 
     // Final steps
     V3Global::dumpCheckGlobalTree("final", 990, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+
+    V3Error::abortIfErrors();
+
+    if (v3Global.opt.isWaiverOutput()) {
+        // Create waiver output, must be just before we exit on warnings
+        V3Waiver::write(v3Global.opt.waiverOutput());
+    }
+
     V3Error::abortIfWarnings();
 
     if (v3Global.opt.makeDepend().isTrue()) {
@@ -565,20 +584,15 @@ static void verilate(const string& argString) {
     FileLine::deleteAllRemaining();
 }
 
-static void execBuildJob() {
-    UASSERT(v3Global.opt.build(), "--build is not specified.");
-    UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
-    UASSERT(!v3Global.opt.cmake(), "--build cannot use CMake.");
-    UINFO(1, "Start Build\n");
-
+static string buildMakeCmd(const string& makefile, const string& target) {
     const V3StringList& makeFlags = v3Global.opt.makeFlags();
     const int jobs = v3Global.opt.buildJobs();
     UASSERT(jobs >= 0, "-j option parser in V3Options.cpp filters out negative value");
 
-    std::stringstream cmd;
+    std::ostringstream cmd;
     cmd << v3Global.opt.getenvMAKE();
     cmd << " -C " << v3Global.opt.makeDir();
-    cmd << " -f " << v3Global.opt.prefix() << ".mk";
+    cmd << " -f " << makefile;
     if (jobs == 0) {
         cmd << " -j";
     } else if (jobs > 1) {
@@ -587,8 +601,18 @@ static void execBuildJob() {
     for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
         cmd << ' ' << *it;
     }
+    if (!target.empty()) { cmd << ' ' << target; }
 
-    const std::string cmdStr = cmd.str();
+    return cmd.str();
+}
+
+static void execBuildJob() {
+    UASSERT(v3Global.opt.build(), "--build is not specified.");
+    UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
+    UASSERT(!v3Global.opt.cmake(), "--build cannot use CMake.");
+    UINFO(1, "Start Build\n");
+
+    const string cmdStr = buildMakeCmd(v3Global.opt.prefix() + ".mk", "");
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
         v3error(cmdStr << " exitted with " << exit_code << std::endl);

@@ -231,7 +231,7 @@ public:
     // ACCESSORS
     string ascii(bool prefixed = true, bool cleanVerilog = false) const;
     string displayed(AstNode* nodep, const string& vformat) const;
-    static bool displayedFmtLegal(char format);  // Is this a valid format letter?
+    static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
     int width() const { return m_width; }
     int widthMin() const;  // Minimum width that can represent this number (~== log2(num)+1)
     bool sized() const { return m_sized; }
@@ -267,10 +267,10 @@ public:
     bool isEqOne() const;
     bool isEqAllOnes(int optwidth = 0) const;
     bool isCaseEq(const V3Number& rhs) const;  // operator==
-    bool isLt(const V3Number& rhs) const;  // operator<
     bool isLtXZ(const V3Number& rhs) const;  // operator< with XZ compared
     void isSigned(bool ssigned) { m_signed = ssigned; }
-    bool isUnknown() const;
+    bool isAnyX() const;
+    bool isAnyXZ() const;
     bool isMsbXZ() const { return bitIsXZ(m_width); }
     uint32_t toUInt() const;
     vlsint32_t toSInt() const;
@@ -283,6 +283,8 @@ public:
     uint32_t toHash() const;
     uint32_t edataWord(int eword) const;
     uint8_t dataByte(int byte) const;
+    uint32_t countBits(const V3Number& ctrl) const;
+    uint32_t countBits(const V3Number& ctrl1, const V3Number& ctrl2, const V3Number& ctrl3) const;
     uint32_t countOnes() const;
     uint32_t
     mostSetBitP1() const;  // Highest bit set plus one, IE for 16 return 5, for 0 return 0.
@@ -313,6 +315,8 @@ public:
     V3Number& opRedAnd(const V3Number& lhs);
     V3Number& opRedXor(const V3Number& lhs);
     V3Number& opRedXnor(const V3Number& lhs);
+    V3Number& opCountBits(const V3Number& expr, const V3Number& ctrl1, const V3Number& ctrl2,
+                          const V3Number& ctrl3);
     V3Number& opCountOnes(const V3Number& lhs);
     V3Number& opIsUnknown(const V3Number& lhs);
     V3Number& opOneHot(const V3Number& lhs);
@@ -330,7 +334,6 @@ public:
     V3Number& opSelInto(const V3Number& lhs, int lsbval, int width);
     V3Number& opToLowerN(const V3Number& lhs);
     V3Number& opToUpperN(const V3Number& lhs);
-    V3Number& opCond(const V3Number& lhs, const V3Number& if1s, const V3Number& if0s);
     V3Number& opCaseEq(const V3Number& lhs, const V3Number& rhs);
     V3Number& opCaseNeq(const V3Number& lhs, const V3Number& rhs);
     V3Number& opWildEq(const V3Number& lhs, const V3Number& rhs);

@@ -23,9 +23,6 @@
 #include "V3GraphDfa.h"
 #include "V3Stats.h"
 
-#include <cstdarg>
-#include <iomanip>
-
 //######################################################################
 // Assert class functions
 

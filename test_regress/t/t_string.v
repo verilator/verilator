@@ -31,6 +31,7 @@ module t (/*AUTOARG*/
    initial begin
       $sformat(vstr, "s=%s", s);
       `checks(vstr, "s=a");
+      `checks(string'(vstr), "s=a");
       `checks(s, "a");
       `checks({s,s,s}, "aaa");
       `checks({4{s}}, "aaaa");

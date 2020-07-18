@@ -29,13 +29,11 @@
 #include "V3Global.h"
 #include "V3Const.h"
 #include "V3Task.h"
-#include "V3Inst.h"
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
 #include "V3LinkLValue.h"
 
-#include <cstdarg>
 #include <map>
 
 //######################################################################
@@ -848,11 +846,12 @@ private:
                     newPortp->funcLocal(true);
                     dpip->addArgsp(newPortp);
                     if (!portp->basicp()) {
-                        portp->v3error(
+                        portp->v3warn(
+                            E_UNSUPPORTED,
                             "Unsupported: DPI argument of type "
-                            << portp->basicp()->prettyTypeName() << endl
-                            << portp->warnMore()
-                            << "... For best portability, use bit, byte, int, or longint");
+                                << portp->basicp()->prettyTypeName() << endl
+                                << portp->warnMore()
+                                << "... For best portability, use bit, byte, int, or longint");
                         // We don't warn on logic either, although the 4-stateness is lost.
                         // That's what other simulators do.
                     }
@@ -875,12 +874,17 @@ private:
                     if (args != "") args += ", ";
 
                     if (portp->isDpiOpenArray()) {
+                        AstNodeDType* dtypep = portp->dtypep()->skipRefp();
+                        if (VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType)) {
+                            v3fatalSrc("Passing dynamic array or queue as actual argument to DPI "
+                                       "open array is not yet supported");
+                        }
+
                         // Ideally we'd make a table of variable
                         // characteristics, and reuse it wherever we can
                         // At least put them into the module's CTOR as static?
                         string propName = portp->name() + "__Vopenprops";
-                        string propCode = ("static const VerilatedVarProps " + propName + "("
-                                           + portp->vlPropInit() + ");\n");
+                        string propCode = portp->vlPropDecl(propName);
                         cfuncp->addStmtsp(new AstCStmt(portp->fileline(), propCode));
                         //
                         // At runtime we need the svOpenArrayHandle to
@@ -968,9 +972,10 @@ private:
                 }
             } else {
                 if (portp->isWide()) {
-                    nodep->v3error("Unsupported: Public functions with return > 64 bits wide.\n"
-                                   + V3Error::warnMore()
-                                   + "... Suggest make it an output argument instead?");
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Public functions with return > 64 bits wide.\n"
+                                      + V3Error::warnMore()
+                                      + "... Suggest make it an output argument instead?");
                 }
             }
 
@@ -1262,7 +1267,8 @@ private:
             if (v3Global.opt.protectIds() && nodep->taskPublic()) {
                 // We always call protect() on names, we don't check if public or not
                 // Hence any external references wouldn't be able to find the refed public object.
-                nodep->v3error("Unsupported: Using --protect-ids with public function");
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Using --protect-ids with public function");
             }
             if (modes > 1) {
                 nodep->v3error("Cannot mix DPI import, DPI export, class methods, and/or public "
@@ -1330,7 +1336,7 @@ private:
         // Done the loop
         m_insStmtp = NULL;  // Next thing should be new statement
     }
-    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
     }
@@ -1460,9 +1466,10 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                     // Problem otherwise is we might have a varref, task
                     // call, or something else that only makes sense in the
                     // domain of the function, not the callee.
-                    nodep->v3error("Unsupported: Non-constant default value in missing argument "
-                                   << portp->prettyNameQ() << " in function call to "
-                                   << nodep->taskp()->prettyTypeName());
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Non-constant default value in missing argument "
+                                      << portp->prettyNameQ() << " in function call to "
+                                      << nodep->taskp()->prettyTypeName());
                     newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
                 } else {
                     newvaluep = newvaluep->cloneTree(true);
@@ -1501,12 +1508,12 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
         }
     }
 
-    if (debug() >= 9) {
+    if (debug() >= 9) {  // LCOV_EXCL_START
         nodep->dumpTree(cout, "-ftref-out: ");
         for (int i = 0; i < tpinnum; ++i) {
             UINFO(0, "   pin " << i << "  conn=" << cvtToHex(tconnects[i].second) << endl);
         }
-    }
+    }  // LCOV_EXCL_STOP
     return tconnects;
 }
 

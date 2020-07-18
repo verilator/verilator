@@ -53,7 +53,6 @@ public:
     // METHODS (directory utilities)
     static void createDir(const string& dirname);
     static void unlinkRegexp(const string& dir, const string& regexp);
-    static std::string getcwd();  // Return the current working directory
 
     // METHODS (random)
     static vluint64_t rand64(vluint64_t* statep);

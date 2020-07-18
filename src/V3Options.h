@@ -72,15 +72,15 @@ inline std::ostream& operator<<(std::ostream& os, const VOptionBool& rhs) {
 class VTimescale {
 public:
     enum en {
-        TS_1S = 0,
         // clang-format off
-        TS_100MS = 1, TS_10MS = 2, TS_1MS = 3,
-        TS_100US = 4, TS_10US = 5, TS_1US = 6,
-        TS_100NS = 7, TS_10NS = 8, TS_1NS = 9,
-        TS_100PS = 10, TS_10PS = 11, TS_1PS = 12,
-        TS_100FS = 13, TS_10FS = 14, TS_1FS = 15,
+        TS_100S = 0, TS_10S = 1, TS_1S = 2,
+        TS_100MS = 3, TS_10MS = 4, TS_1MS = 5,
+        TS_100US = 6, TS_10US = 7, TS_1US = 8,
+        TS_100NS = 9, TS_10NS = 10, TS_1NS = 11,
+        TS_100PS = 12, TS_10PS = 13, TS_1PS = 14,
+        TS_100FS = 15, TS_10FS = 16, TS_1FS = 17,
         // clang-format on
-        NONE = 16,
+        NONE = 18,
         _ENUM_END
     };
     enum { TS_DEFAULT = TS_1PS };
@@ -93,30 +93,47 @@ public:
         : m_e(_e) {}
     explicit inline VTimescale(int _e)
         : m_e(static_cast<en>(_e)) {}
-    int negativeInt() { return -static_cast<int>(m_e); }
     // Construct from string
     VTimescale(const string& value, bool& badr);
     VTimescale(double value, bool& badr) {
         badr = false;
-        // clang-format off
-        if (value == 1e0) m_e = TS_1S;
-        else if (value == 1e-1) m_e = TS_100MS;
-        else if (value == 1e-2) m_e = TS_10MS;
-        else if (value == 1e-3) m_e = TS_1MS;
-        else if (value == 1e-4) m_e = TS_100US;
-        else if (value == 1e-5) m_e = TS_10US;
-        else if (value == 1e-6) m_e = TS_1US;
-        else if (value == 1e-7) m_e = TS_100NS;
-        else if (value == 1e-8) m_e = TS_10NS;
-        else if (value == 1e-9) m_e = TS_1NS;
-        else if (value == 1e-10) m_e = TS_100PS;
-        else if (value == 1e-11) m_e = TS_10PS;
-        else if (value == 1e-12) m_e = TS_1PS;
-        else if (value == 1e-13) m_e = TS_100FS;
-        else if (value == 1e-14) m_e = TS_10FS;
-        else if (value == 1e-15) m_e = TS_1FS;
-        // clang-format on
-        else {
+        if (value == 10e2) {
+            m_e = TS_100S;
+        } else if (value == 1e1) {
+            m_e = TS_10S;
+        } else if (value == 1e0) {
+            m_e = TS_1S;
+        } else if (value == 1e-1) {
+            m_e = TS_100MS;
+        } else if (value == 1e-2) {
+            m_e = TS_10MS;
+        } else if (value == 1e-3) {
+            m_e = TS_1MS;
+        } else if (value == 1e-4) {
+            m_e = TS_100US;
+        } else if (value == 1e-5) {
+            m_e = TS_10US;
+        } else if (value == 1e-6) {
+            m_e = TS_1US;
+        } else if (value == 1e-7) {
+            m_e = TS_100NS;
+        } else if (value == 1e-8) {
+            m_e = TS_10NS;
+        } else if (value == 1e-9) {
+            m_e = TS_1NS;
+        } else if (value == 1e-10) {
+            m_e = TS_100PS;
+        } else if (value == 1e-11) {
+            m_e = TS_10PS;
+        } else if (value == 1e-12) {
+            m_e = TS_1PS;
+        } else if (value == 1e-13) {
+            m_e = TS_100FS;
+        } else if (value == 1e-14) {
+            m_e = TS_10FS;
+        } else if (value == 1e-15) {
+            m_e = TS_1FS;
+        } else {
             m_e = NONE;
             badr = true;
         }
@@ -127,13 +144,15 @@ public:
                              bool allowEmpty = false);
     const char* ascii() const {
         static const char* const names[]
-            = {"1s",  "100ms", "10ms", "1ms", "100us", "10us", "1us", "100ns", "10ns",
-               "1ns", "100ps", "10ps", "1ps", "100fs", "10fs", "1fs", "NONE"};
+            = {"100s", "10s", "1s",    "100ms", "10ms", "1ms",   "100us", "10us", "1us", "100ns",
+               "10ns", "1ns", "100ps", "10ps",  "1ps",  "100fs", "10fs",  "1fs",  "NONE"};
         return names[m_e];
     }
+    int powerOfTen() const { return 2 - static_cast<int>(m_e); }
     double multiplier() const {
-        static double values[] = {1,    1e-1,  1e-2,  1e-3,  1e-4,  1e-5,  1e-6,  1e-7, 1e-8,
-                                  1e-9, 1e-10, 1e-11, 1e-12, 1e-13, 1e-14, 1e-15, 0};
+        static const double values[]
+            = {100,  10,   1,     1e-1,  1e-2,  1e-3,  1e-4,  1e-5,  1e-6, 1e-7,
+               1e-8, 1e-9, 1e-10, 1e-11, 1e-12, 1e-13, 1e-14, 1e-15, 0};
         return values[m_e];
     }
 };
@@ -220,6 +239,7 @@ private:
     bool        m_coverageUser; // main switch: --coverage-func
     bool        m_debugCheck;   // main switch: --debug-check
     bool        m_debugCollision;  // main switch: --debug-collision
+    bool        m_debugExitParse;  // main switch: --debug-exit-parse
     bool        m_debugLeak;    // main switch: --debug-leak
     bool        m_debugNondeterminism;  // main switch: --debug-nondeterminism
     bool        m_debugPartition;  // main switch: --debug-partition
@@ -261,7 +281,6 @@ private:
     bool        m_threadsDpiUnpure;  // main switch: --threads-dpi all
     bool        m_trace;        // main switch: --trace
     bool        m_traceCoverage;  // main switch: --trace-coverage
-    bool        m_traceDups;    // main switch: --trace-dups
     bool        m_traceParams;  // main switch: --trace-params
     bool        m_traceStructs; // main switch: --trace-structs
     bool        m_traceUnderscore;// main switch: --trace-underscore
@@ -274,6 +293,7 @@ private:
     int         m_buildJobs;    // main switch: -j
     int         m_convergeLimit;// main switch: --converge-limit
     int         m_dumpTree;     // main switch: --dump-tree
+    bool        m_dumpTreeAddrids;// main switch: --dump-tree-addrids
     int         m_gateStmts;    // main switch: --gate-stmts
     int         m_ifDepth;      // main switch: --if-depth
     int         m_inlineMult;   // main switch: --inline-mult
@@ -315,6 +335,7 @@ private:
     string      m_protectLib;   // main switch: --protect-lib {lib_name}
     string      m_topModule;    // main switch: --top-module
     string      m_unusedRegexp; // main switch: --unused-regexp
+    string      m_waiverOutput;  // main switch: --waiver-output {filename}
     string      m_xAssign;      // main switch: --x-assign
     string      m_xInitial;     // main switch: --x-initial
     string      m_xmlOutput;    // main switch: --xml-output
@@ -326,17 +347,18 @@ private:
     // MEMBERS (optimizations)
     //                          // main switch: -Op: --public
     bool        m_oAcycSimp;    // main switch: -Oy: acyclic pre-optimizations
+    bool        m_oAssemble;    // main switch: -Om: assign assemble
     bool        m_oCase;        // main switch: -Oe: case tree conversion
     bool        m_oCombine;     // main switch: -Ob: common icode packing
     bool        m_oConst;       // main switch: -Oc: constant folding
     bool        m_oDedupe;      // main switch: -Od: logic deduplication
-    bool        m_oAssemble;    // main switch: -Om: assign assemble
     bool        m_oExpand;      // main switch: -Ox: expansion of C macros
     bool        m_oGate;        // main switch: -Og: gate wire elimination
+    bool        m_oInline;      // main switch: -Oi: module inlining
     bool        m_oLife;        // main switch: -Ol: variable lifetime
     bool        m_oLifePost;    // main switch: -Ot: delayed assignment elimination
     bool        m_oLocalize;    // main switch: -Oz: convert temps to local variables
-    bool        m_oInline;      // main switch: -Oi: module inlining
+    bool        m_oMergeCond;   // main switch: -Ob: merge conditionals
     bool        m_oReloop;      // main switch: -Ov: reform loops
     bool        m_oReorder;     // main switch: -Or: reorder assignments in blocks
     bool        m_oSplit;       // main switch: -Os: always assignment splitting
@@ -417,6 +439,7 @@ public:
     bool coverageUser() const { return m_coverageUser; }
     bool debugCheck() const { return m_debugCheck; }
     bool debugCollision() const { return m_debugCollision; }
+    bool debugExitParse() const { return m_debugExitParse; }
     bool debugLeak() const { return m_debugLeak; }
     bool debugNondeterminism() const { return m_debugNondeterminism; }
     bool debugPartition() const { return m_debugPartition; }
@@ -433,7 +456,6 @@ public:
     bool threadsCoarsen() const { return m_threadsCoarsen; }
     bool trace() const { return m_trace; }
     bool traceCoverage() const { return m_traceCoverage; }
-    bool traceDups() const { return m_traceDups; }
     bool traceParams() const { return m_traceParams; }
     bool traceStructs() const { return m_traceStructs; }
     bool traceUnderscore() const { return m_traceUnderscore; }
@@ -465,6 +487,7 @@ public:
     int buildJobs() const { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int dumpTree() const { return m_dumpTree; }
+    bool dumpTreeAddrids() const { return m_dumpTreeAddrids; }
     int gateStmts() const { return m_gateStmts; }
     int ifDepth() const { return m_ifDepth; }
     int inlineMult() const { return m_inlineMult; }
@@ -520,6 +543,8 @@ public:
     }
     string topModule() const { return m_topModule; }
     string unusedRegexp() const { return m_unusedRegexp; }
+    string waiverOutput() const { return m_waiverOutput; }
+    bool isWaiverOutput() const { return !m_waiverOutput.empty(); }
     string xAssign() const { return m_xAssign; }
     string xInitial() const { return m_xInitial; }
     string xmlOutput() const { return m_xmlOutput; }
@@ -544,18 +569,18 @@ public:
 
     // ACCESSORS (optimization options)
     bool oAcycSimp() const { return m_oAcycSimp; }
+    bool oAssemble() const { return m_oAssemble; }
     bool oCase() const { return m_oCase; }
     bool oCombine() const { return m_oCombine; }
     bool oConst() const { return m_oConst; }
     bool oDedupe() const { return m_oDedupe; }
-    bool oAssemble() const { return m_oAssemble; }
     bool oExpand() const { return m_oExpand; }
     bool oGate() const { return m_oGate; }
-    bool oDup() const { return oLife(); }
+    bool oInline() const { return m_oInline; }
     bool oLife() const { return m_oLife; }
     bool oLifePost() const { return m_oLifePost; }
     bool oLocalize() const { return m_oLocalize; }
-    bool oInline() const { return m_oInline; }
+    bool oMergeCond() const { return m_oMergeCond; }
     bool oReloop() const { return m_oReloop; }
     bool oReorder() const { return m_oReorder; }
     bool oSplit() const { return m_oSplit; }
@@ -573,7 +598,7 @@ public:
     // METHODS (from main)
     static string version();
     static string argString(int argc, char** argv);  ///< Return list of arguments as simple string
-    string allArgsString();  ///< Return all passed arguments as simple string
+    string allArgsString() const;  ///< Return all passed arguments as simple string
     void bin(const string& flag) { m_bin = flag; }
     void parseOpts(FileLine* fl, int argc, char** argv);
     void parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv);
@@ -591,6 +616,8 @@ public:
     static string getenvSYSTEMC_INCLUDE();
     static string getenvSYSTEMC_LIBDIR();
     static string getenvVERILATOR_ROOT();
+    static bool systemCSystemWide();
+    static bool systemCFound();  // SystemC installed, or environment points to it
 
     // METHODS (file utilities using these options)
     string fileExists(const string& filename);

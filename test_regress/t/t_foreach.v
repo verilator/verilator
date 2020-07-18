@@ -11,10 +11,19 @@ module t (/*AUTOARG*/);
    // verilator lint_off LITENDIAN
    // verilator lint_off WIDTH
 
-   reg [63:0] sum;
+   reg [63:0] sum;  // Checked not in objects
+   reg [63:0] add;
    reg [2:1] [4:3] array [5:6] [7:8];
    reg [1:2] [3:4] larray [6:5] [8:7];
    bit [31:0]      depth1_array [0:0];
+
+   typedef struct packed {
+      reg [1:0] [63:0] subarray;
+   } str_t;
+   typedef struct packed {
+      str_t mid;
+   } mid_t;
+   mid_t strarray[3];
 
    function [63:0] crc (input [63:0] sum, input [31:0] a, input [31:0] b, input [31:0] c, input [31:0] d);
       crc = {sum[62:0],sum[63]} ^ {4'b0,a[7:0], 4'h0,b[7:0], 4'h0,c[7:0], 4'h0,d[7:0]};
@@ -86,6 +95,20 @@ module t (/*AUTOARG*/);
          sum = crc(sum, index_a, index_b, index_c, index_d);
       end
       `checkh(sum, 64'h0020179aa7aa0aaa);
+
+      add = 0;
+      strarray[0].mid.subarray[0] = 1;
+      strarray[0].mid.subarray[1] = 2;
+      strarray[1].mid.subarray[0] = 4;
+      strarray[1].mid.subarray[1] = 5;
+      strarray[2].mid.subarray[0] = 6;
+      strarray[2].mid.subarray[1] = 7;
+`ifndef VERILATOR  // Unsupported
+      foreach (strarray[s])
+        foreach (strarray[s].mid.subarray[ss])
+          add += strarray[s].mid.subarray[ss];
+      `checkh(add, 'h19);
+`endif
 
       $write("*-* All Finished *-*\n");
       $finish;

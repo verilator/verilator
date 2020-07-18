@@ -23,7 +23,9 @@ execute(
 run(cmd => ["../bin/verilator_coverage",
             "--annotate", "$Self->{obj_dir}/annotated",
             "$Self->{obj_dir}/coverage.dat",
-    ]);
+    ],
+    verilator_run => 1,
+    );
 
 files_identical("$Self->{obj_dir}/annotated/t_cover_line.v", "t/t_cover_line.out");
 vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});

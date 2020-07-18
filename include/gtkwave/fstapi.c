@@ -794,6 +794,7 @@ pthread_t thread;
 pthread_attr_t thread_attr;
 struct fstWriterContext *xc_parent;
 #endif
+unsigned in_pthread : 1;
 
 size_t fst_orig_break_size;
 size_t fst_orig_break_add_size;
@@ -1806,9 +1807,8 @@ static void *fstWriterFlushContextPrivate1(void *ctx)
 {
 struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
 
+pthread_mutex_lock(&(xc->xc_parent->mutex));
 fstWriterFlushContextPrivate2(xc);
-
-pthread_mutex_unlock(&(xc->xc_parent->mutex));
 
 #ifdef FST_REMOVE_DUPLICATE_VC
 free(xc->curval_mem);
@@ -1817,6 +1817,9 @@ free(xc->valpos_mem);
 free(xc->vchg_mem);
 tmpfile_close(&xc->tchn_handle, &xc->tchn_handle_nam);
 free(xc);
+
+xc->xc_parent->in_pthread = 0;
+pthread_mutex_unlock(&(xc->xc_parent->mutex));
 
 return(NULL);
 }
@@ -1865,7 +1868,15 @@ if(xc->parallel_enabled)
         xc->section_header_only = 0;
         xc->secnum++;
 
+	while (xc->in_pthread) 
+		{ 
+		pthread_mutex_lock(&xc->mutex); 
+		pthread_mutex_unlock(&xc->mutex); 
+		};
+
         pthread_mutex_lock(&xc->mutex);
+	xc->in_pthread = 1;
+        pthread_mutex_unlock(&xc->mutex);
 
         pthread_create(&xc->thread, &xc->thread_attr, fstWriterFlushContextPrivate1, xc2);
         }
@@ -1947,6 +1958,12 @@ if(xc && !xc->already_in_close && !xc->already_in_flush)
 #ifdef FST_WRITER_PARALLEL
                         pthread_mutex_lock(&xc->mutex);
                         pthread_mutex_unlock(&xc->mutex);
+
+			while (xc->in_pthread) 
+				{ 
+				pthread_mutex_lock(&xc->mutex); 
+				pthread_mutex_unlock(&xc->mutex); 
+				};
 #endif
                         }
                 }

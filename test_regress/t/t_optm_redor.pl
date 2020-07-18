@@ -18,6 +18,7 @@ execute(
     );
 
 file_grep_not("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/rstn_r/);
+file_grep_not("$Self->{obj_dir}/$Self->{VM_PREFIX}__Slow.cpp", qr/rstn_r/);
 
 ok(1);
 1;

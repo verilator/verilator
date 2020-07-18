@@ -39,7 +39,7 @@ brief:
 #sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
 #sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
 
-git clone https://git.veripool.org/git/verilator   # Only first time
+git clone https://github.com/verilator/verilator   # Only first time
 ## Note the URL above is not a page you can see with a browser, it's for git only
 
 # Every time you need to build:
@@ -80,8 +80,7 @@ MSVC++.
 
 To build or run Verilator you need these standard packages:
 
-   sudo apt-get install perl python3
-   sudo apt-get install make
+   sudo apt-get install perl python3 make
    sudo apt-get install g++  # Alternatively, clang
    sudo apt-get install libgz  # Non-Ubuntu (ignore if gives error)
    sudo apt-get install libfl2 libfl-dev zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
@@ -90,17 +89,16 @@ To build or run the following are optional but should be installed for
 good performance:
 
    sudo apt-get install ccache  # If present at build, needed for run
-   sudo apt-get install libgoogle-perftools-dev numactl
+   sudo apt-get install libgoogle-perftools-dev numactl perl-doc
 
 To build Verilator you will need to install these packages; these do not
 need to be present to run Verilator:
 
-   sudo apt-get install git
-   sudo apt-get install autoconf flex bison
+   sudo apt-get install git autoconf flex bison
 
 Those developing Verilator itself may also want these (see internals.adoc):
 
-   sudo apt-get install gdb asciidoctor graphviz cmake clang-format
+   sudo apt-get install gdb asciidoctor graphviz cmake clang clang-format gprof lcov
    cpan install Pod::Perldoc
    cpan install Unix::Processors
    cpan install Parallel::Forker
@@ -130,7 +128,7 @@ Downloads]; we presume you know how to use it, and is not described here.)
 
 Get the sources from the repository: (You need do this only once, ever.)
 
-   git clone https://git.veripool.org/git/verilator   # Only first time
+   git clone https://github.com/verilator/verilator   # Only first time
    ## Note the URL above is not a page you can see with a browser, it's for git only
 
 Enter the checkout and determine what version/branch to use:

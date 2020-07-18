@@ -32,7 +32,6 @@
 #include "V3Ast.h"
 #include "V3Const.h"
 
-#include <cstdarg>
 #include <map>
 #include <vector>
 

@@ -30,7 +30,6 @@
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
 
-#include <cstdarg>
 #include <map>
 
 //######################################################################

@@ -66,10 +66,6 @@ bool VString::wildmatch(const string& s, const string& p) {
     return wildmatch(s.c_str(), p.c_str());
 }
 
-bool VString::isWildcard(const string& p) {
-    return ((p.find('*') != string::npos) || (p.find('?') != string::npos));
-}
-
 string VString::dot(const string& a, const string& dot, const string& b) {
     if (b == "") return a;
     if (a == "") return b;
@@ -123,6 +119,24 @@ bool VString::isWhitespace(const string& str) {
         if (!isspace(*pos)) return false;
     }
     return true;
+}
+
+double VString::parseDouble(const string& str, bool* successp) {
+    char* strgp = new char[str.size() + 1];
+    char* dp = strgp;
+    if (successp) *successp = true;
+    for (const char* sp = str.c_str(); *sp; ++sp) {
+        if (*sp != '_') *dp++ = *sp;
+    }
+    *dp++ = '\0';
+    char* endp = strgp;
+    double d = strtod(strgp, &endp);
+    size_t parsed_len = endp - strgp;
+    if (parsed_len != strlen(strgp)) {
+        if (successp) *successp = false;
+    }
+    VL_DO_DANGLING(delete[] strgp, strgp);
+    return d;
 }
 
 //######################################################################

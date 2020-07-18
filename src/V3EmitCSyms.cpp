@@ -23,10 +23,7 @@
 #include "V3LanguageWords.h"
 
 #include <algorithm>
-#include <cmath>
-#include <cstdarg>
 #include <map>
-#include <set>
 #include <vector>
 
 //######################################################################
@@ -107,7 +104,6 @@ class EmitCSyms : EmitCBaseVisitor {
     ScopeVars m_scopeVars;  // Each {scope,public-var}
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
     ScopeNameHierarchy m_vpiScopeHierarchy;  // The actual hierarchy of scopes
-    V3LanguageWords m_words;  // Reserved word detector
     int m_coverBins;  // Coverage bin number
     bool m_dpiHdrOnly;  // Only emit the DPI header
     int m_numStmts;  // Number of statements output
@@ -130,7 +126,7 @@ class EmitCSyms : EmitCBaseVisitor {
             && !(VN_IS(nodep, CFunc)
                  && (VN_CAST(nodep, CFunc)->isConstructor()
                      || VN_CAST(nodep, CFunc)->isDestructor()))) {
-            string rsvd = m_words.isKeyword(nodep->name());
+            string rsvd = V3LanguageWords::isKeyword(nodep->name());
             if (rsvd != "") {
                 // Generally V3Name should find all of these and throw SYMRSVDWORD.
                 // We'll still check here because the compiler errors
@@ -292,7 +288,7 @@ class EmitCSyms : EmitCBaseVisitor {
             string type = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
             string name = nodep->scopep()->name() + "__DOT__" + nodep->name();
             string name_dedot = AstNode::dedotName(name);
-            int timeunit = m_modp->timeunit().negativeInt();
+            int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
                 make_pair(name, ScopeData(scopeSymString(name), name_dedot, timeunit, type)));
         }
@@ -305,7 +301,7 @@ class EmitCSyms : EmitCBaseVisitor {
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
             string name_dedot = AstNode::dedotName(nodep->shortName());
-            int timeunit = m_modp->timeunit().negativeInt();
+            int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
                 make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_dedot,
                                                    timeunit, "SCOPE_MODULE")));
@@ -315,7 +311,7 @@ class EmitCSyms : EmitCBaseVisitor {
         string name = nodep->scopeSymName();
         // UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()
         // <<" ss"<<name<<endl);
-        int timeunit = m_modp ? m_modp->timeunit().negativeInt() : 0;
+        int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
         if (m_scopeNames.find(name) == m_scopeNames.end()) {
             m_scopeNames.insert(make_pair(
                 name, ScopeData(name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER")));
@@ -336,12 +332,7 @@ class EmitCSyms : EmitCBaseVisitor {
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         nameCheck(nodep);
         iterateChildren(nodep);
-        if (nodep->isSigUserRdPublic()
-            // The VPI functions require a pointer to allow modification,
-            // but parameters are constants
-            && !nodep->isParam()) {
-            m_modVars.push_back(make_pair(m_modp, nodep));
-        }
+        if (nodep->isSigUserRdPublic()) { m_modVars.push_back(make_pair(m_modp, nodep)); }
     }
     virtual void visit(AstCoverDecl* nodep) VL_OVERRIDE {
         // Assign numbers to all bins, so we know how big of an array to use
@@ -442,6 +433,8 @@ void EmitCSyms::emitSymHdr() {
     }
     if (v3Global.opt.trace()) {
         puts("bool __Vm_activity;  ///< Used by trace routines to determine change occurred\n");
+        puts("uint32_t __Vm_baseCode;  "
+             "///< Used by trace routines when tracing multiple models\n");
     }
     puts("bool __Vm_didInit;\n");
 
@@ -495,10 +488,6 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// METHODS\n");
     puts("inline const char* name() { return __Vm_namep; }\n");
-    if (v3Global.opt.trace()) {
-        puts("inline bool getClearActivity() { bool r=__Vm_activity; "
-             "__Vm_activity=false; return r; }\n");
-    }
     if (v3Global.opt.savable()) {
         puts("void " + protect("__Vserialize") + "(VerilatedSerialize& os);\n");
         puts("void " + protect("__Vdeserialize") + "(VerilatedDeserialize& os);\n");
@@ -522,6 +511,9 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
         && (!v3Global.opt.outputSplitCFuncs() || m_numStmts < v3Global.opt.outputSplitCFuncs())) {
         return;
     }
+
+    // Splitting file, so using parallel build.
+    v3Global.useParallelBuild(true);
 
     m_numStmts = 0;
     string filename
@@ -627,7 +619,10 @@ void EmitCSyms::emitSymImp() {
         puts("    , __Vm_dumping(false)\n");
         puts("    , __Vm_dumperp(NULL)\n");
     }
-    if (v3Global.opt.trace()) puts("    , __Vm_activity(false)\n");
+    if (v3Global.opt.trace()) {
+        puts("    , __Vm_activity(false)\n");
+        puts("    , __Vm_baseCode(0)\n");
+    }
     puts("    , __Vm_didInit(false)\n");
     puts("    // Setup submodule names\n");
     char comma = ',';
@@ -794,16 +789,38 @@ void EmitCSyms::emitSymImp() {
             }
             puts(protect("__Vscope_" + it->second.m_scopeName) + ".varInsert(__Vfinal,");
             putsQuoted(protect(it->second.m_varBasePretty));
-            puts(", &(");
+
+            std::string varName;
             if (modp->isTop()) {
-                puts(protectIf(scopep->nameDotless() + "p", scopep->protect()));
-                puts("->");
+                varName += (protectIf(scopep->nameDotless() + "p", scopep->protect()) + "->");
             } else {
-                puts(protectIf(scopep->nameDotless(), scopep->protect()));
-                puts(".");
+                varName += (protectIf(scopep->nameDotless(), scopep->protect()) + ".");
             }
-            puts(varp->nameProtect());
-            puts("), ");
+
+            if (varp->isParam()) {
+                varName += protect("var_" + varp->name());
+            } else {
+                varName += protect(varp->name());
+            }
+
+            if (varp->isParam()) {
+                if (varp->vlEnumType() == "VLVT_STRING") {
+                    puts(", const_cast<void*>(static_cast<const void*>(");
+                    puts(varName.c_str());
+                    puts(".c_str())), ");
+                } else {
+                    puts(", const_cast<void*>(static_cast<const void*>(&(");
+                    puts(varName.c_str());
+                    puts("))), ");
+                }
+            } else {
+                puts(", &(");
+                puts(varName.c_str());
+                puts("), ");
+            }
+
+            puts(varp->isParam() ? "true" : "false");
+            puts(", ");
             puts(varp->vlEnumType());  // VLVT_UINT32 etc
             puts(",");
             puts(varp->vlEnumDir());  // VLVD_IN etc

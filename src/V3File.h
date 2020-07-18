@@ -165,7 +165,7 @@ public:
         if (!m_parenVec.empty()) m_parenVec.pop();
     }
     // STATIC METHODS
-    static const string indentSpaces(int num);
+    static string indentSpaces(int num);
     // Add escaped characters to strings
     static string quoteNameControls(const string& namein, Language lang = LA_C);
 

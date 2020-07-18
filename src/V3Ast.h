@@ -117,6 +117,9 @@ public:
 inline bool operator==(const VLifetime& lhs, const VLifetime& rhs) { return lhs.m_e == rhs.m_e; }
 inline bool operator==(const VLifetime& lhs, VLifetime::en rhs) { return lhs.m_e == rhs; }
 inline bool operator==(VLifetime::en lhs, const VLifetime& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 
@@ -193,12 +196,14 @@ class AstCFuncType {
 public:
     enum en {
         FT_NORMAL,
+        TRACE_REGISTER,
         TRACE_INIT,
         TRACE_INIT_SUB,
         TRACE_FULL,
         TRACE_FULL_SUB,
         TRACE_CHANGE,
-        TRACE_CHANGE_SUB
+        TRACE_CHANGE_SUB,
+        TRACE_CLEANUP
     };
     enum en m_e;
     inline AstCFuncType()
@@ -210,10 +215,7 @@ public:
         : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     // METHODS
-    bool isTrace() const {
-        return (m_e == TRACE_INIT || m_e == TRACE_INIT_SUB || m_e == TRACE_FULL
-                || m_e == TRACE_FULL_SUB || m_e == TRACE_CHANGE || m_e == TRACE_CHANGE_SUB);
-    }
+    bool isTrace() const { return m_e != FT_NORMAL; }
 };
 inline bool operator==(const AstCFuncType& lhs, const AstCFuncType& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -258,7 +260,7 @@ public:
         case ET_HIGHEDGE: return ET_LOWEDGE;
         case ET_LOWEDGE: return ET_HIGHEDGE;
         default: UASSERT_STATIC(0, "Inverting bad edgeType()");
-        };
+        }
         return VEdgeType::ET_ILLEGAL;
     }
     const char* ascii() const {
@@ -1081,9 +1083,6 @@ public:
 //          - Also used to allow parameter passing up/down iterate calls
 
 class WidthVP;
-class LinkVP;
-class OrderBlockNU;
-class OrderVarNU;
 class V3GraphVertex;
 class VSymEnt;
 
@@ -1104,15 +1103,11 @@ public:
     explicit VNUser(void* p) { m_u.up = p; }
     ~VNUser() {}
     // Casters
-    WidthVP* c() { return ((WidthVP*)m_u.up); }
-    LinkVP* toLinkVP() { return ((LinkVP*)m_u.up); }
-    VSymEnt* toSymEnt() { return ((VSymEnt*)m_u.up); }
-    AstNode* toNodep() { return ((AstNode*)m_u.up); }
-    OrderBlockNU* toOrderBlock() { return ((OrderBlockNU*)m_u.up); }
-    OrderVarNU* toOrderVar() { return ((OrderVarNU*)m_u.up); }
-    V3GraphVertex* toGraphVertex() { return ((V3GraphVertex*)m_u.up); }
-    inline int toInt() { return m_u.ui; }
-    static inline VNUser fromZero() { return VNUser(0); }
+    WidthVP* c() const { return reinterpret_cast<WidthVP*>(m_u.up); }
+    VSymEnt* toSymEnt() const { return reinterpret_cast<VSymEnt*>(m_u.up); }
+    AstNode* toNodep() const { return reinterpret_cast<AstNode*>(m_u.up); }
+    V3GraphVertex* toGraphVertex() const { return reinterpret_cast<V3GraphVertex*>(m_u.up); }
+    int toInt() const { return m_u.ui; }
     static inline VNUser fromInt(int i) { return VNUser(i); }
 };
 
@@ -1318,7 +1313,7 @@ public:
     class FullValue {};  // for creator type-overload selection
     explicit V3Hash(Illegal) { m_both = 0; }
     // Saving and restoring inside a userp
-    explicit V3Hash(VNUser u) { m_both = u.toInt(); }
+    explicit V3Hash(const VNUser& u) { m_both = u.toInt(); }
     V3Hash operator+=(const V3Hash& rh) {
         setBoth(depth() + rh.depth(), (hshval() * 31 + rh.hshval()));
         return *this;
@@ -1355,12 +1350,12 @@ public:
 // Prefetch a node.
 // The if() makes it faster, even though prefetch won't fault on null pointers
 #define ASTNODE_PREFETCH(nodep) \
-    { \
+    do { \
         if (nodep) { \
             VL_PREFETCH_RD(&((nodep)->m_nextp)); \
             VL_PREFETCH_RD(&((nodep)->m_iterpp)); \
         } \
-    }
+    } while (false)
 
 class AstNode {
     // v ASTNODE_PREFETCH depends on below ordering of members
@@ -1789,20 +1784,22 @@ public:
     static void dumpTreeFileGdb(const char* filenamep = NULL);
 
     // METHODS - queries
-    // Else a $display, etc, that must be ordered with other displays
-    virtual bool isPure() const { return true; }
     // Changes control flow, disable some optimizations
     virtual bool isBrancher() const { return false; }
     // Else a AstTime etc that can't be pushed out
     virtual bool isGateOptimizable() const { return true; }
     // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
     virtual bool isGateDedupable() const { return isGateOptimizable(); }
-    // Else a AstTime etc that can't be substituted out
-    virtual bool isSubstOptimizable() const { return true; }
-    // Else a AstTime etc which output can't be predicted from input
-    virtual bool isPredictOptimizable() const { return true; }
+    // Needs verilated_heavy.h (uses std::string or some others)
+    virtual bool isHeavy() const { return false; }
     // Else creates output or exits, etc, not unconsumed
     virtual bool isOutputter() const { return false; }
+    // Else a AstTime etc which output can't be predicted from input
+    virtual bool isPredictOptimizable() const { return true; }
+    // Else a $display, etc, that must be ordered with other displays
+    virtual bool isPure() const { return true; }
+    // Else a AstTime etc that can't be substituted out
+    virtual bool isSubstOptimizable() const { return true; }
     // isUnlikely handles $stop or similar statement which means an above IF
     // statement is unlikely to be taken
     virtual bool isUnlikely() const { return false; }
@@ -1815,6 +1812,8 @@ public:
     virtual bool hasDType() const { return false; }
     // Iff has a non-null childDTypep(), as generic node function
     virtual AstNodeDType* getChildDTypep() const { return NULL; }
+    // Iff has a non-null child2DTypep(), as generic node function
+    virtual AstNodeDType* getChild2DTypep() const { return NULL; }
     // Another AstNode* may have a pointer into this node, other then normal front/back/etc.
     virtual bool maybePointedTo() const { return false; }
     virtual const char* broken() const { return NULL; }
@@ -1994,6 +1993,43 @@ public:
     virtual bool sizeMattersLhs() const = 0;  // True if output result depends on lhs size
     virtual bool sizeMattersRhs() const = 0;  // True if output result depends on rhs size
     virtual bool sizeMattersThs() const = 0;  // True if output result depends on ths size
+    virtual int instrCount() const { return widthInstrs(); }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode*) const { return true; }
+};
+
+class AstNodeQuadop : public AstNodeMath {
+    // Quaternary math
+public:
+    AstNodeQuadop(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths, AstNode* fhs)
+        : AstNodeMath(t, fl) {
+        setOp1p(lhs);
+        setOp2p(rhs);
+        setOp3p(ths);
+        setOp4p(fhs);
+    }
+    ASTNODE_BASE_FUNCS(NodeQuadop)
+    AstNode* lhsp() const { return op1p(); }
+    AstNode* rhsp() const { return op2p(); }
+    AstNode* thsp() const { return op3p(); }
+    AstNode* fhsp() const { return op4p(); }
+    void lhsp(AstNode* nodep) { return setOp1p(nodep); }
+    void rhsp(AstNode* nodep) { return setOp2p(nodep); }
+    void thsp(AstNode* nodep) { return setOp3p(nodep); }
+    void fhsp(AstNode* nodep) { return setOp4p(nodep); }
+    // METHODS
+    // Set out to evaluation of a AstConst'ed
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
+                               const V3Number& ths, const V3Number& fhs)
+        = 0;
+    virtual bool cleanLhs() const = 0;  // True if LHS must have extra upper bits zero
+    virtual bool cleanRhs() const = 0;  // True if RHS must have extra upper bits zero
+    virtual bool cleanThs() const = 0;  // True if THS must have extra upper bits zero
+    virtual bool cleanFhs() const = 0;  // True if THS must have extra upper bits zero
+    virtual bool sizeMattersLhs() const = 0;  // True if output result depends on lhs size
+    virtual bool sizeMattersRhs() const = 0;  // True if output result depends on rhs size
+    virtual bool sizeMattersThs() const = 0;  // True if output result depends on ths size
+    virtual bool sizeMattersFhs() const = 0;  // True if output result depends on ths size
     virtual int instrCount() const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode*) const { return true; }
@@ -2210,19 +2246,6 @@ public:
     void addNotParallelp(AstNode* nodep) { setOp3p(nodep); }
 };
 
-class AstNodeSenItem : public AstNode {
-    // An AstSenItem or AstSenGate
-public:
-    AstNodeSenItem(AstType t, FileLine* fl)
-        : AstNode(t, fl) {}
-    ASTNODE_BASE_FUNCS(NodeSenItem)
-    virtual bool isClocked() const = 0;
-    virtual bool isCombo() const = 0;
-    virtual bool isInitial() const = 0;
-    virtual bool isSettle() const = 0;
-    virtual bool isNever() const = 0;
-};
-
 class AstNodeVarRef : public AstNodeMath {
     // An AstVarRef or AstVarXRef
 private:
@@ -2233,29 +2256,26 @@ private:
     string m_name;  // Name of variable
     string m_hiername;  // Scope converted into name-> for emitting
     bool m_hierThis;  // Hiername points to "this" function
-    void init();
 
 public:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, bool lvalue)
         : AstNodeMath(t, fl)
         , m_lvalue(lvalue)
-        , m_varp(NULL)
         , m_varScopep(NULL)
         , m_packagep(NULL)
         , m_name(name)
         , m_hierThis(false) {
-        init();
+        this->varp(NULL);
     }
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, AstVar* varp, bool lvalue)
         : AstNodeMath(t, fl)
         , m_lvalue(lvalue)
-        , m_varp(varp)
         , m_varScopep(NULL)
         , m_packagep(NULL)
         , m_name(name)
         , m_hierThis(false) {
         // May have varp==NULL
-        init();
+        this->varp(varp);
     }
     ASTNODE_BASE_FUNCS(NodeVarRef)
     virtual bool hasDType() const { return true; }
@@ -2267,7 +2287,7 @@ public:
     bool lvalue() const { return m_lvalue; }
     void lvalue(bool lval) { m_lvalue = lval; }  // Avoid using this; Set in constructor
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
-    void varp(AstVar* varp) { m_varp = varp; }
+    void varp(AstVar* varp);
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
     string hiername() const { return m_hiername; }
@@ -2338,9 +2358,8 @@ public:
     virtual AstNodeDType* skipRefToEnump() const = 0;
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthAlignBytes() const = 0;
-    virtual int
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
-    widthTotalBytes() const = 0;
+    virtual int widthTotalBytes() const = 0;
     virtual bool maybePointedTo() const { return true; }
     // Iff has a non-null refDTypep(), as generic node function
     virtual AstNodeDType* virtRefDTypep() const { return NULL; }
@@ -2444,9 +2463,8 @@ public:
     }  // op1 = AstMember list
     void addMembersp(AstNode* nodep) { addNOp1p(nodep); }
     bool packed() const { return m_packed; }
-    bool packedUnsup() const {
-        return true;
-    }  // packed() but as don't support unpacked, presently all structs
+    // packed() but as don't support unpacked, presently all structs
+    static bool packedUnsup() { return true; }
     void isFourstate(bool flag) { m_isFourstate = flag; }
     virtual bool isFourstate() const { return m_isFourstate; }
     void clearCache() { m_members.clear(); }
@@ -2455,7 +2473,7 @@ public:
         MemberNameMap::const_iterator it = m_members.find(name);
         return (it == m_members.end()) ? NULL : it->second;
     }
-    int lsb() const { return 0; }
+    static int lsb() { return 0; }
     int msb() const { return dtypep()->width() - 1; }  // Packed classes look like arrays
     VNumRange declRange() const { return VNumRange(msb(), lsb(), false); }
 };
@@ -2497,10 +2515,8 @@ public:
     virtual V3Hash sameHash() const {
         return V3Hash(V3Hash(m_refDTypep), V3Hash(msb()), V3Hash(lsb()));
     }
-    AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const {
-        return VN_CAST(op1p(), NodeDType);
-    }  // op1 = Range of variable
+    virtual AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
@@ -2609,6 +2625,7 @@ private:
     bool m_taskPublic : 1;  // Public task
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_classMethod : 1;  // Class method
+    bool m_extern : 1;  // Extern prototype
     bool m_prototype : 1;  // Just a prototype
     bool m_dpiExport : 1;  // DPI exported
     bool m_dpiImport : 1;  // DPI imported
@@ -2617,6 +2634,8 @@ private:
     bool m_dpiTask : 1;  // DPI import task (vs. void function)
     bool m_isConstructor : 1;  // Class constructor
     bool m_pure : 1;  // DPI import pure (vs. virtual pure)
+    bool m_pureVirtual : 1;  // Pure virtual
+    bool m_virtual : 1;  // Virtual method in class
     VLifetime m_lifetime;  // Lifetime
 public:
     AstNodeFTask(AstType t, FileLine* fl, const string& name, AstNode* stmtsp)
@@ -2626,6 +2645,7 @@ public:
         , m_taskPublic(false)
         , m_attrIsolateAssign(false)
         , m_classMethod(false)
+        , m_extern(false)
         , m_prototype(false)
         , m_dpiExport(false)
         , m_dpiImport(false)
@@ -2633,7 +2653,9 @@ public:
         , m_dpiOpenChild(false)
         , m_dpiTask(false)
         , m_isConstructor(false)
-        , m_pure(false) {
+        , m_pure(false)
+        , m_pureVirtual(false)
+        , m_virtual(false) {
         addNOp3p(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
@@ -2666,6 +2688,8 @@ public:
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     void classMethod(bool flag) { m_classMethod = flag; }
     bool classMethod() const { return m_classMethod; }
+    void isExtern(bool flag) { m_extern = flag; }
+    bool isExtern() const { return m_extern; }
     void prototype(bool flag) { m_prototype = flag; }
     bool prototype() const { return m_prototype; }
     void dpiExport(bool flag) { m_dpiExport = flag; }
@@ -2682,6 +2706,10 @@ public:
     bool isConstructor() const { return m_isConstructor; }
     void pure(bool flag) { m_pure = flag; }
     bool pure() const { return m_pure; }
+    void pureVirtual(bool flag) { m_pureVirtual = flag; }
+    bool pureVirtual() const { return m_pureVirtual; }
+    void isVirtual(bool flag) { m_virtual = flag; }
+    bool isVirtual() const { return m_virtual; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
 };
@@ -2695,11 +2723,13 @@ private:
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
     AstNodeModule* m_packagep;  // Package hierarchy
+    bool m_pli;  // Pli system call ($name)
 public:
     AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
         : AstNodeStmt(t, fl, statement)
         , m_taskp(NULL)
-        , m_packagep(NULL) {
+        , m_packagep(NULL)
+        , m_pli(false) {
         setOp1p(namep);
         addNOp3p(pinsp);
     }
@@ -2707,7 +2737,8 @@ public:
         : AstNodeStmt(t, fl, statement)
         , m_taskp(NULL)
         , m_name(name)
-        , m_packagep(NULL) {
+        , m_packagep(NULL)
+        , m_pli(false) {
         addNOp3p(pinsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
@@ -2731,6 +2762,8 @@ public:
     void dotted(const string& name) { m_dotted = name; }
     AstNodeModule* packagep() const { return m_packagep; }
     void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
+    bool pli() const { return m_pli; }
+    void pli(bool flag) { m_pli = flag; }
     // op1 = namep
     AstNode* namep() const { return op1p(); }
     // op2 = reserved for AstMethodCall
@@ -2894,8 +2927,9 @@ inline bool AstNode::sameGateTree(const AstNode* node2p) const {
     return sameTreeIter(this, node2p, true, true);
 }
 
-inline void AstNodeVarRef::init() {
-    if (m_varp) dtypep(m_varp->dtypep());
+inline void AstNodeVarRef::varp(AstVar* varp) {
+    m_varp = varp;
+    dtypeFrom(varp);
 }
 
 inline bool AstNodeDType::isFourstate() const { return basicp()->isFourstate(); }

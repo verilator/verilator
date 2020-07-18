@@ -10,11 +10,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
+my $waiver_filename = "$Self->{obj_dir}/$Self->{name}_waiver.vlt";
+
 lint(
-    verilator_flags2 => ["--lint-only --language 1364-2001"],
+    verilator_flags2 => ["--lint-only --language 1364-2001 --waiver-output ${waiver_filename}"],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );
+
+if (-e $waiver_filename) {
+    error("Waiver file generated, not expected..");
+}
 
 ok(1);
 1;

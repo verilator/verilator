@@ -24,6 +24,7 @@ foreach my $prog (
         tee => $self->{verbose},
         logfile => "$Self->{obj_dir}/t_help.log",
         expect => qr/^Verilator/,
+        verilator_run => 1,
         );
 
     run(fails => 0,
@@ -32,6 +33,7 @@ foreach my $prog (
         tee => $self->{verbose},
         logfile => "$Self->{obj_dir}/t_help.log",
         expect => qr/^Verilator/,
+        verilator_run => 1,
         );
 
     run(fails => 0,
@@ -39,6 +41,7 @@ foreach my $prog (
                 "-V"],
         logfile => "$Self->{obj_dir}/t_help.log",
         expect => qr/^Verilator/,
+        verilator_run => 1,
         );
 }
 

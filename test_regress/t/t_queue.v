@@ -19,6 +19,13 @@ module t (/*AUTOARG*/
 
    integer i;
 
+   typedef integer q_t[$];
+
+   initial begin
+      q_t iq;
+      iq.push_back(42);
+   end
+
    always @ (posedge clk) begin
       cyc <= cyc + 1;
 
@@ -123,6 +130,7 @@ module t (/*AUTOARG*/
          v = q[2]; `checks(v, "b1");
          v = q[3]; `checks(v, "b2");
          v = q[4]; `checks(v, "");
+         //Unsup: `checkh(q[$], "b2");
 
          v = $sformatf("%p", q); `checks(v, "'{\"f2\", \"f1\", \"b1\", \"b2\"} ");
 
@@ -170,6 +178,7 @@ module t (/*AUTOARG*/
          q.delete(0);
          i = q.size(); `checkh(i, 1);
          `checks(q[0], "front");
+         //Unsup: `checks(q[$], "front");
 
       end
 
@@ -184,6 +193,45 @@ module t (/*AUTOARG*/
          `checkh($dimensions(q), 2);
          //Unsup: `checkh($bits(q), 0);
 
+      end
+
+      // testing a wide queue
+      begin
+         typedef struct packed {
+            bit [7:0] opcode;
+            bit [23:0] addr;
+            bit [127:0] data;
+         } instructionW; // named structure type
+
+         instructionW inst_push;
+         instructionW inst_pop;
+
+         instructionW q[$];
+         `checkh($dimensions(q), 2);
+
+         `checkh(q[0].opcode, 0);
+         `checkh(q[0].addr, 0);
+         `checkh(q[0].data, 0);
+
+         inst_push.opcode = 1;
+         inst_push.addr = 42;
+         inst_push.data = {4{32'hdeadbeef}};
+         q.push_back(inst_push);
+         `checkh(q[0].opcode, 1);
+         `checkh(q[0].addr, 42);
+         `checkh(q[0].data, {4{32'hdeadbeef}});
+
+
+         inst_pop = q.pop_front();
+         `checkh(inst_pop.opcode, 1);
+         `checkh(inst_pop.addr, 42);
+         `checkh(inst_pop.data, {4{32'hdeadbeef}});
+
+         `checkh(q.size(), 0);
+
+         `checkh(q[0].opcode, 0);
+         `checkh(q[0].addr, 0);
+         `checkh(q[0].data, 0);
       end
 
       /* Unsup:

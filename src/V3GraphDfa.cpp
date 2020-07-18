@@ -21,7 +21,6 @@
 #include "V3GraphDfa.h"
 #include "V3GraphAlg.h"
 
-#include <cstdarg>
 #include <map>
 #include <set>
 #include <stack>
@@ -194,7 +193,7 @@ private:
         return NULL;  // No match
     }
 
-    void findNfasWithInput(DfaVertex* dfaStatep, DfaInput input, DfaStates& nfasWithInput) {
+    void findNfasWithInput(DfaVertex* dfaStatep, const DfaInput& input, DfaStates& nfasWithInput) {
         // Return all NFA states, with the given input transition from
         // the nfa states a given dfa state was constructed from.
         nextStep();

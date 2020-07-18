@@ -17,12 +17,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Error.h"
-#include "V3Global.h"
-#include "V3File.h"
 #include "V3ParseImp.h"
 
-#include <cstdarg>
 #include <fstream>
 
 //======================================================================
@@ -43,7 +39,6 @@ public:
         : V3LexerBase(NULL) {}
     ~V3Lexer() {}
     // METHODS
-    void statePop() { yy_pop_state(); }
     void unputString(const char* textp, size_t length) {
         // Add characters to input stream in back-to-front order
         const char* cp = textp;
@@ -51,18 +46,16 @@ public:
     }
 };
 
-void V3ParseImp::statePop() { parsep()->m_lexerp->statePop(); }
-
-void V3ParseImp::unputString(const char* textp, size_t length) {
+void V3ParseImp::lexUnputString(const char* textp, size_t length) {
     parsep()->m_lexerp->unputString(textp, length);
 }
 
-int V3ParseImp::yylexReadTok() {
+void V3ParseImp::yylexReadTok() {
     // Call yylex() remembering last non-whitespace token
-    parsep()->fileline()->startToken();
+    parsep()->lexFileline()->startToken();
     int token = parsep()->m_lexerp->yylex();
-    m_prevLexToken = token;  // Save so can find '#' to parse following number
-    return token;
+    m_lexPrevToken = token;  // Save so can find '#' to parse following number
+    yylval.token = token;
 }
 
 //######################################################################

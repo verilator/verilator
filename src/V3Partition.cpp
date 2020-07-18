@@ -20,7 +20,6 @@
 #include "V3Os.h"
 #include "V3File.h"
 #include "V3GraphAlg.h"
-#include "V3GraphPathChecker.h"
 #include "V3GraphStream.h"
 #include "V3InstrCount.h"
 #include "V3Partition.h"
@@ -330,7 +329,7 @@ private:
     }
     void go() {
         // Generate a pseudo-random graph
-        vluint64_t rngState[2] = {VL_ULL(0x12345678), VL_ULL(0x9abcdef0)};
+        vluint64_t rngState[2] = {0x12345678ULL, 0x9abcdef0ULL};
         // Create 50 vertices
         for (unsigned i = 0; i < 50; ++i) m_vx[i] = new V3GraphVertex(&m_graph);
         // Create 250 edges at random. Edges must go from

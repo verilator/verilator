@@ -65,15 +65,20 @@ void V3ParseImp::parserClear() {
 //======================================================================
 // V3ParseGrammar functions requiring bison state
 
-void V3ParseGrammar::argWrapList(AstNodeFTaskRef* nodep) {
+AstNode* V3ParseGrammar::argWrapList(AstNode* nodep) {
     // Convert list of expressions to list of arguments
+    if (!nodep) return NULL;
     AstNode* outp = NULL;
-    while (nodep->pinsp()) {
-        AstNode* exprp = nodep->pinsp()->unlinkFrBack();
+    AstBegin* tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
+    while (nodep) {
+        AstNode* nextp = nodep->nextp();
+        AstNode* exprp = nodep->unlinkFrBack();
+        nodep = nextp;
         // addNext can handle nulls:
         outp = AstNode::addNext(outp, new AstArg(exprp->fileline(), "", exprp));
     }
-    if (outp) nodep->addPinsp(outp);
+    VL_DO_DANGLING(tempp->deleteTree(), tempp);
+    return outp;
 }
 
 AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name, int value) {
@@ -95,7 +100,7 @@ AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
     }
     if (nrangep && nrangep->nextp()) {
         // Not supported by at least 2 of big 3
-        nrangep->nextp()->v3error("Unsupported: Multidimensional cells/interfaces.");
+        nrangep->nextp()->v3warn(E_UNSUPPORTED, "Unsupported: Multidimensional cells/interfaces.");
         nrangep->nextp()->unlinkFrBackWithNext()->deleteTree();
     }
     return VN_CAST(nrangep, Range);
@@ -115,8 +120,6 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
             if (rangep && isPacked) {
                 arrayp
                     = new AstPackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep);
-            } else if (VN_IS(nrangep, QueueRange)) {
-                arrayp = new AstQueueDType(nrangep->fileline(), VFlagChildDType(), arrayp, NULL);
             } else if (rangep
                        && (VN_IS(rangep->leftp(), Unbounded)
                            || VN_IS(rangep->rightp(), Unbounded))) {
@@ -127,12 +130,11 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
                                                  rangep);
             } else if (VN_IS(nrangep, UnsizedRange)) {
                 arrayp = new AstUnsizedArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp);
-            } else if (VN_IS(nrangep, AssocRange)) {
-                AstAssocRange* arangep = VN_CAST(nrangep, AssocRange);
-                AstNodeDType* keyp = arangep->keyDTypep();
-                keyp->unlinkFrBack();
-                arrayp
-                    = new AstAssocArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp, keyp);
+            } else if (VN_IS(nrangep, BracketRange)) {
+                AstBracketRange* arangep = VN_CAST(nrangep, BracketRange);
+                AstNode* keyp = arangep->elementsp()->unlinkFrBack();
+                arrayp = new AstBracketArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp,
+                                                  keyp);
             } else {
                 UASSERT_OBJ(0, nrangep, "Expected range or unsized range");
             }
@@ -149,7 +151,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
                          << GRAMMARP->m_varIO << "  dt=" << (dtypep ? "set" : "") << endl);
     if (GRAMMARP->m_varIO == VDirection::NONE && GRAMMARP->m_varDecl == AstVarType::PORT) {
         // Just a port list with variable name (not v2k format); AstPort already created
-        if (dtypep) fileline->v3error("Unsupported: Ranges ignored in port-lists");
+        if (dtypep) fileline->v3warn(E_UNSUPPORTED, "Unsupported: Ranges ignored in port-lists");
         return NULL;
     }
     if (GRAMMARP->m_varDecl == AstVarType::WREAL) {
@@ -168,7 +170,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
         if (GRAMMARP->m_varIO.isAny()) {
             type = AstVarType::PORT;
         } else {
-            fileline->v3fatalSrc("Unknown signal type declared");
+            fileline->v3fatalSrc("Unknown signal type declared: " << type.ascii());
         }
     }
     if (type == AstVarType::GENVAR) {

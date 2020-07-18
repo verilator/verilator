@@ -36,7 +36,6 @@
 #include "V3EmitCBase.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 // Clock state, as a visitor of each AstNode
@@ -47,9 +46,6 @@ private:
     // Cleared each Module:
     //  AstVarScope::user1p()   -> AstVarScope*.  Temporary signal that was created.
     AstUser1InUse m_inuser1;
-
-    // TYPES
-    enum { DOUBLE_OR_RATE = 10 };  // How many | per ||, Determined experimentally as best
 
     // STATE
     AstNodeModule* m_modp;  // Current module
@@ -70,8 +66,8 @@ private:
         if (vscp->user1p()) return static_cast<AstVarScope*>(vscp->user1p());
         AstVar* varp = vscp->varp();
         if (!varp->width1()) {
-            varp->v3error(
-                "Unsupported: Clock edge on non-single bit signal: " << varp->prettyNameQ());
+            varp->v3warn(E_UNSUPPORTED, "Unsupported: Clock edge on non-single bit signal: "
+                                            << varp->prettyNameQ());
         }
         string newvarname
             = (string("__Vclklast__") + vscp->scopep()->nameDotless() + "__" + varp->name());
@@ -107,10 +103,8 @@ private:
         // LOWEDGE:  ~var
         AstNode* newp = NULL;
         if (nodep->edgeType() == VEdgeType::ET_ILLEGAL) {
-            if (!v3Global.opt.bboxUnsup()) {
-                nodep->v3error(
-                    "Unsupported: Complicated event expression in sensitive activity list");
-            }
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Complicated event expression in sensitive activity list");
             return NULL;
         }
         AstVarScope* clkvscp = nodep->varrefp()->varScopep();
@@ -142,23 +136,11 @@ private:
         }
         return newp;
     }
-    AstNode* createSenGateEquation(AstSenGate* nodep) {
-        AstNode* newp = new AstAnd(nodep->fileline(), createSenseEquation(nodep->sensesp()),
-                                   nodep->rhsp()->cloneTree(true));
-        return newp;
-    }
-    AstNode* createSenseEquation(AstNodeSenItem* nodesp) {
+    AstNode* createSenseEquation(AstSenItem* nodesp) {
         // Nodep may be a list of elements; we need to walk it
         AstNode* senEqnp = NULL;
-        for (AstNodeSenItem* senp = nodesp; senp; senp = VN_CAST(senp->nextp(), NodeSenItem)) {
-            AstNode* senOnep = NULL;
-            if (AstSenItem* itemp = VN_CAST(senp, SenItem)) {
-                senOnep = createSenItemEquation(itemp);
-            } else if (AstSenGate* itemp = VN_CAST(senp, SenGate)) {
-                senOnep = createSenGateEquation(itemp);
-            } else {
-                senp->v3fatalSrc("Strange node under sentree");
-            }
+        for (AstSenItem* senp = nodesp; senp; senp = VN_CAST(senp->nextp(), SenItem)) {
+            AstNode* const senOnep = createSenItemEquation(senp);
             if (senEqnp) {
                 // Add new OR to the sensitivity list equation
                 senEqnp = new AstOr(senp->fileline(), senEqnp, senOnep);

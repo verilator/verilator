@@ -21,7 +21,6 @@
 #include "V3File.h"
 #include "V3Graph.h"
 
-#include <cstdarg>
 #include <map>
 #include <memory>
 #include <vector>
@@ -142,7 +141,7 @@ void V3GraphVertex::v3errorEnd(std::ostringstream& str) const {
 }
 void V3GraphVertex::v3errorEndFatal(std::ostringstream& str) const {
     v3errorEnd(str);
-    assert(0);
+    assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE
 }
 

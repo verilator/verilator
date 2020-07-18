@@ -38,7 +38,6 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 #define RELOOP_MIN_ITERS 40  // Need at least this many loops to do this optimization
 

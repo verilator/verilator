@@ -35,7 +35,6 @@
 #include "V3Simulate.h"
 
 #include <algorithm>
-#include <cstdarg>
 
 //######################################################################
 // Unroll state, as a visitor of each AstNode
@@ -60,7 +59,8 @@ private:
 
     // VISITORS
     bool cantUnroll(AstNode* nodep, const char* reason) {
-        if (m_generate) nodep->v3error("Unsupported: Can't unroll generate for; " << reason);
+        if (m_generate)
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Can't unroll generate for; " << reason);
         UINFO(3, "   Can't Unroll: " << reason << " :" << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "-cant-");
         V3Stats::addStatSum(string("Unrolling gave up, ") + reason, 1);
@@ -113,7 +113,7 @@ private:
         // Assignment of next value check
         AstAssign* incAssp = VN_CAST(incp, Assign);
         if (!incAssp) return cantUnroll(nodep, "no increment assignment");
-        UASSERT_OBJ(!incAssp->nextp(), nodep, "increment shouldn't be a list");
+        if (incAssp->nextp()) return cantUnroll(nodep, "multiple increments");
 
         m_forVarp = VN_CAST(initAssp->lhsp(), VarRef)->varp();
         m_forVscp = VN_CAST(initAssp->lhsp(), VarRef)->varScopep();
@@ -389,6 +389,7 @@ private:
             if (nodep->backp()->nextp() == nodep) initp = nodep->backp();
             // Grab assignment
             AstNode* incp = NULL;  // Should be last statement
+            AstNode* bodysp = nodep->bodysp();
             if (nodep->incsp()) V3Const::constifyEdit(nodep->incsp());
             // cppcheck-suppress duplicateCondition
             if (nodep->incsp()) {
@@ -397,11 +398,12 @@ private:
                 for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}
                 if (incp) VL_DO_DANGLING(V3Const::constifyEdit(incp), incp);
                 // Again, as may have changed
+                bodysp = nodep->bodysp();
                 for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}
+                if (incp == bodysp) bodysp = NULL;
             }
             // And check it
-            if (forUnrollCheck(nodep, initp, nodep->precondsp(), nodep->condp(), incp,
-                               nodep->bodysp())) {
+            if (forUnrollCheck(nodep, initp, nodep->precondsp(), nodep->condp(), incp, bodysp)) {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Did replacement
             }
         }

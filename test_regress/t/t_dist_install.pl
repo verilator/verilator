@@ -25,7 +25,7 @@ if (!-r "$root/.git") {
         check_finished => 0);
     # Install into temp area
     print "Install...\n";
-    run(cmd => ["cd $root && make DESTDIR=$destdir install-all"],
+    run(cmd => ["cd $root && $ENV{MAKE} DESTDIR=$destdir install-all"],
         check_finished => 0);
 
     # Check we can run a test
@@ -35,7 +35,7 @@ if (!-r "$root/.git") {
 
     # Uninstall
     print "Uninstall...\n";
-    run(cmd => ["cd $root && make DESTDIR=$destdir uninstall"],
+    run(cmd => ["cd $root && $ENV{MAKE} DESTDIR=$destdir uninstall"],
         check_finished => 0);
 
     # Check empty

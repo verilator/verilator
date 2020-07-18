@@ -2,12 +2,79 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
+* Verilator 4.039 devel
 
-* Verilator 4.035 devel
+***   Fix arrayed interfaces, broke in 4.038 (#2468). [Josh Redford]
+
+
+* Verilator 4.038 2020-07-11
+
+**    Versions 4.038 and 4.040 are planned to be the final versions that will
+      support pre-C++11 compilers. Please move to C++11 or newer compilers.
+
+***   Support VPI access to parameters and localparam. [Ludwig Rogiers]
+
+***   Support parsing (not elaboration, yet) of UVM.
+
+****  Add new UNSUPPORTED error code to replace most previous Unsupported: messages.
+
+****  With --bbox-unsup continue parsing on many (not all) UVM constructs.
+
+****  Support for-loop increments with commas.
+
+****  Support $swrite with arbitrary arguments.
+
+****  Support $writememb (#2450). [Fan Shupei]
+
+****  Fix OS X, Free BSD, and -m32 portability issues. [Geza Lore]
+
+****  Fix to flush FST trace on termination due to $stop or assertion failure.
+
+****  Fix part select error when multipling by power-of-two (#2413). [Conor McCullough]
+
+****  Fix division exception (#2460) [Kuoping Hsu]
+
+
+* Verilator 4.036 2020-06-06
+
+**    OPT_FAST is now -Os by default. See the BENCHMARKING & OPTIMIZATION part
+      of the manual if you experience issues with compilation speed.
+
+***   Configure now enables SystemC if it is installed as a system headers,
+      e.g. with 'apt-get install systemc-dev'.
+
+***   Add --waiver-output flag that writes a verilator config file (.vlt) with
+      waivers to the warnings emitted during a Verilator run.
+
+***   Support verilator_coverage --write-info for lcov HTML reports.
+      Line Coverage now tracks all statement lines, not just branch lines.
+
+***   --output-split is now on by default. VM_PARALLEL_BUILDS is set by
+      default iff the --output-split caused an actual file split to occur.
+      --output-split-cfuncs and --output-split-ctrace now default to the
+      value of --output-split. These changes should improve build times of
+      medium and large designs with default options. User makefiles may
+      require changes.
+
+***   The run-time library is now compiled with -Os by default. (#2369, #2373)
+
+****  Support multi channel descriptor I/O (#2190) [Stephen Henry]
+
+****  Support $countbits. (#2287) [Yossi Nivin]
+
+****  Support $isunbounded and parameter $. (#2104)
+
+****  Support unpacked array .sum and .product.
+
+****  Support prefix/postfix increment/decrement. (#2223) [Maciej Sobkowski]
 
 ****  Fix FST tracing of little bit endian signals. [Geza Lore]
 
 ****  Fix +: and -: on unpacked arrays. (#2304) [engr248]
+
+****  Fix $isunknown with constant Z's.
+
+****  Fix queues and dynamic array wide ops. (#2352) [Vassilis Papaefstathiou]
 
 
 * Verilator 4.034 2020-05-03
@@ -646,6 +713,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix constant propagation across DPI imports of inout strings. [Victor Besyakov]
 
 ****  Fix resolving inline nested interface names. (#1250) [Arjen Roodselaar]
+
+****  Fix GCC false warning on array bounds. (#2386)
 
 
 * Verilator 3.916 2017-11-25

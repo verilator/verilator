@@ -234,7 +234,7 @@ public:
     inline void addTask(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym) {
         bool notify;
         {
-            VerilatedLockGuard lk(m_mutex);
+            const VerilatedLockGuard lk(m_mutex);
             m_ready.emplace_back(fnp, evenCycle, sym);
             m_ready_size.fetch_add(1, std::memory_order_relaxed);
             notify = m_waiting;

@@ -47,7 +47,7 @@
 // Function requires a "context" in the import declaration
 #define _VL_SVDPI_CONTEXT_WARN() \
     _VL_SVDPI_WARN("%%Warning: DPI C Function called by Verilog DPI import with missing " \
-                   "'context' keyword.\n");
+                   "'context' keyword.\n")
 
 //======================================================================
 //======================================================================
@@ -416,7 +416,7 @@ static svBit _vl_svGetBitArrElem(const svOpenArrayHandle s, int nargs, int indx1
     case VLVT_UINT16: return (*(reinterpret_cast<SData*>(datap)) >> lsb) & 1;
     case VLVT_UINT32: return (*(reinterpret_cast<IData*>(datap)) >> lsb) & 1;
     case VLVT_UINT64:
-        return (*(reinterpret_cast<QData*>(datap)) >> static_cast<QData>(lsb)) & VL_ULL(1);
+        return (*(reinterpret_cast<QData*>(datap)) >> static_cast<QData>(lsb)) & 1ULL;
     case VLVT_WDATA: {
         WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
         return VL_BITRSHIFT_W(wdatap, lsb) & 1;

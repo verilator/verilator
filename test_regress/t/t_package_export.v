@@ -41,6 +41,9 @@ package pkg30;
    export pkg1::PARAM2;
    export pkg1::PARAM3;
 `endif
+`ifdef T_PACKAGE_EXPORT_BAD
+   export pkg1::BAD_DOES_NOT_EXIST;
+`endif
    parameter PARAM1 = 8;
 endpackage
 package pkg31;

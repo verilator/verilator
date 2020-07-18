@@ -20,7 +20,6 @@
 #include "V3Global.h"
 #include "V3File.h"
 #include "V3Os.h"
-#include "V3PreShell.h"
 #include "V3String.h"
 #include "V3Ast.h"
 
@@ -645,7 +644,7 @@ V3OutFormatter::V3OutFormatter(const string& filename, V3OutFormatter::Language 
 
 //----------------------------------------------------------------------
 
-const string V3OutFormatter::indentSpaces(int num) {
+string V3OutFormatter::indentSpaces(int num) {
     // Indent the specified number of spaces.  Use spaces.
     static char str[MAXSPACE + 20];
     char* cp = str;

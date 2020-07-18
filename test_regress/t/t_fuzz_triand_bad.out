@@ -1,5 +1,5 @@
-%Error: t/t_fuzz_triand_bad.v:8:12: Unsupported: Member call on object 'VARREF 'g'' which is a 'BASICDTYPE 'logic''
-                                  : ... In instance t
+%Error-UNSUPPORTED: t/t_fuzz_triand_bad.v:8:12: Unsupported: Member call on object 'VARREF 'g'' which is a 'BASICDTYPE 'logic''
+                                              : ... In instance t
     8 |    tri g=g.and.g;
       |            ^~~
 %Error: Internal Error: t/t_fuzz_triand_bad.v:8:12: ../V3Width.cpp:#: Unlinked data type

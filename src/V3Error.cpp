@@ -23,8 +23,6 @@
 #endif
 // clang-format on
 
-#include <cstdarg>
-
 //======================================================================
 // Statics
 
@@ -158,13 +156,18 @@ string V3Error::msgPrefix() {
 //======================================================================
 // Abort/exit
 
-void V3Error::vlAbort() {
+void V3Error::vlAbortOrExit() {
     if (V3Error::debugDefault()) {
         std::cerr << msgPrefix() << "Aborting since under --debug" << endl;
-        abort();
+        V3Error::vlAbort();
     } else {
         exit(1);
     }
+}
+
+void V3Error::vlAbort() {
+    VL_GCOV_FLUSH();
+    abort();
 }
 
 //======================================================================
@@ -274,7 +277,7 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
 #endif
             }
 
-            vlAbort();
+            vlAbortOrExit();
         } else if (isError(s_errorCode, s_errorSuppressed)) {
             // We don't dump tree on any error because a Visitor may be in middle of
             // a tree cleanup and cause a false broken problem.
