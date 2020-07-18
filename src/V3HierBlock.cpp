@@ -81,6 +81,7 @@
 #include "V3File.h"
 #include "V3HierBlock.h"
 #include "V3String.h"
+#include "V3Stats.h"
 
 typedef std::vector<std::pair<string, string> > StrGParams;
 
@@ -346,6 +347,8 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
 
     vl_unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan());
     { HierBlockUsageCollectVisitor visitor(planp.get(), nodep); }
+
+    V3Stats::addStat("HierBlock, Hierarchy blocks", planp->m_blocks.size());
 
     // No hierarchy block is found, nothing to do.
     if (planp->empty()) return;

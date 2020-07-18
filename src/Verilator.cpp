@@ -157,7 +157,6 @@ static void process() {
             return;
         }
     }
-    V3Stats::addStat("HierBlock, Hierarchy blocks", v3Global.opt.hierBlocks().size());
 
     // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
     V3Width::width(v3Global.rootp());
