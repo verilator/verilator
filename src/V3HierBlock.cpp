@@ -266,10 +266,10 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
                 m_planp->registerUsage(nodep, *it);
             }
             m_hierBlockp = prevHierBlockp;
-            m_referred.swap(prevReferred);
+            m_referred = prevReferred;
         }
         m_modp = prevModp;
-        m_gparams.swap(prevGParams);
+        m_gparams = prevGParams;
     }
     virtual void visit(AstCell* nodep) VL_OVERRIDE {
         // Visit used module here to know that the module is hier_block or not.
