@@ -65,11 +65,11 @@
 //######################################################################
 // Hierarchical block and parameter db (modules without parameter is also handled)
 class ParameterizedHierBlocks {
-    typedef std::multimap<string, const V3HierarchyBlockOption*> HierBlockOptsByOrigName;
+    typedef std::multimap<string, const V3HierarchicalBlockOption*> HierBlockOptsByOrigName;
     typedef HierBlockOptsByOrigName::const_iterator HierMapIt;
     typedef std::map<string, AstNodeModule*> HierBlockModMap;
     typedef std::map<string, AstConst*> ParamConstMap;
-    typedef std::map<const V3HierarchyBlockOption*, ParamConstMap> ParamsMap;
+    typedef std::map<const V3HierarchicalBlockOption*, ParamConstMap> ParamsMap;
 
     // key:Original module name, value:HiearchyBlockOption*
     // If a module is parameterized, the module is uniquiefied to overridden parameters.
@@ -79,7 +79,7 @@ class ParameterizedHierBlocks {
     // key:mangled module name, value:AstNodeModule*
     HierBlockModMap m_hierBlockMod;
 
-    // Overridden parameters of the hierarchy block
+    // Overridden parameters of the hierarchical block
     ParamsMap m_params;
 
     static bool areSame(AstVar* modvarp, AstConst* varp, AstConst* paramp) {
@@ -107,9 +107,9 @@ public:
     ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep) {
         for (V3HierBlockOptSet::const_iterator it = hierOpts.begin(); it != hierOpts.end(); ++it) {
             m_hierBlockOptsByOrigName.insert(std::make_pair(it->second.origName(), &it->second));
-            const V3HierarchyBlockOption::ParamStrMap& params = it->second.params();
+            const V3HierarchicalBlockOption::ParamStrMap& params = it->second.params();
             ParamConstMap& consts = m_params[&it->second];
-            for (V3HierarchyBlockOption::ParamStrMap::const_iterator pIt = params.begin();
+            for (V3HierarchicalBlockOption::ParamStrMap::const_iterator pIt = params.begin();
                  pIt != params.end(); ++pIt) {
                 AstConst* constp = AstConst::parseParamLiteral(
                     new FileLine(FileLine::EmptySecret()), pIt->second);
@@ -141,7 +141,7 @@ public:
         if (m_hierBlockOptsByOrigName.find(origName) == m_hierBlockOptsByOrigName.end()) {
             return NULL;
         }
-        // This module is a hierarchy block. Need to replace it by the protect-lib wrapper.
+        // This module is a hierarchical block. Need to replace it by the protect-lib wrapper.
         const std::pair<HierMapIt, HierMapIt> candidates
             = m_hierBlockOptsByOrigName.equal_range(origName);
         HierMapIt hierIt;
@@ -153,11 +153,11 @@ public:
             for (AstPin* pinp = firstPinp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
                 if (!pinp->exprp()) continue;
                 UASSERT_OBJ(!pinp->modPTypep(), pinp,
-                            "module with type parameter must not be a hierarchy block");
+                            "module with type parameter must not be a hierarchical block");
                 if (AstVar* modvarp = pinp->modVarp()) {
                     AstConst* constp = VN_CAST(pinp->exprp(), Const);
                     UASSERT_OBJ(constp, pinp,
-                                "parameter for a hierarchy block must have been constified");
+                                "parameter for a hierarchical block must have been constified");
                     ParamConstMap::const_iterator pIt = params.find(modvarp->name());
                     UINFO(5, "Comparing " << modvarp->name() << " " << constp << std::endl);
                     if (pIt == params.end() || paramIdx >= params.size()
@@ -899,7 +899,7 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
             // If the name is very long, we don't want to overwhelm the filename limit
             // We don't do this always, as it aids debugability to have intuitive naming.
             // TODO can use new V3Name hash replacement instead of this
-            // Shorter name is convenient for hierarchy block
+            // Shorter name is convenient for hierarchical block
             string newname = longname;
             if (longname.length() > 30 || srcModp->hierBlock()) {
                 LongMap::iterator iter = m_longMap.find(longname);

@@ -7,7 +7,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-# stats will be deleted but generation will be skipped if libs of hierarchy blocks exist.
+# stats will be deleted but generation will be skipped if libs of hierarchical blocks exist.
 clean_objs();
 
 scenarios(simulator => 1);
@@ -31,7 +31,7 @@ execute(
 file_grep($Self->{obj_dir} . "/Vsub0/sub0.sv", /^module\s+(\S+)\s+/, "sub0");
 file_grep($Self->{obj_dir} . "/Vsub1/sub1.sv", /^module\s+(\S+)\s+/, "sub1");
 file_grep($Self->{obj_dir} . "/Vsub2/sub2.sv", /^module\s+(\S+)\s+/, "sub2");
-file_grep($Self->{stats}, qr/HierBlock,\s+Hierarchy blocks\s+(\d+)/i, 8);
+file_grep($Self->{stats}, qr/HierBlock,\s+Hierarchical blocks\s+(\d+)/i, 8);
 
 ok(1);
 1;

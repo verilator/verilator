@@ -136,15 +136,15 @@ VTimescale::VTimescale(const string& value, bool& badr)
 }
 
 //######################################################################
-// V3HierarchyBlockOption class functions
+// V3HierarchicalBlockOption class functions
 
-// Parse "--hierarchy-block orig_name,mangled_name,param0_name,param0_value,... " option.
+// Parse "--hierarchical-block orig_name,mangled_name,param0_name,param0_value,... " option.
 // The format of value is as same as -G option. (can be string literal surrounded by ")
-V3HierarchyBlockOption::V3HierarchyBlockOption(const string& opts) {
+V3HierarchicalBlockOption::V3HierarchicalBlockOption(const string& opts) {
     V3StringList vals;
     bool inStr = false;
     string cur;
-    static const string hierBlock("--hierarchy-block");
+    static const string hierBlock("--hierarchical-block");
     FileLine cmdfl(FileLine::commandLineFilename());
     // Split by ','. If ',' appears between "", that is not a separator.
     for (string::const_iterator it = opts.begin(); it != opts.end();) {
@@ -393,7 +393,7 @@ string V3Options::allArgsString() const {
     return out;
 }
 
-// Delete some options for Verilation of the hierarchy blocks.
+// Delete some options for Verilation of the hierarchical blocks.
 string V3Options::allArgsStringForHierBlock(bool forTop) const {
     std::set<string> vFiles;
     for (V3StringList::const_iterator it = m_vFiles.begin(); it != m_vFiles.end(); ++it)
@@ -741,10 +741,10 @@ void V3Options::notify() {
 
     if (m_hierarchical && (m_hierChild || !m_hierBlocks.empty())) {
         cmdfl->v3error(
-            "--hierarchical must not be set with --hierarchical-child or --hierarchy-block");
+            "--hierarchical must not be set with --hierarchical-child or --hierarchical-block");
     }
     if (m_hierChild && m_hierBlocks.empty()) {
-        cmdfl->v3error("--hierarchy-block must be set when --hierarchical-child is set");
+        cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
     }
 
     if (protectIds()) {
@@ -1233,9 +1233,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 shift;
                 cout << V3Options::getenvBuiltins(argv[i]) << endl;
                 exit(0);
-            } else if (!strcmp(sw, "-hierarchy-block") && (i + 1) < argc) {
+            } else if (!strcmp(sw, "-hierarchical-block") && (i + 1) < argc) {
                 shift;
-                V3HierarchyBlockOption opt(argv[i]);
+                V3HierarchicalBlockOption opt(argv[i]);
                 m_hierBlocks.insert(std::make_pair(opt.mangledName(), opt));
             } else if (!strncmp(sw, "-I", 2)) {
                 addIncDirUser(parseFileArg(optdir, string(sw + strlen("-I"))));

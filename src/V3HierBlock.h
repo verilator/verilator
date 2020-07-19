@@ -41,10 +41,10 @@ public:
     typedef std::set<const AstNodeModule*> NodeModuleSet;
 
 private:
-    const AstNodeModule* m_modp;  // Hierarchy block module
-    // Hierarchy blocks that directly or indirectly instantiate this block
+    const AstNodeModule* m_modp;  // Hierarchical block module
+    // Hierarchical blocks that directly or indirectly instantiate this block
     HierBlockSet m_parents;
-    // Hierarchy blocks that this block directly or indirectly instantiates
+    // Hierarchical blocks that this block directly or indirectly instantiates
     HierBlockSet m_children;
     // Parameters that are overridden by #(.param(value)) syntax.
     GParams m_gparams;
@@ -75,7 +75,7 @@ public:
     string hierMk(bool withDir) const;
     string hierLib(bool withDir) const;
     string hierGenerated(bool withDir) const;
-    // Write command line opriont to .f file for this hierarchy block
+    // Write command line opriont to .f file for this hierarchical block
     void writeCommandFile(bool forCMake) const;
     string commandFileName(bool forCMake) const;
 };
@@ -104,8 +104,8 @@ public:
     const_iterator end() const { return m_blocks.end(); }
     bool empty() const { return m_blocks.empty(); }
 
-    // Returns all hierarchy blocks that sorted in leaf-first order.
-    // Latter block refers only already appeared hierarchy blocks.
+    // Returns all hierarchical blocks that sorted in leaf-first order.
+    // Latter block refers only already appeared hierarchical blocks.
     HierVector hierBlocksSorted() const;
 
     // Write command line opriont to .f files for child Verilation run

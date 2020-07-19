@@ -13,21 +13,21 @@ top_filename("t/t_hier_block.v");
 
 lint(
     fails => 1,
-    verilator_flags2 => ['--hierarchy-block',
+    verilator_flags2 => ['--hierarchical-block',
                          'modName,mangledName,param0,"paramValue0",param0,"paramValue1",param1,2,param3',
-                         '--hierarchy-block',
+                         '--hierarchical-block',
                          'modName',
-                         '--hierarchy-block',
+                         '--hierarchical-block',
                          'mod0,mod1,\'"str\\\'', # end with backslash
-                         '--hierarchy-block',
+                         '--hierarchical-block',
                          'mod2,mod3,\'"str\\a\'', # unexpected 'a' after backslash
-                         '--hierarchy-block',
+                         '--hierarchical-block',
                          'mod4,mod5,\'"str"abc\',', # not end with "
-                         '--hierarchy-block',
+                         '--hierarchical-block',
                          'mod6,mod7,\'"str"\',', # end with ,
-                         '--hierarchy-block',
+                         '--hierarchical-block',
                          'mod8,mod9,\'s"tr"\',', # unexpected "
-                         '--hierarchy-block',
+                         '--hierarchical-block',
                          'modA,modB,param,', # end with ,
                      ],
     expect_filename => $Self->{golden_filename},

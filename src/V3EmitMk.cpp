@@ -229,7 +229,7 @@ public:
         of.puts("# Include list of all generated classes\n");
         of.puts("include " + v3Global.opt.prefix() + "_classes.mk\n");
         if (v3Global.opt.hierTop()) {
-            of.puts("# Include rules for hierarchy blocks\n");
+            of.puts("# Include rules for hierarchical blocks\n");
             of.puts("include " + v3Global.opt.prefix() + "_hier.mk\n");
         }
         of.puts("# Include global rules\n");
@@ -286,9 +286,9 @@ class EmitMkHierVerilation {
     const V3HierBlockPlan* const m_planp;
     void emitCommonOpts(V3OutMkFile& of) const {
         const string cwd = V3Os::filenameRealPath(".");
-        of.puts("# Verilation of hierarchy blocks are executed in this directory\n");
+        of.puts("# Verilation of hierarchical blocks are executed in this directory\n");
         of.puts("VM_HIER_RUN_DIR := " + cwd + "\n");
-        of.puts("# Common options for hierarchy blocks\n");
+        of.puts("# Common options for hierarchical blocks\n");
         of.puts("VM_HIER_VERILATOR := " + v3Global.opt.getenvVERILATOR_ROOT()
                 + "/bin/verilator\n");
         of.puts("VM_HIER_INPUT_FILES := \\\n");
@@ -323,7 +323,7 @@ class EmitMkHierVerilation {
         of.puts(".SUFFIXES:\n");
         of.puts(".PHONY: hier_build hier_verilation\n");
 
-        of.puts("# Libraries of hierarchy blocks\n");
+        of.puts("# Libraries of hierarchical blocks\n");
         of.puts("VM_HIER_LIBS := \\\n");
         for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end(); ++it) {
             of.puts("\t" + it->second->hierLib(true) + " \\\n");
@@ -351,8 +351,8 @@ class EmitMkHierVerilation {
             of.puts("\n");
         }
 
-        // Rules to process hierarchy blocks
-        of.puts("\n# Verilate hierarchy blocks\n");
+        // Rules to process hierarchical blocks
+        of.puts("\n# Verilate hierarchical blocks\n");
         for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end(); ++it) {
             const string prefix = it->second->hierPrefix();
             of.puts(it->second->hierGenerated(true));

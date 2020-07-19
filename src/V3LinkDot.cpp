@@ -638,7 +638,7 @@ public:
                 if (AstCell* cellp = VN_CAST(lookupSymp->nodep(), Cell)) {
                     if (AstNodeModule* modp = cellp->modp()) {
                         if (modp->hierBlock()) {
-                            refLocationp->v3error("Cannot access inside hierarchy block");
+                            refLocationp->v3error("Cannot access inside hierarchical block");
                         }
                     }
                 }
@@ -814,7 +814,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                 m_statep->insertIfaceModSym(ifacep, m_curSymp);
             }
         } else if (isHierBlockWrapper(nodep->name())) {
-            UINFO(5, "Module is hierarchy block, must not be dead: " << nodep << endl);
+            UINFO(5, "Module is hierarchical block, must not be dead: " << nodep << endl);
             m_scope = nodep->name();
             VSymEnt* upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
             m_curSymp = m_modSymp

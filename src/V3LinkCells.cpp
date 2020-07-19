@@ -492,7 +492,7 @@ private:
         const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
         V3HierBlockOptSet::const_iterator hierIt = hierBlocks.find(v3Global.opt.topModule());
         UASSERT((hierIt != hierBlocks.end()) == v3Global.opt.hierChild(),
-                "information of the top module must exist if --hierarchy-child is set");
+                "information of the top module must exist if --hierarchical-child is set");
         // Look at all modules, and store pointers to all module names
         for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
             nextp = VN_CAST(nodep->nextp(), NodeModule);
@@ -502,7 +502,7 @@ private:
             }
             V3HierBlockOptSet::const_iterator hierModIt = hierBlocks.find(nodep->prettyName());
             if (hierModIt != hierBlocks.end() && nodep->name() != nodep->prettyName()) {
-                // If nodep is a protect-lib wrapper for a hierarchy block with parameters,
+                // If nodep is a protect-lib wrapper for a hierarchical block with parameters,
                 // the module name is encoded. Restore the original name here.
                 RestorePrettyNameVisitor v(nodep);
             }

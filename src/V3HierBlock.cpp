@@ -16,20 +16,20 @@
 // Hierarchical Verilation is useful for large designs.
 // It reduces
 //   - time and memory for Verilation
-//   - compilation time especially when a hierarchy block is used many times
+//   - compilation time especially when a hierarchical block is used many times
 //
-// Hierarchical Verilation internally creates protect-lib for each hierarchy block.
+// Hierarchical Verilation internally creates protect-lib for each hierarchical block.
 // Upper modules read wrapper for the protect-lib instead of the actual design.
 //
 // Hierarchical Verilation runs as the following step
 // 1) Find modules marked by /*verilator hier_block*/ metacomment
-// 2) Generate ${prefix}_hier.mk to create protected-lib for hierarchy blocks and
+// 2) Generate ${prefix}_hier.mk to create protected-lib for hierarchical blocks and
 //    final Verilation to process the top module, that refers wrappers
 // 3) Call child Verilator process via ${prefix}_hier.mk
 //
 // There are 3 kinds of Verilator run.
 // a) To create ${prefix}_hier.mk (--hierarchical)
-// b) To create protect-lib for each hierarchy block (--hierarchical-child)
+// b) To create protect-lib for each hierarchical block (--hierarchical-child)
 // c) To load wrappers and Verilate the top module (... what primary flags?)
 //
 // Then user can build Verilated module as usual.
@@ -40,36 +40,36 @@
 // 2) AstModule with HIER_BLOCK pragma is marked modp->hier_block(true)
 //    in V3LinkResolve.cpp during run a).
 // 3) In V3LinkCells.cpp, the following things are done during run b) and c).
-//    3-1) Delete the upper modules of the hierarchy block because the top module in run b) is
-//         hierarchy block, not the top module of run c).
-//    3-2) If the top module of the run b) or c) instantiates other hierarchy blocks that is
+//    3-1) Delete the upper modules of the hierarchical block because the top module in run b) is
+//         hierarchical block, not the top module of run c).
+//    3-2) If the top module of the run b) or c) instantiates other hierarchical blocks that is
 //         parameterized,
 //         module and task names are renamed to the original name to be compatible with the
 //         hier module to be called.
 //
 //         Parameterized modules have unique name by V3Param.cpp. The unique name contains '__' and
 //         Verilator encodes '__' when loading such symbols.
-// 4) V3LinkDot.cpp checks dotted access across hierarchy block boundary.
+// 4) V3LinkDot.cpp checks dotted access across hierarchical block boundary.
 // 5) In V3Dead.cpp, some parameters of parameterized modules are protected not to be deleted even
 //    if the parameter is not referred. This protection is necessary to match step 6) below.
 // 6) In V3Param.cpp, use protect-lib wrapper of parameterized module made in b) and c).
-//    If a hierarchy block is a parameterized module and instantiated in multiple locations,
+//    If a hierarchical block is a parameterized module and instantiated in multiple locations,
 //    all parameters must exactly match.
-// 7) In V3HierBlock.cpp, relationship among hierarchy blocks are checked in run a).
+// 7) In V3HierBlock.cpp, relationship among hierarchical blocks are checked in run a).
 //    (which block uses other blocks..)
 // 8) In V3EmitMk.cpp, ${prefix}_hier.mk is created in run a).
 //
 // There are two hidden command options.
 //   --hierarchical-child is added to Verilator run b).
-//   --hierarchy-block module_name,mangled_name,name0,value0,name1,value1,...
+//   --hierarchical-block module_name,mangled_name,name0,value0,name1,value1,...
 //       module_name  :The original modulename
 //       mangled_name :Mangled name of parameterized modules (named in V3Param.cpp).
-//                     Same as module_name for non-parameterized hierarchy block.
+//                     Same as module_name for non-parameterized hierarchical block.
 //       name         :The name of the parameter
 //       value        :Overridden value of the parameter
 //
 //       Used for b) and c).
-//       This options is repeated for all instantiating hierarchy blocks.
+//       This options is repeated for all instantiating hierarchical blocks.
 
 #include <memory>
 #include <sstream>
@@ -169,7 +169,7 @@ V3StringList V3HierBlock::commandOptions(bool forCMake) const {
 V3StringList V3HierBlock::hierBlockOptions() const {
     V3StringList opts;
     const StrGParams gparamsStr = stringifyParams(gparams(), false);
-    opts.push_back("--hierarchy-block ");
+    opts.push_back("--hierarchical-block ");
     string s = modp()->origName();  // origName
     s += "," + modp()->name();  // mangledName
     for (StrGParams::const_iterator paramIt = gparamsStr.begin(); paramIt != gparamsStr.end();
@@ -229,7 +229,7 @@ string V3HierBlock::commandFileName(bool forCMake) const {
 }
 
 //######################################################################
-// Collect how hierarchy blocks are used
+// Collect how hierarchical blocks are used
 class HierBlockUsageCollectVisitor : public AstNVisitor {
     // NODE STATE
     // AstNode::user1()            -> bool. Processed
@@ -247,7 +247,8 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
         // Don't visit twice
         if (nodep->user1SetOnce()) return;
         UINFO(5, "Checking " << nodep->prettyNameQ() << " from "
-                             << (m_hierBlockp ? m_hierBlockp->prettyNameQ() : string("null")) << std::endl);
+                             << (m_hierBlockp ? m_hierBlockp->prettyNameQ() : string("null"))
+                             << std::endl);
         AstModule* const prevModp = m_modp;
         AstModule* const prevHierBlockp = m_hierBlockp;
         ModuleSet prevReferred;
@@ -334,23 +335,24 @@ void V3HierBlockPlan::registerUsage(const AstNodeModule* parentp, const AstNodeM
 }
 
 void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
-    // When processing a hierarchy block, no need to create a plan anymore.
+    // When processing a hierarchical block, no need to create a plan anymore.
     if (v3Global.opt.hierChild()) return;
 
     AstNodeModule* modp = nodep->topModulep();
     if (modp->hierBlock()) {
-        modp->v3warn(HIERBLOCK, "Top module illegally marked hierarchy block, ignoring marking\n"
-                                    + V3Error::warnMore()
-                                    + "... Suggest remove verilator hier_block on this module");
+        modp->v3warn(HIERBLOCK,
+                     "Top module illegally marked hierarchical block, ignoring marking\n"
+                         + V3Error::warnMore()
+                         + "... Suggest remove verilator hier_block on this module");
         modp->hierBlock(false);
     }
 
     vl_unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan());
     { HierBlockUsageCollectVisitor visitor(planp.get(), nodep); }
 
-    V3Stats::addStat("HierBlock, Hierarchy blocks", planp->m_blocks.size());
+    V3Stats::addStat("HierBlock, Hierarchical blocks", planp->m_blocks.size());
 
-    // No hierarchy block is found, nothing to do.
+    // No hierarchical block is found, nothing to do.
     if (planp->empty()) return;
 
     v3Global.hierPlanp(planp.release());

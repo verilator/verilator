@@ -80,7 +80,7 @@ public:
         DEPRECATED,     // Feature will be deprecated
         ENDLABEL,       // End lable name mismatch
         GENCLK,         // Generated Clock
-        HIERBLOCK,      // Ignored hierarchy block setting
+        HIERBLOCK,      // Ignored hierarchical block setting
         IFDEPTH,        // If statements too deep
         IGNOREDRETURN,  // Ignoring return value (function as task)
         IMPERFECTSCH,   // Imperfect schedule (disabled by default)

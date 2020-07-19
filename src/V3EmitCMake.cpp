@@ -197,8 +197,8 @@ class CMakeEmitter {
         *of << "# User .cpp files (from .cpp's on Verilator command line)\n";
         cmake_set_raw(*of, name + "_USER_CLASSES", deslash(cmake_list(v3Global.opt.cppFiles())));
         if (const V3HierBlockPlan* planp = v3Global.hierPlanp()) {
-            *of << "# Verilate hierarchy blocks\n";
-            // Sorted hierarchy blocks in order of leaf-first.
+            *of << "# Verilate hierarchical blocks\n";
+            // Sorted hierarchical blocks in order of leaf-first.
             const V3HierBlockPlan::HierVector& hierBlocks = planp->hierBlocksSorted();
             const string topTarget = v3Global.opt.protectLib().empty() ? v3Global.opt.prefix()
                                                                        : v3Global.opt.protectLib();
@@ -231,8 +231,8 @@ class CMakeEmitter {
                 }
                 *of << " VERILATOR_ARGS ";
                 *of << "-f " << deslash(hblockp->commandFileName(true))
-                    << " -CFLAGS -fPIC"  // hierarchy block will be static, but may be linked with
-                                         // .so
+                    << " -CFLAGS -fPIC"  // hierarchical block will be static, but may be linked
+                                         // with .so
                     << ")\n";
             }
             *of << "\n# Verilate the top module that refers protect-lib wrappers of above\n";
