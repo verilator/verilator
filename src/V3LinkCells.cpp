@@ -89,29 +89,6 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
 }
 
 //######################################################################
-// Rename encoded names to pretty name
-
-class RestorePrettyNameVisitor : public AstNVisitor {
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
-        nodep->cname(nodep->prettyName());
-        nodep->name(nodep->prettyName());
-        iterateChildren(nodep);
-    }
-    virtual void visit(AstModule* nodep) VL_OVERRIDE {
-        nodep->name(nodep->prettyName());
-        iterateChildren(nodep);
-    }
-    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
-        nodep->name(nodep->prettyName());
-        iterateChildren(nodep);
-    }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
-
-public:
-    explicit RestorePrettyNameVisitor(AstNodeModule* modp) { iterate(modp); }
-};
-
-//######################################################################
 // Link state, as a visitor of each AstNode
 
 class LinkCellsVisitor : public AstNVisitor {
@@ -499,12 +476,6 @@ private:
             if (v3Global.opt.hierChild() && nodep->name() == hierIt->second.origName()) {
                 nodep->name(hierIt->first);  // Change name of this module to be mangled name
                                              // considering parameter
-            }
-            V3HierBlockOptSet::const_iterator hierModIt = hierBlocks.find(nodep->prettyName());
-            if (hierModIt != hierBlocks.end() && nodep->name() != nodep->prettyName()) {
-                // If nodep is a protect-lib wrapper for a hierarchical block with parameters,
-                // the module name is encoded. Restore the original name here.
-                RestorePrettyNameVisitor v(nodep);
             }
             AstNodeModule* foundp = findModuleSym(nodep->name());
             if (foundp && foundp != nodep) {
