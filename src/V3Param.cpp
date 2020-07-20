@@ -52,6 +52,7 @@
 #include "V3Ast.h"
 #include "V3Case.h"
 #include "V3Const.h"
+#include "V3Os.h"
 #include "V3Parse.h"
 #include "V3Width.h"
 #include "V3Unroll.h"
@@ -219,6 +220,10 @@ private:
     typedef std::map<string, string> LongMap;
     LongMap m_longMap;  // Hash of very long names to unique identity number
     int m_longId;
+
+    // All module names that are loaded from source code
+    // Generated modules by this visitor is not included
+    V3StringSet m_allModuleNames;
 
     typedef std::pair<int, string> ValueMapValue;
     typedef std::map<V3Hash, ValueMapValue> ValueMap;
@@ -390,6 +395,38 @@ private:
             pinp->v3error(AstNode::prettyNameQ(modp->origName())
                           << " has hier_block metacomment, but type parameter "
                              "which is not supported is specified.");
+        }
+    }
+    bool moduleExists(const string& modName) const {
+        if (m_allModuleNames.find(modName) != m_allModuleNames.end()) return true;
+        if (m_modNameMap.find(modName) != m_modNameMap.end()) return true;
+        return false;
+    }
+    string parametrizedHierBlockName(const AstNodeModule* modp, AstPin* paramPinsp) const {
+        VHashSha256 hash;
+        // Calculate hash using module name, parameter name, and parameter value
+        // The hash is used as the module suffix to find a module name that is unique in the design
+        hash.insert(modp->name());
+        for (AstPin* pinp = paramPinsp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            if (AstVar* varp = pinp->modVarp()) hash.insert(varp->name());
+            if (AstConst* constp = VN_CAST(pinp->exprp(), Const)) {
+                hash.insert(constp->num().ascii(false));
+            }
+        }
+        while (true) {
+            // Copy VHashSha256 just in case of hash collision
+            VHashSha256 hashStrGen = hash;
+            // Hex string must be a safe suffix for any symbol
+            const string hashStr = hashStrGen.digestHex();
+            for (string::size_type i = 1; i < hashStr.size(); ++i) {
+                string newName = modp->name();
+                // Don't use '__' not to be encoded when this module is loaded later by Verilator
+                if (newName.at(newName.size() - 1) != '_') newName += '_';
+                newName += hashStr.substr(0, i);
+                if (!moduleExists(newName)) return newName;
+            }
+            // Hash collision. maybe just v3error is practically enough
+            hash.insert(V3Os::trueRandom(64));
         }
     }
     void visitCell(AstCell* nodep, const string& hierName);
@@ -724,6 +761,10 @@ public:
         m_longId = 0;
         m_modp = NULL;
         m_nextValue = 1;
+        for (AstNodeModule* modp = nodep->modulesp(); modp;
+             modp = VN_CAST(modp->nextp(), NodeModule)) {
+            m_allModuleNames.insert(modp->name());
+        }
         //
         iterate(nodep);
     }
@@ -906,9 +947,13 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
                 if (iter != m_longMap.end()) {
                     newname = iter->second;
                 } else {
-                    newname = srcModp->name();
-                    // We use all upper case above, so lower here can't conflict
-                    newname += "__pi" + cvtToStr(++m_longId);
+                    if (srcModp->hierBlock()) {
+                        newname = parametrizedHierBlockName(srcModp, nodep->paramsp());
+                    } else {
+                        newname = srcModp->name();
+                        // We use all upper case above, so lower here can't conflict
+                        newname += "__pi" + cvtToStr(++m_longId);
+                    }
                     m_longMap.insert(make_pair(longname, newname));
                 }
             }
