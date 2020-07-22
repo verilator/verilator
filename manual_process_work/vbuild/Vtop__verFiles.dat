@@ -1,0 +1,13 @@
+# DESCRIPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will.
+C "--cc -Wno-fatal -Wno-UNOPTFLAT -Wno-BLKANDNBLK -Wpedantic -Wno-context --Mdir vbuild --prefix Vtop --exe -o vmain vmain.cpp top.sv"
+S   8863312  8411907  1595409056   624797499  1595409056   624797499 "/home/tkgk/antmicro/verilator/bin/verilator_bin"
+S      1872  8149909  1595411766   468092702  1595411766   464759434 "top.sv"
+T      3272  8275182  1595411812    70535835  1595411812    70535835 "vbuild/Vtop.cpp"
+T      2272  8275180  1595411812    70535835  1595411812    70535835 "vbuild/Vtop.h"
+T      1746  8275184  1595411812    70535835  1595411812    70535835 "vbuild/Vtop.mk"
+T      1892  8275181  1595411812    70535835  1595411812    70535835 "vbuild/Vtop__Slow.cpp"
+T       529  8273722  1595411812    70535835  1595411812    70535835 "vbuild/Vtop__Syms.cpp"
+T       773  8273729  1595411812    70535835  1595411812    70535835 "vbuild/Vtop__Syms.h"
+T       258  8275219  1595411812    70535835  1595411812    70535835 "vbuild/Vtop__ver.d"
+T         0        0  1595411812    70535835  1595411812    70535835 "vbuild/Vtop__verFiles.dat"
+T      1538  8275183  1595411812    70535835  1595411812    70535835 "vbuild/Vtop_classes.mk"
