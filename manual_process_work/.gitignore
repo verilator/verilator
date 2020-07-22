@@ -1,0 +1,9 @@
+vbuild/Vtop__ALL.a
+vbuild/Vtop__ALL.cpp
+vbuild/Vtop__ALL.d
+vbuild/Vtop__ALL.o
+vbuild/verilated.d
+vbuild/verilated.o
+vbuild/vmain
+vbuild/vmain.d
+vbuild/vmain.o
