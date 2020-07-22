@@ -277,7 +277,7 @@ bool AstVar::isScUint() const {
     return ((isSc() && v3Global.opt.pinsScUint() && width() >= 2 && width() <= 64) && !isScBv());
 }
 bool AstVar::isScBigUint() const {
-    return ((isSc() && v3Global.opt.pinsScBigUint() && width() >= 65 && width() <= 512)
+    return ((isSc() && v3Global.opt.pinsScBigUint() && width() >= 65 && width() <= 2048)
             && !isScBv());
 }
 
