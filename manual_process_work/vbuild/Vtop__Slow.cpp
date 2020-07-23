@@ -70,15 +70,35 @@ class Timer
 // Define the simulation timer
 Timer timer{};
 
-// TODO define a vector of active processes
-
 // Define the events
 Event ready_to_finish{};
 
-// Definition of various Processes and their steps
+// Define a vector of active processes
+std::vector <Process> active_processes;
+
+// Definition of various Processes (including unnamed subprocesses)
+Process initial{};
+    Process first{};
+    Process second{};
+        Process second_0{}; // These come from the fork in second()
+        Process second_1{};
+        Process second_2{};
+    Process initial_0{};
+
+// INITIAL
+
+void initial_0(Vtop__Syms* __restrict vlSymsp) {
+    // Activate all the processes under fork
+    active_processes.push_back(first);
+    active_processes.push_back(second);
+    active_processes.push_back(initial_0);
+
+    // fork ends with 'join_any' so we continue in the same step
+    VL_WRITEF("Everything has been started!\n");
+}
+
 
 // FIRST
-Process first{};
 
 // Steps for first();
 void first_0(Vtop__Syms* __restrict vlSymsp) {
@@ -127,10 +147,8 @@ void Vtop::_initial__TOP__1(Vtop__Syms* __restrict vlSymsp) {
     VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop::_initial__TOP__1\n"); );
     Vtop* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
     // Body
-    VL_WRITEF("->ready_to_finish;\n");
-    VL_WRITEF("@ready_to_finish;\n");
+    // XXX TODO the actual execution happens here (!!!)
     VL_FINISH_MT("top.sv", 44, "");
-    VL_WRITEF("Everything has been started!\n");
 }
 
 void Vtop::_eval_initial(Vtop__Syms* __restrict vlSymsp) {
