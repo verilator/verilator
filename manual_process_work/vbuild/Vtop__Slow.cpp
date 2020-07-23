@@ -16,6 +16,14 @@ class Event
 {
     public:
         bool triggered = false;
+
+        void trigger() {
+            triggered = true;
+        }
+
+        void reset() {
+            triggered = false;
+        }
 };
 
 
@@ -23,8 +31,11 @@ class Process
 {
     public:
         std::vector <std::function<bool()>> run_conditions; // waits for arbitrary conditions
+        std::vector <unsigned int> time_conditions; // waits for specific simulation times
         std::vector <std::function<void()>> eval_steps; // unbreakable steps to eval
-        unsigned int current_step = 0;
+        unsigned int current_step = 0; // index for iterating the steps vector
+        bool repeatable = 0; // whether after finishing the last step we should go back to the first one
+        bool finished = false; // whether it should or should not be invoked again
 };
 
 
@@ -46,7 +57,48 @@ class Timer
 
             VL_DBG_MSGF("+    Simulation time advanced to %lu\n", simulation_time);
         }
+
+        unsigned int offset(unsigned int offset) {
+            return simulation_time + offset;
+        }
 };
+
+//==========
+// Definition of various things needed for simulation
+// Most of it should probably not be globals
+
+// Define the simulation timer
+Timer timer{};
+
+// TODO define a vector of active processes
+
+// Define the events
+Event ready_to_finish{};
+
+// Definition of various Processes and their steps
+
+// FIRST
+Process first{};
+
+// Steps for first();
+void first_0(Vtop__Syms* __restrict vlSymsp) {
+    // Nothing until #300
+
+    // step ends with #300 - add a condition for that
+    // The value of 300 has to be read from the node (once it is included in th
+    // AST) - hardcoding it for now.
+    first.time_conditions.push_back(timer.offset(300));
+}
+
+void first_1(Vtop__Syms* __restrict vlSymsp) {
+    // All we have to do is trigger the event
+    ready_to_finish.trigger();
+
+    // This is the last step and we are not expected to start from the
+    // beginning (could be extracted to a separate step - e.g. first_final)
+    first.finished = true;
+}
+
 
 //==========
 
