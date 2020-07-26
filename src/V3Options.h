@@ -260,6 +260,7 @@ private:
     bool        m_pedantic;     // main switch: --Wpedantic
     bool        m_pinsScUint;   // main switch: --pins-sc-uint
     bool        m_pinsScBigUint;// main switch: --pins-sc-biguint
+    bool        m_pinsScBigUintNL;// main switch: --pins-sc-biguint-nolimit
     bool        m_pinsUint8;    // main switch: --pins-uint8
     bool        m_ppComments;   // main switch: --pp-comments
     bool        m_profCFuncs;   // main switch: --prof-cfuncs
@@ -466,6 +467,7 @@ public:
     bool pedantic() const { return m_pedantic; }
     bool pinsScUint() const { return m_pinsScUint; }
     bool pinsScBigUint() const { return m_pinsScBigUint; }
+    bool pinsScBigUintNL() const { return m_pinsScBigUintNL; }
     bool pinsUint8() const { return m_pinsUint8; }
     bool ppComments() const { return m_ppComments; }
     bool profCFuncs() const { return m_profCFuncs; }

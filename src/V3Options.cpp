@@ -916,6 +916,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (onoff(sw, "-pins-sc-biguint", flag /*ref*/)) {
                 m_pinsScBigUint = flag;
                 m_pinsBv = 513;
+            } else if (onoff(sw, "-pins-sc-biguint-nolimit", flag /*ref*/)) {
+                m_pinsScBigUintNL = flag;
+                // m_pinsBv = 513;
             } else if (onoff(sw, "-pins-uint8", flag /*ref*/)) {
                 m_pinsUint8 = flag;
             } else if (onoff(sw, "-pp-comments", flag /*ref*/)) {
@@ -1660,6 +1663,7 @@ V3Options::V3Options() {
     m_pinsBv = 65;
     m_pinsScUint = false;
     m_pinsScBigUint = false;
+    m_pinsScBigUintNL = false;
     m_pinsUint8 = false;
     m_ppComments = false;
     m_profCFuncs = false;

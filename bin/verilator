@@ -363,6 +363,7 @@ arguments.
     --pins-bv <bits>            Specify types for top level ports
     --pins-sc-uint              Specify types for top level ports
     --pins-sc-biguint           Specify types for top level ports
+    --pins-sc-biguint-nolimit   Specify types for top level ports
     --pins-uint8                Specify types for top level ports
     --pipe-filter <command>     Filter all input through a script
     --pp-comments               Show preprocessor comments with -E
