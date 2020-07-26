@@ -2442,7 +2442,7 @@ public:
 class AstModule : public AstNodeModule {
     // A module declaration
 private:
-    bool m_isProgram; // Module represents a program
+    bool m_isProgram;  // Module represents a program
 public:
     AstModule(FileLine* fl, const string& name, bool program = false)
         : ASTGEN_SUPER(fl, name)
