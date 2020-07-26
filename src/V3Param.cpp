@@ -635,7 +635,7 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
                         // This prevents making additional modules, and makes coverage more
                         // obvious as it won't show up under a unique module page name.
                     } else if (exprp->num().isDouble() || exprp->num().isString()
-                               || exprp->num().isFourState()) {
+                               || exprp->num().isFourState() || exprp->num().width() != 32) {
                         longname
                             += ("_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp));
                         any_overrides = true;
