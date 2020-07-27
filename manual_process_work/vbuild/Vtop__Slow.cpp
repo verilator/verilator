@@ -134,6 +134,8 @@ void s_second_s_0(Vtop__Syms* __restrict vlSymsp) {
 
 void s_second_0_s_0(Vtop__Syms* __restrict vlSymsp) {
     // Regular i = 5
+    vlSymsp->i = 5;
+
     p_second_0.finished = true;
 }
 
@@ -145,7 +147,9 @@ void s_second_1_s_0(Vtop__Syms* __restrict vlSymsp) {
 void s_second_1_s_1(Vtop__Syms* __restrict vlSymsp) {
     // job = process::self();
 
-    // XXX find the job variable and attach something meaningful to it
+    // XXX disambiguate our 'process' and the actuall sv process
+    vlSymsp->job = &p_second;
+
     p_second_1.finished = true;
 }
 
@@ -173,26 +177,29 @@ void s_second_2_0_s_0(Vtop__Syms* __restrict vlSymsp) {
 }
 
 void s_second_2_0_s_1(Vtop__Syms* __restrict vlSymsp) {
-    // j++;
-    // XXX extract j from symbols and do j++
+    //         j++;
+    vlSymsp->j++;
 
-    if (true /* XXX j >= 10 */) {
+    // The loop should break (so the process should finish)
+    // when !(j < 10)
+    if (!(vlSymsp->j < 10)) {
         p_second_2_0.finished = true;
     }
 }
 
 void s_second_s_1(Vtop__Syms* __restrict vlSymsp) {
-    VL_WRITEF("TODO: $display After fork: (...)\n");
+    VL_WRITEF("After fork: i=%d, j=%d, job=%p\n",
+              vlSymsp->i, vlSymsp->j, vlSymsp->job);
 
     // wait (j == 3)
     p_second.run_conditions.push_back([](Vtop__Syms* __restrict vlSymsp) {
-                // TODO FIXME extract j from Vtop__Syms* and check it's value
-                return true;
+                return (vlSymsp->j == 3);
             });
 }
 
 void s_second_s_2(Vtop__Syms* __restrict vlSymsp) {
-    VL_WRITEF("TODO: $display After wait: (...)\n");
+    VL_WRITEF("After j wait: i=%d, j=%d, job=%p\n",
+              vlSymsp->i, vlSymsp->j, vlSymsp->job);
 
     p_second.run_conditions.push_back([](Vtop__Syms* __restrict vlSymsp) {
                 return e_ready_to_finish.triggered;
@@ -200,7 +207,8 @@ void s_second_s_2(Vtop__Syms* __restrict vlSymsp) {
 }
 
 void s_second_s_3(Vtop__Syms* __restrict vlSymsp) {
-    VL_WRITEF("TODO: $display After ready to finish: (...)\n");
+    VL_WRITEF("After ready to finish: i=%d, j=%d, job=%p\n",
+              vlSymsp->i, vlSymsp->j, vlSymsp->job);
 
     VL_WRITEF("All done!\n");
     VL_FINISH_MT("top.sv", 44, "");

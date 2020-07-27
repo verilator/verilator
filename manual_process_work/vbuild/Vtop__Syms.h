@@ -15,6 +15,12 @@
 // SYMS CLASS
 class Vtop__Syms : public VerilatedSyms {
   public:
+    // XXX signals renamed to make the code more readable
+    IData/*31:0*/ j;
+    IData/*31:0*/ i;
+
+    // XXX what type to use? (this is 'process job')
+    void* job;
     
     // LOCAL STATE
     const char* __Vm_namep;
