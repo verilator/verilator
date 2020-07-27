@@ -206,6 +206,20 @@ void s_second_3(Vtop__Syms* __restrict vlSymsp) {
     VL_FINISH_MT("top.sv", 44, "");
 }
 
+void s_initial_0_0(Vtop__Syms* __restrict vlSymsp) {
+    // #500;
+
+    p_first.time_conditions.push_back(timer.offset(500));
+}
+
+void s_initial_0_1(Vtop__Syms* __restrict vlSymsp) {
+    // $display("Should not reach this before $finish");
+    // $stop;
+
+    VL_WRITEF("Should not reach this before $finish\n");
+    VL_FINISH_MT("top.sv", 51, "");
+}
+
 //==========
 
 VL_CTOR_IMP(Vtop) {
