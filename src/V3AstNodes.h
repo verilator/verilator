@@ -8015,6 +8015,31 @@ public:
     virtual bool same(const AstNode* samep) const { return true; }
 };
 
+class AstStable : public AstNodeMath {
+    // Verilog $stable
+    // Parents: math
+    // Children: expression
+public:
+    AstStable(FileLine* fl, AstNode* exprp)
+        : ASTGEN_SUPER(fl) {
+        addOp1p(exprp);
+    }
+    ASTNODE_NODE_FUNCS(Stable)
+    virtual string emitVerilog() { return "$stable(%l)"; }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+        V3ERROR_NA;
+    }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { V3ERROR_NA_RETURN(""); }
+    virtual int instrCount() const { return widthInstrs(); }
+    AstNode* exprp() const { return op1p(); }  // op1 = expression
+    AstSenTree* sentreep() const { return VN_CAST(op2p(), SenTree); }  // op2 = clock domain
+    void sentreep(AstSenTree* sentreep) { addOp2p(sentreep); }  // op2 = clock domain
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+};
+
 class AstPattern : public AstNodeMath {
     // Verilog '{a,b,c,d...}
     // Parents: AstNodeAssign, AstPattern, ...

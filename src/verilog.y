@@ -771,6 +771,7 @@ BISONPRE_VERSION(3.0,%define parse.error verbose)
 %token<fl>              yD_SIZE         "$size"
 %token<fl>              yD_SQRT         "$sqrt"
 %token<fl>              yD_SSCANF       "$sscanf"
+%token<fl>              yD_STABLE       "$stable"
 %token<fl>              yD_STIME        "$stime"
 %token<fl>              yD_STOP         "$stop"
 %token<fl>              yD_SWRITE       "$swrite"
@@ -3648,6 +3649,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_SQRT '(' expr ')'			{ $$ = new AstSqrtD($1,$3); }
 	|	yD_SSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSScanF($1,*$5,$3,$6); }
 	|	yD_STIME parenE				{ $$ = new AstSel($1, new AstTime($1, VTimescale(VTimescale::NONE)), 0, 32); }
+	|	yD_STABLE '(' expr ')'			{ $$ = new AstStable($1,$3); }
+	|	yD_STABLE '(' expr ',' expr ')'		{ $$ = $3; BBUNSUP($1, "Unsupported: $stable and clock arguments"); }
 	|	yD_TAN '(' expr ')'			{ $$ = new AstTanD($1,$3); }
 	|	yD_TANH '(' expr ')'			{ $$ = new AstTanhD($1,$3); }
 	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }

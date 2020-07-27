@@ -94,6 +94,22 @@ private:
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
     }
+    virtual void visit(AstStable* nodep) VL_OVERRIDE {
+        if (nodep->sentreep()) return;  // Already processed
+        iterateChildren(nodep);
+        FileLine* fl = nodep->fileline();
+        AstNode* exprp = nodep->exprp()->unlinkFrBack();
+        AstNode* past = new AstPast(fl, exprp, NULL);
+        past->dtypeFrom(exprp);
+        exprp = new AstEq(fl,
+                          past,
+                          exprp->cloneTree(false)); //new AstVarRef(fl, exprp, true)
+        exprp->dtypeSetLogicBool();
+        nodep->replaceWith(exprp);
+        nodep->sentreep(newSenTree(nodep));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
     virtual void visit(AstPropClocked* nodep) VL_OVERRIDE {
         // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
