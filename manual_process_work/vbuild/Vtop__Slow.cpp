@@ -87,7 +87,7 @@ Process initial{};
 
 // INITIAL
 
-void s_initial_0(Vtop__Syms* __restrict vlSymsp) {
+void s_initial_s_0(Vtop__Syms* __restrict vlSymsp) {
     // Activate all the processes under fork
     active_processes.push_back(p_first);
     active_processes.push_back(p_second);
@@ -100,7 +100,7 @@ void s_initial_0(Vtop__Syms* __restrict vlSymsp) {
 
 // FIRST
 
-void s_first_0(Vtop__Syms* __restrict vlSymsp) {
+void s_first_s_0(Vtop__Syms* __restrict vlSymsp) {
     // Nothing until #300
 
     // step ends with #300 - add a condition for that
@@ -109,7 +109,7 @@ void s_first_0(Vtop__Syms* __restrict vlSymsp) {
     p_first.time_conditions.push_back(timer.offset(300));
 }
 
-void s_first_1(Vtop__Syms* __restrict vlSymsp) {
+void s_first_s_1(Vtop__Syms* __restrict vlSymsp) {
     // All we have to do is trigger the event
     e_ready_to_finish.trigger();
 
@@ -120,7 +120,7 @@ void s_first_1(Vtop__Syms* __restrict vlSymsp) {
 
 // SECOND
 
-void s_second_0(Vtop__Syms* __restrict vlSymsp) {
+void s_second_s_0(Vtop__Syms* __restrict vlSymsp) {
     // forks to three unnamed blocks
     active_processes.push_back(p_second_0);
     active_processes.push_back(p_second_1);
@@ -132,24 +132,24 @@ void s_second_0(Vtop__Syms* __restrict vlSymsp) {
             });
 }
 
-void s_second_0_0(Vtop__Syms* __restrict vlSymsp) {
+void s_second_0_s_0(Vtop__Syms* __restrict vlSymsp) {
     // Regular i = 5
     p_second_0.finished = true;
 }
 
-void s_second_1_0(Vtop__Syms* __restrict vlSymsp) {
+void s_second_1_s_0(Vtop__Syms* __restrict vlSymsp) {
     // #10;
     p_second_1.time_conditions.push_back(timer.offset(10));
 }
 
-void s_second_1_1(Vtop__Syms* __restrict vlSymsp) {
+void s_second_1_s_1(Vtop__Syms* __restrict vlSymsp) {
     // job = process::self();
 
     // XXX find the job variable and attach something meaningful to it
     p_second_1.finished = true;
 }
 
-void s_second_2_0(Vtop__Syms* __restrict vlSymsp) {
+void s_second_2_s_0(Vtop__Syms* __restrict vlSymsp) {
     // while (j < 10) begin
     //         #5;
     //         j++;
@@ -167,12 +167,12 @@ void s_second_2_0(Vtop__Syms* __restrict vlSymsp) {
             });
 }
 
-void s_second_2_0_0(Vtop__Syms* __restrict vlSymsp) {
+void s_second_2_0_s_0(Vtop__Syms* __restrict vlSymsp) {
     // #5
     p_first.time_conditions.push_back(timer.offset(5));
 }
 
-void s_second_2_0_1(Vtop__Syms* __restrict vlSymsp) {
+void s_second_2_0_s_1(Vtop__Syms* __restrict vlSymsp) {
     // j++;
     // XXX extract j from symbols and do j++
 
@@ -181,7 +181,7 @@ void s_second_2_0_1(Vtop__Syms* __restrict vlSymsp) {
     }
 }
 
-void s_second_1(Vtop__Syms* __restrict vlSymsp) {
+void s_second_s_1(Vtop__Syms* __restrict vlSymsp) {
     VL_WRITEF("TODO: $display After fork: (...)\n");
 
     // wait (j == 3)
@@ -191,7 +191,7 @@ void s_second_1(Vtop__Syms* __restrict vlSymsp) {
             });
 }
 
-void s_second_2(Vtop__Syms* __restrict vlSymsp) {
+void s_second_s_2(Vtop__Syms* __restrict vlSymsp) {
     VL_WRITEF("TODO: $display After wait: (...)\n");
 
     p_second.run_conditions.push_back([](Vtop__Syms* __restrict vlSymsp) {
@@ -199,7 +199,7 @@ void s_second_2(Vtop__Syms* __restrict vlSymsp) {
             });
 }
 
-void s_second_3(Vtop__Syms* __restrict vlSymsp) {
+void s_second_s_3(Vtop__Syms* __restrict vlSymsp) {
     VL_WRITEF("TODO: $display After ready to finish: (...)\n");
 
     VL_WRITEF("All done!\n");
