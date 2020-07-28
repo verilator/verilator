@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
    input clk;
    integer cyc; initial cyc=1;
    wire [31:0] in = cyc;
-   
+
    Test test (/*AUTOINST*/
               // Inputs
               .clk                      (clk),
@@ -22,7 +22,7 @@ module t (/*AUTOARG*/
                 .clk                    (clk),
                 .in                     (in[31:0]));
 
-   
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
          cyc <= cyc + 1;
