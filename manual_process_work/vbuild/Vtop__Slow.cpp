@@ -12,31 +12,20 @@
 //==========
 
 
-class Event
+
+class ExecutionBlock
 {
     public:
-        bool triggered = false;
-
-        void trigger() {
-            triggered = true;
-        }
-
-        void reset() {
-            triggered = false;
-        }
-};
-
-
-class Process
-{
-    public:
-        std::vector <std::function<bool(Vtop__Syms* __restrict vlSymsp)>> run_conditions; // waits for arbitrary conditions
+        std::vector <std::function<bool(Vtop__Syms*)>> run_conditions; // waits for arbitrary conditions
         std::vector <unsigned int> time_conditions; // waits for specific simulation times
-        std::vector <std::function<void()>> eval_steps; // unbreakable steps to eval
+        std::vector <std::function<void(Vtop__Syms*)>> eval_steps; // unbreakable steps to eval
         unsigned int current_step = 0; // index for iterating the steps vector
         bool finished = false; // whether it should or should not be invoked again
-};
 
+        void add_step(std::function<void(Vtop__Syms*)> fn) {
+            eval_steps.push_back(fn);
+        }
+};
 
 class Timer
 {
@@ -69,21 +58,18 @@ class Timer
 // Define the simulation timer
 Timer timer{};
 
-// Define the events
-Event e_ready_to_finish{};
-
 // Define a vector of active processes
-std::vector <Process> active_processes;
+std::vector <ExecutionBlock> active_processes;
 
 // Definition of various Processes (including unnamed subprocesses)
-Process initial{};
-    Process p_first{};
-    Process p_second{};
-        Process p_second_0{}; // These come from the fork in second()
-        Process p_second_1{};
-        Process p_second_2{};
-            Process p_second_2_0{}; // This is unfurtunate
-    Process p_initial_0{};
+ExecutionBlock p_initial{};
+    ExecutionBlock p_first{};
+    ExecutionBlock p_second{};
+        ExecutionBlock p_second_0{}; // These come from the fork in second()
+        ExecutionBlock p_second_1{};
+        ExecutionBlock p_second_2{};
+            ExecutionBlock p_second_2_0{}; // This is unfurtunate
+    ExecutionBlock p_initial_0{};
 
 // INITIAL
 
@@ -111,7 +97,7 @@ void s_first_s_0(Vtop__Syms* __restrict vlSymsp) {
 
 void s_first_s_1(Vtop__Syms* __restrict vlSymsp) {
     // All we have to do is trigger the event
-    e_ready_to_finish.trigger();
+    vlSymsp->ready_to_finish.trigger();
 
     // This is the last step and we are not expected to start from the
     // beginning (could be extracted to a separate step - e.g. first_final)
@@ -161,7 +147,7 @@ void s_second_2_s_0(Vtop__Syms* __restrict vlSymsp) {
 
     // This is unfortunate, as there is no clean way to
     // handle loops with the proposed approach.
-    // One way is to represent loop as a separate "Process"
+    // One way is to represent loop as a separate "ExecutionBlock"
     // which is done here
 
     active_processes.push_back(p_second_2_0);
@@ -202,7 +188,7 @@ void s_second_s_2(Vtop__Syms* __restrict vlSymsp) {
               vlSymsp->i, vlSymsp->j, vlSymsp->job);
 
     p_second.run_conditions.push_back([](Vtop__Syms* __restrict vlSymsp) {
-                return e_ready_to_finish.triggered;
+                return vlSymsp->ready_to_finish.triggered;
             });
 }
 
@@ -214,13 +200,13 @@ void s_second_s_3(Vtop__Syms* __restrict vlSymsp) {
     VL_FINISH_MT("top.sv", 44, "");
 }
 
-void s_initial_0_0(Vtop__Syms* __restrict vlSymsp) {
+void s_initial_0_s_0(Vtop__Syms* __restrict vlSymsp) {
     // #500;
 
     p_first.time_conditions.push_back(timer.offset(500));
 }
 
-void s_initial_0_1(Vtop__Syms* __restrict vlSymsp) {
+void s_initial_0_s_1(Vtop__Syms* __restrict vlSymsp) {
     // $display("Should not reach this before $finish");
     // $stop;
 
@@ -255,7 +241,39 @@ void Vtop::_initial__TOP__1(Vtop__Syms* __restrict vlSymsp) {
     VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop::_initial__TOP__1\n"); );
     Vtop* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
     // Body
-    // XXX TODO the actual execution happens here (!!!)
+
+    // FIXME initializing ExecutionBlocks should be done outside of 'eval'
+    // in some cases (all?) even dynamically (especially when forking to
+    // pre-defined tasks etc)
+
+    p_initial.add_step(s_initial_s_0);
+
+    {
+        p_first.add_step(s_first_s_0);
+        p_first.add_step(s_first_s_1);
+
+        p_second.add_step(s_second_s_0);
+        {
+            p_second_0.add_step(s_second_0_s_0);
+
+            p_second_1.add_step(s_second_1_s_0);
+            p_second_1.add_step(s_second_1_s_1);
+            p_second_2.add_step(s_second_2_s_0);
+            {
+                p_second_2_0.add_step(s_second_2_0_s_0);
+                p_second_2_0.add_step(s_second_2_0_s_1);
+            }
+        }
+        p_second.add_step(s_second_s_1);
+        p_second.add_step(s_second_s_2);
+        p_second.add_step(s_second_s_3);
+
+        p_initial_0.add_step(s_initial_0_s_0);
+        p_initial_0.add_step(s_initial_0_s_1);
+    }
+
+    while (true) {
+    }
 }
 
 void Vtop::_eval_initial(Vtop__Syms* __restrict vlSymsp) {

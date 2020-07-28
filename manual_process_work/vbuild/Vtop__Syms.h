@@ -12,6 +12,20 @@
 // INCLUDE MODULE CLASSES
 #include "Vtop.h"
 
+class Event
+{
+    public:
+        bool triggered = false;
+
+        void trigger() {
+            triggered = true;
+        }
+
+        void reset() {
+            triggered = false;
+        }
+};
+
 // SYMS CLASS
 class Vtop__Syms : public VerilatedSyms {
   public:
@@ -21,6 +35,8 @@ class Vtop__Syms : public VerilatedSyms {
 
     // XXX what type to use? (this is 'process job')
     void* job;
+
+    Event ready_to_finish{};
     
     // LOCAL STATE
     const char* __Vm_namep;
