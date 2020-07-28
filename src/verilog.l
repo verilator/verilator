@@ -435,6 +435,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$right"              { FL; return yD_RIGHT; }
   "$root"               { FL; return yD_ROOT; }
   "$size"               { FL; return yD_SIZE; }
+  "$stable"             { FL; return yD_STABLE; }
   "$unpacked_dimensions" { FL; return yD_UNPACKED_DIMENSIONS; }
   "$warning"            { FL; return yD_WARNING; }
   /*     SV2005 Keywords */

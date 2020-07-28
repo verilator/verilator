@@ -8,6 +8,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix combining different-width parameters (#2484). [abirkmanis]
 
+****  Support $stable. [Peter Monsson]
 
 * Verilator 4.038 2020-07-11
 
