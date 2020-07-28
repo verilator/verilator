@@ -9,6 +9,8 @@
 #include <vector>
 #include <set>
 
+#include <iostream>
+
 //==========
 
 
@@ -25,12 +27,18 @@ class ExecutionBlock
         void add_step(std::function<void(Vtop__Syms*)> fn) {
             eval_steps.push_back(fn);
         }
+
+        // Just for debugging:
+        std::string name;
+
+        ExecutionBlock() {};
+        ExecutionBlock(std::string name) : name(name) {};
 };
 
 class Timer
 {
     public:
-        unsigned long simulation_time;
+        unsigned long simulation_time = 0;
 
         std::set<unsigned long> requested_slots;
 
@@ -46,8 +54,13 @@ class Timer
             VL_DBG_MSGF("+    Simulation time advanced to %lu\n", simulation_time);
         }
 
-        unsigned int offset(unsigned int offset) {
-            return simulation_time + offset;
+        unsigned int get_slot(unsigned int get_slot) {
+            unsigned int slot;
+
+            slot = simulation_time + get_slot;
+            requested_slots.insert(slot);
+
+            return slot;
         }
 };
 
@@ -59,28 +72,31 @@ class Timer
 Timer timer{};
 
 // Define a vector of active processes
-std::vector <ExecutionBlock> active_processes;
+std::set <ExecutionBlock*> active_processes;
+std::set <ExecutionBlock*> processes_to_activate;
+std::set <ExecutionBlock*> processes_to_remove;
 
 // Definition of various Processes (including unnamed subprocesses)
-ExecutionBlock p_initial{};
-    ExecutionBlock p_first{};
-    ExecutionBlock p_second{};
-        ExecutionBlock p_second_0{}; // These come from the fork in second()
-        ExecutionBlock p_second_1{};
-        ExecutionBlock p_second_2{};
-            ExecutionBlock p_second_2_0{}; // This is unfurtunate
-    ExecutionBlock p_initial_0{};
+ExecutionBlock p_initial{"p_initial"};
+    ExecutionBlock p_first{"p_first"};
+    ExecutionBlock p_second{"p_second"};
+        ExecutionBlock p_second_0{"p_second_0"}; // These come from the fork in second()
+        ExecutionBlock p_second_1{"p_second_1"};
+        ExecutionBlock p_second_2{"p_second_2"};
+            ExecutionBlock p_second_2_0{"p_second_2_0"}; // This is unfurtunate
+    ExecutionBlock p_initial_0{"p_intial_0"};
 
 // INITIAL
 
 void s_initial_s_0(Vtop__Syms* __restrict vlSymsp) {
     // Activate all the processes under fork
-    active_processes.push_back(p_first);
-    active_processes.push_back(p_second);
-    active_processes.push_back(p_initial_0);
+    processes_to_activate.insert(&p_first);
+    processes_to_activate.insert(&p_second);
+    processes_to_activate.insert(&p_initial_0);
 
     // fork ends with 'join_any' so we continue in the same step
     VL_WRITEF("Everything has been started!\n");
+    p_initial.finished = true;
 }
 
 
@@ -92,7 +108,7 @@ void s_first_s_0(Vtop__Syms* __restrict vlSymsp) {
     // step ends with #300 - add a condition for that
     // The value of 300 has to be read from the node (once it is included in th
     // AST) - hardcoding it for now.
-    p_first.time_conditions.push_back(timer.offset(300));
+    p_first.time_conditions.push_back(timer.get_slot(300));
 }
 
 void s_first_s_1(Vtop__Syms* __restrict vlSymsp) {
@@ -108,9 +124,9 @@ void s_first_s_1(Vtop__Syms* __restrict vlSymsp) {
 
 void s_second_s_0(Vtop__Syms* __restrict vlSymsp) {
     // forks to three unnamed blocks
-    active_processes.push_back(p_second_0);
-    active_processes.push_back(p_second_1);
-    active_processes.push_back(p_second_2);
+    processes_to_activate.insert(&p_second_0);
+    processes_to_activate.insert(&p_second_1);
+    processes_to_activate.insert(&p_second_2);
 
     // fork_any - wait until any of the forked processes finishes
     p_second.run_conditions.push_back([](Vtop__Syms* __restrict vlSymsp) {
@@ -127,7 +143,7 @@ void s_second_0_s_0(Vtop__Syms* __restrict vlSymsp) {
 
 void s_second_1_s_0(Vtop__Syms* __restrict vlSymsp) {
     // #10;
-    p_second_1.time_conditions.push_back(timer.offset(10));
+    p_second_1.time_conditions.push_back(timer.get_slot(10));
 }
 
 void s_second_1_s_1(Vtop__Syms* __restrict vlSymsp) {
@@ -150,7 +166,7 @@ void s_second_2_s_0(Vtop__Syms* __restrict vlSymsp) {
     // One way is to represent loop as a separate "ExecutionBlock"
     // which is done here
 
-    active_processes.push_back(p_second_2_0);
+    processes_to_activate.insert(&p_second_2_0);
 
     p_second_2.run_conditions.push_back([](Vtop__Syms* __restrict vlSymsp) {
                 return p_second_2_0.finished;
@@ -159,7 +175,7 @@ void s_second_2_s_0(Vtop__Syms* __restrict vlSymsp) {
 
 void s_second_2_0_s_0(Vtop__Syms* __restrict vlSymsp) {
     // #5
-    p_first.time_conditions.push_back(timer.offset(5));
+    p_first.time_conditions.push_back(timer.get_slot(5));
 }
 
 void s_second_2_0_s_1(Vtop__Syms* __restrict vlSymsp) {
@@ -174,8 +190,8 @@ void s_second_2_0_s_1(Vtop__Syms* __restrict vlSymsp) {
 }
 
 void s_second_s_1(Vtop__Syms* __restrict vlSymsp) {
-    VL_WRITEF("After fork: i=%d, j=%d, job=%p\n",
-              vlSymsp->i, vlSymsp->j, vlSymsp->job);
+    VL_WRITEF("After fork: i=%d, j=%d, job=??\n",
+              vlSymsp->i, vlSymsp->j); //, vlSymsp->job);
 
     // wait (j == 3)
     p_second.run_conditions.push_back([](Vtop__Syms* __restrict vlSymsp) {
@@ -184,8 +200,8 @@ void s_second_s_1(Vtop__Syms* __restrict vlSymsp) {
 }
 
 void s_second_s_2(Vtop__Syms* __restrict vlSymsp) {
-    VL_WRITEF("After j wait: i=%d, j=%d, job=%p\n",
-              vlSymsp->i, vlSymsp->j, vlSymsp->job);
+    VL_WRITEF("After j wait: i=%d, j=%d, job=??\n",
+              vlSymsp->i, vlSymsp->j); //, vlSymsp->job);
 
     p_second.run_conditions.push_back([](Vtop__Syms* __restrict vlSymsp) {
                 return vlSymsp->ready_to_finish.triggered;
@@ -193,8 +209,8 @@ void s_second_s_2(Vtop__Syms* __restrict vlSymsp) {
 }
 
 void s_second_s_3(Vtop__Syms* __restrict vlSymsp) {
-    VL_WRITEF("After ready to finish: i=%d, j=%d, job=%p\n",
-              vlSymsp->i, vlSymsp->j, vlSymsp->job);
+    VL_WRITEF("After ready to finish: i=%d, j=%d, job=??\n",
+              vlSymsp->i, vlSymsp->j); //, vlSymsp->job);
 
     VL_WRITEF("All done!\n");
     VL_FINISH_MT("top.sv", 44, "");
@@ -203,7 +219,7 @@ void s_second_s_3(Vtop__Syms* __restrict vlSymsp) {
 void s_initial_0_s_0(Vtop__Syms* __restrict vlSymsp) {
     // #500;
 
-    p_first.time_conditions.push_back(timer.offset(500));
+    p_initial_0.time_conditions.push_back(timer.get_slot(500));
 }
 
 void s_initial_0_s_1(Vtop__Syms* __restrict vlSymsp) {
@@ -211,7 +227,7 @@ void s_initial_0_s_1(Vtop__Syms* __restrict vlSymsp) {
     // $stop;
 
     VL_WRITEF("Should not reach this before $finish\n");
-    VL_FINISH_MT("top.sv", 51, "");
+    VL_STOP_MT("top.sv", 51, "");
 }
 
 //==========
@@ -272,7 +288,58 @@ void Vtop::_initial__TOP__1(Vtop__Syms* __restrict vlSymsp) {
         p_initial_0.add_step(s_initial_0_s_1);
     }
 
-    while (true) {
+    // starting only the initial block (it should start the other blocks
+    // itself)
+
+    active_processes.insert(&p_initial);
+
+    while (active_processes.size() > 0) {
+
+        std::cout << "Starting evaluation" << std::endl;
+
+        for (auto p: active_processes) {
+            std::cout << "  > Handling " << p->name << std::endl;
+            bool can_run = true;
+            for (auto c: p->run_conditions) {
+                std::cout << "    > checking run condition" << std::endl;
+                can_run &= c(vlSymsp);
+            }
+
+            for (auto t: p->time_conditions) {
+                // XXX should be ==
+                std::cout << "    > checking time condition ("
+                          << t << " == " << timer.simulation_time
+                          << ")" << std::endl;
+                can_run &= (timer.simulation_time == t);
+            }
+
+            if (can_run) {
+                std::cout << "    > can run" << std::endl;
+                // clear all conditions, run steps, increment step counter
+
+                p->run_conditions.clear();
+                p->time_conditions.clear();
+
+                p->eval_steps[p->current_step++](vlSymsp);
+
+                // TODO handle repeatable processes
+            }
+
+            if (p->finished) {
+                processes_to_remove.insert(p);
+            }
+        }
+
+        for (auto p: processes_to_remove) {
+            active_processes.erase(p);
+        }
+        processes_to_remove.clear();
+
+        for (auto p: processes_to_activate) {
+            active_processes.insert(p);
+        }
+        processes_to_activate.clear();
+
     }
 }
 
