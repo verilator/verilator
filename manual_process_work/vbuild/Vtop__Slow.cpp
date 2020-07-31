@@ -14,7 +14,6 @@
 //==========
 
 
-
 class ExecutionBlock
 {
     public:
@@ -149,7 +148,6 @@ void s_second_1_s_0(Vtop__Syms* __restrict vlSymsp) {
 void s_second_1_s_1(Vtop__Syms* __restrict vlSymsp) {
     // job = process::self();
 
-    // XXX disambiguate our 'process' and the actuall sv process
     vlSymsp->job = &p_second;
 
     p_second_1.finished = true;
@@ -173,9 +171,14 @@ void s_second_2_s_0(Vtop__Syms* __restrict vlSymsp) {
             });
 }
 
+void s_second_2_s_1(Vtop__Syms* __restrict vlSymsp) {
+    // After loop, just finish the process
+    p_second_2.finished = true;
+}
+
 void s_second_2_0_s_0(Vtop__Syms* __restrict vlSymsp) {
     // #5
-    p_first.time_conditions.push_back(timer.get_slot(5));
+    p_second_2_0.time_conditions.push_back(timer.get_slot(5));
 }
 
 void s_second_2_0_s_1(Vtop__Syms* __restrict vlSymsp) {
@@ -190,8 +193,9 @@ void s_second_2_0_s_1(Vtop__Syms* __restrict vlSymsp) {
 }
 
 void s_second_s_1(Vtop__Syms* __restrict vlSymsp) {
-    VL_WRITEF("After fork: i=%d, j=%d, job=??\n",
-              vlSymsp->i, vlSymsp->j); //, vlSymsp->job);
+    // FIXME using regular printf to use %p for job printing
+    printf("After fork: i=%d, j=%d, job=%p\n",
+           vlSymsp->i, vlSymsp->j, vlSymsp->job);
 
     // wait (j == 3)
     p_second.run_conditions.push_back([](Vtop__Syms* __restrict vlSymsp) {
@@ -200,8 +204,8 @@ void s_second_s_1(Vtop__Syms* __restrict vlSymsp) {
 }
 
 void s_second_s_2(Vtop__Syms* __restrict vlSymsp) {
-    VL_WRITEF("After j wait: i=%d, j=%d, job=??\n",
-              vlSymsp->i, vlSymsp->j); //, vlSymsp->job);
+    printf("After j wait: i=%d, j=%d, job=%p\n",
+           vlSymsp->i, vlSymsp->j, vlSymsp->job);
 
     p_second.run_conditions.push_back([](Vtop__Syms* __restrict vlSymsp) {
                 return vlSymsp->ready_to_finish.triggered;
@@ -209,8 +213,8 @@ void s_second_s_2(Vtop__Syms* __restrict vlSymsp) {
 }
 
 void s_second_s_3(Vtop__Syms* __restrict vlSymsp) {
-    VL_WRITEF("After ready to finish: i=%d, j=%d, job=??\n",
-              vlSymsp->i, vlSymsp->j); //, vlSymsp->job);
+    printf("After ready to finish: i=%d, j=%d, job=%p\n",
+           vlSymsp->i, vlSymsp->j, vlSymsp->job);
 
     VL_WRITEF("All done!\n");
     VL_FINISH_MT("top.sv", 44, "");
@@ -279,6 +283,7 @@ void Vtop::_initial__TOP__1(Vtop__Syms* __restrict vlSymsp) {
                 p_second_2_0.add_step(s_second_2_0_s_0);
                 p_second_2_0.add_step(s_second_2_0_s_1);
             }
+            p_second_2.add_step(s_second_2_s_1);
         }
         p_second.add_step(s_second_s_1);
         p_second.add_step(s_second_s_2);
@@ -294,35 +299,27 @@ void Vtop::_initial__TOP__1(Vtop__Syms* __restrict vlSymsp) {
     active_processes.insert(&p_initial);
 
     while (active_processes.size() > 0) {
-
-        std::cout << "Starting evaluation" << std::endl;
+        unsigned int run_count = 0;
 
         for (auto p: active_processes) {
-            std::cout << "  > Handling " << p->name << std::endl;
             bool can_run = true;
             for (auto c: p->run_conditions) {
-                std::cout << "    > checking run condition" << std::endl;
                 can_run &= c(vlSymsp);
             }
 
             for (auto t: p->time_conditions) {
-                // XXX should be ==
-                std::cout << "    > checking time condition ("
-                          << t << " == " << timer.simulation_time
-                          << ")" << std::endl;
                 can_run &= (timer.simulation_time == t);
             }
 
             if (can_run) {
-                std::cout << "    > can run" << std::endl;
+                run_count++;
                 // clear all conditions, run steps, increment step counter
 
                 p->run_conditions.clear();
                 p->time_conditions.clear();
 
-                p->eval_steps[p->current_step++](vlSymsp);
-
-                // TODO handle repeatable processes
+                p->eval_steps[p->current_step](vlSymsp);
+                p->current_step = (p->current_step + 1) % p->eval_steps.size();
             }
 
             if (p->finished) {
@@ -340,6 +337,18 @@ void Vtop::_initial__TOP__1(Vtop__Syms* __restrict vlSymsp) {
         }
         processes_to_activate.clear();
 
+        if (Verilated::gotFinish()) break;
+
+        if (run_count == 0 && timer.requested_slots.size() == 0) {
+            // This should never happen
+            std::cout << "!!! didn't run anything, simulation stuck !!" << std::endl;
+            break;
+        }
+
+        // FIXME incrementing time should be outside 'eval' (?), maybe should
+        // after time passes we should be calling 'eval' again.
+
+        if (run_count == 0) timer.advance_time();
     }
 }
 
