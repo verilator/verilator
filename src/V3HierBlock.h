@@ -41,6 +41,7 @@ public:
     typedef std::set<const AstNodeModule*> NodeModuleSet;
 
 private:
+    // MEMBERS
     const AstNodeModule* m_modp;  // Hierarchical block module
     // Hierarchical blocks that directly or indirectly instantiate this block
     HierBlockSet m_parents;
