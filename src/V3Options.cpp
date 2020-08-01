@@ -746,6 +746,11 @@ void V3Options::notify() {
     if (m_hierChild && m_hierBlocks.empty()) {
         cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
     }
+    if (m_hierarchical && m_protectLib.empty() && m_protectKey.empty()) {
+        // Key for hierarchical Verilation is fixed to be ccache friendly when the aim of this run
+        // is not to create protec-lib.
+        m_protectKey = "VL-KEY-HIERARCHICAL";
+    }
 
     if (protectIds()) {
         if (allPublic()) {
