@@ -284,6 +284,7 @@ public:
 //######################################################################
 class EmitMkHierVerilation {
     const V3HierBlockPlan* const m_planp;
+    const string m_makefile;  // path of this makefile
     void emitCommonOpts(V3OutMkFile& of) const {
         const string cwd = V3Os::filenameRealPath(".");
         of.puts("# Verilation of hierarchical blocks are executed in this directory\n");
@@ -310,6 +311,11 @@ class EmitMkHierVerilation {
             of.puts("\t\t" + *it + " \\\n");
         }
     }
+    void emitLaunchVerilator(V3OutMkFile& of, const string& argsFile) const {
+        of.puts("\t@$(MAKE) -C $(VM_HIER_RUN_DIR) -f " + m_makefile
+                + " hier_launch_verilator \\\n");
+        of.puts("\t\tVM_HIER_LAUNCH_VERILATOR_ARGSFILE=\"" + argsFile + "\"\n");
+    }
     void emit(V3OutMkFile& of) const {
         of.puts("# Hierarchical Verilation -*- Makefile -*-\n");
         of.puts("# DESCR"
@@ -321,7 +327,7 @@ class EmitMkHierVerilation {
         of.puts("VM_HIER_VERILATION_INCLUDED = 1\n\n");
 
         of.puts(".SUFFIXES:\n");
-        of.puts(".PHONY: hier_build hier_verilation\n");
+        of.puts(".PHONY: hier_build hier_verilation hier_launch_verilator\n");
 
         of.puts("# Libraries of hierarchical blocks\n");
         of.puts("VM_HIER_LIBS := \\\n");
@@ -336,35 +342,43 @@ class EmitMkHierVerilation {
         of.puts("hier_verilation: " + v3Global.opt.prefix() + ".mk\n");
         emitCommonOpts(of);
 
+        // Instead of direct execute of "cd $(VM_HIER_RUN_DIR) && $(VM_HIER_VERILATOR)",
+        // call via make to get message of "Entering directory" and "Leaving directory".
+        // This will make some editors and IDEs happy when viewing a logfile.
+        of.puts("# VM_HIER_LAUNCH_VERILATOR_ARGSFILE must be passed as a command argument\n");
+        of.puts("hier_launch_verilator:\n");
+        of.puts("\t$(VM_HIER_VERILATOR) -f $(VM_HIER_LAUNCH_VERILATOR_ARGSFILE)\n");
+
         // Top level module
         {
+            const string argsFile = v3Global.hierPlanp()->topCommandArgsFileName(false);
             of.puts("\n# Verilate the top module\n");
             of.puts(v3Global.opt.prefix()
                     + ".mk: $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
+            of.puts(V3Os::filenameNonDir(argsFile) + " ");
             for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end();
                  ++it) {
                 of.puts(it->second->hierWrapper(true) + " ");
             }
             of.puts("\n");
-            of.puts("\tcd $(VM_HIER_RUN_DIR) && $(VM_HIER_VERILATOR) ");
-            of.puts("-f " + v3Global.hierPlanp()->topCommandArgsFileName(false));
-            of.puts("\n");
+            emitLaunchVerilator(of, argsFile);
         }
 
         // Rules to process hierarchical blocks
         of.puts("\n# Verilate hierarchical blocks\n");
         for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end(); ++it) {
             const string prefix = it->second->hierPrefix();
+            const string argsFile = it->second->commandArgsFileName(false);
             of.puts(it->second->hierGenerated(true));
             of.puts(": $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
+            of.puts(V3Os::filenameNonDir(argsFile) + " ");
             const V3HierBlock::HierBlockSet& children = it->second->children();
             for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
                  child != children.end(); ++child) {
                 of.puts((*child)->hierWrapper(true) + " ");
             }
             of.puts("\n");
-            of.puts("\tcd $(VM_HIER_RUN_DIR) && $(VM_HIER_VERILATOR) ");
-            of.puts("-f " + it->second->commandArgsFileName(false) + "\n");
+            emitLaunchVerilator(of, argsFile);
 
             // Rule to build lib*.a
             of.puts(it->second->hierLib(true));
@@ -385,8 +399,9 @@ class EmitMkHierVerilation {
 
 public:
     explicit EmitMkHierVerilation(const V3HierBlockPlan* planp)
-        : m_planp(planp) {
-        V3OutMkFile of(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_hier.mk");
+        : m_planp(planp)
+        , m_makefile(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_hier.mk") {
+        V3OutMkFile of(m_makefile);
         emit(of);
     }
     VL_DEBUG_FUNC;  // Declare debug()
