@@ -89,7 +89,7 @@ static StrGParams stringifyParams(const V3HierBlock::GParams& gparams, bool forG
     StrGParams strParams;
     for (V3HierBlock::GParams::const_iterator gparamIt = gparams.begin();
          gparamIt != gparams.end(); ++gparamIt) {
-        if (AstConst* constp = VN_CAST((*gparamIt)->valuep(), Const)) {
+        if (const AstConst* constp = VN_CAST((*gparamIt)->valuep(), Const)) {
             // Only constant parameter needs to be set to -G because already checked in
             // V3Param.cpp. See also ParamVisitor::checkSupportedParam() in the file.
             if (constp->isDouble()) {
