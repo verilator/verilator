@@ -296,8 +296,7 @@ private:
                 // Only the root of the recursive instantiation can be a hierarhcical block.
                 nodep->modName(m_modp->name());
             } else {
-                // In hierarchical verilation mode, non-top module can be the top module of this
-                // run.
+                // In hierarchical mode, non-top module can be the top module of this run
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }
