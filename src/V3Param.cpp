@@ -240,8 +240,9 @@ private:
 
     UnrollStateful m_unroller;  // Loop unroller
 
-    string m_generateHierName;  // Generate portion of hierarchical name
+    string m_generateHierName;  // Generate portion of hierarchy name
 
+    // Database to get protect-lib wrapper that matches parameters in hierarchical Verilation
     ParameterizedHierBlocks m_hierBlocks;
 
     // METHODS
