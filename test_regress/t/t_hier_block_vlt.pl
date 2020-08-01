@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # stats will be deleted but generation will be skipped if libs of hierarchical blocks exist.
 clean_objs();
 
-scenarios(simulator => 1);
+scenarios(vlt_all => 1);
 top_filename("t/t_hier_block.v");
 
 # Travis environment offers 2 VCPUs, 2 thread setting causes the following warning.
