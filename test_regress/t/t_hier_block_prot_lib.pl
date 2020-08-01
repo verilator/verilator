@@ -27,8 +27,11 @@ while (1) {
                 $secret_dir,
                 "--protect-lib",
                 $secret_prefix,
+                "--protect-key",
+                "PROTECT_KEY",
                 "t/t_hier_block.v",
                 "-DAS_PROT_LIB",
+                $Self->{vltmt} ? ' --threads 1' : '',
                 "--build"],
         verilator_run => 1,
         );
@@ -40,7 +43,7 @@ while (1) {
                              "-DPROTLIB_TOP",
                              "--top-module t",
                              "-LDFLAGS",
-                             "'-L$secret_prefix -lsecret -static'"],
+                             "'$secret_prefix/libsecret.a'"],
         );
 
     execute(
