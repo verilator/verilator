@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # stats will be deleted but generation will be skipped if libs of hierarchical blocks exist.
 clean_objs();
 
-scenarios(simulator => 1);
+scenarios(vlt_all => 1);
 
 # Travis environment offers 2 VCPUs, 2 thread setting causes the following warning.
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
