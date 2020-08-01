@@ -509,7 +509,7 @@ public:
         if (v3Global.opt.hierChild()) {
             const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
             UASSERT(!v3Global.opt.topModule().empty(),
-                    "top module must be explicityly specified in hierarchical mode");
+                    "top module must be explicitly specified in hierarchical mode");
             const V3HierBlockOptSet::const_iterator hierIt
                 = hierBlocks.find(v3Global.opt.topModule());
             UASSERT(hierIt != hierBlocks.end(),
