@@ -38,7 +38,9 @@ module t (/*AUTOARG*/
    wire [7:0] out3_2;
    /* verilator lint_on UNOPTFLAT */
    wire [7:0] out4;
+   wire [7:0] out4_2;
    wire [7:0] out5;
+   wire [7:0] out6;
    int count = 0;
 
    non_hier_sub0 i_sub0(.clk(clk), .in(out3), .out(out0));
@@ -47,14 +49,19 @@ module t (/*AUTOARG*/
    sub3 #(.P0(1)) i_sub3(.clk(clk), .in(out2), .out(out3));
    // Must not use the same wrapper
    sub3 #(.STR("abc"), .P0(1)) i_sub3_2(.clk(clk), .in(out2), .out(out3_2));
-   delay #(.N(2), 8) i_delay0(clk, out3, out4);
-   delay #(.N(3), 8) i_delay1(clk, out4, out5);
+   /* verilator lint_off REALCVT */
+   sub4 #(.P0(1.6), .P1(3.1), .P3(4.1)) i_sub4_0(.clk(clk), .in(out3), .out(out4));  // incr 2
+   sub4 #(.P0(2.4), .P1(3.1), .P3(5)) i_sub4_1(.clk(clk), .in(out3), .out(out4_2));
+   /* verilator lint_on REALCVT */
+   delay #(.N(2), 8) i_delay0(clk, out4, out5);
+   delay #(.N(3), 8) i_delay1(clk, out5, out6);
 
    always_ff @(posedge clk) begin
       if (out3 != out3_2) $stop;
-      $display("%d out0:%d %d %d %d %d %d", count, out0, out1, out2, out3, out4, out5);
+      if (out4 != out4_2) $stop;
+      $display("%d out0:%d %d %d %d %d %d", count, out0, out1, out2, out3, out4, out5, out6);
       if (count == 16) begin
-         if (out5 == 15) begin
+         if (out6 == 16) begin
              $write("*-* All Finished *-*\n");
              $finish;
          end else begin
@@ -161,6 +168,26 @@ module sub3 #(
 
    TYPE [7:0] ff;
    always_ff @(posedge clk) ff <= in + P0;
+   assign out = ff;
+endmodule
+
+module sub4 #(
+   parameter int P0 = 1.1,
+   parameter P1 = 2,
+   parameter real P3 = 3) (
+   input wire clk,
+   input wire [7:0] in,
+   output wire[7:0] out); `HIER_BLOCK
+
+   initial begin
+      if (P1 == 2) begin
+         $display("P1(%f) is not properly set", P1);
+         $stop;
+      end
+   end
+
+   reg [7:0] ff;
+   always_ff @(posedge clk) ff <= in + 8'(P0);
    assign out = ff;
 endmodule
 
