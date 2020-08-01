@@ -84,25 +84,38 @@ class ParameterizedHierBlocks {
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
-    static bool areSame(AstVar* modvarp, AstConst* varp, AstConst* paramp) {
-        if (varp->isString()) { return varp->num().toString() == paramp->num().toString(); }
-        if (modvarp->declKwd() == AstBasicDTypeKwd::FLOAT
-            || modvarp->declKwd() == AstBasicDTypeKwd::DOUBLE) {
-            return v3EpsilonEqual(varp->num().toDouble(), paramp->num().toDouble());
+    static bool areSame(AstConst* pinValuep, AstConst* hierOptParamp) {
+        if (hierOptParamp->isString()) {
+            return pinValuep->isString()
+                   && pinValuep->num().toString() == hierOptParamp->num().toString();
         }
-        // Now integer type is assumed
-        // bitwidth of paramp is accurate because V3Width already caluclated in the previous run.
-        // varp is before width analysis.
-        const int bitwidth = paramp->num().width();
-        V3Number varNum(varp, bitwidth);
-        if (varp->isSigned()) {
-            varNum.opExtendS(varp->num(), varp->num().width());
-        } else {
-            varNum.opAssign(varp->num());
+
+        // Bitwidth of hierOptParamp is accurate because V3Width already caluclated in the previous
+        // run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted to
+        // hierOptParamp width.
+        V3Number varNum(pinValuep, hierOptParamp->num().width());
+        if (hierOptParamp->isDouble()) {
+            varNum.isDouble(true);
+            if (pinValuep->isDouble()) {
+                varNum.opAssign(pinValuep->num());
+            } else {  // Cast from integer to real
+                varNum.opIToRD(pinValuep->num());
+            }
+            return v3EpsilonEqual(varNum.toDouble(), hierOptParamp->num().toDouble());
+        } else {  // Now integer type is assumed
+            if (pinValuep->isDouble()) {  // Need to cast to int
+                // Parameter is actually an integral type, but passed value is floating point.
+                // Conversion from real to integer uses rounding in V3Width.cpp
+                varNum.opRToIRoundS(pinValuep->num());
+            } else if (pinValuep->isSigned()) {
+                varNum.opExtendS(pinValuep->num(), pinValuep->num().width());
+            } else {
+                varNum.opAssign(pinValuep->num());
+            }
+            V3Number isEq(pinValuep, 1);
+            isEq.opEq(varNum, hierOptParamp->num());
+            return isEq.isNeqZero();
         }
-        V3Number isEq(varp, 1);
-        isEq.opEq(varNum, paramp->num());
-        return isEq.isNeqZero();
     }
 
 public:
@@ -160,7 +173,7 @@ public:
                     ParamConstMap::const_iterator pIt = params.find(modvarp->name());
                     UINFO(5, "Comparing " << modvarp->name() << " " << constp << std::endl);
                     if (pIt == params.end() || paramIdx >= params.size()
-                        || !areSame(modvarp, constp, pIt->second)) {
+                        || !areSame(constp, pIt->second)) {
                         found = false;
                         break;
                     }
