@@ -83,6 +83,7 @@ class ParameterizedHierBlocks {
     ParamsMap m_params;
 
     // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
     static bool areSame(AstVar* modvarp, AstConst* varp, AstConst* paramp) {
         if (varp->isString()) { return varp->num().toString() == paramp->num().toString(); }
         if (modvarp->declKwd() == AstBasicDTypeKwd::FLOAT
@@ -134,9 +135,6 @@ public:
             }
         }
     }
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,
                                 const AstNodeModule* modp) {
         if (m_hierBlockOptsByOrigName.find(origName) == m_hierBlockOptsByOrigName.end()) {
@@ -389,7 +387,7 @@ private:
             if (!supported) {
                 pinp->v3error(AstNode::prettyNameQ(modp->origName())
                               << " has hier_block metacomment, hierarchical verilation"
-                              << " supports only integer/floating point/string parameters.");
+                              << " supports only integer/floating point/string parameters");
             }
         } else if (VN_IS(pinp->modPTypep(), ParamTypeDType)) {
             pinp->v3error(AstNode::prettyNameQ(modp->origName())
