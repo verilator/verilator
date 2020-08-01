@@ -26,6 +26,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 class AstNodeModule;
@@ -41,6 +42,10 @@ public:
     typedef std::set<const AstNodeModule*> NodeModuleSet;
 
 private:
+    // TYPES
+    // Parameter name, stringified value
+    typedef std::vector<std::pair<string, string> > StrGParams;
+
     // MEMBERS
     const AstNodeModule* m_modp;  // Hierarchical block module
     // Hierarchical blocks that directly or indirectly instantiate this block
@@ -52,6 +57,7 @@ private:
 
     // METHODS
     VL_UNCOPYABLE(V3HierBlock);
+    static StrGParams stringifyParams(const GParams& gparams, bool forGOption);
 
 public:
     V3HierBlock(const AstNodeModule* modp, const GParams& gparams)

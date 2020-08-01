@@ -83,46 +83,13 @@
 #include "V3String.h"
 #include "V3Stats.h"
 
-typedef std::vector<std::pair<string, string> > StrGParams;
 
-static StrGParams stringifyParams(const V3HierBlock::GParams& gparams, bool forGOption) {
-    StrGParams strParams;
-    for (V3HierBlock::GParams::const_iterator gparamIt = gparams.begin();
-         gparamIt != gparams.end(); ++gparamIt) {
-        if (const AstConst* constp = VN_CAST((*gparamIt)->valuep(), Const)) {
-            // Only constant parameter needs to be set to -G because already checked in
-            // V3Param.cpp. See also ParamVisitor::checkSupportedParam() in the file.
-            if (constp->isDouble()) {
-                // 64 bit width of hex can be expressed with 16 chars.
-                // 32 chars must be long enough for hexadecial floating point
-                // considering prefix of '0x', '.', and 'P'.
-                std::vector<char> hexFpStr(32, '\0');
-                const int len = VL_SNPRINTF(hexFpStr.data(), hexFpStr.size(), "%a",
-                                            constp->num().toDouble());
-                UASSERT_OBJ(0 < len && static_cast<size_t>(len) < hexFpStr.size(), constp,
-                            " is not properly converted to string");
-                strParams.push_back(std::make_pair((*gparamIt)->name(), hexFpStr.data()));
-            } else if (constp->isString()) {
-                string s = constp->num().toString();
-                if (!forGOption) s = VString::quoteBackslash(s);
-                s = VString::quoteStringLiteralForShell(s);
-                strParams.push_back(std::make_pair((*gparamIt)->name(), s));
-            } else {  // Either signed or unsigned integer.
-                string s = constp->num().ascii(true, true);
-                s = VString::quoteAny(s, '\'', '\\');
-                strParams.push_back(std::make_pair((*gparamIt)->name(), s));
-            }
-        }
-    }
-    return strParams;
-}
-
-static string hierCommandFileName(const string& prefix, bool forCMake) {
+static string V3HierCommandFileName(const string& prefix, bool forCMake) {
     return v3Global.opt.makeDir() + "/" + prefix
            + (forCMake ? "_hierCMakeArgs.f" : "_hierMkArgs.f");
 }
 
-static void writeCommonInputs(std::ostream* of, bool forCMake) {
+static void V3HierWriteCommonInputs(std::ostream* of, bool forCMake) {
     if (!forCMake) {
         const V3StringList& vFiles = v3Global.opt.vFiles();
         for (V3StringList::const_iterator it = vFiles.begin(); it != vFiles.end(); ++it) {
@@ -136,7 +103,39 @@ static void writeCommonInputs(std::ostream* of, bool forCMake) {
 }
 
 //######################################################################
-//
+
+V3HierBlock::StrGParams V3HierBlock::stringifyParams(const GParams& gparams, bool forGOption) {
+    StrGParams strParams;
+    for (V3HierBlock::GParams::const_iterator gparamIt = gparams.begin();
+         gparamIt != gparams.end(); ++gparamIt) {
+        if (const AstConst* constp = VN_CAST((*gparamIt)->valuep(), Const)) {
+            string s;
+            // Only constant parameter needs to be set to -G because already checked in
+            // V3Param.cpp. See also ParamVisitor::checkSupportedParam() in the file.
+            if (constp->isDouble()) {
+                // 64 bit width of hex can be expressed with 16 chars.
+                // 32 chars must be long enough for hexadecial floating point
+                // considering prefix of '0x', '.', and 'P'.
+                std::vector<char> hexFpStr(32, '\0');
+                const int len = VL_SNPRINTF(hexFpStr.data(), hexFpStr.size(), "%a",
+                                            constp->num().toDouble());
+                UASSERT_OBJ(0 < len && static_cast<size_t>(len) < hexFpStr.size(), constp,
+                            " is not properly converted to string");
+                s = hexFpStr.data();
+            } else if (constp->isString()) {
+                s = constp->num().toString();
+                if (!forGOption) s = VString::quoteBackslash(s);
+                s = VString::quoteStringLiteralForShell(s);
+            } else {  // Either signed or unsigned integer.
+                s = constp->num().ascii(true, true);
+                s = VString::quoteAny(s, '\'', '\\');
+            }
+            strParams.push_back(std::make_pair((*gparamIt)->name(), s));
+        }
+    }
+    return strParams;
+}
+
 V3HierBlock::~V3HierBlock() {
     UASSERT(m_children.empty(), "at least one module must be a leaf");
     for (HierBlockSet::const_iterator child = m_children.begin(); child != m_children.end();
@@ -211,7 +210,7 @@ void V3HierBlock::writeCommandFile(bool forCMake) const {
         }
     }
     *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
-    writeCommonInputs(of.get(), forCMake);
+    V3HierWriteCommonInputs(of.get(), forCMake);
     const V3StringList& commandOpts = commandOptions(false);
     for (V3StringList::const_iterator it = commandOpts.begin(); it != commandOpts.end(); ++it) {
         *of << (*it) << "\n";
@@ -225,7 +224,7 @@ void V3HierBlock::writeCommandFile(bool forCMake) const {
 }
 
 string V3HierBlock::commandFileName(bool forCMake) const {
-    return hierCommandFileName(hierPrefix(), forCMake);
+    return V3HierCommandFileName(hierPrefix(), forCMake);
 }
 
 //######################################################################
@@ -408,7 +407,7 @@ void V3HierBlockPlan::writeCommandFiles(bool forCMake) const {
             *of << it->second->hierWrapper(true) << "\n";
         }
     }
-    writeCommonInputs(of.get(), forCMake);
+    V3HierWriteCommonInputs(of.get(), forCMake);
     if (!forCMake) {
         const V3StringSet& cppFiles = v3Global.opt.cppFiles();
         for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
@@ -432,5 +431,5 @@ void V3HierBlockPlan::writeCommandFiles(bool forCMake) const {
 }
 
 string V3HierBlockPlan::topCommandFileName(bool forCMake) const {
-    return hierCommandFileName(v3Global.opt.prefix(), forCMake);
+    return V3HierCommandFileName(v3Global.opt.prefix(), forCMake);
 }
