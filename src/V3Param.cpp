@@ -127,7 +127,7 @@ public:
         }
     }
     ~ParameterizedHierBlocks() {
-        for (ParamsMap::iterator it = m_params.begin(); it != m_params.end(); ++it) {
+        for (ParamsMap::const_iterator it = m_params.begin(); it != m_params.end(); ++it) {
             for (ParamConstMap::const_iterator pIt = it->second.begin(); pIt != it->second.end();
                  ++pIt) {
                 delete pIt->second;
