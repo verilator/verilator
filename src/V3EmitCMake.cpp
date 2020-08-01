@@ -230,7 +230,7 @@ class CMakeEmitter {
                     *of << V3Os::filenameRealPath(*it);
                 }
                 *of << " VERILATOR_ARGS ";
-                *of << "-f " << deslash(hblockp->commandFileName(true))
+                *of << "-f " << deslash(hblockp->commandArgsFileName(true))
                     << " -CFLAGS -fPIC"  // hierarchical block will be static, but may be linked
                                          // with .so
                     << ")\n";
@@ -244,7 +244,7 @@ class CMakeEmitter {
             }
             *of << " " << deslash(cmake_list(v3Global.opt.vFiles()));
             *of << " VERILATOR_ARGS ";
-            *of << "-f " << deslash(planp->topCommandFileName(true));
+            *of << "-f " << deslash(planp->topCommandArgsFileName(true));
             *of << ")\n";
         }
     }

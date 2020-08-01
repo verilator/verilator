@@ -347,7 +347,7 @@ class EmitMkHierVerilation {
             }
             of.puts("\n");
             of.puts("\tcd $(VM_HIER_RUN_DIR) && $(VM_HIER_VERILATOR) ");
-            of.puts("-f " + v3Global.hierPlanp()->topCommandFileName(false));
+            of.puts("-f " + v3Global.hierPlanp()->topCommandArgsFileName(false));
             of.puts("\n");
         }
 
@@ -364,7 +364,7 @@ class EmitMkHierVerilation {
             }
             of.puts("\n");
             of.puts("\tcd $(VM_HIER_RUN_DIR) && $(VM_HIER_VERILATOR) ");
-            of.puts("-f " + it->second->commandFileName(false) + "\n");
+            of.puts("-f " + it->second->commandArgsFileName(false) + "\n");
 
             // Rule to build lib*.a
             of.puts(it->second->hierLib(true));

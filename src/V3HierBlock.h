@@ -23,6 +23,8 @@
 
 #include "verilatedos.h"
 
+#include "V3Global.h"
+
 #include <map>
 #include <set>
 #include <string>
@@ -75,17 +77,17 @@ public:
     const AstNodeModule* modp() const { return m_modp; }
 
     // For emitting Makefile and CMakeLists.txt
-    V3StringList commandOptions(bool forCMake) const;
-    V3StringList hierBlockOptions() const;
+    V3StringList commandArgs(bool forCMake) const;
+    V3StringList hierBlockArgs() const;
     string hierPrefix() const;
     string hierSomeFile(bool withDir, const char* prefix, const char* suffix) const;
     string hierWrapper(bool withDir) const;
     string hierMk(bool withDir) const;
     string hierLib(bool withDir) const;
     string hierGenerated(bool withDir) const;
-    // Write command line opriont to .f file for this hierarchical block
-    void writeCommandFile(bool forCMake) const;
-    string commandFileName(bool forCMake) const;
+    // Write command line argumuents to .f file for this hierarchical block
+    void writeCommandArgsFile(bool forCMake) const;
+    string commandArgsFileName(bool forCMake) const;
 };
 
 //######################################################################
@@ -116,9 +118,9 @@ public:
     // Latter block refers only already appeared hierarchical blocks.
     HierVector hierBlocksSorted() const;
 
-    // Write command line opriont to .f files for child Verilation run
-    void writeCommandFiles(bool forCMake) const;
-    string topCommandFileName(bool forCMake) const;
+    // Write command line arguments to .f files for child Verilation run
+    void writeCommandArgsFiles(bool forCMake) const;
+    string topCommandArgsFileName(bool forCMake) const;
 
     static void createPlan(AstNetlist* nodep);
 };

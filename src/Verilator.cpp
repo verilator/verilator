@@ -585,11 +585,11 @@ static void verilate(const string& argString) {
         UASSERT(!v3Global.opt.hierChild(), "This must not be a hierarhcical-child run");
         UASSERT(v3Global.opt.hierBlocks().empty(), "hierarchical-block must not be set");
         if (v3Global.opt.gmake()) {
-            v3Global.hierPlanp()->writeCommandFiles(false);
+            v3Global.hierPlanp()->writeCommandArgsFiles(false);
             V3EmitMk::emitHierVerilation(v3Global.hierPlanp());
         }
         if (v3Global.opt.cmake()) {
-            v3Global.hierPlanp()->writeCommandFiles(true);
+            v3Global.hierPlanp()->writeCommandArgsFiles(true);
             V3EmitCMake::emit();
         }
     }

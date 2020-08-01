@@ -83,8 +83,7 @@
 #include "V3String.h"
 #include "V3Stats.h"
 
-
-static string V3HierCommandFileName(const string& prefix, bool forCMake) {
+static string V3HierCommandArgsFileName(const string& prefix, bool forCMake) {
     return v3Global.opt.makeDir() + "/" + prefix
            + (forCMake ? "_hierCMakeArgs.f" : "_hierMkArgs.f");
 }
@@ -145,7 +144,7 @@ V3HierBlock::~V3HierBlock() {
     }
 }
 
-V3StringList V3HierBlock::commandOptions(bool forCMake) const {
+V3StringList V3HierBlock::commandArgs(bool forCMake) const {
     V3StringList opts;
     const string prefix = "V" + modp()->name();
     if (!forCMake) {
@@ -165,7 +164,7 @@ V3StringList V3HierBlock::commandOptions(bool forCMake) const {
     return opts;
 }
 
-V3StringList V3HierBlock::hierBlockOptions() const {
+V3StringList V3HierBlock::hierBlockArgs() const {
     V3StringList opts;
     const StrGParams gparamsStr = stringifyParams(gparams(), false);
     opts.push_back("--hierarchical-block ");
@@ -199,8 +198,8 @@ string V3HierBlock::hierGenerated(bool withDir) const {
     return hierWrapper(withDir) + ' ' + hierMk(withDir);
 }
 
-void V3HierBlock::writeCommandFile(bool forCMake) const {
-    vl_unique_ptr<std::ofstream> of(V3File::new_ofstream(commandFileName(forCMake)));
+void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
+    vl_unique_ptr<std::ofstream> of(V3File::new_ofstream(commandArgsFileName(forCMake)));
     *of << "--cc\n";
 
     if (!forCMake) {
@@ -211,20 +210,20 @@ void V3HierBlock::writeCommandFile(bool forCMake) const {
     }
     *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     V3HierWriteCommonInputs(of.get(), forCMake);
-    const V3StringList& commandOpts = commandOptions(false);
+    const V3StringList& commandOpts = commandArgs(false);
     for (V3StringList::const_iterator it = commandOpts.begin(); it != commandOpts.end(); ++it) {
         *of << (*it) << "\n";
     }
-    *of << hierBlockOptions().front() << "\n";
+    *of << hierBlockArgs().front() << "\n";
     for (HierBlockSet::const_iterator child = m_children.begin(); child != m_children.end();
          ++child) {
-        *of << hierBlockOptions().front() << "\n";
+        *of << hierBlockArgs().front() << "\n";
     }
     *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
 }
 
-string V3HierBlock::commandFileName(bool forCMake) const {
-    return V3HierCommandFileName(hierPrefix(), forCMake);
+string V3HierBlock::commandArgsFileName(bool forCMake) const {
+    return V3HierCommandArgsFileName(hierPrefix(), forCMake);
 }
 
 //######################################################################
@@ -395,12 +394,12 @@ V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
     return sorted;
 }
 
-void V3HierBlockPlan::writeCommandFiles(bool forCMake) const {
+void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     for (const_iterator it = begin(); it != end(); ++it) {
-        it->second->writeCommandFile(forCMake);
+        it->second->writeCommandArgsFile(forCMake);
     }
     // For the top module
-    vl_unique_ptr<std::ofstream> of(V3File::new_ofstream(topCommandFileName(forCMake)));
+    vl_unique_ptr<std::ofstream> of(V3File::new_ofstream(topCommandArgsFileName(forCMake)));
     if (!forCMake) {
         // Load wrappers first not to be overwritten by the original HDL
         for (const_iterator it = begin(); it != end(); ++it) {
@@ -419,7 +418,7 @@ void V3HierBlockPlan::writeCommandFiles(bool forCMake) const {
         *of << "--mod-prefix " << v3Global.opt.modPrefix() << "\n";
     }
     for (const_iterator it = begin(); it != end(); ++it) {
-        *of << it->second->hierBlockOptions().front() << "\n";
+        *of << it->second->hierBlockArgs().front() << "\n";
     }
 
     if (!v3Global.opt.protectLib().empty()) {
@@ -430,6 +429,6 @@ void V3HierBlockPlan::writeCommandFiles(bool forCMake) const {
     *of << v3Global.opt.allArgsStringForHierBlock(true) << "\n";
 }
 
-string V3HierBlockPlan::topCommandFileName(bool forCMake) const {
-    return V3HierCommandFileName(v3Global.opt.prefix(), forCMake);
+string V3HierBlockPlan::topCommandArgsFileName(bool forCMake) const {
+    return V3HierCommandArgsFileName(v3Global.opt.prefix(), forCMake);
 }
