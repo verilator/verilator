@@ -393,8 +393,7 @@ private:
             }
         } else if (VN_IS(pinp->modPTypep(), ParamTypeDType)) {
             pinp->v3error(AstNode::prettyNameQ(modp->origName())
-                          << " has hier_block metacomment, but type parameter "
-                             "which is not supported is specified.");
+                          << " has hier_block metacomment, but 'parameter type' is not supported");
         }
     }
     bool moduleExists(const string& modName) const {
