@@ -9,12 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_hier_block.v");
 
-scenarios(
-    vlt => 1,
-    xsim => 1,
-    );
-
-scenarios(simulator => 1);
+scenarios(vlt_all => 1, xsim => 1);
 
 my $secret_prefix = "secret";
 my $secret_dir = "$Self->{obj_dir}/$secret_prefix";
