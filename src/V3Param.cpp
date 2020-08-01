@@ -83,6 +83,7 @@ class ParameterizedHierBlocks {
     // Overridden parameters of the hierarchical block
     ParamsMap m_params;
 
+    // METHODS
     static bool areSame(AstVar* modvarp, AstConst* varp, AstConst* paramp) {
         if (varp->isString()) { return varp->num().toString() == paramp->num().toString(); }
         if (modvarp->declKwd() == AstBasicDTypeKwd::FLOAT
