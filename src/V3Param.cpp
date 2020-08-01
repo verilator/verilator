@@ -72,14 +72,13 @@ class ParameterizedHierBlocks {
     typedef std::map<string, AstConst*> ParamConstMap;
     typedef std::map<const V3HierarchicalBlockOption*, ParamConstMap> ParamsMap;
 
+    // MEMBERS
     // key:Original module name, value:HiearchyBlockOption*
     // If a module is parameterized, the module is uniquiefied to overridden parameters.
     // This is why HierBlockOptsByOrigName is multimap.
     HierBlockOptsByOrigName m_hierBlockOptsByOrigName;
-
     // key:mangled module name, value:AstNodeModule*
     HierBlockModMap m_hierBlockMod;
-
     // Overridden parameters of the hierarchical block
     ParamsMap m_params;
 
