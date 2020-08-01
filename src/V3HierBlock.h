@@ -49,6 +49,7 @@ private:
     // Parameters that are overridden by #(.param(value)) syntax.
     GParams m_gparams;
 
+    // METHODS
     VL_UNCOPYABLE(V3HierBlock);
 
 public:
