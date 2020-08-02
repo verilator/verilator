@@ -80,23 +80,20 @@ elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
     if [ "$M32" = 1 ]; then
       sudo apt-get install lib32z1-dev gcc-multilib g++-multilib
     fi
-    yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
-    # Not listing Bit::Vector as slow to install, and only skips one test
-    install-vcddiff
   elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     brew update
     # brew cask install gtkwave # fst2vcd hangs at launch, so don't bother
     brew install ccache perl
-    yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
-    install-vcddiff
   elif [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
     # fst2vcd fails with "Could not open '<input file>', exiting."
     sudo pkg install -y ccache gmake perl5 python3
-    yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
-    install-vcddiff
   else
     fatal "Unknown os: '$TRAVIS_OS_NAME'"
   fi
+  # Common installs
+  # Not listing Bit::Vector as slow to install, and only skips one test
+  yes yes | sudo cpan -M https://cpan.org -fi Unix::Processors Parallel::Forker
+  install-vcddiff
 else
   ##############################################################################
   # Unknown build stage
