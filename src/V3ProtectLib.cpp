@@ -202,7 +202,7 @@ private:
         // CPP hash value
         addComment(txtp, fl, "Hash value to make sure this file and the corresponding");
         addComment(txtp, fl, "library agree");
-        m_hashValuep = new AstTextBlock(fl, "localparam int protectlib_hash__V = ");
+        m_hashValuep = new AstTextBlock(fl, "localparam int protectlib_hash__V = 32'd");
         txtp->addNodep(m_hashValuep);
         txtp->addText(fl, "\n");
 
@@ -414,7 +414,7 @@ private:
         m_seqPortsp->addNodep(varp->cloneTree(false));
         if (m_hasClk) {
             m_seqParamsp->addText(fl, varp->name() + "\n");
-            m_clkSensp->addText(fl, "edge(" + varp->name() + ")");
+            m_clkSensp->addText(fl, "posedge " + varp->name() + " or negedge " + varp->name());
         }
         m_cSeqParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
         m_cSeqClksp->addText(fl, cInputConnection(varp));
