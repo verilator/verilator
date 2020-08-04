@@ -1,0 +1,7 @@
+%Error-UNSUPPORTED: t/t_math_wide_bad.v:21:18: Unsupported: operator POWSS operator of 576 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
+   21 |    assign z2 = a ** 3;
+      |                  ^~
+%Error-UNSUPPORTED: t/t_math_wide_bad.v:20:17: Unsupported: operator MULS operator of 576 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
+   20 |    assign z = a * b;
+      |                 ^
+%Error: Exiting due to

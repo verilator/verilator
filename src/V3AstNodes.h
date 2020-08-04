@@ -7151,6 +7151,7 @@ public:
     virtual string emitVerilog() { return "%k(%l %f* %r)"; }
     virtual string emitC() { return "VL_MULS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
+    virtual bool emitCheckMaxWords() { return true; }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return true; }
     virtual bool cleanRhs() const { return true; }
@@ -7288,6 +7289,7 @@ public:
     }
     virtual string emitVerilog() { return "%k(%l %f** %r)"; }
     virtual string emitC() { return "VL_POW_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual bool emitCheckMaxWords() { return true; }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return true; }
     virtual bool cleanRhs() const { return true; }
@@ -7333,6 +7335,7 @@ public:
     }
     virtual string emitVerilog() { return "%k(%l %f** %r)"; }
     virtual string emitC() { return "VL_POWSS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri, 1,0)"; }
+    virtual bool emitCheckMaxWords() { return true; }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return true; }
     virtual bool cleanRhs() const { return true; }
@@ -7356,6 +7359,7 @@ public:
     }
     virtual string emitVerilog() { return "%k(%l %f** %r)"; }
     virtual string emitC() { return "VL_POWSS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri, 1,1)"; }
+    virtual bool emitCheckMaxWords() { return true; }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return true; }
     virtual bool cleanRhs() const { return true; }
@@ -7379,6 +7383,7 @@ public:
     }
     virtual string emitVerilog() { return "%k(%l %f** %r)"; }
     virtual string emitC() { return "VL_POWSS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri, 0,1)"; }
+    virtual bool emitCheckMaxWords() { return true; }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return true; }
     virtual bool cleanRhs() const { return true; }
