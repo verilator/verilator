@@ -13,7 +13,7 @@ scenarios(vlt_all => 1);
 top_filename("t/t_var_pinsizes.v");
 
 compile(
-    verilator_flags2 => ["-sc --pins-sc-biguint-nolimit --trace --exe $Self->{t_dir}/t_var_pinsizes.cpp"],
+    verilator_flags2 => ["-sc --pins-limit 2048 --exe $Self->{t_dir}/t_var_pinsizes.cpp"],
     make_main => 0,
     );
 

@@ -914,11 +914,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 m_pinsScUint = flag;
                 if (!m_pinsScBigUint) m_pinsBv = 65;
             } else if (onoff(sw, "-pins-sc-biguint", flag /*ref*/)) {
-                m_pinsScBigUint = flag;
+                m_pinsScBigUint = true;
                 m_pinsBv = 513;
-            } else if (onoff(sw, "-pins-sc-biguint-nolimit", flag /*ref*/)) {
-                m_pinsScBigUintNL = flag;
-                // m_pinsBv = 513;
+            } else if (!strcmp (sw, "-pins-limit")) {
+                shift;
+                m_pinsScBigUintNL = true;
+                m_pinsBv = atoi(argv[i]);
             } else if (onoff(sw, "-pins-uint8", flag /*ref*/)) {
                 m_pinsUint8 = flag;
             } else if (onoff(sw, "-pp-comments", flag /*ref*/)) {
