@@ -6,7 +6,7 @@
 
 module t (/*AUTOARG*/
    // Outputs
-   z, z2,
+   z, z2, r,
    // Inputs
    a, b
    );
@@ -16,8 +16,10 @@ module t (/*AUTOARG*/
 
    output signed [17*32 : 0] z;
    output signed [17*32 : 0] z2;
+   output real r;
 
    assign z = a * b;
    assign z2 = a ** 3;
+   assign r = real'(a);
 
 endmodule

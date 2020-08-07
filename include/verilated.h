@@ -764,9 +764,27 @@ static inline QData VL_CVT_Q_D(double lhs) VL_PURE {
 }
 // clang-format on
 
-/// Return double from QData (numeric)
-static inline double VL_ITOR_D_I(IData lhs) VL_PURE {
-    return static_cast<double>(static_cast<vlsint32_t>(lhs));
+/// Return double from lhs (numeric) unsigned
+double VL_ITOR_D_W(int lbits, WDataInP lwp) VL_PURE;
+static inline double VL_ITOR_D_I(int, IData lhs) VL_PURE {
+    return static_cast<double>(static_cast<vluint32_t>(lhs));
+}
+static inline double VL_ITOR_D_Q(int, QData lhs) VL_PURE {
+    return static_cast<double>(static_cast<vluint64_t>(lhs));
+}
+/// Return double from lhs (numeric) signed
+double VL_ISTOR_D_W(int lbits, WDataInP lwp) VL_PURE;
+static inline double VL_ISTOR_D_I(int lbits, IData lhs) VL_PURE {
+    if (lbits == 32) return static_cast<double>(static_cast<vlsint32_t>(lhs));
+    WData lwp[VL_WQ_WORDS_E];
+    VL_SET_WI(lwp, lhs);
+    return VL_ISTOR_D_W(lbits, lwp);
+}
+static inline double VL_ISTOR_D_Q(int lbits, QData lhs) VL_PURE {
+    if (lbits == 64) return static_cast<double>(static_cast<vlsint64_t>(lhs));
+    WData lwp[VL_WQ_WORDS_E];
+    VL_SET_WQ(lwp, lhs);
+    return VL_ISTOR_D_W(lbits, lwp);
 }
 /// Return QData from double (numeric)
 static inline IData VL_RTOI_I_D(double lhs) VL_PURE {
@@ -1453,6 +1471,7 @@ static inline int _VL_CMPS_W(int lbits, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
 //=========================================================================
 // Math
 
+// Output NOT clean
 static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp, WDataInP lwp) VL_MT_SAFE {
     EData carry = 1;
     for (int i = 0; i < words; ++i) {

@@ -385,7 +385,8 @@ public:
     V3Number& opLteS(const V3Number& lhs, const V3Number& rhs);  // Signed
 
     // "D" - double (aka real) math
-    V3Number& opIToRD(const V3Number& lhs);
+    V3Number& opIToRD(const V3Number& lhs, bool isSigned = false);
+    V3Number& opISToRD(const V3Number& lhs) { return opIToRD(lhs, true); }
     V3Number& opRToIS(const V3Number& lhs);
     V3Number& opRToIRoundS(const V3Number& lhs);
     V3Number& opRealToBits(const V3Number& lhs);

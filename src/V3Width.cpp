@@ -332,7 +332,6 @@ private:
     //========
     // Widths: Output real, input integer signed
     virtual void visit(AstBitsToRealD* nodep) VL_OVERRIDE { visit_Or_Lu64(nodep); }
-    virtual void visit(AstIToRD* nodep) VL_OVERRIDE { visit_Or_Ls32(nodep); }
 
     // Widths: Output integer signed, input real
     virtual void visit(AstRToIS* nodep) VL_OVERRIDE { visit_Os32_Lr(nodep); }
@@ -1549,7 +1548,11 @@ private:
         }
         AstNode* newp = nodep->lhsp()->unlinkFrBack();
         if (basicp->isDouble() && !newp->isDouble()) {
-            newp = new AstIToRD(nodep->fileline(), newp);
+            if (newp->isSigned()) {
+                newp = new AstISToRD(nodep->fileline(), newp);
+            } else {
+                newp = new AstIToRD(nodep->fileline(), newp);
+            }
         } else if (!basicp->isDouble() && newp->isDouble()) {
             if (basicp->isSigned()) {
                 newp = new AstRToIRoundS(nodep->fileline(), newp);
@@ -3931,16 +3934,27 @@ private:
             iterateCheck(nodep, "LHS", nodep->lhsp(), SELF, FINAL, subDTypep, EXTEND_EXP);
         }
     }
-    void visit_Or_Ls32(AstNodeUniop* nodep) {
-        // CALLER: AstIToRD
+    virtual void visit(AstIToRD* nodep) VL_OVERRIDE {
         // Real: Output real
         // LHS presumed self-determined, then coerced to real
         if (m_vup->prelim()) {  // First stage evaluation
             nodep->dtypeSetDouble();
-            AstNodeDType* subDTypep = nodep->findLogicDType(32, 32, VSigning::SIGNED);
-            // Self-determined operand
+            // Self-determined operand (TODO check if numeric type)
             userIterateAndNext(nodep->lhsp(), WidthVP(SELF, PRELIM).p());
-            iterateCheck(nodep, "LHS", nodep->lhsp(), SELF, FINAL, subDTypep, EXTEND_EXP);
+            if (nodep->lhsp()->isSigned()) {
+                nodep->replaceWith(
+                    new AstISToRD(nodep->fileline(), nodep->lhsp()->unlinkFrBack()));
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            }
+        }
+    }
+    virtual void visit(AstISToRD* nodep) VL_OVERRIDE {
+        // Real: Output real
+        // LHS presumed self-determined, then coerced to real
+        if (m_vup->prelim()) {  // First stage evaluation
+            nodep->dtypeSetDouble();
+            // Self-determined operand (TODO check if numeric type)
+            userIterateAndNext(nodep->lhsp(), WidthVP(SELF, PRELIM).p());
         }
     }
     void visit_Os32_Lr(AstNodeUniop* nodep) {
@@ -4800,7 +4814,12 @@ private:
             UINFO(6, "   spliceCvtD: " << nodep << endl);
             AstNRelinker linker;
             nodep->unlinkFrBack(&linker);
-            AstNode* newp = new AstIToRD(nodep->fileline(), nodep);
+            AstNode* newp;
+            if (nodep->dtypep()->skipRefp()->isSigned()) {
+                newp = new AstISToRD(nodep->fileline(), nodep);
+            } else {
+                newp = new AstIToRD(nodep->fileline(), nodep);
+            }
             linker.relink(newp);
             return newp;
         } else {

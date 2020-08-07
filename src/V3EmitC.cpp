@@ -877,6 +877,15 @@ public:
         emitOpName(nodep, nodep->emitC(), NULL, NULL, NULL);
     }
     virtual void visit(AstNodeUniop* nodep) VL_OVERRIDE {
+        if (nodep->emitCheckMaxWords()
+            && (nodep->widthWords() > VL_MULS_MAX_WORDS
+                || nodep->lhsp()->widthWords() > VL_MULS_MAX_WORDS)) {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: "
+                    << nodep->prettyOperatorName() << " operator of " << nodep->width()
+                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+        }
         if (emitSimpleOk(nodep)) {
             putbs("(");
             puts(nodep->emitSimpleOperator());
