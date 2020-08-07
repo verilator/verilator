@@ -364,6 +364,12 @@ public:
         }
     }
     virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
+        if (AstCCall* ccallp = VN_CAST(nodep, CCall)) {
+            VRegion region = ccallp->funcp()->region();
+            putsDecoration("// CCall type: ");
+            putsDecoration(region.ascii());
+            putsDecoration("\n");
+        }
         if (AstCMethodCall* ccallp = VN_CAST(nodep, CMethodCall)) {
             // make this a Ast type for future opt
             iterate(ccallp->fromp());
