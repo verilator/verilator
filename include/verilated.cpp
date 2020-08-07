@@ -605,7 +605,6 @@ double VL_ISTOR_D_W(int lbits, WDataInP lwp) VL_PURE {
     vluint32_t pos[VL_MULS_MAX_WORDS + 1];  // Fixed size, as MSVC++ doesn't allow [words] here
     VL_NEGATE_W(VL_WORDS_I(lbits), pos, lwp);
     _VL_CLEAN_INPLACE_W(lbits, pos);
-    double d = VL_ITOR_D_W(lbits, pos);
     return -VL_ITOR_D_W(lbits, pos);
 }
 
