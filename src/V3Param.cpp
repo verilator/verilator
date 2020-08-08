@@ -85,9 +85,8 @@ class ParameterizedHierBlocks {
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
     static bool areSame(AstConst* pinValuep, AstConst* hierOptParamp) {
-        if (hierOptParamp->isString()) {
-            return pinValuep->isString()
-                   && pinValuep->num().toString() == hierOptParamp->num().toString();
+        if (pinValuep->isString()) {
+            return pinValuep->num().toString() == hierOptParamp->num().toString();
         }
 
         // Bitwidth of hierOptParamp is accurate because V3Width already caluclated in the previous

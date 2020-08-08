@@ -217,7 +217,7 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     *of << hierBlockArgs().front() << "\n";
     for (HierBlockSet::const_iterator child = m_children.begin(); child != m_children.end();
          ++child) {
-        *of << hierBlockArgs().front() << "\n";
+        *of << (*child)->hierBlockArgs().front() << "\n";
     }
     *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
 }
