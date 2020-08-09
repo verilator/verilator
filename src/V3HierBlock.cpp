@@ -146,7 +146,7 @@ V3HierBlock::~V3HierBlock() {
 
 V3StringList V3HierBlock::commandArgs(bool forCMake) const {
     V3StringList opts;
-    const string prefix = "V" + modp()->name();
+    const string prefix = hierPrefix();
     if (!forCMake) {
         opts.push_back(" --prefix " + prefix);
         opts.push_back(" --mod-prefix " + prefix);
