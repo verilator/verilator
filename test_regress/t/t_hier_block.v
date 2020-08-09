@@ -37,8 +37,6 @@ module t (/*AUTOARG*/
    wire [7:0] out3;
    wire [7:0] out3_2;
    /* verilator lint_on UNOPTFLAT */
-   wire [7:0] out4;
-   wire [7:0] out4_2;
    wire [7:0] out5;
    wire [7:0] out6;
    int count = 0;
@@ -49,19 +47,14 @@ module t (/*AUTOARG*/
    sub3 #(.P0(1)) i_sub3(.clk(clk), .in(out2), .out(out3));
    // Must not use the same wrapper
    sub3 #(.STR("abc"), .P0(1)) i_sub3_2(.clk(clk), .in(out2), .out(out3_2));
-   /* verilator lint_off REALCVT */
-   sub4 #(.P0(1.6), .P1(3.1), .P3(4.1)) i_sub4_0(.clk(clk), .in(out3), .out(out4));  // incr 2
-   sub4 #(.P0(2.4), .P1(3.1), .P3(5)) i_sub4_1(.clk(clk), .in(out3), .out(out4_2));
-   /* verilator lint_on REALCVT */
-   delay #(.N(2), 8) i_delay0(clk, out4, out5);
+   delay #(.N(2), 8) i_delay0(clk, out3, out5);
    delay #(.N(3), 8) i_delay1(clk, out5, out6);
 
    always_ff @(posedge clk) begin
       if (out3 != out3_2) $stop;
-      if (out4 != out4_2) $stop;
-      $display("%d out0:%d %d %d %d %d %d", count, out0, out1, out2, out3, out4, out5, out6);
+      $display("%d out0:%d %d %d %d %d", count, out0, out1, out2, out3, out5, out6);
       if (count == 16) begin
-         if (out6 == 16) begin
+         if (out6 == 19) begin
              $write("*-* All Finished *-*\n");
              $finish;
          end else begin
@@ -189,7 +182,15 @@ module sub3 #(
 
    TYPE [7:0] ff;
    always_ff @(posedge clk) ff <= in + P0;
-   assign out = ff;
+   always_ff @(posedge clk) if (out4 != out4_2) $stop;
+
+   wire [7:0] out4;
+   wire [7:0] out4_2;
+   assign out = out4;
+   /* verilator lint_off REALCVT */
+   sub4 #(.P0(1.6), .P1(3.1), .P3(4.1)) i_sub4_0(.clk(clk), .in(ff), .out(out4));  // incr 2
+   sub4 #(.P0(2.4), .P1(3.1), .P3(5)) i_sub4_1(.clk(clk), .in(ff), .out(out4_2));
+   /* verilator lint_on REALCVT */
 endmodule
 
 module sub4 #(
