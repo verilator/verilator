@@ -209,7 +209,7 @@ class CMakeEmitter {
                 const string prefix = hblockp->hierPrefix();
                 *of << "add_library(" << prefix << " STATIC)\n";
                 *of << "target_link_libraries(" << topTarget << " PRIVATE " << prefix << ")\n";
-                if (children.empty()) {
+                if (!children.empty()) {
                     *of << "target_link_libraries(" << prefix << " INTERFACE";
                     for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
                          child != children.end(); ++child) {
