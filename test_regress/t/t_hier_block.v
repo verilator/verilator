@@ -71,6 +71,27 @@ module t (/*AUTOARG*/
       end
       count <= count + 1;
    end
+
+`ifdef CPP_MACRO
+   initial begin
+      $display("Macro for C++ compiler is defined for Verilator");
+      $stop;
+   end
+`endif
+
+`systemc_implementation
+#include <iostream>
+#define STRINGIFY_IMPL(str) #str
+#define STRINGIFY(str) STRINGIFY_IMPL(str)
+namespace {
+struct statically_initialized {
+   statically_initialized() {
+      std::cout << "MACRO:" << STRINGIFY(CPP_MACRO) << " is defined" << std::endl;
+   }
+} g_statically_initialized;
+}
+`verilog
+
 `endif  // PROTLIB_TOP
 
 endmodule

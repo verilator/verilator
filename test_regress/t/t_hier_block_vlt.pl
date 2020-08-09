@@ -21,6 +21,7 @@ compile(
     verilator_flags2 => ['--stats',
                          '--hierarchical',
                          '+define+USE_VLT', 't/t_hier_block_vlt.vlt',
+                         '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus -time"',
                          ($Self->{vltmt} ? ' --threads 6' : '')],
     );
 
@@ -32,6 +33,7 @@ file_grep($Self->{obj_dir} . "/Vsub0/sub0.sv", /^module\s+(\S+)\s+/, "sub0");
 file_grep($Self->{obj_dir} . "/Vsub1/sub1.sv", /^module\s+(\S+)\s+/, "sub1");
 file_grep($Self->{obj_dir} . "/Vsub2/sub2.sv", /^module\s+(\S+)\s+/, "sub2");
 file_grep($Self->{stats}, qr/HierBlock,\s+Hierarchical blocks\s+(\d+)/i, 10);
+file_grep($Self->{run_log_filename}, qr/MACRO:(\S+) is defined/i, "cplusplus");
 
 ok(1);
 1;

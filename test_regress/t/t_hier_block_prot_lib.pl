@@ -31,6 +31,7 @@ while (1) {
                 "PROTECT_KEY",
                 "t/t_hier_block.v",
                 "-DAS_PROT_LIB",
+                '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus -time"',
                 $Self->{vltmt} ? ' --threads 1' : '',
                 "--build"],
         verilator_run => 1,
@@ -58,6 +59,7 @@ while (1) {
 file_grep($secret_dir . "/Vsub0/sub0.sv", /^module\s+(\S+)\s+/, "sub0");
 file_grep($secret_dir . "/Vsub1/sub1.sv", /^module\s+(\S+)\s+/, "sub1");
 file_grep($secret_dir . "/Vsub2/sub2.sv", /^module\s+(\S+)\s+/, "sub2");
+file_grep($Self->{run_log_filename}, qr/MACRO:(\S+) is defined/i, "cplusplus");
 
 ok(1);
 1;

@@ -19,7 +19,12 @@ scenarios(vlt_all => 1);
 
 compile(
     v_flags2 => ['t/t_hier_block.cpp'],
-    verilator_flags2 => ['--sc', '--stats', '--hierarchical', ($Self->{vltmt} ? ' --threads 6' : '')],
+    verilator_flags2 => ['--sc',
+                         '--stats',
+                         '--hierarchical',
+                         ($Self->{vltmt} ? ' --threads 6' : ''),
+                         '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus -time"'
+    ],
     );
 
 execute(
@@ -30,6 +35,7 @@ file_grep($Self->{obj_dir} . "/Vsub0/sub0.sv", /^module\s+(\S+)\s+/, "sub0");
 file_grep($Self->{obj_dir} . "/Vsub1/sub1.sv", /^module\s+(\S+)\s+/, "sub1");
 file_grep($Self->{obj_dir} . "/Vsub2/sub2.sv", /^module\s+(\S+)\s+/, "sub2");
 file_grep($Self->{stats}, qr/HierBlock,\s+Hierarchical blocks\s+(\d+)/i, 10);
+file_grep($Self->{run_log_filename}, qr/MACRO:(\S+) is defined/i, "cplusplus");
 
 ok(1);
 1;

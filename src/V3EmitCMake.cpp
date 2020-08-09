@@ -40,11 +40,11 @@ class CMakeEmitter {
         string s;
         if (strs.begin() != strs.end()) {
             s.append("\"");
-            s.append(*strs.begin());
+            s.append(VString::quoteAny(*strs.begin(), '"', '\\'));
             s.append("\"");
             for (typename List::const_iterator it = ++strs.begin(); it != strs.end(); ++it) {
                 s.append(" \"");
-                s.append(*it);
+                s.append(VString::quoteAny(*it, '"', '\\'));
                 s.append("\"");
             }
         }

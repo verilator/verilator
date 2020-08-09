@@ -422,7 +422,9 @@ string V3Options::allArgsStringForHierBlock(bool forTop) const {
             }
         }
         if (out != "") out += " ";
-        out += *it;  // Don't use opt here because '-' is removed in it
+        // Don't use opt here because '-' is removed in it
+        // Use double quote because *it may contain whitespaces
+        out += '"' + VString::quoteAny(*it, '"', '\\') + '"';
     }
     return out;
 }
