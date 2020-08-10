@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix non-32 bit conversion to float (#2495). [dsvf]
 
+****  Fix casting non-self-determined subexpressions (#2493). [phantom-killua]
+
 
 * Verilator 4.038 2020-07-11
 

@@ -1531,7 +1531,8 @@ private:
     virtual void visit(AstCast* nodep) VL_OVERRIDE {
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         // if (debug()) nodep->dumpTree(cout, "  CastPre: ");
-        userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
+        userIterateAndNext(nodep->lhsp(), WidthVP(SELF, PRELIM).p());
+
         // When more general casts are supported, the cast elimination will be done later.
         // For now, replace it ASAP, so widthing can propagate easily
         // The cast may change signing, but we don't know the sign yet.  Make it so.
@@ -1544,7 +1545,11 @@ private:
             // Note widthCheckSized might modify nodep->lhsp()
             AstNodeDType* subDTypep = nodep->findLogicDType(nodep->width(), nodep->width(),
                                                             nodep->lhsp()->dtypep()->numeric());
-            widthCheckSized(nodep, "Cast", nodep->lhsp(), subDTypep, EXTEND_EXP, false);
+            iterateCheck(nodep, "value", nodep->lhsp(), CONTEXT, FINAL, subDTypep, EXTEND_EXP,
+                         false);
+        } else {
+            iterateCheck(nodep, "value", nodep->lhsp(), SELF, FINAL, nodep->lhsp()->dtypep(),
+                         EXTEND_EXP, false);
         }
         AstNode* newp = nodep->lhsp()->unlinkFrBack();
         if (basicp->isDouble() && !newp->isDouble()) {
