@@ -251,6 +251,7 @@ inline void AstNode::debugTreeChange(const char* prefix, int lineno, bool next){
 AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
     // Add to m_nextp, returns this
     UDEBUGONLY(UASSERT_OBJ(newp, nodep, "Null item passed to addNext"););
+    UINFO(4, " addNext " << endl << " " << nodep << endl << " " << newp << endl);
     nodep->debugTreeChange("-addNextThs: ", __LINE__, false);
     newp->debugTreeChange("-addNextNew: ", __LINE__, true);
     if (!nodep) {  // verilog.y and lots of other places assume this

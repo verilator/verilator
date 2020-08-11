@@ -74,6 +74,9 @@
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3ProtectLib.h"
+#include "V3Region.h"
+#include "V3RegionPropagate.h"
+#include "V3RegionSplit.h"
 #include "V3Reloop.h"
 #include "V3Scope.h"
 #include "V3Scoreboard.h"
@@ -176,6 +179,8 @@ static void process() {
 
     // Propagate constants into expressions
     V3Const::constifyAllLint(v3Global.rootp());
+
+    V3Region::insertRegions(v3Global.rootp());
 
     if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Split packed variables into multiple pieces to resolve UNOPTFLAT.
@@ -341,6 +346,12 @@ static void process() {
 
         // Order the code; form SBLOCKs and BLOCKCALLs
         V3Order::orderAll(v3Global.rootp());
+
+        // Split statements from different regions into separate functions
+        V3RegionSplit::splitRegions(v3Global.rootp());
+
+        // Propagate region information to CFuncs
+        // V3RegionPropagate::propagateRegions(v3Global.rootp());
 
         // Change generated clocks to look at delayed signals
         V3GenClk::genClkAll(v3Global.rootp());
