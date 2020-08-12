@@ -6,6 +6,7 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 `define is_near_real(a,b)  (( ((a)<(b)) ? (b)-(a) : (a)-(b)) < (((a)/(b))*0.0001))
 
 module t (/*AUTOARG*/
@@ -16,6 +17,16 @@ module t (/*AUTOARG*/
 
    integer i;
    reg [63:0] b;
+   reg [47:0] i48;
+   reg signed [47:0] is48;
+   reg [31:0] ci32;
+   reg signed [31:0] cis32;
+   reg [47:0] ci48;
+   reg signed [47:0] cis48;
+   reg [63:0] ci64;
+   reg signed [63:0] cis64;
+   reg [95:0] ci96;
+   reg signed [95:0] cis96;
    real  r, r2;
    integer      cyc=0;
 
@@ -88,6 +99,41 @@ module t (/*AUTOARG*/
       // bug
       b = 64'h7fe8000000000000;
       $display("%6.3f", $bitstoreal(b));
+      // bug
+      i48 = 48'hff00_00000000;
+      r = real'(i48);
+      if (r != 280375465082880.0) $stop;
+      r = $itor(i48);
+      if (r != 280375465082880.0) $stop;
+
+      is48 = 48'shff00_00000000;
+      r = real'(is48);
+      if (r != -1099511627776.0) $stop;
+      r = $itor(is48);
+      if (r != -1099511627776.0) $stop;
+
+      r = 0;
+      r = i48;
+      if (r != 280375465082880.0) $stop;
+      r = 0;
+
+      r = $itor(-10);
+      if (r != -10.0) $stop;
+
+      r = real'(4'sb1111);
+      if (r != -1) $stop;
+      r = $itor(4'sb1111);
+      if (r != -1) $stop;
+
+      r = real'(4'b1111);
+      if (r != 15) $stop;
+      r = $itor(4'b1111);
+      if (r != 15) $stop;
+
+      r = real'(96'hf0000000_00000000_00000000);
+      if (r != 74276402357122816493947453440.0) $stop;
+      r = real'(96'shf0000000_00000000_00000000);
+      if (r != -4951760157141521099596496896.0) $stop;
    end
 
    // Test loop
@@ -98,8 +144,18 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       if (cyc==0) begin
          // Setup
+         ci48 <= '0;
+         cis48 <= '0;
+         ci96 <= '0;
+         cis96 <= '0;
       end
-      else if (cyc<90) begin
+      else if (cyc == 1) begin
+         ci48 <= 48'hff00_00000000;
+         cis48 <= 48'shff00_00000000;
+         ci96 <= 96'hf0000000_00000000_00000000;
+         cis96 <= 96'shf0000000_00000000_00000000;
+      end
+      else if (cyc<80) begin
          if ($time != {32'h0, $rtoi($realtime)}) $stop;
          if ($itor(cyc) != cyc) $stop;
          //Unsup: if ((real `($time)) != $realtime) $stop;
@@ -141,6 +197,76 @@ module t (/*AUTOARG*/
              !=  (((cyc-50)!=0) ? 10 : 20)) $stop;
          //
          if ((!(r-50.0)) != (!((cyc-50) != 0))) $stop;
+         //
+         r = real'(ci48);
+         `checkr(r, 280375465082880.0);
+         r = real'(cis48);
+         `checkr(r, -1099511627776.0);
+         //
+         r = real'(ci96);
+         `checkr(r, 74276402357122816493947453440.0);
+         r = real'(cis96);
+         `checkr(r, -4951760157141521099596496896.0);
+      end
+      else if (cyc==90) begin
+         ci32 <= '0;
+         cis32 <= '0;
+         ci48 <= '0;
+         cis48 <= '0;
+         ci64 <= '0;
+         cis64 <= '0;
+         ci96 <= '0;
+         cis96 <= '0;
+      end
+      else if (cyc==91) begin
+         `checkr(real'(ci32), 0.0);
+         `checkr(real'(cis32), 0.0);
+         `checkr(real'(ci48), 0.0);
+         `checkr(real'(cis48), 0.0);
+         `checkr(real'(ci64), 0.0);
+         `checkr(real'(cis64), 0.0);
+         `checkr(real'(ci96), 0.0);
+         `checkr(real'(cis96), 0.0);
+      end
+      else if (cyc==92) begin
+         ci32 <= 32'b1;
+         cis32 <= 32'b1;
+         ci48 <= 48'b1;
+         cis48 <= 48'b1;
+         ci64 <= 64'b1;
+         cis64 <= 64'b1;
+         ci96 <= 96'b1;
+         cis96 <= 96'b1;
+      end
+      else if (cyc==93) begin
+         `checkr(real'(ci32), 1.0);
+         `checkr(real'(cis32), 1.0);
+         `checkr(real'(ci48), 1.0);
+         `checkr(real'(cis48), 1.0);
+         `checkr(real'(ci64), 1.0);
+         `checkr(real'(cis64), 1.0);
+         `checkr(real'(ci96), 1.0);
+         `checkr(real'(cis96), 1.0);
+      end
+      else if (cyc==94) begin
+         ci32 <= ~ '0;
+         cis32 <= ~ '0;
+         ci48 <= ~ '0;
+         cis48 <= ~ '0;
+         ci64 <= ~ '0;
+         cis64 <= ~ '0;
+         ci96 <= ~ '0;
+         cis96 <= ~ '0;
+      end
+      else if (cyc==95) begin
+         `checkr(real'(ci32), 4294967295.0);
+         `checkr(real'(cis32), -1.0);
+         `checkr(real'(ci48), 281474976710655.0);
+         `checkr(real'(cis48), -1.0);
+         `checkr(real'(ci64), 18446744073709551616.0);
+         `checkr(real'(cis64), -1.0);
+         `checkr(real'(ci96), 79228162514264337593543950336.0);
+         `checkr(real'(cis96), -1.0);
       end
       else if (cyc==99) begin
          $write("*-* All Finished *-*\n");
