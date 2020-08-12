@@ -6,9 +6,13 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Fix arrayed interfaces, broke in 4.038 (#2468). [Josh Redford]
 
+****  Support $stable. [Peter Monsson]
+
 ****  Fix combining different-width parameters (#2484). [abirkmanis]
 
-****  Support $stable. [Peter Monsson]
+****  Fix non-32 bit conversion to float (#2495). [dsvf]
+
+****  Fix casting non-self-determined subexpressions (#2493). [phantom-killua]
 
 * Verilator 4.038 2020-07-11
 

@@ -5523,6 +5523,7 @@ public:
     virtual int instrCount() const { return instrCountDouble(); }
 };
 class AstIToRD : public AstNodeUniop {
+    // $itor where lhs is unsigned
 public:
     AstIToRD(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER(fl, lhsp) {
@@ -5531,10 +5532,27 @@ public:
     ASTNODE_NODE_FUNCS(IToRD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opIToRD(lhs); }
     virtual string emitVerilog() { return "%f$itor(%l)"; }
-    virtual string emitC() { return "VL_ITOR_D_I(%li)"; }
+    virtual string emitC() { return "VL_ITOR_D_%lq(%lw, %li)"; }
     virtual bool cleanOut() const { return false; }
-    virtual bool cleanLhs() const { return false; }  // Eliminated before matters
-    virtual bool sizeMattersLhs() const { return false; }  // Eliminated before matters
+    virtual bool cleanLhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual int instrCount() const { return instrCountDouble(); }
+};
+class AstISToRD : public AstNodeUniop {
+    // $itor where lhs is signed
+public:
+    AstISToRD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {
+        dtypeSetDouble();
+    }
+    ASTNODE_NODE_FUNCS(ISToRD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opISToRD(lhs); }
+    virtual string emitVerilog() { return "%f$itor($signed(%l))"; }
+    virtual string emitC() { return "VL_ISTOR_D_%lq(%lw, %li)"; }
+    virtual bool emitCheckMaxWords() { return true; }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
     virtual int instrCount() const { return instrCountDouble(); }
 };
 class AstRealToBits : public AstNodeUniop {
@@ -7151,6 +7169,7 @@ public:
     virtual string emitVerilog() { return "%k(%l %f* %r)"; }
     virtual string emitC() { return "VL_MULS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
+    virtual bool emitCheckMaxWords() { return true; }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return true; }
     virtual bool cleanRhs() const { return true; }
@@ -7288,6 +7307,7 @@ public:
     }
     virtual string emitVerilog() { return "%k(%l %f** %r)"; }
     virtual string emitC() { return "VL_POW_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual bool emitCheckMaxWords() { return true; }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return true; }
     virtual bool cleanRhs() const { return true; }
@@ -7333,6 +7353,7 @@ public:
     }
     virtual string emitVerilog() { return "%k(%l %f** %r)"; }
     virtual string emitC() { return "VL_POWSS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri, 1,0)"; }
+    virtual bool emitCheckMaxWords() { return true; }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return true; }
     virtual bool cleanRhs() const { return true; }
@@ -7356,6 +7377,7 @@ public:
     }
     virtual string emitVerilog() { return "%k(%l %f** %r)"; }
     virtual string emitC() { return "VL_POWSS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri, 1,1)"; }
+    virtual bool emitCheckMaxWords() { return true; }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return true; }
     virtual bool cleanRhs() const { return true; }
@@ -7379,6 +7401,7 @@ public:
     }
     virtual string emitVerilog() { return "%k(%l %f** %r)"; }
     virtual string emitC() { return "VL_POWSS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri, 0,1)"; }
+    virtual bool emitCheckMaxWords() { return true; }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return true; }
     virtual bool cleanRhs() const { return true; }

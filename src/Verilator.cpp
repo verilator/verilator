@@ -193,12 +193,16 @@ static void process() {
         // Expand inouts, stage 2
         // Also simplify pin connections to always be AssignWs in prep for V3Unknown
         V3Tristate::tristateAll(v3Global.rootp());
+    }
 
+    if (!v3Global.opt.xmlOnly()) {
         // Move assignments from X into MODULE temps.
         // (Before flattening, so each new X variable is shared between all scopes of that module.)
         V3Unknown::unknownAll(v3Global.rootp());
         v3Global.constRemoveXs(true);
+    }
 
+    if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Module inlining
         // Cannot remove dead variables after this, as alias information for final
         // V3Scope's V3LinkDot is in the AstVar.
