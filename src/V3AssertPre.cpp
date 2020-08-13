@@ -89,10 +89,42 @@ private:
         if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
         clearAssertInfo();
     }
+    virtual void visit(AstFell* nodep) VL_OVERRIDE {
+        if (nodep->sentreep()) return;  // Already processed
+        iterateChildren(nodep);
+        FileLine* fl = nodep->fileline();
+        AstNode* exprp = nodep->exprp()->unlinkFrBack();
+	if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
+        AstNode* past = new AstPast(fl, exprp, NULL);
+        past->dtypeFrom(exprp);
+	exprp = new AstAnd(fl,
+			   past,
+			   new AstNot(fl, exprp->cloneTree(false)));
+	exprp->dtypeSetLogicBool();
+        nodep->replaceWith(exprp);
+        nodep->sentreep(newSenTree(nodep));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     virtual void visit(AstPast* nodep) VL_OVERRIDE {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
+    }
+    virtual void visit(AstRose* nodep) VL_OVERRIDE {
+        if (nodep->sentreep()) return;  // Already processed
+        iterateChildren(nodep);
+        FileLine* fl = nodep->fileline();
+        AstNode* exprp = nodep->exprp()->unlinkFrBack();
+	if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
+        AstNode* past = new AstPast(fl, exprp, NULL);
+        past->dtypeFrom(exprp);
+	exprp = new AstAnd(fl,
+			   new AstNot(fl, past),
+			   exprp->cloneTree(false));
+	exprp->dtypeSetLogicBool();
+        nodep->replaceWith(exprp);
+        nodep->sentreep(newSenTree(nodep));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     virtual void visit(AstStable* nodep) VL_OVERRIDE {
         if (nodep->sentreep()) return;  // Already processed

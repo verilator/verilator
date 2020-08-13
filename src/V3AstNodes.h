@@ -7991,6 +7991,31 @@ public:
     virtual bool isHeavy() const { return true; }
 };
 
+class AstFell : public AstNodeMath {
+    // Verilog $fell
+    // Parents: math
+    // Children: expression
+public:
+    AstFell(FileLine* fl, AstNode* exprp)
+        : ASTGEN_SUPER(fl) {
+        addOp1p(exprp);
+    }
+    ASTNODE_NODE_FUNCS(Fell)
+    virtual string emitVerilog() { return "$fell(%l)"; }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+        V3ERROR_NA;
+    }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { V3ERROR_NA_RETURN(""); }
+    virtual int instrCount() const { return widthInstrs(); }
+    AstNode* exprp() const { return op1p(); }  // op1 = expression
+    AstSenTree* sentreep() const { return VN_CAST(op2p(), SenTree); }  // op2 = clock domain
+    void sentreep(AstSenTree* sentreep) { addOp2p(sentreep); }  // op2 = clock domain
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+};
+
 class AstPast : public AstNodeMath {
     // Verilog $past
     // Parents: math
@@ -8014,6 +8039,31 @@ public:
     AstNode* ticksp() const { return op2p(); }  // op2 = ticks or NULL means 1
     AstSenTree* sentreep() const { return VN_CAST(op4p(), SenTree); }  // op4 = clock domain
     void sentreep(AstSenTree* sentreep) { addOp4p(sentreep); }  // op4 = clock domain
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+};
+
+class AstRose : public AstNodeMath {
+    // Verilog $rose
+    // Parents: math
+    // Children: expression
+public:
+    AstRose(FileLine* fl, AstNode* exprp)
+        : ASTGEN_SUPER(fl) {
+        addOp1p(exprp);
+    }
+    ASTNODE_NODE_FUNCS(Rose)
+    virtual string emitVerilog() { return "$rose(%l)"; }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+        V3ERROR_NA;
+    }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { V3ERROR_NA_RETURN(""); }
+    virtual int instrCount() const { return widthInstrs(); }
+    AstNode* exprp() const { return op1p(); }  // op1 = expression
+    AstSenTree* sentreep() const { return VN_CAST(op2p(), SenTree); }  // op2 = clock domain
+    void sentreep(AstSenTree* sentreep) { addOp2p(sentreep); }  // op2 = clock domain
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
 };
