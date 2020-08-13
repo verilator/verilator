@@ -3791,8 +3791,8 @@ void V3EmitC::emitc() {
          nodep = VN_CAST(nodep->nextp(), NodeModule)) {
         if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
         // clang-format off
-        { EmitCImp cint; cint.mainInt(nodep); }
-        { EmitCImp slow; slow.mainImp(nodep, true); }
+        EmitCImp cint; cint.mainInt(nodep);
+        cint.mainImp(nodep, true);
         { EmitCImp fast; fast.mainImp(nodep, false); }
         // clang-format on
     }
