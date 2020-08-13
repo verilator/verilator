@@ -94,13 +94,11 @@ private:
         iterateChildren(nodep);
         FileLine* fl = nodep->fileline();
         AstNode* exprp = nodep->exprp()->unlinkFrBack();
-	if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
+        if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
         AstNode* past = new AstPast(fl, exprp, NULL);
         past->dtypeFrom(exprp);
-	exprp = new AstAnd(fl,
-			   past,
-			   new AstNot(fl, exprp->cloneTree(false)));
-	exprp->dtypeSetLogicBool();
+        exprp = new AstAnd(fl, past, new AstNot(fl, exprp->cloneTree(false)));
+        exprp->dtypeSetLogicBool();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -115,13 +113,11 @@ private:
         iterateChildren(nodep);
         FileLine* fl = nodep->fileline();
         AstNode* exprp = nodep->exprp()->unlinkFrBack();
-	if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
+        if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
         AstNode* past = new AstPast(fl, exprp, NULL);
         past->dtypeFrom(exprp);
-	exprp = new AstAnd(fl,
-			   new AstNot(fl, past),
-			   exprp->cloneTree(false));
-	exprp->dtypeSetLogicBool();
+        exprp = new AstAnd(fl, new AstNot(fl, past), exprp->cloneTree(false));
+        exprp->dtypeSetLogicBool();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
