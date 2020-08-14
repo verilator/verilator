@@ -719,6 +719,7 @@ BISONPRE_VERSION(3.0,%define parse.error verbose)
 %token<fl>              yD_FDISPLAYB    "$fdisplayb"
 %token<fl>              yD_FDISPLAYH    "$fdisplayh"
 %token<fl>              yD_FDISPLAYO    "$fdisplayo"
+%token<fl>              yD_FELL         "$fell"
 %token<fl>              yD_FEOF         "$feof"
 %token<fl>              yD_FERROR       "$ferror"
 %token<fl>              yD_FFLUSH       "$fflush"
@@ -760,6 +761,7 @@ BISONPRE_VERSION(3.0,%define parse.error verbose)
 %token<fl>              yD_REWIND       "$rewind"
 %token<fl>              yD_RIGHT        "$right"
 %token<fl>              yD_ROOT         "$root"
+%token<fl>              yD_ROSE         "$rose"
 %token<fl>              yD_RTOI         "$rtoi"
 %token<fl>              yD_SAMPLED      "$sampled"
 %token<fl>              yD_SFORMAT      "$sformat"
@@ -3596,6 +3598,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
 	|	yD_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_DIMENSIONS,$3); }
 	|	yD_EXP '(' expr ')'			{ $$ = new AstExpD($1,$3); }
+	|	yD_FELL '(' expr ')'			{ $$ = new AstFell($1,$3); }
+	|	yD_FELL '(' expr ',' expr ')'		{ $$ = $3; BBUNSUP($1, "Unsupported: $fell and clock arguments"); }
 	|	yD_FEOF '(' expr ')'			{ $$ = new AstFEof($1,$3); }
 	|	yD_FERROR '(' idClassSel ',' idClassSel ')'	{ $$ = new AstFError($1, $3, $5); }
 	|	yD_FGETC '(' expr ')'			{ $$ = new AstFGetC($1,$3); }
@@ -3637,6 +3641,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_REWIND '(' idClassSel ')'		{ $$ = new AstFSeek($1, $3, new AstConst($1, 0), new AstConst($1, 0)); }
 	|	yD_RIGHT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,NULL); }
 	|	yD_RIGHT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,$5); }
+	|	yD_ROSE '(' expr ')'			{ $$ = new AstRose($1,$3); }
+	|	yD_ROSE '(' expr ',' expr ')'		{ $$ = $3; BBUNSUP($1, "Unsupported: $rose and clock arguments"); }
 	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
 	|	yD_SAMPLED '(' expr ')'			{ $$ = new AstSampled($1, $3); }
 	|	yD_SFORMATF '(' exprDispList ')'	{ $$ = new AstSFormatF($1, AstSFormatF::NoFormat(), $3, 'd', false); }
