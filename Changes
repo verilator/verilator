@@ -2,6 +2,12 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
+
+* Verilator 4.099 devel
+
+**    C++11 or newer compilers are now required.
+
+
 * Verilator 4.040 2020-08-15
 
 **    Version 4.040 is planned to be the final version that will
