@@ -113,22 +113,6 @@ AC_ARG_ENABLE([longtests],
 AC_SUBST(CFG_WITH_LONGTESTS)
 AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 
-# CFG_WITH_PREC11
-AC_MSG_CHECKING(whether allow pre-C++11)
-AC_ARG_ENABLE([prec11-final],
-              [AS_HELP_STRING([--enable-prec11-final],
-                              [enable pre-C++11 compilers for Verilator binary
-                               and Verilated makefiles])],
-              [case "${enableval}" in
-                yes) CFG_WITH_PREC11=yes ;;
-                no)  CFG_WITH_PREC11=no ;;
-                *)   AC_MSG_ERROR([bad value ${enableval} for --enable-prec11-final]) ;;
-               esac],
-              [CFG_WITH_PREC11=no;]
-              )
-AC_SUBST(CFG_WITH_PREC11)
-AC_MSG_RESULT($CFG_WITH_PREC11)
-
 # Compiler flags (ensure they are not empty to avoid configure defaults)
 CFLAGS+=" "
 CPPFLAGS+=" "
@@ -430,17 +414,11 @@ CXXFLAGS="$ACO_SAVE_CXXFLAGS"
 
 # Check compiler flag
 if test "$CFG_WITH_THREADED" = "no" ; then
-   if test "$CFG_WITH_PREC11" = "no" ; then
-      AC_MSG_NOTICE([[]])
-      AC_MSG_ERROR([[the $CXX compiler appears to not support C++11.
+   AC_MSG_NOTICE([[]])
+   AC_MSG_ERROR([[the $CXX compiler appears to not support C++11.
 
-Verilator will require a C++11 or newer compiler for all releases starting
-September 2020.  Please investigate a C++11 build environment now so you
-will be ready.  Until then you may rerun configure with the
---enable-prec11-final argument to enable reduced functionality with such
-older compilers. Thanks.]])
+Verilator requires a C++11 or newer compiler.]])
 
-   fi
 fi
 
 # Checks for library functions.
