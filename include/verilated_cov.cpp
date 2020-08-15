@@ -70,15 +70,15 @@ private:
 public:
     // METHODS
     // cppcheck-suppress truncLongCastReturn
-    virtual vluint64_t count() const VL_OVERRIDE { return *m_countp; }
-    virtual void zero() const VL_OVERRIDE { *m_countp = 0; }
+    virtual vluint64_t count() const override { return *m_countp; }
+    virtual void zero() const override { *m_countp = 0; }
     // CONSTRUCTORS
     // cppcheck-suppress noExplicitConstructor
     explicit VerilatedCoverItemSpec(T* countp)
         : m_countp(countp) {
         *m_countp = 0;
     }
-    virtual ~VerilatedCoverItemSpec() VL_OVERRIDE {}
+    virtual ~VerilatedCoverItemSpec() override {}
 };
 
 //=============================================================================

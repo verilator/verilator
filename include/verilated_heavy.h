@@ -379,13 +379,7 @@ template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
 // be protected by other means
 //
 
-// clang-format off
-#if (defined(_MSC_VER) && _MSC_VER >= 1900) || (__cplusplus >= 201103L)
-# define VlClassRef std::shared_ptr
-#else
-# define VlClassRef VlClassRef__SystemVerilog_class_support_requires_a_C11_or_newer_compiler
-#endif
-// clang-format on
+#define VlClassRef std::shared_ptr
 
 template <class T>  // T typically of type VlClassRef<x>
 inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {

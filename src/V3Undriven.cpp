@@ -282,7 +282,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
             // For assigns and non-combo always, do just usr==1, to look
             // for module-wide undriven etc.
@@ -303,15 +303,15 @@ private:
         // Discover variables used in bit definitions, etc
         iterateChildren(nodep);
     }
-    virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
+    virtual void visit(AstArraySel* nodep) override {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
         iterateChildren(nodep);
     }
-    virtual void visit(AstSliceSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstSliceSel* nodep) override {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
         iterateChildren(nodep);
     }
-    virtual void visit(AstSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstSel* nodep) override {
         AstNodeVarRef* varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
         AstConst* constp = VN_CAST(nodep->lsbp(), Const);
         if (varrefp && constp && !constp->num().isFourState()) {
@@ -334,7 +334,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeVarRef* nodep) override {
         // Any variable
         if (nodep->lvalue()
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
@@ -369,14 +369,14 @@ private:
     }
 
     // Don't know what black boxed calls do, assume in+out
-    virtual void visit(AstSysIgnore* nodep) VL_OVERRIDE {
+    virtual void visit(AstSysIgnore* nodep) override {
         bool prevMark = m_inBBox;
         m_inBBox = true;
         iterateChildren(nodep);
         m_inBBox = prevMark;
     }
 
-    virtual void visit(AstAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssign* nodep) override {
         bool prevProc = m_inProcAssign;
         {
             m_inProcAssign = true;
@@ -384,7 +384,7 @@ private:
         }
         m_inProcAssign = prevProc;
     }
-    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignDly* nodep) override {
         bool prevProc = m_inProcAssign;
         {
             m_inProcAssign = true;
@@ -392,7 +392,7 @@ private:
         }
         m_inProcAssign = prevProc;
     }
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignW* nodep) override {
         bool prevCont = m_inContAssign;
         {
             m_inContAssign = true;
@@ -400,7 +400,7 @@ private:
         }
         m_inContAssign = prevCont;
     }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlways* nodep) override {
         AstAlways* prevAlwp = m_alwaysCombp;
         {
             AstNode::user2ClearTree();
@@ -416,7 +416,7 @@ private:
         m_alwaysCombp = prevAlwp;
     }
 
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTask* nodep) override {
         AstNodeFTask* prevTaskp = m_taskp;
         m_taskp = nodep;
         iterateChildren(nodep);
@@ -424,18 +424,18 @@ private:
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os
-    virtual void visit(AstPrimitive*) VL_OVERRIDE {}
+    virtual void visit(AstPrimitive*) override {}
 
     // Coverage artifacts etc shouldn't count as a sink
-    virtual void visit(AstCoverDecl*) VL_OVERRIDE {}
-    virtual void visit(AstCoverInc*) VL_OVERRIDE {}
-    virtual void visit(AstCoverToggle*) VL_OVERRIDE {}
-    virtual void visit(AstTraceDecl*) VL_OVERRIDE {}
-    virtual void visit(AstTraceInc*) VL_OVERRIDE {}
+    virtual void visit(AstCoverDecl*) override {}
+    virtual void visit(AstCoverInc*) override {}
+    virtual void visit(AstCoverToggle*) override {}
+    virtual void visit(AstTraceDecl*) override {}
+    virtual void visit(AstTraceInc*) override {}
 
     // iterate
-    virtual void visit(AstConst* nodep) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstConst* nodep) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

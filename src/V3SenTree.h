@@ -25,7 +25,7 @@
 #include "V3Ast.h"
 #include "V3Hashed.h"
 
-#include VL_INCLUDE_UNORDERED_SET
+#include <unordered_set>
 
 //######################################################################
 // Collect SenTrees under the entire scope
@@ -48,7 +48,7 @@ private:
     };
 
     // MEMBERS
-    typedef vl_unordered_set<AstSenTree*, HashSenTree, EqSenTree> Set;
+    typedef std::unordered_set<AstSenTree*, HashSenTree, EqSenTree> Set;
     Set m_trees;  // Set of sensitive blocks, for folding.
 
 public:

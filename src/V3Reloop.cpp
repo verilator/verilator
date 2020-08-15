@@ -142,12 +142,12 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         m_cfuncp = nodep;
         iterateChildren(nodep);
         m_cfuncp = NULL;
     }
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         if (!m_cfuncp) return;
 
         // Left select WordSel or ArraySel
@@ -232,9 +232,9 @@ private:
         UINFO(9, "Start merge i=" << index << " " << nodep << endl);
     }
     //--------------------
-    virtual void visit(AstVar*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstVar*) override {}  // Accelerate
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

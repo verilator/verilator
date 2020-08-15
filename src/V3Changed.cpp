@@ -142,13 +142,13 @@ private:
         m_statep->m_numStmts += visitor.count();
     }
 
-    virtual void visit(AstBasicDType* nodep) VL_OVERRIDE {  //
+    virtual void visit(AstBasicDType* nodep) override {  //
         newChangeDet();
     }
-    virtual void visit(AstPackArrayDType* nodep) VL_OVERRIDE {  //
+    virtual void visit(AstPackArrayDType* nodep) override {  //
         newChangeDet();
     }
-    virtual void visit(AstUnpackArrayDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstUnpackArrayDType* nodep) override {
         for (int index = 0; index < nodep->elementsConst(); ++index) {
             AstNode* origVEp = m_varEqnp;
             AstNode* origNLEp = m_newLvEqnp;
@@ -169,7 +169,7 @@ private:
             m_newRvEqnp = origNREp;
         }
     }
-    virtual void visit(AstNodeUOrStructDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeUOrStructDType* nodep) override {
         if (nodep->packedUnsup()) {
             newChangeDet();
         } else {
@@ -179,7 +179,7 @@ private:
                                               << m_vscp->varp()->prettyNameQ());
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         iterateChildren(nodep);
         if (debug()) nodep->dumpTree(cout, "-DETECTARRAY-general-");
         m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable"
@@ -242,13 +242,13 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         if (nodep->isTop()) m_statep->m_topModp = nodep;
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstTopScope* nodep) override {
         UINFO(4, " TS " << nodep << endl);
         // Clearing
         AstNode::user1ClearTree();
@@ -271,15 +271,15 @@ private:
 
         iterateChildren(nodep);
     }
-    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarScope* nodep) override {
         if (nodep->isCircular()) {
             UINFO(8, "  CIRC " << nodep << endl);
             if (!nodep->user1SetOnce()) genChangeDet(nodep);
         }
     }
     //--------------------
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

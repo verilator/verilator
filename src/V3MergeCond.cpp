@@ -67,7 +67,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         if (!m_mergeable) return;
         // Clear if node is impure
         if (!nodep->isPure()) {
@@ -76,7 +76,7 @@ private:
         }
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (!m_mergeable) return;
         // Clear if it's an LValue referencing a marked variable
         if (nodep->lvalue() && nodep->varp()->user1()) {
@@ -104,8 +104,8 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE { nodep->varp()->user1(1); }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildrenConst(nodep); }
+    virtual void visit(AstVarRef* nodep) override { nodep->varp()->user1(1); }
+    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // Remove marks from AstVars (clear user1)
@@ -264,7 +264,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         AstNode* const rhsp = nodep->rhsp();
         if (AstNodeCond* const condp = extractCond(rhsp)) {
             if (!m_checkMergeable(nodep)) {
@@ -306,17 +306,17 @@ private:
             mergeEnd();
         }
     }
-    virtual void visit(AstComment*) VL_OVERRIDE {}  // Skip over comments
+    virtual void visit(AstComment*) override {}  // Skip over comments
     // For speed, only iterate what is necessary.
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE { iterateAndNextNull(nodep->modulesp()); }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE { iterateAndNextNull(nodep->stmtsp()); }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override { iterateAndNextNull(nodep->modulesp()); }
+    virtual void visit(AstNodeModule* nodep) override { iterateAndNextNull(nodep->stmtsp()); }
+    virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Close list, if there is one at the end of the function
         if (m_mgFirstp) mergeEnd();
     }
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE { iterateChildren(nodep); }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNodeStmt* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override {}
 
 public:
     // CONSTRUCTORS

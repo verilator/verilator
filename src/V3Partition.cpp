@@ -29,7 +29,7 @@
 
 #include <list>
 #include <memory>
-#include VL_INCLUDE_UNORDERED_SET
+#include <unordered_set>
 
 class MergeCandidate;
 
@@ -271,7 +271,7 @@ private:
     // MEMBERS
     V3Graph m_graph;  // A graph
     V3GraphVertex* m_vx[50];  // All vertices within the graph
-    typedef vl_unordered_map<V3GraphVertex*, uint32_t> CpMap;
+    typedef std::unordered_map<V3GraphVertex*, uint32_t> CpMap;
     CpMap m_cp;  // Vertex-to-CP map
     CpMap m_seen;  // Set of vertices we've seen
 
@@ -650,7 +650,7 @@ public:
     static void dumpCpFilePrefixed(const V3Graph* graphp, const string& nameComment) {
         string filename = v3Global.debugFilename(nameComment) + ".txt";
         UINFO(1, "Writing " << filename << endl);
-        vl_unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
+        std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
         std::ostream* osp = &(*ofp);  // &* needed to deref unique_ptr
         if (osp->fail()) v3fatalStatic("Can't write " << filename);
 
@@ -754,7 +754,7 @@ private:
     LogicMTask* m_ap;
     LogicMTask* m_bp;
     // CONSTRUCTORS
-    SiblingMC() VL_EQ_DELETE;
+    SiblingMC() = delete;
 
 public:
     SiblingMC(LogicMTask* ap, LogicMTask* bp) {
@@ -881,7 +881,7 @@ public:
     void traverse() {
         // For each node, record the critical path cost from the start
         // of the graph through the end of the node.
-        vl_unordered_map<const V3GraphVertex*, uint32_t> critPaths;
+        std::unordered_map<const V3GraphVertex*, uint32_t> critPaths;
         GraphStreamUnordered serialize(m_graphp);
         for (const V3GraphVertex* vertexp; (vertexp = serialize.nextp());) {
             m_vertexCount++;
@@ -938,7 +938,7 @@ static void partInitHalfCriticalPaths(GraphWay way, V3Graph* mtasksp, bool check
         const LogicMTask* mtaskcp = dynamic_cast<const LogicMTask*>(vertexp);
         LogicMTask* mtaskp = const_cast<LogicMTask*>(mtaskcp);
         uint32_t cpCost = 0;
-        vl_unordered_set<V3GraphVertex*> relatives;
+        std::unordered_set<V3GraphVertex*> relatives;
         for (V3GraphEdge* edgep = vertexp->beginp(rev); edgep; edgep = edgep->nextp(rev)) {
             // Run a few asserts on the initial mtask graph,
             // while we're iterating through...
@@ -1066,11 +1066,11 @@ private:
     // TYPES
 
     // TODO: might get a little more speed by making this a
-    // vl_unordered_set and defining hash and equal_to functors for the
+    // std::unordered_set and defining hash and equal_to functors for the
     // SiblingMC:
     typedef std::set<SiblingMC> SibSet;
-    typedef vl_unordered_set<const SiblingMC*> SibpSet;
-    typedef vl_unordered_map<const LogicMTask*, SibpSet> MTask2Sibs;
+    typedef std::unordered_set<const SiblingMC*> SibpSet;
+    typedef std::unordered_map<const LogicMTask*, SibpSet> MTask2Sibs;
 
     // New CP information for mtaskp reflecting an upcoming merge
     struct NewCp {
@@ -1121,7 +1121,7 @@ public:
         //  - Incrementally recompute critical paths near the merged mtask.
 
         for (V3GraphVertex* itp = m_mtasksp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            vl_unordered_set<const V3GraphVertex*> neighbors;
+            std::unordered_set<const V3GraphVertex*> neighbors;
             for (V3GraphEdge* edgep = itp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 m_sb.addElem(MTaskEdge::cast(edgep));
                 UASSERT_OBJ(neighbors.find(edgep->top()) == neighbors.end(), itp,
@@ -1675,7 +1675,7 @@ private:
     // METHODS
     VL_DEBUG_FUNC;
 
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         if (!m_tracingCall) return;
         m_tracingCall = false;
         if (nodep->dpiImportWrapper()) {
@@ -1686,13 +1686,13 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCCall* nodep) override {
         iterateChildren(nodep);
         // Enter the function and trace it
         m_tracingCall = true;
         iterate(nodep->funcp());
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1798,7 +1798,7 @@ private:
     typedef std::set<LogicMTask*, MTaskIdLessThan> LogicMTaskSet;
     typedef std::map<uint32_t /*rank*/, LogicMTaskSet> TasksByRank;
     typedef std::set<const OrderVarStdVertex*, OrderByPtrId&> OvvSet;
-    typedef vl_unordered_map<const OrderLogicVertex*, LogicMTask*> Olv2MTaskMap;
+    typedef std::unordered_map<const OrderLogicVertex*, LogicMTask*> Olv2MTaskMap;
 
     // MEMBERS
     V3Graph* m_mtasksp;  // Mtask graph
@@ -2071,7 +2071,7 @@ private:
     uint32_t m_sandbagNumerator;  // Numerator padding for est runtime
     uint32_t m_sandbagDenom;  // Denomerator padding for est runtime
 
-    typedef vl_unordered_map<const ExecMTask*, MTaskState> MTaskStateMap;
+    typedef std::unordered_map<const ExecMTask*, MTaskState> MTaskStateMap;
     MTaskStateMap m_mtaskState;  // State for each mtask.
 
     MTaskCmp m_mtaskCmp;  // Comparison functor
@@ -2346,7 +2346,7 @@ void V3Partition::hashGraphDebug(const V3Graph* graphp, const char* debugName) {
     // Disabled when there are no nondeterminism issues in flight.
     if (!v3Global.opt.debugNondeterminism()) return;
 
-    vl_unordered_map<const V3GraphVertex*, uint32_t> vx2Id;
+    std::unordered_map<const V3GraphVertex*, uint32_t> vx2Id;
     unsigned id = 0;
     for (const V3GraphVertex* vxp = graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
         vx2Id[vxp] = id++;

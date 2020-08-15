@@ -66,7 +66,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         AstNodeModule* origModp = m_modp;
         {
@@ -76,7 +76,7 @@ private:
         }
         m_modp = origModp;
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         // We recurse into this.
         int lastDepth = m_depth;
         AstCFunc* lastFuncp = m_funcp;
@@ -104,7 +104,7 @@ private:
         }
         m_depth--;
     }
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
         } else {
@@ -112,10 +112,10 @@ private:
         }
     }
 
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
     //--------------------
-    virtual void visit(AstVar*) VL_OVERRIDE {}  // Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstVar*) override {}  // Don't hit varrefs under vars
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

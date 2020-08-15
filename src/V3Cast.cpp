@@ -109,25 +109,25 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeUniop* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeUniop* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1());
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
     }
-    virtual void visit(AstNodeBiop* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeBiop* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1() | nodep->rhsp()->user1());
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) ensureCast(nodep->rhsp());
     }
-    virtual void visit(AstNodeTriop* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeTriop* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1() | nodep->rhsp()->user1() | nodep->thsp()->user1());
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) ensureCast(nodep->rhsp());
         if (nodep->sizeMattersThs()) ensureCast(nodep->thsp());
     }
-    virtual void visit(AstNodeQuadop* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeQuadop* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1() | nodep->rhsp()->user1() | nodep->thsp()->user1()
                      | nodep->fhsp()->user1());
@@ -136,12 +136,12 @@ private:
         if (nodep->sizeMattersThs()) ensureCast(nodep->thsp());
         if (nodep->sizeMattersFhs()) ensureCast(nodep->fhsp());
     }
-    virtual void visit(AstCCast* nodep) VL_OVERRIDE {
+    virtual void visit(AstCCast* nodep) override {
         iterateChildren(nodep);
         ensureLower32Cast(nodep);
         nodep->user1(1);
     }
-    virtual void visit(AstNegate* nodep) VL_OVERRIDE {
+    virtual void visit(AstNegate* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1());
         if (nodep->lhsp()->widthMin() == 1) {
@@ -153,7 +153,7 @@ private:
             ensureCast(nodep->lhsp());
         }
     }
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (!nodep->lvalue() && !VN_IS(nodep->backp(), CCast) && VN_IS(nodep->backp(), NodeMath)
             && !VN_IS(nodep->backp(), ArraySel) && nodep->backp()->width()
             && castSize(nodep) != castSize(nodep->varp())) {
@@ -163,7 +163,7 @@ private:
         }
         nodep->user1(1);
     }
-    virtual void visit(AstConst* nodep) VL_OVERRIDE {
+    virtual void visit(AstConst* nodep) override {
         // Constants are of unknown size if smaller than 33 bits, because
         // we're too lazy to wrap every constant in the universe in
         // ((IData)#).
@@ -171,24 +171,24 @@ private:
     }
 
     // Null dereference protection
-    virtual void visit(AstNullCheck* nodep) VL_OVERRIDE {
+    virtual void visit(AstNullCheck* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1());
     }
-    virtual void visit(AstCMethodCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstCMethodCall* nodep) override {
         iterateChildren(nodep);
         ensureNullChecked(nodep->fromp());
     }
-    virtual void visit(AstMemberSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstMemberSel* nodep) override {
         iterateChildren(nodep);
         ensureNullChecked(nodep->fromp());
     }
 
     // NOPs
-    virtual void visit(AstVar*) VL_OVERRIDE {}
+    virtual void visit(AstVar*) override {}
 
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

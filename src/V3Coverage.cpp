@@ -32,7 +32,7 @@
 #include "V3Ast.h"
 
 #include <map>
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 //######################################################################
 // Coverage state, as a visitor of each AstNode
@@ -40,9 +40,9 @@
 class CoverageVisitor : public AstNVisitor {
 private:
     // TYPES
-    typedef vl_unordered_map<string, int> VarNameMap;
+    typedef std::unordered_map<string, int> VarNameMap;
     typedef std::set<int> LinenoSet;
-    typedef vl_unordered_map<int, LinenoSet> HandleLines;
+    typedef std::unordered_map<int, LinenoSet> HandleLines;
 
     struct ToggleEnt {
         string m_comment;  // Comment for coverage dump
@@ -212,7 +212,7 @@ private:
     }
 
     // VISITORS - BOTH
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         AstNodeModule* origModp = m_modp;
         CheckState lastState = m_state;
         {
@@ -231,9 +231,9 @@ private:
         m_state = lastState;
     }
 
-    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE { iterateProcedure(nodep); }
-    virtual void visit(AstWhile* nodep) VL_OVERRIDE { iterateProcedure(nodep); }
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeProcedure* nodep) override { iterateProcedure(nodep); }
+    virtual void visit(AstWhile* nodep) override { iterateProcedure(nodep); }
+    virtual void visit(AstNodeFTask* nodep) override {
         if (!nodep->dpiImport()) iterateProcedure(nodep);
     }
     void iterateProcedure(AstNode* nodep) {
@@ -264,7 +264,7 @@ private:
     }
 
     // VISITORS - TOGGLE COVERAGE
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         if (m_modp && !m_inToggleOff && !m_state.m_inModOff && nodep->fileline()->coverageOn()
             && v3Global.opt.coverageToggle()) {
@@ -387,7 +387,7 @@ private:
 
     // VISITORS - LINE COVERAGE
     // Note not AstNodeIf; other types don't get covered
-    virtual void visit(AstIf* nodep) VL_OVERRIDE {
+    virtual void visit(AstIf* nodep) override {
         UINFO(4, " IF: " << nodep << endl);
         if (m_state.m_on) {
             // An else-if.  When we iterate the if, use "elsif" marking
@@ -463,7 +463,7 @@ private:
         }
         UINFO(9, " done HANDLE " << m_state.m_handle << " for " << nodep << endl);
     }
-    virtual void visit(AstCaseItem* nodep) VL_OVERRIDE {
+    virtual void visit(AstCaseItem* nodep) override {
         // We don't add an explicit "default" coverage if not provided,
         // as we already have a warning when there is no default.
         UINFO(4, " CASEI: " << nodep << endl);
@@ -483,7 +483,7 @@ private:
             m_state = lastState;
         }
     }
-    virtual void visit(AstCover* nodep) VL_OVERRIDE {
+    virtual void visit(AstCover* nodep) override {
         UINFO(4, " COVER: " << nodep << endl);
         CheckState lastState = m_state;
         {
@@ -500,11 +500,11 @@ private:
         }
         m_state = lastState;
     }
-    virtual void visit(AstStop* nodep) VL_OVERRIDE {
+    virtual void visit(AstStop* nodep) override {
         UINFO(4, "  STOP: " << nodep << endl);
         m_state.m_on = false;
     }
-    virtual void visit(AstPragma* nodep) VL_OVERRIDE {
+    virtual void visit(AstPragma* nodep) override {
         if (nodep->pragType() == AstPragmaType::COVERAGE_BLOCK_OFF) {
             // Skip all NEXT nodes under this block, and skip this if/case branch
             UINFO(4, "  OFF: h" << m_state.m_handle << " " << nodep << endl);
@@ -515,7 +515,7 @@ private:
             lineTrack(nodep);
         }
     }
-    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
+    virtual void visit(AstBegin* nodep) override {
         // Record the hierarchy of any named begins, so we can apply to user
         // coverage points.  This is because there may be cov points inside
         // generate blocks; each point should get separate consideration.
@@ -536,7 +536,7 @@ private:
     }
 
     // VISITORS - BOTH
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         iterateChildren(nodep);
         lineTrack(nodep);
     }

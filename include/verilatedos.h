@@ -184,19 +184,13 @@
 // C++-2011
 
 #if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK)
+// These are deprecated historical defines. We leave them in case users referenced them.
 # define VL_EQ_DELETE = delete
 # define vl_unique_ptr std::unique_ptr
-// By default we use std:: types in C++11.
-// Define VL_USE_UNORDERED_TYPES to test these pre-C++11 classes
-# ifdef VL_USE_UNORDERED_TYPES
-#  define VL_INCLUDE_UNORDERED_MAP "verilated_unordered_set_map.h"
-#  define VL_INCLUDE_UNORDERED_SET "verilated_unordered_set_map.h"
-# else
-#  define vl_unordered_map std::unordered_map
-#  define vl_unordered_set std::unordered_set
-#  define VL_INCLUDE_UNORDERED_MAP <unordered_map>
-#  define VL_INCLUDE_UNORDERED_SET <unordered_set>
-# endif
+# define vl_unordered_map std::unordered_map
+# define vl_unordered_set std::unordered_set
+# define VL_INCLUDE_UNORDERED_MAP <unordered_map>
+# define VL_INCLUDE_UNORDERED_SET <unordered_set>
 # define VL_FINAL final
 # define VL_MUTABLE mutable
 # define VL_OVERRIDE override
@@ -382,8 +376,8 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 
 // Used to declare a class as uncopyable; put after a private:
 #define VL_UNCOPYABLE(Type) \
-    Type(const Type& other) VL_EQ_DELETE; \
-    Type& operator=(const Type&) VL_EQ_DELETE
+    Type(const Type& other) = delete; \
+    Type& operator=(const Type&) = delete
 
 //=========================================================================
 // Verilated function size macros

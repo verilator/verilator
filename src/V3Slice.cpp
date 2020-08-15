@@ -123,7 +123,7 @@ class SliceVisitor : public AstNVisitor {
         return newp;
     }
 
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         // Called recursively on newly created assignments
         if (!nodep->user1() && !VN_IS(nodep, AssignAlias)) {
             nodep->user1(true);
@@ -156,7 +156,7 @@ class SliceVisitor : public AstNVisitor {
         }
     }
 
-    virtual void visit(AstInitArray* nodep) VL_OVERRIDE {
+    virtual void visit(AstInitArray* nodep) override {
         UASSERT_OBJ(!m_assignp, nodep, "Array initialization should have been removed earlier");
     }
 
@@ -215,12 +215,12 @@ class SliceVisitor : public AstNVisitor {
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstEq* nodep) VL_OVERRIDE { expandBiOp(nodep); }
-    virtual void visit(AstNeq* nodep) VL_OVERRIDE { expandBiOp(nodep); }
-    virtual void visit(AstEqCase* nodep) VL_OVERRIDE { expandBiOp(nodep); }
-    virtual void visit(AstNeqCase* nodep) VL_OVERRIDE { expandBiOp(nodep); }
+    virtual void visit(AstEq* nodep) override { expandBiOp(nodep); }
+    virtual void visit(AstNeq* nodep) override { expandBiOp(nodep); }
+    virtual void visit(AstEqCase* nodep) override { expandBiOp(nodep); }
+    virtual void visit(AstNeqCase* nodep) override { expandBiOp(nodep); }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

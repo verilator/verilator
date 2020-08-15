@@ -121,11 +121,11 @@ public:
 
 private:
     // VISITORS
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE { addCall(nodep); }
+    virtual void visit(AstCCall* nodep) override { addCall(nodep); }
     // Speed things up
-    virtual void visit(AstNodeAssign*) VL_OVERRIDE {}
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeAssign*) override {}
+    virtual void visit(AstNodeMath*) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -143,7 +143,7 @@ private:
     // OUTPUT:
     //  AstNode::user3()        -> bool. True to indicate duplicated
     // VISITORS
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         nodep->user3(true);
         iterateChildren(nodep);
     }
@@ -381,7 +381,7 @@ private:
 #endif
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         // Track all callers of each function
         m_call.main(nodep);
         //
@@ -390,7 +390,7 @@ private:
         // Required so that a module instantiating another can benefit from collapsing.
         iterateChildrenBackwards(nodep);
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         m_modp = nodep;
         m_modNFuncs = 0;
@@ -419,7 +419,7 @@ private:
 #endif
         m_modp = NULL;
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         m_funcp = nodep;
         if (!nodep->dontCombine()) {
             if (m_state == STATE_HASH) {
@@ -433,7 +433,7 @@ private:
         }
         m_funcp = NULL;
     }
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
             return;
@@ -450,10 +450,10 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar*) VL_OVERRIDE {}
-    virtual void visit(AstTraceDecl*) VL_OVERRIDE {}
-    virtual void visit(AstTraceInc*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstVar*) override {}
+    virtual void visit(AstTraceDecl*) override {}
+    virtual void visit(AstTraceInc*) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

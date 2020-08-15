@@ -35,8 +35,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include VL_INCLUDE_UNORDERED_SET
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_set>
+#include <unordered_map>
 
 //######################################################################
 // Support classes
@@ -74,7 +74,7 @@ public:
     typedef TspVertexTmpl<T_Key> Vertex;
 
     // MEMBERS
-    typedef vl_unordered_map<T_Key, Vertex*> VMap;
+    typedef std::unordered_map<T_Key, Vertex*> VMap;
     VMap m_vertices;  // T_Key to Vertex lookup map
 
     // CONSTRUCTORS
@@ -149,7 +149,7 @@ public:
         UASSERT(mstp->empty(), "Output graph must start empty");
 
         // Use Prim's algorithm to efficiently construct the MST.
-        vl_unordered_set<Vertex*> visited_set;
+        std::unordered_set<Vertex*> visited_set;
 
         EdgeCmp cmp;
         typedef std::set<V3GraphEdge*, EdgeCmp&> PendingEdgeSet;
@@ -221,7 +221,7 @@ public:
         UASSERT(outp->empty(), "Output graph must start empty");
 
         std::list<Vertex*> odds = keysToVertexList(oddKeys);
-        vl_unordered_set<Vertex*> unmatchedOdds;
+        std::unordered_set<Vertex*> unmatchedOdds;
         typedef typename std::list<Vertex*>::iterator VertexListIt;
         for (VertexListIt it = odds.begin(); it != odds.end(); ++it) {
             outp->addVertex((*it)->key());
@@ -274,7 +274,7 @@ public:
     }
 
     void combineGraph(const TspGraphTmpl& g) {
-        vl_unordered_set<vluint32_t> edges_done;
+        std::unordered_set<vluint32_t> edges_done;
         for (V3GraphVertex* vxp = g.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             Vertex* fromp = castVertexp(vxp);
             for (V3GraphEdge* edgep = fromp->outBeginp(); edgep; edgep = edgep->outNextp()) {
@@ -287,7 +287,7 @@ public:
         }
     }
 
-    void findEulerTourRecurse(vl_unordered_set<unsigned>* markedEdgesp, Vertex* startp,
+    void findEulerTourRecurse(std::unordered_set<unsigned>* markedEdgesp, Vertex* startp,
                               std::vector<T_Key>* sortedOutp) {
         Vertex* cur_vertexp = startp;
 
@@ -360,7 +360,7 @@ public:
     void dumpGraphFilePrefixed(const string& nameComment) const {
         if (v3Global.opt.dumpTree()) {
             string filename = v3Global.debugFilename(nameComment) + ".txt";
-            const vl_unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+            const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
             if (logp->fail()) v3fatal("Can't write " << filename);
             dumpGraph(*logp, nameComment);
         }
@@ -369,7 +369,7 @@ public:
     void findEulerTour(std::vector<T_Key>* sortedOutp) {
         UASSERT(sortedOutp->empty(), "Output graph must start empty");
         if (debug() >= 6) dumpDotFilePrefixed("findEulerTour");
-        vl_unordered_set<unsigned /*edgeID*/> markedEdges;
+        std::unordered_set<unsigned /*edgeID*/> markedEdges;
         // Pick a start node
         Vertex* start_vertexp = castVertexp(verticesBeginp());
         findEulerTourRecurse(&markedEdges, start_vertexp, sortedOutp);
@@ -446,7 +446,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
 
     // Discard duplicate nodes that the Euler tour might contain.
     {
-        vl_unordered_set<const TspStateBase*> seen;
+        std::unordered_set<const TspStateBase*> seen;
         for (V3TSP::StateVec::iterator it = prelim_result.begin(); it != prelim_result.end();
              ++it) {
             const TspStateBase* elemp = *it;

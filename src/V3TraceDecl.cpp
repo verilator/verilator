@@ -124,7 +124,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstTopScope* nodep) override {
         m_topScopep = nodep->scopep();
         // Create the trace init function
         m_initFuncp = newCFunc(AstCFuncType::TRACE_INIT, "traceInitTop");
@@ -133,7 +133,7 @@ private:
         // And find variables
         iterateChildren(nodep);
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         AstCell* const cellp = VN_CAST(nodep->aboveCellp(), Cell);
         if (cellp && VN_IS(cellp->modp(), Iface)) {
             AstCFunc* const origSubFunc = m_initSubFuncp;
@@ -171,7 +171,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarScope* nodep) override {
         iterateChildren(nodep);
         // Prefilter - things that get through this if will either get
         // traced or get a comment as to why not traced.
@@ -213,13 +213,13 @@ private:
         }
     }
     // VISITORS - Data types when tracing
-    virtual void visit(AstConstDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstConstDType* nodep) override {
         if (m_traVscp) iterate(nodep->subDTypep()->skipRefToEnump());
     }
-    virtual void visit(AstRefDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstRefDType* nodep) override {
         if (m_traVscp) iterate(nodep->subDTypep()->skipRefToEnump());
     }
-    virtual void visit(AstUnpackArrayDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstUnpackArrayDType* nodep) override {
         // Note more specific dtypes above
         if (m_traVscp) {
             if (static_cast<int>(nodep->arrayUnpackedElements()) > v3Global.opt.traceMaxArray()) {
@@ -256,7 +256,7 @@ private:
             }
         }
     }
-    virtual void visit(AstPackArrayDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstPackArrayDType* nodep) override {
         if (m_traVscp) {
             if (!v3Global.opt.traceStructs()) {
                 // Everything downstream is packed, so deal with as one trace unit.
@@ -283,7 +283,7 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeUOrStructDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeUOrStructDType* nodep) override {
         if (m_traVscp) {
             if (nodep->packed() && !v3Global.opt.traceStructs()) {
                 // Everything downstream is packed, so deal with as one trace unit
@@ -317,7 +317,7 @@ private:
             }
         }
     }
-    virtual void visit(AstBasicDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstBasicDType* nodep) override {
         if (m_traVscp) {
             if (nodep->isString()) {
                 addIgnore("Unsupported: strings");
@@ -326,15 +326,15 @@ private:
             }
         }
     }
-    virtual void visit(AstEnumDType* nodep) VL_OVERRIDE { iterate(nodep->skipRefp()); }
-    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstEnumDType* nodep) override { iterate(nodep->skipRefp()); }
+    virtual void visit(AstNodeDType* nodep) override {
         // Note more specific dtypes above
         if (!m_traVscp) return;
         addIgnore("Unsupported: data type");
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

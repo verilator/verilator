@@ -344,22 +344,22 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         // VV*****  We reset all userp() on the netlist
         m_modVarMap.clear();
         iterateChildren(nodep);
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         AstNode::user3ClearTree();
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         m_cfuncp = nodep;
         iterateChildren(nodep);
         m_cfuncp = NULL;
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {
+    virtual void visit(AstActive* nodep) override {
         m_activep = nodep;
         bool oldinit = m_inInitial;
         m_inInitial = nodep->hasInitial();
@@ -368,7 +368,7 @@ private:
         iterateChildren(nodep);
         m_inInitial = oldinit;
     }
-    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignDly* nodep) override {
         m_inDly = true;
         m_nextDlyp
             = VN_CAST(nodep->nextp(), AssignDly);  // Next assignment in same block, maybe NULL.
@@ -402,7 +402,7 @@ private:
         m_nextDlyp = NULL;
     }
 
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (!nodep->user2Inc()) {  // Not done yet
             if (m_inDly && nodep->lvalue()) {
                 UINFO(4, "AssignDlyVar: " << nodep << endl);
@@ -459,11 +459,11 @@ private:
         }
     }
 
-    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin");
     }
-    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
+    virtual void visit(AstWhile* nodep) override {
         bool oldloop = m_inLoop;
         m_inLoop = true;
         iterateChildren(nodep);
@@ -471,7 +471,7 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

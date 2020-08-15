@@ -36,7 +36,7 @@
 #include <algorithm>
 #include <map>
 #include <vector>
-#include VL_INCLUDE_UNORDERED_SET
+#include <unordered_set>
 
 //######################################################################
 // Graph subclasses
@@ -114,7 +114,7 @@ private:
     LinkCellsGraph m_graph;  // Linked graph of all cell interconnects
     LibraryVertex* m_libVertexp;  // Vertex at root of all libraries
     V3GraphVertex* m_topVertexp;  // Vertex of top module
-    vl_unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
+    std::unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
     string m_origTopModuleName;  // original name of the top module
 
     VL_DEBUG_FUNC;  // Declare debug()
@@ -160,7 +160,7 @@ private:
     }
 
     // VISITs
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         AstNode::user1ClearTree();
         readModNames();
         iterateChildren(nodep);
@@ -193,7 +193,7 @@ private:
                                                << "' was not found in design.");
         }
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         // Module: Pick up modnames, so we can resolve cells later
         AstNodeModule* oldModp = m_modp;
         {
@@ -235,7 +235,7 @@ private:
         m_modp = oldModp;
     }
 
-    virtual void visit(AstIfaceRefDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstIfaceRefDType* nodep) override {
         // Cell: Resolve its filename.  If necessary, parse it.
         UINFO(4, "Link IfaceRef: " << nodep << endl);
         // Use findIdUpward instead of findIdFlat; it doesn't matter for now
@@ -254,14 +254,14 @@ private:
         // Note cannot do modport resolution here; modports are allowed underneath generates
     }
 
-    virtual void visit(AstPackageImport* nodep) VL_OVERRIDE {
+    virtual void visit(AstPackageImport* nodep) override {
         // Package Import: We need to do the package before the use of a package
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->packagep(), nodep, "Unlinked package");  // Parser should set packagep
         new V3GraphEdge(&m_graph, vertex(m_modp), vertex(nodep->packagep()), 1, false);
     }
 
-    virtual void visit(AstBind* nodep) VL_OVERRIDE {
+    virtual void visit(AstBind* nodep) override {
         // Bind: Has cells underneath that need to be put into the new
         // module, and cells which need resolution
         // TODO this doesn't allow bind to dotted hier names, that would require
@@ -284,7 +284,7 @@ private:
         pushDeletep(nodep->unlinkFrBack());
     }
 
-    virtual void visit(AstCell* nodep) VL_OVERRIDE {
+    virtual void visit(AstCell* nodep) override {
         // Cell: Resolve its filename.  If necessary, parse it.
         // Execute only once.  Complication is that cloning may result in
         // user1 being set (for pre-clone) so check if user1() matches the
@@ -381,7 +381,7 @@ private:
         if (nodep->modp()) {
             nodep->modName(nodep->modp()->name());
             // Note what pins exist
-            vl_unordered_set<string> ports;  // Symbol table of all connected port names
+            std::unordered_set<string> ports;  // Symbol table of all connected port names
             for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
                 if (pinp->name() == "")
                     pinp->v3error("Connect by position is illegal in .* connected cells");
@@ -459,8 +459,8 @@ private:
 
     // Accelerate the recursion
     // Must do statements to support Generates, math though...
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // METHODS
     void readModNames() {

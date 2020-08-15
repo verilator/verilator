@@ -169,7 +169,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstIf* nodep) VL_OVERRIDE {
+    virtual void visit(AstIf* nodep) override {
         if (nodep->user1SetOnce()) return;
         if (nodep->uniquePragma() || nodep->unique0Pragma()) {
             AstNodeIf* ifp = nodep;
@@ -226,7 +226,7 @@ private:
     }
 
     //========== Case assertions
-    virtual void visit(AstCase* nodep) VL_OVERRIDE {
+    virtual void visit(AstCase* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             bool has_default = false;
@@ -296,7 +296,7 @@ private:
     }
 
     //========== Past
-    virtual void visit(AstPast* nodep) VL_OVERRIDE {
+    virtual void visit(AstPast* nodep) override {
         iterateChildren(nodep);
         uint32_t ticks = 1;
         if (nodep->ticksp()) {
@@ -325,13 +325,13 @@ private:
         }
         nodep->replaceWith(inp);
     }
-    virtual void visit(AstSampled* nodep) VL_OVERRIDE {
+    virtual void visit(AstSampled* nodep) override {
         nodep->replaceWith(nodep->exprp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     //========== Statements
-    virtual void visit(AstDisplay* nodep) VL_OVERRIDE {
+    virtual void visit(AstDisplay* nodep) override {
         iterateChildren(nodep);
         // Replace the special types with standard text
         if (nodep->displayType() == AstDisplayType::DT_INFO) {
@@ -344,21 +344,21 @@ private:
         }
     }
 
-    virtual void visit(AstAssert* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssert* nodep) override {
         iterateChildren(nodep);
         newPslAssertion(nodep, nodep->failsp());
     }
-    virtual void visit(AstCover* nodep) VL_OVERRIDE {
+    virtual void visit(AstCover* nodep) override {
         iterateChildren(nodep);
         newPslAssertion(nodep, NULL);
     }
-    virtual void visit(AstRestrict* nodep) VL_OVERRIDE {
+    virtual void visit(AstRestrict* nodep) override {
         iterateChildren(nodep);
         // IEEE says simulator ignores these
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         AstNodeModule* origModp = m_modp;
         unsigned origPastNum = m_modPastNum;
         {
@@ -369,7 +369,7 @@ private:
         m_modp = origModp;
         m_modPastNum = origPastNum;
     }
-    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
+    virtual void visit(AstBegin* nodep) override {
         // This code is needed rather than a visitor in V3Begin,
         // because V3Assert is called before V3Begin
         AstBegin* lastp = m_beginp;
@@ -380,7 +380,7 @@ private:
         m_beginp = lastp;
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

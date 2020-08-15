@@ -44,7 +44,7 @@
 #include "V3Ast.h"
 #include "V3Graph.h"
 
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 class OrderVisitor;
 class OrderMoveVertex;

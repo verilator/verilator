@@ -44,7 +44,7 @@ private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    virtual void visit(AstClass* nodep) VL_OVERRIDE {
+    virtual void visit(AstClass* nodep) override {
         if (nodep->user1SetOnce()) return;
         // Move this class
         nodep->name(m_prefix + nodep->name());
@@ -84,7 +84,7 @@ private:
         m_prefix = prevPrefix;
         m_classScopep = NULL;
     }
-    virtual void visit(AstPackage* nodep) VL_OVERRIDE {
+    virtual void visit(AstPackage* nodep) override {
         string prevPrefix = m_prefix;
         {
             m_prefix = nodep->name() + "__03a__03a";  // ::
@@ -93,7 +93,7 @@ private:
         m_prefix = prevPrefix;
     }
 
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         // Don't move now, or wouldn't keep interating the class
         // TODO move class statics only
@@ -101,7 +101,7 @@ private:
         //    m_moves.push_back(make_pair(nodep, m_classScopep));
         //}
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Don't move now, or wouldn't keep interating the class
         // TODO move function statics only
@@ -110,9 +110,9 @@ private:
         //}
     }
 
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}  // Short circuit
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {}  // Short circuit
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath* nodep) override {}  // Short circuit
+    virtual void visit(AstNodeStmt* nodep) override {}  // Short circuit
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

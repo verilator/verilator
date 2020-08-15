@@ -72,7 +72,7 @@ private:
     // See above
 
     // METHODS
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         // cppcheck-suppress unreadVariable  // cppcheck 1.90 bug
         VarFlags flags(nodep->varp());
         if (flags.m_done) {
@@ -80,7 +80,7 @@ private:
             nodep->hierThis(true);
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -145,11 +145,11 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         iterateChildren(nodep);
         moveVars();
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         UINFO(4, "  CFUNC " << nodep << endl);
         m_cfuncp = nodep;
         searchFuncStmts(nodep->argsp());
@@ -180,7 +180,7 @@ private:
         }
     }
 
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         if (!nodep->isSigPublic() && !nodep->isPrimaryIO()
             && !m_cfuncp) {  // Not already inside a function
             UINFO(4, "    BLKVAR " << nodep << endl);
@@ -188,7 +188,7 @@ private:
         }
         // No iterate; Don't want varrefs under it
     }
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (!VarFlags(nodep->varp()).m_notOpt) {
             if (!m_cfuncp) {  // Not in function, can't optimize
                 // Perhaps impossible, but better safe
@@ -217,7 +217,7 @@ private:
         }
         // No iterate; Don't want varrefs under it
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

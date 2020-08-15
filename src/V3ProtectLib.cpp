@@ -63,7 +63,7 @@ private:
     bool m_hasClk;  // True if the top module has sequential logic
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         m_vfilep
             = new AstVFile(nodep->fileline(), v3Global.opt.makeDir() + "/" + m_libName + ".sv");
         nodep->addFilesp(m_vfilep);
@@ -73,7 +73,7 @@ private:
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         if (!nodep->isTop()) {
             return;
         } else {
@@ -376,7 +376,7 @@ private:
         m_cfilep->tblockp(txtp);
     }
 
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         if (!nodep->isIO()) return;
         if (VN_IS(nodep->dtypep(), UnpackArrayDType)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: unpacked arrays with protect-lib on "
@@ -397,7 +397,7 @@ private:
         }
     }
 
-    virtual void visit(AstNode*) VL_OVERRIDE {}
+    virtual void visit(AstNode*) override {}
 
     string cInputConnection(AstVar* varp) {
         string frstmt;

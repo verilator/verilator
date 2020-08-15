@@ -30,8 +30,8 @@
 #include "V3Error.h"
 
 #include <map>
-#include VL_INCLUDE_UNORDERED_MAP
-#include VL_INCLUDE_UNORDERED_SET
+#include <unordered_map>
+#include <unordered_set>
 
 //######################################################################
 // SortByValueMap
@@ -44,7 +44,7 @@ template <typename T_Key, typename T_Value, class T_KeyCompare = std::less<T_Key
 class SortByValueMap {
     // TYPES
 private:
-    typedef vl_unordered_map<T_Key, T_Value> Key2Val;
+    typedef std::unordered_map<T_Key, T_Value> Key2Val;
     typedef std::set<T_Key, T_KeyCompare> KeySet;
     typedef std::map<T_Value, KeySet> Val2Keys;
 
@@ -354,7 +354,7 @@ template <typename T_Elem, typename T_Score, class T_ElemCompare = std::less<T_E
 class V3Scoreboard {
 private:
     // TYPES
-    typedef vl_unordered_set<const T_Elem*> NeedRescoreSet;
+    typedef std::unordered_set<const T_Elem*> NeedRescoreSet;
     class CmpElems {
     public:
         bool operator()(const T_Elem* const& ap, const T_Elem* const& bp) const {

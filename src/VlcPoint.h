@@ -24,7 +24,7 @@
 
 #include <vector>
 #include <iomanip>
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 //********************************************************************
 // VlcPoint - A coverage point (across all tests)

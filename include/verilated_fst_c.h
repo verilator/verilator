@@ -63,11 +63,11 @@ protected:
     // Implementation of VerilatedTrace interface
 
     // Implementations of protected virtual methods for VerilatedTrace
-    void emitTimeChange(vluint64_t timeui) VL_OVERRIDE;
+    void emitTimeChange(vluint64_t timeui) override;
 
     // Hooks called from VerilatedTrace
-    bool preFullDump() VL_OVERRIDE { return isOpen(); }
-    bool preChangeDump() VL_OVERRIDE { return isOpen(); }
+    bool preFullDump() override { return isOpen(); }
+    bool preChangeDump() override { return isOpen(); }
 
     // Implementations of duck-typed methods for VerilatedTrace. These are
     // called from only one place (namely full*) so always inline them.

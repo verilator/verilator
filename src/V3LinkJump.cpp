@@ -117,7 +117,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         if (nodep->dead()) return;
         AstNodeModule* origModp = m_modp;
         int origRepeatNum = m_modRepeatNum;
@@ -129,12 +129,12 @@ private:
         m_modp = origModp;
         m_modRepeatNum = origRepeatNum;
     }
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTask* nodep) override {
         m_ftaskp = nodep;
         iterateChildren(nodep);
         m_ftaskp = NULL;
     }
-    virtual void visit(AstNodeBlock* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeBlock* nodep) override {
         UINFO(8, "  " << nodep << endl);
         bool oldFork = m_inFork;
         m_blockStack.push_back(nodep);
@@ -145,7 +145,7 @@ private:
         m_blockStack.pop_back();
         m_inFork = oldFork;
     }
-    virtual void visit(AstRepeat* nodep) VL_OVERRIDE {
+    virtual void visit(AstRepeat* nodep) override {
         // So later optimizations don't need to deal with them,
         //    REPEAT(count,body) -> loop=count,WHILE(loop>0) { body, loop-- }
         // Note var can be signed or unsigned based on original number.
@@ -173,7 +173,7 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstWait* nodep) VL_OVERRIDE {
+    virtual void visit(AstWait* nodep) override {
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: wait statements");
         // Statements we'll just execute immediately; equivalent to if they followed this
         if (AstNode* bodysp = nodep->bodysp()) {
@@ -184,7 +184,7 @@ private:
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
+    virtual void visit(AstWhile* nodep) override {
         // Don't need to track AstRepeat/AstFor as they have already been converted
         AstWhile* lastLoopp = m_loopp;
         bool lastInc = m_loopInc;
@@ -198,7 +198,7 @@ private:
         m_loopInc = lastInc;
         m_loopp = lastLoopp;
     }
-    virtual void visit(AstReturn* nodep) VL_OVERRIDE {
+    virtual void visit(AstReturn* nodep) override {
         iterateChildren(nodep);
         AstFunc* funcp = VN_CAST(m_ftaskp, Func);
         if (m_inFork) {
@@ -226,7 +226,7 @@ private:
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstBreak* nodep) VL_OVERRIDE {
+    virtual void visit(AstBreak* nodep) override {
         iterateChildren(nodep);
         if (!m_loopp) {
             nodep->v3error("break isn't underneath a loop");
@@ -238,7 +238,7 @@ private:
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstContinue* nodep) VL_OVERRIDE {
+    virtual void visit(AstContinue* nodep) override {
         iterateChildren(nodep);
         if (!m_loopp) {
             nodep->v3error("continue isn't underneath a loop");
@@ -251,7 +251,7 @@ private:
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstDisable* nodep) VL_OVERRIDE {
+    virtual void visit(AstDisable* nodep) override {
         UINFO(8, "   DISABLE " << nodep << endl);
         iterateChildren(nodep);
         AstNodeBlock* blockp = NULL;
@@ -277,11 +277,11 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         // if (debug() >= 9) { UINFO(0, "\n"); beginp->dumpTree(cout, "  labelo: "); }
     }
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (m_loopInc && nodep->varp()) nodep->varp()->usedLoopIdx(true);
     }
-    virtual void visit(AstConst*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstConst*) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

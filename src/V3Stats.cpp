@@ -75,7 +75,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         allNodes(nodep);
         if (!m_fast) {
             // Count all CFuncs below this module
@@ -84,7 +84,7 @@ private:
         // Else we recursively trace fast CFuncs from the top _eval
         // func, see visit(AstNetlist*)
     }
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         allNodes(nodep);
         iterateChildrenConst(nodep);
         if (m_counting && nodep->dtypep()) {
@@ -110,7 +110,7 @@ private:
             }
         }
     }
-    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarScope* nodep) override {
         allNodes(nodep);
         iterateChildrenConst(nodep);
         if (m_counting) {
@@ -119,7 +119,7 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeIf* nodep) override {
         UINFO(4, "   IF i=" << m_instrs << " " << nodep << endl);
         allNodes(nodep);
         // Condition is part of cost allocated to PREVIOUS block
@@ -169,9 +169,9 @@ private:
         }
     }
     // While's we assume evaluate once.
-    // virtual void visit(AstWhile* nodep) VL_OVERRIDE {
+    // virtual void visit(AstWhile* nodep) override {
 
-    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCCall* nodep) override {
         allNodes(nodep);
         iterateChildrenConst(nodep);
         if (m_fast && !nodep->funcp()->entryPoint()) {
@@ -180,7 +180,7 @@ private:
             iterate(nodep->funcp());
         }
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         if (m_fast) {
             if (!m_tracingCall && !nodep->entryPoint()) return;
             m_tracingCall = false;
@@ -190,11 +190,11 @@ private:
         iterateChildrenConst(nodep);
         m_cfuncp = NULL;
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         allNodes(nodep);
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         if (m_fast && nodep->evalp()) {
             m_instrs = 0;
             m_counting = true;

@@ -89,8 +89,8 @@
 #include <algorithm>
 #include <map>
 #include <vector>
-#include VL_INCLUDE_UNORDERED_MAP
-#include VL_INCLUDE_UNORDERED_SET
+#include <unordered_map>
+#include <unordered_set>
 
 //######################################################################
 // Support classes
@@ -339,19 +339,19 @@ protected:
     virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) = 0;
 
     // VISITORS
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE = 0;
-    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE = 0;
+    virtual void visit(AstAlways* nodep) override = 0;
+    virtual void visit(AstNodeIf* nodep) override = 0;
 
     // We don't do AstNodeFor/AstWhile loops, due to the standard question
     // of what is before vs. after
 
-    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignDly* nodep) override {
         m_inDly = true;
         UINFO(4, "    ASSIGNDLY " << nodep << endl);
         iterateChildren(nodep);
         m_inDly = false;
     }
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (!m_stmtStackps.empty()) {
             AstVarScope* vscp = nodep->varScopep();
             UASSERT_OBJ(vscp, nodep, "Not linked");
@@ -415,7 +415,7 @@ protected:
         }
     }
 
-    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
+    virtual void visit(AstJumpGo* nodep) override {
         // Jumps will disable reordering at all levels
         // This is overly pessimistic; we could treat jumps as barriers, and
         // reorder everything between jumps/labels, however jumps are rare
@@ -427,7 +427,7 @@ protected:
 
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         // **** SPECIAL default type that sets PLI_ORDERING
         if (!m_stmtStackps.empty() && !nodep->isPure()) {
             UINFO(9, "         NotSplittable " << nodep << endl);
@@ -448,7 +448,7 @@ public:
 
     // METHODS
 protected:
-    virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) VL_OVERRIDE {
+    virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) override {
         for (VStack::iterator it = m_stmtStackps.begin(); it != m_stmtStackps.end(); ++it) {
             new SplitRVEdge(&m_graph, *it, vstdp);
         }
@@ -502,7 +502,7 @@ protected:
         m_graph.weaklyConnected(&SplitEdge::followScoreboard);
 
         // Add hard orderings between all nodes of same color, in the order they appeared
-        vl_unordered_map<uint32_t, SplitLogicVertex*> lastOfColor;
+        std::unordered_map<uint32_t, SplitLogicVertex*> lastOfColor;
         for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
             SplitLogicVertex* vvertexp = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
             uint32_t color = vvertexp->color();
@@ -603,7 +603,7 @@ protected:
         firstp->user3p(oldBlockUser3);
     }
 
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlways* nodep) override {
         UINFO(4, "   ALW   " << nodep << endl);
         if (debug() >= 9) nodep->dumpTree(cout, "   alwIn:: ");
         scoreboardClear();
@@ -611,7 +611,7 @@ protected:
         if (debug() >= 9) nodep->dumpTree(cout, "   alwOut: ");
     }
 
-    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeIf* nodep) override {
         UINFO(4, "     IF " << nodep << endl);
         iterateAndNextNull(nodep->condp());
         processBlock(nodep->ifsp());
@@ -622,7 +622,7 @@ private:
     VL_UNCOPYABLE(ReorderVisitor);
 };
 
-typedef vl_unordered_set<uint32_t> ColorSet;
+typedef std::unordered_set<uint32_t> ColorSet;
 typedef std::vector<AstAlways*> AlwaysVec;
 
 class IfColorVisitor : public AstNVisitor {
@@ -632,7 +632,7 @@ class IfColorVisitor : public AstNVisitor {
     typedef std::vector<AstNodeIf*> IfStack;
     IfStack m_ifStack;  // Stack of nested if-statements we're currently processing
 
-    typedef vl_unordered_map<AstNodeIf*, ColorSet> IfColorMap;
+    typedef std::unordered_map<AstNodeIf*, ColorSet> IfColorMap;
     IfColorMap m_ifColors;  // Map each if-statement to the set of colors (split blocks)
     // that will get a copy of that if-statement
 
@@ -667,13 +667,13 @@ private:
     }
 
 protected:
-    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeIf* nodep) override {
         m_ifStack.push_back(nodep);
         trackNode(nodep);
         iterateChildren(nodep);
         m_ifStack.pop_back();
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         trackNode(nodep);
         iterateChildren(nodep);
     }
@@ -689,7 +689,7 @@ class EmitSplitVisitor : public AstNVisitor {
     const IfColorVisitor* m_ifColorp;  // Digest of results of prior coloring
 
     // Map each color to our current place within the color's new always
-    typedef vl_unordered_map<uint32_t, AstNode*> LocMap;
+    typedef std::unordered_map<uint32_t, AstNode*> LocMap;
     LocMap m_addAfter;
 
     AlwaysVec* m_newBlocksp;  // Split always blocks we have generated
@@ -737,7 +737,7 @@ protected:
         return new AstSplitPlaceholder(m_origAlwaysp->fileline());
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         // Anything that's not an if/else we assume is a leaf
         // (that is, something we won't split.) Don't visit further
         // into the leaf.
@@ -759,9 +759,9 @@ protected:
         m_addAfter[color] = clonedp;
     }
 
-    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeIf* nodep) override {
         const ColorSet& colors = m_ifColorp->colors(nodep);
-        typedef vl_unordered_map<uint32_t, AstNodeIf*> CloneMap;
+        typedef std::unordered_map<uint32_t, AstNodeIf*> CloneMap;
         CloneMap clones;
 
         for (ColorSet::const_iterator color = colors.begin(); color != colors.end(); ++color) {
@@ -801,7 +801,7 @@ private:
 };
 
 class RemovePlaceholdersVisitor : public AstNVisitor {
-    typedef vl_unordered_set<AstNode*> NodeSet;
+    typedef std::unordered_set<AstNode*> NodeSet;
     NodeSet m_removeSet;  // placeholders to be removed
 public:
     explicit RemovePlaceholdersVisitor(AstNode* nodep) {
@@ -813,8 +813,8 @@ public:
         }
     }
     virtual ~RemovePlaceholdersVisitor() {}
-    virtual void visit(AstSplitPlaceholder* nodep) VL_OVERRIDE { m_removeSet.insert(nodep); }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstSplitPlaceholder* nodep) override { m_removeSet.insert(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 private:
     VL_UNCOPYABLE(RemovePlaceholdersVisitor);
@@ -825,7 +825,7 @@ private:
     // Keys are original always blocks pending delete,
     // values are newly split always blocks pending insertion
     // at the same position as the originals:
-    typedef vl_unordered_map<AstAlways*, AlwaysVec> ReplaceMap;
+    typedef std::unordered_map<AstAlways*, AlwaysVec> ReplaceMap;
     ReplaceMap m_replaceBlocks;
 
     // AstNodeIf* whose condition we're currently visiting
@@ -857,7 +857,7 @@ public:
 
     // METHODS
 protected:
-    virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) VL_OVERRIDE {
+    virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) override {
         // Each 'if' depends on rvalues in its own conditional ONLY,
         // not rvalues in the if/else bodies.
         for (VStack::const_iterator it = m_stmtStackps.begin(); it != m_stmtStackps.end(); ++it) {
@@ -932,7 +932,7 @@ protected:
         if (debug() >= 9) m_graph.dumpDotFilePrefixed("splitg_colored", false);
     }
 
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlways* nodep) override {
         // build the scoreboard
         scoreboardClear();
         scanBlock(nodep->bodysp());
@@ -964,7 +964,7 @@ protected:
             emitSplit.go();
         }
     }
-    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeIf* nodep) override {
         UINFO(4, "     IF " << nodep << endl);
         m_curIfConditional = nodep;
         iterateAndNextNull(nodep->condp());

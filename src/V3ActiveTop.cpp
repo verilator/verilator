@@ -52,19 +52,19 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstTopScope* nodep) override {
         m_topscopep = nodep;
         m_finder.init(m_topscopep);
         iterateChildren(nodep);
         m_topscopep = NULL;
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         // Create required actives and add to module
         // We can start ordering at a module, or a scope
         UINFO(4, " MOD   " << nodep << endl);
         iterateChildren(nodep);
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {
+    virtual void visit(AstActive* nodep) override {
         UINFO(4, "   ACTIVE " << nodep << endl);
         // Remove duplicate clocks and such; sensesp() may change!
         V3Const::constifyExpensiveEdit(nodep);
@@ -108,22 +108,22 @@ private:
         // No need to do statements under it, they're already moved.
         // iterateChildren(nodep);
     }
-    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstNodeProcedure* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstAssignAlias* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstAssignW* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstAlwaysPublic* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
     //--------------------
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstVarScope*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstVarScope*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

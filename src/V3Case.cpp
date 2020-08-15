@@ -57,7 +57,7 @@ private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    virtual void visit(AstNodeCase* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCase* nodep) override {
         if (VN_IS(nodep, Case) && VN_CAST(nodep, Case)->casex()) {
             nodep->v3warn(CASEX, "Suggest casez (with ?'s) in place of casex (with X's)");
         }
@@ -84,7 +84,7 @@ private:
             m_caseExprp = NULL;
         }
     }
-    virtual void visit(AstConst* nodep) VL_OVERRIDE {
+    virtual void visit(AstConst* nodep) override {
         // See also neverItem
         if (m_caseExprp && nodep->num().isFourState()) {
             if (VN_IS(m_caseExprp, GenCase)) {
@@ -105,7 +105,7 @@ private:
             }
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -467,7 +467,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstCase* nodep) VL_OVERRIDE {
+    virtual void visit(AstCase* nodep) override {
         V3Case::caseLint(nodep);
         iterateChildren(nodep);
         if (debug() >= 9) nodep->dumpTree(cout, " case_old: ");
@@ -482,7 +482,7 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

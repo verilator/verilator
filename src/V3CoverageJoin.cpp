@@ -97,19 +97,19 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         // Find all Coverage's
         iterateChildren(nodep);
         // Simplify
         detectDuplicates();
     }
-    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {
+    virtual void visit(AstCoverToggle* nodep) override {
         m_toggleps.push_back(nodep);
         iterateChildren(nodep);
     }
     //--------------------
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

@@ -146,7 +146,7 @@ V3FileDependImp dependImp;  // Depend implementation class
 // V3FileDependImp
 
 inline void V3FileDependImp::writeDepend(const string& filename) {
-    const vl_unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
     if (ofp->fail()) v3fatal("Can't write " << filename);
 
     for (std::set<DependFile>::iterator iter = m_filenameList.begin();
@@ -183,7 +183,7 @@ inline std::vector<string> V3FileDependImp::getAllDeps() const {
 }
 
 inline void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn) {
-    const vl_unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
     if (ofp->fail()) v3fatal("Can't write " << filename);
 
     string cmdline = stripQuotes(cmdlineIn);
@@ -219,7 +219,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
 }
 
 inline bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn) {
-    const vl_unique_ptr<std::ifstream> ifp(V3File::new_ifstream_nodepend(filename));
+    const std::unique_ptr<std::ifstream> ifp(V3File::new_ifstream_nodepend(filename));
     if (ifp->fail()) {
         UINFO(2, "   --check-times failed: no input " << filename << endl);
         return false;
@@ -975,7 +975,7 @@ class VIdProtectImp {
     // MEMBERS
     typedef std::map<string, string> IdMap;
     IdMap m_nameMap;  // Map of old name into new name
-    typedef vl_unordered_set<std::string> IdSet;
+    typedef std::unordered_set<std::string> IdSet;
     IdSet m_newIdSet;  // Which new names exist
 protected:
     // CONSTRUCTORS

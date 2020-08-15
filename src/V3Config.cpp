@@ -157,7 +157,7 @@ typedef V3ConfigWildcardResolver<V3ConfigFTask> V3ConfigFTaskResolver;
 // Modules have tasks, variables, named blocks and properties
 
 class V3ConfigModule {
-    typedef vl_unordered_set<string> StringSet;
+    typedef std::unordered_set<string> StringSet;
     typedef std::set<AstPragmaType> PragmaSet;
 
     V3ConfigFTaskResolver m_tasks;  // Functions/tasks in module

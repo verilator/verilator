@@ -145,7 +145,7 @@ private:
     std::ofstream* m_ofp;  // Output file
     string m_prefix;
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         *m_ofp << m_prefix;
         if (nodep->user3()) {
             *m_ofp << " %%";
@@ -182,7 +182,7 @@ private:
     int m_maxLineno;
     size_t m_maxFilenameLen;
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         iterateChildren(nodep);
         // Keeping line+filename lengths separate is much faster than calling ascii().length()
         if (nodep->fileline()->lineno() >= m_maxLineno) {
@@ -514,7 +514,7 @@ private:
         }
 
         string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__cdc_edges.txt";
-        const vl_unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
+        const std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
         if (ofp->fail()) v3fatal("Can't write " << filename);
         *ofp << "Edge Report for " << v3Global.opt.prefix() << endl;
 
@@ -633,7 +633,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         AstNodeModule* origModp = m_modp;
         {
             m_modp = nodep;
@@ -641,14 +641,14 @@ private:
         }
         m_modp = origModp;
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);
         m_scopep = nodep;
         m_logicVertexp = NULL;
         iterateChildren(nodep);
         m_scopep = NULL;
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {
+    virtual void visit(AstActive* nodep) override {
         // Create required blocks and add to module
         UINFO(4, "  BLOCK  " << nodep << endl);
         AstNode::user2ClearTree();
@@ -660,7 +660,7 @@ private:
         m_domainp = NULL;
         AstNode::user2ClearTree();
     }
-    virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeVarRef* nodep) override {
         if (m_scopep) {
             UASSERT_OBJ(m_logicVertexp, nodep, "Var ref not under a logic block");
             AstVarScope* varscp = nodep->varScopep();
@@ -688,51 +688,51 @@ private:
             }
         }
     }
-    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignDly* nodep) override {
         m_inDly = true;
         iterateChildren(nodep);
         m_inDly = false;
     }
-    virtual void visit(AstSenItem* nodep) VL_OVERRIDE {
+    virtual void visit(AstSenItem* nodep) override {
         m_inSenItem = true;
         iterateChildren(nodep);
         m_inSenItem = false;
     }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE { iterateNewStmt(nodep); }
-    virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlways* nodep) override { iterateNewStmt(nodep); }
+    virtual void visit(AstAlwaysPublic* nodep) override {
         // CDC doesn't care about public variables
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE { iterateNewStmt(nodep); }
-    virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE { iterateNewStmt(nodep); }
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE { iterateNewStmt(nodep); }
+    virtual void visit(AstCFunc* nodep) override { iterateNewStmt(nodep); }
+    virtual void visit(AstAssignAlias* nodep) override { iterateNewStmt(nodep); }
+    virtual void visit(AstAssignW* nodep) override { iterateNewStmt(nodep); }
 
     // Math that shouldn't cause us to clear hazard
-    virtual void visit(AstConst*) VL_OVERRIDE {}
-    virtual void visit(AstReplicate* nodep) VL_OVERRIDE { iterateChildren(nodep); }
-    virtual void visit(AstConcat* nodep) VL_OVERRIDE { iterateChildren(nodep); }
-    virtual void visit(AstNot* nodep) VL_OVERRIDE { iterateChildren(nodep); }
-    virtual void visit(AstSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstConst*) override {}
+    virtual void visit(AstReplicate* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstConcat* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNot* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstSel* nodep) override {
         if (!VN_IS(nodep->lsbp(), Const)) setNodeHazard(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeSel* nodep) override {
         if (!VN_IS(nodep->bitp(), Const)) setNodeHazard(nodep);
         iterateChildren(nodep);
     }
 
     // Ignores
-    virtual void visit(AstInitial*) VL_OVERRIDE {}
-    virtual void visit(AstTraceDecl*) VL_OVERRIDE {}
-    virtual void visit(AstCoverToggle*) VL_OVERRIDE {}
-    virtual void visit(AstNodeDType*) VL_OVERRIDE {}
+    virtual void visit(AstInitial*) override {}
+    virtual void visit(AstTraceDecl*) override {}
+    virtual void visit(AstCoverToggle*) override {}
+    virtual void visit(AstNodeDType*) override {}
 
     //--------------------
     // Default
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeMath* nodep) override {
         setNodeHazard(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

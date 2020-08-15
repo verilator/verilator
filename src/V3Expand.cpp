@@ -292,7 +292,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstExtend* nodep) VL_OVERRIDE {
+    virtual void visit(AstExtend* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isWide()) {
@@ -318,7 +318,7 @@ private:
         }
     }
 
-    virtual void visit(AstSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstSel* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         // Remember, Sel's may have non-integer rhs, so need to optimize for that!
@@ -600,7 +600,7 @@ private:
         }
     }
 
-    virtual void visit(AstConcat* nodep) VL_OVERRIDE {
+    virtual void visit(AstConcat* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isWide()) {
@@ -642,7 +642,7 @@ private:
         return true;
     }
 
-    virtual void visit(AstReplicate* nodep) VL_OVERRIDE {
+    virtual void visit(AstReplicate* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isWide()) {
@@ -705,7 +705,7 @@ private:
         return true;
     }
 
-    virtual void visit(AstChangeXor* nodep) VL_OVERRIDE {
+    virtual void visit(AstChangeXor* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         UINFO(8, "    Wordize ChangeXor " << nodep << endl);
@@ -742,10 +742,10 @@ private:
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    virtual void visit(AstEq* nodep) VL_OVERRIDE { visitEqNeq(nodep); }
-    virtual void visit(AstNeq* nodep) VL_OVERRIDE { visitEqNeq(nodep); }
+    virtual void visit(AstEq* nodep) override { visitEqNeq(nodep); }
+    virtual void visit(AstNeq* nodep) override { visitEqNeq(nodep); }
 
-    virtual void visit(AstRedOr* nodep) VL_OVERRIDE {
+    virtual void visit(AstRedOr* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
@@ -769,7 +769,7 @@ private:
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    virtual void visit(AstRedAnd* nodep) VL_OVERRIDE {
+    virtual void visit(AstRedAnd* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
@@ -802,7 +802,7 @@ private:
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    virtual void visit(AstRedXor* nodep) VL_OVERRIDE {
+    virtual void visit(AstRedXor* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
@@ -821,7 +821,7 @@ private:
         // which the inlined function does nicely.
     }
 
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeStmt* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
@@ -831,7 +831,7 @@ private:
         iterateChildren(nodep);
         m_stmtp = NULL;
     }
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         m_stmtp = nodep;
         iterateChildren(nodep);
@@ -873,8 +873,8 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstVar*) VL_OVERRIDE {}  // Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstVar*) override {}  // Don't hit varrefs under vars
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

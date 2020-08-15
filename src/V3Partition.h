@@ -26,7 +26,7 @@
 #include <list>
 
 class LogicMTask;
-typedef vl_unordered_map<const MTaskMoveVertex*, LogicMTask*> Vx2MTaskMap;
+typedef std::unordered_map<const MTaskMoveVertex*, LogicMTask*> Vx2MTaskMap;
 
 //*************************************************************************
 /// V3Partition takes the fine-grained logic graph from V3Order and
@@ -76,7 +76,7 @@ private:
 class PartPtrIdMap {
 private:
     // TYPES
-    typedef vl_unordered_map<const void*, vluint64_t> PtrMap;
+    typedef std::unordered_map<const void*, vluint64_t> PtrMap;
     // MEMBERS
     mutable vluint64_t m_nextId;
     mutable PtrMap m_id;

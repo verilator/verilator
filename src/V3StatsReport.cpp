@@ -25,7 +25,7 @@
 
 #include <iomanip>
 #include <map>
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 //######################################################################
 // Stats dumping
@@ -117,7 +117,7 @@ class StatsReport {
         size_t maxWidth = 0;
         typedef std::vector<string> Stages;
         Stages stages;
-        vl_unordered_map<string, int> stageInt;
+        std::unordered_map<string, int> stageInt;
         typedef std::multimap<string, const V3Statistic*> ByName;
         ByName byName;
         // * is always first

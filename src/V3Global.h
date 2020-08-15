@@ -31,7 +31,7 @@
 #include "V3Options.h"
 
 #include <string>
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 class AstNetlist;
 class V3HierBlockPlan;
@@ -83,7 +83,7 @@ class V3Global {
     bool m_useParallelBuild;  // Use parallel build for model
 
     // Memory address to short string mapping (for debug)
-    typedef vl_unordered_map<const void*, std::string> PtrToIdMap;  // The map type
+    typedef std::unordered_map<const void*, std::string> PtrToIdMap;  // The map type
     PtrToIdMap m_ptrToId;  // The actual 'address' <=> 'short string' bijection
 
 public:

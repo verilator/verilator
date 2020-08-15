@@ -31,7 +31,7 @@
 
 #include <algorithm>
 #include <iomanip>
-#include VL_INCLUDE_UNORDERED_SET
+#include <unordered_set>
 
 //######################################################################
 // FileLineSingleton class functions
@@ -442,7 +442,7 @@ string FileLine::warnContext(bool secondary) const {
 }
 
 #ifdef VL_LEAK_CHECKS
-typedef vl_unordered_set<FileLine*> FileLineCheckSet;
+typedef std::unordered_set<FileLine*> FileLineCheckSet;
 FileLineCheckSet fileLineLeakChecks;
 
 void* FileLine::operator new(size_t size) {

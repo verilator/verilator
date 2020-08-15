@@ -24,7 +24,7 @@
 #include "V3Graph.h"
 
 #include <set>
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 //######################################################################
 // GraphStream
@@ -81,7 +81,7 @@ private:
     };
 
     typedef std::set<VxHolder, VxHolderCmp&> ReadyVertices;
-    typedef vl_unordered_map<const V3GraphVertex*, VxHolder> WaitingVertices;
+    typedef std::unordered_map<const V3GraphVertex*, VxHolder> WaitingVertices;
 
     // MEMBERS
     VxHolderCmp m_vxHolderCmp;  // Vertext comparison functor

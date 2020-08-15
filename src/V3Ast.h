@@ -26,7 +26,7 @@
 #include "V3Global.h"
 
 #include <cmath>
-#include VL_INCLUDE_UNORDERED_SET
+#include <unordered_set>
 
 #include "V3Ast__gen_classes.h"  // From ./astgen
 // Things like:

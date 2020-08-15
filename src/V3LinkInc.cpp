@@ -86,12 +86,12 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         // Reset increments count
         m_modIncrementsNum = 0;
         iterateChildren(nodep);
     }
-    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
+    virtual void visit(AstWhile* nodep) override {
         // Special, as statements need to be put in different places
         // Preconditions insert first just before themselves (the normal
         // rule for other statement types)
@@ -108,7 +108,7 @@ private:
         // Done the loop
         m_insStmtp = NULL;  // Next thing should be new statement
     }
-    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeIf* nodep) override {
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->condp());
         m_insStmtp = NULL;
@@ -116,11 +116,11 @@ private:
         iterateAndNextNull(nodep->elsesp());
         m_insStmtp = NULL;
     }
-    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
     }
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
             return;
@@ -136,11 +136,11 @@ private:
         iterateChildren(nodep);
         m_unsupportedHere = false;
     }
-    virtual void visit(AstLogAnd* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
-    virtual void visit(AstLogOr* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
-    virtual void visit(AstLogEq* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
-    virtual void visit(AstLogIf* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
-    virtual void visit(AstNodeCond* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
+    virtual void visit(AstLogAnd* nodep) override { unsupported_visit(nodep); }
+    virtual void visit(AstLogOr* nodep) override { unsupported_visit(nodep); }
+    virtual void visit(AstLogEq* nodep) override { unsupported_visit(nodep); }
+    virtual void visit(AstLogIf* nodep) override { unsupported_visit(nodep); }
+    virtual void visit(AstNodeCond* nodep) override { unsupported_visit(nodep); }
     void prepost_visit(AstNodeTriop* nodep) {
         // Check if we are underneath a statement
         if (!m_insStmtp) {
@@ -225,12 +225,12 @@ private:
         nodep->replaceWith(new AstVarRef(varrefp->fileline(), varp, true));
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstPreAdd* nodep) VL_OVERRIDE { prepost_visit(nodep); }
-    virtual void visit(AstPostAdd* nodep) VL_OVERRIDE { prepost_visit(nodep); }
-    virtual void visit(AstPreSub* nodep) VL_OVERRIDE { prepost_visit(nodep); }
-    virtual void visit(AstPostSub* nodep) VL_OVERRIDE { prepost_visit(nodep); }
-    virtual void visit(AstGenFor* nodep) VL_OVERRIDE { iterateChildren(nodep); }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
+    virtual void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
+    virtual void visit(AstPreSub* nodep) override { prepost_visit(nodep); }
+    virtual void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
+    virtual void visit(AstGenFor* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

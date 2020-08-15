@@ -36,7 +36,7 @@
 #include "V3Const.h"
 #include "V3SenTree.h"  // for SenTreeSet
 
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 //***** See below for main transformation engine
 
@@ -56,7 +56,7 @@ private:
     AstActive* m_cActivep;  // For current scope, the SActive(combo) we're building
 
     SenTreeSet m_activeSens;  // Sen lists for each active we've made
-    typedef vl_unordered_map<AstSenTree*, AstActive*> ActiveMap;
+    typedef std::unordered_map<AstSenTree*, AstActive*> ActiveMap;
     ActiveMap m_activeMap;  // Map sentree to active, for folding.
 
     // METHODS
@@ -65,7 +65,7 @@ private:
         m_scopep->addActivep(nodep);
     }
     // VISITORS
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         m_scopep = nodep;
         m_iActivep = NULL;
         m_cActivep = NULL;
@@ -74,13 +74,13 @@ private:
         iterateChildren(nodep);
         // Don't clear scopep, the namer persists beyond this visit
     }
-    virtual void visit(AstSenTree* nodep) VL_OVERRIDE {
+    virtual void visit(AstSenTree* nodep) override {
         // Simplify sensitivity list
         VL_DO_DANGLING(V3Const::constifyExpensiveEdit(nodep), nodep);
     }
     //--------------------
-    virtual void visit(AstNodeStmt*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeStmt*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // METHODS
@@ -152,7 +152,7 @@ private:
     AstNode* m_alwaysp;  // Always we're under
     AstNode* m_assignp;  // In assign
     // VISITORS
-    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignDly* nodep) override {
         if (m_check != CT_SEQ) {
             // Convert to a non-delayed assignment
             UINFO(5, "    ASSIGNDLY " << nodep << endl);
@@ -174,7 +174,7 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
-    virtual void visit(AstAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssign* nodep) override {
         if (m_check == CT_SEQ) {
             AstNode* las = m_assignp;
             m_assignp = nodep;
@@ -182,7 +182,7 @@ private:
             m_assignp = las;
         }
     }
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         AstVar* varp = nodep->varp();
         if (m_check == CT_SEQ && m_assignp && !varp->isUsedLoopIdx()  // Ignore loop indices
             && !varp->isTemp()) {
@@ -201,7 +201,7 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -230,7 +230,7 @@ private:
     bool m_itemSequent;  // Found a SenItem sequential
 
     // VISITORS
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         // Create required actives and add to scope
         UINFO(4, " SCOPE   " << nodep << endl);
         // Clear last scope's names, and collect this scope's existing names
@@ -238,10 +238,10 @@ private:
         m_scopeFinalp = NULL;
         iterateChildren(nodep);
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {
+    virtual void visit(AstActive* nodep) override {
         // Actives are being formed, so we can ignore any already made
     }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
+    virtual void visit(AstInitial* nodep) override {
         // Relink to IACTIVE, unless already under it
         UINFO(4, "    INITIAL " << nodep << endl);
         ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_INITIAL);
@@ -249,28 +249,28 @@ private:
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
     }
-    virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignAlias* nodep) override {
         // Relink to CACTIVE, unless already under it
         UINFO(4, "    ASSIGNW " << nodep << endl);
         AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
     }
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignW* nodep) override {
         // Relink to CACTIVE, unless already under it
         UINFO(4, "    ASSIGNW " << nodep << endl);
         AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
     }
-    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {
+    virtual void visit(AstCoverToggle* nodep) override {
         // Relink to CACTIVE, unless already under it
         UINFO(4, "    COVERTOGGLE " << nodep << endl);
         AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
         nodep->unlinkFrBack();
         wantactivep->addStmtsp(nodep);
     }
-    virtual void visit(AstFinal* nodep) VL_OVERRIDE {
+    virtual void visit(AstFinal* nodep) override {
         // Relink to CFUNC for the final
         UINFO(4, "    FINAL " << nodep << endl);
         if (!nodep->bodysp()) {  // Empty, Kill it.
@@ -358,7 +358,7 @@ private:
             ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_SEQ);
         }
     }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlways* nodep) override {
         // Move always to appropriate ACTIVE based on its sense list
         UINFO(4, "    ALW   " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "  Alw: ");
@@ -370,13 +370,13 @@ private:
         }
         visitAlways(nodep, nodep->sensesp(), nodep->keyword());
     }
-    virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlwaysPublic* nodep) override {
         // Move always to appropriate ACTIVE based on its sense list
         UINFO(4, "    ALWPub   " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "  Alw: ");
         visitAlways(nodep, nodep->sensesp(), VAlwaysKwd::ALWAYS);
     }
-    virtual void visit(AstSenItem* nodep) VL_OVERRIDE {
+    virtual void visit(AstSenItem* nodep) override {
         if (nodep->varrefp()) {
             if (AstBasicDType* basicp = nodep->varrefp()->dtypep()->basicp()) {
                 if (basicp->isEventValue()) {
@@ -405,9 +405,9 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstVarScope*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstVarScope*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

@@ -162,7 +162,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstTopScope* nodep) override {
         UINFO(4, " TOPSCOPE   " << nodep << endl);
         m_topScopep = nodep;
         m_scopep = nodep->scopep();
@@ -226,7 +226,7 @@ private:
         m_topScopep = NULL;
         m_scopep = NULL;
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         // UINFO(4, " MOD   " << nodep << endl);
         AstNodeModule* origModp = m_modp;
         {
@@ -235,7 +235,7 @@ private:
         }
         m_modp = origModp;
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         // UINFO(4, " SCOPE   " << nodep << endl);
         m_scopep = nodep;
         iterateChildren(nodep);
@@ -246,7 +246,7 @@ private:
         }
         m_scopep = NULL;
     }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlways* nodep) override {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
@@ -255,7 +255,7 @@ private:
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstAlwaysPost* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlwaysPost* nodep) override {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
@@ -264,7 +264,7 @@ private:
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {
+    virtual void visit(AstCoverToggle* nodep) override {
         // nodep->dumpTree(cout, "ct:");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
@@ -281,7 +281,7 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
+    virtual void visit(AstInitial* nodep) override {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
@@ -290,7 +290,7 @@ private:
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Link to global function
         if (nodep->formCallTree()) {
@@ -300,7 +300,7 @@ private:
             m_finalFuncp->addStmtsp(callp);
         }
     }
-    virtual void visit(AstSenTree* nodep) VL_OVERRIDE {
+    virtual void visit(AstSenTree* nodep) override {
         // Delete it later; Actives still pointing to it
         nodep->unlinkFrBack();
         pushDeletep(nodep);
@@ -314,7 +314,7 @@ private:
     void addToInitial(AstNode* stmtsp) {
         m_initFuncp->addStmtsp(stmtsp);  // add to top level function
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {
+    virtual void visit(AstActive* nodep) override {
         // Careful if adding variables here, ACTIVES can be under other ACTIVES
         // Need to save and restore any member state in AstUntilStable block
         if (!m_topScopep || !nodep->stmtsp()) {
@@ -382,7 +382,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
-    virtual void visit(AstExecGraph* nodep) VL_OVERRIDE {
+    virtual void visit(AstExecGraph* nodep) override {
         for (m_mtaskBodyp = VN_CAST(nodep->op1p(), MTaskBody); m_mtaskBodyp;
              m_mtaskBodyp = VN_CAST(m_mtaskBodyp->nextp(), MTaskBody)) {
             clearLastSen();
@@ -397,7 +397,7 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

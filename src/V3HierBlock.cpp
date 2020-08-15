@@ -199,7 +199,7 @@ string V3HierBlock::hierGenerated(bool withDir) const {
 }
 
 void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
-    vl_unique_ptr<std::ofstream> of(V3File::new_ofstream(commandArgsFileName(forCMake)));
+    std::unique_ptr<std::ofstream> of(V3File::new_ofstream(commandArgsFileName(forCMake)));
     *of << "--cc\n";
 
     if (!forCMake) {
@@ -241,7 +241,7 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
     ModuleSet m_referred;  // Modules that have hier_block pragma
     V3HierBlock::GParams m_gparams;  // list of variables that is AstVarType::GPARAM
 
-    virtual void visit(AstModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstModule* nodep) override {
         // Don't visit twice
         if (nodep->user1SetOnce()) return;
         UINFO(5, "Checking " << nodep->prettyNameQ() << " from "
@@ -271,7 +271,7 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
         m_modp = prevModp;
         m_gparams = prevGParams;
     }
-    virtual void visit(AstCell* nodep) VL_OVERRIDE {
+    virtual void visit(AstCell* nodep) override {
         // Visit used module here to know that the module is hier_block or not.
         // This visitor behaves almost depth first search
         if (AstModule* modp = VN_CAST(nodep->modp(), Module)) {
@@ -281,15 +281,15 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
         // Nothing to do for interface because hierarchical block does not exist
         // beyond interface.
     }
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         if (m_modp && m_modp->hierBlock() && nodep->isIfaceRef() && !nodep->isIfaceParent()) {
             nodep->v3error("Modport cannot be used at the hierarchical block boundary");
         }
         if (nodep->isGParam() && nodep->overriddenParam()) m_gparams.push_back(nodep);
     }
 
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     HierBlockUsageCollectVisitor(V3HierBlockPlan* planp, AstNetlist* netlist)
@@ -345,7 +345,7 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
         modp->hierBlock(false);
     }
 
-    vl_unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan());
+    std::unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan());
     { HierBlockUsageCollectVisitor visitor(planp.get(), nodep); }
 
     V3Stats::addStat("HierBlock, Hierarchical blocks", planp->m_blocks.size());
@@ -399,7 +399,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
         it->second->writeCommandArgsFile(forCMake);
     }
     // For the top module
-    vl_unique_ptr<std::ofstream> of(V3File::new_ofstream(topCommandArgsFileName(forCMake)));
+    std::unique_ptr<std::ofstream> of(V3File::new_ofstream(topCommandArgsFileName(forCMake)));
     if (!forCMake) {
         // Load wrappers first not to be overwritten by the original HDL
         for (const_iterator it = begin(); it != end(); ++it) {

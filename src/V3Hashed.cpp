@@ -83,10 +83,10 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstVar*) VL_OVERRIDE {}
-    virtual void visit(AstTypedef*) VL_OVERRIDE {}
-    virtual void visit(AstParamTypeDType*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar*) override {}
+    virtual void visit(AstTypedef*) override {}
+    virtual void visit(AstParamTypeDType*) override {}
+    virtual void visit(AstNode* nodep) override {
         // Hash not just iterate
         nodeHashIterate(nodep);
     }
@@ -151,7 +151,7 @@ void V3Hashed::dumpFilePrefixed(const string& nameComment, bool tree) {
 }
 
 void V3Hashed::dumpFile(const string& filename, bool tree) {
-    const vl_unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
     if (logp->fail()) v3fatal("Can't write " << filename);
 
     std::map<int, int> dist;

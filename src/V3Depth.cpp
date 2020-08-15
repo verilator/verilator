@@ -76,7 +76,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         AstNodeModule* origModp = m_modp;
         {
@@ -86,7 +86,7 @@ private:
         }
         m_modp = origModp;
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         m_funcp = nodep;
         m_depth = 0;
         m_maxdepth = 0;
@@ -100,7 +100,7 @@ private:
         iterateChildren(nodep);
         m_stmtp = NULL;
     }
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
         } else {
@@ -108,8 +108,8 @@ private:
         }
     }
     // Operators
-    virtual void visit(AstNodeTermop* nodep) VL_OVERRIDE {}
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeTermop* nodep) override {}
+    virtual void visit(AstNodeMath* nodep) override {
         // We have some operator defines that use 2 parens, so += 2.
         m_depth += 2;
         if (m_depth > m_maxdepth) m_maxdepth = m_depth;
@@ -135,19 +135,19 @@ private:
             m_funcp->isStatic(false);
         }
     }
-    virtual void visit(AstUCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstUCFunc* nodep) override {
         needNonStaticFunc(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstUCStmt* nodep) VL_OVERRIDE {
+    virtual void visit(AstUCStmt* nodep) override {
         needNonStaticFunc(nodep);
         visitStmt(nodep);
     }
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar*) VL_OVERRIDE {}  // Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstVar*) override {}  // Don't hit varrefs under vars
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

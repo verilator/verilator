@@ -225,7 +225,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         AstNodeModule* origModp = m_modp;
         {
             m_modp = nodep;
@@ -236,17 +236,17 @@ private:
         }
         m_modp = origModp;
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         m_scopep = nodep;
         iterateChildren(nodep);
         m_scopep = NULL;
     }
-    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarScope* nodep) override {
         // Delete the varscope when we're finished
         nodep->unlinkFrBack();
         pushDeletep(nodep);
     }
-    virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
         // Convert the hierch name
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
@@ -256,7 +256,7 @@ private:
         nodep->hierThis(hierThis);
         nodep->varScopep(NULL);
     }
-    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCCall* nodep) override {
         // UINFO(9, "       " << nodep << endl);
         iterateChildren(nodep);
         // Convert the hierch name
@@ -267,7 +267,7 @@ private:
         // Can't do this, as we may have more calls later
         // nodep->funcp()->scopep(NULL);
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         if (!nodep->user1()) {
             m_needThis = false;
             m_allowThis = nodep->isStatic().falseUnknown();  // Non-static or unknown if static
@@ -288,8 +288,8 @@ private:
             }
         }
     }
-    virtual void visit(AstVar*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstVar*) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

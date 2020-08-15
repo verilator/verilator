@@ -32,7 +32,7 @@
 #include "V3AstConstOnly.h"
 
 #include <algorithm>
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 //######################################################################
 
@@ -41,7 +41,7 @@ class BrokenTable : public AstNVisitor {
 private:
     // MEMBERS
     //   For each node, we keep if it exists or not.
-    typedef vl_unordered_map<const AstNode*, int> NodeMap;  // Performance matters (when --debug)
+    typedef std::unordered_map<const AstNode*, int> NodeMap;  // Performance matters (when --debug)
     static NodeMap s_nodes;  // Set of all nodes that exist
     // BITMASK
     enum { FLAG_ALLOCATED = 0x01 };  // new() and not delete()ed
@@ -223,7 +223,7 @@ private:
         iterateChildrenConst(nodep);
     }
     // VISITORS
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         // Process not just iterate
         processAndIterate(nodep);
     }
@@ -271,14 +271,14 @@ private:
         iterateChildrenConst(nodep);
         BrokenTable::setUnder(nodep, false);
     }
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         processAndIterate(nodep);
         UASSERT_OBJ(!(v3Global.assertDTypesResolved() && nodep->brokeLhsMustBeLvalue()
                       && VN_IS(nodep->lhsp(), NodeVarRef)
                       && !VN_CAST(nodep->lhsp(), NodeVarRef)->lvalue()),
                     nodep, "Assignment LHS is not an lvalue");
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         // Process not just iterate
         processAndIterate(nodep);
     }

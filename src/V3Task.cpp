@@ -159,7 +159,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         // Each FTask is unique per-scope, so AstNodeFTaskRefs do not need
         // pointers to what scope the FTask is to be invoked under.
         // However, to create variables, we need to track the scopes involved.
@@ -179,12 +179,12 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignW* nodep) override {
         m_assignwp = nodep;
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
         m_assignwp = NULL;
     }
-    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTaskRef* nodep) override {
         // Includes handling AstMethodCall, AstNew
         if (m_assignwp) {
             // Wire assigns must become always statements to deal with insertion
@@ -197,7 +197,7 @@ private:
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
         new TaskEdge(&m_callGraph, m_curVxp, getFTaskVertex(nodep->taskp()));
     }
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTask* nodep) override {
         UINFO(9, "  TASK " << nodep << endl);
         TaskBaseVertex* lastVxp = m_curVxp;
         m_curVxp = getFTaskVertex(nodep);
@@ -210,7 +210,7 @@ private:
         iterateChildren(nodep);
         m_curVxp = lastVxp;
     }
-    virtual void visit(AstPragma* nodep) VL_OVERRIDE {
+    virtual void visit(AstPragma* nodep) override {
         if (nodep->pragType() == AstPragmaType::NO_INLINE_TASK) {
             // Just mark for the next steps, and we're done with it.
             m_curVxp->noInline(true);
@@ -219,17 +219,17 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         nodep->user4p(m_curVxp);  // Remember what task it's under
     }
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
         if (nodep->varp()->user4u().toGraphVertex() != m_curVxp) {
             if (m_curVxp->pure() && !nodep->varp()->isXTemp()) m_curVxp->impure(nodep);
         }
     }
-    virtual void visit(AstClass* nodep) VL_OVERRIDE {
+    virtual void visit(AstClass* nodep) override {
         // Move initial statements into the constructor
         m_initialps.clear();
         m_ctorp = NULL;
@@ -252,12 +252,12 @@ private:
         m_initialps.clear();
         m_ctorp = NULL;
     }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
+    virtual void visit(AstInitial* nodep) override {
         m_initialps.push_back(nodep);
         iterateChildren(nodep);
     }
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -287,7 +287,7 @@ private:
     //   AstVar::user2p         // AstVarScope* to replace varref with
 
     // VISITORS
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         // Similar code in V3Inline
         if (nodep->varp()->user2p()) {  // It's being converted to an alias.
             UINFO(9,
@@ -302,7 +302,7 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1175,7 +1175,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         AstNodeModule* origModp = m_modp;
         int origNCalls = m_modNCalls;
         {
@@ -1187,17 +1187,17 @@ private:
         m_modp = origModp;
         m_modNCalls = origNCalls;
     }
-    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstTopScope* nodep) override {
         m_topScopep = nodep;
         iterateChildren(nodep);
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         m_scopep = nodep;
         m_insStmtp = NULL;
         iterateChildren(nodep);
         m_scopep = NULL;
     }
-    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTaskRef* nodep) override {
         // Includes handling AstMethodCall, AstNew
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
         iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
@@ -1251,7 +1251,7 @@ private:
         // Visit nodes that normal iteration won't find
         if (visitp) iterateAndNextNull(visitp);
     }
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTask* nodep) override {
         UINFO(4, " Inline   " << nodep << endl);
         InsertMode prevInsMode = m_insMode;
         AstNode* prevInsStmtp = m_insStmtp;
@@ -1319,7 +1319,7 @@ private:
         m_insMode = prevInsMode;
         m_insStmtp = prevInsStmtp;
     }
-    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
+    virtual void visit(AstWhile* nodep) override {
         // Special, as statements need to be put in different places
         // Preconditions insert first just before themselves (the normal
         // rule for other statement types)
@@ -1336,11 +1336,11 @@ private:
         // Done the loop
         m_insStmtp = NULL;  // Next thing should be new statement
     }
-    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
     }
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
             return;
@@ -1351,7 +1351,7 @@ private:
         m_insStmtp = NULL;  // Next thing should be new statement
     }
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

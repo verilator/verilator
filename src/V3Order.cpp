@@ -100,8 +100,8 @@
 #include <memory>
 #include <sstream>
 #include <vector>
-#include VL_INCLUDE_UNORDERED_MAP
-#include VL_INCLUDE_UNORDERED_SET
+#include <unordered_map>
+#include <unordered_set>
 
 static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top);
 
@@ -264,7 +264,7 @@ private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         m_hasClk = false;
         if (AstVarRef* varrefp = VN_CAST(nodep->rhsp(), VarRef)) {
             this->visit(varrefp);
@@ -306,7 +306,7 @@ private:
         }
     }
 
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (m_inAss && nodep->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
             if (m_inClocked) {
                 nodep->v3warn(CLKDATA,
@@ -319,7 +319,7 @@ private:
             }
         }
     }
-    virtual void visit(AstConcat* nodep) VL_OVERRIDE {
+    virtual void visit(AstConcat* nodep) override {
         if (m_inAss) {
             iterateAndNextNull(nodep->lhsp());
             int lw = m_childClkWidth;
@@ -328,20 +328,20 @@ private:
             m_childClkWidth = lw + rw;  // Pass up
         }
     }
-    virtual void visit(AstNodeSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeSel* nodep) override {
         if (m_inAss) {
             iterateChildren(nodep);
             // Pass up result width
             if (m_childClkWidth > nodep->width()) m_childClkWidth = nodep->width();
         }
     }
-    virtual void visit(AstSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstSel* nodep) override {
         if (m_inAss) {
             iterateChildren(nodep);
             if (m_childClkWidth > nodep->width()) m_childClkWidth = nodep->width();
         }
     }
-    virtual void visit(AstReplicate* nodep) VL_OVERRIDE {
+    virtual void visit(AstReplicate* nodep) override {
         if (m_inAss) {
             iterateChildren(nodep);
             if (VN_IS(nodep->rhsp(), Const)) {
@@ -351,12 +351,12 @@ private:
             }
         }
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {
+    virtual void visit(AstActive* nodep) override {
         m_inClocked = nodep->hasClocked();
         iterateChildren(nodep);
         m_inClocked = false;
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -382,7 +382,7 @@ private:
     bool m_clkAss;  // There is signals marked as clocker in the assignment
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         if (const AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
             if (varrefp->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
                 m_clkAss = true;
@@ -391,13 +391,13 @@ private:
         }
         iterateChildren(nodep->rhsp());
     }
-    virtual void visit(AstVarRef*) VL_OVERRIDE {
+    virtual void visit(AstVarRef*) override {
         // Previous versions checked attrClocker() here, but this breaks
         // the updated t_clocker VCD test.
         // If reenable this visitor note AstNodeMath short circuit below
     }
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -432,9 +432,9 @@ template <class T_MoveVertex> class ProcessMoveBuildGraph {
     // TYPES
     typedef std::pair<const V3GraphVertex*, const AstSenTree*> VxDomPair;
     // Maps an (original graph vertex, domain) pair to a T_MoveVertex
-    // Not vl_unordered_map, because std::pair doesn't provide std::hash
+    // Not std::unordered_map, because std::pair doesn't provide std::hash
     typedef std::map<VxDomPair, T_MoveVertex*> Var2Move;
-    typedef vl_unordered_map<const OrderLogicVertex*, T_MoveVertex*> Logic2Move;
+    typedef std::unordered_map<const OrderLogicVertex*, T_MoveVertex*> Logic2Move;
 
 public:
     class MoveVertexMaker {
@@ -877,7 +877,7 @@ private:
         // elements. Up to 10 of the widest
         std::cerr << V3Error::warnMore() << "... Widest candidate vars to split:" << endl;
         std::stable_sort(m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarWidthCmp());
-        vl_unordered_set<const AstVar*> canSplitList;
+        std::unordered_set<const AstVar*> canSplitList;
         int lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
         for (int i = 0; i < lim; i++) {
             OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
@@ -943,7 +943,7 @@ private:
         }
     }
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         {
             AstUser4InUse m_inuser4;  // Used only when building tree, so below
             iterateChildren(nodep);
@@ -954,7 +954,7 @@ private:
             m_topScopep = NULL;
         }
     }
-    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstTopScope* nodep) override {
         // Process the last thing we're finishing
         UASSERT_OBJ(!m_topScopep, nodep, "Only one topscope should ever be created");
         UINFO(2, "  Loading tree...\n");
@@ -989,7 +989,7 @@ private:
         AstNode::user3ClearTree();
         AstNode::user4ClearTree();
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         AstNodeModule* origModp = m_modp;
         {
             m_modp = nodep;
@@ -997,8 +997,8 @@ private:
         }
         m_modp = origModp;
     }
-    virtual void visit(AstClass*) VL_OVERRIDE {}
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstClass*) override {}
+    virtual void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);
         m_scopep = nodep;
         m_logicVxp = NULL;
@@ -1008,7 +1008,7 @@ private:
         iterateChildren(nodep);
         m_scopep = NULL;
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {
+    virtual void visit(AstActive* nodep) override {
         // Create required activation blocks and add to module
         UINFO(4, "  ACTIVE  " << nodep << endl);
         m_activep = nodep;
@@ -1024,7 +1024,7 @@ private:
         m_activeSenVxp = NULL;
         m_inClocked = false;
     }
-    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarScope* nodep) override {
         // Create links to all input signals
         UASSERT_OBJ(m_modp, nodep, "Scope not under module");
         if (m_modp->isTop() && nodep->varp()->isNonOutput()) {
@@ -1032,7 +1032,7 @@ private:
             new OrderEdge(&m_graph, m_inputsVxp, varVxp, WEIGHT_INPUT);
         }
     }
-    virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeVarRef* nodep) override {
         if (m_scopep) {
             AstVarScope* varscp = nodep->varScopep();
             UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
@@ -1159,7 +1159,7 @@ private:
             }
         }
     }
-    virtual void visit(AstSenTree* nodep) VL_OVERRIDE {
+    virtual void visit(AstSenTree* nodep) override {
         // Having a node derived from the sentree isn't required for
         // correctness, it merely makes the graph better connected
         // and improves graph algorithmic performance
@@ -1174,21 +1174,21 @@ private:
             m_inSenTree = false;
         }
     }
-    virtual void visit(AstAlwaysPost* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlwaysPost* nodep) override {
         m_inPost = true;
         iterateNewStmt(nodep);
         m_inPost = false;
     }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE { iterateNewStmt(nodep); }
-    virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE { iterateNewStmt(nodep); }
-    virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE { iterateNewStmt(nodep); }
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlways* nodep) override { iterateNewStmt(nodep); }
+    virtual void visit(AstAlwaysPublic* nodep) override { iterateNewStmt(nodep); }
+    virtual void visit(AstAssignAlias* nodep) override { iterateNewStmt(nodep); }
+    virtual void visit(AstAssignW* nodep) override {
         OrderClkAssVisitor visitor(nodep);
         m_inClkAss = visitor.isClkAss();
         iterateNewStmt(nodep);
         m_inClkAss = false;
     }
-    virtual void visit(AstAssignPre* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignPre* nodep) override {
         OrderClkAssVisitor visitor(nodep);
         m_inClkAss = visitor.isClkAss();
         m_inPre = true;
@@ -1196,7 +1196,7 @@ private:
         m_inPre = false;
         m_inClkAss = false;
     }
-    virtual void visit(AstAssignPost* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignPost* nodep) override {
         OrderClkAssVisitor visitor(nodep);
         m_inClkAss = visitor.isClkAss();
         m_inPost = true;
@@ -1204,20 +1204,20 @@ private:
         m_inPost = false;
         m_inClkAss = false;
     }
-    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE { iterateNewStmt(nodep); }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
+    virtual void visit(AstCoverToggle* nodep) override { iterateNewStmt(nodep); }
+    virtual void visit(AstInitial* nodep) override {
         // We use initials to setup parameters and static consts's which may be referenced
         // in user initial blocks.  So use ordering to sort them all out.
         iterateNewStmt(nodep);
     }
-    virtual void visit(AstCFunc*) VL_OVERRIDE {
+    virtual void visit(AstCFunc*) override {
         // Ignore for now
         // We should detect what variables are set in the function, and make
         // settlement code for them, then set a global flag, so we call "settle"
         // on the next evaluation loop.
     }
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1571,7 +1571,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 void OrderVisitor::processEdgeReport() {
     // Make report of all signal names and what clock edges they have
     string filename = v3Global.debugFilename("order_edges.txt");
-    const vl_unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
     if (logp->fail()) v3fatal("Can't write " << filename);
     // Testing emitter: V3EmitV::verilogForTree(v3Global.rootp(), *logp);
 
@@ -1846,7 +1846,7 @@ void OrderVisitor::processMTasks() {
     V3Graph mtasks;
     partitioner.go(&mtasks);
 
-    vl_unordered_map<unsigned /*mtask id*/, MTaskState> mtaskStates;
+    std::unordered_map<unsigned /*mtask id*/, MTaskState> mtaskStates;
 
     // Iterate through the entire logicGraph. For each logic node,
     // attach it to a per-MTask ordered list of logic nodes.
@@ -2012,7 +2012,7 @@ void OrderVisitor::process() {
     m_graph.dumpDotFilePrefixed("orderg_done");
     if (false && debug()) {
         string dfilename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_INT_order";
-        const vl_unique_ptr<std::ofstream> logp(V3File::new_ofstream(dfilename));
+        const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(dfilename));
         if (logp->fail()) v3fatal("Can't write " << dfilename);
         m_graph.dump(*logp);
     }

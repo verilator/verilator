@@ -134,7 +134,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         AstNodeModule* origModp = m_modp;
         {
@@ -144,23 +144,23 @@ private:
         }
         m_modp = origModp;
     }
-    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignDly* nodep) override {
         m_assigndlyp = nodep;
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
         m_assigndlyp = NULL;
     }
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignW* nodep) override {
         m_assignwp = nodep;
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
         m_assignwp = NULL;
     }
-    virtual void visit(AstCaseItem* nodep) VL_OVERRIDE {
+    virtual void visit(AstCaseItem* nodep) override {
         m_constXCvt = false;  // Avoid losing the X's in casex
         iterateAndNextNull(nodep->condsp());
         m_constXCvt = true;
         iterateAndNextNull(nodep->bodysp());
     }
-    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeDType* nodep) override {
         m_constXCvt = false;  // Avoid losing the X's in casex
         iterateChildren(nodep);
         m_constXCvt = true;
@@ -237,11 +237,11 @@ private:
         }
     }
 
-    virtual void visit(AstEqCase* nodep) VL_OVERRIDE { visitEqNeqCase(nodep); }
-    virtual void visit(AstNeqCase* nodep) VL_OVERRIDE { visitEqNeqCase(nodep); }
-    virtual void visit(AstEqWild* nodep) VL_OVERRIDE { visitEqNeqWild(nodep); }
-    virtual void visit(AstNeqWild* nodep) VL_OVERRIDE { visitEqNeqWild(nodep); }
-    virtual void visit(AstIsUnknown* nodep) VL_OVERRIDE {
+    virtual void visit(AstEqCase* nodep) override { visitEqNeqCase(nodep); }
+    virtual void visit(AstNeqCase* nodep) override { visitEqNeqCase(nodep); }
+    virtual void visit(AstEqWild* nodep) override { visitEqNeqWild(nodep); }
+    virtual void visit(AstNeqWild* nodep) override { visitEqNeqWild(nodep); }
+    virtual void visit(AstIsUnknown* nodep) override {
         iterateChildren(nodep);
         // Ahh, we're two state, so this is easy
         UINFO(4, " ISUNKNOWN->0 " << nodep << endl);
@@ -249,7 +249,7 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstConst* nodep) VL_OVERRIDE {
+    virtual void visit(AstConst* nodep) override {
         if (m_constXCvt && nodep->num().isFourState()) {
             UINFO(4, " CONST4 " << nodep << endl);
             if (debug() >= 9) nodep->dumpTree(cout, "  Const_old: ");
@@ -306,7 +306,7 @@ private:
         }
     }
 
-    virtual void visit(AstSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstSel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
@@ -353,7 +353,7 @@ private:
     // visit(AstSliceSel) not needed as its bounds are constant and checked
     // in V3Width.
 
-    virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
+    virtual void visit(AstArraySel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             if (debug() == 9) nodep->dumpTree(cout, "-in: ");
@@ -424,7 +424,7 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

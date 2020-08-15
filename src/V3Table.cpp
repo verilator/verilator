@@ -413,8 +413,8 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE { iterateChildren(nodep); }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNodeModule* nodep) override {
         AstNodeModule* origModp = m_modp;
         int origModTables = m_modTables;
         ModTableVector origModTableVscs = m_modTableVscs;
@@ -428,26 +428,26 @@ private:
         m_modTables = origModTables;
         m_modTableVscs = origModTableVscs;
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);
         m_scopep = nodep;
         iterateChildren(nodep);
         m_scopep = NULL;
     }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlways* nodep) override {
         UINFO(4, "  ALWAYS  " << nodep << endl);
         if (treeTest(nodep)) {
             // Well, then, I'll be a memory hog.
             VL_DO_DANGLING(createTable(nodep), nodep);
         }
     }
-    virtual void visit(AstAssignAlias*) VL_OVERRIDE {}
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignAlias*) override {}
+    virtual void visit(AstAssignW* nodep) override {
         // It's nearly impossible to have a large enough assign to make this worthwhile
         // For now we won't bother.
         // Accelerated: no iterate
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

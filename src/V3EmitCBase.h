@@ -121,7 +121,7 @@ private:
     // MEMBERS
     int m_count;  // Number of statements
     // VISITORS
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         m_count++;
         iterateChildren(nodep);
     }
