@@ -47,9 +47,9 @@ private:
     AstUser3InUse m_inuser3;
 
     // STATE
-    AstActive* m_activep;  // Inside activate statement
+    AstActive* m_activep = nullptr;  // Inside activate statement
     AstNodeModule* m_topModp;  // Top module
-    AstScope* m_scopetopp;  // Scope under TOPSCOPE
+    AstScope* m_scopetopp = nullptr;  // Scope under TOPSCOPE
 
     // METHODS
     AstVarScope* genInpClk(AstVarScope* vscp) {
@@ -118,10 +118,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    GenClkRenameVisitor(AstTopScope* nodep, AstNodeModule* topModp) {
-        m_topModp = topModp;
-        m_scopetopp = nullptr;
-        m_activep = nullptr;
+    GenClkRenameVisitor(AstTopScope* nodep, AstNodeModule* topModp)
+        : m_topModp(topModp) {
         iterate(nodep);
     }
     virtual ~GenClkRenameVisitor() override {}
@@ -138,10 +136,10 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstActive* m_activep;  // Inside activate statement
-    bool m_tracingCall;  // Iterating into a call to a cfunc
-    AstNodeAssign* m_assignp;  // Inside assigndly statement
-    AstNodeModule* m_topModp;  // Top module
+    bool m_tracingCall = false;  // Iterating into a call to a cfunc
+    AstActive* m_activep = nullptr;  // Inside activate statement
+    AstNodeAssign* m_assignp = nullptr;  // Inside assigndly statement
+    AstNodeModule* m_topModp = nullptr;  // Top module
 
     // VISITORS
     virtual void visit(AstTopScope* nodep) override {
@@ -216,13 +214,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit GenClkReadVisitor(AstNetlist* nodep)
-        : m_activep(nullptr)
-        , m_tracingCall(false)
-        , m_assignp(nullptr)
-        , m_topModp(nullptr) {
-        iterate(nodep);
-    }
+    explicit GenClkReadVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~GenClkReadVisitor() override {}
 };
 

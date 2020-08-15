@@ -112,8 +112,8 @@ class VHashSha256 {
     // MEMBERS
     uint32_t m_inthash[8];  // Intermediate hash, in host order
     string m_remainder;  // Unhashed data
-    bool m_final;  // Finalized
-    size_t m_totLength;  // Total all-chunk length as needed by output digest
+    bool m_final = false;  // Finalized
+    size_t m_totLength = 0;  // Total all-chunk length as needed by output digest
 public:
     // CONSTRUCTORS
     VHashSha256() {
@@ -125,8 +125,6 @@ public:
         m_inthash[5] = 0x9b05688c;
         m_inthash[6] = 0x1f83d9ab;
         m_inthash[7] = 0x5be0cd19;
-        m_final = false;
-        m_totLength = 0;
     }
     explicit VHashSha256(const string& data)
         : VHashSha256() {

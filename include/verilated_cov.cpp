@@ -100,16 +100,12 @@ private:
     IndexValueMap m_indexValues VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for keys
     ItemList m_items VL_GUARDED_BY(m_mutex);  ///< List of all items
 
-    VerilatedCovImpItem* m_insertp VL_GUARDED_BY(m_mutex);  ///< Item about to insert
-    const char* m_insertFilenamep VL_GUARDED_BY(m_mutex);  ///< Filename about to insert
-    int m_insertLineno VL_GUARDED_BY(m_mutex);  ///< Line number about to insert
+    VerilatedCovImpItem* m_insertp VL_GUARDED_BY(m_mutex) = nullptr;  ///< Item about to insert
+    const char* m_insertFilenamep VL_GUARDED_BY(m_mutex) = nullptr;  ///< Filename about to insert
+    int m_insertLineno VL_GUARDED_BY(m_mutex) = 0;  ///< Line number about to insert
 
     // CONSTRUCTORS
-    VerilatedCovImp() {
-        m_insertp = nullptr;
-        m_insertFilenamep = nullptr;
-        m_insertLineno = 0;
-    }
+    VerilatedCovImp() {}
     VL_UNCOPYABLE(VerilatedCovImp);
 
 public:

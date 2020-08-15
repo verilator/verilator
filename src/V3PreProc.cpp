@@ -68,7 +68,7 @@ class VDefineRef {
     string m_name;  // Define last name being defined
     string m_params;  // Define parameter list for next expansion
     string m_nextarg;  // String being built for next argument
-    int m_parenLevel;  // Parenthesis counting inside def args (for PARENT not child)
+    int m_parenLevel = 0;  // Parenthesis counting inside def args (for PARENT not child)
 
     std::vector<string> m_args;  // List of define arguments
 public:
@@ -81,8 +81,7 @@ public:
     std::vector<string>& args() { return m_args; }
     VDefineRef(const string& name, const string& params)
         : m_name(name)
-        , m_params(params)
-        , m_parenLevel(0) {}
+        , m_params(params) {}
     ~VDefineRef() {}
 };
 
@@ -117,11 +116,11 @@ public:
     DefinesMap m_defines;  ///< Map of defines
 
     // STATE
-    V3PreProc* m_preprocp;  ///< Object we're holding data for
-    V3PreLex* m_lexp;  ///< Current lexer state (nullptr = closed)
+    V3PreProc* m_preprocp = nullptr;  ///< Object we're holding data for
+    V3PreLex* m_lexp = nullptr;  ///< Current lexer state (nullptr = closed)
     std::stack<V3PreLex*> m_includeStack;  ///< Stack of includers above current m_lexp
-    int m_lastLineno;  // Last line number (stall detection)
-    int m_tokensOnLine;  // Number of tokens on line (stall detection)
+    int m_lastLineno = 0;  // Last line number (stall detection)
+    int m_tokensOnLine = 0;  // Number of tokens on line (stall detection)
 
     enum ProcState {
         ps_TOP,
@@ -150,23 +149,23 @@ public:
     }
 
     std::stack<ProcState> m_states;  ///< Current state of parser
-    int m_off;  ///< If non-zero, ifdef level is turned off, don't dump text
-    bool m_incError;  ///< Include error found
+    int m_off = 0;  ///< If non-zero, ifdef level is turned off, don't dump text
+    bool m_incError = false;  ///< Include error found
     string m_lastSym;  ///< Last symbol name found.
     string m_formals;  ///< Last formals found
 
     // For getRawToken/ `line insertion
     string m_lineCmt;  ///< Line comment(s) to be returned
-    bool m_lineCmtNl;  ///< Newline needed before inserting lineCmt
-    int m_lineAdd;  ///< Empty lines to return to maintain line count
-    bool m_rawAtBol;  ///< Last rawToken left us at beginning of line
+    bool m_lineCmtNl = false;  ///< Newline needed before inserting lineCmt
+    int m_lineAdd = 0;  ///< Empty lines to return to maintain line count
+    bool m_rawAtBol = true;  ///< Last rawToken left us at beginning of line
 
     // For getFinalToken
-    bool m_finAhead;  ///< Have read a token ahead
-    int m_finToken;  ///< Last token read
+    bool m_finAhead = false;  ///< Have read a token ahead
+    int m_finToken = 0;  ///< Last token read
     string m_finBuf;  ///< Last yytext read
-    bool m_finAtBol;  ///< Last getFinalToken left us at beginning of line
-    FileLine* m_finFilelinep;  ///< Location of last returned token (internal only)
+    bool m_finAtBol = true;  ///< Last getFinalToken left us at beginning of line
+    FileLine* m_finFilelinep = nullptr;  ///< Location of last returned token (internal only)
 
     // For stringification
     string m_strify;  ///< Text to be stringified
@@ -174,8 +173,8 @@ public:
     // For defines
     std::stack<VDefineRef> m_defRefs;  ///< Pending define substitution
     std::stack<VPreIfEntry> m_ifdefStack;  ///< Stack of true/false emitting evaluations
-    unsigned m_defDepth;  ///< How many `defines deep
-    bool m_defPutJoin;  ///< Insert `` after substitution
+    unsigned m_defDepth = 0;  ///< How many `defines deep
+    bool m_defPutJoin = false;  ///< Insert `` after substitution
 
     // For `` join
     std::stack<string> m_joinStack;  ///< Text on lhs of join
@@ -261,23 +260,6 @@ public:
     V3PreProcImp() {
         m_debug = 0;
         m_states.push(ps_TOP);
-        m_off = 0;
-        m_incError = false;
-        m_lineChars = "";
-        m_lastSym = "";
-        m_lineAdd = 0;
-        m_lineCmtNl = false;
-        m_rawAtBol = true;
-        m_finAhead = false;
-        m_finAtBol = true;
-        m_defDepth = 0;
-        m_defPutJoin = false;
-        m_finToken = 0;
-        m_finFilelinep = nullptr;
-        m_lexp = nullptr;
-        m_preprocp = nullptr;
-        m_lastLineno = 0;
-        m_tokensOnLine = 0;
     }
     void configure(FileLine* filelinep) {
         // configure() separate from constructor to avoid calling abstract functions

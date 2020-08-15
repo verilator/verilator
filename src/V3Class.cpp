@@ -34,7 +34,7 @@ private:
     // MEMBERS
     AstUser1InUse m_inuser1;
     string m_prefix;  // String prefix to add to name based on hier
-    AstScope* m_classScopep;  // Package moving scopes into
+    AstScope* m_classScopep = nullptr;  // Package moving scopes into
     typedef std::vector<std::pair<AstNode*, AstScope*>> MoveVector;
     MoveVector m_moves;
 
@@ -116,10 +116,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit ClassVisitor(AstNetlist* nodep)
-        : m_classScopep(nullptr) {
-        iterate(nodep);
-    }
+    explicit ClassVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~ClassVisitor() override {
         for (MoveVector::iterator it = m_moves.begin(); it != m_moves.end(); ++it) {
             it->second->addVarp(it->first->unlinkFrBack());

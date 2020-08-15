@@ -36,7 +36,7 @@ private:
 
     // STATE
     bool m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
-    AstNodeFTask* m_ftaskp;  // Function or task we're inside
+    AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -298,9 +298,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    LinkLValueVisitor(AstNode* nodep, bool start) {
-        m_setRefLvalue = start;
-        m_ftaskp = nullptr;
+    LinkLValueVisitor(AstNode* nodep, bool start)
+        : m_setRefLvalue(start) {
         iterate(nodep);
     }
     virtual ~LinkLValueVisitor() override {}

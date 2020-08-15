@@ -42,7 +42,7 @@
 
 class LifePostElimVisitor : public AstNVisitor {
 private:
-    bool m_tracingCall;  // Iterating into a CCall to a CFunc
+    bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
 
     // NODE STATE
     // INPUT:
@@ -90,10 +90,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LifePostElimVisitor(AstTopScope* nodep)
-        : m_tracingCall(false) {
-        iterate(nodep);
-    }
+    explicit LifePostElimVisitor(AstTopScope* nodep) { iterate(nodep); }
     virtual ~LifePostElimVisitor() override {}
 };
 
@@ -142,12 +139,12 @@ private:
     AstUser4InUse m_inuser4;
 
     // STATE
-    uint32_t m_sequence;  // Sequence number of assigns/varrefs,
+    uint32_t m_sequence = 0;  // Sequence number of assigns/varrefs,
     //                                  // local to the current MTask.
-    const ExecMTask* m_execMTaskp;  // Current ExecMTask being processed,
+    const ExecMTask* m_execMTaskp = nullptr;  // Current ExecMTask being processed,
     //                                  // or nullptr for serial code.
     VDouble0 m_statAssnDel;  // Statistic tracking
-    bool m_tracingCall;  // Currently tracing a CCall to a CFunc
+    bool m_tracingCall = false;  // Currently tracing a CCall to a CFunc
 
     // Map each varscope to one or more locations where it's accessed.
     // These maps will not include any ASSIGNPOST accesses:
@@ -159,7 +156,7 @@ private:
     typedef std::unordered_map<const AstVarScope*, LifePostLocation> PostLocMap;
     PostLocMap m_assignposts;  // AssignPost dly var locations
 
-    const V3Graph* m_mtasksGraphp;  // Mtask tracking graph
+    const V3Graph* m_mtasksGraphp = nullptr;  // Mtask tracking graph
     std::unique_ptr<GraphPathChecker> m_checker;
 
     // METHODS
@@ -347,13 +344,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LifePostDlyVisitor(AstNetlist* nodep)
-        : m_sequence(0)
-        , m_execMTaskp(nullptr)
-        , m_tracingCall(false)
-        , m_mtasksGraphp(nullptr) {
-        iterate(nodep);
-    }
+    explicit LifePostDlyVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~LifePostDlyVisitor() override {
         V3Stats::addStat("Optimizations, Lifetime postassign deletions", m_statAssnDel);
     }

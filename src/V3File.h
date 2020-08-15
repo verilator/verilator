@@ -191,12 +191,11 @@ private:
 };
 
 class V3OutCFile : public V3OutFile {
-    int m_guard;  // Created header guard
+    int m_guard = false;  // Created header guard
     int m_private;  // 1 = Most recently emitted private:, 2 = public:
 public:
     explicit V3OutCFile(const string& filename)
-        : V3OutFile(filename, V3OutFormatter::LA_C)
-        , m_guard(false) {
+        : V3OutFile(filename, V3OutFormatter::LA_C) {
         resetPrivate();
     }
     virtual ~V3OutCFile() override {}

@@ -51,9 +51,9 @@ protected:
 class ActiveNamer : public ActiveBaseVisitor {
 private:
     // STATE
-    AstScope* m_scopep;  // Current scope to add statement to
-    AstActive* m_iActivep;  // For current scope, the IActive we're building
-    AstActive* m_cActivep;  // For current scope, the SActive(combo) we're building
+    AstScope* m_scopep = nullptr;  // Current scope to add statement to
+    AstActive* m_iActivep = nullptr;  // For current scope, the IActive we're building
+    AstActive* m_cActivep = nullptr;  // For current scope, the SActive(combo) we're building
 
     SenTreeSet m_activeSens;  // Sen lists for each active we've made
     typedef std::unordered_map<AstSenTree*, AstActive*> ActiveMap;
@@ -131,11 +131,7 @@ public:
 
 public:
     // CONSTRUCTORS
-    ActiveNamer() {
-        m_scopep = nullptr;
-        m_iActivep = nullptr;
-        m_cActivep = nullptr;
-    }
+    ActiveNamer() {}
     virtual ~ActiveNamer() override {}
     void main(AstScope* nodep) { iterate(nodep); }
 };
@@ -150,7 +146,7 @@ public:
 private:
     CheckType m_check;  // Combo logic or other
     AstNode* m_alwaysp;  // Always we're under
-    AstNode* m_assignp;  // In assign
+    AstNode* m_assignp = nullptr;  // In assign
     // VISITORS
     virtual void visit(AstAssignDly* nodep) override {
         if (m_check != CT_SEQ) {
@@ -205,10 +201,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    ActiveDlyVisitor(AstNode* nodep, CheckType check) {
-        m_alwaysp = nodep;
-        m_check = check;
-        m_assignp = nullptr;
+    ActiveDlyVisitor(AstNode* nodep, CheckType check)
+        : m_check(check)
+        , m_alwaysp(nodep) {
         iterate(nodep);
     }
     virtual ~ActiveDlyVisitor() override {}
@@ -225,9 +220,9 @@ private:
 
     // STATE
     ActiveNamer m_namer;  // Tracking of active names
-    AstCFunc* m_scopeFinalp;  // Final function for this scope
-    bool m_itemCombo;  // Found a SenItem combo
-    bool m_itemSequent;  // Found a SenItem sequential
+    AstCFunc* m_scopeFinalp = nullptr;  // Final function for this scope
+    bool m_itemCombo = false;  // Found a SenItem combo
+    bool m_itemSequent = false;  // Found a SenItem sequential
 
     // VISITORS
     virtual void visit(AstScope* nodep) override {
@@ -411,12 +406,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit ActiveVisitor(AstNetlist* nodep)
-        : m_scopeFinalp(nullptr)
-        , m_itemCombo(false)
-        , m_itemSequent(false) {
-        iterate(nodep);
-    }
+    explicit ActiveVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~ActiveVisitor() override {}
 };
 

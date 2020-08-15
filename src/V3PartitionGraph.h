@@ -56,27 +56,22 @@ class ExecMTask : public AbstractMTask {
 private:
     AstMTaskBody* m_bodyp;  // Task body
     uint32_t m_id;  // Unique id of this mtask.
-    uint32_t m_priority;  // Predicted critical path from the start of
+    uint32_t m_priority = 0;  // Predicted critical path from the start of
     // this mtask to the ends of the graph that are reachable from this
     // mtask. In abstract time units.
-    uint32_t m_cost;  // Predicted runtime of this mtask, in the same
+    uint32_t m_cost = 0;  // Predicted runtime of this mtask, in the same
     // abstract time units as priority().
-    uint32_t m_thread;  // Thread for static (pack_mtasks) scheduling,
+    uint32_t m_thread = 0xffffffff;  // Thread for static (pack_mtasks) scheduling,
     // or 0xffffffff if not yet assigned.
-    const ExecMTask* m_packNextp;  // Next for static (pack_mtasks) scheduling
-    bool m_threadRoot;  // Is root thread
+    const ExecMTask* m_packNextp = nullptr;  // Next for static (pack_mtasks) scheduling
+    bool m_threadRoot = false;  // Is root thread
     VL_UNCOPYABLE(ExecMTask);
 
 public:
     ExecMTask(V3Graph* graphp, AstMTaskBody* bodyp, uint32_t id)
         : AbstractMTask(graphp)
         , m_bodyp(bodyp)
-        , m_id(id)
-        , m_priority(0)
-        , m_cost(0)
-        , m_thread(0xffffffff)
-        , m_packNextp(nullptr)
-        , m_threadRoot(false) {}
+        , m_id(id) {}
     AstMTaskBody* bodyp() const { return m_bodyp; }
     virtual uint32_t id() const override { return m_id; }
     uint32_t priority() const { return m_priority; }

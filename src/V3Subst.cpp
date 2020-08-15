@@ -183,7 +183,7 @@ private:
     //
     // STATE
     int m_origStep;  // Step number where subst was recorded
-    bool m_ok;  // No misassignments found
+    bool m_ok = true;  // No misassignments found
 
     // METHODS
     SubstVarEntry* findEntryp(AstVarRef* nodep) {
@@ -210,10 +210,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    SubstUseVisitor(AstNode* nodep, int origStep) {
+    SubstUseVisitor(AstNode* nodep, int origStep)
+        : m_origStep(origStep) {
         UINFO(9, "        SubstUseVisitor " << origStep << " " << nodep << endl);
-        m_ok = true;
-        m_origStep = origStep;
         iterate(nodep);
     }
     virtual ~SubstUseVisitor() override {}

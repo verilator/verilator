@@ -31,17 +31,14 @@ private:
     // MEMBERS
     int m_lineno;  ///< Line number
     int m_column;  ///< Column number
-    vluint64_t m_count;  ///< Count
-    bool m_ok;  ///< Coverage is above threshold
+    vluint64_t m_count = 0;  ///< Count
+    bool m_ok = false;  ///< Coverage is above threshold
 
 public:
     // CONSTRUCTORS
-    VlcSourceCount(int lineno, int column) {
-        m_lineno = lineno;
-        m_column = column;
-        m_count = 0;
-        m_ok = false;
-    }
+    VlcSourceCount(int lineno, int column)
+        : m_lineno(lineno)
+        , m_column(column) {}
     ~VlcSourceCount() {}
 
     // ACCESSORS

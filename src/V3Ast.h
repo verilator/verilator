@@ -1263,18 +1263,13 @@ class AstNRelinker {
 protected:
     friend class AstNode;
     enum RelinkWhatEn { RELINK_BAD, RELINK_NEXT, RELINK_OP1, RELINK_OP2, RELINK_OP3, RELINK_OP4 };
-    AstNode* m_oldp;  // The old node that was linked to this point in the tree
-    AstNode* m_backp;
-    RelinkWhatEn m_chg;
-    AstNode** m_iterpp;
+    AstNode* m_oldp = nullptr;  // The old node that was linked to this point in the tree
+    AstNode* m_backp = nullptr;
+    RelinkWhatEn m_chg = RELINK_BAD;
+    AstNode** m_iterpp = nullptr;
 
 public:
-    AstNRelinker() {
-        m_oldp = nullptr;
-        m_backp = nullptr;
-        m_chg = RELINK_BAD;
-        m_iterpp = nullptr;
-    }
+    AstNRelinker() {}
     void relink(AstNode* newp);
     AstNode* oldp() const { return m_oldp; }
     void dump(std::ostream& str = std::cout) const;
@@ -2256,29 +2251,23 @@ class AstNodeVarRef : public AstNodeMath {
 private:
     bool m_lvalue;  // Left hand side assignment
     AstVar* m_varp;  // [AfterLink] Pointer to variable itself
-    AstVarScope* m_varScopep;  // Varscope for hierarchy
-    AstNodeModule* m_packagep;  // Package hierarchy
+    AstVarScope* m_varScopep = nullptr;  // Varscope for hierarchy
+    AstNodeModule* m_packagep = nullptr;  // Package hierarchy
     string m_name;  // Name of variable
     string m_hiername;  // Scope converted into name-> for emitting
-    bool m_hierThis;  // Hiername points to "this" function
+    bool m_hierThis = false;  // Hiername points to "this" function
 
 public:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, bool lvalue)
         : AstNodeMath(t, fl)
         , m_lvalue(lvalue)
-        , m_varScopep(nullptr)
-        , m_packagep(nullptr)
-        , m_name(name)
-        , m_hierThis(false) {
+        , m_name(name) {
         this->varp(nullptr);
     }
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, AstVar* varp, bool lvalue)
         : AstNodeMath(t, fl)
         , m_lvalue(lvalue)
-        , m_varScopep(nullptr)
-        , m_packagep(nullptr)
-        , m_name(name)
-        , m_hierThis(false) {
+        , m_name(name) {
         // May have varp==nullptr
         this->varp(varp);
     }
@@ -2630,7 +2619,7 @@ class AstNodeFTask : public AstNode {
 private:
     string m_name;  // Name of task
     string m_cname;  // Name of task if DPI import
-    uint64_t m_dpiOpenParent;  // DPI import open array, if !=0, how many callees
+    uint64_t m_dpiOpenParent = 0;  // DPI import open array, if !=0, how many callees
     bool m_taskPublic : 1;  // Public task
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_classMethod : 1;  // Class method
@@ -2650,7 +2639,6 @@ public:
     AstNodeFTask(AstType t, FileLine* fl, const string& name, AstNode* stmtsp)
         : AstNode(t, fl)
         , m_name(name)
-        , m_dpiOpenParent(0)
         , m_taskPublic(false)
         , m_attrIsolateAssign(false)
         , m_classMethod(false)
@@ -2729,27 +2717,21 @@ class AstNodeFTaskRef : public AstNodeStmt {
     // A reference to a task (or function)
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
 private:
-    AstNodeFTask* m_taskp;  // [AfterLink] Pointer to task referenced
+    AstNodeFTask* m_taskp = nullptr;  // [AfterLink] Pointer to task referenced
     string m_name;  // Name of variable
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
-    AstNodeModule* m_packagep;  // Package hierarchy
-    bool m_pli;  // Pli system call ($name)
+    AstNodeModule* m_packagep = nullptr;  // Package hierarchy
+    bool m_pli = false;  // Pli system call ($name)
 public:
     AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
-        : AstNodeStmt(t, fl, statement)
-        , m_taskp(nullptr)
-        , m_packagep(nullptr)
-        , m_pli(false) {
+        : AstNodeStmt(t, fl, statement) {
         setOp1p(namep);
         addNOp3p(pinsp);
     }
     AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, const string& name, AstNode* pinsp)
         : AstNodeStmt(t, fl, statement)
-        , m_taskp(nullptr)
-        , m_name(name)
-        , m_packagep(nullptr)
-        , m_pli(false) {
+        , m_name(name) {
         addNOp3p(pinsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
@@ -2804,9 +2786,9 @@ private:
     bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
-    int m_level;  // 1=top module, 2=cell off top module, ...
-    int m_varNum;  // Incrementing variable number
-    int m_typeNum;  // Incrementing implicit type number
+    int m_level = 0;  // 1=top module, 2=cell off top module, ...
+    int m_varNum = 0;  // Incrementing variable number
+    int m_typeNum = 0;  // Incrementing implicit type number
     VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
     VOptionBool m_unconnectedDrive;  // State of `unconnected_drive
@@ -2822,10 +2804,7 @@ public:
         , m_hierBlock(false)
         , m_internal(false)
         , m_recursive(false)
-        , m_recursiveClone(false)
-        , m_level(0)
-        , m_varNum(0)
-        , m_typeNum(0) {}
+        , m_recursiveClone(false) {}
     ASTNODE_BASE_FUNCS(NodeModule)
     virtual void dump(std::ostream& str) const override;
     virtual bool maybePointedTo() const override { return true; }

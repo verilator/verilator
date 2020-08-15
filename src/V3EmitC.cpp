@@ -1287,10 +1287,10 @@ unsigned EmitVarTspSorter::m_serialNext = 0;
 
 class EmitCImp : EmitCStmts {
     // MEMBERS
-    AstNodeModule* m_modp;
+    AstNodeModule* m_modp = nullptr;
     std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
-    bool m_slow;  // Creating __Slow file
-    bool m_fast;  // Creating non __Slow file (or both)
+    bool m_slow = false;  // Creating __Slow file
+    bool m_fast = false;  // Creating non __Slow file (or both)
 
     //---------------------------------------
     // METHODS
@@ -1771,11 +1771,7 @@ class EmitCImp : EmitCStmts {
     void maybeSplit(AstNodeModule* modp);
 
 public:
-    EmitCImp() {
-        m_modp = nullptr;
-        m_slow = false;
-        m_fast = false;
-    }
+    EmitCImp() {}
     virtual ~EmitCImp() override {}
     void mainImp(AstNodeModule* modp, bool slow);
     void mainInt(AstNodeModule* modp);

@@ -52,8 +52,8 @@ public:
 class CdcEitherVertex : public V3GraphVertex {
     AstScope* m_scopep;
     AstNode* m_nodep;
-    AstSenTree* m_srcDomainp;
-    AstSenTree* m_dstDomainp;
+    AstSenTree* m_srcDomainp = nullptr;
+    AstSenTree* m_dstDomainp = nullptr;
     bool m_srcDomainSet : 1;
     bool m_dstDomainSet : 1;
     bool m_asyncPath : 1;
@@ -63,8 +63,6 @@ public:
         : V3GraphVertex(graphp)
         , m_scopep(scopep)
         , m_nodep(nodep)
-        , m_srcDomainp(nullptr)
-        , m_dstDomainp(nullptr)
         , m_srcDomainSet(false)
         , m_dstDomainSet(false)
         , m_asyncPath(false) {}
@@ -87,15 +85,13 @@ public:
 
 class CdcVarVertex : public CdcEitherVertex {
     AstVarScope* m_varScp;
-    int m_cntAsyncRst;
-    bool m_fromFlop;
+    int m_cntAsyncRst = 0;
+    bool m_fromFlop = false;
 
 public:
     CdcVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
         : CdcEitherVertex(graphp, scopep, varScp)
-        , m_varScp(varScp)
-        , m_cntAsyncRst(0)
-        , m_fromFlop(false) {}
+        , m_varScp(varScp) {}
     virtual ~CdcVarVertex() override {}
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
@@ -169,9 +165,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    CdcDumpVisitor(AstNode* nodep, std::ofstream* ofp, const string& prefix) {
-        m_ofp = ofp;
-        m_prefix = prefix;
+    CdcDumpVisitor(AstNode* nodep, std::ofstream* ofp, const string& prefix)
+        : m_ofp(ofp)
+        , m_prefix(prefix) {
         iterate(nodep);
     }
     virtual ~CdcDumpVisitor() override {}

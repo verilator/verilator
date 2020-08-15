@@ -73,14 +73,14 @@ class V3Global {
     V3HierBlockPlan* m_hierPlanp;  // Hierarchical verilation plan, nullptr unless hier_block
     VWidthMinUsage m_widthMinUsage;  // What AstNode::widthMin() is used for
 
-    int m_debugFileNumber;  // Number to append to debug files created
-    bool m_assertDTypesResolved;  // Tree should have dtypep()'s
-    bool m_constRemoveXs;  // Const needs to strip any Xs
-    bool m_needC11;  // Need C++11
-    bool m_needHeavy;  // Need verilated_heavy.h include
-    bool m_needTraceDumper;  // Need __Vm_dumperp in symbols
-    bool m_dpi;  // Need __Dpi include files
-    bool m_useParallelBuild;  // Use parallel build for model
+    int m_debugFileNumber = 0;  // Number to append to debug files created
+    bool m_assertDTypesResolved = false;  // Tree should have dtypep()'s
+    bool m_constRemoveXs = false;  // Const needs to strip any Xs
+    bool m_needC11 = false;  // Need C++11
+    bool m_needHeavy = false;  // Need verilated_heavy.h include
+    bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
+    bool m_dpi = false;  // Need __Dpi include files
+    bool m_useParallelBuild = false;  // Use parallel build for model
 
     // Memory address to short string mapping (for debug)
     typedef std::unordered_map<const void*, std::string> PtrToIdMap;  // The map type
@@ -94,15 +94,7 @@ public:
     V3Global()
         : m_rootp(nullptr)  // created by makeInitNetlist() so static constructors run first
         , m_hierPlanp(nullptr)  // Set via hierPlanp(V3HierBlockPlan*) when use hier_block
-        , m_widthMinUsage(VWidthMinUsage::LINT_WIDTH)
-        , m_debugFileNumber(0)
-        , m_assertDTypesResolved(false)
-        , m_constRemoveXs(false)
-        , m_needC11(false)
-        , m_needHeavy(false)
-        , m_needTraceDumper(false)
-        , m_dpi(false)
-        , m_useParallelBuild(false) {}
+        , m_widthMinUsage(VWidthMinUsage::LINT_WIDTH) {}
     AstNetlist* makeNetlist();
     void boot() {
         UASSERT(!m_rootp, "call once");

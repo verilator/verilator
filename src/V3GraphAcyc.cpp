@@ -35,16 +35,13 @@ class GraphAcycVertex : public V3GraphVertex {
 protected:
     friend class GraphAcyc;
     V3ListEnt<GraphAcycVertex*> m_work;  // List of vertices with optimization work left
-    uint32_t m_storedRank;  // Rank held until commit to edge placement
-    bool m_onWorkList;  // True if already on list of work to do
-    bool m_deleted;  // True if deleted
+    uint32_t m_storedRank = 0;  // Rank held until commit to edge placement
+    bool m_onWorkList = false;  // True if already on list of work to do
+    bool m_deleted = false;  // True if deleted
 public:
     GraphAcycVertex(V3Graph* graphp, V3GraphVertex* origVertexp)
         : V3GraphVertex(graphp)
-        , m_origVertexp(origVertexp)
-        , m_storedRank(0)
-        , m_onWorkList(false)
-        , m_deleted(false) {}
+        , m_origVertexp(origVertexp) {}
     virtual ~GraphAcycVertex() override {}
     V3GraphVertex* origVertexp() const { return m_origVertexp; }
     void setDelete() { m_deleted = true; }
@@ -106,7 +103,7 @@ private:
     V3List<GraphAcycVertex*> m_work;  // List of vertices with optimization work left
     std::vector<OrigEdgeList*> m_origEdgeDelp;  // List of deletions to do when done
     V3EdgeFuncP m_origEdgeFuncp;  // Function that says we follow this edge (in original graph)
-    uint32_t m_placeStep;  // Number that user() must be equal to to indicate processing
+    uint32_t m_placeStep = 0;  // Number that user() must be equal to to indicate processing
 
     static int debug() { return V3Graph::debug(); }
 
@@ -188,11 +185,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    GraphAcyc(V3Graph* origGraphp, V3EdgeFuncP edgeFuncp) {
-        m_origGraphp = origGraphp;
-        m_origEdgeFuncp = edgeFuncp;
-        m_placeStep = 0;
-    }
+    GraphAcyc(V3Graph* origGraphp, V3EdgeFuncP edgeFuncp)
+        : m_origGraphp(origGraphp)
+        , m_origEdgeFuncp(edgeFuncp) {}
     ~GraphAcyc() {
         for (std::vector<OrigEdgeList*>::iterator it = m_origEdgeDelp.begin();
              it != m_origEdgeDelp.end(); ++it) {

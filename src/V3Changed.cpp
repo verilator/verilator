@@ -41,21 +41,14 @@
 class ChangedState {
 public:
     // STATE
-    AstNodeModule* m_topModp;  // Top module
-    AstScope* m_scopetopp;  // Scope under TOPSCOPE
-    AstCFunc* m_chgFuncp;  // Change function we're building
-    AstCFunc* m_tlChgFuncp;  // Top level change function we're building
-    int m_numStmts;  // Number of statements added to m_chgFuncp
-    int m_funcNum;  // Number of change functions emitted
+    AstNodeModule* m_topModp = nullptr;  // Top module
+    AstScope* m_scopetopp = nullptr;  // Scope under TOPSCOPE
+    AstCFunc* m_chgFuncp = nullptr;  // Change function we're building
+    AstCFunc* m_tlChgFuncp = nullptr;  // Top level change function we're building
+    int m_numStmts = 0;  // Number of statements added to m_chgFuncp
+    int m_funcNum = 0;  // Number of change functions emitted
 
-    ChangedState() {
-        m_topModp = nullptr;
-        m_chgFuncp = nullptr;
-        m_scopetopp = nullptr;
-        m_tlChgFuncp = nullptr;
-        m_numStmts = 0;
-        m_funcNum = 0;
-    }
+    ChangedState() {}
     ~ChangedState() {}
 
     void maybeCreateChgFuncp() {
@@ -284,8 +277,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    ChangedVisitor(AstNetlist* nodep, ChangedState* statep) {
-        m_statep = statep;
+    ChangedVisitor(AstNetlist* nodep, ChangedState* statep)
+        : m_statep(statep) {
         iterate(nodep);
     }
     virtual ~ChangedVisitor() override {}

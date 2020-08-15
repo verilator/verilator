@@ -38,11 +38,10 @@ struct GraphPCNode {
     // operation. We'll use this in pathExistsInternal() to avoid checking
     // the same node twice, and again in updateHalfCriticalPath() to assert
     // there are no cycles.
-    vluint64_t m_seenAtGeneration;
+    vluint64_t m_seenAtGeneration = 0;
 
     // CONSTRUCTORS
-    GraphPCNode()
-        : m_seenAtGeneration(0) {
+    GraphPCNode() {
         for (int w = 0; w < GraphWay::NUM_WAYS; w++) m_cp[w] = 0;
     }
     ~GraphPCNode() {}

@@ -40,13 +40,11 @@
 // Graph subclasses
 
 class TaskBaseVertex : public V3GraphVertex {
-    AstNode* m_impurep;  // Node causing impure function w/ outside references
-    bool m_noInline;  // Marked with pragma
+    AstNode* m_impurep = nullptr;  // Node causing impure function w/ outside references
+    bool m_noInline = false;  // Marked with pragma
 public:
     explicit TaskBaseVertex(V3Graph* graphp)
-        : V3GraphVertex(graphp)
-        , m_impurep(nullptr)
-        , m_noInline(false) {}
+        : V3GraphVertex(graphp) {}
     virtual ~TaskBaseVertex() override {}
     bool pure() const { return m_impurep == nullptr; }
     AstNode* impureNode() const { return m_impurep; }
@@ -111,8 +109,8 @@ private:
     typedef std::vector<AstInitial*> Initials;
     // MEMBERS
     VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
-    AstAssignW* m_assignwp;  // Current assignment
-    AstNodeFTask* m_ctorp;  // Class constructor
+    AstAssignW* m_assignwp = nullptr;  // Current assignment
+    AstNodeFTask* m_ctorp = nullptr;  // Class constructor
     V3Graph m_callGraph;  // Task call graph
     TaskBaseVertex* m_curVxp;  // Current vertex we're adding to
     Initials m_initialps;  // Initial blocks to move
@@ -261,9 +259,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit TaskStateVisitor(AstNetlist* nodep)
-        : m_assignwp(nullptr)
-        , m_ctorp(nullptr) {
+    explicit TaskStateVisitor(AstNetlist* nodep) {
         m_curVxp = new TaskCodeVertex(&m_callGraph);
         AstNode::user3ClearTree();
         AstNode::user4ClearTree();

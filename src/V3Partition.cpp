@@ -185,7 +185,7 @@ private:
     //               // from graph-start to current node, or REVERSE
     //               // from graph-end to current node.
     T_CostAccessor* m_accessp;  // Access cost and CPs on V3GraphVertex's.
-    vluint64_t m_generation;  // Mark each vertex with this number;
+    vluint64_t m_generation = 0;  // Mark each vertex with this number;
     //                        // confirm we only process each vertex once.
     bool m_slowAsserts;  // Enable nontrivial asserts
     typedef SortByValueMap<V3GraphVertex*, uint32_t> PropCpPendSet;
@@ -198,7 +198,6 @@ public:
         : GraphAlg<>(graphp, edgeFuncp)
         , m_way(way)
         , m_accessp(accessp)
-        , m_generation(0)
         , m_slowAsserts(slowAsserts) {}
 
     // METHODS
@@ -445,7 +444,7 @@ private:
 
     // Cost estimate for this LogicMTask, derived from V3InstrCount.
     // In abstract time units.
-    uint32_t m_cost;
+    uint32_t m_cost = 0;
 
     // Cost of critical paths going FORWARD from graph-start to the start
     // of this vertex, and also going REVERSE from the end of the graph to
@@ -458,7 +457,7 @@ private:
     // graph. We'll mark each node with the last generation that scanned
     // it. We can use this to avoid recursing through the same node twice
     // while searching for a path.
-    vluint64_t m_generation;
+    vluint64_t m_generation = 0;
 
     // Redundant with the V3GraphEdge's, store a map of relatives so we can
     // quickly check if we have a given parent or child.
@@ -473,9 +472,7 @@ private:
 public:
     // CONSTRUCTORS
     LogicMTask(V3Graph* graphp, MTaskMoveVertex* mtmvVxp)
-        : AbstractLogicMTask(graphp)
-        , m_cost(0)
-        , m_generation(0) {
+        : AbstractLogicMTask(graphp) {
         for (int i = 0; i < GraphWay::NUM_WAYS; ++i) m_critPathCost[i] = 0;
         if (mtmvVxp) {  // Else null for test
             m_vertices.push_back(mtmvVxp);
@@ -730,12 +727,11 @@ public:
 // Information associated with scoreboarding an MTask
 class MergeCandidate {
 private:
-    bool m_removedFromSb;  // Not on scoreboard, generally ignore
+    bool m_removedFromSb = false;  // Not on scoreboard, generally ignore
     vluint64_t m_id;  // Serial number for ordering
 public:
     // CONSTRUCTORS
-    MergeCandidate()
-        : m_removedFromSb(false) {
+    MergeCandidate() {
         static vluint64_t serial = 0;
         ++serial;
         m_id = serial;
@@ -852,23 +848,19 @@ class PartParallelismEst {
     // The ratio of m_totalGraphCost to longestCpCost gives us an estimate
     // of the parallelizability of this graph which is only as good as the
     // guess returned by LogicMTask::cost().
-    uint32_t m_totalGraphCost;
+    uint32_t m_totalGraphCost = 0;
 
     // Cost of the longest critical path, in abstract units (the same units
     // returned by the vertexCost)
-    uint32_t m_longestCpCost;
+    uint32_t m_longestCpCost = 0;
 
-    size_t m_vertexCount;  // Number of vertexes calculated
-    size_t m_edgeCount;  // Number of edges calculated
+    size_t m_vertexCount = 0;  // Number of vertexes calculated
+    size_t m_edgeCount = 0;  // Number of edges calculated
 
 public:
     // CONSTRUCTORS
     explicit PartParallelismEst(const V3Graph* graphp)
-        : m_graphp(graphp)
-        , m_totalGraphCost(0)
-        , m_longestCpCost(0)
-        , m_vertexCount(0)
-        , m_edgeCount(0) {}
+        : m_graphp(graphp) {}
 
     // METHODS
     uint32_t totalGraphCost() const { return m_totalGraphCost; }
@@ -1082,8 +1074,8 @@ private:
     // MEMBERS
     V3Graph* m_mtasksp;  // Mtask graph
     uint32_t m_scoreLimit;  // Sloppy score allowed when picking merges
-    uint32_t m_scoreLimitBeforeRescore;  // Next score rescore at
-    unsigned m_mergesSinceRescore;  // Merges since last rescore
+    uint32_t m_scoreLimitBeforeRescore = 0xffffffff;  // Next score rescore at
+    unsigned m_mergesSinceRescore = 0;  // Merges since last rescore
     bool m_slowAsserts;  // Take extra time to validate algorithm
     V3Scoreboard<MergeCandidate, uint32_t> m_sb;  // Scoreboard
     SibSet m_pairs;  // Storage for each SiblingMC
@@ -1094,8 +1086,6 @@ public:
     PartContraction(V3Graph* mtasksp, uint32_t scoreLimit, bool slowAsserts)
         : m_mtasksp(mtasksp)
         , m_scoreLimit(scoreLimit)
-        , m_scoreLimitBeforeRescore(0xffffffff)
-        , m_mergesSinceRescore(0)
         , m_slowAsserts(slowAsserts)
         , m_sb(&mergeCandidateScore, slowAsserts) {}
 
@@ -1670,8 +1660,8 @@ const GraphWay* PartContraction::s_shortestWaywardCpInclusiveWay = nullptr;
 // routine.
 class DpiImportCallVisitor : public AstNVisitor {
 private:
-    bool m_hasDpiHazard;  // Found a DPI import call.
-    bool m_tracingCall;  // Iterating into a CCall to a CFunc
+    bool m_hasDpiHazard = false;  // Found a DPI import call.
+    bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     // METHODS
     VL_DEBUG_FUNC;
 
@@ -1696,11 +1686,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit DpiImportCallVisitor(AstNode* nodep)
-        : m_hasDpiHazard(false)
-        , m_tracingCall(false) {
-        iterate(nodep);
-    }
+    explicit DpiImportCallVisitor(AstNode* nodep) { iterate(nodep); }
     bool hasDpiHazard() const { return m_hasDpiHazard; }
     virtual ~DpiImportCallVisitor() override {}
 

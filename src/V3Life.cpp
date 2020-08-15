@@ -280,9 +280,9 @@ class LifeVisitor : public AstNVisitor {
 private:
     // STATE
     LifeState* m_statep;  // Current state
-    bool m_sideEffect;  // Side effects discovered in assign RHS
-    bool m_noopt;  // Disable optimization of variables in this block
-    bool m_tracingCall;  // Iterating into a CCall to a CFunc
+    bool m_sideEffect = false;  // Side effects discovered in assign RHS
+    bool m_noopt = false;  // Disable optimization of variables in this block
+    bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
 
     // LIFE MAP
     //  For each basic block, we'll make a new map of what variables that if/else is changing
@@ -444,9 +444,6 @@ public:
     LifeVisitor(AstNode* nodep, LifeState* statep) {
         UINFO(4, "  LifeVisitor on " << nodep << endl);
         m_statep = statep;
-        m_sideEffect = false;
-        m_noopt = false;
-        m_tracingCall = false;
         {
             m_lifep = new LifeBlock(nullptr, m_statep);
             iterate(nodep);
@@ -486,8 +483,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    LifeTopVisitor(AstNetlist* nodep, LifeState* statep) {
-        m_statep = statep;
+    LifeTopVisitor(AstNetlist* nodep, LifeState* statep)
+        : m_statep(statep) {
         iterate(nodep);
     }
     virtual ~LifeTopVisitor() override {}

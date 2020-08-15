@@ -63,11 +63,10 @@ private:
         AstNodeDType* m_errp;  // Node that was found, for error reporting if not known type
         AstNodeDType* m_dtypep;  // Data type for the 'from' slice
         VNumRange m_fromRange;  // Numeric range bounds for the 'from' slice
-        FromData(AstNodeDType* errp, AstNodeDType* dtypep, const VNumRange& fromRange) {
-            m_errp = errp;
-            m_dtypep = dtypep;
-            m_fromRange = fromRange;
-        }
+        FromData(AstNodeDType* errp, AstNodeDType* dtypep, const VNumRange& fromRange)
+            : m_errp(errp)
+            , m_dtypep(dtypep)
+            , m_fromRange(fromRange) {}
         ~FromData() {}
     };
     FromData fromDataForArray(AstNode* nodep, AstNode* basefromp) {

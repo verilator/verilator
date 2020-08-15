@@ -34,17 +34,14 @@ private:
     // MEMBERS
     string m_name;  //< Name of the point
     vluint64_t m_pointNum;  //< Point number
-    vluint64_t m_testsCovering;  //< Number tests with non-zero coverage of this point
-    vluint64_t m_count;  //< Count of hits across all tests
+    vluint64_t m_testsCovering = 0;  //< Number tests with non-zero coverage of this point
+    vluint64_t m_count = 0;  //< Count of hits across all tests
 
 public:
     // CONSTRUCTORS
-    VlcPoint(const string& name, int pointNum) {
-        m_name = name;
-        m_pointNum = pointNum;
-        m_testsCovering = 0;
-        m_count = 0;
-    }
+    VlcPoint(const string& name, int pointNum)
+        : m_name(name)
+        , m_pointNum(pointNum) {}
     ~VlcPoint() {}
     // ACCESSORS
     const string& name() const { return m_name; }
@@ -99,7 +96,7 @@ private:
     typedef std::map<string, vluint64_t> NameMap;  // Sorted by name (ordered)
     NameMap m_nameMap;  //< Name to point-number
     std::vector<VlcPoint> m_points;  //< List of all points
-    vluint64_t m_numPoints;  //< Total unique points
+    vluint64_t m_numPoints = 0;  //< Total unique points
 
 public:
     // ITERATORS
@@ -109,8 +106,7 @@ public:
     ByName::iterator end() { return m_nameMap.end(); }
 
     // CONSTRUCTORS
-    VlcPoints()
-        : m_numPoints(0) {}
+    VlcPoints() {}
     ~VlcPoints() {}
 
     // METHODS

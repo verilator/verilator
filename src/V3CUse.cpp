@@ -78,7 +78,7 @@ public:
 class CUseDTypeVisitor : public AstNVisitor {
     // MEMBERS
     CUseState& m_stater;  // State for inserter
-    bool m_impOnly;  // In details needed only for implementation
+    bool m_impOnly = false;  // In details needed only for implementation
     // METHODS
     virtual void visit(AstClassRefDType* nodep) override {
         if (nodep->user2SetOnce()) return;  // Process once
@@ -107,8 +107,7 @@ class CUseDTypeVisitor : public AstNVisitor {
 public:
     // CONSTRUCTORS
     explicit CUseDTypeVisitor(AstNodeModule* nodep, CUseState& stater)
-        : m_stater(stater)
-        , m_impOnly(false) {
+        : m_stater(stater) {
         iterate(nodep);
     }
     virtual ~CUseDTypeVisitor() override {}

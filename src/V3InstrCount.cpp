@@ -37,10 +37,10 @@ private:
     AstUser4InUse m_inuser4;
 
     // MEMBERS
-    uint32_t m_instrCount;  // Running count of instructions
+    uint32_t m_instrCount = 0;  // Running count of instructions
     const AstNode* m_startNodep;  // Start node of count
-    bool m_tracingCall;  // Iterating into a CCall to a CFunc
-    bool m_inCFunc;  // Inside AstCFunc
+    bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
+    bool m_inCFunc = false;  // Inside AstCFunc
     bool m_assertNoDups;  // Check for duplicates
     std::ostream* m_osp;  // Dump file
 
@@ -69,10 +69,7 @@ private:
 public:
     // CONSTRUCTORS
     InstrCountVisitor(AstNode* nodep, bool assertNoDups, std::ostream* osp)
-        : m_instrCount(0)
-        , m_startNodep(nodep)
-        , m_tracingCall(false)
-        , m_inCFunc(false)
+        : m_startNodep(nodep)
         , m_assertNoDups(assertNoDups)
         , m_osp(osp) {
         if (nodep) iterate(nodep);
@@ -269,13 +266,12 @@ private:
 
     // MEMBERS
     std::ostream* m_osp;  // Dump file
-    unsigned m_depth;  // Current tree depth for printing indent
+    unsigned m_depth = 0;  // Current tree depth for printing indent
 
 public:
     // CONSTRUCTORS
     InstrCountDumpVisitor(AstNode* nodep, std::ostream* osp)
-        : m_osp(osp)
-        , m_depth(0) {
+        : m_osp(osp) {
         // No check for nullptr output, so...
         UASSERT_OBJ(osp, nodep, "Don't call if not dumping");
         if (nodep) iterate(nodep);

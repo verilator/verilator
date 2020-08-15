@@ -34,7 +34,7 @@ protected:
     // For speed, keep m_cp as the first member of this structure
     vluint8_t* m_cp;  ///< Current pointer into m_bufp buffer
     vluint8_t* m_bufp;  ///< Output buffer
-    bool m_isOpen;  ///< True indicates open file/stream
+    bool m_isOpen = false;  ///< True indicates open file/stream
     std::string m_filename;  ///< Filename, for error messages
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
 
@@ -49,7 +49,6 @@ protected:
 
 public:
     VerilatedSerialize() {
-        m_isOpen = false;
         m_bufp = new vluint8_t[bufferSize()];
         m_cp = m_bufp;
     }
@@ -94,8 +93,8 @@ protected:
     // For speed, keep m_cp as the first member of this structure
     vluint8_t* m_cp;  ///< Current pointer into m_bufp buffer
     vluint8_t* m_bufp;  ///< Output buffer
-    vluint8_t* m_endp;  ///< Last valid byte in m_bufp buffer
-    bool m_isOpen;  ///< True indicates open file/stream
+    vluint8_t* m_endp = nullptr;  ///< Last valid byte in m_bufp buffer
+    bool m_isOpen = false;  ///< True indicates open file/stream
     std::string m_filename;  ///< Filename, for error messages
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
 
@@ -111,10 +110,8 @@ protected:
 
 public:
     VerilatedDeserialize() {
-        m_isOpen = false;
         m_bufp = new vluint8_t[bufferSize()];
         m_cp = m_bufp;
-        m_endp = nullptr;
     }
     virtual ~VerilatedDeserialize() {
         close();
@@ -159,12 +156,11 @@ private:
 
 class VerilatedSave : public VerilatedSerialize {
 private:
-    int m_fd;  ///< File descriptor we're writing to
+    int m_fd = -1;  ///< File descriptor we're writing to
 
 public:
     // CONSTRUCTORS
-    VerilatedSave()
-        : m_fd(-1) {}
+    VerilatedSave() {}
     virtual ~VerilatedSave() override { close(); }
     // METHODS
     /// Open the file; call isOpen() to see if errors
@@ -180,12 +176,11 @@ public:
 
 class VerilatedRestore : public VerilatedDeserialize {
 private:
-    int m_fd;  ///< File descriptor we're writing to
+    int m_fd = -1;  ///< File descriptor we're writing to
 
 public:
     // CONSTRUCTORS
-    VerilatedRestore()
-        : m_fd(-1) {}
+    VerilatedRestore() {}
     virtual ~VerilatedRestore() override { close(); }
 
     // METHODS

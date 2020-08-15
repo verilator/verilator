@@ -42,11 +42,10 @@ private:
     // Entire netlist:
     // AstNodeFTask::user1      -> bool, 1=processed
     AstUser1InUse m_inuser1;
-    bool m_anyFuncInBegin;
+    bool m_anyFuncInBegin = false;
 
 public:
-    BeginState()
-        : m_anyFuncInBegin(false) {}
+    BeginState() {}
     ~BeginState() {}
     void userMarkChanged(AstNode* nodep) {
         nodep->user1(true);
@@ -61,11 +60,11 @@ class BeginVisitor : public AstNVisitor {
 private:
     // STATE
     BeginState* m_statep;  // Current global state
-    AstNodeModule* m_modp;  // Current module
-    AstNodeFTask* m_ftaskp;  // Current function/task
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     string m_namedScope;  // Name of begin blocks above us
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
-    int m_ifDepth;  // Current if depth
+    int m_ifDepth = 0;  // Current if depth
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -250,11 +249,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    BeginVisitor(AstNetlist* nodep, BeginState* statep) {
-        m_statep = statep;
-        m_modp = nullptr;
-        m_ftaskp = nullptr;
-        m_ifDepth = 0;
+    BeginVisitor(AstNetlist* nodep, BeginState* statep)
+        : m_statep(statep) {
         iterate(nodep);
     }
     virtual ~BeginVisitor() override {}

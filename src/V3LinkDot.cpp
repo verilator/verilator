@@ -706,17 +706,17 @@ LinkDotState* LinkDotState::s_errorThisp = nullptr;
 class LinkDotFindVisitor : public AstNVisitor {
     // STATE
     LinkDotState* m_statep;  // State to pass between visitors, including symbol table
-    AstNodeModule* m_packagep;  // Current package
-    VSymEnt* m_modSymp;  // Symbol Entry for current module
-    VSymEnt* m_curSymp;  // Symbol Entry for current table, where to lookup/insert
+    AstNodeModule* m_packagep = nullptr;  // Current package
+    VSymEnt* m_modSymp = nullptr;  // Symbol Entry for current module
+    VSymEnt* m_curSymp = nullptr;  // Symbol Entry for current table, where to lookup/insert
     string m_scope;  // Scope text
-    AstNodeBlock* m_blockp;  // Current Begin/end block
-    AstNodeFTask* m_ftaskp;  // Current function/task
-    bool m_inRecursion;  // Inside a recursive module
-    int m_paramNum;  // Parameter number, for position based connection
-    int m_blockNum;  // Begin block number, 0=none seen
-    bool m_explicitNew;  // Hit a "new" function
-    int m_modBlockNum;  // Begin block number in module, 0=none seen
+    AstNodeBlock* m_blockp = nullptr;  // Current Begin/end block
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    bool m_inRecursion = false;  // Inside a recursive module
+    int m_paramNum = 0;  // Parameter number, for position based connection
+    int m_blockNum = 0;  // Begin block number, 0=none seen
+    bool m_explicitNew = false;  // Hit a "new" function
+    int m_modBlockNum = 0;  // Begin block number in module, 0=none seen
 
     // METHODS
     int debug() { return LinkDotState::debug(); }
@@ -1252,19 +1252,10 @@ class LinkDotFindVisitor : public AstNVisitor {
 
 public:
     // CONSTRUCTORS
-    LinkDotFindVisitor(AstNetlist* rootp, LinkDotState* statep) {
+    LinkDotFindVisitor(AstNetlist* rootp, LinkDotState* statep)
+        : m_statep(statep) {
         UINFO(4, __FUNCTION__ << ": " << endl);
-        m_packagep = nullptr;
-        m_curSymp = m_modSymp = nullptr;
-        m_statep = statep;
-        m_blockp = nullptr;
-        m_ftaskp = nullptr;
-        m_inRecursion = false;
-        m_paramNum = 0;
-        m_blockNum = 0;
-        m_explicitNew = false;
-        m_modBlockNum = 0;
-        //
+
         iterate(rootp);
     }
     virtual ~LinkDotFindVisitor() override {}
@@ -1282,7 +1273,7 @@ private:
 
     // STATE
     LinkDotState* m_statep;  // State to pass between visitors, including symbol table
-    AstNodeModule* m_modp;  // Current module
+    AstNodeModule* m_modp = nullptr;  // Current module
 
     int debug() { return LinkDotState::debug(); }
 
@@ -1427,11 +1418,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    LinkDotParamVisitor(AstNetlist* rootp, LinkDotState* statep) {
+    LinkDotParamVisitor(AstNetlist* rootp, LinkDotState* statep)
+        : m_statep(statep) {
         UINFO(4, __FUNCTION__ << ": " << endl);
-        m_statep = statep;
-        m_modp = nullptr;
-        //
         iterate(rootp);
     }
     virtual ~LinkDotParamVisitor() override {}
@@ -1443,8 +1432,8 @@ class LinkDotScopeVisitor : public AstNVisitor {
 
     // STATE
     LinkDotState* m_statep;  // State to pass between visitors, including symbol table
-    AstScope* m_scopep;  // The current scope
-    VSymEnt* m_modSymp;  // Symbol entry for current module
+    AstScope* m_scopep = nullptr;  // The current scope
+    VSymEnt* m_modSymp = nullptr;  // Symbol entry for current module
 
     int debug() { return LinkDotState::debug(); }
 
@@ -1582,12 +1571,9 @@ class LinkDotScopeVisitor : public AstNVisitor {
 
 public:
     // CONSTRUCTORS
-    LinkDotScopeVisitor(AstNetlist* rootp, LinkDotState* statep) {
+    LinkDotScopeVisitor(AstNetlist* rootp, LinkDotState* statep)
+        : m_statep(statep) {
         UINFO(4, __FUNCTION__ << ": " << endl);
-        m_modSymp = nullptr;
-        m_scopep = nullptr;
-        m_statep = statep;
-        //
         iterate(rootp);
     }
     virtual ~LinkDotScopeVisitor() override {}
@@ -1713,13 +1699,13 @@ private:
 
     // STATE
     LinkDotState* m_statep;  // State, including dotted symbol table
-    VSymEnt* m_curSymp;  // SymEnt for current lookup point
-    VSymEnt* m_modSymp;  // SymEnt for current module
-    VSymEnt* m_pinSymp;  // SymEnt for pin lookups
-    AstCell* m_cellp;  // Current cell
-    AstNodeModule* m_modp;  // Current module
-    AstNodeFTask* m_ftaskp;  // Current function/task
-    int m_modportNum;  // Uniqueify modport numbers
+    VSymEnt* m_curSymp = nullptr;  // SymEnt for current lookup point
+    VSymEnt* m_modSymp = nullptr;  // SymEnt for current module
+    VSymEnt* m_pinSymp = nullptr;  // SymEnt for pin lookups
+    AstCell* m_cellp = nullptr;  // Current cell
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    int m_modportNum = 0;  // Uniqueify modport numbers
 
     struct DotStates {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -2812,17 +2798,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    LinkDotResolveVisitor(AstNetlist* rootp, LinkDotState* statep) {
+    LinkDotResolveVisitor(AstNetlist* rootp, LinkDotState* statep)
+        : m_statep(statep) {
         UINFO(4, __FUNCTION__ << ": " << endl);
-        m_statep = statep;
-        m_modSymp = nullptr;
-        m_curSymp = nullptr;
-        m_pinSymp = nullptr;
-        m_cellp = nullptr;
-        m_modp = nullptr;
-        m_ftaskp = nullptr;
-        m_modportNum = 0;
-        //
         iterate(rootp);
     }
     virtual ~LinkDotResolveVisitor() override {}

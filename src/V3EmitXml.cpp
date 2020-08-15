@@ -35,7 +35,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
 
     // MEMBERS
     V3OutFile* m_ofp;
-    uint64_t m_id;
+    uint64_t m_id = 0;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -245,9 +245,8 @@ class EmitXmlFileVisitor : public AstNVisitor {
     }
 
 public:
-    EmitXmlFileVisitor(AstNode* nodep, V3OutFile* ofp) {
-        m_ofp = ofp;
-        m_id = 0;
+    EmitXmlFileVisitor(AstNode* nodep, V3OutFile* ofp)
+        : m_ofp(ofp) {
         iterate(nodep);
     }
     virtual ~EmitXmlFileVisitor() override {}
@@ -312,7 +311,7 @@ private:
     // MEMBERS
     std::ostream& m_os;
     std::string m_hier;
-    bool m_hasChildren;
+    bool m_hasChildren = false;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -362,9 +361,7 @@ private:
 public:
     // CONSTRUCTORS
     HierCellsXmlVisitor(AstNetlist* nodep, std::ostream& os)
-        : m_os(os)
-        , m_hier("")
-        , m_hasChildren(false) {
+        : m_os(os) {
         // Operate on whole netlist
         nodep->accept(*this);
     }

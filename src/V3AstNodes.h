@@ -286,11 +286,11 @@ public:
 
 class AstClassPackage : public AstNodeModule {
     // The static information portion of a class (treated similarly to a package)
-    AstClass* m_classp;  // Class package this is under (weak pointer, hard link is other way)
+    AstClass* m_classp
+        = nullptr;  // Class package this is under (weak pointer, hard link is other way)
 public:
     AstClassPackage(FileLine* fl, const string& name)
-        : ASTGEN_SUPER(fl, name)
-        , m_classp(nullptr) {}
+        : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(ClassPackage)
     virtual string verilogKwd() const override { return "/*class*/package"; }
     virtual const char* broken() const override;
@@ -303,14 +303,13 @@ class AstClass : public AstNodeModule {
     typedef std::map<string, AstNode*> MemberNameMap;
     // MEMBERS
     MemberNameMap m_members;  // Members or method children
-    AstClassPackage* m_packagep;  // Class package this is under
+    AstClassPackage* m_packagep = nullptr;  // Class package this is under
     bool m_virtual;  // Virtual class
     void insertCache(AstNode* nodep);
 
 public:
     AstClass(FileLine* fl, const string& name)
-        : ASTGEN_SUPER(fl, name)
-        , m_packagep(nullptr) {}
+        : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(Class)
     virtual string verilogKwd() const override { return "class"; }
     virtual bool isHeavy() const override { return true; }
@@ -977,12 +976,11 @@ class AstClassRefDType : public AstNodeDType {
     // Reference to a class
 private:
     AstClass* m_classp;  // data type pointed to, BELOW the AstTypedef
-    AstNodeModule* m_packagep;  // Package hierarchy
+    AstNodeModule* m_packagep = nullptr;  // Package hierarchy
 public:
     AstClassRefDType(FileLine* fl, AstClass* classp)
         : ASTGEN_SUPER(fl)
-        , m_classp(classp)
-        , m_packagep(nullptr) {
+        , m_classp(classp) {
         dtypep(this);
     }
     ASTNODE_NODE_FUNCS(ClassRefDType)
@@ -1029,29 +1027,23 @@ private:
     string m_cellName;  // "" = no cell, such as when connects to 'input' iface
     string m_ifaceName;  // Interface name
     string m_modportName;  // "" = no modport
-    AstIface* m_ifacep;  // Pointer to interface; note cellp() should override
-    AstCell* m_cellp;  // When exact parent cell known; not a guess
-    AstModport* m_modportp;  // nullptr = unlinked or no modport
+    AstIface* m_ifacep = nullptr;  // Pointer to interface; note cellp() should override
+    AstCell* m_cellp = nullptr;  // When exact parent cell known; not a guess
+    AstModport* m_modportp = nullptr;  // nullptr = unlinked or no modport
 public:
     AstIfaceRefDType(FileLine* fl, const string& cellName, const string& ifaceName)
         : ASTGEN_SUPER(fl)
         , m_modportFileline(nullptr)
         , m_cellName(cellName)
         , m_ifaceName(ifaceName)
-        , m_modportName("")
-        , m_ifacep(nullptr)
-        , m_cellp(nullptr)
-        , m_modportp(nullptr) {}
+        , m_modportName("") {}
     AstIfaceRefDType(FileLine* fl, FileLine* modportFl, const string& cellName,
                      const string& ifaceName, const string& modport)
         : ASTGEN_SUPER(fl)
         , m_modportFileline(modportFl)
         , m_cellName(cellName)
         , m_ifaceName(ifaceName)
-        , m_modportName(modport)
-        , m_ifacep(nullptr)
-        , m_cellp(nullptr)
-        , m_modportp(nullptr) {}
+        , m_modportName(modport) {}
     ASTNODE_NODE_FUNCS(IfaceRefDType)
     // METHODS
     virtual const char* broken() const override;
@@ -1149,33 +1141,24 @@ class AstRefDType : public AstNodeDType {
 private:
     // Pre-Width must reference the Typeref, not what it points to, as some child
     // types like AstBracketArrayType will disappear and can't lose the handle
-    AstTypedef* m_typedefp;  // referenced type
+    AstTypedef* m_typedefp = nullptr;  // referenced type
     // Post-width typedefs are removed and point to type directly
-    AstNodeDType* m_refDTypep;  // data type pointed to, BELOW the AstTypedef
+    AstNodeDType* m_refDTypep = nullptr;  // data type pointed to, BELOW the AstTypedef
     string m_name;  // Name of an AstTypedef
-    AstNodeModule* m_packagep;  // Package hierarchy
+    AstNodeModule* m_packagep = nullptr;  // Package hierarchy
 public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl)
-        , m_typedefp(nullptr)
-        , m_refDTypep(nullptr)
-        , m_name(name)
-        , m_packagep(nullptr) {}
+        , m_name(name) {}
     AstRefDType(FileLine* fl, const string& name, AstNode* classOrPackagep, AstNode* paramsp)
         : ASTGEN_SUPER(fl)
-        , m_typedefp(nullptr)
-        , m_refDTypep(nullptr)
-        , m_name(name)
-        , m_packagep(nullptr) {
+        , m_name(name) {
         setNOp3p(classOrPackagep);
         addNOp4p(paramsp);
     }
     class FlagTypeOfExpr {};  // type(expr) for parser only
     AstRefDType(FileLine* fl, FlagTypeOfExpr, AstNode* typeofp)
-        : ASTGEN_SUPER(fl)
-        , m_typedefp(nullptr)
-        , m_refDTypep(nullptr)
-        , m_packagep(nullptr) {
+        : ASTGEN_SUPER(fl) {
         setOp2p(typeofp);
     }
     ASTNODE_NODE_FUNCS(RefDType)
@@ -1281,21 +1264,19 @@ private:
     AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
     string m_name;  // Name of variable
     string m_tag;  // Holds the string of the verilator tag -- used in XML output.
-    int m_lsb;  // Within this level's packed struct, the LSB of the first bit of the member
+    int m_lsb = -1;  // Within this level's packed struct, the LSB of the first bit of the member
     // UNSUP: int m_randType;    // Randomization type (IEEE)
 public:
     AstMemberDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_lsb(-1) {
+        , m_name(name) {
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
         refDTypep(nullptr);
     }
     AstMemberDType(FileLine* fl, const string& name, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_lsb(-1) {
+        , m_name(name) {
         UASSERT(dtp, "AstMember created with no dtype");
         refDTypep(dtp);
         dtypep(this);
@@ -1817,21 +1798,19 @@ class AstCMethodHard : public AstNodeStmt {
     // Not all calls are statments vs math.  AstNodeStmt needs isStatement() to deal.
 private:
     string m_name;  // Name of method
-    bool m_pure;  // Pure optimizable
+    bool m_pure = false;  // Pure optimizable
 public:
     AstCMethodHard(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name,
                    AstNode* pinsp)
         : ASTGEN_SUPER(fl, false)
-        , m_name(name)
-        , m_pure(false) {
+        , m_name(name) {
         setOp1p(fromp);
         dtypep(nullptr);  // V3Width will resolve
         addNOp2p(pinsp);
     }
     AstCMethodHard(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
         : ASTGEN_SUPER(fl, false)
-        , m_name(name)
-        , m_pure(false) {
+        , m_name(name) {
         setOp1p(fromp);
         addNOp2p(pinsp);
     }
@@ -2416,29 +2395,21 @@ class AstPin : public AstNode {
 private:
     int m_pinNum;  // Pin number
     string m_name;  // Pin name, or "" for number based interconnect
-    AstVar* m_modVarp;  // Input/output this pin connects to on submodule.
-    AstParamTypeDType* m_modPTypep;  // Param type this pin connects to on submodule.
-    bool m_param;  // Pin connects to parameter
-    bool m_svImplicit;  // Pin is SystemVerilog .name'ed
+    AstVar* m_modVarp = nullptr;  // Input/output this pin connects to on submodule.
+    AstParamTypeDType* m_modPTypep = nullptr;  // Param type this pin connects to on submodule.
+    bool m_param = false;  // Pin connects to parameter
+    bool m_svImplicit = false;  // Pin is SystemVerilog .name'ed
 public:
     AstPin(FileLine* fl, int pinNum, const string& name, AstNode* exprp)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_param(false)
-        , m_svImplicit(false) {
+        , m_name(name) {
         m_pinNum = pinNum;
-        m_modVarp = nullptr;
-        m_modPTypep = nullptr;
         setNOp1p(exprp);
     }
     AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp)
-        : ASTGEN_SUPER(fl)
-        , m_param(false)
-        , m_svImplicit(false) {
+        : ASTGEN_SUPER(fl) {
         m_name = varname->name();
         m_pinNum = pinNum;
-        m_modVarp = nullptr;
-        m_modPTypep = nullptr;
         setNOp1p(exprp);
     }
     ASTNODE_NODE_FUNCS(Pin)
@@ -2605,19 +2576,17 @@ class AstMemberSel : public AstNodeMath {
 private:
     // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
     string m_name;
-    AstVar* m_varp;  // Post link, variable within class that is target of selection
+    AstVar* m_varp = nullptr;  // Post link, variable within class that is target of selection
 public:
     AstMemberSel(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_varp(nullptr) {
+        , m_name(name) {
         setOp1p(fromp);
         dtypep(nullptr);  // V3Width will resolve
     }
     AstMemberSel(FileLine* fl, AstNode* fromp, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
-        , m_name(dtp->name())
-        , m_varp(nullptr) {
+        , m_name(dtp->name()) {
         setOp1p(fromp);
         dtypep(dtp);
     }
@@ -2655,13 +2624,12 @@ class AstModportFTaskRef : public AstNode {
 private:
     string m_name;  // Name of the variable referenced
     bool m_export;  // Type of the function (import/export)
-    AstNodeFTask* m_ftaskp;  // Link to the function
+    AstNodeFTask* m_ftaskp = nullptr;  // Link to the function
 public:
     AstModportFTaskRef(FileLine* fl, const string& name, bool isExport)
         : ASTGEN_SUPER(fl)
         , m_name(name)
-        , m_export(isExport)
-        , m_ftaskp(nullptr) {}
+        , m_export(isExport) {}
     ASTNODE_NODE_FUNCS(ModportFTaskRef)
     virtual const char* broken() const override {
         BROKEN_RTN(m_ftaskp && !m_ftaskp->brokeExists());
@@ -2685,13 +2653,12 @@ class AstModportVarRef : public AstNode {
 private:
     string m_name;  // Name of the variable referenced
     VDirection m_direction;  // Direction of the variable (in/out)
-    AstVar* m_varp;  // Link to the actual Var
+    AstVar* m_varp = nullptr;  // Link to the actual Var
 public:
     AstModportVarRef(FileLine* fl, const string& name, VDirection::en direction)
         : ASTGEN_SUPER(fl)
         , m_name(name)
-        , m_direction(direction)
-        , m_varp(nullptr) {}
+        , m_direction(direction) {}
     ASTNODE_NODE_FUNCS(ModportVarRef)
     virtual const char* broken() const override {
         BROKEN_RTN(m_varp && !m_varp->brokeExists());
@@ -2743,7 +2710,7 @@ private:
     string m_name;  // Cell name
     string m_origName;  // Original name before dot addition
     string m_modName;  // Module the cell instances
-    AstNodeModule* m_modp;  // [AfterLink] Pointer to module instanced
+    AstNodeModule* m_modp = nullptr;  // [AfterLink] Pointer to module instanced
     bool m_hasIfaceVar : 1;  // True if a Var has been created for this cell
     bool m_recursive : 1;  // Self-recursive module
     bool m_trace : 1;  // Trace this cell
@@ -2755,7 +2722,6 @@ public:
         , m_name(instName)
         , m_origName(instName)
         , m_modName(modName)
-        , m_modp(nullptr)
         , m_hasIfaceVar(false)
         , m_recursive(false)
         , m_trace(true) {
@@ -2808,7 +2774,7 @@ class AstCellInline : public AstNode {
 private:
     string m_name;  // Cell name, possibly {a}__DOT__{b}...
     string m_origModName;  // Original name of the module, ignoring name() changes, for dot lookup
-    AstScope* m_scopep;  // The scope that the cell is inlined into
+    AstScope* m_scopep = nullptr;  // The scope that the cell is inlined into
     VTimescale m_timeunit;  // Parent module time unit
 public:
     AstCellInline(FileLine* fl, const string& name, const string& origModName,
@@ -2816,7 +2782,6 @@ public:
         : ASTGEN_SUPER(fl)
         , m_name(name)
         , m_origModName(origModName)
-        , m_scopep(nullptr)
         , m_timeunit(timeunit) {}
     ASTNODE_NODE_FUNCS(CellInline)
     virtual void dump(std::ostream& str) const override;
@@ -3178,11 +3143,10 @@ class AstSenTree : public AstNode {
     // Parents:  MODULE | SBLOCK
     // Children: SENITEM list
 private:
-    bool m_multi;  // Created from combo logic by ORing multiple clock domains
+    bool m_multi = false;  // Created from combo logic by ORing multiple clock domains
 public:
     AstSenTree(FileLine* fl, AstSenItem* sensesp)
-        : ASTGEN_SUPER(fl)
-        , m_multi(false) {
+        : ASTGEN_SUPER(fl) {
         addNOp1p(sensesp);
     }
     ASTNODE_NODE_FUNCS(SenTree)
@@ -4500,12 +4464,11 @@ class AstJumpBlock : public AstNodeStmt {
     // Children: {statement list, with JumpGo and JumpLabel below}
 private:
     AstJumpLabel* m_labelp;  // [After V3Jump] Pointer to declaration
-    int m_labelNum;  // Set by V3EmitCSyms to tell final V3Emit what to increment
+    int m_labelNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
     // After construction must call ->labelp to associate with appropriate label
     AstJumpBlock(FileLine* fl, AstNode* stmtsp)
-        : ASTGEN_SUPER(fl)
-        , m_labelNum(0) {
+        : ASTGEN_SUPER(fl) {
         addNOp1p(stmtsp);
     }
     virtual const char* broken() const override;
@@ -5016,7 +4979,7 @@ class AstTraceDecl : public AstNodeStmt {
     // Parents:  {statement list}
     // Children: expression being traced
 private:
-    uint32_t m_code;  // Trace identifier code; converted to ASCII by trace routines
+    uint32_t m_code = 0;  // Trace identifier code; converted to ASCII by trace routines
     const string m_showname;  // Name of variable
     const VNumRange m_bitRange;  // Property of var the trace details
     const VNumRange m_arrayRange;  // Property of var the trace details
@@ -5031,7 +4994,6 @@ public:
                  AstNode* valuep, const VNumRange& bitRange, const VNumRange& arrayRange,
                  bool isScoped)
         : ASTGEN_SUPER(fl)
-        , m_code(0)
         , m_showname(showname)
         , m_bitRange(bitRange)
         , m_arrayRange(arrayRange)
@@ -5177,14 +5139,13 @@ class AstScopeName : public AstNodeMath {
     // Parents:  DISPLAY
     // Children: TEXT
 private:
-    bool m_dpiExport;  // Is for dpiExport
+    bool m_dpiExport = false;  // Is for dpiExport
     string scopeNameFormatter(AstText* scopeTextp) const;
     string scopePrettyNameFormatter(AstText* scopeTextp) const;
 
 public:
     explicit AstScopeName(FileLine* fl)
-        : ASTGEN_SUPER(fl)
-        , m_dpiExport(false) {
+        : ASTGEN_SUPER(fl) {
         dtypeSetUInt64();
     }
     ASTNODE_NODE_FUNCS(ScopeName)
@@ -8823,12 +8784,11 @@ public:
 class AstMTaskBody : public AstNode {
     // Hold statements for each MTask
 private:
-    ExecMTask* m_execMTaskp;
+    ExecMTask* m_execMTaskp = nullptr;
 
 public:
     explicit AstMTaskBody(FileLine* fl)
-        : ASTGEN_SUPER(fl)
-        , m_execMTaskp(nullptr) {}
+        : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(MTaskBody);
     virtual const char* broken() const override {
         BROKEN_RTN(!m_execMTaskp);
@@ -8879,7 +8839,7 @@ public:
 class AstTypeTable : public AstNode {
     // Container for hash of standard data types
     // Children:  NODEDTYPEs
-    AstVoidDType* m_voidp;
+    AstVoidDType* m_voidp = nullptr;
     AstBasicDType* m_basicps[AstBasicDTypeKwd::_ENUM_MAX];
     //
     typedef std::map<VBasicTypeKey, AstBasicDType*> DetailedMap;
@@ -8887,8 +8847,7 @@ class AstTypeTable : public AstNode {
 
 public:
     explicit AstTypeTable(FileLine* fl)
-        : ASTGEN_SUPER(fl)
-        , m_voidp(nullptr) {
+        : ASTGEN_SUPER(fl) {
         for (int i = 0; i < AstBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = nullptr;
     }
     ASTNODE_NODE_FUNCS(TypeTable)
@@ -8914,19 +8873,15 @@ class AstNetlist : public AstNode {
     // Parents:   none
     // Children:  MODULEs & CFILEs
 private:
-    AstTypeTable* m_typeTablep;  // Reference to top type table, for faster lookup
-    AstPackage* m_dollarUnitPkgp;  // $unit
-    AstCFunc* m_evalp;  // The '_eval' function
-    AstExecGraph* m_execGraphp;  // Execution MTask graph for threads>1 mode
+    AstTypeTable* m_typeTablep = nullptr;  // Reference to top type table, for faster lookup
+    AstPackage* m_dollarUnitPkgp = nullptr;  // $unit
+    AstCFunc* m_evalp = nullptr;  // The '_eval' function
+    AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
 public:
     AstNetlist()
-        : ASTGEN_SUPER(new FileLine(FileLine::builtInFilename()))
-        , m_typeTablep(nullptr)
-        , m_dollarUnitPkgp(nullptr)
-        , m_evalp(nullptr)
-        , m_execGraphp(nullptr) {}
+        : ASTGEN_SUPER(new FileLine(FileLine::builtInFilename())) {}
     ASTNODE_NODE_FUNCS(Netlist)
     virtual const char* broken() const override {
         BROKEN_RTN(m_dollarUnitPkgp && !m_dollarUnitPkgp->brokeExists());

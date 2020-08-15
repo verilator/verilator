@@ -55,7 +55,8 @@
 class CheckMergeableVisitor : public AstNVisitor {
 private:
     // STATE
-    bool m_mergeable;  // State tracking whether tree being processed is a mergeable condition
+    bool m_mergeable
+        = false;  // State tracking whether tree being processed is a mergeable condition
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -85,8 +86,7 @@ private:
     }
 
 public:
-    CheckMergeableVisitor()
-        : m_mergeable(false) {}
+    CheckMergeableVisitor() {}
 
     // Return false if this node should not be merged at all because:
     // - It contains an impure expression

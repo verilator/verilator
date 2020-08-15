@@ -80,16 +80,13 @@ public:
 
 class TristateVertex : public V3GraphVertex {
     AstNode* m_nodep;
-    bool m_isTristate;  // Logic indicates a tristate
-    bool m_feedsTri;  // Propagates to a tristate node (on RHS)
-    bool m_processed;  // Tristating was cleaned up
+    bool m_isTristate = false;  // Logic indicates a tristate
+    bool m_feedsTri = false;  // Propagates to a tristate node (on RHS)
+    bool m_processed = false;  // Tristating was cleaned up
 public:
     TristateVertex(V3Graph* graphp, AstNode* nodep)
         : V3GraphVertex(graphp)
-        , m_nodep(nodep)
-        , m_isTristate(false)
-        , m_feedsTri(false)
-        , m_processed(false) {}
+        , m_nodep(nodep) {}
     virtual ~TristateVertex() override {}
     // ACCESSORS
     AstNode* nodep() const { return m_nodep; }

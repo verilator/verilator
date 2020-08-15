@@ -45,11 +45,11 @@ private:
     typedef std::multimap<string, AstCFunc*> FuncMmap;
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
-    AstScope* m_scopep;  // Current scope
-    bool m_modSingleton;  // m_modp is only instanced once
-    bool m_allowThis;  // Allow function non-static
-    bool m_needThis;  // Make function non-static
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstScope* m_scopep = nullptr;  // Current scope
+    bool m_modSingleton = false;  // m_modp is only instanced once
+    bool m_allowThis = false;  // Allow function non-static
+    bool m_needThis = false;  // Make function non-static
     FuncMmap m_modFuncs;  // Name of public functions added
 
     // METHODS
@@ -293,14 +293,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit DescopeVisitor(AstNetlist* nodep)
-        : m_modp(nullptr)
-        , m_scopep(nullptr)
-        , m_modSingleton(false)
-        , m_allowThis(false)
-        , m_needThis(false) {
-        iterate(nodep);
-    }
+    explicit DescopeVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~DescopeVisitor() override {}
 };
 

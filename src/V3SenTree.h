@@ -74,15 +74,14 @@ private:
 class SenTreeFinder {
 private:
     // STATE
-    AstTopScope* m_topScopep;  // Top scope to add global SenTrees to
+    AstTopScope* m_topScopep = nullptr;  // Top scope to add global SenTrees to
     SenTreeSet m_trees;  // Set of global SenTrees
 
     VL_UNCOPYABLE(SenTreeFinder);
 
 public:
     // CONSTRUCTORS
-    SenTreeFinder()
-        : m_topScopep(nullptr) {}
+    SenTreeFinder() {}
 
     // METHODS
     AstSenTree* getSenTree(AstSenTree* senTreep) {

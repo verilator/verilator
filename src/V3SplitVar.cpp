@@ -393,11 +393,11 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
     typedef std::set<AstVar*, AstNodeComparator> VarSet;
     VarSet m_foundTargetVar;
     UnpackRefMap m_refs;
-    AstNodeModule* m_modp;
+    AstNodeModule* m_modp = nullptr;
     // AstNodeStmt, AstCell, AstNodeFTaskRef, or AstAlways(Public) for sensitivity
-    AstNode* m_contextp;
-    AstNodeFTask* m_inFTask;
-    size_t m_numSplit;
+    AstNode* m_contextp = nullptr;
+    AstNodeFTask* m_inFTask = nullptr;
+    size_t m_numSplit = 0;
     // List for SplitPackedVarVisitor
     SplitVarRefsMap m_refsForPackedSplit;
 
@@ -766,11 +766,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
 
 public:
     explicit SplitUnpackedVarVisitor(AstNetlist* nodep)
-        : m_refs()
-        , m_modp(nullptr)
-        , m_contextp(nullptr)
-        , m_inFTask(nullptr)
-        , m_numSplit(0) {
+        : m_refs() {
         iterate(nodep);
     }
     ~SplitUnpackedVarVisitor() {
@@ -872,7 +868,7 @@ class PackedVarRef {
     };
     std::vector<PackedVarRefEntry> m_lhs, m_rhs;
     AstBasicDType* m_basicp;  // Cache the ptr since varp->dtypep()->basicp() is expensive
-    bool m_dedupDone;
+    bool m_dedupDone = false;
     static void dedupRefs(std::vector<PackedVarRefEntry>& refs) {
         // Use raw pointer to dedup
         typedef std::map<AstNode*, size_t, AstNodeComparator> NodeIndices;
@@ -901,8 +897,7 @@ public:
         return m_rhs;
     }
     explicit PackedVarRef(AstVar* varp)
-        : m_basicp(varp->dtypep()->basicp())
-        , m_dedupDone(false) {}
+        : m_basicp(varp->dtypep()->basicp()) {}
     void append(const PackedVarRefEntry& e, bool lvalue) {
         UASSERT(!m_dedupDone, "cannot add after dedup()");
         if (lvalue)

@@ -31,14 +31,12 @@ template <class T> class V3List {
     // List container for linked list of elements of type *T  (T is a pointer type)
 private:
     // MEMBERS
-    T m_headp;  // First element
-    T m_tailp;  // Last element
+    T m_headp = nullptr;  // First element
+    T m_tailp = nullptr;  // Last element
     friend class V3ListEnt<T>;
 
 public:
-    V3List()
-        : m_headp(nullptr)
-        , m_tailp(nullptr) {}
+    V3List() {}
     ~V3List() {}
     // METHODS
     T begin() const { return m_headp; }
@@ -56,8 +54,8 @@ template <class T> class V3ListEnt {
     // List entry for linked list of elements of type *T  (T is a pointer type)
 private:
     // MEMBERS
-    T m_nextp;  // Pointer to next element, nullptr=end
-    T m_prevp;  // Pointer to previous element, nullptr=beginning
+    T m_nextp = nullptr;  // Pointer to next element, nullptr=end
+    T m_prevp = nullptr;  // Pointer to previous element, nullptr=beginning
     friend class V3List<T>;
     static V3ListEnt* baseToListEnt(void* newbasep, size_t offset) {
         // "this" must be a element inside of *basep
@@ -67,9 +65,7 @@ private:
     }
 
 public:
-    V3ListEnt()
-        : m_nextp(nullptr)
-        , m_prevp(nullptr) {}
+    V3ListEnt() {}
     ~V3ListEnt() {
 #ifdef VL_DEBUG
         // Load bogus pointers so we can catch deletion bugs

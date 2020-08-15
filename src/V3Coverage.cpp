@@ -60,15 +60,11 @@ private:
     };
 
     struct CheckState {  // State save-restored on each new coverage scope/block
-        bool m_on;  // Should this block get covered?
-        bool m_inModOff;  // In module with no coverage
-        int m_handle;  // Opaque handle for index into line tracking
-        const AstNode* m_nodep;  // Node establishing this state
-        CheckState()
-            : m_on(false)
-            , m_inModOff(false)
-            , m_handle(0)
-            , m_nodep(nullptr) {}
+        bool m_on = false;  // Should this block get covered?
+        bool m_inModOff = false;  // In module with no coverage
+        int m_handle = 0;  // Opaque handle for index into line tracking
+        const AstNode* m_nodep = nullptr;  // Node establishing this state
+        CheckState() {}
         bool lineCoverageOn(const AstNode* nodep) {
             return m_on && !m_inModOff && nodep->fileline()->coverageOn()
                    && v3Global.opt.coverageLine();

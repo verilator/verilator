@@ -167,12 +167,11 @@ public:
 
 class VerilatedVpioRange : public VerilatedVpio {
     const VerilatedRange* m_range;
-    vlsint32_t m_iteration;
+    vlsint32_t m_iteration = 0;
 
 public:
     explicit VerilatedVpioRange(const VerilatedRange* range)
-        : m_range(range)
-        , m_iteration(0) {}
+        : m_range(range) {}
     virtual ~VerilatedVpioRange() override {}
     static inline VerilatedVpioRange* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioRange*>(reinterpret_cast<VerilatedVpio*>(h));
@@ -421,13 +420,13 @@ class VerilatedVpiImp {
 
     VpioCbList m_cbObjLists[CB_ENUM_MAX_VALUE];  // Callbacks for each supported reason
     VpioTimedCbs m_timedCbs;  // Time based callbacks
-    VerilatedVpiError* m_errorInfop;  // Container for vpi error info
+    VerilatedVpiError* m_errorInfop = nullptr;  // Container for vpi error info
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
 
     static VerilatedVpiImp s_s;  // Singleton
 
 public:
-    VerilatedVpiImp() { m_errorInfop = nullptr; }
+    VerilatedVpiImp() {}
     ~VerilatedVpiImp() {}
     static void assertOneCheck() { s_s.m_assertOne.check(); }
     static void cbReasonAdd(VerilatedVpioCb* vop) {

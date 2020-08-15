@@ -470,9 +470,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    InlineRelinkVisitor(AstNodeModule* cloneModp, AstNodeModule* oldModp, AstCell* cellp) {
-        m_modp = oldModp;
-        m_cellp = cellp;
+    InlineRelinkVisitor(AstNodeModule* cloneModp, AstNodeModule* oldModp, AstCell* cellp)
+        : m_modp(oldModp)
+        , m_cellp(cellp) {
         iterate(cloneModp);
     }
     virtual ~InlineRelinkVisitor() override {}

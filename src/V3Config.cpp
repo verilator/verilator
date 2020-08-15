@@ -118,15 +118,12 @@ typedef V3ConfigWildcardResolver<V3ConfigVar> V3ConfigVarResolver;
 
 class V3ConfigFTask {
     V3ConfigVarResolver m_vars;  // Variables in function/task
-    bool m_isolate;  // Isolate function return
-    bool m_noinline;  // Don't inline function/task
-    bool m_public;  // Public function/task
+    bool m_isolate = false;  // Isolate function return
+    bool m_noinline = false;  // Don't inline function/task
+    bool m_public = false;  // Public function/task
 
 public:
-    V3ConfigFTask()
-        : m_isolate(false)
-        , m_noinline(false)
-        , m_public(false) {}
+    V3ConfigFTask() {}
     void update(const V3ConfigFTask& f) {
         // Don't overwrite true with false
         if (f.m_isolate) m_isolate = true;
@@ -164,13 +161,11 @@ class V3ConfigModule {
     V3ConfigVarResolver m_vars;  // Variables in module
     StringSet m_coverageOffBlocks;  // List of block names for coverage_off
     PragmaSet m_modPragmas;  // List of Pragmas for modules
-    bool m_inline;  // Whether to force the inline
-    bool m_inlineValue;  // The inline value (on/off)
+    bool m_inline = false;  // Whether to force the inline
+    bool m_inlineValue = false;  // The inline value (on/off)
 
 public:
-    V3ConfigModule()
-        : m_inline(false)
-        , m_inlineValue(false) {}
+    V3ConfigModule() {}
 
     void update(const V3ConfigModule& m) {
         m_tasks.update(m.m_tasks);

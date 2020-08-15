@@ -45,7 +45,7 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstTopScope* m_topscopep;  // Top scope for adding sentrees under
+    AstTopScope* m_topscopep = nullptr;  // Top scope for adding sentrees under
     SenTreeFinder m_finder;  // Find global sentree's and add them
 
     // METHODS
@@ -127,10 +127,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit ActiveTopVisitor(AstNetlist* nodep)
-        : m_topscopep(nullptr) {
-        iterate(nodep);
-    }
+    explicit ActiveTopVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~ActiveTopVisitor() override {}
 };
 

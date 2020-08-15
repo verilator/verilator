@@ -78,13 +78,12 @@ private:
     // TYPES
     typedef std::unordered_map<const void*, vluint64_t> PtrMap;
     // MEMBERS
-    mutable vluint64_t m_nextId;
+    mutable vluint64_t m_nextId = 0;
     mutable PtrMap m_id;
 
 public:
     // CONSTRUCTORS
-    PartPtrIdMap()
-        : m_nextId(0) {}
+    PartPtrIdMap() {}
     // METHODS
     vluint64_t findId(const void* ptrp) const {
         PtrMap::const_iterator it = m_id.find(ptrp);

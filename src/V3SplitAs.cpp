@@ -74,8 +74,8 @@ private:
     // STATE
     AstVarScope* m_splitVscp;  // Variable we want to split
     bool m_modeMatch;  // Remove matching Vscp, else non-matching
-    bool m_keepStmt;  // Current Statement must be preserved
-    bool m_matches;  // Statement below has matching lvalue reference
+    bool m_keepStmt = false;  // Current Statement must be preserved
+    bool m_matches = false;  // Statement below has matching lvalue reference
 
     // METHODS
     virtual void visit(AstVarRef* nodep) override {
@@ -116,11 +116,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    SplitAsCleanVisitor(AstAlways* nodep, AstVarScope* vscp, bool modeMatch) {
-        m_splitVscp = vscp;
-        m_modeMatch = modeMatch;
-        m_keepStmt = false;
-        m_matches = false;
+    SplitAsCleanVisitor(AstAlways* nodep, AstVarScope* vscp, bool modeMatch)
+        : m_splitVscp(vscp)
+        , m_modeMatch(modeMatch) {
         iterate(nodep);
     }
     virtual ~SplitAsCleanVisitor() override {}

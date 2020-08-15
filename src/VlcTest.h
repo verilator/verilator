@@ -35,21 +35,17 @@ private:
     string m_name;  //< Name of the test
     double m_computrons;  //< Runtime for the test
     vluint64_t m_testrun;  //< Test run number, for database use
-    vluint64_t m_rank;  //< Execution rank suggestion
-    vluint64_t m_rankPoints;  //< Ranked additional points
-    vluint64_t m_user;  //< User data for algorithms (not persisted in .dat file)
+    vluint64_t m_rank = 0;  //< Execution rank suggestion
+    vluint64_t m_rankPoints = 0;  //< Ranked additional points
+    vluint64_t m_user = 0;  //< User data for algorithms (not persisted in .dat file)
     VlcBuckets m_buckets;  //< Coverage data for each coverage point
 
 public:
     // CONSTRUCTORS
-    VlcTest(const string& name, vluint64_t testrun, double comp) {
-        m_name = name;
-        m_computrons = comp;
-        m_testrun = testrun;
-        m_rank = 0;
-        m_rankPoints = 0;
-        m_user = 0;
-    }
+    VlcTest(const string& name, vluint64_t testrun, double comp)
+        : m_name(name)
+        , m_computrons(comp)
+        , m_testrun(testrun) {}
     ~VlcTest() {}
 
     // ACCESSORS

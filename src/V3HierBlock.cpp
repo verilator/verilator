@@ -236,8 +236,8 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
     // STATE
     typedef std::set<const AstModule*> ModuleSet;
     V3HierBlockPlan* const m_planp;
-    AstModule* m_modp;  // The current module
-    AstModule* m_hierBlockp;  // The nearest parent module that is a hierarchical block
+    AstModule* m_modp = nullptr;  // The current module
+    AstModule* m_hierBlockp = nullptr;  // The nearest parent module that is a hierarchical block
     ModuleSet m_referred;  // Modules that have hier_block pragma
     V3HierBlock::GParams m_gparams;  // list of variables that is AstVarType::GPARAM
 
@@ -293,10 +293,7 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
 
 public:
     HierBlockUsageCollectVisitor(V3HierBlockPlan* planp, AstNetlist* netlist)
-        : m_planp(planp)
-        , m_modp(nullptr)
-        , m_hierBlockp(nullptr) {
-
+        : m_planp(planp) {
         iterateChildren(netlist);
     }
     VL_DEBUG_FUNC;  // Declare debug()

@@ -128,7 +128,7 @@ public:
     V3ListEnt<OrderMoveDomScope*> m_readyDomScopeE;  // List of next ready dom scope
     V3List<OrderMoveVertex*> m_readyVertices;  // Ready vertices with same domain & scope
 private:
-    bool m_onReadyList;  // True if DomScope is already on list of ready dom/scopes
+    bool m_onReadyList = false;  // True if DomScope is already on list of ready dom/scopes
     const AstSenTree* m_domainp;  // Domain all vertices belong to
     const AstScope* m_scopep;  // Scope all vertices belong to
 
@@ -138,8 +138,7 @@ private:
 
 public:
     OrderMoveDomScope(const AstSenTree* domainp, const AstScope* scopep)
-        : m_onReadyList(false)
-        , m_domainp(domainp)
+        : m_domainp(domainp)
         , m_scopep(scopep) {}
     OrderMoveDomScope* readyDomScopeNextp() const { return m_readyDomScopeE.nextp(); }
     const AstSenTree* domainp() const { return m_domainp; }
@@ -661,25 +660,25 @@ private:
     // STATE
     OrderGraph m_graph;  // Scoreboard of var usages/dependencies
     SenTreeFinder m_finder;  // Find global sentree's and add them
-    AstSenTree* m_comboDomainp;  // Combo activation tree
-    AstSenTree* m_deleteDomainp;  // Delete this from tree
-    OrderInputsVertex* m_inputsVxp;  // Top level vertex all inputs point from
-    OrderLogicVertex* m_logicVxp;  // Current statement being tracked, nullptr=ignored
-    AstTopScope* m_topScopep;  // Current top scope being processed
-    AstScope* m_scopetopp;  // Scope under TOPSCOPE
-    AstNodeModule* m_modp;  // Current module
-    AstScope* m_scopep;  // Current scope being processed
-    AstActive* m_activep;  // Current activation block
-    bool m_inSenTree;  // Underneath AstSenItem; any varrefs are clocks
-    bool m_inClocked;  // Underneath clocked block
-    bool m_inClkAss;  // Underneath AstAssign
-    bool m_inPre;  // Underneath AstAssignPre
-    bool m_inPost;  // Underneath AstAssignPost
-    OrderLogicVertex* m_activeSenVxp;  // Sensitivity vertex
+    AstSenTree* m_comboDomainp = nullptr;  // Combo activation tree
+    AstSenTree* m_deleteDomainp = nullptr;  // Delete this from tree
+    OrderInputsVertex* m_inputsVxp = nullptr;  // Top level vertex all inputs point from
+    OrderLogicVertex* m_logicVxp = nullptr;  // Current statement being tracked, nullptr=ignored
+    AstTopScope* m_topScopep = nullptr;  // Current top scope being processed
+    AstScope* m_scopetopp = nullptr;  // Scope under TOPSCOPE
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstScope* m_scopep = nullptr;  // Current scope being processed
+    AstActive* m_activep = nullptr;  // Current activation block
+    bool m_inSenTree = false;  // Underneath AstSenItem; any varrefs are clocks
+    bool m_inClocked = false;  // Underneath clocked block
+    bool m_inClkAss = false;  // Underneath AstAssign
+    bool m_inPre = false;  // Underneath AstAssignPre
+    bool m_inPost = false;  // Underneath AstAssignPost
+    OrderLogicVertex* m_activeSenVxp = nullptr;  // Sensitivity vertex
     std::deque<OrderUser*> m_orderUserps;  // All created OrderUser's for later deletion.
     // STATE... for inside process
-    AstCFunc* m_pomNewFuncp;  // Current function being created
-    int m_pomNewStmts;  // Statements in function being created
+    AstCFunc* m_pomNewFuncp = nullptr;  // Current function being created
+    int m_pomNewStmts = 0;  // Statements in function being created
     V3Graph m_pomGraph;  // Graph of logic elements to move
     V3List<OrderMoveVertex*> m_pomWaiting;  // List of nodes needing inputs to become ready
 protected:
@@ -755,12 +754,10 @@ private:
     // processMTask* routines schedule threaded execution
     struct MTaskState {
         typedef std::list<const OrderLogicVertex*> Logics;
-        AstMTaskBody* m_mtaskBodyp;
+        AstMTaskBody* m_mtaskBodyp = nullptr;
         Logics m_logics;
-        ExecMTask* m_execMTaskp;
-        MTaskState()
-            : m_mtaskBodyp(nullptr)
-            , m_execMTaskp(nullptr) {}
+        ExecMTask* m_execMTaskp = nullptr;
+        MTaskState() {}
     };
     void processMTasks();
     typedef enum { LOGIC_INITIAL, LOGIC_SETTLE } InitialLogicE;
@@ -1222,22 +1219,6 @@ private:
 public:
     // CONSTRUCTORS
     OrderVisitor() {
-        m_topScopep = nullptr;
-        m_scopetopp = nullptr;
-        m_modp = nullptr;
-        m_scopep = nullptr;
-        m_activep = nullptr;
-        m_inSenTree = false;
-        m_inClocked = false;
-        m_inClkAss = false;
-        m_inPre = m_inPost = false;
-        m_comboDomainp = nullptr;
-        m_deleteDomainp = nullptr;
-        m_inputsVxp = nullptr;
-        m_activeSenVxp = nullptr;
-        m_logicVxp = nullptr;
-        m_pomNewFuncp = nullptr;
-        m_pomNewStmts = 0;
         if (debug()) m_graph.debug(5);  // 3 is default if global debug; we want acyc debugging
     }
     virtual ~OrderVisitor() override {

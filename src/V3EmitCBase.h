@@ -33,8 +33,8 @@
 class EmitCBaseVisitor : public AstNVisitor {
 public:
     // STATE
-    V3OutCFile* m_ofp;
-    bool m_trackText;  // Always track AstText nodes
+    V3OutCFile* m_ofp = nullptr;
+    bool m_trackText = false;  // Always track AstText nodes
     // METHODS
     V3OutCFile* ofp() const { return m_ofp; }
     void puts(const string& str) { ofp()->puts(str); }
@@ -106,10 +106,7 @@ public:
     }
 
     // CONSTRUCTORS
-    EmitCBaseVisitor() {
-        m_ofp = nullptr;
-        m_trackText = false;
-    }
+    EmitCBaseVisitor() {}
     virtual ~EmitCBaseVisitor() override {}
 };
 

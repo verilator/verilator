@@ -36,11 +36,10 @@ class VerilatedVcd;
 
 class VerilatedVcdFile {
 private:
-    int m_fd;  ///< File descriptor we're writing to
+    int m_fd = 0;  ///< File descriptor we're writing to
 public:
     // METHODS
-    VerilatedVcdFile()
-        : m_fd(0) {}
+    VerilatedVcdFile() {}
     virtual ~VerilatedVcdFile() {}
     virtual bool open(const std::string& name) VL_MT_UNSAFE;
     virtual void close() VL_MT_UNSAFE;
