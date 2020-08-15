@@ -53,7 +53,7 @@
 class V3OptionsImp {
 public:
     // TYPES
-    typedef std::map<string, std::set<string> > DirMap;  // Directory listing
+    typedef std::map<string, std::set<string>> DirMap;  // Directory listing
 
     // STATE
     std::list<string> m_allArgs;  // List of every argument encountered

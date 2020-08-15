@@ -46,7 +46,7 @@ public:
 private:
     // TYPES
     // Parameter name, stringified value
-    typedef std::vector<std::pair<string, string> > StrGParams;
+    typedef std::vector<std::pair<string, string>> StrGParams;
 
     // MEMBERS
     const AstNodeModule* m_modp;  // Hierarchical block module

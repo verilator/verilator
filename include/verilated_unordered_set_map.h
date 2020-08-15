@@ -97,7 +97,7 @@ template <typename T> struct vl_equal_to<T*> {
 //===================================================================
 //
 /// Functional clone of the std::unordered_set hash table.
-template <class T_Key, class T_Hash = vl_hash<T_Key>, class T_Equal = vl_equal_to<T_Key> >
+template <class T_Key, class T_Hash = vl_hash<T_Key>, class T_Equal = vl_equal_to<T_Key>>
 class vl_unordered_set {
 public:
     // TYPES
@@ -400,7 +400,7 @@ private:
 //
 /// Functional clone of the std::unordered_map hash table.
 template <class T_Key, class T_Value, class T_Hash = vl_hash<T_Key>,
-          class T_Equal = vl_equal_to<T_Key> >
+          class T_Equal = vl_equal_to<T_Key>>
 class vl_unordered_map {
 private:
     // TYPES

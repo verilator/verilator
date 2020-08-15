@@ -360,7 +360,7 @@ public:
         os << "# SystemC::Coverage-3\n";
 
         // Build list of events; totalize if collapsing hierarchy
-        typedef std::map<std::string, std::pair<std::string, vluint64_t> > EventMap;
+        typedef std::map<std::string, std::pair<std::string, vluint64_t>> EventMap;
         EventMap eventCounts;
         for (ItemList::iterator it = m_items.begin(); it != m_items.end(); ++it) {
             VerilatedCovImpItem* itemp = *(it);

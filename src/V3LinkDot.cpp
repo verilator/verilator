@@ -140,9 +140,9 @@ private:
     // TYPES
     typedef std::multimap<string, VSymEnt*> NameScopeSymMap;
     typedef std::map<VSymEnt*, VSymEnt*> ScopeAliasMap;
-    typedef std::set<std::pair<AstNodeModule*, string> > ImplicitNameSet;
+    typedef std::set<std::pair<AstNodeModule*, string>> ImplicitNameSet;
     typedef std::vector<VSymEnt*> IfaceVarSyms;
-    typedef std::vector<std::pair<AstIface*, VSymEnt*> > IfaceModSyms;
+    typedef std::vector<std::pair<AstIface*, VSymEnt*>> IfaceModSyms;
 
     static LinkDotState* s_errorThisp;  // Last self, for error reporting only
 

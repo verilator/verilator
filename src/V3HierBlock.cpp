@@ -357,7 +357,7 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
 }
 
 V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
-    typedef std::map<const V3HierBlock*, std::set<const V3HierBlock*> > ChildrenMap;
+    typedef std::map<const V3HierBlock*, std::set<const V3HierBlock*>> ChildrenMap;
     ChildrenMap childrenOfHierBlock;
 
     HierVector sorted;

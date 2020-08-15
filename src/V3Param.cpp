@@ -215,7 +215,7 @@ private:
 
     // TYPES
     // Note may have duplicate entries
-    typedef std::deque<std::pair<AstIfaceRefDType*, AstIfaceRefDType*> > IfaceRefRefs;
+    typedef std::deque<std::pair<AstIfaceRefDType*, AstIfaceRefDType*>> IfaceRefRefs;
 
     // STATE
     typedef std::map<AstNode*, AstNode*> CloneMap;
