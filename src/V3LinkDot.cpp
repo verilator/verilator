@@ -541,7 +541,7 @@ private:
     }
 
 public:
-    VSymEnt* findDotted(FileLine* /*refLocationp*/, VSymEnt* lookupSymp, const string& dotname,
+    VSymEnt* findDotted(FileLine* refLocationp, VSymEnt* lookupSymp, const string& dotname,
                         string& baddot, VSymEnt*& okSymp) {
         // Given a dotted hierarchy name, return where in scope it is
         // Note when dotname=="" we just fall through and return lookupSymp
@@ -636,6 +636,15 @@ public:
                     return NULL;  // Not found
                 }
             }
+            if (lookupSymp) {
+                if (AstCell* cellp = VN_CAST(lookupSymp->nodep(), Cell)) {
+                    if (AstNodeModule* modp = cellp->modp()) {
+                        if (modp->hierBlock()) {
+                            refLocationp->v3error("Cannot access inside hierarchical block");
+                        }
+                    }
+                }
+            }
             firstId = false;
         }
         return lookupSymp;
@@ -720,6 +729,11 @@ class LinkDotFindVisitor : public AstNVisitor {
         m_statep->insertBlock(m_curSymp, newp->name(), newp, m_packagep);
     }
 
+    bool isHierBlockWrapper(const string& name) const {
+        const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
+        return hierBlocks.find(name) != hierBlocks.end();
+    }
+
     // VISITs
     virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         // Process $unit or other packages
@@ -801,6 +815,14 @@ class LinkDotFindVisitor : public AstNVisitor {
             if (AstIface* ifacep = VN_CAST(nodep, Iface)) {
                 m_statep->insertIfaceModSym(ifacep, m_curSymp);
             }
+        } else if (isHierBlockWrapper(nodep->name())) {
+            UINFO(5, "Module is hierarchical block, must not be dead: " << nodep << endl);
+            m_scope = nodep->name();
+            VSymEnt* upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
+            m_curSymp = m_modSymp
+                = m_statep->insertBlock(upperSymp, nodep->name() + "::", nodep, m_packagep);
+            iterateChildren(nodep);
+            nodep->user4(true);
         } else {  // !doit
             // Will be optimized away later
             // Can't remove now, as our backwards iterator will throw up

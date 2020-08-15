@@ -196,6 +196,31 @@ typedef std::vector<string> V3StringList;
 typedef std::set<string> V3StringSet;
 
 //######################################################################
+
+// Information given by --hierarchical-block option
+class V3HierarchicalBlockOption {
+public:
+    // key:parameter name, value:value (as string)
+    typedef std::map<string, string> ParamStrMap;
+
+private:
+    string m_origName;  // module name
+    // module name after uniquified
+    // same as m_origName for non-parameterized module
+    string m_mangledName;
+    // overriding parameter values specified by -G option
+    ParamStrMap m_parameters;
+
+public:
+    explicit V3HierarchicalBlockOption(const string& optstring);
+    const string& origName() const { return m_origName; }
+    const string& mangledName() const { return m_mangledName; }
+    const ParamStrMap params() const { return m_parameters; }
+};
+
+typedef std::map<string, V3HierarchicalBlockOption> V3HierBlockOptSet;
+
+//######################################################################
 // V3Options - Command line options
 
 class V3Options {
@@ -221,6 +246,7 @@ private:
     DebugSrcMap m_debugSrcs;    // argument: --debugi-<srcfile>=<level>
     DebugSrcMap m_dumpTrees;    // argument: --dump-treei-<srcfile>=<level>
     std::map<string,string> m_parameters;  // Parameters
+    std::map<string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
 
     bool        m_preprocOnly;  // main switch: -E
     bool        m_makePhony;    // main switch: -MP
@@ -295,6 +321,8 @@ private:
     int         m_dumpTree;     // main switch: --dump-tree
     bool        m_dumpTreeAddrids;// main switch: --dump-tree-addrids
     int         m_gateStmts;    // main switch: --gate-stmts
+    bool        m_hierarchical; // main switch: --hierarchical
+    bool        m_hierChild;    // main switch: --hierarchical-child
     int         m_ifDepth;      // main switch: --if-depth
     int         m_inlineMult;   // main switch: --inline-mult
     VOptionBool m_makeDepend;  // main switch: -MMD
@@ -386,6 +414,7 @@ private:
     string parseFileArg(const string& optdir, const string& relfilename);
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
+    int stripOptionsForChildRun(const string& opt, bool forTop) const;
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(V3Options);
@@ -595,10 +624,23 @@ public:
         return m_traceFormat.sourceName() + (systemC() ? "_sc" : "_c");
     }
 
+    bool hierarchical() const { return m_hierarchical; }
+    bool hierChild() const { return m_hierChild; }
+    bool hierTop() const { return !m_hierChild && !m_hierBlocks.empty(); }
+    const V3HierBlockOptSet& hierBlocks() const { return m_hierBlocks; }
+    // Directory to save .tree, .dot, .dat, .vpp for hierarchical block top
+    // Returns makeDir() unless top module of hierarchical verilation.
+    string hierTopDataDir() const {
+        return hierTop() ? (makeDir() + '/' + prefix() + "__hier.dir") : makeDir();
+    }
+
     // METHODS (from main)
     static string version();
     static string argString(int argc, char** argv);  ///< Return list of arguments as simple string
     string allArgsString() const;  ///< Return all passed arguments as simple string
+    // Return options for child hierarchical blocks when forTop==false, otherwise returns args for
+    // the top module.
+    string allArgsStringForHierBlock(bool forTop) const;
     void bin(const string& flag) { m_bin = flag; }
     void parseOpts(FileLine* fl, int argc, char** argv);
     void parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv);

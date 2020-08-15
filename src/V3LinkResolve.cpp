@@ -266,7 +266,17 @@ private:
     }
 
     virtual void visit(AstPragma* nodep) VL_OVERRIDE {
-        if (nodep->pragType() == AstPragmaType::PUBLIC_MODULE) {
+        if (nodep->pragType() == AstPragmaType::HIER_BLOCK) {
+            UASSERT_OBJ(m_modp, nodep, "HIER_BLOCK not under a module");
+            // If this is hierarchical mode which is to create protect-lib,
+            // sub modules do not have hier_block meta comment in the source code.
+            // But .vlt files may still mark a module which is actually a protect-lib wrapper
+            // hier_block. AstNodeModule::hierBlock() can be true only when --hierarchical is
+            // specified.
+            m_modp->hierBlock(v3Global.opt.hierarchical());
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (nodep->pragType() == AstPragmaType::PUBLIC_MODULE) {
             UASSERT_OBJ(m_modp, nodep, "PUBLIC_MODULE not under a module");
             m_modp->modPublic(true);
             nodep->unlinkFrBack();

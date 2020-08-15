@@ -115,6 +115,7 @@ private:
     LibraryVertex* m_libVertexp;  // Vertex at root of all libraries
     V3GraphVertex* m_topVertexp;  // Vertex of top module
     vl_unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
+    string m_origTopModuleName;  // original name of the top module
 
     VL_DEBUG_FUNC;  // Declare debug()
 
@@ -290,6 +291,16 @@ private:
         // m_mod, if 0 never did it, if !=, it is an unprocessed clone
         bool cloned = (nodep->user1p() && nodep->user1p() != m_modp);
         if (nodep->user1p() == m_modp) return;  // AstBind and AstNodeModule may call a cell twice
+        if (v3Global.opt.hierChild() && nodep->modName() == m_origTopModuleName) {
+            if (nodep->modName() == m_modp->origName()) {
+                // Only the root of the recursive instantiation can be a hierarhcical block.
+                nodep->modName(m_modp->name());
+            } else {
+                // In hierarchical mode, non-top module can be the top module of this run
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+        }
         nodep->user1p(m_modp);
         //
         if (!nodep->modp() || cloned) {
@@ -453,13 +464,23 @@ private:
 
     // METHODS
     void readModNames() {
+        // mangled_name, BlockOptions
+        const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
+        V3HierBlockOptSet::const_iterator hierIt = hierBlocks.find(v3Global.opt.topModule());
+        UASSERT((hierIt != hierBlocks.end()) == v3Global.opt.hierChild(),
+                "information of the top module must exist if --hierarchical-child is set");
         // Look at all modules, and store pointers to all module names
         for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
             nextp = VN_CAST(nodep->nextp(), NodeModule);
+            if (v3Global.opt.hierChild() && nodep->name() == hierIt->second.origName()) {
+                nodep->name(hierIt->first);  // Change name of this module to be mangled name
+                                             // considering parameter
+            }
             AstNodeModule* foundp = findModuleSym(nodep->name());
             if (foundp && foundp != nodep) {
                 if (!(foundp->fileline()->warnIsOff(V3ErrorCode::MODDUP)
-                      || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP))) {
+                      || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP)
+                      || hierBlocks.find(nodep->name()) != hierBlocks.end())) {
                     nodep->v3warn(MODDUP, "Duplicate declaration of module: "
                                               << nodep->prettyNameQ() << endl
                                               << nodep->warnContextPrimary() << endl
@@ -485,6 +506,18 @@ public:
         m_modp = NULL;
         m_libVertexp = NULL;
         m_topVertexp = NULL;
+        if (v3Global.opt.hierChild()) {
+            const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
+            UASSERT(!v3Global.opt.topModule().empty(),
+                    "top module must be explicitly specified in hierarchical mode");
+            const V3HierBlockOptSet::const_iterator hierIt
+                = hierBlocks.find(v3Global.opt.topModule());
+            UASSERT(hierIt != hierBlocks.end(),
+                    "top module must be listed in --hierarchical-block");
+            m_origTopModuleName = hierIt->second.origName();
+        } else {
+            m_origTopModuleName = v3Global.opt.topModule();
+        }
         iterate(nodep);
     }
     virtual ~LinkCellsVisitor() {}

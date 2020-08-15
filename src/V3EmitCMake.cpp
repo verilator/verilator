@@ -21,6 +21,7 @@
 #include "V3Os.h"
 #include "V3EmitCMake.h"
 #include "V3EmitCBase.h"
+#include "V3HierBlock.h"
 
 #include <memory>
 
@@ -39,11 +40,11 @@ class CMakeEmitter {
         string s;
         if (strs.begin() != strs.end()) {
             s.append("\"");
-            s.append(*strs.begin());
+            s.append(VString::quoteAny(*strs.begin(), '"', '\\'));
             s.append("\"");
             for (typename List::const_iterator it = ++strs.begin(); it != strs.end(); ++it) {
                 s.append(" \"");
-                s.append(*it);
+                s.append(VString::quoteAny(*it, '"', '\\'));
                 s.append("\"");
             }
         }
@@ -195,6 +196,57 @@ class CMakeEmitter {
 
         *of << "# User .cpp files (from .cpp's on Verilator command line)\n";
         cmake_set_raw(*of, name + "_USER_CLASSES", deslash(cmake_list(v3Global.opt.cppFiles())));
+        if (const V3HierBlockPlan* planp = v3Global.hierPlanp()) {
+            *of << "# Verilate hierarchical blocks\n";
+            // Sorted hierarchical blocks in order of leaf-first.
+            const V3HierBlockPlan::HierVector& hierBlocks = planp->hierBlocksSorted();
+            const string topTarget = v3Global.opt.protectLib().empty() ? v3Global.opt.prefix()
+                                                                       : v3Global.opt.protectLib();
+            for (V3HierBlockPlan::HierVector::const_iterator it = hierBlocks.begin();
+                 it != hierBlocks.end(); ++it) {
+                const V3HierBlock* hblockp = *it;
+                const V3HierBlock::HierBlockSet& children = hblockp->children();
+                const string prefix = hblockp->hierPrefix();
+                *of << "add_library(" << prefix << " STATIC)\n";
+                *of << "target_link_libraries(" << topTarget << " PRIVATE " << prefix << ")\n";
+                if (!children.empty()) {
+                    *of << "target_link_libraries(" << prefix << " INTERFACE";
+                    for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
+                         child != children.end(); ++child) {
+                        *of << " " << (*child)->hierPrefix();
+                    }
+                    *of << ")\n";
+                }
+                *of << "verilate(" << prefix << " PREFIX " << prefix << " TOP_MODULE "
+                    << hblockp->modp()->name() << " DIRECTORY "
+                    << deslash("${CMAKE_CURRENT_BINARY_DIR}/" + prefix) << " SOURCES ";
+                for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
+                     child != children.end(); ++child) {
+                    *of << deslash(" ${CMAKE_CURRENT_BINARY_DIR}/" + (*child)->hierWrapper(true));
+                }
+                *of << " ";
+                const V3StringList& vFiles = v3Global.opt.vFiles();
+                for (V3StringList::const_iterator it = vFiles.begin(); it != vFiles.end(); ++it) {
+                    *of << V3Os::filenameRealPath(*it);
+                }
+                *of << " VERILATOR_ARGS ";
+                *of << "-f " << deslash(hblockp->commandArgsFileName(true))
+                    << " -CFLAGS -fPIC"  // hierarchical block will be static, but may be linked
+                                         // with .so
+                    << ")\n";
+            }
+            *of << "\n# Verilate the top module that refers protect-lib wrappers of above\n";
+            *of << "verilate(" << topTarget << " PREFIX " << v3Global.opt.prefix()
+                << " TOP_MODULE " << v3Global.rootp()->topModulep()->name() << " DIRECTORY "
+                << deslash("${CMAKE_CURRENT_BINARY_DIR}/" + topTarget + ".dir") << " SOURCES ";
+            for (V3HierBlockPlan::const_iterator it = planp->begin(); it != planp->end(); ++it) {
+                *of << deslash(" ${CMAKE_CURRENT_BINARY_DIR}/" + it->second->hierWrapper(true));
+            }
+            *of << " " << deslash(cmake_list(v3Global.opt.vFiles()));
+            *of << " VERILATOR_ARGS ";
+            *of << "-f " << deslash(planp->topCommandArgsFileName(true));
+            *of << ")\n";
+        }
     }
 
 public:

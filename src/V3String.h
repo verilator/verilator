@@ -80,8 +80,15 @@ public:
     static string downcase(const string& str);
     // Convert string to upper case (toupper)
     static string upcase(const string& str);
+    // Insert esc just before tgt
+    static string quoteAny(const string& str, char tgt, char esc);
+    // Replace any \'s with \\  (two consecutive backslashes)
+    static string quoteBackslash(const string& str) { return quoteAny(str, '\\', '\\'); }
     // Replace any %'s with %%
-    static string quotePercent(const string& str);
+    static string quotePercent(const string& str) { return quoteAny(str, '%', '%'); }
+    // Surround a raw string by double quote and escape if necessary
+    // e.g. input abc's  becomes "\"abc\'s\""
+    static string quoteStringLiteralForShell(const string& str);
     // Replace any unprintable with space
     // This includes removing tabs, so column tracking is correct
     static string spaceUnprintable(const string& str);

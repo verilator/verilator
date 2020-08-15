@@ -135,6 +135,95 @@ VTimescale::VTimescale(const string& value, bool& badr)
     }
 }
 
+//######################################################################
+// V3HierarchicalBlockOption class functions
+
+// Parse "--hierarchical-block orig_name,mangled_name,param0_name,param0_value,... " option.
+// The format of value is as same as -G option. (can be string literal surrounded by ")
+V3HierarchicalBlockOption::V3HierarchicalBlockOption(const string& opts) {
+    V3StringList vals;
+    bool inStr = false;
+    string cur;
+    static const string hierBlock("--hierarchical-block");
+    FileLine cmdfl(FileLine::commandLineFilename());
+    // Split by ','. If ',' appears between "", that is not a separator.
+    for (string::const_iterator it = opts.begin(); it != opts.end();) {
+        if (inStr) {
+            if (*it == '\\') {
+                ++it;
+                if (it == opts.end()) {
+                    cmdfl.v3error(hierBlock + " must not end with \\");
+                    break;
+                }
+                if (*it != '"' && *it != '\\') {
+                    cmdfl.v3error(hierBlock + " does not allow '" + *it + "' after \\");
+                    break;
+                }
+                cur.push_back(*it);
+                ++it;
+            } else if (*it == '"') {  // end of string
+                cur.push_back(*it);
+                vals.push_back(cur);
+                cur.clear();
+                ++it;
+                if (it != opts.end()) {
+                    if (*it != ',') {
+                        cmdfl.v3error(hierBlock + " expects ',', but '" + *it + "' is passed");
+                        break;
+                    }
+                    ++it;
+                    if (it == opts.end()) {
+                        cmdfl.v3error(hierBlock + " must not end with ','");
+                        break;
+                    }
+                    inStr = *it == '"';
+                    cur.push_back(*it);
+                    ++it;
+                }
+            } else {
+                cur.push_back(*it);
+                ++it;
+            }
+        } else {
+            if (*it == '"') {
+                cmdfl.v3error(hierBlock + " does not allow '\"' in the middle of literal");
+                break;
+            }
+            if (*it == ',') {  // end of this parameter
+                vals.push_back(cur);
+                cur.clear();
+                ++it;
+                if (it == opts.end()) {
+                    cmdfl.v3error(hierBlock + " must not end with ','");
+                    break;
+                }
+                inStr = *it == '"';
+            }
+            cur.push_back(*it);
+            ++it;
+        }
+    }
+    if (!cur.empty()) vals.push_back(cur);
+    if (vals.size() >= 2) {
+        if (vals.size() % 2) {
+            cmdfl.v3error(hierBlock + " requires the number of entries to be even");
+        }
+        m_origName = vals[0];
+        m_mangledName = vals[1];
+    } else {
+        cmdfl.v3error(hierBlock + " requires at least two comma-separated values");
+    }
+    for (size_t i = 2; i + 1 < vals.size(); i += 2) {
+        const bool inserted = m_parameters.insert(std::make_pair(vals[i], vals[i + 1])).second;
+        if (!inserted) {
+            cmdfl.v3error("Module name '" + vals[i] + "' is duplicated in " + hierBlock);
+        }
+    }
+}
+
+//######################################################################
+// V3Options class functions
+
 void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr,
                               VTimescale& precr, bool allowEmpty) {
     // Parse `timescale of <number><units> / <number><units>
@@ -304,6 +393,42 @@ string V3Options::allArgsString() const {
     return out;
 }
 
+// Delete some options for Verilation of the hierarchical blocks.
+string V3Options::allArgsStringForHierBlock(bool forTop) const {
+    std::set<string> vFiles;
+    for (V3StringList::const_iterator it = m_vFiles.begin(); it != m_vFiles.end(); ++it)
+        vFiles.insert(*it);
+    string out;
+    for (std::list<string>::const_iterator it = m_impp->m_allArgs.begin();
+         it != m_impp->m_allArgs.end(); ++it) {
+        int skip = 0;
+        if (it->length() >= 2 && (*it)[0] == '-' && (*it)[1] == '-') {
+            skip = 2;
+        } else if (it->length() >= 1 && (*it)[0] == '-') {
+            skip = 1;
+        }
+        if (skip > 0) {  // *it is an option
+            const string opt = it->substr(skip);  // Remove '-' in the beginning
+            const int numStrip = stripOptionsForChildRun(opt, forTop);
+            if (numStrip) {
+                UASSERT(0 <= numStrip && numStrip <= 2, "should be one of 0, 1, 2");
+                if (numStrip == 2) ++it;
+                continue;
+            }
+        } else {  // Not an option
+            if (vFiles.find(*it) != vFiles.end()  // Remove HDL
+                || m_cppFiles.find(*it) != m_cppFiles.end()) {  // Remove C++
+                continue;
+            }
+        }
+        if (out != "") out += " ";
+        // Don't use opt here because '-' is removed in it
+        // Use double quote because *it may contain whitespaces
+        out += '"' + VString::quoteAny(*it, '"', '\\') + '"';
+    }
+    return out;
+}
+
 //######################################################################
 // File searching
 
@@ -381,6 +506,23 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
         }
     }
     return "";
+}
+
+// Checks if a option needs to be stripped for child run of hierarchical Verilation.
+// 0: Keep the option including its argument
+// 1: Delete the option which has no argument
+// 2: Delete the option and its argument
+int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) const {
+    if (opt == "Mdir" || opt == "clk" || opt == "f" || opt == "j" || opt == "l2-name"
+        || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib" || opt == "protect-key"
+        || opt == "top-module" || opt == "v") {
+        return 2;
+    }
+    if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
+        || opt == "hierarchical" || (opt.length() > 2 && opt.substr(0, 2) == "G=")) {
+        return 1;
+    }
+    return 0;
 }
 
 string V3Options::filePath(FileLine* fl, const string& modname, const string& lastpath,
@@ -598,6 +740,19 @@ void V3Options::notify() {
 
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_cmake) m_gmake = true;
+
+    if (m_hierarchical && (m_hierChild || !m_hierBlocks.empty())) {
+        cmdfl->v3error(
+            "--hierarchical must not be set with --hierarchical-child or --hierarchical-block");
+    }
+    if (m_hierChild && m_hierBlocks.empty()) {
+        cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
+    }
+    if (m_hierarchical && m_protectLib.empty() && m_protectKey.empty()) {
+        // Key for hierarchical Verilation is fixed to be ccache friendly when the aim of this run
+        // is not to create protec-lib.
+        m_protectKey = "VL-KEY-HIERARCHICAL";
+    }
 
     if (protectIds()) {
         if (allPublic()) {
@@ -896,6 +1051,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 m_exe = flag;
             } else if (onoff(sw, "-flatten", flag /*ref*/)) {
                 m_flatten = flag;
+            } else if (onoff(sw, "-hierarchical", flag /*ref*/)) {
+                m_hierarchical = flag;
+            } else if (onoff(sw, "-hierarchical-child", flag /*ref*/)) {
+                m_hierChild = flag;
             } else if (onoff(sw, "-ignc", flag /*ref*/)) {
                 m_ignc = flag;
             } else if (onoff(sw, "-inhibit-sim", flag /*ref*/)) {
@@ -1081,6 +1240,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 shift;
                 cout << V3Options::getenvBuiltins(argv[i]) << endl;
                 exit(0);
+            } else if (!strcmp(sw, "-hierarchical-block") && (i + 1) < argc) {
+                shift;
+                V3HierarchicalBlockOption opt(argv[i]);
+                m_hierBlocks.insert(std::make_pair(opt.mangledName(), opt));
             } else if (!strncmp(sw, "-I", 2)) {
                 addIncDirUser(parseFileArg(optdir, string(sw + strlen("-I"))));
             } else if (!strcmp(sw, "-if-depth") && (i + 1) < argc) {
@@ -1648,10 +1811,12 @@ V3Options::V3Options() {
     m_dumpDefines = false;
     m_exe = false;
     m_flatten = false;
+    m_gmake = false;
+    m_hierarchical = false;
+    m_hierChild = false;
     m_ignc = false;
     m_inhibitSim = false;
     m_lintOnly = false;
-    m_gmake = false;
     m_makePhony = false;
     m_main = false;
     m_orderClockDly = true;
