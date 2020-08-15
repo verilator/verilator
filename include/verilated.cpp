@@ -584,6 +584,30 @@ QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp, bool lsig
     return VL_POW_QQW(obits, rbits, rbits, lhs, rwp);
 }
 
+double VL_ITOR_D_W(int lbits, WDataInP lwp) VL_PURE {
+    int ms_word = VL_WORDS_I(lbits) - 1;
+    for (; !lwp[ms_word] && ms_word > 0;) --ms_word;
+    if (ms_word == 0) return static_cast<double>(lwp[0]);
+    if (ms_word == 1) return static_cast<double>(VL_SET_QW(lwp));
+    // We need 53 bits of mantissa, which might mean looking at 3 words
+    // namely ms_word, ms_word-1 and ms_word-2
+    EData ihi = lwp[ms_word];
+    EData imid = lwp[ms_word - 1];
+    EData ilo = lwp[ms_word - 2];
+    double hi = static_cast<double>(ihi) * exp2(2 * VL_EDATASIZE);
+    double mid = static_cast<double>(imid) * exp2(VL_EDATASIZE);
+    double lo = static_cast<double>(ilo);
+    double d = (hi + mid + lo) * exp2(VL_EDATASIZE * (ms_word - 2));
+    return d;
+}
+double VL_ISTOR_D_W(int lbits, WDataInP lwp) VL_PURE {
+    if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_D_W(lbits, lwp);
+    vluint32_t pos[VL_MULS_MAX_WORDS + 1];  // Fixed size, as MSVC++ doesn't allow [words] here
+    VL_NEGATE_W(VL_WORDS_I(lbits), pos, lwp);
+    _VL_CLEAN_INPLACE_W(lbits, pos);
+    return -VL_ITOR_D_W(lbits, pos);
+}
+
 //===========================================================================
 // Formatting
 

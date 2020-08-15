@@ -2232,13 +2232,24 @@ V3Number& V3Number::opSelInto(const V3Number& lhs, int lsbval, int width) {
 //======================================================================
 // Ops - Floating point
 
-V3Number& V3Number::opIToRD(const V3Number& lhs) {
+V3Number& V3Number::opIToRD(const V3Number& lhs, bool isSigned) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     // IEEE says we ignore x/z in real conversions
     V3Number noxz(lhs);
     noxz.opAssignNonXZ(lhs);
-    return setDouble(noxz.toSInt());
+    double d = 0;
+    bool negate = isSigned && noxz.isNegative();
+    if (negate) {
+        V3Number noxz_signed = noxz;
+        noxz.opNegate(noxz_signed);
+    }
+    for (int bit = noxz.width() - 1; bit >= 0; bit--) {
+        // Some precision might be lost in this add, that's what we want
+        if (noxz.bitIs1(bit)) d += exp2(bit);
+    }
+    if (negate) d = -d;
+    return setDouble(d);
 }
 V3Number& V3Number::opRToIS(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);

@@ -7,11 +7,12 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.038 2020-07-11],
+AC_INIT([Verilator],[4.040 2020-08-15],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
 # and commit using "devel release" or "Version bump" message
+# Then 'make maintainer-dist'
 
 AC_CONFIG_HEADER(src/config_build.h)
 AC_CONFIG_FILES(Makefile docs/Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)

@@ -1,22 +1,9 @@
 %Error: t/t_process.v:22:4: Can't find typedef: 'process'
    22 |    process p;
       |    ^~~~~~~
-%Error: t/t_process.v:26:20: Can't find definition of task/function: 'self'
+%Error-UNSUPPORTED: t/t_process.v:26:20: Unsupported: 'process'
    26 |       p = process::self();
       |                    ^~~~
-%Error: t/t_process.v:27:34: Can't find definition of variable: 'RUNNING'
-   27 |       if (p.status() != process::RUNNING) $stop;
-      |                                  ^~~~~~~
-%Error: t/t_process.v:28:34: Can't find definition of variable: 'WAITING'
-   28 |       if (p.status() == process::WAITING) $stop;
-      |                                  ^~~~~~~
-%Error: t/t_process.v:29:34: Can't find definition of variable: 'SUSPENDED'
-   29 |       if (p.status() == process::SUSPENDED) $stop;
-      |                                  ^~~~~~~~~
-%Error: t/t_process.v:30:34: Can't find definition of variable: 'KILLED'
-   30 |       if (p.status() == process::KILLED) $stop;
-      |                                  ^~~~~~
-%Error: t/t_process.v:31:34: Can't find definition of variable: 'FINISHED'
-   31 |       if (p.status() == process::FINISHED) $stop;
-      |                                  ^~~~~~~~
-%Error: Exiting due to
+%Error: Internal Error: t/t_process.v:26:11: ../V3LinkDot.cpp:#: Bad package link
+   26 |       p = process::self();
+      |           ^~~~~~~

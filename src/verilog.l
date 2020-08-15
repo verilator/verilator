@@ -422,6 +422,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$dimensions"         { FL; return yD_DIMENSIONS; }
   "$error"              { FL; return yD_ERROR; }
   "$fatal"              { FL; return yD_FATAL; }
+  "$fell"               { FL; return yD_FELL; }
   "$high"               { FL; return yD_HIGH; }
   "$increment"          { FL; return yD_INCREMENT; }
   "$info"               { FL; return yD_INFO; }
@@ -434,7 +435,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$past"               { FL; return yD_PAST; }
   "$right"              { FL; return yD_RIGHT; }
   "$root"               { FL; return yD_ROOT; }
+  "$rose"               { FL; return yD_ROSE; }
   "$size"               { FL; return yD_SIZE; }
+  "$stable"             { FL; return yD_STABLE; }
   "$unpacked_dimensions" { FL; return yD_UNPACKED_DIMENSIONS; }
   "$warning"            { FL; return yD_WARNING; }
   /*     SV2005 Keywords */

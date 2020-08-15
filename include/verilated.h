@@ -764,9 +764,27 @@ static inline QData VL_CVT_Q_D(double lhs) VL_PURE {
 }
 // clang-format on
 
-/// Return double from QData (numeric)
-static inline double VL_ITOR_D_I(IData lhs) VL_PURE {
-    return static_cast<double>(static_cast<vlsint32_t>(lhs));
+/// Return double from lhs (numeric) unsigned
+double VL_ITOR_D_W(int lbits, WDataInP lwp) VL_PURE;
+static inline double VL_ITOR_D_I(int, IData lhs) VL_PURE {
+    return static_cast<double>(static_cast<vluint32_t>(lhs));
+}
+static inline double VL_ITOR_D_Q(int, QData lhs) VL_PURE {
+    return static_cast<double>(static_cast<vluint64_t>(lhs));
+}
+/// Return double from lhs (numeric) signed
+double VL_ISTOR_D_W(int lbits, WDataInP lwp) VL_PURE;
+static inline double VL_ISTOR_D_I(int lbits, IData lhs) VL_PURE {
+    if (lbits == 32) return static_cast<double>(static_cast<vlsint32_t>(lhs));
+    WData lwp[VL_WQ_WORDS_E];
+    VL_SET_WI(lwp, lhs);
+    return VL_ISTOR_D_W(lbits, lwp);
+}
+static inline double VL_ISTOR_D_Q(int lbits, QData lhs) VL_PURE {
+    if (lbits == 64) return static_cast<double>(static_cast<vlsint64_t>(lhs));
+    WData lwp[VL_WQ_WORDS_E];
+    VL_SET_WQ(lwp, lhs);
+    return VL_ISTOR_D_W(lbits, lwp);
 }
 /// Return QData from double (numeric)
 static inline IData VL_RTOI_I_D(double lhs) VL_PURE {
@@ -1453,6 +1471,7 @@ static inline int _VL_CMPS_W(int lbits, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
 //=========================================================================
 // Math
 
+// Output NOT clean
 static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp, WDataInP lwp) VL_MT_SAFE {
     EData carry = 1;
     for (int i = 0; i < words; ++i) {
@@ -2538,25 +2557,25 @@ static inline WDataOutP VL_CONSTHI_W_1X(int obits, int lsb, WDataOutP obase,
                                         EData d0) VL_MT_SAFE {
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;
-    _END(obits,1);
+    _END(obits, VL_WORDS_I(lsb) + 1);
 }
 static inline WDataOutP VL_CONSTHI_W_2X(int obits, int lsb, WDataOutP obase,
                                         EData d1, EData d0) VL_MT_SAFE {
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;
-    _END(obits,2);
+    _END(obits, VL_WORDS_I(lsb) + 2);
 }
 static inline WDataOutP VL_CONSTHI_W_3X(int obits, int lsb, WDataOutP obase,
                                         EData d2, EData d1, EData d0) VL_MT_SAFE {
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;
-    _END(obits,3);
+    _END(obits, VL_WORDS_I(lsb) + 3);
 }
 static inline WDataOutP VL_CONSTHI_W_4X(int obits, int lsb, WDataOutP obase,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    _END(obits,4);
+    _END(obits, VL_WORDS_I(lsb) + 4);
 }
 static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP obase,
                                         EData d4,
@@ -2564,7 +2583,7 @@ static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP obase,
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;
-    _END(obits,5);
+    _END(obits, VL_WORDS_I(lsb) + 5);
 }
 static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP obase,
                                         EData d5, EData d4,
@@ -2572,7 +2591,7 @@ static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP obase,
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;
-    _END(obits,6);
+    _END(obits, VL_WORDS_I(lsb) + 6);
 }
 static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP obase,
                                         EData d6, EData d5, EData d4,
@@ -2580,7 +2599,7 @@ static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP obase,
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;  o[6] = d6;
-    _END(obits,7);
+    _END(obits, VL_WORDS_I(lsb) + 7);
 }
 static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP obase,
                                         EData d7, EData d6, EData d5, EData d4,
@@ -2588,7 +2607,7 @@ static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP obase,
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;  o[6] = d6;  o[7] = d7;
-    _END(obits,8);
+    _END(obits, VL_WORDS_I(lsb) + 8);
 }
 
 #undef _END

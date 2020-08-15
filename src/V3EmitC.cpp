@@ -877,6 +877,15 @@ public:
         emitOpName(nodep, nodep->emitC(), NULL, NULL, NULL);
     }
     virtual void visit(AstNodeUniop* nodep) VL_OVERRIDE {
+        if (nodep->emitCheckMaxWords()
+            && (nodep->widthWords() > VL_MULS_MAX_WORDS
+                || nodep->lhsp()->widthWords() > VL_MULS_MAX_WORDS)) {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: "
+                    << nodep->prettyOperatorName() << " operator of " << nodep->width()
+                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+        }
         if (emitSimpleOk(nodep)) {
             putbs("(");
             puts(nodep->emitSimpleOperator());
@@ -888,6 +897,13 @@ public:
         }
     }
     virtual void visit(AstNodeBiop* nodep) VL_OVERRIDE {
+        if (nodep->emitCheckMaxWords() && nodep->widthWords() > VL_MULS_MAX_WORDS) {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: "
+                    << nodep->prettyOperatorName() << " operator of " << nodep->width()
+                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+        }
         if (emitSimpleOk(nodep)) {
             putbs("(");
             iterateAndNextNull(nodep->lhsp());
@@ -914,56 +930,6 @@ public:
             iterateAndNextNull(nodep->lhsp());
             puts(")");
         }
-    }
-    virtual void visit(AstMulS* nodep) VL_OVERRIDE {
-        if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-            nodep->v3warn(
-                E_UNSUPPORTED,
-                "Unsupported: Signed multiply of "
-                    << nodep->width()
-                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
-        }
-        visit(VN_CAST(nodep, NodeBiop));
-    }
-    virtual void visit(AstPow* nodep) VL_OVERRIDE {
-        if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-            nodep->v3warn(
-                E_UNSUPPORTED,
-                "Unsupported: Power of "
-                    << nodep->width()
-                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
-        }
-        visit(VN_CAST(nodep, NodeBiop));
-    }
-    virtual void visit(AstPowSS* nodep) VL_OVERRIDE {
-        if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-            nodep->v3warn(
-                E_UNSUPPORTED,
-                "Unsupported: Power of "
-                    << nodep->width()
-                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
-        }
-        visit(VN_CAST(nodep, NodeBiop));
-    }
-    virtual void visit(AstPowSU* nodep) VL_OVERRIDE {
-        if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-            nodep->v3warn(
-                E_UNSUPPORTED,
-                "Unsupported: Power of "
-                    << nodep->width()
-                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
-        }
-        visit(VN_CAST(nodep, NodeBiop));
-    }
-    virtual void visit(AstPowUS* nodep) VL_OVERRIDE {
-        if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-            nodep->v3warn(
-                E_UNSUPPORTED,
-                "Unsupported: Power of "
-                    << nodep->width()
-                    << " bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
-        }
-        visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstCCast* nodep) VL_OVERRIDE {
         // Extending a value of the same word width is just a NOP.
@@ -3825,8 +3791,8 @@ void V3EmitC::emitc() {
          nodep = VN_CAST(nodep->nextp(), NodeModule)) {
         if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
         // clang-format off
-        { EmitCImp cint; cint.mainInt(nodep); }
-        { EmitCImp slow; slow.mainImp(nodep, true); }
+        EmitCImp cint; cint.mainInt(nodep);
+        cint.mainImp(nodep, true);
         { EmitCImp fast; fast.mainImp(nodep, false); }
         // clang-format on
     }

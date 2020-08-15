@@ -1493,19 +1493,19 @@ void AstParseRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << expect().ascii() << "]";
 }
-void AstPackageRef::dump(std::ostream& str) const {
+void AstClassOrPackageRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
+    if (classOrPackagep()) { str << " cpkg=" << nodeAddr(classOrPackagep()); }
     str << " -> ";
-    if (packagep()) {
-        packagep()->dump(str);
+    if (classOrPackagep()) {
+        classOrPackagep()->dump(str);
     } else {
         str << "UNLINKED";
     }
 }
 void AstDot::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (colon()) str << "[::]";
+    if (colon()) str << " [::]";
 }
 void AstActive::dump(std::ostream& str) const {
     this->AstNode::dump(str);

@@ -429,7 +429,9 @@ public:
     static AstIfaceRefDType* ifaceRefFromArray(AstNodeDType* nodep) {
         AstIfaceRefDType* ifacerefp = VN_CAST(nodep, IfaceRefDType);
         if (!ifacerefp) {
-            if (AstUnpackArrayDType* arrp = VN_CAST(nodep, UnpackArrayDType)) {
+            if (AstBracketArrayDType* arrp = VN_CAST(nodep, BracketArrayDType)) {
+                ifacerefp = VN_CAST(arrp->subDTypep(), IfaceRefDType);
+            } else if (AstUnpackArrayDType* arrp = VN_CAST(nodep, UnpackArrayDType)) {
                 ifacerefp = VN_CAST(arrp->subDTypep(), IfaceRefDType);
             }
         }
@@ -1006,12 +1008,6 @@ class LinkDotFindVisitor : public AstNVisitor {
         // Var: Remember its name for later resolution
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Var not under module?");
         iterateChildren(nodep);
-        if (m_ftaskp && nodep->isParam()) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Parameters in functions");  // Big3 unsupported too
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            return;
-        }
         if (nodep->isFuncLocal() && nodep->lifetime().isStatic()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' function/task variables");
         } else if (nodep->isClassMember() && nodep->lifetime().isStatic()) {
@@ -1951,7 +1947,7 @@ private:
             m_ds.m_dotPos = DP_SCOPE;
 
             // m_ds.m_dotText communicates the cell prefix between stages
-            if (VN_IS(nodep->lhsp(), PackageRef)) {
+            if (VN_IS(nodep->lhsp(), ClassOrPackageRef)) {
                 // if (!start) { nodep->lhsp()->v3error("Package reference may not be embedded in
                 // dotted reference"); m_ds.m_dotErr=true; }
                 m_ds.m_dotPos = DP_PACKAGE;
@@ -2047,9 +2043,16 @@ private:
                 expectWhat = "scope/variable";
                 allowScope = true;
                 allowVar = true;
-                UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), PackageRef), m_ds.m_dotp->lhsp(),
+                UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                             "Bad package link");
-                packagep = VN_CAST(m_ds.m_dotp->lhsp(), PackageRef)->packagep();
+                AstClassOrPackageRef* cpackagerefp
+                    = VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
+                packagep = cpackagerefp->packagep();
+                if (!packagep && cpackagerefp->classOrPackagep()) {
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Class '::' references: "
+                                      << AstNode::prettyNameQ(cpackagerefp->name()));
+                }
                 UASSERT_OBJ(packagep, m_ds.m_dotp->lhsp(), "Bad package link");
                 m_ds.m_dotSymp = m_statep->getNodeSym(packagep);
                 m_ds.m_dotPos = DP_SCOPE;
@@ -2399,11 +2402,19 @@ private:
         if (nodep->user3SetOnce()) return;
         UINFO(8, "     " << nodep << endl);
         if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
-            UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), PackageRef), m_ds.m_dotp->lhsp(),
+            UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
-            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), PackageRef)->packagep(), m_ds.m_dotp->lhsp(),
-                        "Bad package link");
-            nodep->packagep(VN_CAST(m_ds.m_dotp->lhsp(), PackageRef)->packagep());
+            AstClassOrPackageRef* cpackagerefp = VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
+            if (cpackagerefp->name() == "process" || cpackagerefp->name() == "local") {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: " << AstNode::prettyNameQ(cpackagerefp->name()));
+            }
+            if (cpackagerefp->paramsp()) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
+            }
+            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->packagep(),
+                        m_ds.m_dotp->lhsp(), "Bad package link");
+            nodep->packagep(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->packagep());
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = NULL;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
@@ -2667,12 +2678,30 @@ private:
     virtual void visit(AstRefDType* nodep) VL_OVERRIDE {
         // Resolve its reference
         if (nodep->user3SetOnce()) return;
+        if (AstNode* cpackagep = nodep->classOrPackagep()) {
+            if (AstClassOrPackageRef* cpackagerefp = VN_CAST(cpackagep, ClassOrPackageRef)) {
+                if (cpackagerefp->packagep()) {
+                    nodep->packagep(cpackagerefp->packagep());
+                } else {
+                    cpackagep->v3warn(E_UNSUPPORTED, "Unsupported: Class '::' reference");
+                    // if (cpackagerefp->paramsp()) {
+                    //    nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
+                    // }
+                }
+            } else {
+                cpackagep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Multiple '::' package/class reference");
+            }
+            VL_DO_DANGLING(cpackagep->unlinkFrBack()->deleteTree(), cpackagep);
+        } else if (nodep->paramsp()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
+        }
         if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
-            UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), PackageRef), m_ds.m_dotp->lhsp(),
+            UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
-            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), PackageRef)->packagep(), m_ds.m_dotp->lhsp(),
-                        "Bad package link");
-            nodep->packagep(VN_CAST(m_ds.m_dotp->lhsp(), PackageRef)->packagep());
+            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->packagep(),
+                        m_ds.m_dotp->lhsp(), "Bad package link");
+            nodep->packagep(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->packagep());
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = NULL;
         } else {
