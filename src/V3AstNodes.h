@@ -7669,24 +7669,17 @@ public:
 class AstReplicate : public AstNodeBiop {
     // Also used as a "Uniop" flavor of Concat, e.g. "{a}"
     // Verilog {rhs{lhs}} - Note rhsp() is the replicate value, not the lhsp()
-private:
-    void init() {
-        if (lhsp()) {
-            if (const AstConst* constp = VN_CAST(rhsp(), Const)) {
-                dtypeSetLogicSized(lhsp()->width() * constp->toUInt(), VSigning::UNSIGNED);
-            }
-        }
-    }
-
 public:
     AstReplicate(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        init();
+        if (lhsp) {
+            if (const AstConst* constp = VN_CAST(rhsp, Const)) {
+                dtypeSetLogicSized(lhsp->width() * constp->toUInt(), VSigning::UNSIGNED);
+            }
+        }
     }
     AstReplicate(FileLine* fl, AstNode* lhsp, uint32_t repCount)
-        : ASTGEN_SUPER(fl, lhsp, new AstConst(fl, repCount)) {
-        init();
-    }
+        : AstReplicate(fl, lhsp, new AstConst(fl, repCount)) {}
     ASTNODE_NODE_FUNCS(Replicate)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
         return new AstReplicate(this->fileline(), lhsp, rhsp);
@@ -7705,18 +7698,13 @@ public:
 };
 class AstReplicateN : public AstNodeBiop {
     // String replicate
-private:
-    void init() { dtypeSetString(); }
-
 public:
     AstReplicateN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        init();
+        dtypeSetString();
     }
     AstReplicateN(FileLine* fl, AstNode* lhsp, uint32_t repCount)
-        : ASTGEN_SUPER(fl, lhsp, new AstConst(fl, repCount)) {
-        init();
-    }
+        : AstReplicateN(fl, lhsp, new AstConst(fl, repCount)) {}
     ASTNODE_NODE_FUNCS(ReplicateN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
         return new AstReplicateN(this->fileline(), lhsp, rhsp);

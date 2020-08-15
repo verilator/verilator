@@ -116,9 +116,20 @@ class VHashSha256 {
     size_t m_totLength;  // Total all-chunk length as needed by output digest
 public:
     // CONSTRUCTORS
-    VHashSha256() { init(); }
-    explicit VHashSha256(const string& data) {
-        init();
+    VHashSha256() {
+        m_inthash[0] = 0x6a09e667;
+        m_inthash[1] = 0xbb67ae85;
+        m_inthash[2] = 0x3c6ef372;
+        m_inthash[3] = 0xa54ff53a;
+        m_inthash[4] = 0x510e527f;
+        m_inthash[5] = 0x9b05688c;
+        m_inthash[6] = 0x1f83d9ab;
+        m_inthash[7] = 0x5be0cd19;
+        m_final = false;
+        m_totLength = 0;
+    }
+    explicit VHashSha256(const string& data)
+        : VHashSha256() {
         insert(data);
     }
     ~VHashSha256() {}
@@ -138,18 +149,6 @@ public:
     void insert(uint64_t value) { insert(cvtToStr(value)); }
 
 private:
-    void init() {
-        m_inthash[0] = 0x6a09e667;
-        m_inthash[1] = 0xbb67ae85;
-        m_inthash[2] = 0x3c6ef372;
-        m_inthash[3] = 0xa54ff53a;
-        m_inthash[4] = 0x510e527f;
-        m_inthash[5] = 0x9b05688c;
-        m_inthash[6] = 0x1f83d9ab;
-        m_inthash[7] = 0x5be0cd19;
-        m_final = false;
-        m_totLength = 0;
-    }
     static void selfTestOne(const string& data, const string& data2, const string& exp,
                             const string& exp64);
     void finalize();  // Process remaining data
