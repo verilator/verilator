@@ -93,7 +93,7 @@ private:
     bool m_scoped;  ///< Running with AstVarScopes instead of AstVars
     bool m_params;  ///< Doing parameter propagation
     // Checking:
-    string m_whyNotOptimizable;  ///< String explaining why not optimizable or NULL to optimize
+    string m_whyNotOptimizable;  ///< String explaining why not optimizable or nullptr to optimize
     AstNode* m_whyNotNodep;  ///< First node not optimizable
     bool m_anyAssignDly;  ///< True if found a delayed assignment
     bool m_anyAssignComb;  ///< True if found a non-delayed assignment
@@ -198,7 +198,7 @@ public:
             m_whyNotOptimizable += stack.str();
         }
     }
-    bool optimizable() const { return m_whyNotNodep == NULL; }
+    bool optimizable() const { return m_whyNotNodep == nullptr; }
     string whyNotMessage() const { return m_whyNotOptimizable; }
     AstNode* whyNotNodep() const { return m_whyNotNodep; }
 
@@ -305,12 +305,12 @@ public:
     V3Number* fetchNumberNull(AstNode* nodep) {
         AstConst* constp = fetchConstNull(nodep);
         if (constp) return &constp->num();
-        return NULL;
+        return nullptr;
     }
     V3Number* fetchOutNumberNull(AstNode* nodep) {
         AstConst* constp = fetchOutConstNull(nodep);
         if (constp) return &constp->num();
-        return NULL;
+        return nullptr;
     }
 
 private:
@@ -423,7 +423,7 @@ private:
                 }
                 vscp->user1(vscp->user1() | VU_RV);
                 bool isConst = nodep->varp()->isParam() && nodep->varp()->valuep();
-                AstNode* valuep = isConst ? fetchValueNull(nodep->varp()->valuep()) : NULL;
+                AstNode* valuep = isConst ? fetchValueNull(nodep->varp()->valuep()) : nullptr;
                 if (isConst
                     && valuep) {  // Propagate PARAM constants for constant function analysis
                     if (!m_checkOnly && optimizable()) newValue(vscp, valuep);
@@ -647,7 +647,7 @@ private:
         }
         if (!m_checkOnly && optimizable()) {
             AstNode* vscp = varOrScope(varrefp);
-            AstInitArray* initp = NULL;
+            AstInitArray* initp = nullptr;
             if (AstInitArray* vscpnump = VN_CAST(fetchOutValueNull(vscp), InitArray)) {
                 initp = vscpnump;
             } else if (AstInitArray* vscpnump = VN_CAST(fetchValueNull(vscp), InitArray)) {
@@ -676,7 +676,7 @@ private:
         }
     }
     void handleAssignSel(AstNodeAssign* nodep, AstSel* selp) {
-        AstVarRef* varrefp = NULL;
+        AstVarRef* varrefp = nullptr;
         V3Number lsb(nodep);
         iterateAndNextNull(nodep->rhsp());  // Value to assign
         handleAssignSelRecurse(nodep, selp, varrefp /*ref*/, lsb /*ref*/, 0);
@@ -684,7 +684,7 @@ private:
             UASSERT_OBJ(varrefp, nodep,
                         "Indicated optimizable, but no variable found on RHS of select");
             AstNode* vscp = varOrScope(varrefp);
-            AstConst* outconstp = NULL;
+            AstConst* outconstp = nullptr;
             if (AstConst* vscpnump = fetchOutConstNull(vscp)) {
                 outconstp = vscpnump;
             } else if (AstConst* vscpnump = fetchConstNull(vscp)) {
@@ -849,7 +849,7 @@ private:
         iterateChildren(nodep);
         if (m_jumpp && m_jumpp->labelp() == nodep) {
             UINFO(5, "   JUMP DONE " << nodep << endl);
-            m_jumpp = NULL;
+            m_jumpp = nullptr;
         }
     }
     virtual void visit(AstStop* nodep) override {
@@ -1100,13 +1100,13 @@ public:
     }
     void clear() {
         m_whyNotOptimizable = "";
-        m_whyNotNodep = NULL;
+        m_whyNotNodep = nullptr;
         m_anyAssignComb = false;
         m_anyAssignDly = false;
         m_inDlyAssign = false;
         m_instrCount = 0;
         m_dataCount = 0;
-        m_jumpp = NULL;
+        m_jumpp = nullptr;
 
         AstNode::user1ClearTree();
         AstNode::user2ClearTree();

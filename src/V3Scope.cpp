@@ -89,8 +89,8 @@ private:
             return;
         }
         // Operate starting at the top of the hierarchy
-        m_aboveCellp = NULL;
-        m_aboveScopep = NULL;
+        m_aboveCellp = nullptr;
+        m_aboveScopep = nullptr;
         iterate(modp);
         cleanupVarRefs();
     }
@@ -287,7 +287,7 @@ private:
         // Make sure variable has made user1p.
         UASSERT_OBJ(nodep->varp(), nodep, "Unlinked");
         if (nodep->varp()->isIfaceRef()) {
-            nodep->varScopep(NULL);
+            nodep->varScopep(nullptr);
         } else {
             // We may have not made the variable yet, and we can't make it now as
             // the var's referenced package etc might not be created yet.
@@ -321,10 +321,10 @@ private:
 public:
     // CONSTRUCTORS
     explicit ScopeVisitor(AstNetlist* nodep) {
-        m_aboveCellp = NULL;
-        m_aboveScopep = NULL;
-        m_modp = NULL;
-        m_scopep = NULL;
+        m_aboveCellp = nullptr;
+        m_aboveScopep = nullptr;
+        m_modp = nullptr;
+        m_scopep = nullptr;
         //
         iterate(nodep);
     }
@@ -347,7 +347,7 @@ private:
         // Want to ignore blocks under it
         m_scopep = nodep;
         iterateChildren(nodep);
-        m_scopep = NULL;
+        m_scopep = nullptr;
     }
 
     virtual void movedDeleteOrIterate(AstNode* nodep) {
@@ -373,7 +373,7 @@ private:
 
     virtual void visit(AstVarXRef* nodep) override {
         // The crossrefs are dealt with in V3LinkDot
-        nodep->varp(NULL);
+        nodep->varp(nullptr);
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         // The crossrefs are dealt with in V3LinkDot
@@ -386,14 +386,14 @@ private:
             nodep->taskp(newp);
             UINFO(9, "   New pkg-taskref " << nodep << endl);
         } else if (!VN_IS(nodep, MethodCall)) {
-            nodep->taskp(NULL);
+            nodep->taskp(nullptr);
             UINFO(9, "   New pkg-taskref " << nodep << endl);
         }
         iterateChildren(nodep);
     }
     virtual void visit(AstModportFTaskRef* nodep) override {
         // The crossrefs are dealt with in V3LinkDot
-        nodep->ftaskp(NULL);
+        nodep->ftaskp(nullptr);
         iterateChildren(nodep);
     }
 
@@ -403,7 +403,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ScopeCleanupVisitor(AstNetlist* nodep) {
-        m_scopep = NULL;
+        m_scopep = nullptr;
         iterate(nodep);
     }
     virtual ~ScopeCleanupVisitor() {}

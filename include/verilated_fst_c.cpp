@@ -59,13 +59,13 @@
 
 VerilatedFst::VerilatedFst(void* fst)
     : m_fst(fst)
-    , m_symbolp(NULL)
-    , m_strbuf(NULL) {}
+    , m_symbolp(nullptr)
+    , m_strbuf(nullptr) {}
 
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);
-    if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = NULL);
-    if (m_strbuf) VL_DO_CLEAR(delete[] m_strbuf, m_strbuf = NULL);
+    if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = nullptr);
+    if (m_strbuf) VL_DO_CLEAR(delete[] m_strbuf, m_strbuf = nullptr);
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
@@ -106,7 +106,7 @@ void VerilatedFst::close() {
     m_assertOne.check();
     VerilatedTrace<VerilatedFst>::close();
     fstWriterClose(m_fst);
-    m_fst = NULL;
+    m_fst = nullptr;
 }
 
 void VerilatedFst::flush() {
@@ -158,7 +158,7 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
     // Follow the hierarchy of the new variable from the common scope point
     while (new_it != tokens.end()) {
-        fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), NULL);
+        fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), nullptr);
         m_curScope.push_back(*new_it);
         new_it = tokens.erase(new_it);
     }

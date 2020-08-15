@@ -132,7 +132,7 @@ class CUseVisitor : public AstNVisitor {
         }
     }
     void makeVlToString(AstClass* nodep) {
-        AstCFunc* funcp = new AstCFunc(nodep->fileline(), "VL_TO_STRING", NULL, "std::string");
+        AstCFunc* funcp = new AstCFunc(nodep->fileline(), "VL_TO_STRING", nullptr, "std::string");
         funcp->argTypes("const VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(nodep)
                         + ">& obj");
         funcp->isMethod(false);
@@ -145,7 +145,7 @@ class CUseVisitor : public AstNVisitor {
         nodep->addStmtp(funcp);
     }
     void makeToString(AstClass* nodep) {
-        AstCFunc* funcp = new AstCFunc(nodep->fileline(), "to_string", NULL, "std::string");
+        AstCFunc* funcp = new AstCFunc(nodep->fileline(), "to_string", nullptr, "std::string");
         funcp->isConst(true);
         funcp->isStatic(false);
         funcp->protect(false);
@@ -156,7 +156,8 @@ class CUseVisitor : public AstNVisitor {
         nodep->addStmtp(funcp);
     }
     void makeToStringMiddle(AstClass* nodep) {
-        AstCFunc* funcp = new AstCFunc(nodep->fileline(), "to_string_middle", NULL, "std::string");
+        AstCFunc* funcp
+            = new AstCFunc(nodep->fileline(), "to_string_middle", nullptr, "std::string");
         funcp->isConst(true);
         funcp->isStatic(false);
         funcp->protect(false);

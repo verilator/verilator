@@ -523,7 +523,7 @@ private:
             dup2(fd_stdout[P_WR], 1);
             // And stderr comes from parent
 
-            execl("/bin/sh", "sh", "-c", command.c_str(), static_cast<char*>(NULL));
+            execl("/bin/sh", "sh", "-c", command.c_str(), static_cast<char*>(nullptr));
             // Don't use v3fatal, we don't share the common structures any more
             fprintf(stderr, "--pipe-filter: exec failed: %s\n", strerror(errno));
             _exit(1);
@@ -619,7 +619,7 @@ protected:
 
 VInFilter::VInFilter(const string& command) { m_impp = new VInFilterImp(command); }
 VInFilter::~VInFilter() {
-    if (m_impp) VL_DO_CLEAR(delete m_impp, m_impp = NULL);
+    if (m_impp) VL_DO_CLEAR(delete m_impp, m_impp = nullptr);
 }
 
 bool VInFilter::readWholefile(const string& filename, VInFilter::StrList& outl) {
@@ -942,12 +942,14 @@ void V3OutFormatter::printf(const char* fmt...) {
 
 V3OutFile::V3OutFile(const string& filename, V3OutFormatter::Language lang)
     : V3OutFormatter(filename, lang) {
-    if ((m_fp = V3File::new_fopen_w(filename)) == NULL) { v3fatal("Cannot write " << filename); }
+    if ((m_fp = V3File::new_fopen_w(filename)) == nullptr) {
+        v3fatal("Cannot write " << filename);
+    }
 }
 
 V3OutFile::~V3OutFile() {
     if (m_fp) fclose(m_fp);
-    m_fp = NULL;
+    m_fp = nullptr;
 }
 
 void V3OutFile::putsForceIncs() {

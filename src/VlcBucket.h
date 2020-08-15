@@ -53,13 +53,13 @@ public:
     // CONSTRUCTORS
     VlcBuckets() {
         m_dataSize = 0;
-        m_datap = NULL;
+        m_datap = nullptr;
         m_bucketsCovered = 0;
         allocate(1024);
     }
     ~VlcBuckets() {
         m_dataSize = 0;
-        VL_DO_CLEAR(free(m_datap), m_datap = NULL);
+        VL_DO_CLEAR(free(m_datap), m_datap = nullptr);
     }
 
     // ACCESSORS

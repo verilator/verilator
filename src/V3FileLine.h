@@ -132,8 +132,8 @@ public:
         , m_lastColumn(0)
         , m_filenameno(singleton().nameToNumber(filename))
         , m_contentLineno(0)
-        , m_contentp(NULL)
-        , m_parent(NULL)
+        , m_contentp(nullptr)
+        , m_parent(nullptr)
         , m_warnOn(defaultFileLine().m_warnOn)
         , m_waive(false) {}
     explicit FileLine(FileLine* fromp)

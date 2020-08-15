@@ -111,7 +111,7 @@ private:
         if (m_modp->modPublic()) cantInline("modPublic", false);
 
         iterateChildren(nodep);
-        m_modp = NULL;
+        m_modp = nullptr;
     }
     virtual void visit(AstClass* nodep) override {
         // TODO allow inlining of modules that have classes
@@ -148,12 +148,12 @@ private:
     }
     virtual void visit(AstVarXRef* nodep) override {
         // Cleanup link until V3LinkDot can correct it
-        nodep->varp(NULL);
+        nodep->varp(nullptr);
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         // Cleanup link until V3LinkDot can correct it
         // MethodCalls not currently supported by inliner, so keep linked
-        if (!nodep->packagep() && !VN_IS(nodep, MethodCall)) nodep->taskp(NULL);
+        if (!nodep->packagep() && !VN_IS(nodep, MethodCall)) nodep->taskp(nullptr);
         iterateChildren(nodep);
     }
     virtual void visit(AstAlways* nodep) override {
@@ -220,7 +220,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit InlineMarkVisitor(AstNode* nodep) {
-        m_modp = NULL;
+        m_modp = nullptr;
         iterate(nodep);
     }
     virtual ~InlineMarkVisitor() {
@@ -517,7 +517,7 @@ private:
             // The cell has been removed so let's make sure we don't leave a reference to it
             // This dtype may still be in use by the AstAssignVarScope created earlier
             // but that'll get cleared up later
-            nodep->cellp(NULL);
+            nodep->cellp(nullptr);
         }
     }
     virtual void visit(AstNodeModule* nodep) override {
@@ -615,7 +615,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit InlineVisitor(AstNode* nodep) {
-        m_modp = NULL;
+        m_modp = nullptr;
         iterate(nodep);
     }
     virtual ~InlineVisitor() {  //

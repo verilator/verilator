@@ -81,7 +81,7 @@ public:
             newp->dtypeFrom(nodep);
             return newp;
         } else {
-            return NULL;
+            return nullptr;
         }
     }
 
@@ -95,7 +95,7 @@ private:
         // See if the dtype/refDType can be converted to a standard one
         // This reduces the number of dtypes in the system, and since
         // dtypep() figures into sameTree() results in better optimizations
-        if (!nodep) return NULL;
+        if (!nodep) return nullptr;
         // Recurse to handle the data type, as may change the size etc of this type
         if (!nodep->user1()) iterate(nodep);
         // Look for duplicate

@@ -172,7 +172,7 @@ void VlcTop::rank() {
             UINFO(9, "Left on iter" << nextrank << ": ");  // LCOV_EXCL_LINE
             remaining.dump();  // LCOV_EXCL_LINE
         }
-        VlcTest* bestTestp = NULL;
+        VlcTest* bestTestp = nullptr;
         vluint64_t bestRemain = 0;
         for (std::vector<VlcTest*>::iterator it = bytime.begin(); it != bytime.end(); ++it) {
             VlcTest* testp = *it;

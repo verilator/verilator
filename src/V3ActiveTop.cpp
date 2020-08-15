@@ -56,7 +56,7 @@ private:
         m_topscopep = nodep;
         m_finder.init(m_topscopep);
         iterateChildren(nodep);
-        m_topscopep = NULL;
+        m_topscopep = nullptr;
     }
     virtual void visit(AstNodeModule* nodep) override {
         // Create required actives and add to module
@@ -69,7 +69,7 @@ private:
         // Remove duplicate clocks and such; sensesp() may change!
         V3Const::constifyExpensiveEdit(nodep);
         AstSenTree* sensesp = nodep->sensesp();
-        UASSERT_OBJ(sensesp, nodep, "NULL");
+        UASSERT_OBJ(sensesp, nodep, "nullptr");
         if (sensesp->sensesp() && VN_IS(sensesp->sensesp(), SenItem)
             && VN_CAST(sensesp->sensesp(), SenItem)->isNever()) {
             // Never executing.  Kill it.
@@ -128,7 +128,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ActiveTopVisitor(AstNetlist* nodep)
-        : m_topscopep(NULL) {
+        : m_topscopep(nullptr) {
         iterate(nodep);
     }
     virtual ~ActiveTopVisitor() {}

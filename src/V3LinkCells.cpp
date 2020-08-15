@@ -129,7 +129,7 @@ private:
     AstNodeModule* findModuleSym(const string& modName) {
         VSymEnt* foundp = m_mods.rootp()->findIdFallback(modName);
         if (!foundp) {
-            return NULL;
+            return nullptr;
         } else {
             return VN_CAST(foundp->nodep(), NodeModule);
         }
@@ -174,7 +174,7 @@ private:
                 AstNodeModule* modp = vvertexp->modp();
                 modp->level(vvertexp->rank() + 1);
                 if (vvertexp == m_topVertexp && modp->level() != 2) {
-                    AstNodeModule* abovep = NULL;
+                    AstNodeModule* abovep = nullptr;
                     if (V3GraphEdge* edgep = vvertexp->inBeginp()) {
                         if (LinkCellsVertex* eFromVertexp
                             = dynamic_cast<LinkCellsVertex*>(edgep->fromp())) {
@@ -325,7 +325,7 @@ private:
                         if (!otherModp) {
                             otherModp = cellmodp->cloneTree(false);
                             otherModp->name(otherModp->name() + "__Vrcm");
-                            otherModp->user1p(NULL);  // Need new vertex
+                            otherModp->user1p(nullptr);  // Need new vertex
                             otherModp->user2p(cellmodp);
                             otherModp->recursiveClone(true);
                             // user1 etc will retain its pre-clone value
@@ -349,7 +349,7 @@ private:
                 }
             }
         }
-        // Remove AstCell(AstPin("",NULL)), it's a side effect of how we parse "()"
+        // Remove AstCell(AstPin("",nullptr)), it's a side effect of how we parse "()"
         // the empty middle is identical to the empty rule that must find pins in "(,)".
         if (nodep->pinsp() && !nodep->pinsp()->nextp() && nodep->pinsp()->name() == ""
             && !nodep->pinsp()->exprp()) {
@@ -407,16 +407,17 @@ private:
                         if (pinStar) {
                             UINFO(9, "    need .* PORT  " << portp << endl);
                             // Create any not already connected
-                            AstPin* newp = new AstPin(nodep->fileline(), 0, portp->name(),
-                                                      new AstParseRef(nodep->fileline(),
-                                                                      VParseRefExp::PX_TEXT,
-                                                                      portp->name(), NULL, NULL));
+                            AstPin* newp = new AstPin(
+                                nodep->fileline(), 0, portp->name(),
+                                new AstParseRef(nodep->fileline(), VParseRefExp::PX_TEXT,
+                                                portp->name(), nullptr, nullptr));
                             newp->svImplicit(true);
                             nodep->addPinsp(newp);
                         } else {  // warn on the CELL that needs it, not the port
                             nodep->v3warn(PINMISSING,
                                           "Cell has missing pin: " << portp->prettyNameQ());
-                            AstPin* newp = new AstPin(nodep->fileline(), 0, portp->name(), NULL);
+                            AstPin* newp
+                                = new AstPin(nodep->fileline(), 0, portp->name(), nullptr);
                             nodep->addPinsp(newp);
                         }
                     }
@@ -434,7 +435,7 @@ private:
                 string varName = nodep->name() + "__Viftop";  // V3LinkDot looks for this naming
                 AstIfaceRefDType* idtypep = new AstIfaceRefDType(nodep->fileline(), nodep->name(),
                                                                  nodep->modp()->name());
-                idtypep->ifacep(NULL);  // cellp overrides
+                idtypep->ifacep(nullptr);  // cellp overrides
                 // In the case of arrayed interfaces, we replace cellp when de-arraying in V3Inst
                 idtypep->cellp(nodep);  // Only set when real parent cell known.
                 AstVar* varp;
@@ -503,9 +504,9 @@ public:
         : m_mods(nodep) {
         m_filterp = filterp;
         m_parseSymp = parseSymp;
-        m_modp = NULL;
-        m_libVertexp = NULL;
-        m_topVertexp = NULL;
+        m_modp = nullptr;
+        m_libVertexp = nullptr;
+        m_topVertexp = nullptr;
         if (v3Global.opt.hierChild()) {
             const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
             UASSERT(!v3Global.opt.topModule().empty(),

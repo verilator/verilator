@@ -174,8 +174,8 @@ private:
         VlThrSymTab m_sym;  // Symbol table to execute
         bool m_evenCycle;  // Even/odd for flag alternation
         ExecRec()
-            : m_fnp(NULL)
-            , m_sym(NULL)
+            : m_fnp(nullptr)
+            , m_sym(nullptr)
             , m_evenCycle(false) {}
         ExecRec(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym)
             : m_fnp(fnp)

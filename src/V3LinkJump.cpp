@@ -63,7 +63,7 @@ private:
         UINFO(4, "Create label for " << nodep << endl);
         if (VN_IS(nodep, JumpLabel)) return VN_CAST(nodep, JumpLabel);  // Done
 
-        AstNode* underp = NULL;
+        AstNode* underp = nullptr;
         bool under_and_next = true;
         if (VN_IS(nodep, NodeBlock)) {
             underp = VN_CAST(nodep, NodeBlock)->stmtsp();
@@ -80,7 +80,7 @@ private:
             }
         } else {
             nodep->v3fatalSrc("Unknown jump point for break/disable/continue");
-            return NULL;
+            return nullptr;
         }
         // Skip over variables as we'll just move them in a moment
         // Also this would otherwise prevent us from using a label twice
@@ -92,7 +92,7 @@ private:
         if (VN_IS(underp, JumpLabel)) {
             return VN_CAST(underp, JumpLabel);
         } else {  // Move underp stuff to be under a new label
-            AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), NULL);
+            AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), nullptr);
             AstJumpLabel* labelp = new AstJumpLabel(nodep->fileline(), blockp);
             blockp->labelp(labelp);
 
@@ -132,7 +132,7 @@ private:
     virtual void visit(AstNodeFTask* nodep) override {
         m_ftaskp = nodep;
         iterateChildren(nodep);
-        m_ftaskp = NULL;
+        m_ftaskp = nullptr;
     }
     virtual void visit(AstNodeBlock* nodep) override {
         UINFO(8, "  " << nodep << endl);
@@ -254,7 +254,7 @@ private:
     virtual void visit(AstDisable* nodep) override {
         UINFO(8, "   DISABLE " << nodep << endl);
         iterateChildren(nodep);
-        AstNodeBlock* blockp = NULL;
+        AstNodeBlock* blockp = nullptr;
         for (BlockStack::reverse_iterator it = m_blockStack.rbegin(); it != m_blockStack.rend();
              ++it) {
             UINFO(9, "    UNDERBLK  " << *it << endl);
@@ -286,10 +286,10 @@ private:
 public:
     // CONSTRUCTORS
     explicit LinkJumpVisitor(AstNetlist* nodep) {
-        m_modp = NULL;
-        m_ftaskp = NULL;
+        m_modp = nullptr;
+        m_ftaskp = nullptr;
         m_inFork = false;
-        m_loopp = NULL;
+        m_loopp = nullptr;
         m_loopInc = false;
         m_modRepeatNum = 0;
         iterate(nodep);

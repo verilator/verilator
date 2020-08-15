@@ -187,7 +187,7 @@ private:
         AstVar* chgVarp = new AstVar(fl, AstVarType::MODULETEMP,
                                      "__Vtablechg" + cvtToStr(m_modTables), dtypep);
         chgVarp->isConst(true);
-        chgVarp->valuep(new AstInitArray(nodep->fileline(), dtypep, NULL));
+        chgVarp->valuep(new AstInitArray(nodep->fileline(), dtypep, nullptr));
         m_modp->addStmtp(chgVarp);
         AstVarScope* chgVscp = new AstVarScope(chgVarp->fileline(), m_scopep, chgVarp);
         m_scopep->addVarp(chgVscp);
@@ -243,7 +243,7 @@ private:
             AstVar* tablevarp = new AstVar(fl, AstVarType::MODULETEMP, name, dtypep);
             tablevarp->isConst(true);
             tablevarp->isStatic(true);
-            tablevarp->valuep(new AstInitArray(nodep->fileline(), dtypep, NULL));
+            tablevarp->valuep(new AstInitArray(nodep->fileline(), dtypep, nullptr));
             m_modp->addStmtp(tablevarp);
             AstVarScope* tablevscp = new AstVarScope(tablevarp->fileline(), m_scopep, tablevarp);
             m_scopep->addVarp(tablevscp);
@@ -254,7 +254,7 @@ private:
     AstNode* createLookupInput(AstNode* nodep, AstVarScope* indexVscp) {
         // Concat inputs into a single temp variable (inside always)
         // First var in inVars becomes the LSB of the concat
-        AstNode* concatp = NULL;
+        AstNode* concatp = nullptr;
         for (std::deque<AstVarScope*>::iterator it = m_inVarps.begin(); it != m_inVarps.end();
              ++it) {
             AstVarScope* invscp = *it;
@@ -287,7 +287,7 @@ private:
             UINFO(8, " Simulating " << std::hex << inValue << endl);
 
             // Above simulateVisitor clears user 3, so
-            // all outputs default to NULL to mean 'recirculating'.
+            // all outputs default to nullptr to mean 'recirculating'.
             simvis.clear();
 
             // Set all inputs to the constant
@@ -404,7 +404,7 @@ private:
                                                new AstVarRef(nodep->fileline(), chgVscp, false),
                                                new AstVarRef(nodep->fileline(), indexVscp, false)),
                                new AstConst(nodep->fileline(), outputChgMask)),
-                    outsetp, NULL);
+                    outsetp, nullptr);
             }
 
             stmtsp->addNext(outsetp);
@@ -432,7 +432,7 @@ private:
         UINFO(4, " SCOPE " << nodep << endl);
         m_scopep = nodep;
         iterateChildren(nodep);
-        m_scopep = NULL;
+        m_scopep = nullptr;
     }
     virtual void visit(AstAlways* nodep) override {
         UINFO(4, "  ALWAYS  " << nodep << endl);
@@ -452,9 +452,9 @@ private:
 public:
     // CONSTRUCTORS
     explicit TableVisitor(AstNetlist* nodep) {
-        m_modp = NULL;
+        m_modp = nullptr;
         m_modTables = 0;
-        m_scopep = NULL;
+        m_scopep = nullptr;
         m_assignDly = 0;
         m_inWidth = 0;
         m_outWidth = 0;

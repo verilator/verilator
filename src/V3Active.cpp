@@ -61,14 +61,14 @@ private:
 
     // METHODS
     void addActive(AstActive* nodep) {
-        UASSERT_OBJ(m_scopep, nodep, "NULL scope");
+        UASSERT_OBJ(m_scopep, nodep, "nullptr scope");
         m_scopep->addActivep(nodep);
     }
     // VISITORS
     virtual void visit(AstScope* nodep) override {
         m_scopep = nodep;
-        m_iActivep = NULL;
-        m_cActivep = NULL;
+        m_iActivep = nullptr;
+        m_cActivep = nullptr;
         m_activeSens.clear();
         m_activeMap.clear();
         iterateChildren(nodep);
@@ -106,7 +106,7 @@ public:
     AstActive* getActive(FileLine* fl, AstSenTree* sensesp) {
         // Return a sentree in this scope that matches given sense list.
 
-        AstActive* activep = NULL;
+        AstActive* activep = nullptr;
         AstSenTree* activeSenp = m_activeSens.find(sensesp);
         if (activeSenp) {
             ActiveMap::iterator it = m_activeMap.find(activeSenp);
@@ -132,9 +132,9 @@ public:
 public:
     // CONSTRUCTORS
     ActiveNamer() {
-        m_scopep = NULL;
-        m_iActivep = NULL;
-        m_cActivep = NULL;
+        m_scopep = nullptr;
+        m_iActivep = nullptr;
+        m_cActivep = nullptr;
     }
     virtual ~ActiveNamer() {}
     void main(AstScope* nodep) { iterate(nodep); }
@@ -208,7 +208,7 @@ public:
     ActiveDlyVisitor(AstNode* nodep, CheckType check) {
         m_alwaysp = nodep;
         m_check = check;
-        m_assignp = NULL;
+        m_assignp = nullptr;
         iterate(nodep);
     }
     virtual ~ActiveDlyVisitor() {}
@@ -235,7 +235,7 @@ private:
         UINFO(4, " SCOPE   " << nodep << endl);
         // Clear last scope's names, and collect this scope's existing names
         m_namer.main(nodep);
-        m_scopeFinalp = NULL;
+        m_scopeFinalp = nullptr;
         iterateChildren(nodep);
     }
     virtual void visit(AstActive* nodep) override {
@@ -321,7 +321,7 @@ private:
             sequent = false;
         }
 
-        AstActive* wantactivep = NULL;
+        AstActive* wantactivep = nullptr;
         if (combo && !sequent) {
             // Combo:  Relink to ACTIVE(combo)
             wantactivep = m_namer.getCActive(nodep->fileline());
@@ -412,7 +412,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ActiveVisitor(AstNetlist* nodep)
-        : m_scopeFinalp(NULL)
+        : m_scopeFinalp(nullptr)
         , m_itemCombo(false)
         , m_itemSequent(false) {
         iterate(nodep);

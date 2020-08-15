@@ -229,7 +229,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         visitNodeDisplay(nodep, nodep->filep(), nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }
     virtual void visit(AstElabDisplay* nodep) override {
-        visitNodeDisplay(nodep, NULL, nodep->fmtp()->text(), nodep->fmtp()->exprsp());
+        visitNodeDisplay(nodep, nullptr, nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }
     virtual void visit(AstFScanF* nodep) override {
         visitNodeDisplay(nodep, nodep->filep(), nodep->text(), nodep->exprsp());
@@ -241,7 +241,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         visitNodeDisplay(nodep, nodep->lhsp(), nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }
     virtual void visit(AstSFormatF* nodep) override {
-        visitNodeDisplay(nodep, NULL, nodep->text(), nodep->exprsp());
+        visitNodeDisplay(nodep, nullptr, nodep->text(), nodep->exprsp());
     }
     virtual void visit(AstFOpen* nodep) override {
         putfs(nodep, nodep->verilogKwd());
@@ -407,9 +407,9 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
 
     // Operators
-    virtual void emitVerilogFormat(AstNode* nodep, const string& format, AstNode* lhsp = NULL,
-                                   AstNode* rhsp = NULL, AstNode* thsp = NULL,
-                                   AstNode* fhsp = NULL) {
+    virtual void emitVerilogFormat(AstNode* nodep, const string& format, AstNode* lhsp = nullptr,
+                                   AstNode* rhsp = nullptr, AstNode* thsp = nullptr,
+                                   AstNode* fhsp = nullptr) {
         // Look at emitVerilog() format for term/uni/dual/triops,
         // and write out appropriate text.
         //      %f      Potential fileline-if-change and line break
@@ -640,7 +640,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstActive* nodep) override {
         m_sensesp = nodep->sensesp();
         iterateAndNextNull(nodep->stmtsp());
-        m_sensesp = NULL;
+        m_sensesp = nullptr;
     }
     virtual void visit(AstVarScope*) override {}
     virtual void visit(AstNodeText*) override {}
@@ -659,7 +659,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 
 public:
     bool m_suppressVarSemi;  // Suppress emitting semicolon for AstVars
-    explicit EmitVBaseVisitor(AstSenTree* domainp = NULL) {
+    explicit EmitVBaseVisitor(AstSenTree* domainp = nullptr) {
         // Domain for printing one a ALWAYS under a ACTIVE
         m_suppressSemi = false;
         m_suppressVarSemi = false;
@@ -751,8 +751,9 @@ public:
         , m_prefix(prefix)
         , m_flWidth(flWidth) {
         m_column = 0;
-        m_prefixFl = v3Global.rootp()
-                         ->fileline();  // NETLIST's fileline instead of NULL to avoid NULL checks
+        m_prefixFl
+            = v3Global.rootp()
+                  ->fileline();  // NETLIST's fileline instead of nullptr to avoid nullptr checks
     }
     virtual ~EmitVPrefixedFormatter() {
         if (m_column) puts("\n");

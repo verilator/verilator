@@ -189,11 +189,11 @@ class OrderUser {
     // Stored in AstVarScope::user1p, a list of all the various vertices
     // that can exist for one given variable
 private:
-    OrderVarVertex* m_vertexp[WV_MAX];  // Vertex of each type (if non NULL)
+    OrderVarVertex* m_vertexp[WV_MAX];  // Vertex of each type (if non nullptr)
 public:
     // METHODS
     OrderVarVertex* newVarUserVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varscp,
-                                     WhichVertex type, bool* createdp = NULL) {
+                                     WhichVertex type, bool* createdp = nullptr) {
         UASSERT_OBJ(type < WV_MAX, varscp, "Bad case");
         OrderVarVertex* vertexp = m_vertexp[type];
         if (!vertexp) {
@@ -217,7 +217,7 @@ public:
 public:
     // CONSTRUCTORS
     OrderUser() {
-        for (int i = 0; i < WV_MAX; i++) m_vertexp[i] = NULL;
+        for (int i = 0; i < WV_MAX; i++) m_vertexp[i] = nullptr;
     }
     ~OrderUser() {}
 };
@@ -441,7 +441,7 @@ public:
     public:
         // Clients of ProcessMoveBuildGraph must supply MoveVertexMaker
         // which creates new T_MoveVertex's. Each new vertex wraps lvertexp
-        // (which may be NULL.)
+        // (which may be nullptr.)
         virtual T_MoveVertex* makeVertexp(  //
             OrderLogicVertex* lvertexp, const OrderEitherVertex* varVertexp,
             const AstScope* scopep, const AstSenTree* domainp)
@@ -484,8 +484,8 @@ public:
         // For each logic node, make a T_MoveVertex
         for (V3GraphVertex* itp = m_graphp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (OrderLogicVertex* lvertexp = dynamic_cast<OrderLogicVertex*>(itp)) {
-                T_MoveVertex* moveVxp = m_vxMakerp->makeVertexp(lvertexp, NULL, lvertexp->scopep(),
-                                                                lvertexp->domainp());
+                T_MoveVertex* moveVxp = m_vxMakerp->makeVertexp(
+                    lvertexp, nullptr, lvertexp->scopep(), lvertexp->domainp());
                 if (moveVxp) {
                     // Cross link so we can find it later
                     m_logic2move[lvertexp] = moveVxp;
@@ -532,14 +532,14 @@ private:
                     const OrderEitherVertex* eithp
                         = dynamic_cast<const OrderEitherVertex*>(nonLogicVxp);
                     T_MoveVertex* newMoveVxp
-                        = m_vxMakerp->makeVertexp(NULL, eithp, eithp->scopep(), domainp);
+                        = m_vxMakerp->makeVertexp(nullptr, eithp, eithp->scopep(), domainp);
                     m_var2move[key] = newMoveVxp;
 
                     // Find downstream logics that depend on (var, domain)
                     if (!iterate(newMoveVxp, edgep->top(), domainp)) {
                         // No downstream dependencies, so remove this
                         // intermediate vertex.
-                        m_var2move[key] = NULL;
+                        m_var2move[key] = nullptr;
                         m_vxMakerp->freeVertexp(newMoveVxp);
                         continue;
                     }
@@ -596,7 +596,7 @@ public:
                                  const AstScope* scopep, const AstSenTree* domainp) {
         // Exclude initial/settle logic from the mtasks graph.
         // We'll output time-zero logic separately.
-        if (domainp->hasInitial() || domainp->hasSettle()) return NULL;
+        if (domainp->hasInitial() || domainp->hasSettle()) return nullptr;
         return new MTaskMoveVertex(m_pomGraphp, lvertexp, varVertexp, scopep, domainp);
     }
     void freeVertexp(MTaskMoveVertex* freeMep) { freeMep->unlinkDelete(m_pomGraphp); }
@@ -664,7 +664,7 @@ private:
     AstSenTree* m_comboDomainp;  // Combo activation tree
     AstSenTree* m_deleteDomainp;  // Delete this from tree
     OrderInputsVertex* m_inputsVxp;  // Top level vertex all inputs point from
-    OrderLogicVertex* m_logicVxp;  // Current statement being tracked, NULL=ignored
+    OrderLogicVertex* m_logicVxp;  // Current statement being tracked, nullptr=ignored
     AstTopScope* m_topScopep;  // Current top scope being processed
     AstScope* m_scopetopp;  // Scope under TOPSCOPE
     AstNodeModule* m_modp;  // Current module
@@ -702,10 +702,10 @@ private:
             UINFO(4, "   STMT " << nodep << endl);
             // VV*****  We reset user4p()
             AstNode::user4ClearTree();
-            UASSERT_OBJ(m_activep && m_activep->sensesp(), nodep, "NULL");
+            UASSERT_OBJ(m_activep && m_activep->sensesp(), nodep, "nullptr");
             // If inside combo logic, ignore the domain, we'll assign one based on interconnect
             AstSenTree* startDomainp = m_activep->sensesp();
-            if (startDomainp->hasCombo()) startDomainp = NULL;
+            if (startDomainp->hasCombo()) startDomainp = nullptr;
             m_logicVxp = new OrderLogicVertex(&m_graph, m_scopep, startDomainp, nodep);
             if (m_activeSenVxp) {
                 // If in a clocked activation, add a link from the sensitivity to this block
@@ -714,12 +714,12 @@ private:
             }
             nodep->user1p(m_modp);
             iterateChildren(nodep);
-            m_logicVxp = NULL;
+            m_logicVxp = nullptr;
         }
     }
 
     OrderVarVertex* newVarUserVertex(AstVarScope* varscp, WhichVertex type,
-                                     bool* createdp = NULL) {
+                                     bool* createdp = nullptr) {
         if (!varscp->user1p()) {
             OrderUser* newup = new OrderUser();
             m_orderUserps.push_back(newup);
@@ -759,8 +759,8 @@ private:
         Logics m_logics;
         ExecMTask* m_execMTaskp;
         MTaskState()
-            : m_mtaskBodyp(NULL)
-            , m_execMTaskp(NULL) {}
+            : m_mtaskBodyp(nullptr)
+            , m_execMTaskp(nullptr) {}
     };
     void processMTasks();
     typedef enum { LOGIC_INITIAL, LOGIC_SETTLE } InitialLogicE;
@@ -786,8 +786,8 @@ private:
 
     void nodeMarkCircular(OrderVarVertex* vertexp, OrderEdge* edgep) {
         AstVarScope* nodep = vertexp->varScp();
-        OrderLogicVertex* fromLVtxp = NULL;
-        OrderLogicVertex* toLVtxp = NULL;
+        OrderLogicVertex* fromLVtxp = nullptr;
+        OrderLogicVertex* toLVtxp = nullptr;
         if (edgep) {
             fromLVtxp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
             toLVtxp = dynamic_cast<OrderLogicVertex*>(edgep->top());
@@ -951,7 +951,7 @@ private:
         // We're finished, complete the topscopes
         if (m_topScopep) {
             process();
-            m_topScopep = NULL;
+            m_topScopep = nullptr;
         }
     }
     virtual void visit(AstTopScope* nodep) override {
@@ -962,7 +962,7 @@ private:
         AstNode::user1ClearTree();
         AstNode::user3ClearTree();
         m_graph.clear();
-        m_activep = NULL;
+        m_activep = nullptr;
         m_topScopep = nodep;
         m_scopetopp = nodep->scopep();
         // Find global SenTrees
@@ -980,8 +980,8 @@ private:
         pushDeletep(m_deleteDomainp);  // Cleanup when done
         UINFO(5, "    DeleteDomain = " << m_deleteDomainp << endl);
         // Base vertices
-        m_activeSenVxp = NULL;
-        m_inputsVxp = new OrderInputsVertex(&m_graph, NULL);
+        m_activeSenVxp = nullptr;
+        m_inputsVxp = new OrderInputsVertex(&m_graph, nullptr);
         //
         iterateChildren(nodep);
         // Done topscope, erase extra user information
@@ -1001,18 +1001,18 @@ private:
     virtual void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);
         m_scopep = nodep;
-        m_logicVxp = NULL;
-        m_activeSenVxp = NULL;
+        m_logicVxp = nullptr;
+        m_activeSenVxp = nullptr;
         nodep->user1p(m_modp);
         // Iterate
         iterateChildren(nodep);
-        m_scopep = NULL;
+        m_scopep = nullptr;
     }
     virtual void visit(AstActive* nodep) override {
         // Create required activation blocks and add to module
         UINFO(4, "  ACTIVE  " << nodep << endl);
         m_activep = nodep;
-        m_activeSenVxp = NULL;
+        m_activeSenVxp = nullptr;
         m_inClocked = nodep->hasClocked();
         // Grab the sensitivity list
         UASSERT_OBJ(!nodep->sensesStorep(), nodep,
@@ -1020,8 +1020,8 @@ private:
         iterate(nodep->sensesp());
         // Collect statements under it
         iterateChildren(nodep);
-        m_activep = NULL;
-        m_activeSenVxp = NULL;
+        m_activep = nullptr;
+        m_activeSenVxp = nullptr;
         m_inClocked = false;
     }
     virtual void visit(AstVarScope* nodep) override {
@@ -1222,21 +1222,21 @@ private:
 public:
     // CONSTRUCTORS
     OrderVisitor() {
-        m_topScopep = NULL;
-        m_scopetopp = NULL;
-        m_modp = NULL;
-        m_scopep = NULL;
-        m_activep = NULL;
+        m_topScopep = nullptr;
+        m_scopetopp = nullptr;
+        m_modp = nullptr;
+        m_scopep = nullptr;
+        m_activep = nullptr;
         m_inSenTree = false;
         m_inClocked = false;
         m_inClkAss = false;
         m_inPre = m_inPost = false;
-        m_comboDomainp = NULL;
-        m_deleteDomainp = NULL;
-        m_inputsVxp = NULL;
-        m_activeSenVxp = NULL;
-        m_logicVxp = NULL;
-        m_pomNewFuncp = NULL;
+        m_comboDomainp = nullptr;
+        m_deleteDomainp = nullptr;
+        m_inputsVxp = nullptr;
+        m_activeSenVxp = nullptr;
+        m_logicVxp = nullptr;
+        m_pomNewFuncp = nullptr;
         m_pomNewStmts = 0;
         if (debug()) m_graph.debug(5);  // 3 is default if global debug; we want acyc debugging
     }
@@ -1423,10 +1423,10 @@ void OrderVisitor::processCircular() {
                 // other tests such as t_gated_clk_1.
                 if (!v3Global.opt.orderClockDly()) {
                     UINFO(5, "Circular Clock, no-order-clock-delay " << vvertexp << endl);
-                    nodeMarkCircular(vvertexp, NULL);
+                    nodeMarkCircular(vvertexp, nullptr);
                 } else if (vvertexp->isDelayed()) {
                     UINFO(5, "Circular Clock, delayed " << vvertexp << endl);
-                    nodeMarkCircular(vvertexp, NULL);
+                    nodeMarkCircular(vvertexp, nullptr);
                 } else {
                     UINFO(5, "Circular Clock, not delayed " << vvertexp << endl);
                 }
@@ -1494,7 +1494,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
     if (vertexp->domainp()) return;  // Already processed, or sequential logic
     UINFO(5, "    pdi: " << vertexp << endl);
     OrderVarVertex* vvertexp = dynamic_cast<OrderVarVertex*>(vertexp);
-    AstSenTree* domainp = NULL;
+    AstSenTree* domainp = nullptr;
     UASSERT(m_comboDomainp, "not preset");
     if (vvertexp && vvertexp->varScp()->varp()->isNonOutput()) domainp = m_comboDomainp;
     if (vvertexp && vvertexp->varScp()->isCircular()) domainp = m_comboDomainp;
@@ -1534,7 +1534,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
                     UASSERT_OBJ(newtree2p, fromVertexp->domainp(),
                                 "No senitem found under clocked domain");
                     newtreep->addSensesp(newtree2p);
-                    newtree2p = NULL;  // Below edit may replace it
+                    newtree2p = nullptr;  // Below edit may replace it
                     V3Const::constifyExpensiveEdit(newtreep);  // Remove duplicates
                     newtreep->multi(true);  // Comment that it was made from 2 clock domains
                     domainp = m_finder.getSenTree(newtreep);
@@ -1617,7 +1617,7 @@ void OrderVisitor::processMoveBuildGraph() {
     UINFO(5, "  MoveBuildGraph\n");
     processMoveClear();
     m_pomGraph
-        .userClearVertices();  // Vertex::user->OrderMoveVertex*, last edge added or NULL=none
+        .userClearVertices();  // Vertex::user->OrderMoveVertex*, last edge added or nullptr=none
 
     OrderMoveVertexMaker createOrderMoveVertex(&m_pomGraph, &m_pomWaiting);
     ProcessMoveBuildGraph<OrderMoveVertex> serialPMBG(&m_graph, &m_pomGraph,
@@ -1654,13 +1654,14 @@ void OrderVisitor::processMove() {
         while (domScopep) {
             UINFO(6, "   MoveDomain l=" << domScopep->domainp() << endl);
             // Process all nodes ready under same domain & scope
-            m_pomNewFuncp = NULL;
+            m_pomNewFuncp = nullptr;
             while (OrderMoveVertex* vertexp
                    = domScopep->readyVertices().begin()) {  // lintok-begin-on-ref
                 processMoveOne(vertexp, domScopep, 1);
             }
-            // Done with scope/domain pair, pick new scope under same domain, or NULL if none left
-            OrderMoveDomScope* domScopeNextp = NULL;
+            // Done with scope/domain pair, pick new scope under same domain, or nullptr if none
+            // left
+            OrderMoveDomScope* domScopeNextp = nullptr;
             for (OrderMoveDomScope* huntp = m_pomReadyDomScope.begin(); huntp;
                  huntp = huntp->readyDomScopeNextp()) {
                 if (huntp->domainp() == domScopep->domainp()) {
@@ -1745,12 +1746,12 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 
 AstActive* OrderVisitor::processMoveOneLogic(const OrderLogicVertex* lvertexp,
                                              AstCFunc*& newFuncpr, int& newStmtsr) {
-    AstActive* activep = NULL;
+    AstActive* activep = nullptr;
     AstScope* scopep = lvertexp->scopep();
     AstSenTree* domainp = lvertexp->domainp();
     AstNode* nodep = lvertexp->nodep();
     AstNodeModule* modp = VN_CAST(scopep->user1p(), NodeModule);  // Stashed by visitor func
-    UASSERT(modp, "NULL");
+    UASSERT(modp, "nullptr");
     if (VN_IS(nodep, SenTree)) {
         // Just ignore sensitivities, we'll deal with them when we move statements that need them
     } else {  // Normal logic
@@ -1759,7 +1760,7 @@ AstActive* OrderVisitor::processMoveOneLogic(const OrderLogicVertex* lvertexp,
             || (v3Global.opt.outputSplitCFuncs()
                 && v3Global.opt.outputSplitCFuncs() < newStmtsr)) {
             // Put every statement into a unique function to ease profiling or reduce function size
-            newFuncpr = NULL;
+            newFuncpr = nullptr;
         }
         if (!newFuncpr && domainp != m_deleteDomainp) {
             string name = cfuncName(modp, domainp, scopep, nodep);
@@ -1800,8 +1801,8 @@ void OrderVisitor::processMTasksInitial(InitialLogicE logic_type) {
     // mtask partition, aren't eligible for parallelism.
     //
     int initStmts = 0;
-    AstCFunc* initCFunc = NULL;
-    AstScope* lastScopep = NULL;
+    AstCFunc* initCFunc = nullptr;
+    AstScope* lastScopep = nullptr;
     for (V3GraphVertex* initVxp = m_graph.verticesBeginp(); initVxp;
          initVxp = initVxp->verticesNextp()) {
         OrderLogicVertex* initp = dynamic_cast<OrderLogicVertex*>(initVxp);
@@ -1810,7 +1811,7 @@ void OrderVisitor::processMTasksInitial(InitialLogicE logic_type) {
         if ((logic_type == LOGIC_SETTLE) && !initp->domainp()->hasSettle()) continue;
         if (initp->scopep() != lastScopep) {
             // Start new cfunc, don't let the cfunc cross scopes
-            initCFunc = NULL;
+            initCFunc = nullptr;
             lastScopep = initp->scopep();
         }
         AstActive* newActivep = processMoveOneLogic(initp, initCFunc /*ref*/, initStmts /*ref*/);
@@ -1911,15 +1912,15 @@ void OrderVisitor::processMTasks() {
         // Create leaf CFunc's to run this mtask's logic,
         // and create a set of AstActive's to call those CFuncs.
         // Add the AstActive's into the AstMTaskBody.
-        const AstSenTree* last_domainp = NULL;
-        AstCFunc* leafCFuncp = NULL;
+        const AstSenTree* last_domainp = nullptr;
+        AstCFunc* leafCFuncp = nullptr;
         int leafStmts = 0;
         for (MTaskState::Logics::iterator it = state.m_logics.begin(); it != state.m_logics.end();
              ++it) {
             const OrderLogicVertex* logicp = *it;
             if (logicp->domainp() != last_domainp) {
                 // Start a new leaf function.
-                leafCFuncp = NULL;
+                leafCFuncp = nullptr;
             }
             last_domainp = logicp->domainp();
 

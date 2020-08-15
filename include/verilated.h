@@ -409,7 +409,7 @@ class Verilated {
         const char** argv;
         CommandArgValues()
             : argc(0)
-            , argv(NULL) {}
+            , argv(nullptr) {}
         ~CommandArgValues() {}
     } s_args;
 
@@ -561,8 +561,8 @@ public:
         t_s.t_dpiFilename = filenamep;
         t_s.t_dpiLineno = lineno;
     }
-    static void dpiClearContext() VL_MT_SAFE { t_s.t_dpiScopep = NULL; }
-    static bool dpiInContext() VL_MT_SAFE { return t_s.t_dpiScopep != NULL; }
+    static void dpiClearContext() VL_MT_SAFE { t_s.t_dpiScopep = nullptr; }
+    static bool dpiInContext() VL_MT_SAFE { return t_s.t_dpiScopep != nullptr; }
     static const char* dpiFilenamep() VL_MT_SAFE { return t_s.t_dpiFilename; }
     static int dpiLineno() VL_MT_SAFE { return t_s.t_dpiLineno; }
     static int exportFuncNum(const char* namep) VL_MT_SAFE;

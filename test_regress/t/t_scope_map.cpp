@@ -43,7 +43,7 @@ int main(int argc, char** argv, char** env) {
         it->second->scopeDump();
 #endif
         VerilatedVarNameMap* varNameMap = it->second->varsp();
-        if (varNameMap == NULL) {
+        if (varNameMap == nullptr) {
             VL_PRINTF("%%Error: Bad varsp()\n");
             return -1;
         }
@@ -119,7 +119,7 @@ int main(int argc, char** argv, char** env) {
     for (VerilatedScopeNameMap::const_iterator it = scopeMapp->begin(); it != scopeMapp->end();
          ++it) {
         VerilatedVarNameMap* varNameMap = it->second->varsp();
-        if (varNameMap == NULL) {
+        if (varNameMap == nullptr) {
             VL_PRINTF("%%Error: Bad varsp()\n");
             return -1;
         }

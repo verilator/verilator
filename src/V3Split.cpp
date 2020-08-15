@@ -274,7 +274,7 @@ protected:
         m_inDly = false;
         m_graph.clear();
         m_stmtStackps.clear();
-        m_pliVertexp = NULL;
+        m_pliVertexp = nullptr;
         m_noReorderWhy = "";
         AstNode::user1ClearTree();
         AstNode::user2ClearTree();
@@ -546,7 +546,7 @@ protected:
             UINFO(6, "   No changes\n");
         } else {
             AstNRelinker replaceHandle;  // Where to add the list
-            AstNode* newListp = NULL;
+            AstNode* newListp = nullptr;
             for (RankNodeMap::const_iterator it = rankMap.begin(); it != rankMap.end(); ++it) {
                 AstNode* nextp = it->second;
                 UINFO(6, "   New order: " << nextp << endl);
@@ -572,7 +572,7 @@ protected:
         // Save recursion state
         AstNode* firstp = nodep;  // We may reorder, and nodep is no longer first.
         void* oldBlockUser3 = nodep->user3p();  // May be overloaded in below loop, save it
-        nodep->user3p(NULL);
+        nodep->user3p(nullptr);
         UASSERT_OBJ(nodep->firstAbovep(), nodep,
                     "Node passed is in next list; should have processed all list at once");
         // Process it
@@ -716,7 +716,7 @@ public:
             // We don't need to clone m_origAlwaysp->sensesp() here;
             // V3Activate already moved it to a parent node.
             AstAlways* alwaysp
-                = new AstAlways(m_origAlwaysp->fileline(), VAlwaysKwd::ALWAYS, NULL, NULL);
+                = new AstAlways(m_origAlwaysp->fileline(), VAlwaysKwd::ALWAYS, nullptr, nullptr);
             // Put a placeholder node into stmtp to track our position.
             // We'll strip these out after the blocks are fully cloned.
             AstSplitPlaceholder* placeholderp = makePlaceholderp();
@@ -834,7 +834,7 @@ private:
     // CONSTRUCTORS
 public:
     explicit SplitVisitor(AstNetlist* nodep)
-        : m_curIfConditional(NULL) {
+        : m_curIfConditional(nullptr) {
         iterate(nodep);
 
         // Splice newly-split blocks into the tree. Remove placeholders
@@ -968,7 +968,7 @@ protected:
         UINFO(4, "     IF " << nodep << endl);
         m_curIfConditional = nodep;
         iterateAndNextNull(nodep->condp());
-        m_curIfConditional = NULL;
+        m_curIfConditional = nullptr;
         scanBlock(nodep->ifsp());
         scanBlock(nodep->elsesp());
     }

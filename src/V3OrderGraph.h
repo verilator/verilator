@@ -123,7 +123,7 @@ public:
 
 class OrderEitherVertex : public V3GraphVertex {
     AstScope* m_scopep;  // Scope the vertex is in
-    AstSenTree* m_domainp;  // Clock domain (NULL = to be computed as we iterate)
+    AstSenTree* m_domainp;  // Clock domain (nullptr = to be computed as we iterate)
     bool m_isFromInput;  // From input, or derived therefrom (conservatively false)
 protected:
     OrderEitherVertex(V3Graph* graphp, const OrderEitherVertex& old)
@@ -158,7 +158,7 @@ class OrderInputsVertex : public OrderEitherVertex {
 
 public:
     OrderInputsVertex(V3Graph* graphp, AstSenTree* domainp)
-        : OrderEitherVertex(graphp, NULL, domainp) {
+        : OrderEitherVertex(graphp, nullptr, domainp) {
         isFromInput(true);  // By definition
     }
     virtual ~OrderInputsVertex() {}
@@ -211,7 +211,7 @@ protected:
 
 public:
     OrderVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
-        : OrderEitherVertex(graphp, scopep, NULL)
+        : OrderEitherVertex(graphp, scopep, nullptr)
         , m_varScp(varScp)
         , m_isClock(false)
         , m_isDelayed(false) {}
@@ -331,11 +331,11 @@ public:
         : V3GraphVertex(graphp)
         , m_logicp(logicp)
         , m_state(POM_WAIT)
-        , m_domScopep(NULL) {}
+        , m_domScopep(nullptr) {}
     virtual ~OrderMoveVertex() {}
     virtual OrderMoveVertex* clone(V3Graph* graphp) const {
         v3fatalSrc("Unsupported");
-        return NULL;
+        return nullptr;
     }
     // METHODS
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_MOVE; }
@@ -350,7 +350,7 @@ public:
         if (logicp()) {
             return logicp()->fileline();
         } else {
-            return NULL;
+            return nullptr;
         }
     }
     virtual string name() const {
@@ -405,7 +405,7 @@ public:
     virtual ~MTaskMoveVertex() {}
     virtual MTaskMoveVertex* clone(V3Graph* graphp) const {
         v3fatalSrc("Unsupported");
-        return NULL;
+        return nullptr;
     }
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_MOVE; }
     virtual string dotColor() const {

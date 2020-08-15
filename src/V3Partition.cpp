@@ -628,7 +628,7 @@ private:
              followp = followp->outNextp()) {
             if (followp == excludedEdgep) continue;
             LogicMTask* nextp = dynamic_cast<LogicMTask*>(followp->top());
-            if (pathExistsFromInternal(nextp, top, NULL, generation)) return true;
+            if (pathExistsFromInternal(nextp, top, nullptr, generation)) return true;
         }
         return false;
     }
@@ -636,8 +636,8 @@ private:
     // True if there's a path from 'fromp' to 'top' excluding
     // 'excludedEdgep', false otherwise.
     //
-    // 'excludedEdgep' may be NULL in which case no edge is excluded.  If
-    // 'excludedEdgep' is non-NULL it must connect fromp and top.
+    // 'excludedEdgep' may be nullptr in which case no edge is excluded.  If
+    // 'excludedEdgep' is non-nullptr it must connect fromp and top.
     //
     // TODO: consider changing this API to the 'isTransitiveEdge' API
     // used by GraphPathChecker
@@ -655,7 +655,7 @@ public:
         if (osp->fail()) v3fatalStatic("Can't write " << filename);
 
         // Find start vertex with longest CP
-        const LogicMTask* startp = NULL;
+        const LogicMTask* startp = nullptr;
         for (const V3GraphVertex* vxp = graphp->verticesBeginp(); vxp;
              vxp = vxp->verticesNextp()) {
             const LogicMTask* mtaskp = dynamic_cast<const LogicMTask*>(vxp);
@@ -679,7 +679,7 @@ public:
             const EdgeSet& children = nextp->m_edges[GraphWay::FORWARD];
             EdgeSet::const_reverse_iterator it = children.rbegin();
             if (it == children.rend()) {
-                nextp = NULL;
+                nextp = nullptr;
             } else {
                 nextp = (*it).key();
             }
@@ -773,8 +773,8 @@ public:
     LogicMTask* ap() const { return m_ap; }
     LogicMTask* bp() const { return m_bp; }
     bool mergeWouldCreateCycle() const {
-        return (LogicMTask::pathExistsFrom(m_ap, m_bp, NULL)
-                || LogicMTask::pathExistsFrom(m_bp, m_ap, NULL));
+        return (LogicMTask::pathExistsFrom(m_ap, m_bp, nullptr)
+                || LogicMTask::pathExistsFrom(m_bp, m_ap, nullptr));
     }
     bool operator<(const SiblingMC& other) const {
         if (m_ap->id() < other.m_ap->id()) { return true; }
@@ -806,7 +806,7 @@ public:
         return LogicMTask::pathExistsFrom(fromMTaskp(), toMTaskp(), this);
     }
     static MTaskEdge* cast(V3GraphEdge* edgep) {
-        if (!edgep) return NULL;
+        if (!edgep) return nullptr;
         MTaskEdge* resultp = dynamic_cast<MTaskEdge*>(edgep);
         UASSERT(resultp, "Failed to cast in MTaskEdge::cast");
         return resultp;
@@ -1291,10 +1291,10 @@ private:
     }
 
     void contract(MergeCandidate* mergeCanp) {
-        LogicMTask* top = NULL;
-        LogicMTask* fromp = NULL;
+        LogicMTask* top = nullptr;
+        LogicMTask* fromp = nullptr;
         MTaskEdge* mergeEdgep = dynamic_cast<MTaskEdge*>(mergeCanp);
-        SiblingMC* mergeSibsp = NULL;
+        SiblingMC* mergeSibsp = nullptr;
         if (mergeEdgep) {
             top = dynamic_cast<LogicMTask*>(mergeEdgep->top());
             fromp = dynamic_cast<LogicMTask*>(mergeEdgep->fromp());
@@ -1340,7 +1340,7 @@ private:
             // Remove and free the connecting edge. Must do this before
             // propagating CP's below.
             m_sb.removeElem(mergeCanp);
-            VL_DO_CLEAR(mergeEdgep->unlinkDelete(), mergeEdgep = NULL);
+            VL_DO_CLEAR(mergeEdgep->unlinkDelete(), mergeEdgep = nullptr);
         }
 
         // This also updates cost and stepCost on recipientp
@@ -1390,7 +1390,7 @@ private:
         partMergeEdgesFrom(m_mtasksp, recipientp, donorp, &m_sb);
 
         // Delete the donorp mtask from the graph
-        VL_DO_CLEAR(donorp->unlinkDelete(m_mtasksp), donorp = NULL);
+        VL_DO_CLEAR(donorp->unlinkDelete(m_mtasksp), donorp = nullptr);
 
         m_mergesSinceRescore++;
 
@@ -1564,9 +1564,9 @@ private:
         // NOTE: To get a dot file run with --debugi-V3Partition 4 or more.
         vluint64_t startUsecs = V3Os::timeUsecs();
         V3Graph mtasks;
-        LogicMTask* lastp = NULL;
+        LogicMTask* lastp = nullptr;
         for (unsigned i = 0; i < chain_len; ++i) {
-            LogicMTask* mtp = new LogicMTask(&mtasks, NULL);
+            LogicMTask* mtp = new LogicMTask(&mtasks, nullptr);
             mtp->setCost(1);
             if (lastp) { new MTaskEdge(&mtasks, lastp, mtp, 1); }
             lastp = mtp;
@@ -1615,17 +1615,17 @@ private:
     static void selfTestX() {
         // NOTE: To get a dot file run with --debugi-V3Partition 4 or more.
         V3Graph mtasks;
-        LogicMTask* center = new LogicMTask(&mtasks, NULL);
+        LogicMTask* center = new LogicMTask(&mtasks, nullptr);
         center->setCost(1);
         unsigned i;
         for (i = 0; i < 50; ++i) {
-            LogicMTask* mtp = new LogicMTask(&mtasks, NULL);
+            LogicMTask* mtp = new LogicMTask(&mtasks, nullptr);
             mtp->setCost(1);
             // Edge from every input -> center
             new MTaskEdge(&mtasks, mtp, center, 1);
         }
         for (i = 0; i < 50; ++i) {
-            LogicMTask* mtp = new LogicMTask(&mtasks, NULL);
+            LogicMTask* mtp = new LogicMTask(&mtasks, nullptr);
             mtp->setCost(1);
             // Edge from center -> every output
             new MTaskEdge(&mtasks, center, mtp, 1);
@@ -1661,7 +1661,7 @@ private:
     VL_UNCOPYABLE(PartContraction);
 };
 
-const GraphWay* PartContraction::s_shortestWaywardCpInclusiveWay = NULL;
+const GraphWay* PartContraction::s_shortestWaywardCpInclusiveWay = nullptr;
 
 //######################################################################
 // DpiImportCallVisitor
@@ -1830,13 +1830,13 @@ private:
         }
     }
     void mergeSameRankTasks(TasksByRank* tasksByRankp) {
-        LogicMTask* lastMergedp = NULL;
+        LogicMTask* lastMergedp = nullptr;
         for (TasksByRank::iterator rankIt = tasksByRankp->begin(); rankIt != tasksByRankp->end();
              ++rankIt) {
             // Find the largest node at this rank, merge into it.  (If we
             // happen to find a huge node, this saves time in
             // partMergeEdgesFrom() versus merging into an arbitrary node.)
-            LogicMTask* mergedp = NULL;
+            LogicMTask* mergedp = nullptr;
             for (LogicMTaskSet::iterator it = rankIt->second.begin(); it != rankIt->second.end();
                  ++it) {
                 LogicMTask* mtaskp = *it;
@@ -1864,7 +1864,7 @@ private:
                 // Move all vertices from donorp to mergedp
                 mergedp->moveAllVerticesFrom(donorp);
                 // Move edges from donorp to recipientp
-                partMergeEdgesFrom(m_mtasksp, mergedp, donorp, NULL);
+                partMergeEdgesFrom(m_mtasksp, mergedp, donorp, nullptr);
                 // Remove donorp from the graph
                 VL_DO_DANGLING(donorp->unlinkDelete(m_mtasksp), donorp);
                 m_mergesDone++;
@@ -2146,7 +2146,7 @@ public:
             // on each thread (in that thread's local time frame.)
             uint32_t bestTime = 0xffffffff;
             uint32_t bestTh = 0;
-            ExecMTask* bestMtaskp = NULL;
+            ExecMTask* bestMtaskp = nullptr;
             for (uint32_t th = 0; th < m_nThreads; ++th) {
                 for (ReadyMTasks::iterator taskIt = m_ready.begin(); taskIt != m_ready.end();
                      ++taskIt) {
@@ -2230,13 +2230,13 @@ public:
     // SELF TEST
     static void selfTest() {
         V3Graph graph;
-        ExecMTask* t0 = new ExecMTask(&graph, NULL, 0);
+        ExecMTask* t0 = new ExecMTask(&graph, nullptr, 0);
         t0->cost(1000);
         t0->priority(1100);
-        ExecMTask* t1 = new ExecMTask(&graph, NULL, 1);
+        ExecMTask* t1 = new ExecMTask(&graph, nullptr, 1);
         t1->cost(100);
         t1->priority(100);
-        ExecMTask* t2 = new ExecMTask(&graph, NULL, 2);
+        ExecMTask* t2 = new ExecMTask(&graph, nullptr, 2);
         t2->cost(100);
         t2->priority(100);
 
@@ -2255,11 +2255,11 @@ public:
 
         UASSERT_SELFTEST(uint32_t, t1->thread(), 0);
         UASSERT_SELFTEST(bool, t1->threadRoot(), false);
-        UASSERT_SELFTEST(const void*, t1->packNextp(), NULL);
+        UASSERT_SELFTEST(const void*, t1->packNextp(), nullptr);
 
         UASSERT_SELFTEST(uint32_t, t2->thread(), 1);
         UASSERT_SELFTEST(bool, t2->threadRoot(), true);
-        UASSERT_SELFTEST(const void*, t2->packNextp(), NULL);
+        UASSERT_SELFTEST(const void*, t2->packNextp(), nullptr);
 
         // On its native thread, we see the actual end time for t0:
         UASSERT_SELFTEST(uint32_t, packer.completionTime(t0, 0), 1000);
@@ -2378,7 +2378,7 @@ void V3Partition::setupMTaskDeps(V3Graph* mtasksp, const Vx2MTaskMap* vx2mtaskp)
                 Vx2MTaskMap::const_iterator it = vx2mtaskp->find(top);
                 UASSERT(it != vx2mtaskp->end(), "MTask map can't find id");
                 LogicMTask* otherMTaskp = it->second;
-                UASSERT(otherMTaskp, "NULL other Mtask");
+                UASSERT(otherMTaskp, "nullptr other Mtask");
                 UASSERT_OBJ(otherMTaskp != mtaskp, mtaskp, "Would create a cycle edge");
 
                 // Don't create redundant edges.

@@ -145,7 +145,7 @@ void i_shortreal(float i) {
 void i_chandle(void* i) {
     static int n = 0;
     printf("i_chandle %d\n", n);
-    if (i != NULL) stop();
+    if (i != nullptr) stop();
     n++;
 }
 
@@ -256,7 +256,7 @@ void i_shortreal_t(float i) {
 void i_chandle_t(void* i) {
     static int n = 0;
     printf("i_chandle_t %d\n", n);
-    if (i != NULL) stop();
+    if (i != nullptr) stop();
     n++;
 }
 
@@ -618,7 +618,7 @@ void check_exports() {
 #ifndef NO_SHORTREAL
     e_shortreal(1.0f * n + 0.25f);
 #endif
-    e_chandle((n % 2) ? reinterpret_cast<void*>(&e_chandle) : NULL);
+    e_chandle((n % 2) ? reinterpret_cast<void*>(&e_chandle) : nullptr);
     e_string((n % 2) ? "World" : "Hello");
     e_bit(n % 2);
     e_logic(!(n % 2));
@@ -645,7 +645,7 @@ void check_exports() {
 #ifndef NO_SHORTREAL
     e_shortreal_t(1.0f * (2 * n) + 0.25f);
 #endif
-    e_chandle_t((n % 2) ? NULL : reinterpret_cast<void*>(&e_chandle_t));
+    e_chandle_t((n % 2) ? nullptr : reinterpret_cast<void*>(&e_chandle_t));
     e_string_t((n % 2) ? "Hello" : "World");
     e_bit_t(n % 2);
     e_logic_t(!(n % 2));

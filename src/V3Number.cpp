@@ -1451,7 +1451,7 @@ V3Number& V3Number::opAtoN(const V3Number& lhs, int base) {
     str.erase(std::remove(str.begin(), str.end(), '_'), str.end());
 
     errno = 0;
-    long v = std::strtol(str.c_str(), NULL, base);
+    long v = std::strtol(str.c_str(), nullptr, base);
     if (errno != 0) v = 0;
     return setLongS(static_cast<vlsint32_t>(v));
 }

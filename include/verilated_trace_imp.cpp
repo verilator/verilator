@@ -39,7 +39,7 @@
 // Static utility functions
 
 static double timescaleToDouble(const char* unitp) {
-    char* endp = NULL;
+    char* endp = nullptr;
     double value = strtod(unitp, &endp);
     // On error so we allow just "ns" to return 1e-9.
     if (value == 0.0 && endp == unitp) value = 1;
@@ -276,7 +276,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::onExit(void* selfp) {
 
 template <>
 VerilatedTrace<VL_DERIVED_T>::VerilatedTrace()
-    : m_sigs_oldvalp(NULL)
+    : m_sigs_oldvalp(nullptr)
     , m_timeLastDump(0)
     , m_fullDump(true)
     , m_nextCode(0)
@@ -294,7 +294,7 @@ VerilatedTrace<VL_DERIVED_T>::VerilatedTrace()
 }
 
 template <> VerilatedTrace<VL_DERIVED_T>::~VerilatedTrace() {
-    if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = NULL);
+    if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = nullptr);
     Verilated::removeFlushCb(VerilatedTrace<VL_DERIVED_T>::onFlush, this);
     Verilated::removeExitCb(VerilatedTrace<VL_DERIVED_T>::onExit, this);
 #ifdef VL_TRACE_THREADED

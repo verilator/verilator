@@ -65,7 +65,7 @@ private:
             if (!prettyName.empty() && prettyName[0] == '_') return "Leading underscore";
             if (prettyName.find("._") != string::npos) return "Inlined leading underscore";
         }
-        return NULL;
+        return nullptr;
     }
 
     AstCFunc* newCFunc(AstCFuncType type, const string& name) {
@@ -91,7 +91,7 @@ private:
     AstCFunc* newCFuncSub(AstCFunc* basep) {
         const string name = "traceInitSub" + cvtToStr(m_funcNum++);
         AstCFunc* const funcp = newCFunc(AstCFuncType::TRACE_INIT_SUB, name);
-        if (!m_interface) callCFuncSub(basep, funcp, NULL);
+        if (!m_interface) callCFuncSub(basep, funcp, nullptr);
         return funcp;
     }
     void addTraceDecl(const VNumRange& arrayRange,
@@ -191,7 +191,7 @@ private:
                 m_traShowname = AstNode::vcdName(scopep->name() + " " + varp->name());
                 if (m_traShowname.substr(0, 4) == "TOP ") m_traShowname.erase(0, 4);
             }
-            UASSERT_OBJ(m_initSubFuncp, nodep, "NULL");
+            UASSERT_OBJ(m_initSubFuncp, nodep, "nullptr");
 
             m_traVscp = nodep;
             if (const char* const ignoreReasonp = vscIgnoreTrace(nodep)) {
@@ -206,9 +206,9 @@ private:
                 // Recurse into data type of the signal; the visitors will call addTraceDecl()
                 iterate(varp->dtypep()->skipRefToEnump());
                 // Cleanup
-                if (m_traValuep) VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = NULL);
+                if (m_traValuep) VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);
             }
-            m_traVscp = NULL;
+            m_traVscp = nullptr;
             m_traShowname = "";
         }
     }
@@ -248,7 +248,7 @@ private:
 
                         m_traValuep->dtypep(subtypep);
                         iterate(subtypep);
-                        VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = NULL);
+                        VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);
                     }
                     m_traShowname = oldShowname;
                     m_traValuep = oldValuep;
@@ -275,7 +275,7 @@ private:
                                                  subtypep->width());
                         m_traValuep->dtypep(subtypep);
                         iterate(subtypep);
-                        VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = NULL);
+                        VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);
                     }
                     m_traShowname = oldShowname;
                     m_traValuep = oldValuep;
@@ -306,7 +306,7 @@ private:
                                              itemp->lsb(), subtypep->width());
                             m_traValuep->dtypep(subtypep);
                             iterate(subtypep);
-                            VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = NULL);
+                            VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);
                         } else {  // Else union, replicate fields
                             iterate(subtypep);
                         }
@@ -339,13 +339,13 @@ private:
 public:
     // CONSTRUCTORS
     explicit TraceDeclVisitor(AstNetlist* nodep) {
-        m_topScopep = NULL;
-        m_initFuncp = NULL;
-        m_initSubFuncp = NULL;
+        m_topScopep = nullptr;
+        m_initFuncp = nullptr;
+        m_initSubFuncp = nullptr;
         m_initSubStmts = 0;
         m_funcNum = 0;
-        m_traVscp = NULL;
-        m_traValuep = NULL;
+        m_traVscp = nullptr;
+        m_traValuep = nullptr;
         m_interface = false;
         iterate(nodep);
     }

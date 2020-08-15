@@ -52,7 +52,7 @@ void V3ScoreboardBase::selfTest() {
 
     UASSERT(sb.needsRescore(), "SelfTest: Newly filled sb should need a rescore.");
     UASSERT(sb.needsRescore(&e1), "SelfTest: Individual newly-added element should need rescore");
-    UASSERT(NULL == sb.bestp(),
+    UASSERT(nullptr == sb.bestp(),
             "SelfTest: Newly filled sb should have nothing eligible for Bestp()");
 
     sb.rescore();

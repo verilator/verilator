@@ -116,7 +116,7 @@ public:
     //          iterateInEdges() will stop traversing edges if one is deleted
     VNUser iterateCurrentOutEdges(GateGraphBaseVisitor& v, VNUser vu = VNUser(0)) {
         VNUser ret = VNUser(0);
-        V3GraphEdge* next_edgep = NULL;
+        V3GraphEdge* next_edgep = nullptr;
         for (V3GraphEdge* edgep = outBeginp(); edgep; edgep = next_edgep) {
             // Need to find the next edge before visiting in case the edge is deleted
             next_edgep = edgep->outNextp();
@@ -138,8 +138,8 @@ public:
         , m_varScp(varScp)
         , m_isTop(false)
         , m_isClock(false)
-        , m_rstSyncNodep(NULL)
-        , m_rstAsyncNodep(NULL) {}
+        , m_rstSyncNodep(nullptr)
+        , m_rstAsyncNodep(nullptr) {}
     virtual ~GateVarVertex() {}
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
@@ -170,7 +170,7 @@ public:
 
 class GateLogicVertex : public GateEitherVertex {
     AstNode* m_nodep;
-    AstActive* m_activep;  // Under what active; NULL is ok (under cfunc or such)
+    AstActive* m_activep;  // Under what active; nullptr is ok (under cfunc or such)
     bool m_slow;  // In slow block
 public:
     GateLogicVertex(V3Graph* graphp, AstScope* scopep, AstNode* nodep, AstActive* activep,
@@ -277,9 +277,9 @@ public:
     // CONSTRUCTORS
     GateOkVisitor(AstNode* nodep, bool buffersOnly, bool dedupe) {
         m_isSimple = true;
-        m_substTreep = NULL;
+        m_substTreep = nullptr;
         m_buffersOnly = buffersOnly;
-        m_lhsVarRef = NULL;
+        m_lhsVarRef = nullptr;
         m_dedupe = dedupe;
         m_ops = 0;
         // Iterate
@@ -318,7 +318,7 @@ private:
 
     // STATE
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
-    GateLogicVertex* m_logicVertexp;  // Current statement being tracked, NULL=ignored
+    GateLogicVertex* m_logicVertexp;  // Current statement being tracked, nullptr=ignored
     AstScope* m_scopep;  // Current scope being processed
     AstNodeModule* m_modp;  // Current module
     AstActive* m_activep;  // Current active
@@ -346,7 +346,7 @@ private:
             if (consumeReason) m_logicVertexp->setConsumed(consumeReason);
             if (VN_IS(nodep, SenItem)) m_logicVertexp->setConsumed("senItem");
             iterateChildren(nodep);
-            m_logicVertexp = NULL;
+            m_logicVertexp = nullptr;
         }
     }
 
@@ -428,9 +428,9 @@ private:
     virtual void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);
         m_scopep = nodep;
-        m_logicVertexp = NULL;
+        m_logicVertexp = nullptr;
         iterateChildren(nodep);
-        m_scopep = NULL;
+        m_scopep = nullptr;
     }
     virtual void visit(AstActive* nodep) override {
         // Create required blocks and add to module
@@ -440,7 +440,7 @@ private:
         AstNode::user2ClearTree();
         iterateChildren(nodep);
         AstNode::user2ClearTree();
-        m_activep = NULL;
+        m_activep = nullptr;
         m_activeReducible = true;
     }
     virtual void visit(AstNodeVarRef* nodep) override {
@@ -471,12 +471,12 @@ private:
         }
     }
     virtual void visit(AstAlways* nodep) override {
-        iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? NULL : "Multiple Stmts"), NULL);
+        iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts"), nullptr);
     }
     virtual void visit(AstAlwaysPublic* nodep) override {
         bool lastslow = m_inSlow;
         m_inSlow = true;
-        iterateNewStmt(nodep, "AlwaysPublic", NULL);
+        iterateNewStmt(nodep, "AlwaysPublic", nullptr);
         m_inSlow = lastslow;
     }
     virtual void visit(AstCFunc* nodep) override {
@@ -487,21 +487,21 @@ private:
         if (m_logicVertexp) {  // Already under logic; presumably a SenGate
             iterateChildren(nodep);
         } else {  // Standalone item, probably right under a SenTree
-            iterateNewStmt(nodep, NULL, NULL);
+            iterateNewStmt(nodep, nullptr, nullptr);
         }
         m_inSenItem = false;
     }
     virtual void visit(AstInitial* nodep) override {
         bool lastslow = m_inSlow;
         m_inSlow = true;
-        iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? NULL : "Multiple Stmts"), NULL);
+        iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts"), nullptr);
         m_inSlow = lastslow;
     }
     virtual void visit(AstAssignAlias* nodep) override {  //
-        iterateNewStmt(nodep, NULL, NULL);
+        iterateNewStmt(nodep, nullptr, nullptr);
     }
     virtual void visit(AstAssignW* nodep) override {  //
-        iterateNewStmt(nodep, NULL, NULL);
+        iterateNewStmt(nodep, nullptr, nullptr);
     }
     virtual void visit(AstCoverToggle* nodep) override {
         iterateNewStmt(nodep, "CoverToggle", "CoverToggle");
@@ -529,10 +529,10 @@ public:
     // CONSTRUCTORS
     explicit GateVisitor(AstNode* nodep) {
         AstNode::user1ClearTree();
-        m_logicVertexp = NULL;
-        m_scopep = NULL;
-        m_modp = NULL;
-        m_activep = NULL;
+        m_logicVertexp = nullptr;
+        m_scopep = nullptr;
+        m_modp = nullptr;
+        m_activep = nullptr;
         m_activeReducible = true;
         m_inSenItem = false;
         m_inSlow = false;
@@ -675,7 +675,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                             // optimize it further
                             logicp->unlinkFrBack();
                             vvertexp->varScp()->valuep(logicp);
-                            logicp = NULL;
+                            logicp = nullptr;
                             // Mark the vertex so we don't mark it as being
                             // unconsumed in the next step
                             vvertexp->user(true);
@@ -787,7 +787,7 @@ void GateVisitor::consumedMove() {
         }
         if (GateLogicVertex* lvertexp = dynamic_cast<GateLogicVertex*>(vertexp)) {
             AstNode* nodep = lvertexp->nodep();
-            AstActive* oldactp = lvertexp->activep();  // NULL under cfunc
+            AstActive* oldactp = lvertexp->activep();  // nullptr under cfunc
             if (!lvertexp->consumed() && oldactp) {
                 // Eventually: Move the statement to a new active block
                 // with "tracing-on" sensitivity
@@ -895,7 +895,7 @@ public:
 
 void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode* consumerp) {
     if (debug() >= 5) consumerp->dumpTree(cout, "    elimUsePre: ");
-    GateElimVisitor elimVisitor(consumerp, varscp, substp, NULL);
+    GateElimVisitor elimVisitor(consumerp, varscp, substp, nullptr);
     if (elimVisitor.didReplace()) {
         if (debug() >= 9) consumerp->dumpTree(cout, "    elimUseCns: ");
         // Caution: Can't let V3Const change our handle to consumerp, such as by
@@ -920,9 +920,9 @@ private:
     // NODE STATE
     // Ast*::user2p     -> parent AstNodeAssign* for this rhsp
     // Ast*::user3p     -> AstActive* of assign, for isSame() in test for duplicate
-    //                     Set to NULL if this assign's tree was later replaced
+    //                     Set to nullptr if this assign's tree was later replaced
     // Ast*::user5p     -> AstNode* of assign if condition, for isSame() in test for duplicate
-    //                     Set to NULL if this assign's tree was later replaced
+    //                     Set to nullptr if this assign's tree was later replaced
     // AstUser1InUse    m_inuser1;      (Allocated for use in GateVisitor)
     // AstUser2InUse    m_inuser2;      (Allocated for use in GateVisitor)
     AstUser3InUse m_inuser3;
@@ -935,7 +935,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     void hash(AstNode* nodep) {
-        // !NULL && the object is hashable
+        // !nullptr && the object is hashable
         if (nodep && !nodep->sameHash().isIllegal()) m_hashed.hash(nodep);
     }
     bool sameHash(AstNode* node1p, AstNode* node2p) {
@@ -985,7 +985,8 @@ public:
     }
 
     AstNodeAssign* hashAndFindDupe(AstNodeAssign* assignp, AstNode* extra1p, AstNode* extra2p) {
-        // Legal for extra1p/2p to be NULL, we'll compare with other assigns with extras also NULL
+        // Legal for extra1p/2p to be nullptr, we'll compare with other assigns with extras also
+        // nullptr
         AstNode* rhsp = assignp->rhsp();
         rhsp->user2p(assignp);
         rhsp->user3p(extra1p);
@@ -1004,7 +1005,7 @@ public:
             return VN_CAST(m_hashed.iteratorNodep(dupit)->user2p(), NodeAssign);
         }
         // Retain new inserted information
-        return NULL;
+        return nullptr;
     }
 
     void check() {
@@ -1094,16 +1095,16 @@ private:
 public:
     // CONSTRUCTORS
     GateDedupeVarVisitor() {
-        m_assignp = NULL;
-        m_ifCondp = NULL;
+        m_assignp = nullptr;
+        m_ifCondp = nullptr;
         m_always = false;
         m_dedupable = true;
     }
     ~GateDedupeVarVisitor() {}
     // PUBLIC METHODS
     AstNodeVarRef* findDupe(AstNode* nodep, AstVarScope* consumerVarScopep, AstActive* activep) {
-        m_assignp = NULL;
-        m_ifCondp = NULL;
+        m_assignp = nullptr;
+        m_ifCondp = nullptr;
         m_always = false;
         m_dedupable = true;
         iterate(nodep);
@@ -1118,7 +1119,7 @@ public:
                 }
             }
         }
-        return NULL;
+        return nullptr;
     }
     void hashReplace(AstNode* oldp, AstNode* newp) { m_ghash.hashReplace(oldp, newp); }
 };
@@ -1157,7 +1158,7 @@ private:
                 V3GraphEdge* edgep = vvertexp->inBeginp();
                 GateLogicVertex* lvertexp = static_cast<GateLogicVertex*>(edgep->fromp());
                 UASSERT_OBJ(vvertexp->dedupable(), vvertexp->varScp(),
-                            "GateLogicVertex* visit should have returned NULL "
+                            "GateLogicVertex* visit should have returned nullptr "
                             "if consumer var vertex is not dedupable.");
                 GateOkVisitor okVisitor(lvertexp->nodep(), false, true);
                 if (okVisitor.isSimple()) {
@@ -1197,7 +1198,7 @@ private:
                     AstNode* lvertexNodep = lvertexp->nodep();
                     lvertexNodep->unlinkFrBack();
                     vvertexp->varScp()->valuep(lvertexNodep);
-                    lvertexNodep = NULL;
+                    lvertexNodep = nullptr;
                     vvertexp->user(true);
                     lvertexp->user(true);
                 }
@@ -1208,7 +1209,7 @@ private:
     }
 
     // Given iterated logic, starting at vu which was consumer's GateVarVertex
-    // Returns a varref that has the same logic input; or NULL if none
+    // Returns a varref that has the same logic input; or nullptr if none
     virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) {
         lvertexp->iterateInEdges(*this);
 
@@ -1274,18 +1275,18 @@ private:
         AstVarRef* preVarRefp = VN_CAST(pre->fromp(), VarRef);
         AstVarRef* curVarRefp = VN_CAST(cur->fromp(), VarRef);
         if (!preVarRefp || !curVarRefp || !curVarRefp->same(preVarRefp)) {
-            return NULL;  // not the same var
+            return nullptr;  // not the same var
         }
         const AstConst* pstart = VN_CAST(pre->lsbp(), Const);
         const AstConst* pwidth = VN_CAST(pre->widthp(), Const);
         const AstConst* cstart = VN_CAST(cur->lsbp(), Const);
         const AstConst* cwidth = VN_CAST(cur->widthp(), Const);
-        if (!pstart || !pwidth || !cstart || !cwidth) return NULL;  // too complicated
+        if (!pstart || !pwidth || !cstart || !cwidth) return nullptr;  // too complicated
         if (cur->lsbConst() + cur->widthConst() == pre->lsbConst()) {
             return new AstSel(curVarRefp->fileline(), curVarRefp->cloneTree(false),
                               cur->lsbConst(), pre->widthConst() + cur->widthConst());
         } else {
-            return NULL;
+            return nullptr;
         }
     }
 
@@ -1369,9 +1370,9 @@ private:
 public:
     explicit GateMergeAssignsGraphVisitor(V3Graph* graphp)
         : GateGraphBaseVisitor(graphp) {
-        m_assignp = NULL;
-        m_activep = NULL;
-        m_logicvp = NULL;
+        m_assignp = nullptr;
+        m_activep = nullptr;
+        m_logicvp = nullptr;
         m_numMergedAssigns = 0;
         m_graphp = graphp;
     }
@@ -1427,7 +1428,7 @@ private:
 public:
     // CONSTRUCTORS
     GateConcatVisitor() {
-        m_vscp = NULL;
+        m_vscp = nullptr;
         m_offset = 0;
         m_found_offset = 0;
         m_found = false;
@@ -1558,8 +1559,8 @@ public:
     explicit GateClkDecompGraphVisitor(V3Graph* graphp)
         : GateGraphBaseVisitor(graphp) {
         m_seen_clk_vectors = 0;
-        m_clk_vsp = NULL;
-        m_clk_vvertexp = NULL;
+        m_clk_vsp = nullptr;
+        m_clk_vvertexp = nullptr;
         m_total_seen_clk_vectors = 0;
         m_total_decomposed_clk_vectors = 0;
     }

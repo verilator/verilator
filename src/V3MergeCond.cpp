@@ -150,7 +150,7 @@ private:
                 if (VN_IS(andp->lhsp(), Const)) { return condp; }
             }
         }
-        return NULL;
+        return nullptr;
     }
 
     // Apply (_ & 1'b1). This is necessary because this pass is after V3Clean,
@@ -204,7 +204,7 @@ private:
 
             // Create equivalent 'if' statement and insert it before the first node
             AstIf* const ifp
-                = new AstIf(m_mgCondp->fileline(), m_mgCondp->unlinkFrBack(), NULL, NULL);
+                = new AstIf(m_mgCondp->fileline(), m_mgCondp->unlinkFrBack(), nullptr, nullptr);
             m_mgFirstp->replaceWith(ifp);
             ifp->addNextHere(m_mgFirstp);
             // Unzip the list and insert under branches
@@ -212,7 +212,7 @@ private:
             do {
                 // Grab next pointer and unlink
                 AstNode* const currp = nextp;
-                nextp = currp != m_mgLastp ? currp->nextp() : NULL;
+                nextp = currp != m_mgLastp ? currp->nextp() : nullptr;
                 currp->unlinkFrBack();
                 // Skip over comments
                 if (VN_IS(currp, Comment)) {
@@ -235,10 +235,10 @@ private:
             } while (nextp);
         }
         // Reset state
-        m_mgFirstp = NULL;
-        m_mgCondp = NULL;
-        m_mgLastp = NULL;
-        m_mgNextp = NULL;
+        m_mgFirstp = nullptr;
+        m_mgCondp = nullptr;
+        m_mgLastp = nullptr;
+        m_mgNextp = nullptr;
         m_markVars.clear();
     }
 
@@ -292,13 +292,13 @@ private:
                 // Is it a 'lhs = cond & value' or 'lhs = value & cond'?
                 if (AstAnd* const andp = VN_CAST(rhsp, And)) {
                     if (andp->lhsp()->sameTree(m_mgCondp) || andp->rhsp()->sameTree(m_mgCondp)) {
-                        addToList(nodep, NULL);
+                        addToList(nodep, nullptr);
                         return;
                     }
                 }
                 // Is it simply 'lhs = cond'?
                 if (rhsp->sameTree(m_mgCondp)) {
-                    addToList(nodep, NULL);
+                    addToList(nodep, nullptr);
                     return;
                 }
             }
@@ -321,10 +321,10 @@ private:
 public:
     // CONSTRUCTORS
     explicit MergeCondVisitor(AstNetlist* nodep) {
-        m_mgFirstp = NULL;
-        m_mgCondp = NULL;
-        m_mgLastp = NULL;
-        m_mgNextp = NULL;
+        m_mgFirstp = nullptr;
+        m_mgCondp = nullptr;
+        m_mgLastp = nullptr;
+        m_mgNextp = nullptr;
         m_listLenght = 0;
         m_markVars.clear();
         iterate(nodep);

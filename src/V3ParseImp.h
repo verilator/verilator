@@ -180,7 +180,7 @@ class V3ParseImp {
     std::deque<FileLine> m_lexLintState;  // Current lint state for save/restore
     std::deque<string> m_ppBuffers;  // Preprocessor->lex buffer of characters to process
 
-    AstNode* m_tagNodep;  // Points to the node to set to m_tag or NULL to not set.
+    AstNode* m_tagNodep;  // Points to the node to set to m_tag or nullptr to not set.
     VTimescale m_timeLastUnit;  // Last `timescale's unit
 
 public:
@@ -304,13 +304,13 @@ public:
         : m_rootp(rootp)
         , m_filterp(filterp)
         , m_symp(parserSymp) {
-        m_lexFileline = NULL;
-        m_lexerp = NULL;
+        m_lexFileline = nullptr;
+        m_lexerp = nullptr;
         m_inLibrary = false;
         m_lexKwdDepth = 0;
         m_lexKwdLast = stateVerilogRecent();
         m_lexPrevToken = 0;
-        m_tagNodep = NULL;
+        m_tagNodep = nullptr;
         m_timeLastUnit = v3Global.opt.timeDefaultUnit();
     }
     ~V3ParseImp();

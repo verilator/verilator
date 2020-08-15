@@ -152,14 +152,14 @@
 #if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
 # define VL_DANGLING(var)
 #else
-/// After e.g. delete, set variable to NULL to indicate must not use later
+/// After e.g. delete, set variable to nullptr to indicate must not use later
 # define VL_DANGLING(var) \
     do { \
-        *const_cast<const void**>(reinterpret_cast<const void* const*>(&var)) = NULL; \
+        *const_cast<const void**>(reinterpret_cast<const void* const*>(&var)) = nullptr; \
     } while (false)
 #endif
 
-/// Perform an e.g. delete, then set variable to NULL to indicate must not use later.
+/// Perform an e.g. delete, then set variable to nullptr to indicate must not use later.
 /// Unlike VL_DO_CLEAR the setting of the variable is only for debug reasons.
 #define VL_DO_DANGLING(stmt, var) \
     do { \
@@ -169,7 +169,7 @@
         VL_DANGLING(var); \
     } while (false)
 
-/// Perform an e.g. delete, then set variable to NULL as a requirement
+/// Perform an e.g. delete, then set variable to nullptr as a requirement
 #define VL_DO_CLEAR(stmt, stmt2) \
     do { \
         do { \

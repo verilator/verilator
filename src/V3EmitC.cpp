@@ -539,10 +539,10 @@ public:
         displayNode(nodep, nodep->scopeNamep(), nodep->text(), nodep->exprsp(), false);
     }
     virtual void visit(AstFScanF* nodep) override {
-        displayNode(nodep, NULL, nodep->text(), nodep->exprsp(), true);
+        displayNode(nodep, nullptr, nodep->text(), nodep->exprsp(), true);
     }
     virtual void visit(AstSScanF* nodep) override {
-        displayNode(nodep, NULL, nodep->text(), nodep->exprsp(), true);
+        displayNode(nodep, nullptr, nodep->text(), nodep->exprsp(), true);
     }
     virtual void visit(AstValuePlusArgs* nodep) override {
         puts("VL_VALUEPLUSARGS_IN");
@@ -570,7 +570,7 @@ public:
     }
     virtual void visit(AstFGetS* nodep) override {
         checkMaxWords(nodep);
-        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
+        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
     }
 
     void checkMaxWords(AstNode* nodep) {
@@ -874,7 +874,7 @@ public:
 
     // Operators
     virtual void visit(AstNodeTermop* nodep) override {
-        emitOpName(nodep, nodep->emitC(), NULL, NULL, NULL);
+        emitOpName(nodep, nodep->emitC(), nullptr, nullptr, nullptr);
     }
     virtual void visit(AstNodeUniop* nodep) override {
         if (nodep->emitCheckMaxWords()
@@ -893,7 +893,7 @@ public:
             iterateAndNextNull(nodep->lhsp());
             puts(")");
         } else {
-            emitOpName(nodep, nodep->emitC(), nodep->lhsp(), NULL, NULL);
+            emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nullptr, nullptr);
         }
     }
     virtual void visit(AstNodeBiop* nodep) override {
@@ -913,7 +913,7 @@ public:
             iterateAndNextNull(nodep->rhsp());
             puts(")");
         } else {
-            emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
+            emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
         }
     }
     virtual void visit(AstNodeTriop* nodep) override {
@@ -1004,7 +1004,7 @@ public:
             iterateAndNextNull(nodep->rhsp());
             puts(")");
         } else {
-            emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
+            emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
         }
     }
     virtual void visit(AstStreamL* nodep) override {
@@ -1029,7 +1029,7 @@ public:
             }
         }
         emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)", nodep->lhsp(),
-                   nodep->rhsp(), NULL);
+                   nodep->rhsp(), nullptr);
     }
     virtual void visit(AstCountBits* nodep) override {
         putbs("VL_COUNTBITS_");
@@ -1187,16 +1187,16 @@ public:
             puts(assignString);
             puts(" = ");
         }
-        emitConstant(constp, NULL, assignString);
+        emitConstant(constp, nullptr, assignString);
         puts(";\n");
     }
     virtual void visit(AstConst* nodep) override {
         if (nodep->isWide()) {
             UASSERT_OBJ(m_wideTempRefp, nodep, "Wide Constant w/ no temp");
             emitConstant(nodep, m_wideTempRefp, "");
-            m_wideTempRefp = NULL;  // We used it, barf if set it a second time
+            m_wideTempRefp = nullptr;  // We used it, barf if set it a second time
         } else {
-            emitConstant(nodep, NULL, "");
+            emitConstant(nodep, nullptr, "");
         }
     }
 
@@ -1224,7 +1224,7 @@ public:
 
     void init() {
         m_suppressSemi = false;
-        m_wideTempRefp = NULL;
+        m_wideTempRefp = nullptr;
         m_labelNum = 0;
         m_splitSize = 0;
         m_splitFilenum = 0;
@@ -1340,7 +1340,7 @@ class EmitCImp : EmitCStmts {
         string filenameNoExt = v3Global.opt.makeDir() + "/" + prefixNameProtect(modp);
         if (filenum) filenameNoExt += "__" + cvtToStr(filenum);
         filenameNoExt += (slow ? "__Slow" : "");
-        V3OutCFile* ofp = NULL;
+        V3OutCFile* ofp = nullptr;
         if (v3Global.opt.lintOnly()) {
             // Unfortunately we have some lint checks here, so we can't just skip processing.
             // We should move them to a different stage.
@@ -1401,7 +1401,7 @@ class EmitCImp : EmitCStmts {
         string recName;
         if (v3Global.opt.profThreads()) {
             recName = "__Vprfthr_" + cvtToStr(curExecMTaskp->id());
-            puts("VlProfileRec* " + recName + " = NULL;\n");
+            puts("VlProfileRec* " + recName + " = nullptr;\n");
             // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
             puts("if (VL_UNLIKELY(vlTOPp->__Vm_profile_cycle_start)) {\n");
             puts(recName + " = vlTOPp->__Vm_threadPoolp->profileAppend();\n");
@@ -1772,7 +1772,7 @@ class EmitCImp : EmitCStmts {
 
 public:
     EmitCImp() {
-        m_modp = NULL;
+        m_modp = nullptr;
         m_slow = false;
         m_fast = false;
     }
@@ -1934,7 +1934,7 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp,
         } else if (pos[0] == '%') {
             ++pos;
             bool detail = false;
-            AstNode* detailp = NULL;
+            AstNode* detailp = nullptr;
             switch (pos[0]) {
             case '%': puts("%"); break;
             case 'k': putbs(""); break;
@@ -1961,7 +1961,7 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp,
                     COMMA;
                     puts(m_wideTempRefp->hiernameProtect());
                     puts(m_wideTempRefp->varp()->nameProtect());
-                    m_wideTempRefp = NULL;
+                    m_wideTempRefp = nullptr;
                     needComma = true;
                 }
                 break;
@@ -2125,7 +2125,7 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt,
                             bool ignore, char fmtLetter) {
     // Print display argument, edits elistp
-    AstNode* argp = NULL;
+    AstNode* argp = nullptr;
     if (!ignore) {
         argp = *elistp;
         // Prep for next parameter
@@ -2161,10 +2161,10 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const
     }
     emitDispState.pushFormat(pfmt);
     if (!ignore) {
-        emitDispState.pushArg(' ', NULL, cvtToStr(argp->widthMin()));
+        emitDispState.pushArg(' ', nullptr, cvtToStr(argp->widthMin()));
         emitDispState.pushArg(fmtLetter, argp, "");
     } else {
-        emitDispState.pushArg(fmtLetter, NULL, "");
+        emitDispState.pushArg(fmtLetter, nullptr, "");
     }
 }
 
@@ -2247,7 +2247,7 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep, const str
                 } else {
                     emitDispState.pushFormat("%N");  // Add a . when needed
                 }
-                emitDispState.pushArg(' ', NULL, "vlSymsp->name()");
+                emitDispState.pushArg(' ', nullptr, "vlSymsp->name()");
                 emitDispState.pushFormat(suffix);
                 break;
             }
@@ -2307,7 +2307,7 @@ void EmitCImp::emitMTaskVertexCtors(bool* firstp) {
 
     // This will flip to 'true' before the start of the 0th cycle.
     emitCtorSep(firstp);
-    puts("__Vm_threadPoolp(NULL)");
+    puts("__Vm_threadPoolp(nullptr)");
     if (v3Global.opt.profThreads()) {
         emitCtorSep(firstp);
         puts("__Vm_profile_cycle_start(0)");
@@ -2438,7 +2438,7 @@ void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
     puts(prefixNameProtect(modp) + "::~" + prefixNameProtect(modp) + "() {\n");
     if (modp->isTop()) {
         if (v3Global.opt.mtasks()) {
-            puts("VL_DO_CLEAR(delete __Vm_threadPoolp, __Vm_threadPoolp = NULL);\n");
+            puts("VL_DO_CLEAR(delete __Vm_threadPoolp, __Vm_threadPoolp = nullptr);\n");
         }
         // Call via function in __Trace.cpp as this .cpp file does not have trace header
         if (v3Global.needTraceDumper()) {
@@ -2448,7 +2448,7 @@ void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
         }
     }
     emitTextSection(AstType::atScDtor);
-    if (modp->isTop()) puts("VL_DO_CLEAR(delete __VlSymsp, __VlSymsp = NULL);\n");
+    if (modp->isTop()) puts("VL_DO_CLEAR(delete __VlSymsp, __VlSymsp = nullptr);\n");
     puts("}\n");
     splitSizeInc(10);
 }
@@ -3252,7 +3252,7 @@ void EmitCImp::maybeSplit(AstNodeModule* fileModp) {
         // Splitting file, so using parallel build.
         v3Global.useParallelBuild(true);
         // Close old file
-        VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
         // Open a new file
         m_ofp = newOutCFile(fileModp, !m_fast, true /*source*/, splitFilenumInc());
         emitImpTop(fileModp);
@@ -3278,7 +3278,7 @@ void EmitCImp::mainInt(AstNodeModule* modp) {
         m_modp = modp;
     }
     ofp()->putsEndGuard();
-    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
 
 void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
@@ -3321,7 +3321,7 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
             }
         }
     }
-    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
 
 //######################################################################
@@ -3375,7 +3375,7 @@ class EmitCTrace : EmitCStmts {
 
         if (v3Global.needTraceDumper() && !optSystemC()) {
             puts("void " + topClassName() + "::_traceDump() {\n");
-            // Caller checked for __Vm_dumperp non-NULL
+            // Caller checked for __Vm_dumperp non-nullptr
             puts("const VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
             puts("__VlSymsp->__Vm_dumperp->dump(VL_TIME_Q());\n");
             puts("}\n");
@@ -3399,7 +3399,8 @@ class EmitCTrace : EmitCStmts {
             puts("void " + topClassName() + "::_traceDumpClose() {\n");
             puts("const VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
             puts("__VlSymsp->__Vm_dumping = false;\n");
-            puts("VL_DO_CLEAR(delete __VlSymsp->__Vm_dumperp, __VlSymsp->__Vm_dumperp = NULL);\n");
+            puts("VL_DO_CLEAR(delete __VlSymsp->__Vm_dumperp, __VlSymsp->__Vm_dumperp = "
+                 "nullptr);\n");
             puts("}\n");
             splitSizeInc(10);
         }
@@ -3672,7 +3673,7 @@ class EmitCTrace : EmitCStmts {
                 // Splitting file, so using parallel build.
                 v3Global.useParallelBuild(true);
                 // Close old file
-                VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+                VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
                 // Open a new file
                 newOutCFile(splitFilenumInc());
             }
@@ -3736,7 +3737,7 @@ class EmitCTrace : EmitCStmts {
             }
             puts("}\n");
         }
-        m_funcp = NULL;
+        m_funcp = nullptr;
     }
     virtual void visit(AstTraceDecl* nodep) override {
         int enumNum = emitTraceDeclDType(nodep->dtypep());
@@ -3764,7 +3765,7 @@ class EmitCTrace : EmitCStmts {
 
 public:
     explicit EmitCTrace(bool slow) {
-        m_funcp = NULL;
+        m_funcp = nullptr;
         m_slow = slow;
         m_enumNum = 0;
     }
@@ -3777,7 +3778,7 @@ public:
 
         iterate(v3Global.rootp());
 
-        VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
     }
 };
 

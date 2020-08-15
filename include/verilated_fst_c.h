@@ -83,7 +83,7 @@ public:
     //=========================================================================
     // External interface to client code
 
-    explicit VerilatedFst(void* fst = NULL);
+    explicit VerilatedFst(void* fst = nullptr);
     ~VerilatedFst();
 
     /// Open the file; call isOpen() to see if errors
@@ -93,7 +93,7 @@ public:
     /// Flush any remaining data to this file
     void flush() VL_MT_UNSAFE;
     /// Is file open?
-    bool isOpen() const { return m_fst != NULL; }
+    bool isOpen() const { return m_fst != nullptr; }
 
     //=========================================================================
     // Internal interface to Verilator generated code
@@ -135,7 +135,7 @@ class VerilatedFstC {
     VL_UNCOPYABLE(VerilatedFstC);
 
 public:
-    explicit VerilatedFstC(void* filep = NULL)
+    explicit VerilatedFstC(void* filep = nullptr)
         : m_sptrace(filep) {}
     ~VerilatedFstC() { close(); }
     /// Routines can only be called from one thread; allow next call from different thread

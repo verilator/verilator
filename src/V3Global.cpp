@@ -36,7 +36,7 @@ AstNetlist* V3Global::makeNetlist() {
 }
 
 void V3Global::shutdown() {
-    VL_DO_CLEAR(delete m_hierPlanp, m_hierPlanp = NULL);  // delete nullptr is safe
+    VL_DO_CLEAR(delete m_hierPlanp, m_hierPlanp = nullptr);  // delete nullptr is safe
 }
 
 void V3Global::checkTree() { rootp()->checkTree(); }

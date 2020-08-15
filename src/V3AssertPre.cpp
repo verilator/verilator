@@ -45,20 +45,20 @@ private:
 
     AstSenTree* newSenTree(AstNode* nodep) {
         // Create sentree based on clocked or default clock
-        // Return NULL for always
-        AstSenTree* newp = NULL;
+        // Return nullptr for always
+        AstSenTree* newp = nullptr;
         AstSenItem* senip = m_senip;
         if (!senip) senip = m_seniDefaultp;
         if (!senip) senip = m_seniAlwaysp;
         if (!senip) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Unclocked assertion");
-            newp = new AstSenTree(nodep->fileline(), NULL);
+            newp = new AstSenTree(nodep->fileline(), nullptr);
         } else {
             newp = new AstSenTree(nodep->fileline(), senip->cloneTree(true));
         }
         return newp;
     }
-    void clearAssertInfo() { m_senip = NULL; }
+    void clearAssertInfo() { m_senip = nullptr; }
 
     // VISITORS
     //========== Statements
@@ -78,7 +78,7 @@ private:
         iterateAndNextNull(nodep->sensesp());
         if (nodep->sensesp()) m_seniAlwaysp = nodep->sensesp()->sensesp();
         iterateAndNextNull(nodep->bodysp());
-        m_seniAlwaysp = NULL;
+        m_seniAlwaysp = nullptr;
     }
 
     virtual void visit(AstNodeCoverOrAssert* nodep) override {
@@ -95,7 +95,7 @@ private:
         FileLine* fl = nodep->fileline();
         AstNode* exprp = nodep->exprp()->unlinkFrBack();
         if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
-        AstNode* past = new AstPast(fl, exprp, NULL);
+        AstNode* past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstAnd(fl, past, new AstNot(fl, exprp->cloneTree(false)));
         exprp->dtypeSetLogicBool();
@@ -114,7 +114,7 @@ private:
         FileLine* fl = nodep->fileline();
         AstNode* exprp = nodep->exprp()->unlinkFrBack();
         if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
-        AstNode* past = new AstPast(fl, exprp, NULL);
+        AstNode* past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstAnd(fl, new AstNot(fl, past), exprp->cloneTree(false));
         exprp->dtypeSetLogicBool();
@@ -127,7 +127,7 @@ private:
         iterateChildren(nodep);
         FileLine* fl = nodep->fileline();
         AstNode* exprp = nodep->exprp()->unlinkFrBack();
-        AstNode* past = new AstPast(fl, exprp, NULL);
+        AstNode* past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstEq(fl, past,
                           exprp->cloneTree(false));  // new AstVarRef(fl, exprp, true)
@@ -163,15 +163,15 @@ private:
     virtual void visit(AstNodeModule* nodep) override {
         iterateChildren(nodep);
         // Reset defaults
-        m_seniDefaultp = NULL;
+        m_seniDefaultp = nullptr;
     }
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit AssertPreVisitor(AstNetlist* nodep) {
-        m_seniDefaultp = NULL;
-        m_seniAlwaysp = NULL;
+        m_seniDefaultp = nullptr;
+        m_seniAlwaysp = nullptr;
         clearAssertInfo();
         // Process
         iterate(nodep);

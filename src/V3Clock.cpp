@@ -101,11 +101,11 @@ private:
         // BOTHEDGE:  var ^ var_last
         // HIGHEDGE:  var
         // LOWEDGE:  ~var
-        AstNode* newp = NULL;
+        AstNode* newp = nullptr;
         if (nodep->edgeType() == VEdgeType::ET_ILLEGAL) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Complicated event expression in sensitive activity list");
-            return NULL;
+            return nullptr;
         }
         AstVarScope* clkvscp = nodep->varrefp()->varScopep();
         if (nodep->edgeType() == VEdgeType::ET_POSEDGE) {
@@ -138,7 +138,7 @@ private:
     }
     AstNode* createSenseEquation(AstSenItem* nodesp) {
         // Nodep may be a list of elements; we need to walk it
-        AstNode* senEqnp = NULL;
+        AstNode* senEqnp = nullptr;
         for (AstSenItem* senp = nodesp; senp; senp = VN_CAST(senp->nextp(), SenItem)) {
             AstNode* const senOnep = createSenItemEquation(senp);
             if (senEqnp) {
@@ -153,12 +153,12 @@ private:
     AstIf* makeActiveIf(AstSenTree* sensesp) {
         AstNode* senEqnp = createSenseEquation(sensesp->sensesp());
         UASSERT_OBJ(senEqnp, sensesp, "No sense equation, shouldn't be in sequent activation.");
-        AstIf* newifp = new AstIf(sensesp->fileline(), senEqnp, NULL, NULL);
+        AstIf* newifp = new AstIf(sensesp->fileline(), senEqnp, nullptr, nullptr);
         return newifp;
     }
     void clearLastSen() {
-        m_lastSenp = NULL;
-        m_lastIfp = NULL;
+        m_lastSenp = nullptr;
+        m_lastIfp = nullptr;
     }
 
     // VISITORS
@@ -223,8 +223,8 @@ private:
         // Done, clear so we can detect errors
         UINFO(4, " TOPSCOPEDONE " << nodep << endl);
         clearLastSen();
-        m_topScopep = NULL;
-        m_scopep = NULL;
+        m_topScopep = nullptr;
+        m_scopep = nullptr;
     }
     virtual void visit(AstNodeModule* nodep) override {
         // UINFO(4, " MOD   " << nodep << endl);
@@ -244,7 +244,7 @@ private:
             movep->unlinkFrBackWithNext();
             m_evalFuncp->addFinalsp(movep);
         }
-        m_scopep = NULL;
+        m_scopep = nullptr;
     }
     virtual void visit(AstAlways* nodep) override {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
@@ -272,7 +272,7 @@ private:
         AstNode* origp = nodep->origp()->unlinkFrBack();
         AstNode* changep = nodep->changep()->unlinkFrBack();
         AstIf* newp = new AstIf(nodep->fileline(), new AstXor(nodep->fileline(), origp, changep),
-                                incp, NULL);
+                                incp, nullptr);
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
@@ -402,16 +402,16 @@ private:
 public:
     // CONSTRUCTORS
     explicit ClockVisitor(AstNetlist* nodep) {
-        m_modp = NULL;
-        m_evalFuncp = NULL;
-        m_initFuncp = NULL;
-        m_finalFuncp = NULL;
-        m_settleFuncp = NULL;
-        m_topScopep = NULL;
-        m_lastSenp = NULL;
-        m_lastIfp = NULL;
-        m_scopep = NULL;
-        m_mtaskBodyp = NULL;
+        m_modp = nullptr;
+        m_evalFuncp = nullptr;
+        m_initFuncp = nullptr;
+        m_finalFuncp = nullptr;
+        m_settleFuncp = nullptr;
+        m_topScopep = nullptr;
+        m_lastSenp = nullptr;
+        m_lastIfp = nullptr;
+        m_scopep = nullptr;
+        m_mtaskBodyp = nullptr;
         //
         iterate(nodep);
         // Allow downstream modules to find _eval()

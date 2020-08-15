@@ -75,7 +75,7 @@ public:
         , m_priority(0)
         , m_cost(0)
         , m_thread(0xffffffff)
-        , m_packNextp(NULL)
+        , m_packNextp(nullptr)
         , m_threadRoot(false) {}
     AstMTaskBody* bodyp() const { return m_bodyp; }
     virtual uint32_t id() const { return m_id; }

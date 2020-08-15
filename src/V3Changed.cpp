@@ -49,10 +49,10 @@ public:
     int m_funcNum;  // Number of change functions emitted
 
     ChangedState() {
-        m_topModp = NULL;
-        m_chgFuncp = NULL;
-        m_scopetopp = NULL;
-        m_tlChgFuncp = NULL;
+        m_topModp = nullptr;
+        m_chgFuncp = nullptr;
+        m_scopetopp = nullptr;
+        m_tlChgFuncp = nullptr;
         m_numStmts = 0;
         m_funcNum = 0;
     }
@@ -267,7 +267,8 @@ private:
         // Each change detection function needs at least one AstChangeDet
         // to ensure that V3EmitC outputs the necessary code.
         m_statep->maybeCreateChgFuncp();
-        m_statep->m_chgFuncp->addStmtsp(new AstChangeDet(nodep->fileline(), NULL, NULL, false));
+        m_statep->m_chgFuncp->addStmtsp(
+            new AstChangeDet(nodep->fileline(), nullptr, nullptr, false));
 
         iterateChildren(nodep);
     }

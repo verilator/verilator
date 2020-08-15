@@ -408,7 +408,7 @@ public:
     }
 
     // Get the best element, with the lowest score (lower is better), among
-    // elements whose scores are known. Returns NULL if no elements with
+    // elements whose scores are known. Returns nullptr if no elements with
     // known scores exist.
     //
     // Note: This does not automatically rescore. Client must call
@@ -417,7 +417,7 @@ public:
     // considers elements that aren't pending rescore.
     const T_Elem* bestp() {
         typename SortedMap::iterator result = m_sorted.begin();
-        if (VL_UNLIKELY(result == m_sorted.end())) return NULL;
+        if (VL_UNLIKELY(result == m_sorted.end())) return nullptr;
         return (*result).key();
     }
 

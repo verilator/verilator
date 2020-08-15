@@ -6,7 +6,7 @@
 
 #include VM_PREFIX_INCLUDE
 
-VM_PREFIX* tb = NULL;
+VM_PREFIX* tb = nullptr;
 
 double sc_time_stamp() { return 0; }
 

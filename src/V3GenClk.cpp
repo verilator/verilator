@@ -108,7 +108,7 @@ private:
         m_activep = nodep;
         UASSERT_OBJ(nodep->sensesp(), nodep, "Unlinked");
         iterateChildren(nodep->sensesp());  // iterateAndNext?
-        m_activep = NULL;
+        m_activep = nullptr;
         iterateChildren(nodep);
     }
     virtual void visit(AstCFunc* nodep) override { iterateChildren(nodep); }
@@ -120,8 +120,8 @@ public:
     // CONSTRUCTORS
     GenClkRenameVisitor(AstTopScope* nodep, AstNodeModule* topModp) {
         m_topModp = topModp;
-        m_scopetopp = NULL;
-        m_activep = NULL;
+        m_scopetopp = nullptr;
+        m_activep = nullptr;
         iterate(nodep);
     }
     virtual ~GenClkRenameVisitor() {}
@@ -199,14 +199,14 @@ private:
         // UINFO(8, "ASS " << nodep << endl);
         m_assignp = nodep;
         iterateChildren(nodep);
-        m_assignp = NULL;
+        m_assignp = nullptr;
     }
     virtual void visit(AstActive* nodep) override {
         UINFO(8, "ACTIVE " << nodep << endl);
         m_activep = nodep;
         UASSERT_OBJ(nodep->sensesp(), nodep, "Unlinked");
         iterateChildren(nodep->sensesp());  // iterateAndNext?
-        m_activep = NULL;
+        m_activep = nullptr;
         iterateChildren(nodep);
     }
 
@@ -217,10 +217,10 @@ private:
 public:
     // CONSTRUCTORS
     explicit GenClkReadVisitor(AstNetlist* nodep)
-        : m_activep(NULL)
+        : m_activep(nullptr)
         , m_tracingCall(false)
-        , m_assignp(NULL)
-        , m_topModp(NULL) {
+        , m_assignp(nullptr)
+        , m_topModp(nullptr) {
         iterate(nodep);
     }
     virtual ~GenClkReadVisitor() {}

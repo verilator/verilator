@@ -107,7 +107,7 @@ public:
     VlcTests() {}
     ~VlcTests() {
         for (VlcTests::ByName::iterator it = begin(); it != end(); ++it) {
-            VL_DO_CLEAR(delete *it, *it = NULL);
+            VL_DO_CLEAR(delete *it, *it = nullptr);
         }
     }
 

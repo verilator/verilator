@@ -149,9 +149,9 @@ FileLine::FileLine(FileLine::EmptySecret) {
     m_firstColumn = 0;
     m_lastColumn = 0;
     m_filenameno = singleton().nameToNumber(FileLine::builtInFilename());
-    m_contentp = NULL;
+    m_contentp = nullptr;
     m_contentLineno = 0;
-    m_parent = NULL;
+    m_parent = nullptr;
 
     m_warnOn = 0;
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
@@ -250,7 +250,7 @@ FileLine* FileLine::copyOrSameFileLine() {
 #ifndef _V3ERROR_NO_GLOBAL_
     V3Config::applyIgnores(this);  // Toggle warnings based on global config file
 #endif
-    static FileLine* lastNewp = NULL;
+    static FileLine* lastNewp = nullptr;
     if (lastNewp && *lastNewp == *this) {  // Compares lineno, filename, etc
         return lastNewp;
     }

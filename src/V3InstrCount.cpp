@@ -276,7 +276,7 @@ public:
     InstrCountDumpVisitor(AstNode* nodep, std::ostream* osp)
         : m_osp(osp)
         , m_depth(0) {
-        // No check for NULL output, so...
+        // No check for nullptr output, so...
         UASSERT_OBJ(osp, nodep, "Don't call if not dumping");
         if (nodep) iterate(nodep);
     }

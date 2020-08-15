@@ -160,7 +160,7 @@ public:
     // good locality.) V3Order.cpp relies on this to order the logic
     // vertices within a given mtask without jumping over domains too much.
     const V3GraphVertex* nextp() {
-        const V3GraphVertex* resultp = NULL;
+        const V3GraphVertex* resultp = nullptr;
 
         typename ReadyVertices::iterator curIt;
         if (m_last == m_readyVertices.end()) {

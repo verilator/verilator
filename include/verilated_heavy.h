@@ -55,7 +55,7 @@ class VlReadMem {
 public:
     VlReadMem(bool hex, int bits, const std::string& filename, QData start, QData end);
     ~VlReadMem();
-    bool isOpen() const { return m_fp != NULL; }
+    bool isOpen() const { return m_fp != nullptr; }
     int linenum() const { return m_linenum; }
     bool get(QData& addrr, std::string& valuer);
     void setData(void* valuep, const std::string& rhs);
@@ -69,7 +69,7 @@ class VlWriteMem {
 public:
     VlWriteMem(bool hex, int bits, const std::string& filename, QData start, QData end);
     ~VlWriteMem();
-    bool isOpen() const { return m_fp != NULL; }
+    bool isOpen() const { return m_fp != nullptr; }
     void print(QData addr, bool addrstamp, const void* valuep);
 };
 

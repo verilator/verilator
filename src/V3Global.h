@@ -70,7 +70,7 @@ inline bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
 class V3Global {
     // Globals
     AstNetlist* m_rootp;  // Root of entire netlist
-    V3HierBlockPlan* m_hierPlanp;  // Hierarchical verilation plan, NULL unless hier_block
+    V3HierBlockPlan* m_hierPlanp;  // Hierarchical verilation plan, nullptr unless hier_block
     VWidthMinUsage m_widthMinUsage;  // What AstNode::widthMin() is used for
 
     int m_debugFileNumber;  // Number to append to debug files created
@@ -92,8 +92,8 @@ public:
 
     // CONSTRUCTORS
     V3Global()
-        : m_rootp(NULL)  // created by makeInitNetlist() so static constructors run first
-        , m_hierPlanp(NULL)  // Set via hierPlanp(V3HierBlockPlan*) when use hier_block
+        : m_rootp(nullptr)  // created by makeInitNetlist() so static constructors run first
+        , m_hierPlanp(nullptr)  // Set via hierPlanp(V3HierBlockPlan*) when use hier_block
         , m_widthMinUsage(VWidthMinUsage::LINT_WIDTH)
         , m_debugFileNumber(0)
         , m_assertDTypesResolved(false)

@@ -28,7 +28,7 @@
     virtual void accept(AstNVisitor& v) { v.visit(this); } \
     virtual AstNode* clone() { return new Ast##name(*this); } \
     static Ast##name* cloneTreeNull(Ast##name* nodep, bool cloneNextLink) { \
-        return nodep ? nodep->cloneTree(cloneNextLink) : NULL; \
+        return nodep ? nodep->cloneTree(cloneNextLink) : nullptr; \
     } \
     Ast##name* cloneTree(bool cloneNext) { \
         return static_cast<Ast##name*>(AstNode::cloneTree(cloneNext)); \
@@ -171,7 +171,7 @@ public:
     bool isEqAllOnes() const { return num().isEqAllOnes(width()); }
     bool isEqAllOnesV() const { return num().isEqAllOnes(widthMinV()); }
     // Parse string and create appropriate type of AstConst.
-    // May return NULL on parse failure.
+    // May return nullptr on parse failure.
     static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
 };
 
@@ -290,7 +290,7 @@ class AstClassPackage : public AstNodeModule {
 public:
     AstClassPackage(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl, name)
-        , m_classp(NULL) {}
+        , m_classp(nullptr) {}
     ASTNODE_NODE_FUNCS(ClassPackage)
     virtual string verilogKwd() const { return "/*class*/package"; }
     virtual const char* broken() const;
@@ -310,7 +310,7 @@ class AstClass : public AstNodeModule {
 public:
     AstClass(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl, name)
-        , m_packagep(NULL) {}
+        , m_packagep(nullptr) {}
     ASTNODE_NODE_FUNCS(Class)
     virtual string verilogKwd() const { return "class"; }
     virtual bool isHeavy() const { return true; }
@@ -319,7 +319,7 @@ public:
     virtual const char* broken() const {
         BROKEN_BASE_RTN(AstNodeModule::broken());
         BROKEN_RTN(m_packagep && !m_packagep->brokeExists());
-        return NULL;
+        return nullptr;
     }
     // op1/op2/op3 in AstNodeModule
     AstClassPackage* packagep() const { return m_packagep; }
@@ -335,7 +335,7 @@ public:
     void repairCache();
     AstNode* findMember(const string& name) const {
         MemberNameMap::const_iterator it = m_members.find(name);
-        return (it == m_members.end()) ? NULL : it->second;
+        return (it == m_members.end()) ? nullptr : it->second;
     }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
@@ -373,7 +373,7 @@ public:
         , m_varType(type)
         , m_name(name) {
         childDTypep(dtp);  // Only for parser
-        dtypep(NULL);  // V3Width will resolve
+        dtypep(nullptr);  // V3Width will resolve
     }
     ASTNODE_NODE_FUNCS(ParamTypeDType)
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
@@ -413,7 +413,7 @@ public:
         , m_name(name) {
         childDTypep(dtp);  // Only for parser
         addAttrsp(attrsp);
-        dtypep(NULL);  // V3Width will resolve
+        dtypep(nullptr);  // V3Width will resolve
         m_attrPublic = false;
     }
     ASTNODE_NODE_FUNCS(Typedef)
@@ -468,7 +468,7 @@ public:
         , m_name(name)
         , m_containerp(containerp) {
         childDTypep(dtp);  // Only for parser
-        dtypep(NULL);  // V3Width will resolve
+        dtypep(nullptr);  // V3Width will resolve
         m_uniqueNum = uniqueNumInc();
     }
     ASTNODE_NODE_FUNCS(DefImplicitDType)
@@ -511,9 +511,9 @@ public:
         : ASTGEN_SUPER(fl) {
         childDTypep(dtp);  // Only for parser
         keyChildDTypep(keyDtp);  // Only for parser
-        refDTypep(NULL);
-        keyDTypep(NULL);
-        dtypep(NULL);  // V3Width will resolve
+        refDTypep(nullptr);
+        keyDTypep(nullptr);
+        dtypep(nullptr);  // V3Width will resolve
     }
     ASTNODE_NODE_FUNCS(AssocArrayDType)
     virtual const char* broken() const {
@@ -521,7 +521,7 @@ public:
                      || (!m_refDTypep && childDTypep())));
         BROKEN_RTN(!((m_keyDTypep && !childDTypep() && m_keyDTypep->brokeExists())
                      || (!m_keyDTypep && childDTypep())));
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
@@ -557,7 +557,7 @@ public:
     AstNodeDType* keyChildDTypep() const { return VN_CAST(op2p(), NodeDType); }
     void keyChildDTypep(AstNodeDType* nodep) { setOp2p(nodep); }
     // METHODS
-    virtual AstBasicDType* basicp() const { return NULL; }
+    virtual AstBasicDType* basicp() const { return nullptr; }
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
@@ -587,7 +587,7 @@ public:
     // Will be removed in V3Width, which relies on this
     // being a child not a dtype pointed node
     virtual bool maybePointedTo() const { return false; }
-    virtual AstBasicDType* basicp() const { return NULL; }
+    virtual AstBasicDType* basicp() const { return nullptr; }
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
@@ -604,19 +604,19 @@ public:
     AstDynArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl) {
         childDTypep(dtp);  // Only for parser
-        refDTypep(NULL);
-        dtypep(NULL);  // V3Width will resolve
+        refDTypep(nullptr);
+        dtypep(nullptr);  // V3Width will resolve
     }
     AstDynArrayDType(FileLine* fl, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl) {
         refDTypep(dtp);
-        dtypep(NULL);  // V3Width will resolve
+        dtypep(nullptr);  // V3Width will resolve
     }
     ASTNODE_NODE_FUNCS(DynArrayDType)
     virtual const char* broken() const {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
@@ -642,7 +642,7 @@ public:
     virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
     // METHODS
-    virtual AstBasicDType* basicp() const { return NULL; }
+    virtual AstBasicDType* basicp() const { return nullptr; }
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
@@ -658,9 +658,9 @@ public:
     AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep)
         : ASTGEN_SUPER(fl) {
         childDTypep(dtp);  // Only for parser
-        refDTypep(NULL);
+        refDTypep(nullptr);
         setOp2p(rangep);
-        dtypep(NULL);  // V3Width will resolve
+        dtypep(nullptr);  // V3Width will resolve
         int width = subDTypep()->width() * rangep->elementsConst();
         widthForce(width, width);
     }
@@ -684,9 +684,9 @@ public:
     AstUnpackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep)
         : ASTGEN_SUPER(fl) {
         childDTypep(dtp);  // Only for parser
-        refDTypep(NULL);
+        refDTypep(nullptr);
         setOp2p(rangep);
-        dtypep(NULL);  // V3Width will resolve
+        dtypep(nullptr);  // V3Width will resolve
         // For backward compatibility AstNodeArrayDType and others inherit
         // width and signing from the subDType/base type
         widthFromSub(subDTypep());
@@ -713,14 +713,14 @@ public:
     AstUnsizedArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl) {
         childDTypep(dtp);  // Only for parser
-        refDTypep(NULL);
-        dtypep(NULL);  // V3Width will resolve
+        refDTypep(nullptr);
+        dtypep(nullptr);  // V3Width will resolve
     }
     ASTNODE_NODE_FUNCS(UnsizedArrayDType)
     virtual const char* broken() const {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
@@ -767,24 +767,24 @@ private:
 public:
     AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, const VSigning& signst = VSigning::NOSIGN)
         : ASTGEN_SUPER(fl) {
-        init(kwd, signst, 0, -1, NULL);
+        init(kwd, signst, 0, -1, nullptr);
     }
     AstBasicDType(FileLine* fl, VFlagLogicPacked, int wantwidth)
         : ASTGEN_SUPER(fl) {
-        init(AstBasicDTypeKwd::LOGIC, VSigning::NOSIGN, wantwidth, -1, NULL);
+        init(AstBasicDTypeKwd::LOGIC, VSigning::NOSIGN, wantwidth, -1, nullptr);
     }
     AstBasicDType(FileLine* fl, VFlagBitPacked, int wantwidth)
         : ASTGEN_SUPER(fl) {
-        init(AstBasicDTypeKwd::BIT, VSigning::NOSIGN, wantwidth, -1, NULL);
+        init(AstBasicDTypeKwd::BIT, VSigning::NOSIGN, wantwidth, -1, nullptr);
     }
     AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, VSigning numer, int wantwidth, int widthmin)
         : ASTGEN_SUPER(fl) {
-        init(kwd, numer, wantwidth, widthmin, NULL);
+        init(kwd, numer, wantwidth, widthmin, nullptr);
     }
     AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, VSigning numer, VNumRange range,
                   int widthmin)
         : ASTGEN_SUPER(fl) {
-        init(kwd, numer, range.elements(), widthmin, NULL);
+        init(kwd, numer, range.elements(), widthmin, nullptr);
         m.m_nrange = range;  // as init() presumes lsb==0, but range.lsb() might not be
     }
     // See also addRange in verilog.y
@@ -843,7 +843,7 @@ public:
     virtual string prettyDTypeName() const;
     virtual const char* broken() const {
         BROKEN_RTN(dtypep() != this);
-        return NULL;
+        return nullptr;
     }
     virtual bool isHeavy() const { return keyword() == AstBasicDTypeKwd::STRING; }
     AstRange* rangep() const { return VN_CAST(op1p(), Range); }  // op1 = Range of variable
@@ -903,7 +903,7 @@ public:
         if (rangep() && VN_IS(rangep()->msbp(), Const) && VN_IS(rangep()->lsbp(), Const)) {
             m.m_nrange.init(rangep()->msbConst(), rangep()->lsbConst(), rangep()->littleEndian());
             rangep()->unlinkFrBackWithNext()->deleteTree();
-            rangep(NULL);
+            rangep(nullptr);
         }
     }
 };
@@ -918,15 +918,15 @@ public:
     AstConstDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl) {
         childDTypep(dtp);  // Only for parser
-        refDTypep(NULL);  // V3Width will resolve
-        dtypep(NULL);  // V3Width will resolve
+        refDTypep(nullptr);  // V3Width will resolve
+        dtypep(nullptr);  // V3Width will resolve
         widthFromSub(subDTypep());
     }
     ASTNODE_NODE_FUNCS(ConstDType)
     virtual const char* broken() const {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
@@ -967,14 +967,14 @@ public:
     AstClassRefDType(FileLine* fl, AstClass* classp)
         : ASTGEN_SUPER(fl)
         , m_classp(classp)
-        , m_packagep(NULL) {
+        , m_packagep(nullptr) {
         dtypep(this);
     }
     ASTNODE_NODE_FUNCS(ClassRefDType)
     // METHODS
     virtual const char* broken() const {
         BROKEN_RTN(m_classp && !m_classp->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_classp && m_classp->clonep()) m_classp = m_classp->clonep();
@@ -988,15 +988,15 @@ public:
     virtual void dump(std::ostream& str = std::cout) const;
     virtual void dumpSmall(std::ostream& str) const;
     virtual string name() const { return classp() ? classp()->name() : "<unlinked>"; }
-    virtual AstBasicDType* basicp() const { return NULL; }
+    virtual AstBasicDType* basicp() const { return nullptr; }
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return 0; }
     virtual int widthTotalBytes() const { return 0; }
-    virtual AstNodeDType* virtRefDTypep() const { return NULL; }
+    virtual AstNodeDType* virtRefDTypep() const { return nullptr; }
     virtual void virtRefDTypep(AstNodeDType* nodep) {}
-    virtual AstNodeDType* subDTypep() const { return NULL; }
+    virtual AstNodeDType* subDTypep() const { return nullptr; }
     AstNodeModule* packagep() const { return m_packagep; }
     void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
     AstClass* classp() const { return m_classp; }
@@ -1012,17 +1012,17 @@ private:
     string m_modportName;  // "" = no modport
     AstIface* m_ifacep;  // Pointer to interface; note cellp() should override
     AstCell* m_cellp;  // When exact parent cell known; not a guess
-    AstModport* m_modportp;  // NULL = unlinked or no modport
+    AstModport* m_modportp;  // nullptr = unlinked or no modport
 public:
     AstIfaceRefDType(FileLine* fl, const string& cellName, const string& ifaceName)
         : ASTGEN_SUPER(fl)
-        , m_modportFileline(NULL)
+        , m_modportFileline(nullptr)
         , m_cellName(cellName)
         , m_ifaceName(ifaceName)
         , m_modportName("")
-        , m_ifacep(NULL)
-        , m_cellp(NULL)
-        , m_modportp(NULL) {}
+        , m_ifacep(nullptr)
+        , m_cellp(nullptr)
+        , m_modportp(nullptr) {}
     AstIfaceRefDType(FileLine* fl, FileLine* modportFl, const string& cellName,
                      const string& ifaceName, const string& modport)
         : ASTGEN_SUPER(fl)
@@ -1030,16 +1030,16 @@ public:
         , m_cellName(cellName)
         , m_ifaceName(ifaceName)
         , m_modportName(modport)
-        , m_ifacep(NULL)
-        , m_cellp(NULL)
-        , m_modportp(NULL) {}
+        , m_ifacep(nullptr)
+        , m_cellp(nullptr)
+        , m_modportp(nullptr) {}
     ASTNODE_NODE_FUNCS(IfaceRefDType)
     // METHODS
     virtual const char* broken() const;
     virtual void dump(std::ostream& str = std::cout) const;
     virtual void dumpSmall(std::ostream& str) const;
     virtual void cloneRelink();
-    virtual AstBasicDType* basicp() const { return NULL; }
+    virtual AstBasicDType* basicp() const { return nullptr; }
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
@@ -1074,14 +1074,14 @@ public:
         : ASTGEN_SUPER(fl) {
         setNOp2p(boundp);
         childDTypep(dtp);  // Only for parser
-        refDTypep(NULL);
-        dtypep(NULL);  // V3Width will resolve
+        refDTypep(nullptr);
+        dtypep(nullptr);  // V3Width will resolve
     }
     ASTNODE_NODE_FUNCS(QueueDType)
     virtual const char* broken() const {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
@@ -1104,7 +1104,7 @@ public:
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
-    AstNode* boundp() const { return op2p(); }  // op2 = Bound, NULL = none
+    AstNode* boundp() const { return op2p(); }  // op2 = Bound, nullptr = none
     void boundp(AstNode* nodep) { setNOp2p(nodep); }
     int boundConst() const {
         AstConst* constp = VN_CAST(boundp(), Const);
@@ -1113,7 +1113,7 @@ public:
     virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
     // METHODS
-    virtual AstBasicDType* basicp() const { return NULL; }
+    virtual AstBasicDType* basicp() const { return nullptr; }
     // cppcheck-suppress csyleCast
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
@@ -1136,25 +1136,25 @@ private:
 public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl)
-        , m_typedefp(NULL)
-        , m_refDTypep(NULL)
+        , m_typedefp(nullptr)
+        , m_refDTypep(nullptr)
         , m_name(name)
-        , m_packagep(NULL) {}
+        , m_packagep(nullptr) {}
     AstRefDType(FileLine* fl, const string& name, AstNode* classOrPackagep, AstNode* paramsp)
         : ASTGEN_SUPER(fl)
-        , m_typedefp(NULL)
-        , m_refDTypep(NULL)
+        , m_typedefp(nullptr)
+        , m_refDTypep(nullptr)
         , m_name(name)
-        , m_packagep(NULL) {
+        , m_packagep(nullptr) {
         setNOp3p(classOrPackagep);
         addNOp4p(paramsp);
     }
     class FlagTypeOfExpr {};  // type(expr) for parser only
     AstRefDType(FileLine* fl, FlagTypeOfExpr, AstNode* typeofp)
         : ASTGEN_SUPER(fl)
-        , m_typedefp(NULL)
-        , m_refDTypep(NULL)
-        , m_packagep(NULL) {
+        , m_typedefp(nullptr)
+        , m_refDTypep(nullptr)
+        , m_packagep(nullptr) {
         setOp2p(typeofp);
     }
     ASTNODE_NODE_FUNCS(RefDType)
@@ -1162,7 +1162,7 @@ public:
     virtual const char* broken() const {
         BROKEN_RTN(m_typedefp && !m_typedefp->brokeExists());
         BROKEN_RTN(m_refDTypep && !m_refDTypep->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_typedefp && m_typedefp->clonep()) { m_typedefp = m_typedefp->clonep(); }
@@ -1182,10 +1182,10 @@ public:
     virtual string prettyDTypeName() const {
         return subDTypep() ? subDTypep()->name() : prettyName();
     }
-    virtual AstBasicDType* basicp() const { return subDTypep() ? subDTypep()->basicp() : NULL; }
+    virtual AstBasicDType* basicp() const { return subDTypep() ? subDTypep()->basicp() : nullptr; }
     AstNodeDType* subDTypep() const {
         if (typedefp()) return typedefp()->subDTypep();
-        return refDTypep();  // Maybe NULL
+        return refDTypep();  // Maybe nullptr
     }
     virtual AstNodeDType* skipRefp() const {
         // Skip past both the Ref and the Typedef
@@ -1193,7 +1193,7 @@ public:
             return subDTypep()->skipRefp();
         } else {
             v3fatalSrc("Typedef not linked");
-            return NULL;
+            return nullptr;
         }
     }
     virtual AstNodeDType* skipRefToConstp() const {
@@ -1201,7 +1201,7 @@ public:
             return subDTypep()->skipRefToConstp();
         } else {
             v3fatalSrc("Typedef not linked");
-            return NULL;
+            return nullptr;
         }
     }
     virtual AstNodeDType* skipRefToEnump() const {
@@ -1209,7 +1209,7 @@ public:
             return subDTypep()->skipRefToEnump();
         } else {
             v3fatalSrc("Typedef not linked");
-            return NULL;
+            return nullptr;
         }
     }
     virtual int widthAlignBytes() const { return dtypeSkipRefp()->widthAlignBytes(); }
@@ -1264,8 +1264,8 @@ public:
         , m_name(name)
         , m_lsb(-1) {
         childDTypep(dtp);  // Only for parser
-        dtypep(NULL);  // V3Width will resolve
-        refDTypep(NULL);
+        dtypep(nullptr);  // V3Width will resolve
+        refDTypep(nullptr);
     }
     AstMemberDType(FileLine* fl, const string& name, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
@@ -1321,11 +1321,11 @@ public:
     virtual void dumpSmall(std::ostream& str) const;
     virtual bool hasDType() const { return true; }
     virtual bool maybePointedTo() const { return true; }
-    virtual AstNodeDType* subDTypep() const { return NULL; }
-    virtual AstNodeDType* virtRefDTypep() const { return NULL; }
+    virtual AstNodeDType* subDTypep() const { return nullptr; }
+    virtual AstNodeDType* virtRefDTypep() const { return nullptr; }
     virtual void virtRefDTypep(AstNodeDType* nodep) {}
     virtual bool similarDType(AstNodeDType* samep) const { return this == samep; }
-    virtual AstBasicDType* basicp() const { return NULL; }
+    virtual AstBasicDType* basicp() const { return nullptr; }
     // cppcheck-suppress csyleCast
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
@@ -1376,7 +1376,7 @@ public:
     virtual string name() const { return itemp()->name(); }
     virtual const char* broken() const {
         BROKEN_RTN(!VN_IS(itemp(), EnumItem));
-        return NULL;
+        return nullptr;
     }
     virtual int instrCount() const { return 0; }
     virtual void cloneRelink() {
@@ -1406,9 +1406,9 @@ public:
     AstEnumDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNode* itemsp)
         : ASTGEN_SUPER(fl) {
         childDTypep(dtp);  // Only for parser
-        refDTypep(NULL);
+        refDTypep(nullptr);
         addNOp2p(itemsp);
-        dtypep(NULL);  // V3Width will resolve
+        dtypep(nullptr);  // V3Width will resolve
         widthFromSub(subDTypep());
         m_uniqueNum = uniqueNumInc();
     }
@@ -1416,7 +1416,7 @@ public:
     virtual const char* broken() const {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
@@ -1457,11 +1457,11 @@ public:
     explicit AstParseTypeDType(FileLine* fl)
         : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(ParseTypeDType)
-    AstNodeDType* dtypep() const { return NULL; }
+    AstNodeDType* dtypep() const { return nullptr; }
     // METHODS
     virtual bool similarDType(AstNodeDType* samep) const { return this == samep; }
-    virtual AstBasicDType* basicp() const { return NULL; }
-    virtual AstNodeDType* skipRefp() const { return NULL; }
+    virtual AstBasicDType* basicp() const { return nullptr; }
+    virtual AstNodeDType* skipRefp() const { return nullptr; }
     // cppcheck-suppress csyleCast
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
@@ -1612,7 +1612,7 @@ class AstSelBit : public AstNodePreSel {
     // Gets replaced during link with AstArraySel or AstSel
 public:
     AstSelBit(FileLine* fl, AstNode* fromp, AstNode* bitp)
-        : ASTGEN_SUPER(fl, fromp, bitp, NULL) {
+        : ASTGEN_SUPER(fl, fromp, bitp, nullptr) {
         UASSERT_OBJ(!v3Global.assertDTypesResolved(), this,
                     "not coded to create after dtypes resolved");
     }
@@ -1685,7 +1685,9 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode*) const { return true; }
     virtual int instrCount() const { return widthInstrs() * (VN_CAST(lsbp(), Const) ? 3 : 10); }
-    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
+    AstNode* fromp() const {
+        return op1p();
+    }  // op1 = Extracting what (nullptr=TBD during parsing)
     AstNode* lsbp() const { return op2p(); }  // op2 = Msb selection expression
     AstNode* widthp() const { return op3p(); }  // op3 = Width
     int widthConst() const { return VN_CAST(widthp(), Const)->toSInt(); }
@@ -1727,7 +1729,9 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode*) const { return true; }
     virtual int instrCount() const { return 10; }  // Removed before matters
-    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
+    AstNode* fromp() const {
+        return op1p();
+    }  // op1 = Extracting what (nullptr=TBD during parsing)
     // For widthConst()/loConst etc, see declRange().elements() and other VNumRange methods
     VNumRange& declRange() { return m_declRange; }
     const VNumRange& declRange() const { return m_declRange; }
@@ -1744,7 +1748,7 @@ public:
                   AstNode* pinsp)
         : ASTGEN_SUPER(fl, false, name, pinsp) {
         setOp2p(fromp);
-        dtypep(NULL);  // V3Width will resolve
+        dtypep(nullptr);  // V3Width will resolve
     }
     AstMethodCall(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
         : ASTGEN_SUPER(fl, false, name, pinsp) {
@@ -1754,7 +1758,7 @@ public:
     virtual const char* broken() const {
         BROKEN_BASE_RTN(AstNodeFTaskRef::broken());
         BROKEN_RTN(!fromp());
-        return NULL;
+        return nullptr;
     }
     virtual void dump(std::ostream& str) const;
     virtual bool hasDType() const { return true; }
@@ -1762,7 +1766,9 @@ public:
         statement(true);
         dtypeSetVoid();
     }
-    AstNode* fromp() const { return op2p(); }  // op2 = Extracting what (NULL=TBD during parsing)
+    AstNode* fromp() const {
+        return op2p();
+    }  // op2 = Extracting what (nullptr=TBD during parsing)
     void fromp(AstNode* nodep) { setOp2p(nodep); }
 };
 
@@ -1780,7 +1786,7 @@ public:
         , m_name(name)
         , m_pure(false) {
         setOp1p(fromp);
-        dtypep(NULL);  // V3Width will resolve
+        dtypep(nullptr);  // V3Width will resolve
         addNOp2p(pinsp);
     }
     AstCMethodHard(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
@@ -1805,7 +1811,9 @@ public:
         statement(true);
         dtypeSetVoid();
     }
-    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
+    AstNode* fromp() const {
+        return op1p();
+    }  // op1 = Extracting what (nullptr=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
     AstNode* pinsp() const { return op2p(); }  // op2 = Pin interconnection list
     void addPinsp(AstNode* nodep) { addOp2p(nodep); }
@@ -1901,7 +1909,7 @@ public:
         init();
         combineType(type);
         childDTypep(dtp);  // Only for parser
-        dtypep(NULL);  // V3Width will resolve
+        dtypep(nullptr);  // V3Width will resolve
         if (dtp->basicp()) {
             m_declKwd = dtp->basicp()->keyword();
         } else {
@@ -2191,8 +2199,8 @@ class AstScope : public AstNode {
 private:
     // An AstScope->name() is special: . indicates an uninlined scope, __DOT__ an inlined scope
     string m_name;  // Name
-    AstScope* m_aboveScopep;  // Scope above this one in the hierarchy (NULL if top)
-    AstCell* m_aboveCellp;  // Cell above this in the hierarchy (NULL if top)
+    AstScope* m_aboveScopep;  // Scope above this one in the hierarchy (nullptr if top)
+    AstCell* m_aboveCellp;  // Cell above this in the hierarchy (nullptr if top)
     AstNodeModule* m_modp;  // Module scope corresponds to
 public:
     AstScope(FileLine* fl, AstNodeModule* modp, const string& name, AstScope* aboveScopep,
@@ -2219,7 +2227,7 @@ public:
     AstNode* finalClksp() const { return op3p(); }  // op3 = Final assigns for clock correction
     AstScope* aboveScopep() const { return m_aboveScopep; }
     AstCell* aboveCellp() const { return m_aboveCellp; }
-    bool isTop() const { return aboveScopep() == NULL; }  // At top of hierarchy
+    bool isTop() const { return aboveScopep() == nullptr; }  // At top of hierarchy
 };
 
 class AstTopScope : public AstNode {
@@ -2269,7 +2277,7 @@ public:
     virtual const char* broken() const {
         BROKEN_RTN(m_varp && !m_varp->brokeExists());
         BROKEN_RTN(m_scopep && !m_scopep->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual bool maybePointedTo() const { return true; }
     virtual string name() const { return scopep()->name() + "->" + varp()->name(); }
@@ -2277,7 +2285,7 @@ public:
     virtual bool hasDType() const { return true; }
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
     AstScope* scopep() const { return m_scopep; }  // Pointer to scope it's under
-    // op1 = Calculation of value of variable, NULL=complicated
+    // op1 = Calculation of value of variable, nullptr=complicated
     AstNode* valuep() const { return op1p(); }
     void valuep(AstNode* valuep) { addOp1p(valuep); }
     bool isCircular() const { return m_circular; }
@@ -2290,7 +2298,7 @@ class AstVarRef : public AstNodeVarRef {
     // A reference to a variable (lvalue or rvalue)
 public:
     AstVarRef(FileLine* fl, const string& name, bool lvalue)
-        : ASTGEN_SUPER(fl, name, NULL, lvalue) {}
+        : ASTGEN_SUPER(fl, name, nullptr, lvalue) {}
     // This form only allowed post-link because output/wire compression may
     // lead to deletion of AstVar's
     AstVarRef(FileLine* fl, AstVar* varp, bool lvalue)
@@ -2335,7 +2343,7 @@ private:
     string m_inlinedDots;  // Dotted hierarchy flattened out
 public:
     AstVarXRef(FileLine* fl, const string& name, const string& dotted, bool lvalue)
-        : ASTGEN_SUPER(fl, name, NULL, lvalue)
+        : ASTGEN_SUPER(fl, name, nullptr, lvalue)
         , m_dotted(dotted) {}
     AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, bool lvalue)
         : ASTGEN_SUPER(fl, varp->name(), varp, lvalue)
@@ -2377,8 +2385,8 @@ public:
         , m_param(false)
         , m_svImplicit(false) {
         m_pinNum = pinNum;
-        m_modVarp = NULL;
-        m_modPTypep = NULL;
+        m_modVarp = nullptr;
+        m_modPTypep = nullptr;
         setNOp1p(exprp);
     }
     AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp)
@@ -2387,8 +2395,8 @@ public:
         , m_svImplicit(false) {
         m_name = varname->name();
         m_pinNum = pinNum;
-        m_modVarp = NULL;
-        m_modPTypep = NULL;
+        m_modVarp = nullptr;
+        m_modPTypep = nullptr;
         setNOp1p(exprp);
     }
     ASTNODE_NODE_FUNCS(Pin)
@@ -2396,7 +2404,7 @@ public:
     virtual const char* broken() const {
         BROKEN_RTN(m_modVarp && !m_modVarp->brokeExists());
         BROKEN_RTN(m_modPTypep && !m_modPTypep->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual string name() const { return m_name; }  // * = Pin name, ""=go by number
     virtual void name(const string& name) { m_name = name; }
@@ -2410,7 +2418,7 @@ public:
     bool dotStar() const { return name() == ".*"; }  // Fake name for .* connections until linked
     int pinNum() const { return m_pinNum; }
     void exprp(AstNode* nodep) { addOp1p(nodep); }
-    // op1 = Expression connected to pin, NULL if unconnected
+    // op1 = Expression connected to pin, nullptr if unconnected
     AstNode* exprp() const { return op1p(); }
     AstVar* modVarp() const { return m_modVarp; }  // [After Link] Pointer to variable
     void modVarp(AstVar* nodep) { m_modVarp = nodep; }
@@ -2438,7 +2446,7 @@ public:
     virtual void name(const string& name) { m_name = name; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     void exprp(AstNode* nodep) { addOp1p(nodep); }
-    // op1 = Expression connected to pin, NULL if unconnected
+    // op1 = Expression connected to pin, nullptr if unconnected
     AstNode* exprp() const { return op1p(); }
     bool emptyConnectNoNext() const { return !exprp() && name() == "" && !nextp(); }
 };
@@ -2506,7 +2514,7 @@ public:
     ASTNODE_NODE_FUNCS(PackageExport)
     virtual const char* broken() const {
         BROKEN_RTN(!m_packagep || !m_packagep->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_packagep && m_packagep->clonep()) m_packagep = m_packagep->clonep();
@@ -2530,7 +2538,7 @@ public:
     ASTNODE_NODE_FUNCS(PackageImport)
     virtual const char* broken() const {
         BROKEN_RTN(!m_packagep || !m_packagep->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_packagep && m_packagep->clonep()) m_packagep = m_packagep->clonep();
@@ -2560,14 +2568,14 @@ public:
     AstMemberSel(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name)
         : ASTGEN_SUPER(fl)
         , m_name(name)
-        , m_varp(NULL) {
+        , m_varp(nullptr) {
         setOp1p(fromp);
-        dtypep(NULL);  // V3Width will resolve
+        dtypep(nullptr);  // V3Width will resolve
     }
     AstMemberSel(FileLine* fl, AstNode* fromp, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
         , m_name(dtp->name())
-        , m_varp(NULL) {
+        , m_varp(nullptr) {
         setOp1p(fromp);
         dtypep(dtp);
     }
@@ -2577,7 +2585,7 @@ public:
     }
     virtual const char* broken() const {
         BROKEN_RTN(m_varp && !m_varp->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual void dump(std::ostream& str) const;
     virtual string name() const { return m_name; }
@@ -2590,7 +2598,9 @@ public:
     virtual bool cleanOut() const { return false; }
     virtual bool same(const AstNode* samep) const { return true; }  // dtype comparison does it
     virtual int instrCount() const { return widthInstrs(); }
-    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
+    AstNode* fromp() const {
+        return op1p();
+    }  // op1 = Extracting what (nullptr=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
     AstVar* varp() const { return m_varp; }
     void varp(AstVar* nodep) { m_varp = nodep; }
@@ -2610,11 +2620,11 @@ public:
         : ASTGEN_SUPER(fl)
         , m_name(name)
         , m_export(isExport)
-        , m_ftaskp(NULL) {}
+        , m_ftaskp(nullptr) {}
     ASTNODE_NODE_FUNCS(ModportFTaskRef)
     virtual const char* broken() const {
         BROKEN_RTN(m_ftaskp && !m_ftaskp->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual void dump(std::ostream& str) const;
     virtual string name() const { return m_name; }
@@ -2640,11 +2650,11 @@ public:
         : ASTGEN_SUPER(fl)
         , m_name(name)
         , m_direction(direction)
-        , m_varp(NULL) {}
+        , m_varp(nullptr) {}
     ASTNODE_NODE_FUNCS(ModportVarRef)
     virtual const char* broken() const {
         BROKEN_RTN(m_varp && !m_varp->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual void dump(std::ostream& str) const;
     virtual void cloneRelink() {
@@ -2704,7 +2714,7 @@ public:
         , m_name(instName)
         , m_origName(instName)
         , m_modName(modName)
-        , m_modp(NULL)
+        , m_modp(nullptr)
         , m_hasIfaceVar(false)
         , m_recursive(false)
         , m_trace(true) {
@@ -2717,7 +2727,7 @@ public:
     virtual void dump(std::ostream& str) const;
     virtual const char* broken() const {
         BROKEN_RTN(m_modp && !m_modp->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual bool maybePointedTo() const { return true; }
     // ACCESSORS
@@ -2731,7 +2741,7 @@ public:
     AstPin* pinsp() const { return VN_CAST(op1p(), Pin); }  // op1 = List of cell ports
     // op2 = List of parameter #(##) values
     AstPin* paramsp() const { return VN_CAST(op2p(), Pin); }
-    // op3 = Range of arrayed instants (NULL=not ranged)
+    // op3 = Range of arrayed instants (nullptr=not ranged)
     AstRange* rangep() const { return VN_CAST(op3p(), Range); }
     // op4 = List of interface references
     AstIntfRef* intfRefp() const { return VN_CAST(op4p(), IntfRef); }
@@ -2765,13 +2775,13 @@ public:
         : ASTGEN_SUPER(fl)
         , m_name(name)
         , m_origModName(origModName)
-        , m_scopep(NULL)
+        , m_scopep(nullptr)
         , m_timeunit(timeunit) {}
     ASTNODE_NODE_FUNCS(CellInline)
     virtual void dump(std::ostream& str) const;
     virtual const char* broken() const {
         BROKEN_RTN(m_scopep && !m_scopep->brokeExists());
-        return NULL;
+        return nullptr;
     }
     // ACCESSORS
     virtual string name() const { return m_name; }  // * = Cell name
@@ -2883,8 +2893,8 @@ private:
     string m_name;
 
 public:
-    AstParseRef(FileLine* fl, VParseRefExp expect, const string& name, AstNode* lhsp = NULL,
-                AstNodeFTaskRef* ftaskrefp = NULL)
+    AstParseRef(FileLine* fl, VParseRefExp expect, const string& name, AstNode* lhsp = nullptr,
+                AstNodeFTaskRef* ftaskrefp = nullptr)
         : ASTGEN_SUPER(fl)
         , m_expect(expect)
         , m_name(name) {
@@ -2926,7 +2936,7 @@ public:
     // METHODS
     virtual const char* broken() const {
         BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_classOrPackagep && m_classOrPackagep->clonep()) {
@@ -3239,7 +3249,7 @@ public:
     AstAssignAlias(FileLine* fl, AstVarRef* lhsp, AstVarRef* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignAlias)
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { V3ERROR_NA_RETURN(NULL); }
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { V3ERROR_NA_RETURN(nullptr); }
     virtual bool brokeLhsMustBeLvalue() const { return false; }
 };
 
@@ -3269,7 +3279,7 @@ public:
     AstAlways* convertToAlways() {
         AstNode* lhs1p = lhsp()->unlinkFrBack();
         AstNode* rhs1p = rhsp()->unlinkFrBack();
-        AstAlways* newp = new AstAlways(fileline(), VAlwaysKwd::ALWAYS, NULL,
+        AstAlways* newp = new AstAlways(fileline(), VAlwaysKwd::ALWAYS, nullptr,
                                         new AstAssign(fileline(), lhs1p, rhs1p));
         replaceWith(newp);  // User expected to then deleteTree();
         return newp;
@@ -3400,7 +3410,7 @@ public:
         m_linescov = linescov;
         m_offset = offset;
         m_binNum = 0;
-        m_dataDeclp = NULL;
+        m_dataDeclp = nullptr;
     }
     ASTNODE_NODE_FUNCS(CoverDecl)
     virtual const char* broken() const {
@@ -3408,7 +3418,7 @@ public:
         if (m_dataDeclp && m_dataDeclp->m_dataDeclp) {  // Avoid O(n^2) accessing
             v3fatalSrc("dataDeclp should point to real data, not be a list");
         }
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_dataDeclp && m_dataDeclp->clonep()) m_dataDeclp = m_dataDeclp->clonep();
@@ -3433,7 +3443,7 @@ public:
     }
     virtual bool isPredictOptimizable() const { return false; }
     void dataDeclp(AstCoverDecl* nodep) { m_dataDeclp = nodep; }
-    // dataDecl NULL means "use this one", but often you want "this" to
+    // dataDecl nullptr means "use this one", but often you want "this" to
     // indicate to get data from here
     AstCoverDecl* dataDeclNullp() const { return m_dataDeclp; }
     AstCoverDecl* dataDeclThisp() { return dataDeclNullp() ? dataDeclNullp() : this; }
@@ -3453,7 +3463,7 @@ public:
     ASTNODE_NODE_FUNCS(CoverInc)
     virtual const char* broken() const {
         BROKEN_RTN(!declp()->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_declp->clonep()) m_declp = m_declp->clonep();
@@ -3588,7 +3598,7 @@ public:
     AstNode* bodysp() const { return op2p(); }  // op2 = what to do
     void condsp(AstNode* nodep) { setOp1p(nodep); }
     void addBodysp(AstNode* newp) { addOp2p(newp); }
-    bool isDefault() const { return condsp() == NULL; }
+    bool isDefault() const { return condsp() == nullptr; }
     bool ignoreOverlap() const { return m_ignoreOverlap; }
     void ignoreOverlap(bool flag) { m_ignoreOverlap = flag; }
 };
@@ -3612,7 +3622,7 @@ public:
         , m_missingArgChar(missingArgChar) {
         dtypeSetString();
         addNOp1p(exprsp);
-        addNOp2p(NULL);
+        addNOp2p(nullptr);
     }
     AstSFormatF(FileLine* fl, NoFormat, AstNode* exprsp, char missingArgChar = 'd',
                 bool hidden = true)
@@ -3623,7 +3633,7 @@ public:
         , m_missingArgChar(missingArgChar) {
         dtypeSetString();
         addNOp1p(exprsp);
-        addNOp2p(NULL);
+        addNOp2p(nullptr);
     }
     ASTNODE_NODE_FUNCS(SFormatF)
     virtual string name() const { return m_text; }
@@ -3677,7 +3687,7 @@ public:
     virtual void dump(std::ostream& str) const;
     virtual const char* broken() const {
         BROKEN_RTN(!fmtp());
-        return NULL;
+        return nullptr;
     }
     virtual string verilogKwd() const {
         return (filep() ? string("$f") + string(displayType().ascii())
@@ -3709,7 +3719,7 @@ class AstDumpCtl : public AstNodeStmt {
     // Child: expr based on type of control statement
     VDumpCtlType m_ctlType;  // Type of operation
 public:
-    AstDumpCtl(FileLine* fl, VDumpCtlType ctlType, AstNode* exprp = NULL)
+    AstDumpCtl(FileLine* fl, VDumpCtlType ctlType, AstNode* exprp = nullptr)
         : ASTGEN_SUPER(fl)
         , m_ctlType(ctlType) {
         setNOp1p(exprp);
@@ -3745,7 +3755,7 @@ public:
     ASTNODE_NODE_FUNCS(ElabDisplay)
     virtual const char* broken() const {
         BROKEN_RTN(!fmtp());
-        return NULL;
+        return nullptr;
     }
     virtual string verilogKwd() const { return (string("$") + string(displayType().ascii())); }
     virtual bool isGateOptimizable() const { return false; }
@@ -3783,7 +3793,7 @@ public:
     ASTNODE_NODE_FUNCS(SFormat)
     virtual const char* broken() const {
         BROKEN_RTN(!fmtp());
-        return NULL;
+        return nullptr;
     }
     virtual string verilogKwd() const { return "$sformat"; }
     virtual string emitVerilog() { V3ERROR_NA_RETURN(""); }
@@ -4211,7 +4221,7 @@ public:
 
 class AstValuePlusArgs : public AstNodeMath {
     // Parents: expr
-    // Child: variable to set.  If NULL then this is a $test$plusargs instead of $value$plusargs
+    // Child: variable to set.  If nullptr then this is a $test$plusargs instead of $value$plusargs
 public:
     AstValuePlusArgs(FileLine* fl, AstNode* searchp, AstNode* outp)
         : ASTGEN_SUPER(fl) {
@@ -4236,7 +4246,7 @@ public:
 
 class AstTestPlusArgs : public AstNodeMath {
     // Parents: expr
-    // Child: variable to set.  If NULL then this is a $test$plusargs instead of $value$plusargs
+    // Child: variable to set.  If nullptr then this is a $test$plusargs instead of $value$plusargs
 private:
     string m_text;
 
@@ -4248,7 +4258,7 @@ public:
     virtual string name() const { return m_text; }
     virtual string verilogKwd() const { return "$test$plusargs"; }
     virtual string emitVerilog() { return verilogKwd(); }
-    virtual string emitC() { return "VL_VALUEPLUSARGS_%nq(%lw, %P, NULL)"; }
+    virtual string emitC() { return "VL_VALUEPLUSARGS_%nq(%lw, %P, nullptr)"; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool cleanOut() const { return true; }
@@ -4312,7 +4322,7 @@ public:
 
 class AstWhile : public AstNodeStmt {
 public:
-    AstWhile(FileLine* fl, AstNode* condp, AstNode* bodysp, AstNode* incsp = NULL)
+    AstWhile(FileLine* fl, AstNode* condp, AstNode* bodysp, AstNode* incsp = nullptr)
         : ASTGEN_SUPER(fl) {
         setOp2p(condp);
         addNOp3p(bodysp);
@@ -4392,7 +4402,7 @@ public:
 
 class AstReturn : public AstNodeStmt {
 public:
-    explicit AstReturn(FileLine* fl, AstNode* lhsp = NULL)
+    explicit AstReturn(FileLine* fl, AstNode* lhsp = nullptr)
         : ASTGEN_SUPER(fl) {
         setNOp1p(lhsp);
     }
@@ -4418,7 +4428,7 @@ private:
     bool m_unique0Pragma;  // unique0 case
     bool m_priorityPragma;  // priority case
 public:
-    AstIf(FileLine* fl, AstNode* condp, AstNode* ifsp, AstNode* elsesp = NULL)
+    AstIf(FileLine* fl, AstNode* condp, AstNode* ifsp, AstNode* elsesp = nullptr)
         : ASTGEN_SUPER(fl, condp, ifsp, elsesp) {
         m_uniquePragma = false;
         m_unique0Pragma = false;
@@ -4480,7 +4490,7 @@ public:
     virtual const char* broken() const {
         BROKEN_RTN(!blockp()->brokeExistsAbove());
         BROKEN_RTN(blockp()->labelp() != this);
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_blockp->clonep()) m_blockp = m_blockp->clonep();
@@ -4508,7 +4518,7 @@ public:
     ASTNODE_NODE_FUNCS(JumpGo);
     virtual const char* broken() const {
         BROKEN_RTN(!labelp()->brokeExistsBelow());
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_labelp->clonep()) m_labelp = m_labelp->clonep();
@@ -4696,7 +4706,7 @@ public:
             BROKEN_RTN(!VN_IS(it->second, InitItem));
             BROKEN_RTN(!it->second->brokeExists());
         }
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         for (KeyItemMap::iterator it = m_map.begin(); it != m_map.end(); ++it) {
@@ -4717,7 +4727,7 @@ public:
     const KeyItemMap& map() const { return m_map; }
     AstNode* addIndexValuep(uint32_t index, AstNode* newp) {
         // Returns old value, caller must garbage collect
-        AstNode* oldp = NULL;
+        AstNode* oldp = nullptr;
         KeyItemMap::iterator it = m_map.find(index);
         if (it != m_map.end()) {
             oldp = it->second->valuep();
@@ -4732,7 +4742,7 @@ public:
     AstNode* getIndexValuep(uint32_t index) const {
         KeyItemMap::const_iterator it = m_map.find(index);
         if (it == m_map.end()) {
-            return NULL;
+            return nullptr;
         } else {
             return it->second->valuep();
         }
@@ -5016,7 +5026,7 @@ public:
     ASTNODE_NODE_FUNCS(TraceInc)
     virtual const char* broken() const {
         BROKEN_RTN(!declp()->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_declp->clonep()) m_declp = m_declp->clonep();
@@ -5060,7 +5070,7 @@ public:
     virtual string name() const { return m_name; }
     virtual const char* broken() const {
         BROKEN_RTN(m_sensesp && !m_sensesp->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_sensesp->clonep()) {
@@ -5088,7 +5098,8 @@ private:
     // Return a value of a attribute, for example a LSB or array LSB of a signal
     AstAttrType m_attrType;  // What sort of extraction
 public:
-    AstAttrOf(FileLine* fl, AstAttrType attrtype, AstNode* fromp = NULL, AstNode* dimp = NULL)
+    AstAttrOf(FileLine* fl, AstAttrType attrtype, AstNode* fromp = nullptr,
+              AstNode* dimp = nullptr)
         : ASTGEN_SUPER(fl) {
         setNOp1p(fromp);
         setNOp2p(dimp);
@@ -8040,7 +8051,7 @@ public:
     virtual bool cleanOut() const { V3ERROR_NA_RETURN(""); }
     virtual int instrCount() const { return widthInstrs(); }
     AstNode* exprp() const { return op1p(); }  // op1 = expression
-    AstNode* ticksp() const { return op2p(); }  // op2 = ticks or NULL means 1
+    AstNode* ticksp() const { return op2p(); }  // op2 = ticks or nullptr means 1
     AstSenTree* sentreep() const { return VN_CAST(op4p(), SenTree); }  // op4 = clock domain
     void sentreep(AstSenTree* sentreep) { addOp4p(sentreep); }  // op4 = clock domain
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -8167,7 +8178,7 @@ public:
     // op1 = expression to assign or another AstPattern (list if replicated)
     AstNode* lhssp() const { return op1p(); }
     AstNode* keyp() const { return op2p(); }  // op2 = assignment key (Const, id Text)
-    AstNode* repp() const { return op3p(); }  // op3 = replication count, or NULL for count 1
+    AstNode* repp() const { return op3p(); }  // op3 = replication count, or nullptr for count 1
     bool isDefault() const { return m_default; }
     void isDefault(bool flag) { m_default = flag; }
 };
@@ -8267,7 +8278,7 @@ class AstRestrict : public AstNodeCoverOrAssert {
 public:
     ASTNODE_NODE_FUNCS(Restrict)
     AstRestrict(FileLine* fl, AstNode* propp)
-        : ASTGEN_SUPER(fl, propp, NULL, false, "") {}
+        : ASTGEN_SUPER(fl, propp, nullptr, false, "") {}
 };
 
 //======================================================================
@@ -8507,7 +8518,7 @@ public:
     virtual string name() const { return m_name; }
     virtual const char* broken() const {
         BROKEN_RTN((m_scopep && !m_scopep->brokeExists()));
-        return NULL;
+        return nullptr;
     }
     virtual bool maybePointedTo() const { return true; }
     virtual void dump(std::ostream& str = std::cout) const;
@@ -8587,7 +8598,8 @@ public:
     void addFinalsp(AstNode* nodep) { addOp4p(nodep); }
     // Special methods
     bool emptyBody() const {
-        return argsp() == NULL && initsp() == NULL && stmtsp() == NULL && finalsp() == NULL;
+        return argsp() == nullptr && initsp() == nullptr && stmtsp() == nullptr
+               && finalsp() == nullptr;
     }
 };
 
@@ -8596,7 +8608,7 @@ class AstCCall : public AstNodeCCall {
     // Parents:  Anything above a statement
     // Children: Args to the function
 public:
-    AstCCall(FileLine* fl, AstCFunc* funcp, AstNode* argsp = NULL)
+    AstCCall(FileLine* fl, AstCFunc* funcp, AstNode* argsp = nullptr)
         : ASTGEN_SUPER(fl, funcp, argsp) {}
     // Replacement form for V3Combine
     // Note this removes old attachments from the oldp
@@ -8610,7 +8622,7 @@ class AstCMethodCall : public AstNodeCCall {
     // Parents:  Anything above a statement
     // Children: Args to the function
 public:
-    AstCMethodCall(FileLine* fl, AstNode* fromp, AstCFunc* funcp, AstNode* argsp = NULL)
+    AstCMethodCall(FileLine* fl, AstNode* fromp, AstCFunc* funcp, AstNode* argsp = nullptr)
         : ASTGEN_SUPER(fl, funcp, argsp) {
         setOp1p(fromp);
     }
@@ -8618,9 +8630,11 @@ public:
     virtual const char* broken() const {
         BROKEN_BASE_RTN(AstNodeCCall::broken());
         BROKEN_RTN(!fromp());
-        return NULL;
+        return nullptr;
     }
-    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
+    AstNode* fromp() const {
+        return op1p();
+    }  // op1 = Extracting what (nullptr=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
 };
 
@@ -8629,7 +8643,7 @@ class AstCNew : public AstNodeCCall {
     // Parents:  Anything above an expression
     // Children: Args to the function
 public:
-    AstCNew(FileLine* fl, AstCFunc* funcp, AstNode* argsp = NULL)
+    AstCNew(FileLine* fl, AstCFunc* funcp, AstNode* argsp = nullptr)
         : ASTGEN_SUPER(fl, funcp, argsp) {
         statement(false);
     }
@@ -8754,11 +8768,11 @@ private:
 public:
     explicit AstMTaskBody(FileLine* fl)
         : ASTGEN_SUPER(fl)
-        , m_execMTaskp(NULL) {}
+        , m_execMTaskp(nullptr) {}
     ASTNODE_NODE_FUNCS(MTaskBody);
     virtual const char* broken() const {
         BROKEN_RTN(!m_execMTaskp);
-        return NULL;
+        return nullptr;
     }
     AstNode* stmtsp() const { return op1p(); }
     void addStmtsp(AstNode* nodep) { addOp1p(nodep); }
@@ -8784,7 +8798,7 @@ public:
     virtual ~AstExecGraph();
     virtual const char* broken() const {
         BROKEN_RTN(!m_depGraphp);
-        return NULL;
+        return nullptr;
     }
     const V3Graph* depGraphp() const { return m_depGraphp; }
     V3Graph* mutableDepGraphp() { return m_depGraphp; }
@@ -8814,8 +8828,8 @@ class AstTypeTable : public AstNode {
 public:
     explicit AstTypeTable(FileLine* fl)
         : ASTGEN_SUPER(fl)
-        , m_voidp(NULL) {
-        for (int i = 0; i < AstBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = NULL;
+        , m_voidp(nullptr) {
+        for (int i = 0; i < AstBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = nullptr;
     }
     ASTNODE_NODE_FUNCS(TypeTable)
     AstNodeDType* typesp() const { return VN_CAST(op1p(), NodeDType); }  // op1 = List of dtypes
@@ -8849,15 +8863,15 @@ private:
 public:
     AstNetlist()
         : ASTGEN_SUPER(new FileLine(FileLine::builtInFilename()))
-        , m_typeTablep(NULL)
-        , m_dollarUnitPkgp(NULL)
-        , m_evalp(NULL)
-        , m_execGraphp(NULL) {}
+        , m_typeTablep(nullptr)
+        , m_dollarUnitPkgp(nullptr)
+        , m_evalp(nullptr)
+        , m_execGraphp(nullptr) {}
     ASTNODE_NODE_FUNCS(Netlist)
     virtual const char* broken() const {
         BROKEN_RTN(m_dollarUnitPkgp && !m_dollarUnitPkgp->brokeExists());
         BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual string name() const { return "$root"; }
     virtual void dump(std::ostream& str) const;

@@ -195,7 +195,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
             delete m_streampStack.top();
             m_streampStack.pop();
         }
-        VL_DO_CLEAR(yy_delete_buffer(m_bufferState), m_bufferState = NULL);
+        VL_DO_CLEAR(yy_delete_buffer(m_bufferState), m_bufferState = nullptr);
     }
 
     // Called by V3PreLex.l from lexer

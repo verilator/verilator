@@ -59,7 +59,7 @@ public:
     void add(AstSenTree* nodep) { m_trees.insert(nodep); }
 
     AstSenTree* find(AstSenTree* likep) {
-        AstSenTree* resultp = NULL;
+        AstSenTree* resultp = nullptr;
         Set::iterator it = m_trees.find(likep);
         if (it != m_trees.end()) resultp = *it;
         return resultp;
@@ -82,7 +82,7 @@ private:
 public:
     // CONSTRUCTORS
     SenTreeFinder()
-        : m_topScopep(NULL) {}
+        : m_topScopep(nullptr) {}
 
     // METHODS
     AstSenTree* getSenTree(AstSenTree* senTreep) {

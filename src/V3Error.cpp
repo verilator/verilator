@@ -40,7 +40,7 @@ bool V3Error::s_describedEachWarn[V3ErrorCode::_ENUM_MAX];
 bool V3Error::s_describedWarnings = false;
 bool V3Error::s_pretendError[V3ErrorCode::_ENUM_MAX];
 V3Error::MessagesSet V3Error::s_messages;
-V3Error::ErrorExitCb V3Error::s_errorExitCb = NULL;
+V3Error::ErrorExitCb V3Error::s_errorExitCb = nullptr;
 
 struct v3errorIniter {
     v3errorIniter() { V3Error::init(); }

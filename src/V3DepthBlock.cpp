@@ -50,7 +50,7 @@ private:
         nodep->unlinkFrBack(&relinkHandle);
         // Create function
         string name = m_funcp->name() + "__deep" + cvtToStr(++m_deepNum);
-        AstCFunc* funcp = new AstCFunc(nodep->fileline(), name, NULL);
+        AstCFunc* funcp = new AstCFunc(nodep->fileline(), name, nullptr);
         funcp->argTypes(EmitCBaseVisitor::symClassVar());
         funcp->symProlog(true);
         funcp->slow(m_funcp->slow());
@@ -120,8 +120,8 @@ private:
 public:
     // CONSTRUCTORS
     explicit DepthBlockVisitor(AstNetlist* nodep) {
-        m_modp = NULL;
-        m_funcp = NULL;
+        m_modp = nullptr;
+        m_funcp = nullptr;
         m_depth = 0;
         m_deepNum = 0;
         //

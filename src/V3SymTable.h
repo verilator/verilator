@@ -153,7 +153,7 @@ public:
                              : "se" + cvtToHex(it->second) + " n=" + cvtToHex(it->second->nodep()))
                      << endl);
         if (it != m_idNameMap.end()) return (it->second);
-        return NULL;
+        return nullptr;
     }
     VSymEnt* findIdFallback(const string& name) const {
         // Find identifier looking upward through symbol hierarchy
@@ -161,7 +161,7 @@ public:
         if (VSymEnt* entp = findIdFlat(name)) return entp;
         // Then scan the upper begin/end block or module for the name
         if (m_fallbackp) return m_fallbackp->findIdFallback(name);
-        return NULL;
+        return nullptr;
     }
     void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp) const {
         // Suggest alternative symbol candidates without looking upward through symbol hierarchy
@@ -335,9 +335,9 @@ inline VSymEnt::VSymEnt(VSymGraph* graphp, AstNode* nodep)
     // No argument to set fallbackp, as generally it's wrong to set it in the new call,
     // Instead it needs to be set on a "findOrNew()" return, as it may have been new'ed
     // by an earlier search insertion.
-    m_fallbackp = NULL;
-    m_parentp = NULL;
-    m_packagep = NULL;
+    m_fallbackp = nullptr;
+    m_parentp = nullptr;
+    m_packagep = nullptr;
     m_exported = true;
     m_imported = false;
     graphp->pushNewEnt(this);

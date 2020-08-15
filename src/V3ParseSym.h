@@ -48,7 +48,7 @@ public:
         : m_syms(rootp) {
         s_anonNum = 0;  // Number of next anonymous object
         pushScope(findNewTable(rootp));
-        m_symTableNextId = NULL;
+        m_symTableNextId = nullptr;
         m_symCurrentp = symCurrentp();
     }
     ~V3ParseSym() {}
@@ -77,11 +77,11 @@ public:
             UINFO(9, "symTableNextId under " << entp << "-" << entp->type().ascii() << endl);
             m_symTableNextId = getTable(entp);
         } else {
-            UINFO(9, "symTableNextId under NULL" << endl);
-            m_symTableNextId = NULL;
+            UINFO(9, "symTableNextId under nullptr" << endl);
+            m_symTableNextId = nullptr;
         }
     }
-    void reinsert(AstNode* nodep, VSymEnt* parentp = NULL) {
+    void reinsert(AstNode* nodep, VSymEnt* parentp = nullptr) {
         reinsert(nodep, parentp, nodep->name());
     }
     void reinsert(AstNode* nodep, VSymEnt* parentp, string name) {
@@ -91,7 +91,7 @@ public:
         }
         parentp->reinsert(name, findNewTable(nodep));
     }
-    void pushNew(AstNode* nodep) { pushNewUnder(nodep, NULL); }
+    void pushNew(AstNode* nodep) { pushNewUnder(nodep, nullptr); }
     void pushNewUnder(AstNode* nodep, VSymEnt* parentp) {
         if (!parentp) parentp = symCurrentp();
         VSymEnt* symp
@@ -104,7 +104,7 @@ public:
         if (parentp) {
             pushNewUnder(nodep, findNewTable(parentp));
         } else {
-            pushNewUnder(nodep, NULL);
+            pushNewUnder(nodep, nullptr);
         }
     }
     void pushScope(VSymEnt* symp) {
@@ -142,7 +142,7 @@ public:
         if (foundp) {
             return foundp->nodep();
         } else {
-            return NULL;
+            return nullptr;
         }
     }
     void importExtends(AstNode* classp) {

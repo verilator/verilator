@@ -308,7 +308,7 @@ private:
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else {  // NULL=bad extract, or unknown node type
+        } else {  // nullptr=bad extract, or unknown node type
             nodep->v3error("Illegal bit or array select; type already selected, or bad dimension: "
                            << "data type is" << fromdata.m_errp->prettyDTypeNameQ());
             // How to recover?  We'll strip a dimension.
@@ -438,7 +438,7 @@ private:
             // if (debug() >= 9) newp->dumpTree(cout, "--SELEXnew: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else {  // NULL=bad extract, or unknown node type
+        } else {  // nullptr=bad extract, or unknown node type
             nodep->v3error("Illegal range select; type already selected, or bad dimension: "
                            << "data type is " << fromdata.m_errp->prettyDTypeNameQ());
             UINFO(1, "    Related ddtype: " << ddtypep << endl);
@@ -513,7 +513,7 @@ private:
                 newwidthp
                     = new AstConst(nodep->fileline(), AstConst::Unsized32(), width * elwidth);
             }
-            AstNode* newlsbp = NULL;
+            AstNode* newlsbp = nullptr;
             if (VN_IS(nodep, SelPlus)) {
                 if (fromRange.littleEndian()) {
                     // SELPLUS(from,lsb,width) -> SEL(from, (vector_msb-width+1)-sel, width)
@@ -544,7 +544,7 @@ private:
             if (debug() >= 9) newp->dumpTree(cout, "--SELNEW: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else {  // NULL=bad extract, or unknown node type
+        } else {  // nullptr=bad extract, or unknown node type
             nodep->v3error("Illegal +: or -: select; type already selected, or bad dimension: "
                            << "data type is " << fromdata.m_errp->prettyDTypeNameQ());
             // How to recover?  We'll strip a dimension.

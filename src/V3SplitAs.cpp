@@ -58,7 +58,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit SplitAsFindVisitor(AstAlways* nodep) {
-        m_splitVscp = NULL;
+        m_splitVscp = nullptr;
         iterate(nodep);
     }
     virtual ~SplitAsFindVisitor() {}
@@ -161,7 +161,7 @@ private:
     virtual void visit(AstAlways* nodep) override {
         // Are there any lvalue references below this?
         // There could be more than one.  So, we process the first one found first.
-        AstVarScope* lastSplitVscp = NULL;
+        AstVarScope* lastSplitVscp = nullptr;
         while (!nodep->user1()) {
             // Find any splittable variables
             SplitAsFindVisitor visitor(nodep);
@@ -189,7 +189,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit SplitAsVisitor(AstNetlist* nodep) {
-        m_splitVscp = NULL;
+        m_splitVscp = nullptr;
         AstNode::user1ClearTree();  // user1p() used on entire tree
         iterate(nodep);
     }

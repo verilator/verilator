@@ -69,7 +69,7 @@ public:
 // Structure for each variable encountered
 
 class LifeVarEntry {
-    AstNodeAssign* m_assignp;  // Last assignment to this varscope, NULL if no longer relevant
+    AstNodeAssign* m_assignp;  // Last assignment to this varscope, nullptr if no longer relevant
     AstConst* m_constp;  // Known constant value
     // First access was a set (and thus block above may have a set that can be deleted
     bool m_setBeforeUse;
@@ -77,8 +77,8 @@ class LifeVarEntry {
     bool m_everSet;
 
     inline void init(bool setBeforeUse) {
-        m_assignp = NULL;
-        m_constp = NULL;
+        m_assignp = nullptr;
+        m_constp = nullptr;
         m_setBeforeUse = setBeforeUse;
         m_everSet = false;
     }
@@ -103,17 +103,17 @@ public:
     ~LifeVarEntry() {}
     inline void simpleAssign(AstNodeAssign* assp) {  // New simple A=.... assignment
         m_assignp = assp;
-        m_constp = NULL;
+        m_constp = nullptr;
         m_everSet = true;
         if (VN_IS(assp->rhsp(), Const)) m_constp = VN_CAST(assp->rhsp(), Const);
     }
     inline void complexAssign() {  // A[x]=... or some complicated assignment
-        m_assignp = NULL;
-        m_constp = NULL;
+        m_assignp = nullptr;
+        m_constp = nullptr;
         m_everSet = true;
     }
     inline void consumed() {  // Rvalue read of A
-        m_assignp = NULL;
+        m_assignp = nullptr;
     }
     AstNodeAssign* assignp() const { return m_assignp; }
     AstConst* constNodep() const { return m_constp; }
@@ -133,7 +133,7 @@ class LifeBlock {
     //  For each basic block, we'll make a new map of what variables that if/else is changing
     typedef std::map<AstVarScope*, LifeVarEntry> LifeMap;
     LifeMap m_map;  // Current active lifetime map for current scope
-    LifeBlock* m_aboveLifep;  // Upper life, or NULL
+    LifeBlock* m_aboveLifep;  // Upper life, or nullptr
     LifeState* m_statep;  // Current global state
 
     VL_DEBUG_FUNC;  // Declare debug()
@@ -297,7 +297,7 @@ private:
     virtual void visit(AstVarRef* nodep) override {
         // Consumption/generation of a variable,
         // it's used so can't elim assignment before this use.
-        UASSERT_OBJ(nodep->varScopep(), nodep, "NULL");
+        UASSERT_OBJ(nodep->varScopep(), nodep, "nullptr");
         //
         AstVarScope* vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
@@ -448,13 +448,13 @@ public:
         m_noopt = false;
         m_tracingCall = false;
         {
-            m_lifep = new LifeBlock(NULL, m_statep);
+            m_lifep = new LifeBlock(nullptr, m_statep);
             iterate(nodep);
-            if (m_lifep) VL_DO_CLEAR(delete m_lifep, m_lifep = NULL);
+            if (m_lifep) VL_DO_CLEAR(delete m_lifep, m_lifep = nullptr);
         }
     }
     virtual ~LifeVisitor() {
-        if (m_lifep) VL_DO_CLEAR(delete m_lifep, m_lifep = NULL);
+        if (m_lifep) VL_DO_CLEAR(delete m_lifep, m_lifep = nullptr);
     }
     VL_UNCOPYABLE(LifeVisitor);
 };

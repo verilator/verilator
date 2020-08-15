@@ -259,7 +259,7 @@ string V3Os::trueRandom(size_t size) {
     // Note: std::string.data() returns a non-const Char* from C++17 onwards.
     // For pre-C++17, this cast is OK in practice, even though it's UB.
 #if defined(_WIN32) || defined(__MINGW32__)
-    NTSTATUS hr = BCryptGenRandom(NULL, reinterpret_cast<BYTE*>(data), size,
+    NTSTATUS hr = BCryptGenRandom(nullptr, reinterpret_cast<BYTE*>(data), size,
                                   BCRYPT_USE_SYSTEM_PREFERRED_RNG);
     if (!BCRYPT_SUCCESS(hr)) { v3fatal("Could not acquire random data."); }
 #else
@@ -290,7 +290,7 @@ uint64_t V3Os::timeUsecs() {
 #else
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     timeval tv;
-    if (gettimeofday(&tv, NULL) < 0) return 0;
+    if (gettimeofday(&tv, nullptr) < 0) return 0;
     return static_cast<uint64_t>(tv.tv_sec) * 1000000 + tv.tv_usec;
 #endif
 }

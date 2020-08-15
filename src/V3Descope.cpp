@@ -76,7 +76,7 @@ private:
     // Sets 'hierThisr' true if the object is local to this scope
     // (and could be made into a function-local later in V3Localize),
     // false if the object is in another scope.
-    string descopedName(const AstScope* scopep, bool& hierThisr, const AstVar* varp = NULL) {
+    string descopedName(const AstScope* scopep, bool& hierThisr, const AstVar* varp = nullptr) {
         UASSERT(scopep, "Var/Func not scoped");
         hierThisr = (scopep == m_scopep);
 
@@ -180,7 +180,7 @@ private:
                     UINFO(6,
                           "  at " << newfuncp->argTypes() << " und " << funcp->argTypes() << endl);
                     funcp->declPrivate(true);
-                    AstNode* argsp = NULL;
+                    AstNode* argsp = nullptr;
                     for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
                         if (AstVar* portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
@@ -202,7 +202,7 @@ private:
                                 new AstCMath(funcp->fileline(),
                                              string("&(") + funcp->scopep()->nameVlSym() + ")",
                                              64)),
-                            returnp, NULL);
+                            returnp, nullptr);
                         newfuncp->addStmtsp(ifp);
                     } else {
                         newfuncp->addStmtsp(returnp);
@@ -213,7 +213,7 @@ private:
                 // newfuncp->addStmtsp(new AstDisplay(newfuncp->fileline(),
                 //                                   AstDisplayType::DT_WARNING,
                 //                                   string("%%Error: ")+name+"() called with bad
-                //                                   scope", NULL));
+                //                                   scope", nullptr));
                 // newfuncp->addStmtsp(new AstStop(newfuncp->fileline()));
                 if (debug() >= 9) newfuncp->dumpTree(cout, "   newfunc: ");
             } else {
@@ -239,7 +239,7 @@ private:
     virtual void visit(AstScope* nodep) override {
         m_scopep = nodep;
         iterateChildren(nodep);
-        m_scopep = NULL;
+        m_scopep = nullptr;
     }
     virtual void visit(AstVarScope* nodep) override {
         // Delete the varscope when we're finished
@@ -254,7 +254,7 @@ private:
         nodep->hiername(descopedName(nodep->varScopep()->scopep(), hierThis /*ref*/,
                                      nodep->varScopep()->varp()));
         nodep->hierThis(hierThis);
-        nodep->varScopep(NULL);
+        nodep->varScopep(nullptr);
     }
     virtual void visit(AstNodeCCall* nodep) override {
         // UINFO(9, "       " << nodep << endl);
@@ -265,7 +265,7 @@ private:
         bool hierThis;
         nodep->hiername(descopedName(nodep->funcp()->scopep(), hierThis /*ref*/));
         // Can't do this, as we may have more calls later
-        // nodep->funcp()->scopep(NULL);
+        // nodep->funcp()->scopep(nullptr);
     }
     virtual void visit(AstCFunc* nodep) override {
         if (!nodep->user1()) {
@@ -294,8 +294,8 @@ private:
 public:
     // CONSTRUCTORS
     explicit DescopeVisitor(AstNetlist* nodep)
-        : m_modp(NULL)
-        , m_scopep(NULL)
+        : m_modp(nullptr)
+        , m_scopep(nullptr)
         , m_modSingleton(false)
         , m_allowThis(false)
         , m_needThis(false) {

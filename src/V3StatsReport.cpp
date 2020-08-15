@@ -59,7 +59,7 @@ class StatsReport {
         }
 
         // Process duplicates
-        V3Statistic* lastp = NULL;
+        V3Statistic* lastp = nullptr;
         for (ByName::iterator it = byName.begin(); it != byName.end(); ++it) {
             V3Statistic* repp = it->second;
             if (lastp && lastp->sumit() && lastp->printit() && lastp->name() == repp->name()

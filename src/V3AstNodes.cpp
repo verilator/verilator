@@ -36,7 +36,7 @@ const char* AstIfaceRefDType::broken() const {
     BROKEN_RTN(m_ifacep && !m_ifacep->brokeExists());
     BROKEN_RTN(m_cellp && !m_cellp->brokeExists());
     BROKEN_RTN(m_modportp && !m_modportp->brokeExists());
-    return NULL;
+    return nullptr;
 }
 
 AstIface* AstIfaceRefDType::ifaceViaCellp() const {
@@ -46,7 +46,7 @@ AstIface* AstIfaceRefDType::ifaceViaCellp() const {
 const char* AstNodeVarRef::broken() const {
     BROKEN_RTN(m_varScopep && !m_varScopep->brokeExists());
     BROKEN_RTN(m_varp && !m_varp->brokeExists());
-    return NULL;
+    return nullptr;
 }
 
 void AstNodeVarRef::cloneRelink() {
@@ -84,7 +84,7 @@ const char* AstNodeUOrStructDType::broken() const {
             return "member broken";
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 void AstNodeCCall::dump(std::ostream& str) const {
@@ -101,7 +101,7 @@ void AstNodeCCall::cloneRelink() {
 }
 const char* AstNodeCCall::broken() const {
     BROKEN_RTN(m_funcp && !m_funcp->brokeExists());
-    return NULL;
+    return nullptr;
 }
 bool AstNodeCCall::isPure() const { return funcp()->pure(); }
 string AstNodeCCall::hiernameProtect() const {
@@ -253,7 +253,7 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
             return new AstConst(fl, AstConst::StringToParse(), literal.c_str());
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
@@ -604,13 +604,13 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
         if (anodep->isSc()) {
             return anodep;
         } else {
-            return NULL;
+            return nullptr;
         }
     } else if (VN_IS(nodep, VarRef)) {
         if (VN_CAST(nodep, VarRef)->varp()->isSc()) {
             return VN_CAST(nodep, VarRef)->varp();
         } else {
-            return NULL;
+            return nullptr;
         }
     } else if (VN_IS(nodep, ArraySel)) {
         if (nodep->op1p()) {
@@ -626,7 +626,7 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
             if (AstVar* p = scVarRecurse(nodep->op4p())) return p;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 string AstVar::mtasksString() const {
@@ -664,17 +664,17 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
             if (adtypep->isRanged()) {
                 if ((dim++) == dimension) return adtypep;
             }
-            return NULL;
+            return nullptr;
         } else if (AstNodeUOrStructDType* adtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
             if (adtypep->packed()) {
                 if ((dim++) == dimension) return adtypep;
             }
-            return NULL;
+            return nullptr;
         }
         // Node no ->next in loop; use continue where necessary
         break;
     }
-    return NULL;
+    return nullptr;
 }
 
 uint32_t AstNodeDType::arrayUnpackedElements() {
@@ -761,7 +761,7 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep) {
 
 const char* AstJumpBlock::broken() const {
     BROKEN_RTN(!labelp()->brokeExistsBelow());
-    return NULL;
+    return nullptr;
 }
 void AstJumpBlock::cloneRelink() {
     if (m_labelp->clonep()) m_labelp = m_labelp->clonep();
@@ -772,7 +772,7 @@ const char* AstScope::broken() const {
     BROKEN_RTN(m_aboveCellp && !m_aboveCellp->brokeExists());
     BROKEN_RTN(!m_modp);
     BROKEN_RTN(m_modp && !m_modp->brokeExists());
-    return NULL;
+    return nullptr;
 }
 void AstScope::cloneRelink() {
     if (m_aboveScopep && m_aboveScopep->clonep()) m_aboveScopep->clonep();
@@ -846,7 +846,7 @@ void AstTypeTable::clearCache() {
     // When we mass-change widthMin in V3WidthCommit, we need to correct the table.
     // Just clear out the maps; the search functions will be used to rebuild the map
     for (int i = 0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
-        m_basicps[i] = NULL;
+        m_basicps[i] = nullptr;
     }
     m_detailedMap.clear();
     // Clear generic()'s so dead detection will work
@@ -1079,7 +1079,7 @@ void AstCellInline::dump(std::ostream& str) const {
 const char* AstClassPackage::broken() const {
     BROKEN_BASE_RTN(AstNodeModule::broken());
     BROKEN_RTN(m_classp && !m_classp->brokeExists());
-    return NULL;
+    return nullptr;
 }
 void AstClass::insertCache(AstNode* nodep) {
     if (VN_IS(nodep, Var) || VN_IS(nodep, NodeFTask) || VN_IS(nodep, EnumItemRef)) {

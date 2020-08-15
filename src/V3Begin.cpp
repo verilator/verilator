@@ -99,7 +99,7 @@ private:
             m_unnamedScope = "";
             m_ftaskp = nodep;
             iterateChildren(nodep);
-            m_ftaskp = NULL;
+            m_ftaskp = nullptr;
         }
         m_namedScope = oldScope;
         m_unnamedScope = oldUnnamed;
@@ -147,7 +147,7 @@ private:
         m_unnamedScope = oldUnnamed;
 
         // Cleanup
-        AstNode* addsp = NULL;
+        AstNode* addsp = nullptr;
         if (AstNode* stmtsp = nodep->stmtsp()) {
             stmtsp->unlinkFrBackWithNext();
             if (addsp) {
@@ -252,8 +252,8 @@ public:
     // CONSTRUCTORS
     BeginVisitor(AstNetlist* nodep, BeginState* statep) {
         m_statep = statep;
-        m_modp = NULL;
-        m_ftaskp = NULL;
+        m_modp = nullptr;
+        m_ftaskp = nullptr;
         m_ifDepth = 0;
         iterate(nodep);
     }

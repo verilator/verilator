@@ -1242,9 +1242,9 @@ public:
     void iterateChildrenBackwards(AstNode* nodep);
     /// Call visit()s on const nodep's children
     void iterateChildrenConst(AstNode* nodep);
-    /// Call visit()s on nodep (maybe NULL) and nodep's nextp() list
+    /// Call visit()s on nodep (maybe nullptr) and nodep's nextp() list
     void iterateAndNextNull(AstNode* nodep);
-    /// Call visit()s on const nodep (maybe NULL) and nodep's nextp() list
+    /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list
     void iterateAndNextConstNull(AstNode* nodep);
     /// Return edited nodep; see comments in V3Ast.cpp
     AstNode* iterateSubtreeReturnEdits(AstNode* nodep);
@@ -1270,10 +1270,10 @@ protected:
 
 public:
     AstNRelinker() {
-        m_oldp = NULL;
-        m_backp = NULL;
+        m_oldp = nullptr;
+        m_backp = nullptr;
         m_chg = RELINK_BAD;
-        m_iterpp = NULL;
+        m_iterpp = nullptr;
     }
     void relink(AstNode* newp);
     AstNode* oldp() const { return m_oldp; }
@@ -1498,9 +1498,9 @@ public:
     AstNode* op3p() const { return m_op3p; }
     AstNode* op4p() const { return m_op4p; }
     AstNodeDType* dtypep() const { return m_dtypep; }
-    AstNode* clonep() const { return ((m_cloneCnt == s_cloneCntGbl) ? m_clonep : NULL); }
-    AstNode* firstAbovep() const {  // Returns NULL when second or later in list
-        return ((backp() && backp()->nextp() != this) ? backp() : NULL);
+    AstNode* clonep() const { return ((m_cloneCnt == s_cloneCntGbl) ? m_clonep : nullptr); }
+    AstNode* firstAbovep() const {  // Returns nullptr when second or later in list
+        return ((backp() && backp()->nextp() != this) ? backp() : nullptr);
     }
     bool brokeExists() const;
     bool brokeExistsAbove() const;
@@ -1664,7 +1664,7 @@ public:
     static void editCountSetLast() { s_editCntLast = editCountGbl(); }
 
     // ACCESSORS for specific types
-    // Alas these can't be virtual or they break when passed a NULL
+    // Alas these can't be virtual or they break when passed a nullptr
     bool isZero() const;
     bool isOne() const;
     bool isNeqZero() const;
@@ -1735,7 +1735,7 @@ public:
     // METHODS - Tree modifications
     // Returns nodep, adds newp to end of nodep's list
     static AstNode* addNext(AstNode* nodep, AstNode* newp);
-    // Returns nodep, adds newp (maybe NULL) to end of nodep's list
+    // Returns nodep, adds newp (maybe nullptr) to end of nodep's list
     static AstNode* addNextNull(AstNode* nodep, AstNode* newp);
     inline AstNode* addNext(AstNode* newp) { return addNext(this, newp); }
     inline AstNode* addNextNull(AstNode* newp) { return addNextNull(this, newp); }
@@ -1746,9 +1746,10 @@ public:
     }
     void addHereThisAsNext(AstNode* newp);  // Adds at old place of this, this becomes next
     void replaceWith(AstNode* newp);  // Replace current node in tree with new node
-    AstNode* unlinkFrBack(AstNRelinker* linkerp = NULL);  // Unlink this from whoever points to it.
+    AstNode* unlinkFrBack(AstNRelinker* linkerp
+                          = nullptr);  // Unlink this from whoever points to it.
     // Unlink this from whoever points to it, keep entire next list with unlinked node
-    AstNode* unlinkFrBackWithNext(AstNRelinker* linkerp = NULL);
+    AstNode* unlinkFrBackWithNext(AstNRelinker* linkerp = nullptr);
     void swapWith(AstNode* bp);
     void relink(AstNRelinker* linkerp);  // Generally use linker->relink() instead
     void cloneRelinkNode() { cloneRelink(); }
@@ -1759,9 +1760,9 @@ public:
                                AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
-    // Clone or return NULL if NULL
+    // Clone or return nullptr if nullptr
     static AstNode* cloneTreeNull(AstNode* nodep, bool cloneNextLink) {
-        return nodep ? nodep->cloneTree(cloneNextLink) : NULL;
+        return nodep ? nodep->cloneTree(cloneNextLink) : nullptr;
     }
     AstNode* cloneTree(bool cloneNextLink);  // Not const, as sets clonep() on original nodep
     bool gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
@@ -1771,7 +1772,7 @@ public:
     void deleteTree();  // Always deletes the next link
     void checkTree();  // User Interface version
     void checkIter() const;
-    void clearIter() { m_iterpp = NULL; }
+    void clearIter() { m_iterpp = nullptr; }
     void dumpPtrs(std::ostream& os = std::cout) const;
     void dumpTree(std::ostream& os = std::cout, const string& indent = "    ",
                   int maxDepth = 0) const;
@@ -1782,7 +1783,7 @@ public:
     void dumpTreeAndNext(std::ostream& os = std::cout, const string& indent = "    ",
                          int maxDepth = 0) const;
     void dumpTreeFile(const string& filename, bool append = false, bool doDump = true);
-    static void dumpTreeFileGdb(const char* filenamep = NULL);
+    static void dumpTreeFileGdb(const char* filenamep = nullptr);
 
     // METHODS - queries
     // Changes control flow, disable some optimizations
@@ -1812,12 +1813,12 @@ public:
     // Iff has a data type; dtype() must be non null
     virtual bool hasDType() const { return false; }
     // Iff has a non-null childDTypep(), as generic node function
-    virtual AstNodeDType* getChildDTypep() const { return NULL; }
+    virtual AstNodeDType* getChildDTypep() const { return nullptr; }
     // Iff has a non-null child2DTypep(), as generic node function
-    virtual AstNodeDType* getChild2DTypep() const { return NULL; }
+    virtual AstNodeDType* getChild2DTypep() const { return nullptr; }
     // Another AstNode* may have a pointer into this node, other then normal front/back/etc.
     virtual bool maybePointedTo() const { return false; }
-    virtual const char* broken() const { return NULL; }
+    virtual const char* broken() const { return nullptr; }
 
     // INVOKERS
     virtual void accept(AstNVisitor& v) = 0;
@@ -1858,7 +1859,7 @@ public:
 
 inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
     if (!rhs) {
-        os << "NULL";
+        os << "nullptr";
     } else {
         rhs->dump(os);
     }
@@ -1873,7 +1874,7 @@ inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 #define ASTNODE_BASE_FUNCS(name) \
     virtual ~Ast##name() {} \
     static Ast##name* cloneTreeNull(Ast##name* nodep, bool cloneNextLink) { \
-        return nodep ? nodep->cloneTree(cloneNextLink) : NULL; \
+        return nodep ? nodep->cloneTree(cloneNextLink) : nullptr; \
     } \
     Ast##name* cloneTree(bool cloneNext) { \
         return static_cast<Ast##name*>(AstNode::cloneTree(cloneNext)); \
@@ -2263,20 +2264,20 @@ public:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, bool lvalue)
         : AstNodeMath(t, fl)
         , m_lvalue(lvalue)
-        , m_varScopep(NULL)
-        , m_packagep(NULL)
+        , m_varScopep(nullptr)
+        , m_packagep(nullptr)
         , m_name(name)
         , m_hierThis(false) {
-        this->varp(NULL);
+        this->varp(nullptr);
     }
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, AstVar* varp, bool lvalue)
         : AstNodeMath(t, fl)
         , m_lvalue(lvalue)
-        , m_varScopep(NULL)
-        , m_packagep(NULL)
+        , m_varScopep(nullptr)
+        , m_packagep(nullptr)
         , m_name(name)
         , m_hierThis(false) {
-        // May have varp==NULL
+        // May have varp==nullptr
         this->varp(varp);
     }
     ASTNODE_BASE_FUNCS(NodeVarRef)
@@ -2364,17 +2365,17 @@ public:
     virtual int widthTotalBytes() const = 0;
     virtual bool maybePointedTo() const { return true; }
     // Iff has a non-null refDTypep(), as generic node function
-    virtual AstNodeDType* virtRefDTypep() const { return NULL; }
+    virtual AstNodeDType* virtRefDTypep() const { return nullptr; }
     // Iff has refDTypep(), set as generic node function
     virtual void virtRefDTypep(AstNodeDType* nodep) {}
     // Iff has a non-null second dtypep, as generic node function
-    virtual AstNodeDType* virtRefDType2p() const { return NULL; }
+    virtual AstNodeDType* virtRefDType2p() const { return nullptr; }
     // Iff has second dtype, set as generic node function
     virtual void virtRefDType2p(AstNodeDType* nodep) {}
     // Assignable equivalence.  Call skipRefp() on this and samep before calling
     virtual bool similarDType(AstNodeDType* samep) const = 0;
     // Iff has a non-null subDTypep(), as generic node function
-    virtual AstNodeDType* subDTypep() const { return NULL; }
+    virtual AstNodeDType* subDTypep() const { return nullptr; }
     virtual bool isFourstate() const;
     // Ideally an IEEE $typename
     virtual string prettyDTypeName() const { return prettyTypeName(); }
@@ -2473,7 +2474,7 @@ public:
     void repairMemberCache();
     AstMemberDType* findMember(const string& name) const {
         MemberNameMap::const_iterator it = m_members.find(name);
-        return (it == m_members.end()) ? NULL : it->second;
+        return (it == m_members.end()) ? nullptr : it->second;
     }
     static int lsb() { return 0; }
     int msb() const { return dtypep()->width() - 1; }  // Packed classes look like arrays
@@ -2490,7 +2491,7 @@ private:
 public:
     AstNodeArrayDType(AstType t, FileLine* fl)
         : AstNodeDType(t, fl) {
-        m_refDTypep = NULL;
+        m_refDTypep = nullptr;
     }
     ASTNODE_BASE_FUNCS(NodeArrayDType)
     virtual void dump(std::ostream& str) const;
@@ -2498,7 +2499,7 @@ public:
     virtual const char* broken() const {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
@@ -2549,7 +2550,9 @@ public:
     AstNodeSel(AstType t, FileLine* fl, AstNode* fromp, AstNode* bitp)
         : AstNodeBiop(t, fl, fromp, bitp) {}
     ASTNODE_BASE_FUNCS(NodeSel)
-    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
+    AstNode* fromp() const {
+        return op1p();
+    }  // op1 = Extracting what (nullptr=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
     AstNode* bitp() const { return op2p(); }  // op2 = Msb selection expression
     void bitp(AstNode* nodep) { setOp2p(nodep); }
@@ -2578,7 +2581,7 @@ class AstNodeCCall : public AstNodeStmt {
     string m_argTypes;
 
 public:
-    AstNodeCCall(AstType t, FileLine* fl, AstCFunc* funcp, AstNode* argsp = NULL)
+    AstNodeCCall(AstType t, FileLine* fl, AstCFunc* funcp, AstNode* argsp = nullptr)
         : AstNodeStmt(t, fl, true)
         , m_funcp(funcp) {
         addNOp2p(argsp);
@@ -2670,10 +2673,10 @@ public:
     virtual void name(const string& name) { m_name = name; }
     string cname() const { return m_cname; }
     void cname(const string& cname) { m_cname = cname; }
-    // op1 = Output variable (functions only, NULL for tasks)
+    // op1 = Output variable (functions only, nullptr for tasks)
     AstNode* fvarp() const { return op1p(); }
     void addFvarp(AstNode* nodep) { addNOp1p(nodep); }
-    bool isFunction() const { return fvarp() != NULL; }
+    bool isFunction() const { return fvarp() != nullptr; }
     // op3 = Statements/Ports/Vars
     AstNode* stmtsp() const { return op3p(); }  // op3 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp3p(nodep); }
@@ -2729,24 +2732,24 @@ private:
 public:
     AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
         : AstNodeStmt(t, fl, statement)
-        , m_taskp(NULL)
-        , m_packagep(NULL)
+        , m_taskp(nullptr)
+        , m_packagep(nullptr)
         , m_pli(false) {
         setOp1p(namep);
         addNOp3p(pinsp);
     }
     AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, const string& name, AstNode* pinsp)
         : AstNodeStmt(t, fl, statement)
-        , m_taskp(NULL)
+        , m_taskp(nullptr)
         , m_name(name)
-        , m_packagep(NULL)
+        , m_packagep(nullptr)
         , m_pli(false) {
         addNOp3p(pinsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
     virtual const char* broken() const {
         BROKEN_RTN(m_taskp && !m_taskp->brokeExists());
-        return NULL;
+        return nullptr;
     }
     virtual void cloneRelink() {
         if (m_taskp && m_taskp->clonep()) { m_taskp = m_taskp->clonep(); }
@@ -2792,7 +2795,7 @@ private:
     bool m_hierBlock : 1;  // Hiearchical Block marked by HIER_BLOCK pragma
     bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
-    bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise NULL
+    bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
     int m_level;  // 1=top module, 2=cell off top module, ...
     int m_varNum;  // Incrementing variable number
     int m_typeNum;  // Incrementing implicit type number

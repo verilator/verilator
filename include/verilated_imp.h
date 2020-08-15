@@ -319,7 +319,7 @@ public:
     static inline void* userFind(const void* scopep, void* userKey) VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.m_userMapMutex);
         UserMap::const_iterator it = s_s.m_userMap.find(std::make_pair(scopep, userKey));
-        if (VL_UNLIKELY(it == s_s.m_userMap.end())) return NULL;
+        if (VL_UNLIKELY(it == s_s.m_userMap.end())) return nullptr;
         return it->second;
     }
 
@@ -363,7 +363,7 @@ public:  // But only for verilated*.cpp
         const VerilatedLockGuard lock(s_s.m_nameMutex);
         // If too slow, can assume this is only VL_MT_SAFE_POSINIT
         VerilatedScopeNameMap::const_iterator it = s_s.m_nameMap.find(namep);
-        if (VL_UNLIKELY(it == s_s.m_nameMap.end())) return NULL;
+        if (VL_UNLIKELY(it == s_s.m_nameMap.end())) return nullptr;
         return it->second;
     }
     static void scopeErase(const VerilatedScope* scopep) VL_MT_SAFE {
@@ -544,7 +544,7 @@ public:  // But only for verilated*.cpp
             for (int i = 0; (fdi != 0) && (i < 31); i++, fdi >>= 1) {
                 if (fdi & VL_MASK_I(1)) {
                     fclose(s_s.m_fdps[i]);
-                    s_s.m_fdps[i] = NULL;
+                    s_s.m_fdps[i] = nullptr;
                     s_s.m_fdFreeMct.push_back(i);
                 }
             }
@@ -553,7 +553,7 @@ public:  // But only for verilated*.cpp
     static inline FILE* fdToFp(IData fdi) VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.m_fdMutex);
         const VerilatedFpList fdlist = fdToFpList(fdi);
-        if (VL_UNLIKELY(fdlist.size() != 1)) return NULL;
+        if (VL_UNLIKELY(fdlist.size() != 1)) return nullptr;
         return *fdlist.begin();
     }
 

@@ -56,7 +56,7 @@ private:
 inline void V3LanguageWords::Singleton::init() {
     // C++ keywords
     // clang-format off
-    addKwd("NULL",                  "C++ common word");
+    addKwd("nullptr",                  "C++ common word");
     addKwd("abort",                 "C++ common word");
     addKwd("alignas",               "C++11 keyword");
     addKwd("alignof",               "C++11 keyword");

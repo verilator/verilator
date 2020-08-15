@@ -106,8 +106,8 @@ private:
 
     // CONSTRUCTORS
     VerilatedCovImp() {
-        m_insertp = NULL;
-        m_insertFilenamep = NULL;
+        m_insertp = nullptr;
+        m_insertFilenamep = nullptr;
         m_insertLineno = 0;
     }
     VL_UNCOPYABLE(VerilatedCovImp);
@@ -340,7 +340,7 @@ public:
         }
         m_items.push_back(m_insertp);
         // Prepare for next
-        m_insertp = NULL;
+        m_insertp = nullptr;
     }
 
     void write(const char* filename) VL_EXCLUDES(m_mutex) {
@@ -445,15 +445,15 @@ void VerilatedCov::_insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8)
                             A(21), A(22), A(23), A(24), A(25), A(26), A(27), A(28),
                             A(29)) VL_MT_SAFE {
     const char* keyps[VerilatedCovImpBase::MAX_KEYS]
-        = {NULL,  NULL,  NULL,  // filename,lineno,page
-           key0,  key1,  key2,  key3,  key4,  key5,  key6,  key7,  key8,  key9,
-           key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
-           key20, key21, key22, key23, key24, key25, key26, key27, key28, key29};
+        = {nullptr, nullptr, nullptr,  // filename,lineno,page
+           key0,    key1,    key2,    key3,  key4,  key5,  key6,  key7,  key8,  key9,
+           key10,   key11,   key12,   key13, key14, key15, key16, key17, key18, key19,
+           key20,   key21,   key22,   key23, key24, key25, key26, key27, key28, key29};
     const char* valps[VerilatedCovImpBase::MAX_KEYS]
-        = {NULL,   NULL,   NULL,  // filename,lineno,page
-           valp0,  valp1,  valp2,  valp3,  valp4,  valp5,  valp6,  valp7,  valp8,  valp9,
-           valp10, valp11, valp12, valp13, valp14, valp15, valp16, valp17, valp18, valp19,
-           valp20, valp21, valp22, valp23, valp24, valp25, valp26, valp27, valp28, valp29};
+        = {nullptr, nullptr, nullptr,  // filename,lineno,page
+           valp0,   valp1,   valp2,   valp3,  valp4,  valp5,  valp6,  valp7,  valp8,  valp9,
+           valp10,  valp11,  valp12,  valp13, valp14, valp15, valp16, valp17, valp18, valp19,
+           valp20,  valp21,  valp22,  valp23, valp24, valp25, valp26, valp27, valp28, valp29};
     VerilatedCovImp::imp().insertp(keyps, valps);
 }
 

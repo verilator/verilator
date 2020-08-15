@@ -103,7 +103,7 @@ private:
         if (m_assertp) nodep->v3error("Assert not allowed under another assert");
         m_assertp = nodep;
         iterateChildren(nodep);
-        m_assertp = NULL;
+        m_assertp = nullptr;
     }
     virtual void visit(AstVar* nodep) override {
         iterateChildren(nodep);
@@ -141,7 +141,7 @@ private:
             m_ftaskp = nodep;
             iterateChildren(nodep);
         }
-        m_ftaskp = NULL;
+        m_ftaskp = nullptr;
         m_lifetime = origLifetime;
         if (nodep->dpiExport()) { nodep->scopeNamep(new AstScopeName(nodep->fileline())); }
     }
@@ -245,7 +245,7 @@ private:
                 // From {...}[...] syntax in IEEE 2017
                 if (basefromp) { UINFO(1, "    Related node: " << basefromp << endl); }
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Select of concatenation");
-                nodep = NULL;
+                nodep = nullptr;
             } else {
                 if (basefromp) { UINFO(1, "    Related node: " << basefromp << endl); }
                 nodep->v3fatalSrc("Illegal bit select; no signal/member being extracted from");
@@ -478,7 +478,7 @@ private:
             // never used won't result in any warnings.
         } else {
             // Massive hack, just tie off all outputs so our analysis can proceed
-            AstVar* varoutp = NULL;
+            AstVar* varoutp = nullptr;
             for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 if (AstVar* varp = VN_CAST(stmtp, Var)) {
                     if (varp->isReadOnly()) {
@@ -523,10 +523,10 @@ public:
     // CONSTRUCTORS
     explicit LinkResolveVisitor(AstNetlist* rootp)
         : m_lifetime(VLifetime::STATIC) {  // Static outside a module/class
-        m_classp = NULL;
-        m_ftaskp = NULL;
-        m_modp = NULL;
-        m_assertp = NULL;
+        m_classp = nullptr;
+        m_ftaskp = nullptr;
+        m_modp = nullptr;
+        m_assertp = nullptr;
         m_senitemCvtNum = 0;
         iterate(rootp);
     }
@@ -570,7 +570,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LinkBotupVisitor(AstNetlist* rootp) {
-        m_modp = NULL;
+        m_modp = nullptr;
         //
         iterate(rootp);
     }

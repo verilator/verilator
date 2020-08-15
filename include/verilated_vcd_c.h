@@ -133,7 +133,7 @@ public:
     //=========================================================================
     // External interface to client code
 
-    explicit VerilatedVcd(VerilatedVcdFile* filep = NULL);
+    explicit VerilatedVcd(VerilatedVcdFile* filep = nullptr);
     ~VerilatedVcd();
 
     // ACCESSORS
@@ -337,7 +337,7 @@ class VerilatedVcdC {
     VL_UNCOPYABLE(VerilatedVcdC);
 
 public:
-    explicit VerilatedVcdC(VerilatedVcdFile* filep = NULL)
+    explicit VerilatedVcdC(VerilatedVcdFile* filep = nullptr)
         : m_sptrace(filep) {}
     ~VerilatedVcdC() { close(); }
     /// Routines can only be called from one thread; allow next call from different thread

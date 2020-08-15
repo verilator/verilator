@@ -157,8 +157,8 @@ public:
 };
 
 V3PreShellImp V3PreShellImp::s_preImp;
-V3PreProc* V3PreShellImp::s_preprocp = NULL;
-VInFilter* V3PreShellImp::s_filterp = NULL;
+V3PreProc* V3PreShellImp::s_preprocp = nullptr;
+VInFilter* V3PreShellImp::s_filterp = nullptr;
 
 //######################################################################
 // Perl class functions

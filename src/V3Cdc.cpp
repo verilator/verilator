@@ -63,8 +63,8 @@ public:
         : V3GraphVertex(graphp)
         , m_scopep(scopep)
         , m_nodep(nodep)
-        , m_srcDomainp(NULL)
-        , m_dstDomainp(NULL)
+        , m_srcDomainp(nullptr)
+        , m_dstDomainp(nullptr)
         , m_srcDomainSet(false)
         , m_dstDomainSet(false)
         , m_asyncPath(false) {}
@@ -229,7 +229,7 @@ private:
 
     // STATE
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
-    CdcLogicVertex* m_logicVertexp;  // Current statement being tracked, NULL=ignored
+    CdcLogicVertex* m_logicVertexp;  // Current statement being tracked, nullptr=ignored
     AstScope* m_scopep;  // Current scope being processed
     AstNodeModule* m_modp;  // Current module
     AstSenTree* m_domainp;  // Current sentree
@@ -253,7 +253,7 @@ private:
                 m_logicVertexp->dstDomainSet(true);
             }
             iterateChildren(nodep);
-            m_logicVertexp = NULL;
+            m_logicVertexp = nullptr;
 
             if (false && debug() >= 9) {
                 UINFO(9, "Trace Logic:\n");
@@ -273,7 +273,7 @@ private:
                 // Create IO vertex - note it's relative to the pointed to var, not where we are
                 // now This allows reporting to easily print the input statement
                 CdcLogicVertex* ioVertexp
-                    = new CdcLogicVertex(&m_graph, varscp->scopep(), varscp->varp(), NULL);
+                    = new CdcLogicVertex(&m_graph, varscp->scopep(), varscp->varp(), nullptr);
                 if (varscp->varp()->isWritable()) {
                     new V3GraphEdge(&m_graph, vertexp, ioVertexp, 1);
                 } else {
@@ -364,7 +364,7 @@ private:
                     UINFO(8, "   Trace One async: " << vvertexp << endl);
                     // Twice, as we need to detect, then propagate
                     CdcEitherVertex* markp = traceAsyncRecurse(vvertexp, false);
-                    if (markp) {  // Mark is non-NULL if something bad on this path
+                    if (markp) {  // Mark is non-nullptr if something bad on this path
                         UINFO(9, "   Trace One bad! " << vvertexp << endl);
                         m_userGeneration++;  // Effectively a userClearVertices()
                         traceAsyncRecurse(vvertexp, true);
@@ -377,12 +377,12 @@ private:
     }
 
     CdcEitherVertex* traceAsyncRecurse(CdcEitherVertex* vertexp, bool mark) {
-        // First pass: Return vertex of any hazardous stuff attached, or NULL if OK
+        // First pass: Return vertex of any hazardous stuff attached, or nullptr if OK
         // If first pass returns true, second pass calls asyncPath() on appropriate nodes
-        if (vertexp->user() >= m_userGeneration) return NULL;  // Processed - prevent loop
+        if (vertexp->user() >= m_userGeneration) return nullptr;  // Processed - prevent loop
         vertexp->user(m_userGeneration);
 
-        CdcEitherVertex* mark_outp = NULL;
+        CdcEitherVertex* mark_outp = nullptr;
         UINFO(9, "      Trace: " << vertexp << endl);
 
         // Clear out in prep for marking next path
@@ -401,7 +401,7 @@ private:
                     CdcEitherVertex* eFromVertexp = static_cast<CdcEitherVertex*>(edgep->fromp());
                     eFromVertexp->asyncPath(true);
                 }
-                return NULL;
+                return nullptr;
             }
             // Also ok if from flop, but partially trace the flop so more obvious to users
             if (vvertexp->fromFlop()) {
@@ -409,7 +409,7 @@ private:
                     CdcEitherVertex* eFromVertexp = static_cast<CdcEitherVertex*>(edgep->fromp());
                     eFromVertexp->asyncPath(true);
                 }
-                return NULL;
+                return nullptr;
             }
         }
 
@@ -594,7 +594,7 @@ private:
         }
 
         // Convert list of senses into one sense node
-        AstSenTree* senoutp = NULL;
+        AstSenTree* senoutp = nullptr;
         bool senedited = false;
         for (SenSet::iterator it = senouts.begin(); it != senouts.end(); ++it) {
             if (!senoutp) {
@@ -644,9 +644,9 @@ private:
     virtual void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);
         m_scopep = nodep;
-        m_logicVertexp = NULL;
+        m_logicVertexp = nullptr;
         iterateChildren(nodep);
-        m_scopep = NULL;
+        m_scopep = nullptr;
     }
     virtual void visit(AstActive* nodep) override {
         // Create required blocks and add to module
@@ -657,7 +657,7 @@ private:
             || m_domainp->hasClocked()) {  // IE not hasSettle/hasInitial
             iterateNewStmt(nodep);
         }
-        m_domainp = NULL;
+        m_domainp = nullptr;
         AstNode::user2ClearTree();
     }
     virtual void visit(AstNodeVarRef* nodep) override {
@@ -737,10 +737,10 @@ private:
 public:
     // CONSTRUCTORS
     explicit CdcVisitor(AstNode* nodep) {
-        m_logicVertexp = NULL;
-        m_scopep = NULL;
-        m_modp = NULL;
-        m_domainp = NULL;
+        m_logicVertexp = nullptr;
+        m_scopep = nullptr;
+        m_modp = nullptr;
+        m_domainp = nullptr;
         m_inDly = false;
         m_inSenItem = 0;
         m_userGeneration = 0;
@@ -763,12 +763,12 @@ public:
         if (debug() >= 1) edgeReport();  // Not useful to users at the moment
         if (false) {
             *m_ofp << "\nDBG-test-dumper\n";
-            V3EmitV::verilogPrefixedTree(nodep, *m_ofp, "DBG ", 40, NULL, true);
+            V3EmitV::verilogPrefixedTree(nodep, *m_ofp, "DBG ", 40, nullptr, true);
             *m_ofp << endl;
         }
     }
     virtual ~CdcVisitor() {
-        if (m_ofp) VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+        if (m_ofp) VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
     }
 };
 

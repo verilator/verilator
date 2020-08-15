@@ -54,8 +54,8 @@ private:
             , m_chgRefp(cp) {}
         ~ToggleEnt() {}
         void cleanup() {
-            VL_DO_CLEAR(m_varRefp->deleteTree(), m_varRefp = NULL);
-            VL_DO_CLEAR(m_chgRefp->deleteTree(), m_chgRefp = NULL);
+            VL_DO_CLEAR(m_varRefp->deleteTree(), m_varRefp = nullptr);
+            VL_DO_CLEAR(m_chgRefp->deleteTree(), m_chgRefp = nullptr);
         }
     };
 
@@ -68,7 +68,7 @@ private:
             : m_on(false)
             , m_inModOff(false)
             , m_handle(0)
-            , m_nodep(NULL) {}
+            , m_nodep(nullptr) {}
         bool lineCoverageOn(const AstNode* nodep) {
             return m_on && !m_inModOff && nodep->fileline()->coverageOn()
                    && v3Global.opt.coverageLine();
@@ -106,7 +106,7 @@ private:
         }
         // We allow this, though tracing doesn't
         // if (nodep->arrayp(1)) return "Unsupported: Multi-dimensional array";
-        return NULL;
+        return nullptr;
     }
 
     AstCoverInc* newCoverInc(FileLine* fl, const string& hier, const string& page_prefix,
@@ -546,7 +546,7 @@ public:
     explicit CoverageVisitor(AstNetlist* rootp) {
         // Operate on all modules
         m_nextHandle = 0;
-        m_modp = NULL;
+        m_modp = nullptr;
         m_beginHier = "";
         m_inToggleOff = false;
         iterateChildren(rootp);

@@ -136,7 +136,7 @@ private:
     void addOrigEdgep(V3GraphEdge* toEdgep, V3GraphEdge* addEdgep) {
         // Add addEdge (or it's list) to list of edges that break edge represents
         // Note addEdge may already have a bunch of similar linked edge representations.  Yuk.
-        UASSERT(addEdgep, "Adding NULL");
+        UASSERT(addEdgep, "Adding nullptr");
         if (!toEdgep->userp()) {
             OrigEdgeList* oep = new OrigEdgeList;
             m_origEdgeDelp.push_back(oep);
@@ -382,7 +382,7 @@ void GraphAcyc::simplifyDup(GraphAcycVertex* avertexp) {
     if (avertexp->isDelete()) return;
     // Clear marks
     for (V3GraphEdge* edgep = avertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-        edgep->top()->userp(NULL);
+        edgep->top()->userp(nullptr);
     }
     // Mark edges and detect duplications
     for (V3GraphEdge *nextp, *edgep = avertexp->outBeginp(); edgep; edgep = nextp) {

@@ -21,7 +21,7 @@
 
 std::atomic<vluint64_t> VlMTaskVertex::s_yields;
 
-VL_THREAD_LOCAL VlThreadPool::ProfileTrace* VlThreadPool::t_profilep = NULL;
+VL_THREAD_LOCAL VlThreadPool::ProfileTrace* VlThreadPool::t_profilep = nullptr;
 
 //=============================================================================
 // VlMTaskVertex
@@ -55,7 +55,7 @@ void VlWorkerThread::workerLoop() {
     if (VL_UNLIKELY(m_profiling)) m_poolp->setupProfilingClientThread();
 
     ExecRec work;
-    work.m_fnp = NULL;
+    work.m_fnp = nullptr;
 
     while (true) {
         if (VL_LIKELY(!work.m_fnp)) dequeWork(&work);
@@ -65,7 +65,7 @@ void VlWorkerThread::workerLoop() {
 
         if (VL_LIKELY(work.m_fnp)) {
             work.m_fnp(work.m_evenCycle, work.m_sym);
-            work.m_fnp = NULL;
+            work.m_fnp = nullptr;
         }
     }
 
@@ -110,7 +110,7 @@ VlThreadPool::~VlThreadPool() {
 void VlThreadPool::tearDownProfilingClientThread() {
     assert(t_profilep);
     delete t_profilep;
-    t_profilep = NULL;
+    t_profilep = nullptr;
 }
 
 void VlThreadPool::setupProfilingClientThread() {

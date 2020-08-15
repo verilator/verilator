@@ -157,7 +157,7 @@ private:
         searchFuncStmts(nodep->stmtsp());
         searchFuncStmts(nodep->finalsp());
         iterateChildren(nodep);
-        m_cfuncp = NULL;
+        m_cfuncp = nullptr;
     }
     void searchFuncStmts(AstNode* nodep) {
         // Search for basic assignments to allow moving non-blocktemps
@@ -211,7 +211,7 @@ private:
                 AstVarRef* firstasn = static_cast<AstVarRef*>(nodep->varp()->user4p());
                 if (firstasn && nodep != firstasn) {
                     clearStdOptimizable(nodep->varp(), "notFirstAsn");
-                    nodep->varp()->user4p(NULL);
+                    nodep->varp()->user4p(nullptr);
                 }
             }
         }
@@ -222,7 +222,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LocalizeVisitor(AstNetlist* nodep) {
-        m_cfuncp = NULL;
+        m_cfuncp = nullptr;
         iterate(nodep);
     }
     virtual ~LocalizeVisitor() {

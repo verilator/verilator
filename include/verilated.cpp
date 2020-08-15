@@ -176,7 +176,7 @@ void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char
 std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
     va_list aq;
     va_copy(aq, ap);
-    int len = VL_VSNPRINTF(NULL, 0, formatp, aq);
+    int len = VL_VSNPRINTF(nullptr, 0, formatp, aq);
     va_end(aq);
     if (VL_UNLIKELY(len < 1)) return "";
 
@@ -262,7 +262,7 @@ Verilated::NonSerialized::NonSerialized() {
 Verilated::NonSerialized::~NonSerialized() {
     if (s_profThreadsFilenamep) {
         VL_DO_CLEAR(free(const_cast<char*>(s_profThreadsFilenamep)),
-                    s_profThreadsFilenamep = NULL);
+                    s_profThreadsFilenamep = nullptr);
     }
 }
 
@@ -687,7 +687,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
     // Note also assumes variables < 64 are not wide, this assumption is
     // sometimes not true in low-level routines written here in verilated.cpp
     static VL_THREAD_LOCAL char tmp[VL_VALUE_STRING_MAX_WIDTH];
-    const char* pctp = NULL;  // Most recent %##.##g format
+    const char* pctp = nullptr;  // Most recent %##.##g format
     bool inPct = false;
     bool widthSet = false;
     bool left = false;
@@ -777,7 +777,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 const int lbits = va_arg(ap, int);
                 QData ld = 0;
                 WData qlwp[VL_WQ_WORDS_E];
-                WDataInP lwp = NULL;
+                WDataInP lwp = nullptr;
                 if (lbits <= VL_QUADSIZE) {
                     ld = _VL_VA_ARG_Q(ap, lbits);
                     VL_SET_WQ(qlwp, ld);
@@ -947,7 +947,7 @@ static inline int _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp,
     } else {
         if (floc < 0) return EOF;
         floc = floc & ~7;  // Align to closest character
-        if (fromp == NULL) {
+        if (fromp == nullptr) {
             return fstr[fstr.length() - 1 - (floc >> 3)];
         } else {
             return VL_BITRSHIFT_W(fromp, floc) & 0xff;
@@ -969,7 +969,7 @@ static inline void _vl_vsss_read_str(FILE* fp, int& floc, WDataInP fromp, const 
     while (true) {
         int c = _vl_vsss_peek(fp, floc, fromp, fstr);
         if (c == EOF || isspace(c)) break;
-        if (acceptp && NULL == strchr(acceptp, c)) break;  // String - allow anything
+        if (acceptp && nullptr == strchr(acceptp, c)) break;  // String - allow anything
         if (acceptp) c = tolower(c);  // Non-strings we'll simplify
         *cp++ = c;
         _vl_vsss_advance(fp, floc);
@@ -984,7 +984,7 @@ static inline char* _vl_vsss_read_bin(FILE* fp, int& floc, WDataInP fromp, const
     // whitespace). In the fp case, except descriptor to have been opened in binary mode.
     while (n-- > 0) {
         const int c = _vl_vsss_peek(fp, floc, fromp, fstr);
-        if (c == EOF) return NULL;
+        if (c == EOF) return nullptr;
         if (!inhibit) *beginp++ = c;
         _vl_vsss_advance(fp, floc);
     }
@@ -1088,7 +1088,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 }
                 case 's': {
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
-                    _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, NULL);
+                    _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, nullptr);
                     if (!tmp[0]) goto done;
                     int lpos = (static_cast<int>(strlen(tmp))) - 1;
                     int lsb = 0;
@@ -1118,7 +1118,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                         double r;
                         vlsint64_t ld;
                     } u;
-                    u.r = strtod(tmp, NULL);
+                    u.r = strtod(tmp, nullptr);
                     VL_SET_WQ(owp, u.ld);
                     break;
                 }
@@ -1409,7 +1409,7 @@ IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) VL_MT_SAFE {
 
     va_list ap;
     va_start(ap, formatp);
-    IData got = _vl_vsscanf(fp, 0, NULL, "", formatp, ap);
+    IData got = _vl_vsscanf(fp, 0, nullptr, "", formatp, ap);
     va_end(ap);
     return got;
 }
@@ -1420,7 +1420,7 @@ IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) VL_MT_SAFE {
 
     va_list ap;
     va_start(ap, formatp);
-    IData got = _vl_vsscanf(NULL, lbits, fnw, "", formatp, ap);
+    IData got = _vl_vsscanf(nullptr, lbits, fnw, "", formatp, ap);
     va_end(ap);
     return got;
 }
@@ -1430,21 +1430,21 @@ IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...) VL_MT_SAFE {
 
     va_list ap;
     va_start(ap, formatp);
-    IData got = _vl_vsscanf(NULL, lbits, fnw, "", formatp, ap);
+    IData got = _vl_vsscanf(nullptr, lbits, fnw, "", formatp, ap);
     va_end(ap);
     return got;
 }
 IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, formatp);
-    IData got = _vl_vsscanf(NULL, lbits, lwp, "", formatp, ap);
+    IData got = _vl_vsscanf(nullptr, lbits, lwp, "", formatp, ap);
     va_end(ap);
     return got;
 }
 IData VL_SSCANF_INX(int, const std::string& ld, const char* formatp, ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, formatp);
-    IData got = _vl_vsscanf(NULL, ld.length() * 8, NULL, ld, formatp, ap);
+    IData got = _vl_vsscanf(nullptr, ld.length() * 8, nullptr, ld, formatp, ap);
     va_end(ap);
     return got;
 }
@@ -1621,7 +1621,7 @@ IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_S
 const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
     const std::string& match = VerilatedImp::argPlusMatch(prefixp);
     static VL_THREAD_LOCAL char outstr[VL_VALUE_STRING_MAX_WIDTH];
-    if (match.empty()) return NULL;
+    if (match.empty()) return nullptr;
     outstr[0] = '\0';
     strncat(outstr, match.c_str() + strlen(prefixp) + 1,  // +1 to skip the "+"
             VL_VALUE_STRING_MAX_WIDTH - 1);
@@ -1701,7 +1701,7 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
     str_mod.erase(std::remove(str_mod.begin(), str_mod.end(), '_'), str_mod.end());
 
     errno = 0;
-    long v = std::strtol(str_mod.c_str(), NULL, base);
+    long v = std::strtol(str_mod.c_str(), nullptr, base);
     if (errno != 0) v = 0;
     return static_cast<IData>(v);
 }
@@ -1769,14 +1769,14 @@ VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData star
     if (VL_UNLIKELY(!m_fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
         VL_FATAL_MT(filename.c_str(), 0, "", "$readmem file not found");
-        // cppcheck-suppress resourceLeak  // m_fp is NULL - bug in cppcheck
+        // cppcheck-suppress resourceLeak  // m_fp is nullptr - bug in cppcheck
         return;
     }
 }
 VlReadMem::~VlReadMem() {
     if (m_fp) {
         fclose(m_fp);
-        m_fp = NULL;
+        m_fp = nullptr;
     }
 }
 bool VlReadMem::get(QData& addrr, std::string& valuer) {
@@ -1906,14 +1906,14 @@ VlWriteMem::VlWriteMem(bool hex, int bits, const std::string& filename, QData st
     m_fp = fopen(filename.c_str(), "w");
     if (VL_UNLIKELY(!m_fp)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "$writemem file not found");
-        // cppcheck-suppress resourceLeak  // m_fp is NULL - bug in cppcheck
+        // cppcheck-suppress resourceLeak  // m_fp is nullptr - bug in cppcheck
         return;
     }
 }
 VlWriteMem::~VlWriteMem() {
     if (m_fp) {
         fclose(m_fp);
-        m_fp = NULL;
+        m_fp = nullptr;
     }
 }
 void VlWriteMem::print(QData addr, bool addrstamp, const void* valuep) {
@@ -2181,7 +2181,7 @@ Verilated::ThreadLocal::ThreadLocal()
     , t_endOfEvalReqd(0)
     ,
 #endif
-    t_dpiScopep(NULL)
+    t_dpiScopep(nullptr)
     , t_dpiFilename(0)
     , t_dpiLineno(0) {
 }
@@ -2291,7 +2291,7 @@ void Verilated::profThreadsFilenamep(const char* flagp) VL_MT_SAFE {
 const char* Verilated::catName(const char* n1, const char* n2, const char* delimiter) VL_MT_SAFE {
     // Returns new'ed data
     // Used by symbol table creation to make module names
-    static VL_THREAD_LOCAL char* strp = NULL;
+    static VL_THREAD_LOCAL char* strp = nullptr;
     static VL_THREAD_LOCAL size_t len = 0;
     size_t newlen = strlen(n1) + strlen(n2) + strlen(delimiter) + 1;
     if (!strp || newlen > len) {
@@ -2559,7 +2559,7 @@ VerilatedModule::VerilatedModule(const char* namep)
 VerilatedModule::~VerilatedModule() {
     // Memory cleanup - not called during normal operation
     // NOLINTNEXTLINE(google-readability-casting)
-    if (m_namep) VL_DO_CLEAR(free((void*)(m_namep)), m_namep = NULL);
+    if (m_namep) VL_DO_CLEAR(free((void*)(m_namep)), m_namep = nullptr);
 }
 
 //======================================================================
@@ -2587,8 +2587,8 @@ size_t VerilatedVarProps::totalSize() const {
 }
 
 void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const {
-    if (VL_UNLIKELY(dim <= 0 || dim > udims())) return NULL;
-    if (VL_UNLIKELY(indx < low(dim) || indx > high(dim))) return NULL;
+    if (VL_UNLIKELY(dim <= 0 || dim > udims())) return nullptr;
+    if (VL_UNLIKELY(indx < low(dim) || indx > high(dim))) return nullptr;
     int indxAdj = indx - low(dim);
     vluint8_t* bytep = reinterpret_cast<vluint8_t*>(datap);
     // If on index 1 of a 2 index array, then each index 1 is index2sz*entsz
@@ -2602,12 +2602,12 @@ void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const 
 // VerilatedScope:: Methods
 
 VerilatedScope::VerilatedScope() {
-    m_callbacksp = NULL;
-    m_namep = NULL;
-    m_identifierp = NULL;
+    m_callbacksp = nullptr;
+    m_namep = nullptr;
+    m_identifierp = nullptr;
     m_funcnumMax = 0;
-    m_symsp = NULL;
-    m_varsp = NULL;
+    m_symsp = nullptr;
+    m_varsp = nullptr;
     m_timeunit = 0;
     m_type = SCOPE_OTHER;
 }
@@ -2615,9 +2615,9 @@ VerilatedScope::VerilatedScope() {
 VerilatedScope::~VerilatedScope() {
     // Memory cleanup - not called during normal operation
     VerilatedImp::scopeErase(this);
-    if (m_namep) VL_DO_CLEAR(delete[] m_namep, m_namep = NULL);
-    if (m_callbacksp) VL_DO_CLEAR(delete[] m_callbacksp, m_callbacksp = NULL);
-    if (m_varsp) VL_DO_CLEAR(delete m_varsp, m_varsp = NULL);
+    if (m_namep) VL_DO_CLEAR(delete[] m_namep, m_namep = nullptr);
+    if (m_callbacksp) VL_DO_CLEAR(delete[] m_callbacksp, m_callbacksp = nullptr);
+    if (m_varsp) VL_DO_CLEAR(delete m_varsp, m_varsp = nullptr);
     m_funcnumMax = 0;  // Force callback table to empty
 }
 
@@ -2699,7 +2699,7 @@ VerilatedVar* VerilatedScope::varFind(const char* namep) const VL_MT_SAFE_POSTIN
         VerilatedVarNameMap::iterator it = m_varsp->find(namep);
         if (VL_LIKELY(it != m_varsp->end())) return &(it->second);
     }
-    return NULL;
+    return nullptr;
 }
 
 void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
@@ -2708,7 +2708,7 @@ void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
                        + "' but scope wasn't set, perhaps due to dpi import call without "
                        + "'context', or missing svSetScope. See IEEE 1800-2017 35.5.3.");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
-    return NULL;
+    return nullptr;
 }
 
 void* VerilatedScope::exportFindError(int funcnum) const {
@@ -2717,7 +2717,7 @@ void* VerilatedScope::exportFindError(int funcnum) const {
                        + "' but this DPI export function exists only in other scopes, not scope '"
                        + name() + "'");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
-    return NULL;
+    return nullptr;
 }
 
 void VerilatedScope::scopeDump() const {

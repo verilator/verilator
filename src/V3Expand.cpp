@@ -341,7 +341,7 @@ private:
             AstNode* lowp = new AstShiftR(nodep->fileline(), lowwordp, newSelBitBit(nodep->lsbp()),
                                           nodep->width());
             // If > 1 bit, we might be crossing the word boundary
-            AstNode* midp = NULL;
+            AstNode* midp = nullptr;
             V3Number zero(nodep, longOrQuadWidth(nodep));
             if (nodep->widthConst() > 1) {
                 AstNode* midwordp =  // SEL(from,[1+wordnum])
@@ -378,7 +378,7 @@ private:
                 }
             }
             // If > 32 bits, we might be crossing the second word boundary
-            AstNode* hip = NULL;
+            AstNode* hip = nullptr;
             if (nodep->widthConst() > VL_EDATASIZE) {
                 AstNode* hiwordp =  // SEL(from,[2+wordnum])
                     newWordSel(nodep->fromp()->fileline(), nodep->fromp()->cloneTree(true),
@@ -710,11 +710,11 @@ private:
         iterateChildren(nodep);
         UINFO(8, "    Wordize ChangeXor " << nodep << endl);
         // -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
-        AstNode* newp = NULL;
+        AstNode* newp = nullptr;
         for (int w = 0; w < nodep->lhsp()->widthWords(); w++) {
             AstNode* eqp = new AstXor(nodep->fileline(), newAstWordSelClone(nodep->lhsp(), w),
                                       newAstWordSelClone(nodep->rhsp(), w));
-            newp = (newp == NULL) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
+            newp = (newp == nullptr) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
         }
         VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
     }
@@ -725,11 +725,11 @@ private:
         if (nodep->lhsp()->isWide()) {
             UINFO(8, "    Wordize EQ/NEQ " << nodep << endl);
             // -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
-            AstNode* newp = NULL;
+            AstNode* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); w++) {
                 AstNode* eqp = new AstXor(nodep->fileline(), newAstWordSelClone(nodep->lhsp(), w),
                                           newAstWordSelClone(nodep->rhsp(), w));
-                newp = (newp == NULL) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
+                newp = (newp == nullptr) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
             }
             if (VN_IS(nodep, Neq)) {
                 newp
@@ -751,10 +751,10 @@ private:
         if (nodep->lhsp()->isWide()) {
             UINFO(8, "    Wordize REDOR " << nodep << endl);
             // -> (0!={or{for each_word{WORDSEL(lhs,#)}}}
-            AstNode* newp = NULL;
+            AstNode* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); w++) {
                 AstNode* eqp = newAstWordSelClone(nodep->lhsp(), w);
-                newp = (newp == NULL) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
+                newp = (newp == nullptr) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
             }
             newp = new AstNeq(nodep->fileline(),
                               new AstConst(nodep->fileline(), AstConst::SizedEData(), 0), newp);
@@ -775,7 +775,7 @@ private:
         if (nodep->lhsp()->isWide()) {
             UINFO(8, "    Wordize REDAND " << nodep << endl);
             // -> (0!={and{for each_word{WORDSEL(lhs,#)}}}
-            AstNode* newp = NULL;
+            AstNode* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); w++) {
                 AstNode* eqp = newAstWordSelClone(nodep->lhsp(), w);
                 if (w == nodep->lhsp()->widthWords() - 1) {
@@ -787,7 +787,7 @@ private:
                                     // cppcheck-suppress memleak
                                     eqp);
                 }
-                newp = (newp == NULL) ? eqp : (new AstAnd(nodep->fileline(), newp, eqp));
+                newp = (newp == nullptr) ? eqp : (new AstAnd(nodep->fileline(), newp, eqp));
             }
             newp = new AstEq(
                 nodep->fileline(),
@@ -808,10 +808,10 @@ private:
         if (nodep->lhsp()->isWide()) {
             UINFO(8, "    Wordize REDXOR " << nodep << endl);
             // -> (0!={redxor{for each_word{XOR(WORDSEL(lhs,#))}}}
-            AstNode* newp = NULL;
+            AstNode* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); w++) {
                 AstNode* eqp = newAstWordSelClone(nodep->lhsp(), w);
-                newp = (newp == NULL) ? eqp : (new AstXor(nodep->fileline(), newp, eqp));
+                newp = (newp == nullptr) ? eqp : (new AstXor(nodep->fileline(), newp, eqp));
             }
             newp = new AstRedXor(nodep->fileline(), newp);
             UINFO(8, "    Wordize REDXORnew " << newp << endl);
@@ -829,7 +829,7 @@ private:
         }
         m_stmtp = nodep;
         iterateChildren(nodep);
-        m_stmtp = NULL;
+        m_stmtp = nullptr;
     }
     virtual void visit(AstNodeAssign* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
@@ -869,7 +869,7 @@ private:
         }
         // Cleanup common code
         if (did) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        m_stmtp = NULL;
+        m_stmtp = nullptr;
     }
 
     //--------------------
@@ -879,7 +879,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ExpandVisitor(AstNetlist* nodep) {
-        m_stmtp = NULL;
+        m_stmtp = nullptr;
         iterate(nodep);
     }
     virtual ~ExpandVisitor() {}

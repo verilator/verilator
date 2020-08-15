@@ -170,7 +170,7 @@ private:
         if (nodep->varp()) nodep->varp()->user1Inc();
         if (nodep->packagep()) {
             if (m_elimCells) {
-                nodep->packagep(NULL);
+                nodep->packagep(nullptr);
             } else {
                 nodep->packagep()->user1Inc();
             }
@@ -181,7 +181,7 @@ private:
         checkAll(nodep);
         if (nodep->packagep()) {
             if (m_elimCells) {
-                nodep->packagep(NULL);
+                nodep->packagep(nullptr);
             } else {
                 nodep->packagep()->user1Inc();
             }
@@ -199,7 +199,7 @@ private:
                     "RefDType should point to data type before typedefs removed");
         if (nodep->packagep()) {
             if (m_elimCells) {
-                nodep->packagep(NULL);
+                nodep->packagep(nullptr);
             } else {
                 nodep->packagep()->user1Inc();
             }
@@ -211,7 +211,7 @@ private:
         checkAll(nodep);
         if (nodep->packagep()) {
             if (m_elimCells) {
-                nodep->packagep(NULL);
+                nodep->packagep(nullptr);
             } else {
                 nodep->packagep()->user1Inc();
             }
@@ -228,7 +228,7 @@ private:
         checkAll(nodep);
         if (nodep->packagep()) {
             if (m_elimCells) {
-                nodep->packagep(NULL);
+                nodep->packagep(nullptr);
             } else {
                 nodep->packagep()->user1Inc();
             }
@@ -350,7 +350,7 @@ private:
                     scp->aboveScopep()->user1Inc(-1);
                     if (scp->dtypep()) scp->dtypep()->user1Inc(-1);
                     VL_DO_DANGLING(scp->unlinkFrBack()->deleteTree(), scp);
-                    *it = NULL;
+                    *it = nullptr;
                     retry = true;
                 }
             }
@@ -371,12 +371,12 @@ private:
             retry = false;
             for (std::vector<AstClass*>::iterator it = m_classesp.begin(); it != m_classesp.end();
                  ++it) {
-                if (AstClass* nodep = *it) {  // NULL if deleted earlier
+                if (AstClass* nodep = *it) {  // nullptr if deleted earlier
                     if (nodep->user1() == 0) {
                         if (nodep->extendsp()) nodep->extendsp()->user1Inc(-1);
                         if (nodep->packagep()) nodep->packagep()->user1Inc(-1);
                         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-                        *it = NULL;
+                        *it = nullptr;
                         retry = true;
                     }
                 }
@@ -412,7 +412,7 @@ private:
                     UINFO(4, "  Dead " << varp << endl);
                     if (varp->dtypep()) varp->dtypep()->user1Inc(-1);
                     VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
-                    *it = NULL;
+                    *it = nullptr;
                     retry = true;
                 }
             }
@@ -443,7 +443,7 @@ public:
     // CONSTRUCTORS
     DeadVisitor(AstNetlist* nodep, bool elimUserVars, bool elimDTypes, bool elimScopes,
                 bool elimCells) {
-        m_modp = NULL;
+        m_modp = nullptr;
         m_elimCells = elimCells;
         m_elimUserVars = elimUserVars;
         m_elimDTypes = elimDTypes;

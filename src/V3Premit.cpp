@@ -190,7 +190,7 @@ private:
         AstNodeModule* origModp = m_modp;
         {
             m_modp = nodep;
-            m_funcp = NULL;
+            m_funcp = nullptr;
             iterateChildren(nodep);
         }
         m_modp = origModp;
@@ -198,7 +198,7 @@ private:
     virtual void visit(AstCFunc* nodep) override {
         m_funcp = nodep;
         iterateChildren(nodep);
-        m_funcp = NULL;
+        m_funcp = nullptr;
     }
     void startStatement(AstNode* nodep) {
         m_assignLhs = false;
@@ -211,11 +211,11 @@ private:
         startStatement(nodep);
         m_inWhilep = nodep;
         iterateAndNextNull(nodep->condp());
-        m_inWhilep = NULL;
+        m_inWhilep = nullptr;
         startStatement(nodep);
         iterateAndNextNull(nodep->bodysp());
         iterateAndNextNull(nodep->incsp());
-        m_stmtp = NULL;
+        m_stmtp = nullptr;
     }
     virtual void visit(AstNodeAssign* nodep) override {
         startStatement(nodep);
@@ -231,7 +231,7 @@ private:
         m_assignLhs = true;
         iterateAndNextNull(nodep->lhsp());
         m_assignLhs = false;
-        m_stmtp = NULL;
+        m_stmtp = nullptr;
     }
     virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
@@ -241,14 +241,14 @@ private:
         UINFO(4, "  STMT  " << nodep << endl);
         startStatement(nodep);
         iterateChildren(nodep);
-        m_stmtp = NULL;
+        m_stmtp = nullptr;
     }
     virtual void visit(AstTraceInc* nodep) override {
         startStatement(nodep);
         m_inTracep = nodep;
         iterateChildren(nodep);
-        m_inTracep = NULL;
-        m_stmtp = NULL;
+        m_inTracep = nullptr;
+        m_stmtp = nullptr;
     }
     void visitShift(AstNodeBiop* nodep) {
         // Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
@@ -366,7 +366,7 @@ private:
     virtual void visit(AstDisplay* nodep) override {
         startStatement(nodep);
         iterateChildren(nodep);
-        m_stmtp = NULL;
+        m_stmtp = nullptr;
         if (v3Global.opt.autoflush()) {
             AstNode* searchp = nodep->nextp();
             while (searchp && VN_IS(searchp, Comment)) searchp = searchp->nextp();
@@ -400,11 +400,11 @@ private:
 public:
     // CONSTRUCTORS
     explicit PremitVisitor(AstNetlist* nodep) {
-        m_modp = NULL;
-        m_funcp = NULL;
-        m_stmtp = NULL;
-        m_inWhilep = NULL;
-        m_inTracep = NULL;
+        m_modp = nullptr;
+        m_funcp = nullptr;
+        m_stmtp = nullptr;
+        m_inWhilep = nullptr;
+        m_inTracep = nullptr;
         m_assignLhs = false;
         iterate(nodep);
     }

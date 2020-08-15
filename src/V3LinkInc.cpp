@@ -95,26 +95,26 @@ private:
         // Special, as statements need to be put in different places
         // Preconditions insert first just before themselves (the normal
         // rule for other statement types)
-        m_insStmtp = NULL;  // First thing should be new statement
+        m_insStmtp = nullptr;  // First thing should be new statement
         iterateAndNextNull(nodep->precondsp());
         // Conditions insert first at end of precondsp.
         m_insMode = IM_WHILE_PRECOND;
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->condp());
         // Body insert just before themselves
-        m_insStmtp = NULL;  // First thing should be new statement
+        m_insStmtp = nullptr;  // First thing should be new statement
         iterateAndNextNull(nodep->bodysp());
         iterateAndNextNull(nodep->incsp());
         // Done the loop
-        m_insStmtp = NULL;  // Next thing should be new statement
+        m_insStmtp = nullptr;  // Next thing should be new statement
     }
     virtual void visit(AstNodeIf* nodep) override {
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->condp());
-        m_insStmtp = NULL;
+        m_insStmtp = nullptr;
         iterateAndNextNull(nodep->ifsp());
         iterateAndNextNull(nodep->elsesp());
-        m_insStmtp = NULL;
+        m_insStmtp = nullptr;
     }
     virtual void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
@@ -128,7 +128,7 @@ private:
         m_insMode = IM_BEFORE;
         m_insStmtp = nodep;
         iterateChildren(nodep);
-        m_insStmtp = NULL;  // Next thing should be new statement
+        m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void unsupported_visit(AstNode* nodep) {
         m_unsupportedHere = true;
@@ -237,7 +237,7 @@ public:
     explicit LinkIncVisitor(AstNetlist* nodep) {
         m_modIncrementsNum = 0;
         m_insMode = IM_BEFORE;
-        m_insStmtp = NULL;
+        m_insStmtp = nullptr;
         m_unsupportedHere = false;
         iterate(nodep);
     }

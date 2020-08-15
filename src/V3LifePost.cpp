@@ -107,7 +107,7 @@ struct LifeLocation {
 
 public:
     LifeLocation()
-        : mtaskp(NULL)
+        : mtaskp(nullptr)
         , sequence(0) {}
     LifeLocation(const ExecMTask* mtaskp_, uint32_t sequence_)
         : mtaskp(mtaskp_)
@@ -125,7 +125,7 @@ struct LifePostLocation {
     LifeLocation loc;
     AstAssignPost* nodep;
     LifePostLocation()
-        : nodep(NULL) {}
+        : nodep(nullptr) {}
     LifePostLocation(LifeLocation loc_, AstAssignPost* nodep_)
         : loc(loc_)
         , nodep(nodep_) {}
@@ -145,7 +145,7 @@ private:
     uint32_t m_sequence;  // Sequence number of assigns/varrefs,
     //                                  // local to the current MTask.
     const ExecMTask* m_execMTaskp;  // Current ExecMTask being processed,
-    //                                  // or NULL for serial code.
+    //                                  // or nullptr for serial code.
     VDouble0 m_statAssnDel;  // Statistic tracking
     bool m_tracingCall;  // Currently tracing a CCall to a CFunc
 
@@ -334,7 +334,7 @@ private:
             m_sequence = 0;
             iterate(mtaskp->bodyp());
         }
-        m_execMTaskp = NULL;
+        m_execMTaskp = nullptr;
     }
     virtual void visit(AstCFunc* nodep) override {
         if (!m_tracingCall && !nodep->entryPoint()) return;
@@ -349,9 +349,9 @@ public:
     // CONSTRUCTORS
     explicit LifePostDlyVisitor(AstNetlist* nodep)
         : m_sequence(0)
-        , m_execMTaskp(NULL)
+        , m_execMTaskp(nullptr)
         , m_tracingCall(false)
-        , m_mtasksGraphp(NULL) {
+        , m_mtasksGraphp(nullptr) {
         iterate(nodep);
     }
     virtual ~LifePostDlyVisitor() {

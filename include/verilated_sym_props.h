@@ -97,7 +97,7 @@ protected:
         , m_vlflags(vlflags)
         , m_pdims(pdims)
         , m_udims(udims) {
-        initUnpacked(NULL);
+        initUnpacked(nullptr);
     }
 
 public:

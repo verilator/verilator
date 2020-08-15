@@ -136,7 +136,7 @@ void V3Hashed::erase(iterator it) {
     UINFO(8, "   erase " << nodep << endl);
     UASSERT_OBJ(nodep->user4p(), nodep, "Called removeNode on non-hashed node");
     m_hashMmap.erase(it);
-    nodep->user4p(NULL);  // So we don't allow removeNode again
+    nodep->user4p(nullptr);  // So we don't allow removeNode again
 }
 
 void V3Hashed::check() {

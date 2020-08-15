@@ -109,7 +109,7 @@ private:
             cleanFileline(nodep);
             m_ftaskp = nodep;
             iterateChildren(nodep);
-            m_ftaskp = NULL;
+            m_ftaskp = nullptr;
         }
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
@@ -117,7 +117,7 @@ private:
             cleanFileline(nodep);
             UINFO(5, "   " << nodep << endl);
             AstNodeModule* upperValueModp = m_valueModp;
-            m_valueModp = NULL;
+            m_valueModp = nullptr;
             iterateChildren(nodep);
             m_valueModp = upperValueModp;
         }
@@ -148,15 +148,15 @@ private:
             int lsb = nodep->rangep()->lsbConst();
             int increment = (msb > lsb) ? -1 : 1;
             int offset_from_init = 0;
-            AstNode* addp = NULL;
+            AstNode* addp = nullptr;
             for (int i = msb; i != (lsb + increment); i += increment, offset_from_init++) {
                 string name = nodep->name() + cvtToStr(i);
-                AstNode* valuep = NULL;
+                AstNode* valuep = nullptr;
                 if (nodep->valuep())
                     valuep = new AstAdd(
                         nodep->fileline(), nodep->valuep()->cloneTree(true),
                         new AstConst(nodep->fileline(), AstConst::Unsized32(), offset_from_init));
-                AstNode* newp = new AstEnumItem(nodep->fileline(), name, NULL, valuep);
+                AstNode* newp = new AstEnumItem(nodep->fileline(), name, nullptr, valuep);
                 if (addp) {
                     addp = addp->addNextNull(newp);
                 } else {
@@ -213,7 +213,7 @@ private:
         m_varp = nodep;
 
         iterateChildren(nodep);
-        m_varp = NULL;
+        m_varp = nullptr;
         // temporaries under an always aren't expected to be blocking
         if (m_inAlways) nodep->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);
         if (nodep->valuep()) {
@@ -347,7 +347,7 @@ private:
         // so that for "var enum {...} a,b" a & b will share a common typedef
         // Unique name space under each containerp() so that an addition of
         // a new type won't change every verilated module.
-        AstTypedef* defp = NULL;
+        AstTypedef* defp = nullptr;
         ImplTypedefMap::iterator it
             = m_implTypedef.find(make_pair(nodep->containerp(), nodep->name()));
         if (it != m_implTypedef.end()) {
@@ -370,7 +370,7 @@ private:
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
             } else {
-                defp = new AstTypedef(nodep->fileline(), nodep->name(), NULL, VFlagChildDType(),
+                defp = new AstTypedef(nodep->fileline(), nodep->name(), nullptr, VFlagChildDType(),
                                       dtypep);
                 m_implTypedef.insert(
                     make_pair(make_pair(nodep->containerp(), defp->name()), defp));
@@ -402,7 +402,7 @@ private:
         //   3. ASTSELLOOPVARS(first, var0..var1))
         //   4. DOT(DOT(first, second), ASTSELBIT(third, var0))
         AstNode* bracketp = nodep->arrayp();
-        AstNode* firstVarsp = NULL;
+        AstNode* firstVarsp = nullptr;
         while (AstDot* dotp = VN_CAST(bracketp, Dot)) { bracketp = dotp->rhsp(); }
         if (AstSelBit* selp = VN_CAST(bracketp, SelBit)) {
             firstVarsp = selp->rhsp()->unlinkFrBackWithNext();
@@ -499,7 +499,7 @@ private:
         cleanFileline(nodep);
         //
         AstNodeModule* upperValueModp = m_valueModp;
-        m_valueModp = NULL;
+        m_valueModp = nullptr;
         iterateChildren(nodep);
         m_valueModp = upperValueModp;
     }
@@ -596,12 +596,12 @@ private:
 public:
     // CONSTRUCTORS
     explicit LinkParseVisitor(AstNetlist* rootp) {
-        m_varp = NULL;
-        m_modp = NULL;
-        m_ftaskp = NULL;
-        m_dtypep = NULL;
+        m_varp = nullptr;
+        m_modp = nullptr;
+        m_ftaskp = nullptr;
+        m_dtypep = nullptr;
         m_inAlways = false;
-        m_valueModp = NULL;
+        m_valueModp = nullptr;
         iterate(rootp);
     }
     virtual ~LinkParseVisitor() {}

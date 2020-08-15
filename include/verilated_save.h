@@ -55,7 +55,7 @@ public:
     }
     virtual ~VerilatedSerialize() {
         close();
-        if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = NULL);
+        if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = nullptr);
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }
@@ -114,11 +114,11 @@ public:
         m_isOpen = false;
         m_bufp = new vluint8_t[bufferSize()];
         m_cp = m_bufp;
-        m_endp = NULL;
+        m_endp = nullptr;
     }
     virtual ~VerilatedDeserialize() {
         close();
-        if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = NULL);
+        if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = nullptr);
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }

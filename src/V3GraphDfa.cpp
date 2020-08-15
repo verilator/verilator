@@ -30,7 +30,7 @@
 // Algorithms - find starting node
 
 DfaVertex* DfaGraph::findStart() {
-    DfaVertex* startp = NULL;
+    DfaVertex* startp = nullptr;
     for (V3GraphVertex* vertexp = this->verticesBeginp(); vertexp;
          vertexp = vertexp->verticesNextp()) {
         if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
@@ -83,7 +83,7 @@ private:
         return (nfaState(vertexp) && !(vertexp->user() == m_step));
     }
 
-    DfaVertex* newDfaVertex(DfaVertex* nfaTemplatep = NULL) {
+    DfaVertex* newDfaVertex(DfaVertex* nfaTemplatep = nullptr) {
         DfaVertex* vertexp = new DfaVertex(graphp());
         vertexp->color(1);  // Mark as dfa
         if (nfaTemplatep && nfaTemplatep->start()) vertexp->start(true);
@@ -190,7 +190,7 @@ private:
                 return testp;  // Identical
             }
         }
-        return NULL;  // No match
+        return nullptr;  // No match
     }
 
     void findNfasWithInput(DfaVertex* dfaStatep, const DfaInput& input, DfaStates& nfasWithInput) {
@@ -545,7 +545,7 @@ private:
 
     void add_complement_edges() {
         // Find accepting vertex
-        DfaVertex* acceptp = NULL;
+        DfaVertex* acceptp = nullptr;
         for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
              vertexp = vertexp->verticesNextp()) {
             if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
@@ -602,7 +602,7 @@ public:
         add_complement_edges();
         if (debug() >= 6) m_graphp->dumpDotFilePrefixed("comp_preswap");
 
-        VL_DO_CLEAR(m_tempNewerReject->unlinkDelete(graphp()), m_tempNewerReject = NULL);
+        VL_DO_CLEAR(m_tempNewerReject->unlinkDelete(graphp()), m_tempNewerReject = nullptr);
         if (debug() >= 6) m_graphp->dumpDotFilePrefixed("comp_out");
     }
     ~DfaGraphComplement() {}

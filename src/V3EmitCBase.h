@@ -107,7 +107,7 @@ public:
 
     // CONSTRUCTORS
     EmitCBaseVisitor() {
-        m_ofp = NULL;
+        m_ofp = nullptr;
         m_trackText = false;
     }
     virtual ~EmitCBaseVisitor() {}

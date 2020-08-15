@@ -188,7 +188,7 @@ private:
         m_cfuncp = nodep;
         allNodes(nodep);
         iterateChildrenConst(nodep);
-        m_cfuncp = NULL;
+        m_cfuncp = nullptr;
     }
     virtual void visit(AstNode* nodep) override {
         allNodes(nodep);
@@ -211,7 +211,7 @@ public:
         : m_stage(stage)
         , m_fast(fast) {
         UINFO(9, "Starting stats, fast=" << fast << endl);
-        m_cfuncp = NULL;
+        m_cfuncp = nullptr;
         m_counting = !m_fast;
         m_instrs = 0;
         m_tracingCall = false;

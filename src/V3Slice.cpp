@@ -134,7 +134,7 @@ class SliceVisitor : public AstNVisitor {
                 // Left and right could have different msb/lsbs/endianness, but #elements is common
                 // and all variables are realigned to start at zero
                 // Assign of a little endian'ed slice to a big endian one must reverse the elements
-                AstNode* newlistp = NULL;
+                AstNode* newlistp = nullptr;
                 int elements = arrayp->rangep()->elementsConst();
                 for (int offset = 0; offset < elements; ++offset) {
                     AstNode* newp = nodep->cloneType  // AstNodeAssign
@@ -152,7 +152,7 @@ class SliceVisitor : public AstNVisitor {
             }
             m_assignp = nodep;
             iterateChildren(nodep);
-            m_assignp = NULL;
+            m_assignp = nullptr;
         }
     }
 
@@ -167,7 +167,7 @@ class SliceVisitor : public AstNVisitor {
             AstNodeDType* fromDtp = nodep->lhsp()->dtypep()->skipRefp();
             UINFO(9, "  Bi-Eq/Neq expansion " << nodep << endl);
             if (AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
-                AstNodeBiop* logp = NULL;
+                AstNodeBiop* logp = nullptr;
                 if (!VN_IS(nodep->lhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
                     nodep->lhsp()->v3error(
                         "Slice operator "
@@ -225,7 +225,7 @@ class SliceVisitor : public AstNVisitor {
 public:
     // CONSTRUCTORS
     explicit SliceVisitor(AstNetlist* nodep) {
-        m_assignp = NULL;
+        m_assignp = nullptr;
         m_assignError = false;
         iterate(nodep);
     }

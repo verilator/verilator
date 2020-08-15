@@ -242,7 +242,7 @@ private:
     bool m_inContAssign;  // In continuous assignment
     bool m_inProcAssign;  // In procedural assignment
     AstNodeFTask* m_taskp;  // Current task
-    AstAlways* m_alwaysCombp;  // Current always if combo, otherwise NULL
+    AstAlways* m_alwaysCombp;  // Current always if combo, otherwise nullptr
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -408,7 +408,7 @@ private:
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
                 m_alwaysCombp = nodep;
             } else {
-                m_alwaysCombp = NULL;
+                m_alwaysCombp = nullptr;
             }
             iterateChildren(nodep);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
@@ -443,8 +443,8 @@ public:
         m_inBBox = false;
         m_inContAssign = false;
         m_inProcAssign = false;
-        m_taskp = NULL;
-        m_alwaysCombp = NULL;
+        m_taskp = nullptr;
+        m_alwaysCombp = nullptr;
         iterate(nodep);
     }
     virtual ~UndrivenVisitor() {

@@ -81,7 +81,7 @@ private:
     void vertexIterate(V3GraphVertex* vertexp) {
         // Clear marks
         for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            edgep->top()->userp(NULL);
+            edgep->top()->userp(nullptr);
         }
         // Mark edges and detect duplications
         for (V3GraphEdge *nextp, *edgep = vertexp->outBeginp(); edgep; edgep = nextp) {
@@ -140,13 +140,13 @@ void V3Graph::removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp) {
 class GraphAlgRemoveTransitiveEdges : GraphAlg<> {
 public:
     explicit GraphAlgRemoveTransitiveEdges(V3Graph* graphp)
-        : GraphAlg<>(graphp, NULL) {}
+        : GraphAlg<>(graphp, nullptr) {}
     void go() {
         GraphPathChecker checker(m_graphp);
         for (V3GraphVertex* vxp = m_graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            V3GraphEdge* deletep = NULL;
+            V3GraphEdge* deletep = nullptr;
             for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                if (deletep) VL_DO_CLEAR(deletep->unlinkDelete(), deletep = NULL);
+                if (deletep) VL_DO_CLEAR(deletep->unlinkDelete(), deletep = nullptr);
                 // It should be safe to modify the graph, despite using
                 // the GraphPathChecker, as none of the modifications will
                 // change what can be reached from what, nor should they

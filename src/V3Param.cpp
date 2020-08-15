@@ -150,7 +150,7 @@ public:
     AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,
                                 const AstNodeModule* modp) {
         if (m_hierBlockOptsByOrigName.find(origName) == m_hierBlockOptsByOrigName.end()) {
-            return NULL;
+            return nullptr;
         }
         // This module is a hierarchical block. Need to replace it by the protect-lib wrapper.
         const std::pair<HierMapIt, HierMapIt> candidates
@@ -191,7 +191,7 @@ public:
                     hierIt->second->mangledName() << " is not found");
 
         HierBlockModMap::const_iterator it = m_hierBlockMod.find(hierIt->second->mangledName());
-        if (it == m_hierBlockMod.end()) return NULL;
+        if (it == m_hierBlockMod.end()) return nullptr;
         return it->second;
     }
 };
@@ -332,7 +332,7 @@ private:
         if (AstBracketArrayDType* adtypep = VN_CAST(nodep, BracketArrayDType)) {
             return adtypep->subDTypep();
         }
-        return NULL;
+        return nullptr;
     }
     void collectPins(CloneMap* clonemapp, AstNodeModule* modp) {
         // Grab all I/O so we can remap our pins later
@@ -475,12 +475,12 @@ private:
                 for (CellList::iterator it = m_cellps.begin(); it != m_cellps.end(); ++it) {
                     AstCell* cellp = *it;
                     if (string* genHierNamep = (string*)cellp->user5p()) {
-                        cellp->user5p(NULL);
+                        cellp->user5p(nullptr);
                         VL_DO_DANGLING(delete genHierNamep, genHierNamep);
                     }
                 }
                 m_cellps.clear();
-                m_modp = NULL;
+                m_modp = nullptr;
             }
         }
     }
@@ -519,7 +519,7 @@ private:
     virtual void visit(AstNodeFTask* nodep) override {
         m_ftaskp = nodep;
         iterateChildren(nodep);
-        m_ftaskp = NULL;
+        m_ftaskp = nullptr;
     }
 
     // Make sure all parameters are constantified
@@ -621,7 +621,7 @@ private:
                 }
             }
         }
-        nodep->varp(NULL);  // Needs relink, as may remove pointed-to var
+        nodep->varp(nullptr);  // Needs relink, as may remove pointed-to var
     }
 
     virtual void visit(AstUnlinkedRef* nodep) override {
@@ -730,7 +730,7 @@ private:
     }
     virtual void visit(AstGenCase* nodep) override {
         UINFO(9, "  GENCASE " << nodep << endl);
-        AstNode* keepp = NULL;
+        AstNode* keepp = nullptr;
         iterateAndNextNull(nodep->exprp());
         V3Case::caseLint(nodep);
         V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body,
@@ -786,8 +786,8 @@ public:
     explicit ParamVisitor(AstNetlist* nodep)
         : m_hierBlocks(v3Global.opt.hierBlocks(), nodep) {
         m_longId = 0;
-        m_ftaskp = NULL;
-        m_modp = NULL;
+        m_ftaskp = nullptr;
+        m_modp = nullptr;
         m_nextValue = 1;
         for (AstNodeModule* modp = nodep->modulesp(); modp;
              modp = VN_CAST(modp->nextp(), NodeModule)) {
@@ -899,7 +899,7 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
                     portIrefp = VN_CAST(arraySubDTypep(modvarp->subDTypep()), IfaceRefDType);
                 }
 
-                AstIfaceRefDType* pinIrefp = NULL;
+                AstIfaceRefDType* pinIrefp = nullptr;
                 AstNode* exprp = pinp->exprp();
                 if (exprp && VN_IS(exprp, VarRef) && VN_CAST(exprp, VarRef)->varp()
                     && VN_CAST(exprp, VarRef)->varp()->subDTypep()
@@ -989,7 +989,7 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
 
             //
             // Already made this flavor?
-            AstNodeModule* cellmodp = NULL;
+            AstNodeModule* cellmodp = nullptr;
             ModNameMap::iterator iter = m_modNameMap.find(newname);
             if (iter != m_modNameMap.end()) cellmodp = iter->second.m_modp;
             if (!cellmodp) {

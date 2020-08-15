@@ -294,8 +294,8 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
 public:
     HierBlockUsageCollectVisitor(V3HierBlockPlan* planp, AstNetlist* netlist)
         : m_planp(planp)
-        , m_modp(NULL)
-        , m_hierBlockp(NULL) {
+        , m_modp(nullptr)
+        , m_hierBlockp(nullptr) {
 
         iterateChildren(netlist);
     }

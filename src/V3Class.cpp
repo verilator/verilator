@@ -59,12 +59,12 @@ private:
         v3Global.rootp()->addModulep(packagep);
         // Add package to hierarchy
         AstCell* cellp = new AstCell(packagep->fileline(), packagep->fileline(), packagep->name(),
-                                     packagep->name(), NULL, NULL, NULL);
+                                     packagep->name(), nullptr, nullptr, nullptr);
         cellp->modp(packagep);
         v3Global.rootp()->topModulep()->addStmtp(cellp);
         // Find class's scope
         // Alternative would be to move this and related to V3Scope
-        AstScope* classScopep = NULL;
+        AstScope* classScopep = nullptr;
         for (AstNode* itp = nodep->stmtsp(); itp; itp = itp->nextp()) {
             if ((classScopep = VN_CAST(itp, Scope))) break;
         }
@@ -82,7 +82,7 @@ private:
             iterateChildren(nodep);
         }
         m_prefix = prevPrefix;
-        m_classScopep = NULL;
+        m_classScopep = nullptr;
     }
     virtual void visit(AstPackage* nodep) override {
         string prevPrefix = m_prefix;
@@ -117,7 +117,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ClassVisitor(AstNetlist* nodep)
-        : m_classScopep(NULL) {
+        : m_classScopep(nullptr) {
         iterate(nodep);
     }
     virtual ~ClassVisitor() {

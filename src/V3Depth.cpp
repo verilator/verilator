@@ -81,7 +81,7 @@ private:
         AstNodeModule* origModp = m_modp;
         {
             m_modp = nodep;
-            m_funcp = NULL;
+            m_funcp = nullptr;
             iterateChildren(nodep);
         }
         m_modp = origModp;
@@ -91,14 +91,14 @@ private:
         m_depth = 0;
         m_maxdepth = 0;
         iterateChildren(nodep);
-        m_funcp = NULL;
+        m_funcp = nullptr;
     }
     void visitStmt(AstNodeStmt* nodep) {
         m_depth = 0;
         m_maxdepth = 0;
         m_stmtp = nodep;
         iterateChildren(nodep);
-        m_stmtp = NULL;
+        m_stmtp = nullptr;
     }
     virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
@@ -152,9 +152,9 @@ private:
 public:
     // CONSTRUCTORS
     explicit DepthVisitor(AstNetlist* nodep) {
-        m_modp = NULL;
-        m_funcp = NULL;
-        m_stmtp = NULL;
+        m_modp = nullptr;
+        m_funcp = nullptr;
+        m_stmtp = nullptr;
         m_depth = 0;
         m_maxdepth = 0;
         //

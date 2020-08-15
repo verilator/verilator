@@ -345,7 +345,7 @@ class EmitCSyms : EmitCBaseVisitor {
         if (nodep->dpiImport() || nodep->dpiExportWrapper()) m_dpis.push_back(nodep);
         m_funcp = nodep;
         iterateChildren(nodep);
-        m_funcp = NULL;
+        m_funcp = nullptr;
     }
 
     //---------------------------------------
@@ -355,12 +355,12 @@ class EmitCSyms : EmitCBaseVisitor {
 public:
     explicit EmitCSyms(AstNetlist* nodep, bool dpiHdrOnly)
         : m_dpiHdrOnly(dpiHdrOnly) {
-        m_funcp = NULL;
-        m_modp = NULL;
+        m_funcp = nullptr;
+        m_modp = nullptr;
         m_coverBins = 0;
         m_numStmts = 0;
         m_funcNum = 0;
-        m_ofpBase = NULL;
+        m_ofpBase = nullptr;
         iterate(nodep);
     }
 };
@@ -496,14 +496,14 @@ void EmitCSyms::emitSymHdr() {
     puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
 
     ofp()->putsEndGuard();
-    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
 
 void EmitCSyms::closeSplit() {
     if (!m_ofp || m_ofp == m_ofpBase) return;
 
     puts("}\n");
-    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
 
 void EmitCSyms::checkSplit(bool usesVfinal) {
@@ -617,7 +617,7 @@ void EmitCSyms::emitSymImp() {
     puts("    : __Vm_namep(namep)\n");  // No leak, as gets destroyed when the top is destroyed
     if (v3Global.needTraceDumper()) {
         puts("    , __Vm_dumping(false)\n");
-        puts("    , __Vm_dumperp(NULL)\n");
+        puts("    , __Vm_dumperp(nullptr)\n");
     }
     if (v3Global.opt.trace()) {
         puts("    , __Vm_activity(false)\n");
@@ -835,7 +835,7 @@ void EmitCSyms::emitSymImp() {
 
     m_ofpBase->puts("}\n");
     closeSplit();
-    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
 
 //######################################################################

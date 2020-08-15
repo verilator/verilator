@@ -91,7 +91,7 @@ void V3LinkLevel::modSortByLevel() {
 
 void V3LinkLevel::timescaling(const ModVec& mods) {
     // Timescale determination
-    AstNodeModule* modTimedp = NULL;
+    AstNodeModule* modTimedp = nullptr;
     VTimescale unit(VTimescale::NONE);
     // Use highest level module as default unit - already sorted in proper order
     for (ModVec::const_iterator it = mods.begin(); it != mods.end(); ++it) {
@@ -160,7 +160,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
             AstCell* cellp = new AstCell(modp->fileline(), modp->fileline(),
                                          // Could add __03a__03a="::" to prevent conflict
                                          // with module names/"v"
-                                         modp->name(), modp->name(), NULL, NULL, NULL);
+                                         modp->name(), modp->name(), nullptr, nullptr, nullptr);
             cellp->modp(modp);
             newmodp->addStmtp(cellp);
         }
@@ -203,7 +203,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
         AstCell* cellp = new AstCell(
             newmodp->fileline(), newmodp->fileline(),
             (!v3Global.opt.l2Name().empty() ? v3Global.opt.l2Name() : oldmodp->name()),
-            oldmodp->name(), NULL, NULL, NULL);
+            oldmodp->name(), nullptr, nullptr, nullptr);
         cellp->modp(oldmodp);
         newmodp->addStmtp(cellp);
 

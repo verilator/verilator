@@ -1115,7 +1115,7 @@ private:
             AstSel* sel2p = new AstSel(conp->fileline(), rhs2p, lsb2, msb2 - lsb2 + 1);
             // Make new assigns of same flavor as old one
             //*** Not cloneTree; just one node.
-            AstNode* newp = NULL;
+            AstNode* newp = nullptr;
             if (!need_temp) {
                 AstNodeAssign* asn1ap = VN_CAST(nodep->cloneType(lc1p, sel1p), NodeAssign);
                 AstNodeAssign* asn2ap = VN_CAST(nodep->cloneType(lc2p, sel2p), NodeAssign);
@@ -1307,7 +1307,7 @@ private:
         m_wremove = false;
         iterateChildren(nodep);
         m_wremove = true;
-        m_scopep = NULL;
+        m_scopep = nullptr;
     }
 
     void swapSides(AstNodeBiCom* nodep) {
@@ -1594,7 +1594,7 @@ private:
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             }
         }
-        m_selp = NULL;
+        m_selp = nullptr;
     }
     virtual void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
@@ -1784,7 +1784,7 @@ private:
                 SenItemCmp cmp;
                 if (nextp && !cmp(senp, nextp)) {
                     // Something's out of order, sort it
-                    senp = NULL;
+                    senp = nullptr;
                     std::vector<AstSenItem*> vec;
                     for (AstSenItem* senp = VN_CAST(nodep->sensesp(), SenItem); senp;
                          senp = VN_CAST(senp->nextp(), SenItem)) {
@@ -1883,7 +1883,7 @@ private:
         iterateChildren(nodep);
         if (m_doNConst) {
             if (const AstConst* constp = VN_CAST(nodep->condp(), Const)) {
-                AstNode* keepp = NULL;
+                AstNode* keepp = nullptr;
                 if (constp->isZero()) {
                     UINFO(4, "IF(0,{any},{x}) => {x}: " << nodep << endl);
                     keepp = nodep->elsesp();
@@ -1907,7 +1907,7 @@ private:
                 // effects in the condition itself
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             } else if (!afterComment(nodep->ifsp())) {
-                UINFO(4, "IF({x}) NULL {...} => IF(NOT{x}}: " << nodep << endl);
+                UINFO(4, "IF({x}) nullptr {...} => IF(NOT{x}}: " << nodep << endl);
                 AstNode* condp = nodep->condp();
                 AstNode* elsesp = nodep->elsesp();
                 condp->unlinkFrBackWithNext();
@@ -2173,7 +2173,7 @@ private:
         // AstJumpGo's below here that point to this node will set user4
         if (m_doExpensive && !nodep->user4()) {
             UINFO(4, "JUMPLABEL => unused " << nodep << endl);
-            AstNode* underp = NULL;
+            AstNode* underp = nullptr;
             if (nodep->stmtsp()) underp = nodep->stmtsp()->unlinkFrBackWithNext();
             if (underp) {
                 nodep->replaceWith(underp);
@@ -2559,10 +2559,10 @@ public:
         m_hasJumpDelay = false;
         m_warn = false;
         m_wremove = true;  // Overridden in visitors
-        m_modp = NULL;
-        m_selp = NULL;
-        m_scopep = NULL;
-        m_attrp = NULL;
+        m_modp = nullptr;
+        m_selp = nullptr;
+        m_scopep = nullptr;
+        m_attrp = nullptr;
         //
         // clang-format off
         switch (pmode) {

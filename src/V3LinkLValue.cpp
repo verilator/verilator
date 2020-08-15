@@ -270,7 +270,7 @@ private:
     virtual void visit(AstNodeFTask* nodep) override {
         m_ftaskp = nodep;
         iterateChildren(nodep);
-        m_ftaskp = NULL;
+        m_ftaskp = nullptr;
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         AstNode* pinp = nodep->pinsp();
@@ -300,7 +300,7 @@ public:
     // CONSTRUCTORS
     LinkLValueVisitor(AstNode* nodep, bool start) {
         m_setRefLvalue = start;
-        m_ftaskp = NULL;
+        m_ftaskp = nullptr;
         iterate(nodep);
     }
     virtual ~LinkLValueVisitor() {}

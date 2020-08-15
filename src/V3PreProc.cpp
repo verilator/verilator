@@ -118,7 +118,7 @@ public:
 
     // STATE
     V3PreProc* m_preprocp;  ///< Object we're holding data for
-    V3PreLex* m_lexp;  ///< Current lexer state (NULL = closed)
+    V3PreLex* m_lexp;  ///< Current lexer state (nullptr = closed)
     std::stack<V3PreLex*> m_includeStack;  ///< Stack of includers above current m_lexp
     int m_lastLineno;  // Last line number (stall detection)
     int m_tokensOnLine;  // Number of tokens on line (stall detection)
@@ -273,9 +273,9 @@ public:
         m_defDepth = 0;
         m_defPutJoin = false;
         m_finToken = 0;
-        m_finFilelinep = NULL;
-        m_lexp = NULL;
-        m_preprocp = NULL;
+        m_finFilelinep = nullptr;
+        m_lexp = nullptr;
+        m_preprocp = nullptr;
         m_lastLineno = 0;
         m_tokensOnLine = 0;
     }
@@ -292,7 +292,7 @@ public:
         m_lexp->debug(debug() >= 5 ? debug() : 0);  // See also V3PreProc::debug() method
     }
     ~V3PreProcImp() {
-        if (m_lexp) VL_DO_CLEAR(delete m_lexp, m_lexp = NULL);
+        if (m_lexp) VL_DO_CLEAR(delete m_lexp, m_lexp = nullptr);
     }
 };
 
@@ -338,7 +338,7 @@ string V3PreProcImp::defParams(const string& name) {
 }
 FileLine* V3PreProcImp::defFileline(const string& name) {
     DefinesMap::iterator iter = m_defines.find(name);
-    if (iter == m_defines.end()) return NULL;
+    if (iter == m_defines.end()) return nullptr;
     return iter->second.fileline();
 }
 void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
@@ -687,7 +687,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
         string argName;
         bool quote = false;
         bool backslashesc = false;  // In \.....{space} block
-        // Note we go through the loop once more at the NULL end-of-string
+        // Note we go through the loop once more at the nullptr end-of-string
         for (const char* cp = value.c_str(); (*cp) || argName != ""; cp = (*cp ? cp + 1 : cp)) {
             // UINFO(4, "CH "<<*cp<<"  an "<<argName<<endl);
             if (!quote && *cp == '\\') {
@@ -1584,7 +1584,7 @@ string V3PreProcImp::getline() {
     if (isEof()) return "";
     const char* rtnp;
     bool gotEof = false;
-    while (NULL == (rtnp = strchr(m_lineChars.c_str(), '\n')) && !gotEof) {
+    while (nullptr == (rtnp = strchr(m_lineChars.c_str(), '\n')) && !gotEof) {
         string buf;
         int tok = getFinalToken(buf /*ref*/);
         if (debug() >= 5) {

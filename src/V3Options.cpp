@@ -827,7 +827,7 @@ string V3Options::protectKeyDefaulted() {
 void V3Options::throwSigsegv() {  // LCOV_EXCL_START
 #if !(defined(VL_CPPCHECK) || defined(__clang_analyzer__))
     // clang-format off
-    { char* zp = NULL; *zp = 0; }  // Intentional core dump, ignore warnings here
+    { char* zp = nullptr; *zp = 0; }  // Intentional core dump, ignore warnings here
     // clang-format on
 #endif
 }  // LCOV_EXCL_STOP
@@ -1711,7 +1711,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it) {
         argv.push_back(const_cast<char*>(it->c_str()));
     }
-    argv.push_back(NULL);  // argv is NULL-terminated
+    argv.push_back(nullptr);  // argv is nullptr-terminated
     parseOptsList(fl, optdir, static_cast<int>(argv.size() - 1), argv.data());
 }
 
@@ -1904,7 +1904,7 @@ V3Options::V3Options() {
     addIncDirFallback(".");  // Looks better than {long_cwd_path}/...
 }
 
-V3Options::~V3Options() { VL_DO_CLEAR(delete m_impp, m_impp = NULL); }
+V3Options::~V3Options() { VL_DO_CLEAR(delete m_impp, m_impp = nullptr); }
 
 void V3Options::setDebugMode(int level) {
     V3Error::debugDefault(level);

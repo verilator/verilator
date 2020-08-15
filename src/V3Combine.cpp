@@ -208,7 +208,7 @@ private:
                                            << oldfuncp << endl);
                 // Mark user3p on entire old tree, so we don't process it more
                 CombMarkVisitor visitor(oldfuncp);
-                m_call.replaceFunc(oldfuncp, NULL);
+                m_call.replaceFunc(oldfuncp, nullptr);
                 oldfuncp->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(oldfuncp), oldfuncp);
             }
@@ -251,8 +251,8 @@ private:
     void replaceOnlyCallFunc(AstCCall* nodep) {
         if (AstCFunc* oldfuncp = VN_CAST(nodep->backp(), CFunc)) {
             // oldfuncp->dumpTree(cout, "MAYDEL: ");
-            if (nodep->nextp() == NULL && oldfuncp->initsp() == NULL && oldfuncp->stmtsp() == nodep
-                && oldfuncp->finalsp() == NULL) {
+            if (nodep->nextp() == nullptr && oldfuncp->initsp() == nullptr
+                && oldfuncp->stmtsp() == nodep && oldfuncp->finalsp() == nullptr) {
                 UINFO(9, "     Function only has call " << oldfuncp << endl);
                 m_call.deleteCall(nodep);
                 CombMarkVisitor visitor(oldfuncp);
@@ -266,9 +266,9 @@ private:
         // UINFO(4,"    STMT " << hashval << " " << node1p << endl);
         //
         int bestDepth = 0;  // Best substitution found in the search
-        AstNode* bestNode2p = NULL;
-        AstNode* bestLast1p = NULL;
-        AstNode* bestLast2p = NULL;
+        AstNode* bestNode2p = nullptr;
+        AstNode* bestLast1p = nullptr;
+        AstNode* bestLast2p = nullptr;
         //
         std::pair<V3Hashed::iterator, V3Hashed::iterator> eqrange
             = m_hashed.mmap().equal_range(hashval);
@@ -279,8 +279,8 @@ private:
             // We need to mark iteration to prevent matching code inside
             // code (abab matching in ababab)
             AstNode::user1ClearTree();  // user1p() used on entire tree
-            m_walkLast1p = NULL;
-            m_walkLast2p = NULL;
+            m_walkLast1p = nullptr;
+            m_walkLast2p = nullptr;
             int depth = walkDupCodeNext(node1p, node2p, 1);
             if (depth > COMBINE_MIN_STATEMENTS && depth > bestDepth) {
                 bestDepth = depth;
@@ -332,7 +332,7 @@ private:
         if ((pos = oldname.find("_common")) != string::npos) oldname.erase(pos);
         if ((pos = oldname.find("__")) != string::npos) oldname.erase(pos);
         AstCFunc* newfuncp = new AstCFunc(node1p->fileline(),
-                                          oldname + "_common" + cvtToStr(++m_modNFuncs), NULL);
+                                          oldname + "_common" + cvtToStr(++m_modNFuncs), nullptr);
         m_modp->addStmtp(newfuncp);
         // Create calls
         AstCCall* call1p = new AstCCall(node1p->fileline(), newfuncp);
@@ -394,7 +394,7 @@ private:
         UINFO(4, " MOD   " << nodep << endl);
         m_modp = nodep;
         m_modNFuncs = 0;
-        m_walkLast2p = NULL;
+        m_walkLast2p = nullptr;
         m_hashed.clear();
         // Compute hash of all statement trees in the function
         m_state = STATE_HASH;
@@ -417,7 +417,7 @@ private:
             m_state = STATE_IDLE;
         }
 #endif
-        m_modp = NULL;
+        m_modp = nullptr;
     }
     virtual void visit(AstCFunc* nodep) override {
         m_funcp = nodep;
@@ -431,7 +431,7 @@ private:
             }
 #endif
         }
-        m_funcp = NULL;
+        m_funcp = nullptr;
     }
     virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
@@ -459,11 +459,11 @@ public:
     // CONSTRUCTORS
     explicit CombineVisitor(AstNetlist* nodep) {
         m_state = STATE_IDLE;
-        m_modp = NULL;
-        m_funcp = NULL;
+        m_modp = nullptr;
+        m_funcp = nullptr;
         m_modNFuncs = 0;
-        m_walkLast1p = NULL;
-        m_walkLast2p = NULL;
+        m_walkLast1p = nullptr;
+        m_walkLast2p = nullptr;
         iterate(nodep);
     }
     virtual ~CombineVisitor() {  //

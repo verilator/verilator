@@ -82,9 +82,9 @@ private:
             // of multiple statements.  Perhaps someday make all wassigns into always's?
             UINFO(5, "     IM_WireRep  " << m_assignwp << endl);
             m_assignwp->convertToAlways();
-            VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = NULL);
+            VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = nullptr);
         }
-        bool needDly = (m_assigndlyp != NULL);
+        bool needDly = (m_assigndlyp != nullptr);
         if (m_assigndlyp) {
             // Delayed assignments become normal assignments,
             // then the temp created becomes the delayed assignment
@@ -92,7 +92,7 @@ private:
                                           m_assigndlyp->lhsp()->unlinkFrBackWithNext(),
                                           m_assigndlyp->rhsp()->unlinkFrBackWithNext());
             m_assigndlyp->replaceWith(newp);
-            VL_DO_CLEAR(pushDeletep(m_assigndlyp), m_assigndlyp = NULL);
+            VL_DO_CLEAR(pushDeletep(m_assigndlyp), m_assigndlyp = nullptr);
         }
         AstNode* prep = nodep;
 
@@ -125,7 +125,7 @@ private:
                                  new AstAssignDly(fl, prep, new AstVarRef(fl, varp, false)))
                                      : static_cast<AstNode*>(
                                          new AstAssign(fl, prep, new AstVarRef(fl, varp, false)))),
-                            NULL);
+                            nullptr);
             newp->branchPred(VBranchPred::BP_LIKELY);
             if (debug() >= 9) newp->dumpTree(cout, "     _new: ");
             abovep->addNextStmt(newp, abovep);
@@ -147,12 +147,12 @@ private:
     virtual void visit(AstAssignDly* nodep) override {
         m_assigndlyp = nodep;
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        m_assigndlyp = NULL;
+        m_assigndlyp = nullptr;
     }
     virtual void visit(AstAssignW* nodep) override {
         m_assignwp = nodep;
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        m_assignwp = NULL;
+        m_assignwp = nullptr;
     }
     virtual void visit(AstCaseItem* nodep) override {
         m_constXCvt = false;  // Avoid losing the X's in casex
@@ -429,9 +429,9 @@ private:
 public:
     // CONSTRUCTORS
     explicit UnknownVisitor(AstNetlist* nodep) {
-        m_modp = NULL;
-        m_assigndlyp = NULL;
-        m_assignwp = NULL;
+        m_modp = nullptr;
+        m_assigndlyp = nullptr;
+        m_assignwp = nullptr;
         m_constXCvt = false;
         iterate(nodep);
     }

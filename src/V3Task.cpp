@@ -45,10 +45,10 @@ class TaskBaseVertex : public V3GraphVertex {
 public:
     explicit TaskBaseVertex(V3Graph* graphp)
         : V3GraphVertex(graphp)
-        , m_impurep(NULL)
+        , m_impurep(nullptr)
         , m_noInline(false) {}
     virtual ~TaskBaseVertex() {}
-    bool pure() const { return m_impurep == NULL; }
+    bool pure() const { return m_impurep == nullptr; }
     AstNode* impureNode() const { return m_impurep; }
     void impure(AstNode* nodep) { m_impurep = nodep; }
     bool noInline() const { return m_noInline; }
@@ -64,7 +64,7 @@ public:
     TaskFTaskVertex(V3Graph* graphp, AstNodeFTask* nodep)
         : TaskBaseVertex(graphp)
         , m_nodep(nodep) {
-        m_cFuncp = NULL;
+        m_cFuncp = nullptr;
     }
     virtual ~TaskFTaskVertex() {}
     AstNodeFTask* nodep() const { return m_nodep; }
@@ -182,7 +182,7 @@ private:
     virtual void visit(AstAssignW* nodep) override {
         m_assignwp = nodep;
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        m_assignwp = NULL;
+        m_assignwp = nullptr;
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         // Includes handling AstMethodCall, AstNew
@@ -191,7 +191,7 @@ private:
             // of multiple statements.  Perhaps someday make all wassigns into always's?
             UINFO(5, "     IM_WireRep  " << m_assignwp << endl);
             m_assignwp->convertToAlways();
-            VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = NULL);
+            VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = nullptr);
         }
         // We make multiple edges if a task is called multiple times from another task.
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
@@ -232,7 +232,7 @@ private:
     virtual void visit(AstClass* nodep) override {
         // Move initial statements into the constructor
         m_initialps.clear();
-        m_ctorp = NULL;
+        m_ctorp = nullptr;
         {  // Find m_initialps, m_ctor
             iterateChildren(nodep);
         }
@@ -250,7 +250,7 @@ private:
             VL_DO_DANGLING(pushDeletep(initialp->unlinkFrBack()), initialp);
         }
         m_initialps.clear();
-        m_ctorp = NULL;
+        m_ctorp = nullptr;
     }
     virtual void visit(AstInitial* nodep) override {
         m_initialps.push_back(nodep);
@@ -262,8 +262,8 @@ private:
 public:
     // CONSTRUCTORS
     explicit TaskStateVisitor(AstNetlist* nodep)
-        : m_assignwp(NULL)
-        , m_ctorp(NULL) {
+        : m_assignwp(nullptr)
+        , m_ctorp(nullptr) {
         m_curVxp = new TaskCodeVertex(&m_callGraph);
         AstNode::user3ClearTree();
         AstNode::user4ClearTree();
@@ -382,9 +382,10 @@ private:
 
     AstNode* createInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
                                 AstVarScope* outvscp) {
-        // outvscp is the variable for functions only, if NULL, it's a task
+        // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
-        AstNode* newbodysp = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe NULL
+        AstNode* newbodysp
+            = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe nullptr
         AstNode* beginp
             = new AstComment(refp->fileline(), string("Function: ") + refp->name(), true);
         if (newbodysp) beginp->addNext(newbodysp);
@@ -502,7 +503,7 @@ private:
 
     AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
                                    AstVarScope* outvscp, AstCNew*& cnewpr) {
-        // outvscp is the variable for functions only, if NULL, it's a task
+        // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstCFunc* cfuncp = m_statep->ftaskCFuncp(refp->taskp());
         UASSERT_OBJ(cfuncp, refp, "No non-inline task associated with this task call?");
@@ -716,7 +717,7 @@ private:
         string args;
         args += ("(" + EmitCBaseVisitor::symClassName()
                  + "*)(__Vscopep->symsp())");  // Upcast w/o overhead
-        AstNode* argnodesp = NULL;
+        AstNode* argnodesp = nullptr;
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO() && !portp->isFuncReturn() && portp != rtnvarp) {
@@ -951,7 +952,7 @@ private:
         // Probably some of this work should be done later, but...
         // should the type of the function be bool/uint32/64 etc (based on lookup) or IData?
         AstNode::user2ClearTree();
-        AstVar* rtnvarp = NULL;
+        AstVar* rtnvarp = nullptr;
         if (nodep->isFunction()) {
             AstVar* portp = VN_CAST(nodep->fvarp(), Var);
             UASSERT_OBJ(portp, nodep, "function without function output variable");
@@ -1000,7 +1001,7 @@ private:
                 if (nodep->dpiOpenParent()) {
                     // No need to make more than just the c prototype, children will
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    return NULL;
+                    return nullptr;
                 }
             }
 
@@ -1009,7 +1010,7 @@ private:
             if (!duplicatedDpiProto(nodep, dpiproto)) makeDpiExportWrapper(nodep, rtnvarp);
         }
 
-        AstVarScope* rtnvscp = NULL;
+        AstVarScope* rtnvscp = nullptr;
         if (rtnvarp) {
             rtnvscp = new AstVarScope(rtnvarp->fileline(), m_scopep, rtnvarp);
             m_scopep->addVarp(rtnvscp);
@@ -1151,7 +1152,7 @@ private:
         // See also AstNode::addBeforeStmt; this predates that function
         if (debug() >= 9) nodep->dumpTree(cout, "-newstmt:");
         UASSERT_OBJ(m_insStmtp, nodep, "Function not underneath a statement");
-        AstNode* visitp = NULL;
+        AstNode* visitp = nullptr;
         if (m_insMode == IM_BEFORE) {
             // Add the whole thing before insertAt
             UINFO(5, "     IM_Before  " << m_insStmtp << endl);
@@ -1180,7 +1181,7 @@ private:
         int origNCalls = m_modNCalls;
         {
             m_modp = nodep;
-            m_insStmtp = NULL;
+            m_insStmtp = nullptr;
             m_modNCalls = 0;
             iterateChildren(nodep);
         }
@@ -1193,9 +1194,9 @@ private:
     }
     virtual void visit(AstScope* nodep) override {
         m_scopep = nodep;
-        m_insStmtp = NULL;
+        m_insStmtp = nullptr;
         iterateChildren(nodep);
-        m_scopep = NULL;
+        m_scopep = nullptr;
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         // Includes handling AstMethodCall, AstNew
@@ -1207,7 +1208,7 @@ private:
         string namePrefix = ((VN_IS(nodep, FuncRef) ? "__Vfunc_" : "__Vtask_")
                              + nodep->taskp()->shortName() + "__" + cvtToStr(m_modNCalls++));
         // Create output variable
-        AstVarScope* outvscp = NULL;
+        AstVarScope* outvscp = nullptr;
         if (nodep->taskp()->isFunction()) {
             // Not that it's a FUNCREF, but that we're calling a function (perhaps as a task)
             outvscp
@@ -1215,7 +1216,7 @@ private:
         }
         // Create cloned statements
         AstNode* beginp;
-        AstCNew* cnewp = NULL;
+        AstCNew* cnewp = nullptr;
         if (m_statep->ftaskNoInline(nodep->taskp())) {
             // This may share VarScope's with a public task, if any.  Yuk.
             beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
@@ -1223,7 +1224,7 @@ private:
             beginp = createInlinedFTask(nodep, namePrefix, outvscp);
         }
         // Replace the ref
-        AstNode* visitp = NULL;
+        AstNode* visitp = nullptr;
         if (VN_IS(nodep, New)) {
             UASSERT_OBJ(!nodep->isStatement(), nodep, "new is non-stmt");
             UASSERT_OBJ(cnewp, nodep, "didn't create cnew for new");
@@ -1241,7 +1242,7 @@ private:
                     IGNOREDRETURN,
                     "Ignoring return value of non-void function (IEEE 1800-2017 13.4.1)");
             }
-            // outvscp maybe non-NULL if calling a function in a taskref,
+            // outvscp maybe non-nullptr if calling a function in a taskref,
             // but if so we want to simply ignore the function result
             nodep->replaceWith(beginp);
         }
@@ -1323,18 +1324,18 @@ private:
         // Special, as statements need to be put in different places
         // Preconditions insert first just before themselves (the normal
         // rule for other statement types)
-        m_insStmtp = NULL;  // First thing should be new statement
+        m_insStmtp = nullptr;  // First thing should be new statement
         iterateAndNextNull(nodep->precondsp());
         // Conditions insert first at end of precondsp.
         m_insMode = IM_WHILE_PRECOND;
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->condp());
         // Body insert just before themselves
-        m_insStmtp = NULL;  // First thing should be new statement
+        m_insStmtp = nullptr;  // First thing should be new statement
         iterateAndNextNull(nodep->bodysp());
         iterateAndNextNull(nodep->incsp());
         // Done the loop
-        m_insStmtp = NULL;  // Next thing should be new statement
+        m_insStmtp = nullptr;  // Next thing should be new statement
     }
     virtual void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
@@ -1348,7 +1349,7 @@ private:
         m_insMode = IM_BEFORE;
         m_insStmtp = nodep;
         iterateChildren(nodep);
-        m_insStmtp = NULL;  // Next thing should be new statement
+        m_insStmtp = nullptr;  // Next thing should be new statement
     }
     //--------------------
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -1357,11 +1358,11 @@ public:
     // CONSTRUCTORS
     TaskVisitor(AstNetlist* nodep, TaskStateVisitor* statep)
         : m_statep(statep) {
-        m_modp = NULL;
-        m_topScopep = NULL;
-        m_scopep = NULL;
+        m_modp = nullptr;
+        m_topScopep = nullptr;
+        m_scopep = nullptr;
         m_insMode = IM_BEFORE;
-        m_insStmtp = NULL;
+        m_insStmtp = nullptr;
         m_modNCalls = 0;
         AstNode::user1ClearTree();
         iterate(nodep);
@@ -1375,7 +1376,7 @@ public:
 V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp) {
     // Output list will be in order of the port declaration variables (so
     // func calls are made right in C)
-    // Missing pin/expr?  We return (pinvar, NULL)
+    // Missing pin/expr?  We return (pinvar, nullptr)
     // Extra   pin/expr?  We clean it up
 
     typedef std::map<string, int> NameToIndex;
@@ -1385,11 +1386,11 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 
     // Find ports
     int tpinnum = 0;
-    AstVar* sformatp = NULL;
+    AstVar* sformatp = nullptr;
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp = stmtp->nextp()) {
         if (AstVar* portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO()) {
-                tconnects.push_back(make_pair(portp, static_cast<AstArg*>(NULL)));
+                tconnects.push_back(make_pair(portp, static_cast<AstArg*>(nullptr)));
                 nameToIndex.insert(
                     make_pair(portp->name(), tpinnum));  // For name based connections
                 tpinnum++;
@@ -1431,7 +1432,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
         } else {  // By pin number
             if (ppinnum >= tpinnum) {
                 if (sformatp) {
-                    tconnects.push_back(make_pair(sformatp, static_cast<AstArg*>(NULL)));
+                    tconnects.push_back(make_pair(sformatp, static_cast<AstArg*>(nullptr)));
                     tconnects[ppinnum].second = argp;
                     tpinnum++;
                 } else {
@@ -1451,7 +1452,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     for (int i = 0; i < tpinnum; ++i) {
         AstVar* portp = tconnects[i].first;
         if (!tconnects[i].second || !tconnects[i].second->exprp()) {
-            AstNode* newvaluep = NULL;
+            AstNode* newvaluep = nullptr;
             if (!portp->valuep()) {
                 nodep->v3error("Missing argument on non-defaulted argument "
                                << portp->prettyNameQ() << " in function call to "
@@ -1481,9 +1482,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             // or not, we make this into a pin
             UINFO(9, "Default pin for " << portp << endl);
             AstArg* newp = new AstArg(nodep->fileline(), portp->name(), newvaluep);
-            if (tconnects[i].second) {  // Have a "NULL" pin already defined for it
+            if (tconnects[i].second) {  // Have a "nullptr" pin already defined for it
                 VL_DO_CLEAR(tconnects[i].second->unlinkFrBack()->deleteTree(),
-                            tconnects[i].second = NULL);
+                            tconnects[i].second = nullptr);
             }
             tconnects[i].second = newp;
             reorganize = true;

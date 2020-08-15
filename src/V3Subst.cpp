@@ -54,7 +54,7 @@ protected:
     friend class SubstVarEntry;
     // METHODS
     void clear() {
-        m_assignp = NULL;
+        m_assignp = nullptr;
         m_step = 0;
         m_use = false;
         m_complex = false;
@@ -90,7 +90,7 @@ private:
     bool wordNumOk(int word) const { return word < m_varp->widthWords(); }
     AstNodeAssign* getWordAssignp(int word) const {
         if (!wordNumOk(word)) {
-            return NULL;
+            return nullptr;
         } else {
             return m_words[word].m_assignp;
         }
@@ -133,7 +133,7 @@ public:
             UASSERT_OBJ(assp, errp, "Reading whole that was never assigned");
             return (assp->rhsp());
         } else {
-            return NULL;
+            return nullptr;
         }
     }
     // Return what to substitute given word number for
@@ -143,7 +143,7 @@ public:
             UASSERT_OBJ(assp, errp, "Reading a word that was never assigned, or bad word #");
             return (assp->rhsp());
         } else {
-            return NULL;
+            return nullptr;
         }
     }
     int getWholeStep() const { return m_whole.m_step; }
@@ -161,12 +161,12 @@ public:
     void deleteUnusedAssign() {
         // If there are unused assignments in this var, kill them
         if (!m_whole.m_use && !m_wordUse && m_whole.m_assignp) {
-            VL_DO_CLEAR(deleteAssign(m_whole.m_assignp), m_whole.m_assignp = NULL);
+            VL_DO_CLEAR(deleteAssign(m_whole.m_assignp), m_whole.m_assignp = nullptr);
         }
         for (unsigned i = 0; i < m_words.size(); i++) {
             if (!m_whole.m_use && !m_words[i].m_use && m_words[i].m_assignp
                 && !m_words[i].m_complex) {
-                VL_DO_CLEAR(deleteAssign(m_words[i].m_assignp), m_words[i].m_assignp = NULL);
+                VL_DO_CLEAR(deleteAssign(m_words[i].m_assignp), m_words[i].m_assignp = nullptr);
             }
         }
     }
@@ -187,7 +187,7 @@ private:
 
     // METHODS
     SubstVarEntry* findEntryp(AstVarRef* nodep) {
-        return reinterpret_cast<SubstVarEntry*>(nodep->varp()->user1p());  // Might be NULL
+        return reinterpret_cast<SubstVarEntry*>(nodep->varp()->user1p());  // Might be nullptr
     }
     // VISITORS
     virtual void visit(AstVarRef* nodep) override {

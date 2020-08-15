@@ -60,11 +60,11 @@ private:
     AssVec m_mgAssignps;  // List of assignments merging
     AstCFunc* m_mgCfuncp;  // Parent C function
     AstNode* m_mgNextp;  // Next node
-    AstNodeSel* m_mgSelLp;  // Parent select, NULL = idle
-    AstNodeSel* m_mgSelRp;  // Parent select, NULL = constant
+    AstNodeSel* m_mgSelLp;  // Parent select, nullptr = idle
+    AstNodeSel* m_mgSelRp;  // Parent select, nullptr = constant
     AstNodeVarRef* m_mgVarrefLp;  // Parent varref
-    AstNodeVarRef* m_mgVarrefRp;  // Parent varref, NULL = constant
-    AstConst* m_mgConstRp;  // Parent RHS constant, NULL = sel
+    AstNodeVarRef* m_mgVarrefRp;  // Parent varref, nullptr = constant
+    AstConst* m_mgConstRp;  // Parent RHS constant, nullptr = sel
     uint32_t m_mgIndexLo;  // Merge range
     uint32_t m_mgIndexHi;  // Merge range
 
@@ -106,7 +106,7 @@ private:
                 AstNode* incp = new AstAssign(
                     fl, new AstVarRef(fl, itp, true),
                     new AstAdd(fl, new AstConst(fl, 1), new AstVarRef(fl, itp, false)));
-                AstWhile* whilep = new AstWhile(fl, condp, NULL, incp);
+                AstWhile* whilep = new AstWhile(fl, condp, nullptr, incp);
                 initp->addNext(whilep);
                 bodyp->replaceWith(initp);
                 whilep->addBodysp(bodyp);
@@ -133,11 +133,11 @@ private:
             }
             // Setup for next merge
             m_mgAssignps.clear();
-            m_mgSelLp = NULL;
-            m_mgSelRp = NULL;
-            m_mgVarrefLp = NULL;
-            m_mgVarrefRp = NULL;
-            m_mgConstRp = NULL;
+            m_mgSelLp = nullptr;
+            m_mgSelRp = nullptr;
+            m_mgVarrefLp = nullptr;
+            m_mgVarrefRp = nullptr;
+            m_mgConstRp = nullptr;
         }
     }
 
@@ -145,7 +145,7 @@ private:
     virtual void visit(AstCFunc* nodep) override {
         m_cfuncp = nodep;
         iterateChildren(nodep);
-        m_cfuncp = NULL;
+        m_cfuncp = nullptr;
     }
     virtual void visit(AstNodeAssign* nodep) override {
         if (!m_cfuncp) return;
@@ -177,7 +177,7 @@ private:
         // RHS is a constant or a select
         AstConst* rconstp = VN_CAST(nodep->rhsp(), Const);
         AstNodeSel* rselp = VN_CAST(nodep->rhsp(), NodeSel);
-        AstNodeVarRef* rvarrefp = NULL;
+        AstNodeVarRef* rvarrefp = nullptr;
         if (rconstp) {  // Ok
         } else {
             if (!rselp) {
@@ -239,14 +239,14 @@ private:
 public:
     // CONSTRUCTORS
     explicit ReloopVisitor(AstNetlist* nodep) {
-        m_cfuncp = NULL;
-        m_mgCfuncp = NULL;
-        m_mgNextp = NULL;
-        m_mgSelLp = NULL;
-        m_mgSelRp = NULL;
-        m_mgVarrefLp = NULL;
-        m_mgVarrefRp = NULL;
-        m_mgConstRp = NULL;
+        m_cfuncp = nullptr;
+        m_mgCfuncp = nullptr;
+        m_mgNextp = nullptr;
+        m_mgSelLp = nullptr;
+        m_mgSelRp = nullptr;
+        m_mgVarrefLp = nullptr;
+        m_mgVarrefRp = nullptr;
+        m_mgConstRp = nullptr;
         m_mgIndexLo = 0;
         m_mgIndexHi = 0;
         iterate(nodep);
