@@ -5035,12 +5035,11 @@ The following deprecated items are scheduled for future removal:
 
 =over 4
 
-=item Pre-C++11 compiler support
+=item C++11 compiler support
 
-Verilator supports pre-C++11 compilers for non-threaded models when
-configured with --enable-prec11/--enable-prec11-final.  This flag will be
-removed and C++11 compilers will be required for both compiling Verilator
-and compiling Verilated models no sooner than September 2020.
+Verilator currently requires C++11 or newer compilers.  Verilator will
+require C++14 or newer compilers for both compiling Verilator and compiling
+Verilated models no sooner than January 2022.
 
 =item SystemC 2.2 and earlier support
 

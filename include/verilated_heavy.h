@@ -75,9 +75,8 @@ public:
 
 //===================================================================
 // Verilog array container
-// Similar to std::array<WData, N>, but:
-//   1. Doesn't require C++11
-//   2. Lighter weight, only methods needed by Verilator, to help compile time.
+// Similar to std::array<WData, N>, but lighter weight, only methods needed
+// by Verilator, to help compile time.
 //
 // This is only used when we need an upper-level container and so can't
 // simply use a C style array (which is just a pointer).
