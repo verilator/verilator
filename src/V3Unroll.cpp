@@ -471,7 +471,7 @@ private:
 public:
     // CONSTRUCTORS
     UnrollVisitor() { init(false, ""); }
-    virtual ~UnrollVisitor() {
+    virtual ~UnrollVisitor() override {
         V3Stats::addStatSum("Optimizations, Unrolled Loops", m_statLoops);
         V3Stats::addStatSum("Optimizations, Unrolled Iterations", m_statIters);
     }

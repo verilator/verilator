@@ -120,7 +120,7 @@ public:
         : m_classScopep(nullptr) {
         iterate(nodep);
     }
-    virtual ~ClassVisitor() {
+    virtual ~ClassVisitor() override {
         for (MoveVector::iterator it = m_moves.begin(); it != m_moves.end(); ++it) {
             it->second->addVarp(it->first->unlinkFrBack());
         }

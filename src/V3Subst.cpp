@@ -216,7 +216,7 @@ public:
         m_origStep = origStep;
         iterate(nodep);
     }
-    virtual ~SubstUseVisitor() {}
+    virtual ~SubstUseVisitor() override {}
     // METHODS
     bool ok() const { return m_ok; }
 };
@@ -375,7 +375,7 @@ public:
         m_assignStep = 0;
         iterate(nodep);
     }
-    virtual ~SubstVisitor() {
+    virtual ~SubstVisitor() override {
         V3Stats::addStat("Optimizations, Substituted temps", m_statSubsts);
         for (std::vector<SubstVarEntry*>::iterator it = m_entryps.begin(); it != m_entryps.end();
              ++it) {

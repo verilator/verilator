@@ -52,7 +52,7 @@ public:
         AstNode::user4ClearTree();  // Check marked InUse before we're called
         iterate(nodep);
     }
-    virtual ~ConstVarMarkVisitor() {}
+    virtual ~ConstVarMarkVisitor() override {}
 };
 
 class ConstVarFindVisitor : public AstNVisitor {
@@ -74,7 +74,7 @@ public:
         m_found = false;
         iterateAndNextNull(nodep);
     }
-    virtual ~ConstVarFindVisitor() {}
+    virtual ~ConstVarFindVisitor() override {}
     // METHODS
     bool found() const { return m_found; }
 };
@@ -2579,7 +2579,7 @@ public:
         }
         // clang-format on
     }
-    virtual ~ConstVisitor() {}
+    virtual ~ConstVisitor() override {}
     AstNode* mainAcceptEdit(AstNode* nodep) {
         // Operate starting at a random place
         return iterateSubtreeReturnEdits(nodep);

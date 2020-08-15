@@ -191,7 +191,7 @@ public:
 public:
     // CONSTRUCTORS
     BrokenTable() {}
-    virtual ~BrokenTable() {}
+    virtual ~BrokenTable() override {}
 };
 
 BrokenTable::NodeMap BrokenTable::s_nodes;
@@ -231,7 +231,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit BrokenMarkVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~BrokenMarkVisitor() {}
+    virtual ~BrokenMarkVisitor() override {}
 };
 
 //######################################################################
@@ -286,7 +286,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit BrokenCheckVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~BrokenCheckVisitor() {}
+    virtual ~BrokenCheckVisitor() override {}
 };
 
 //######################################################################

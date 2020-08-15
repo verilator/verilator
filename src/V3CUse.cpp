@@ -111,7 +111,7 @@ public:
         , m_impOnly(false) {
         iterate(nodep);
     }
-    virtual ~CUseDTypeVisitor() {}
+    virtual ~CUseDTypeVisitor() override {}
     VL_UNCOPYABLE(CUseDTypeVisitor);
 };
 
@@ -212,7 +212,7 @@ public:
         : m_state(nodep) {
         iterate(nodep);
     }
-    virtual ~CUseVisitor() {}
+    virtual ~CUseVisitor() override {}
     VL_UNCOPYABLE(CUseVisitor);
 };
 

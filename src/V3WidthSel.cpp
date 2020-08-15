@@ -571,7 +571,7 @@ public:
     // CONSTRUCTORS
     WidthSelVisitor() {}
     AstNode* mainAcceptEdit(AstNode* nodep) { return iterateSubtreeReturnEdits(nodep); }
-    virtual ~WidthSelVisitor() {}
+    virtual ~WidthSelVisitor() override {}
 };
 
 //######################################################################

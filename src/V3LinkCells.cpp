@@ -44,8 +44,8 @@
 class LinkCellsGraph : public V3Graph {
 public:
     LinkCellsGraph() {}
-    virtual ~LinkCellsGraph() {}
-    virtual void loopsMessageCb(V3GraphVertex* vertexp);
+    virtual ~LinkCellsGraph() override {}
+    virtual void loopsMessageCb(V3GraphVertex* vertexp) override;
 };
 
 class LinkCellsVertex : public V3GraphVertex {
@@ -55,12 +55,12 @@ public:
     LinkCellsVertex(V3Graph* graphp, AstNodeModule* modp)
         : V3GraphVertex(graphp)
         , m_modp(modp) {}
-    virtual ~LinkCellsVertex() {}
+    virtual ~LinkCellsVertex() override {}
     AstNodeModule* modp() const { return m_modp; }
-    virtual string name() const { return modp()->name(); }
-    virtual FileLine* fileline() const { return modp()->fileline(); }
+    virtual string name() const override { return modp()->name(); }
+    virtual FileLine* fileline() const override { return modp()->fileline(); }
     // Recursive modules get space for maximum recursion
-    virtual uint32_t rankAdder() const {
+    virtual uint32_t rankAdder() const override {
         return m_modp->recursiveClone() ? (1 + v3Global.opt.moduleRecursionDepth()) : 1;
     }
 };
@@ -69,8 +69,8 @@ class LibraryVertex : public V3GraphVertex {
 public:
     explicit LibraryVertex(V3Graph* graphp)
         : V3GraphVertex(graphp) {}
-    virtual ~LibraryVertex() {}
-    virtual string name() const { return "*LIBRARY*"; }
+    virtual ~LibraryVertex() override {}
+    virtual string name() const override { return "*LIBRARY*"; }
 };
 
 void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
@@ -521,7 +521,7 @@ public:
         }
         iterate(nodep);
     }
-    virtual ~LinkCellsVisitor() {}
+    virtual ~LinkCellsVisitor() override {}
 };
 
 //######################################################################

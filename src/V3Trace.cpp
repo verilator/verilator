@@ -71,20 +71,20 @@ public:
         m_activityCode = code;
         m_slow = false;
     }
-    virtual ~TraceActivityVertex() {}
+    virtual ~TraceActivityVertex() override {}
     // ACCESSORS
     AstNode* insertp() const {
         if (!m_insertp) v3fatalSrc("Null insertp; probably called on a special always/slow.");
         return m_insertp;
     }
-    virtual string name() const {
+    virtual string name() const override {
         if (activityAlways()) {
             return "*ALWAYS*";
         } else {
             return (string(slow() ? "*SLOW* " : "")) + insertp()->name();
         }
     }
-    virtual string dotColor() const { return slow() ? "yellowGreen" : "green"; }
+    virtual string dotColor() const override { return slow() ? "yellowGreen" : "green"; }
     vlsint32_t activityCode() const { return m_activityCode; }
     bool activityAlways() const { return activityCode() == ACTIVITY_ALWAYS; }
     bool activitySlow() const { return activityCode() == ACTIVITY_SLOW; }
@@ -102,12 +102,12 @@ public:
     TraceCFuncVertex(V3Graph* graphp, AstCFunc* nodep)
         : V3GraphVertex(graphp)
         , m_nodep(nodep) {}
-    virtual ~TraceCFuncVertex() {}
+    virtual ~TraceCFuncVertex() override {}
     // ACCESSORS
     AstCFunc* nodep() const { return m_nodep; }
-    virtual string name() const { return nodep()->name(); }
-    virtual string dotColor() const { return "yellow"; }
-    virtual FileLine* fileline() const { return nodep()->fileline(); }
+    virtual string name() const override { return nodep()->name(); }
+    virtual string dotColor() const override { return "yellow"; }
+    virtual FileLine* fileline() const override { return nodep()->fileline(); }
 };
 
 class TraceTraceVertex : public V3GraphVertex {
@@ -120,12 +120,12 @@ public:
         : V3GraphVertex(graphp)
         , m_nodep(nodep)
         , m_duplicatep(nullptr) {}
-    virtual ~TraceTraceVertex() {}
+    virtual ~TraceTraceVertex() override {}
     // ACCESSORS
     AstTraceDecl* nodep() const { return m_nodep; }
-    virtual string name() const { return nodep()->name(); }
-    virtual string dotColor() const { return "red"; }
-    virtual FileLine* fileline() const { return nodep()->fileline(); }
+    virtual string name() const override { return nodep()->name(); }
+    virtual string dotColor() const override { return "red"; }
+    virtual FileLine* fileline() const override { return nodep()->fileline(); }
     TraceTraceVertex* duplicatep() const { return m_duplicatep; }
     void duplicatep(TraceTraceVertex* dupp) {
         UASSERT_OBJ(!duplicatep(), nodep(), "Assigning duplicatep() to already duplicated node");
@@ -140,12 +140,12 @@ public:
     TraceVarVertex(V3Graph* graphp, AstVarScope* nodep)
         : V3GraphVertex(graphp)
         , m_nodep(nodep) {}
-    virtual ~TraceVarVertex() {}
+    virtual ~TraceVarVertex() override {}
     // ACCESSORS
     AstVarScope* nodep() const { return m_nodep; }
-    virtual string name() const { return nodep()->name(); }
-    virtual string dotColor() const { return "skyblue"; }
-    virtual FileLine* fileline() const { return nodep()->fileline(); }
+    virtual string name() const override { return nodep()->name(); }
+    virtual string dotColor() const override { return "skyblue"; }
+    virtual FileLine* fileline() const override { return nodep()->fileline(); }
 };
 
 //######################################################################
@@ -885,7 +885,7 @@ public:
         m_code = 0;
         iterate(nodep);
     }
-    virtual ~TraceVisitor() {
+    virtual ~TraceVisitor() override {
         V3Stats::addStat("Tracing, Unique changing signals", m_statChgSigs);
         V3Stats::addStat("Tracing, Unique traced signals", m_statUniqSigs);
         V3Stats::addStat("Tracing, Unique trace codes", m_statUniqCodes);

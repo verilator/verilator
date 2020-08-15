@@ -54,11 +54,11 @@ class TableSimulateVisitor : public SimulateVisitor {
 
 public:
     ///< Call other-this function on all new var references
-    virtual void varRefCb(AstVarRef* nodep);
+    virtual void varRefCb(AstVarRef* nodep) override;
 
     // CONSTRUCTORS
     explicit TableSimulateVisitor(TableVisitor* cbthis) { m_cbthis = cbthis; }
-    virtual ~TableSimulateVisitor() {}
+    virtual ~TableSimulateVisitor() override {}
 };
 
 //######################################################################
@@ -461,7 +461,7 @@ public:
         m_totalBytes = 0;
         iterate(nodep);
     }
-    virtual ~TableVisitor() {  //
+    virtual ~TableVisitor() override {  //
         V3Stats::addStat("Optimizations, Tables created", m_statTablesCre);
     }
 };

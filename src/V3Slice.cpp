@@ -229,7 +229,7 @@ public:
         m_assignError = false;
         iterate(nodep);
     }
-    virtual ~SliceVisitor() {}
+    virtual ~SliceVisitor() override {}
 };
 
 //######################################################################

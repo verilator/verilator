@@ -371,7 +371,7 @@ public:
             iterate(nodep);
         } while (m_newClkMarked);
     }
-    virtual ~OrderClkMarkVisitor() {}
+    virtual ~OrderClkMarkVisitor() override {}
 };
 
 //######################################################################
@@ -405,7 +405,7 @@ public:
         m_clkAss = false;
         iterate(nodep);
     }
-    virtual ~OrderClkAssVisitor() {}
+    virtual ~OrderClkAssVisitor() override {}
     // METHODS
     bool isClkAss() { return m_clkAss; }
 };
@@ -1240,7 +1240,7 @@ public:
         m_pomNewStmts = 0;
         if (debug()) m_graph.debug(5);  // 3 is default if global debug; we want acyc debugging
     }
-    virtual ~OrderVisitor() {
+    virtual ~OrderVisitor() override {
         // Stats
         for (int type = 0; type < OrderVEdgeType::_ENUM_END; type++) {
             double count = double(m_statCut[type]);

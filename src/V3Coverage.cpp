@@ -551,7 +551,7 @@ public:
         m_inToggleOff = false;
         iterateChildren(rootp);
     }
-    virtual ~CoverageVisitor() {}
+    virtual ~CoverageVisitor() override {}
 };
 
 //######################################################################

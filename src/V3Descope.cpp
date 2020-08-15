@@ -301,7 +301,7 @@ public:
         , m_needThis(false) {
         iterate(nodep);
     }
-    virtual ~DescopeVisitor() {}
+    virtual ~DescopeVisitor() override {}
 };
 
 //######################################################################

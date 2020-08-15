@@ -131,7 +131,7 @@ public:
         : m_topscopep(nullptr) {
         iterate(nodep);
     }
-    virtual ~ActiveTopVisitor() {}
+    virtual ~ActiveTopVisitor() override {}
 };
 
 //######################################################################

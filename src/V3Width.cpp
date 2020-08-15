@@ -5419,7 +5419,7 @@ public:
     AstNode* mainAcceptEdit(AstNode* nodep) {
         return userIterateSubtreeReturnEdits(nodep, WidthVP(SELF, BOTH).p());
     }
-    virtual ~WidthVisitor() {}
+    virtual ~WidthVisitor() override {}
 };
 
 //######################################################################

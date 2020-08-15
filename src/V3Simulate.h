@@ -1131,7 +1131,7 @@ public:
         setMode(false /*scoped*/, false /*checking*/, true /*params*/);
         mainGuts(nodep);
     }
-    virtual ~SimulateVisitor() {
+    virtual ~SimulateVisitor() override {
         for (ConstPile::iterator it = m_constAllps.begin(); it != m_constAllps.end(); ++it) {
             for (ConstDeque::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 delete (*it2);

@@ -882,7 +882,7 @@ public:
         m_stmtp = nullptr;
         iterate(nodep);
     }
-    virtual ~ExpandVisitor() {}
+    virtual ~ExpandVisitor() override {}
 };
 
 //----------------------------------------------------------------------

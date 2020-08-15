@@ -251,7 +251,7 @@ public:
         m_mgIndexHi = 0;
         iterate(nodep);
     }
-    virtual ~ReloopVisitor() {
+    virtual ~ReloopVisitor() override {
         V3Stats::addStat("Optimizations, Reloops", m_statReloops);
         V3Stats::addStat("Optimizations, Reloop iterations", m_statReItems);
     }

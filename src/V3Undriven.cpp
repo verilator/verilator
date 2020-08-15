@@ -447,7 +447,7 @@ public:
         m_alwaysCombp = nullptr;
         iterate(nodep);
     }
-    virtual ~UndrivenVisitor() {
+    virtual ~UndrivenVisitor() override {
         for (std::vector<UndrivenVarEntry*>::iterator it = m_entryps[1].begin();
              it != m_entryps[1].end(); ++it) {
             (*it)->reportViolations();

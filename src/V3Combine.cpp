@@ -54,7 +54,7 @@ protected:
     // STATE
 
     // METHODS
-    virtual ~CombBaseVisitor() {}
+    virtual ~CombBaseVisitor() override {}
     VL_DEBUG_FUNC;  // Declare debug()
 };
 
@@ -130,7 +130,7 @@ private:
 public:
     // CONSTRUCTORS
     CombCallVisitor() {}
-    virtual ~CombCallVisitor() {}
+    virtual ~CombCallVisitor() override {}
     void main(AstNetlist* nodep) { iterate(nodep); }
 };
 
@@ -151,7 +151,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit CombMarkVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~CombMarkVisitor() {}
+    virtual ~CombMarkVisitor() override {}
 };
 
 //######################################################################
@@ -466,7 +466,7 @@ public:
         m_walkLast2p = nullptr;
         iterate(nodep);
     }
-    virtual ~CombineVisitor() {  //
+    virtual ~CombineVisitor() override {  //
         V3Stats::addStat("Optimizations, Combined CFuncs", m_statCombs);
     }
 };

@@ -796,7 +796,7 @@ public:
         //
         iterate(nodep);
     }
-    virtual ~ParamVisitor() {}
+    virtual ~ParamVisitor() override {}
 };
 
 //----------------------------------------------------------------------

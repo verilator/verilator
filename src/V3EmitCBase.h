@@ -110,7 +110,7 @@ public:
         m_ofp = nullptr;
         m_trackText = false;
     }
-    virtual ~EmitCBaseVisitor() {}
+    virtual ~EmitCBaseVisitor() override {}
 };
 
 //######################################################################
@@ -132,7 +132,7 @@ public:
         m_count = 0;
         iterate(nodep);
     }
-    virtual ~EmitCBaseCounterVisitor() {}
+    virtual ~EmitCBaseCounterVisitor() override {}
     int count() const { return m_count; }
 };
 

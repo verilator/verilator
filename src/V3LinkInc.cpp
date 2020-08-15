@@ -241,7 +241,7 @@ public:
         m_unsupportedHere = false;
         iterate(nodep);
     }
-    virtual ~LinkIncVisitor() {}
+    virtual ~LinkIncVisitor() override {}
 };
 
 //######################################################################

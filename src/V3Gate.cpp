@@ -78,9 +78,9 @@ public:
         , m_reducible(true)
         , m_dedupable(true)
         , m_consumed(false) {}
-    virtual ~GateEitherVertex() {}
+    virtual ~GateEitherVertex() override {}
     // ACCESSORS
-    virtual string dotStyle() const { return m_consumed ? "" : "dotted"; }
+    virtual string dotStyle() const override { return m_consumed ? "" : "dotted"; }
     AstScope* scopep() const { return m_scopep; }
     bool reducible() const { return m_reducible; }
     bool dedupable() const { return m_dedupable; }
@@ -140,11 +140,11 @@ public:
         , m_isClock(false)
         , m_rstSyncNodep(nullptr)
         , m_rstAsyncNodep(nullptr) {}
-    virtual ~GateVarVertex() {}
+    virtual ~GateVarVertex() override {}
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
-    virtual string name() const { return (cvtToHex(m_varScp) + " " + varScp()->name()); }
-    virtual string dotColor() const { return "blue"; }
+    virtual string name() const override { return (cvtToHex(m_varScp) + " " + varScp()->name()); }
+    virtual string dotColor() const override { return "blue"; }
     bool isTop() const { return m_isTop; }
     void setIsTop() { m_isTop = true; }
     bool isClock() const { return m_isClock; }
@@ -165,7 +165,9 @@ public:
             setIsClock();
         }
     }
-    VNUser accept(GateGraphBaseVisitor& v, VNUser vu = VNUser(0)) { return v.visit(this, vu); }
+    virtual VNUser accept(GateGraphBaseVisitor& v, VNUser vu = VNUser(0)) override {
+        return v.visit(this, vu);
+    }
 };
 
 class GateLogicVertex : public GateEitherVertex {
@@ -179,15 +181,19 @@ public:
         , m_nodep(nodep)
         , m_activep(activep)
         , m_slow(slow) {}
-    virtual ~GateLogicVertex() {}
+    virtual ~GateLogicVertex() override {}
     // ACCESSORS
-    virtual string name() const { return (cvtToHex(m_nodep) + "@" + scopep()->prettyName()); }
-    virtual string dotColor() const { return "purple"; }
-    virtual FileLine* fileline() const { return nodep()->fileline(); }
+    virtual string name() const override {
+        return (cvtToHex(m_nodep) + "@" + scopep()->prettyName());
+    }
+    virtual string dotColor() const override { return "purple"; }
+    virtual FileLine* fileline() const override { return nodep()->fileline(); }
     AstNode* nodep() const { return m_nodep; }
     AstActive* activep() const { return m_activep; }
     bool slow() const { return m_slow; }
-    VNUser accept(GateGraphBaseVisitor& v, VNUser vu = VNUser(0)) { return v.visit(this, vu); }
+    virtual VNUser accept(GateGraphBaseVisitor& v, VNUser vu = VNUser(0)) override {
+        return v.visit(this, vu);
+    }
 };
 
 //######################################################################
@@ -294,7 +300,7 @@ public:
         }
         if (debug() >= 9 && !m_isSimple) nodep->dumpTree(cout, "    gate!Ok: ");
     }
-    virtual ~GateOkVisitor() {}
+    virtual ~GateOkVisitor() override {}
     // PUBLIC METHODS
     bool isSimple() const { return m_isSimple; }
     AstNode* substTree() const { return m_substTreep; }
@@ -538,7 +544,7 @@ public:
         m_inSlow = false;
         iterate(nodep);
     }
-    virtual ~GateVisitor() {
+    virtual ~GateVisitor() override {
         V3Stats::addStat("Optimizations, Gate sigs deleted", m_statSigs);
         V3Stats::addStat("Optimizations, Gate inputs replaced", m_statRefs);
         V3Stats::addStat("Optimizations, Gate sigs deduped", m_statDedupLogic);
@@ -878,7 +884,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    virtual ~GateElimVisitor() {}
+    virtual ~GateElimVisitor() override {}
     GateElimVisitor(AstNode* nodep, AstVarScope* varscp, AstNode* replaceTreep,
                     GateDedupeVarVisitor* varVisp) {
         UINFO(9, "     elimvisitor " << nodep << endl);
@@ -1143,7 +1149,7 @@ private:
     GateDedupeVarVisitor m_varVisitor;  // Looks for a dupe of the logic
     int m_depth;  // Iteration depth
 
-    virtual VNUser visit(GateVarVertex* vvertexp, VNUser) {
+    virtual VNUser visit(GateVarVertex* vvertexp, VNUser) override {
         // Check that we haven't been here before
         if (m_depth > GATE_DEDUP_MAX_DEPTH)
             return VNUser(0);  // Break loops; before user2 set so hit this vertex later
@@ -1210,7 +1216,7 @@ private:
 
     // Given iterated logic, starting at vu which was consumer's GateVarVertex
     // Returns a varref that has the same logic input; or nullptr if none
-    virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) {
+    virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) override {
         lvertexp->iterateInEdges(*this);
 
         GateVarVertex* consumerVvertexpp = static_cast<GateVarVertex*>(vu.toGraphVertex());
@@ -1290,7 +1296,7 @@ private:
         }
     }
 
-    virtual VNUser visit(GateVarVertex* vvertexp, VNUser) {
+    virtual VNUser visit(GateVarVertex* vvertexp, VNUser) override {
         for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep;) {
             V3GraphEdge* oldedgep = edgep;
             edgep = edgep->inNextp();  // for recursive since the edge could be deleted
@@ -1363,7 +1369,7 @@ private:
         }
         return VNUser(0);
     }
-    virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) {  //
+    virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) override {  //
         return VNUser(0);
     }
 
@@ -1433,7 +1439,7 @@ public:
         m_found_offset = 0;
         m_found = false;
     }
-    virtual ~GateConcatVisitor() {}
+    virtual ~GateConcatVisitor() override {}
     // PUBLIC METHODS
     bool concatOffset(AstConcat* concatp, AstVarScope* vscp, int& offsetr) {
         m_vscp = vscp;
@@ -1474,7 +1480,7 @@ private:
     int m_total_seen_clk_vectors;
     int m_total_decomposed_clk_vectors;
 
-    virtual VNUser visit(GateVarVertex* vvertexp, VNUser vu) {
+    virtual VNUser visit(GateVarVertex* vvertexp, VNUser vu) override {
         // Check that we haven't been here before
         AstVarScope* vsp = vvertexp->varScp();
         if (vsp->user2SetOnce()) return VNUser(0);
@@ -1491,7 +1497,7 @@ private:
         return VNUser(0);  // Unused
     }
 
-    virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) {
+    virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) override {
         GateClkDecompState* currState = reinterpret_cast<GateClkDecompState*>(vu.c());
         int clk_offset = currState->m_offset;
         if (const AstAssignW* assignp = VN_CAST(lvertexp->nodep(), AssignW)) {
@@ -1564,7 +1570,7 @@ public:
         m_total_seen_clk_vectors = 0;
         m_total_decomposed_clk_vectors = 0;
     }
-    virtual ~GateClkDecompGraphVisitor() {
+    virtual ~GateClkDecompGraphVisitor() override {
         V3Stats::addStat("Optimizations, Clocker seen vectors", m_total_seen_clk_vectors);
         V3Stats::addStat("Optimizations, Clocker decomposed vectors",
                          m_total_decomposed_clk_vectors);
@@ -1621,7 +1627,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit GateDeassignVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~GateDeassignVisitor() {}
+    virtual ~GateDeassignVisitor() override {}
 };
 
 //######################################################################

@@ -103,7 +103,7 @@ public:
         nodeHashIterate(const_cast<AstNode*>(nodep));
     }
     V3Hash finalHash() const { return m_lowerHash; }
-    virtual ~HashedVisitor() {}
+    virtual ~HashedVisitor() override {}
 };
 
 //######################################################################

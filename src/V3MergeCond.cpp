@@ -329,7 +329,7 @@ public:
         m_markVars.clear();
         iterate(nodep);
     }
-    virtual ~MergeCondVisitor() {
+    virtual ~MergeCondVisitor() override {
         V3Stats::addStat("Optimizations, MergeCond merges", m_statMerges);
         V3Stats::addStat("Optimizations, MergeCond merged items", m_statMergedItems);
         V3Stats::addStat("Optimizations, MergeCond longest merge", m_statLongestList);

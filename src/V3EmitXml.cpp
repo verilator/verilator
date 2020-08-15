@@ -250,7 +250,7 @@ public:
         m_id = 0;
         iterate(nodep);
     }
-    virtual ~EmitXmlFileVisitor() {}
+    virtual ~EmitXmlFileVisitor() override {}
 };
 
 //######################################################################
@@ -301,7 +301,7 @@ public:
         }
         m_os << "</module_files>\n";
     }
-    virtual ~ModuleFilesXmlVisitor() {}
+    virtual ~ModuleFilesXmlVisitor() override {}
 };
 
 //######################################################################
@@ -368,7 +368,7 @@ public:
         // Operate on whole netlist
         nodep->accept(*this);
     }
-    virtual ~HierCellsXmlVisitor() {}
+    virtual ~HierCellsXmlVisitor() override {}
 };
 
 //######################################################################

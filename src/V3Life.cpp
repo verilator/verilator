@@ -453,7 +453,7 @@ public:
             if (m_lifep) VL_DO_CLEAR(delete m_lifep, m_lifep = nullptr);
         }
     }
-    virtual ~LifeVisitor() {
+    virtual ~LifeVisitor() override {
         if (m_lifep) VL_DO_CLEAR(delete m_lifep, m_lifep = nullptr);
     }
     VL_UNCOPYABLE(LifeVisitor);
@@ -490,7 +490,7 @@ public:
         m_statep = statep;
         iterate(nodep);
     }
-    virtual ~LifeTopVisitor() {}
+    virtual ~LifeTopVisitor() override {}
 };
 
 //######################################################################

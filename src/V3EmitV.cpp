@@ -665,7 +665,7 @@ public:
         m_suppressVarSemi = false;
         m_sensesp = domainp;
     }
-    virtual ~EmitVBaseVisitor() {}
+    virtual ~EmitVBaseVisitor() override {}
 };
 
 //######################################################################
@@ -676,11 +676,11 @@ class EmitVFileVisitor : public EmitVBaseVisitor {
     V3OutFile* m_ofp;
     // METHODS
     V3OutFile* ofp() const { return m_ofp; }
-    virtual void puts(const string& str) { ofp()->puts(str); }
-    virtual void putbs(const string& str) { ofp()->putbs(str); }
-    virtual void putfs(AstNode*, const string& str) { putbs(str); }
-    virtual void putqs(AstNode*, const string& str) { putbs(str); }
-    virtual void putsNoTracking(const string& str) { ofp()->putsNoTracking(str); }
+    virtual void puts(const string& str) override { ofp()->puts(str); }
+    virtual void putbs(const string& str) override { ofp()->putbs(str); }
+    virtual void putfs(AstNode*, const string& str) override { putbs(str); }
+    virtual void putqs(AstNode*, const string& str) override { putbs(str); }
+    virtual void putsNoTracking(const string& str) override { ofp()->putsNoTracking(str); }
 
 public:
     EmitVFileVisitor(AstNode* nodep, V3OutFile* ofp, bool trackText = false,
@@ -690,7 +690,7 @@ public:
         m_suppressVarSemi = suppressVarSemi;
         iterate(nodep);
     }
-    virtual ~EmitVFileVisitor() {}
+    virtual ~EmitVFileVisitor() override {}
 };
 
 //######################################################################
@@ -700,18 +700,18 @@ class EmitVStreamVisitor : public EmitVBaseVisitor {
     // MEMBERS
     std::ostream& m_os;
     // METHODS
-    virtual void putsNoTracking(const string& str) { m_os << str; }
-    virtual void puts(const string& str) { putsNoTracking(str); }
-    virtual void putbs(const string& str) { puts(str); }
-    virtual void putfs(AstNode*, const string& str) { putbs(str); }
-    virtual void putqs(AstNode*, const string& str) { putbs(str); }
+    virtual void putsNoTracking(const string& str) override { m_os << str; }
+    virtual void puts(const string& str) override { putsNoTracking(str); }
+    virtual void putbs(const string& str) override { puts(str); }
+    virtual void putfs(AstNode*, const string& str) override { putbs(str); }
+    virtual void putqs(AstNode*, const string& str) override { putbs(str); }
 
 public:
     EmitVStreamVisitor(AstNode* nodep, std::ostream& os)
         : m_os(os) {
         iterate(nodep);
     }
-    virtual ~EmitVStreamVisitor() {}
+    virtual ~EmitVStreamVisitor() override {}
 };
 
 //######################################################################
@@ -724,7 +724,7 @@ class EmitVPrefixedFormatter : public V3OutFormatter {
     int m_column;  // Rough location; need just zero or non-zero
     FileLine* m_prefixFl;
     // METHODS
-    virtual void putcOutput(char chr) {
+    virtual void putcOutput(char chr) override {
         if (chr == '\n') {
             m_column = 0;
             m_os << chr;
@@ -755,7 +755,7 @@ public:
             = v3Global.rootp()
                   ->fileline();  // NETLIST's fileline instead of nullptr to avoid nullptr checks
     }
-    virtual ~EmitVPrefixedFormatter() {
+    virtual ~EmitVPrefixedFormatter() override {
         if (m_column) puts("\n");
     }
 };
@@ -765,13 +765,13 @@ class EmitVPrefixedVisitor : public EmitVBaseVisitor {
     EmitVPrefixedFormatter m_formatter;  // Special verilog formatter (Way down the
                                          // inheritance is another unused V3OutFormatter)
     // METHODS
-    virtual void putsNoTracking(const string& str) { m_formatter.putsNoTracking(str); }
-    virtual void puts(const string& str) { m_formatter.puts(str); }
+    virtual void putsNoTracking(const string& str) override { m_formatter.putsNoTracking(str); }
+    virtual void puts(const string& str) override { m_formatter.puts(str); }
     // We don't use m_formatter's putbs because the tokens will change filelines
     // and insert returns at the proper locations
-    virtual void putbs(const string& str) { m_formatter.puts(str); }
-    virtual void putfs(AstNode* nodep, const string& str) { putfsqs(nodep, str, false); }
-    virtual void putqs(AstNode* nodep, const string& str) { putfsqs(nodep, str, true); }
+    virtual void putbs(const string& str) override { m_formatter.puts(str); }
+    virtual void putfs(AstNode* nodep, const string& str) override { putfsqs(nodep, str, false); }
+    virtual void putqs(AstNode* nodep, const string& str) override { putfsqs(nodep, str, true); }
     void putfsqs(AstNode* nodep, const string& str, bool quiet) {
         if (m_formatter.prefixFl() != nodep->fileline()) {
             m_formatter.prefixFl(nodep->fileline());
@@ -789,7 +789,7 @@ public:
         if (user3mark) { AstUser3InUse::check(); }
         iterate(nodep);
     }
-    virtual ~EmitVPrefixedVisitor() {}
+    virtual ~EmitVPrefixedVisitor() override {}
 };
 
 //######################################################################

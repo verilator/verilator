@@ -392,7 +392,7 @@ public:
         // Process
         iterate(nodep);
     }
-    virtual ~AssertVisitor() {
+    virtual ~AssertVisitor() override {
         V3Stats::addStat("Assertions, assert non-immediate statements", m_statAsNotImm);
         V3Stats::addStat("Assertions, assert immediate statements", m_statAsImm);
         V3Stats::addStat("Assertions, cover statements", m_statCover);

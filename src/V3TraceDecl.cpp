@@ -349,7 +349,7 @@ public:
         m_interface = false;
         iterate(nodep);
     }
-    virtual ~TraceDeclVisitor() {
+    virtual ~TraceDeclVisitor() override {
         V3Stats::addStat("Tracing, Traced signals", m_statSigs);
         V3Stats::addStat("Tracing, Ignored signals", m_statIgnSigs);
     }

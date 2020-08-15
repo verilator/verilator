@@ -418,7 +418,7 @@ public:
         // easily without iterating through the tree.
         nodep->evalp(m_evalFuncp);
     }
-    virtual ~ClockVisitor() {}
+    virtual ~ClockVisitor() override {}
 };
 
 //######################################################################

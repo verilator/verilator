@@ -530,7 +530,7 @@ public:
         m_senitemCvtNum = 0;
         iterate(rootp);
     }
-    virtual ~LinkResolveVisitor() {}
+    virtual ~LinkResolveVisitor() override {}
 };
 
 //######################################################################
@@ -574,7 +574,7 @@ public:
         //
         iterate(rootp);
     }
-    virtual ~LinkBotupVisitor() {}
+    virtual ~LinkBotupVisitor() override {}
 };
 
 //######################################################################

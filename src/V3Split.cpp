@@ -102,12 +102,14 @@ protected:
     SplitNodeVertex(V3Graph* graphp, AstNode* nodep)
         : V3GraphVertex(graphp)
         , m_nodep(nodep) {}
-    virtual ~SplitNodeVertex() {}
+    virtual ~SplitNodeVertex() override {}
     // ACCESSORS
     // Do not make accessor for nodep(),  It may change due to
     // reordering a lower block, but we don't repair it
-    virtual string name() const { return cvtToHex(m_nodep) + ' ' + m_nodep->prettyTypeName(); }
-    virtual FileLine* fileline() const { return nodep()->fileline(); }
+    virtual string name() const override {
+        return cvtToHex(m_nodep) + ' ' + m_nodep->prettyTypeName();
+    }
+    virtual FileLine* fileline() const override { return nodep()->fileline(); }
 
 public:
     virtual AstNode* nodep() const { return m_nodep; }
@@ -117,34 +119,34 @@ class SplitPliVertex : public SplitNodeVertex {
 public:
     explicit SplitPliVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex(graphp, nodep) {}
-    virtual ~SplitPliVertex() {}
-    virtual string name() const { return "*PLI*"; }
-    virtual string dotColor() const { return "green"; }
+    virtual ~SplitPliVertex() override {}
+    virtual string name() const override { return "*PLI*"; }
+    virtual string dotColor() const override { return "green"; }
 };
 
 class SplitLogicVertex : public SplitNodeVertex {
 public:
     SplitLogicVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex(graphp, nodep) {}
-    virtual ~SplitLogicVertex() {}
-    virtual string dotColor() const { return "yellow"; }
+    virtual ~SplitLogicVertex() override {}
+    virtual string dotColor() const override { return "yellow"; }
 };
 
 class SplitVarStdVertex : public SplitNodeVertex {
 public:
     SplitVarStdVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex(graphp, nodep) {}
-    virtual ~SplitVarStdVertex() {}
-    virtual string dotColor() const { return "skyblue"; }
+    virtual ~SplitVarStdVertex() override {}
+    virtual string dotColor() const override { return "skyblue"; }
 };
 
 class SplitVarPostVertex : public SplitNodeVertex {
 public:
     SplitVarPostVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex(graphp, nodep) {}
-    virtual ~SplitVarPostVertex() {}
-    virtual string name() const { return string("POST ") + SplitNodeVertex::name(); }
-    virtual string dotColor() const { return "CadetBlue"; }
+    virtual ~SplitVarPostVertex() override {}
+    virtual string name() const override { return string("POST ") + SplitNodeVertex::name(); }
+    virtual string dotColor() const override { return "CadetBlue"; }
 };
 
 //######################################################################
@@ -159,7 +161,7 @@ protected:
               bool cutable = CUTABLE)
         : V3GraphEdge(graphp, fromp, top, weight, cutable)
         , m_ignoreInStep(0) {}
-    virtual ~SplitEdge() {}
+    virtual ~SplitEdge() override {}
 
 public:
     // Iterator for graph functions
@@ -178,7 +180,7 @@ public:
         if (!oedgep) v3fatalSrc("Following edge of non-SplitEdge type");
         return (!oedgep->ignoreThisStep());
     }
-    virtual string dotStyle() const {
+    virtual string dotStyle() const override {
         return ignoreThisStep() ? "dotted" : V3GraphEdge::dotStyle();
     }
 };
@@ -188,36 +190,36 @@ class SplitPostEdge : public SplitEdge {
 public:
     SplitPostEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge(graphp, fromp, top, WEIGHT_NORMAL) {}
-    virtual ~SplitPostEdge() {}
-    virtual bool followScoreboard() const { return false; }
-    virtual string dotColor() const { return "khaki"; }
+    virtual ~SplitPostEdge() override {}
+    virtual bool followScoreboard() const override { return false; }
+    virtual string dotColor() const override { return "khaki"; }
 };
 
 class SplitLVEdge : public SplitEdge {
 public:
     SplitLVEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge(graphp, fromp, top, WEIGHT_NORMAL) {}
-    virtual ~SplitLVEdge() {}
-    virtual bool followScoreboard() const { return true; }
-    virtual string dotColor() const { return "yellowGreen"; }
+    virtual ~SplitLVEdge() override {}
+    virtual bool followScoreboard() const override { return true; }
+    virtual string dotColor() const override { return "yellowGreen"; }
 };
 
 class SplitRVEdge : public SplitEdge {
 public:
     SplitRVEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge(graphp, fromp, top, WEIGHT_NORMAL) {}
-    virtual ~SplitRVEdge() {}
-    virtual bool followScoreboard() const { return true; }
-    virtual string dotColor() const { return "green"; }
+    virtual ~SplitRVEdge() override {}
+    virtual bool followScoreboard() const override { return true; }
+    virtual string dotColor() const override { return "green"; }
 };
 
 struct SplitScorebdEdge : public SplitEdge {
 public:
     SplitScorebdEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge(graphp, fromp, top, WEIGHT_NORMAL) {}
-    virtual ~SplitScorebdEdge() {}
-    virtual bool followScoreboard() const { return true; }
-    virtual string dotColor() const { return "blue"; }
+    virtual ~SplitScorebdEdge() override {}
+    virtual bool followScoreboard() const override { return true; }
+    virtual string dotColor() const override { return "blue"; }
 };
 
 struct SplitStrictEdge : public SplitEdge {
@@ -226,9 +228,9 @@ struct SplitStrictEdge : public SplitEdge {
 public:
     SplitStrictEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge(graphp, fromp, top, WEIGHT_NORMAL, NOT_CUTABLE) {}
-    virtual ~SplitStrictEdge() {}
-    virtual bool followScoreboard() const { return true; }
-    virtual string dotColor() const { return "blue"; }
+    virtual ~SplitStrictEdge() override {}
+    virtual bool followScoreboard() const override { return true; }
+    virtual string dotColor() const override { return "blue"; }
 };
 
 //######################################################################
@@ -261,7 +263,7 @@ protected:
     // CONSTRUCTORS
 public:
     SplitReorderBaseVisitor() { scoreboardClear(); }
-    virtual ~SplitReorderBaseVisitor() {
+    virtual ~SplitReorderBaseVisitor() override {
         V3Stats::addStat("Optimizations, Split always", m_statSplits);
     }
 
@@ -444,7 +446,7 @@ class ReorderVisitor : public SplitReorderBaseVisitor {
     // CONSTRUCTORS
 public:
     explicit ReorderVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ReorderVisitor() {}
+    virtual ~ReorderVisitor() override {}
 
     // METHODS
 protected:
@@ -641,7 +643,7 @@ public:
     // Visit through *nodep and map each AstNodeIf within to the set of
     // colors it will participate in. Also find the whole set of colors.
     explicit IfColorVisitor(AstAlways* nodep) { iterate(nodep); }
-    virtual ~IfColorVisitor() {}
+    virtual ~IfColorVisitor() override {}
 
     // METHODS
     const ColorSet& colors() const { return m_colors; }
@@ -706,7 +708,7 @@ public:
         UINFO(6, "  splitting always " << nodep << endl);
     }
 
-    virtual ~EmitSplitVisitor() {}
+    virtual ~EmitSplitVisitor() override {}
 
     // METHODS
     void go() {
@@ -812,7 +814,7 @@ public:
             VL_DO_DANGLING(np->deleteTree(), np);
         }
     }
-    virtual ~RemovePlaceholdersVisitor() {}
+    virtual ~RemovePlaceholdersVisitor() override {}
     virtual void visit(AstSplitPlaceholder* nodep) override { m_removeSet.insert(nodep); }
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
@@ -853,7 +855,7 @@ public:
         }
     }
 
-    virtual ~SplitVisitor() {}
+    virtual ~SplitVisitor() override {}
 
     // METHODS
 protected:

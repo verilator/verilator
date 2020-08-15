@@ -1238,7 +1238,7 @@ public:
         m_trackText = trackText;
         iterate(nodep);
     }
-    virtual ~EmitCStmts() {}
+    virtual ~EmitCStmts() override {}
 };
 
 //######################################################################
@@ -1257,12 +1257,12 @@ public:
         , m_serial(++m_serialNext) {}
     virtual ~EmitVarTspSorter() {}
     // METHODS
-    bool operator<(const TspStateBase& other) const {
+    virtual bool operator<(const TspStateBase& other) const override {
         return operator<(dynamic_cast<const EmitVarTspSorter&>(other));
     }
     bool operator<(const EmitVarTspSorter& other) const { return m_serial < other.m_serial; }
     const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
-    virtual int cost(const TspStateBase* otherp) const {
+    virtual int cost(const TspStateBase* otherp) const override {
         return cost(dynamic_cast<const EmitVarTspSorter*>(otherp));
     }
     virtual int cost(const EmitVarTspSorter* otherp) const {
@@ -1776,7 +1776,7 @@ public:
         m_slow = false;
         m_fast = false;
     }
-    virtual ~EmitCImp() {}
+    virtual ~EmitCImp() override {}
     void mainImp(AstNodeModule* modp, bool slow);
     void mainInt(AstNodeModule* modp);
     void mainDoFunc(AstCFunc* nodep) { iterate(nodep); }
@@ -3107,7 +3107,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
              + "C* tfp, int levels, int options = 0);\n");
         if (optSystemC()) {
             puts("/// SC tracing; avoid overloaded virtual function lint warning\n");
-            puts("virtual void trace(sc_trace_file* tfp) const { "
+            puts("virtual void trace(sc_trace_file* tfp) const override { "
                  "::sc_core::sc_module::trace(tfp); }\n");
         }
     }
@@ -3769,7 +3769,7 @@ public:
         m_slow = slow;
         m_enumNum = 0;
     }
-    virtual ~EmitCTrace() {}
+    virtual ~EmitCTrace() override {}
     void main() {
         // Put out the file
         newOutCFile(0);

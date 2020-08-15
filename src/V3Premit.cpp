@@ -76,7 +76,7 @@ public:
         m_noopt = false;
         iterate(nodep);
     }
-    virtual ~PremitAssignVisitor() {}
+    virtual ~PremitAssignVisitor() override {}
     bool noOpt() const { return m_noopt; }
 };
 
@@ -408,7 +408,7 @@ public:
         m_assignLhs = false;
         iterate(nodep);
     }
-    virtual ~PremitVisitor() {}
+    virtual ~PremitVisitor() override {}
 };
 
 //----------------------------------------------------------------------

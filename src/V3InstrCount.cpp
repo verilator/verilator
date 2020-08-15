@@ -77,7 +77,7 @@ public:
         , m_osp(osp) {
         if (nodep) iterate(nodep);
     }
-    virtual ~InstrCountVisitor() {}
+    virtual ~InstrCountVisitor() override {}
 
     // METHODS
     uint32_t instrCount() const { return m_instrCount; }
@@ -280,7 +280,7 @@ public:
         UASSERT_OBJ(osp, nodep, "Don't call if not dumping");
         if (nodep) iterate(nodep);
     }
-    virtual ~InstrCountDumpVisitor() {}
+    virtual ~InstrCountDumpVisitor() override {}
 
 private:
     // METHODS

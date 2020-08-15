@@ -257,7 +257,7 @@ public:
         m_ifDepth = 0;
         iterate(nodep);
     }
-    virtual ~BeginVisitor() {}
+    virtual ~BeginVisitor() override {}
 };
 
 //######################################################################
@@ -298,7 +298,7 @@ private:
 public:
     // CONSTRUCTORS
     BeginRelinkVisitor(AstNetlist* nodep, BeginState*) { iterate(nodep); }
-    virtual ~BeginRelinkVisitor() {}
+    virtual ~BeginRelinkVisitor() override {}
 };
 
 //######################################################################

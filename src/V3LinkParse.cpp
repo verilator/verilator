@@ -604,7 +604,7 @@ public:
         m_valueModp = nullptr;
         iterate(rootp);
     }
-    virtual ~LinkParseVisitor() {}
+    virtual ~LinkParseVisitor() override {}
 };
 
 //######################################################################

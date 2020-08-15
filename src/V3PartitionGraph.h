@@ -32,7 +32,7 @@ class AbstractMTask : public V3GraphVertex {
 public:
     AbstractMTask(V3Graph* graphp)
         : V3GraphVertex(graphp) {}
-    virtual ~AbstractMTask() {}
+    virtual ~AbstractMTask() override {}
     virtual uint32_t id() const = 0;
     virtual uint32_t cost() const = 0;
 };
@@ -44,12 +44,12 @@ public:
     // CONSTRUCTORS
     AbstractLogicMTask(V3Graph* graphp)
         : AbstractMTask(graphp) {}
-    virtual ~AbstractLogicMTask() {}
+    virtual ~AbstractLogicMTask() override {}
     // METHODS
     // Set of logic vertices in this mtask. Order is not significant.
     virtual const VxList* vertexListp() const = 0;
-    virtual uint32_t id() const = 0;  // Unique id of this mtask.
-    virtual uint32_t cost() const = 0;
+    virtual uint32_t id() const override = 0;  // Unique id of this mtask.
+    virtual uint32_t cost() const override = 0;
 };
 
 class ExecMTask : public AbstractMTask {
@@ -78,10 +78,10 @@ public:
         , m_packNextp(nullptr)
         , m_threadRoot(false) {}
     AstMTaskBody* bodyp() const { return m_bodyp; }
-    virtual uint32_t id() const { return m_id; }
+    virtual uint32_t id() const override { return m_id; }
     uint32_t priority() const { return m_priority; }
     void priority(uint32_t pri) { m_priority = pri; }
-    virtual uint32_t cost() const { return m_cost; }
+    virtual uint32_t cost() const override { return m_cost; }
     void cost(uint32_t cost) { m_cost = cost; }
     void thread(uint32_t thread) { m_thread = thread; }
     uint32_t thread() const { return m_thread; }
@@ -93,7 +93,7 @@ public:
         // If this MTask maps to a C function, this should be the name
         return string("__Vmtask") + "__" + cvtToStr(m_id);
     }
-    string name() const { return string("mt") + cvtToStr(id()); }
+    virtual string name() const override { return string("mt") + cvtToStr(id()); }
     void dump(std::ostream& str) const {
         str << name() << "." << cvtToHex(this);
         if (priority() || cost()) str << " [pr=" << priority() << " c=" << cvtToStr(cost()) << "]";

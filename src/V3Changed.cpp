@@ -216,7 +216,7 @@ public:
         m_newLvEqnp->deleteTree();
         m_newRvEqnp->deleteTree();
     }
-    virtual ~ChangedInsertVisitor() {}
+    virtual ~ChangedInsertVisitor() override {}
     VL_UNCOPYABLE(ChangedInsertVisitor);
 };
 
@@ -288,7 +288,7 @@ public:
         m_statep = statep;
         iterate(nodep);
     }
-    virtual ~ChangedVisitor() {}
+    virtual ~ChangedVisitor() override {}
 };
 
 //######################################################################

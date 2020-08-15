@@ -220,7 +220,7 @@ public:
         // Process
         iterate(nodep);
     }
-    virtual ~StatsVisitor() {
+    virtual ~StatsVisitor() override {
         // Done. Publish statistics
         V3Stats::addStat(m_stage, "Instruction count, TOTAL", m_statInstr);
         V3Stats::addStat(m_stage, "Instruction count, fast critical", m_statInstrFast);

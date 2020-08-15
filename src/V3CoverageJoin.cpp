@@ -114,7 +114,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit CoverageJoinVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~CoverageJoinVisitor() {
+    virtual ~CoverageJoinVisitor() override {
         V3Stats::addStat("Coverage, Toggle points joined", m_statToggleJoins);
     }
 };

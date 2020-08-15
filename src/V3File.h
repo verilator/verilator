@@ -182,12 +182,12 @@ class V3OutFile : public V3OutFormatter {
 
 public:
     V3OutFile(const string& filename, V3OutFormatter::Language lang);
-    virtual ~V3OutFile();
+    virtual ~V3OutFile() override;
     void putsForceIncs();
 
 private:
     // CALLBACKS
-    virtual void putcOutput(char chr) { fputc(chr, m_fp); }
+    virtual void putcOutput(char chr) override { fputc(chr, m_fp); }
 };
 
 class V3OutCFile : public V3OutFile {
@@ -199,7 +199,7 @@ public:
         , m_guard(false) {
         resetPrivate();
     }
-    virtual ~V3OutCFile() {}
+    virtual ~V3OutCFile() override {}
     virtual void putsHeader() { puts("// Verilated -*- C++ -*-\n"); }
     virtual void putsIntTopInclude() { putsForceIncs(); }
     virtual void putsGuard();
@@ -223,9 +223,9 @@ class V3OutScFile : public V3OutCFile {
 public:
     explicit V3OutScFile(const string& filename)
         : V3OutCFile(filename) {}
-    virtual ~V3OutScFile() {}
-    virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
-    virtual void putsIntTopInclude() {
+    virtual ~V3OutScFile() override {}
+    virtual void putsHeader() override { puts("// Verilated -*- SystemC -*-\n"); }
+    virtual void putsIntTopInclude() override {
         putsForceIncs();
         puts("#include \"systemc.h\"\n");
         puts("#include \"verilated_sc.h\"\n");
@@ -236,7 +236,7 @@ class V3OutVFile : public V3OutFile {
 public:
     explicit V3OutVFile(const string& filename)
         : V3OutFile(filename, V3OutFormatter::LA_VERILOG) {}
-    virtual ~V3OutVFile() {}
+    virtual ~V3OutVFile() override {}
     virtual void putsHeader() { puts("// Verilated -*- Verilog -*-\n"); }
 };
 
@@ -246,7 +246,7 @@ public:
         : V3OutFile(filename, V3OutFormatter::LA_XML) {
         blockIndent(2);
     }
-    virtual ~V3OutXmlFile() {}
+    virtual ~V3OutXmlFile() override {}
     virtual void putsHeader() { puts("<?xml version=\"1.0\" ?>\n"); }
 };
 
@@ -254,7 +254,7 @@ class V3OutMkFile : public V3OutFile {
 public:
     explicit V3OutMkFile(const string& filename)
         : V3OutFile(filename, V3OutFormatter::LA_MK) {}
-    virtual ~V3OutMkFile() {}
+    virtual ~V3OutMkFile() override {}
     virtual void putsHeader() { puts("# Verilated -*- Makefile -*-\n"); }
     // No automatic indentation yet.
     void puts(const char* strg) { putsNoTracking(strg); }

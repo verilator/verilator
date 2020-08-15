@@ -90,19 +90,19 @@ public:
         , m_isTristate(false)
         , m_feedsTri(false)
         , m_processed(false) {}
-    virtual ~TristateVertex() {}
+    virtual ~TristateVertex() override {}
     // ACCESSORS
     AstNode* nodep() const { return m_nodep; }
     AstVar* varp() const { return VN_CAST(nodep(), Var); }
-    virtual string name() const {
+    virtual string name() const override {
         return ((isTristate() ? "tri\\n" : feedsTri() ? "feed\\n" : "-\\n")
                 + (nodep()->prettyTypeName() + " " + cvtToHex(nodep())));
     }
-    virtual string dotColor() const {
+    virtual string dotColor() const override {
         return (varp() ? (isTristate() ? "darkblue" : feedsTri() ? "blue" : "lightblue")
                        : (isTristate() ? "darkgreen" : feedsTri() ? "green" : "lightgreen"));
     }
-    virtual FileLine* fileline() const { return nodep()->fileline(); }
+    virtual FileLine* fileline() const override { return nodep()->fileline(); }
     void isTristate(bool flag) { m_isTristate = flag; }
     bool isTristate() const { return m_isTristate; }
     void feedsTri(bool flag) { m_feedsTri = flag; }
@@ -309,7 +309,7 @@ public:
         , m_lvalue(lvalue) {
         iterate(nodep);
     }
-    virtual ~TristatePinVisitor() {}
+    virtual ~TristatePinVisitor() override {}
 };
 
 //######################################################################
@@ -1357,7 +1357,7 @@ public:
         m_tgraph.clear();
         iterate(nodep);
     }
-    virtual ~TristateVisitor() {
+    virtual ~TristateVisitor() override {
         V3Stats::addStat("Tristate, Tristate resolved nets", m_statTriSigs);
     }
 };

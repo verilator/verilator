@@ -136,7 +136,7 @@ public:
         //
         iterate(nodep);
     }
-    virtual ~InstVisitor() {}
+    virtual ~InstVisitor() override {}
 };
 
 //######################################################################
@@ -190,7 +190,7 @@ public:
         m_modVarNameMap.clear();
         iterate(nodep);
     }
-    virtual ~InstDeModVarVisitor() {}
+    virtual ~InstDeModVarVisitor() override {}
 };
 
 //######################################################################
@@ -472,7 +472,7 @@ public:
         //
         iterate(nodep);
     }
-    virtual ~InstDeVisitor() {}
+    virtual ~InstDeVisitor() override {}
 };
 
 //######################################################################

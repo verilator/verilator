@@ -47,7 +47,7 @@ public:
         : V3GraphVertex(graphp)
         , m_impurep(nullptr)
         , m_noInline(false) {}
-    virtual ~TaskBaseVertex() {}
+    virtual ~TaskBaseVertex() override {}
     bool pure() const { return m_impurep == nullptr; }
     AstNode* impureNode() const { return m_impurep; }
     void impure(AstNode* nodep) { m_impurep = nodep; }
@@ -66,11 +66,11 @@ public:
         , m_nodep(nodep) {
         m_cFuncp = nullptr;
     }
-    virtual ~TaskFTaskVertex() {}
+    virtual ~TaskFTaskVertex() override {}
     AstNodeFTask* nodep() const { return m_nodep; }
-    virtual string name() const { return nodep()->name(); }
-    virtual string dotColor() const { return pure() ? "black" : "red"; }
-    virtual FileLine* fileline() const { return nodep()->fileline(); }
+    virtual string name() const override { return nodep()->name(); }
+    virtual string dotColor() const override { return pure() ? "black" : "red"; }
+    virtual FileLine* fileline() const override { return nodep()->fileline(); }
     AstCFunc* cFuncp() const { return m_cFuncp; }
     void cFuncp(AstCFunc* nodep) { m_cFuncp = nodep; }
 };
@@ -80,17 +80,17 @@ class TaskCodeVertex : public TaskBaseVertex {
 public:
     explicit TaskCodeVertex(V3Graph* graphp)
         : TaskBaseVertex(graphp) {}
-    virtual ~TaskCodeVertex() {}
-    virtual string name() const { return "*CODE*"; }
-    virtual string dotColor() const { return "green"; }
+    virtual ~TaskCodeVertex() override {}
+    virtual string name() const override { return "*CODE*"; }
+    virtual string dotColor() const override { return "green"; }
 };
 
 class TaskEdge : public V3GraphEdge {
 public:
     TaskEdge(V3Graph* graphp, TaskBaseVertex* fromp, TaskBaseVertex* top)
         : V3GraphEdge(graphp, fromp, top, 1, false) {}
-    virtual ~TaskEdge() {}
-    virtual string dotLabel() const { return "w" + cvtToStr(weight()); }
+    virtual ~TaskEdge() override {}
+    virtual string dotLabel() const override { return "w" + cvtToStr(weight()); }
 };
 
 //######################################################################
@@ -273,7 +273,7 @@ public:
         m_callGraph.removeRedundantEdgesSum(&TaskEdge::followAlwaysTrue);
         m_callGraph.dumpDotFilePrefixed("task_call");
     }
-    virtual ~TaskStateVisitor() {}
+    virtual ~TaskStateVisitor() override {}
     VL_UNCOPYABLE(TaskStateVisitor);
 };
 
@@ -309,7 +309,7 @@ public:
     explicit TaskRelinkVisitor(AstBegin* nodep) {  // Passed temporary tree
         iterate(nodep);
     }
-    virtual ~TaskRelinkVisitor() {}
+    virtual ~TaskRelinkVisitor() override {}
 };
 
 //######################################################################
@@ -1367,7 +1367,7 @@ public:
         AstNode::user1ClearTree();
         iterate(nodep);
     }
-    virtual ~TaskVisitor() {}
+    virtual ~TaskVisitor() override {}
 };
 
 //######################################################################

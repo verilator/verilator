@@ -113,7 +113,7 @@ public:
         m_caseExprp = nullptr;
         iterate(nodep);
     }
-    virtual ~CaseLintVisitor() {}
+    virtual ~CaseLintVisitor() override {}
 };
 
 //######################################################################
@@ -494,7 +494,7 @@ public:
         for (uint32_t i = 0; i < (1UL << CASE_OVERLAP_WIDTH); ++i) m_valueItem[i] = nullptr;
         iterate(nodep);
     }
-    virtual ~CaseVisitor() {
+    virtual ~CaseVisitor() override {
         V3Stats::addStat("Optimizations, Cases parallelized", m_statCaseFast);
         V3Stats::addStat("Optimizations, Cases complex", m_statCaseSlow);
     }

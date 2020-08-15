@@ -124,7 +124,7 @@ public:
         m_activep = nullptr;
         iterate(nodep);
     }
-    virtual ~GenClkRenameVisitor() {}
+    virtual ~GenClkRenameVisitor() override {}
 };
 
 //######################################################################
@@ -223,7 +223,7 @@ public:
         , m_topModp(nullptr) {
         iterate(nodep);
     }
-    virtual ~GenClkReadVisitor() {}
+    virtual ~GenClkReadVisitor() override {}
 };
 
 //######################################################################

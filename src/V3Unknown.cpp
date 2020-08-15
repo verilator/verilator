@@ -435,7 +435,7 @@ public:
         m_constXCvt = false;
         iterate(nodep);
     }
-    virtual ~UnknownVisitor() {  //
+    virtual ~UnknownVisitor() override {  //
         V3Stats::addStat("Unknowns, variables created", m_statUnkVars);
     }
 };

@@ -61,7 +61,7 @@ public:
         m_splitVscp = nullptr;
         iterate(nodep);
     }
-    virtual ~SplitAsFindVisitor() {}
+    virtual ~SplitAsFindVisitor() override {}
     // METHODS
     AstVarScope* splitVscp() const { return m_splitVscp; }
 };
@@ -123,7 +123,7 @@ public:
         m_matches = false;
         iterate(nodep);
     }
-    virtual ~SplitAsCleanVisitor() {}
+    virtual ~SplitAsCleanVisitor() override {}
 };
 
 //######################################################################
@@ -193,7 +193,7 @@ public:
         AstNode::user1ClearTree();  // user1p() used on entire tree
         iterate(nodep);
     }
-    virtual ~SplitAsVisitor() {
+    virtual ~SplitAsVisitor() override {
         V3Stats::addStat("Optimizations, isolate_assignments blocks", m_statSplits);
     }
 };

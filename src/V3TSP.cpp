@@ -59,7 +59,7 @@ public:
     TspVertexTmpl(V3Graph* graphp, const T_Key& k)
         : V3GraphVertex(graphp)
         , m_key(k) {}
-    virtual ~TspVertexTmpl() {}
+    virtual ~TspVertexTmpl() override {}
     const T_Key& key() const { return m_key; }
 
 private:
@@ -80,7 +80,7 @@ public:
     // CONSTRUCTORS
     TspGraphTmpl()
         : V3Graph() {}
-    virtual ~TspGraphTmpl() {}
+    virtual ~TspGraphTmpl() override {}
 
     // METHODS
     void addVertex(const T_Key& key) {
@@ -507,7 +507,7 @@ public:
         , m_ypos(ypos)
         , m_serial(++m_serialNext) {}
     ~TspTestState() {}
-    virtual int cost(const TspStateBase* otherp) const {
+    virtual int cost(const TspStateBase* otherp) const override {
         return cost(dynamic_cast<const TspTestState*>(otherp));
     }
     static unsigned diff(unsigned a, unsigned b) {
@@ -527,7 +527,7 @@ public:
     unsigned xpos() const { return m_xpos; }
     unsigned ypos() const { return m_ypos; }
 
-    bool operator<(const TspStateBase& other) const {
+    bool operator<(const TspStateBase& other) const override {
         return operator<(dynamic_cast<const TspTestState&>(other));
     }
     bool operator<(const TspTestState& other) const { return m_serial < other.m_serial; }

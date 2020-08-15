@@ -121,7 +121,7 @@ public:
         iterateChildren(nodep);
         calc_tasks();
     }
-    virtual ~BranchVisitor() {}
+    virtual ~BranchVisitor() override {}
 };
 
 //######################################################################

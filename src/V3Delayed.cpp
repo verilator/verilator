@@ -486,7 +486,7 @@ public:
 
         iterate(nodep);
     }
-    virtual ~DelayedVisitor() {
+    virtual ~DelayedVisitor() override {
         V3Stats::addStat("Optimizations, Delayed shared-sets", m_statSharedSet);
     }
 };

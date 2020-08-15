@@ -328,7 +328,7 @@ public:
         //
         iterate(nodep);
     }
-    virtual ~ScopeVisitor() {}
+    virtual ~ScopeVisitor() override {}
 };
 
 //######################################################################
@@ -406,7 +406,7 @@ public:
         m_scopep = nullptr;
         iterate(nodep);
     }
-    virtual ~ScopeCleanupVisitor() {}
+    virtual ~ScopeCleanupVisitor() override {}
 };
 
 //######################################################################

@@ -303,7 +303,7 @@ public:
         m_ftaskp = nullptr;
         iterate(nodep);
     }
-    virtual ~LinkLValueVisitor() {}
+    virtual ~LinkLValueVisitor() override {}
 };
 
 //######################################################################

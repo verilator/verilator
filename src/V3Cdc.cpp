@@ -68,9 +68,9 @@ public:
         , m_srcDomainSet(false)
         , m_dstDomainSet(false)
         , m_asyncPath(false) {}
-    virtual ~CdcEitherVertex() {}
+    virtual ~CdcEitherVertex() override {}
     // ACCESSORS
-    virtual FileLine* fileline() const { return nodep()->fileline(); }
+    virtual FileLine* fileline() const override { return nodep()->fileline(); }
     AstScope* scopep() const { return m_scopep; }
     AstNode* nodep() const { return m_nodep; }
     AstSenTree* srcDomainp() const { return m_srcDomainp; }
@@ -96,11 +96,11 @@ public:
         , m_varScp(varScp)
         , m_cntAsyncRst(0)
         , m_fromFlop(false) {}
-    virtual ~CdcVarVertex() {}
+    virtual ~CdcVarVertex() override {}
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
-    virtual string name() const { return (cvtToHex(m_varScp) + " " + varScp()->name()); }
-    virtual string dotColor() const {
+    virtual string name() const override { return (cvtToHex(m_varScp) + " " + varScp()->name()); }
+    virtual string dotColor() const override {
         return fromFlop() ? "green" : cntAsyncRst() ? "red" : "blue";
     }
     int cntAsyncRst() const { return m_cntAsyncRst; }
@@ -121,10 +121,12 @@ public:
         srcDomainp(sensenodep);
         dstDomainp(sensenodep);
     }
-    virtual ~CdcLogicVertex() {}
+    virtual ~CdcLogicVertex() override {}
     // ACCESSORS
-    virtual string name() const { return (cvtToHex(nodep()) + "@" + scopep()->prettyName()); }
-    virtual string dotColor() const { return hazard() ? "black" : "yellow"; }
+    virtual string name() const override {
+        return (cvtToHex(nodep()) + "@" + scopep()->prettyName());
+    }
+    virtual string dotColor() const override { return hazard() ? "black" : "yellow"; }
     bool hazard() const { return m_hazard; }
     void setHazard(AstNode* nodep) {
         m_hazard = true;
@@ -172,7 +174,7 @@ public:
         m_prefix = prefix;
         iterate(nodep);
     }
-    virtual ~CdcDumpVisitor() {}
+    virtual ~CdcDumpVisitor() override {}
 };
 
 //######################################################################
@@ -200,7 +202,7 @@ public:
         m_maxFilenameLen = 0;
         iterate(nodep);
     }
-    virtual ~CdcWidthVisitor() {}
+    virtual ~CdcWidthVisitor() override {}
     // ACCESSORS
     int maxWidth() {
         size_t width = 1;
@@ -767,7 +769,7 @@ public:
             *m_ofp << endl;
         }
     }
-    virtual ~CdcVisitor() {
+    virtual ~CdcVisitor() override {
         if (m_ofp) VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
     }
 };

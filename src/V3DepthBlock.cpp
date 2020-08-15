@@ -127,7 +127,7 @@ public:
         //
         iterate(nodep);
     }
-    virtual ~DepthBlockVisitor() {}
+    virtual ~DepthBlockVisitor() override {}
 };
 
 //######################################################################

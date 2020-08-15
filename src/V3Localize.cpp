@@ -85,7 +85,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LocalizeDehierVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~LocalizeDehierVisitor() {}
+    virtual ~LocalizeDehierVisitor() override {}
 };
 
 //######################################################################
@@ -225,7 +225,7 @@ public:
         m_cfuncp = nullptr;
         iterate(nodep);
     }
-    virtual ~LocalizeVisitor() {
+    virtual ~LocalizeVisitor() override {
         V3Stats::addStat("Optimizations, Vars localized", m_statLocVars);
     }
 };

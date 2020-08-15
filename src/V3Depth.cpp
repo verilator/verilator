@@ -160,7 +160,7 @@ public:
         //
         iterate(nodep);
     }
-    virtual ~DepthVisitor() {}
+    virtual ~DepthVisitor() override {}
 };
 
 //######################################################################

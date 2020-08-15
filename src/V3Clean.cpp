@@ -304,7 +304,7 @@ public:
         m_modp = nullptr;
         iterate(nodep);
     }
-    virtual ~CleanVisitor() {}
+    virtual ~CleanVisitor() override {}
 };
 
 //######################################################################

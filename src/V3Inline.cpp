@@ -223,7 +223,7 @@ public:
         m_modp = nullptr;
         iterate(nodep);
     }
-    virtual ~InlineMarkVisitor() {
+    virtual ~InlineMarkVisitor() override {
         V3Stats::addStat("Optimizations, Inline unsupported", m_statUnsup);
         // Done with these, are not outputs
         AstNode::user2ClearTree();
@@ -257,7 +257,7 @@ public:
     explicit InlineCollectVisitor(AstNodeModule* nodep) {  // passed OLD module, not new one
         iterate(nodep);
     }
-    virtual ~InlineCollectVisitor() {}
+    virtual ~InlineCollectVisitor() override {}
 };
 
 //######################################################################
@@ -475,7 +475,7 @@ public:
         m_cellp = cellp;
         iterate(cloneModp);
     }
-    virtual ~InlineRelinkVisitor() {}
+    virtual ~InlineRelinkVisitor() override {}
 };
 
 //######################################################################
@@ -618,7 +618,7 @@ public:
         m_modp = nullptr;
         iterate(nodep);
     }
-    virtual ~InlineVisitor() {  //
+    virtual ~InlineVisitor() override {  //
         V3Stats::addStat("Optimizations, Inlined cells", m_statCells);
     }
 };
@@ -709,7 +709,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit InlineIntfRefVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~InlineIntfRefVisitor() {}
+    virtual ~InlineIntfRefVisitor() override {}
 };
 
 //######################################################################

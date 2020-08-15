@@ -140,7 +140,7 @@ public:
         m_modp = nullptr;
         iterate(nodep);
     }
-    virtual ~NameVisitor() {}
+    virtual ~NameVisitor() override {}
 };
 
 //######################################################################

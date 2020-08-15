@@ -114,11 +114,11 @@ public:
         m_value.format = cbDatap->value ? cbDatap->value->format : vpiSuppressVal;
         m_cbData.value = &m_value;
     }
-    virtual ~VerilatedVpioCb() {}
+    virtual ~VerilatedVpioCb() override {}
     static inline VerilatedVpioCb* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioCb*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiCallback; }
+    virtual vluint32_t type() const override { return vpiCallback; }
     vluint32_t reason() const { return m_cbData.reason; }
     VerilatedPliCb cb_rtnp() const { return m_cbData.cb_rtn; }
     t_cb_data* cb_datap() { return &(m_cbData); }
@@ -131,11 +131,11 @@ class VerilatedVpioConst : public VerilatedVpio {
 public:
     explicit VerilatedVpioConst(vlsint32_t num)
         : m_num(num) {}
-    virtual ~VerilatedVpioConst() {}
+    virtual ~VerilatedVpioConst() override {}
     static inline VerilatedVpioConst* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioConst*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiConstant; }
+    virtual vluint32_t type() const override { return vpiConstant; }
     vlsint32_t num() const { return m_num; }
 };
 
@@ -148,17 +148,17 @@ public:
         : m_varp(varp)
         , m_scopep(scopep) {}
 
-    virtual ~VerilatedVpioParam() {}
+    virtual ~VerilatedVpioParam() override {}
 
     static inline VerilatedVpioParam* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioParam*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiParameter; }
+    virtual vluint32_t type() const override { return vpiParameter; }
     const VerilatedVar* varp() const { return m_varp; }
     void* varDatap() const { return m_varp->datap(); }
     const VerilatedScope* scopep() const { return m_scopep; }
-    virtual const char* name() const { return m_varp->name(); }
-    virtual const char* fullname() const {
+    virtual const char* name() const override { return m_varp->name(); }
+    virtual const char* fullname() const override {
         static VL_THREAD_LOCAL std::string out;
         out = std::string(m_scopep->name()) + "." + name();
         return out.c_str();
@@ -173,16 +173,16 @@ public:
     explicit VerilatedVpioRange(const VerilatedRange* range)
         : m_range(range)
         , m_iteration(0) {}
-    virtual ~VerilatedVpioRange() {}
+    virtual ~VerilatedVpioRange() override {}
     static inline VerilatedVpioRange* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioRange*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiRange; }
-    virtual vluint32_t size() const { return m_range->elements(); }
-    virtual const VerilatedRange* rangep() const { return m_range; }
+    virtual vluint32_t type() const override { return vpiRange; }
+    virtual vluint32_t size() const override { return m_range->elements(); }
+    virtual const VerilatedRange* rangep() const override { return m_range; }
     int iteration() const { return m_iteration; }
     void iterationInc() { ++m_iteration; }
-    virtual vpiHandle dovpi_scan() {
+    virtual vpiHandle dovpi_scan() override {
         if (!iteration()) {
             VerilatedVpioRange* nextp = new VerilatedVpioRange(*this);
             nextp->iterationInc();
@@ -199,14 +199,14 @@ protected:
 public:
     explicit VerilatedVpioScope(const VerilatedScope* scopep)
         : m_scopep(scopep) {}
-    virtual ~VerilatedVpioScope() {}
+    virtual ~VerilatedVpioScope() override {}
     static inline VerilatedVpioScope* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioScope*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiScope; }
+    virtual vluint32_t type() const override { return vpiScope; }
     const VerilatedScope* scopep() const { return m_scopep; }
-    virtual const char* name() const { return m_scopep->name(); }
-    virtual const char* fullname() const { return m_scopep->name(); }
+    virtual const char* name() const override { return m_scopep->name(); }
+    virtual const char* fullname() const override { return m_scopep->name(); }
 };
 
 class VerilatedVpioVar : public VerilatedVpio {
@@ -236,7 +236,7 @@ public:
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();
     }
-    virtual ~VerilatedVpioVar() {
+    virtual ~VerilatedVpioVar() override {
         if (m_prevDatap) VL_DO_CLEAR(delete[] m_prevDatap, m_prevDatap = nullptr);
     }
     static inline VerilatedVpioVar* castp(vpiHandle h) {
@@ -248,13 +248,13 @@ public:
     vluint8_t mask_byte(int idx) { return m_mask.u8[idx & 3]; }
     vluint32_t entSize() const { return m_entSize; }
     vluint32_t index() { return m_index; }
-    virtual vluint32_t type() const {
+    virtual vluint32_t type() const override {
         return (varp()->dims() > 1) ? vpiMemory : vpiReg;  // but might be wire, logic
     }
-    virtual vluint32_t size() const { return get_range().elements(); }
-    virtual const VerilatedRange* rangep() const { return &get_range(); }
-    virtual const char* name() const { return m_varp->name(); }
-    virtual const char* fullname() const {
+    virtual vluint32_t size() const override { return get_range().elements(); }
+    virtual const VerilatedRange* rangep() const override { return &get_range(); }
+    virtual const char* name() const override { return m_varp->name(); }
+    virtual const char* fullname() const override {
         static VL_THREAD_LOCAL std::string out;
         out = std::string(m_scopep->name()) + "." + name();
         return out.c_str();
@@ -277,14 +277,14 @@ public:
         m_index = index;
         m_varDatap = (static_cast<vluint8_t*>(varp->datap())) + entSize() * offset;
     }
-    virtual ~VerilatedVpioMemoryWord() {}
+    virtual ~VerilatedVpioMemoryWord() override {}
     static inline VerilatedVpioMemoryWord* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioMemoryWord*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiMemoryWord; }
-    virtual vluint32_t size() const { return varp()->packed().elements(); }
-    virtual const VerilatedRange* rangep() const { return &(varp()->packed()); }
-    virtual const char* fullname() const {
+    virtual vluint32_t type() const override { return vpiMemoryWord; }
+    virtual vluint32_t size() const override { return varp()->packed().elements(); }
+    virtual const VerilatedRange* rangep() const override { return &(varp()->packed()); }
+    virtual const char* fullname() const override {
         static VL_THREAD_LOCAL std::string out;
         char num[20];
         sprintf(num, "%d", m_index);
@@ -302,12 +302,12 @@ public:
     explicit VerilatedVpioVarIter(const VerilatedScope* scopep)
         : m_scopep(scopep)
         , m_started(false) {}
-    virtual ~VerilatedVpioVarIter() {}
+    virtual ~VerilatedVpioVarIter() override {}
     static inline VerilatedVpioVarIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioVarIter*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiIterator; }
-    virtual vpiHandle dovpi_scan() {
+    virtual vluint32_t type() const override { return vpiIterator; }
+    virtual vpiHandle dovpi_scan() override {
         if (VL_LIKELY(m_scopep->varsp())) {
             VerilatedVarNameMap* varsp = m_scopep->varsp();
             if (VL_UNLIKELY(!m_started)) {
@@ -339,15 +339,15 @@ public:
         , m_iteration(varp->unpacked().right())
         , m_direction(VL_LIKELY(varp->unpacked().left() > varp->unpacked().right()) ? 1 : -1)
         , m_done(false) {}
-    virtual ~VerilatedVpioMemoryWordIter() {}
+    virtual ~VerilatedVpioMemoryWordIter() override {}
     static inline VerilatedVpioMemoryWordIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioMemoryWordIter*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiIterator; }
+    virtual vluint32_t type() const override { return vpiIterator; }
     void iterationInc() {
         if (!(m_done = (m_iteration == m_varp->unpacked().left()))) m_iteration += m_direction;
     }
-    virtual vpiHandle dovpi_scan() {
+    virtual vpiHandle dovpi_scan() override {
         vpiHandle result;
         if (m_done) return 0;
         result = vpi_handle_by_index(m_handle, m_iteration);
@@ -370,9 +370,9 @@ public:
     static inline VerilatedVpioModule* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioModule*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiModule; }
-    virtual const char* name() const { return m_name; }
-    virtual const char* fullname() const { return m_fullname; }
+    virtual vluint32_t type() const override { return vpiModule; }
+    virtual const char* name() const override { return m_name; }
+    virtual const char* fullname() const override { return m_fullname; }
 };
 
 class VerilatedVpioModuleIter : public VerilatedVpio {
@@ -384,12 +384,12 @@ public:
         : m_vec(&vec) {
         m_it = m_vec->begin();
     }
-    virtual ~VerilatedVpioModuleIter() {}
+    virtual ~VerilatedVpioModuleIter() override {}
     static inline VerilatedVpioModuleIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioModuleIter*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const { return vpiIterator; }
-    virtual vpiHandle dovpi_scan() {
+    virtual vluint32_t type() const override { return vpiIterator; }
+    virtual vpiHandle dovpi_scan() override {
         if (m_it == m_vec->end()) return 0;
         const VerilatedScope* modp = *m_it++;
         return (new VerilatedVpioModule(modp))->castVpiHandle();

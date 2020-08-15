@@ -136,7 +136,7 @@ public:
         m_iActivep = nullptr;
         m_cActivep = nullptr;
     }
-    virtual ~ActiveNamer() {}
+    virtual ~ActiveNamer() override {}
     void main(AstScope* nodep) { iterate(nodep); }
 };
 
@@ -211,7 +211,7 @@ public:
         m_assignp = nullptr;
         iterate(nodep);
     }
-    virtual ~ActiveDlyVisitor() {}
+    virtual ~ActiveDlyVisitor() override {}
 };
 
 //######################################################################
@@ -417,7 +417,7 @@ public:
         , m_itemSequent(false) {
         iterate(nodep);
     }
-    virtual ~ActiveVisitor() {}
+    virtual ~ActiveVisitor() override {}
 };
 
 //######################################################################

@@ -78,19 +78,19 @@
 
 class LinkNodeMatcherFTask : public VNodeMatcher {
 public:
-    virtual bool nodeMatch(const AstNode* nodep) const { return VN_IS(nodep, NodeFTask); }
+    virtual bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, NodeFTask); }
 };
 class LinkNodeMatcherModport : public VNodeMatcher {
 public:
-    virtual bool nodeMatch(const AstNode* nodep) const { return VN_IS(nodep, Modport); }
+    virtual bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, Modport); }
 };
 class LinkNodeMatcherVar : public VNodeMatcher {
 public:
-    virtual bool nodeMatch(const AstNode* nodep) const { return VN_IS(nodep, Var); }
+    virtual bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, Var); }
 };
 class LinkNodeMatcherVarIO : public VNodeMatcher {
 public:
-    virtual bool nodeMatch(const AstNode* nodep) const {
+    virtual bool nodeMatch(const AstNode* nodep) const override {
         const AstVar* varp = VN_CAST_CONST(nodep, Var);
         if (!varp) return false;
         return varp->isIO();
@@ -98,7 +98,7 @@ public:
 };
 class LinkNodeMatcherVarParam : public VNodeMatcher {
 public:
-    virtual bool nodeMatch(const AstNode* nodep) const {
+    virtual bool nodeMatch(const AstNode* nodep) const override {
         const AstVar* varp = VN_CAST_CONST(nodep, Var);
         if (!varp) return false;
         return varp->isParam();
@@ -106,7 +106,7 @@ public:
 };
 class LinkNodeMatcherVarOrScope : public VNodeMatcher {
 public:
-    virtual bool nodeMatch(const AstNode* nodep) const {
+    virtual bool nodeMatch(const AstNode* nodep) const override {
         return VN_IS(nodep, Var) || VN_IS(nodep, Scope);
     }
 };
@@ -1267,7 +1267,7 @@ public:
         //
         iterate(rootp);
     }
-    virtual ~LinkDotFindVisitor() {}
+    virtual ~LinkDotFindVisitor() override {}
 };
 
 //======================================================================
@@ -1434,7 +1434,7 @@ public:
         //
         iterate(rootp);
     }
-    virtual ~LinkDotParamVisitor() {}
+    virtual ~LinkDotParamVisitor() override {}
 };
 
 //======================================================================
@@ -1590,7 +1590,7 @@ public:
         //
         iterate(rootp);
     }
-    virtual ~LinkDotScopeVisitor() {}
+    virtual ~LinkDotScopeVisitor() override {}
 };
 
 //======================================================================
@@ -1675,7 +1675,7 @@ public:
         m_statep = statep;
         iterate(nodep);
     }
-    virtual ~LinkDotIfaceVisitor() {}
+    virtual ~LinkDotIfaceVisitor() override {}
 };
 
 void LinkDotState::computeIfaceModSyms() {
@@ -2825,7 +2825,7 @@ public:
         //
         iterate(rootp);
     }
-    virtual ~LinkDotResolveVisitor() {}
+    virtual ~LinkDotResolveVisitor() override {}
 };
 
 //######################################################################

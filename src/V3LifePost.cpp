@@ -94,7 +94,7 @@ public:
         : m_tracingCall(false) {
         iterate(nodep);
     }
-    virtual ~LifePostElimVisitor() {}
+    virtual ~LifePostElimVisitor() override {}
 };
 
 //######################################################################
@@ -354,7 +354,7 @@ public:
         , m_mtasksGraphp(nullptr) {
         iterate(nodep);
     }
-    virtual ~LifePostDlyVisitor() {
+    virtual ~LifePostDlyVisitor() override {
         V3Stats::addStat("Optimizations, Lifetime postassign deletions", m_statAssnDel);
     }
 };

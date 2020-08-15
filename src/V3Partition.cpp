@@ -495,7 +495,7 @@ public:
         m_vertices.splice(m_vertices.end(), otherp->m_vertices);
         m_cost += otherp->m_cost;
     }
-    virtual const VxList* vertexListp() const { return &m_vertices; }
+    virtual const VxList* vertexListp() const override { return &m_vertices; }
     static vluint64_t incGeneration() {
         static vluint64_t s_generation = 0;
         ++s_generation;
@@ -505,10 +505,10 @@ public:
     // Use this instead of pointer-compares to compare LogicMTasks. Avoids
     // nondeterministic output.  Also name mtasks based on this number in
     // the final C++ output.
-    virtual uint32_t id() const { return m_serialId; }
+    virtual uint32_t id() const override { return m_serialId; }
     void id(uint32_t id) { m_serialId = id; }
     // Abstract cost of every logic mtask
-    virtual uint32_t cost() const { return m_cost; }
+    virtual uint32_t cost() const override { return m_cost; }
     void setCost(uint32_t cost) { m_cost = cost; }  // For tests only
     uint32_t stepCost() const { return stepCost(m_cost); }
     static uint32_t stepCost(uint32_t cost) {
@@ -559,7 +559,7 @@ public:
         }
     }
 
-    virtual string name() const {
+    virtual string name() const override {
         // Display forward and reverse critical path costs. This gives a quick
         // read on whether graph partitioning looks reasonable or bad.
         std::ostringstream out;
@@ -792,7 +792,7 @@ public:
         fromp->addRelative(GraphWay::FORWARD, top);
         top->addRelative(GraphWay::REVERSE, fromp);
     }
-    virtual ~MTaskEdge() {
+    virtual ~MTaskEdge() override {
         fromMTaskp()->removeRelative(GraphWay::FORWARD, toMTaskp());
         toMTaskp()->removeRelative(GraphWay::REVERSE, fromMTaskp());
     }
@@ -802,7 +802,7 @@ public:
     }
     LogicMTask* fromMTaskp() const { return dynamic_cast<LogicMTask*>(fromp()); }
     LogicMTask* toMTaskp() const { return dynamic_cast<LogicMTask*>(top()); }
-    virtual bool mergeWouldCreateCycle() const {
+    virtual bool mergeWouldCreateCycle() const override {
         return LogicMTask::pathExistsFrom(fromMTaskp(), toMTaskp(), this);
     }
     static MTaskEdge* cast(V3GraphEdge* edgep) {
@@ -1702,7 +1702,7 @@ public:
         iterate(nodep);
     }
     bool hasDpiHazard() const { return m_hasDpiHazard; }
-    virtual ~DpiImportCallVisitor() {}
+    virtual ~DpiImportCallVisitor() override {}
 
 private:
     VL_UNCOPYABLE(DpiImportCallVisitor);

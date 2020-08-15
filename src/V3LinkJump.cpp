@@ -294,7 +294,7 @@ public:
         m_modRepeatNum = 0;
         iterate(nodep);
     }
-    virtual ~LinkJumpVisitor() {}
+    virtual ~LinkJumpVisitor() override {}
 };
 
 //######################################################################
