@@ -4,15 +4,32 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.039 devel
 
+**    Version 4.040 is planned to be the final version that will
+      support pre-C++11 compilers. Please move to C++11 or newer compilers.
+
 ***   Fix arrayed interfaces, broke in 4.038 (#2468). [Josh Redford]
 
-****  Support $stable, $rose and $fell. [Peter Monsson]
+****  Support $stable, $rose and $fell.  (#2148) (#2501) [Peter Monsson]
+
+****  Support simple function localparams (#2461). [James Hanlon]
+
+****  Miscellaneous parsing error changes towards UVM support.
+
+****  Fix arrayed interfaces (#2469).  [Josh Redford]
+
+****  Fix protect lib VCS warning. (#2479) [Julien Margetts]
 
 ****  Fix combining different-width parameters (#2484). [abirkmanis]
+
+****  Fix protect-lib without sequential logic (#2492). [Yutetsu TAKATSUKASA]
+
+****  Fix V3Unknown from running with flat XML output (#2494). [James Hanlon]
 
 ****  Fix non-32 bit conversion to float (#2495). [dsvf]
 
 ****  Fix casting non-self-determined subexpressions (#2493). [phantom-killua]
+
+****  Fix SystemC net names (#2500). [Edgar E. Iglesias]
 
 
 * Verilator 4.038 2020-07-11
