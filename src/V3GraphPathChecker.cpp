@@ -38,11 +38,10 @@ struct GraphPCNode {
     // operation. We'll use this in pathExistsInternal() to avoid checking
     // the same node twice, and again in updateHalfCriticalPath() to assert
     // there are no cycles.
-    vluint64_t m_seenAtGeneration;
+    vluint64_t m_seenAtGeneration = 0;
 
     // CONSTRUCTORS
-    GraphPCNode()
-        : m_seenAtGeneration(0) {
+    GraphPCNode() {
         for (int w = 0; w < GraphWay::NUM_WAYS; w++) m_cp[w] = 0;
     }
     ~GraphPCNode() {}
@@ -52,8 +51,8 @@ struct GraphPCNode {
 // GraphPathChecker implementation
 
 GraphPathChecker::GraphPathChecker(const V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-    : GraphAlg<const V3Graph>(graphp, edgeFuncp)
-    , m_generation(0) {
+    : GraphAlg<const V3Graph>{graphp, edgeFuncp}
+    , m_generation{0} {
     for (V3GraphVertex* vxp = graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
         // Setup tracking structure for each node.  If delete a vertex
         // there would be a leak, but ok as accept only const V3Graph*'s.
@@ -69,7 +68,7 @@ GraphPathChecker::~GraphPathChecker() {
     for (V3GraphVertex* vxp = m_graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
         GraphPCNode* nodep = static_cast<GraphPCNode*>(vxp->userp());
         VL_DO_DANGLING(delete nodep, nodep);
-        vxp->userp(NULL);
+        vxp->userp(nullptr);
     }
 }
 

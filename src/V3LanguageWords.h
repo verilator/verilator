@@ -41,7 +41,7 @@ public:
     static const_iterator begin() { return s().s_kwdMap.begin(); }
     static const_iterator end() { return s().s_kwdMap.end(); }
     static string isKeyword(const string& kwd) {
-        KeywordMap::const_iterator it = s().s_kwdMap.find(kwd);
+        const auto it = vlstd::as_const(s().s_kwdMap).find(kwd);
         if (it == s().s_kwdMap.end()) return "";
         return it->second;
     }
@@ -56,7 +56,7 @@ private:
 inline void V3LanguageWords::Singleton::init() {
     // C++ keywords
     // clang-format off
-    addKwd("NULL",                  "C++ common word");
+    addKwd("nullptr",                  "C++ common word");
     addKwd("abort",                 "C++ common word");
     addKwd("alignas",               "C++11 keyword");
     addKwd("alignof",               "C++11 keyword");

@@ -63,11 +63,10 @@ private:
         AstNodeDType* m_errp;  // Node that was found, for error reporting if not known type
         AstNodeDType* m_dtypep;  // Data type for the 'from' slice
         VNumRange m_fromRange;  // Numeric range bounds for the 'from' slice
-        FromData(AstNodeDType* errp, AstNodeDType* dtypep, const VNumRange& fromRange) {
-            m_errp = errp;
-            m_dtypep = dtypep;
-            m_fromRange = fromRange;
-        }
+        FromData(AstNodeDType* errp, AstNodeDType* dtypep, const VNumRange& fromRange)
+            : m_errp{errp}
+            , m_dtypep{dtypep}
+            , m_fromRange{fromRange} {}
         ~FromData() {}
     };
     FromData fromDataForArray(AstNode* nodep, AstNode* basefromp) {
@@ -199,7 +198,7 @@ private:
     // VISITORS
     // If adding new visitors, ensure V3Width's visit(TYPE) calls into here
 
-    virtual void visit(AstSelBit* nodep) VL_OVERRIDE {
+    virtual void visit(AstSelBit* nodep) override {
         // Select of a non-width specified part of an array, i.e. "array[2]"
         // This select style has a lsb and msb (no user specified width)
         UINFO(6, "SELBIT " << nodep << endl);
@@ -276,9 +275,10 @@ private:
         } else if (VN_IS(ddtypep, BasicDType) && ddtypep->isString()) {
             // SELBIT(string, index) -> GETC(string, index)
             AstNodeVarRef* varrefp = VN_CAST(fromp, NodeVarRef);
-            if (!varrefp)
+            if (!varrefp) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: String array operation on non-variable");
+            }
             AstNode* newp;
             if (varrefp && varrefp->lvalue()) {
                 newp = new AstGetcRefN(nodep->fileline(), fromp, rhsp);
@@ -308,7 +308,7 @@ private:
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else {  // NULL=bad extract, or unknown node type
+        } else {  // nullptr=bad extract, or unknown node type
             nodep->v3error("Illegal bit or array select; type already selected, or bad dimension: "
                            << "data type is" << fromdata.m_errp->prettyDTypeNameQ());
             // How to recover?  We'll strip a dimension.
@@ -317,7 +317,7 @@ private:
         }
         if (!rhsp->backp()) { VL_DO_DANGLING(pushDeletep(rhsp), rhsp); }
     }
-    virtual void visit(AstSelExtract* nodep) VL_OVERRIDE {
+    virtual void visit(AstSelExtract* nodep) override {
         // Select of a range specified part of an array, i.e. "array[2:3]"
         // SELEXTRACT(from,msb,lsb) -> SEL(from, lsb, 1+msb-lsb)
         // This select style has a (msb or lsb) and width
@@ -438,7 +438,7 @@ private:
             // if (debug() >= 9) newp->dumpTree(cout, "--SELEXnew: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else {  // NULL=bad extract, or unknown node type
+        } else {  // nullptr=bad extract, or unknown node type
             nodep->v3error("Illegal range select; type already selected, or bad dimension: "
                            << "data type is " << fromdata.m_errp->prettyDTypeNameQ());
             UINFO(1, "    Related ddtype: " << ddtypep << endl);
@@ -513,7 +513,7 @@ private:
                 newwidthp
                     = new AstConst(nodep->fileline(), AstConst::Unsized32(), width * elwidth);
             }
-            AstNode* newlsbp = NULL;
+            AstNode* newlsbp = nullptr;
             if (VN_IS(nodep, SelPlus)) {
                 if (fromRange.littleEndian()) {
                     // SELPLUS(from,lsb,width) -> SEL(from, (vector_msb-width+1)-sel, width)
@@ -544,7 +544,7 @@ private:
             if (debug() >= 9) newp->dumpTree(cout, "--SELNEW: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else {  // NULL=bad extract, or unknown node type
+        } else {  // nullptr=bad extract, or unknown node type
             nodep->v3error("Illegal +: or -: select; type already selected, or bad dimension: "
                            << "data type is " << fromdata.m_errp->prettyDTypeNameQ());
             // How to recover?  We'll strip a dimension.
@@ -556,13 +556,13 @@ private:
         if (!rhsp->backp()) { VL_DO_DANGLING(pushDeletep(rhsp), rhsp); }
         if (!widthp->backp()) { VL_DO_DANGLING(pushDeletep(widthp), widthp); }
     }
-    virtual void visit(AstSelPlus* nodep) VL_OVERRIDE { replaceSelPlusMinus(nodep); }
-    virtual void visit(AstSelMinus* nodep) VL_OVERRIDE { replaceSelPlusMinus(nodep); }
+    virtual void visit(AstSelPlus* nodep) override { replaceSelPlusMinus(nodep); }
+    virtual void visit(AstSelMinus* nodep) override { replaceSelPlusMinus(nodep); }
     // If adding new visitors, ensure V3Width's visit(TYPE) calls into here
 
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstNode* nodep) override {  // LCOV_EXCL_LINE
         // See notes above; we never iterate
         nodep->v3fatalSrc("Shouldn't iterate in V3WidthSel");
     }
@@ -571,7 +571,7 @@ public:
     // CONSTRUCTORS
     WidthSelVisitor() {}
     AstNode* mainAcceptEdit(AstNode* nodep) { return iterateSubtreeReturnEdits(nodep); }
-    virtual ~WidthSelVisitor() {}
+    virtual ~WidthSelVisitor() override {}
 };
 
 //######################################################################

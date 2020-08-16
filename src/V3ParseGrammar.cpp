@@ -32,7 +32,7 @@ int V3ParseImp::bisonParse() {
 
 const char* V3ParseImp::tokenName(int token) {
 #if YYDEBUG || YYERROR_VERBOSE
-    static const char** nameTablep = NULL;
+    static const char** nameTablep = nullptr;
     if (!nameTablep) {
         int size;
         for (size = 0; yytname[size]; ++size) {}
@@ -59,7 +59,7 @@ const char* V3ParseImp::tokenName(int token) {
 
 void V3ParseImp::parserClear() {
     // Clear up any dynamic memory V3Parser required
-    VARDTYPE(NULL);
+    VARDTYPE(nullptr);
 }
 
 //======================================================================
@@ -67,8 +67,8 @@ void V3ParseImp::parserClear() {
 
 AstNode* V3ParseGrammar::argWrapList(AstNode* nodep) {
     // Convert list of expressions to list of arguments
-    if (!nodep) return NULL;
-    AstNode* outp = NULL;
+    if (!nodep) return nullptr;
+    AstNode* outp = nullptr;
     AstBegin* tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
     while (nodep) {
         AstNode* nextp = nodep->nextp();
@@ -152,7 +152,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     if (GRAMMARP->m_varIO == VDirection::NONE && GRAMMARP->m_varDecl == AstVarType::PORT) {
         // Just a port list with variable name (not v2k format); AstPort already created
         if (dtypep) fileline->v3warn(E_UNSUPPORTED, "Unsupported: Ranges ignored in port-lists");
-        return NULL;
+        return nullptr;
     }
     if (GRAMMARP->m_varDecl == AstVarType::WREAL) {
         // dtypep might not be null, might be implicit LOGIC before we knew better

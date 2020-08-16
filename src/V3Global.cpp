@@ -36,10 +36,10 @@ AstNetlist* V3Global::makeNetlist() {
 }
 
 void V3Global::shutdown() {
-    VL_DO_CLEAR(delete m_hierPlanp, m_hierPlanp = NULL);  // delete nullptr is safe
+    VL_DO_CLEAR(delete m_hierPlanp, m_hierPlanp = nullptr);  // delete nullptr is safe
 }
 
-void V3Global::checkTree() { rootp()->checkTree(); }
+void V3Global::checkTree() const { rootp()->checkTree(); }
 
 void V3Global::readFiles() {
     // NODE STATE
@@ -52,8 +52,7 @@ void V3Global::readFiles() {
     V3Parse parser(v3Global.rootp(), &filter, &parseSyms);
     // Read top module
     const V3StringList& vFiles = v3Global.opt.vFiles();
-    for (V3StringList::const_iterator it = vFiles.begin(); it != vFiles.end(); ++it) {
-        string filename = *it;
+    for (const string& filename : vFiles) {
         parser.parseFile(new FileLine(FileLine::commandLineFilename()), filename, false,
                          "Cannot find file containing module: ");
     }
@@ -62,8 +61,7 @@ void V3Global::readFiles() {
     // To be compatible with other simulators,
     // this needs to be done after the top file is read
     const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
-    for (V3StringSet::const_iterator it = libraryFiles.begin(); it != libraryFiles.end(); ++it) {
-        string filename = *it;
+    for (const string& filename : libraryFiles) {
         parser.parseFile(new FileLine(FileLine::commandLineFilename()), filename, true,
                          "Cannot find file containing library module: ");
     }
@@ -83,7 +81,7 @@ void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool 
 }
 
 const std::string& V3Global::ptrToId(const void* p) {
-    PtrToIdMap::iterator it = m_ptrToId.find(p);
+    auto it = m_ptrToId.find(p);
     if (it == m_ptrToId.end()) {
         std::ostringstream os;
         if (p) {

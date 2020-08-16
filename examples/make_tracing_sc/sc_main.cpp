@@ -98,7 +98,7 @@ int sc_main(int argc, char* argv[]) {
 #if VM_TRACE
     // If verilator was invoked with --trace argument,
     // and if at run time passed the +trace argument, turn on tracing
-    VerilatedVcdSc* tfp = NULL;
+    VerilatedVcdSc* tfp = nullptr;
     const char* flag = Verilated::commandArgsPlusMatch("trace");
     if (flag && 0 == strcmp(flag, "+trace")) {
         cout << "Enabling waves into logs/vlt_dump.vcd...\n";
@@ -139,7 +139,7 @@ int sc_main(int argc, char* argv[]) {
 #if VM_TRACE
     if (tfp) {
         tfp->close();
-        tfp = NULL;
+        tfp = nullptr;
     }
 #endif
 
@@ -151,7 +151,7 @@ int sc_main(int argc, char* argv[]) {
 
     // Destroy model
     delete top;
-    top = NULL;
+    top = nullptr;
 
     // Fin
     return 0;

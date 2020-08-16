@@ -35,7 +35,7 @@
 class V3ErrorCode {
 public:
     // clang-format off
-    enum en {
+    enum en: uint8_t  {
         EC_MIN=0,       // Keep first
         //
         EC_INFO,        // General information out
@@ -129,13 +129,13 @@ public:
     // clang-format on
     enum en m_e;
     inline V3ErrorCode()
-        : m_e(EC_MIN) {}
+        : m_e{EC_MIN} {}
     // cppcheck-suppress noExplicitConstructor
     inline V3ErrorCode(en _e)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit V3ErrorCode(const char* msgp);  // Matching code or ERROR
     explicit inline V3ErrorCode(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e{static_cast<en>(_e)} {}
     operator en() const { return m_e; }
     const char* ascii() const {
         // clang-format off
@@ -239,7 +239,7 @@ private:
     static MessagesSet s_messages;  // What errors we've outputted
     static ErrorExitCb s_errorExitCb;  // Callback when error occurs for dumping
 
-    enum MaxErrors { MAX_ERRORS = 50 };  // Fatal after this may errors
+    static constexpr unsigned MAX_ERRORS = 50;  // Fatal after this may errors
 
     V3Error() {
         std::cerr << ("Static class");

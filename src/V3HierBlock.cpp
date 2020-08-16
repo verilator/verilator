@@ -91,14 +91,10 @@ static string V3HierCommandArgsFileName(const string& prefix, bool forCMake) {
 static void V3HierWriteCommonInputs(std::ostream* of, bool forCMake) {
     if (!forCMake) {
         const V3StringList& vFiles = v3Global.opt.vFiles();
-        for (V3StringList::const_iterator it = vFiles.begin(); it != vFiles.end(); ++it) {
-            *of << *it << "\n";
-        }
+        for (const string& i : vFiles) *of << i << "\n";
     }
     const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
-    for (V3StringSet::const_iterator it = libraryFiles.begin(); it != libraryFiles.end(); ++it) {
-        *of << "-v " << *it << "\n";
-    }
+    for (const string& i : libraryFiles) *of << "-v " << i << "\n";
 }
 
 //######################################################################
@@ -199,7 +195,7 @@ string V3HierBlock::hierGenerated(bool withDir) const {
 }
 
 void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
-    vl_unique_ptr<std::ofstream> of(V3File::new_ofstream(commandArgsFileName(forCMake)));
+    std::unique_ptr<std::ofstream> of(V3File::new_ofstream(commandArgsFileName(forCMake)));
     *of << "--cc\n";
 
     if (!forCMake) {
@@ -211,9 +207,7 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     V3HierWriteCommonInputs(of.get(), forCMake);
     const V3StringList& commandOpts = commandArgs(false);
-    for (V3StringList::const_iterator it = commandOpts.begin(); it != commandOpts.end(); ++it) {
-        *of << (*it) << "\n";
-    }
+    for (const string& opt : commandOpts) *of << opt << "\n";
     *of << hierBlockArgs().front() << "\n";
     for (HierBlockSet::const_iterator child = m_children.begin(); child != m_children.end();
          ++child) {
@@ -236,12 +230,12 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
     // STATE
     typedef std::set<const AstModule*> ModuleSet;
     V3HierBlockPlan* const m_planp;
-    AstModule* m_modp;  // The current module
-    AstModule* m_hierBlockp;  // The nearest parent module that is a hierarchical block
+    AstModule* m_modp = nullptr;  // The current module
+    AstModule* m_hierBlockp = nullptr;  // The nearest parent module that is a hierarchical block
     ModuleSet m_referred;  // Modules that have hier_block pragma
     V3HierBlock::GParams m_gparams;  // list of variables that is AstVarType::GPARAM
 
-    virtual void visit(AstModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstModule* nodep) override {
         // Don't visit twice
         if (nodep->user1SetOnce()) return;
         UINFO(5, "Checking " << nodep->prettyNameQ() << " from "
@@ -262,16 +256,14 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
 
         if (nodep->hierBlock()) {
             m_planp->add(nodep, m_gparams);
-            for (ModuleSet::const_iterator it = m_referred.begin(); it != m_referred.end(); ++it) {
-                m_planp->registerUsage(nodep, *it);
-            }
+            for (const AstModule* modp : m_referred) m_planp->registerUsage(nodep, modp);
             m_hierBlockp = prevHierBlockp;
             m_referred = prevReferred;
         }
         m_modp = prevModp;
         m_gparams = prevGParams;
     }
-    virtual void visit(AstCell* nodep) VL_OVERRIDE {
+    virtual void visit(AstCell* nodep) override {
         // Visit used module here to know that the module is hier_block or not.
         // This visitor behaves almost depth first search
         if (AstModule* modp = VN_CAST(nodep->modp(), Module)) {
@@ -281,22 +273,19 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
         // Nothing to do for interface because hierarchical block does not exist
         // beyond interface.
     }
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         if (m_modp && m_modp->hierBlock() && nodep->isIfaceRef() && !nodep->isIfaceParent()) {
             nodep->v3error("Modport cannot be used at the hierarchical block boundary");
         }
         if (nodep->isGParam() && nodep->overriddenParam()) m_gparams.push_back(nodep);
     }
 
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     HierBlockUsageCollectVisitor(V3HierBlockPlan* planp, AstNetlist* netlist)
-        : m_planp(planp)
-        , m_modp(NULL)
-        , m_hierBlockp(NULL) {
-
+        : m_planp{planp} {
         iterateChildren(netlist);
     }
     VL_DEBUG_FUNC;  // Declare debug()
@@ -345,7 +334,7 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
         modp->hierBlock(false);
     }
 
-    vl_unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan());
+    std::unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan());
     { HierBlockUsageCollectVisitor visitor(planp.get(), nodep); }
 
     V3Stats::addStat("HierBlock, Hierarchical blocks", planp->m_blocks.size());
@@ -380,7 +369,7 @@ V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
         for (V3HierBlock::HierBlockSet::const_iterator it = p.begin(); it != p.end(); ++it) {
             // Delete hblockp from parrents. If a parent does not have a child anymore, then it is
             // a leaf too.
-            const ChildrenMap::iterator parentIt = childrenOfHierBlock.find(*it);
+            const auto parentIt = childrenOfHierBlock.find(*it);
             UASSERT_OBJ(parentIt != childrenOfHierBlock.end(), (*it)->modp(), "must be included");
             const V3HierBlock::HierBlockSet::size_type erased = parentIt->second.erase(hblockp);
             UASSERT_OBJ(erased == 1, hblockp->modp(),
@@ -399,7 +388,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
         it->second->writeCommandArgsFile(forCMake);
     }
     // For the top module
-    vl_unique_ptr<std::ofstream> of(V3File::new_ofstream(topCommandArgsFileName(forCMake)));
+    std::unique_ptr<std::ofstream> of(V3File::new_ofstream(topCommandArgsFileName(forCMake)));
     if (!forCMake) {
         // Load wrappers first not to be overwritten by the original HDL
         for (const_iterator it = begin(); it != end(); ++it) {
@@ -409,9 +398,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     V3HierWriteCommonInputs(of.get(), forCMake);
     if (!forCMake) {
         const V3StringSet& cppFiles = v3Global.opt.cppFiles();
-        for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
-            *of << *it << "\n";
-        }
+        for (const string& i : cppFiles) *of << i << "\n";
         *of << "--top-module " << v3Global.rootp()->topModulep()->name() << "\n";
         *of << "--prefix " << v3Global.opt.prefix() << "\n";
         *of << "-Mdir " << v3Global.opt.makeDir() << "\n";

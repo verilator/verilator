@@ -87,12 +87,12 @@ class TimingState {
     AstUser1InUse m_inuser1;
 
     // MEMBERS
-    AstVarScope* m_eventVarScp;  // FSM event variable for procedure
-    AstVarScope* m_fsmVarScp;  // FSM state variable for procedure
+    AstVarScope* m_eventVarScp = nullptr;  // FSM event variable for procedure
+    AstVarScope* m_fsmVarScp = nullptr;  // FSM state variable for procedure
 public:
-    int m_procNum;  // Procedure number
-    AstNodeModule* m_modp;  // Current module
-    AstScope* m_scopep;  // Current scope
+    int m_procNum = 0;  // Procedure number
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstScope* m_scopep = nullptr;  // Current scope
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -128,17 +128,11 @@ public:
     string fsmName() const { return "__vProc" + cvtToStr(m_procNum) + "Fsm"; }
 
     // CONSTRUCTORS
-    TimingState() {
-        m_eventVarScp = NULL;
-        m_fsmVarScp = NULL;
-        m_modp = NULL;
-        m_scopep = NULL;
-        m_procNum = 0;
-    }
+    TimingState() {}
     ~TimingState() {}
     void initProcedure() {
-        m_eventVarScp = NULL;
-        m_fsmVarScp = NULL;
+        m_eventVarScp = nullptr;
+        m_fsmVarScp = nullptr;
     }
 };
 
@@ -159,7 +153,7 @@ class TimingProcedureVisitor : public AstNVisitor {
 
     AstJumpLabel* newLabelp(AstNode* nodep) {
         // Create new JumpBlock/JumpLabel, return label for later insertion at appropriate point
-        AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), NULL);
+        AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), nullptr);
         AstJumpLabel* labelp = new AstJumpLabel(nodep->fileline(), blockp);
         blockp->labelp(labelp);
         // Returned labelp must be tree inserted
@@ -180,8 +174,8 @@ class TimingProcedureVisitor : public AstNVisitor {
         return upblockp;
     }
     void buildTable(AstJumpBlock* upblockp) {
-        AstNode* newp = NULL;
-        AstNodeIf* lastIfp = NULL;
+        AstNode* newp = nullptr;
+        AstNodeIf* lastIfp = nullptr;
         for (JumpTableMap::iterator it = m_jumpTable.begin(); it != m_jumpTable.end(); ++it) {
             AstJumpLabel* labelp = it->second;
             // Build  IF(EQ(CONST(state), fsmvar)) JUMPGO(label)
@@ -218,7 +212,7 @@ class TimingProcedureVisitor : public AstNVisitor {
         // Keep any AstVars under the function not under the new JumpLabel/If
         while (VN_IS(stmtsp, Var)) stmtsp = stmtsp->nextp();
         // Move all other statements under end label, so can branch past it
-        AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), NULL);
+        AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), nullptr);
         m_exitLabelp = new AstJumpLabel(nodep->fileline(), blockp);
         blockp->labelp(m_exitLabelp);
         blockp->addEndStmtsp(m_exitLabelp);
@@ -240,7 +234,7 @@ class TimingProcedureVisitor : public AstNVisitor {
             // Back-insert the jump blocks and state table
             buildTable(buildJumpBlocks(blockp));
         }
-        m_exitLabelp = NULL;
+        m_exitLabelp = nullptr;
     }
     virtual void visit(AstDelay* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
@@ -281,7 +275,7 @@ public:
         : m_state(stater)
         , m_newProc(newProc)
         , m_procedurep(procedurep)
-        , m_exitLabelp(NULL) {
+        , m_exitLabelp(nullptr) {
         iterate(procedurep);
     }
     ~TimingProcedureVisitor() {}
@@ -293,9 +287,9 @@ class TimingVisitor : public AstNVisitor {
 private:
     // STATE
     TimingState m_state;  // State information
-    AstNodeFTask* m_ftaskp;  // Current function/task
-    AstNodeProcedure* m_procedurep;  // Current initial/final/always
-    int m_delays;  // Delays within procedure
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstNodeProcedure* m_procedurep = nullptr;  // Current initial/final/always
+    int m_delays = 0;  // Delays within procedure
     VDouble0 m_statDelays;  // Statistic tracking
     VDouble0 m_statProcedures;  // Statistic tracking
 
@@ -329,7 +323,7 @@ private:
             // Activation & FSM variables
             ++m_state.m_procNum;
             ++m_statProcedures;
-            AstNodeProcedure* alwaysp = NULL;
+            AstNodeProcedure* alwaysp = nullptr;
             {
                 FileLine* fl = nodep->fileline();
                 // For initial, create version with and without triggering statements
@@ -346,12 +340,12 @@ private:
             { TimingProcedureVisitor visit(m_state /*ref*/, nodep, false); }
             { TimingProcedureVisitor visit(m_state /*ref*/, alwaysp, true); }
         }
-        m_procedurep = NULL;
+        m_procedurep = nullptr;
     }
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         m_ftaskp = nodep;
         iterateChildren(nodep);
-        m_ftaskp = NULL;
+        m_ftaskp = nullptr;
     }
     virtual void visit(AstDelay* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
@@ -376,12 +370,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit TimingVisitor(AstNetlist* nodep) {
-        m_delays = 0;
-        m_ftaskp = NULL;
-        m_procedurep = NULL;
-        iterate(nodep);
-    }
+    explicit TimingVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~TimingVisitor() {
         V3Stats::addStat("Timing, Delayed procedures", m_statProcedures);
         V3Stats::addStat("Timing, Delayed procedures states", m_statDelays);

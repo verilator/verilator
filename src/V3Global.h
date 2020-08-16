@@ -31,7 +31,7 @@
 #include "V3Options.h"
 
 #include <string>
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 class AstNetlist;
 class V3HierBlockPlan;
@@ -43,15 +43,15 @@ class V3HierBlockPlan;
 
 class VWidthMinUsage {
 public:
-    enum en { LINT_WIDTH, MATCHES_WIDTH, VERILOG_WIDTH };
+    enum en : uint8_t { LINT_WIDTH, MATCHES_WIDTH, VERILOG_WIDTH };
     enum en m_e;
     inline VWidthMinUsage()
-        : m_e(LINT_WIDTH) {}
+        : m_e{LINT_WIDTH} {}
     // cppcheck-suppress noExplicitConstructor
     inline VWidthMinUsage(en _e)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit inline VWidthMinUsage(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e{static_cast<en>(_e)} {}
     operator en() const { return m_e; }
 };
 inline bool operator==(const VWidthMinUsage& lhs, const VWidthMinUsage& rhs) {
@@ -70,20 +70,19 @@ inline bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
 class V3Global {
     // Globals
     AstNetlist* m_rootp;  // Root of entire netlist
-    V3HierBlockPlan* m_hierPlanp;  // Hierarchical verilation plan, NULL unless hier_block
+    V3HierBlockPlan* m_hierPlanp;  // Hierarchical verilation plan, nullptr unless hier_block
     VWidthMinUsage m_widthMinUsage;  // What AstNode::widthMin() is used for
 
-    int m_debugFileNumber;  // Number to append to debug files created
-    bool m_assertDTypesResolved;  // Tree should have dtypep()'s
-    bool m_constRemoveXs;  // Const needs to strip any Xs
-    bool m_needC11;  // Need C++11
-    bool m_needHeavy;  // Need verilated_heavy.h include
-    bool m_needTraceDumper;  // Need __Vm_dumperp in symbols
-    bool m_dpi;  // Need __Dpi include files
-    bool m_useParallelBuild;  // Use parallel build for model
+    int m_debugFileNumber = 0;  // Number to append to debug files created
+    bool m_assertDTypesResolved = false;  // Tree should have dtypep()'s
+    bool m_constRemoveXs = false;  // Const needs to strip any Xs
+    bool m_needHeavy = false;  // Need verilated_heavy.h include
+    bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
+    bool m_dpi = false;  // Need __Dpi include files
+    bool m_useParallelBuild = false;  // Use parallel build for model
 
     // Memory address to short string mapping (for debug)
-    typedef vl_unordered_map<const void*, std::string> PtrToIdMap;  // The map type
+    typedef std::unordered_map<const void*, std::string> PtrToIdMap;  // The map type
     PtrToIdMap m_ptrToId;  // The actual 'address' <=> 'short string' bijection
 
 public:
@@ -92,17 +91,9 @@ public:
 
     // CONSTRUCTORS
     V3Global()
-        : m_rootp(NULL)  // created by makeInitNetlist() so static constructors run first
-        , m_hierPlanp(NULL)  // Set via hierPlanp(V3HierBlockPlan*) when use hier_block
-        , m_widthMinUsage(VWidthMinUsage::LINT_WIDTH)
-        , m_debugFileNumber(0)
-        , m_assertDTypesResolved(false)
-        , m_constRemoveXs(false)
-        , m_needC11(false)
-        , m_needHeavy(false)
-        , m_needTraceDumper(false)
-        , m_dpi(false)
-        , m_useParallelBuild(false) {}
+        : m_rootp{nullptr}  // created by makeInitNetlist(} so static constructors run first
+        , m_hierPlanp{nullptr}  // Set via hierPlanp(V3HierBlockPlan*} when use hier_block
+        , m_widthMinUsage{VWidthMinUsage::LINT_WIDTH} {}
     AstNetlist* makeNetlist();
     void boot() {
         UASSERT(!m_rootp, "call once");
@@ -116,7 +107,7 @@ public:
 
     // METHODS
     void readFiles();
-    void checkTree();
+    void checkTree() const;
     static void dumpCheckGlobalTree(const string& stagename, int newNumber = 0,
                                     bool doDump = true);
     void assertDTypesResolved(bool flag) { m_assertDTypesResolved = flag; }
@@ -130,8 +121,6 @@ public:
         sprintf(digits, "%03d", m_debugFileNumber);
         return opt.hierTopDataDir() + "/" + opt.prefix() + "_" + digits + "_" + nameComment;
     }
-    bool needC11() const { return m_needC11; }
-    void needC11(bool flag) { m_needC11 = flag; }
     bool needHeavy() const { return m_needHeavy; }
     void needHeavy(bool flag) { m_needHeavy = flag; }
     bool needTraceDumper() const { return m_needTraceDumper; }

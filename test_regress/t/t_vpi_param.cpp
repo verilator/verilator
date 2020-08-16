@@ -52,7 +52,7 @@ unsigned int main_time = 0;
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
+        printf("%%Error: %s:%d: GOT = nullptr  EXP = !nullptr\n", FILENM, __LINE__); \
         return __LINE__; \
     }
 
@@ -91,7 +91,7 @@ int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verb
     const char* p;
 
     vpi_printf((PLI_BYTE8*)"Check parameter %s vpi ...\n", name.c_str());
-    param_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name.c_str()), NULL);
+    param_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name.c_str()), nullptr);
     CHECK_RESULT_NZ(param_h);
     vpi_type = vpi_get(vpiType, param_h);
     CHECK_RESULT(vpi_type, vpiParameter);
@@ -111,7 +111,7 @@ int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verb
     // values
     if (verbose) {vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str()); }
     value.value.integer = exp_value;
-    vpi_put_value(param_h, &value, NULL, vpiNoDelay);
+    vpi_put_value(param_h, &value, nullptr, vpiNoDelay);
     CHECK_RESULT_NZ(vpi_chk_error(&e));
     if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
 
@@ -135,7 +135,7 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
     const char* p;
 
     vpi_printf((PLI_BYTE8*)"Check parameter %s vpi ...\n", name.c_str());
-    param_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name.c_str()), NULL);
+    param_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name.c_str()), nullptr);
     CHECK_RESULT_NZ(param_h);
     vpi_type = vpi_get(vpiType, param_h);
     CHECK_RESULT(vpi_type, vpiParameter);
@@ -155,7 +155,7 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
     // values
     if (verbose) {vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str()); }
     value.value.str = (PLI_BYTE8*) exp_value.c_str();
-    vpi_put_value(param_h, &value, NULL, vpiNoDelay);
+    vpi_put_value(param_h, &value, nullptr, vpiNoDelay);
     CHECK_RESULT_NZ(vpi_chk_error(&e));
     if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
 
@@ -200,7 +200,7 @@ static int mon_check_vpi() {
 
     vpi_value.format = vpiIntVal;
     vpi_value.value.integer = mon_check();
-    vpi_put_value(href, &vpi_value, NULL, vpiNoDelay);
+    vpi_put_value(href, &vpi_value, nullptr, vpiNoDelay);
 
     return 0;
 }

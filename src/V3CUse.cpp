@@ -32,7 +32,7 @@
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
 
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 //######################################################################
 
@@ -67,7 +67,7 @@ public:
 
     // CONSTRUCTORS
     explicit CUseState(AstNodeModule* nodep)
-        : m_modInsertp(nodep) {}
+        : m_modInsertp{nodep} {}
     virtual ~CUseState() {}
     VL_UNCOPYABLE(CUseState);
 };
@@ -78,9 +78,9 @@ public:
 class CUseDTypeVisitor : public AstNVisitor {
     // MEMBERS
     CUseState& m_stater;  // State for inserter
-    bool m_impOnly;  // In details needed only for implementation
+    bool m_impOnly = false;  // In details needed only for implementation
     // METHODS
-    virtual void visit(AstClassRefDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstClassRefDType* nodep) override {
         if (nodep->user2SetOnce()) return;  // Process once
         if (!m_impOnly) m_stater.newUse(nodep, VUseType::INT_FWD_CLASS, nodep->classp()->name());
         // No class.h, it's inside the class package's h file
@@ -93,12 +93,12 @@ class CUseDTypeVisitor : public AstNVisitor {
         }
         m_impOnly = oldImpOnly;
     }
-    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeDType* nodep) override {
         if (nodep->user2SetOnce()) return;  // Process once
         if (nodep->virtRefDTypep()) iterate(nodep->virtRefDTypep());
         if (nodep->virtRefDType2p()) iterate(nodep->virtRefDType2p());
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         if (nodep->user2SetOnce()) return;  // Process once
         if (nodep->dtypep() && !nodep->dtypep()->user2()) iterate(nodep->dtypep());
         iterateChildren(nodep);
@@ -107,11 +107,10 @@ class CUseDTypeVisitor : public AstNVisitor {
 public:
     // CONSTRUCTORS
     explicit CUseDTypeVisitor(AstNodeModule* nodep, CUseState& stater)
-        : m_stater(stater)
-        , m_impOnly(false) {
+        : m_stater{stater} {
         iterate(nodep);
     }
-    virtual ~CUseDTypeVisitor() {}
+    virtual ~CUseDTypeVisitor() override {}
     VL_UNCOPYABLE(CUseDTypeVisitor);
 };
 
@@ -132,7 +131,7 @@ class CUseVisitor : public AstNVisitor {
         }
     }
     void makeVlToString(AstClass* nodep) {
-        AstCFunc* funcp = new AstCFunc(nodep->fileline(), "VL_TO_STRING", NULL, "std::string");
+        AstCFunc* funcp = new AstCFunc(nodep->fileline(), "VL_TO_STRING", nullptr, "std::string");
         funcp->argTypes("const VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(nodep)
                         + ">& obj");
         funcp->isMethod(false);
@@ -145,7 +144,7 @@ class CUseVisitor : public AstNVisitor {
         nodep->addStmtp(funcp);
     }
     void makeToString(AstClass* nodep) {
-        AstCFunc* funcp = new AstCFunc(nodep->fileline(), "to_string", NULL, "std::string");
+        AstCFunc* funcp = new AstCFunc(nodep->fileline(), "to_string", nullptr, "std::string");
         funcp->isConst(true);
         funcp->isStatic(false);
         funcp->protect(false);
@@ -156,7 +155,8 @@ class CUseVisitor : public AstNVisitor {
         nodep->addStmtp(funcp);
     }
     void makeToStringMiddle(AstClass* nodep) {
-        AstCFunc* funcp = new AstCFunc(nodep->fileline(), "to_string_middle", NULL, "std::string");
+        AstCFunc* funcp
+            = new AstCFunc(nodep->fileline(), "to_string_middle", nullptr, "std::string");
         funcp->isConst(true);
         funcp->isStatic(false);
         funcp->protect(false);
@@ -189,7 +189,7 @@ class CUseVisitor : public AstNVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         if (v3Global.opt.trace()) {
             AstCUse* usep
                 = m_state.newUse(nodep, VUseType::INT_FWD_CLASS, v3Global.opt.traceClassBase());
@@ -203,15 +203,15 @@ class CUseVisitor : public AstNVisitor {
             makeToStringMiddle(classp);
         }
     }
-    virtual void visit(AstNode*) VL_OVERRIDE {}  // All in AstNodeModule
+    virtual void visit(AstNode*) override {}  // All in AstNodeModule
 
 public:
     // CONSTRUCTORS
     explicit CUseVisitor(AstNodeModule* nodep)
-        : m_state(nodep) {
+        : m_state{nodep} {
         iterate(nodep);
     }
-    virtual ~CUseVisitor() {}
+    virtual ~CUseVisitor() override {}
     VL_UNCOPYABLE(CUseVisitor);
 };
 

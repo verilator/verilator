@@ -63,8 +63,8 @@ private:
 
 public:
     V3HierBlock(const AstNodeModule* modp, const GParams& gparams)
-        : m_modp(modp)
-        , m_gparams(gparams) {}
+        : m_modp{modp}
+        , m_gparams{gparams} {}
     ~V3HierBlock();
     VL_DEBUG_FUNC;  // Declare debug()
 

@@ -75,4 +75,4 @@ public:
     }
 };
 
-#define VPI_HANDLE(signal) vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(signal), NULL);
+#define VPI_HANDLE(signal) vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(signal), nullptr);

@@ -37,9 +37,9 @@ class V3Lexer;
 //======================================================================
 // Types (between parser & lexer)
 
-typedef enum { uniq_NONE, uniq_UNIQUE, uniq_UNIQUE0, uniq_PRIORITY } V3UniqState;
+typedef enum : uint8_t { uniq_NONE, uniq_UNIQUE, uniq_UNIQUE0, uniq_PRIORITY } V3UniqState;
 
-typedef enum { iprop_NONE, iprop_CONTEXT, iprop_PURE } V3ImportProperty;
+typedef enum : uint8_t { iprop_NONE, iprop_CONTEXT, iprop_PURE } V3ImportProperty;
 
 //============================================================================
 // Member qualifiers
@@ -180,7 +180,7 @@ class V3ParseImp {
     std::deque<FileLine> m_lexLintState;  // Current lint state for save/restore
     std::deque<string> m_ppBuffers;  // Preprocessor->lex buffer of characters to process
 
-    AstNode* m_tagNodep;  // Points to the node to set to m_tag or NULL to not set.
+    AstNode* m_tagNodep;  // Points to the node to set to m_tag or nullptr to not set.
     VTimescale m_timeLastUnit;  // Last `timescale's unit
 
 public:
@@ -301,16 +301,16 @@ public:
 public:
     // CONSTRUCTORS
     V3ParseImp(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* parserSymp)
-        : m_rootp(rootp)
-        , m_filterp(filterp)
-        , m_symp(parserSymp) {
-        m_lexFileline = NULL;
-        m_lexerp = NULL;
+        : m_rootp{rootp}
+        , m_filterp{filterp}
+        , m_symp{parserSymp} {
+        m_lexFileline = nullptr;
+        m_lexerp = nullptr;
         m_inLibrary = false;
         m_lexKwdDepth = 0;
         m_lexKwdLast = stateVerilogRecent();
         m_lexPrevToken = 0;
-        m_tagNodep = NULL;
+        m_tagNodep = nullptr;
         m_timeLastUnit = v3Global.opt.timeDefaultUnit();
     }
     ~V3ParseImp();

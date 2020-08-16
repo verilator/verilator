@@ -36,7 +36,7 @@ class V3Lexer : public V3LexerBase {
 public:
     // CONSTRUCTORS
     V3Lexer()
-        : V3LexerBase(NULL) {}
+        : V3LexerBase{nullptr} {}
     ~V3Lexer() {}
     // METHODS
     void unputString(const char* textp, size_t length) {
@@ -68,5 +68,5 @@ void V3ParseImp::lexNew() {
 }
 
 void V3ParseImp::lexDestroy() {
-    if (m_lexerp) VL_DO_CLEAR(delete m_lexerp, m_lexerp = NULL);
+    if (m_lexerp) VL_DO_CLEAR(delete m_lexerp, m_lexerp = nullptr);
 }

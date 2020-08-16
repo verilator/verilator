@@ -112,13 +112,22 @@ class VHashSha256 {
     // MEMBERS
     uint32_t m_inthash[8];  // Intermediate hash, in host order
     string m_remainder;  // Unhashed data
-    bool m_final;  // Finalized
-    size_t m_totLength;  // Total all-chunk length as needed by output digest
+    bool m_final = false;  // Finalized
+    size_t m_totLength = 0;  // Total all-chunk length as needed by output digest
 public:
     // CONSTRUCTORS
-    VHashSha256() { init(); }
-    explicit VHashSha256(const string& data) {
-        init();
+    VHashSha256() {
+        m_inthash[0] = 0x6a09e667;
+        m_inthash[1] = 0xbb67ae85;
+        m_inthash[2] = 0x3c6ef372;
+        m_inthash[3] = 0xa54ff53a;
+        m_inthash[4] = 0x510e527f;
+        m_inthash[5] = 0x9b05688c;
+        m_inthash[6] = 0x1f83d9ab;
+        m_inthash[7] = 0x5be0cd19;
+    }
+    explicit VHashSha256(const string& data)
+        : VHashSha256{} {
         insert(data);
     }
     ~VHashSha256() {}
@@ -138,18 +147,6 @@ public:
     void insert(uint64_t value) { insert(cvtToStr(value)); }
 
 private:
-    void init() {
-        m_inthash[0] = 0x6a09e667;
-        m_inthash[1] = 0xbb67ae85;
-        m_inthash[2] = 0x3c6ef372;
-        m_inthash[3] = 0xa54ff53a;
-        m_inthash[4] = 0x510e527f;
-        m_inthash[5] = 0x9b05688c;
-        m_inthash[6] = 0x1f83d9ab;
-        m_inthash[7] = 0x5be0cd19;
-        m_final = false;
-        m_totLength = 0;
-    }
     static void selfTestOne(const string& data, const string& data2, const string& exp,
                             const string& exp64);
     void finalize();  // Process remaining data
@@ -168,7 +165,7 @@ class VName {
 public:
     // CONSTRUCTORS
     explicit VName(const string& name)
-        : m_name(name) {}
+        : m_name{name} {}
     ~VName() {}
     // METHODS
     void name(const string& name) {
@@ -188,8 +185,8 @@ public:
 
 class VSpellCheck {
     // CONSTANTS
-    enum { NUM_CANDIDATE_LIMIT = 10000 };  // Avoid searching huge netlists
-    enum { LENGTH_LIMIT = 100 };  // Maximum string length to search
+    static constexpr unsigned NUM_CANDIDATE_LIMIT = 10000;  // Avoid searching huge netlists
+    static constexpr unsigned LENGTH_LIMIT = 100;  // Maximum string length to search
     // TYPES
     typedef unsigned int EditDistance;
     typedef std::vector<string> Candidates;

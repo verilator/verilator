@@ -32,7 +32,7 @@
 #include "V3AstConstOnly.h"
 
 #include <algorithm>
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 //######################################################################
 
@@ -41,7 +41,7 @@ class BrokenTable : public AstNVisitor {
 private:
     // MEMBERS
     //   For each node, we keep if it exists or not.
-    typedef vl_unordered_map<const AstNode*, int> NodeMap;  // Performance matters (when --debug)
+    typedef std::unordered_map<const AstNode*, int> NodeMap;  // Performance matters (when --debug)
     static NodeMap s_nodes;  // Set of all nodes that exist
     // BITMASK
     enum { FLAG_ALLOCATED = 0x01 };  // new() and not delete()ed
@@ -49,12 +49,13 @@ private:
     enum { FLAG_LINKABLE = 0x04 };  // Is in netlist tree, can be linked to
     enum { FLAG_LEAKED = 0x08 };  // Known to have been leaked
     enum { FLAG_UNDER_NOW = 0x10 };  // Is in tree as parent of current node
+
 public:
     // METHODS
     static void deleted(const AstNode* nodep) {
         // Called by operator delete on any node - only if VL_LEAK_CHECKS
         if (debug() >= 9) cout << "-nodeDel:  " << cvtToHex(nodep) << endl;
-        NodeMap::iterator iter = s_nodes.find(nodep);
+        const auto iter = s_nodes.find(nodep);
         UASSERT_OBJ(!(iter == s_nodes.end() || !(iter->second & FLAG_ALLOCATED)),
                     reinterpret_cast<const AstNode*>(nodep),
                     "Deleting AstNode object that was never tracked or already deleted");
@@ -67,7 +68,7 @@ public:
     static void addNewed(const AstNode* nodep) {
         // Called by operator new on any node - only if VL_LEAK_CHECKS
         if (debug() >= 9) cout << "-nodeNew:  " << cvtToHex(nodep) << endl;
-        NodeMap::iterator iter = s_nodes.find(nodep);
+        const auto iter = s_nodes.find(nodep);
         UASSERT_OBJ(!(iter != s_nodes.end() && (iter->second & FLAG_ALLOCATED)), nodep,
                     "Newing AstNode object that is already allocated");
         if (iter == s_nodes.end()) {
@@ -78,7 +79,7 @@ public:
     static void setUnder(const AstNode* nodep, bool flag) {
         // Called by BrokenCheckVisitor when each node entered/exited
         if (!okIfLinkedTo(nodep)) return;
-        NodeMap::iterator iter = s_nodes.find(nodep);
+        const auto iter = s_nodes.find(nodep);
         if (iter != s_nodes.end()) {
             iter->second &= ~FLAG_UNDER_NOW;
             if (flag) iter->second |= FLAG_UNDER_NOW;
@@ -89,7 +90,7 @@ public:
         // cppcheck-suppress knownConditionTrueFalse
         if (!linkable) return;  // save some time, else the map will get huge!
 #endif
-        NodeMap::iterator iter = s_nodes.find(nodep);
+        const auto iter = s_nodes.find(nodep);
         if (VL_UNCOVERABLE(iter == s_nodes.end())) {
 #ifdef VL_LEAK_CHECKS
             nodep->v3fatalSrc("AstNode is in tree, but not allocated");
@@ -113,7 +114,7 @@ public:
         // Some generic node has a pointer to this node.  Is it allocated?
         // Use this when might not be in tree; otherwise use okIfLinkedTo().
 #ifdef VL_LEAK_CHECKS
-        NodeMap::iterator iter = s_nodes.find(nodep);
+        const auto iter = s_nodes.find(nodep);
         if (iter == s_nodes.end()) return false;
         if (!(iter->second & FLAG_ALLOCATED)) return false;
 #endif
@@ -121,7 +122,7 @@ public:
     }
     static bool okIfLinkedTo(const AstNode* nodep) {
         // Some node in tree has a pointer to this node.  Is it kosher?
-        NodeMap::iterator iter = s_nodes.find(nodep);
+        const auto iter = s_nodes.find(nodep);
         if (iter == s_nodes.end()) return false;
 #ifdef VL_LEAK_CHECKS
         if (!(iter->second & FLAG_ALLOCATED)) return false;
@@ -133,7 +134,7 @@ public:
     static bool okIfAbove(const AstNode* nodep) {
         // Must be linked to and below current node
         if (!okIfLinkedTo(nodep)) return false;
-        NodeMap::iterator iter = s_nodes.find(nodep);
+        const auto iter = s_nodes.find(nodep);
         if (iter == s_nodes.end()) return false;
         if ((iter->second & FLAG_UNDER_NOW)) return false;
         return true;
@@ -141,7 +142,7 @@ public:
     static bool okIfBelow(const AstNode* nodep) {
         // Must be linked to and below current node
         if (!okIfLinkedTo(nodep)) return false;
-        NodeMap::iterator iter = s_nodes.find(nodep);
+        const auto iter = s_nodes.find(nodep);
         if (iter == s_nodes.end()) return false;
         if (!(iter->second & FLAG_UNDER_NOW)) return false;
         return true;
@@ -188,10 +189,9 @@ public:
         }
     }
 
-public:
     // CONSTRUCTORS
     BrokenTable() {}
-    virtual ~BrokenTable() {}
+    virtual ~BrokenTable() override {}
 };
 
 BrokenTable::NodeMap BrokenTable::s_nodes;
@@ -223,7 +223,7 @@ private:
         iterateChildrenConst(nodep);
     }
     // VISITORS
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         // Process not just iterate
         processAndIterate(nodep);
     }
@@ -231,7 +231,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit BrokenMarkVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~BrokenMarkVisitor() {}
+    virtual ~BrokenMarkVisitor() override {}
 };
 
 //######################################################################
@@ -239,7 +239,7 @@ public:
 
 class BrokenCheckVisitor : public AstNVisitor {
 private:
-    void checkWidthMin(const AstNode* nodep) {
+    static void checkWidthMin(const AstNode* nodep) {
         UASSERT_OBJ(nodep->width() == nodep->widthMin()
                         || v3Global.widthMinUsage() != VWidthMinUsage::MATCHES_WIDTH,
                     nodep, "Width != WidthMin");
@@ -271,14 +271,14 @@ private:
         iterateChildrenConst(nodep);
         BrokenTable::setUnder(nodep, false);
     }
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         processAndIterate(nodep);
         UASSERT_OBJ(!(v3Global.assertDTypesResolved() && nodep->brokeLhsMustBeLvalue()
                       && VN_IS(nodep->lhsp(), NodeVarRef)
                       && !VN_CAST(nodep->lhsp(), NodeVarRef)->lvalue()),
                     nodep, "Assignment LHS is not an lvalue");
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         // Process not just iterate
         processAndIterate(nodep);
     }
@@ -286,7 +286,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit BrokenCheckVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~BrokenCheckVisitor() {}
+    virtual ~BrokenCheckVisitor() override {}
 };
 
 //######################################################################

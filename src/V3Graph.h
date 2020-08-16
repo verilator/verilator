@@ -47,7 +47,7 @@ typedef bool (*V3EdgeFuncP)(const V3GraphEdge* edgep);
 
 class GraphWay {
 public:
-    enum en {
+    enum en : uint8_t {
         FORWARD = 0,
         REVERSE = 1,
         NUM_WAYS = 2  // NUM_WAYS is not an actual way, it's typically
@@ -55,12 +55,12 @@ public:
     };
     enum en m_e;
     inline GraphWay()
-        : m_e(FORWARD) {}
+        : m_e{FORWARD} {}
     // cppcheck-suppress noExplicitConstructor
     inline GraphWay(en _e)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit inline GraphWay(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e{static_cast<en>(_e)} {}
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"FORWARD", "REVERSE"};
@@ -229,7 +229,7 @@ public:
     virtual string dotStyle() const { return ""; }
     virtual string dotName() const { return ""; }
     virtual uint32_t rankAdder() const { return 1; }
-    virtual FileLine* fileline() const { return NULL; }  // NULL for unknown
+    virtual FileLine* fileline() const { return nullptr; }  // nullptr for unknown
     virtual int sortCmp(const V3GraphVertex* rhsp) const {
         // LHS goes first if of lower rank, or lower fanout
         if (m_rank < rhsp->m_rank) return -1;
@@ -250,11 +250,11 @@ public:
     // ITERATORS
     V3GraphVertex* verticesNextp() const { return m_vertices.nextp(); }
     V3GraphEdge* inBeginp() const { return m_ins.begin(); }
-    bool inEmpty() const { return inBeginp() == NULL; }
+    bool inEmpty() const { return inBeginp() == nullptr; }
     bool inSize1() const;
     uint32_t inHash() const;
     V3GraphEdge* outBeginp() const { return m_outs.begin(); }
-    bool outEmpty() const { return outBeginp() == NULL; }
+    bool outEmpty() const { return outBeginp() == nullptr; }
     bool outSize1() const;
     uint32_t outHash() const;
     V3GraphEdge* beginp(GraphWay way) const { return way.forward() ? outBeginp() : inBeginp(); }
@@ -265,7 +265,7 @@ public:
     /// Edges are routed around this vertex to point from "from" directly to "to"
     void rerouteEdges(V3Graph* graphp);
     /// Find the edge connecting ap and bp, where bp is wayward from ap.
-    /// If edge is not found returns NULL. O(edges) performance.
+    /// If edge is not found returns nullptr. O(edges) performance.
     V3GraphEdge* findConnectingEdgep(GraphWay way, const V3GraphVertex* waywardp);
 };
 
@@ -277,7 +277,7 @@ class V3GraphEdge {
     // Wires/variables aren't edges.  Edges have only a single to/from vertex
 public:
     // ENUMS
-    enum Cutable { NOT_CUTABLE = false, CUTABLE = true };  // For passing to V3GraphEdge
+    enum Cutable : uint8_t { NOT_CUTABLE = false, CUTABLE = true };  // For passing to V3GraphEdge
 protected:
     friend class V3Graph;
     friend class V3GraphVertex;

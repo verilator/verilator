@@ -152,14 +152,14 @@
 #if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
 # define VL_DANGLING(var)
 #else
-/// After e.g. delete, set variable to NULL to indicate must not use later
+/// After e.g. delete, set variable to nullptr to indicate must not use later
 # define VL_DANGLING(var) \
     do { \
-        *const_cast<const void**>(reinterpret_cast<const void* const*>(&var)) = NULL; \
+        *const_cast<const void**>(reinterpret_cast<const void* const*>(&var)) = nullptr; \
     } while (false)
 #endif
 
-/// Perform an e.g. delete, then set variable to NULL to indicate must not use later.
+/// Perform an e.g. delete, then set variable to nullptr to indicate must not use later.
 /// Unlike VL_DO_CLEAR the setting of the variable is only for debug reasons.
 #define VL_DO_DANGLING(stmt, var) \
     do { \
@@ -169,7 +169,7 @@
         VL_DANGLING(var); \
     } while (false)
 
-/// Perform an e.g. delete, then set variable to NULL as a requirement
+/// Perform an e.g. delete, then set variable to nullptr as a requirement
 #define VL_DO_CLEAR(stmt, stmt2) \
     do { \
         do { \
@@ -184,19 +184,13 @@
 // C++-2011
 
 #if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK)
+// These are deprecated historical defines. We leave them in case users referenced them.
 # define VL_EQ_DELETE = delete
 # define vl_unique_ptr std::unique_ptr
-// By default we use std:: types in C++11.
-// Define VL_USE_UNORDERED_TYPES to test these pre-C++11 classes
-# ifdef VL_USE_UNORDERED_TYPES
-#  define VL_INCLUDE_UNORDERED_MAP "verilated_unordered_set_map.h"
-#  define VL_INCLUDE_UNORDERED_SET "verilated_unordered_set_map.h"
-# else
-#  define vl_unordered_map std::unordered_map
-#  define vl_unordered_set std::unordered_set
-#  define VL_INCLUDE_UNORDERED_MAP <unordered_map>
-#  define VL_INCLUDE_UNORDERED_SET <unordered_set>
-# endif
+# define vl_unordered_map std::unordered_map
+# define vl_unordered_set std::unordered_set
+# define VL_INCLUDE_UNORDERED_MAP <unordered_map>
+# define VL_INCLUDE_UNORDERED_SET <unordered_set>
 # define VL_FINAL final
 # define VL_MUTABLE mutable
 # define VL_OVERRIDE override
@@ -382,8 +376,8 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 
 // Used to declare a class as uncopyable; put after a private:
 #define VL_UNCOPYABLE(Type) \
-    Type(const Type& other) VL_EQ_DELETE; \
-    Type& operator=(const Type&) VL_EQ_DELETE
+    Type(const Type& other) = delete; \
+    Type& operator=(const Type&) = delete
 
 //=========================================================================
 // Verilated function size macros
@@ -493,6 +487,14 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 
 #define VL_STRINGIFY(x) VL_STRINGIFY2(x)
 #define VL_STRINGIFY2(x) #x
+
+//=========================================================================
+// Conversions
+
+namespace vlstd {
+// C++17's std::as_const
+template <class T> T const& as_const(T& v) { return v; }
+};  // namespace vlstd
 
 //=========================================================================
 

@@ -45,31 +45,31 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstTopScope* m_topscopep;  // Top scope for adding sentrees under
+    AstTopScope* m_topscopep = nullptr;  // Top scope for adding sentrees under
     SenTreeFinder m_finder;  // Find global sentree's and add them
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstTopScope* nodep) override {
         m_topscopep = nodep;
         m_finder.init(m_topscopep);
         iterateChildren(nodep);
-        m_topscopep = NULL;
+        m_topscopep = nullptr;
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         // Create required actives and add to module
         // We can start ordering at a module, or a scope
         UINFO(4, " MOD   " << nodep << endl);
         iterateChildren(nodep);
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {
+    virtual void visit(AstActive* nodep) override {
         UINFO(4, "   ACTIVE " << nodep << endl);
         // Remove duplicate clocks and such; sensesp() may change!
         V3Const::constifyExpensiveEdit(nodep);
         AstSenTree* sensesp = nodep->sensesp();
-        UASSERT_OBJ(sensesp, nodep, "NULL");
+        UASSERT_OBJ(sensesp, nodep, "nullptr");
         if (sensesp->sensesp() && VN_IS(sensesp->sensesp(), SenItem)
             && VN_CAST(sensesp->sensesp(), SenItem)->isNever()) {
             // Never executing.  Kill it.
@@ -108,30 +108,27 @@ private:
         // No need to do statements under it, they're already moved.
         // iterateChildren(nodep);
     }
-    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstNodeProcedure* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstAssignAlias* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstAssignW* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstAlwaysPublic* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
     //--------------------
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstVarScope*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstVarScope*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit ActiveTopVisitor(AstNetlist* nodep)
-        : m_topscopep(NULL) {
-        iterate(nodep);
-    }
-    virtual ~ActiveTopVisitor() {}
+    explicit ActiveTopVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~ActiveTopVisitor() override {}
 };
 
 //######################################################################

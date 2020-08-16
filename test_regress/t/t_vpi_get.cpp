@@ -52,7 +52,7 @@ unsigned int main_time = 0;
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
+        printf("%%Error: %s:%d: GOT = nullptr  EXP = !nullptr\n", FILENM, __LINE__); \
         return __LINE__; \
     }
 
@@ -168,7 +168,7 @@ int mon_check_props() {
            {"testout", {24, vpiOutput, 0, vpiPort}, {0, 0, 0, 0}},
            {"sub.subin", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
            {"sub.subout", {1, vpiOutput, 1, vpiPort}, {0, 0, 0, 0}},
-           {NULL, {0, 0, 0, 0}, {0, 0, 0, 0}}};
+           {nullptr, {0, 0, 0, 0}, {0, 0, 0, 0}}};
     struct params* value = values;
     while (value->signal) {
         TestVpiHandle h = VPI_HANDLE(value->signal);
@@ -211,7 +211,7 @@ static int mon_check_vpi() {
 
     vpi_value.format = vpiIntVal;
     vpi_value.value.integer = mon_check();
-    vpi_put_value(href, &vpi_value, NULL, vpiNoDelay);
+    vpi_put_value(href, &vpi_value, nullptr, vpiNoDelay);
 
     return 0;
 }

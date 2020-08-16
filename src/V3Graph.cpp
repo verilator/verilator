@@ -33,18 +33,18 @@ int V3Graph::debug() { return std::max(V3Error::debugDefault(), s_debug); }
 // Vertices
 
 V3GraphVertex::V3GraphVertex(V3Graph* graphp, const V3GraphVertex& old)
-    : m_fanout(old.m_fanout)
-    , m_color(old.m_color)
-    , m_rank(old.m_rank) {
-    m_userp = NULL;
+    : m_fanout{old.m_fanout}
+    , m_color{old.m_color}
+    , m_rank{old.m_rank} {
+    m_userp = nullptr;
     verticesPushBack(graphp);
 }
 
 V3GraphVertex::V3GraphVertex(V3Graph* graphp)
-    : m_fanout(0)
-    , m_color(0)
-    , m_rank(0) {
-    m_userp = NULL;
+    : m_fanout{0}
+    , m_color{0}
+    , m_rank{0} {
+    m_userp = nullptr;
     verticesPushBack(graphp);
 }
 
@@ -52,7 +52,7 @@ void V3GraphVertex::verticesPushBack(V3Graph* graphp) {
     m_vertices.pushBack(graphp->m_vertices, this);
 }
 
-void V3GraphVertex::unlinkEdges(V3Graph* graphp) {
+void V3GraphVertex::unlinkEdges(V3Graph*) {
     for (V3GraphEdge* edgep = outBeginp(); edgep; /*BELOW*/) {
         V3GraphEdge* nextp = edgep->outNextp();
         edgep->unlinkDelete();
@@ -71,7 +71,7 @@ void V3GraphVertex::unlinkDelete(V3Graph* graphp) {
     // Unlink from vertex list
     m_vertices.unlink(graphp->m_vertices, this);
     // Delete
-    delete this;  // this=NULL;
+    delete this;  // this=nullptr;
 }
 
 void V3GraphVertex::rerouteEdges(V3Graph* graphp) {
@@ -123,7 +123,7 @@ V3GraphEdge* V3GraphVertex::findConnectingEdgep(GraphWay way, const V3GraphVerte
         aedgep = aedgep->nextp(way);
         bedgep = bedgep->nextp(inv);
     }
-    return NULL;
+    return nullptr;
 }
 
 void V3GraphVertex::v3errorEnd(std::ostringstream& str) const {
@@ -165,7 +165,7 @@ void V3GraphEdge::init(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top
     m_top = top;
     m_weight = weight;
     m_cutable = cutable;
-    m_userp = NULL;
+    m_userp = nullptr;
     // Link vertices to this edge
     outPushBack();
     inPushBack();
@@ -185,7 +185,7 @@ void V3GraphEdge::unlinkDelete() {
     // Unlink to side
     m_ins.unlink(m_top->m_ins, this);
     // Delete
-    delete this;  // this=NULL;
+    delete this;  // this=nullptr;
 }
 
 void V3GraphEdge::outPushBack() {
@@ -239,7 +239,7 @@ void V3Graph::userClearVertices() {
     // down more than help.
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
         vertexp->user(0);
-        vertexp->userp(NULL);  // Its a union, but might be different size than user()
+        vertexp->userp(nullptr);  // Its a union, but might be different size than user()
     }
 }
 
@@ -248,7 +248,7 @@ void V3Graph::userClearEdges() {
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
         for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             edgep->user(0);
-            edgep->userp(NULL);  // Its a union, but might be different size than user()
+            edgep->userp(nullptr);  // Its a union, but might be different size than user()
         }
     }
 }
@@ -314,7 +314,7 @@ void V3Graph::dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsS
 void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     // This generates a file used by graphviz, https://www.graphviz.org
     // "hardcoded" parameters:
-    const vl_unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
     if (logp->fail()) v3fatal("Can't write " << filename);
 
     // Header

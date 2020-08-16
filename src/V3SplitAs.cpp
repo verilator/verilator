@@ -45,23 +45,20 @@ public:
 class SplitAsFindVisitor : public SplitAsBaseVisitor {
 private:
     // STATE
-    AstVarScope* m_splitVscp;  // Variable we want to split
+    AstVarScope* m_splitVscp = nullptr;  // Variable we want to split
 
     // METHODS
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (nodep->lvalue() && !m_splitVscp && nodep->varp()->attrIsolateAssign()) {
             m_splitVscp = nodep->varScopep();
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit SplitAsFindVisitor(AstAlways* nodep) {
-        m_splitVscp = NULL;
-        iterate(nodep);
-    }
-    virtual ~SplitAsFindVisitor() {}
+    explicit SplitAsFindVisitor(AstAlways* nodep) { iterate(nodep); }
+    virtual ~SplitAsFindVisitor() override {}
     // METHODS
     AstVarScope* splitVscp() const { return m_splitVscp; }
 };
@@ -74,11 +71,11 @@ private:
     // STATE
     AstVarScope* m_splitVscp;  // Variable we want to split
     bool m_modeMatch;  // Remove matching Vscp, else non-matching
-    bool m_keepStmt;  // Current Statement must be preserved
-    bool m_matches;  // Statement below has matching lvalue reference
+    bool m_keepStmt = false;  // Current Statement must be preserved
+    bool m_matches = false;  // Statement below has matching lvalue reference
 
     // METHODS
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (nodep->lvalue()) {
             if (nodep->varScopep() == m_splitVscp) {
                 UINFO(6, "       CL VAR " << nodep << endl);
@@ -86,7 +83,7 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
             return;
@@ -112,18 +109,16 @@ private:
         m_keepStmt = oldKeep || m_keepStmt;
         UINFO(9, "     upKeep=" << m_keepStmt << " STMT " << nodep << endl);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    SplitAsCleanVisitor(AstAlways* nodep, AstVarScope* vscp, bool modeMatch) {
-        m_splitVscp = vscp;
-        m_modeMatch = modeMatch;
-        m_keepStmt = false;
-        m_matches = false;
+    SplitAsCleanVisitor(AstAlways* nodep, AstVarScope* vscp, bool modeMatch)
+        : m_splitVscp{vscp}
+        , m_modeMatch{modeMatch} {
         iterate(nodep);
     }
-    virtual ~SplitAsCleanVisitor() {}
+    virtual ~SplitAsCleanVisitor() override {}
 };
 
 //######################################################################
@@ -137,7 +132,7 @@ private:
 
     // STATE
     VDouble0 m_statSplits;  // Statistic tracking
-    AstVarScope* m_splitVscp;  // Variable we want to split
+    AstVarScope* m_splitVscp = nullptr;  // Variable we want to split
 
     // METHODS
     void splitAlways(AstAlways* nodep) {
@@ -158,10 +153,10 @@ private:
         }
     }
 
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlways* nodep) override {
         // Are there any lvalue references below this?
         // There could be more than one.  So, we process the first one found first.
-        AstVarScope* lastSplitVscp = NULL;
+        AstVarScope* lastSplitVscp = nullptr;
         while (!nodep->user1()) {
             // Find any splittable variables
             SplitAsFindVisitor visitor(nodep);
@@ -183,17 +178,16 @@ private:
     }
 
     // Speedup; no always under math
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit SplitAsVisitor(AstNetlist* nodep) {
-        m_splitVscp = NULL;
         AstNode::user1ClearTree();  // user1p() used on entire tree
         iterate(nodep);
     }
-    virtual ~SplitAsVisitor() {
+    virtual ~SplitAsVisitor() override {
         V3Stats::addStat("Optimizations, isolate_assignments blocks", m_statSplits);
     }
 };

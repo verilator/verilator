@@ -131,7 +131,7 @@ void i_shortreal(float* o) {
 void i_chandle(void** o) {
     static int n = 0;
     printf("i_chandle %d\n", n);
-    *o = (n++ % 2) ? reinterpret_cast<void*>(&i_chandle) : NULL;
+    *o = (n++ % 2) ? reinterpret_cast<void*>(&i_chandle) : nullptr;
 }
 
 void i_string(const char** o) {
@@ -247,7 +247,7 @@ void i_shortreal_t(float* o) {
 void i_chandle_t(void** o) {
     static int n = 0;
     printf("i_chandle_t %d\n", n);
-    *o = (n++ % 2) ? reinterpret_cast<void*>(&i_chandle) : NULL;
+    *o = (n++ % 2) ? reinterpret_cast<void*>(&i_chandle) : nullptr;
 }
 
 void i_string_t(const char** o) {
@@ -707,7 +707,7 @@ void check_exports() {
 #endif
 
     e_chandle(&x_chandle);
-    if (x_chandle != NULL) stop();
+    if (x_chandle != nullptr) stop();
 
     e_string(&x_string);
     if ((n % 2) == 0) {
@@ -768,7 +768,7 @@ void check_exports() {
 #endif
 
     e_chandle_t(&x_chandle_t);
-    if (x_chandle_t != NULL) stop();
+    if (x_chandle_t != nullptr) stop();
 
     e_string_t(&x_string_t);
     if ((n % 2) == 0) {

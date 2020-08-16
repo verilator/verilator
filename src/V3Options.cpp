@@ -122,7 +122,7 @@ V3LangCode::V3LangCode(const char* textp) {
 // VTimescale class functions
 
 VTimescale::VTimescale(const string& value, bool& badr)
-    : m_e(VTimescale::NONE) {
+    : m_e{VTimescale::NONE} {
     badr = true;
     string spaceless = VString::removeWhitespace(value);
     for (int i = TS_100S; i < _ENUM_END; ++i) {
@@ -385,10 +385,9 @@ void V3Options::addArg(const string& arg) { m_impp->m_allArgs.push_back(arg); }
 
 string V3Options::allArgsString() const {
     string out;
-    for (std::list<string>::const_iterator it = m_impp->m_allArgs.begin();
-         it != m_impp->m_allArgs.end(); ++it) {
+    for (const string& i : m_impp->m_allArgs) {
         if (out != "") out += " ";
-        out += *it;
+        out += i;
     }
     return out;
 }
@@ -469,7 +468,7 @@ string V3Options::fileExists(const string& filename) {
     string dir = V3Os::filenameDir(filename);
     string basename = V3Os::filenameNonDir(filename);
 
-    V3OptionsImp::DirMap::iterator diriter = m_impp->m_dirMap.find(dir);
+    auto diriter = m_impp->m_dirMap.find(dir);
     if (diriter == m_impp->m_dirMap.end()) {
         // Read the listing
         m_impp->m_dirMap.insert(std::make_pair(dir, std::set<string>()));
@@ -484,7 +483,7 @@ string V3Options::fileExists(const string& filename) {
     }
     // Find it
     std::set<string>* filesetp = &(diriter->second);
-    std::set<string>::iterator fileiter = filesetp->find(basename);
+    const auto fileiter = filesetp->find(basename);
     if (fileiter == filesetp->end()) {
         return "";  // Not found
     }
@@ -495,9 +494,8 @@ string V3Options::fileExists(const string& filename) {
 }
 
 string V3Options::filePathCheckOneDir(const string& modname, const string& dirname) {
-    for (std::list<string>::iterator extIter = m_impp->m_libExtVs.begin();
-         extIter != m_impp->m_libExtVs.end(); ++extIter) {
-        string fn = V3Os::filenameFromDirBase(dirname, modname + *extIter);
+    for (const string& i : m_impp->m_libExtVs) {
+        string fn = V3Os::filenameFromDirBase(dirname, modname + i);
         string exists = fileExists(fn);
         if (exists != "") {
             // Strip ./, it just looks ugly
@@ -530,14 +528,12 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
-    for (std::list<string>::iterator dirIter = m_impp->m_incDirUsers.begin();
-         dirIter != m_impp->m_incDirUsers.end(); ++dirIter) {
-        string exists = filePathCheckOneDir(modname, *dirIter);
+    for (const string& dir : m_impp->m_incDirUsers) {
+        string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
-    for (std::list<string>::iterator dirIter = m_impp->m_incDirFallbacks.begin();
-         dirIter != m_impp->m_incDirFallbacks.end(); ++dirIter) {
-        string exists = filePathCheckOneDir(modname, *dirIter);
+    for (const string& dir : m_impp->m_incDirFallbacks) {
+        string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
 
@@ -568,19 +564,15 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
                         << endl);
         }
         std::cerr << V3Error::warnMore() << "... Looked in:" << endl;
-        for (std::list<string>::iterator dirIter = m_impp->m_incDirUsers.begin();
-             dirIter != m_impp->m_incDirUsers.end(); ++dirIter) {
-            for (std::list<string>::iterator extIter = m_impp->m_libExtVs.begin();
-                 extIter != m_impp->m_libExtVs.end(); ++extIter) {
-                string fn = V3Os::filenameFromDirBase(*dirIter, modname + *extIter);
+        for (const string& dir : m_impp->m_incDirUsers) {
+            for (const string& ext : m_impp->m_libExtVs) {
+                string fn = V3Os::filenameFromDirBase(dir, modname + ext);
                 std::cerr << V3Error::warnMore() << "     " << fn << endl;
             }
         }
-        for (std::list<string>::iterator dirIter = m_impp->m_incDirFallbacks.begin();
-             dirIter != m_impp->m_incDirFallbacks.end(); ++dirIter) {
-            for (std::list<string>::iterator extIter = m_impp->m_libExtVs.begin();
-                 extIter != m_impp->m_libExtVs.end(); ++extIter) {
-                string fn = V3Os::filenameFromDirBase(*dirIter, modname + *extIter);
+        for (const string& dir : m_impp->m_incDirFallbacks) {
+            for (const string& ext : m_impp->m_libExtVs) {
+                string fn = V3Os::filenameFromDirBase(dir, modname + ext);
                 std::cerr << V3Error::warnMore() << "     " << fn << endl;
             }
         }
@@ -596,7 +588,7 @@ V3LangCode V3Options::fileLanguage(const string& filename) {
     string::size_type pos;
     if ((pos = ext.rfind('.')) != string::npos) {
         ext.erase(0, pos + 1);
-        std::map<string, V3LangCode>::iterator it = m_impp->m_langExts.find(ext);
+        const auto it = m_impp->m_langExts.find(ext);
         if (it != m_impp->m_langExts.end()) return it->second;
     }
     return m_defaultLanguage;
@@ -832,7 +824,7 @@ string V3Options::protectKeyDefaulted() {
 void V3Options::throwSigsegv() {  // LCOV_EXCL_START
 #if !(defined(VL_CPPCHECK) || defined(__clang_analyzer__))
     // clang-format off
-    { char* zp = NULL; *zp = 0; }  // Intentional core dump, ignore warnings here
+    { char* zp = nullptr; *zp = 0; }  // Intentional core dump, ignore warnings here
     // clang-format on
 #endif
 }  // LCOV_EXCL_STOP
@@ -1593,7 +1585,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     // Read the specified -f filename and process as arguments
     UINFO(1, "Reading Options File " << filename << endl);
 
-    const vl_unique_ptr<std::ifstream> ifp(V3File::new_ifstream(filename));
+    const std::unique_ptr<std::ifstream> ifp(V3File::new_ifstream(filename));
     if (ifp->fail()) {
         fl->v3error("Cannot open -f command file: " + filename);
         return;
@@ -1639,7 +1631,12 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     std::vector<string> args;
 
     // Parse file using a state machine, taking into account quoted strings and escaped chars
-    enum state { ST_IN_OPTION, ST_ESCAPED_CHAR, ST_IN_QUOTED_STR, ST_IN_DOUBLE_QUOTED_STR };
+    enum state : uint8_t {
+        ST_IN_OPTION,
+        ST_ESCAPED_CHAR,
+        ST_IN_QUOTED_STR,
+        ST_IN_DOUBLE_QUOTED_STR
+    };
 
     state st = ST_IN_OPTION;
     state last_st = ST_IN_OPTION;
@@ -1715,10 +1712,8 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     // Convert to argv style arg list and parse them
     std::vector<char*> argv;
     argv.reserve(args.size() + 1);
-    for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it) {
-        argv.push_back(const_cast<char*>(it->c_str()));
-    }
-    argv.push_back(NULL);  // argv is NULL-terminated
+    for (const string& i : args) argv.push_back(const_cast<char*>(i.c_str()));
+    argv.push_back(nullptr);  // argv is nullptr-terminated
     parseOptsList(fl, optdir, static_cast<int>(argv.size() - 1), argv.data());
 }
 
@@ -1793,109 +1788,9 @@ void V3Options::showVersion(bool verbose) {
 V3Options::V3Options() {
     m_impp = new V3OptionsImp;
 
-    m_assert = false;
-    m_autoflush = false;
-    m_bboxSys = false;
-    m_bboxUnsup = false;
-    m_build = false;
-    m_cdc = false;
-    m_cmake = false;
-    m_context = true;
-    m_coverageLine = false;
-    m_coverageToggle = false;
-    m_coverageUnderscore = false;
-    m_coverageUser = false;
-    m_debugCheck = false;
-    m_debugCollision = false;
-    m_debugExitParse = false;
-    m_debugLeak = true;
-    m_debugNondeterminism = false;
-    m_debugPartition = false;
-    m_debugProtect = false;
-    m_debugSelfTest = false;
-    m_decoration = true;
-    m_dpiHdrOnly = false;
-    m_dumpDefines = false;
-    m_exe = false;
-    m_flatten = false;
-    m_gmake = false;
-    m_hierarchical = false;
-    m_hierChild = false;
-    m_ignc = false;
-    m_inhibitSim = false;
-    m_lintOnly = false;
-    m_makePhony = false;
-    m_main = false;
-    m_orderClockDly = true;
-    m_outFormatOk = false;
-    m_pedantic = false;
-    m_pinsBv = 65;
-    m_pinsScUint = false;
-    m_pinsScBigUint = false;
-    m_pinsUint8 = false;
-    m_ppComments = false;
-    m_profCFuncs = false;
-    m_profThreads = false;
-    m_protectIds = false;
-    m_preprocOnly = false;
-    m_preprocNoLine = false;
-    m_public = false;
-    m_publicFlatRW = false;
-    m_quietExit = false;
-    m_relativeCFuncs = true;
-    m_relativeIncludes = false;
-    m_reportUnoptflat = false;
-    m_savable = false;
-    m_stats = false;
-    m_statsVars = false;
-    m_structsPacked = true;
-    m_systemC = false;
-    m_threads = 0;
-    m_threadsDpiPure = true;
-    m_threadsDpiUnpure = false;
-    m_threadsCoarsen = true;
-    m_threadsMaxMTasks = 0;
-    m_timing = false;
-    m_trace = false;
-    m_traceCoverage = false;
     m_traceFormat = TraceFormat::VCD;
-    m_traceParams = true;
-    m_traceStructs = false;
-    m_traceUnderscore = false;
-    m_traceThreads = 0;
-    m_underlineZero = false;
-    m_verilate = true;
-    m_vpi = false;
-    m_xInitialEdge = false;
-    m_xmlOnly = false;
-
-    m_buildJobs = 1;
-    m_convergeLimit = 100;
-    m_dumpTree = 0;
-    m_dumpTreeAddrids = false;
-    m_gateStmts = 100;
-    m_ifDepth = 0;
-    m_inlineMult = 2000;
-    m_maxNumWidth = 65536;
-    m_moduleRecursion = 100;
-    m_outputSplit = 20000;
-    m_outputSplitCFuncs = -1;
-    m_outputSplitCTrace = -1;
-    m_traceDepth = 0;
-    m_traceMaxArray = 32;
-    m_traceMaxWidth = 256;
-    m_unrollCount = 64;
-    m_unrollStmts = 30000;
-
-    m_compLimitBlocks = 0;
-    m_compLimitMembers = 64;
-    m_compLimitParens = 0;
 
     m_makeDir = "obj_dir";
-    m_bin = "";
-    m_flags = "";
-    m_waiverOutput = "";
-    m_l2Name = "";
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";
 
@@ -1912,7 +1807,7 @@ V3Options::V3Options() {
     addIncDirFallback(".");  // Looks better than {long_cwd_path}/...
 }
 
-V3Options::~V3Options() { VL_DO_CLEAR(delete m_impp, m_impp = NULL); }
+V3Options::~V3Options() { VL_DO_CLEAR(delete m_impp, m_impp = nullptr); }
 
 void V3Options::setDebugMode(int level) {
     V3Error::debugDefault(level);
@@ -1923,7 +1818,7 @@ void V3Options::setDebugMode(int level) {
 }
 
 void V3Options::setDebugSrcLevel(const string& srcfile, int level) {
-    DebugSrcMap::iterator iter = m_debugSrcs.find(srcfile);
+    const auto iter = m_debugSrcs.find(srcfile);
     if (iter != m_debugSrcs.end()) {
         iter->second = level;
     } else {
@@ -1935,7 +1830,7 @@ int V3Options::debugSrcLevel(const string& srcfile_path, int default_level) {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
     string srcfile = V3Os::filenameNonDirExt(srcfile_path);
-    DebugSrcMap::iterator iter = m_debugSrcs.find(srcfile);
+    const auto iter = m_debugSrcs.find(srcfile);
     if (iter != m_debugSrcs.end()) {
         return iter->second;
     } else {
@@ -1944,7 +1839,7 @@ int V3Options::debugSrcLevel(const string& srcfile_path, int default_level) {
 }
 
 void V3Options::setDumpTreeLevel(const string& srcfile, int level) {
-    DebugSrcMap::iterator iter = m_dumpTrees.find(srcfile);
+    const auto iter = m_dumpTrees.find(srcfile);
     if (iter != m_dumpTrees.end()) {
         iter->second = level;
     } else {
@@ -1956,7 +1851,7 @@ int V3Options::dumpTreeLevel(const string& srcfile_path) {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
     string srcfile = V3Os::filenameNonDirExt(srcfile_path);
-    DebugSrcMap::iterator iter = m_dumpTrees.find(srcfile);
+    const auto iter = m_dumpTrees.find(srcfile);
     if (iter != m_dumpTrees.end()) {
         return iter->second;
     } else {

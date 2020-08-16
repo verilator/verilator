@@ -150,7 +150,7 @@ public:
     AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,
                                 const AstNodeModule* modp) {
         if (m_hierBlockOptsByOrigName.find(origName) == m_hierBlockOptsByOrigName.end()) {
-            return NULL;
+            return nullptr;
         }
         // This module is a hierarchical block. Need to replace it by the protect-lib wrapper.
         const std::pair<HierMapIt, HierMapIt> candidates
@@ -169,7 +169,7 @@ public:
                     AstConst* constp = VN_CAST(pinp->exprp(), Const);
                     UASSERT_OBJ(constp, pinp,
                                 "parameter for a hierarchical block must have been constified");
-                    ParamConstMap::const_iterator pIt = params.find(modvarp->name());
+                    const auto pIt = vlstd::as_const(params).find(modvarp->name());
                     UINFO(5, "Comparing " << modvarp->name() << " " << constp << std::endl);
                     if (pIt == params.end() || paramIdx >= params.size()
                         || !areSame(constp, pIt->second)) {
@@ -190,8 +190,8 @@ public:
         UASSERT_OBJ(modIt != m_hierBlockMod.end(), firstPinp,
                     hierIt->second->mangledName() << " is not found");
 
-        HierBlockModMap::const_iterator it = m_hierBlockMod.find(hierIt->second->mangledName());
-        if (it == m_hierBlockMod.end()) return NULL;
+        const auto it = vlstd::as_const(m_hierBlockMod).find(hierIt->second->mangledName());
+        if (it == m_hierBlockMod.end()) return nullptr;
         return it->second;
     }
 };
@@ -222,14 +222,15 @@ private:
     struct ModInfo {
         AstNodeModule* m_modp;  // Module with specified name
         CloneMap m_cloneMap;  // Map of old-varp -> new cloned varp
-        explicit ModInfo(AstNodeModule* modp) { m_modp = modp; }
+        explicit ModInfo(AstNodeModule* modp)
+            : m_modp{modp} {}
     };
     typedef std::map<string, ModInfo> ModNameMap;
     ModNameMap m_modNameMap;  // Hash of created module flavors by name
 
     typedef std::map<string, string> LongMap;
     LongMap m_longMap;  // Hash of very long names to unique identity number
-    int m_longId;
+    int m_longId = 0;
 
     // All module names that are loaded from source code
     // Generated modules by this visitor is not included
@@ -238,7 +239,7 @@ private:
     typedef std::pair<int, string> ValueMapValue;
     typedef std::map<V3Hash, ValueMapValue> ValueMap;
     ValueMap m_valueMap;  // Hash of node hash to (param value, name)
-    int m_nextValue;  // Next value to use in m_valueMap
+    int m_nextValue = 1;  // Next value to use in m_valueMap
 
     typedef std::multimap<int, AstNodeModule*> LevelModMap;
     LevelModMap m_todoModps;  // Modules left to process
@@ -246,14 +247,10 @@ private:
     typedef std::deque<AstCell*> CellList;
     CellList m_cellps;  // Cells left to process (in this module)
 
-    AstNodeFTask* m_ftaskp;  // Function/task reference
-
-    AstNodeModule* m_modp;  // Current module being processed
-
+    AstNodeFTask* m_ftaskp = nullptr;  // Function/task reference
+    AstNodeModule* m_modp = nullptr;  // Current module being processed
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
-
     UnrollStateful m_unroller;  // Loop unroller
-
     string m_generateHierName;  // Generate portion of hierarchy name
 
     // Database to get protect-lib wrapper that matches parameters in hierarchical Verilation
@@ -312,7 +309,7 @@ private:
         // Force hash collisions -- for testing only
         if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash();
         int num;
-        ValueMap::iterator it = m_valueMap.find(hash);
+        const auto it = m_valueMap.find(hash);
         if (it != m_valueMap.end() && it->second.second == key) {
             num = it->second.first;
         } else {
@@ -332,7 +329,7 @@ private:
         if (AstBracketArrayDType* adtypep = VN_CAST(nodep, BracketArrayDType)) {
             return adtypep->subDTypep();
         }
-        return NULL;
+        return nullptr;
     }
     void collectPins(CloneMap* clonemapp, AstNodeModule* modp) {
         // Grab all I/O so we can remap our pins later
@@ -358,12 +355,12 @@ private:
             if (pinp->modVarp()) {
                 // Find it in the clone structure
                 // UINFO(8,"Clone find 0x"<<hex<<(uint32_t)pinp->modVarp()<<endl);
-                CloneMap::iterator cloneiter = clonemapp->find(pinp->modVarp());
+                const auto cloneiter = clonemapp->find(pinp->modVarp());
                 UASSERT_OBJ(cloneiter != clonemapp->end(), pinp,
                             "Couldn't find pin in clone list");
                 pinp->modVarp(VN_CAST(cloneiter->second, Var));
             } else if (pinp->modPTypep()) {
-                CloneMap::iterator cloneiter = clonemapp->find(pinp->modPTypep());
+                const auto cloneiter = clonemapp->find(pinp->modPTypep());
                 UASSERT_OBJ(cloneiter != clonemapp->end(), pinp,
                             "Couldn't find pin in clone list");
                 pinp->modPTypep(VN_CAST(cloneiter->second, ParamTypeDType));
@@ -383,7 +380,7 @@ private:
         }
         for (AstPin* pinp = startpinp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
             if (AstVar* varp = pinp->modVarp()) {
-                std::map<string, AstVar*>::const_iterator varIt = nameToPin.find(varp->name());
+                const auto varIt = vlstd::as_const(nameToPin).find(varp->name());
                 UASSERT_OBJ(varIt != nameToPin.end(), varp,
                             "Not found in " << modp->prettyNameQ());
                 pinp->modVarp(varIt->second);
@@ -447,7 +444,7 @@ private:
         // Hitting a cell adds to the appropriate level of this level-sorted list,
         // so since cells originally exist top->bottom we process in top->bottom order too.
         while (!m_todoModps.empty()) {
-            LevelModMap::iterator itm = m_todoModps.begin();
+            const auto itm = m_todoModps.cbegin();
             AstNodeModule* nodep = itm->second;
             m_todoModps.erase(itm);
             if (!nodep->user5SetOnce()) {  // Process once; note clone() must clear so we do it
@@ -460,8 +457,7 @@ private:
                 //
                 // Process interface cells, then non-interface which may ref an interface cell
                 for (int nonIf = 0; nonIf < 2; ++nonIf) {
-                    for (CellList::iterator it = m_cellps.begin(); it != m_cellps.end(); ++it) {
-                        AstCell* cellp = *it;
+                    for (AstCell* cellp : m_cellps) {
                         if ((nonIf == 0 && VN_IS(cellp->modp(), Iface))
                             || (nonIf == 1 && !VN_IS(cellp->modp(), Iface))) {
                             string fullName(m_modp->hierName());
@@ -472,25 +468,24 @@ private:
                         }
                     }
                 }
-                for (CellList::iterator it = m_cellps.begin(); it != m_cellps.end(); ++it) {
-                    AstCell* cellp = *it;
+                for (AstCell* cellp : m_cellps) {
                     if (string* genHierNamep = (string*)cellp->user5p()) {
-                        cellp->user5p(NULL);
+                        cellp->user5p(nullptr);
                         VL_DO_DANGLING(delete genHierNamep, genHierNamep);
                     }
                 }
                 m_cellps.clear();
-                m_modp = NULL;
+                m_modp = nullptr;
             }
         }
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         // Modules must be done in top-down-order
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         if (nodep->dead()) {
             UINFO(4, " MOD-dead.  " << nodep << endl);  // Marked by LinkDot
         } else if (nodep->recursiveClone()) {
@@ -510,20 +505,20 @@ private:
             UINFO(4, " MOD-dead?  " << nodep << endl);
         }
     }
-    virtual void visit(AstCell* nodep) VL_OVERRIDE {
+    virtual void visit(AstCell* nodep) override {
         // Must do ifaces first, so push to list and do in proper order
         string* genHierNamep = new string(m_generateHierName);
         nodep->user5p(genHierNamep);
         m_cellps.push_back(nodep);
     }
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTask* nodep) override {
         m_ftaskp = nodep;
         iterateChildren(nodep);
-        m_ftaskp = NULL;
+        m_ftaskp = nullptr;
     }
 
     // Make sure all parameters are constantified
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         if (!nodep->user5SetOnce()) {  // Process once
             iterateChildren(nodep);
             if (nodep->isParam()) {
@@ -558,7 +553,7 @@ private:
         }
     }
     // Make sure varrefs cause vars to constify before things above
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (nodep->varp()) iterate(nodep->varp());
     }
     bool ifaceParamReplace(AstVarXRef* nodep, AstNode* candp) {
@@ -578,7 +573,7 @@ private:
         }
         return false;
     }
-    virtual void visit(AstVarXRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarXRef* nodep) override {
         // Check to see if the scope is just an interface because interfaces are special
         string dotted = nodep->dotted();
         if (!dotted.empty() && nodep->varp() && nodep->varp()->isParam()) {
@@ -621,10 +616,10 @@ private:
                 }
             }
         }
-        nodep->varp(NULL);  // Needs relink, as may remove pointed-to var
+        nodep->varp(nullptr);  // Needs relink, as may remove pointed-to var
     }
 
-    virtual void visit(AstUnlinkedRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstUnlinkedRef* nodep) override {
         AstVarXRef* varxrefp = VN_CAST(nodep->op1p(), VarXRef);
         AstNodeFTaskRef* taskrefp = VN_CAST(nodep->op1p(), NodeFTaskRef);
         if (varxrefp) {
@@ -645,7 +640,7 @@ private:
         nodep->replaceWith(nodep->op1p()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstCellArrayRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstCellArrayRef* nodep) override {
         V3Const::constifyParamsEdit(nodep->selp());
         if (const AstConst* constp = VN_CAST(nodep->selp(), Const)) {
             string index = AstNode::encodeNumber(constp->toSInt());
@@ -664,7 +659,7 @@ private:
     }
 
     // Generate Statements
-    virtual void visit(AstGenIf* nodep) VL_OVERRIDE {
+    virtual void visit(AstGenIf* nodep) override {
         UINFO(9, "  GENIF " << nodep << endl);
         iterateAndNextNull(nodep->condp());
         // We suppress errors when widthing params since short-circuiting in
@@ -692,7 +687,7 @@ private:
     //! @todo Unlike generated IF, we don't have to worry about short-circuiting the conditional
     //!       expression, since this is currently restricted to simple comparisons. If we ever do
     //!       move to more generic constant expressions, such code will be needed here.
-    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
+    virtual void visit(AstBegin* nodep) override {
         if (nodep->genforp()) {
             AstGenFor* forp = VN_CAST(nodep->genforp(), GenFor);
             UASSERT_OBJ(forp, nodep, "Non-GENFOR under generate-for BEGIN");
@@ -725,12 +720,12 @@ private:
             m_generateHierName = rootHierName;
         }
     }
-    virtual void visit(AstGenFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstGenFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("GENFOR should have been wrapped in BEGIN");
     }
-    virtual void visit(AstGenCase* nodep) VL_OVERRIDE {
+    virtual void visit(AstGenCase* nodep) override {
         UINFO(9, "  GENCASE " << nodep << endl);
-        AstNode* keepp = NULL;
+        AstNode* keepp = nullptr;
         iterateAndNextNull(nodep->exprp());
         V3Case::caseLint(nodep);
         V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body,
@@ -779,16 +774,12 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit ParamVisitor(AstNetlist* nodep)
-        : m_hierBlocks(v3Global.opt.hierBlocks(), nodep) {
-        m_longId = 0;
-        m_ftaskp = NULL;
-        m_modp = NULL;
-        m_nextValue = 1;
+        : m_hierBlocks{v3Global.opt.hierBlocks(), nodep} {
         for (AstNodeModule* modp = nodep->modulesp(); modp;
              modp = VN_CAST(modp->nextp(), NodeModule)) {
             m_allModuleNames.insert(modp->name());
@@ -796,7 +787,7 @@ public:
         //
         iterate(nodep);
     }
-    virtual ~ParamVisitor() {}
+    virtual ~ParamVisitor() override {}
 };
 
 //----------------------------------------------------------------------
@@ -899,7 +890,7 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
                     portIrefp = VN_CAST(arraySubDTypep(modvarp->subDTypep()), IfaceRefDType);
                 }
 
-                AstIfaceRefDType* pinIrefp = NULL;
+                AstIfaceRefDType* pinIrefp = nullptr;
                 AstNode* exprp = pinp->exprp();
                 if (exprp && VN_IS(exprp, VarRef) && VN_CAST(exprp, VarRef)->varp()
                     && VN_CAST(exprp, VarRef)->varp()->subDTypep()
@@ -971,7 +962,7 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
             // Shorter name is convenient for hierarchical block
             string newname = longname;
             if (longname.length() > 30 || srcModp->hierBlock()) {
-                LongMap::iterator iter = m_longMap.find(longname);
+                const auto iter = m_longMap.find(longname);
                 if (iter != m_longMap.end()) {
                     newname = iter->second;
                 } else {
@@ -989,8 +980,8 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
 
             //
             // Already made this flavor?
-            AstNodeModule* cellmodp = NULL;
-            ModNameMap::iterator iter = m_modNameMap.find(newname);
+            AstNodeModule* cellmodp = nullptr;
+            auto iter = m_modNameMap.find(newname);
             if (iter != m_modNameMap.end()) cellmodp = iter->second.m_modp;
             if (!cellmodp) {
                 // Deep clone of new module

@@ -181,7 +181,7 @@ void svPutPartselLogic(svLogicVecVal* dp, const svLogicVecVal s, int lbit, int w
 static inline const VerilatedDpiOpenVar* _vl_openhandle_varp(const svOpenArrayHandle h) {
     if (VL_UNLIKELY(!h)) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
-                    "%%Error: DPI svOpenArrayHandle function called with NULL handle");
+                    "%%Error: DPI svOpenArrayHandle function called with nullptr handle");
     }
     const VerilatedDpiOpenVar* varp = reinterpret_cast<const VerilatedDpiOpenVar*>(h);
     if (VL_UNLIKELY(!varp->magicOk())) {
@@ -202,10 +202,10 @@ int svIncrement(const svOpenArrayHandle h, int d) { return _vl_openhandle_varp(h
 int svSize(const svOpenArrayHandle h, int d) { return _vl_openhandle_varp(h)->elements(d); }
 int svDimensions(const svOpenArrayHandle h) { return _vl_openhandle_varp(h)->udims(); }
 
-/// Return pointer to open array data, or NULL if not in IEEE standard C layout
+/// Return pointer to open array data, or nullptr if not in IEEE standard C layout
 void* svGetArrayPtr(const svOpenArrayHandle h) {
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
-    if (VL_UNLIKELY(!varp->isDpiStdLayout())) return NULL;
+    if (VL_UNLIKELY(!varp->isDpiStdLayout())) return nullptr;
     return varp->datap();
 }
 /// Return size of open array, or 0 if not in IEEE standard C layout
@@ -226,7 +226,7 @@ static void* _vl_sv_adjusted_datap(const VerilatedDpiOpenVar* varp, int nargs, i
         _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function called on"
                        " %d dimensional array using %d dimensional function.\n",
                        varp->udims(), nargs);
-        return NULL;
+        return nullptr;
     }
     if (nargs >= 1) {
         datap = varp->datapAdjustIndex(datap, 1, indx1);
@@ -234,7 +234,7 @@ static void* _vl_sv_adjusted_datap(const VerilatedDpiOpenVar* varp, int nargs, i
             _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function index 1 "
                            "out of bounds; %d outside [%d:%d].\n",
                            indx1, varp->left(1), varp->right(1));
-            return NULL;
+            return nullptr;
         }
     }
     if (nargs >= 2) {
@@ -243,7 +243,7 @@ static void* _vl_sv_adjusted_datap(const VerilatedDpiOpenVar* varp, int nargs, i
             _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function index 2 "
                            "out of bounds; %d outside [%d:%d].\n",
                            indx2, varp->left(2), varp->right(2));
-            return NULL;
+            return nullptr;
         }
     }
     if (nargs >= 3) {
@@ -252,7 +252,7 @@ static void* _vl_sv_adjusted_datap(const VerilatedDpiOpenVar* varp, int nargs, i
             _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function index 3 "
                            "out of bounds; %d outside [%d:%d].\n",
                            indx1, varp->left(3), varp->right(3));
-            return NULL;
+            return nullptr;
         }
     }
     return datap;
@@ -268,11 +268,11 @@ static int _vl_sv_adjusted_bit(const VerilatedDpiOpenVar* varp, int indx) {
     return indx - varp->low(0);
 }
 
-/// Return pointer to simulator open array element, or NULL if outside range
+/// Return pointer to simulator open array element, or nullptr if outside range
 static void* _vl_svGetArrElemPtr(const svOpenArrayHandle h, int nargs, int indx1, int indx2,
                                  int indx3) VL_MT_SAFE {
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(h);
-    if (VL_UNLIKELY(!varp->isDpiStdLayout())) return NULL;
+    if (VL_UNLIKELY(!varp->isDpiStdLayout())) return nullptr;
     void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     return datap;
 }
@@ -794,7 +794,7 @@ void svPutLogicArrElem3(const svOpenArrayHandle d, svLogic value, int indx1, int
 svScope svGetScope() {
     if (VL_UNLIKELY(!Verilated::dpiInContext())) {
         _VL_SVDPI_CONTEXT_WARN();
-        return NULL;
+        return nullptr;
     }
     // NOLINTNEXTLINE(google-readability-casting)
     return (svScope)(Verilated::dpiScope());

@@ -438,7 +438,7 @@ CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
 
 cppcheck: $(CPPCHECK_DEP)
 %.cppcheck: %.cpp
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $<
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 -DVL_THREADED=1 $(CPPCHECK_INC) $<
 
 CLANGTIDY = clang-tidy
 CLANGTIDY_FLAGS = -config=''

@@ -28,9 +28,9 @@
 class VlcBuckets {
 private:
     // MEMBERS
-    vluint64_t* m_datap;  ///< Pointer to first bucket (dynamically allocated)
-    vluint64_t m_dataSize;  ///< Current entries in m_datap
-    vluint64_t m_bucketsCovered;  ///< Num buckets with sufficient coverage
+    vluint64_t* m_datap = nullptr;  ///< Pointer to first bucket (dynamically allocated)
+    vluint64_t m_dataSize = 0;  ///< Current entries in m_datap
+    vluint64_t m_bucketsCovered = 0;  ///< Num buckets with sufficient coverage
 
     static inline vluint64_t covBit(vluint64_t point) { return 1ULL << (point & 63); }
     inline vluint64_t allocSize() const { return sizeof(vluint64_t) * m_dataSize / 64; }
@@ -51,15 +51,10 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlcBuckets() {
-        m_dataSize = 0;
-        m_datap = NULL;
-        m_bucketsCovered = 0;
-        allocate(1024);
-    }
+    VlcBuckets() { allocate(1024); }
     ~VlcBuckets() {
         m_dataSize = 0;
-        VL_DO_CLEAR(free(m_datap), m_datap = NULL);
+        VL_DO_CLEAR(free(m_datap), m_datap = nullptr);
     }
 
     // ACCESSORS

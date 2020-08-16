@@ -31,22 +31,20 @@ template <class T> class V3List {
     // List container for linked list of elements of type *T  (T is a pointer type)
 private:
     // MEMBERS
-    T m_headp;  // First element
-    T m_tailp;  // Last element
+    T m_headp = nullptr;  // First element
+    T m_tailp = nullptr;  // Last element
     friend class V3ListEnt<T>;
 
 public:
-    V3List()
-        : m_headp(NULL)
-        , m_tailp(NULL) {}
+    V3List() {}
     ~V3List() {}
     // METHODS
     T begin() const { return m_headp; }
-    T end() const { return NULL; }
-    bool empty() const { return m_headp == NULL; }
+    T end() const { return nullptr; }
+    bool empty() const { return m_headp == nullptr; }
     void reset() {  // clear() without walking the list
-        m_headp = NULL;
-        m_tailp = NULL;
+        m_headp = nullptr;
+        m_tailp = nullptr;
     }
 };
 
@@ -56,8 +54,8 @@ template <class T> class V3ListEnt {
     // List entry for linked list of elements of type *T  (T is a pointer type)
 private:
     // MEMBERS
-    T m_nextp;  // Pointer to next element, NULL=end
-    T m_prevp;  // Pointer to previous element, NULL=beginning
+    T m_nextp = nullptr;  // Pointer to next element, nullptr=end
+    T m_prevp = nullptr;  // Pointer to previous element, nullptr=beginning
     friend class V3List<T>;
     static V3ListEnt* baseToListEnt(void* newbasep, size_t offset) {
         // "this" must be a element inside of *basep
@@ -67,9 +65,7 @@ private:
     }
 
 public:
-    V3ListEnt()
-        : m_nextp(NULL)
-        , m_prevp(NULL) {}
+    V3ListEnt() {}
     ~V3ListEnt() {
 #ifdef VL_DEBUG
         // Load bogus pointers so we can catch deletion bugs
@@ -83,7 +79,7 @@ public:
         // "this" must be a element inside of *newp
         // cppcheck-suppress thisSubtraction
         size_t offset = (size_t)(vluint8_t*)(this) - (size_t)(vluint8_t*)(newp);
-        m_nextp = NULL;
+        m_nextp = nullptr;
         if (!listr.m_headp) listr.m_headp = newp;
         m_prevp = listr.m_tailp;
         if (m_prevp) baseToListEnt(m_prevp, offset)->m_nextp = newp;
@@ -96,7 +92,7 @@ public:
         m_nextp = listr.m_headp;
         if (m_nextp) baseToListEnt(m_nextp, offset)->m_prevp = newp;
         listr.m_headp = newp;
-        m_prevp = NULL;
+        m_prevp = nullptr;
         if (!listr.m_tailp) listr.m_tailp = newp;
     }
     // Unlink from side
@@ -114,7 +110,7 @@ public:
         } else {
             listr.m_headp = m_nextp;
         }
-        m_prevp = m_nextp = NULL;
+        m_prevp = m_nextp = nullptr;
     }
 };
 

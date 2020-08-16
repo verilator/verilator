@@ -20,14 +20,14 @@ class TestVpiHandle {
 
 public:
     TestVpiHandle()
-        : m_handle(NULL)
+        : m_handle(nullptr)
         , m_free(true) {}
     TestVpiHandle(vpiHandle h)
         : m_handle(h)
         , m_free(true) {}
     ~TestVpiHandle() {
         if (m_handle && m_free) {
-            { vpi_free_object(m_handle); m_handle = NULL; }
+            { vpi_free_object(m_handle); m_handle = nullptr; }
         }
     }
     operator vpiHandle() const { return m_handle; }

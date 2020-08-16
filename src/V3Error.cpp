@@ -40,7 +40,7 @@ bool V3Error::s_describedEachWarn[V3ErrorCode::_ENUM_MAX];
 bool V3Error::s_describedWarnings = false;
 bool V3Error::s_pretendError[V3ErrorCode::_ENUM_MAX];
 V3Error::MessagesSet V3Error::s_messages;
-V3Error::ErrorExitCb V3Error::s_errorExitCb = NULL;
+V3Error::ErrorExitCb V3Error::s_errorExitCb = nullptr;
 
 struct v3errorIniter {
     v3errorIniter() { V3Error::init(); }
@@ -212,7 +212,7 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
     s_messages.insert(msg);
     if (!locationStr.empty()) {
         string locationMsg = warnMore() + locationStr + "\n";
-        size_t pos = msg.find("\n");
+        size_t pos = msg.find('\n');
         msg.insert(pos + 1, locationMsg);
     }
     // Output

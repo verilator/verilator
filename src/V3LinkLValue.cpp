@@ -36,14 +36,14 @@ private:
 
     // STATE
     bool m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
-    AstNodeFTask* m_ftaskp;  // Function or task we're inside
+    AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITs
     // Result handing
-    virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeVarRef* nodep) override {
         // VarRef: LValue its reference
         if (m_setRefLvalue) nodep->lvalue(true);
         if (nodep->varp()) {
@@ -56,7 +56,7 @@ private:
     }
 
     // Nodes that start propagating down lvalues
-    virtual void visit(AstPin* nodep) VL_OVERRIDE {
+    virtual void visit(AstPin* nodep) override {
         if (nodep->modVarp() && nodep->modVarp()->isWritable()) {
             // When the varref's were created, we didn't know the I/O state
             // Now that we do, and it's from a output, we know it's a lvalue
@@ -67,7 +67,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -77,7 +77,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFOpen* nodep) VL_OVERRIDE {
+    virtual void visit(AstFOpen* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -88,7 +88,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {
+    virtual void visit(AstFOpenMcd* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -98,7 +98,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFClose* nodep) VL_OVERRIDE {
+    virtual void visit(AstFClose* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -106,7 +106,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFError* nodep) VL_OVERRIDE {
+    virtual void visit(AstFError* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -115,7 +115,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFFlush* nodep) VL_OVERRIDE {
+    virtual void visit(AstFFlush* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -123,7 +123,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFGetC* nodep) VL_OVERRIDE {
+    virtual void visit(AstFGetC* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -131,7 +131,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFGetS* nodep) VL_OVERRIDE {
+    virtual void visit(AstFGetS* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -140,7 +140,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFRead* nodep) VL_OVERRIDE {
+    virtual void visit(AstFRead* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -149,7 +149,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFScanF* nodep) VL_OVERRIDE {
+    virtual void visit(AstFScanF* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -158,7 +158,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFUngetC* nodep) VL_OVERRIDE {
+    virtual void visit(AstFUngetC* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -166,7 +166,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstSScanF* nodep) VL_OVERRIDE {
+    virtual void visit(AstSScanF* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -174,13 +174,13 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstSysIgnore* nodep) VL_OVERRIDE {
+    virtual void visit(AstSysIgnore* nodep) override {
         // Can't know if lvalue or not; presume so as stricter
         bool last_setRefLvalue = m_setRefLvalue;
         iterateChildren(nodep);
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstReadMem* nodep) VL_OVERRIDE {
+    virtual void visit(AstReadMem* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -192,7 +192,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstValuePlusArgs* nodep) VL_OVERRIDE {
+    virtual void visit(AstValuePlusArgs* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = false;
@@ -202,7 +202,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstSFormat* nodep) VL_OVERRIDE {
+    virtual void visit(AstSFormat* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             m_setRefLvalue = true;
@@ -223,13 +223,13 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstPreAdd* nodep) VL_OVERRIDE { prepost_visit(nodep); }
-    virtual void visit(AstPostAdd* nodep) VL_OVERRIDE { prepost_visit(nodep); }
-    virtual void visit(AstPreSub* nodep) VL_OVERRIDE { prepost_visit(nodep); }
-    virtual void visit(AstPostSub* nodep) VL_OVERRIDE { prepost_visit(nodep); }
+    virtual void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
+    virtual void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
+    virtual void visit(AstPreSub* nodep) override { prepost_visit(nodep); }
+    virtual void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
 
     // Nodes that change LValue state
-    virtual void visit(AstSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstSel* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {
             iterateAndNextNull(nodep->lhsp());
@@ -240,7 +240,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstNodeSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeSel* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {  // Only set lvalues on the from
             iterateAndNextNull(nodep->lhsp());
@@ -249,7 +249,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstCellArrayRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstCellArrayRef* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {  // selp is not an lvalue
             m_setRefLvalue = false;
@@ -257,7 +257,7 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstNodePreSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodePreSel* nodep) override {
         bool last_setRefLvalue = m_setRefLvalue;
         {  // Only set lvalues on the from
             iterateAndNextNull(nodep->lhsp());
@@ -267,12 +267,12 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTask* nodep) override {
         m_ftaskp = nodep;
         iterateChildren(nodep);
-        m_ftaskp = NULL;
+        m_ftaskp = nullptr;
     }
-    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTaskRef* nodep) override {
         AstNode* pinp = nodep->pinsp();
         AstNodeFTask* taskp = nodep->taskp();
         // We'll deal with mismatching pins later
@@ -294,16 +294,15 @@ private:
         }
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    LinkLValueVisitor(AstNode* nodep, bool start) {
-        m_setRefLvalue = start;
-        m_ftaskp = NULL;
+    LinkLValueVisitor(AstNode* nodep, bool start)
+        : m_setRefLvalue{start} {
         iterate(nodep);
     }
-    virtual ~LinkLValueVisitor() {}
+    virtual ~LinkLValueVisitor() override {}
 };
 
 //######################################################################

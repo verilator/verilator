@@ -83,10 +83,10 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstVar*) VL_OVERRIDE {}
-    virtual void visit(AstTypedef*) VL_OVERRIDE {}
-    virtual void visit(AstParamTypeDType*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar*) override {}
+    virtual void visit(AstTypedef*) override {}
+    virtual void visit(AstParamTypeDType*) override {}
+    virtual void visit(AstNode* nodep) override {
         // Hash not just iterate
         nodeHashIterate(nodep);
     }
@@ -94,16 +94,16 @@ private:
 public:
     // CONSTRUCTORS
     explicit HashedVisitor(AstNode* nodep)
-        : m_cacheInUser4(true) {
+        : m_cacheInUser4{true} {
         nodeHashIterate(nodep);
         // UINFO(9,"  stmthash "<<hex<<V3Hashed::nodeHash(nodep)<<"  "<<nodep<<endl);
     }
     explicit HashedVisitor(const AstNode* nodep)
-        : m_cacheInUser4(false) {
+        : m_cacheInUser4{false} {
         nodeHashIterate(const_cast<AstNode*>(nodep));
     }
     V3Hash finalHash() const { return m_lowerHash; }
-    virtual ~HashedVisitor() {}
+    virtual ~HashedVisitor() override {}
 };
 
 //######################################################################
@@ -136,7 +136,7 @@ void V3Hashed::erase(iterator it) {
     UINFO(8, "   erase " << nodep << endl);
     UASSERT_OBJ(nodep->user4p(), nodep, "Called removeNode on non-hashed node");
     m_hashMmap.erase(it);
-    nodep->user4p(NULL);  // So we don't allow removeNode again
+    nodep->user4p(nullptr);  // So we don't allow removeNode again
 }
 
 void V3Hashed::check() {
@@ -151,7 +151,7 @@ void V3Hashed::dumpFilePrefixed(const string& nameComment, bool tree) {
 }
 
 void V3Hashed::dumpFile(const string& filename, bool tree) {
-    const vl_unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
     if (logp->fail()) v3fatal("Can't write " << filename);
 
     std::map<int, int> dist;

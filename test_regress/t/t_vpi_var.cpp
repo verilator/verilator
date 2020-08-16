@@ -57,7 +57,7 @@ unsigned int callback_count_strs_max = 500;
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
+        printf("%%Error: %s:%d: GOT = nullptr  EXP = !nullptr\n", FILENM, __LINE__); \
         return __LINE__; \
     }
 
@@ -79,7 +79,7 @@ unsigned int callback_count_strs_max = 500;
 #define CHECK_RESULT_CSTR(got, exp) \
     if (strcmp((got), (exp))) { \
         printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
-               ((got) != NULL) ? (got) : "<null>", ((exp) != NULL) ? (exp) : "<null>"); \
+               ((got) != nullptr) ? (got) : "<null>", ((exp) != nullptr) ? (exp) : "<null>"); \
         return __LINE__; \
     }
 
@@ -129,8 +129,8 @@ int _mon_check_callbacks() {
     cb_data.reason = cbEndOfSimulation;
     cb_data.cb_rtn = _mon_check_callbacks_error;
     cb_data.user_data = 0;
-    cb_data.value = NULL;
-    cb_data.time = NULL;
+    cb_data.value = nullptr;
+    cb_data.time = nullptr;
 
     vpiHandle vh = vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(vh);
@@ -184,7 +184,7 @@ int _mon_check_value_callbacks() {
     cb_data.cb_rtn = _value_callback;
     cb_data.obj = vh1;
     cb_data.value = &v;
-    cb_data.time = NULL;
+    cb_data.time = nullptr;
 
     vpiHandle vh = vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(vh);
@@ -223,7 +223,7 @@ int _mon_check_var() {
     TestVpiHandle vh1 = VPI_HANDLE("onebit");
     CHECK_RESULT_NZ(vh1);
 
-    TestVpiHandle vh2 = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::top(), NULL);
+    TestVpiHandle vh2 = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::top(), nullptr);
     CHECK_RESULT_NZ(vh2);
 
     // scope attributes
@@ -527,7 +527,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
         for (int i = 1; i <= 128; i++) {
             char buf[32];
             snprintf(buf, sizeof(buf), TestSimulator::rooted("arr[%d].arr"), i);
-            CHECK_RESULT_NZ(data[i].scope = vpi_handle_by_name((PLI_BYTE8*)buf, NULL));
+            CHECK_RESULT_NZ(data[i].scope = vpi_handle_by_name((PLI_BYTE8*)buf, nullptr));
             CHECK_RESULT_NZ(data[i].sig = vpi_handle_by_name((PLI_BYTE8*)"sig", data[i].scope));
             CHECK_RESULT_NZ(data[i].rfr = vpi_handle_by_name((PLI_BYTE8*)"rfr", data[i].scope));
             CHECK_RESULT_NZ(data[i].check
@@ -544,7 +544,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
         cb_data.cb_rtn = _mon_check_putget_str;  // this function
         cb_data.obj = count_h;
         cb_data.value = &v;
-        cb_data.time = NULL;
+        cb_data.time = nullptr;
         v.format = vpiIntVal;
 
         cb = vpi_register_cb(&cb_data);
@@ -578,7 +578,7 @@ int mon_check() {
     if (int status = _mon_check_getput()) return status;
     if (int status = _mon_check_quad()) return status;
     if (int status = _mon_check_string()) return status;
-    if (int status = _mon_check_putget_str(NULL)) return status;
+    if (int status = _mon_check_putget_str(nullptr)) return status;
     if (int status = _mon_check_vlog_info()) return status;
 #ifndef IS_VPI
     VerilatedVpi::selfTest();
@@ -596,7 +596,7 @@ static int mon_check_vpi() {
 
     vpi_value.format = vpiIntVal;
     vpi_value.value.integer = mon_check();
-    vpi_put_value(href, &vpi_value, NULL, vpiNoDelay);
+    vpi_put_value(href, &vpi_value, nullptr, vpiNoDelay);
 
     return 0;
 }

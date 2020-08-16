@@ -44,7 +44,7 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstNode* m_stmtp;  // Current statement
+    AstNode* m_stmtp = nullptr;  // Current statement
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -292,7 +292,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstExtend* nodep) VL_OVERRIDE {
+    virtual void visit(AstExtend* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isWide()) {
@@ -318,7 +318,7 @@ private:
         }
     }
 
-    virtual void visit(AstSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstSel* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         // Remember, Sel's may have non-integer rhs, so need to optimize for that!
@@ -341,7 +341,7 @@ private:
             AstNode* lowp = new AstShiftR(nodep->fileline(), lowwordp, newSelBitBit(nodep->lsbp()),
                                           nodep->width());
             // If > 1 bit, we might be crossing the word boundary
-            AstNode* midp = NULL;
+            AstNode* midp = nullptr;
             V3Number zero(nodep, longOrQuadWidth(nodep));
             if (nodep->widthConst() > 1) {
                 AstNode* midwordp =  // SEL(from,[1+wordnum])
@@ -378,7 +378,7 @@ private:
                 }
             }
             // If > 32 bits, we might be crossing the second word boundary
-            AstNode* hip = NULL;
+            AstNode* hip = nullptr;
             if (nodep->widthConst() > VL_EDATASIZE) {
                 AstNode* hiwordp =  // SEL(from,[2+wordnum])
                     newWordSel(nodep->fromp()->fileline(), nodep->fromp()->cloneTree(true),
@@ -600,7 +600,7 @@ private:
         }
     }
 
-    virtual void visit(AstConcat* nodep) VL_OVERRIDE {
+    virtual void visit(AstConcat* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isWide()) {
@@ -642,7 +642,7 @@ private:
         return true;
     }
 
-    virtual void visit(AstReplicate* nodep) VL_OVERRIDE {
+    virtual void visit(AstReplicate* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isWide()) {
@@ -705,16 +705,16 @@ private:
         return true;
     }
 
-    virtual void visit(AstChangeXor* nodep) VL_OVERRIDE {
+    virtual void visit(AstChangeXor* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         UINFO(8, "    Wordize ChangeXor " << nodep << endl);
         // -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
-        AstNode* newp = NULL;
+        AstNode* newp = nullptr;
         for (int w = 0; w < nodep->lhsp()->widthWords(); w++) {
             AstNode* eqp = new AstXor(nodep->fileline(), newAstWordSelClone(nodep->lhsp(), w),
                                       newAstWordSelClone(nodep->rhsp(), w));
-            newp = (newp == NULL) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
+            newp = (newp == nullptr) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
         }
         VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
     }
@@ -725,11 +725,11 @@ private:
         if (nodep->lhsp()->isWide()) {
             UINFO(8, "    Wordize EQ/NEQ " << nodep << endl);
             // -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
-            AstNode* newp = NULL;
+            AstNode* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); w++) {
                 AstNode* eqp = new AstXor(nodep->fileline(), newAstWordSelClone(nodep->lhsp(), w),
                                           newAstWordSelClone(nodep->rhsp(), w));
-                newp = (newp == NULL) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
+                newp = (newp == nullptr) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
             }
             if (VN_IS(nodep, Neq)) {
                 newp
@@ -742,19 +742,19 @@ private:
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    virtual void visit(AstEq* nodep) VL_OVERRIDE { visitEqNeq(nodep); }
-    virtual void visit(AstNeq* nodep) VL_OVERRIDE { visitEqNeq(nodep); }
+    virtual void visit(AstEq* nodep) override { visitEqNeq(nodep); }
+    virtual void visit(AstNeq* nodep) override { visitEqNeq(nodep); }
 
-    virtual void visit(AstRedOr* nodep) VL_OVERRIDE {
+    virtual void visit(AstRedOr* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
             UINFO(8, "    Wordize REDOR " << nodep << endl);
             // -> (0!={or{for each_word{WORDSEL(lhs,#)}}}
-            AstNode* newp = NULL;
+            AstNode* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); w++) {
                 AstNode* eqp = newAstWordSelClone(nodep->lhsp(), w);
-                newp = (newp == NULL) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
+                newp = (newp == nullptr) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
             }
             newp = new AstNeq(nodep->fileline(),
                               new AstConst(nodep->fileline(), AstConst::SizedEData(), 0), newp);
@@ -769,13 +769,13 @@ private:
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    virtual void visit(AstRedAnd* nodep) VL_OVERRIDE {
+    virtual void visit(AstRedAnd* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
             UINFO(8, "    Wordize REDAND " << nodep << endl);
             // -> (0!={and{for each_word{WORDSEL(lhs,#)}}}
-            AstNode* newp = NULL;
+            AstNode* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); w++) {
                 AstNode* eqp = newAstWordSelClone(nodep->lhsp(), w);
                 if (w == nodep->lhsp()->widthWords() - 1) {
@@ -787,7 +787,7 @@ private:
                                     // cppcheck-suppress memleak
                                     eqp);
                 }
-                newp = (newp == NULL) ? eqp : (new AstAnd(nodep->fileline(), newp, eqp));
+                newp = (newp == nullptr) ? eqp : (new AstAnd(nodep->fileline(), newp, eqp));
             }
             newp = new AstEq(
                 nodep->fileline(),
@@ -802,16 +802,16 @@ private:
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    virtual void visit(AstRedXor* nodep) VL_OVERRIDE {
+    virtual void visit(AstRedXor* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
             UINFO(8, "    Wordize REDXOR " << nodep << endl);
             // -> (0!={redxor{for each_word{XOR(WORDSEL(lhs,#))}}}
-            AstNode* newp = NULL;
+            AstNode* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); w++) {
                 AstNode* eqp = newAstWordSelClone(nodep->lhsp(), w);
-                newp = (newp == NULL) ? eqp : (new AstXor(nodep->fileline(), newp, eqp));
+                newp = (newp == nullptr) ? eqp : (new AstXor(nodep->fileline(), newp, eqp));
             }
             newp = new AstRedXor(nodep->fileline(), newp);
             UINFO(8, "    Wordize REDXORnew " << newp << endl);
@@ -821,7 +821,7 @@ private:
         // which the inlined function does nicely.
     }
 
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeStmt* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
@@ -829,9 +829,9 @@ private:
         }
         m_stmtp = nodep;
         iterateChildren(nodep);
-        m_stmtp = NULL;
+        m_stmtp = nullptr;
     }
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         m_stmtp = nodep;
         iterateChildren(nodep);
@@ -869,20 +869,17 @@ private:
         }
         // Cleanup common code
         if (did) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        m_stmtp = NULL;
+        m_stmtp = nullptr;
     }
 
     //--------------------
-    virtual void visit(AstVar*) VL_OVERRIDE {}  // Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstVar*) override {}  // Don't hit varrefs under vars
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit ExpandVisitor(AstNetlist* nodep) {
-        m_stmtp = NULL;
-        iterate(nodep);
-    }
-    virtual ~ExpandVisitor() {}
+    explicit ExpandVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~ExpandVisitor() override {}
 };
 
 //----------------------------------------------------------------------

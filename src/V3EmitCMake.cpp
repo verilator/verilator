@@ -78,7 +78,7 @@ class CMakeEmitter {
     }
 
     static void emitOverallCMake() {
-        const vl_unique_ptr<std::ofstream> of(
+        const std::unique_ptr<std::ofstream> of(
             V3File::new_ofstream(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".cmake"));
         string name = v3Global.opt.prefix();
 
@@ -125,7 +125,11 @@ class CMakeEmitter {
                           : "0");
 
         *of << "\n### Sources...\n";
-        std::vector<string> classes_fast, classes_slow, support_fast, support_slow, global;
+        std::vector<string> classes_fast;
+        std::vector<string> classes_slow;
+        std::vector<string> support_fast;
+        std::vector<string> support_slow;
+        std::vector<string> global;
         for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
              nodep = VN_CAST(nodep->nextp(), NodeFile)) {
             AstCFile* cfilep = VN_CAST(nodep, CFile);
@@ -226,9 +230,7 @@ class CMakeEmitter {
                 }
                 *of << " ";
                 const V3StringList& vFiles = v3Global.opt.vFiles();
-                for (V3StringList::const_iterator it = vFiles.begin(); it != vFiles.end(); ++it) {
-                    *of << V3Os::filenameRealPath(*it);
-                }
+                for (const string& i : vFiles) *of << V3Os::filenameRealPath(i);
                 *of << " VERILATOR_ARGS ";
                 *of << "-f " << deslash(hblockp->commandArgsFileName(true))
                     << " -CFLAGS -fPIC"  // hierarchical block will be static, but may be linked

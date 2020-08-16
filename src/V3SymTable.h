@@ -133,7 +133,7 @@ public:
         }
     }
     void reinsert(const string& name, VSymEnt* entp) {
-        IdNameMap::iterator it = m_idNameMap.find(name);
+        const auto it = m_idNameMap.find(name);
         if (name != "" && it != m_idNameMap.end()) {
             UINFO(9, "     SymReinsert se" << cvtToHex(this) << " '" << name << "' se"
                                            << cvtToHex(entp) << "  " << entp->nodep() << endl);
@@ -145,7 +145,7 @@ public:
     VSymEnt* findIdFlat(const string& name) const {
         // Find identifier without looking upward through symbol hierarchy
         // First, scan this begin/end block or module for the name
-        IdNameMap::const_iterator it = m_idNameMap.find(name);
+        const auto it = m_idNameMap.find(name);
         UINFO(9, "     SymFind   se"
                      << cvtToHex(this) << " '" << name << "' -> "
                      << (it == m_idNameMap.end()
@@ -153,7 +153,7 @@ public:
                              : "se" + cvtToHex(it->second) + " n=" + cvtToHex(it->second->nodep()))
                      << endl);
         if (it != m_idNameMap.end()) return (it->second);
-        return NULL;
+        return nullptr;
     }
     VSymEnt* findIdFallback(const string& name) const {
         // Find identifier looking upward through symbol hierarchy
@@ -161,7 +161,7 @@ public:
         if (VSymEnt* entp = findIdFlat(name)) return entp;
         // Then scan the upper begin/end block or module for the name
         if (m_fallbackp) return m_fallbackp->findIdFallback(name);
-        return NULL;
+        return nullptr;
     }
     void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp) const {
         // Suggest alternative symbol candidates without looking upward through symbol hierarchy
@@ -211,7 +211,7 @@ public:
     void importFromPackage(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
         // Import tokens from source symbol table into this symbol table
         if (id_or_star != "*") {
-            IdNameMap::const_iterator it = srcp->m_idNameMap.find(id_or_star);
+            const auto it = srcp->m_idNameMap.find(id_or_star);
             if (it != srcp->m_idNameMap.end()) {
                 importOneSymbol(graphp, it->first, it->second, true);
             }
@@ -225,7 +225,7 @@ public:
     void exportFromPackage(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
         // Export tokens from source symbol table into this symbol table
         if (id_or_star != "*") {
-            IdNameMap::const_iterator it = srcp->m_idNameMap.find(id_or_star);
+            const auto it = vlstd::as_const(srcp->m_idNameMap).find(id_or_star);
             if (it != srcp->m_idNameMap.end()) exportOneSymbol(graphp, it->first, it->second);
         } else {
             for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
@@ -292,7 +292,7 @@ class VSymGraph {
 public:
     explicit VSymGraph(AstNetlist* nodep) { m_symRootp = new VSymEnt(this, nodep); }
     ~VSymGraph() {
-        for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) delete (*it);
+        for (const VSymEnt* entp : m_symsp) delete entp;
     }
 
     // METHODS
@@ -317,7 +317,7 @@ public:
         if (v3Global.opt.dumpTree()) {
             string filename = v3Global.debugFilename(nameComment) + ".txt";
             UINFO(2, "Dumping " << filename << endl);
-            const vl_unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+            const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
             if (logp->fail()) v3fatal("Can't write " << filename);
             dump(*logp, "");
         }
@@ -335,9 +335,9 @@ inline VSymEnt::VSymEnt(VSymGraph* graphp, AstNode* nodep)
     // No argument to set fallbackp, as generally it's wrong to set it in the new call,
     // Instead it needs to be set on a "findOrNew()" return, as it may have been new'ed
     // by an earlier search insertion.
-    m_fallbackp = NULL;
-    m_parentp = NULL;
-    m_packagep = NULL;
+    m_fallbackp = nullptr;
+    m_parentp = nullptr;
+    m_packagep = nullptr;
     m_exported = true;
     m_imported = false;
     graphp->pushNewEnt(this);

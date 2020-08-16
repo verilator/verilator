@@ -79,7 +79,7 @@ extern "C" {
     }
 #define CHECK_RESULT_NNULL(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = %p   EXP = !NULL\n", __FILE__, __LINE__, (got)); \
+        printf("%%Error: %s:%d: GOT = %p   EXP = !nullptr\n", __FILE__, __LINE__, (got)); \
         return __LINE__; \
     }
 
