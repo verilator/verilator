@@ -385,10 +385,9 @@ void V3Options::addArg(const string& arg) { m_impp->m_allArgs.push_back(arg); }
 
 string V3Options::allArgsString() const {
     string out;
-    for (std::list<string>::const_iterator it = m_impp->m_allArgs.begin();
-         it != m_impp->m_allArgs.end(); ++it) {
+    for (const string& i : m_impp->m_allArgs) {
         if (out != "") out += " ";
-        out += *it;
+        out += i;
     }
     return out;
 }
@@ -1706,9 +1705,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     // Convert to argv style arg list and parse them
     std::vector<char*> argv;
     argv.reserve(args.size() + 1);
-    for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it) {
-        argv.push_back(const_cast<char*>(it->c_str()));
-    }
+    for (const string& i : args) argv.push_back(const_cast<char*>(i.c_str()));
     argv.push_back(nullptr);  // argv is nullptr-terminated
     parseOptsList(fl, optdir, static_cast<int>(argv.size() - 1), argv.data());
 }

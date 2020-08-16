@@ -782,15 +782,11 @@ protected:
 
         iterateAndNextNull(nodep->ifsp());
 
-        for (ColorSet::const_iterator color = colors.begin(); color != colors.end(); ++color) {
-            m_addAfter[*color] = clones[*color]->elsesp();
-        }
+        for (const auto& color : colors) m_addAfter[color] = clones[color]->elsesp();
 
         iterateAndNextNull(nodep->elsesp());
 
-        for (ColorSet::const_iterator color = colors.begin(); color != colors.end(); ++color) {
-            m_addAfter[*color] = clones[*color];
-        }
+        for (const auto& color : colors) m_addAfter[color] = clones[color];
     }
 
 private:
@@ -803,8 +799,7 @@ class RemovePlaceholdersVisitor : public AstNVisitor {
 public:
     explicit RemovePlaceholdersVisitor(AstNode* nodep) {
         iterate(nodep);
-        for (NodeSet::const_iterator it = m_removeSet.begin(); it != m_removeSet.end(); ++it) {
-            AstNode* np = *it;
+        for (AstNode* np : m_removeSet) {
             np->unlinkFrBack();  // Without next
             VL_DO_DANGLING(np->deleteTree(), np);
         }

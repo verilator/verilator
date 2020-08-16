@@ -47,10 +47,7 @@ void V3Waiver::write(const std::string& filename) {
 
     if (s_waiverList.size() == 0) { *ofp << "// No waivers needed - great!" << endl; }
 
-    for (V3Waiver::WaiverList::const_iterator it = s_waiverList.begin(); it != s_waiverList.end();
-         ++it) {
-        *ofp << "// " << *it << std::endl << endl;
-    }
+    for (const auto& i : s_waiverList) *ofp << "// " << i << std::endl << endl;
 }
 
 V3Waiver::WaiverList V3Waiver::s_waiverList;

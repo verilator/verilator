@@ -505,10 +505,7 @@ void V3Graph::sortEdges() {
         // We know the vector contains all of the edges that were
         // there originally (didn't delete or add)
         vertexp->outUnlink();
-        for (std::vector<V3GraphEdge*>::const_iterator it = edges.begin(); it != edges.end();
-             ++it) {
-            (*it)->outPushBack();
-        }
+        for (V3GraphEdge* edgep : edges) edgep->outPushBack();
         // Prep for next
         edges.clear();
     }

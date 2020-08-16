@@ -974,9 +974,7 @@ std::ostream& operator<<(std::ostream& os, const V3Hash& rhs) {
 
 V3Hash::V3Hash(const string& name) {
     uint32_t val = 0;
-    for (string::const_iterator it = name.begin(); it != name.end(); ++it) {
-        val = val * 31 + *it;
-    }
+    for (const auto& c : name) val = val * 31 + c;
     setBoth(1, val);
 }
 

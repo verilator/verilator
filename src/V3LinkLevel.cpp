@@ -61,8 +61,7 @@ void V3LinkLevel::modSortByLevel() {
                                        << "... Suggest see manual; fix the duplicates, or use "
                                           "--top-module to select top."
                                        << V3Error::warnContextNone());
-            for (ModVec::const_iterator it = tops.begin(); it != tops.end(); ++it) {
-                AstNode* alsop = *it;
+            for (AstNode* alsop : tops) {
                 std::cout << secp->warnMore() << "... Top module " << alsop->prettyNameQ() << endl
                           << alsop->warnContextSecondary();
             }
@@ -74,17 +73,13 @@ void V3LinkLevel::modSortByLevel() {
     // Reorder the netlist's modules to have modules in level sorted order
     stable_sort(mods.begin(), mods.end(), CmpLevel());  // Sort the vector
     UINFO(9, "modSortByLevel() sorted\n");  // Comment required for gcc4.6.3 / bug666
-    for (ModVec::const_iterator it = mods.begin(); it != mods.end(); ++it) {
-        AstNodeModule* nodep = *it;
+    for (AstNodeModule* nodep : mods) {
         nodep->clearIter();  // Because we didn't iterate to find the node
         // pointers, may have a stale m_iterp() needing cleanup
         nodep->unlinkFrBack();
     }
     UASSERT_OBJ(!v3Global.rootp()->modulesp(), v3Global.rootp(), "Unlink didn't work");
-    for (ModVec::const_iterator it = mods.begin(); it != mods.end(); ++it) {
-        AstNodeModule* nodep = *it;
-        v3Global.rootp()->addModulep(nodep);
-    }
+    for (AstNodeModule* nodep : mods) v3Global.rootp()->addModulep(nodep);
     UINFO(9, "modSortByLevel() done\n");  // Comment required for gcc4.6.3 / bug666
     V3Global::dumpCheckGlobalTree("cells", false, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
@@ -105,8 +100,7 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
     if (unit.isNone()) unit = VTimescale(VTimescale::TS_DEFAULT);
     v3Global.rootp()->timeunit(unit);
 
-    for (ModVec::const_iterator it = mods.begin(); it != mods.end(); ++it) {
-        AstNodeModule* nodep = *it;
+    for (AstNodeModule* nodep : mods) {
         if (nodep->timeunit().isNone()) {
             if (modTimedp && !VN_IS(nodep, Iface)
                 && !(VN_IS(nodep, Package) && VN_CAST(nodep, Package)->isDollarUnit())) {

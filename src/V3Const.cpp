@@ -2013,8 +2013,7 @@ private:
             bool inPct = false;
             AstNode* argp = nodep->exprsp();
             string text = nodep->text();
-            for (string::const_iterator it = text.begin(); it != text.end(); ++it) {
-                char ch = *it;
+            for (const char ch : text) {
                 if (!inPct && ch == '%') {
                     inPct = true;
                     fmt = ch;

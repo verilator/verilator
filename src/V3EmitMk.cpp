@@ -193,17 +193,13 @@ public:
         of.puts("VM_USER_CFLAGS = \\\n");
         if (!v3Global.opt.protectLib().empty()) of.puts("\t-fPIC \\\n");
         const V3StringList& cFlags = v3Global.opt.cFlags();
-        for (V3StringList::const_iterator it = cFlags.begin(); it != cFlags.end(); ++it) {
-            of.puts("\t" + *it + " \\\n");
-        }
+        for (const string& i : cFlags) of.puts("\t" + i + " \\\n");
         of.puts("\n");
 
         of.puts("# User LDLIBS (from -LDFLAGS on Verilator command line)\n");
         of.puts("VM_USER_LDLIBS = \\\n");
         const V3StringList& ldLibs = v3Global.opt.ldLibs();
-        for (V3StringList::const_iterator it = ldLibs.begin(); it != ldLibs.end(); ++it) {
-            of.puts("\t" + *it + " \\\n");
-        }
+        for (const string& i : ldLibs) of.puts("\t" + i + " \\\n");
         of.puts("\n");
 
         V3StringSet dirs;
@@ -236,8 +232,7 @@ public:
             of.puts("\n### Executable rules... (from --exe)\n");
             of.puts("VPATH += $(VM_USER_DIR)\n");
             of.puts("\n");
-            for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
-                string cppfile = *it;
+            for (const string& cppfile : cppFiles) {
                 string basename = V3Os::filenameNonExt(cppfile);
                 // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
                 of.puts(basename + ".o: " + cppfile + "\n");
@@ -292,22 +287,17 @@ class EmitMkHierVerilation {
         of.puts("VM_HIER_VERILATOR := " + perl_wrapper + "\n");
         of.puts("VM_HIER_INPUT_FILES := \\\n");
         const V3StringList& vFiles = v3Global.opt.vFiles();
-        for (V3StringList::const_iterator it = vFiles.begin(); it != vFiles.end(); ++it) {
-            of.puts("\t" + V3Os::filenameRealPath(*it) + " \\\n");
-        }
+        for (const string& i : vFiles) of.puts("\t" + V3Os::filenameRealPath(i) + " \\\n");
         of.puts("\n");
         const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
         of.puts("VM_HIER_VERILOG_LIBS := \\\n");
-        for (V3StringSet::const_iterator it = libraryFiles.begin(); it != libraryFiles.end();
-             ++it) {
-            of.puts("\t" + V3Os::filenameRealPath(*it) + " \\\n");
+        for (const string& i : libraryFiles) {
+            of.puts("\t" + V3Os::filenameRealPath(i) + " \\\n");
         }
         of.puts("\n");
     }
     void emitOpts(V3OutMkFile& of, const V3StringList& opts) const {
-        for (V3StringList::const_iterator it = opts.begin(); it != opts.end(); ++it) {
-            of.puts("\t\t" + *it + " \\\n");
-        }
+        for (const string& i : opts) { of.puts("\t\t" + i + " \\\n"); }
     }
     void emitLaunchVerilator(V3OutMkFile& of, const string& argsFile) const {
         of.puts("\t@$(MAKE) -C $(VM_HIER_RUN_DIR) -f " + m_makefile

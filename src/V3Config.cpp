@@ -170,10 +170,7 @@ public:
     void update(const V3ConfigModule& m) {
         m_tasks.update(m.m_tasks);
         m_vars.update(m.m_vars);
-        for (StringSet::const_iterator it = m.m_coverageOffBlocks.begin();
-             it != m.m_coverageOffBlocks.end(); ++it) {
-            m_coverageOffBlocks.insert(*it);
-        }
+        for (const string& i : m.m_coverageOffBlocks) m_coverageOffBlocks.insert(i);
         if (!m_inline) {
             m_inline = m.m_inline;
             m_inlineValue = m.m_inlineValue;
@@ -210,9 +207,8 @@ public:
     void applyBlock(AstNodeBlock* nodep) {
         AstPragmaType pragma = AstPragmaType::COVERAGE_BLOCK_OFF;
         if (!nodep->unnamed()) {
-            for (StringSet::const_iterator it = m_coverageOffBlocks.begin();
-                 it != m_coverageOffBlocks.end(); ++it) {
-                if (VString::wildmatch(nodep->name(), *it)) {
+            for (const string& i : m_coverageOffBlocks) {
+                if (VString::wildmatch(nodep->name(), i)) {
                     nodep->addStmtsp(new AstPragma(nodep->fileline(), pragma));
                 }
             }

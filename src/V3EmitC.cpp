@@ -2828,10 +2828,7 @@ void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
     for (VarSortMap::const_iterator it = vmap.begin(); it != vmap.end(); ++it) {
         int size_class = it->first;
         const VarVec& vec = it->second;
-        for (VarVec::const_iterator jt = vec.begin(); jt != vec.end(); ++jt) {
-            const AstVar* varp = *jt;
-            m2v[varp->mtaskIds()][size_class].push_back(varp);
-        }
+        for (const AstVar* varp : vec) { m2v[varp->mtaskIds()][size_class].push_back(varp); }
     }
 
     // Create a TSP sort state for each MTaskIdSet footprint
@@ -2908,8 +2905,7 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons, const VarVec& nonanons,
         }
     }
     // Output nonanons
-    for (VarVec::const_iterator it = nonanons.begin(); it != nonanons.end(); ++it) {
-        const AstVar* varp = *it;
+    for (const AstVar* varp : nonanons) {
         emitVarCmtChg(varp, &curVarCmt);
         emitVarDecl(varp, prefixIfImp);
     }

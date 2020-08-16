@@ -828,14 +828,12 @@ void V3OutFormatter::putsQuoted(const string& strg) {
     // Don't use to quote a filename for #include - #include doesn't \ escape.
     putcNoTracking('"');
     string quoted = quoteNameControls(strg);
-    for (string::const_iterator cp = quoted.begin(); cp != quoted.end(); ++cp) {
-        putcNoTracking(*cp);
-    }
+    for (const char c : quoted) putcNoTracking(c);
     putcNoTracking('"');
 }
 void V3OutFormatter::putsNoTracking(const string& strg) {
     // Don't track {}'s, probably because it's a $display format string
-    for (string::const_iterator cp = strg.begin(); cp != strg.end(); ++cp) putcNoTracking(*cp);
+    for (const char c : strg) putcNoTracking(c);
 }
 
 void V3OutFormatter::putcNoTracking(char chr) {
@@ -864,43 +862,43 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
     string out;
     if (lang == LA_XML) {
         // Encode chars into XML string
-        for (string::const_iterator pos = namein.begin(); pos != namein.end(); ++pos) {
-            if (pos[0] == '"') {
+        for (const char c : namein) {
+            if (c == '"') {
                 out += string("&quot;");
-            } else if (pos[0] == '\'') {
+            } else if (c == '\'') {
                 out += string("&apos;");
-            } else if (pos[0] == '<') {
+            } else if (c == '<') {
                 out += string("&lt;");
-            } else if (pos[0] == '>') {
+            } else if (c == '>') {
                 out += string("&gt;");
-            } else if (pos[0] == '&') {
+            } else if (c == '&') {
                 out += string("&amp;");
-            } else if (isprint(pos[0])) {
-                out += pos[0];
+            } else if (isprint(c)) {
+                out += c;
             } else {
                 char decimal[10];
-                sprintf(decimal, "&#%u;", (unsigned char)pos[0]);
+                sprintf(decimal, "&#%u;", (unsigned char)c);
                 out += decimal;
             }
         }
     } else {
         // Encode control chars into C style escapes
-        for (string::const_iterator pos = namein.begin(); pos != namein.end(); ++pos) {
-            if (pos[0] == '\\' || pos[0] == '"') {
-                out += string("\\") + pos[0];
-            } else if (pos[0] == '\n') {
+        for (const char c : namein) {
+            if (c == '\\' || c == '"') {
+                out += string("\\") + c;
+            } else if (c == '\n') {
                 out += "\\n";
-            } else if (pos[0] == '\r') {
+            } else if (c == '\r') {
                 out += "\\r";
-            } else if (pos[0] == '\t') {
+            } else if (c == '\t') {
                 out += "\\t";
-            } else if (isprint(pos[0])) {
-                out += pos[0];
+            } else if (isprint(c)) {
+                out += c;
             } else {
                 // This will also cover \a etc
                 // Can't use %03o as messes up when signed
                 char octal[10];
-                sprintf(octal, "\\%o%o%o", (pos[0] >> 6) & 3, (pos[0] >> 3) & 7, pos[0] & 7);
+                sprintf(octal, "\\%o%o%o", (c >> 6) & 3, (c >> 3) & 7, c & 7);
                 out += octal;
             }
         }
@@ -937,9 +935,7 @@ V3OutFile::~V3OutFile() {
 
 void V3OutFile::putsForceIncs() {
     const V3StringList& forceIncs = v3Global.opt.forceIncs();
-    for (V3StringList::const_iterator it = forceIncs.begin(); it != forceIncs.end(); ++it) {
-        puts("#include \"" + *it + "\"\n");
-    }
+    for (const string& i : forceIncs) { puts("#include \"" + i + "\"\n"); }
 }
 
 void V3OutCFile::putsGuard() {

@@ -133,11 +133,7 @@ private:
     uint32_t hashDfaOrigins(const DfaStates& nfasWithInput) {
         // Find the NFA states this dfa came from,
         uint32_t hash = 0;
-        for (DfaStates::const_iterator nfaIt = nfasWithInput.begin(); nfaIt != nfasWithInput.end();
-             ++nfaIt) {
-            DfaVertex* nfaStatep = *nfaIt;
-            hash ^= hashVertex(nfaStatep);
-        }
+        for (DfaVertex* nfaStatep : nfasWithInput) hash ^= hashVertex(nfaStatep);
         return hash;
     }
 
@@ -147,9 +143,7 @@ private:
         nextStep();
         // Mark all input vertexes
         int num1s = 0;
-        for (DfaStates::const_iterator nfaIt = nfasWithInput.begin(); nfaIt != nfasWithInput.end();
-             ++nfaIt) {
-            DfaVertex* nfaStatep = *nfaIt;
+        for (DfaVertex* nfaStatep : nfasWithInput) {
             nfaStatep->user(m_step);
             num1s++;
         }

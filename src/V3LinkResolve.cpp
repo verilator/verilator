@@ -304,8 +304,7 @@ private:
         bool inPct = false;
         bool inIgnore = false;
         string fmt;
-        for (string::const_iterator it = format.begin(); it != format.end(); ++it) {
-            char ch = *it;
+        for (const char ch : format) {
             if (!inPct && ch == '%') {
                 inPct = true;
                 inIgnore = false;

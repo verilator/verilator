@@ -636,10 +636,8 @@ static string buildMakeCmd(const string& makefile, const string& target) {
     } else if (jobs > 1) {
         cmd << " -j " << jobs;
     }
-    for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
-        cmd << ' ' << *it;
-    }
-    if (!target.empty()) { cmd << ' ' << target; }
+    for (const string& flag : makeFlags) cmd << ' ' << flag;
+    if (!target.empty()) cmd << ' ' << target;
 
     return cmd.str();
 }

@@ -421,16 +421,16 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         //      %k      Potential line break
         bool inPct = false;
         putbs("");
-        for (string::const_iterator pos = format.begin(); pos != format.end(); ++pos) {
-            if (pos[0] == '%') {
+        for (const char c : format) {
+            if (c == '%') {
                 inPct = true;
             } else if (!inPct) {  // Normal text
                 string s;
-                s += pos[0];
+                s += c;
                 puts(s);
             } else {  // Format character
                 inPct = false;
-                switch (*pos) {
+                switch (c) {
                 case '%': puts("%"); break;
                 case 'f': putfs(nodep, ""); break;
                 case 'k': putbs(""); break;
@@ -459,7 +459,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
                     iterateAndNextNull(nodep->dtypep());
                     break;
                 }
-                default: nodep->v3fatalSrc("Unknown emitVerilog format code: %" << pos[0]); break;
+                default: nodep->v3fatalSrc("Unknown emitVerilog format code: %" << c); break;
                 }
             }
         }

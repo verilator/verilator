@@ -135,12 +135,10 @@ class StatsReport {
 
         // Header
         os << "  Stat     " << std::left << std::setw(maxWidth - 5 - 2) << "";
-        for (Stages::const_iterator it = stages.begin(); it != stages.end(); ++it) {
-            os << "  " << std::left << std::setw(9) << *it;
-        }
+        for (const string& i : stages) os << "  " << std::left << std::setw(9) << i;
         os << endl;
         os << "  -------- " << std::left << std::setw(maxWidth - 5 - 2) << "";
-        for (Stages::const_iterator it = stages.begin(); it != stages.end(); ++it) {
+        for (auto it = stages.begin(); it != stages.end(); ++it) {
             os << "  " << std::left << std::setw(9) << "-------";
         }
         // os<<endl;

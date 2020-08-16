@@ -86,9 +86,9 @@ string VString::upcase(const string& str) {
 
 string VString::quoteAny(const string& str, char tgt, char esc) {
     string out;
-    for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {
-        if (*pos == tgt) out += esc;
-        out += *pos;
+    for (const char c : str) {
+        if (c == tgt) out += esc;
+        out += c;
     }
     return out;
 }
@@ -100,9 +100,9 @@ string VString::quoteStringLiteralForShell(const string& str) {
     result.push_back(dquote);  // Start quoted string
     result.push_back(escape);
     result.push_back(dquote);  // "
-    for (string::const_iterator it = str.begin(); it != str.end(); ++it) {
-        if (*it == dquote || *it == escape) { result.push_back(escape); }
-        result.push_back(*it);
+    for (const char c : str) {
+        if (c == dquote || c == escape) result.push_back(escape);
+        result.push_back(c);
     }
     result.push_back(escape);
     result.push_back(dquote);  // "
@@ -112,9 +112,9 @@ string VString::quoteStringLiteralForShell(const string& str) {
 
 string VString::spaceUnprintable(const string& str) {
     string out;
-    for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {
-        if (isprint(*pos)) {
-            out += *pos;
+    for (const char c : str) {
+        if (isprint(c)) {
+            out += c;
         } else {
             out += ' ';
         }
@@ -125,15 +125,15 @@ string VString::spaceUnprintable(const string& str) {
 string VString::removeWhitespace(const string& str) {
     string out;
     out.reserve(str.size());
-    for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {
-        if (!isspace(*pos)) out += *pos;
+    for (const char c : str) {
+        if (!isspace(c)) out += c;
     }
     return out;
 }
 
 bool VString::isWhitespace(const string& str) {
-    for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {
-        if (!isspace(*pos)) return false;
+    for (const char c : str) {
+        if (!isspace(c)) return false;
     }
     return true;
 }
@@ -452,8 +452,7 @@ string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distance
     string bestCandidate;
     size_t gLen = goal.length();
     distancer = LENGTH_LIMIT * 10;
-    for (Candidates::const_iterator it = m_candidates.begin(); it != m_candidates.end(); ++it) {
-        const string candidate = *it;
+    for (const string& candidate : m_candidates) {
         size_t cLen = candidate.length();
 
         // Min distance must be inserting/deleting to make lengths match

@@ -652,9 +652,7 @@ void V3TSP::selfTestString() {
     expect.push_back("3");
 
     if (VL_UNCOVERABLE(expect != result)) {
-        for (std::vector<string>::const_iterator it = result.begin(); it != result.end(); ++it) {
-            cout << *it << " ";
-        }
+        for (const string& i : result) cout << i << " ";
         cout << endl;
         v3fatalSrc("TSP string self-test fail. Result (above) did not match expectation.");
     }

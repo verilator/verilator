@@ -3234,8 +3234,7 @@ private:
         AstNode* argp = nodep->exprsp();
         string txt = nodep->text();
         string fmt;
-        for (string::const_iterator it = txt.begin(); it != txt.end(); ++it) {
-            char ch = *it;
+        for (char ch : txt) {
             if (!inPct && ch == '%') {
                 inPct = true;
                 fmt = ch;

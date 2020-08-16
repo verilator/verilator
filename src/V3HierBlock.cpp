@@ -91,14 +91,10 @@ static string V3HierCommandArgsFileName(const string& prefix, bool forCMake) {
 static void V3HierWriteCommonInputs(std::ostream* of, bool forCMake) {
     if (!forCMake) {
         const V3StringList& vFiles = v3Global.opt.vFiles();
-        for (V3StringList::const_iterator it = vFiles.begin(); it != vFiles.end(); ++it) {
-            *of << *it << "\n";
-        }
+        for (const string& i : vFiles) *of << i << "\n";
     }
     const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
-    for (V3StringSet::const_iterator it = libraryFiles.begin(); it != libraryFiles.end(); ++it) {
-        *of << "-v " << *it << "\n";
-    }
+    for (const string& i : libraryFiles) *of << "-v " << i << "\n";
 }
 
 //######################################################################
@@ -211,9 +207,7 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     V3HierWriteCommonInputs(of.get(), forCMake);
     const V3StringList& commandOpts = commandArgs(false);
-    for (V3StringList::const_iterator it = commandOpts.begin(); it != commandOpts.end(); ++it) {
-        *of << (*it) << "\n";
-    }
+    for (const string& opt : commandOpts) *of << opt << "\n";
     *of << hierBlockArgs().front() << "\n";
     for (HierBlockSet::const_iterator child = m_children.begin(); child != m_children.end();
          ++child) {
@@ -262,9 +256,7 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
 
         if (nodep->hierBlock()) {
             m_planp->add(nodep, m_gparams);
-            for (ModuleSet::const_iterator it = m_referred.begin(); it != m_referred.end(); ++it) {
-                m_planp->registerUsage(nodep, *it);
-            }
+            for (const AstModule* modp : m_referred) m_planp->registerUsage(nodep, modp);
             m_hierBlockp = prevHierBlockp;
             m_referred = prevReferred;
         }
@@ -406,9 +398,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     V3HierWriteCommonInputs(of.get(), forCMake);
     if (!forCMake) {
         const V3StringSet& cppFiles = v3Global.opt.cppFiles();
-        for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
-            *of << *it << "\n";
-        }
+        for (const string& i : cppFiles) *of << i << "\n";
         *of << "--top-module " << v3Global.rootp()->topModulep()->name() << "\n";
         *of << "--prefix " << v3Global.opt.prefix() << "\n";
         *of << "-Mdir " << v3Global.opt.makeDir() << "\n";
