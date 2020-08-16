@@ -140,7 +140,7 @@ private:
     string traceNameForLine(AstNode* nodep, const string& type) {
         string name = "vlCoverageLineTrace_" + nodep->fileline()->filebasenameNoExt() + "__"
                       + cvtToStr(nodep->fileline()->lineno()) + "_" + type;
-        VarNameMap::iterator it = m_varnames.find(name);
+        const auto it = m_varnames.find(name);
         if (it == m_varnames.end()) {
             m_varnames.insert(make_pair(name, 1));
         } else {

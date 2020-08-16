@@ -58,7 +58,7 @@ string FileLineSingleton::filenameLetters(int fileno) {
 //! We associate a language with each source file, so we also set the default
 //! for this.
 int FileLineSingleton::nameToNumber(const string& filename) {
-    FileNameNumMap::const_iterator it = m_namemap.find(filename);
+    const auto it = vlstd::as_const(m_namemap).find(filename);
     if (VL_LIKELY(it != m_namemap.end())) return it->second;
     int num = m_names.size();
     m_names.push_back(filename);
@@ -454,7 +454,7 @@ void* FileLine::operator new(size_t size) {
 void FileLine::operator delete(void* objp, size_t size) {
     if (!objp) return;
     FileLine* flp = static_cast<FileLine*>(objp);
-    FileLineCheckSet::iterator it = fileLineLeakChecks.find(flp);
+    const auto it = fileLineLeakChecks.find(flp);
     if (it != fileLineLeakChecks.end()) {
         fileLineLeakChecks.erase(it);
     } else {
@@ -470,7 +470,7 @@ void FileLine::deleteAllRemaining() {
     // that way.  Unfortunately this makes our leak checking a big mess, so
     // only when leak checking we'll track them all and cleanup.
     while (true) {
-        FileLineCheckSet::iterator it = fileLineLeakChecks.begin();
+        const auto it = fileLineLeakChecks.begin();
         if (it == fileLineLeakChecks.end()) break;
         delete *it;
         // Operator delete will remove the iterated object from the list.

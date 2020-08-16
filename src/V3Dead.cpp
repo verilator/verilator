@@ -358,8 +358,7 @@ private:
     }
 
     void deadCheckCells() {
-        for (std::vector<AstCell*>::iterator it = m_cellsp.begin(); it != m_cellsp.end(); ++it) {
-            AstCell* cellp = *it;
+        for (AstCell* cellp : m_cellsp) {
             if (cellp->user1() == 0 && !cellp->modp()->stmtsp()) {
                 cellp->modp()->user1Inc(-1);
                 VL_DO_DANGLING(cellp->unlinkFrBack()->deleteTree(), cellp);
@@ -386,8 +385,7 @@ private:
 
     void deadCheckVar() {
         // Delete any unused varscopes
-        for (std::vector<AstVarScope*>::iterator it = m_vscsp.begin(); it != m_vscsp.end(); ++it) {
-            AstVarScope* vscp = *it;
+        for (AstVarScope* vscp : m_vscsp) {
             if (vscp->user1() == 0) {
                 UINFO(4, "  Dead " << vscp << endl);
                 std::pair<AssignMap::iterator, AssignMap::iterator> eqrange

@@ -182,7 +182,7 @@ private:
         // not depend on order of edges
         uint32_t hash = hashDfaOrigins(nfasWithInput);
 
-        std::pair<HashMap::iterator, HashMap::iterator> eqrange = m_hashMap.equal_range(hash);
+        const auto eqrange = m_hashMap.equal_range(hash);
         for (HashMap::iterator it = eqrange.first; it != eqrange.second; ++it) {
             DfaVertex* testp = it->second;
             if (compareDfaOrigins(nfasWithInput, testp)) {

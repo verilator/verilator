@@ -247,16 +247,16 @@ private:
 
 public:
     iterator begin() {
-        typename Val2Keys::iterator valIt = m_vals.begin();
+        const auto valIt = m_vals.begin();
         if (valIt == m_vals.end()) return end();
-        typename KeySet::const_iterator keyIt = valIt->second.begin();
+        const auto keyIt = valIt->second.begin();
         return iterator(valIt, keyIt, this);
     }
     const_iterator begin() const {
         SortByValueMap* mutp = const_cast<SortByValueMap*>(this);
-        typename Val2Keys::iterator valIt = mutp->m_vals.begin();
+        const auto valIt = mutp->m_vals.begin();
         if (valIt == mutp->m_vals.end()) return end();
-        typename KeySet::const_iterator keyIt = valIt->second.begin();
+        const auto keyIt = valIt->second.begin();
         return const_iterator(valIt, keyIt, mutp);
     }
     iterator end() { return iterator(this); }
@@ -271,24 +271,24 @@ public:
     const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
 
     iterator find(const T_Key& k) {
-        typename Key2Val::iterator kvit = m_keys.find(k);
+        const auto kvit = m_keys.find(k);
         if (kvit == m_keys.end()) return end();
 
-        typename Val2Keys::iterator valIt = m_vals.find(kvit->second);
-        typename KeySet::iterator keyIt = valIt->second.find(k);
+        const auto valIt = m_vals.find(kvit->second);
+        const auto keyIt = valIt->second.find(k);
         return iterator(valIt, keyIt, this);
     }
     const_iterator find(const T_Key& k) const {
         SortByValueMap* mutp = const_cast<SortByValueMap*>(this);
-        typename Key2Val::iterator kvit = mutp->m_keys.find(k);
+        const auto kvit = mutp->m_keys.find(k);
         if (kvit == mutp->m_keys.end()) return end();
 
-        typename Val2Keys::iterator valIt = mutp->m_vals.find(kvit->second);
-        typename KeySet::iterator keyIt = valIt->second.find(k);
+        const auto valIt = mutp->m_vals.find(kvit->second);
+        const auto keyIt = valIt->second.find(k);
         return const_iterator(valIt, keyIt, mutp);
     }
     void set(const T_Key& k, const T_Value& v) {
-        typename Key2Val::iterator kvit = m_keys.find(k);
+        const auto kvit = m_keys.find(k);
         if (kvit != m_keys.end()) {
             if (kvit->second == v) {
                 return;  // LCOV_EXCL_LINE // Same value already present; stop.
@@ -300,7 +300,7 @@ public:
         m_vals[v].insert(k);
     }
     size_t erase(const T_Key& k) {
-        typename Key2Val::iterator kvit = m_keys.find(k);
+        const auto kvit = m_keys.find(k);
         if (kvit == m_keys.end()) return 0;
         removeKeyFromOldVal(k, kvit->second);
         m_keys.erase(kvit);
@@ -319,7 +319,7 @@ public:
     // be a const reference, otherwise the client could corrupt the sorted
     // order of m_byValue by reaching through and changing the value.
     const T_Value& at(const T_Key& k) const {
-        typename Key2Val::const_iterator kvit = m_keys.find(k);
+        const auto kvit = m_keys.find(k);
         UASSERT(kvit != m_keys.end(), "at() lookup key not found");
         return kvit->second;
     }
@@ -415,7 +415,7 @@ public:
     // reflected in the result of bestp(). Otherwise, bestp() only
     // considers elements that aren't pending rescore.
     const T_Elem* bestp() {
-        typename SortedMap::iterator result = m_sorted.begin();
+        const auto result = m_sorted.begin();
         if (VL_UNLIKELY(result == m_sorted.end())) return nullptr;
         return (*result).key();
     }
@@ -444,7 +444,7 @@ public:
     bool needsRescore(const T_Elem* elp) { return (m_unknown.find(elp) != m_unknown.end()); }
     // Retrieve the last known score for an element.
     T_Score cachedScore(const T_Elem* elp) {
-        typename SortedMap::iterator result = m_sorted.find(elp);
+        const auto result = m_sorted.find(elp);
         UASSERT(result != m_sorted.end(), "V3Scoreboard::cachedScore() failed to find element");
         return (*result).value();
     }
@@ -452,9 +452,7 @@ public:
     // call the client's scoring function to get a new score,
     // and sort all elements by their current score.
     void rescore() {
-        for (typename NeedRescoreSet::iterator it = m_unknown.begin(); it != m_unknown.end();
-             ++it) {
-            const T_Elem* elp = *it;
+        for (const T_Elem* elp : m_unknown) {
             T_Score sortScore = m_scoreFnp(elp);
             m_sorted.set(elp, sortScore);
         }

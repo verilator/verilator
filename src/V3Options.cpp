@@ -469,7 +469,7 @@ string V3Options::fileExists(const string& filename) {
     string dir = V3Os::filenameDir(filename);
     string basename = V3Os::filenameNonDir(filename);
 
-    V3OptionsImp::DirMap::iterator diriter = m_impp->m_dirMap.find(dir);
+    auto diriter = m_impp->m_dirMap.find(dir);
     if (diriter == m_impp->m_dirMap.end()) {
         // Read the listing
         m_impp->m_dirMap.insert(std::make_pair(dir, std::set<string>()));
@@ -484,7 +484,7 @@ string V3Options::fileExists(const string& filename) {
     }
     // Find it
     std::set<string>* filesetp = &(diriter->second);
-    std::set<string>::iterator fileiter = filesetp->find(basename);
+    const auto fileiter = filesetp->find(basename);
     if (fileiter == filesetp->end()) {
         return "";  // Not found
     }
@@ -495,9 +495,8 @@ string V3Options::fileExists(const string& filename) {
 }
 
 string V3Options::filePathCheckOneDir(const string& modname, const string& dirname) {
-    for (std::list<string>::iterator extIter = m_impp->m_libExtVs.begin();
-         extIter != m_impp->m_libExtVs.end(); ++extIter) {
-        string fn = V3Os::filenameFromDirBase(dirname, modname + *extIter);
+    for (const string& i : m_impp->m_libExtVs) {
+        string fn = V3Os::filenameFromDirBase(dirname, modname + i);
         string exists = fileExists(fn);
         if (exists != "") {
             // Strip ./, it just looks ugly
@@ -530,14 +529,12 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
-    for (std::list<string>::iterator dirIter = m_impp->m_incDirUsers.begin();
-         dirIter != m_impp->m_incDirUsers.end(); ++dirIter) {
-        string exists = filePathCheckOneDir(modname, *dirIter);
+    for (const string& dir : m_impp->m_incDirUsers) {
+        string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
-    for (std::list<string>::iterator dirIter = m_impp->m_incDirFallbacks.begin();
-         dirIter != m_impp->m_incDirFallbacks.end(); ++dirIter) {
-        string exists = filePathCheckOneDir(modname, *dirIter);
+    for (const string& dir : m_impp->m_incDirFallbacks) {
+        string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
 
@@ -568,19 +565,15 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
                         << endl);
         }
         std::cerr << V3Error::warnMore() << "... Looked in:" << endl;
-        for (std::list<string>::iterator dirIter = m_impp->m_incDirUsers.begin();
-             dirIter != m_impp->m_incDirUsers.end(); ++dirIter) {
-            for (std::list<string>::iterator extIter = m_impp->m_libExtVs.begin();
-                 extIter != m_impp->m_libExtVs.end(); ++extIter) {
-                string fn = V3Os::filenameFromDirBase(*dirIter, modname + *extIter);
+        for (const string& dir : m_impp->m_incDirUsers) {
+            for (const string& ext : m_impp->m_libExtVs) {
+                string fn = V3Os::filenameFromDirBase(dir, modname + ext);
                 std::cerr << V3Error::warnMore() << "     " << fn << endl;
             }
         }
-        for (std::list<string>::iterator dirIter = m_impp->m_incDirFallbacks.begin();
-             dirIter != m_impp->m_incDirFallbacks.end(); ++dirIter) {
-            for (std::list<string>::iterator extIter = m_impp->m_libExtVs.begin();
-                 extIter != m_impp->m_libExtVs.end(); ++extIter) {
-                string fn = V3Os::filenameFromDirBase(*dirIter, modname + *extIter);
+        for (const string& dir : m_impp->m_incDirFallbacks) {
+            for (const string& ext : m_impp->m_libExtVs) {
+                string fn = V3Os::filenameFromDirBase(dir, modname + ext);
                 std::cerr << V3Error::warnMore() << "     " << fn << endl;
             }
         }
@@ -596,7 +589,7 @@ V3LangCode V3Options::fileLanguage(const string& filename) {
     string::size_type pos;
     if ((pos = ext.rfind('.')) != string::npos) {
         ext.erase(0, pos + 1);
-        std::map<string, V3LangCode>::iterator it = m_impp->m_langExts.find(ext);
+        const auto it = m_impp->m_langExts.find(ext);
         if (it != m_impp->m_langExts.end()) return it->second;
     }
     return m_defaultLanguage;
@@ -1816,7 +1809,7 @@ void V3Options::setDebugMode(int level) {
 }
 
 void V3Options::setDebugSrcLevel(const string& srcfile, int level) {
-    DebugSrcMap::iterator iter = m_debugSrcs.find(srcfile);
+    const auto iter = m_debugSrcs.find(srcfile);
     if (iter != m_debugSrcs.end()) {
         iter->second = level;
     } else {
@@ -1828,7 +1821,7 @@ int V3Options::debugSrcLevel(const string& srcfile_path, int default_level) {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
     string srcfile = V3Os::filenameNonDirExt(srcfile_path);
-    DebugSrcMap::iterator iter = m_debugSrcs.find(srcfile);
+    const auto iter = m_debugSrcs.find(srcfile);
     if (iter != m_debugSrcs.end()) {
         return iter->second;
     } else {
@@ -1837,7 +1830,7 @@ int V3Options::debugSrcLevel(const string& srcfile_path, int default_level) {
 }
 
 void V3Options::setDumpTreeLevel(const string& srcfile, int level) {
-    DebugSrcMap::iterator iter = m_dumpTrees.find(srcfile);
+    const auto iter = m_dumpTrees.find(srcfile);
     if (iter != m_dumpTrees.end()) {
         iter->second = level;
     } else {
@@ -1849,7 +1842,7 @@ int V3Options::dumpTreeLevel(const string& srcfile_path) {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
     string srcfile = V3Os::filenameNonDirExt(srcfile_path);
-    DebugSrcMap::iterator iter = m_dumpTrees.find(srcfile);
+    const auto iter = m_dumpTrees.find(srcfile);
     if (iter != m_dumpTrees.end()) {
         return iter->second;
     } else {

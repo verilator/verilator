@@ -445,21 +445,21 @@ public:
         VpioCbList& cbObjList = s_s.m_cbObjLists[cbp->reason()];
         // We do not remove it now as we may be iterating the list,
         // instead set to nullptr and will cleanup later
-        for (VpioCbList::iterator it = cbObjList.begin(); it != cbObjList.end(); ++it) {
-            if (*it == cbp) *it = nullptr;
+        for (auto& ir : cbObjList) {
+            if (ir == cbp) ir = nullptr;
         }
     }
     static void cbTimedRemove(VerilatedVpioCb* cbp) {
-        VpioTimedCbs::iterator it = s_s.m_timedCbs.find(std::make_pair(cbp->time(), cbp));
-        if (VL_LIKELY(it != s_s.m_timedCbs.end())) { s_s.m_timedCbs.erase(it); }
+        const auto it = s_s.m_timedCbs.find(std::make_pair(cbp->time(), cbp));
+        if (VL_LIKELY(it != s_s.m_timedCbs.end())) s_s.m_timedCbs.erase(it);
     }
     static void callTimedCbs() VL_MT_UNSAFE_ONE {
         assertOneCheck();
         QData time = VL_TIME_Q();
-        for (VpioTimedCbs::iterator it = s_s.m_timedCbs.begin(); it != s_s.m_timedCbs.end();) {
+        for (auto it = s_s.m_timedCbs.begin(); it != s_s.m_timedCbs.end();) {
             if (VL_UNLIKELY(it->first <= time)) {
                 VerilatedVpioCb* vop = it->second;
-                VpioTimedCbs::iterator last_it = it;
+                const auto last_it = it;
                 ++it;  // Timed callbacks are one-shot
                 s_s.m_timedCbs.erase(last_it);
                 VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: timed_callback %p\n", vop););
@@ -470,14 +470,14 @@ public:
         }
     }
     static QData cbNextDeadline() {
-        VpioTimedCbs::const_iterator it = s_s.m_timedCbs.begin();
-        if (VL_LIKELY(it != s_s.m_timedCbs.end())) return it->first;
+        const auto it = s_s.m_timedCbs.cbegin();
+        if (VL_LIKELY(it != s_s.m_timedCbs.cend())) return it->first;
         return ~0ULL;  // maxquad
     }
     static bool callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE {
         VpioCbList& cbObjList = s_s.m_cbObjLists[reason];
         bool called = false;
-        for (VpioCbList::iterator it = cbObjList.begin(); it != cbObjList.end();) {
+        for (auto it = cbObjList.begin(); it != cbObjList.end();) {
             if (VL_UNLIKELY(!*it)) {  // Deleted earlier, cleanup
                 it = cbObjList.erase(it);
                 continue;
@@ -494,7 +494,7 @@ public:
         VpioCbList& cbObjList = s_s.m_cbObjLists[cbValueChange];
         typedef std::set<VerilatedVpioVar*> VpioVarSet;
         VpioVarSet update;  // set of objects to update after callbacks
-        for (VpioCbList::iterator it = cbObjList.begin(); it != cbObjList.end();) {
+        for (auto it = cbObjList.begin(); it != cbObjList.end();) {
             if (VL_UNLIKELY(!*it)) {  // Deleted earlier, cleanup
                 it = cbObjList.erase(it);
                 continue;
@@ -515,9 +515,7 @@ public:
                 }
             }
         }
-        for (VpioVarSet::const_iterator it = update.begin(); it != update.end(); ++it) {
-            memcpy((*it)->prevDatap(), (*it)->varDatap(), (*it)->entSize());
-        }
+        for (const auto& ip : update) { memcpy(ip->prevDatap(), ip->varDatap(), ip->entSize()); }
     }
 
     static VerilatedVpiError* error_info() VL_MT_UNSAFE_ONE;  // getter for vpi error info
@@ -1253,7 +1251,7 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         VerilatedVpioModule* vop = VerilatedVpioModule::castp(object);
         const VerilatedHierarchyMap* map = VerilatedImp::hierarchyMap();
         const VerilatedScope* mod = vop ? vop->scopep() : nullptr;
-        VerilatedHierarchyMap::const_iterator it = map->find(const_cast<VerilatedScope*>(mod));
+        const auto it = vlstd::as_const(map)->find(const_cast<VerilatedScope*>(mod));
         if (it == map->end()) return 0;
         return ((new VerilatedVpioModuleIter(it->second))->castVpiHandle());
     }

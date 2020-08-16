@@ -441,15 +441,9 @@ public:
     // CONSTRUCTORS
     explicit UndrivenVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~UndrivenVisitor() override {
-        for (std::vector<UndrivenVarEntry*>::iterator it = m_entryps[1].begin();
-             it != m_entryps[1].end(); ++it) {
-            (*it)->reportViolations();
-        }
+        for (UndrivenVarEntry* ip : m_entryps[1]) ip->reportViolations();
         for (int usr = 1; usr < 3; ++usr) {
-            for (std::vector<UndrivenVarEntry*>::iterator it = m_entryps[usr].begin();
-                 it != m_entryps[usr].end(); ++it) {
-                delete (*it);
-            }
+            for (UndrivenVarEntry* ip : m_entryps[usr]) delete ip;
         }
     }
 };

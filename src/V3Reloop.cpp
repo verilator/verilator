@@ -124,8 +124,7 @@ private:
                 if (debug() >= 9) whilep->dumpTree(cout, "-new: ");
 
                 // Remove remaining assigns
-                for (AssVec::iterator it = m_mgAssignps.begin(); it != m_mgAssignps.end(); ++it) {
-                    AstNodeAssign* assp = *it;
+                for (AstNodeAssign* assp : m_mgAssignps) {
                     if (assp != bodyp) {
                         VL_DO_DANGLING(assp->unlinkFrBack()->deleteTree(), assp);
                     }

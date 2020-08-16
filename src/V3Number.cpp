@@ -567,8 +567,8 @@ string V3Number::displayed(AstNode* nodep, const string& vformat) const {
 }
 
 string V3Number::displayed(FileLine* fl, const string& vformat) const {
-    string::const_iterator pos = vformat.begin();
-    UASSERT(pos != vformat.end() && pos[0] == '%',
+    auto pos = vformat.cbegin();
+    UASSERT(pos != vformat.cend() && pos[0] == '%',
             "$display-like function with non format argument " << *this);
     ++pos;
     bool left = false;
@@ -2400,14 +2400,14 @@ V3Number& V3Number::opToLowerN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_STRING_ARGS1(lhs);
     std::string out = lhs.toString();
-    for (std::string::iterator it = out.begin(); it != out.end(); ++it) { *it = tolower(*it); }
+    for (auto& cr : out) cr = tolower(cr);
     return setString(out);
 }
 V3Number& V3Number::opToUpperN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_STRING_ARGS1(lhs);
     std::string out = lhs.toString();
-    for (std::string::iterator it = out.begin(); it != out.end(); ++it) { *it = toupper(*it); }
+    for (auto& cr : out) cr = toupper(cr);
     return setString(out);
 }
 

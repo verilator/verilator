@@ -157,7 +157,7 @@ public:
     V3List<OrderMoveVertex*>& readyVertices() { return m_readyVertices; }
     static OrderMoveDomScope* findCreate(const AstSenTree* domainp, const AstScope* scopep) {
         const DomScopeKey key = make_pair(domainp, scopep);
-        DomScopeMap::iterator iter = s_dsMap.find(key);
+        const auto iter = s_dsMap.find(key);
         if (iter != s_dsMap.end()) {
             return iter->second;
         } else {
@@ -1222,10 +1222,7 @@ public:
             }
         }
         // Destruction
-        for (std::deque<OrderUser*>::iterator it = m_orderUserps.begin();
-             it != m_orderUserps.end(); ++it) {
-            delete *it;
-        }
+        for (OrderUser* ip : m_orderUserps) delete ip;
         m_graph.debug(V3Error::debugDefault());
     }
     void main(AstNode* nodep) { iterate(nodep); }
@@ -1573,9 +1570,7 @@ void OrderVisitor::processEdgeReport() {
 
     *logp << "Signals and their clock domains:" << endl;
     stable_sort(report.begin(), report.end());
-    for (std::deque<string>::iterator it = report.begin(); it != report.end(); ++it) {
-        *logp << (*it) << endl;
-    }
+    for (const string& i : report) *logp << i << endl;
 }
 
 void OrderVisitor::processMoveClear() {
@@ -1888,9 +1883,7 @@ void OrderVisitor::processMTasks() {
         const AstSenTree* last_domainp = nullptr;
         AstCFunc* leafCFuncp = nullptr;
         int leafStmts = 0;
-        for (MTaskState::Logics::iterator it = state.m_logics.begin(); it != state.m_logics.end();
-             ++it) {
-            const OrderLogicVertex* logicp = *it;
+        for (const OrderLogicVertex* logicp : state.m_logics) {
             if (logicp->domainp() != last_domainp) {
                 // Start a new leaf function.
                 leafCFuncp = nullptr;

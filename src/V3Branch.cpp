@@ -108,8 +108,7 @@ private:
 
     // METHODS
     void calc_tasks() {
-        for (CFuncVec::iterator it = m_cfuncsp.begin(); it != m_cfuncsp.end(); ++it) {
-            AstCFunc* nodep = *it;
+        for (AstCFunc* nodep : m_cfuncsp) {
             if (!nodep->dontInline()) nodep->isInline(true);
         }
     }

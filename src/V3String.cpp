@@ -74,13 +74,13 @@ string VString::dot(const string& a, const string& dot, const string& b) {
 
 string VString::downcase(const string& str) {
     string out = str;
-    for (string::iterator pos = out.begin(); pos != out.end(); ++pos) *pos = tolower(*pos);
+    for (auto& cr : out) cr = tolower(cr);
     return out;
 }
 
 string VString::upcase(const string& str) {
     string out = str;
-    for (string::iterator pos = out.begin(); pos != out.end(); ++pos) *pos = toupper(*pos);
+    for (auto& cr : out) cr = toupper(cr);
     return out;
 }
 

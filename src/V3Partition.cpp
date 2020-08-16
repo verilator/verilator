@@ -244,7 +244,7 @@ public:
         //
         // This generalizes to multiple seed nodes also.
         while (!m_pending.empty()) {
-            PropCpPendSet::reverse_iterator it = m_pending.rbegin();
+            const auto it = m_pending.rbegin();
             V3GraphVertex* updateMep = (*it).key();
             uint32_t cpGrowBy = (*it).value();
             m_pending.erase(it);
@@ -297,12 +297,12 @@ private:
         // Confirm that we only set each node's CP once.  That's an
         // important property of PartPropagateCp which allows it to be far
         // faster than a recursive algorithm on some graphs.
-        CpMap::iterator it = m_seen.find(vxp);
+        const auto it = m_seen.find(vxp);
         UASSERT_OBJ(it == m_seen.end(), vxp, "Set CP on node twice");
         m_seen[vxp] = cost;
     }
     uint32_t critPathCost(V3GraphVertex* vxp, GraphWay way) const {
-        CpMap::const_iterator it = m_cp.find(vxp);
+        const auto it = m_cp.find(vxp);
         if (it != m_cp.end()) return it->second;
         return 0;
     }
@@ -425,7 +425,7 @@ public:
             LogicMTask* mtaskp = dynamic_cast<LogicMTask*>(vxp);
             EdgeSet& edges = mtaskp->m_edges[way.invert()];
             // This is mtaskp's relative with longest !wayward inclusive CP:
-            EdgeSet::reverse_iterator edgeIt = edges.rbegin();
+            const auto edgeIt = edges.rbegin();
             uint32_t edgeCp = (*edgeIt).value();
             UASSERT_OBJ(edgeCp == cp, vxp, "CP doesn't match longest wayward edge");
         }
@@ -686,8 +686,7 @@ public:
              << " (should match the computed critical path cost (CP) for the graph)\n";
 
         // Dump
-        for (std::vector<const LogicMTask*>::iterator it = path.begin(); it != path.end(); ++it) {
-            const LogicMTask* mtaskp = *it;
+        for (const LogicMTask* mtaskp : path) {
             *osp << "begin mtask with cost " << mtaskp->cost() << endl;
             for (VxList::const_iterator lit = mtaskp->vertexListp()->begin();
                  lit != mtaskp->vertexListp()->end(); ++lit) {
@@ -1523,7 +1522,7 @@ private:
 
         // Don't make all NxN/2 possible pairs of prereqs, that's a lot
         // to cart around. Just make a few pairs.
-        std::vector<LogicMTask*>::iterator it = shortestPrereqs.begin();
+        auto it = shortestPrereqs.cbegin();
         for (unsigned i = 0; exhaustive || (i < 3); ++i) {
             if (it == shortestPrereqs.end()) break;
             LogicMTask* ap = *(it++);
@@ -1834,7 +1833,7 @@ private:
             rankIt->second.erase(mergedp);
 
             while (!rankIt->second.empty()) {
-                LogicMTaskSet::iterator begin = rankIt->second.begin();
+                const auto begin = rankIt->second.cbegin();
                 LogicMTask* donorp = *begin;
                 UASSERT_OBJ(donorp != mergedp, donorp, "Donor can't be merged edge");
                 rankIt->second.erase(begin);
@@ -2360,7 +2359,7 @@ void V3Partition::setupMTaskDeps(V3Graph* mtasksp, const Vx2MTaskMap* vx2mtaskp)
                 UASSERT(outp->weight() > 0, "Mtask not assigned weight");
                 const MTaskMoveVertex* top = dynamic_cast<MTaskMoveVertex*>(outp->top());
                 UASSERT(top, "MoveVertex not associated to mtask");
-                Vx2MTaskMap::const_iterator it = vx2mtaskp->find(top);
+                const auto it = vlstd::as_const(vx2mtaskp)->find(top);
                 UASSERT(it != vx2mtaskp->end(), "MTask map can't find id");
                 LogicMTask* otherMTaskp = it->second;
                 UASSERT(otherMTaskp, "nullptr other Mtask");

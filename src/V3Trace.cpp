@@ -220,7 +220,7 @@ private:
             if (TraceTraceVertex* const vvertexp = dynamic_cast<TraceTraceVertex*>(itp)) {
                 AstTraceDecl* const nodep = vvertexp->nodep();
                 if (nodep->valuep() && !vvertexp->duplicatep()) {
-                    V3Hashed::iterator dupit = hashed.findDuplicate(nodep->valuep());
+                    const auto dupit = hashed.findDuplicate(nodep->valuep());
                     if (dupit != hashed.end()) {
                         const AstTraceDecl* const dupDeclp
                             = VN_CAST_CONST(hashed.iteratorNodep(dupit)->backp(), TraceDecl);
@@ -381,10 +381,10 @@ private:
         // For each activity set with only a small number of signals, make those
         // signals always traced, as it's cheaper to check a few value changes
         // than to test a lot of activity flags
-        TraceVec::iterator it = traces.begin();
-        const TraceVec::iterator end = traces.end();
+        auto it = traces.begin();
+        const auto end = traces.end();
         while (it != end) {
-            TraceVec::iterator head = it;
+            auto head = it;
             // Approximate the complexity of the value change check
             uint32_t complexity = 0;
             const ActCodeSet& actSet = it->first;
@@ -533,8 +533,8 @@ private:
 
         int topFuncNum = 0;
         int subFuncNum = 0;
-        TraceVec::const_iterator it = traces.begin();
-        while (it != traces.end()) {
+        auto it = traces.cbegin();
+        while (it != traces.cend()) {
             AstCFunc* topFuncp = nullptr;
             AstCFunc* subFuncp = nullptr;
             int subStmts = 0;
@@ -637,8 +637,7 @@ private:
                     if (always) {
                         condp = new AstConst(flp, 1);  // Always true, will be folded later
                     } else {
-                        for (ActCodeSet::iterator it = actSet.begin(); it != actSet.end(); ++it) {
-                            const uint32_t actCode = *it;
+                        for (const uint32_t actCode : actSet) {
                             AstNode* const selp = selectActivity(flp, actCode, false);
                             condp = condp ? new AstOr(flp, condp, selp) : selp;
                         }

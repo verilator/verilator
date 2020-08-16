@@ -121,7 +121,7 @@ public:
         return scopep;
     }
     AstVarScope* findVarScope(AstScope* scopep, AstVar* nodep) {
-        VarToScopeMap::iterator iter = m_varToScopeMap.find(make_pair(scopep, nodep));
+        const auto iter = m_varToScopeMap.find(make_pair(scopep, nodep));
         UASSERT_OBJ(iter != m_varToScopeMap.end(), nodep, "No scope for var");
         return iter->second;
     }
@@ -233,8 +233,7 @@ private:
             iterateChildren(nodep);
         }
         UASSERT_OBJ(m_ctorp, nodep, "class constructor missing");  // LinkDot always makes it
-        for (Initials::iterator it = m_initialps.begin(); it != m_initialps.end(); ++it) {
-            AstInitial* initialp = *it;
+        for (AstInitial* initialp : m_initialps) {
             if (AstNode* newp = initialp->bodysp()) {
                 newp->unlinkFrBackWithNext();
                 if (!m_ctorp->stmtsp()) {
@@ -812,7 +811,7 @@ private:
     bool duplicatedDpiProto(AstNodeFTask* nodep, const string& dpiproto) {
         // Only create one DPI extern prototype for each specified cname
         // as it's legal for the user to attach multiple tasks to one dpi cname
-        DpiNames::iterator iter = m_dpiNames.find(nodep->cname());
+        const auto iter = m_dpiNames.find(nodep->cname());
         if (iter == m_dpiNames.end()) {
             m_dpiNames.insert(make_pair(nodep->cname(), make_pair(nodep, dpiproto)));
             return false;
@@ -1401,7 +1400,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
         UASSERT_OBJ(argp, pinp, "Non-arg under ftask reference");
         if (argp->name() != "") {
             // By name
-            NameToIndex::iterator it = nameToIndex.find(argp->name());
+            const auto it = nameToIndex.find(argp->name());
             if (it == nameToIndex.end()) {
                 pinp->v3error("No such argument " << argp->prettyNameQ() << " in function call to "
                                                   << nodep->taskp()->prettyTypeName());

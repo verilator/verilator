@@ -108,8 +108,8 @@ public:
     void deleteCall(AstCCall* nodep) {
         std::pair<CallMmap::iterator, CallMmap::iterator> eqrange
             = m_callMmap.equal_range(nodep->funcp());
-        for (CallMmap::iterator nextit = eqrange.first; nextit != eqrange.second;) {
-            CallMmap::iterator eqit = nextit++;
+        for (auto nextit = eqrange.first; nextit != eqrange.second;) {
+            const auto eqit = nextit++;
             AstCCall* callp = eqit->second;
             if (callp == nodep) {
                 m_callMmap.erase(eqit);

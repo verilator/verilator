@@ -2876,7 +2876,7 @@ private:
         AstNode* newp = nullptr;
         for (AstMemberDType* memp = vdtypep->membersp(); memp;
              memp = VN_CAST(memp->nextp(), MemberDType)) {
-            PatMap::iterator it = patmap.find(memp);
+            const auto it = patmap.find(memp);
             AstPatMember* newpatp = nullptr;
             AstPatMember* patp = nullptr;
             if (it == patmap.end()) {
@@ -2923,7 +2923,7 @@ private:
         for (int ent = range.hi(); ent >= range.lo(); --ent) {
             AstPatMember* newpatp = nullptr;
             AstPatMember* patp = nullptr;
-            PatVecMap::iterator it = patmap.find(ent);
+            const auto it = patmap.find(ent);
             if (it == patmap.end()) {
                 if (defaultp) {
                     newpatp = defaultp->cloneTree(false);
@@ -2978,7 +2978,7 @@ private:
         for (int ent = range.hi(); ent >= range.lo(); --ent) {
             AstPatMember* newpatp = nullptr;
             AstPatMember* patp = nullptr;
-            PatVecMap::iterator it = patmap.find(ent);
+            const auto it = patmap.find(ent);
             if (it == patmap.end()) {
                 if (defaultp) {
                     newpatp = defaultp->cloneTree(false);
@@ -5158,7 +5158,7 @@ private:
     }
     AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        TableMap::iterator pos = m_tableMap.find(make_pair(nodep, attrType));
+        const auto pos = m_tableMap.find(make_pair(nodep, attrType));
         if (pos != m_tableMap.end()) return pos->second;
         AstNodeArrayDType* vardtypep
             = new AstUnpackArrayDType(nodep->fileline(), nodep->findSigned32DType(),
@@ -5185,7 +5185,7 @@ private:
     }
     AstVar* enumVarp(AstEnumDType* nodep, AstAttrType attrType, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        TableMap::iterator pos = m_tableMap.find(make_pair(nodep, attrType));
+        const auto pos = m_tableMap.find(make_pair(nodep, attrType));
         if (pos != m_tableMap.end()) return pos->second;
         UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " max=" << msbdim << " for "
                                             << nodep << endl);

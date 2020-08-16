@@ -112,7 +112,7 @@ public:
             // Unfortunately to release the lock we need to copy the message
             // (Or have the message be a pointer, but then new/delete cost on each message)
             // We assume messages are small, so copy
-            auto it = m_queue.begin();
+            const auto it = m_queue.begin();
             const VerilatedMsg msg = *(it);
             m_queue.erase(it);
             m_mutex.unlock();
@@ -284,9 +284,9 @@ public:
                         "%Error: Verilog called $test$plusargs or $value$plusargs without"
                         " testbench C first calling Verilated::commandArgs(argc,argv).");
         }
-        for (ArgVec::const_iterator it = s_s.m_argVec.begin(); it != s_s.m_argVec.end(); ++it) {
-            if ((*it)[0] == '+') {
-                if (0 == strncmp(prefixp, it->c_str() + 1, len)) return *it;
+        for (const auto& i : s_s.m_argVec) {
+            if (i[0] == '+') {
+                if (0 == strncmp(prefixp, i.c_str() + 1, len)) return i;
             }
         }
         return "";
@@ -305,7 +305,7 @@ public:
     // per map overhead * N scopes would take much more space and cache thrashing.
     static inline void userInsert(const void* scopep, void* userKey, void* userData) VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.m_userMapMutex);
-        UserMap::iterator it = s_s.m_userMap.find(std::make_pair(scopep, userKey));
+        const auto it = s_s.m_userMap.find(std::make_pair(scopep, userKey));
         if (it != s_s.m_userMap.end()) {
             it->second = userData;
         } else {
@@ -314,7 +314,7 @@ public:
     }
     static inline void* userFind(const void* scopep, void* userKey) VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.m_userMapMutex);
-        UserMap::const_iterator it = s_s.m_userMap.find(std::make_pair(scopep, userKey));
+        const auto& it = vlstd::as_const(s_s.m_userMap).find(std::make_pair(scopep, userKey));
         if (VL_UNLIKELY(it == s_s.m_userMap.end())) return nullptr;
         return it->second;
     }
@@ -324,7 +324,7 @@ private:
     static void userEraseScope(const VerilatedScope* scopep) VL_MT_SAFE {
         // Slow ok - called once/scope on destruction, so we simply iterate.
         const VerilatedLockGuard lock(s_s.m_userMapMutex);
-        for (UserMap::iterator it = s_s.m_userMap.begin(); it != s_s.m_userMap.end();) {
+        for (auto it = s_s.m_userMap.begin(); it != s_s.m_userMap.end();) {
             if (it->first.first == scopep) {
                 s_s.m_userMap.erase(it++);
             } else {
@@ -335,13 +335,13 @@ private:
     static void userDump() VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.m_userMapMutex);  // Avoid it changing in middle of dump
         bool first = true;
-        for (UserMap::const_iterator it = s_s.m_userMap.begin(); it != s_s.m_userMap.end(); ++it) {
+        for (const auto& i : s_s.m_userMap) {
             if (first) {
                 VL_PRINTF_MT("  userDump:\n");
                 first = false;
             }
-            VL_PRINTF_MT("    DPI_USER_DATA scope %p key %p: %p\n", it->first.first,
-                         it->first.second, it->second);
+            VL_PRINTF_MT("    DPI_USER_DATA scope %p key %p: %p\n", i.first.first, i.first.second,
+                         i.second);
         }
     }
 
@@ -350,7 +350,7 @@ public:  // But only for verilated*.cpp
     static void scopeInsert(const VerilatedScope* scopep) VL_MT_SAFE {
         // Slow ok - called once/scope at construction
         const VerilatedLockGuard lock(s_s.m_nameMutex);
-        VerilatedScopeNameMap::iterator it = s_s.m_nameMap.find(scopep->name());
+        const auto it = s_s.m_nameMap.find(scopep->name());
         if (it == s_s.m_nameMap.end()) {
             s_s.m_nameMap.insert(it, std::make_pair(scopep->name(), scopep));
         }
@@ -358,7 +358,7 @@ public:  // But only for verilated*.cpp
     static inline const VerilatedScope* scopeFind(const char* namep) VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.m_nameMutex);
         // If too slow, can assume this is only VL_MT_SAFE_POSINIT
-        VerilatedScopeNameMap::const_iterator it = s_s.m_nameMap.find(namep);
+        const auto& it = s_s.m_nameMap.find(namep);
         if (VL_UNLIKELY(it == s_s.m_nameMap.end())) return nullptr;
         return it->second;
     }
@@ -366,15 +366,14 @@ public:  // But only for verilated*.cpp
         // Slow ok - called once/scope at destruction
         const VerilatedLockGuard lock(s_s.m_nameMutex);
         userEraseScope(scopep);
-        VerilatedScopeNameMap::iterator it = s_s.m_nameMap.find(scopep->name());
+        const auto it = s_s.m_nameMap.find(scopep->name());
         if (it != s_s.m_nameMap.end()) s_s.m_nameMap.erase(it);
     }
     static void scopesDump() VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.m_nameMutex);
         VL_PRINTF_MT("  scopesDump:\n");
-        for (VerilatedScopeNameMap::const_iterator it = s_s.m_nameMap.begin();
-             it != s_s.m_nameMap.end(); ++it) {
-            const VerilatedScope* scopep = it->second;
+        for (const auto& i : s_s.m_nameMap) {
+            const VerilatedScope* scopep = i.second;
             scopep->scopeDump();
         }
         VL_PRINTF_MT("\n");
@@ -408,7 +407,7 @@ public:  // But only for verilated*.cpp
     static int exportInsert(const char* namep) VL_MT_SAFE {
         // Slow ok - called once/function at creation
         const VerilatedLockGuard lock(s_s.m_exportMutex);
-        ExportNameMap::iterator it = s_s.m_exportMap.find(namep);
+        const auto it = s_s.m_exportMap.find(namep);
         if (it == s_s.m_exportMap.end()) {
             s_s.m_exportMap.insert(it, std::make_pair(namep, s_s.m_exportNext++));
             return s_s.m_exportNext++;
@@ -418,7 +417,7 @@ public:  // But only for verilated*.cpp
     }
     static int exportFind(const char* namep) VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.m_exportMutex);
-        ExportNameMap::const_iterator it = s_s.m_exportMap.find(namep);
+        const auto& it = s_s.m_exportMap.find(namep);
         if (VL_LIKELY(it != s_s.m_exportMap.end())) return it->second;
         std::string msg = (std::string("%Error: Testbench C called ") + namep
                            + " but no such DPI export function name exists in ANY model");
@@ -428,22 +427,20 @@ public:  // But only for verilated*.cpp
     static const char* exportName(int funcnum) VL_MT_SAFE {
         // Slowpath; find name for given export; errors only so no map to reverse-map it
         const VerilatedLockGuard lock(s_s.m_exportMutex);
-        for (ExportNameMap::const_iterator it = s_s.m_exportMap.begin();
-             it != s_s.m_exportMap.end(); ++it) {
-            if (it->second == funcnum) return it->first;
+        for (const auto& i : s_s.m_exportMap) {
+            if (i.second == funcnum) return i.first;
         }
         return "*UNKNOWN*";
     }
     static void exportsDump() VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.m_exportMutex);
         bool first = true;
-        for (ExportNameMap::const_iterator it = s_s.m_exportMap.begin();
-             it != s_s.m_exportMap.end(); ++it) {
+        for (const auto& i : s_s.m_exportMap) {
             if (first) {
                 VL_PRINTF_MT("  exportDump:\n");
                 first = false;
             }
-            VL_PRINTF_MT("    DPI_EXPORT_NAME %05d: %s\n", it->second, it->first);
+            VL_PRINTF_MT("    DPI_EXPORT_NAME %05d: %s\n", i.second, i.first);
         }
     }
     // We don't free up m_exportMap until the end, because we can't be sure
@@ -500,9 +497,7 @@ public:  // But only for verilated*.cpp
     static void fdFlush(IData fdi) VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.m_fdMutex);
         const VerilatedFpList fdlist = fdToFpList(fdi);
-        for (VerilatedFpList::const_iterator it = fdlist.begin(); it != fdlist.end(); ++it) {
-            fflush(*it);
-        }
+        for (const auto& i : fdlist) fflush(i);
     }
     static IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.m_fdMutex);
@@ -520,9 +515,9 @@ public:  // But only for verilated*.cpp
     static void fdWrite(IData fdi, const std::string& output) VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.m_fdMutex);
         const VerilatedFpList fdlist = fdToFpList(fdi);
-        for (VerilatedFpList::const_iterator it = fdlist.begin(); it != fdlist.end(); ++it) {
-            if (VL_UNLIKELY(!*it)) continue;
-            fwrite(output.c_str(), 1, output.size(), *it);
+        for (const auto& i : fdlist) {
+            if (VL_UNLIKELY(!i)) continue;
+            fwrite(output.c_str(), 1, output.size(), i);
         }
     }
     static void fdClose(IData fdi) VL_MT_SAFE {

@@ -421,7 +421,7 @@ class TristateVisitor : public TristateBaseVisitor {
 
     void mapInsertLhsVarRef(AstVarRef* nodep) {
         AstVar* key = nodep->varp();
-        VarMap::iterator it = m_lhsmap.find(key);
+        const auto it = m_lhsmap.find(key);
         UINFO(9, "    mapInsertLhsVarRef " << nodep << endl);
         if (it == m_lhsmap.end()) {  // Not found
             RefVec* refsp = new RefVec();
@@ -482,7 +482,7 @@ class TristateVisitor : public TristateBaseVisitor {
         for (TristateGraph::VarVec::iterator ii = vars.begin(); ii != vars.end(); ++ii) {
             AstVar* varp = (*ii);
             if (m_tgraph.isTristate(varp)) {
-                VarMap::iterator it = m_lhsmap.find(varp);
+                const auto it = m_lhsmap.find(varp);
                 if (it == m_lhsmap.end()) {
                     // set output enable to always be off on this assign
                     // statement so that this var is floating

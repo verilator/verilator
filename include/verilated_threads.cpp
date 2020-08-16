@@ -125,9 +125,9 @@ void VlThreadPool::setupProfilingClientThread() {
 
 void VlThreadPool::profileAppendAll(const VlProfileRec& rec) {
     const VerilatedLockGuard lk(m_mutex);
-    for (ProfileSet::iterator it = m_allProfiles.begin(); it != m_allProfiles.end(); ++it) {
+    for (const auto& profilep : m_allProfiles) {
         // Every thread's profile trace gets a copy of rec.
-        (*it)->emplace_back(rec);
+        profilep->emplace_back(rec);
     }
 }
 
@@ -152,13 +152,12 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
     fprintf(fp, "VLPROF stat yields %" VL_PRI64 "u\n", VlMTaskVertex::yields());
 
     vluint32_t thread_id = 0;
-    for (ProfileSet::const_iterator pit = m_allProfiles.begin(); pit != m_allProfiles.end();
-         ++pit) {
+    for (const auto& pi : m_allProfiles) {
         ++thread_id;
 
         bool printing = false;  // False while in warmup phase
-        for (ProfileTrace::const_iterator eit = (*pit)->begin(); eit != (*pit)->end(); ++eit) {
-            switch (eit->m_type) {
+        for (const auto& ei : *pi) {
+            switch (ei.m_type) {
             case VlProfileRec::TYPE_BARRIER:  //
                 printing = true;
                 break;
@@ -168,9 +167,8 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
                         "VLPROF mtask %d"
                         " start %" VL_PRI64 "u end %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
                         " predict_time %u cpu %u on thread %u\n",
-                        eit->m_mtaskId, eit->m_startTime, eit->m_endTime,
-                        (eit->m_endTime - eit->m_startTime), eit->m_predictTime, eit->m_cpu,
-                        thread_id);
+                        ei.m_mtaskId, ei.m_startTime, ei.m_endTime,
+                        (ei.m_endTime - ei.m_startTime), ei.m_predictTime, ei.m_cpu, thread_id);
                 break;
             default: assert(false); break;  // LCOV_EXCL_LINE
             }

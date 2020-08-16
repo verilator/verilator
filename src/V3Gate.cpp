@@ -983,8 +983,8 @@ public:
         hash(extra1p);
         hash(extra2p);
 
-        V3Hashed::iterator inserted = m_hashed.hashAndInsert(rhsp);
-        V3Hashed::iterator dupit = m_hashed.findDuplicate(rhsp, this);
+        const auto inserted = m_hashed.hashAndInsert(rhsp);
+        const auto dupit = m_hashed.findDuplicate(rhsp, this);
         // Even though rhsp was just inserted, V3Hashed::findDuplicate doesn't
         // return anything in the hash that has the same pointer (V3Hashed.cpp::findDuplicate)
         // So dupit is either a different, duplicate rhsp, or the end of the hash.

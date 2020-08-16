@@ -226,8 +226,7 @@ public:
 
         stable_sort(funcsp.begin(), funcsp.end(), CmpName());
 
-        for (FuncVec::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
-            const AstCFunc* funcp = *it;
+        for (const AstCFunc* funcp : funcsp) {
             ofp()->putsPrivate(funcp->declPrivate());
             if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
             if (funcp->isStatic().trueUnknown()) puts("static ");
@@ -1528,9 +1527,7 @@ class EmitCImp : EmitCStmts {
         puts("QData __req = false;  // Logically a bool\n");  // But not because it results in
                                                               // faster code
         bool gotOne = false;
-        for (std::vector<AstChangeDet*>::iterator it = m_blkChangeDetVec.begin();
-             it != m_blkChangeDetVec.end(); ++it) {
-            AstChangeDet* changep = *it;
+        for (AstChangeDet* changep : m_blkChangeDetVec) {
             if (changep->lhsp()) {
                 if (!gotOne) {  // Not a clocked block
                     puts("__req |= (");
@@ -1543,9 +1540,7 @@ class EmitCImp : EmitCStmts {
         if (gotOne) puts(");\n");
         if (gotOne && !v3Global.opt.protectIds()) {
             // puts("VL_DEBUG_IF( if (__req) cout<<\"- CLOCKREQ );");
-            for (std::vector<AstChangeDet*>::iterator it = m_blkChangeDetVec.begin();
-                 it != m_blkChangeDetVec.end(); ++it) {
-                AstChangeDet* nodep = *it;
+            for (AstChangeDet* nodep : m_blkChangeDetVec) {
                 if (nodep->lhsp()) {
                     puts("VL_DEBUG_IF( if(__req && (");
                     bool gotOneIgnore = false;
@@ -1854,8 +1849,7 @@ void EmitCStmts::emitVarCtors(bool* firstp) {
         ofp()->indentInc();
         puts("\n");
         puts("#if (SYSTEMC_VERSION>20011000)\n");  // SystemC 2.0.1 and newer
-        for (VarVec::iterator it = m_ctorVarsVec.begin(); it != m_ctorVarsVec.end(); ++it) {
-            const AstVar* varp = *it;
+        for (const AstVar* varp : m_ctorVarsVec) {
             bool isArray = !VN_CAST(varp->dtypeSkipRefp(), BasicDType);
             if (isArray) {
                 puts("// Skipping array: ");
@@ -2887,7 +2881,7 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons, const VarVec& nonanons,
         }
         if (anonL1s != 1)
             puts("// Anonymous structures to workaround compiler member-count bugs\n");
-        VarVec::const_iterator it = anons.begin();
+        auto it = anons.cbegin();
         for (int l3 = 0; l3 < anonL3s && it != anons.end(); ++l3) {
             if (anonL3s != 1) puts("struct {\n");
             for (int l2 = 0; l2 < anonL2s && it != anons.end(); ++l2) {

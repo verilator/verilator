@@ -55,10 +55,9 @@ public:
     ~LifeState() {
         V3Stats::addStatSum("Optimizations, Lifetime assign deletions", m_statAssnDel);
         V3Stats::addStatSum("Optimizations, Lifetime constant prop", m_statAssnCon);
-        for (std::vector<AstNode*>::iterator it = m_unlinkps.begin(); it != m_unlinkps.end();
-             ++it) {
-            (*it)->unlinkFrBack();
-            (*it)->deleteTree();
+        for (AstNode* ip : m_unlinkps) {
+            ip->unlinkFrBack();
+            ip->deleteTree();
         }
     }
     // METHODS
@@ -168,7 +167,7 @@ public:
         // Do we have a old assignment we can nuke?
         UINFO(4, "     ASSIGNof: " << nodep << endl);
         UINFO(7, "       new: " << assp << endl);
-        LifeMap::iterator it = m_map.find(nodep);
+        const auto it = m_map.find(nodep);
         if (it != m_map.end()) {
             checkRemoveAssign(it);
             it->second.simpleAssign(assp);
@@ -179,7 +178,7 @@ public:
     }
     void complexAssign(AstVarScope* nodep) {
         UINFO(4, "     clearof: " << nodep << endl);
-        LifeMap::iterator it = m_map.find(nodep);
+        const auto it = m_map.find(nodep);
         if (it != m_map.end()) {
             it->second.complexAssign();
         } else {
@@ -188,7 +187,7 @@ public:
     }
     void varUsageReplace(AstVarScope* nodep, AstVarRef* varrefp) {
         // Variable rvalue.  If it references a constant, we can simply replace it
-        LifeMap::iterator it = m_map.find(nodep);
+        const auto it = m_map.find(nodep);
         if (it != m_map.end()) {
             if (AstConst* constp = it->second.constNodep()) {
                 if (!varrefp->varp()->isSigPublic()) {
@@ -208,7 +207,7 @@ public:
         }
     }
     void complexAssignFind(AstVarScope* nodep) {
-        LifeMap::iterator it = m_map.find(nodep);
+        const auto it = m_map.find(nodep);
         if (it != m_map.end()) {
             UINFO(4, "     casfind: " << it->first << endl);
             it->second.complexAssign();
@@ -217,7 +216,7 @@ public:
         }
     }
     void consumedFind(AstVarScope* nodep) {
-        LifeMap::iterator it = m_map.find(nodep);
+        const auto it = m_map.find(nodep);
         if (it != m_map.end()) {
             it->second.consumed();
         } else {
@@ -254,7 +253,7 @@ public:
             if (it->second.setBeforeUse() && nodep->user1()) {
                 // Both branches set the var, we can remove the assignment before the IF.
                 UINFO(4, "DUALBRANCH " << nodep << endl);
-                LifeMap::iterator itab = m_map.find(nodep);
+                const auto itab = m_map.find(nodep);
                 if (itab != m_map.end()) checkRemoveAssign(itab);
             }
         }

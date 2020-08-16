@@ -394,18 +394,16 @@ protected:
                     SplitVarPostVertex* vpostp
                         = reinterpret_cast<SplitVarPostVertex*>(vscp->user2p());
                     // Add edges
-                    for (VStack::iterator it = m_stmtStackps.begin(); it != m_stmtStackps.end();
-                         ++it) {
-                        new SplitLVEdge(&m_graph, vpostp, *it);
+                    for (SplitLogicVertex* vxp : m_stmtStackps) {
+                        new SplitLVEdge(&m_graph, vpostp, vxp);
                     }
                 } else {  // Nondelayed assignment
                     if (nodep->lvalue()) {
                         // Non-delay; need to maintain existing ordering
                         // with all consumers of the signal
                         UINFO(4, "     VARREFLV: " << nodep << endl);
-                        for (VStack::iterator it = m_stmtStackps.begin();
-                             it != m_stmtStackps.end(); ++it) {
-                            new SplitLVEdge(&m_graph, vstdp, *it);
+                        for (SplitLogicVertex* ivxp : m_stmtStackps) {
+                            new SplitLVEdge(&m_graph, vstdp, ivxp);
                         }
                     } else {
                         UINFO(4, "     VARREF:   " << nodep << endl);
@@ -450,9 +448,7 @@ public:
     // METHODS
 protected:
     virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) override {
-        for (VStack::iterator it = m_stmtStackps.begin(); it != m_stmtStackps.end(); ++it) {
-            new SplitRVEdge(&m_graph, *it, vstdp);
-        }
+        for (SplitLogicVertex* vxp : m_stmtStackps) new SplitRVEdge(&m_graph, vxp, vstdp);
     }
 
     void cleanupBlockGraph(AstNode* nodep) {
@@ -647,7 +643,7 @@ public:
     // METHODS
     const ColorSet& colors() const { return m_colors; }
     const ColorSet& colors(AstNodeIf* nodep) const {
-        IfColorMap::const_iterator it = m_ifColors.find(nodep);
+        const auto it = m_ifColors.find(nodep);
         UASSERT_OBJ(it != m_ifColors.end(), nodep, "Node missing from split color() map");
         return it->second;
     }

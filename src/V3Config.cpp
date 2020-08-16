@@ -60,7 +60,7 @@ public:
     // Access an entity and resolve wildcards that match it
     T* resolve(const string& name) {
         // Lookup if it was resolved before, typically not
-        typename Map::iterator it = m_mapResolved.find(name);
+        auto it = m_mapResolved.find(name);
         if (VL_UNLIKELY(it != m_mapResolved.end())) { return &it->second; }
 
         T* newp = nullptr;

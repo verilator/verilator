@@ -189,10 +189,7 @@ public:
         : m_origGraphp{origGraphp}
         , m_origEdgeFuncp{edgeFuncp} {}
     ~GraphAcyc() {
-        for (std::vector<OrigEdgeList*>::iterator it = m_origEdgeDelp.begin();
-             it != m_origEdgeDelp.end(); ++it) {
-            delete (*it);
-        }
+        for (OrigEdgeList* ip : m_origEdgeDelp) delete ip;
         m_origEdgeDelp.clear();
     }
     void main();
@@ -476,10 +473,7 @@ void GraphAcyc::place() {
 
     // Process each edge in weighted order
     m_placeStep = 10;
-    for (std::vector<V3GraphEdge*>::iterator it = edges.begin(); it != edges.end(); ++it) {
-        V3GraphEdge* edgep = (*it);
-        placeTryEdge(edgep);
-    }
+    for (V3GraphEdge* edgep : edges) placeTryEdge(edgep);
 }
 
 void GraphAcyc::placeTryEdge(V3GraphEdge* edgep) {

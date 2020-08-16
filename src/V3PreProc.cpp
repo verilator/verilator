@@ -299,11 +299,11 @@ void V3PreProcImp::undefineall() {
     }
 }
 bool V3PreProcImp::defExists(const string& name) {
-    DefinesMap::iterator iter = m_defines.find(name);
+    const auto iter = m_defines.find(name);
     return (iter != m_defines.end());
 }
 string V3PreProcImp::defValue(const string& name) {
-    DefinesMap::iterator iter = m_defines.find(name);
+    const auto iter = m_defines.find(name);
     if (iter == m_defines.end()) {
         fileline()->v3error("Define or directive not defined: `" + name);
         return "";
@@ -311,7 +311,7 @@ string V3PreProcImp::defValue(const string& name) {
     return iter->second.value();
 }
 string V3PreProcImp::defParams(const string& name) {
-    DefinesMap::iterator iter = m_defines.find(name);
+    const auto iter = m_defines.find(name);
     if (iter == m_defines.end()) {
         fileline()->v3error("Define or directive not defined: `" + name);
         return "";
@@ -319,7 +319,7 @@ string V3PreProcImp::defParams(const string& name) {
     return iter->second.params();
 }
 FileLine* V3PreProcImp::defFileline(const string& name) {
-    DefinesMap::iterator iter = m_defines.find(name);
+    const auto iter = m_defines.find(name);
     if (iter == m_defines.end()) return nullptr;
     return iter->second.fileline();
 }
@@ -686,7 +686,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
             }
             if (argName != "") {
                 // Found a possible variable substitution
-                std::map<string, string>::iterator iter = argValueByName.find(argName);
+                const auto iter = argValueByName.find(argName);
                 if (iter != argValueByName.end()) {
                     // Substitute
                     string subst = iter->second;
@@ -795,9 +795,7 @@ void V3PreProcImp::openFile(FileLine* fl, VInFilter* filterp, const string& file
     FileLine* flsp = new FileLine(filename);
     flsp->lineno(1);
     flsp->newContent();
-    for (StrList::iterator it = wholefile.begin(); it != wholefile.end(); ++it) {
-        flsp->contentp()->pushText(*it);
-    }
+    for (const string& i : wholefile) flsp->contentp()->pushText(i);
 
     // Create new stream structure
     m_lexp->scanNewFile(flsp);

@@ -210,8 +210,7 @@ public:
         of.puts("# User .cpp files (from .cpp's on Verilator command line)\n");
         of.puts("VM_USER_CLASSES = \\\n");
         const V3StringSet& cppFiles = v3Global.opt.cppFiles();
-        for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
-            string cppfile = *it;
+        for (const auto& cppfile : cppFiles) {
             of.puts("\t" + V3Os::filenameNonExt(cppfile) + " \\\n");
             string dir = V3Os::filenameDir(cppfile);
             dirs.insert(dir);
@@ -220,9 +219,7 @@ public:
 
         of.puts("# User .cpp directories (from .cpp's on Verilator command line)\n");
         of.puts("VM_USER_DIR = \\\n");
-        for (V3StringSet::iterator it = dirs.begin(); it != dirs.end(); ++it) {
-            of.puts("\t" + *it + " \\\n");
-        }
+        for (const auto& i : dirs) of.puts("\t" + i + " \\\n");
         of.puts("\n");
 
         of.puts("\n### Default rules...\n");

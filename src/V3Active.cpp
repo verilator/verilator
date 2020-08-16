@@ -109,7 +109,7 @@ public:
         AstActive* activep = nullptr;
         AstSenTree* activeSenp = m_activeSens.find(sensesp);
         if (activeSenp) {
-            ActiveMap::iterator it = m_activeMap.find(activeSenp);
+            const auto it = m_activeMap.find(activeSenp);
             UASSERT(it != m_activeMap.end(), "Corrupt active map");
             activep = it->second;
         }

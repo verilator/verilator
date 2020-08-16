@@ -489,5 +489,13 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #define VL_STRINGIFY2(x) #x
 
 //=========================================================================
+// Conversions
+
+namespace vlstd {
+// C++17's std::as_const
+template <class T> T const& as_const(T& v) { return v; }
+};  // namespace vlstd
+
+//=========================================================================
 
 #endif  // Guard

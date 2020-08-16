@@ -149,26 +149,23 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
     const std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
     if (ofp->fail()) v3fatal("Can't write " << filename);
 
-    for (std::set<DependFile>::iterator iter = m_filenameList.begin();
-         iter != m_filenameList.end(); ++iter) {
-        if (iter->target()) { *ofp << iter->filename() << " "; }
+    for (const DependFile& i : m_filenameList) {
+        if (i.target()) *ofp << i.filename() << " ";
     }
     *ofp << " : ";
     *ofp << v3Global.opt.bin();
     *ofp << " ";
 
-    for (std::set<DependFile>::iterator iter = m_filenameList.begin();
-         iter != m_filenameList.end(); ++iter) {
-        if (!iter->target()) { *ofp << iter->filename() << " "; }
+    for (const DependFile& i : m_filenameList) {
+        if (!i.target()) *ofp << i.filename() << " ";
     }
 
     *ofp << endl;
 
     if (v3Global.opt.makePhony()) {
         *ofp << endl;
-        for (std::set<DependFile>::iterator iter = m_filenameList.begin();
-             iter != m_filenameList.end(); ++iter) {
-            if (!iter->target()) { *ofp << iter->filename() << ":" << endl; }
+        for (const DependFile& i : m_filenameList) {
+            if (!i.target()) *ofp << i.filename() << ":" << endl;
         }
     }
 }
@@ -576,7 +573,7 @@ protected:
     friend class VInFilter;
     // Read file contents and return it
     bool readWholefile(const string& filename, StrList& outl) {
-        FileContentsMap::iterator it = m_contentsMap.find(filename);
+        const auto it = m_contentsMap.find(filename);
         if (it != m_contentsMap.end()) {
             outl.push_back(it->second);
             return true;
@@ -592,12 +589,12 @@ protected:
     }
     size_t listSize(StrList& sl) {
         size_t out = 0;
-        for (StrList::iterator it = sl.begin(); it != sl.end(); ++it) out += it->length();
+        for (const string& i : sl) out += i.length();
         return out;
     }
     string listString(StrList& sl) {
         string out;
-        for (StrList::iterator it = sl.begin(); it != sl.end(); ++it) out += *it;
+        for (const string& i : sl) out += i;
         return out;
     }
     // CONSTRUCTORS
@@ -984,7 +981,7 @@ public:
     // METHODS
     string passthru(const string& old) {
         if (!v3Global.opt.protectIds()) return old;
-        IdMap::iterator it = m_nameMap.find(old);
+        const auto it = m_nameMap.find(old);
         if (it != m_nameMap.end()) {
             // No way to go back and correct the older crypt name
             UASSERT(old == it->second,
@@ -997,7 +994,7 @@ public:
     }
     string protectIf(const string& old, bool doIt) {
         if (!v3Global.opt.protectIds() || old.empty() || !doIt) return old;
-        IdMap::iterator it = m_nameMap.find(old);
+        const auto it = m_nameMap.find(old);
         if (it != m_nameMap.end())
             return it->second;
         else {

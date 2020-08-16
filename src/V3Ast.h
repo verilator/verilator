@@ -2464,7 +2464,7 @@ public:
     void clearCache() { m_members.clear(); }
     void repairMemberCache();
     AstMemberDType* findMember(const string& name) const {
-        MemberNameMap::const_iterator it = m_members.find(name);
+        const auto it = m_members.find(name);
         return (it == m_members.end()) ? nullptr : it->second;
     }
     static int lsb() { return 0; }

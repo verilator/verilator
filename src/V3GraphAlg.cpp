@@ -487,9 +487,7 @@ void V3Graph::sortVertices() {
     }
     std::stable_sort(vertices.begin(), vertices.end(), GraphSortVertexCmp());
     this->verticesUnlink();
-    for (std::vector<V3GraphVertex*>::iterator it = vertices.begin(); it != vertices.end(); ++it) {
-        (*it)->verticesPushBack(this);
-    }
+    for (V3GraphVertex* ip : vertices) ip->verticesPushBack(this);
 }
 
 void V3Graph::sortEdges() {

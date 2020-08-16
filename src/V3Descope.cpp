@@ -148,7 +148,7 @@ private:
         for (FuncMmap::iterator it = m_modFuncs.begin(); it != m_modFuncs.end(); ++it) {
             string name = it->first;
             AstCFunc* topFuncp = it->second;
-            FuncMmap::iterator nextIt1 = it;
+            auto nextIt1 = it;
             ++nextIt1;
             bool moreOfSame1 = (nextIt1 != m_modFuncs.end() && nextIt1->first == name);
             if (moreOfSame1) {
@@ -171,7 +171,7 @@ private:
                      eachIt != m_modFuncs.end() && eachIt->first == name; ++eachIt) {
                     it = eachIt;
                     AstCFunc* funcp = eachIt->second;
-                    FuncMmap::iterator nextIt2 = eachIt;
+                    auto nextIt2 = eachIt;
                     ++nextIt2;
                     bool moreOfSame = (nextIt2 != m_modFuncs.end() && nextIt2->first == name);
                     UASSERT_OBJ(funcp->scopep(), funcp, "Not scoped");

@@ -102,18 +102,14 @@ public:
     // CONSTRUCTORS
     VlcTests() {}
     ~VlcTests() {
-        for (VlcTests::ByName::iterator it = begin(); it != end(); ++it) {
-            VL_DO_CLEAR(delete *it, *it = nullptr);
-        }
+        for (auto it = begin(); it != end(); ++it) { VL_DO_CLEAR(delete *it, *it = nullptr); }
     }
 
     // METHODS
     void dump(bool bucketsToo) {
         UINFO(2, "dumpTests...\n");
         VlcTest::dumpHeader();
-        for (VlcTests::ByName::const_iterator it = begin(); it != end(); ++it) {
-            (*it)->dump(bucketsToo);
-        }
+        for (const auto& testp : m_tests) testp->dump(bucketsToo);
     }
     VlcTest* newTest(const string& name, vluint64_t testrun, double comp) {
         VlcTest* testp = new VlcTest(name, testrun, comp);
@@ -121,7 +117,7 @@ public:
         return testp;
     }
     void clearUser() {
-        for (ByName::iterator it = m_tests.begin(); it != m_tests.end(); ++it) (*it)->user(0);
+        for (const auto& testp : m_tests) testp->user(0);
     }
 };
 

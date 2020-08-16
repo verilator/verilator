@@ -333,7 +333,7 @@ public:
     void clearCache() { m_members.clear(); }
     void repairCache();
     AstNode* findMember(const string& name) const {
-        MemberNameMap::const_iterator it = m_members.find(name);
+        const auto it = m_members.find(name);
         return (it == m_members.end()) ? nullptr : it->second;
     }
     bool isVirtual() const { return m_virtual; }
@@ -4728,7 +4728,7 @@ public:
     AstNode* addIndexValuep(uint32_t index, AstNode* newp) {
         // Returns old value, caller must garbage collect
         AstNode* oldp = nullptr;
-        KeyItemMap::iterator it = m_map.find(index);
+        const auto it = m_map.find(index);
         if (it != m_map.end()) {
             oldp = it->second->valuep();
             it->second->valuep(newp);
@@ -4740,7 +4740,7 @@ public:
         return oldp;
     }
     AstNode* getIndexValuep(uint32_t index) const {
-        KeyItemMap::const_iterator it = m_map.find(index);
+        const auto it = m_map.find(index);
         if (it == m_map.end()) {
             return nullptr;
         } else {

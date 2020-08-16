@@ -133,7 +133,7 @@ public:
         }
     }
     void reinsert(const string& name, VSymEnt* entp) {
-        IdNameMap::iterator it = m_idNameMap.find(name);
+        const auto it = m_idNameMap.find(name);
         if (name != "" && it != m_idNameMap.end()) {
             UINFO(9, "     SymReinsert se" << cvtToHex(this) << " '" << name << "' se"
                                            << cvtToHex(entp) << "  " << entp->nodep() << endl);
@@ -145,7 +145,7 @@ public:
     VSymEnt* findIdFlat(const string& name) const {
         // Find identifier without looking upward through symbol hierarchy
         // First, scan this begin/end block or module for the name
-        IdNameMap::const_iterator it = m_idNameMap.find(name);
+        const auto it = m_idNameMap.find(name);
         UINFO(9, "     SymFind   se"
                      << cvtToHex(this) << " '" << name << "' -> "
                      << (it == m_idNameMap.end()
@@ -211,7 +211,7 @@ public:
     void importFromPackage(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
         // Import tokens from source symbol table into this symbol table
         if (id_or_star != "*") {
-            IdNameMap::const_iterator it = srcp->m_idNameMap.find(id_or_star);
+            const auto it = srcp->m_idNameMap.find(id_or_star);
             if (it != srcp->m_idNameMap.end()) {
                 importOneSymbol(graphp, it->first, it->second, true);
             }
@@ -225,7 +225,7 @@ public:
     void exportFromPackage(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
         // Export tokens from source symbol table into this symbol table
         if (id_or_star != "*") {
-            IdNameMap::const_iterator it = srcp->m_idNameMap.find(id_or_star);
+            const auto it = vlstd::as_const(srcp->m_idNameMap).find(id_or_star);
             if (it != srcp->m_idNameMap.end()) exportOneSymbol(graphp, it->first, it->second);
         } else {
             for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
@@ -292,7 +292,7 @@ class VSymGraph {
 public:
     explicit VSymGraph(AstNetlist* nodep) { m_symRootp = new VSymEnt(this, nodep); }
     ~VSymGraph() {
-        for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) delete (*it);
+        for (const VSymEnt* entp : m_symsp) delete entp;
     }
 
     // METHODS

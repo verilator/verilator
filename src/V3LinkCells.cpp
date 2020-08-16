@@ -467,7 +467,7 @@ private:
     void readModNames() {
         // mangled_name, BlockOptions
         const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
-        V3HierBlockOptSet::const_iterator hierIt = hierBlocks.find(v3Global.opt.topModule());
+        const auto hierIt = vlstd::as_const(hierBlocks).find(v3Global.opt.topModule());
         UASSERT((hierIt != hierBlocks.end()) == v3Global.opt.hierChild(),
                 "information of the top module must exist if --hierarchical-child is set");
         // Look at all modules, and store pointers to all module names

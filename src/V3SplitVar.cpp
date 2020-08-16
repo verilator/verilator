@@ -981,7 +981,7 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
     virtual void visit(AstVarRef* nodep) override {
         AstVar* varp = nodep->varp();
         visit(varp);
-        PackedVarRefMap::iterator refit = m_refs.find(varp);
+        const auto refit = m_refs.find(varp);
         if (refit == m_refs.end()) return;  // variable without split_var metacomment
         UASSERT_OBJ(varp->attrSplitVar(), varp, "split_var attribute must be attached");
         UASSERT_OBJ(!nodep->packagep(), nodep,
@@ -1000,7 +1000,7 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
         }
 
         AstVar* varp = vrefp->varp();
-        PackedVarRefMap::iterator refit = m_refs.find(varp);
+        const auto refit = m_refs.find(varp);
         if (refit == m_refs.end()) {
             iterateChildren(nodep);
             return;  // Variable without split_var metacomment
@@ -1114,13 +1114,12 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
     }
     static void updateReferences(AstVar* varp, PackedVarRef& ref,
                                  const std::vector<SplitNewVar>& vars) {
-        typedef std::vector<SplitNewVar> NewVars;  // Sorted by its lsb
         for (int lvalue = 0; lvalue <= 1; ++lvalue) {  // Refer the new split variables
             std::vector<PackedVarRefEntry>& refs = lvalue ? ref.lhs() : ref.rhs();
             for (PackedVarRef::iterator refit = refs.begin(), refitend = refs.end();
                  refit != refitend; ++refit) {
-                NewVars::const_iterator varit = std::upper_bound(
-                    vars.begin(), vars.end(), refit->lsb(), SplitNewVar::Match());
+                auto varit = std::upper_bound(vars.begin(), vars.end(), refit->lsb(),
+                                              SplitNewVar::Match());
                 UASSERT_OBJ(varit != vars.end(), refit->nodep(), "Not found");
                 UASSERT(!(varit->msb() < refit->lsb() || refit->msb() < varit->lsb()),
                         "wrong search result");

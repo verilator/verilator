@@ -396,7 +396,7 @@ public:
         return symp;
     }
     VSymEnt* getScopeSym(AstScope* nodep) {
-        NameScopeSymMap::iterator it = m_nameScopeSymMap.find(nodep->name());
+        const auto it = m_nameScopeSymMap.find(nodep->name());
         UASSERT_OBJ(it != m_nameScopeSymMap.end(), nodep,
                     "Scope never assigned a symbol entry '" << nodep->name() << "'");
         return it->second;
@@ -404,7 +404,7 @@ public:
     void implicitOkAdd(AstNodeModule* nodep, const string& varname) {
         // Mark the given variable name as being allowed to be implicitly declared
         if (nodep) {
-            ImplicitNameSet::iterator it = m_implicitNameSet.find(make_pair(nodep, varname));
+            const auto it = m_implicitNameSet.find(make_pair(nodep, varname));
             if (it == m_implicitNameSet.end()) {
                 m_implicitNameSet.insert(make_pair(nodep, varname));
             }
@@ -438,9 +438,7 @@ public:
         return ifacerefp;
     }
     void computeIfaceVarSyms() {
-        for (IfaceVarSyms::iterator it = m_ifaceVarSyms.begin(); it != m_ifaceVarSyms.end();
-             ++it) {
-            VSymEnt* varSymp = *it;
+        for (VSymEnt* varSymp : m_ifaceVarSyms) {
             AstVar* varp = varSymp ? VN_CAST(varSymp->nodep(), Var) : nullptr;
             UINFO(9, "  insAllIface se" << cvtToHex(varSymp) << " " << varp << endl);
             AstIfaceRefDType* ifacerefp = ifaceRefFromArray(varp->subDTypep());
@@ -507,7 +505,7 @@ public:
                 VSymEnt* lhsp = it->first;
                 VSymEnt* srcp = lhsp;
                 while (true) {  // Follow chain of aliases up to highest level non-alias
-                    ScopeAliasMap::iterator it2 = m_scopeAliasMap[samn].find(srcp);
+                    const auto it2 = m_scopeAliasMap[samn].find(srcp);
                     if (it2 != m_scopeAliasMap[samn].end()) {
                         srcp = it2->second;
                         continue;

@@ -174,7 +174,7 @@ private:
 
         // Iterate through all modules in bottom-up order.
         // Make a final inlining decision for each.
-        for (ModVec::reverse_iterator it = m_allMods.rbegin(); it != m_allMods.rend(); ++it) {
+        for (auto it = m_allMods.rbegin(); it != m_allMods.rend(); ++it) {
             AstNodeModule* modp = *it;
 
             // If we're going to inline some modules into this one,

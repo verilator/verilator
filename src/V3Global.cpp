@@ -83,7 +83,7 @@ void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool 
 }
 
 const std::string& V3Global::ptrToId(const void* p) {
-    PtrToIdMap::iterator it = m_ptrToId.find(p);
+    auto it = m_ptrToId.find(p);
     if (it == m_ptrToId.end()) {
         std::ostringstream os;
         if (p) {

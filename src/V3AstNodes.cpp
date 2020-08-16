@@ -481,9 +481,9 @@ string AstVar::vlPropDecl(string propName) const {
         out += "static const int " + propName + "__ulims[";
         out += cvtToStr(ulims.size());
         out += "] = {";
-        std::vector<int>::const_iterator it = ulims.begin();
+        auto it = ulims.cbegin();
         out += cvtToStr(*it);
-        while (++it != ulims.end()) {
+        while (++it != ulims.cend()) {
             out += ", ";
             out += cvtToStr(*it);
         }
@@ -920,7 +920,7 @@ AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
     VBasicTypeKey key(nodep->width(), nodep->widthMin(), nodep->numeric(), nodep->keyword(),
                       nodep->nrange());
     DetailedMap& mapr = m_detailedMap;
-    DetailedMap::const_iterator it = mapr.find(key);
+    const auto it = mapr.find(key);
     if (it != mapr.end()) return it->second;
     mapr.insert(make_pair(key, nodep));
     nodep->generic(true);

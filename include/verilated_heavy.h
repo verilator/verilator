@@ -145,21 +145,21 @@ public:
     int exists(const T_Key& index) const { return m_map.find(index) != m_map.end(); }
     // Return first element.  Verilog: function int first(ref index);
     int first(T_Key& indexr) const {
-        typename Map::const_iterator it = m_map.begin();
+        const auto it = m_map.cbegin();
         if (it == m_map.end()) return 0;
         indexr = it->first;
         return 1;
     }
     // Return last element.  Verilog: function int last(ref index)
     int last(T_Key& indexr) const {
-        typename Map::const_reverse_iterator it = m_map.rbegin();
+        const auto it = m_map.crbegin();
         if (it == m_map.rend()) return 0;
         indexr = it->first;
         return 1;
     }
     // Return next element. Verilog: function int next(ref index)
     int next(T_Key& indexr) const {
-        typename Map::const_iterator it = m_map.find(indexr);
+        auto it = m_map.find(indexr);
         if (VL_UNLIKELY(it == m_map.end())) return 0;
         ++it;
         if (VL_UNLIKELY(it == m_map.end())) return 0;
@@ -168,7 +168,7 @@ public:
     }
     // Return prev element. Verilog: function int prev(ref index)
     int prev(T_Key& indexr) const {
-        typename Map::const_iterator it = m_map.find(indexr);
+        auto it = m_map.find(indexr);
         if (VL_UNLIKELY(it == m_map.end())) return 0;
         if (VL_UNLIKELY(it == m_map.begin())) return 0;
         --it;
@@ -179,7 +179,7 @@ public:
     // Can't just overload operator[] or provide a "at" reference to set,
     // because we need to be able to insert only when the value is set
     T_Value& at(const T_Key& index) {
-        typename Map::iterator it = m_map.find(index);
+        const auto it = m_map.find(index);
         if (it == m_map.end()) {
             std::pair<typename Map::iterator, bool> pit
                 = m_map.insert(std::make_pair(index, m_defaultValue));
@@ -189,7 +189,7 @@ public:
     }
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(const T_Key& index) const {
-        typename Map::iterator it = m_map.find(index);
+        const auto it = m_map.find(index);
         if (it == m_map.end()) {
             return m_defaultValue;
         } else {
@@ -204,8 +204,8 @@ public:
     std::string to_string() const {
         std::string out = "'{";
         std::string comma;
-        for (typename Map::const_iterator it = m_map.begin(); it != m_map.end(); ++it) {
-            out += comma + VL_TO_STRING(it->first) + ":" + VL_TO_STRING(it->second);
+        for (const auto& i : m_map) {
+            out += comma + VL_TO_STRING(i.first) + ":" + VL_TO_STRING(i.second);
             comma = ", ";
         }
         // Default not printed - maybe random init data
@@ -239,10 +239,9 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
                    const VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
     VlWriteMem wmem(hex, bits, filename, start, end);
     if (VL_UNLIKELY(!wmem.isOpen())) return;
-    for (typename VlAssocArray<T_Key, T_Value>::const_iterator it = obj.begin(); it != obj.end();
-         ++it) {
-        QData addr = it->first;
-        if (addr >= start && addr <= end) wmem.print(addr, true, &(it->second));
+    for (const auto& i : obj) {
+        QData addr = i.first;
+        if (addr >= start && addr <= end) wmem.print(addr, true, &(i.second));
     }
 }
 
@@ -361,8 +360,8 @@ public:
     std::string to_string() const {
         std::string out = "'{";
         std::string comma;
-        for (typename Deque::const_iterator it = m_deque.begin(); it != m_deque.end(); ++it) {
-            out += comma + VL_TO_STRING(*it);
+        for (const auto& i : m_deque) {
+            out += comma + VL_TO_STRING(i);
             comma = ", ";
         }
         return out + "} ";

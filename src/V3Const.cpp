@@ -1788,14 +1788,8 @@ private:
                         vec.push_back(senp);
                     }
                     stable_sort(vec.begin(), vec.end(), SenItemCmp());
-                    for (std::vector<AstSenItem*>::iterator it = vec.begin(); it != vec.end();
-                         ++it) {
-                        (*it)->unlinkFrBack();
-                    }
-                    for (std::vector<AstSenItem*>::iterator it = vec.begin(); it != vec.end();
-                         ++it) {
-                        nodep->addSensesp(*it);
-                    }
+                    for (const auto& ip : vec) ip->unlinkFrBack();
+                    for (const auto& ip : vec) nodep->addSensesp(ip);
                     break;
                 }
             }

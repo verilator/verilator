@@ -224,16 +224,14 @@ private:
         // Create table for each output
         typedef std::map<string, int> NameCounts;
         NameCounts namecounts;
-        for (std::deque<AstVarScope*>::iterator it = m_outVarps.begin(); it != m_outVarps.end();
-             ++it) {
-            AstVarScope* outvscp = *it;
+        for (const AstVarScope* outvscp : m_outVarps) {
             AstVar* outvarp = outvscp->varp();
             FileLine* fl = nodep->fileline();
             AstNodeArrayDType* dtypep = new AstUnpackArrayDType(
                 fl, outvarp->dtypep(), new AstRange(fl, VL_MASK_I(m_inWidth), 0));
             v3Global.rootp()->typeTablep()->addTypesp(dtypep);
             string name = "__Vtable" + cvtToStr(m_modTables) + "_" + outvarp->name();
-            NameCounts::iterator nit = namecounts.find(name);
+            const auto nit = namecounts.find(name);
             if (nit != namecounts.end()) {
                 // Multiple scopes can have same var name. We could append the
                 // scope name but that is very long, so just deduplicate.
@@ -256,9 +254,7 @@ private:
         // Concat inputs into a single temp variable (inside always)
         // First var in inVars becomes the LSB of the concat
         AstNode* concatp = nullptr;
-        for (std::deque<AstVarScope*>::iterator it = m_inVarps.begin(); it != m_inVarps.end();
-             ++it) {
-            AstVarScope* invscp = *it;
+        for (AstVarScope* invscp : m_inVarps) {
             AstVarRef* refp = new AstVarRef(nodep->fileline(), invscp, false);
             if (concatp) {
                 concatp = new AstConcat(nodep->fileline(), refp, concatp);
@@ -293,9 +289,7 @@ private:
 
             // Set all inputs to the constant
             uint32_t shift = 0;
-            for (std::deque<AstVarScope*>::iterator it = m_inVarps.begin(); it != m_inVarps.end();
-                 ++it) {
-                AstVarScope* invscp = *it;
+            for (AstVarScope* invscp : m_inVarps) {
                 // LSB is first variable, so extract it that way
                 AstConst cnst(invscp->fileline(), AstConst::WidthedValue(), invscp->width(),
                               VL_MASK_I(invscp->width()) & (inValue >> shift));
@@ -316,9 +310,7 @@ private:
             // If a output changed, add it to table
             int outnum = 0;
             V3Number outputChgMask(nodep, m_outVarps.size(), 0);
-            for (std::deque<AstVarScope*>::iterator it = m_outVarps.begin();
-                 it != m_outVarps.end(); ++it) {
-                AstVarScope* outvscp = *it;
+            for (AstVarScope* outvscp : m_outVarps) {
                 V3Number* outnump = simvis.fetchOutNumberNull(outvscp);
                 AstNode* setp;
                 if (!outnump) {
@@ -353,9 +345,7 @@ private:
         // See if another table we've created is identical, if so use it for both.
         // (A more 'modern' way would be to instead use V3Hashed::findDuplicate)
         AstVar* var1p = vsc1p->varp();
-        for (std::deque<AstVarScope*>::iterator it = m_modTableVscs.begin();
-             it != m_modTableVscs.end(); ++it) {
-            AstVarScope* vsc2p = *it;
+        for (AstVarScope* vsc2p : m_modTableVscs) {
             AstVar* var2p = vsc2p->varp();
             if (var1p->width() == var2p->width()
                 && (var1p->dtypep()->arrayUnpackedElements()
@@ -381,9 +371,7 @@ private:
         // elimination will remove it for us.
         // Set each output from array ref into our table
         int outnum = 0;
-        for (std::deque<AstVarScope*>::iterator it = m_outVarps.begin(); it != m_outVarps.end();
-             ++it) {
-            AstVarScope* outvscp = *it;
+        for (AstVarScope* outvscp : m_outVarps) {
             AstNode* alhsp = new AstVarRef(nodep->fileline(), outvscp, true);
             AstNode* arhsp = new AstArraySel(
                 nodep->fileline(), new AstVarRef(nodep->fileline(), m_tableVarps[outnum], false),

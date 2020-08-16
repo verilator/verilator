@@ -154,10 +154,7 @@ int main(int argc, char** argv, char** /*env*/) {
 
     {
         const VlStringSet& readFiles = top.opt.readFiles();
-        for (VlStringSet::const_iterator it = readFiles.begin(); it != readFiles.end(); ++it) {
-            string filename = *it;
-            top.readCoverage(filename);
-        }
+        for (const auto& filename : readFiles) top.readCoverage(filename);
     }
 
     if (debug() >= 9) {
@@ -179,10 +176,7 @@ int main(int argc, char** argv, char** /*env*/) {
         V3Error::abortIfWarnings();
         if (top.opt.unlink()) {
             const VlStringSet& readFiles = top.opt.readFiles();
-            for (VlStringSet::const_iterator it = readFiles.begin(); it != readFiles.end(); ++it) {
-                string filename = *it;
-                unlink(filename.c_str());
-            }
+            for (const auto& filename : readFiles) { unlink(filename.c_str()); }
         }
     }
 

@@ -70,11 +70,11 @@ private:
             AstVarRef* nodep = it->first;
             AstScope* scopep = it->second;
             if (nodep->packagep() && !nodep->varp()->isClassMember()) {
-                PackageScopeMap::iterator it2 = m_packageScopes.find(nodep->packagep());
+                const auto it2 = m_packageScopes.find(nodep->packagep());
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
             }
-            VarScopeMap::iterator it3 = m_varScopes.find(make_pair(nodep->varp(), scopep));
+            const auto it3 = m_varScopes.find(make_pair(nodep->varp(), scopep));
             UASSERT_OBJ(it3 != m_varScopes.end(), nodep, "Can't locate varref scope");
             AstVarScope* varscp = it3->second;
             nodep->varScopep(varscp);

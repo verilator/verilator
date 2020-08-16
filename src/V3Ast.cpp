@@ -1267,8 +1267,6 @@ AstNodeDType* AstNode::findVoidDType() const {
 // AstNVisitor
 
 void AstNVisitor::doDeletes() {
-    for (std::vector<AstNode*>::iterator it = m_deleteps.begin(); it != m_deleteps.end(); ++it) {
-        (*it)->deleteTree();
-    }
+    for (AstNode* nodep : m_deleteps) nodep->deleteTree();
     m_deleteps.clear();
 }

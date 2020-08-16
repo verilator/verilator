@@ -118,8 +118,7 @@ private:
         flags.setNodeFlags(nodep);
     }
     void moveVars() {
-        for (std::vector<AstVar*>::iterator it = m_varps.begin(); it != m_varps.end(); ++it) {
-            AstVar* nodep = *it;
+        for (AstVar* nodep : m_varps) {
             if (nodep->valuep()) clearOptimizable(nodep, "HasInitValue");
             if (!VarFlags(nodep).m_stdFuncAsn) clearStdOptimizable(nodep, "NoStdAssign");
             VarFlags flags(nodep);

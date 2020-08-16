@@ -1639,12 +1639,12 @@ std::string VL_TO_STRING_W(int words, WDataInP obj) {
 
 std::string VL_TOLOWER_NN(const std::string& ld) VL_MT_SAFE {
     std::string out = ld;
-    for (std::string::iterator it = out.begin(); it != out.end(); ++it) *it = tolower(*it);
+    for (auto& cr : out) cr = tolower(cr);
     return out;
 }
 std::string VL_TOUPPER_NN(const std::string& ld) VL_MT_SAFE {
     std::string out = ld;
-    for (std::string::iterator it = out.begin(); it != out.end(); ++it) *it = toupper(*it);
+    for (auto& cr : out) cr = toupper(cr);
     return out;
 }
 
@@ -1862,8 +1862,8 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
     QData shift = m_hex ? 4ULL : 1ULL;
     bool innum = false;
     // Shift value in
-    for (std::string::const_iterator it = rhs.begin(); it != rhs.end(); ++it) {
-        char c = tolower(*it);
+    for (const auto& i : rhs) {
+        char c = tolower(i);
         int value = (c >= 'a' ? (c == 'x' ? VL_RAND_RESET_I(4) : (c - 'a' + 10)) : (c - '0'));
         if (m_bits <= 8) {
             CData* datap = reinterpret_cast<CData*>(valuep);
@@ -2312,7 +2312,7 @@ static void removeCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
     cbs.remove(pair);
 }
 static void runCallbacks(VoidPCbList& cbs) VL_MT_SAFE {
-    for (VoidPCbList::iterator it = cbs.begin(); it != cbs.end(); ++it) { it->first(it->second); }
+    for (const auto& i : cbs) i.first(i.second);
 }
 
 void Verilated::addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
@@ -2445,9 +2445,7 @@ void VerilatedImp::internalsDump() VL_MT_SAFE {
     VL_PRINTF_MT("internalsDump:\n");
     versionDump();
     VL_PRINTF_MT("  Argv:");
-    for (ArgVec::const_iterator it = s_s.m_argVec.begin(); it != s_s.m_argVec.end(); ++it) {
-        VL_PRINTF_MT(" %s", it->c_str());
-    }
+    for (const auto& i : s_s.m_argVec) VL_PRINTF_MT(" %s", i.c_str());
     VL_PRINTF_MT("\n");
     scopesDump();
     exportsDump();
@@ -2675,7 +2673,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, boo
 // cppcheck-suppress unusedFunction  // Used by applications
 VerilatedVar* VerilatedScope::varFind(const char* namep) const VL_MT_SAFE_POSTINIT {
     if (VL_LIKELY(m_varsp)) {
-        VerilatedVarNameMap::iterator it = m_varsp->find(namep);
+        const auto it = m_varsp->find(namep);
         if (VL_LIKELY(it != m_varsp->end())) return &(it->second);
     }
     return nullptr;
@@ -2708,9 +2706,7 @@ void VerilatedScope::scopeDump() const {
         }
     }
     if (VerilatedVarNameMap* varsp = this->varsp()) {
-        for (VerilatedVarNameMap::const_iterator it = varsp->begin(); it != varsp->end(); ++it) {
-            VL_PRINTF_MT("       VAR %p: %s\n", &(it->second), it->first);
-        }
+        for (const auto& i : *varsp) VL_PRINTF_MT("       VAR %p: %s\n", &(i.second), i.first);
     }
 }
 

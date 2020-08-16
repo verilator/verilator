@@ -119,7 +119,7 @@ private:
     // PRIVATE METHODS
     int valueIndex(const std::string& value) VL_REQUIRES(m_mutex) {
         static int nextIndex = KEY_UNDEF + 1;
-        ValueIndexMap::iterator iter = m_valueIndexes.find(value);
+        const auto iter = m_valueIndexes.find(value);
         if (iter != m_valueIndexes.end()) return iter->second;
         nextIndex++;
         assert(nextIndex > 0);  // Didn't rollover
@@ -231,10 +231,7 @@ private:
 #undef SELF_CHECK
     }
     void clearGuts() VL_REQUIRES(m_mutex) {
-        for (ItemList::const_iterator it = m_items.begin(); it != m_items.end(); ++it) {
-            VerilatedCovImpItem* itemp = *(it);
-            VL_DO_DANGLING(delete itemp, itemp);
-        }
+        for (const auto& itemp : m_items) VL_DO_DANGLING(delete itemp, itemp);
         m_items.clear();
         m_indexValues.clear();
         m_valueIndexes.clear();
@@ -252,8 +249,7 @@ public:
         const VerilatedLockGuard lock(m_mutex);
         if (matchp && matchp[0]) {
             ItemList newlist;
-            for (ItemList::iterator it = m_items.begin(); it != m_items.end(); ++it) {
-                VerilatedCovImpItem* itemp = *(it);
+            for (const auto& itemp : m_items) {
                 if (!itemMatchesString(itemp, matchp)) {
                     VL_DO_DANGLING(delete itemp, itemp);
                 } else {
@@ -266,9 +262,7 @@ public:
     void zero() VL_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
-        for (ItemList::const_iterator it = m_items.begin(); it != m_items.end(); ++it) {
-            (*it)->zero();
-        }
+        for (const auto& itemp : m_items) itemp->zero();
     }
 
     // We assume there's always call to i/f/p in that order
@@ -358,8 +352,7 @@ public:
         // Build list of events; totalize if collapsing hierarchy
         typedef std::map<std::string, std::pair<std::string, vluint64_t>> EventMap;
         EventMap eventCounts;
-        for (ItemList::iterator it = m_items.begin(); it != m_items.end(); ++it) {
-            VerilatedCovImpItem* itemp = *(it);
+        for (const auto& itemp : m_items) {
             std::string name;
             std::string hier;
             bool per_instance = false;
@@ -390,7 +383,7 @@ public:
             // inefficient)
 
             // Find or insert the named event
-            EventMap::iterator cit = eventCounts.find(name);
+            const auto cit = eventCounts.find(name);
             if (cit != eventCounts.end()) {
                 const std::string& oldhier = cit->second.first;
                 cit->second.second += itemp->count();
@@ -401,11 +394,11 @@ public:
         }
 
         // Output body
-        for (EventMap::const_iterator it = eventCounts.begin(); it != eventCounts.end(); ++it) {
+        for (const auto& i : eventCounts) {
             os << "C '" << std::dec;
-            os << it->first;
-            if (!it->second.first.empty()) os << keyValueFormatter(VL_CIK_HIER, it->second.first);
-            os << "' " << it->second.second;
+            os << i.first;
+            if (!i.second.first.empty()) os << keyValueFormatter(VL_CIK_HIER, i.second.first);
+            os << "' " << i.second.second;
             os << std::endl;
         }
     }

@@ -80,7 +80,7 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     VerilatedTrace<VerilatedFst>::traceInit();
 
     // Clear the scope stack
-    std::list<std::string>::iterator it = m_curScope.begin();
+    auto it = m_curScope.begin();
     while (it != m_curScope.end()) {
         fstWriterSetUpscope(m_fst);
         it = m_curScope.erase(it);
@@ -89,10 +89,7 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     // convert m_code2symbol into an array for fast lookup
     if (!m_symbolp) {
         m_symbolp = new fstHandle[nextCode()];
-        for (Code2SymbolType::iterator it = m_code2symbol.begin(); it != m_code2symbol.end();
-             ++it) {
-            m_symbolp[it->first] = it->second;
-        }
+        for (const auto& i : m_code2symbol) m_symbolp[i.first] = i.second;
     }
     m_code2symbol.clear();
 
@@ -140,8 +137,8 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
     tokens.insert(tokens.begin(), moduleName());  // Add current module to the hierarchy
 
     // Find point where current and new scope diverge
-    std::list<std::string>::iterator cur_it = m_curScope.begin();
-    std::list<std::string>::iterator new_it = tokens.begin();
+    auto cur_it = m_curScope.begin();
+    auto new_it = tokens.begin();
     while (cur_it != m_curScope.end() && new_it != tokens.end()) {
         if (*cur_it != *new_it) break;
         ++cur_it;
@@ -171,7 +168,7 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
         fstWriterEmitEnumTableRef(m_fst, enumNum);
     }
 
-    Code2SymbolType::const_iterator it = m_code2symbol.find(code);
+    const auto it = vlstd::as_const(m_code2symbol).find(code);
     if (it == m_code2symbol.end()) {  // New
         m_code2symbol[code]
             = fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), 0);

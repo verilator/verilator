@@ -113,15 +113,15 @@ public:
     void dump() {
         UINFO(2, "dumpPoints...\n");
         VlcPoint::dumpHeader();
-        for (VlcPoints::ByName::const_iterator it = begin(); it != end(); ++it) {
-            const VlcPoint& point = pointNumber(it->second);
+        for (const auto& i : *this) {
+            const VlcPoint& point = pointNumber(i.second);
             point.dump();
         }
     }
     VlcPoint& pointNumber(vluint64_t num) { return m_points[num]; }
     vluint64_t findAddPoint(const string& name, vluint64_t count) {
         vluint64_t pointnum;
-        NameMap::const_iterator iter = m_nameMap.find(name);
+        const auto iter = m_nameMap.find(name);
         if (iter != m_nameMap.end()) {
             pointnum = iter->second;
             m_points[pointnum].countInc(count);

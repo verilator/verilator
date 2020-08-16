@@ -1009,7 +1009,7 @@ private:
 
             string result;
             string format = nodep->text();
-            string::const_iterator pos = format.begin();
+            auto pos = format.cbegin();
             bool inPct = false;
             for (; pos != format.end(); ++pos) {
                 if (!inPct && pos[0] == '%') {
@@ -1132,15 +1132,10 @@ public:
         mainGuts(nodep);
     }
     virtual ~SimulateVisitor() override {
-        for (ConstPile::iterator it = m_constAllps.begin(); it != m_constAllps.end(); ++it) {
-            for (ConstDeque::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                delete (*it2);
-            }
+        for (const auto& i : m_constAllps) {
+            for (AstConst* i2p : i.second) delete i2p;
         }
-        for (std::deque<AstNode*>::iterator it = m_reclaimValuesp.begin();
-             it != m_reclaimValuesp.end(); ++it) {
-            delete (*it);
-        }
+        for (AstNode* ip : m_reclaimValuesp) delete ip;
         m_reclaimValuesp.clear();
         m_constFreeps.clear();
         m_constAllps.clear();

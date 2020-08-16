@@ -197,7 +197,7 @@ private:
             for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 V3GraphVertex* toVertexp = edgep->top();
 
-                typename WaitingVertices::iterator it = m_waitingVertices.find(toVertexp);
+                const auto it = m_waitingVertices.find(toVertexp);
                 UASSERT_OBJ(it != m_waitingVertices.end(), toVertexp,
                             "Found edge into vertex not in waiting list.");
                 if (it->second.unblock()) {
@@ -209,7 +209,7 @@ private:
             for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                 V3GraphVertex* fromVertexp = edgep->fromp();
 
-                typename WaitingVertices::iterator it = m_waitingVertices.find(fromVertexp);
+                const auto it = m_waitingVertices.find(fromVertexp);
                 UASSERT_OBJ(it != m_waitingVertices.end(), fromVertexp,
                             "Found edge into vertex not in waiting list.");
                 if (it->second.unblock()) {

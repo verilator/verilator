@@ -164,7 +164,7 @@ public:
         m_modVarNameMap.insert(make_pair(nodep->name(), nodep));
     }
     AstVar* find(const string& name) {
-        VarNameMap::iterator it = m_modVarNameMap.find(name);
+        const auto it = m_modVarNameMap.find(name);
         if (it != m_modVarNameMap.end()) {
             return it->second;
         } else {

@@ -372,10 +372,9 @@ public:
     }
     virtual ~SubstVisitor() override {
         V3Stats::addStat("Optimizations, Substituted temps", m_statSubsts);
-        for (std::vector<SubstVarEntry*>::iterator it = m_entryps.begin(); it != m_entryps.end();
-             ++it) {
-            (*it)->deleteUnusedAssign();
-            delete (*it);
+        for (SubstVarEntry* ip : m_entryps) {
+            ip->deleteUnusedAssign();
+            delete ip;
         }
     }
 };

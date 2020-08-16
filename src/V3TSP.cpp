@@ -84,7 +84,7 @@ public:
 
     // METHODS
     void addVertex(const T_Key& key) {
-        typename VMap::iterator itr = m_vertices.find(key);
+        const auto itr = m_vertices.find(key);
         UASSERT(itr == m_vertices.end(), "Vertex already exists with same key");
         Vertex* v = new Vertex(this, key);
         m_vertices[key] = v;
@@ -177,7 +177,7 @@ public:
         // discard it and repeat again.
         unsigned edges_made = 0;
         while (!pendingEdges.empty()) {
-            typename PendingEdgeSet::iterator firstIt = pendingEdges.begin();
+            const auto firstIt = pendingEdges.cbegin();
             V3GraphEdge* bestEdgep = *firstIt;
             pendingEdges.erase(firstIt);
 
@@ -317,8 +317,7 @@ public:
 
         // Look for nodes on the tour that still have
         // un-marked edges. If we find one, recurse.
-        for (typename std::vector<Vertex*>::iterator it = tour.begin(); it != tour.end(); ++it) {
-            Vertex* vxp = *it;
+        for (Vertex* vxp : tour) {
             bool recursed;
             do {
                 recursed = false;
@@ -338,10 +337,7 @@ public:
         }
 
         UINFO(6, "Tour was: ");
-        for (typename std::vector<Vertex*>::iterator it = tour.begin(); it != tour.end(); ++it) {
-            Vertex* vxp = *it;
-            UINFONL(6, " " << vxp->key());
-        }
+        for (const Vertex* vxp : tour) UINFONL(6, " " << vxp->key());
         UINFONL(6, "\n");
     }
 
@@ -390,7 +386,7 @@ public:
 
 private:
     Vertex* findVertex(const T_Key& key) const {
-        typename VMap::const_iterator it = m_vertices.find(key);
+        const auto it = m_vertices.find(key);
         UASSERT(it != m_vertices.end(), "Vertex not found");
         return it->second;
     }

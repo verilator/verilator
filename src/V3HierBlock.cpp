@@ -377,7 +377,7 @@ V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
         for (V3HierBlock::HierBlockSet::const_iterator it = p.begin(); it != p.end(); ++it) {
             // Delete hblockp from parrents. If a parent does not have a child anymore, then it is
             // a leaf too.
-            const ChildrenMap::iterator parentIt = childrenOfHierBlock.find(*it);
+            const auto parentIt = childrenOfHierBlock.find(*it);
             UASSERT_OBJ(parentIt != childrenOfHierBlock.end(), (*it)->modp(), "must be included");
             const V3HierBlock::HierBlockSet::size_type erased = parentIt->second.erase(hblockp);
             UASSERT_OBJ(erased == 1, hblockp->modp(),

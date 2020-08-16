@@ -543,9 +543,7 @@ private:
             }
         }
         stable_sort(report.begin(), report.end());
-        for (std::deque<string>::iterator it = report.begin(); it != report.end(); ++it) {
-            *ofp << *it;
-        }
+        for (const auto& line : report) *ofp << line;
     }
 
     void edgeDomainRecurse(CdcEitherVertex* vertexp, bool traceDests, int level) {

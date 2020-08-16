@@ -54,20 +54,16 @@ private:
         // Note uses user4
         V3Hashed hashed;  // Duplicate code detection
         // Hash all of the original signals we toggle cover
-        for (ToggleList::iterator it = m_toggleps.begin(); it != m_toggleps.end(); ++it) {
-            AstCoverToggle* nodep = *it;
-            hashed.hashAndInsert(nodep->origp());
-        }
+        for (AstCoverToggle* nodep : m_toggleps) hashed.hashAndInsert(nodep->origp());
         // Find if there are any duplicates
-        for (ToggleList::iterator it = m_toggleps.begin(); it != m_toggleps.end(); ++it) {
-            AstCoverToggle* nodep = *it;
+        for (AstCoverToggle* nodep : m_toggleps) {
             // nodep->backp() is null if we already detected it's a duplicate and unlinked it.
             if (nodep->backp()) {
                 // Want to choose a base node, and keep finding duplicates that are identical.
                 // This prevents making chains where a->b, then c->d, then b->c, as we'll
                 // find a->b, a->c, a->d directly.
                 while (true) {
-                    V3Hashed::iterator dupit = hashed.findDuplicate(nodep->origp());
+                    const auto dupit = hashed.findDuplicate(nodep->origp());
                     if (dupit == hashed.end()) break;
                     //
                     AstNode* duporigp = hashed.iteratorNodep(dupit);

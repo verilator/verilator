@@ -41,7 +41,7 @@ public:
     static const_iterator begin() { return s().s_kwdMap.begin(); }
     static const_iterator end() { return s().s_kwdMap.end(); }
     static string isKeyword(const string& kwd) {
-        KeywordMap::const_iterator it = s().s_kwdMap.find(kwd);
+        const auto it = vlstd::as_const(s().s_kwdMap).find(kwd);
         if (it == s().s_kwdMap.end()) return "";
         return it->second;
     }

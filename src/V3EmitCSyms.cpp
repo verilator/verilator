@@ -168,7 +168,7 @@ class EmitCSyms : EmitCBaseVisitor {
 
     void varHierarchyScopes(string scp) {
         while (!scp.empty()) {
-            ScopeNames::const_iterator scpit = m_vpiScopeCandidates.find(scp);
+            const auto scpit = m_vpiScopeCandidates.find(scp);
             if ((scpit != m_vpiScopeCandidates.end())
                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
                 m_scopeNames.insert(make_pair(scpit->second.m_symName, scpit->second));
@@ -704,8 +704,8 @@ void EmitCSyms::emitSymImp() {
                  ++lit) {
                 string fromname = scopeSymString(it->first);
                 string toname = scopeSymString(*lit);
-                ScopeNames::const_iterator from = m_scopeNames.find(fromname);
-                ScopeNames::const_iterator to = m_scopeNames.find(toname);
+                const auto from = vlstd::as_const(m_scopeNames).find(fromname);
+                const auto to = vlstd::as_const(m_scopeNames).find(toname);
                 UASSERT(from != m_scopeNames.end(), fromname + " not in m_scopeNames");
                 UASSERT(to != m_scopeNames.end(), toname + " not in m_scopeNames");
                 puts("__Vhier.add(");
@@ -859,8 +859,7 @@ void EmitCSyms::emitDpiHdr() {
 
     int firstExp = 0;
     int firstImp = 0;
-    for (std::vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
-        AstCFunc* nodep = *it;
+    for (AstCFunc* nodep : m_dpis) {
         if (nodep->dpiExportWrapper()) {
             if (!firstExp++) puts("\n// DPI EXPORTS\n");
             puts("// DPI export" + ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
@@ -909,8 +908,7 @@ void EmitCSyms::emitDpiImp() {
     puts("#include \"" + topClassName() + ".h\"\n");
     puts("\n");
 
-    for (std::vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
-        AstCFunc* nodep = *it;
+    for (AstCFunc* nodep : m_dpis) {
         if (nodep->dpiExportWrapper()) {
             puts("#ifndef _VL_DPIDECL_" + nodep->name() + "\n");
             puts("#define _VL_DPIDECL_" + nodep->name() + "\n");

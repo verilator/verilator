@@ -60,7 +60,7 @@ public:
 
     AstSenTree* find(AstSenTree* likep) {
         AstSenTree* resultp = nullptr;
-        Set::iterator it = m_trees.find(likep);
+        const auto it = m_trees.find(likep);
         if (it != m_trees.end()) resultp = *it;
         return resultp;
     }

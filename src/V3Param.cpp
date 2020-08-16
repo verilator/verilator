@@ -169,7 +169,7 @@ public:
                     AstConst* constp = VN_CAST(pinp->exprp(), Const);
                     UASSERT_OBJ(constp, pinp,
                                 "parameter for a hierarchical block must have been constified");
-                    ParamConstMap::const_iterator pIt = params.find(modvarp->name());
+                    const auto pIt = vlstd::as_const(params).find(modvarp->name());
                     UINFO(5, "Comparing " << modvarp->name() << " " << constp << std::endl);
                     if (pIt == params.end() || paramIdx >= params.size()
                         || !areSame(constp, pIt->second)) {
@@ -190,7 +190,7 @@ public:
         UASSERT_OBJ(modIt != m_hierBlockMod.end(), firstPinp,
                     hierIt->second->mangledName() << " is not found");
 
-        HierBlockModMap::const_iterator it = m_hierBlockMod.find(hierIt->second->mangledName());
+        const auto it = vlstd::as_const(m_hierBlockMod).find(hierIt->second->mangledName());
         if (it == m_hierBlockMod.end()) return nullptr;
         return it->second;
     }
@@ -309,7 +309,7 @@ private:
         // Force hash collisions -- for testing only
         if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash();
         int num;
-        ValueMap::iterator it = m_valueMap.find(hash);
+        const auto it = m_valueMap.find(hash);
         if (it != m_valueMap.end() && it->second.second == key) {
             num = it->second.first;
         } else {
@@ -355,12 +355,12 @@ private:
             if (pinp->modVarp()) {
                 // Find it in the clone structure
                 // UINFO(8,"Clone find 0x"<<hex<<(uint32_t)pinp->modVarp()<<endl);
-                CloneMap::iterator cloneiter = clonemapp->find(pinp->modVarp());
+                const auto cloneiter = clonemapp->find(pinp->modVarp());
                 UASSERT_OBJ(cloneiter != clonemapp->end(), pinp,
                             "Couldn't find pin in clone list");
                 pinp->modVarp(VN_CAST(cloneiter->second, Var));
             } else if (pinp->modPTypep()) {
-                CloneMap::iterator cloneiter = clonemapp->find(pinp->modPTypep());
+                const auto cloneiter = clonemapp->find(pinp->modPTypep());
                 UASSERT_OBJ(cloneiter != clonemapp->end(), pinp,
                             "Couldn't find pin in clone list");
                 pinp->modPTypep(VN_CAST(cloneiter->second, ParamTypeDType));
@@ -380,7 +380,7 @@ private:
         }
         for (AstPin* pinp = startpinp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
             if (AstVar* varp = pinp->modVarp()) {
-                std::map<string, AstVar*>::const_iterator varIt = nameToPin.find(varp->name());
+                const auto varIt = vlstd::as_const(nameToPin).find(varp->name());
                 UASSERT_OBJ(varIt != nameToPin.end(), varp,
                             "Not found in " << modp->prettyNameQ());
                 pinp->modVarp(varIt->second);
@@ -444,7 +444,7 @@ private:
         // Hitting a cell adds to the appropriate level of this level-sorted list,
         // so since cells originally exist top->bottom we process in top->bottom order too.
         while (!m_todoModps.empty()) {
-            LevelModMap::iterator itm = m_todoModps.begin();
+            const auto itm = m_todoModps.cbegin();
             AstNodeModule* nodep = itm->second;
             m_todoModps.erase(itm);
             if (!nodep->user5SetOnce()) {  // Process once; note clone() must clear so we do it
@@ -457,8 +457,7 @@ private:
                 //
                 // Process interface cells, then non-interface which may ref an interface cell
                 for (int nonIf = 0; nonIf < 2; ++nonIf) {
-                    for (CellList::iterator it = m_cellps.begin(); it != m_cellps.end(); ++it) {
-                        AstCell* cellp = *it;
+                    for (AstCell* cellp : m_cellps) {
                         if ((nonIf == 0 && VN_IS(cellp->modp(), Iface))
                             || (nonIf == 1 && !VN_IS(cellp->modp(), Iface))) {
                             string fullName(m_modp->hierName());
@@ -469,8 +468,7 @@ private:
                         }
                     }
                 }
-                for (CellList::iterator it = m_cellps.begin(); it != m_cellps.end(); ++it) {
-                    AstCell* cellp = *it;
+                for (AstCell* cellp : m_cellps) {
                     if (string* genHierNamep = (string*)cellp->user5p()) {
                         cellp->user5p(nullptr);
                         VL_DO_DANGLING(delete genHierNamep, genHierNamep);
@@ -964,7 +962,7 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
             // Shorter name is convenient for hierarchical block
             string newname = longname;
             if (longname.length() > 30 || srcModp->hierBlock()) {
-                LongMap::iterator iter = m_longMap.find(longname);
+                const auto iter = m_longMap.find(longname);
                 if (iter != m_longMap.end()) {
                     newname = iter->second;
                 } else {
@@ -983,7 +981,7 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
             //
             // Already made this flavor?
             AstNodeModule* cellmodp = nullptr;
-            ModNameMap::iterator iter = m_modNameMap.find(newname);
+            auto iter = m_modNameMap.find(newname);
             if (iter != m_modNameMap.end()) cellmodp = iter->second.m_modp;
             if (!cellmodp) {
                 // Deep clone of new module

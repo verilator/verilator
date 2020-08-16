@@ -120,7 +120,7 @@ private:
         AstVar* varp;
         AstNodeModule* addmodp = oldvarscp->scopep()->modp();
         // We need a new AstVar, but only one for all scopes, to match the new AstVarScope
-        VarMap::iterator it = m_modVarMap.find(make_pair(addmodp, name));
+        const auto it = m_modVarMap.find(make_pair(addmodp, name));
         if (it != m_modVarMap.end()) {
             // Created module's AstVar earlier under some other scope
             varp = it->second;

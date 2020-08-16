@@ -252,10 +252,9 @@ VerilatedSerialize& operator<<(VerilatedSerialize& os, VlAssocArray<T_Key, T_Val
     os << rhs.atDefault();
     vluint32_t len = rhs.size();
     os << len;
-    for (typename VlAssocArray<T_Key, T_Value>::const_iterator it = rhs.begin(); it != rhs.end();
-         ++it) {
-        T_Key index = it->first;  // Copy to get around const_iterator
-        T_Value value = it->second;
+    for (const auto& i : rhs) {
+        T_Key index = i.first;  // Copy to get around const_iterator
+        T_Value value = i.second;
         os << index << value;
     }
     return os;

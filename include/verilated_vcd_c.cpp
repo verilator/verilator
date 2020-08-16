@@ -185,15 +185,15 @@ void VerilatedVcd::makeNameMap() {
     // If no scope was specified, prefix everything with a "top"
     // This comes from user instantiations with no name - IE Vtop("").
     bool nullScope = false;
-    for (NameMap::const_iterator it = m_namemapp->begin(); it != m_namemapp->end(); ++it) {
-        const std::string& hiername = it->first;
+    for (const auto& i : *m_namemapp) {
+        const std::string& hiername = i.first;
         if (!hiername.empty() && hiername[0] == '\t') nullScope = true;
     }
     if (nullScope) {
         NameMap* newmapp = new NameMap;
-        for (NameMap::const_iterator it = m_namemapp->begin(); it != m_namemapp->end(); ++it) {
-            const std::string& hiername = it->first;
-            const std::string& decl = it->second;
+        for (const auto& i : *m_namemapp) {
+            const std::string& hiername = i.first;
+            const std::string& decl = i.second;
             std::string newname = std::string("top");
             if (hiername[0] != '\t') newname += ' ';
             newname += hiername;
@@ -367,9 +367,9 @@ void VerilatedVcd::dumpHeader() {
 
     // Print the signal names
     const char* lastName = "";
-    for (NameMap::const_iterator it = m_namemapp->begin(); it != m_namemapp->end(); ++it) {
-        const std::string& hiernamestr = it->first;
-        const std::string& decl = it->second;
+    for (const auto& i : *m_namemapp) {
+        const std::string& hiernamestr = i.first;
+        const std::string& decl = i.second;
 
         // Determine difference between the old and new names
         const char* hiername = hiernamestr.c_str();
