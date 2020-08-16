@@ -39,7 +39,7 @@
 
 #include <algorithm>
 
-#define RELOOP_MIN_ITERS 40  // Need at least this many loops to do this optimization
+constexpr unsigned RELOOP_MIN_ITERS = 40;  // Need at least this many loops to do this optimization
 
 //######################################################################
 

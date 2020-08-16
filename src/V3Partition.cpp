@@ -72,9 +72,9 @@ class MergeCandidate;
 // If you don't care about partitioner runtime and you want the most
 // aggressive partition, set the limit very high.  If you have huge
 // vertices, leave this as is.
-#define PART_SIBLING_EDGE_LIMIT 25
+constexpr unsigned PART_SIBLING_EDGE_LIMIT = 25;
 
-//   PART_STEPPED_COST (boolean)
+//   PART_STEPPED_COST (defined/undef)
 //
 // When computing critical path costs, use a step function on the actual
 // underlying vertex cost.
@@ -106,28 +106,6 @@ class MergeCandidate;
 //    behavior.
 #define PART_STEPPED_COST true
 
-//   PART_STEPPED_RESCORE_LIMIT (boolean)
-//
-// If false, we always try to merge the absolute lowest (best) scoring
-// mtask pair among all candidates.
-//
-// If true, we're willing to merge mtask pairs with scores up to 5% higher
-// (worse) than the best, in exchange for doing a Rescore() operation
-// somewhat less often.
-//
-// A true setting can result in a much faster compile in the presence of
-// huge vertices, eg. 45 minutes versus 4.5 minutes for one particular
-// model. HOWEVER, a true setting usually results in modestly worse
-// partitions, often around 10% more MTasks and 10% longer cycle times.
-//
-// (TODO: Why does this setting save time with huge vertices?
-// Is there a way to get best of both worlds without the trade off?)
-//
-// If you have huge vertices, you may wish to set this true.  If you don't
-// have huge vertices (which should be everyone, we think, now that V3Split
-// is fixed) leave it set false for the most aggressive partition.
-#define PART_STEPPED_RESCORE_LIMIT false
-
 // Don't produce more than a certain maximum number of MTasks.  This helps
 // the TSP variable sort not to blow up (a concern for some of the tests)
 // and we probably don't want a huge number of mtasks in practice anyway
@@ -136,7 +114,7 @@ class MergeCandidate;
 // If the user doesn't give one with '--threads-max-mtasks', we'll set the
 // maximum # of MTasks to
 //  (# of threads * PART_DEFAULT_MAX_MTASKS_PER_THREAD)
-#define PART_DEFAULT_MAX_MTASKS_PER_THREAD 50
+constexpr unsigned PART_DEFAULT_MAX_MTASKS_PER_THREAD = 50;
 
 //   end tunables.
 

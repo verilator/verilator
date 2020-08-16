@@ -239,7 +239,7 @@ private:
     static MessagesSet s_messages;  // What errors we've outputted
     static ErrorExitCb s_errorExitCb;  // Callback when error occurs for dumping
 
-    enum MaxErrors { MAX_ERRORS = 50 };  // Fatal after this may errors
+    static constexpr unsigned MAX_ERRORS = 50;  // Fatal after this may errors
 
     V3Error() {
         std::cerr << ("Static class");

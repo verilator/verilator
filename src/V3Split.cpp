@@ -156,7 +156,7 @@ class SplitEdge : public V3GraphEdge {
     uint32_t m_ignoreInStep = 0;  // Step number that if set to, causes this edge to be ignored
     static uint32_t s_stepNum;  // Global step number
 protected:
-    enum { WEIGHT_NORMAL = 10 };
+    static constexpr int WEIGHT_NORMAL = 10;
     SplitEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
               bool cutable = CUTABLE)
         : V3GraphEdge{graphp, fromp, top, weight, cutable} {}

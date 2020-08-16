@@ -39,7 +39,7 @@
 
 typedef std::list<AstNodeVarRef*> GateVarRefList;
 
-#define GATE_DEDUP_MAX_DEPTH 20
+constexpr int GATE_DEDUP_MAX_DEPTH = 20;
 
 //######################################################################
 

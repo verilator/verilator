@@ -101,7 +101,7 @@ public:
 
 class V3OutFormatter {
     // TYPES
-    enum MiscConsts { MAXSPACE = 80 };  // After this indent, stop indenting more
+    static constexpr int MAXSPACE = 80;  // After this indent, stop indenting more
 public:
     enum AlignClass : uint8_t { AL_AUTO = 0, AL_STATIC = 1 };
     enum Language : uint8_t {

@@ -37,7 +37,7 @@
 #include <iomanip>
 #include <memory>
 
-#define CDC_WEIGHT_ASYNC 0x1000  // Weight for edges that feed async logic
+constexpr int CDC_WEIGHT_ASYNC = 0x1000;  // Weight for edges that feed async logic
 
 //######################################################################
 

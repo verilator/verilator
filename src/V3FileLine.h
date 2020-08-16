@@ -89,7 +89,7 @@ std::ostream& operator<<(std::ostream& os, VFileContent* contentp);
 //! language is held in tables in the FileLineSingleton class.
 class FileLine {
     // CONSTANTS
-    enum { SHOW_SOURCE_MAX_LENGTH = 400 };  // Don't show source lines > this long
+    static constexpr unsigned SHOW_SOURCE_MAX_LENGTH = 400;  // Don't show source lines > this long
 
     // MEMBERS
     // Columns here means number of chars from beginning (i.e. tabs count as one)

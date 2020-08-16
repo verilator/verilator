@@ -185,8 +185,8 @@ public:
 
 class VSpellCheck {
     // CONSTANTS
-    enum { NUM_CANDIDATE_LIMIT = 10000 };  // Avoid searching huge netlists
-    enum { LENGTH_LIMIT = 100 };  // Maximum string length to search
+    static constexpr unsigned NUM_CANDIDATE_LIMIT = 10000;  // Avoid searching huge netlists
+    static constexpr unsigned LENGTH_LIMIT = 100;  // Maximum string length to search
     // TYPES
     typedef unsigned int EditDistance;
     typedef std::vector<string> Candidates;

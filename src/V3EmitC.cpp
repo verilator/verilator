@@ -30,9 +30,10 @@
 #include <vector>
 #include <unordered_set>
 
-#define VL_VALUE_STRING_MAX_WIDTH 8192  // We use a static char array in VL_VALUE_STRING
+constexpr int VL_VALUE_STRING_MAX_WIDTH = 8192;  // We use a static char array in VL_VALUE_STRING
 
-#define EMITC_NUM_CONSTW 8  // Number of VL_CONST_W_*X's in verilated.h (IE VL_CONST_W_8X is last)
+constexpr int EMITC_NUM_CONSTW
+    = 8;  // Number of VL_CONST_W_*X's in verilated.h (IE VL_CONST_W_8X is last)
 
 //######################################################################
 // Emit statements and math operators

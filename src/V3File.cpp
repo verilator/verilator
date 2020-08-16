@@ -56,8 +56,8 @@
 
 // If change this code, run a test with the below size set very small
 //#define INFILTER_IPC_BUFSIZ 16
-#define INFILTER_IPC_BUFSIZ (64 * 1024)  // For debug, try this as a small number
-#define INFILTER_CACHE_MAX (64 * 1024)  // Maximum bytes to cache if same file read twice
+constexpr int INFILTER_IPC_BUFSIZ = (64 * 1024);  // For debug, try this as a small number
+constexpr int INFILTER_CACHE_MAX = (64 * 1024);  // Maximum bytes to cache if same file read twice
 
 //######################################################################
 // V3File Internal state

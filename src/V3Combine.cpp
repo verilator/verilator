@@ -45,7 +45,9 @@
 
 //######################################################################
 
-#define COMBINE_MIN_STATEMENTS 50  // Min # of statements to be worth making a function
+#ifdef VL_COMBINE_STATEMENTS
+constexpr int COMBINE_MIN_STATEMENTS = 50;  // Min # of statements to be worth making a function
+#endif
 
 //######################################################################
 
