@@ -717,7 +717,7 @@ class LinkDotFindVisitor : public AstNVisitor {
     int m_modBlockNum = 0;  // Begin block number in module, 0=none seen
 
     // METHODS
-    int debug() { return LinkDotState::debug(); }
+    static int debug() { return LinkDotState::debug(); }
 
     void makeImplicitNew(AstClass* nodep) {
         AstFunc* newp = new AstFunc(nodep->fileline(), "new", nullptr, nullptr);
@@ -1273,7 +1273,7 @@ private:
     LinkDotState* m_statep;  // State to pass between visitors, including symbol table
     AstNodeModule* m_modp = nullptr;  // Current module
 
-    int debug() { return LinkDotState::debug(); }
+    static int debug() { return LinkDotState::debug(); }
 
     void pinImplicitExprRecurse(AstNode* nodep) {
         // Under a pin, Check interconnect expression for a pin reference or a concat.
@@ -1433,7 +1433,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
     AstScope* m_scopep = nullptr;  // The current scope
     VSymEnt* m_modSymp = nullptr;  // Symbol entry for current module
 
-    int debug() { return LinkDotState::debug(); }
+    static int debug() { return LinkDotState::debug(); }
 
     // VISITs
     virtual void visit(AstNetlist* nodep) override {
@@ -1586,7 +1586,7 @@ class LinkDotIfaceVisitor : public AstNVisitor {
     VSymEnt* m_curSymp;  // Symbol Entry for current table, where to lookup/insert
 
     // METHODS
-    int debug() { return LinkDotState::debug(); }
+    static int debug() { return LinkDotState::debug(); }
 
     // VISITs
     virtual void visit(AstModport* nodep) override {
@@ -1735,7 +1735,7 @@ private:
         }
     } m_ds;  // State to preserve across recursions
 
-    int debug() { return LinkDotState::debug(); }
+    static int debug() { return LinkDotState::debug(); }
 
     // METHODS - Variables
     void createImplicitVar(VSymEnt* lookupSymp, AstVarRef* nodep, AstNodeModule* modp,
@@ -2034,10 +2034,11 @@ private:
             AstNode* varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
             AstNode* newp
                 = new AstMemberSel(nodep->fileline(), varEtcp, VFlagChildDType(), nodep->name());
-            if (m_ds.m_dotErr)
+            if (m_ds.m_dotErr) {
                 nodep->unlinkFrBack();  // Avoid circular node loop on errors
-            else
+            } else {
                 nodep->replaceWith(newp);
+            }
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {
             //

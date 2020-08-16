@@ -120,7 +120,7 @@ class EmitCSyms : EmitCBaseVisitor {
     void emitDpiHdr();
     void emitDpiImp();
 
-    void nameCheck(AstNode* nodep) {
+    static void nameCheck(AstNode* nodep) {
         // Prevent GCC compile time error; name check all things that reach C++ code
         if (nodep->name() != ""
             && !(VN_IS(nodep, CFunc)
@@ -139,7 +139,7 @@ class EmitCSyms : EmitCBaseVisitor {
         }
     }
 
-    string scopeSymString(const string& scpname) {
+    static string scopeSymString(const string& scpname) {
         string out = scpname;
         string::size_type pos;
         while ((pos = out.find("__PVT__")) != string::npos) out.replace(pos, 7, "");
@@ -150,7 +150,7 @@ class EmitCSyms : EmitCBaseVisitor {
         return out;
     }
 
-    string scopeDecodeIdentifier(const string& scpname) {
+    static string scopeDecodeIdentifier(const string& scpname) {
         string out = scpname;
         // Remove hierarchy
         string::size_type pos = out.rfind('.');
@@ -800,16 +800,16 @@ void EmitCSyms::emitSymImp() {
             if (varp->isParam()) {
                 if (varp->vlEnumType() == "VLVT_STRING") {
                     puts(", const_cast<void*>(static_cast<const void*>(");
-                    puts(varName.c_str());
+                    puts(varName);
                     puts(".c_str())), ");
                 } else {
                     puts(", const_cast<void*>(static_cast<const void*>(&(");
-                    puts(varName.c_str());
+                    puts(varName);
                     puts("))), ");
                 }
             } else {
                 puts(", &(");
-                puts(varName.c_str());
+                puts(varName);
                 puts("), ");
             }
 

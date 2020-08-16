@@ -1345,7 +1345,7 @@ private:
         }
         return VNUser(0);
     }
-    virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) override {  //
+    virtual VNUser visit(GateLogicVertex*, VNUser vu) override {  //
         return VNUser(0);
     }
 

@@ -315,7 +315,7 @@ public:
     bool m_isRef;  // Is it a reference?
     string m_type;  // The base type, e.g.: "Foo_t"s
     string m_dims;  // Array dimensions, e.g.: "[3][2][1]"
-    string render(const string& name) {
+    string render(const string& name) const {
         string out;
         out += m_type;
         out += " ";
@@ -462,7 +462,7 @@ string AstVar::vlEnumDir() const {
     return out;
 }
 
-string AstVar::vlPropDecl(string propName) const {
+string AstVar::vlPropDecl(const string& propName) const {
     string out;
 
     std::vector<int> ulims;  // Unpacked dimension limits
@@ -902,8 +902,9 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
     return newp;
 }
 
-AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, VNumRange range,
-                                               int widthMin, VSigning numeric) {
+AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd,
+                                               const VNumRange& range, int widthMin,
+                                               VSigning numeric) {
     AstBasicDType* new1p = new AstBasicDType(fl, kwd, numeric, range, widthMin);
     AstBasicDType* newp = findInsertSameDType(new1p);
     if (newp != new1p) {

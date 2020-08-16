@@ -100,7 +100,7 @@ private:
 
     void dumpHeader();
 
-    char* writeCode(char* writep, vluint32_t code);
+    static char* writeCode(char* writep, vluint32_t code);
 
     void finishLine(vluint32_t code, char* writep);
 

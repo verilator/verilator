@@ -144,19 +144,21 @@ class EmitXmlFileVisitor : public AstNVisitor {
         puts(" origName=");
         putsQuoted(nodep->origName());
         // Attributes
-        if (nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES)
+        if (nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
             puts(" clocker=\"true\"");
-        else if (nodep->attrClocker() == VVarAttrClocker::CLOCKER_NO)
+        } else if (nodep->attrClocker() == VVarAttrClocker::CLOCKER_NO) {
             puts(" clocker=\"false\"");
+        }
         if (nodep->attrClockEn()) puts(" clock_enable=\"true\"");
         if (nodep->attrIsolateAssign()) puts(" isolate_assignments=\"true\"");
         if (nodep->isSigPublic()) puts(" public=\"true\"");
         if (nodep->isSigUserRdPublic()) puts(" public_flat_rd=\"true\"");
         if (nodep->isSigUserRWPublic()) puts(" public_flat_rw=\"true\"");
-        if (nodep->isGParam())
+        if (nodep->isGParam()) {
             puts(" param=\"true\"");
-        else if (nodep->isParam())
+        } else if (nodep->isParam()) {
             puts(" localparam=\"true\"");
+        }
         if (nodep->attrScBv()) puts(" sc_bv=\"true\"");
         if (nodep->attrScClocked()) puts(" sc_clock=\"true\"");
         if (nodep->attrSFormat()) puts(" sformat=\"true\"");
@@ -286,9 +288,7 @@ private:
 public:
     // CONSTRUCTORS
     ModuleFilesXmlVisitor(AstNetlist* nodep, std::ostream& os)
-        : m_os{os}
-        , m_modulesCovered{}
-        , m_nodeModules{} {
+        : m_os{os} {
         // Operate on whole netlist
         nodep->accept(*this);
         // Xml output

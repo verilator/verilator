@@ -873,14 +873,14 @@ public:
             m_totalGraphCost += vertexCost(vertexp);
         }
     }
-    void statsReport(const string& stage) {
+    void statsReport(const string& stage) const {
         V3Stats::addStat("MTask graph, " + stage + ", critical path cost", m_longestCpCost);
         V3Stats::addStat("MTask graph, " + stage + ", total graph cost", m_totalGraphCost);
         V3Stats::addStat("MTask graph, " + stage + ", mtask count", m_vertexCount);
         V3Stats::addStat("MTask graph, " + stage + ", edge count", m_edgeCount);
         V3Stats::addStat("MTask graph, " + stage + ", parallelism factor", parallelismFactor());
     }
-    void debugReport() {
+    void debugReport() const {
         UINFO(0, "    Critical path cost = " << m_longestCpCost << endl);
         UINFO(0, "    Total graph cost = " << m_totalGraphCost << endl);
         UINFO(0, "    MTask vertex count = " << m_vertexCount << endl);

@@ -65,7 +65,7 @@ private:
         int m_handle = 0;  // Opaque handle for index into line tracking
         const AstNode* m_nodep = nullptr;  // Node establishing this state
         CheckState() {}
-        bool lineCoverageOn(const AstNode* nodep) {
+        bool lineCoverageOn(const AstNode* nodep) const {
             return m_on && !m_inModOff && nodep->fileline()->coverageOn()
                    && v3Global.opt.coverageLine();
         }

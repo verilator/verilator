@@ -129,7 +129,6 @@ public:
         return activep;
     }
 
-public:
     // CONSTRUCTORS
     ActiveNamer() {}
     virtual ~ActiveNamer() override {}

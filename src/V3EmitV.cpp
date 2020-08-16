@@ -147,7 +147,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         iterateAndNextNull(nodep->rhsp());
         if (!m_suppressSemi) puts(";\n");
     }
-    virtual void visit(AstBreak* nodep) override {
+    virtual void visit(AstBreak*) override {
         putbs("break");
         if (!m_suppressSemi) puts(";\n");
     }
@@ -201,7 +201,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         puts(string("// ") + nodep->name() + "\n");
         iterateChildren(nodep);
     }
-    virtual void visit(AstContinue* nodep) override {
+    virtual void visit(AstContinue*) override {
         putbs("continue");
         if (!m_suppressSemi) puts(";\n");
     }

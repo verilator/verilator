@@ -280,7 +280,7 @@ public:
 
 private:
     // METHODS
-    string indent() { return string(m_depth, ':') + " "; }
+    string indent() const { return string(m_depth, ':') + " "; }
     virtual void visit(AstNode* nodep) override {
         ++m_depth;
         if (unsigned costPlus1 = nodep->user4()) {

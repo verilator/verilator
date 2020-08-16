@@ -398,7 +398,7 @@ public:
     explicit OrderClkAssVisitor(AstNode* nodep) { iterate(nodep); }
     virtual ~OrderClkAssVisitor() override {}
     // METHODS
-    bool isClkAss() { return m_clkAss; }
+    bool isClkAss() const { return m_clkAss; }
 };
 
 //######################################################################
@@ -1958,9 +1958,10 @@ void OrderVisitor::process() {
     if (!v3Global.opt.mtasks()) {
         UINFO(2, "  Construct Move Graph...\n");
         processMoveBuildGraph();
-        if (debug() >= 4)
+        if (debug() >= 4) {
             m_pomGraph.dumpDotFilePrefixed(
                 "ordermv_start");  // Different prefix (ordermv) as it's not the same graph
+        }
         m_pomGraph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
         if (debug() >= 4) m_pomGraph.dumpDotFilePrefixed("ordermv_simpl");
 

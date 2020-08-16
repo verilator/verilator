@@ -421,16 +421,18 @@ void V3PreProcImp::comment(const string& text) {
     bool vlcomment = false;
     if ((cp[0] == 'v' || cp[0] == 'V') && 0 == (strncmp(cp + 1, "erilator", 8))) {
         cp += strlen("verilator");
-        if (*cp == '_')
+        if (*cp == '_') {
             fileline()->v3error("Extra underscore in meta-comment;"
                                 " use /*verilator {...}*/ not /*verilator_{...}*/");
+        }
         vlcomment = true;
     } else if (0 == (strncmp(cp, "synopsys", strlen("synopsys")))) {
         cp += strlen("synopsys");
         synth = true;
-        if (*cp == '_')
+        if (*cp == '_') {
             fileline()->v3error("Extra underscore in meta-comment;"
                                 " use /*synopsys {...}*/ not /*synopsys_{...}*/");
+        }
     } else if (0 == (strncmp(cp, "cadence", strlen("cadence")))) {
         cp += strlen("cadence");
         synth = true;

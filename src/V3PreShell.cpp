@@ -110,6 +110,7 @@ protected:
             modfileline->language(v3Global.opt.fileLanguage(modfilename));
             V3Parse::ppPushText(
                 parsep, (string("`begin_keywords \"") + modfileline->language().ascii() + "\"\n"));
+            // FileLine tracks and frees modfileline
         }
 
         while (!s_preprocp->isEof()) {

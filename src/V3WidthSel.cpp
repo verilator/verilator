@@ -275,9 +275,10 @@ private:
         } else if (VN_IS(ddtypep, BasicDType) && ddtypep->isString()) {
             // SELBIT(string, index) -> GETC(string, index)
             AstNodeVarRef* varrefp = VN_CAST(fromp, NodeVarRef);
-            if (!varrefp)
+            if (!varrefp) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: String array operation on non-variable");
+            }
             AstNode* newp;
             if (varrefp && varrefp->lvalue()) {
                 newp = new AstGetcRefN(nodep->fileline(), fromp, rhsp);

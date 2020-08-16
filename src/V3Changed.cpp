@@ -135,10 +135,10 @@ private:
         m_statep->m_numStmts += visitor.count();
     }
 
-    virtual void visit(AstBasicDType* nodep) override {  //
+    virtual void visit(AstBasicDType*) override {  //
         newChangeDet();
     }
-    virtual void visit(AstPackArrayDType* nodep) override {  //
+    virtual void visit(AstPackArrayDType*) override {  //
         newChangeDet();
     }
     virtual void visit(AstUnpackArrayDType* nodep) override {

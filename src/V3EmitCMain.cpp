@@ -35,7 +35,7 @@ class EmitCMain : EmitCBaseVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit EmitCMain(AstNetlist* nodep) { emitInt(); }
+    explicit EmitCMain(AstNetlist*) { emitInt(); }
 
 private:
     // MAIN METHOD

@@ -153,10 +153,11 @@ private:
             for (int i = msb; i != (lsb + increment); i += increment, offset_from_init++) {
                 string name = nodep->name() + cvtToStr(i);
                 AstNode* valuep = nullptr;
-                if (nodep->valuep())
+                if (nodep->valuep()) {
                     valuep = new AstAdd(
                         nodep->fileline(), nodep->valuep()->cloneTree(true),
                         new AstConst(nodep->fileline(), AstConst::Unsized32(), offset_from_init));
+                }
                 AstNode* newp = new AstEnumItem(nodep->fileline(), name, nullptr, valuep);
                 if (addp) {
                     addp = addp->addNextNull(newp);

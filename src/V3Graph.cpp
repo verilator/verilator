@@ -52,7 +52,7 @@ void V3GraphVertex::verticesPushBack(V3Graph* graphp) {
     m_vertices.pushBack(graphp->m_vertices, this);
 }
 
-void V3GraphVertex::unlinkEdges(V3Graph* graphp) {
+void V3GraphVertex::unlinkEdges(V3Graph*) {
     for (V3GraphEdge* edgep = outBeginp(); edgep; /*BELOW*/) {
         V3GraphEdge* nextp = edgep->outNextp();
         edgep->unlinkDelete();

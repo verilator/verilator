@@ -1820,11 +1820,13 @@ private:
                 // TODO IEEE says assigning sized number that is not same size as enum is illegal
             }
             if (!itemp->valuep()) {
-                if (num.isEqZero() && itemp != nodep->itemsp())
+                if (num.isEqZero() && itemp != nodep->itemsp()) {
                     itemp->v3error("Enum value illegally wrapped around (IEEE 1800-2017 6.19)");
-                if (num.isFourState())
+                }
+                if (num.isFourState()) {
                     itemp->v3error("Enum value that is unassigned cannot follow value with X/Zs "
                                    "(IEEE 1800-2017 6.19)");
+                }
                 if (!nodep->dtypep()->basicp()
                     && !nodep->dtypep()->basicp()->keyword().isIntNumeric()) {
                     itemp->v3error("Enum names without values only allowed on numeric types");
@@ -1835,9 +1837,10 @@ private:
 
             AstConst* constp = VN_CAST(itemp->valuep(), Const);
             if (constp->num().isFourState() && nodep->dtypep()->basicp()
-                && !nodep->dtypep()->basicp()->isFourstate())
+                && !nodep->dtypep()->basicp()->isFourstate()) {
                 itemp->v3error("Enum value with X/Zs cannot be assigned to non-fourstate type "
                                "(IEEE 1800-2017 6.19)");
+            }
             num.opAssign(constp->num());
             // Look for duplicates
             if (inits.find(num) != inits.end()) {  // IEEE says illegal

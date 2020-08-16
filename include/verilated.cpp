@@ -40,7 +40,8 @@
 #endif
 // clang-format on
 
-#define VL_VALUE_STRING_MAX_WIDTH 8192  ///< Max static char array for VL_VALUE_STRING
+/// Max static char array for VL_VALUE_STRING
+constexpr unsigned VL_VALUE_STRING_MAX_WIDTH = 8192;
 
 //===========================================================================
 // Static sanity checks (when get C++11 can use static_assert)
@@ -764,8 +765,8 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     if (!widthSet) width = VerilatedImp::timeFormatWidth();
                     output += _vl_vsformat_time(tmp, d, left, width);
                 } else {
-                    std::string fmt(pctp, pos - pctp + 1);
-                    sprintf(tmp, fmt.c_str(), d);
+                    std::string fmts(pctp, pos - pctp + 1);
+                    sprintf(tmp, fmts.c_str(), d);
                     output += tmp;
                 }
                 break;
@@ -1699,7 +1700,7 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
     str_mod.erase(std::remove(str_mod.begin(), str_mod.end(), '_'), str_mod.end());
 
     errno = 0;
-    long v = std::strtol(str_mod.c_str(), nullptr, base);
+    auto v = std::strtol(str_mod.c_str(), nullptr, base);
     if (errno != 0) v = 0;
     return static_cast<IData>(v);
 }

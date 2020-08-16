@@ -63,7 +63,7 @@ public:
     int splitSize() const { return m_splitSize; }
     void splitSizeInc(int count) { m_splitSize += count; }
     void splitSizeInc(AstNode* nodep) { splitSizeInc(EmitCBaseCounterVisitor(nodep).count()); }
-    bool splitNeeded() {
+    bool splitNeeded() const {
         return (splitSize() && v3Global.opt.outputSplit()
                 && v3Global.opt.outputSplit() < splitSize());
     }
@@ -1222,18 +1222,16 @@ public:
         nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
     }
 
-    void init() {
+public:
+    EmitCStmts() {
         m_suppressSemi = false;
         m_wideTempRefp = nullptr;
         m_labelNum = 0;
         m_splitSize = 0;
         m_splitFilenum = 0;
     }
-
-public:
-    EmitCStmts() { init(); }
-    EmitCStmts(AstNode* nodep, V3OutCFile* ofp, bool trackText = false) {
-        init();
+    EmitCStmts(AstNode* nodep, V3OutCFile* ofp, bool trackText = false)
+        : EmitCStmts{} {
         m_ofp = ofp;
         m_trackText = trackText;
         iterate(nodep);
@@ -2104,10 +2102,11 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
         }
         // End
         puts(")");
-        if (isStmt)
+        if (isStmt) {
             puts(";\n");
-        else
+        } else {
             puts(" ");
+        }
         // Prep for next
         emitDispState.clear();
     }

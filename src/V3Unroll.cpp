@@ -67,7 +67,7 @@ private:
         return false;
     }
 
-    int unrollCount() {
+    int unrollCount() const {
         return m_generate ? v3Global.opt.unrollCount() * 16 : v3Global.opt.unrollCount();
     }
 

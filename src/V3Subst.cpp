@@ -71,7 +71,7 @@ class SubstVarEntry {
     bool m_wordUse = false;  // True if any individual word usage
     SubstVarWord m_whole;  // Data for whole vector used at once
     std::vector<SubstVarWord> m_words;  // Data for every word, if multi word variable
-    int debug() { return SubstBaseVisitor::debug(); }
+    static int debug() { return SubstBaseVisitor::debug(); }
 
 public:
     // CONSTRUCTORS

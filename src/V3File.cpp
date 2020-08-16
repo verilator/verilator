@@ -991,9 +991,9 @@ public:
     string protectIf(const string& old, bool doIt) {
         if (!v3Global.opt.protectIds() || old.empty() || !doIt) return old;
         const auto it = m_nameMap.find(old);
-        if (it != m_nameMap.end())
+        if (it != m_nameMap.end()) {
             return it->second;
-        else {
+        } else {
             string out;
             if (v3Global.opt.debugProtect()) {
                 // This lets us see the symbol being protected to debug cases

@@ -35,7 +35,7 @@
 // Internal constants
 
 #define VL_DEBUG_IF_PLI VL_DEBUG_IF
-#define VL_VPI_LINE_SIZE 8192
+constexpr unsigned VL_VPI_LINE_SIZE = 8192;
 
 //======================================================================
 // Internal macros
@@ -246,7 +246,7 @@ public:
     vluint32_t mask() const { return m_mask.u32; }
     vluint8_t mask_byte(int idx) { return m_mask.u8[idx & 3]; }
     vluint32_t entSize() const { return m_entSize; }
-    vluint32_t index() { return m_index; }
+    vluint32_t index() const { return m_index; }
     virtual vluint32_t type() const override {
         return (varp()->dims() > 1) ? vpiMemory : vpiReg;  // but might be wire, logic
     }
@@ -1606,7 +1606,6 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
     }
     _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s", VL_FUNC,
                   VerilatedVpiError::strFromVpiVal(valuep->format), fullname);
-    return;
 }
 
 void vpi_get_value(vpiHandle object, p_vpi_value valuep) {
@@ -1708,7 +1707,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             for (int i = 0; i < chars; ++i) {
                 union {
                     char byte[2];
-                    short half;
+                    vluint16_t half;
                 } val;
                 idx = div(i * 3, 8);
                 if (i < len) {

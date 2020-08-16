@@ -49,6 +49,7 @@ private:
     enum { FLAG_LINKABLE = 0x04 };  // Is in netlist tree, can be linked to
     enum { FLAG_LEAKED = 0x08 };  // Known to have been leaked
     enum { FLAG_UNDER_NOW = 0x10 };  // Is in tree as parent of current node
+
 public:
     // METHODS
     static void deleted(const AstNode* nodep) {
@@ -188,7 +189,6 @@ public:
         }
     }
 
-public:
     // CONSTRUCTORS
     BrokenTable() {}
     virtual ~BrokenTable() override {}
@@ -239,7 +239,7 @@ public:
 
 class BrokenCheckVisitor : public AstNVisitor {
 private:
-    void checkWidthMin(const AstNode* nodep) {
+    static void checkWidthMin(const AstNode* nodep) {
         UASSERT_OBJ(nodep->width() == nodep->widthMin()
                         || v3Global.widthMinUsage() != VWidthMinUsage::MATCHES_WIDTH,
                     nodep, "Width != WidthMin");

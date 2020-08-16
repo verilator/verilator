@@ -196,7 +196,7 @@ public:
     explicit CdcWidthVisitor(AstNode* nodep) { iterate(nodep); }
     virtual ~CdcWidthVisitor() override {}
     // ACCESSORS
-    int maxWidth() {
+    int maxWidth() const {
         size_t width = 1;
         width += m_maxFilenameLen;
         width += 1;  // The :

@@ -327,7 +327,7 @@ private:
         }
     }
     virtual void visit(AstEnumDType* nodep) override { iterate(nodep->skipRefp()); }
-    virtual void visit(AstNodeDType* nodep) override {
+    virtual void visit(AstNodeDType*) override {
         // Note more specific dtypes above
         if (!m_traVscp) return;
         addIgnore("Unsupported: data type");

@@ -138,7 +138,7 @@ public:
     void setNoInline(bool set) { m_noinline = set; }
     void setPublic(bool set) { m_public = set; }
 
-    void apply(AstNodeFTask* ftaskp) {
+    void apply(AstNodeFTask* ftaskp) const {
         if (m_noinline)
             ftaskp->addStmtsp(new AstPragma(ftaskp->fileline(), AstPragmaType::NO_INLINE_TASK));
         if (m_public)

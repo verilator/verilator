@@ -1452,7 +1452,7 @@ V3Number& V3Number::opAtoN(const V3Number& lhs, int base) {
     str.erase(std::remove(str.begin(), str.end(), '_'), str.end());
 
     errno = 0;
-    long v = std::strtol(str.c_str(), nullptr, base);
+    auto v = std::strtol(str.c_str(), nullptr, base);
     if (errno != 0) v = 0;
     return setLongS(static_cast<vlsint32_t>(v));
 }
@@ -2161,11 +2161,7 @@ V3Number& V3Number::opExtendXZ(const V3Number& lhs, uint32_t lbits) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < width(); bit++) {
-        char extendWith = lhs.bitIsExtend(bit, lbits);
-        if (extendWith == '1' || extendWith == 1) extendWith = 0;
-        setBit(bit, lhs.bitIsExtend(bit, lbits));
-    }
+    for (int bit = 0; bit < width(); bit++) { setBit(bit, lhs.bitIsExtend(bit, lbits)); }
     return *this;
 }
 

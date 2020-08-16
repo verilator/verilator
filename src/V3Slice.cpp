@@ -188,9 +188,9 @@ class SliceVisitor : public AstNVisitor {
                                           new AstArraySel(nodep->fileline(),
                                                           nodep->rhsp()->cloneTree(false), index)),
                                       NodeBiop);
-                        if (!logp)
+                        if (!logp) {
                             logp = clonep;
-                        else {
+                        } else {
                             switch (nodep->type()) {
                             case AstType::atEq:  // FALLTHRU
                             case AstType::atEqCase:

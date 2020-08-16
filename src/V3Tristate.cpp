@@ -943,7 +943,7 @@ class TristateVisitor : public TristateBaseVisitor {
                 FileLine* fl = nodep->fileline();
                 V3Number oneIfEn = VN_CAST(constp->user1p(), Const)
                                        ->num();  // visit(AstConst) already split into en/ones
-                V3Number oneIfEnOne = constp->num();
+                const V3Number& oneIfEnOne = constp->num();
                 AstVar* envarp = getCreateEnVarp(varrefp->varp());
                 AstNode* newp = new AstLogAnd(
                     fl, new AstEq(fl, new AstConst(fl, oneIfEn), new AstVarRef(fl, envarp, false)),

@@ -39,7 +39,7 @@ void V3Global::shutdown() {
     VL_DO_CLEAR(delete m_hierPlanp, m_hierPlanp = nullptr);  // delete nullptr is safe
 }
 
-void V3Global::checkTree() { rootp()->checkTree(); }
+void V3Global::checkTree() const { rootp()->checkTree(); }
 
 void V3Global::readFiles() {
     // NODE STATE

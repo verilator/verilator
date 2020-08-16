@@ -108,7 +108,7 @@ public:
 
     // METHODS
     void readFiles();
-    void checkTree();
+    void checkTree() const;
     static void dumpCheckGlobalTree(const string& stagename, int newNumber = 0,
                                     bool doDump = true);
     void assertDTypesResolved(bool flag) { m_assertDTypesResolved = flag; }
