@@ -369,8 +369,8 @@ public:
     AstParamTypeDType(FileLine* fl, AstVarType type, const string& name, VFlagChildDType,
                       AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
-        , m_varType(type)
-        , m_name(name) {
+        , m_varType{type}
+        , m_name{name} {
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
     }
@@ -413,7 +413,7 @@ public:
     AstTypedef(FileLine* fl, const string& name, AstNode* attrsp, VFlagChildDType,
                AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
+        , m_name{name} {
         childDTypep(dtp);  // Only for parser
         addAttrsp(attrsp);
         dtypep(nullptr);  // V3Width will resolve
@@ -447,7 +447,7 @@ private:
 public:
     AstTypedefFwd(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {}
+        , m_name{name} {}
     ASTNODE_NODE_FUNCS(TypedefFwd)
     // METHODS
     virtual string name() const override { return m_name; }
@@ -468,8 +468,8 @@ public:
     AstDefImplicitDType(FileLine* fl, const string& name, void* containerp, VFlagChildDType,
                         AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_containerp(containerp) {
+        , m_name{name}
+        , m_containerp{containerp} {
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
         m_uniqueNum = uniqueNumInc();
@@ -980,7 +980,7 @@ private:
 public:
     AstClassRefDType(FileLine* fl, AstClass* classp)
         : ASTGEN_SUPER(fl)
-        , m_classp(classp) {
+        , m_classp{classp} {
         dtypep(this);
     }
     ASTNODE_NODE_FUNCS(ClassRefDType)
@@ -1033,17 +1033,17 @@ private:
 public:
     AstIfaceRefDType(FileLine* fl, const string& cellName, const string& ifaceName)
         : ASTGEN_SUPER(fl)
-        , m_modportFileline(nullptr)
-        , m_cellName(cellName)
-        , m_ifaceName(ifaceName)
-        , m_modportName("") {}
+        , m_modportFileline{nullptr}
+        , m_cellName{cellName}
+        , m_ifaceName{ifaceName}
+        , m_modportName{""} {}
     AstIfaceRefDType(FileLine* fl, FileLine* modportFl, const string& cellName,
                      const string& ifaceName, const string& modport)
         : ASTGEN_SUPER(fl)
-        , m_modportFileline(modportFl)
-        , m_cellName(cellName)
-        , m_ifaceName(ifaceName)
-        , m_modportName(modport) {}
+        , m_modportFileline{modportFl}
+        , m_cellName{cellName}
+        , m_ifaceName{ifaceName}
+        , m_modportName{modport} {}
     ASTNODE_NODE_FUNCS(IfaceRefDType)
     // METHODS
     virtual const char* broken() const override;
@@ -1149,10 +1149,10 @@ private:
 public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {}
+        , m_name{name} {}
     AstRefDType(FileLine* fl, const string& name, AstNode* classOrPackagep, AstNode* paramsp)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
+        , m_name{name} {
         setNOp3p(classOrPackagep);
         addNOp4p(paramsp);
     }
@@ -1269,14 +1269,14 @@ private:
 public:
     AstMemberDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
+        , m_name{name} {
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
         refDTypep(nullptr);
     }
     AstMemberDType(FileLine* fl, const string& name, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
+        , m_name{name} {
         UASSERT(dtp, "AstMember created with no dtype");
         refDTypep(dtp);
         dtypep(this);
@@ -1355,7 +1355,7 @@ public:
     // Parents: ENUM
     AstEnumItem(FileLine* fl, const string& name, AstNode* rangep, AstNode* initp)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
+        , m_name{name} {
         addNOp1p(rangep);
         addNOp2p(initp);
     }
@@ -1377,8 +1377,8 @@ private:
 public:
     AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstNodeModule* packagep)
         : ASTGEN_SUPER(fl)
-        , m_itemp(itemp)
-        , m_packagep(packagep) {
+        , m_itemp{itemp}
+        , m_packagep{packagep} {
         dtypeFrom(m_itemp);
     }
     ASTNODE_NODE_FUNCS(EnumItemRef)
@@ -1671,15 +1671,15 @@ private:
     int m_declElWidth;  // If a packed array, the number of bits per element
 public:
     AstSel(FileLine* fl, AstNode* fromp, AstNode* lsbp, AstNode* widthp)
-        : ASTGEN_SUPER(fl, fromp, lsbp, widthp) {
-        m_declElWidth = 1;
+        : ASTGEN_SUPER(fl, fromp, lsbp, widthp)
+        , m_declElWidth{1} {
         if (VN_IS(widthp, Const)) {
             dtypeSetLogicSized(VN_CAST(widthp, Const)->toUInt(), VSigning::UNSIGNED);
         }
     }
     AstSel(FileLine* fl, AstNode* fromp, int lsb, int bitwidth)
-        : ASTGEN_SUPER(fl, fromp, new AstConst(fl, lsb), new AstConst(fl, bitwidth)) {
-        m_declElWidth = 1;
+        : ASTGEN_SUPER(fl, fromp, new AstConst(fl, lsb), new AstConst(fl, bitwidth))
+        , m_declElWidth{1} {
         dtypeSetLogicSized(bitwidth, VSigning::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(Sel)
@@ -1730,7 +1730,7 @@ public:
     AstSliceSel(FileLine* fl, AstNode* fromp, const VNumRange& declRange)
         : ASTGEN_SUPER(fl, fromp, new AstConst(fl, declRange.lo()),
                        new AstConst(fl, declRange.elements()))
-        , m_declRange(declRange) {}
+        , m_declRange{declRange} {}
     ASTNODE_NODE_FUNCS(SliceSel)
     virtual void dump(std::ostream& str) const override;
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& lo,
@@ -1803,14 +1803,14 @@ public:
     AstCMethodHard(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name,
                    AstNode* pinsp)
         : ASTGEN_SUPER(fl, false)
-        , m_name(name) {
+        , m_name{name} {
         setOp1p(fromp);
         dtypep(nullptr);  // V3Width will resolve
         addNOp2p(pinsp);
     }
     AstCMethodHard(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
         : ASTGEN_SUPER(fl, false)
-        , m_name(name) {
+        , m_name{name} {
         setOp1p(fromp);
         addNOp2p(pinsp);
     }
@@ -1922,8 +1922,8 @@ private:
 public:
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_origName(name) {
+        , m_name{name}
+        , m_origName{name} {
         init();
         combineType(type);
         childDTypep(dtp);  // Only for parser
@@ -1936,8 +1936,8 @@ public:
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_origName(name) {
+        , m_name{name}
+        , m_origName{name} {
         init();
         combineType(type);
         UASSERT(dtp, "AstVar created with no dtype");
@@ -1950,8 +1950,8 @@ public:
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagLogicPacked, int wantwidth)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_origName(name) {
+        , m_name{name}
+        , m_origName{name} {
         init();
         combineType(type);
         dtypeSetLogicSized(wantwidth, VSigning::UNSIGNED);
@@ -1959,8 +1959,8 @@ public:
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagBitPacked, int wantwidth)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_origName(name) {
+        , m_name{name}
+        , m_origName{name} {
         init();
         combineType(type);
         dtypeSetBitSized(wantwidth, VSigning::UNSIGNED);
@@ -1968,8 +1968,8 @@ public:
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_origName(name) {
+        , m_name{name}
+        , m_origName{name} {
         init();
         combineType(type);
         if (examplep->childDTypep()) { childDTypep(examplep->childDTypep()->cloneTree(true)); }
@@ -2223,10 +2223,10 @@ public:
     AstScope(FileLine* fl, AstNodeModule* modp, const string& name, AstScope* aboveScopep,
              AstCell* aboveCellp)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_aboveScopep(aboveScopep)
-        , m_aboveCellp(aboveCellp)
-        , m_modp(modp) {}
+        , m_name{name}
+        , m_aboveScopep{aboveScopep}
+        , m_aboveCellp{aboveCellp}
+        , m_modp{modp} {}
     ASTNODE_NODE_FUNCS(Scope)
     virtual void cloneRelink() override;
     virtual const char* broken() const override;
@@ -2277,8 +2277,8 @@ private:
 public:
     AstVarScope(FileLine* fl, AstScope* scopep, AstVar* varp)
         : ASTGEN_SUPER(fl)
-        , m_scopep(scopep)
-        , m_varp(varp) {
+        , m_scopep{scopep}
+        , m_varp{varp} {
         m_circular = false;
         m_trace = true;
         dtypeFrom(varp);
@@ -2365,10 +2365,10 @@ private:
 public:
     AstVarXRef(FileLine* fl, const string& name, const string& dotted, bool lvalue)
         : ASTGEN_SUPER(fl, name, nullptr, lvalue)
-        , m_dotted(dotted) {}
+        , m_dotted{dotted} {}
     AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, bool lvalue)
         : ASTGEN_SUPER(fl, varp->name(), varp, lvalue)
-        , m_dotted(dotted) {
+        , m_dotted{dotted} {
         dtypeFrom(varp);
     }
     ASTNODE_NODE_FUNCS(VarXRef)
@@ -2402,14 +2402,14 @@ private:
 public:
     AstPin(FileLine* fl, int pinNum, const string& name, AstNode* exprp)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
-        m_pinNum = pinNum;
+        , m_pinNum{pinNum}
+        , m_name{name} {
         setNOp1p(exprp);
     }
     AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp)
-        : ASTGEN_SUPER(fl) {
-        m_name = varname->name();
-        m_pinNum = pinNum;
+        : ASTGEN_SUPER(fl)
+        , m_pinNum{pinNum}
+        , m_name{varname->name()} {
         setNOp1p(exprp);
     }
     ASTNODE_NODE_FUNCS(Pin)
@@ -2451,7 +2451,7 @@ private:
 public:
     AstArg(FileLine* fl, const string& name, AstNode* exprp)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
+        , m_name{name} {
         setNOp1p(exprp);
     }
     ASTNODE_NODE_FUNCS(Arg)
@@ -2471,7 +2471,7 @@ private:
 public:
     AstModule(FileLine* fl, const string& name, bool program = false)
         : ASTGEN_SUPER(fl, name)
-        , m_isProgram(program) {}
+        , m_isProgram{program} {}
     ASTNODE_NODE_FUNCS(Module)
     virtual string verilogKwd() const override { return m_isProgram ? "program" : "module"; }
 };
@@ -2522,8 +2522,8 @@ private:
 public:
     AstPackageExport(FileLine* fl, AstPackage* packagep, const string& name)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_packagep(packagep) {}
+        , m_name{name}
+        , m_packagep{packagep} {}
     ASTNODE_NODE_FUNCS(PackageExport)
     virtual const char* broken() const override {
         BROKEN_RTN(!m_packagep || !m_packagep->brokeExists());
@@ -2546,8 +2546,8 @@ private:
 public:
     AstPackageImport(FileLine* fl, AstPackage* packagep, const string& name)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_packagep(packagep) {}
+        , m_name{name}
+        , m_packagep{packagep} {}
     ASTNODE_NODE_FUNCS(PackageImport)
     virtual const char* broken() const override {
         BROKEN_RTN(!m_packagep || !m_packagep->brokeExists());
@@ -2580,13 +2580,13 @@ private:
 public:
     AstMemberSel(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
+        , m_name{name} {
         setOp1p(fromp);
         dtypep(nullptr);  // V3Width will resolve
     }
     AstMemberSel(FileLine* fl, AstNode* fromp, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl)
-        , m_name(dtp->name()) {
+        , m_name{dtp->name()} {
         setOp1p(fromp);
         dtypep(dtp);
     }
@@ -2628,8 +2628,8 @@ private:
 public:
     AstModportFTaskRef(FileLine* fl, const string& name, bool isExport)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_export(isExport) {}
+        , m_name{name}
+        , m_export{isExport} {}
     ASTNODE_NODE_FUNCS(ModportFTaskRef)
     virtual const char* broken() const override {
         BROKEN_RTN(m_ftaskp && !m_ftaskp->brokeExists());
@@ -2657,8 +2657,8 @@ private:
 public:
     AstModportVarRef(FileLine* fl, const string& name, VDirection::en direction)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_direction(direction) {}
+        , m_name{name}
+        , m_direction{direction} {}
     ASTNODE_NODE_FUNCS(ModportVarRef)
     virtual const char* broken() const override {
         BROKEN_RTN(m_varp && !m_varp->brokeExists());
@@ -2682,7 +2682,7 @@ private:
 public:
     AstModport(FileLine* fl, const string& name, AstNode* varsp)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
+        , m_name{name} {
         addNOp1p(varsp);
     }
     virtual string name() const override { return m_name; }
@@ -2698,7 +2698,7 @@ private:
 public:
     AstIntfRef(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {}
+        , m_name{name} {}
     virtual string name() const override { return m_name; }
     ASTNODE_NODE_FUNCS(IntfRef)
 };
@@ -2718,13 +2718,13 @@ public:
     AstCell(FileLine* fl, FileLine* mfl, const string& instName, const string& modName,
             AstPin* pinsp, AstPin* paramsp, AstRange* rangep)
         : ASTGEN_SUPER(fl)
-        , m_modNameFileline(mfl)
-        , m_name(instName)
-        , m_origName(instName)
-        , m_modName(modName)
-        , m_hasIfaceVar(false)
-        , m_recursive(false)
-        , m_trace(true) {
+        , m_modNameFileline{mfl}
+        , m_name{instName}
+        , m_origName{instName}
+        , m_modName{modName}
+        , m_hasIfaceVar{false}
+        , m_recursive{false}
+        , m_trace{true} {
         addNOp1p(pinsp);
         addNOp2p(paramsp);
         setNOp3p(rangep);
@@ -2780,9 +2780,9 @@ public:
     AstCellInline(FileLine* fl, const string& name, const string& origModName,
                   const VTimescale& timeunit)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_origModName(origModName)
-        , m_timeunit(timeunit) {}
+        , m_name{name}
+        , m_origModName{origModName}
+        , m_timeunit{timeunit} {}
     ASTNODE_NODE_FUNCS(CellInline)
     virtual void dump(std::ostream& str) const override;
     virtual const char* broken() const override {
@@ -2806,7 +2806,7 @@ private:
 public:
     AstCellRef(FileLine* fl, const string& name, AstNode* cellp, AstNode* exprp)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
+        , m_name{name} {
         addNOp1p(cellp);
         addNOp2p(exprp);
     }
@@ -2824,7 +2824,7 @@ private:
 public:
     AstCellArrayRef(FileLine* fl, const string& name, AstNode* selectExprp)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
+        , m_name{name} {
         addNOp1p(selectExprp);
     }
     ASTNODE_NODE_FUNCS(CellArrayRef)
@@ -2840,7 +2840,7 @@ private:
 public:
     AstUnlinkedRef(FileLine* fl, AstNode* refp, const string& name, AstNode* crp)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
+        , m_name{name} {
         addNOp1p(refp);
         addNOp2p(crp);
     }
@@ -2859,7 +2859,7 @@ private:
 public:
     AstBind(FileLine* fl, const string& name, AstNode* cellsp)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {
+        , m_name{name} {
         UASSERT_OBJ(VN_IS(cellsp, Cell), cellsp, "Only cells allowed to be bound");
         addNOp1p(cellsp);
     }
@@ -2878,8 +2878,8 @@ private:
 public:
     AstPort(FileLine* fl, int pinnum, const string& name)
         : ASTGEN_SUPER(fl)
-        , m_pinNum(pinnum)
-        , m_name(name) {}
+        , m_pinNum{pinnum}
+        , m_name{name} {}
     ASTNODE_NODE_FUNCS(Port)
     virtual string name() const override { return m_name; }  // * = Port name
     int pinNum() const { return m_pinNum; }  // * = Pin number, for order based instantiation
@@ -2902,8 +2902,8 @@ public:
     AstParseRef(FileLine* fl, VParseRefExp expect, const string& name, AstNode* lhsp = nullptr,
                 AstNodeFTaskRef* ftaskrefp = nullptr)
         : ASTGEN_SUPER(fl)
-        , m_expect(expect)
-        , m_name(name) {
+        , m_expect{expect}
+        , m_name{name} {
         setNOp1p(lhsp);
         setNOp2p(ftaskrefp);
     }
@@ -2932,8 +2932,8 @@ public:
     AstClassOrPackageRef(FileLine* fl, const string& name, AstNode* classOrPackagep,
                          AstNode* paramsp)
         : ASTGEN_SUPER(fl)
-        , m_name(name)
-        , m_classOrPackagep(classOrPackagep) {
+        , m_name{name}
+        , m_classOrPackagep{classOrPackagep} {
         addNOp4p(paramsp);
     }
     ASTNODE_NODE_FUNCS(ClassOrPackageRef)
@@ -2967,7 +2967,7 @@ class AstDot : public AstNode {
 public:
     AstDot(FileLine* fl, bool colon, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl)
-        , m_colon(colon) {
+        , m_colon{colon} {
         setOp1p(lhsp);
         setOp2p(rhsp);
     }
@@ -3051,8 +3051,8 @@ private:
 public:
     AstDpiExport(FileLine* fl, const string& vname, const string& cname)
         : ASTGEN_SUPER(fl)
-        , m_name(vname)
-        , m_cname(cname) {}
+        , m_name{vname}
+        , m_cname{cname} {}
     ASTNODE_NODE_FUNCS(DpiExport)
     virtual string name() const override { return m_name; }
     virtual void name(const string& name) override { m_name = name; }
@@ -3090,29 +3090,24 @@ public:
     class Never {};  // for creator type-overload selection
     AstSenItem(FileLine* fl, VEdgeType edgeType, AstNode* varrefp)
         : ASTGEN_SUPER(fl)
-        , m_edgeType(edgeType) {
+        , m_edgeType{edgeType} {
         setOp1p(varrefp);
     }
     AstSenItem(FileLine* fl, Combo)
-        : ASTGEN_SUPER(fl) {
-        m_edgeType = VEdgeType::ET_COMBO;
-    }
+        : ASTGEN_SUPER(fl)
+        , m_edgeType{VEdgeType::ET_COMBO} {}
     AstSenItem(FileLine* fl, Illegal)
-        : ASTGEN_SUPER(fl) {
-        m_edgeType = VEdgeType::ET_ILLEGAL;
-    }
+        : ASTGEN_SUPER(fl)
+        , m_edgeType{VEdgeType::ET_ILLEGAL} {}
     AstSenItem(FileLine* fl, Initial)
-        : ASTGEN_SUPER(fl) {
-        m_edgeType = VEdgeType::ET_INITIAL;
-    }
+        : ASTGEN_SUPER(fl)
+        , m_edgeType{VEdgeType::ET_INITIAL} {}
     AstSenItem(FileLine* fl, Settle)
-        : ASTGEN_SUPER(fl) {
-        m_edgeType = VEdgeType::ET_SETTLE;
-    }
+        : ASTGEN_SUPER(fl)
+        , m_edgeType{VEdgeType::ET_SETTLE} {}
     AstSenItem(FileLine* fl, Never)
-        : ASTGEN_SUPER(fl) {
-        m_edgeType = VEdgeType::ET_NEVER;
-    }
+        : ASTGEN_SUPER(fl)
+        , m_edgeType{VEdgeType::ET_NEVER} {}
     ASTNODE_NODE_FUNCS(SenItem)
     virtual void dump(std::ostream& str) const override;
     virtual V3Hash sameHash() const override { return V3Hash(edgeType()); }
@@ -3185,7 +3180,7 @@ class AstAlways : public AstNodeProcedure {
 public:
     AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sensesp, AstNode* bodysp)
         : ASTGEN_SUPER(fl, bodysp)
-        , m_keyword(keyword) {
+        , m_keyword{keyword} {
         addNOp1p(sensesp);
     }
     ASTNODE_NODE_FUNCS(Always)
@@ -3356,8 +3351,8 @@ private:
 public:
     AstComment(FileLine* fl, const string& name, bool showAt = false)
         : ASTGEN_SUPER(fl)
-        , m_showAt(showAt)
-        , m_name(name) {}
+        , m_showAt{showAt}
+        , m_name{name} {}
     ASTNODE_NODE_FUNCS(Comment)
     virtual string name() const override { return m_name; }  // * = Text
     virtual V3Hash sameHash() const override { return V3Hash(); }  // Ignore name in comments
@@ -3462,9 +3457,8 @@ private:
     AstCoverDecl* m_declp;  // [After V3Coverage] Pointer to declaration
 public:
     AstCoverInc(FileLine* fl, AstCoverDecl* declp)
-        : ASTGEN_SUPER(fl) {
-        m_declp = declp;
-    }
+        : ASTGEN_SUPER(fl)
+        , m_declp{declp} {}
     ASTNODE_NODE_FUNCS(CoverInc)
     virtual const char* broken() const override {
         BROKEN_RTN(!declp()->brokeExists());
@@ -3546,21 +3540,15 @@ class AstCase : public AstNodeCase {
     // casesp Children: CASEITEMs
 private:
     VCaseType m_casex;  // 0=case, 1=casex, 2=casez
-    bool m_fullPragma;  // Synthesis full_case
-    bool m_parallelPragma;  // Synthesis parallel_case
-    bool m_uniquePragma;  // unique case
-    bool m_unique0Pragma;  // unique0 case
-    bool m_priorityPragma;  // priority case
+    bool m_fullPragma = false;  // Synthesis full_case
+    bool m_parallelPragma = false;  // Synthesis parallel_case
+    bool m_uniquePragma = false;  // unique case
+    bool m_unique0Pragma = false;  // unique0 case
+    bool m_priorityPragma = false;  // priority case
 public:
     AstCase(FileLine* fl, VCaseType casex, AstNode* exprp, AstNode* casesp)
-        : ASTGEN_SUPER(fl, exprp, casesp) {
-        m_casex = casex;
-        m_fullPragma = false;
-        m_parallelPragma = false;
-        m_uniquePragma = false;
-        m_unique0Pragma = false;
-        m_priorityPragma = false;
-    }
+        : ASTGEN_SUPER(fl, exprp, casesp)
+        , m_casex{casex} {}
     ASTNODE_NODE_FUNCS(Case)
     virtual string verilogKwd() const override {
         return casez() ? "casez" : casex() ? "casex" : "case";
@@ -3591,13 +3579,12 @@ class AstCaseItem : public AstNode {
     // condsp Children: MATH  (Null condition used for default block)
     // bodysp Children: Statements
 private:
-    bool m_ignoreOverlap;  // Default created by assertions; ignore overlaps
+    bool m_ignoreOverlap = false;  // Default created by assertions; ignore overlaps
 public:
     AstCaseItem(FileLine* fl, AstNode* condsp, AstNode* bodysp)
         : ASTGEN_SUPER(fl) {
         addNOp1p(condsp);
         addNOp2p(bodysp);
-        m_ignoreOverlap = false;
     }
     ASTNODE_NODE_FUNCS(CaseItem)
     virtual int instrCount() const override { return widthInstrs() + instrCountBranch(); }
@@ -3623,10 +3610,10 @@ public:
     AstSFormatF(FileLine* fl, const string& text, bool hidden, AstNode* exprsp,
                 char missingArgChar = 'd')
         : ASTGEN_SUPER(fl)
-        , m_text(text)
-        , m_hidden(hidden)
-        , m_hasFormat(true)
-        , m_missingArgChar(missingArgChar) {
+        , m_text{text}
+        , m_hidden{hidden}
+        , m_hasFormat{true}
+        , m_missingArgChar{missingArgChar} {
         dtypeSetString();
         addNOp1p(exprsp);
         addNOp2p(nullptr);
@@ -3634,10 +3621,10 @@ public:
     AstSFormatF(FileLine* fl, NoFormat, AstNode* exprsp, char missingArgChar = 'd',
                 bool hidden = true)
         : ASTGEN_SUPER(fl)
-        , m_text("")
-        , m_hidden(hidden)
-        , m_hasFormat(false)
-        , m_missingArgChar(missingArgChar) {
+        , m_text{""}
+        , m_hidden{hidden}
+        , m_hasFormat{false}
+        , m_missingArgChar{missingArgChar} {
         dtypeSetString();
         addNOp1p(exprsp);
         addNOp2p(nullptr);
@@ -3730,7 +3717,7 @@ class AstDumpCtl : public AstNodeStmt {
 public:
     AstDumpCtl(FileLine* fl, VDumpCtlType ctlType, AstNode* exprp = nullptr)
         : ASTGEN_SUPER(fl)
-        , m_ctlType(ctlType) {
+        , m_ctlType{ctlType} {
         setNOp1p(exprp);
     }
     ASTNODE_NODE_FUNCS(DumpCtl)
@@ -4076,7 +4063,7 @@ private:
 public:
     AstFScanF(FileLine* fl, const string& text, AstNode* filep, AstNode* exprsp)
         : ASTGEN_SUPER(fl)
-        , m_text(text) {
+        , m_text{text} {
         addNOp1p(exprsp);
         setNOp2p(filep);
     }
@@ -4112,7 +4099,7 @@ private:
 public:
     AstSScanF(FileLine* fl, const string& text, AstNode* fromp, AstNode* exprsp)
         : ASTGEN_SUPER(fl)
-        , m_text(text) {
+        , m_text{text} {
         addNOp1p(exprsp);
         setOp2p(fromp);
     }
@@ -4264,7 +4251,7 @@ private:
 public:
     AstTestPlusArgs(FileLine* fl, const string& text)
         : ASTGEN_SUPER(fl)
-        , m_text(text) {}
+        , m_text{text} {}
     ASTNODE_NODE_FUNCS(TestPlusArgs)
     virtual string name() const override { return m_text; }
     virtual string verilogKwd() const override { return "$test$plusargs"; }
@@ -4390,7 +4377,7 @@ private:
 public:
     AstDisable(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl)
-        , m_name(name) {}
+        , m_name{name} {}
     ASTNODE_NODE_FUNCS(Disable)
     virtual string name() const override { return m_name; }  // * = Block name
     virtual void name(const string& flag) override { m_name = flag; }
@@ -4498,7 +4485,7 @@ private:
 public:
     AstJumpLabel(FileLine* fl, AstJumpBlock* blockp)
         : ASTGEN_SUPER(fl)
-        , m_blockp(blockp) {}
+        , m_blockp{blockp} {}
     ASTNODE_NODE_FUNCS(JumpLabel)
     virtual bool maybePointedTo() const override { return true; }
     virtual const char* broken() const override {
@@ -4528,7 +4515,7 @@ private:
 public:
     AstJumpGo(FileLine* fl, AstJumpLabel* labelp)
         : ASTGEN_SUPER(fl)
-        , m_labelp(labelp) {}
+        , m_labelp{labelp} {}
     ASTNODE_NODE_FUNCS(JumpGo);
     virtual const char* broken() const override {
         BROKEN_RTN(!labelp()->brokeExistsBelow());
@@ -4612,10 +4599,9 @@ public:
     // Node that simply puts name into the output stream
     AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool generate = false,
              bool implied = false)
-        : ASTGEN_SUPER(fl, name, stmtsp) {
-        m_generate = generate;
-        m_implied = implied;
-    }
+        : ASTGEN_SUPER(fl, name, stmtsp)
+        , m_generate{generate}
+        , m_implied{implied} {}
     ASTNODE_NODE_FUNCS(Begin)
     virtual void dump(std::ostream& str) const override;
     // op1p is statements in NodeBlock
@@ -4833,9 +4819,8 @@ public:
     // Pragmas don't result in any output code, they're just flags that affect
     // other processing in verilator.
     AstPragma(FileLine* fl, AstPragmaType pragType)
-        : ASTGEN_SUPER(fl) {
-        m_pragType = pragType;
-    }
+        : ASTGEN_SUPER(fl)
+        , m_pragType{pragType} {}
     ASTNODE_NODE_FUNCS(Pragma)
     AstPragmaType pragType() const { return m_pragType; }  // *=type of the pragma
     virtual V3Hash sameHash() const override { return V3Hash(pragType()); }
@@ -4994,16 +4979,16 @@ public:
                  AstNode* valuep, const VNumRange& bitRange, const VNumRange& arrayRange,
                  bool isScoped)
         : ASTGEN_SUPER(fl)
-        , m_showname(showname)
-        , m_bitRange(bitRange)
-        , m_arrayRange(arrayRange)
+        , m_showname{showname}
+        , m_bitRange{bitRange}
+        , m_arrayRange{arrayRange}
         , m_codeInc(
               ((arrayRange.ranged() ? arrayRange.elements() : 1) * valuep->dtypep()->widthWords()
                * (VL_EDATASIZE / 32)))  // A code is always 32-bits
-        , m_varType(varp->varType())
-        , m_declKwd(varp->declKwd())
-        , m_declDirection(varp->declDirection())
-        , m_isScoped(isScoped) {
+        , m_varType{varp->varType()}
+        , m_declKwd{varp->declKwd()}
+        , m_declDirection{varp->declDirection()}
+        , m_isScoped{isScoped} {
         dtypeFrom(valuep);
         addNOp1p(valuep);
     }
@@ -5039,8 +5024,8 @@ private:
 public:
     AstTraceInc(FileLine* fl, AstTraceDecl* declp, bool full)
         : ASTGEN_SUPER(fl)
-        , m_declp(declp)
-        , m_full(full) {
+        , m_declp{declp}
+        , m_full{full} {
         dtypeFrom(declp);
         addOp2p(declp->valuep()->cloneTree(true));
     }
@@ -5193,7 +5178,7 @@ class AstUdpTableLine : public AstNode {
 public:
     AstUdpTableLine(FileLine* fl, const string& text)
         : ASTGEN_SUPER(fl)
-        , m_text(text) {}
+        , m_text{text} {}
     ASTNODE_NODE_FUNCS(UdpTableLine)
     virtual string name() const override { return m_text; }
     string text() const { return m_text; }
@@ -5208,13 +5193,13 @@ private:
     bool m_reset;  // Random reset, versus always random
 public:
     AstRand(FileLine* fl, AstNodeDType* dtp, bool reset)
-        : ASTGEN_SUPER(fl) {
+        : ASTGEN_SUPER(fl)
+        , m_reset{reset} {
         dtypep(dtp);
-        m_reset = reset;
     }
     explicit AstRand(FileLine* fl)
         : ASTGEN_SUPER(fl)
-        , m_reset(false) {}
+        , m_reset{false} {}
     ASTNODE_NODE_FUNCS(Rand)
     virtual string emitVerilog() override { return "%f$random"; }
     virtual string emitC() override {
@@ -5233,7 +5218,7 @@ class AstTime : public AstNodeTermop {
 public:
     AstTime(FileLine* fl, const VTimescale& timeunit)
         : ASTGEN_SUPER(fl)
-        , m_timeunit(timeunit) {
+        , m_timeunit{timeunit} {
         dtypeSetUInt64();
     }
     ASTNODE_NODE_FUNCS(Time)
@@ -5255,7 +5240,7 @@ class AstTimeD : public AstNodeTermop {
 public:
     AstTimeD(FileLine* fl, const VTimescale& timeunit)
         : ASTGEN_SUPER(fl)
-        , m_timeunit(timeunit) {
+        , m_timeunit{timeunit} {
         dtypeSetDouble();
     }
     ASTNODE_NODE_FUNCS(TimeD)
@@ -6265,7 +6250,7 @@ private:
 public:
     AstAtoN(FileLine* fl, AstNode* lhsp, FmtType fmt)
         : ASTGEN_SUPER(fl, lhsp)
-        , m_fmt(fmt) {
+        , m_fmt{fmt} {
         fmt == ATOREAL ? dtypeSetDouble() : dtypeSetSigned32();
     }
     ASTNODE_NODE_FUNCS(AtoN)
@@ -8017,7 +8002,7 @@ private:
 public:
     AstCompareNN(FileLine* fl, AstNode* lhsp, AstNode* rhsp, bool ignoreCase)
         : ASTGEN_SUPER(fl, lhsp, rhsp)
-        , m_ignoreCase(ignoreCase) {
+        , m_ignoreCase{ignoreCase} {
         dtypeSetUInt32();
     }
     ASTNODE_NODE_FUNCS(CompareNN)
@@ -8180,13 +8165,12 @@ class AstPatMember : public AstNodeMath {
     // Parents: AstPattern
     // Children: expression, AstPattern, replication count
 private:
-    bool m_default;
+    bool m_default = false;
 
 public:
     AstPatMember(FileLine* fl, AstNode* lhsp, AstNode* keyp, AstNode* repp)
         : ASTGEN_SUPER(fl) {
         addOp1p(lhsp), setNOp2p(keyp), setNOp3p(repp);
-        m_default = false;
     }
     ASTNODE_NODE_FUNCS(PatMember)
     virtual string emitVerilog() override { return lhssp() ? "%f{%r{%k%l}}" : "%l"; }
@@ -8460,11 +8444,10 @@ private:
     bool m_support : 1;  ///< Support file (non systemc)
 public:
     AstCFile(FileLine* fl, const string& name)
-        : ASTGEN_SUPER(fl, name) {
-        m_slow = false;
-        m_source = false;
-        m_support = false;
-    }
+        : ASTGEN_SUPER(fl, name)
+        , m_slow{false}
+        , m_source{false}
+        , m_support{false} {}
     ASTNODE_NODE_FUNCS(CFile)
     virtual void dump(std::ostream& str = std::cout) const override;
     bool slow() const { return m_slow; }
@@ -8701,15 +8684,15 @@ public:
     // Emit C textual math function (like AstUCFunc)
     AstCMath(FileLine* fl, AstNode* exprsp)
         : ASTGEN_SUPER(fl)
-        , m_cleanOut(true)
-        , m_pure(false) {
+        , m_cleanOut{true}
+        , m_pure{false} {
         addOp1p(exprsp);
         dtypeFrom(exprsp);
     }
     AstCMath(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut = true)
         : ASTGEN_SUPER(fl)
-        , m_cleanOut(cleanOut)
-        , m_pure(true) {
+        , m_cleanOut{cleanOut}
+        , m_pure{true} {
         addNOp1p(new AstText(fl, textStmt, true));
         if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::UNSIGNED); }
     }
@@ -8772,8 +8755,8 @@ private:
 public:
     AstCUse(FileLine* fl, VUseType useType, const string& name)
         : ASTGEN_SUPER(fl)
-        , m_useType(useType)
-        , m_name(name) {}
+        , m_useType{useType}
+        , m_name{name} {}
     ASTNODE_NODE_FUNCS(CUse)
     virtual string name() const override { return m_name; }
     virtual void dump(std::ostream& str = std::cout) const override;

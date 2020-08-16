@@ -40,12 +40,12 @@ public:
     enum en { OPT_DEFAULT_FALSE = 0, OPT_DEFAULT_TRUE, OPT_TRUE, OPT_FALSE, _ENUM_END };
     enum en m_e;
     inline VOptionBool()
-        : m_e(OPT_DEFAULT_FALSE) {}
+        : m_e{OPT_DEFAULT_FALSE} {}
     // cppcheck-suppress noExplicitConstructor
     inline VOptionBool(en _e)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit inline VOptionBool(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e{static_cast<en>(_e)} {}
     operator en() const { return m_e; }
     bool isDefault() const { return m_e == OPT_DEFAULT_FALSE || m_e == OPT_DEFAULT_TRUE; }
     bool isTrue() const { return m_e == OPT_TRUE || m_e == OPT_DEFAULT_TRUE; }
@@ -87,12 +87,12 @@ public:
     enum en m_e;
     // CONSTRUCTOR
     inline VTimescale()
-        : m_e(NONE) {}
+        : m_e{NONE} {}
     // cppcheck-suppress noExplicitConstructor
     inline VTimescale(en _e)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit inline VTimescale(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e{static_cast<en>(_e)} {}
     // Construct from string
     VTimescale(const string& value, bool& badr);
     VTimescale(double value, bool& badr) {
@@ -172,9 +172,9 @@ public:
     enum en { VCD = 0, FST } m_e;
     // cppcheck-suppress noExplicitConstructor
     inline TraceFormat(en _e = VCD)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit inline TraceFormat(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e{static_cast<en>(_e)} {}
     operator en() const { return m_e; }
     bool fst() const { return m_e == FST; }
     string classBase() const {

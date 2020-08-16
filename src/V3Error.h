@@ -129,13 +129,13 @@ public:
     // clang-format on
     enum en m_e;
     inline V3ErrorCode()
-        : m_e(EC_MIN) {}
+        : m_e{EC_MIN} {}
     // cppcheck-suppress noExplicitConstructor
     inline V3ErrorCode(en _e)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit V3ErrorCode(const char* msgp);  // Matching code or ERROR
     explicit inline V3ErrorCode(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e{static_cast<en>(_e)} {}
     operator en() const { return m_e; }
     const char* ascii() const {
         // clang-format off

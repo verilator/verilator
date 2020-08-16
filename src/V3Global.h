@@ -46,12 +46,12 @@ public:
     enum en { LINT_WIDTH, MATCHES_WIDTH, VERILOG_WIDTH };
     enum en m_e;
     inline VWidthMinUsage()
-        : m_e(LINT_WIDTH) {}
+        : m_e{LINT_WIDTH} {}
     // cppcheck-suppress noExplicitConstructor
     inline VWidthMinUsage(en _e)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit inline VWidthMinUsage(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e{static_cast<en>(_e)} {}
     operator en() const { return m_e; }
 };
 inline bool operator==(const VWidthMinUsage& lhs, const VWidthMinUsage& rhs) {

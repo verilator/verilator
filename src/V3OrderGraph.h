@@ -89,12 +89,12 @@ struct OrderVEdgeType {
     }
     enum en m_e;
     inline OrderVEdgeType()
-        : m_e(VERTEX_UNKNOWN) {}
+        : m_e{VERTEX_UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
     inline OrderVEdgeType(en _e)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit inline OrderVEdgeType(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e{static_cast<en>(_e)} {}
     operator en() const { return m_e; }
 };
 inline bool operator==(const OrderVEdgeType& lhs, const OrderVEdgeType& rhs) {

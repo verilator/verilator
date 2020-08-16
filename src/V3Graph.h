@@ -55,12 +55,12 @@ public:
     };
     enum en m_e;
     inline GraphWay()
-        : m_e(FORWARD) {}
+        : m_e{FORWARD} {}
     // cppcheck-suppress noExplicitConstructor
     inline GraphWay(en _e)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit inline GraphWay(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e{static_cast<en>(_e)} {}
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"FORWARD", "REVERSE"};
