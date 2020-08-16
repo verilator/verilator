@@ -165,6 +165,7 @@ public:
     enum en {
         ILLEGAL,
         COVERAGE_BLOCK_OFF,
+        HIER_BLOCK,
         INLINE_MODULE,
         NO_INLINE_MODULE,
         NO_INLINE_TASK,
@@ -1891,6 +1892,7 @@ public:
     // For documentation on emitC format see EmitCStmts::emitOpName
     virtual string emitC() = 0;
     virtual string emitSimpleOperator() { return ""; }
+    virtual bool emitCheckMaxWords() { return false; }  // Check VL_MULS_MAX_WORDS
     virtual bool cleanOut() const = 0;  // True if output has extra upper bits zero
     // Someday we will generically support data types on every math node
     // Until then isOpaque indicates we shouldn't constant optimize this node type
@@ -2246,19 +2248,6 @@ public:
     void addNotParallelp(AstNode* nodep) { setOp3p(nodep); }
 };
 
-class AstNodeSenItem : public AstNode {
-    // An AstSenItem or AstSenGate
-public:
-    AstNodeSenItem(AstType t, FileLine* fl)
-        : AstNode(t, fl) {}
-    ASTNODE_BASE_FUNCS(NodeSenItem)
-    virtual bool isClocked() const = 0;
-    virtual bool isCombo() const = 0;
-    virtual bool isInitial() const = 0;
-    virtual bool isSettle() const = 0;
-    virtual bool isNever() const = 0;
-};
-
 class AstNodeVarRef : public AstNodeMath {
     // An AstVarRef or AstVarXRef
 private:
@@ -2269,29 +2258,26 @@ private:
     string m_name;  // Name of variable
     string m_hiername;  // Scope converted into name-> for emitting
     bool m_hierThis;  // Hiername points to "this" function
-    void init();
 
 public:
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, bool lvalue)
         : AstNodeMath(t, fl)
         , m_lvalue(lvalue)
-        , m_varp(NULL)
         , m_varScopep(NULL)
         , m_packagep(NULL)
         , m_name(name)
         , m_hierThis(false) {
-        init();
+        this->varp(NULL);
     }
     AstNodeVarRef(AstType t, FileLine* fl, const string& name, AstVar* varp, bool lvalue)
         : AstNodeMath(t, fl)
         , m_lvalue(lvalue)
-        , m_varp(varp)
         , m_varScopep(NULL)
         , m_packagep(NULL)
         , m_name(name)
         , m_hierThis(false) {
         // May have varp==NULL
-        init();
+        this->varp(varp);
     }
     ASTNODE_BASE_FUNCS(NodeVarRef)
     virtual bool hasDType() const { return true; }
@@ -2303,7 +2289,7 @@ public:
     bool lvalue() const { return m_lvalue; }
     void lvalue(bool lval) { m_lvalue = lval; }  // Avoid using this; Set in constructor
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
-    void varp(AstVar* varp) { m_varp = varp; }
+    void varp(AstVar* varp);
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
     string hiername() const { return m_hiername; }
@@ -2803,6 +2789,7 @@ private:
     bool m_modTrace : 1;  // Tracing this module
     bool m_inLibrary : 1;  // From a library, no error if not used, never top level
     bool m_dead : 1;  // LinkDot believes is dead; will remove in Dead visitors
+    bool m_hierBlock : 1;  // Hiearchical Block marked by HIER_BLOCK pragma
     bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise NULL
@@ -2821,6 +2808,7 @@ public:
         , m_modTrace(false)
         , m_inLibrary(false)
         , m_dead(false)
+        , m_hierBlock(false)
         , m_internal(false)
         , m_recursive(false)
         , m_recursiveClone(false)
@@ -2855,6 +2843,8 @@ public:
     bool modTrace() const { return m_modTrace; }
     void dead(bool flag) { m_dead = flag; }
     bool dead() const { return m_dead; }
+    void hierBlock(bool flag) { m_hierBlock = flag; }
+    bool hierBlock() const { return m_hierBlock; }
     void internal(bool flag) { m_internal = flag; }
     bool internal() const { return m_internal; }
     void recursive(bool flag) { m_recursive = flag; }
@@ -2943,8 +2933,9 @@ inline bool AstNode::sameGateTree(const AstNode* node2p) const {
     return sameTreeIter(this, node2p, true, true);
 }
 
-inline void AstNodeVarRef::init() {
-    if (m_varp) dtypep(m_varp->dtypep());
+inline void AstNodeVarRef::varp(AstVar* varp) {
+    m_varp = varp;
+    dtypeFrom(varp);
 }
 
 inline bool AstNodeDType::isFourstate() const { return basicp()->isFourstate(); }

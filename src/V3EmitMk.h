@@ -20,11 +20,14 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+class V3HierBlockPlan;
+
 //============================================================================
 
 class V3EmitMk {
 public:
     static void emitmk();
+    static void emitHierVerilation(const V3HierBlockPlan* planp);
 };
 
 #endif  // Guard

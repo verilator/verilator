@@ -20,6 +20,7 @@
 #include "V3Global.h"
 #include "V3Ast.h"
 #include "V3File.h"
+#include "V3HierBlock.h"
 #include "V3LinkCells.h"
 #include "V3Parse.h"
 #include "V3ParseSym.h"
@@ -32,6 +33,10 @@ AstNetlist* V3Global::makeNetlist() {
     AstNetlist* newp = new AstNetlist();
     newp->addTypeTablep(new AstTypeTable(newp->fileline()));
     return newp;
+}
+
+void V3Global::shutdown() {
+    VL_DO_CLEAR(delete m_hierPlanp, m_hierPlanp = NULL);  // delete nullptr is safe
 }
 
 void V3Global::checkTree() { rootp()->checkTree(); }

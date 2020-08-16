@@ -52,6 +52,7 @@
 #include "V3Gate.h"
 #include "V3GenClk.h"
 #include "V3Graph.h"
+#include "V3HierBlock.h"
 #include "V3Inline.h"
 #include "V3Inst.h"
 #include "V3Life.h"
@@ -101,6 +102,13 @@
 
 V3Global v3Global;
 
+static void reportStatsIfEnabled() {
+    if (v3Global.opt.stats()) {
+        V3Stats::statsFinalAll(v3Global.rootp());
+        V3Stats::statsReport();
+    }
+}
+
 static void process() {
     // Sort modules by level so later algorithms don't need to care
     V3LinkLevel::modSortByLevel();
@@ -139,6 +147,17 @@ static void process() {
     // Remove any modules that were parameterized and are no longer referenced.
     V3Dead::deadifyModules(v3Global.rootp());
     v3Global.checkTree();
+
+    // Create a hierarchical verilation plan
+    if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && v3Global.opt.hierarchical()) {
+        V3HierBlockPlan::createPlan(v3Global.rootp());
+        // If a plan is created, further analysis is not necessary.
+        // The actual Verilation will be done based on this plan.
+        if (v3Global.hierPlanp()) {
+            reportStatsIfEnabled();
+            return;
+        }
+    }
 
     // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
     V3Width::width(v3Global.rootp());
@@ -194,12 +213,16 @@ static void process() {
         // Expand inouts, stage 2
         // Also simplify pin connections to always be AssignWs in prep for V3Unknown
         V3Tristate::tristateAll(v3Global.rootp());
+    }
 
+    if (!v3Global.opt.xmlOnly()) {
         // Move assignments from X into MODULE temps.
         // (Before flattening, so each new X variable is shared between all scopes of that module.)
         V3Unknown::unknownAll(v3Global.rootp());
         v3Global.constRemoveXs(true);
+    }
 
+    if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Module inlining
         // Cannot remove dead variables after this, as alias information for final
         // V3Scope's V3LinkDot is in the AstVar.
@@ -499,10 +522,7 @@ static void process() {
     }
 
     // Statistics
-    if (v3Global.opt.stats()) {
-        V3Stats::statsFinalAll(v3Global.rootp());
-        V3Stats::statsReport();
-    }
+    reportStatsIfEnabled();
 
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
         // Makefile must be after all other emitters
@@ -520,8 +540,9 @@ static void verilate(const string& argString) {
     // Can we skip doing everything if times are ok?
     V3File::addSrcDepend(v3Global.opt.bin());
     if (v3Global.opt.skipIdentical().isTrue()
-        && V3File::checkTimes(
-            v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__verFiles.dat", argString)) {
+        && V3File::checkTimes(v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
+                                  + "__verFiles.dat",
+                              argString)) {
         UINFO(1, "--skip-identical: No change to any source files, exiting\n");
         return;
     }
@@ -534,9 +555,9 @@ static void verilate(const string& argString) {
     //--FRONTEND------------------
 
     // Cleanup
-    V3Os::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix() + "_*.tree");
-    V3Os::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix() + "_*.dot");
-    V3Os::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix() + "_*.txt");
+    V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.tree");
+    V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.dot");
+    V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.txt");
 
     // Internal tests (after option parsing as need debug() setting,
     // and after removing files as may make debug output)
@@ -570,15 +591,32 @@ static void verilate(const string& argString) {
 
     V3Error::abortIfWarnings();
 
+    if (v3Global.hierPlanp()) {  // This run is for just write a makefile
+        UASSERT(v3Global.opt.hierarchical(), "hierarchical must be set");
+        UASSERT(!v3Global.opt.hierChild(), "This must not be a hierarhcical-child run");
+        UASSERT(v3Global.opt.hierBlocks().empty(), "hierarchical-block must not be set");
+        if (v3Global.opt.gmake()) {
+            v3Global.hierPlanp()->writeCommandArgsFiles(false);
+            V3EmitMk::emitHierVerilation(v3Global.hierPlanp());
+        }
+        if (v3Global.opt.cmake()) {
+            v3Global.hierPlanp()->writeCommandArgsFiles(true);
+            V3EmitCMake::emit();
+        }
+    }
     if (v3Global.opt.makeDepend().isTrue()) {
-        V3File::writeDepend(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__ver.d");
+        string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix();
+        filename += v3Global.opt.hierTop() ? "__hierVer.d" : "__ver.d";
+        V3File::writeDepend(filename);
     }
     if (v3Global.opt.protectIds()) {
-        VIdProtect::writeMapFile(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
+        VIdProtect::writeMapFile(v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
                                  + "__idmap.xml");
     }
+
     if (v3Global.opt.skipIdentical().isTrue() || v3Global.opt.makeDepend().isTrue()) {
-        V3File::writeTimes(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__verFiles.dat",
+        V3File::writeTimes(v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
+                               + "__verFiles.dat",
                            argString);
     }
 
@@ -627,6 +665,18 @@ static void execBuildJob() {
     }
 }
 
+static void execHierVerilation() {
+    UASSERT(v3Global.hierPlanp(), "must be called only when plan exists");
+    const string makefile = v3Global.opt.prefix() + "_hier.mk ";
+    const string target = v3Global.opt.build() ? " hier_build" : " hier_verilation";
+    const string cmdStr = buildMakeCmd(makefile, target);
+    const int exit_code = V3Os::system(cmdStr);
+    if (exit_code != 0) {
+        v3error(cmdStr << " exitted with " << exit_code << std::endl);
+        exit(exit_code);
+    }
+}
+
 //######################################################################
 
 int main(int argc, char** argv, char** env) {
@@ -661,7 +711,14 @@ int main(int argc, char** argv, char** env) {
         UINFO(1, "Option --no-verilate: Skip Verilation\n");
     }
 
-    if (v3Global.opt.build()) execBuildJob();
+    if (v3Global.hierPlanp() && v3Global.opt.gmake()) {
+        execHierVerilation();  // execHierVerilation() takes care of --build too
+    } else if (v3Global.opt.build()) {
+        execBuildJob();
+    }
+
+    // Explicitly release resources
+    v3Global.shutdown();
 
     UINFO(1, "Done, Exiting...\n");
 }

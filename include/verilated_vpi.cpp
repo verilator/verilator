@@ -964,52 +964,52 @@ const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE {
     return names[(vpiVal <= vpiIsProtected) ? vpiVal : 0];
 }
 
-#define CHECK_RESULT_CSTR(got, exp) \
+#define SELF_CHECK_RESULT_CSTR(got, exp) \
     if (0 != strcmp((got), (exp))) { \
         std::string msg \
             = std::string("%Error: ") + "GOT = '" + got + "'" + "  EXP = '" + exp + "'"; \
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str()); \
     }
 
-#define CHECK_ENUM_STR(fn, enum) \
+#define SELF_CHECK_ENUM_STR(fn, enum) \
     do { \
         const char* strVal = VerilatedVpiError::fn(enum); \
-        CHECK_RESULT_CSTR(strVal, #enum); \
+        SELF_CHECK_RESULT_CSTR(strVal, #enum); \
     } while (0)
 
 void VerilatedVpi::selfTest() VL_MT_UNSAFE_ONE { VerilatedVpiError::selfTest(); }
 void VerilatedVpiError::selfTest() VL_MT_UNSAFE_ONE {
     VerilatedVpiImp::assertOneCheck();
 
-    CHECK_ENUM_STR(strFromVpiVal, vpiBinStrVal);
-    CHECK_ENUM_STR(strFromVpiVal, vpiRawFourStateVal);
+    SELF_CHECK_ENUM_STR(strFromVpiVal, vpiBinStrVal);
+    SELF_CHECK_ENUM_STR(strFromVpiVal, vpiRawFourStateVal);
 
-    CHECK_ENUM_STR(strFromVpiObjType, vpiAlways);
-    CHECK_ENUM_STR(strFromVpiObjType, vpiWhile);
-    CHECK_ENUM_STR(strFromVpiObjType, vpiAttribute);
-    CHECK_ENUM_STR(strFromVpiObjType, vpiUdpArray);
-    CHECK_ENUM_STR(strFromVpiObjType, vpiContAssignBit);
-    CHECK_ENUM_STR(strFromVpiObjType, vpiGenVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiAlways);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiWhile);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiAttribute);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUdpArray);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiContAssignBit);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiGenVar);
 
-    CHECK_ENUM_STR(strFromVpiMethod, vpiCondition);
-    CHECK_ENUM_STR(strFromVpiMethod, vpiStmt);
+    SELF_CHECK_ENUM_STR(strFromVpiMethod, vpiCondition);
+    SELF_CHECK_ENUM_STR(strFromVpiMethod, vpiStmt);
 
-    CHECK_ENUM_STR(strFromVpiCallbackReason, cbValueChange);
-    CHECK_ENUM_STR(strFromVpiCallbackReason, cbAtEndOfSimTime);
+    SELF_CHECK_ENUM_STR(strFromVpiCallbackReason, cbValueChange);
+    SELF_CHECK_ENUM_STR(strFromVpiCallbackReason, cbAtEndOfSimTime);
 
-    CHECK_ENUM_STR(strFromVpiProp, vpiType);
-    CHECK_ENUM_STR(strFromVpiProp, vpiProtected);
-    CHECK_ENUM_STR(strFromVpiProp, vpiDirection);
-    CHECK_ENUM_STR(strFromVpiProp, vpiTermIndex);
-    CHECK_ENUM_STR(strFromVpiProp, vpiConstType);
-    CHECK_ENUM_STR(strFromVpiProp, vpiAutomatic);
-    CHECK_ENUM_STR(strFromVpiProp, vpiOffset);
-    CHECK_ENUM_STR(strFromVpiProp, vpiStop);
-    CHECK_ENUM_STR(strFromVpiProp, vpiIsProtected);
+    SELF_CHECK_ENUM_STR(strFromVpiProp, vpiType);
+    SELF_CHECK_ENUM_STR(strFromVpiProp, vpiProtected);
+    SELF_CHECK_ENUM_STR(strFromVpiProp, vpiDirection);
+    SELF_CHECK_ENUM_STR(strFromVpiProp, vpiTermIndex);
+    SELF_CHECK_ENUM_STR(strFromVpiProp, vpiConstType);
+    SELF_CHECK_ENUM_STR(strFromVpiProp, vpiAutomatic);
+    SELF_CHECK_ENUM_STR(strFromVpiProp, vpiOffset);
+    SELF_CHECK_ENUM_STR(strFromVpiProp, vpiStop);
+    SELF_CHECK_ENUM_STR(strFromVpiProp, vpiIsProtected);
 }
 
-#undef CHECK_ENUM_STR
-#undef CHECK_RESULT_CSTR
+#undef SELF_CHECK_ENUM_STR
+#undef SELF_CHECK_RESULT_CSTR
 
 //======================================================================
 // callback related

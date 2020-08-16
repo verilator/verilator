@@ -151,7 +151,7 @@ private:
 
     // Map each varscope to one or more locations where it's accessed.
     // These maps will not include any ASSIGNPOST accesses:
-    typedef vl_unordered_map<const AstVarScope*, std::set<LifeLocation> > LocMap;
+    typedef vl_unordered_map<const AstVarScope*, std::set<LifeLocation>> LocMap;
     LocMap m_reads;  // VarScope read locations
     LocMap m_writes;  // VarScope write locations
 

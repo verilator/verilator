@@ -3,9 +3,49 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
-* Verilator 4.037 devel
+* Verilator 4.099 devel
+
+**    C++11 or newer compilers are now required.
+
+
+* Verilator 4.040 2020-08-15
+
+**    Version 4.040 is planned to be the final version that will
+      support pre-C++11 compilers. Please move to C++11 or newer compilers.
+
+***   Fix arrayed interfaces, broke in 4.038 (#2468). [Josh Redford]
+
+****  Support $stable, $rose and $fell.  (#2148) (#2501) [Peter Monsson]
+
+****  Support simple function localparams (#2461). [James Hanlon]
+
+****  Miscellaneous parsing error changes towards UVM support.
+
+****  Fix arrayed interfaces (#2469).  [Josh Redford]
+
+****  Fix protect lib VCS warning. (#2479) [Julien Margetts]
+
+****  Fix combining different-width parameters (#2484). [abirkmanis]
+
+****  Fix protect-lib without sequential logic (#2492). [Yutetsu TAKATSUKASA]
+
+****  Fix V3Unknown from running with flat XML output (#2494). [James Hanlon]
+
+****  Fix non-32 bit conversion to float (#2495). [dsvf]
+
+****  Fix casting non-self-determined subexpressions (#2493). [phantom-killua]
+
+****  Fix SystemC net names (#2500). [Edgar E. Iglesias]
+
+
+* Verilator 4.038 2020-07-11
+
+**    Versions 4.038 and 4.040 are planned to be the final versions that will
+      support pre-C++11 compilers. Please move to C++11 or newer compilers.
 
 ***   Support VPI access to parameters and localparam. [Ludwig Rogiers]
+
+***   Support parsing (not elaboration, yet) of UVM.
 
 ****  Add new UNSUPPORTED error code to replace most previous Unsupported: messages.
 
@@ -13,9 +53,17 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support for-loop increments with commas.
 
+****  Support $swrite with arbitrary arguments.
+
+****  Support $writememb (#2450). [Fan Shupei]
+
+****  Fix OS X, Free BSD, and -m32 portability issues. [Geza Lore]
+
 ****  Fix to flush FST trace on termination due to $stop or assertion failure.
 
 ****  Fix part select error when multipling by power-of-two (#2413). [Conor McCullough]
+
+****  Fix division exception (#2460) [Kuoping Hsu]
 
 
 * Verilator 4.036 2020-06-06

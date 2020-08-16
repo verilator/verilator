@@ -35,7 +35,7 @@ private:
     AstUser1InUse m_inuser1;
     string m_prefix;  // String prefix to add to name based on hier
     AstScope* m_classScopep;  // Package moving scopes into
-    typedef std::vector<std::pair<AstNode*, AstScope*> > MoveVector;
+    typedef std::vector<std::pair<AstNode*, AstScope*>> MoveVector;
     MoveVector m_moves;
 
     // NODE STATE

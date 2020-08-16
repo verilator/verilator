@@ -22,7 +22,7 @@
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3PartitionGraph.h"  // Just for mtask dumping
-#include "V3String.h"  // For VString::parseDouble
+#include "V3String.h"
 #include "V3EmitCBase.h"
 
 #include <iomanip>
@@ -815,28 +815,28 @@ string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
 
 bool AstSenTree::hasClocked() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstNodeSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), NodeSenItem)) {
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), SenItem)) {
         if (senp->isClocked()) return true;
     }
     return false;
 }
 bool AstSenTree::hasSettle() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstNodeSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), NodeSenItem)) {
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), SenItem)) {
         if (senp->isSettle()) return true;
     }
     return false;
 }
 bool AstSenTree::hasInitial() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstNodeSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), NodeSenItem)) {
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), SenItem)) {
         if (senp->isInitial()) return true;
     }
     return false;
 }
 bool AstSenTree::hasCombo() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstNodeSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), NodeSenItem)) {
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_CAST(senp->nextp(), SenItem)) {
         if (senp->isCombo()) return true;
     }
     return false;
@@ -1493,19 +1493,19 @@ void AstParseRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << expect().ascii() << "]";
 }
-void AstPackageRef::dump(std::ostream& str) const {
+void AstClassOrPackageRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
+    if (classOrPackagep()) { str << " cpkg=" << nodeAddr(classOrPackagep()); }
     str << " -> ";
-    if (packagep()) {
-        packagep()->dump(str);
+    if (classOrPackagep()) {
+        classOrPackagep()->dump(str);
     } else {
         str << "UNLINKED";
     }
 }
 void AstDot::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (colon()) str << "[::]";
+    if (colon()) str << " [::]";
 }
 void AstActive::dump(std::ostream& str) const {
     this->AstNode::dump(str);

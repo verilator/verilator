@@ -40,7 +40,7 @@
 /// value-sorted order.  Values need not be unique. Uses T_KeyCompare to
 /// break ties in the sort when values collide.
 
-template <typename T_Key, typename T_Value, class T_KeyCompare = std::less<T_Key> >
+template <typename T_Key, typename T_Value, class T_KeyCompare = std::less<T_Key>>
 class SortByValueMap {
     // TYPES
 private:
@@ -350,7 +350,7 @@ private:
 /// when the subset of elements whose scores change is much smaller than
 /// the full set size.
 
-template <typename T_Elem, typename T_Score, class T_ElemCompare = std::less<T_Elem> >
+template <typename T_Elem, typename T_Score, class T_ElemCompare = std::less<T_Elem>>
 class V3Scoreboard {
 private:
     // TYPES

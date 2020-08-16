@@ -129,7 +129,7 @@ void VerilatedSave::open(const char* filenamep) VL_MT_UNSAFE_ONE {
         // cppcheck-suppress duplicateExpression
         m_fd = ::open(filenamep,
                       O_CREAT | O_WRONLY | O_TRUNC | O_LARGEFILE | O_NONBLOCK | O_CLOEXEC, 0666);
-        if (m_fd < 0) {
+        if (VL_UNLIKELY(m_fd < 0)) {
             // User code can check isOpen()
             m_isOpen = false;
             return;
@@ -151,7 +151,7 @@ void VerilatedRestore::open(const char* filenamep) VL_MT_UNSAFE_ONE {
     } else {
         // cppcheck-suppress duplicateExpression
         m_fd = ::open(filenamep, O_CREAT | O_RDONLY | O_LARGEFILE | O_CLOEXEC, 0666);
-        if (m_fd < 0) {
+        if (VL_UNLIKELY(m_fd < 0)) {
             // User code can check isOpen()
             m_isOpen = false;
             return;

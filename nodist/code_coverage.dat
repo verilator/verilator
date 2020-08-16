@@ -53,6 +53,7 @@ exclude_line_regexp(qr/(\bv3fatalSrc\b
                     |\bUINFO\b)/x);
 
 # Exclude for branch coverage only
-exclude_branch_regexp(qr/(\bdebug\(\))/x);
+exclude_branch_regexp(qr/(\bdebug\(\)
+                         |\bSELF_CHECK)/x);
 
 1;

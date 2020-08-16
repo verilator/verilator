@@ -84,13 +84,30 @@ string VString::upcase(const string& str) {
     return out;
 }
 
-string VString::quotePercent(const string& str) {
+string VString::quoteAny(const string& str, char tgt, char esc) {
     string out;
     for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {
-        if (*pos == '%') out += '%';
+        if (*pos == tgt) out += esc;
         out += *pos;
     }
     return out;
+}
+
+string VString::quoteStringLiteralForShell(const string& str) {
+    string result;
+    const char dquote = '"';
+    const char escape = '\\';
+    result.push_back(dquote);  // Start quoted string
+    result.push_back(escape);
+    result.push_back(dquote);  // "
+    for (string::const_iterator it = str.begin(); it != str.end(); ++it) {
+        if (*it == dquote || *it == escape) { result.push_back(escape); }
+        result.push_back(*it);
+    }
+    result.push_back(escape);
+    result.push_back(dquote);  // "
+    result.push_back(dquote);  // Terminate quoted string
+    return result;
 }
 
 string VString::spaceUnprintable(const string& str) {

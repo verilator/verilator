@@ -25,7 +25,7 @@
 // The following nodes have package pointers and are cleaned up here:
 // AstRefDType, AstEnumItemRef, AstNodeVarRef, AstNodeFTask
 // These have packagep but will not exist at this stage
-// AstPackageImport, AstDot, AstPackageRef
+// AstPackageImport, AstDot, AstClassOrPackageRef
 //
 // Note on packagep: After the V3Scope/V3LinkDotScoped stage, package links
 // are no longer used, but their presence prevents us from removing empty
@@ -329,7 +329,12 @@ private:
         if (nodep->isSigPublic()) return false;  // Can't elim publics!
         if (nodep->isIO() || nodep->isClassMember()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;
-        if (nodep->isParam() && !nodep->isTrace() && !v3Global.opt.xmlOnly()) return true;
+        if (nodep->isParam()) {
+            const bool overriddenForHierBlock
+                = m_modp && m_modp->hierBlock() && nodep->overriddenParam();
+            if (!nodep->isTrace() && !overriddenForHierBlock && !v3Global.opt.xmlOnly())
+                return true;
+        }
         return m_elimUserVars;  // Post-Trace can kill most anything
     }
 

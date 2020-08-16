@@ -333,7 +333,7 @@ private:
         IM_AFTER,  // Pointing at last inserted stmt, insert after
         IM_WHILE_PRECOND  // Pointing to for loop, add to body end
     };
-    typedef std::map<string, std::pair<AstNodeFTask*, string> > DpiNames;
+    typedef std::map<string, std::pair<AstNodeFTask*, string>> DpiNames;
 
     // STATE
     TaskStateVisitor* m_statep;  // Common state between visitors

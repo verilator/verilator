@@ -922,7 +922,7 @@ public:
     std::vector<SplitNewVar> splitPlan(bool skipUnused) const {
         UASSERT(m_dedupDone, "dedup() must be called before");
         std::vector<SplitNewVar> plan;
-        std::vector<std::pair<int, bool> > points;  // <bit location, is end>
+        std::vector<std::pair<int, bool>> points;  // <bit location, is end>
         points.reserve(m_lhs.size() * 2 + 2);  // 2 points will be added per one PackedVarRefEntry
         for (const_iterator it = m_lhs.begin(), itend = m_lhs.end(); it != itend; ++it) {
             points.push_back(std::make_pair(it->lsb(), false));  // Start of a region

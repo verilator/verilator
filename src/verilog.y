@@ -31,7 +31,7 @@
 #include <cstdarg>
 #include <stack>
 
-#define YYERROR_VERBOSE 1
+#define YYERROR_VERBOSE 1  // For prior to Bison 3.6
 #define YYINITDEPTH 10000  // Older bisons ignore YYMAXDEPTH
 #define YYMAXDEPTH 10000
 
@@ -264,17 +264,6 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
         GRAMMARP->m_instParamp = paramsp; \
     }
 
-static AstPackage* CAST_PACKAGE_CLASS(AstNode* nodep) {
-    if (!nodep) {
-        return NULL;
-    } else if (AstPackage* pkgp = VN_CAST(nodep, Package)) {
-        return pkgp;
-    } else {
-        BBUNSUP(nodep->fileline(), "Unsupported class :: reference");
-        return NULL;
-    }
-}
-
 #define DEL(nodep) \
     { \
         if (nodep) nodep->deleteTree(); \
@@ -322,6 +311,9 @@ class AstSenTree;
 // clang-format off
 %}
 
+// Bison 3.0 and newer
+BISONPRE_VERSION(3.0,%define parse.error verbose)
+
 // When writing Bison patterns we use yTOKEN instead of "token",
 // so Bison will error out on unknown "token"s.
 
@@ -368,6 +360,7 @@ class AstSenTree;
 %token<fl>              yVLT_COVERAGE_OFF           "coverage_off"
 %token<fl>              yVLT_COVERAGE_ON            "coverage_on"
 %token<fl>              yVLT_FULL_CASE              "full_case"
+%token<fl>              yVLT_HIER_BLOCK             "hier_block"
 %token<fl>              yVLT_INLINE                 "inline"
 %token<fl>              yVLT_ISOLATE_ASSIGNMENTS    "isolate_assignments"
 %token<fl>              yVLT_LINT_OFF               "lint_off"
@@ -727,6 +720,7 @@ class AstSenTree;
 %token<fl>              yD_FDISPLAYB    "$fdisplayb"
 %token<fl>              yD_FDISPLAYH    "$fdisplayh"
 %token<fl>              yD_FDISPLAYO    "$fdisplayo"
+%token<fl>              yD_FELL         "$fell"
 %token<fl>              yD_FEOF         "$feof"
 %token<fl>              yD_FERROR       "$ferror"
 %token<fl>              yD_FFLUSH       "$fflush"
@@ -768,6 +762,7 @@ class AstSenTree;
 %token<fl>              yD_REWIND       "$rewind"
 %token<fl>              yD_RIGHT        "$right"
 %token<fl>              yD_ROOT         "$root"
+%token<fl>              yD_ROSE         "$rose"
 %token<fl>              yD_RTOI         "$rtoi"
 %token<fl>              yD_SAMPLED      "$sampled"
 %token<fl>              yD_SFORMAT      "$sformat"
@@ -779,6 +774,7 @@ class AstSenTree;
 %token<fl>              yD_SIZE         "$size"
 %token<fl>              yD_SQRT         "$sqrt"
 %token<fl>              yD_SSCANF       "$sscanf"
+%token<fl>              yD_STABLE       "$stable"
 %token<fl>              yD_STIME        "$stime"
 %token<fl>              yD_STOP         "$stop"
 %token<fl>              yD_SWRITE       "$swrite"
@@ -810,6 +806,7 @@ class AstSenTree;
 %token<fl>              yVL_CLOCK_ENABLE        "/*verilator clock_enable*/"
 %token<fl>              yVL_COVERAGE_BLOCK_OFF  "/*verilator coverage_block_off*/"
 %token<fl>              yVL_FULL_CASE           "/*verilator full_case*/"
+%token<fl>              yVL_HIER_BLOCK          "/*verilator hier_block*/"
 %token<fl>              yVL_INLINE_MODULE       "/*verilator inline_module*/"
 %token<fl>              yVL_ISOLATE_ASSIGNMENTS "/*verilator isolate_assignments*/"
 %token<fl>              yVL_NO_CLOCKER          "/*verilator no_clocker*/"
@@ -1473,7 +1470,7 @@ program_declaration:		// IEEE: program_declaration + program_nonansi_header + pr
 
 pgmFront<modulep>:
 		yPROGRAM lifetimeE idAny/*new_program*/
-			{ $$ = new AstModule($<fl>3,*$3);
+			{ $$ = new AstModule($<fl>3, *$3, true);
 			  $$->lifetime($2);
 			  $$->inLibrary(PARSEP->inLibrary() || $$->fileline()->celldefineOn());
 			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
@@ -1780,8 +1777,8 @@ simple_type<dtypep>:		// ==IEEE: simple_type
 	//			// Even though we looked up the type and have a AstNode* to it,
 	//			// we can't fully resolve it because it may have been just a forward definition.
 	|	packageClassScopeE idType
-			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2);
-			  refp->packagep($1); $$ = refp; }
+			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2, $1, NULL);
+			  $$ = refp; }
 	//
 	//			// { generate_block_identifer ... } '.'
 	//			// Need to determine if generate_block_identifier can be lex-detected
@@ -1798,13 +1795,10 @@ data_type<dtypep>:		// ==IEEE: data_type
 	//			// IEEE: ps_covergroup_identifier
 	//			// Don't distinguish between types and classes so all these combined
 	|	packageClassScopeE idType packed_dimensionListE
-			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2);
-			  refp->packagep($1);
+			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2, $1, NULL);
 			  $$ = GRAMMARP->createArray(refp, $3, true); }
 	|	packageClassScopeE idType parameter_value_assignmentClass packed_dimensionListE
-			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2);
-			  refp->packagep($1);
-			  BBUNSUP($3->fileline(), "Unsupported: Parameter classes");
+			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2, $1, $3);
 			  $$ = GRAMMARP->createArray(refp, $4, true); }
 	;
 
@@ -1848,7 +1842,8 @@ var_data_type<dtypep>:		// ==IEEE: var_data_type
 	;
 
 type_reference<dtypep>:  	// ==IEEE: type_reference
-		yTYPE '(' exprOrDataType ')'		{ $$ = new AstRefDType($1, AstRefDType::FlagTypeOfExpr(), $3); }
+		yTYPE '(' exprOrDataType ')'
+			{ $$ = new AstRefDType($1, AstRefDType::FlagTypeOfExpr(), $3); }
 	;
 
 struct_unionDecl<uorstructp>:	// IEEE: part of data_type
@@ -2018,8 +2013,7 @@ enum_base_typeE<dtypep>:	// IEEE: enum_base_type
 	|	idAny rangeListE
 			{ $$ = GRAMMARP->createArray(new AstRefDType($<fl>1, *$1), $2, true); }
 	|	packageClassScope idAny rangeListE
-			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2);
-			  refp->packagep($1);
+			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2, $1, NULL);
 			  $$ = GRAMMARP->createArray(refp, $3, true); }
 	;
 
@@ -2226,6 +2220,7 @@ non_port_module_item<nodep>:	// ==IEEE: non_port_module_item
 	|	yaSCIMPH				{ $$ = new AstScImpHdr($<fl>1,*$1); }
 	|	yaSCCTOR				{ $$ = new AstScCtor($<fl>1,*$1); }
 	|	yaSCDTOR				{ $$ = new AstScDtor($<fl>1,*$1); }
+	|	yVL_HIER_BLOCK				{ $$ = new AstPragma($1,AstPragmaType::HIER_BLOCK); }
 	|	yVL_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::INLINE_MODULE); }
 	|	yVL_NO_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_MODULE); }
 	|	yVL_PUBLIC_MODULE			{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_MODULE); v3Global.dpi(true); }
@@ -2523,7 +2518,7 @@ delay_control<nodep>:	//== IEEE: delay_control
 
 delay_value<nodep>:		// ==IEEE:delay_value
 	//			// IEEE: ps_identifier
-		packageClassScopeE varRefBase		{ $$ = $2; $2->packagep($1); }
+		packageClassScopeE varRefBase		{ $$ = AstDot::newIfPkg($<fl>2, $1, $2); }
 	|	yaINTNUM 				{ $$ = new AstConst($<fl>1, *$1); }
 	|	yaFLOATNUM 				{ $$ = new AstConst($<fl>1, AstConst::RealDouble(), $1); }
 	|	timeNumAdjusted				{ $$ = $1; }
@@ -2836,11 +2831,11 @@ event_control<sentreep>:	// ==IEEE: event_control
 event_expression<senitemp>:	// IEEE: event_expression - split over several
 	//UNSUP			// Below are all removed
 		senitem					{ $$ = $1; }
-	|	event_expression yOR senitem		{ $$ = VN_CAST($1->addNextNull($3), NodeSenItem); }
-	|	event_expression ',' senitem		{ $$ = VN_CAST($1->addNextNull($3), NodeSenItem); }	/* Verilog 2001 */
+	|	event_expression yOR senitem		{ $$ = VN_CAST($1->addNextNull($3), SenItem); }
+	|	event_expression ',' senitem		{ $$ = VN_CAST($1->addNextNull($3), SenItem); }	/* Verilog 2001 */
 	//UNSUP			// Above are all removed, replace with:
 	//UNSUP	ev_expr					{ $$ = $1; }
-	//UNSUP	event_expression ',' ev_expr %prec yOR	{ $$ = VN_CAST($1->addNextNull($3), NodeSenItem); }
+	//UNSUP	event_expression ',' ev_expr %prec yOR	{ $$ = VN_CAST($1->addNextNull($3), SenItem); }
 	;
 
 senitem<senitemp>:		// IEEE: part of event_expression, non-'OR' ',' terms
@@ -3409,7 +3404,7 @@ taskRef<nodep>:			// IEEE: part of tf_call
 		id		 		{ $$ = new AstTaskRef($<fl>1,*$1,NULL); }
 	|	id '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef($<fl>1,*$1,$3); }
 	|	packageClassScope id '(' list_of_argumentsE ')'
-			{ $$ = AstDot::newIfPkg($<fl>2, CAST_PACKAGE_CLASS($1), new AstTaskRef($<fl>2, *$2, $4)); }
+			{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstTaskRef($<fl>2, *$2, $4)); }
 	;
 
 funcRef<nodep>:			// IEEE: part of tf_call
@@ -3425,7 +3420,7 @@ funcRef<nodep>:			// IEEE: part of tf_call
 		id '(' list_of_argumentsE ')'
 			{ $$ = new AstFuncRef($<fl>1, *$1, $3); }
 	|	packageClassScope id '(' list_of_argumentsE ')'
-			{ $$ = AstDot::newIfPkg($<fl>2, CAST_PACKAGE_CLASS($1), new AstFuncRef($<fl>2, *$2, $4)); }
+			{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstFuncRef($<fl>2, *$2, $4)); }
 	//UNSUP list_of_argumentE should be pev_list_of_argumentE
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
@@ -3606,6 +3601,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
 	|	yD_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_DIMENSIONS,$3); }
 	|	yD_EXP '(' expr ')'			{ $$ = new AstExpD($1,$3); }
+	|	yD_FELL '(' expr ')'			{ $$ = new AstFell($1,$3); }
+	|	yD_FELL '(' expr ',' expr ')'		{ $$ = $3; BBUNSUP($1, "Unsupported: $fell and clock arguments"); }
 	|	yD_FEOF '(' expr ')'			{ $$ = new AstFEof($1,$3); }
 	|	yD_FERROR '(' idClassSel ',' idClassSel ')'	{ $$ = new AstFError($1, $3, $5); }
 	|	yD_FGETC '(' expr ')'			{ $$ = new AstFGetC($1,$3); }
@@ -3647,6 +3644,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_REWIND '(' idClassSel ')'		{ $$ = new AstFSeek($1, $3, new AstConst($1, 0), new AstConst($1, 0)); }
 	|	yD_RIGHT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,NULL); }
 	|	yD_RIGHT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,$5); }
+	|	yD_ROSE '(' expr ')'			{ $$ = new AstRose($1,$3); }
+	|	yD_ROSE '(' expr ',' expr ')'		{ $$ = $3; BBUNSUP($1, "Unsupported: $rose and clock arguments"); }
 	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
 	|	yD_SAMPLED '(' expr ')'			{ $$ = new AstSampled($1, $3); }
 	|	yD_SFORMATF '(' exprDispList ')'	{ $$ = new AstSFormatF($1, AstSFormatF::NoFormat(), $3, 'd', false); }
@@ -3659,6 +3658,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_SQRT '(' expr ')'			{ $$ = new AstSqrtD($1,$3); }
 	|	yD_SSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSScanF($1,*$5,$3,$6); }
 	|	yD_STIME parenE				{ $$ = new AstSel($1, new AstTime($1, VTimescale(VTimescale::NONE)), 0, 32); }
+	|	yD_STABLE '(' expr ')'			{ $$ = new AstStable($1,$3); }
+	|	yD_STABLE '(' expr ',' expr ')'		{ $$ = $3; BBUNSUP($1, "Unsupported: $stable and clock arguments"); }
 	|	yD_TAN '(' expr ')'			{ $$ = new AstTanD($1,$3); }
 	|	yD_TANH '(' expr ')'			{ $$ = new AstTanhD($1,$3); }
 	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }
@@ -4260,7 +4261,7 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 		yTHIS					{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "this"); }
 	|	yD_ROOT					{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"); }
 	|	idArrayed				{ $$ = $1; }
-	|	packageClassScope idArrayed		{ $$ = AstDot::newIfPkg($2->fileline(), CAST_PACKAGE_CLASS($1), $2); }
+	|	packageClassScope idArrayed		{ $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
 	|	~l~expr '.' idArrayed			{ $$ = new AstDot($<fl>2, false, $1, $3); }
 	//			// expr below must be a "yTHIS"
 	|	~l~expr '.' ySUPER			{ $$ = $1; BBUNSUP($3, "Unsupported: super"); }
@@ -4739,7 +4740,7 @@ idClassSel<nodep>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged va
 			{ $$ = new AstDot($2, false, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "super"), $3); }
 	|	yTHIS '.' ySUPER '.' idDotted		{ $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
 	//			// Expanded: package_scope idDotted
-	|	packageClassScope idDotted		{ $$ = $2; BBUNSUP($2, "Unsupported: package scoped id"); }
+	|	packageClassScope idDotted		{ $$ = new AstDot($<fl>2, true, $1, $2); }
 	;
 
 idClassSelForeach<nodep>:
@@ -4751,7 +4752,7 @@ idClassSelForeach<nodep>:
 			{ $$ = new AstDot($2, false, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "super"), $3); }
 	|	yTHIS '.' ySUPER '.' idDottedForeach	{ $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
 	//			// Expanded: package_scope idForeach
-	|	packageClassScope idDottedForeach	{ $$ = $2; BBUNSUP($2, "Unsupported: package/class scoped id"); }
+	|	packageClassScope idDottedForeach	{ $$ = new AstDot($<fl>2, true, $1, $2); }
 	;
 
 idDotted<nodep>:
@@ -4782,7 +4783,8 @@ idDottedMoreForeach<nodep>:
 // id below includes:
 //	 enum_identifier
 idArrayed<nodep>:		// IEEE: id + select
-		id						{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL); }
+		id
+			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL); }
 	//			// IEEE: id + part_select_range/constant_part_select_range
 	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2, $1, $3); }  // Or AstArraySel, don't know yet.
 	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2, $1, $3, $5); }
@@ -4792,7 +4794,8 @@ idArrayed<nodep>:		// IEEE: id + select
 	;
 
 idArrayedForeach<nodep>:	// IEEE: id + select (under foreach expression)
-		id						{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL); }
+		id
+			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL); }
 	//			// IEEE: id + part_select_range/constant_part_select_range
 	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2, $1, $3); }  // Or AstArraySel, don't know yet.
 	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2, $1, $3, $5); }
@@ -5885,18 +5888,17 @@ class_typeExtImpOne<nodep>:	// part of IEEE: class_type, where we either get a p
 		idAny
 	/*mid*/		{ /* no nextId as not refing it above this*/ }
 	/*cont*/    parameter_value_assignmentE
-			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, NULL, NULL);
-			  $<scp>$ = $<scp>1;
-			  if ($3) BBUNSUP($3->fileline(), "Unsupported: Parameterized classes"); }
+			{ $$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, $3);
+			  $<scp>$ = $<scp>1; }
 	//
 	//			// package_sopeIdFollows expanded
 	|	yD_UNIT yP_COLONCOLON
-			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, "$unit", NULL, NULL);
+			{ $$ = new AstClassOrPackageRef($<fl>1, "$unit", NULL, NULL);
                           $<scp>$ = NULL;  // No purpose otherwise, every symtab can see root
 			  SYMP->nextId(PARSEP->rootp()); }
 	//
 	|	yLOCAL__COLONCOLON yP_COLONCOLON
-			{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, "local", NULL, NULL);
+			{ $$ = new AstClassOrPackageRef($<fl>1, "local::", NULL, NULL);
                           $<scp>$ = NULL;  // UNSUP
 			  SYMP->nextId(PARSEP->rootp());
 			  BBUNSUP($1, "Unsupported: Randomize 'local::'"); }
@@ -5909,11 +5911,11 @@ class_typeExtImpOne<nodep>:	// part of IEEE: class_type, where we either get a p
 
 //=== Below rules assume special scoping per above
 
-packageClassScopeNoId<packagep>:	// IEEE: [package_scope] not followed by yaID
+packageClassScopeNoId<nodep>:	// IEEE: [package_scope] not followed by yaID
 		packageClassScope			{ $$ = $1; $<scp>$ = $<scp>1; SYMP->nextId(NULL); }
 	;
 
-packageClassScopeE<packagep>:	// IEEE: [package_scope]
+packageClassScopeE<nodep>:	// IEEE: [package_scope]
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
 	//			//     if not needed must use packageClassScopeNoId
 	//			// TODO: To support classes should return generic type, not packagep
@@ -5922,7 +5924,7 @@ packageClassScopeE<packagep>:	// IEEE: [package_scope]
 	|	packageClassScope			{ $$ = $1; $<scp>$ = $<scp>1; }
 	;
 
-packageClassScope<packagep>:	// IEEE: class_scope + type
+packageClassScope<nodep>:	// IEEE: class_scope
 	//			// IEEE: "class_type yP_COLONCOLON"
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
 	//			//     if not needed must use packageClassScopeNoId
@@ -5931,10 +5933,11 @@ packageClassScope<packagep>:	// IEEE: class_scope + type
 		packageClassScopeList			{ $$ = $1; $<scp>$ = $<scp>1; }
 	|	localNextId yP_COLONCOLON		{ $$ = $1; $<scp>$ = $<scp>1; }
 	|	dollarUnitNextId yP_COLONCOLON		{ $$ = $1; $<scp>$ = $<scp>1; }
-	|	dollarUnitNextId yP_COLONCOLON packageClassScopeList	{ $$ = $3; $<scp>$ = $<scp>3; }
+	|	dollarUnitNextId yP_COLONCOLON packageClassScopeList
+			{ $$ = new AstDot($2, true, $1, $3); $<scp>$ = $<scp>3; }
 	;
 
-packageClassScopeList<packagep>:	// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
+packageClassScopeList<nodep>:	// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
 	//			// Or IEEE: [package_scope]
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
 	//			//     if not needed must use packageClassScopeNoId
@@ -5942,10 +5945,10 @@ packageClassScopeList<packagep>:	// IEEE: class_type: "id [ parameter_value_assi
 	//			// If you follow the rules down, class_type is really a list via ps_class_identifier
 		packageClassScopeItem			{ $$ = $1; $<scp>$ = $<scp>1; }
 	|	packageClassScopeList packageClassScopeItem
-			{ $$ = $2; $<scp>$ = $<scp>2; BBUNSUP($<fl>2, "Unsupported: Nested :: references"); }
+			{ $$ = new AstDot($<fl>2, true, $1, $2); $<scp>$ = $<scp>2; }
 	;
 
-packageClassScopeItem<packagep>:	// IEEE: package_scope or [package_scope]::[class_scope]
+packageClassScopeItem<nodep>:	// IEEE: package_scope or [package_scope]::[class_scope]
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
 	//			//     if not needed must use packageClassScopeNoId
 	//			// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
@@ -5953,29 +5956,30 @@ packageClassScopeItem<packagep>:	// IEEE: package_scope or [package_scope]::[cla
 		idCC
 	/*mid*/		{ SYMP->nextId($<scp>1); }
 	/*cont*/    yP_COLONCOLON
-			{ $$ = VN_CAST($<scp>1, Package); $<scp>$ = $<scp>1; }  // UNSUP classes
+			{ $$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, NULL); $<scp>$ = $<scp>1; }
 	//
 	|	idCC parameter_value_assignment
 	/*mid*/		{ SYMP->nextId($<scp>1); }   // Change next *after* we handle parameters, not before
 	/*cont*/    yP_COLONCOLON
-			{ $$ = VN_CAST($<scp>1, Package); $<scp>$ = $<scp>1;  // UNSUP classes
-			  if ($2) BBUNSUP($2->fileline(), "Unsupported: Parameterized classes"); }
+			{ $$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, $2); $<scp>$ = $<scp>1; }
 	;
 
-dollarUnitNextId<packagep>:	// $unit
+dollarUnitNextId<nodep>:	// $unit
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
 	//			//     if not needed must use packageClassScopeNoId
 	//			// Must call nextId without any additional tokens following
 		yD_UNIT
-			{ $$ = GRAMMARP->unitPackage($<fl>1); SYMP->nextId(PARSEP->rootp()); }
+			{ $$ = new AstClassOrPackageRef($1, "$unit", GRAMMARP->unitPackage($<fl>1), NULL);
+                          SYMP->nextId(PARSEP->rootp()); }
 	;
 
-localNextId<packagep>:		// local
+localNextId<nodep>:		// local
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
 	//			//     if not needed must use packageClassScopeNoId
 	//			// Must call nextId without any additional tokens following
 		yLOCAL__COLONCOLON
-			{ $$ = GRAMMARP->unitPackage($<fl>1); SYMP->nextId(PARSEP->rootp());
+			{ $$ = new AstClassOrPackageRef($1, "local::", GRAMMARP->unitPackage($<fl>1), NULL);
+                          SYMP->nextId(PARSEP->rootp());
 			  BBUNSUP($<fl>1, "Unsupported: Randomize 'local::'"); }
 	;
 
@@ -6183,6 +6187,8 @@ vltItem:
 			{ V3Config::addCaseFull(*$3, 0); }
 	|	yVLT_FULL_CASE yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
 			{ V3Config::addCaseFull(*$3, $5->toUInt()); }
+	|	yVLT_HIER_BLOCK vltDModuleE
+			{ V3Config::addModulePragma(*$2, AstPragmaType::HIER_BLOCK); }
 	|	yVLT_PARALLEL_CASE yVLT_D_FILE yaSTRING
 			{ V3Config::addCaseParallel(*$3, 0); }
 	|	yVLT_PARALLEL_CASE yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM

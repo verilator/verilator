@@ -34,11 +34,11 @@ private:
     // NODE STATE/TYPES
     // STATE
     // Reset each module:
-    AstNodeSenItem* m_seniDefaultp;  // Default sensitivity (from AstDefClock)
+    AstSenItem* m_seniDefaultp;  // Default sensitivity (from AstDefClock)
     // Reset each assertion:
-    AstNodeSenItem* m_senip;  // Last sensitivity
+    AstSenItem* m_senip;  // Last sensitivity
     // Reset each always:
-    AstNodeSenItem* m_seniAlwaysp;  // Last sensitivity in always
+    AstSenItem* m_seniAlwaysp;  // Last sensitivity in always
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -47,7 +47,7 @@ private:
         // Create sentree based on clocked or default clock
         // Return NULL for always
         AstSenTree* newp = NULL;
-        AstNodeSenItem* senip = m_senip;
+        AstSenItem* senip = m_senip;
         if (!senip) senip = m_seniDefaultp;
         if (!senip) senip = m_seniAlwaysp;
         if (!senip) {
@@ -89,11 +89,54 @@ private:
         if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
         clearAssertInfo();
     }
+    virtual void visit(AstFell* nodep) VL_OVERRIDE {
+        if (nodep->sentreep()) return;  // Already processed
+        iterateChildren(nodep);
+        FileLine* fl = nodep->fileline();
+        AstNode* exprp = nodep->exprp()->unlinkFrBack();
+        if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
+        AstNode* past = new AstPast(fl, exprp, NULL);
+        past->dtypeFrom(exprp);
+        exprp = new AstAnd(fl, past, new AstNot(fl, exprp->cloneTree(false)));
+        exprp->dtypeSetLogicBool();
+        nodep->replaceWith(exprp);
+        nodep->sentreep(newSenTree(nodep));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     virtual void visit(AstPast* nodep) VL_OVERRIDE {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
     }
+    virtual void visit(AstRose* nodep) VL_OVERRIDE {
+        if (nodep->sentreep()) return;  // Already processed
+        iterateChildren(nodep);
+        FileLine* fl = nodep->fileline();
+        AstNode* exprp = nodep->exprp()->unlinkFrBack();
+        if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
+        AstNode* past = new AstPast(fl, exprp, NULL);
+        past->dtypeFrom(exprp);
+        exprp = new AstAnd(fl, new AstNot(fl, past), exprp->cloneTree(false));
+        exprp->dtypeSetLogicBool();
+        nodep->replaceWith(exprp);
+        nodep->sentreep(newSenTree(nodep));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    virtual void visit(AstStable* nodep) VL_OVERRIDE {
+        if (nodep->sentreep()) return;  // Already processed
+        iterateChildren(nodep);
+        FileLine* fl = nodep->fileline();
+        AstNode* exprp = nodep->exprp()->unlinkFrBack();
+        AstNode* past = new AstPast(fl, exprp, NULL);
+        past->dtypeFrom(exprp);
+        exprp = new AstEq(fl, past,
+                          exprp->cloneTree(false));  // new AstVarRef(fl, exprp, true)
+        exprp->dtypeSetLogicBool();
+        nodep->replaceWith(exprp);
+        nodep->sentreep(newSenTree(nodep));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
     virtual void visit(AstPropClocked* nodep) VL_OVERRIDE {
         // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
