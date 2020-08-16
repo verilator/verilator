@@ -88,20 +88,14 @@ ssize_t VerilatedVcdFile::write(const char* bufp, ssize_t len) VL_MT_UNSAFE {
 //=============================================================================
 // Opening/Closing
 
-VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
-    : m_isOpen(false)
-    , m_rolloverMB(0)
-    , m_modDepth(0) {
+VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep) {
     // Not in header to avoid link issue if header is included without this .cpp file
     m_fileNewed = (filep == nullptr);
     m_filep = m_fileNewed ? new VerilatedVcdFile : filep;
-    m_namemapp = nullptr;
-    m_evcd = false;
     m_wrChunkSize = 8 * 1024;
     m_wrBufp = new char[m_wrChunkSize * 8];
     m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
     m_writep = m_wrBufp;
-    m_wroteBytes = 0;
     m_suffixesp = nullptr;
 }
 

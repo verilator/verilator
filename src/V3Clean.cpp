@@ -50,7 +50,7 @@ private:
     enum CleanState { CS_UNKNOWN, CS_CLEAN, CS_DIRTY };
 
     // STATE
-    AstNodeModule* m_modp;
+    AstNodeModule* m_modp = nullptr;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -300,10 +300,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit CleanVisitor(AstNetlist* nodep) {
-        m_modp = nullptr;
-        iterate(nodep);
-    }
+    explicit CleanVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~CleanVisitor() override {}
 };
 

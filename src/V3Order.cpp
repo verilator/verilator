@@ -138,8 +138,8 @@ private:
 
 public:
     OrderMoveDomScope(const AstSenTree* domainp, const AstScope* scopep)
-        : m_domainp(domainp)
-        , m_scopep(scopep) {}
+        : m_domainp{domainp}
+        , m_scopep{scopep} {}
     OrderMoveDomScope* readyDomScopeNextp() const { return m_readyDomScopeE.nextp(); }
     const AstSenTree* domainp() const { return m_domainp; }
     const AstScope* scopep() const { return m_scopep; }
@@ -253,12 +253,12 @@ struct OrderVarFanoutCmp {
 //
 class OrderClkMarkVisitor : public AstNVisitor {
 private:
-    bool m_hasClk;  // flag indicating whether there is clock signal on rhs
-    bool m_inClocked;  // Currently inside a sequential block
+    bool m_hasClk = false;  // flag indicating whether there is clock signal on rhs
+    bool m_inClocked = false;  // Currently inside a sequential block
     bool m_newClkMarked;  // Flag for deciding whether a new run is needed
-    bool m_inAss;  // Currently inside of a assignment
-    int m_childClkWidth;  // If in hasClk, width of clock signal in child
-    int m_rightClkWidth;  // Clk width on the RHS
+    bool m_inAss = false;  // Currently inside of a assignment
+    int m_childClkWidth = 0;  // If in hasClk, width of clock signal in child
+    int m_rightClkWidth = 0;  // Clk width on the RHS
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -360,11 +360,6 @@ private:
 public:
     // CONSTRUCTORS
     explicit OrderClkMarkVisitor(AstNode* nodep) {
-        m_hasClk = false;
-        m_inClocked = false;
-        m_inAss = false;
-        m_childClkWidth = 0;
-        m_rightClkWidth = 0;
         do {
             m_newClkMarked = false;
             iterate(nodep);
@@ -378,7 +373,7 @@ public:
 
 class OrderClkAssVisitor : public AstNVisitor {
 private:
-    bool m_clkAss;  // There is signals marked as clocker in the assignment
+    bool m_clkAss = false;  // There is signals marked as clocker in the assignment
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
     virtual void visit(AstNodeAssign* nodep) override {
@@ -400,10 +395,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit OrderClkAssVisitor(AstNode* nodep) {
-        m_clkAss = false;
-        iterate(nodep);
-    }
+    explicit OrderClkAssVisitor(AstNode* nodep) { iterate(nodep); }
     virtual ~OrderClkAssVisitor() override {}
     // METHODS
     bool isClkAss() { return m_clkAss; }
@@ -461,9 +453,9 @@ public:
     ProcessMoveBuildGraph(const V3Graph* logicGraphp,  // Input graph of OrderLogicVertex etc.
                           V3Graph* outGraphp,  // Output graph of T_MoveVertex's
                           MoveVertexMaker* vxMakerp)
-        : m_graphp(logicGraphp)
-        , m_outGraphp(outGraphp)
-        , m_vxMakerp(vxMakerp) {}
+        : m_graphp{logicGraphp}
+        , m_outGraphp{outGraphp}
+        , m_vxMakerp{vxMakerp} {}
     virtual ~ProcessMoveBuildGraph() {}
 
     // METHODS
@@ -566,8 +558,8 @@ class OrderMoveVertexMaker : public ProcessMoveBuildGraph<OrderMoveVertex>::Move
 public:
     // CONSTRUCTORS
     OrderMoveVertexMaker(V3Graph* pomGraphp, V3List<OrderMoveVertex*>* pomWaitingp)
-        : m_pomGraphp(pomGraphp)
-        , m_pomWaitingp(pomWaitingp) {}
+        : m_pomGraphp{pomGraphp}
+        , m_pomWaitingp{pomWaitingp} {}
     // METHODS
     OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
                                  const AstScope* scopep, const AstSenTree* domainp) {
@@ -590,7 +582,7 @@ class OrderMTaskMoveVertexMaker : public ProcessMoveBuildGraph<MTaskMoveVertex>:
 
 public:
     explicit OrderMTaskMoveVertexMaker(V3Graph* pomGraphp)
-        : m_pomGraphp(pomGraphp) {}
+        : m_pomGraphp{pomGraphp} {}
     MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex* varVertexp,
                                  const AstScope* scopep, const AstSenTree* domainp) {
         // Exclude initial/settle logic from the mtasks graph.

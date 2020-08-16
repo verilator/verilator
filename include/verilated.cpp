@@ -255,8 +255,6 @@ Verilated::Serialized::Serialized() {
 }
 
 Verilated::NonSerialized::NonSerialized() {
-    s_profThreadsStart = 1;
-    s_profThreadsWindow = 2;
     s_profThreadsFilenamep = strdup("profile_threads.dat");
 }
 Verilated::NonSerialized::~NonSerialized() {
@@ -1759,12 +1757,12 @@ static const char* formatBinary(int nBits, vluint32_t bits) {
 }
 
 VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData start, QData end)
-    : m_hex(hex)
-    , m_bits(bits)
-    , m_filename(filename)
-    , m_end(end)
-    , m_addr(start)
-    , m_linenum(0) {
+    : m_hex{hex}
+    , m_bits{bits}
+    , m_filename{filename}
+    , m_end{end}
+    , m_addr{start}
+    , m_linenum{0} {
     m_fp = fopen(filename.c_str(), "r");
     if (VL_UNLIKELY(!m_fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
@@ -1895,9 +1893,9 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
 }
 
 VlWriteMem::VlWriteMem(bool hex, int bits, const std::string& filename, QData start, QData end)
-    : m_hex(hex)
-    , m_bits(bits)
-    , m_addr(0) {
+    : m_hex{hex}
+    , m_bits{bits}
+    , m_addr{0} {
     if (VL_UNLIKELY(start > end)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "$writemem invalid address range");
         return;
@@ -2174,17 +2172,7 @@ void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix,
 //===========================================================================
 // Verilated:: Methods
 
-Verilated::ThreadLocal::ThreadLocal()
-    :
-#ifdef VL_THREADED
-    t_mtaskId(0)
-    , t_endOfEvalReqd(0)
-    ,
-#endif
-    t_dpiScopep(nullptr)
-    , t_dpiFilename(0)
-    , t_dpiLineno(0) {
-}
+Verilated::ThreadLocal::ThreadLocal() {}
 Verilated::ThreadLocal::~ThreadLocal() {}
 
 void Verilated::debug(int level) VL_MT_SAFE {
@@ -2554,7 +2542,7 @@ VerilatedSyms::~VerilatedSyms() {
 // VerilatedModule:: Methods
 
 VerilatedModule::VerilatedModule(const char* namep)
-    : m_namep(strdup(namep)) {}
+    : m_namep{strdup(namep)} {}
 
 VerilatedModule::~VerilatedModule() {
     // Memory cleanup - not called during normal operation
@@ -2601,16 +2589,7 @@ void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const 
 //======================================================================
 // VerilatedScope:: Methods
 
-VerilatedScope::VerilatedScope() {
-    m_callbacksp = nullptr;
-    m_namep = nullptr;
-    m_identifierp = nullptr;
-    m_funcnumMax = 0;
-    m_symsp = nullptr;
-    m_varsp = nullptr;
-    m_timeunit = 0;
-    m_type = SCOPE_OTHER;
-}
+VerilatedScope::VerilatedScope() {}
 
 VerilatedScope::~VerilatedScope() {
     // Memory cleanup - not called during normal operation

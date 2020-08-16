@@ -238,11 +238,11 @@ private:
 
     // STATE
     std::vector<UndrivenVarEntry*> m_entryps[3];  // Nodes to delete when we are finished
-    bool m_inBBox;  // In black box; mark as driven+used
-    bool m_inContAssign;  // In continuous assignment
-    bool m_inProcAssign;  // In procedural assignment
-    AstNodeFTask* m_taskp;  // Current task
-    AstAlways* m_alwaysCombp;  // Current always if combo, otherwise nullptr
+    bool m_inBBox = false;  // In black box; mark as driven+used
+    bool m_inContAssign = false;  // In continuous assignment
+    bool m_inProcAssign = false;  // In procedural assignment
+    AstNodeFTask* m_taskp = nullptr;  // Current task
+    AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -439,14 +439,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit UndrivenVisitor(AstNetlist* nodep) {
-        m_inBBox = false;
-        m_inContAssign = false;
-        m_inProcAssign = false;
-        m_taskp = nullptr;
-        m_alwaysCombp = nullptr;
-        iterate(nodep);
-    }
+    explicit UndrivenVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~UndrivenVisitor() override {
         for (std::vector<UndrivenVarEntry*>::iterator it = m_entryps[1].begin();
              it != m_entryps[1].end(); ++it) {

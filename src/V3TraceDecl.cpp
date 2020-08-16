@@ -36,15 +36,15 @@ private:
     // NODE STATE
 
     // STATE
-    AstScope* m_topScopep;  // Current top scope
-    AstCFunc* m_initFuncp;  // Trace function being built
-    AstCFunc* m_initSubFuncp;  // Trace function being built (under m_init)
-    int m_initSubStmts;  // Number of statements in function
-    int m_funcNum;  // Function number being built
-    AstVarScope* m_traVscp;  // Signal being trace constructed
-    AstNode* m_traValuep;  // Signal being traced's value to trace in it
+    AstScope* m_topScopep = nullptr;  // Current top scope
+    AstCFunc* m_initFuncp = nullptr;  // Trace function being built
+    AstCFunc* m_initSubFuncp = nullptr;  // Trace function being built (under m_init)
+    int m_initSubStmts = 0;  // Number of statements in function
+    int m_funcNum = 0;  // Function number being built
+    AstVarScope* m_traVscp = nullptr;  // Signal being trace constructed
+    AstNode* m_traValuep = nullptr;  // Signal being traced's value to trace in it
     string m_traShowname;  // Signal being traced's component name
-    bool m_interface;  // Currently tracing an interface
+    bool m_interface = false;  // Currently tracing an interface
 
     VDouble0 m_statSigs;  // Statistic tracking
     VDouble0 m_statIgnSigs;  // Statistic tracking
@@ -338,17 +338,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit TraceDeclVisitor(AstNetlist* nodep) {
-        m_topScopep = nullptr;
-        m_initFuncp = nullptr;
-        m_initSubFuncp = nullptr;
-        m_initSubStmts = 0;
-        m_funcNum = 0;
-        m_traVscp = nullptr;
-        m_traValuep = nullptr;
-        m_interface = false;
-        iterate(nodep);
-    }
+    explicit TraceDeclVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~TraceDeclVisitor() override {
         V3Stats::addStat("Tracing, Traced signals", m_statSigs);
         V3Stats::addStat("Tracing, Ignored signals", m_statIgnSigs);

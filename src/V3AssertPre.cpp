@@ -34,11 +34,11 @@ private:
     // NODE STATE/TYPES
     // STATE
     // Reset each module:
-    AstSenItem* m_seniDefaultp;  // Default sensitivity (from AstDefClock)
+    AstSenItem* m_seniDefaultp = nullptr;  // Default sensitivity (from AstDefClock)
     // Reset each assertion:
-    AstSenItem* m_senip;  // Last sensitivity
+    AstSenItem* m_senip = nullptr;  // Last sensitivity
     // Reset each always:
-    AstSenItem* m_seniAlwaysp;  // Last sensitivity in always
+    AstSenItem* m_seniAlwaysp = nullptr;  // Last sensitivity in always
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -170,8 +170,6 @@ private:
 public:
     // CONSTRUCTORS
     explicit AssertPreVisitor(AstNetlist* nodep) {
-        m_seniDefaultp = nullptr;
-        m_seniAlwaysp = nullptr;
         clearAssertInfo();
         // Process
         iterate(nodep);

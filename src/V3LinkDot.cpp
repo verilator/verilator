@@ -198,7 +198,7 @@ public:
 
     // CONSTRUCTORS
     LinkDotState(AstNetlist* rootp, VLinkDotStep step)
-        : m_syms(rootp) {
+        : m_syms{rootp} {
         UINFO(4, __FUNCTION__ << ": " << endl);
         m_forPrimary = (step == LDS_PRIMARY);
         m_forPrearray = (step == LDS_PARAMED || step == LDS_PRIMARY);
@@ -1253,7 +1253,7 @@ class LinkDotFindVisitor : public AstNVisitor {
 public:
     // CONSTRUCTORS
     LinkDotFindVisitor(AstNetlist* rootp, LinkDotState* statep)
-        : m_statep(statep) {
+        : m_statep{statep} {
         UINFO(4, __FUNCTION__ << ": " << endl);
 
         iterate(rootp);
@@ -1419,7 +1419,7 @@ private:
 public:
     // CONSTRUCTORS
     LinkDotParamVisitor(AstNetlist* rootp, LinkDotState* statep)
-        : m_statep(statep) {
+        : m_statep{statep} {
         UINFO(4, __FUNCTION__ << ": " << endl);
         iterate(rootp);
     }
@@ -1572,7 +1572,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
 public:
     // CONSTRUCTORS
     LinkDotScopeVisitor(AstNetlist* rootp, LinkDotState* statep)
-        : m_statep(statep) {
+        : m_statep{statep} {
         UINFO(4, __FUNCTION__ << ": " << endl);
         iterate(rootp);
     }
@@ -2799,7 +2799,7 @@ private:
 public:
     // CONSTRUCTORS
     LinkDotResolveVisitor(AstNetlist* rootp, LinkDotState* statep)
-        : m_statep(statep) {
+        : m_statep{statep} {
         UINFO(4, __FUNCTION__ << ": " << endl);
         iterate(rootp);
     }

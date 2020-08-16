@@ -56,8 +56,8 @@ private:
     public:
         // CONSTRUCTORS
         VisitBase(InstrCountVisitor* visitor, AstNode* nodep)
-            : m_nodep(nodep)
-            , m_visitor(visitor) {
+            : m_nodep{nodep}
+            , m_visitor{visitor} {
             m_savedCount = m_visitor->startVisitBase(nodep);
         }
         ~VisitBase() { m_visitor->endVisitBase(m_savedCount, m_nodep); }
@@ -69,9 +69,9 @@ private:
 public:
     // CONSTRUCTORS
     InstrCountVisitor(AstNode* nodep, bool assertNoDups, std::ostream* osp)
-        : m_startNodep(nodep)
-        , m_assertNoDups(assertNoDups)
-        , m_osp(osp) {
+        : m_startNodep{nodep}
+        , m_assertNoDups{assertNoDups}
+        , m_osp{osp} {
         if (nodep) iterate(nodep);
     }
     virtual ~InstrCountVisitor() override {}
@@ -271,7 +271,7 @@ private:
 public:
     // CONSTRUCTORS
     InstrCountDumpVisitor(AstNode* nodep, std::ostream* osp)
-        : m_osp(osp) {
+        : m_osp{osp} {
         // No check for nullptr output, so...
         UASSERT_OBJ(osp, nodep, "Don't call if not dumping");
         if (nodep) iterate(nodep);

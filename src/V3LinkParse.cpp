@@ -48,14 +48,15 @@ private:
     typedef std::set<FileLine*> FileLineSet;
 
     // STATE
-    AstVar* m_varp;  // Variable we're under
+    AstVar* m_varp = nullptr;  // Variable we're under
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     FileLineSet m_filelines;  // Filelines that have been seen
-    bool m_inAlways;  // Inside an always
-    AstNodeModule* m_valueModp;  // If set, move AstVar->valuep() initial values to this module
-    AstNodeModule* m_modp;  // Current module
-    AstNodeFTask* m_ftaskp;  // Current task
-    AstNodeDType* m_dtypep;  // Current data type
+    bool m_inAlways = false;  // Inside an always
+    AstNodeModule* m_valueModp
+        = nullptr;  // If set, move AstVar->valuep() initial values to this module
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstNodeFTask* m_ftaskp = nullptr;  // Current task
+    AstNodeDType* m_dtypep = nullptr;  // Current data type
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -595,15 +596,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LinkParseVisitor(AstNetlist* rootp) {
-        m_varp = nullptr;
-        m_modp = nullptr;
-        m_ftaskp = nullptr;
-        m_dtypep = nullptr;
-        m_inAlways = false;
-        m_valueModp = nullptr;
-        iterate(rootp);
-    }
+    explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
     virtual ~LinkParseVisitor() override {}
 };
 

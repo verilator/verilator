@@ -48,16 +48,16 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
-    AstTopScope* m_topScopep;  // Current top scope
-    AstScope* m_scopep;  // Current scope
-    AstCFunc* m_evalFuncp;  // Top eval function we are creating
-    AstCFunc* m_initFuncp;  // Top initial function we are creating
-    AstCFunc* m_finalFuncp;  // Top final function we are creating
-    AstCFunc* m_settleFuncp;  // Top settlement function we are creating
-    AstSenTree* m_lastSenp;  // Last sensitivity match, so we can detect duplicates.
-    AstIf* m_lastIfp;  // Last sensitivity if active to add more under
-    AstMTaskBody* m_mtaskBodyp;  // Current mtask body
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstTopScope* m_topScopep = nullptr;  // Current top scope
+    AstScope* m_scopep = nullptr;  // Current scope
+    AstCFunc* m_evalFuncp = nullptr;  // Top eval function we are creating
+    AstCFunc* m_initFuncp = nullptr;  // Top initial function we are creating
+    AstCFunc* m_finalFuncp = nullptr;  // Top final function we are creating
+    AstCFunc* m_settleFuncp = nullptr;  // Top settlement function we are creating
+    AstSenTree* m_lastSenp = nullptr;  // Last sensitivity match, so we can detect duplicates.
+    AstIf* m_lastIfp = nullptr;  // Last sensitivity if active to add more under
+    AstMTaskBody* m_mtaskBodyp = nullptr;  // Current mtask body
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -402,17 +402,6 @@ private:
 public:
     // CONSTRUCTORS
     explicit ClockVisitor(AstNetlist* nodep) {
-        m_modp = nullptr;
-        m_evalFuncp = nullptr;
-        m_initFuncp = nullptr;
-        m_finalFuncp = nullptr;
-        m_settleFuncp = nullptr;
-        m_topScopep = nullptr;
-        m_lastSenp = nullptr;
-        m_lastIfp = nullptr;
-        m_scopep = nullptr;
-        m_mtaskBodyp = nullptr;
-        //
         iterate(nodep);
         // Allow downstream modules to find _eval()
         // easily without iterating through the tree.

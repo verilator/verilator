@@ -40,8 +40,8 @@ protected:
     bool m_deleted = false;  // True if deleted
 public:
     GraphAcycVertex(V3Graph* graphp, V3GraphVertex* origVertexp)
-        : V3GraphVertex(graphp)
-        , m_origVertexp(origVertexp) {}
+        : V3GraphVertex{graphp}
+        , m_origVertexp{origVertexp} {}
     virtual ~GraphAcycVertex() override {}
     V3GraphVertex* origVertexp() const { return m_origVertexp; }
     void setDelete() { m_deleted = true; }
@@ -66,7 +66,7 @@ private:
 public:
     GraphAcycEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
                   bool cutable = false)
-        : V3GraphEdge(graphp, fromp, top, weight, cutable) {}
+        : V3GraphEdge{graphp, fromp, top, weight, cutable} {}
     virtual ~GraphAcycEdge() override {}
     // yellow=we might still cut it, else oldEdge: yellowGreen=made uncutable, red=uncutable
     virtual string dotColor() const override {
@@ -186,8 +186,8 @@ private:
 public:
     // CONSTRUCTORS
     GraphAcyc(V3Graph* origGraphp, V3EdgeFuncP edgeFuncp)
-        : m_origGraphp(origGraphp)
-        , m_origEdgeFuncp(edgeFuncp) {}
+        : m_origGraphp{origGraphp}
+        , m_origEdgeFuncp{edgeFuncp} {}
     ~GraphAcyc() {
         for (std::vector<OrigEdgeList*>::iterator it = m_origEdgeDelp.begin();
              it != m_origEdgeDelp.end(); ++it) {

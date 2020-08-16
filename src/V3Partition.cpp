@@ -195,10 +195,10 @@ public:
     // CONSTRUCTORS
     PartPropagateCp(V3Graph* graphp, GraphWay way, T_CostAccessor* accessp, bool slowAsserts,
                     V3EdgeFuncP edgeFuncp = &V3GraphEdge::followAlwaysTrue)
-        : GraphAlg<>(graphp, edgeFuncp)
-        , m_way(way)
-        , m_accessp(accessp)
-        , m_slowAsserts(slowAsserts) {}
+        : GraphAlg<>{graphp, edgeFuncp}
+        , m_way{way}
+        , m_accessp{accessp}
+        , m_slowAsserts{slowAsserts} {}
 
     // METHODS
     void cpHasIncreased(V3GraphVertex* vxp, uint32_t newInclusiveCp) {
@@ -472,7 +472,7 @@ private:
 public:
     // CONSTRUCTORS
     LogicMTask(V3Graph* graphp, MTaskMoveVertex* mtmvVxp)
-        : AbstractLogicMTask(graphp) {
+        : AbstractLogicMTask{graphp} {
         for (int i = 0; i < GraphWay::NUM_WAYS; ++i) m_critPathCost[i] = 0;
         if (mtmvVxp) {  // Else null for test
             m_vertices.push_back(mtmvVxp);
@@ -784,7 +784,7 @@ class MTaskEdge : public V3GraphEdge, public MergeCandidate {
 public:
     // CONSTRUCTORS
     MTaskEdge(V3Graph* graphp, LogicMTask* fromp, LogicMTask* top, int weight)
-        : V3GraphEdge(graphp, fromp, top, weight) {
+        : V3GraphEdge{graphp, fromp, top, weight} {
         fromp->addRelative(GraphWay::FORWARD, top);
         top->addRelative(GraphWay::REVERSE, fromp);
     }
@@ -860,7 +860,7 @@ class PartParallelismEst {
 public:
     // CONSTRUCTORS
     explicit PartParallelismEst(const V3Graph* graphp)
-        : m_graphp(graphp) {}
+        : m_graphp{graphp} {}
 
     // METHODS
     uint32_t totalGraphCost() const { return m_totalGraphCost; }
@@ -1084,10 +1084,10 @@ private:
 public:
     // CONSTRUCTORS
     PartContraction(V3Graph* mtasksp, uint32_t scoreLimit, bool slowAsserts)
-        : m_mtasksp(mtasksp)
-        , m_scoreLimit(scoreLimit)
-        , m_slowAsserts(slowAsserts)
-        , m_sb(&mergeCandidateScore, slowAsserts) {}
+        : m_mtasksp{mtasksp}
+        , m_scoreLimit{scoreLimit}
+        , m_slowAsserts{slowAsserts}
+        , m_sb{&mergeCandidateScore, slowAsserts} {}
 
     // METHODS
     void go() {
@@ -1789,12 +1789,11 @@ private:
     // MEMBERS
     V3Graph* m_mtasksp;  // Mtask graph
     Olv2MTaskMap m_olv2mtask;  // Map OrderLogicVertex to LogicMTask who wraps it
-    unsigned m_mergesDone;  // Number of MTasks merged. For stats only.
+    unsigned m_mergesDone = 0;  // Number of MTasks merged. For stats only.
 public:
     // CONSTRUCTORs
     explicit PartFixDataHazards(V3Graph* mtasksp)
-        : m_mtasksp(mtasksp)
-        , m_mergesDone(0) {}
+        : m_mtasksp{mtasksp} {}
     // METHODS
 private:
     void findAdjacentTasks(OvvSet::iterator ovvIt, TasksByRank* tasksByRankp) {
@@ -2073,11 +2072,11 @@ public:
     // CONSTRUCTORS
     explicit PartPackMTasks(V3Graph* mtasksp, uint32_t nThreads = v3Global.opt.threads(),
                             unsigned sandbagNumerator = 30, unsigned sandbagDenom = 100)
-        : m_mtasksp(mtasksp)
-        , m_nThreads(nThreads)
-        , m_sandbagNumerator(sandbagNumerator)
-        , m_sandbagDenom(sandbagDenom)
-        , m_ready(m_mtaskCmp) {}
+        : m_mtasksp{mtasksp}
+        , m_nThreads{nThreads}
+        , m_sandbagNumerator{sandbagNumerator}
+        , m_sandbagDenom{sandbagDenom}
+        , m_ready{m_mtaskCmp} {}
     ~PartPackMTasks() {}
 
     // METHODS

@@ -105,14 +105,14 @@ class WidthVP {
     Stage m_stage;  // If true, report errors
 public:
     WidthVP(AstNodeDType* dtypep, Stage stage)
-        : m_dtypep(dtypep)
-        , m_stage(stage) {
+        : m_dtypep{dtypep}
+        , m_stage{stage} {
         // Prelim doesn't look at assignments, so shouldn't need a dtype,
         // however AstPattern uses them
     }
     WidthVP(Determ determ, Stage stage)
-        : m_dtypep(nullptr)
-        , m_stage(stage) {
+        : m_dtypep{nullptr}
+        , m_stage{stage} {
         if (determ != SELF && stage != PRELIM)
             v3fatalSrc("Context-determined width request only allowed as prelim step");
     }
@@ -184,15 +184,16 @@ private:
     typedef std::map<int, AstPatMember*> PatVecMap;
 
     // STATE
-    WidthVP* m_vup;  // Current node state
+    WidthVP* m_vup = nullptr;  // Current node state
     bool m_paramsOnly;  // Computing parameter value; limit operation
-    AstRange* m_cellRangep;  // Range for arrayed instantiations, nullptr for normal instantiations
-    AstNodeFTask* m_ftaskp;  // Current function/task
-    AstNodeProcedure* m_procedurep;  // Current final/always
-    AstFunc* m_funcp;  // Current function
-    AstAttrOf* m_attrp;  // Current attribute
+    AstRange* m_cellRangep
+        = nullptr;  // Range for arrayed instantiations, nullptr for normal instantiations
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
+    AstFunc* m_funcp = nullptr;  // Current function
+    AstAttrOf* m_attrp = nullptr;  // Current attribute
     bool m_doGenerate;  // Do errors later inside generate statement
-    int m_dtTables;  // Number of created data type tables
+    int m_dtTables = 0;  // Number of created data type tables
     TableMap m_tableMap;  // Created tables so can remove duplicates
 
     // ENUMS
@@ -5404,18 +5405,10 @@ private:
 public:
     // CONSTRUCTORS
     WidthVisitor(bool paramsOnly,  // [in] TRUE if we are considering parameters only.
-                 bool doGenerate) {  // [in] TRUE if we are inside a generate statement and
+                 bool doGenerate)  // [in] TRUE if we are inside a generate statement and
         //                           // don't wish to trigger errors
-        m_paramsOnly = paramsOnly;
-        m_cellRangep = nullptr;
-        m_ftaskp = nullptr;
-        m_procedurep = nullptr;
-        m_funcp = nullptr;
-        m_attrp = nullptr;
-        m_doGenerate = doGenerate;
-        m_dtTables = 0;
-        m_vup = nullptr;
-    }
+        : m_paramsOnly{paramsOnly}
+        , m_doGenerate{doGenerate} {}
     AstNode* mainAcceptEdit(AstNode* nodep) {
         return userIterateSubtreeReturnEdits(nodep, WidthVP(SELF, BOTH).p());
     }

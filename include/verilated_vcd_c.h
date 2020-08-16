@@ -61,23 +61,23 @@ private:
 
     VerilatedVcdFile* m_filep;  ///< File we're writing to
     bool m_fileNewed;  ///< m_filep needs destruction
-    bool m_isOpen;  ///< True indicates open file
-    bool m_evcd;  ///< True for evcd format
+    bool m_isOpen = false;  ///< True indicates open file
+    bool m_evcd = false;  ///< True for evcd format
     std::string m_filename;  ///< Filename we're writing to (if open)
-    vluint64_t m_rolloverMB;  ///< MB of file size to rollover at
-    int m_modDepth;  ///< Depth of module hierarchy
+    vluint64_t m_rolloverMB = 0;  ///< MB of file size to rollover at
+    int m_modDepth = 0;  ///< Depth of module hierarchy
 
     char* m_wrBufp;  ///< Output buffer
     char* m_wrFlushp;  ///< Output buffer flush trigger location
     char* m_writep;  ///< Write pointer into output buffer
     vluint64_t m_wrChunkSize;  ///< Output buffer size
-    vluint64_t m_wroteBytes;  ///< Number of bytes written to this file
+    vluint64_t m_wroteBytes = 0;  ///< Number of bytes written to this file
 
     std::vector<char> m_suffixes;  ///< VCD line end string codes + metadata
     const char* m_suffixesp;  ///< Pointer to first element of above
 
     typedef std::map<std::string, std::string> NameMap;
-    NameMap* m_namemapp;  ///< List of names for the header
+    NameMap* m_namemapp = nullptr;  ///< List of names for the header
 
     void bufferResize(vluint64_t minsize);
     void bufferFlush() VL_MT_UNSAFE_ONE;
@@ -337,7 +337,7 @@ class VerilatedVcdC {
 
 public:
     explicit VerilatedVcdC(VerilatedVcdFile* filep = nullptr)
-        : m_sptrace(filep) {}
+        : m_sptrace{filep} {}
     ~VerilatedVcdC() { close(); }
     /// Routines can only be called from one thread; allow next call from different thread
     void changeThread() { spTrace()->changeThread(); }

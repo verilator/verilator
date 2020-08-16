@@ -182,7 +182,7 @@ public:
 
     // CONSTRUCTORS
     explicit StatsReport(std::ofstream* aofp)
-        : os(*aofp) {
+        : os{*aofp} {
         header();
         sumit();
         stars();

@@ -57,10 +57,10 @@ private:
     };
 
     // STATE
-    int m_modIncrementsNum;  // Var name counter
-    InsertMode m_insMode;  // How to insert
-    AstNode* m_insStmtp;  // Where to insert statement
-    bool m_unsupportedHere;  // Used to detect where it's not supported yet
+    int m_modIncrementsNum = 0;  // Var name counter
+    InsertMode m_insMode = IM_BEFORE;  // How to insert
+    AstNode* m_insStmtp = nullptr;  // Where to insert statement
+    bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
 
 private:
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
@@ -234,13 +234,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LinkIncVisitor(AstNetlist* nodep) {
-        m_modIncrementsNum = 0;
-        m_insMode = IM_BEFORE;
-        m_insStmtp = nullptr;
-        m_unsupportedHere = false;
-        iterate(nodep);
-    }
+    explicit LinkIncVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~LinkIncVisitor() override {}
 };
 

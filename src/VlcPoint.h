@@ -39,9 +39,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlcPoint(const string& name, int pointNum)
-        : m_name(name)
-        , m_pointNum(pointNum) {}
+    VlcPoint(const string& name, vluint64_t pointNum)
+        : m_name{name}
+        , m_pointNum{pointNum} {}
     ~VlcPoint() {}
     // ACCESSORS
     const string& name() const { return m_name; }

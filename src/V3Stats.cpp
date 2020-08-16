@@ -208,8 +208,8 @@ private:
 public:
     // CONSTRUCTORS
     StatsVisitor(AstNetlist* nodep, const string& stage, bool fast)
-        : m_stage(stage)
-        , m_fast(fast) {
+        : m_stage{stage}
+        , m_fast{fast} {
         UINFO(9, "Starting stats, fast=" << fast << endl);
         m_cfuncp = nullptr;
         m_counting = !m_fast;

@@ -34,9 +34,9 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstNodeModule* m_modp;  // Last module
-    AstBegin* m_beginp;  // Last begin
-    unsigned m_modPastNum;  // Module past numbering
+    AstNodeModule* m_modp = nullptr;  // Last module
+    AstBegin* m_beginp = nullptr;  // Last begin
+    unsigned m_modPastNum = 0;  // Module past numbering
     VDouble0 m_statCover;  // Statistic tracking
     VDouble0 m_statAsNotImm;  // Statistic tracking
     VDouble0 m_statAsImm;  // Statistic tracking
@@ -385,13 +385,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit AssertVisitor(AstNetlist* nodep) {
-        m_beginp = nullptr;
-        m_modp = nullptr;
-        m_modPastNum = 0;
-        // Process
-        iterate(nodep);
-    }
+    explicit AssertVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~AssertVisitor() override {
         V3Stats::addStat("Assertions, assert non-immediate statements", m_statAsNotImm);
         V3Stats::addStat("Assertions, assert immediate statements", m_statAsImm);

@@ -87,8 +87,8 @@ public:
     AstAttrType m_type;  // Type of attribute
     AstSenTree* m_sentreep;  // Sensitivity tree for public_flat_rw
     V3ConfigVarAttr(AstAttrType type, AstSenTree* sentreep)
-        : m_type(type)
-        , m_sentreep(sentreep) {}
+        : m_type{type}
+        , m_sentreep{sentreep} {}
 };
 
 // Overload vector with the required update function and to apply all entries
@@ -234,9 +234,9 @@ public:
     V3ErrorCode m_code;  // Error code
     bool m_on;  // True to enable message
     V3ConfigIgnoresLine(V3ErrorCode code, int lineno, bool on)
-        : m_lineno(lineno)
-        , m_code(code)
-        , m_on(on) {}
+        : m_lineno{lineno}
+        , m_code{code}
+        , m_on{on} {}
     ~V3ConfigIgnoresLine() {}
     inline bool operator<(const V3ConfigIgnoresLine& rh) const {
         if (m_lineno < rh.m_lineno) return true;

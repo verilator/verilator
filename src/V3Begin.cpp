@@ -250,7 +250,7 @@ private:
 public:
     // CONSTRUCTORS
     BeginVisitor(AstNetlist* nodep, BeginState* statep)
-        : m_statep(statep) {
+        : m_statep{statep} {
         iterate(nodep);
     }
     virtual ~BeginVisitor() override {}

@@ -202,8 +202,8 @@ private:
 public:
     // CONSTRUCTORS
     ActiveDlyVisitor(AstNode* nodep, CheckType check)
-        : m_check(check)
-        , m_alwaysp(nodep) {
+        : m_check{check}
+        , m_alwaysp{nodep} {
         iterate(nodep);
     }
     virtual ~ActiveDlyVisitor() override {}

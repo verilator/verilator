@@ -72,18 +72,17 @@ public:
         typename KeySet::iterator m_keyIt;
         typename Val2Keys::iterator m_valIt;
         SortByValueMap* m_sbvmp;
-        bool m_end;  // At the end()
+        bool m_end = true;  // At the end()
 
         // CONSTRUCTORS
         explicit const_iterator(SortByValueMap* sbmvp)  // for end()
-            : m_sbvmp(sbmvp)
-            , m_end(true) {}
+            : m_sbvmp{sbmvp} {}
         const_iterator(typename Val2Keys::iterator valIt, typename KeySet::iterator keyIt,
                        SortByValueMap* sbvmp)
-            : m_keyIt(keyIt)
-            , m_valIt(valIt)
-            , m_sbvmp(sbvmp)
-            , m_end(false) {}
+            : m_keyIt{keyIt}
+            , m_valIt{valIt}
+            , m_sbvmp{sbvmp}
+            , m_end{false} {}
 
         // METHODS
         void advanceUntilValid() {
@@ -204,10 +203,10 @@ public:
 
         // CONSTRUCTORS
         explicit iterator(SortByValueMap* sbvmp)
-            : const_iterator(sbvmp) {}
+            : const_iterator{sbvmp} {}
         iterator(typename Val2Keys::iterator valIt, typename KeySet::iterator keyIt,
                  SortByValueMap* sbvmp)
-            : const_iterator(valIt, keyIt, sbvmp) {}
+            : const_iterator{valIt, keyIt, sbvmp} {}
 
         // METHODS
         iterator& operator++() {
@@ -374,8 +373,8 @@ private:
 public:
     // CONSTRUCTORS
     explicit V3Scoreboard(UserScoreFnp scoreFnp, bool slowAsserts)
-        : m_scoreFnp(scoreFnp)
-        , m_slowAsserts(slowAsserts) {}
+        : m_scoreFnp{scoreFnp}
+        , m_slowAsserts{slowAsserts} {}
     ~V3Scoreboard() {}
 
     // METHODS

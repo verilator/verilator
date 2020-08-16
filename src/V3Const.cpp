@@ -59,7 +59,7 @@ class ConstVarFindVisitor : public AstNVisitor {
     // NODE STATE
     // AstVar::user4p           -> bool, input from ConstVarMarkVisitor
     // MEMBERS
-    bool m_found;
+    bool m_found = false;
 
 private:
     // VISITORS
@@ -70,10 +70,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit ConstVarFindVisitor(AstNode* nodep) {
-        m_found = false;
-        iterateAndNextNull(nodep);
-    }
+    explicit ConstVarFindVisitor(AstNode* nodep) { iterateAndNextNull(nodep); }
     virtual ~ConstVarFindVisitor() override {}
     // METHODS
     bool found() const { return m_found; }
@@ -92,20 +89,20 @@ private:
     // AstEnum::user4           -> bool.  Recursing.
 
     // STATE
-    bool m_params;  // If true, propagate parameterized and true numbers only
-    bool m_required;  // If true, must become a constant
-    bool m_wremove;  // Inside scope, no assignw removal
-    bool m_warn;  // Output warnings
-    bool m_doExpensive;  // Enable computationally expensive optimizations
-    bool m_doNConst;  // Enable non-constant-child simplifications
-    bool m_doShort;  // Remove expressions that short circuit
-    bool m_doV;  // Verilog, not C++ conversion
-    bool m_doGenerate;  // Postpone width checking inside generate
-    bool m_hasJumpDelay;  // JumpGo or Delay under this while
-    AstNodeModule* m_modp;  // Current module
-    AstArraySel* m_selp;  // Current select
-    AstNode* m_scopep;  // Current scope
-    AstAttrOf* m_attrp;  // Current attribute
+    bool m_params = false;  // If true, propagate parameterized and true numbers only
+    bool m_required = false;  // If true, must become a constant
+    bool m_wremove = true;  // Inside scope, no assignw removal
+    bool m_warn = false;  // Output warnings
+    bool m_doExpensive = false;  // Enable computationally expensive optimizations
+    bool m_doNConst = false;  // Enable non-constant-child simplifications
+    bool m_doShort = true;  // Remove expressions that short circuit
+    bool m_doV = false;  // Verilog, not C++ conversion
+    bool m_doGenerate = false;  // Postpone width checking inside generate
+    bool m_hasJumpDelay = false;  // JumpGo or Delay under this while
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstArraySel* m_selp = nullptr;  // Current select
+    AstNode* m_scopep = nullptr;  // Current scope
+    AstAttrOf* m_attrp = nullptr;  // Current attribute
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -2549,21 +2546,6 @@ public:
 
     // CONSTRUCTORS
     explicit ConstVisitor(ProcMode pmode) {
-        m_params = false;
-        m_required = false;
-        m_doExpensive = false;
-        m_doNConst = false;
-        m_doShort = true;  // Presently always done
-        m_doV = false;
-        m_doGenerate = false;  // Inside generate conditionals
-        m_hasJumpDelay = false;
-        m_warn = false;
-        m_wremove = true;  // Overridden in visitors
-        m_modp = nullptr;
-        m_selp = nullptr;
-        m_scopep = nullptr;
-        m_attrp = nullptr;
-        //
         // clang-format off
         switch (pmode) {
         case PROC_PARAMS:       m_doV = true;  m_doNConst = true; m_params = true;

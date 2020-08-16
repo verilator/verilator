@@ -497,7 +497,7 @@ public:
 // Unroll class functions
 
 UnrollStateful::UnrollStateful()
-    : m_unrollerp(new UnrollVisitor) {}
+    : m_unrollerp{new UnrollVisitor} {}
 UnrollStateful::~UnrollStateful() { delete m_unrollerp; }
 
 void UnrollStateful::unrollGen(AstNodeFor* nodep, const string& beginName) {

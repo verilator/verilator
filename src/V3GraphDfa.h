@@ -86,9 +86,9 @@ class DfaVertex : public V3GraphVertex {
 public:
     // CONSTRUCTORS
     explicit DfaVertex(DfaGraph* graphp, bool start = false, bool accepting = false)
-        : V3GraphVertex(graphp)
-        , m_start(start)
-        , m_accepting(accepting) {}
+        : V3GraphVertex{graphp}
+        , m_start{start}
+        , m_accepting{accepting} {}
     using V3GraphVertex::clone;  // We are overriding, not overloading clone(V3Graph*)
     virtual DfaVertex* clone(DfaGraph* graphp) {
         return new DfaVertex(graphp, start(), accepting());
@@ -121,13 +121,13 @@ public:
     static DfaInput NA() { return VNUser::fromInt(1); }  // as in not-applicable
     // CONSTRUCTORS
     DfaEdge(DfaGraph* graphp, DfaVertex* fromp, DfaVertex* top, const DfaInput& input)
-        : V3GraphEdge(graphp, fromp, top, 1)
+        : V3GraphEdge{graphp, fromp, top, 1}
         , m_input(input)
         , m_complement(false) {}
     DfaEdge(DfaGraph* graphp, DfaVertex* fromp, DfaVertex* top, const DfaEdge* copyfrom)
-        : V3GraphEdge(graphp, fromp, top, copyfrom->weight())
-        , m_input(copyfrom->input())
-        , m_complement(copyfrom->complement()) {}
+        : V3GraphEdge{graphp, fromp, top, copyfrom->weight()}
+        , m_input{copyfrom->input()}
+        , m_complement{copyfrom->complement()} {}
     virtual ~DfaEdge() override {}
     // METHODS
     virtual string dotColor() const override {

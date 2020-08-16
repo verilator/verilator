@@ -43,9 +43,9 @@ private:
 public:
     // CONSTRUCTORS
     VlcTest(const string& name, vluint64_t testrun, double comp)
-        : m_name(name)
-        , m_computrons(comp)
-        , m_testrun(testrun) {}
+        : m_name{name}
+        , m_computrons{comp}
+        , m_testrun{testrun} {}
     ~VlcTest() {}
 
     // ACCESSORS

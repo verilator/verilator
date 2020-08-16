@@ -127,7 +127,7 @@ public:
         m_inthash[7] = 0x5be0cd19;
     }
     explicit VHashSha256(const string& data)
-        : VHashSha256() {
+        : VHashSha256{} {
         insert(data);
     }
     ~VHashSha256() {}
@@ -165,7 +165,7 @@ class VName {
 public:
     // CONSTRUCTORS
     explicit VName(const string& name)
-        : m_name(name) {}
+        : m_name{name} {}
     ~VName() {}
     // METHODS
     void name(const string& name) {

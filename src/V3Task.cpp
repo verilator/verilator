@@ -44,7 +44,7 @@ class TaskBaseVertex : public V3GraphVertex {
     bool m_noInline = false;  // Marked with pragma
 public:
     explicit TaskBaseVertex(V3Graph* graphp)
-        : V3GraphVertex(graphp) {}
+        : V3GraphVertex{graphp} {}
     virtual ~TaskBaseVertex() override {}
     bool pure() const { return m_impurep == nullptr; }
     AstNode* impureNode() const { return m_impurep; }
@@ -56,14 +56,12 @@ public:
 class TaskFTaskVertex : public TaskBaseVertex {
     // Every task gets a vertex, and we link tasks together based on funcrefs.
     AstNodeFTask* m_nodep;
-    AstCFunc* m_cFuncp;
+    AstCFunc* m_cFuncp = nullptr;
 
 public:
     TaskFTaskVertex(V3Graph* graphp, AstNodeFTask* nodep)
-        : TaskBaseVertex(graphp)
-        , m_nodep(nodep) {
-        m_cFuncp = nullptr;
-    }
+        : TaskBaseVertex{graphp}
+        , m_nodep{nodep} {}
     virtual ~TaskFTaskVertex() override {}
     AstNodeFTask* nodep() const { return m_nodep; }
     virtual string name() const override { return nodep()->name(); }
@@ -77,7 +75,7 @@ class TaskCodeVertex : public TaskBaseVertex {
     // Top vertex for all calls not under another task
 public:
     explicit TaskCodeVertex(V3Graph* graphp)
-        : TaskBaseVertex(graphp) {}
+        : TaskBaseVertex{graphp} {}
     virtual ~TaskCodeVertex() override {}
     virtual string name() const override { return "*CODE*"; }
     virtual string dotColor() const override { return "green"; }
@@ -86,7 +84,7 @@ public:
 class TaskEdge : public V3GraphEdge {
 public:
     TaskEdge(V3Graph* graphp, TaskBaseVertex* fromp, TaskBaseVertex* top)
-        : V3GraphEdge(graphp, fromp, top, 1, false) {}
+        : V3GraphEdge{graphp, fromp, top, 1, false} {}
     virtual ~TaskEdge() override {}
     virtual string dotLabel() const override { return "w" + cvtToStr(weight()); }
 };
@@ -333,12 +331,12 @@ private:
 
     // STATE
     TaskStateVisitor* m_statep;  // Common state between visitors
-    AstNodeModule* m_modp;  // Current module
-    AstTopScope* m_topScopep;  // Current top scope
-    AstScope* m_scopep;  // Current scope
-    InsertMode m_insMode;  // How to insert
-    AstNode* m_insStmtp;  // Where to insert statement
-    int m_modNCalls;  // Incrementing func # for making symbols
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstTopScope* m_topScopep = nullptr;  // Current top scope
+    AstScope* m_scopep = nullptr;  // Current scope
+    InsertMode m_insMode = IM_BEFORE;  // How to insert
+    AstNode* m_insStmtp = nullptr;  // Where to insert statement
+    int m_modNCalls = 0;  // Incrementing func # for making symbols
     DpiNames m_dpiNames;  // Map of all created DPI functions
 
     // METHODS
@@ -1353,13 +1351,7 @@ private:
 public:
     // CONSTRUCTORS
     TaskVisitor(AstNetlist* nodep, TaskStateVisitor* statep)
-        : m_statep(statep) {
-        m_modp = nullptr;
-        m_topScopep = nullptr;
-        m_scopep = nullptr;
-        m_insMode = IM_BEFORE;
-        m_insStmtp = nullptr;
-        m_modNCalls = 0;
+        : m_statep{statep} {
         AstNode::user1ClearTree();
         iterate(nodep);
     }

@@ -484,7 +484,7 @@ private:
 public:
     // CONSTRUCTORS
     LifeTopVisitor(AstNetlist* nodep, LifeState* statep)
-        : m_statep(statep) {
+        : m_statep{statep} {
         iterate(nodep);
     }
     virtual ~LifeTopVisitor() override {}

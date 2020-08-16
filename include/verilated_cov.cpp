@@ -75,7 +75,7 @@ public:
     // CONSTRUCTORS
     // cppcheck-suppress noExplicitConstructor
     explicit VerilatedCoverItemSpec(T* countp)
-        : m_countp(countp) {
+        : m_countp{countp} {
         *m_countp = 0;
     }
     virtual ~VerilatedCoverItemSpec() override {}

@@ -92,9 +92,9 @@ public:
 
     // CONSTRUCTORS
     V3Global()
-        : m_rootp(nullptr)  // created by makeInitNetlist() so static constructors run first
-        , m_hierPlanp(nullptr)  // Set via hierPlanp(V3HierBlockPlan*) when use hier_block
-        , m_widthMinUsage(VWidthMinUsage::LINT_WIDTH) {}
+        : m_rootp{nullptr}  // created by makeInitNetlist(} so static constructors run first
+        , m_hierPlanp{nullptr}  // Set via hierPlanp(V3HierBlockPlan*} when use hier_block
+        , m_widthMinUsage{VWidthMinUsage::LINT_WIDTH} {}
     AstNetlist* makeNetlist();
     void boot() {
         UASSERT(!m_rootp, "call once");

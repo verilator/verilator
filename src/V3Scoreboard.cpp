@@ -26,7 +26,7 @@ public:
     uint32_t m_id;
     // CONSTRUCTORS
     explicit ScoreboardTestElem(uint32_t score)
-        : m_score(score) {
+        : m_score{score} {
         static uint32_t s_serial = 0;
         m_id = ++s_serial;
     }

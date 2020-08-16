@@ -55,8 +55,8 @@ class V3GraphTestVertex : public V3GraphVertex {
 
 public:
     V3GraphTestVertex(V3Graph* graphp, const string& name)
-        : V3GraphVertex(graphp)
-        , m_name(name) {}
+        : V3GraphVertex{graphp}
+        , m_name{name} {}
     virtual ~V3GraphTestVertex() override {}
     // ACCESSORS
     virtual string name() const override { return m_name; }
@@ -65,7 +65,7 @@ public:
 class V3GraphTestVarVertex : public V3GraphTestVertex {
 public:
     V3GraphTestVarVertex(V3Graph* graphp, const string& name)
-        : V3GraphTestVertex(graphp, name) {}
+        : V3GraphTestVertex{graphp, name} {}
     virtual ~V3GraphTestVarVertex() override {}
     // ACCESSORS
     virtual string dotColor() const override { return "blue"; }
@@ -265,8 +265,8 @@ class DfaTestVertex : public DfaVertex {
 
 public:
     DfaTestVertex(DfaGraph* graphp, const string& name)
-        : DfaVertex(graphp)
-        , m_name(name) {}
+        : DfaVertex{graphp}
+        , m_name{name} {}
     virtual ~DfaTestVertex() override {}
     // ACCESSORS
     virtual string name() const override { return m_name; }

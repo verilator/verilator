@@ -301,9 +301,9 @@ public:
 public:
     // CONSTRUCTORS
     V3ParseImp(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* parserSymp)
-        : m_rootp(rootp)
-        , m_filterp(filterp)
-        , m_symp(parserSymp) {
+        : m_rootp{rootp}
+        , m_filterp{filterp}
+        , m_symp{parserSymp} {
         m_lexFileline = nullptr;
         m_lexerp = nullptr;
         m_inLibrary = false;

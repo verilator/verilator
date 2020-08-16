@@ -31,7 +31,7 @@
 class AbstractMTask : public V3GraphVertex {
 public:
     AbstractMTask(V3Graph* graphp)
-        : V3GraphVertex(graphp) {}
+        : V3GraphVertex{graphp} {}
     virtual ~AbstractMTask() override {}
     virtual uint32_t id() const = 0;
     virtual uint32_t cost() const = 0;
@@ -43,7 +43,7 @@ public:
     typedef std::list<MTaskMoveVertex*> VxList;
     // CONSTRUCTORS
     AbstractLogicMTask(V3Graph* graphp)
-        : AbstractMTask(graphp) {}
+        : AbstractMTask{graphp} {}
     virtual ~AbstractLogicMTask() override {}
     // METHODS
     // Set of logic vertices in this mtask. Order is not significant.
@@ -69,9 +69,9 @@ private:
 
 public:
     ExecMTask(V3Graph* graphp, AstMTaskBody* bodyp, uint32_t id)
-        : AbstractMTask(graphp)
-        , m_bodyp(bodyp)
-        , m_id(id) {}
+        : AbstractMTask{graphp}
+        , m_bodyp{bodyp}
+        , m_id{id} {}
     AstMTaskBody* bodyp() const { return m_bodyp; }
     virtual uint32_t id() const override { return m_id; }
     uint32_t priority() const { return m_priority; }

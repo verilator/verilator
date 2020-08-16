@@ -67,18 +67,16 @@ protected:
 class SubstVarEntry {
     // MEMBERS
     AstVar* m_varp;  // Variable this tracks
-    bool m_wordAssign;  // True if any word assignments
-    bool m_wordUse;  // True if any individual word usage
+    bool m_wordAssign = false;  // True if any word assignments
+    bool m_wordUse = false;  // True if any individual word usage
     SubstVarWord m_whole;  // Data for whole vector used at once
     std::vector<SubstVarWord> m_words;  // Data for every word, if multi word variable
     int debug() { return SubstBaseVisitor::debug(); }
 
 public:
     // CONSTRUCTORS
-    explicit SubstVarEntry(AstVar* varp) {  // Construction for when a var is used
-        m_varp = varp;
-        m_wordAssign = false;
-        m_wordUse = false;
+    explicit SubstVarEntry(AstVar* varp)
+        : m_varp{varp} {  // Construction for when a var is used
         m_words.resize(varp->widthWords());
         m_whole.clear();
         for (int i = 0; i < varp->widthWords(); i++) m_words[i].clear();
@@ -211,7 +209,7 @@ private:
 public:
     // CONSTRUCTORS
     SubstUseVisitor(AstNode* nodep, int origStep)
-        : m_origStep(origStep) {
+        : m_origStep{origStep} {
         UINFO(9, "        SubstUseVisitor " << origStep << " " << nodep << endl);
         iterate(nodep);
     }
@@ -234,8 +232,8 @@ private:
 
     // STATE
     std::vector<SubstVarEntry*> m_entryps;  // Nodes to delete when we are finished
-    int m_ops;  // Number of operators on assign rhs
-    int m_assignStep;  // Assignment number to determine var lifetime
+    int m_ops = 0;  // Number of operators on assign rhs
+    int m_assignStep = 0;  // Assignment number to determine var lifetime
     VDouble0 m_statSubsts;  // Statistic tracking
 
     enum {
@@ -370,8 +368,6 @@ public:
     explicit SubstVisitor(AstNode* nodep) {
         AstNode::user1ClearTree();  // user1p() used on entire tree
         AstNode::user2ClearTree();  // user2p() used on entire tree
-        m_ops = 0;
-        m_assignStep = 0;
         iterate(nodep);
     }
     virtual ~SubstVisitor() override {

@@ -42,7 +42,7 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstCell* m_cellp;  // Current cell
+    AstCell* m_cellp = nullptr;  // Current cell
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -131,11 +131,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit InstVisitor(AstNetlist* nodep) {
-        m_cellp = nullptr;
-        //
-        iterate(nodep);
-    }
+    explicit InstVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~InstVisitor() override {}
 };
 
@@ -199,8 +195,9 @@ class InstDeVisitor : public AstNVisitor {
     // Find all cells with arrays, and convert to non-arrayed
 private:
     // STATE
-    AstRange* m_cellRangep;  // Range for arrayed instantiations, nullptr for normal instantiations
-    int m_instSelNum;  // Current instantiation count 0..N-1
+    AstRange* m_cellRangep
+        = nullptr;  // Range for arrayed instantiations, nullptr for normal instantiations
+    int m_instSelNum = 0;  // Current instantiation count 0..N-1
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
 
     VL_DEBUG_FUNC;  // Declare debug()
@@ -466,12 +463,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit InstDeVisitor(AstNetlist* nodep) {
-        m_cellRangep = nullptr;
-        m_instSelNum = 0;
-        //
-        iterate(nodep);
-    }
+    explicit InstDeVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~InstDeVisitor() override {}
 };
 

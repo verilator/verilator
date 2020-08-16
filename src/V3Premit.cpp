@@ -43,7 +43,7 @@ private:
     AstUser4InUse m_inuser4;
 
     // STATE
-    bool m_noopt;  // Disable optimization of variables in this block
+    bool m_noopt = false;  // Disable optimization of variables in this block
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -73,7 +73,6 @@ public:
     // CONSTRUCTORS
     explicit PremitAssignVisitor(AstNodeAssign* nodep) {
         UINFO(4, "  PremitAssignVisitor on " << nodep << endl);
-        m_noopt = false;
         iterate(nodep);
     }
     virtual ~PremitAssignVisitor() override {}
@@ -94,12 +93,12 @@ private:
     AstUser2InUse m_inuser2;
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
-    AstCFunc* m_funcp;  // Current block
-    AstNode* m_stmtp;  // Current statement
-    AstWhile* m_inWhilep;  // Inside while loop, special statement additions
-    AstTraceInc* m_inTracep;  // Inside while loop, special statement additions
-    bool m_assignLhs;  // Inside assignment lhs, don't breakup extracts
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstCFunc* m_funcp = nullptr;  // Current block
+    AstNode* m_stmtp = nullptr;  // Current statement
+    AstWhile* m_inWhilep = nullptr;  // Inside while loop, special statement additions
+    AstTraceInc* m_inTracep = nullptr;  // Inside while loop, special statement additions
+    bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -399,15 +398,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit PremitVisitor(AstNetlist* nodep) {
-        m_modp = nullptr;
-        m_funcp = nullptr;
-        m_stmtp = nullptr;
-        m_inWhilep = nullptr;
-        m_inTracep = nullptr;
-        m_assignLhs = false;
-        iterate(nodep);
-    }
+    explicit PremitVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~PremitVisitor() override {}
 };
 

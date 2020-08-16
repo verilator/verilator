@@ -486,8 +486,8 @@ private:
 
 public:
     explicit ProtectVisitor(AstNode* nodep)
-        : m_libName(v3Global.opt.protectLib())
-        , m_topName(v3Global.opt.prefix()) {
+        : m_libName{v3Global.opt.protectLib()}
+        , m_topName{v3Global.opt.prefix()} {
         iterate(nodep);
     }
 };

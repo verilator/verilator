@@ -48,9 +48,9 @@ private:
         uint32_t m_numBlockingEdges;  // Number of blocking edges
         // CONSTRUCTORS
         VxHolder(const V3GraphVertex* vxp, uint32_t pos, uint32_t numBlockingEdges)
-            : m_vxp(vxp)
-            , m_pos(pos)
-            , m_numBlockingEdges(numBlockingEdges) {}
+            : m_vxp{vxp}
+            , m_pos{pos}
+            , m_numBlockingEdges{numBlockingEdges} {}
         // METHODS
         const V3GraphVertex* vertexp() const { return m_vxp; }
         // Decrement blocking edges count, return true if the vertex is
@@ -68,7 +68,7 @@ private:
         T_Compare m_lessThan;  // Sorting functor
         // CONSTRUCTORS
         explicit VxHolderCmp(const T_Compare& lessThan)
-            : m_lessThan(lessThan) {}
+            : m_lessThan{lessThan} {}
         // METHODS
         bool operator()(const VxHolder& a, const VxHolder& b) const {
             if (m_lessThan.operator()(a.vertexp(), b.vertexp())) return true;
@@ -97,10 +97,10 @@ public:
         // NOTE: Perhaps REVERSE way should also reverse the sense of the
         // lessThan function? For now the only usage of REVERSE is not
         // sensitive to its lessThan at all, so it doesn't matter.
-        : m_vxHolderCmp(lessThan)
-        , m_readyVertices(m_vxHolderCmp)
-        , m_last(m_readyVertices.end())
-        , m_way(way) {
+        : m_vxHolderCmp{lessThan}
+        , m_readyVertices{m_vxHolderCmp}
+        , m_last{m_readyVertices.end()}
+        , m_way{way} {
         uint32_t pos = 0;
         for (const V3GraphVertex* vxp = graphp->verticesBeginp(); vxp;
              vxp = vxp->verticesNextp()) {

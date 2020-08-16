@@ -173,13 +173,15 @@ private:
     // STATE
     typedef enum { STATE_IDLE, STATE_HASH, STATE_DUP } CombineState;
     VDouble0 m_statCombs;  // Statistic tracking
-    CombineState m_state;  // Major state
-    AstNodeModule* m_modp;  // Current module
-    AstCFunc* m_funcp;  // Current function
+    CombineState m_state = STATE_IDLE;  // Major state
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstCFunc* m_funcp = nullptr;  // Current function
     CombCallVisitor m_call;  // Tracking of function call users
-    int m_modNFuncs;  // Number of functions made
-    AstNode* m_walkLast1p;  // Final node that is the same in duplicate list
-    AstNode* m_walkLast2p;  // Final node that is the same in duplicate list
+    int m_modNFuncs = 0;  // Number of functions made
+#ifdef VL_COMBINE_STATEMENTS
+    AstNode* m_walkLast1p = nullptr;  // Final node that is the same in duplicate list
+#endif
+    AstNode* m_walkLast2p = nullptr;  // Final node that is the same in duplicate list
     V3Hashed m_hashed;  // Hash for every node in module
 
     // METHODS
@@ -457,15 +459,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit CombineVisitor(AstNetlist* nodep) {
-        m_state = STATE_IDLE;
-        m_modp = nullptr;
-        m_funcp = nullptr;
-        m_modNFuncs = 0;
-        m_walkLast1p = nullptr;
-        m_walkLast2p = nullptr;
-        iterate(nodep);
-    }
+    explicit CombineVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~CombineVisitor() override {  //
         V3Stats::addStat("Optimizations, Combined CFuncs", m_statCombs);
     }

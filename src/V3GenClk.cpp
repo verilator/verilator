@@ -119,7 +119,7 @@ private:
 public:
     // CONSTRUCTORS
     GenClkRenameVisitor(AstTopScope* nodep, AstNodeModule* topModp)
-        : m_topModp(topModp) {
+        : m_topModp{topModp} {
         iterate(nodep);
     }
     virtual ~GenClkRenameVisitor() override {}

@@ -60,12 +60,12 @@ class CdcEitherVertex : public V3GraphVertex {
 
 public:
     CdcEitherVertex(V3Graph* graphp, AstScope* scopep, AstNode* nodep)
-        : V3GraphVertex(graphp)
-        , m_scopep(scopep)
-        , m_nodep(nodep)
-        , m_srcDomainSet(false)
-        , m_dstDomainSet(false)
-        , m_asyncPath(false) {}
+        : V3GraphVertex{graphp}
+        , m_scopep{scopep}
+        , m_nodep{nodep}
+        , m_srcDomainSet{false}
+        , m_dstDomainSet{false}
+        , m_asyncPath{false} {}
     virtual ~CdcEitherVertex() override {}
     // ACCESSORS
     virtual FileLine* fileline() const override { return nodep()->fileline(); }
@@ -90,8 +90,8 @@ class CdcVarVertex : public CdcEitherVertex {
 
 public:
     CdcVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
-        : CdcEitherVertex(graphp, scopep, varScp)
-        , m_varScp(varScp) {}
+        : CdcEitherVertex{graphp, scopep, varScp}
+        , m_varScp{varScp} {}
     virtual ~CdcVarVertex() override {}
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
@@ -111,9 +111,9 @@ class CdcLogicVertex : public CdcEitherVertex {
 
 public:
     CdcLogicVertex(V3Graph* graphp, AstScope* scopep, AstNode* nodep, AstSenTree* sensenodep)
-        : CdcEitherVertex(graphp, scopep, nodep)
-        , m_hazard(false)
-        , m_isFlop(false) {
+        : CdcEitherVertex{graphp, scopep, nodep}
+        , m_hazard{false}
+        , m_isFlop{false} {
         srcDomainp(sensenodep);
         dstDomainp(sensenodep);
     }
@@ -166,8 +166,8 @@ private:
 public:
     // CONSTRUCTORS
     CdcDumpVisitor(AstNode* nodep, std::ofstream* ofp, const string& prefix)
-        : m_ofp(ofp)
-        , m_prefix(prefix) {
+        : m_ofp{ofp}
+        , m_prefix{prefix} {
         iterate(nodep);
     }
     virtual ~CdcDumpVisitor() override {}
@@ -177,8 +177,8 @@ public:
 
 class CdcWidthVisitor : public CdcBaseVisitor {
 private:
-    int m_maxLineno;
-    size_t m_maxFilenameLen;
+    int m_maxLineno = 0;
+    size_t m_maxFilenameLen = 0;
 
     virtual void visit(AstNode* nodep) override {
         iterateChildren(nodep);
@@ -193,11 +193,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit CdcWidthVisitor(AstNode* nodep) {
-        m_maxLineno = 0;
-        m_maxFilenameLen = 0;
-        iterate(nodep);
-    }
+    explicit CdcWidthVisitor(AstNode* nodep) { iterate(nodep); }
     virtual ~CdcWidthVisitor() override {}
     // ACCESSORS
     int maxWidth() {
@@ -227,16 +223,16 @@ private:
 
     // STATE
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
-    CdcLogicVertex* m_logicVertexp;  // Current statement being tracked, nullptr=ignored
-    AstScope* m_scopep;  // Current scope being processed
-    AstNodeModule* m_modp;  // Current module
-    AstSenTree* m_domainp;  // Current sentree
-    bool m_inDly;  // In delayed assign
-    int m_inSenItem;  // Number of senitems
+    CdcLogicVertex* m_logicVertexp = nullptr;  // Current statement being tracked, nullptr=ignored
+    AstScope* m_scopep = nullptr;  // Current scope being processed
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstSenTree* m_domainp = nullptr;  // Current sentree
+    bool m_inDly = false;  // In delayed assign
+    int m_inSenItem = 0;  // Number of senitems
     string m_ofFilename;  // Output filename
     std::ofstream* m_ofp;  // Output file
-    uint32_t m_userGeneration;  // Generation count to avoid slow userClearVertices
-    int m_filelineWidth;  // Characters in longest fileline
+    uint32_t m_userGeneration = 0;  // Generation count to avoid slow userClearVertices
+    int m_filelineWidth = 0;  // Characters in longest fileline
 
     // METHODS
     void iterateNewStmt(AstNode* nodep) {
@@ -735,15 +731,6 @@ private:
 public:
     // CONSTRUCTORS
     explicit CdcVisitor(AstNode* nodep) {
-        m_logicVertexp = nullptr;
-        m_scopep = nullptr;
-        m_modp = nullptr;
-        m_domainp = nullptr;
-        m_inDly = false;
-        m_inSenItem = 0;
-        m_userGeneration = 0;
-        m_filelineWidth = 0;
-
         // Make report of all signal names and what clock edges they have
         string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__cdc.txt";
         m_ofp = V3File::new_ofstream(filename);

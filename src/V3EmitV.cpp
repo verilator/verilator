@@ -30,8 +30,8 @@
 
 class EmitVBaseVisitor : public EmitCBaseVisitor {
     // MEMBERS
-    bool m_suppressSemi;
-    AstSenTree* m_sensesp;
+    bool m_suppressSemi = false;
+    AstSenTree* m_sensesp;  // Domain for printing one a ALWAYS under a ACTIVE
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -658,13 +658,9 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
 
 public:
-    bool m_suppressVarSemi;  // Suppress emitting semicolon for AstVars
-    explicit EmitVBaseVisitor(AstSenTree* domainp = nullptr) {
-        // Domain for printing one a ALWAYS under a ACTIVE
-        m_suppressSemi = false;
-        m_suppressVarSemi = false;
-        m_sensesp = domainp;
-    }
+    bool m_suppressVarSemi = false;  // Suppress emitting semicolon for AstVars
+    explicit EmitVBaseVisitor(AstSenTree* domainp = nullptr)
+        : m_sensesp{domainp} {}
     virtual ~EmitVBaseVisitor() override {}
 };
 
@@ -708,7 +704,7 @@ class EmitVStreamVisitor : public EmitVBaseVisitor {
 
 public:
     EmitVStreamVisitor(AstNode* nodep, std::ostream& os)
-        : m_os(os) {
+        : m_os{os} {
         iterate(nodep);
     }
     virtual ~EmitVStreamVisitor() override {}
@@ -746,10 +742,10 @@ public:
     FileLine* prefixFl() const { return m_prefixFl; }
     int column() const { return m_column; }
     EmitVPrefixedFormatter(std::ostream& os, const string& prefix, int flWidth)
-        : V3OutFormatter("__STREAM", V3OutFormatter::LA_VERILOG)
-        , m_os(os)
-        , m_prefix(prefix)
-        , m_flWidth(flWidth) {
+        : V3OutFormatter{"__STREAM", V3OutFormatter::LA_VERILOG}
+        , m_os{os}
+        , m_prefix{prefix}
+        , m_flWidth{flWidth} {
         m_column = 0;
         m_prefixFl
             = v3Global.rootp()
@@ -784,8 +780,8 @@ class EmitVPrefixedVisitor : public EmitVBaseVisitor {
 public:
     EmitVPrefixedVisitor(AstNode* nodep, std::ostream& os, const string& prefix, int flWidth,
                          AstSenTree* domainp, bool user3mark)
-        : EmitVBaseVisitor(domainp)
-        , m_formatter(os, prefix, flWidth) {
+        : EmitVBaseVisitor{domainp}
+        , m_formatter{os, prefix, flWidth} {
         if (user3mark) { AstUser3InUse::check(); }
         iterate(nodep);
     }

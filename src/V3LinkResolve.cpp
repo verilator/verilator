@@ -47,12 +47,12 @@ private:
 
     // STATE
     // Below state needs to be preserved between each module call.
-    AstNodeModule* m_modp;  // Current module
-    AstClass* m_classp;  // Class we're inside
-    AstNodeFTask* m_ftaskp;  // Function or task we're inside
-    AstNodeCoverOrAssert* m_assertp;  // Current assertion
-    VLifetime m_lifetime;  // Propagating lifetime
-    int m_senitemCvtNum;  // Temporary signal counter
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstClass* m_classp = nullptr;  // Class we're inside
+    AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
+    AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
+    VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
+    int m_senitemCvtNum = 0;  // Temporary signal counter
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -521,15 +521,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LinkResolveVisitor(AstNetlist* rootp)
-        : m_lifetime(VLifetime::STATIC) {  // Static outside a module/class
-        m_classp = nullptr;
-        m_ftaskp = nullptr;
-        m_modp = nullptr;
-        m_assertp = nullptr;
-        m_senitemCvtNum = 0;
-        iterate(rootp);
-    }
+    explicit LinkResolveVisitor(AstNetlist* rootp) { iterate(rootp); }
     virtual ~LinkResolveVisitor() override {}
 };
 
@@ -541,7 +533,7 @@ public:
 class LinkBotupVisitor : public AstNVisitor {
 private:
     // STATE
-    AstNodeModule* m_modp;  // Current module
+    AstNodeModule* m_modp = nullptr;  // Current module
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -569,11 +561,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LinkBotupVisitor(AstNetlist* rootp) {
-        m_modp = nullptr;
-        //
-        iterate(rootp);
-    }
+    explicit LinkBotupVisitor(AstNetlist* rootp) { iterate(rootp); }
     virtual ~LinkBotupVisitor() override {}
 };
 

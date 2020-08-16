@@ -94,12 +94,12 @@ private:
 public:
     // CONSTRUCTORS
     explicit HashedVisitor(AstNode* nodep)
-        : m_cacheInUser4(true) {
+        : m_cacheInUser4{true} {
         nodeHashIterate(nodep);
         // UINFO(9,"  stmthash "<<hex<<V3Hashed::nodeHash(nodep)<<"  "<<nodep<<endl);
     }
     explicit HashedVisitor(const AstNode* nodep)
-        : m_cacheInUser4(false) {
+        : m_cacheInUser4{false} {
         nodeHashIterate(const_cast<AstNode*>(nodep));
     }
     V3Hash finalHash() const { return m_lowerHash; }

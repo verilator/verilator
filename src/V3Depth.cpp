@@ -39,11 +39,11 @@ private:
     // NODE STATE
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
-    AstCFunc* m_funcp;  // Current block
-    AstNode* m_stmtp;  // Current statement
-    int m_depth;  // How deep in an expression
-    int m_maxdepth;  // Maximum depth in an expression
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstCFunc* m_funcp = nullptr;  // Current block
+    AstNode* m_stmtp = nullptr;  // Current statement
+    int m_depth = 0;  // How deep in an expression
+    int m_maxdepth = 0;  // Maximum depth in an expression
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -151,15 +151,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit DepthVisitor(AstNetlist* nodep) {
-        m_modp = nullptr;
-        m_funcp = nullptr;
-        m_stmtp = nullptr;
-        m_depth = 0;
-        m_maxdepth = 0;
-        //
-        iterate(nodep);
-    }
+    explicit DepthVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~DepthVisitor() override {}
 };
 

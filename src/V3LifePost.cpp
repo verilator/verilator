@@ -104,11 +104,11 @@ struct LifeLocation {
 
 public:
     LifeLocation()
-        : mtaskp(nullptr)
-        , sequence(0) {}
+        : mtaskp{nullptr}
+        , sequence{0} {}
     LifeLocation(const ExecMTask* mtaskp_, uint32_t sequence_)
-        : mtaskp(mtaskp_)
-        , sequence(sequence_) {}
+        : mtaskp{mtaskp_}
+        , sequence{sequence_} {}
     bool operator<(const LifeLocation& b) const {
         unsigned a_id = mtaskp ? mtaskp->id() : 0;
         unsigned b_id = b.mtaskp ? b.mtaskp->id() : 0;
@@ -122,10 +122,10 @@ struct LifePostLocation {
     LifeLocation loc;
     AstAssignPost* nodep;
     LifePostLocation()
-        : nodep(nullptr) {}
+        : nodep{nullptr} {}
     LifePostLocation(LifeLocation loc_, AstAssignPost* nodep_)
-        : loc(loc_)
-        , nodep(nodep_) {}
+        : loc{loc_}
+        , nodep{nodep_} {}
 };
 
 //######################################################################

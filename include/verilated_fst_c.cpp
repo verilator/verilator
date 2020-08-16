@@ -58,9 +58,7 @@
 // VerilatedFst
 
 VerilatedFst::VerilatedFst(void* fst)
-    : m_fst(fst)
-    , m_symbolp(nullptr)
-    , m_strbuf(nullptr) {}
+    : m_fst{fst} {}
 
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);

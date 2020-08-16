@@ -72,9 +72,9 @@ class V3FileDependImp {
         struct stat m_stat;  // Stat information
     public:
         DependFile(const string& filename, bool target)
-            : m_target(target)
-            , m_exists(true)
-            , m_filename(filename) {
+            : m_target{target}
+            , m_exists{true}
+            , m_filename{filename} {
             m_stat.st_ctime = 0;
             m_stat.st_mtime = 0;
         }
@@ -338,16 +338,16 @@ class VInFilterImp {
     typedef VInFilter::StrList StrList;
 
     FileContentsMap m_contentsMap;  // Cache of file contents
-    bool m_readEof;  // Received EOF on read
+    bool m_readEof = false;  // Received EOF on read
 #ifdef INFILTER_PIPE
-    pid_t m_pid;  // fork() process id
+    pid_t m_pid = 0;  // fork() process id
 #else
-    int m_pid;  // fork() process id - always zero as disabled
+    int m_pid = 0;  // fork() process id - always zero as disabled
 #endif
-    bool m_pidExited;
-    int m_pidStatus;
-    int m_writeFd;  // File descriptor TO filter
-    int m_readFd;  // File descriptor FROM filter
+    bool m_pidExited = false;
+    int m_pidStatus = 0;
+    int m_writeFd = 0;  // File descriptor TO filter
+    int m_readFd = 0;  // File descriptor FROM filter
 
 private:
     // METHODS
@@ -601,15 +601,7 @@ protected:
         return out;
     }
     // CONSTRUCTORS
-    explicit VInFilterImp(const string& command) {
-        m_readEof = false;
-        m_pid = 0;
-        m_pidExited = false;
-        m_pidStatus = 0;
-        m_writeFd = 0;
-        m_readFd = 0;
-        start(command);
-    }
+    explicit VInFilterImp(const string& command) { start(command); }
     ~VInFilterImp() { stop(); }
 };
 
@@ -631,14 +623,8 @@ bool VInFilter::readWholefile(const string& filename, VInFilter::StrList& outl) 
 // V3OutFormatter: A class for printing to a file, with automatic indentation of C++ code.
 
 V3OutFormatter::V3OutFormatter(const string& filename, V3OutFormatter::Language lang)
-    : m_filename(filename)
-    , m_lang(lang)
-    , m_lineno(1)
-    , m_column(0)
-    , m_nobreak(false)
-    , m_prependIndent(true)
-    , m_indentLevel(0)
-    , m_bracketLevel(0) {
+    : m_filename{filename}
+    , m_lang{lang} {
     m_blockIndent = v3Global.opt.decoration() ? 4 : 1;
     m_commaWidth = v3Global.opt.decoration() ? 50 : 150;
 }
@@ -941,7 +927,7 @@ void V3OutFormatter::printf(const char* fmt...) {
 // V3OutFormatter: A class for printing to a file, with automatic indentation of C++ code.
 
 V3OutFile::V3OutFile(const string& filename, V3OutFormatter::Language lang)
-    : V3OutFormatter(filename, lang) {
+    : V3OutFormatter{filename, lang} {
     if ((m_fp = V3File::new_fopen_w(filename)) == nullptr) {
         v3fatal("Cannot write " << filename);
     }

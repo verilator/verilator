@@ -57,8 +57,8 @@ private:
 
 public:
     TspVertexTmpl(V3Graph* graphp, const T_Key& k)
-        : V3GraphVertex(graphp)
-        , m_key(k) {}
+        : V3GraphVertex{graphp}
+        , m_key{k} {}
     virtual ~TspVertexTmpl() override {}
     const T_Key& key() const { return m_key; }
 
@@ -79,7 +79,7 @@ public:
 
     // CONSTRUCTORS
     TspGraphTmpl()
-        : V3Graph() {}
+        : V3Graph{} {}
     virtual ~TspGraphTmpl() override {}
 
     // METHODS
@@ -503,9 +503,9 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
 class TspTestState : public V3TSP::TspStateBase {
 public:
     TspTestState(unsigned xpos, unsigned ypos)
-        : m_xpos(xpos)
-        , m_ypos(ypos)
-        , m_serial(++m_serialNext) {}
+        : m_xpos{xpos}
+        , m_ypos{ypos}
+        , m_serial{++m_serialNext} {}
     ~TspTestState() {}
     virtual int cost(const TspStateBase* otherp) const override {
         return cost(dynamic_cast<const TspTestState*>(otherp));

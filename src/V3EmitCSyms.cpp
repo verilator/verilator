@@ -43,19 +43,19 @@ class EmitCSyms : EmitCBaseVisitor {
         string m_type;
         ScopeData(const string& symName, const string& prettyName, int timeunit,
                   const string& type)
-            : m_symName(symName)
-            , m_prettyName(prettyName)
-            , m_timeunit(timeunit)
-            , m_type(type) {}
+            : m_symName{symName}
+            , m_prettyName{prettyName}
+            , m_timeunit{timeunit}
+            , m_type{type} {}
     };
     struct ScopeFuncData {
         AstScopeName* m_scopep;
         AstCFunc* m_funcp;
         AstNodeModule* m_modp;
         ScopeFuncData(AstScopeName* scopep, AstCFunc* funcp, AstNodeModule* modp)
-            : m_scopep(scopep)
-            , m_funcp(funcp)
-            , m_modp(modp) {}
+            : m_scopep{scopep}
+            , m_funcp{funcp}
+            , m_modp{modp} {}
     };
     struct ScopeVarData {
         string m_scopeName;
@@ -65,11 +65,11 @@ class EmitCSyms : EmitCBaseVisitor {
         AstScope* m_scopep;
         ScopeVarData(const string& scopeName, const string& varBasePretty, AstVar* varp,
                      AstNodeModule* modp, AstScope* scopep)
-            : m_scopeName(scopeName)
-            , m_varBasePretty(varBasePretty)
-            , m_varp(varp)
-            , m_modp(modp)
-            , m_scopep(scopep) {}
+            : m_scopeName{scopeName}
+            , m_varBasePretty{varBasePretty}
+            , m_varp{varp}
+            , m_modp{modp}
+            , m_scopep{scopep} {}
     };
     typedef std::map<string, ScopeFuncData> ScopeFuncs;
     typedef std::map<string, ScopeVarData> ScopeVars;
@@ -94,8 +94,8 @@ class EmitCSyms : EmitCBaseVisitor {
     };
 
     // STATE
-    AstCFunc* m_funcp;  // Current function
-    AstNodeModule* m_modp;  // Current module
+    AstCFunc* m_funcp = nullptr;  // Current function
+    AstNodeModule* m_modp = nullptr;  // Current module
     std::vector<ScopeModPair> m_scopes;  // Every scope by module
     std::vector<AstCFunc*> m_dpis;  // DPI functions
     std::vector<ModVarPair> m_modVars;  // Each public {mod,var}
@@ -104,11 +104,11 @@ class EmitCSyms : EmitCBaseVisitor {
     ScopeVars m_scopeVars;  // Each {scope,public-var}
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
     ScopeNameHierarchy m_vpiScopeHierarchy;  // The actual hierarchy of scopes
-    int m_coverBins;  // Coverage bin number
+    int m_coverBins = 0;  // Coverage bin number
     bool m_dpiHdrOnly;  // Only emit the DPI header
-    int m_numStmts;  // Number of statements output
-    int m_funcNum;  // CFunc split function number
-    V3OutCFile* m_ofpBase;  // Base (not split) C file
+    int m_numStmts = 0;  // Number of statements output
+    int m_funcNum = 0;  // CFunc split function number
+    V3OutCFile* m_ofpBase = nullptr;  // Base (not split) C file
     std::map<int, bool> m_usesVfinal;  // Split method uses __Vfinal
 
     // METHODS
@@ -354,13 +354,7 @@ class EmitCSyms : EmitCBaseVisitor {
 
 public:
     explicit EmitCSyms(AstNetlist* nodep, bool dpiHdrOnly)
-        : m_dpiHdrOnly(dpiHdrOnly) {
-        m_funcp = nullptr;
-        m_modp = nullptr;
-        m_coverBins = 0;
-        m_numStmts = 0;
-        m_funcNum = 0;
-        m_ofpBase = nullptr;
+        : m_dpiHdrOnly{dpiHdrOnly} {
         iterate(nodep);
     }
 };

@@ -47,12 +47,12 @@ private:
     typedef std::vector<AstNodeBlock*> BlockStack;
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
-    AstNodeFTask* m_ftaskp;  // Current function/task
-    AstWhile* m_loopp;  // Current loop
-    bool m_loopInc;  // In loop increment
-    bool m_inFork;  // Under fork
-    int m_modRepeatNum;  // Repeat counter
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstWhile* m_loopp = nullptr;  // Current loop
+    bool m_loopInc = false;  // In loop increment
+    bool m_inFork = false;  // Under fork
+    int m_modRepeatNum = 0;  // Repeat counter
     BlockStack m_blockStack;  // All begin blocks above current node
 
     // METHODS
@@ -285,15 +285,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LinkJumpVisitor(AstNetlist* nodep) {
-        m_modp = nullptr;
-        m_ftaskp = nullptr;
-        m_inFork = false;
-        m_loopp = nullptr;
-        m_loopInc = false;
-        m_modRepeatNum = 0;
-        iterate(nodep);
-    }
+    explicit LinkJumpVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~LinkJumpVisitor() override {}
 };
 

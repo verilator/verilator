@@ -52,7 +52,8 @@
 
 class CaseLintVisitor : public AstNVisitor {
 private:
-    AstNodeCase* m_caseExprp;  // Under a CASE value node, if so the relevant case statement
+    AstNodeCase* m_caseExprp
+        = nullptr;  // Under a CASE value node, if so the relevant case statement
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -109,10 +110,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit CaseLintVisitor(AstNodeCase* nodep) {
-        m_caseExprp = nullptr;
-        iterate(nodep);
-    }
+    explicit CaseLintVisitor(AstNodeCase* nodep) { iterate(nodep); }
     virtual ~CaseLintVisitor() override {}
 };
 
@@ -131,9 +129,9 @@ private:
     VDouble0 m_statCaseSlow;  // Statistic tracking
 
     // Per-CASE
-    int m_caseWidth;  // Width of valueItems
-    int m_caseItems;  // Number of caseItem unique values
-    bool m_caseNoOverlapsAllCovered;  // Proven to be synopsys parallel_case compliant
+    int m_caseWidth = 0;  // Width of valueItems
+    int m_caseItems = 0;  // Number of caseItem unique values
+    bool m_caseNoOverlapsAllCovered = false;  // Proven to be synopsys parallel_case compliant
     // For each possible value, the case branch we need
     AstNode* m_valueItem[1 << CASE_OVERLAP_WIDTH];
 
@@ -488,9 +486,6 @@ private:
 public:
     // CONSTRUCTORS
     explicit CaseVisitor(AstNetlist* nodep) {
-        m_caseWidth = 0;
-        m_caseItems = 0;
-        m_caseNoOverlapsAllCovered = false;
         for (uint32_t i = 0; i < (1UL << CASE_OVERLAP_WIDTH); ++i) m_valueItem[i] = nullptr;
         iterate(nodep);
     }

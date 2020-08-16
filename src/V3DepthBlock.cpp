@@ -37,10 +37,10 @@ private:
     // NODE STATE
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
-    AstCFunc* m_funcp;  // Current function
-    int m_depth;  // How deep in an expression
-    int m_deepNum;  // How many functions made
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstCFunc* m_funcp = nullptr;  // Current function
+    int m_depth = 0;  // How deep in an expression
+    int m_deepNum = 0;  // How many functions made
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -119,14 +119,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit DepthBlockVisitor(AstNetlist* nodep) {
-        m_modp = nullptr;
-        m_funcp = nullptr;
-        m_depth = 0;
-        m_deepNum = 0;
-        //
-        iterate(nodep);
-    }
+    explicit DepthBlockVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~DepthBlockVisitor() override {}
 };
 

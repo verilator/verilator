@@ -67,7 +67,7 @@ public:
 
     // CONSTRUCTORS
     explicit CUseState(AstNodeModule* nodep)
-        : m_modInsertp(nodep) {}
+        : m_modInsertp{nodep} {}
     virtual ~CUseState() {}
     VL_UNCOPYABLE(CUseState);
 };
@@ -107,7 +107,7 @@ class CUseDTypeVisitor : public AstNVisitor {
 public:
     // CONSTRUCTORS
     explicit CUseDTypeVisitor(AstNodeModule* nodep, CUseState& stater)
-        : m_stater(stater) {
+        : m_stater{stater} {
         iterate(nodep);
     }
     virtual ~CUseDTypeVisitor() override {}
@@ -208,7 +208,7 @@ class CUseVisitor : public AstNVisitor {
 public:
     // CONSTRUCTORS
     explicit CUseVisitor(AstNodeModule* nodep)
-        : m_state(nodep) {
+        : m_state{nodep} {
         iterate(nodep);
     }
     virtual ~CUseVisitor() override {}

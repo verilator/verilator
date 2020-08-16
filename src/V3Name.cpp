@@ -40,7 +40,7 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstNodeModule* m_modp;
+    AstNodeModule* m_modp = nullptr;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -136,10 +136,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit NameVisitor(AstNetlist* nodep) {
-        m_modp = nullptr;
-        iterate(nodep);
-    }
+    explicit NameVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~NameVisitor() override {}
 };
 

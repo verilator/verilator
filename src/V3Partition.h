@@ -40,7 +40,7 @@ class V3Partition {
 public:
     // CONSTRUCTORS
     explicit V3Partition(V3Graph* fineDepsGraphp)
-        : m_fineDepsGraphp(fineDepsGraphp) {}
+        : m_fineDepsGraphp{fineDepsGraphp} {}
     ~V3Partition() {}
 
     // METHODS

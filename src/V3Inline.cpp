@@ -66,7 +66,7 @@ private:
     };  // Pragma suggests inlining
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
+    AstNodeModule* m_modp = nullptr;  // Current module
     VDouble0 m_statUnsup;  // Statistic tracking
 
     typedef std::vector<AstNodeModule*> ModVec;
@@ -219,10 +219,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit InlineMarkVisitor(AstNode* nodep) {
-        m_modp = nullptr;
-        iterate(nodep);
-    }
+    explicit InlineMarkVisitor(AstNode* nodep) { iterate(nodep); }
     virtual ~InlineMarkVisitor() override {
         V3Stats::addStat("Optimizations, Inline unsupported", m_statUnsup);
         // Done with these, are not outputs
@@ -471,8 +468,8 @@ private:
 public:
     // CONSTRUCTORS
     InlineRelinkVisitor(AstNodeModule* cloneModp, AstNodeModule* oldModp, AstCell* cellp)
-        : m_modp(oldModp)
-        , m_cellp(cellp) {
+        : m_modp{oldModp}
+        , m_cellp{cellp} {
         iterate(cloneModp);
     }
     virtual ~InlineRelinkVisitor() override {}
@@ -501,7 +498,7 @@ private:
     AstUser5InUse m_inuser5;
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
+    AstNodeModule* m_modp = nullptr;  // Current module
     VDouble0 m_statCells;  // Statistic tracking
 
     // METHODS
@@ -614,10 +611,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit InlineVisitor(AstNode* nodep) {
-        m_modp = nullptr;
-        iterate(nodep);
-    }
+    explicit InlineVisitor(AstNode* nodep) { iterate(nodep); }
     virtual ~InlineVisitor() override {  //
         V3Stats::addStat("Optimizations, Inlined cells", m_statCells);
     }

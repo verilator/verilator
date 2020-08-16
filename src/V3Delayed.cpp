@@ -89,12 +89,12 @@ private:
     enum VarUsage { VU_NONE = 0, VU_DLY = 1, VU_NONDLY = 2 };
 
     // STATE
-    AstActive* m_activep;  // Current activate
-    AstCFunc* m_cfuncp;  // Current public C Function
-    AstAssignDly* m_nextDlyp;  // Next delayed assignment in a list of assignments
-    bool m_inDly;  // True in delayed assignments
-    bool m_inLoop;  // True in for loops
-    bool m_inInitial;  // True in initial blocks
+    AstActive* m_activep = nullptr;  // Current activate
+    AstCFunc* m_cfuncp = nullptr;  // Current public C Function
+    AstAssignDly* m_nextDlyp = nullptr;  // Next delayed assignment in a list of assignments
+    bool m_inDly = false;  // True in delayed assignments
+    bool m_inLoop = false;  // True in for loops
+    bool m_inInitial = false;  // True in initial blocks
     typedef std::map<std::pair<AstNodeModule*, string>, AstVar*> VarMap;
     VarMap m_modVarMap;  // Table of new var names created under module
     VDouble0 m_statSharedSet;  // Statistic tracking
@@ -476,16 +476,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit DelayedVisitor(AstNetlist* nodep) {
-        m_inDly = false;
-        m_activep = nullptr;
-        m_cfuncp = nullptr;
-        m_nextDlyp = nullptr;
-        m_inLoop = false;
-        m_inInitial = false;
-
-        iterate(nodep);
-    }
+    explicit DelayedVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~DelayedVisitor() override {
         V3Stats::addStat("Optimizations, Delayed shared-sets", m_statSharedSet);
     }

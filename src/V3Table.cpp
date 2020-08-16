@@ -57,7 +57,8 @@ public:
     virtual void varRefCb(AstVarRef* nodep) override;
 
     // CONSTRUCTORS
-    explicit TableSimulateVisitor(TableVisitor* cbthis) { m_cbthis = cbthis; }
+    explicit TableSimulateVisitor(TableVisitor* cbthis)
+        : m_cbthis{cbthis} {}
     virtual ~TableSimulateVisitor() override {}
 };
 
@@ -70,22 +71,22 @@ private:
     // Cleared on each always/assignw
 
     // STATE
-    double m_totalBytes;  // Total bytes in tables created
+    double m_totalBytes = 0;  // Total bytes in tables created
     VDouble0 m_statTablesCre;  // Statistic tracking
 
     //  State cleared on each module
-    AstNodeModule* m_modp;  // Current MODULE
-    int m_modTables;  // Number of tables created in this module
+    AstNodeModule* m_modp = nullptr;  // Current MODULE
+    int m_modTables = 0;  // Number of tables created in this module
     typedef std::deque<AstVarScope*> ModTableVector;
     ModTableVector m_modTableVscs;  // All tables created
 
     //  State cleared on each scope
-    AstScope* m_scopep;  // Current SCOPE
+    AstScope* m_scopep = nullptr;  // Current SCOPE
 
     //  State cleared on each always/assignw
-    bool m_assignDly;  // Consists of delayed assignments instead of normal assignments
-    int m_inWidth;  // Input table width
-    int m_outWidth;  // Output table width
+    bool m_assignDly = false;  // Consists of delayed assignments instead of normal assignments
+    int m_inWidth = 0;  // Input table width
+    int m_outWidth = 0;  // Output table width
     std::deque<AstVarScope*> m_inVarps;  // Input variable list
     std::deque<AstVarScope*> m_outVarps;  // Output variable list
     std::deque<bool> m_outNotSet;  // True if output variable is not set at some point
@@ -451,16 +452,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit TableVisitor(AstNetlist* nodep) {
-        m_modp = nullptr;
-        m_modTables = 0;
-        m_scopep = nullptr;
-        m_assignDly = 0;
-        m_inWidth = 0;
-        m_outWidth = 0;
-        m_totalBytes = 0;
-        iterate(nodep);
-    }
+    explicit TableVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~TableVisitor() override {  //
         V3Stats::addStat("Optimizations, Tables created", m_statTablesCre);
     }

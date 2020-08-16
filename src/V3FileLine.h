@@ -126,27 +126,27 @@ private:
 
 public:
     explicit FileLine(const string& filename)
-        : m_firstLineno(0)
-        , m_firstColumn(0)
-        , m_lastLineno(0)
-        , m_lastColumn(0)
-        , m_filenameno(singleton().nameToNumber(filename))
-        , m_contentLineno(0)
-        , m_contentp(nullptr)
-        , m_parent(nullptr)
-        , m_warnOn(defaultFileLine().m_warnOn)
-        , m_waive(false) {}
+        : m_firstLineno{0}
+        , m_firstColumn{0}
+        , m_lastLineno{0}
+        , m_lastColumn{0}
+        , m_filenameno{singleton().nameToNumber(filename)}
+        , m_contentLineno{0}
+        , m_contentp{nullptr}
+        , m_parent{nullptr}
+        , m_warnOn{defaultFileLine().m_warnOn}
+        , m_waive{false} {}
     explicit FileLine(FileLine* fromp)
-        : m_firstLineno(fromp->m_firstLineno)
-        , m_firstColumn(fromp->m_firstColumn)
-        , m_lastLineno(fromp->m_lastLineno)
-        , m_lastColumn(fromp->m_lastColumn)
-        , m_filenameno(fromp->m_filenameno)
-        , m_contentLineno(fromp->m_contentLineno)
-        , m_contentp(fromp->m_contentp)
-        , m_parent(fromp->m_parent)
-        , m_warnOn(fromp->m_warnOn)
-        , m_waive(fromp->m_waive) {}
+        : m_firstLineno{fromp->m_firstLineno}
+        , m_firstColumn{fromp->m_firstColumn}
+        , m_lastLineno{fromp->m_lastLineno}
+        , m_lastColumn{fromp->m_lastColumn}
+        , m_filenameno{fromp->m_filenameno}
+        , m_contentLineno{fromp->m_contentLineno}
+        , m_contentp{fromp->m_contentp}
+        , m_parent{fromp->m_parent}
+        , m_warnOn{fromp->m_warnOn}
+        , m_waive{fromp->m_waive} {}
     struct EmptySecret {};  // Constructor selection
     explicit FileLine(EmptySecret);
     FileLine* copyOrSameFileLine();

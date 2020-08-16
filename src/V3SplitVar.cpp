@@ -243,29 +243,29 @@ class UnpackRef {
     bool m_ftask;  // true if the reference is in function/task. false if in module.
 public:
     UnpackRef(AstNode* stmtp, AstVarRef* nodep, bool ftask)
-        : m_contextp(stmtp)
-        , m_nodep(nodep)
-        , m_index(-1)
-        , m_msb(0)
-        , m_lsb(1)
-        , m_lvalue(nodep->lvalue())
-        , m_ftask(ftask) {}
+        : m_contextp{stmtp}
+        , m_nodep{nodep}
+        , m_index{-1}
+        , m_msb{0}
+        , m_lsb{1}
+        , m_lvalue{nodep->lvalue()}
+        , m_ftask{ftask} {}
     UnpackRef(AstNode* stmtp, AstArraySel* nodep, int idx, bool lvalue, bool ftask)
-        : m_contextp(stmtp)
-        , m_nodep(nodep)
-        , m_index(idx)
-        , m_msb(0)
-        , m_lsb(1)
-        , m_lvalue(lvalue)
-        , m_ftask(ftask) {}
+        : m_contextp{stmtp}
+        , m_nodep{nodep}
+        , m_index{idx}
+        , m_msb{0}
+        , m_lsb{1}
+        , m_lvalue{lvalue}
+        , m_ftask{ftask} {}
     UnpackRef(AstNode* stmtp, AstSliceSel* nodep, int msb, int lsb, bool lvalue, bool ftask)
-        : m_contextp(stmtp)
-        , m_nodep(nodep)
-        , m_index(msb == lsb ? msb : -1)  // Equivalent to ArraySel
-        , m_msb(msb)
-        , m_lsb(lsb)
-        , m_lvalue(lvalue)
-        , m_ftask(ftask) {}
+        : m_contextp{stmtp}
+        , m_nodep{nodep}
+        , m_index{msb == lsb ? msb : -1}  // Equivalent to ArraySel
+        , m_msb{msb}
+        , m_lsb{lsb}
+        , m_lvalue{lvalue}
+        , m_ftask{ftask} {}
     AstNode* nodep() const { return m_nodep; }
     bool isSingleRef() const {
         return VN_IS(m_nodep, ArraySel) || (m_msb == m_lsb && m_lsb == m_index);
@@ -359,7 +359,7 @@ public:
                 iterateChildren(nodep);
             }
             explicit Visitor(RefsInModule& p)
-                : m_parent(p) {}
+                : m_parent{p} {}
         } v(*this);
         v.iterate(nodep);
     }
@@ -766,7 +766,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
 
 public:
     explicit SplitUnpackedVarVisitor(AstNetlist* nodep)
-        : m_refs() {
+        : m_refs{} {
         iterate(nodep);
     }
     ~SplitUnpackedVarVisitor() {
@@ -808,9 +808,9 @@ class SplitNewVar {
     AstVar* m_varp;  // The LSB of this variable is always 0, not m_lsb
 public:
     SplitNewVar(int lsb, int bitwidth, AstVar* varp = nullptr)
-        : m_lsb(lsb)
-        , m_bitwidth(bitwidth)
-        , m_varp(varp) {}
+        : m_lsb{lsb}
+        , m_bitwidth{bitwidth}
+        , m_varp{varp} {}
     int lsb() const { return m_lsb; }
     int msb() const { return m_lsb + m_bitwidth - 1; }
     int bitwidth() const { return m_bitwidth; }
@@ -835,13 +835,13 @@ class PackedVarRefEntry {
 
 public:
     PackedVarRefEntry(AstSel* selp, int lsb, int bitwidth)
-        : m_nodep(selp)
-        , m_lsb(lsb)
-        , m_bitwidth(bitwidth) {}
+        : m_nodep{selp}
+        , m_lsb{lsb}
+        , m_bitwidth{bitwidth} {}
     PackedVarRefEntry(AstVarRef* refp, int lsb, int bitwidth)
-        : m_nodep(refp)
-        , m_lsb(lsb)
-        , m_bitwidth(bitwidth) {}
+        : m_nodep{refp}
+        , m_lsb{lsb}
+        , m_bitwidth{bitwidth} {}
     AstNode* nodep() const { return m_nodep; }
     int lsb() const { return m_lsb; }
     int msb() const { return m_lsb + m_bitwidth - 1; }
@@ -897,7 +897,7 @@ public:
         return m_rhs;
     }
     explicit PackedVarRef(AstVar* varp)
-        : m_basicp(varp->dtypep()->basicp()) {}
+        : m_basicp{varp->dtypep()->basicp()} {}
     void append(const PackedVarRefEntry& e, bool lvalue) {
         UASSERT(!m_dedupDone, "cannot add after dedup()");
         if (lvalue)
@@ -1205,9 +1205,9 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
 public:
     // When reusing the information from SplitUnpackedVarVisitor
     SplitPackedVarVisitor(AstNetlist* nodep, SplitVarRefsMap& refs)
-        : m_netp(nodep)
-        , m_modp(nullptr)
-        , m_numSplit(0) {
+        : m_netp{nodep}
+        , m_modp{nullptr}
+        , m_numSplit{0} {
         // If you want ignore refs and walk the tne entire AST,
         // just call iterateChildren(m_modp) and split() for each module
         for (SplitVarRefsMap::iterator it = refs.begin(), it_end = refs.end(); it != it_end;

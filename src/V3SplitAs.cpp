@@ -45,7 +45,7 @@ public:
 class SplitAsFindVisitor : public SplitAsBaseVisitor {
 private:
     // STATE
-    AstVarScope* m_splitVscp;  // Variable we want to split
+    AstVarScope* m_splitVscp = nullptr;  // Variable we want to split
 
     // METHODS
     virtual void visit(AstVarRef* nodep) override {
@@ -57,10 +57,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit SplitAsFindVisitor(AstAlways* nodep) {
-        m_splitVscp = nullptr;
-        iterate(nodep);
-    }
+    explicit SplitAsFindVisitor(AstAlways* nodep) { iterate(nodep); }
     virtual ~SplitAsFindVisitor() override {}
     // METHODS
     AstVarScope* splitVscp() const { return m_splitVscp; }
@@ -117,8 +114,8 @@ private:
 public:
     // CONSTRUCTORS
     SplitAsCleanVisitor(AstAlways* nodep, AstVarScope* vscp, bool modeMatch)
-        : m_splitVscp(vscp)
-        , m_modeMatch(modeMatch) {
+        : m_splitVscp{vscp}
+        , m_modeMatch{modeMatch} {
         iterate(nodep);
     }
     virtual ~SplitAsCleanVisitor() override {}
@@ -135,7 +132,7 @@ private:
 
     // STATE
     VDouble0 m_statSplits;  // Statistic tracking
-    AstVarScope* m_splitVscp;  // Variable we want to split
+    AstVarScope* m_splitVscp = nullptr;  // Variable we want to split
 
     // METHODS
     void splitAlways(AstAlways* nodep) {
@@ -187,7 +184,6 @@ private:
 public:
     // CONSTRUCTORS
     explicit SplitAsVisitor(AstNetlist* nodep) {
-        m_splitVscp = nullptr;
         AstNode::user1ClearTree();  // user1p() used on entire tree
         iterate(nodep);
     }

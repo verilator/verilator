@@ -27,8 +27,8 @@ VL_THREAD_LOCAL VlThreadPool::ProfileTrace* VlThreadPool::t_profilep = nullptr;
 // VlMTaskVertex
 
 VlMTaskVertex::VlMTaskVertex(vluint32_t upstreamDepCount)
-    : m_upstreamDepsDone(0)
-    , m_upstreamDepCount(upstreamDepCount) {
+    : m_upstreamDepsDone{0}
+    , m_upstreamDepCount{upstreamDepCount} {
     assert(atomic_is_lock_free(&m_upstreamDepsDone));
 }
 
@@ -36,13 +36,11 @@ VlMTaskVertex::VlMTaskVertex(vluint32_t upstreamDepCount)
 // VlWorkerThread
 
 VlWorkerThread::VlWorkerThread(VlThreadPool* poolp, bool profiling)
-    : m_waiting(false)
-    , m_ready_size(0)
-    , m_poolp(poolp)
-    , m_profiling(profiling)
-    , m_exiting(false)
-    // Must init this last -- after setting up fields that it might read:
-    , m_cthread(startWorker, this) {}
+    : m_waiting{false}
+    , m_poolp{poolp}
+    , m_profiling{profiling}  // Must init this last -- after setting up fields that it might read:
+    , m_exiting{false}
+    , m_cthread{startWorker, this} {}
 
 VlWorkerThread::~VlWorkerThread() {
     m_exiting.store(true, std::memory_order_release);
@@ -78,7 +76,7 @@ void VlWorkerThread::startWorker(VlWorkerThread* workerp) { workerp->workerLoop(
 // VlThreadPool
 
 VlThreadPool::VlThreadPool(int nThreads, bool profiling)
-    : m_profiling(profiling) {
+    : m_profiling{profiling} {
     // --threads N passes nThreads=N-1, as the "main" threads counts as 1
     unsigned cpus = std::thread::hardware_concurrency();
     if (cpus < nThreads + 1) {

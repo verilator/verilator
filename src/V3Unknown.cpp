@@ -52,11 +52,11 @@ private:
     AstUser2InUse m_inuser2;
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
-    bool m_constXCvt;  // Convert X's
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstAssignW* m_assignwp = nullptr;  // Current assignment
+    AstAssignDly* m_assigndlyp = nullptr;  // Current assignment
+    bool m_constXCvt = false;  // Convert X's
     VDouble0 m_statUnkVars;  // Statistic tracking
-    AstAssignW* m_assignwp;  // Current assignment
-    AstAssignDly* m_assigndlyp;  // Current assignment
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -428,13 +428,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit UnknownVisitor(AstNetlist* nodep) {
-        m_modp = nullptr;
-        m_assigndlyp = nullptr;
-        m_assignwp = nullptr;
-        m_constXCvt = false;
-        iterate(nodep);
-    }
+    explicit UnknownVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~UnknownVisitor() override {  //
         V3Stats::addStat("Unknowns, variables created", m_statUnkVars);
     }

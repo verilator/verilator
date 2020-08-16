@@ -122,7 +122,7 @@ V3LangCode::V3LangCode(const char* textp) {
 // VTimescale class functions
 
 VTimescale::VTimescale(const string& value, bool& badr)
-    : m_e(VTimescale::NONE) {
+    : m_e{VTimescale::NONE} {
     badr = true;
     string spaceless = VString::removeWhitespace(value);
     for (int i = TS_100S; i < _ENUM_END; ++i) {
@@ -1786,108 +1786,9 @@ void V3Options::showVersion(bool verbose) {
 V3Options::V3Options() {
     m_impp = new V3OptionsImp;
 
-    m_assert = false;
-    m_autoflush = false;
-    m_bboxSys = false;
-    m_bboxUnsup = false;
-    m_build = false;
-    m_cdc = false;
-    m_cmake = false;
-    m_context = true;
-    m_coverageLine = false;
-    m_coverageToggle = false;
-    m_coverageUnderscore = false;
-    m_coverageUser = false;
-    m_debugCheck = false;
-    m_debugCollision = false;
-    m_debugExitParse = false;
-    m_debugLeak = true;
-    m_debugNondeterminism = false;
-    m_debugPartition = false;
-    m_debugProtect = false;
-    m_debugSelfTest = false;
-    m_decoration = true;
-    m_dpiHdrOnly = false;
-    m_dumpDefines = false;
-    m_exe = false;
-    m_flatten = false;
-    m_gmake = false;
-    m_hierarchical = false;
-    m_hierChild = false;
-    m_ignc = false;
-    m_inhibitSim = false;
-    m_lintOnly = false;
-    m_makePhony = false;
-    m_main = false;
-    m_orderClockDly = true;
-    m_outFormatOk = false;
-    m_pedantic = false;
-    m_pinsBv = 65;
-    m_pinsScUint = false;
-    m_pinsScBigUint = false;
-    m_pinsUint8 = false;
-    m_ppComments = false;
-    m_profCFuncs = false;
-    m_profThreads = false;
-    m_protectIds = false;
-    m_preprocOnly = false;
-    m_preprocNoLine = false;
-    m_public = false;
-    m_publicFlatRW = false;
-    m_quietExit = false;
-    m_relativeCFuncs = true;
-    m_relativeIncludes = false;
-    m_reportUnoptflat = false;
-    m_savable = false;
-    m_stats = false;
-    m_statsVars = false;
-    m_structsPacked = true;
-    m_systemC = false;
-    m_threads = 0;
-    m_threadsDpiPure = true;
-    m_threadsDpiUnpure = false;
-    m_threadsCoarsen = true;
-    m_threadsMaxMTasks = 0;
-    m_trace = false;
-    m_traceCoverage = false;
     m_traceFormat = TraceFormat::VCD;
-    m_traceParams = true;
-    m_traceStructs = false;
-    m_traceUnderscore = false;
-    m_traceThreads = 0;
-    m_underlineZero = false;
-    m_verilate = true;
-    m_vpi = false;
-    m_xInitialEdge = false;
-    m_xmlOnly = false;
-
-    m_buildJobs = 1;
-    m_convergeLimit = 100;
-    m_dumpTree = 0;
-    m_dumpTreeAddrids = false;
-    m_gateStmts = 100;
-    m_ifDepth = 0;
-    m_inlineMult = 2000;
-    m_maxNumWidth = 65536;
-    m_moduleRecursion = 100;
-    m_outputSplit = 20000;
-    m_outputSplitCFuncs = -1;
-    m_outputSplitCTrace = -1;
-    m_traceDepth = 0;
-    m_traceMaxArray = 32;
-    m_traceMaxWidth = 256;
-    m_unrollCount = 64;
-    m_unrollStmts = 30000;
-
-    m_compLimitBlocks = 0;
-    m_compLimitMembers = 64;
-    m_compLimitParens = 0;
 
     m_makeDir = "obj_dir";
-    m_bin = "";
-    m_flags = "";
-    m_waiverOutput = "";
-    m_l2Name = "";
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";
 

@@ -400,8 +400,8 @@ class EmitMkHierVerilation {
 
 public:
     explicit EmitMkHierVerilation(const V3HierBlockPlan* planp)
-        : m_planp(planp)
-        , m_makefile(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_hier.mk") {
+        : m_planp{planp}
+        , m_makefile{v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_hier.mk"} {
         V3OutMkFile of(m_makefile);
         emit(of);
     }

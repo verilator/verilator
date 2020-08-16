@@ -109,8 +109,8 @@ class VerilatedVpioCb : public VerilatedVpio {
 public:
     // cppcheck-suppress uninitVar  // m_value
     VerilatedVpioCb(const t_cb_data* cbDatap, QData time)
-        : m_cbData(*cbDatap)
-        , m_time(time) {
+        : m_cbData{*cbDatap}
+        , m_time{time} {
         m_value.format = cbDatap->value ? cbDatap->value->format : vpiSuppressVal;
         m_cbData.value = &m_value;
     }
@@ -130,7 +130,7 @@ class VerilatedVpioConst : public VerilatedVpio {
 
 public:
     explicit VerilatedVpioConst(vlsint32_t num)
-        : m_num(num) {}
+        : m_num{num} {}
     virtual ~VerilatedVpioConst() override {}
     static inline VerilatedVpioConst* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioConst*>(reinterpret_cast<VerilatedVpio*>(h));
@@ -145,8 +145,8 @@ class VerilatedVpioParam : public VerilatedVpio {
 
 public:
     VerilatedVpioParam(const VerilatedVar* varp, const VerilatedScope* scopep)
-        : m_varp(varp)
-        , m_scopep(scopep) {}
+        : m_varp{varp}
+        , m_scopep{scopep} {}
 
     virtual ~VerilatedVpioParam() override {}
 
@@ -171,7 +171,7 @@ class VerilatedVpioRange : public VerilatedVpio {
 
 public:
     explicit VerilatedVpioRange(const VerilatedRange* range)
-        : m_range(range) {}
+        : m_range{range} {}
     virtual ~VerilatedVpioRange() override {}
     static inline VerilatedVpioRange* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioRange*>(reinterpret_cast<VerilatedVpio*>(h));
@@ -197,7 +197,7 @@ protected:
 
 public:
     explicit VerilatedVpioScope(const VerilatedScope* scopep)
-        : m_scopep(scopep) {}
+        : m_scopep{scopep} {}
     virtual ~VerilatedVpioScope() override {}
     static inline VerilatedVpioScope* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioScope*>(reinterpret_cast<VerilatedVpio*>(h));
@@ -227,9 +227,9 @@ protected:
 
 public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
-        : m_varp(varp)
-        , m_scopep(scopep)
-        , m_index(0) {
+        : m_varp{varp}
+        , m_scopep{scopep}
+        , m_index{0} {
         m_prevDatap = nullptr;
         m_mask.u32 = VL_MASK_I(varp->packed().elements());
         m_entSize = varp->entSize();
@@ -272,7 +272,7 @@ class VerilatedVpioMemoryWord : public VerilatedVpioVar {
 public:
     VerilatedVpioMemoryWord(const VerilatedVar* varp, const VerilatedScope* scopep,
                             vlsint32_t index, int offset)
-        : VerilatedVpioVar(varp, scopep) {
+        : VerilatedVpioVar{varp, scopep} {
         m_index = index;
         m_varDatap = (static_cast<vluint8_t*>(varp->datap())) + entSize() * offset;
     }
@@ -295,12 +295,11 @@ public:
 class VerilatedVpioVarIter : public VerilatedVpio {
     const VerilatedScope* m_scopep;
     VerilatedVarNameMap::const_iterator m_it;
-    bool m_started;
+    bool m_started = false;
 
 public:
     explicit VerilatedVpioVarIter(const VerilatedScope* scopep)
-        : m_scopep(scopep)
-        , m_started(false) {}
+        : m_scopep{scopep} {}
     virtual ~VerilatedVpioVarIter() override {}
     static inline VerilatedVpioVarIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioVarIter*>(reinterpret_cast<VerilatedVpio*>(h));
@@ -329,15 +328,14 @@ class VerilatedVpioMemoryWordIter : public VerilatedVpio {
     const VerilatedVar* m_varp;
     vlsint32_t m_iteration;
     vlsint32_t m_direction;
-    bool m_done;
+    bool m_done = false;
 
 public:
     VerilatedVpioMemoryWordIter(const vpiHandle handle, const VerilatedVar* varp)
-        : m_handle(handle)
-        , m_varp(varp)
-        , m_iteration(varp->unpacked().right())
-        , m_direction(VL_LIKELY(varp->unpacked().left() > varp->unpacked().right()) ? 1 : -1)
-        , m_done(false) {}
+        : m_handle{handle}
+        , m_varp{varp}
+        , m_iteration{varp->unpacked().right()}
+        , m_direction{VL_LIKELY(varp->unpacked().left() > varp->unpacked().right()) ? 1 : -1} {}
     virtual ~VerilatedVpioMemoryWordIter() override {}
     static inline VerilatedVpioMemoryWordIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioMemoryWordIter*>(reinterpret_cast<VerilatedVpio*>(h));
@@ -361,7 +359,7 @@ class VerilatedVpioModule : public VerilatedVpioScope {
 
 public:
     explicit VerilatedVpioModule(const VerilatedScope* modulep)
-        : VerilatedVpioScope(modulep) {
+        : VerilatedVpioScope{modulep} {
         m_fullname = m_scopep->name();
         if (strncmp(m_fullname, "TOP.", 4) == 0) m_fullname += 4;
         m_name = m_scopep->identifier();
@@ -380,7 +378,7 @@ class VerilatedVpioModuleIter : public VerilatedVpio {
 
 public:
     explicit VerilatedVpioModuleIter(const std::vector<const VerilatedScope*>& vec)
-        : m_vec(&vec) {
+        : m_vec{&vec} {
         m_it = m_vec->begin();
     }
     virtual ~VerilatedVpioModuleIter() override {}
@@ -529,7 +527,7 @@ class VerilatedVpiError {
     //// Container for vpi error info
 
     t_vpi_error_info m_errorInfo;
-    bool m_flag;
+    bool m_flag = false;
     char m_buff[VL_VPI_LINE_SIZE];
     void setError(PLI_BYTE8* message, PLI_BYTE8* code, PLI_BYTE8* file, PLI_INT32 line) {
         m_errorInfo.message = message;
@@ -550,8 +548,7 @@ class VerilatedVpiError {
     }
 
 public:
-    VerilatedVpiError()
-        : m_flag(false) {
+    VerilatedVpiError() {
         m_buff[0] = '\0';
         m_errorInfo.product = const_cast<PLI_BYTE8*>(Verilated::productName());
     }

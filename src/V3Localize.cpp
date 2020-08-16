@@ -101,7 +101,7 @@ private:
 
     // STATE
     VDouble0 m_statLocVars;  // Statistic tracking
-    AstCFunc* m_cfuncp;  // Current active function
+    AstCFunc* m_cfuncp = nullptr;  // Current active function
     std::vector<AstVar*> m_varps;  // List of variables to consider for deletion
 
     // METHODS
@@ -221,10 +221,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LocalizeVisitor(AstNetlist* nodep) {
-        m_cfuncp = nullptr;
-        iterate(nodep);
-    }
+    explicit LocalizeVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~LocalizeVisitor() override {
         V3Stats::addStat("Optimizations, Vars localized", m_statLocVars);
     }

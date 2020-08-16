@@ -38,17 +38,16 @@ private:
     // MEMBERS
     static int s_anonNum;  // Number of next anonymous object (parser use only)
     VSymGraph m_syms;  // Graph of symbol tree
-    VSymEnt* m_symTableNextId;  // Symbol table for next lexer lookup (parser use only)
+    VSymEnt* m_symTableNextId = nullptr;  // Symbol table for next lexer lookup (parser use only)
     VSymEnt* m_symCurrentp;  // Active symbol table for additions/lookups
     SymStack m_sympStack;  // Stack of upper nodes with pending symbol tables
 
 public:
     // CONSTRUCTORS
     explicit V3ParseSym(AstNetlist* rootp)
-        : m_syms(rootp) {
+        : m_syms{rootp} {
         s_anonNum = 0;  // Number of next anonymous object
         pushScope(findNewTable(rootp));
-        m_symTableNextId = nullptr;
         m_symCurrentp = symCurrentp();
     }
     ~V3ParseSym() {}

@@ -51,10 +51,10 @@ class VDefine {
     bool m_cmdline;  // Set on command line, don't `undefineall
 public:
     VDefine(FileLine* fl, const string& value, const string& params, bool cmdline)
-        : m_fileline(fl)
-        , m_value(value)
-        , m_params(params)
-        , m_cmdline(cmdline) {}
+        : m_fileline{fl}
+        , m_value{value}
+        , m_params{params}
+        , m_cmdline{cmdline} {}
     FileLine* fileline() const { return m_fileline; }
     string value() const { return m_value; }
     string params() const { return m_params; }
@@ -80,8 +80,8 @@ public:
     void parenLevel(int value) { m_parenLevel = value; }
     std::vector<string>& args() { return m_args; }
     VDefineRef(const string& name, const string& params)
-        : m_name(name)
-        , m_params(params) {}
+        : m_name{name}
+        , m_params{params} {}
     ~VDefineRef() {}
 };
 
@@ -96,8 +96,8 @@ public:
     bool on() const { return m_on; }
     bool everOn() const { return m_everOn; }
     VPreIfEntry(bool on, bool everOn)
-        : m_on(on)
-        , m_everOn(everOn || on) {}  // Note everOn includes new state
+        : m_on{on}
+        , m_everOn{everOn || on} {}  // Note everOn includes new state
     ~VPreIfEntry() {}
 };
 

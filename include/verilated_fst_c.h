@@ -50,8 +50,8 @@ private:
     Code2SymbolType m_code2symbol;
     Local2FstDtype m_local2fstdtype;
     std::list<std::string> m_curScope;
-    fstHandle* m_symbolp;  ///< same as m_code2symbol, but as an array
-    char* m_strbuf;  ///< String buffer long enough to hold maxBits() chars
+    fstHandle* m_symbolp = nullptr;  ///< same as m_code2symbol, but as an array
+    char* m_strbuf = nullptr;  ///< String buffer long enough to hold maxBits() chars
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
@@ -136,7 +136,7 @@ class VerilatedFstC {
 
 public:
     explicit VerilatedFstC(void* filep = nullptr)
-        : m_sptrace(filep) {}
+        : m_sptrace{filep} {}
     ~VerilatedFstC() { close(); }
     /// Routines can only be called from one thread; allow next call from different thread
     void changeThread() { spTrace()->changeThread(); }

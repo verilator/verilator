@@ -56,7 +56,7 @@ class GateGraphBaseVisitor {
 public:
     V3Graph* m_graphp;  // Graph this class is visiting
     explicit GateGraphBaseVisitor(V3Graph* graphp)
-        : m_graphp(graphp) {}
+        : m_graphp{graphp} {}
     virtual ~GateGraphBaseVisitor() {}
     virtual VNUser visit(GateLogicVertex* vertexp, VNUser vu = VNUser(0)) = 0;
     virtual VNUser visit(GateVarVertex* vertexp, VNUser vu = VNUser(0)) = 0;
@@ -73,8 +73,8 @@ class GateEitherVertex : public V3GraphVertex {
     bool m_consumed = false;  // Output goes to something meaningful
 public:
     GateEitherVertex(V3Graph* graphp, AstScope* scopep)
-        : V3GraphVertex(graphp)
-        , m_scopep(scopep) {}
+        : V3GraphVertex{graphp}
+        , m_scopep{scopep} {}
     virtual ~GateEitherVertex() override {}
     // ACCESSORS
     virtual string dotStyle() const override { return m_consumed ? "" : "dotted"; }
@@ -131,8 +131,8 @@ class GateVarVertex : public GateEitherVertex {
     AstNode* m_rstAsyncNodep = nullptr;  // Used as reset and in SenItem, in clocked always
 public:
     GateVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
-        : GateEitherVertex(graphp, scopep)
-        , m_varScp(varScp) {}
+        : GateEitherVertex{graphp, scopep}
+        , m_varScp{varScp} {}
     virtual ~GateVarVertex() override {}
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
@@ -170,10 +170,10 @@ class GateLogicVertex : public GateEitherVertex {
 public:
     GateLogicVertex(V3Graph* graphp, AstScope* scopep, AstNode* nodep, AstActive* activep,
                     bool slow)
-        : GateEitherVertex(graphp, scopep)
-        , m_nodep(nodep)
-        , m_activep(activep)
-        , m_slow(slow) {}
+        : GateEitherVertex{graphp, scopep}
+        , m_nodep{nodep}
+        , m_activep{activep}
+        , m_slow{slow} {}
     virtual ~GateLogicVertex() override {}
     // ACCESSORS
     virtual string name() const override {
@@ -313,13 +313,13 @@ private:
 
     // STATE
     V3Graph m_graph;  // Scoreboard of var usages/dependencies
-    GateLogicVertex* m_logicVertexp;  // Current statement being tracked, nullptr=ignored
-    AstScope* m_scopep;  // Current scope being processed
-    AstNodeModule* m_modp;  // Current module
-    AstActive* m_activep;  // Current active
-    bool m_activeReducible;  // Is activation block reducible?
-    bool m_inSenItem;  // Underneath AstSenItem; any varrefs are clocks
-    bool m_inSlow;  // Inside a slow structure
+    GateLogicVertex* m_logicVertexp = nullptr;  // Current statement being tracked, nullptr=ignored
+    AstScope* m_scopep = nullptr;  // Current scope being processed
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstActive* m_activep = nullptr;  // Current active
+    bool m_activeReducible = true;  // Is activation block reducible?
+    bool m_inSenItem = false;  // Underneath AstSenItem; any varrefs are clocks
+    bool m_inSlow = false;  // Inside a slow structure
     VDouble0 m_statSigs;  // Statistic tracking
     VDouble0 m_statRefs;  // Statistic tracking
     VDouble0 m_statDedupLogic;  // Statistic tracking
@@ -524,13 +524,6 @@ public:
     // CONSTRUCTORS
     explicit GateVisitor(AstNode* nodep) {
         AstNode::user1ClearTree();
-        m_logicVertexp = nullptr;
-        m_scopep = nullptr;
-        m_modp = nullptr;
-        m_activep = nullptr;
-        m_activeReducible = true;
-        m_inSenItem = false;
-        m_inSlow = false;
         iterate(nodep);
     }
     virtual ~GateVisitor() override {
@@ -1219,7 +1212,7 @@ private:
 
 public:
     explicit GateDedupeGraphVisitor(V3Graph* graphp)
-        : GateGraphBaseVisitor(graphp) {}
+        : GateGraphBaseVisitor{graphp} {}
     void dedupeTree(GateVarVertex* vvertexp) { vvertexp->accept(*this); }
     VDouble0 numDeduped() { return m_numDeduped; }
 };
@@ -1254,9 +1247,9 @@ void GateVisitor::dedupe() {
 class GateMergeAssignsGraphVisitor : public GateGraphBaseVisitor {
 private:
     // NODE STATE
-    AstNodeAssign* m_assignp;
-    AstActive* m_activep;
-    GateLogicVertex* m_logicvp;
+    AstNodeAssign* m_assignp = nullptr;
+    AstActive* m_activep = nullptr;
+    GateLogicVertex* m_logicvp = nullptr;
     VDouble0 m_numMergedAssigns;  // Statistic tracking
 
     // assemble two Sel into one if possible
@@ -1358,12 +1351,8 @@ private:
 
 public:
     explicit GateMergeAssignsGraphVisitor(V3Graph* graphp)
-        : GateGraphBaseVisitor(graphp) {
-        m_assignp = nullptr;
-        m_activep = nullptr;
-        m_logicvp = nullptr;
-        m_numMergedAssigns = 0;
-        m_graphp = graphp;
+        : GateGraphBaseVisitor{graphp} {
+        m_graphp = graphp;  // In base
     }
     void mergeAssignsTree(GateVarVertex* vvertexp) { vvertexp->accept(*this); }
     VDouble0 numMergedAssigns() { return m_numMergedAssigns; }
@@ -1441,8 +1430,8 @@ public:
     int m_offset;
     AstVarScope* m_last_vsp;
     GateClkDecompState(int offset, AstVarScope* vsp)
-        : m_offset(offset)
-        , m_last_vsp(vsp) {}
+        : m_offset{offset}
+        , m_last_vsp{vsp} {}
     virtual ~GateClkDecompState() {}
 };
 
@@ -1450,12 +1439,12 @@ class GateClkDecompGraphVisitor : public GateGraphBaseVisitor {
 private:
     // NODE STATE
     // AstVarScope::user2p      -> bool: already visited
-    int m_seen_clk_vectors;
-    AstVarScope* m_clk_vsp;
-    GateVarVertex* m_clk_vvertexp;
+    int m_seen_clk_vectors = 0;
+    AstVarScope* m_clk_vsp = nullptr;
+    GateVarVertex* m_clk_vvertexp = nullptr;
     GateConcatVisitor m_concat_visitor;
-    int m_total_seen_clk_vectors;
-    int m_total_decomposed_clk_vectors;
+    int m_total_seen_clk_vectors = 0;
+    int m_total_decomposed_clk_vectors = 0;
 
     virtual VNUser visit(GateVarVertex* vvertexp, VNUser vu) override {
         // Check that we haven't been here before
@@ -1540,13 +1529,7 @@ private:
 
 public:
     explicit GateClkDecompGraphVisitor(V3Graph* graphp)
-        : GateGraphBaseVisitor(graphp) {
-        m_seen_clk_vectors = 0;
-        m_clk_vsp = nullptr;
-        m_clk_vvertexp = nullptr;
-        m_total_seen_clk_vectors = 0;
-        m_total_decomposed_clk_vectors = 0;
-    }
+        : GateGraphBaseVisitor{graphp} {}
     virtual ~GateClkDecompGraphVisitor() override {
         V3Stats::addStat("Optimizations, Clocker seen vectors", m_total_seen_clk_vectors);
         V3Stats::addStat("Optimizations, Clocker decomposed vectors",

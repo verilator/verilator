@@ -116,7 +116,7 @@ public:
 class EmitCBaseCounterVisitor : public AstNVisitor {
 private:
     // MEMBERS
-    int m_count;  // Number of statements
+    int m_count = 0;  // Number of statements
     // VISITORS
     virtual void visit(AstNode* nodep) override {
         m_count++;
@@ -125,10 +125,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit EmitCBaseCounterVisitor(AstNode* nodep) {
-        m_count = 0;
-        iterate(nodep);
-    }
+    explicit EmitCBaseCounterVisitor(AstNode* nodep) { iterate(nodep); }
     virtual ~EmitCBaseCounterVisitor() override {}
     int count() const { return m_count; }
 };

@@ -53,8 +53,8 @@ class LinkCellsVertex : public V3GraphVertex {
 
 public:
     LinkCellsVertex(V3Graph* graphp, AstNodeModule* modp)
-        : V3GraphVertex(graphp)
-        , m_modp(modp) {}
+        : V3GraphVertex{graphp}
+        , m_modp{modp} {}
     virtual ~LinkCellsVertex() override {}
     AstNodeModule* modp() const { return m_modp; }
     virtual string name() const override { return modp()->name(); }
@@ -68,7 +68,7 @@ public:
 class LibraryVertex : public V3GraphVertex {
 public:
     explicit LibraryVertex(V3Graph* graphp)
-        : V3GraphVertex(graphp) {}
+        : V3GraphVertex{graphp} {}
     virtual ~LibraryVertex() override {}
     virtual string name() const override { return "*LIBRARY*"; }
 };
@@ -109,11 +109,11 @@ private:
     V3ParseSym* m_parseSymp;  // Parser symbol table
 
     // Below state needs to be preserved between each module call.
-    AstNodeModule* m_modp;  // Current module
+    AstNodeModule* m_modp = nullptr;  // Current module
     VSymGraph m_mods;  // Symbol table of all module names
     LinkCellsGraph m_graph;  // Linked graph of all cell interconnects
-    LibraryVertex* m_libVertexp;  // Vertex at root of all libraries
-    V3GraphVertex* m_topVertexp;  // Vertex of top module
+    LibraryVertex* m_libVertexp = nullptr;  // Vertex at root of all libraries
+    V3GraphVertex* m_topVertexp = nullptr;  // Vertex of top module
     std::unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
     string m_origTopModuleName;  // original name of the top module
 
@@ -501,12 +501,9 @@ private:
 public:
     // CONSTRUCTORS
     LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp)
-        : m_mods(nodep) {
+        : m_mods{nodep} {
         m_filterp = filterp;
         m_parseSymp = parseSymp;
-        m_modp = nullptr;
-        m_libVertexp = nullptr;
-        m_topVertexp = nullptr;
         if (v3Global.opt.hierChild()) {
             const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
             UASSERT(!v3Global.opt.topModule().empty(),

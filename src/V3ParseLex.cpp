@@ -36,7 +36,7 @@ class V3Lexer : public V3LexerBase {
 public:
     // CONSTRUCTORS
     V3Lexer()
-        : V3LexerBase(nullptr) {}
+        : V3LexerBase{nullptr} {}
     ~V3Lexer() {}
     // METHODS
     void unputString(const char* textp, size_t length) {

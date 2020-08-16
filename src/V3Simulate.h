@@ -55,8 +55,8 @@ public:
     V3TaskConnects* m_tconnects;
     // CONSTRUCTORS
     SimStackNode(AstFuncRef* funcp, V3TaskConnects* tconnects)
-        : m_funcp(funcp)
-        , m_tconnects(tconnects) {}
+        : m_funcp{funcp}
+        , m_tconnects{tconnects} {}
     ~SimStackNode() {}
 };
 

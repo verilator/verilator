@@ -44,11 +44,11 @@ protected:
     friend class VerilatedVarProps;
     friend class VerilatedScope;
     VerilatedRange()
-        : m_left(0)
-        , m_right(0) {}
+        : m_left{0}
+        , m_right{0} {}
     VerilatedRange(int left, int right)
-        : m_left(left)
-        , m_right(right) {}
+        : m_left{left}
+        , m_right{right} {}
     void init(int left, int right) {
         m_left = left;
         m_right = right;
@@ -92,11 +92,11 @@ class VerilatedVarProps {
 protected:
     friend class VerilatedScope;
     VerilatedVarProps(VerilatedVarType vltype, VerilatedVarFlags vlflags, int pdims, int udims)
-        : m_magic(MAGIC)
-        , m_vltype(vltype)
-        , m_vlflags(vlflags)
-        , m_pdims(pdims)
-        , m_udims(udims) {
+        : m_magic{MAGIC}
+        , m_vltype{vltype}
+        , m_vlflags{vlflags}
+        , m_pdims{pdims}
+        , m_udims{udims} {
         initUnpacked(nullptr);
     }
 
@@ -104,36 +104,36 @@ public:
     class Unpacked {};
     // Without packed
     VerilatedVarProps(VerilatedVarType vltype, int vlflags)
-        : m_magic(MAGIC)
-        , m_vltype(vltype)
-        , m_vlflags(VerilatedVarFlags(vlflags))
-        , m_pdims(0)
-        , m_udims(0) {}
+        : m_magic{MAGIC}
+        , m_vltype{vltype}
+        , m_vlflags{VerilatedVarFlags(vlflags)}
+        , m_pdims{0}
+        , m_udims{0} {}
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims)
-        : m_magic(MAGIC)
-        , m_vltype(vltype)
-        , m_vlflags(VerilatedVarFlags(vlflags))
-        , m_pdims(0)
-        , m_udims(udims) {
+        : m_magic{MAGIC}
+        , m_vltype{vltype}
+        , m_vlflags{VerilatedVarFlags(vlflags)}
+        , m_pdims{0}
+        , m_udims{udims} {
         initUnpacked(ulims);
     }
     // With packed
     class Packed {};
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr)
-        : m_magic(MAGIC)
-        , m_vltype(vltype)
-        , m_vlflags(VerilatedVarFlags(vlflags))
-        , m_pdims(1)
-        , m_udims(0)
-        , m_packed(pl, pr) {}
+        : m_magic{MAGIC}
+        , m_vltype{vltype}
+        , m_vlflags{VerilatedVarFlags(vlflags)}
+        , m_pdims{1}
+        , m_udims{0}
+        , m_packed{pl, pr} {}
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr, Unpacked,
                       int udims, const int* ulims)
-        : m_magic(MAGIC)
-        , m_vltype(vltype)
-        , m_vlflags(VerilatedVarFlags(vlflags))
-        , m_pdims(1)
-        , m_udims(udims)
-        , m_packed(pl, pr) {
+        : m_magic{MAGIC}
+        , m_vltype{vltype}
+        , m_vlflags{VerilatedVarFlags(vlflags)}
+        , m_pdims{1}
+        , m_udims{udims}
+        , m_packed{pl, pr} {
         initUnpacked(ulims);
     }
 
@@ -196,11 +196,11 @@ class VerilatedDpiOpenVar {
 public:
     // CONSTRUCTORS
     VerilatedDpiOpenVar(const VerilatedVarProps* propsp, void* datap)
-        : m_propsp(propsp)
-        , m_datap(datap) {}
+        : m_propsp{propsp}
+        , m_datap{datap} {}
     VerilatedDpiOpenVar(const VerilatedVarProps* propsp, const void* datap)
-        : m_propsp(propsp)
-        , m_datap(const_cast<void*>(datap)) {}
+        : m_propsp{propsp}
+        , m_datap{const_cast<void*>(datap)} {}
     ~VerilatedDpiOpenVar() {}
     // METHODS
     void* datap() const { return m_datap; }
@@ -237,10 +237,10 @@ protected:
     // CONSTRUCTORS
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int dims, bool isParam)
-        : VerilatedVarProps(vltype, vlflags, (dims > 0 ? 1 : 0), ((dims > 1) ? dims - 1 : 0))
-        , m_datap(datap)
-        , m_namep(namep)
-        , m_isParam(isParam) {}
+        : VerilatedVarProps{vltype, vlflags, (dims > 0 ? 1 : 0), ((dims > 1) ? dims - 1 : 0)}
+        , m_datap{datap}
+        , m_namep{namep}
+        , m_isParam{isParam} {}
 
 public:
     ~VerilatedVar() {}

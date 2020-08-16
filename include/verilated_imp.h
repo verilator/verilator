@@ -62,8 +62,8 @@ private:
 public:
     // CONSTRUCTORS
     VerilatedMsg(const std::function<void()>& cb)
-        : m_mtaskId(Verilated::mtaskId())
-        , m_cb(cb) {}
+        : m_mtaskId{Verilated::mtaskId()}
+        , m_cb{cb} {}
     ~VerilatedMsg() {}
     // METHODS
     vluint32_t mtaskId() const { return m_mtaskId; }
@@ -84,7 +84,7 @@ class VerilatedEvalMsgQueue {
 public:
     // CONSTRUCTORS
     VerilatedEvalMsgQueue()
-        : m_depth(0) {
+        : m_depth{0} {
         assert(atomic_is_lock_free(&m_depth));
     }
     ~VerilatedEvalMsgQueue() {}
@@ -172,12 +172,11 @@ public:
 // FILE* list constructed from a file-descriptor
 class VerilatedFpList {
     FILE* m_fp[31];
-    std::size_t m_sz;
+    std::size_t m_sz = 0;
 
 public:
     typedef FILE* const* const_iterator;
-    explicit VerilatedFpList()
-        : m_sz(0) {}
+    explicit VerilatedFpList() {}
     const_iterator begin() const { return m_fp; }
     const_iterator end() const { return m_fp + m_sz; }
     std::size_t size() const { return m_sz; }
@@ -204,14 +203,11 @@ protected:
     static VerilatedImp s_s;  ///< Static Singleton; One and only static this
 
     struct Serialized {  // All these members serialized/deserialized
-        int m_timeFormatUnits;  // $timeformat units
-        int m_timeFormatPrecision;  // $timeformat number of decimal places
-        int m_timeFormatWidth;  // $timeformat character width
+        int m_timeFormatUnits = UNITS_NONE;  // $timeformat units
+        int m_timeFormatPrecision = 0;  // $timeformat number of decimal places
+        int m_timeFormatWidth = 20;  // $timeformat character width
         enum { UNITS_NONE = 99 };  // Default based on precision
-        Serialized()
-            : m_timeFormatUnits(UNITS_NONE)
-            , m_timeFormatPrecision(0)
-            , m_timeFormatWidth(20) {}
+        Serialized() {}
         ~Serialized() {}
     } m_ser;
 
@@ -255,8 +251,8 @@ protected:
 public:  // But only for verilated*.cpp
     // CONSTRUCTORS
     VerilatedImp()
-        : m_argVecLoaded(false)
-        , m_exportNext(0) {
+        : m_argVecLoaded{false}
+        , m_exportNext{0} {
         s_s.m_fdps.resize(31);
         std::fill(s_s.m_fdps.begin(), s_s.m_fdps.end(), (FILE*)0);
         s_s.m_fdFreeMct.resize(30);

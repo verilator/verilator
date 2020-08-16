@@ -119,8 +119,8 @@ private:
 
 public:
     GraphRemoveRedundant(V3Graph* graphp, V3EdgeFuncP edgeFuncp, bool sumWeights)
-        : GraphAlg<>(graphp, edgeFuncp)
-        , m_sumWeights(sumWeights) {
+        : GraphAlg<>{graphp, edgeFuncp}
+        , m_sumWeights{sumWeights} {
         main();
     }
     ~GraphRemoveRedundant() {}
@@ -284,7 +284,7 @@ private:
 
 public:
     GraphAlgStrongly(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-        : GraphAlg<>(graphp, edgeFuncp) {
+        : GraphAlg<>{graphp, edgeFuncp} {
         m_currentDfs = 0;
         main();
     }
@@ -336,7 +336,7 @@ private:
 
 public:
     GraphAlgRank(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-        : GraphAlg<>(graphp, edgeFuncp) {
+        : GraphAlg<>{graphp, edgeFuncp} {
         main();
     }
     ~GraphAlgRank() {}
@@ -389,7 +389,7 @@ private:
 
 public:
     GraphAlgRLoops(V3Graph* graphp, V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp)
-        : GraphAlg<>(graphp, edgeFuncp) {
+        : GraphAlg<>{graphp, edgeFuncp} {
         m_done = false;
         main(vertexp);
     }
@@ -433,8 +433,8 @@ private:
 public:
     GraphAlgSubtrees(V3Graph* graphp, V3Graph* loopGraphp, V3EdgeFuncP edgeFuncp,
                      V3GraphVertex* vertexp)
-        : GraphAlg<>(graphp, edgeFuncp)
-        , m_loopGraphp(loopGraphp) {
+        : GraphAlg<>{graphp, edgeFuncp}
+        , m_loopGraphp{loopGraphp} {
         // Vertex::m_userp - New vertex if we have seen this vertex already
         // Edge::m_userp - New edge if we have seen this edge already
         m_graphp->userClearVertices();

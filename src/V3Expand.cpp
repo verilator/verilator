@@ -44,7 +44,7 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstNode* m_stmtp;  // Current statement
+    AstNode* m_stmtp = nullptr;  // Current statement
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -878,10 +878,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit ExpandVisitor(AstNetlist* nodep) {
-        m_stmtp = nullptr;
-        iterate(nodep);
-    }
+    explicit ExpandVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~ExpandVisitor() override {}
 };
 

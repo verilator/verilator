@@ -246,7 +246,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
 
 public:
     EmitXmlFileVisitor(AstNode* nodep, V3OutFile* ofp)
-        : m_ofp(ofp) {
+        : m_ofp{ofp} {
         iterate(nodep);
     }
     virtual ~EmitXmlFileVisitor() override {}
@@ -286,9 +286,9 @@ private:
 public:
     // CONSTRUCTORS
     ModuleFilesXmlVisitor(AstNetlist* nodep, std::ostream& os)
-        : m_os(os)
-        , m_modulesCovered()
-        , m_nodeModules() {
+        : m_os{os}
+        , m_modulesCovered{}
+        , m_nodeModules{} {
         // Operate on whole netlist
         nodep->accept(*this);
         // Xml output
@@ -361,7 +361,7 @@ private:
 public:
     // CONSTRUCTORS
     HierCellsXmlVisitor(AstNetlist* nodep, std::ostream& os)
-        : m_os(os) {
+        : m_os{os} {
         // Operate on whole netlist
         nodep->accept(*this);
     }

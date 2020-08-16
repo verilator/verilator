@@ -49,9 +49,9 @@ private:
         AstNode* m_varRefp;  // How to get to this element
         AstNode* m_chgRefp;  // How to get to this element
         ToggleEnt(const string& comment, AstNode* vp, AstNode* cp)
-            : m_comment(comment)
-            , m_varRefp(vp)
-            , m_chgRefp(cp) {}
+            : m_comment{comment}
+            , m_varRefp{vp}
+            , m_chgRefp{cp} {}
         ~ToggleEnt() {}
         void cleanup() {
             VL_DO_CLEAR(m_varRefp->deleteTree(), m_varRefp = nullptr);
@@ -70,7 +70,7 @@ private:
                    && v3Global.opt.coverageLine();
         }
     };
-    int m_nextHandle;
+    int m_nextHandle = 0;
 
     // NODE STATE
     // Entire netlist:
@@ -79,8 +79,8 @@ private:
 
     // STATE
     CheckState m_state;  // State save-restored on each new coverage scope/block
-    AstNodeModule* m_modp;  // Current module to add statement to
-    bool m_inToggleOff;  // In function/task etc
+    AstNodeModule* m_modp = nullptr;  // Current module to add statement to
+    bool m_inToggleOff = false;  // In function/task etc
     VarNameMap m_varnames;  // Uniquification of inserted variable names
     string m_beginHier;  // AstBegin hier name for user coverage points
     HandleLines m_handleLines;  // All line numbers for a given m_stateHandle
@@ -539,14 +539,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit CoverageVisitor(AstNetlist* rootp) {
-        // Operate on all modules
-        m_nextHandle = 0;
-        m_modp = nullptr;
-        m_beginHier = "";
-        m_inToggleOff = false;
-        iterateChildren(rootp);
-    }
+    explicit CoverageVisitor(AstNetlist* rootp) { iterateChildren(rootp); }
     virtual ~CoverageVisitor() override {}
 };
 

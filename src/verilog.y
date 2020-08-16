@@ -50,46 +50,32 @@
 
 class V3ParseGrammar {
 public:
-    bool m_impliedDecl;  // Allow implied wire declarations
+    bool m_impliedDecl = false;  // Allow implied wire declarations
     AstVarType m_varDecl;  // Type for next signal declaration (reg/wire/etc)
-    bool m_varDeclTyped;  // Var got reg/wire for dedup check
+    bool m_varDeclTyped = false;  // Var got reg/wire for dedup check
     VDirection m_varIO;  // Direction for next signal declaration (reg/wire/etc)
     VLifetime m_varLifetime;  // Static/Automatic for next signal
-    AstVar* m_varAttrp;  // Current variable for attribute adding
-    AstRange* m_gateRangep;  // Current range for gate declarations
-    AstCase* m_caseAttrp;  // Current case statement for attribute adding
-    AstNodeDType* m_varDTypep;  // Pointer to data type for next signal declaration
-    AstNodeDType* m_memDTypep;  // Pointer to data type for next member declaration
-    AstNodeModule* m_modp;  // Last module for timeunits
-    bool m_pinAnsi;  // In ANSI port list
-    FileLine* m_instModuleFl;  // Fileline of module referenced for instantiations
+    AstVar* m_varAttrp = nullptr;  // Current variable for attribute adding
+    AstRange* m_gateRangep = nullptr;  // Current range for gate declarations
+    AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
+    AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
+    AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
+    AstNodeModule* m_modp = nullptr;  // Last module for timeunits
+    bool m_pinAnsi = false;  // In ANSI port list
+    FileLine* m_instModuleFl = nullptr;  // Fileline of module referenced for instantiations
     string m_instModule;  // Name of module referenced for instantiations
-    AstPin* m_instParamp;  // Parameters for instantiations
-    bool m_tracingParse;  // Tracing disable for parser
+    AstPin* m_instParamp = nullptr;  // Parameters for instantiations
+    bool m_tracingParse = true;  // Tracing disable for parser
 
-    int m_pinNum;  // Pin number currently parsing
+    int m_pinNum = -1;  // Pin number currently parsing
     std::stack<int> m_pinStack;  // Queue of pin numbers being parsed
 
     static int s_modTypeImpNum;  // Implicit type number, incremented each module
 
     // CONSTRUCTORS
     V3ParseGrammar() {
-        m_impliedDecl = false;
         m_varDecl = AstVarType::UNKNOWN;
-        m_varDeclTyped = false;
         m_varIO = VDirection::NONE;
-        m_varDTypep = nullptr;
-        m_gateRangep = nullptr;
-        m_memDTypep = nullptr;
-        m_modp = nullptr;
-        m_pinAnsi = false;
-        m_pinNum = -1;
-        m_instModuleFl = nullptr;
-        m_instModule = "";
-        m_instParamp = nullptr;
-        m_varAttrp = nullptr;
-        m_caseAttrp = nullptr;
-        m_tracingParse = true;
     }
     static V3ParseGrammar* singletonp() {
         static V3ParseGrammar singleton;

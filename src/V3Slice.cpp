@@ -53,8 +53,8 @@ class SliceVisitor : public AstNVisitor {
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstNode* m_assignp;  // Assignment we are under
-    bool m_assignError;  // True if the current assign already has an error
+    AstNode* m_assignp = nullptr;  // Assignment we are under
+    bool m_assignError = false;  // True if the current assign already has an error
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -224,11 +224,7 @@ class SliceVisitor : public AstNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit SliceVisitor(AstNetlist* nodep) {
-        m_assignp = nullptr;
-        m_assignError = false;
-        iterate(nodep);
-    }
+    explicit SliceVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~SliceVisitor() override {}
 };
 

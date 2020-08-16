@@ -222,14 +222,15 @@ private:
     struct ModInfo {
         AstNodeModule* m_modp;  // Module with specified name
         CloneMap m_cloneMap;  // Map of old-varp -> new cloned varp
-        explicit ModInfo(AstNodeModule* modp) { m_modp = modp; }
+        explicit ModInfo(AstNodeModule* modp)
+            : m_modp{modp} {}
     };
     typedef std::map<string, ModInfo> ModNameMap;
     ModNameMap m_modNameMap;  // Hash of created module flavors by name
 
     typedef std::map<string, string> LongMap;
     LongMap m_longMap;  // Hash of very long names to unique identity number
-    int m_longId;
+    int m_longId = 0;
 
     // All module names that are loaded from source code
     // Generated modules by this visitor is not included
@@ -238,7 +239,7 @@ private:
     typedef std::pair<int, string> ValueMapValue;
     typedef std::map<V3Hash, ValueMapValue> ValueMap;
     ValueMap m_valueMap;  // Hash of node hash to (param value, name)
-    int m_nextValue;  // Next value to use in m_valueMap
+    int m_nextValue = 1;  // Next value to use in m_valueMap
 
     typedef std::multimap<int, AstNodeModule*> LevelModMap;
     LevelModMap m_todoModps;  // Modules left to process
@@ -246,14 +247,10 @@ private:
     typedef std::deque<AstCell*> CellList;
     CellList m_cellps;  // Cells left to process (in this module)
 
-    AstNodeFTask* m_ftaskp;  // Function/task reference
-
-    AstNodeModule* m_modp;  // Current module being processed
-
+    AstNodeFTask* m_ftaskp = nullptr;  // Function/task reference
+    AstNodeModule* m_modp = nullptr;  // Current module being processed
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
-
     UnrollStateful m_unroller;  // Loop unroller
-
     string m_generateHierName;  // Generate portion of hierarchy name
 
     // Database to get protect-lib wrapper that matches parameters in hierarchical Verilation
@@ -784,11 +781,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ParamVisitor(AstNetlist* nodep)
-        : m_hierBlocks(v3Global.opt.hierBlocks(), nodep) {
-        m_longId = 0;
-        m_ftaskp = nullptr;
-        m_modp = nullptr;
-        m_nextValue = 1;
+        : m_hierBlocks{v3Global.opt.hierBlocks(), nodep} {
         for (AstNodeModule* modp = nodep->modulesp(); modp;
              modp = VN_CAST(modp->nextp(), NodeModule)) {
             m_allModuleNames.insert(modp->name());

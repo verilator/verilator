@@ -32,12 +32,12 @@ class VDouble0 {
 public:
     // METHODS
     VDouble0()
-        : m_d(0) {}
+        : m_d{0.0} {}
     ~VDouble0() {}
 
     // Implicit conversion operators:
     explicit VDouble0(const vluint64_t v)
-        : m_d(v) {}
+        : m_d{static_cast<double>(v)} {}
     operator double() const { return m_d; }
 
     // Explicit operators:
@@ -90,12 +90,12 @@ public:
     // CONSTRUCTORS
     V3Statistic(const string& stage, const string& name, double count, bool sumit = false,
                 bool perf = false)
-        : m_name(name)
-        , m_count(count)
-        , m_stage(stage)
-        , m_sumit(sumit)
-        , m_perf(perf)
-        , m_printit(true) {}
+        : m_name{name}
+        , m_count{count}
+        , m_stage{stage}
+        , m_sumit{sumit}
+        , m_perf{perf}
+        , m_printit{true} {}
     virtual ~V3Statistic() {}
 };
 

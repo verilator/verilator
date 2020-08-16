@@ -299,7 +299,7 @@ private:
 public:
     // CONSTRUCTORS
     LinkLValueVisitor(AstNode* nodep, bool start)
-        : m_setRefLvalue(start) {
+        : m_setRefLvalue{start} {
         iterate(nodep);
     }
     virtual ~LinkLValueVisitor() override {}

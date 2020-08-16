@@ -37,8 +37,8 @@ private:
 public:
     // CONSTRUCTORS
     VlcSourceCount(int lineno, int column)
-        : m_lineno(lineno)
-        , m_column(column) {}
+        : m_lineno{lineno}
+        , m_column{column} {}
     ~VlcSourceCount() {}
 
     // ACCESSORS
@@ -66,15 +66,13 @@ public:
 private:
     // MEMBERS
     string m_name;  //< Name of the source file
-    bool m_needed;  //< Need to annotate; has low coverage
+    bool m_needed = false;  //< Need to annotate; has low coverage
     LinenoMap m_lines;  //< Map of each annotated line
 
 public:
     // CONSTRUCTORS
-    explicit VlcSource(const string& name) {
-        m_name = name;
-        m_needed = false;
-    }
+    explicit VlcSource(const string& name)
+        : m_name{name} {}
     ~VlcSource() {}
 
     // ACCESSORS

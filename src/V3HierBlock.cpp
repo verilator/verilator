@@ -293,7 +293,7 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
 
 public:
     HierBlockUsageCollectVisitor(V3HierBlockPlan* planp, AstNetlist* netlist)
-        : m_planp(planp) {
+        : m_planp{planp} {
         iterateChildren(netlist);
     }
     VL_DEBUG_FUNC;  // Declare debug()

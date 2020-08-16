@@ -55,18 +55,18 @@ private:
     // STATE
     VDouble0 m_statReloops;  // Statistic tracking
     VDouble0 m_statReItems;  // Statistic tracking
-    AstCFunc* m_cfuncp;  // Current block
+    AstCFunc* m_cfuncp = nullptr;  // Current block
 
     AssVec m_mgAssignps;  // List of assignments merging
-    AstCFunc* m_mgCfuncp;  // Parent C function
-    AstNode* m_mgNextp;  // Next node
-    AstNodeSel* m_mgSelLp;  // Parent select, nullptr = idle
-    AstNodeSel* m_mgSelRp;  // Parent select, nullptr = constant
-    AstNodeVarRef* m_mgVarrefLp;  // Parent varref
-    AstNodeVarRef* m_mgVarrefRp;  // Parent varref, nullptr = constant
-    AstConst* m_mgConstRp;  // Parent RHS constant, nullptr = sel
-    uint32_t m_mgIndexLo;  // Merge range
-    uint32_t m_mgIndexHi;  // Merge range
+    AstCFunc* m_mgCfuncp = nullptr;  // Parent C function
+    AstNode* m_mgNextp = nullptr;  // Next node
+    AstNodeSel* m_mgSelLp = nullptr;  // Parent select, nullptr = idle
+    AstNodeSel* m_mgSelRp = nullptr;  // Parent select, nullptr = constant
+    AstNodeVarRef* m_mgVarrefLp = nullptr;  // Parent varref
+    AstNodeVarRef* m_mgVarrefRp = nullptr;  // Parent varref, nullptr = constant
+    AstConst* m_mgConstRp = nullptr;  // Parent RHS constant, nullptr = sel
+    uint32_t m_mgIndexLo = 0;  // Merge range
+    uint32_t m_mgIndexHi = 0;  // Merge range
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -238,19 +238,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit ReloopVisitor(AstNetlist* nodep) {
-        m_cfuncp = nullptr;
-        m_mgCfuncp = nullptr;
-        m_mgNextp = nullptr;
-        m_mgSelLp = nullptr;
-        m_mgSelRp = nullptr;
-        m_mgVarrefLp = nullptr;
-        m_mgVarrefRp = nullptr;
-        m_mgConstRp = nullptr;
-        m_mgIndexLo = 0;
-        m_mgIndexHi = 0;
-        iterate(nodep);
-    }
+    explicit ReloopVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~ReloopVisitor() override {
         V3Stats::addStat("Optimizations, Reloops", m_statReloops);
         V3Stats::addStat("Optimizations, Reloop iterations", m_statReItems);

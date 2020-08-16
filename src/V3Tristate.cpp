@@ -85,8 +85,8 @@ class TristateVertex : public V3GraphVertex {
     bool m_processed = false;  // Tristating was cleaned up
 public:
     TristateVertex(V3Graph* graphp, AstNode* nodep)
-        : V3GraphVertex(graphp)
-        , m_nodep(nodep) {}
+        : V3GraphVertex{graphp}
+        , m_nodep{nodep} {}
     virtual ~TristateVertex() override {}
     // ACCESSORS
     AstNode* nodep() const { return m_nodep; }
@@ -302,8 +302,8 @@ class TristatePinVisitor : public TristateBaseVisitor {
 public:
     // CONSTRUCTORS
     TristatePinVisitor(AstNode* nodep, TristateGraph& tgraph, bool lvalue)
-        : m_tgraph(tgraph)
-        , m_lvalue(lvalue) {
+        : m_tgraph{tgraph}
+        , m_lvalue{lvalue} {
         iterate(nodep);
     }
     virtual ~TristatePinVisitor() override {}
@@ -336,14 +336,14 @@ class TristateVisitor : public TristateBaseVisitor {
     };  // Both bits set
 
     // MEMBERS
-    bool m_graphing;  // Major mode - creating graph
+    bool m_graphing = false;  // Major mode - creating graph
     //
-    AstNodeModule* m_modp;  // Current module
-    AstCell* m_cellp;  // current cell
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstCell* m_cellp = nullptr;  // current cell
     VarMap m_lhsmap;  // LHS driver map
-    int m_unique;
-    bool m_alhs;  // On LHS of assignment
-    AstNode* m_logicp;  // Current logic being built
+    int m_unique = 0;
+    bool m_alhs = false;  // On LHS of assignment
+    AstNode* m_logicp = nullptr;  // Current logic being built
     TristateGraph m_tgraph;  // Logic graph
 
     // STATS
@@ -1345,12 +1345,6 @@ class TristateVisitor : public TristateBaseVisitor {
 public:
     // CONSTRUCTORS
     explicit TristateVisitor(AstNode* nodep) {
-        m_graphing = false;
-        m_modp = nullptr;
-        m_cellp = nullptr;
-        m_unique = 0;
-        m_alhs = false;
-        m_logicp = nullptr;
         m_tgraph.clear();
         iterate(nodep);
     }

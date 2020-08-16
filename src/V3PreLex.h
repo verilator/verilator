@@ -136,8 +136,8 @@ public:
     bool m_file = false;  // Buffer is start of new file
     int m_termState = 0;  // Termination fsm
     VPreStream(FileLine* fl, V3PreLex* lexp)
-        : m_curFilelinep(fl)
-        , m_lexp(lexp) {
+        : m_curFilelinep{fl}
+        , m_lexp{lexp} {
         lexStreamDepthAdd(1);
     }
     ~VPreStream() { lexStreamDepthAdd(-1); }
@@ -173,8 +173,8 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
 
     // CONSTRUCTORS
     V3PreLex(V3PreProcImp* preimpp, FileLine* filelinep)
-        : m_preimpp(preimpp)
-        , m_tokFilelinep(filelinep) {
+        : m_preimpp{preimpp}
+        , m_tokFilelinep{filelinep} {
         initFirstBuffer(filelinep);
     }
     ~V3PreLex() {

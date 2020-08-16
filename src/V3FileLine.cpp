@@ -142,16 +142,16 @@ std::ostream& operator<<(std::ostream& os, VFileContent* contentp) {
 //######################################################################
 // FileLine class functions
 
-FileLine::FileLine(FileLine::EmptySecret) {
-    // Sort of a singleton
-    m_firstLineno = 0;
-    m_lastLineno = 0;
-    m_firstColumn = 0;
-    m_lastColumn = 0;
+// Sort of a singleton
+FileLine::FileLine(FileLine::EmptySecret)
+    : m_firstLineno{0}
+    , m_firstColumn{0}
+    , m_lastLineno{0}
+    , m_lastColumn{0}
+    , m_contentLineno{0}
+    , m_contentp{nullptr}
+    , m_parent{nullptr} {
     m_filenameno = singleton().nameToNumber(FileLine::builtInFilename());
-    m_contentp = nullptr;
-    m_contentLineno = 0;
-    m_parent = nullptr;
 
     m_warnOn = 0;
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {

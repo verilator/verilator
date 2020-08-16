@@ -126,11 +126,11 @@ private:
     VDouble0 m_statMergedItems;  // Statistic tracking
     VDouble0 m_statLongestList;  // Statistic tracking
 
-    AstNode* m_mgFirstp;  // First node in merged sequence
-    AstNode* m_mgCondp;  // The condition of the first node
-    AstNode* m_mgLastp;  // Last node in merged sequence
-    const AstNode* m_mgNextp;  // Next node in list being examined
-    uint32_t m_listLenght;  // Length of current list
+    AstNode* m_mgFirstp = nullptr;  // First node in merged sequence
+    AstNode* m_mgCondp = nullptr;  // The condition of the first node
+    AstNode* m_mgLastp = nullptr;  // Last node in merged sequence
+    const AstNode* m_mgNextp = nullptr;  // Next node in list being examined
+    uint32_t m_listLenght = 0;  // Length of current list
 
     CheckMergeableVisitor m_checkMergeable;  // Sub visitor for encapsulation & speed
     MarkVarsVisitor m_markVars;  // Sub visitor for encapsulation & speed
@@ -321,11 +321,6 @@ private:
 public:
     // CONSTRUCTORS
     explicit MergeCondVisitor(AstNetlist* nodep) {
-        m_mgFirstp = nullptr;
-        m_mgCondp = nullptr;
-        m_mgLastp = nullptr;
-        m_mgNextp = nullptr;
-        m_listLenght = 0;
         m_markVars.clear();
         iterate(nodep);
     }

@@ -60,14 +60,14 @@ public:
     enum { ACTIVITY_ALWAYS = ((1UL << 31) - 2) };
     enum { ACTIVITY_SLOW = 0 };
     TraceActivityVertex(V3Graph* graphp, AstNode* nodep, bool slow)
-        : V3GraphVertex(graphp)
-        , m_insertp(nodep) {
+        : V3GraphVertex{graphp}
+        , m_insertp{nodep} {
         m_activityCode = 0;
         m_slow = slow;
     }
     TraceActivityVertex(V3Graph* graphp, vlsint32_t code)
-        : V3GraphVertex(graphp)
-        , m_insertp(nullptr) {
+        : V3GraphVertex{graphp}
+        , m_insertp{nullptr} {
         m_activityCode = code;
         m_slow = false;
     }
@@ -100,8 +100,8 @@ class TraceCFuncVertex : public V3GraphVertex {
 
 public:
     TraceCFuncVertex(V3Graph* graphp, AstCFunc* nodep)
-        : V3GraphVertex(graphp)
-        , m_nodep(nodep) {}
+        : V3GraphVertex{graphp}
+        , m_nodep{nodep} {}
     virtual ~TraceCFuncVertex() override {}
     // ACCESSORS
     AstCFunc* nodep() const { return m_nodep; }
@@ -113,13 +113,12 @@ public:
 class TraceTraceVertex : public V3GraphVertex {
     AstTraceDecl* const m_nodep;  // TRACEINC this represents
     // nullptr, or other vertex with the real code() that duplicates this one
-    TraceTraceVertex* m_duplicatep;
+    TraceTraceVertex* m_duplicatep = nullptr;
 
 public:
     TraceTraceVertex(V3Graph* graphp, AstTraceDecl* nodep)
-        : V3GraphVertex(graphp)
-        , m_nodep(nodep)
-        , m_duplicatep(nullptr) {}
+        : V3GraphVertex{graphp}
+        , m_nodep{nodep} {}
     virtual ~TraceTraceVertex() override {}
     // ACCESSORS
     AstTraceDecl* nodep() const { return m_nodep; }
@@ -138,8 +137,8 @@ class TraceVarVertex : public V3GraphVertex {
 
 public:
     TraceVarVertex(V3Graph* graphp, AstVarScope* nodep)
-        : V3GraphVertex(graphp)
-        , m_nodep(nodep) {}
+        : V3GraphVertex{graphp}
+        , m_nodep{nodep} {}
     virtual ~TraceVarVertex() override {}
     // ACCESSORS
     AstVarScope* nodep() const { return m_nodep; }
@@ -168,16 +167,16 @@ private:
     // AstUser4InUse     In V3Hashed
 
     // STATE
-    AstNodeModule* m_topModp;  // Module to add variables to
-    AstScope* m_topScopep;  // Scope to add variables to
-    AstCFunc* m_funcp;  // C function adding to graph
-    AstTraceDecl* m_tracep;  // Trace function adding to graph
-    AstVarScope* m_activityVscp;  // Activity variable
-    uint32_t m_activityNumber;  // Count of fields in activity variable
-    uint32_t m_code;  // Trace ident code# being assigned
+    AstNodeModule* m_topModp = nullptr;  // Module to add variables to
+    AstScope* m_topScopep = nullptr;  // Scope to add variables to
+    AstCFunc* m_funcp = nullptr;  // C function adding to graph
+    AstTraceDecl* m_tracep = nullptr;  // Trace function adding to graph
+    AstVarScope* m_activityVscp = nullptr;  // Activity variable
+    uint32_t m_activityNumber = 0;  // Count of fields in activity variable
+    uint32_t m_code = 0;  // Trace ident code# being assigned
     V3Graph m_graph;  // Var/CFunc tracking
     TraceActivityVertex* const m_alwaysVtxp;  // "Always trace" vertex
-    bool m_finding;  // Pass one of algorithm?
+    bool m_finding = false;  // Pass one of algorithm?
 
     VDouble0 m_statChgSigs;  // Statistic tracking
     VDouble0 m_statUniqSigs;  // Statistic tracking
@@ -874,15 +873,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit TraceVisitor(AstNetlist* nodep)
-        : m_alwaysVtxp(new TraceActivityVertex(&m_graph, TraceActivityVertex::ACTIVITY_ALWAYS)) {
-        m_funcp = nullptr;
-        m_tracep = nullptr;
-        m_topModp = nullptr;
-        m_topScopep = nullptr;
-        m_finding = false;
-        m_activityVscp = nullptr;
-        m_activityNumber = 0;
-        m_code = 0;
+        : m_alwaysVtxp{new TraceActivityVertex{&m_graph, TraceActivityVertex::ACTIVITY_ALWAYS}} {
         iterate(nodep);
     }
     virtual ~TraceVisitor() override {

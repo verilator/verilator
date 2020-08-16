@@ -51,11 +51,11 @@ private:
     typedef std::set<std::pair<AstVarRef*, AstScope*>> VarRefScopeSet;
 
     // STATE, inside processing a single module
-    AstNodeModule* m_modp;  // Current module
-    AstScope* m_scopep;  // Current scope we are building
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstScope* m_scopep = nullptr;  // Current scope we are building
     // STATE, for passing down one level of hierarchy (may need save/restore)
-    AstCell* m_aboveCellp;  // Cell that instantiates this module
-    AstScope* m_aboveScopep;  // Scope that instantiates this scope
+    AstCell* m_aboveCellp = nullptr;  // Cell that instantiates this module
+    AstScope* m_aboveScopep = nullptr;  // Scope that instantiates this scope
 
     PackageScopeMap m_packageScopes;  // Scopes for each package
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
@@ -320,14 +320,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit ScopeVisitor(AstNetlist* nodep) {
-        m_aboveCellp = nullptr;
-        m_aboveScopep = nullptr;
-        m_modp = nullptr;
-        m_scopep = nullptr;
-        //
-        iterate(nodep);
-    }
+    explicit ScopeVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~ScopeVisitor() override {}
 };
 
@@ -337,7 +330,7 @@ public:
 class ScopeCleanupVisitor : public AstNVisitor {
 private:
     // STATE
-    AstScope* m_scopep;  // Current scope we are building
+    AstScope* m_scopep = nullptr;  // Current scope we are building
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -402,10 +395,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit ScopeCleanupVisitor(AstNetlist* nodep) {
-        m_scopep = nullptr;
-        iterate(nodep);
-    }
+    explicit ScopeCleanupVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~ScopeCleanupVisitor() override {}
 };
 

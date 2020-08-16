@@ -163,7 +163,7 @@ private:
 
 public:
     explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr)
-        : m_mutexr(mutexr) {
+        : m_mutexr{mutexr} {
         m_mutexr.lock();
     }
     ~VerilatedLockGuard() VL_RELEASE() { m_mutexr.unlock(); }
@@ -203,7 +203,7 @@ public:
     /// The constructor establishes the thread id for all later calls.
     /// If necessary, a different class could be made that inits it otherwise.
     VerilatedAssertOneThread()
-        : m_threadid(VL_THREAD_ID()) {}
+        : m_threadid{VL_THREAD_ID()} {}
     ~VerilatedAssertOneThread() { check(); }
     // METHODS
     /// Check that the current thread ID is the same as the construction thread ID
@@ -319,15 +319,15 @@ public:
     } Type;  // Type of a scope, currently module is only interesting
 private:
     // Fastpath:
-    VerilatedSyms* m_symsp;  ///< Symbol table
-    void** m_callbacksp;  ///< Callback table pointer (Fastpath)
-    int m_funcnumMax;  ///< Maxium function number stored (Fastpath)
+    VerilatedSyms* m_symsp = nullptr;  ///< Symbol table
+    void** m_callbacksp = nullptr;  ///< Callback table pointer (Fastpath)
+    int m_funcnumMax = 0;  ///< Maxium function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
-    VerilatedVarNameMap* m_varsp;  ///< Variable map
-    const char* m_namep;  ///< Scope name (Slowpath)
-    const char* m_identifierp;  ///< Identifier of scope (with escapes removed)
-    vlsint8_t m_timeunit;  ///< Timeunit in negative power-of-10
-    Type m_type;  ///< Type of the scope
+    VerilatedVarNameMap* m_varsp = nullptr;  ///< Variable map
+    const char* m_namep = nullptr;  ///< Scope name (Slowpath)
+    const char* m_identifierp = nullptr;  ///< Identifier of scope (with escapes removed)
+    vlsint8_t m_timeunit = 0;  ///< Timeunit in negative power-of-10
+    Type m_type = SCOPE_OTHER;  ///< Type of the scope
 
 public:  // But internals only - called from VerilatedModule's
     VerilatedScope();
@@ -393,8 +393,8 @@ class Verilated {
     static struct NonSerialized {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
-        vluint64_t s_profThreadsStart;  ///< +prof+threads starting time
-        vluint32_t s_profThreadsWindow;  ///< +prof+threads window size
+        vluint64_t s_profThreadsStart = 1;  ///< +prof+threads starting time
+        vluint32_t s_profThreadsWindow = 2;  ///< +prof+threads window size
         // Slow path
         const char* s_profThreadsFilenamep;  ///< +prof+threads filename
         NonSerialized();
@@ -405,23 +405,22 @@ class Verilated {
     // assumption is that the restore is allowed to pass different arguments
     static struct CommandArgValues {
         VerilatedMutex m_argMutex;  ///< Mutex for s_args members, when VL_THREADED
-        int argc;
-        const char** argv;
-        CommandArgValues()
-            : argc(0)
-            , argv(nullptr) {}
+        int argc = 0;
+        const char** argv = nullptr;
+        CommandArgValues() {}
         ~CommandArgValues() {}
     } s_args;
 
     // Not covered by mutex, as per-thread
     static VL_THREAD_LOCAL struct ThreadLocal {
 #ifdef VL_THREADED
-        vluint32_t t_mtaskId;  ///< Current mtask# executing on this thread
-        vluint32_t t_endOfEvalReqd;  ///< Messages may be pending, thread needs endOf-eval calls
+        vluint32_t t_mtaskId = 0;  ///< Current mtask# executing on this thread
+        vluint32_t t_endOfEvalReqd
+            = 0;  ///< Messages may be pending, thread needs endOf-eval calls
 #endif
-        const VerilatedScope* t_dpiScopep;  ///< DPI context scope
-        const char* t_dpiFilename;  ///< DPI context filename
-        int t_dpiLineno;  ///< DPI context line number
+        const VerilatedScope* t_dpiScopep = nullptr;  ///< DPI context scope
+        const char* t_dpiFilename = nullptr;  ///< DPI context filename
+        int t_dpiLineno = 0;  ///< DPI context line number
 
         ThreadLocal();
         ~ThreadLocal();

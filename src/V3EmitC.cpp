@@ -1253,8 +1253,8 @@ private:
 public:
     // CONSTRUCTORS
     explicit EmitVarTspSorter(const MTaskIdSet& mtaskIds)
-        : m_mtaskIds(mtaskIds)
-        , m_serial(++m_serialNext) {}
+        : m_mtaskIds{mtaskIds}
+        , m_serial{++m_serialNext} {}
     virtual ~EmitVarTspSorter() {}
     // METHODS
     virtual bool operator<(const TspStateBase& other) const override {
@@ -3330,10 +3330,10 @@ class EmitCTrace : EmitCStmts {
     AstUser1InUse m_inuser1;
 
     // MEMBERS
-    AstCFunc* m_funcp;  // Function we're in now
+    AstCFunc* m_funcp = nullptr;  // Function we're in now
     bool m_slow;  // Making slow file
-    int m_enumNum;  // Enumeration number (whole netlist)
-    int m_baseCode;  // Code of first AstTraceInc in this function
+    int m_enumNum = 0;  // Enumeration number (whole netlist)
+    int m_baseCode = -1;  // Code of first AstTraceInc in this function
 
     // METHODS
     void newOutCFile(int filenum) {
@@ -3760,11 +3760,8 @@ class EmitCTrace : EmitCStmts {
     virtual void visit(AstCoverInc* nodep) override {}
 
 public:
-    explicit EmitCTrace(bool slow) {
-        m_funcp = nullptr;
-        m_slow = slow;
-        m_enumNum = 0;
-    }
+    explicit EmitCTrace(bool slow)
+        : m_slow{slow} {}
     virtual ~EmitCTrace() override {}
     void main() {
         // Put out the file
