@@ -340,12 +340,12 @@ sub write_type_enum {
 sub write_types {
     my $fh = open_file(@_);
 
-    printf $fh "    enum en {\n";
+    printf $fh "    enum en : uint16_t {\n";
     (my $final, undef) = write_type_enum($fh, "Node", 0, {}, "concrete-enum", 2);
     printf $fh "        _ENUM_END = $final\n";
     printf $fh "    };\n";
 
-    printf $fh "    enum bounds {\n";
+    printf $fh "    enum bounds : uint16_t {\n";
     write_type_enum($fh, "Node", 0, {}, "abstract-enum", 2);
     printf $fh "        _BOUNDS_END\n";
     printf $fh "    };\n";

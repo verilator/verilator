@@ -1625,7 +1625,12 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     std::vector<string> args;
 
     // Parse file using a state machine, taking into account quoted strings and escaped chars
-    enum state { ST_IN_OPTION, ST_ESCAPED_CHAR, ST_IN_QUOTED_STR, ST_IN_DOUBLE_QUOTED_STR };
+    enum state : uint8_t {
+        ST_IN_OPTION,
+        ST_ESCAPED_CHAR,
+        ST_IN_QUOTED_STR,
+        ST_IN_DOUBLE_QUOTED_STR
+    };
 
     state st = ST_IN_OPTION;
     state last_st = ST_IN_OPTION;

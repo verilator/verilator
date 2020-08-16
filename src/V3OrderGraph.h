@@ -53,7 +53,7 @@ class OrderMoveDomScope;
 
 //######################################################################
 
-enum OrderWeights {
+enum OrderWeights : uint8_t {
     WEIGHT_INPUT = 1,  // Low weight just so dot graph looks nice
     WEIGHT_COMBO = 1,  // Breakable combo logic
     WEIGHT_POST = 2,  // Post-delayed used var
@@ -63,7 +63,7 @@ enum OrderWeights {
 };  // High weight just so dot graph looks nice
 
 struct OrderVEdgeType {
-    enum en {
+    enum en : uint8_t {
         VERTEX_UNKNOWN = 0,
         VERTEX_INPUTS,
         VERTEX_LOGIC,
@@ -322,7 +322,7 @@ public:
 //--- Following only under the move graph, not the main graph
 
 class OrderMoveVertex : public V3GraphVertex {
-    typedef enum { POM_WAIT, POM_READY, POM_MOVED } OrderMState;
+    typedef enum : uint8_t { POM_WAIT, POM_READY, POM_MOVED } OrderMState;
 
     OrderLogicVertex* m_logicp;
     OrderMState m_state;  // Movement state

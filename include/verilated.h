@@ -94,7 +94,7 @@ class VerilatedVcdSc;
 class VerilatedFst;
 class VerilatedFstC;
 
-enum VerilatedVarType {
+enum VerilatedVarType : vluint8_t {
     VLVT_UNKNOWN = 0,
     VLVT_PTR,  // Pointer to something
     VLVT_UINT8,  // AKA CData
@@ -313,7 +313,7 @@ public:  // But for internal use only
 
 class VerilatedScope {
 public:
-    typedef enum {
+    typedef enum : vluint8_t {
         SCOPE_MODULE,
         SCOPE_OTHER
     } Type;  // Type of a scope, currently module is only interesting

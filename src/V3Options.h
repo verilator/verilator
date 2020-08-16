@@ -37,7 +37,7 @@ class VOptionBool {
     // Class to track options that are either not specified (and default
     // true/false), versus user setting the option to true or false
 public:
-    enum en { OPT_DEFAULT_FALSE = 0, OPT_DEFAULT_TRUE, OPT_TRUE, OPT_FALSE, _ENUM_END };
+    enum en : uint8_t { OPT_DEFAULT_FALSE = 0, OPT_DEFAULT_TRUE, OPT_TRUE, OPT_FALSE, _ENUM_END };
     enum en m_e;
     inline VOptionBool()
         : m_e{OPT_DEFAULT_FALSE} {}
@@ -71,7 +71,7 @@ inline std::ostream& operator<<(std::ostream& os, const VOptionBool& rhs) {
 
 class VTimescale {
 public:
-    enum en {
+    enum en : uint8_t {
         // clang-format off
         TS_100S = 0, TS_10S = 1, TS_1S = 2,
         TS_100MS = 3, TS_10MS = 4, TS_1MS = 5,
@@ -83,7 +83,7 @@ public:
         NONE = 18,
         _ENUM_END
     };
-    enum { TS_DEFAULT = TS_1PS };
+    enum : uint8_t { TS_DEFAULT = TS_1PS };
     enum en m_e;
     // CONSTRUCTOR
     inline VTimescale()
@@ -169,7 +169,7 @@ inline std::ostream& operator<<(std::ostream& os, const VTimescale& rhs) {
 
 class TraceFormat {
 public:
-    enum en { VCD = 0, FST } m_e;
+    enum en : uint8_t { VCD = 0, FST } m_e;
     // cppcheck-suppress noExplicitConstructor
     inline TraceFormat(en _e = VCD)
         : m_e{_e} {}

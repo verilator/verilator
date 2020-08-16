@@ -75,7 +75,7 @@ public:
                     char fmtLetter);
 
     void emitVarDecl(const AstVar* nodep, const string& prefixIfImp);
-    typedef enum {
+    typedef enum : uint8_t {
         EVL_CLASS_IO,
         EVL_CLASS_SIG,
         EVL_CLASS_TEMP,

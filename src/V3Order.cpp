@@ -182,7 +182,7 @@ inline std::ostream& operator<<(std::ostream& lhs, const OrderMoveDomScope& rhs)
 // Order information stored under each AstNode::user1p()...
 
 // Types of vertex we can create
-enum WhichVertex { WV_STD, WV_PRE, WV_PORD, WV_POST, WV_SETL, WV_MAX };
+enum WhichVertex : uint8_t { WV_STD, WV_PRE, WV_PORD, WV_POST, WV_SETL, WV_MAX };
 
 class OrderUser {
     // Stored in AstVarScope::user1p, a list of all the various vertices
@@ -683,7 +683,7 @@ private:
     VDouble0 m_statCut[OrderVEdgeType::_ENUM_END];  // Count of each edge type cut
 
     // TYPES
-    enum VarUsage { VU_NONE = 0, VU_CON = 1, VU_GEN = 2 };
+    enum VarUsage : uint8_t { VU_NONE = 0, VU_CON = 1, VU_GEN = 2 };
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -752,7 +752,7 @@ private:
         MTaskState() {}
     };
     void processMTasks();
-    typedef enum { LOGIC_INITIAL, LOGIC_SETTLE } InitialLogicE;
+    typedef enum : uint8_t { LOGIC_INITIAL, LOGIC_SETTLE } InitialLogicE;
     void processMTasksInitial(InitialLogicE logic_type);
 
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep,

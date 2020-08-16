@@ -35,7 +35,7 @@
 class V3ErrorCode {
 public:
     // clang-format off
-    enum en {
+    enum en: uint8_t  {
         EC_MIN=0,       // Keep first
         //
         EC_INFO,        // General information out

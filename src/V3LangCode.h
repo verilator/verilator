@@ -30,7 +30,7 @@
 //! file).
 class V3LangCode {
 public:
-    enum en {
+    enum en : uint8_t {
         L_ERROR,  // Must be first.
         L1364_1995,
         L1364_2001,

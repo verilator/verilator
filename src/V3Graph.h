@@ -47,7 +47,7 @@ typedef bool (*V3EdgeFuncP)(const V3GraphEdge* edgep);
 
 class GraphWay {
 public:
-    enum en {
+    enum en : uint8_t {
         FORWARD = 0,
         REVERSE = 1,
         NUM_WAYS = 2  // NUM_WAYS is not an actual way, it's typically
@@ -277,7 +277,7 @@ class V3GraphEdge {
     // Wires/variables aren't edges.  Edges have only a single to/from vertex
 public:
     // ENUMS
-    enum Cutable { NOT_CUTABLE = false, CUTABLE = true };  // For passing to V3GraphEdge
+    enum Cutable : uint8_t { NOT_CUTABLE = false, CUTABLE = true };  // For passing to V3GraphEdge
 protected:
     friend class V3Graph;
     friend class V3GraphVertex;

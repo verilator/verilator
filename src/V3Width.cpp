@@ -81,12 +81,16 @@
 
 //######################################################################
 
-enum Stage { PRELIM = 1, FINAL = 2, BOTH = 3 };  // Numbers are a bitmask <0>=prelim, <1>=final
+enum Stage : uint8_t {
+    PRELIM = 1,
+    FINAL = 2,
+    BOTH = 3
+};  // Numbers are a bitmask <0>=prelim, <1>=final
 std::ostream& operator<<(std::ostream& str, const Stage& rhs) {
     return str << ("-PFB"[static_cast<int>(rhs)]);
 }
 
-enum Determ {
+enum Determ : uint8_t {
     SELF,  // Self-determined
     CONTEXT,  // Context-determined
     ASSIGN  // Assignment-like where sign comes from RHS only
@@ -197,7 +201,7 @@ private:
     TableMap m_tableMap;  // Created tables so can remove duplicates
 
     // ENUMS
-    enum ExtendRule {
+    enum ExtendRule : uint8_t {
         EXTEND_EXP,  // Extend if expect sign and node signed, e.g. node=y in ADD(x,y), "x + y"
         EXTEND_ZERO,  // Extend with zeros. e.g. node=y in EQ(x,y), "x == y"
         EXTEND_LHS,  // Extend with sign if node signed. e.g. node=y in ASSIGN(y,x), "x = y"
@@ -2526,7 +2530,14 @@ private:
         nodep->dtypeSetSigned32();  // Guess on error
     }
     void methodCallUnpack(AstMethodCall* nodep, AstUnpackArrayDType* adtypep) {
-        enum { UNKNOWN = 0, ARRAY_OR, ARRAY_AND, ARRAY_XOR, ARRAY_SUM, ARRAY_PRODUCT } methodId;
+        enum : uint8_t {
+            UNKNOWN = 0,
+            ARRAY_OR,
+            ARRAY_AND,
+            ARRAY_XOR,
+            ARRAY_SUM,
+            ARRAY_PRODUCT
+        } methodId;
 
         methodId = UNKNOWN;
         if (nodep->name() == "or") {

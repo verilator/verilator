@@ -50,7 +50,7 @@
 class LinkIncVisitor : public AstNVisitor {
 private:
     // TYPES
-    enum InsertMode {
+    enum InsertMode : uint8_t {
         IM_BEFORE,  // Pointing at statement ref is in, insert before this
         IM_AFTER,  // Pointing at last inserted stmt, insert after
         IM_WHILE_PRECOND  // Pointing to for loop, add to body end

@@ -122,7 +122,7 @@ public:
     int m_lastLineno = 0;  // Last line number (stall detection)
     int m_tokensOnLine = 0;  // Number of tokens on line (stall detection)
 
-    enum ProcState {
+    enum ProcState : uint8_t {
         ps_TOP,
         ps_DEFNAME_UNDEF,
         ps_DEFNAME_DEFINE,

@@ -43,7 +43,7 @@ class V3HierBlockPlan;
 
 class VWidthMinUsage {
 public:
-    enum en { LINT_WIDTH, MATCHES_WIDTH, VERILOG_WIDTH };
+    enum en : uint8_t { LINT_WIDTH, MATCHES_WIDTH, VERILOG_WIDTH };
     enum en m_e;
     inline VWidthMinUsage()
         : m_e{LINT_WIDTH} {}

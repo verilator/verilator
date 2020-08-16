@@ -134,7 +134,7 @@ private:
 public:
     // ENUMS
     // In order of priority, compute first ... compute last
-    enum SAMNum { SAMN_MODPORT, SAMN_IFTOP, SAMN__MAX };  // Values for m_scopeAliasMap
+    enum SAMNum : uint8_t { SAMN_MODPORT, SAMN_IFTOP, SAMN__MAX };  // Values for m_scopeAliasMap
 
 private:
     // TYPES
@@ -1687,7 +1687,7 @@ private:
     AstUser5InUse m_inuser5;
 
     // TYPES
-    enum DotPosition {
+    enum DotPosition : uint8_t {
         DP_NONE = 0,  // Not under a DOT
         DP_PACKAGE,  // {package}:: DOT
         DP_SCOPE,  // [DOT...] {scope-or-var} DOT

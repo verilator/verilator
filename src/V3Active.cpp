@@ -141,7 +141,7 @@ public:
 
 class ActiveDlyVisitor : public ActiveBaseVisitor {
 public:
-    enum CheckType { CT_SEQ, CT_COMBO, CT_INITIAL, CT_LATCH };
+    enum CheckType : uint8_t { CT_SEQ, CT_COMBO, CT_INITIAL, CT_LATCH };
 
 private:
     CheckType m_check;  // Combo logic or other

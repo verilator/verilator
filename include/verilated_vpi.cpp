@@ -965,10 +965,10 @@ const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE {
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str()); \
     }
 
-#define SELF_CHECK_ENUM_STR(fn, enum) \
+#define SELF_CHECK_ENUM_STR(fn, enumn) \
     do { \
-        const char* strVal = VerilatedVpiError::fn(enum); \
-        SELF_CHECK_RESULT_CSTR(strVal, #enum); \
+        const char* strVal = VerilatedVpiError::fn(enumn); \
+        SELF_CHECK_RESULT_CSTR(strVal, #enumn); \
     } while (0)
 
 void VerilatedVpi::selfTest() VL_MT_UNSAFE_ONE { VerilatedVpiError::selfTest(); }

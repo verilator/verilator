@@ -43,7 +43,7 @@ class UndrivenVarEntry {
     std::vector<bool> m_wholeFlags;  // Used/Driven on whole vector
     std::vector<bool> m_bitFlags;  // Used/Driven on each subbit
 
-    enum { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAGS_PER_BIT = 2 };
+    enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAGS_PER_BIT = 2 };
 
     VL_DEBUG_FUNC;  // Declare debug()
 
@@ -70,7 +70,7 @@ private:
     bool drivenFlag(int bit) const {
         return m_wholeFlags[FLAG_DRIVEN] || m_bitFlags[bit * FLAGS_PER_BIT + FLAG_DRIVEN];
     }
-    enum BitNamesWhich { BN_UNUSED, BN_UNDRIVEN, BN_BOTH };
+    enum BitNamesWhich : uint8_t { BN_UNUSED, BN_UNDRIVEN, BN_BOTH };
     string bitNames(BitNamesWhich which) {
         string bits;
         bool prev = false;

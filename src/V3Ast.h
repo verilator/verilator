@@ -96,7 +96,7 @@ inline std::ostream& operator<<(std::ostream& os, const AstType& rhs) { return o
 
 class VLifetime {
 public:
-    enum en { NONE, AUTOMATIC, STATIC };
+    enum en : uint8_t { NONE, AUTOMATIC, STATIC };
     enum en m_e;
     const char* ascii() const {
         static const char* const names[] = {"NONE", "VAUTOM", "VSTATIC"};
@@ -125,7 +125,7 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 class VSigning {
 public:
-    enum en {
+    enum en : uint8_t {
         UNSIGNED,
         SIGNED,
         NOSIGN,
@@ -162,7 +162,7 @@ inline std::ostream& operator<<(std::ostream& os, const VSigning& rhs) {
 
 class AstPragmaType {
 public:
-    enum en {
+    enum en : uint8_t {
         ILLEGAL,
         COVERAGE_BLOCK_OFF,
         HIER_BLOCK,
@@ -195,7 +195,7 @@ inline bool operator==(AstPragmaType::en lhs, const AstPragmaType& rhs) { return
 
 class AstCFuncType {
 public:
-    enum en {
+    enum en : uint8_t {
         FT_NORMAL,
         TRACE_REGISTER,
         TRACE_INIT,
@@ -229,7 +229,7 @@ inline bool operator==(AstCFuncType::en lhs, const AstCFuncType& rhs) { return l
 class VEdgeType {
 public:
     // REMEMBER to edit the strings below too
-    enum en {
+    enum en : uint8_t {
         // These must be in general -> most specific order, as we sort by it
         // in V3Const::visit AstSenTree
         ET_ILLEGAL,
@@ -315,7 +315,7 @@ inline bool operator==(VEdgeType::en lhs, const VEdgeType& rhs) { return lhs == 
 class AstAttrType {
 public:
     // clang-format off
-    enum en {
+    enum en: uint8_t  {
         ILLEGAL,
         //
         DIM_BITS,                       // V3Const converts to constant
@@ -396,7 +396,7 @@ inline bool operator==(AstAttrType::en lhs, const AstAttrType& rhs) { return lhs
 
 class AstBasicDTypeKwd {
 public:
-    enum en {
+    enum en : uint8_t {
         UNKNOWN,
         BIT,
         BYTE,
@@ -532,7 +532,7 @@ inline bool operator==(AstBasicDTypeKwd::en lhs, const AstBasicDTypeKwd& rhs) {
 
 class VDirection {
 public:
-    enum en { NONE, INPUT, OUTPUT, INOUT, REF, CONSTREF };
+    enum en : uint8_t { NONE, INPUT, OUTPUT, INOUT, REF, CONSTREF };
     enum en m_e;
     inline VDirection()
         : m_e{NONE} {}
@@ -577,7 +577,7 @@ inline std::ostream& operator<<(std::ostream& os, const VDirection& rhs) {
 /// Boolean or unknown
 class VBoolOrUnknown {
 public:
-    enum en { BU_FALSE = 0, BU_TRUE = 1, BU_UNKNOWN = 2, _ENUM_END };
+    enum en : uint8_t { BU_FALSE = 0, BU_TRUE = 1, BU_UNKNOWN = 2, _ENUM_END };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
     inline VBoolOrUnknown()
@@ -616,7 +616,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBoolOrUnknown& rhs) {
 /// Join type
 class VJoinType {
 public:
-    enum en { JOIN = 0, JOIN_ANY = 1, JOIN_NONE = 2 };
+    enum en : uint8_t { JOIN = 0, JOIN_ANY = 1, JOIN_NONE = 2 };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
     inline VJoinType()
@@ -649,7 +649,7 @@ inline std::ostream& operator<<(std::ostream& os, const VJoinType& rhs) {
 
 class AstVarType {
 public:
-    enum en {
+    enum en : uint8_t {
         UNKNOWN,
         GPARAM,
         LPARAM,
@@ -717,7 +717,7 @@ inline std::ostream& operator<<(std::ostream& os, const AstVarType& rhs) {
 
 class VBranchPred {
 public:
-    enum en { BP_UNKNOWN = 0, BP_LIKELY, BP_UNLIKELY, _ENUM_END };
+    enum en : uint8_t { BP_UNKNOWN = 0, BP_LIKELY, BP_UNLIKELY, _ENUM_END };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
     inline VBranchPred()
@@ -758,7 +758,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
 
 class VVarAttrClocker {
 public:
-    enum en { CLOCKER_UNKNOWN = 0, CLOCKER_YES, CLOCKER_NO, _ENUM_END };
+    enum en : uint8_t { CLOCKER_UNKNOWN = 0, CLOCKER_YES, CLOCKER_NO, _ENUM_END };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
     inline VVarAttrClocker()
@@ -801,7 +801,7 @@ inline std::ostream& operator<<(std::ostream& os, const VVarAttrClocker& rhs) {
 
 class VAlwaysKwd {
 public:
-    enum en { ALWAYS, ALWAYS_FF, ALWAYS_LATCH, ALWAYS_COMB };
+    enum en : uint8_t { ALWAYS, ALWAYS_FF, ALWAYS_LATCH, ALWAYS_COMB };
     enum en m_e;
     inline VAlwaysKwd()
         : m_e{ALWAYS} {}
@@ -824,7 +824,7 @@ inline bool operator==(VAlwaysKwd::en lhs, const VAlwaysKwd& rhs) { return lhs =
 
 class VCaseType {
 public:
-    enum en { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE };
+    enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE };
     enum en m_e;
     inline VCaseType()
         : m_e{CT_CASE} {}
@@ -843,7 +843,7 @@ inline bool operator==(VCaseType::en lhs, const VCaseType& rhs) { return lhs == 
 
 class AstDisplayType {
 public:
-    enum en { DT_DISPLAY, DT_WRITE, DT_INFO, DT_ERROR, DT_WARNING, DT_FATAL };
+    enum en : uint8_t { DT_DISPLAY, DT_WRITE, DT_INFO, DT_ERROR, DT_WARNING, DT_FATAL };
     enum en m_e;
     inline AstDisplayType()
         : m_e{DT_DISPLAY} {}
@@ -875,7 +875,7 @@ inline bool operator==(AstDisplayType::en lhs, const AstDisplayType& rhs) {
 
 class VDumpCtlType {
 public:
-    enum en { FILE, VARS, ALL, FLUSH, LIMIT, OFF, ON };
+    enum en : uint8_t { FILE, VARS, ALL, FLUSH, LIMIT, OFF, ON };
     enum en m_e;
     inline VDumpCtlType()
         : m_e{ON} {}
@@ -901,7 +901,7 @@ inline bool operator==(VDumpCtlType::en lhs, const VDumpCtlType& rhs) { return l
 
 class VParseRefExp {
 public:
-    enum en {
+    enum en : uint8_t {
         PX_NONE,  // Used in V3LinkParse only
         PX_ROOT,
         PX_TEXT  // Unknown ID component
@@ -1014,7 +1014,7 @@ inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
 
 class VUseType {
 public:
-    enum en {
+    enum en : uint8_t {
         IMP_INCLUDE,  // Implementation (.cpp) needs an include
         INT_INCLUDE,  // Interface (.h) needs an include
         IMP_FWD_CLASS,  // Implementation (.cpp) needs a forward class declaration
@@ -1262,7 +1262,14 @@ public:
 class AstNRelinker {
 protected:
     friend class AstNode;
-    enum RelinkWhatEn { RELINK_BAD, RELINK_NEXT, RELINK_OP1, RELINK_OP2, RELINK_OP3, RELINK_OP4 };
+    enum RelinkWhatEn : uint8_t {
+        RELINK_BAD,
+        RELINK_NEXT,
+        RELINK_OP1,
+        RELINK_OP2,
+        RELINK_OP3,
+        RELINK_OP4
+    };
     AstNode* m_oldp = nullptr;  // The old node that was linked to this point in the tree
     AstNode* m_backp = nullptr;
     RelinkWhatEn m_chg = RELINK_BAD;

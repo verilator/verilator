@@ -171,7 +171,7 @@ private:
     // AstUser4InUse     part of V3Hashed
 
     // STATE
-    typedef enum { STATE_IDLE, STATE_HASH, STATE_DUP } CombineState;
+    typedef enum : uint8_t { STATE_IDLE, STATE_HASH, STATE_DUP } CombineState;
     VDouble0 m_statCombs;  // Statistic tracking
     CombineState m_state = STATE_IDLE;  // Major state
     AstNodeModule* m_modp = nullptr;  // Current module

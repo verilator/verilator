@@ -87,7 +87,7 @@ class VerilatedTraceCommand {
 public:
     // These must all fit in 4 bit at the moment, as the tracing routines
     // pack parameters in the top bits.
-    enum {
+    enum : vluint8_t {
         CHG_BIT_0 = 0x0,
         CHG_BIT_1 = 0x1,
         CHG_CDATA = 0x2,

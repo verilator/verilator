@@ -85,7 +85,7 @@ private:
     //    (and output for non-delayed assignments)
     //  AstVar(Scope)::user2()  -> AstCont*. Output value of variable (delayed assignments)
 
-    enum VarUsage { VU_NONE = 0, VU_LV = 1, VU_RV = 2, VU_LVDLY = 4 };
+    enum VarUsage : uint8_t { VU_NONE = 0, VU_LV = 1, VU_RV = 2, VU_LVDLY = 4 };
 
     // STATE
     // Major mode

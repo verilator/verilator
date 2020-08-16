@@ -2528,7 +2528,7 @@ private:
 
 public:
     // Processing Mode Enum
-    enum ProcMode {
+    enum ProcMode : uint8_t {
         PROC_PARAMS,
         PROC_GENERATE,
         PROC_LIVE,

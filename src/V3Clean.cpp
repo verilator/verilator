@@ -47,7 +47,7 @@ private:
     AstUser3InUse m_inuser3;
 
     // TYPES
-    enum CleanState { CS_UNKNOWN, CS_CLEAN, CS_DIRTY };
+    enum CleanState : uint8_t { CS_UNKNOWN, CS_CLEAN, CS_DIRTY };
 
     // STATE
     AstNodeModule* m_modp = nullptr;

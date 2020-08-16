@@ -58,7 +58,7 @@ private:
     AstUser4InUse m_inuser4;
 
     // For the user2 field:
-    enum {
+    enum : uint8_t {
         CIL_NOTHARD = 0,  // Inline not supported
         CIL_NOTSOFT,  // Don't inline unless user overrides
         CIL_MAYBE,  // Might inline

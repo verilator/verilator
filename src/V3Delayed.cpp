@@ -86,7 +86,7 @@ private:
     AstUser4InUse m_inuser4;
     AstUser5InUse m_inuser5;
 
-    enum VarUsage { VU_NONE = 0, VU_DLY = 1, VU_NONDLY = 2 };
+    enum VarUsage : uint8_t { VU_NONE = 0, VU_DLY = 1, VU_NONDLY = 2 };
 
     // STATE
     AstActive* m_activep = nullptr;  // Current activate
