@@ -76,7 +76,6 @@ class V3Global {
     int m_debugFileNumber = 0;  // Number to append to debug files created
     bool m_assertDTypesResolved = false;  // Tree should have dtypep()'s
     bool m_constRemoveXs = false;  // Const needs to strip any Xs
-    bool m_needC11 = false;  // Need C++11
     bool m_needHeavy = false;  // Need verilated_heavy.h include
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
@@ -122,8 +121,6 @@ public:
         sprintf(digits, "%03d", m_debugFileNumber);
         return opt.hierTopDataDir() + "/" + opt.prefix() + "_" + digits + "_" + nameComment;
     }
-    bool needC11() const { return m_needC11; }
-    void needC11(bool flag) { m_needC11 = flag; }
     bool needHeavy() const { return m_needHeavy; }
     void needHeavy(bool flag) { m_needHeavy = flag; }
     bool needTraceDumper() const { return m_needTraceDumper; }

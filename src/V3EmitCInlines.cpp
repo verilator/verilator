@@ -37,7 +37,6 @@ class EmitCInlines : EmitCBaseVisitor {
     // VISITORS
     virtual void visit(AstClass* nodep) override {
         checkHeavy(nodep);
-        v3Global.needC11(true);
         iterateChildren(nodep);
     }
     virtual void visit(AstCNew* nodep) override {
