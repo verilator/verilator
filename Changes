@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    C++11 or newer compilers are now required.
 
+**    Support hierarchical Verilation (#2206). [Yutetsu TAKATSUKASA]
+
 
 * Verilator 4.040 2020-08-15
 
