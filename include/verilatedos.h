@@ -122,7 +122,7 @@
 # if defined(_MSC_VER) && _MSC_VER >= 1900
 #  define VL_THREAD_LOCAL thread_local
 # elif defined(__GNUC__)
-#  if (__cplusplus < 201103L) && !defined(VL_THREADED_NO_C11_WARNING)
+#  if (__cplusplus < 201103L)
 #   error "VL_THREADED/--threads support requires C++-11 or newer only; use newer compiler"
 #  endif
 # else
