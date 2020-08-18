@@ -301,6 +301,15 @@ class AstSenTree;
 // Bison 3.0 and newer
 BISONPRE_VERSION(3.0,%define parse.error verbose)
 
+// We run bison with the -d argument. This tells it to generate a
+// header file with token names. Old versions of bison pasted the
+// contents of that file into the generated source as well; newer
+// versions just include it.
+//
+// Since we run bison through ../bisonpre, it doesn't know the correct
+// header file name, so we need to tell it.
+BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
+
 // When writing Bison patterns we use yTOKEN instead of "token",
 // so Bison will error out on unknown "token"s.
 
