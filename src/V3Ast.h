@@ -84,7 +84,7 @@ public:
     inline AstType(en _e)
         : m_e{_e} {}
     explicit inline AstType(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
 inline bool operator==(const AstType& lhs, const AstType& rhs) { return lhs.m_e == rhs.m_e; }
@@ -108,7 +108,7 @@ public:
     inline VLifetime(en _e)
         : m_e{_e} {}
     explicit inline VLifetime(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool isNone() const { return m_e == NONE; }
     bool isAutomatic() const { return m_e == AUTOMATIC; }
@@ -145,7 +145,7 @@ public:
         return isSigned ? VSigning(SIGNED) : VSigning(UNSIGNED);
     }
     explicit inline VSigning(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     inline bool isSigned() const { return m_e == SIGNED; }
     inline bool isNosign() const { return m_e == NOSIGN; }
@@ -182,7 +182,7 @@ public:
     inline AstPragmaType(en _e)
         : m_e{_e} {}
     explicit inline AstPragmaType(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
 inline bool operator==(const AstPragmaType& lhs, const AstPragmaType& rhs) {
@@ -213,7 +213,7 @@ public:
     inline AstCFuncType(en _e)
         : m_e{_e} {}
     explicit inline AstCFuncType(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     // METHODS
     bool isTrace() const { return m_e != FT_NORMAL; }
@@ -303,7 +303,7 @@ public:
     inline VEdgeType(en _e)
         : m_e{_e} {}
     explicit inline VEdgeType(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
 inline bool operator==(const VEdgeType& lhs, const VEdgeType& rhs) { return lhs.m_e == rhs.m_e; }
@@ -383,7 +383,7 @@ public:
     inline AstAttrType(en _e)
         : m_e{_e} {}
     explicit inline AstAttrType(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
 inline bool operator==(const AstAttrType& lhs, const AstAttrType& rhs) {
@@ -453,7 +453,7 @@ public:
     inline AstBasicDTypeKwd(en _e)
         : m_e{_e} {}
     explicit inline AstBasicDTypeKwd(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     int width() const {
         switch (m_e) {
@@ -540,7 +540,7 @@ public:
     inline VDirection(en _e)
         : m_e{_e} {}
     explicit inline VDirection(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"NONE", "INPUT", "OUTPUT", "INOUT", "REF", "CONSTREF"};
@@ -586,7 +586,7 @@ public:
     inline VBoolOrUnknown(en _e)
         : m_e{_e} {}
     explicit inline VBoolOrUnknown(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     const char* ascii() const {
         static const char* const names[] = {"FALSE", "TRUE", "UNK"};
         return names[m_e];
@@ -625,7 +625,7 @@ public:
     inline VJoinType(en _e)
         : m_e{_e} {}
     explicit inline VJoinType(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     const char* ascii() const {
         static const char* const names[] = {"JOIN", "JOIN_ANY", "JOIN_NONE"};
         return names[m_e];
@@ -678,7 +678,7 @@ public:
     inline AstVarType(en _e)
         : m_e{_e} {}
     explicit inline AstVarType(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {
@@ -726,7 +726,7 @@ public:
     inline VBranchPred(en _e)
         : m_e{_e} {}
     explicit inline VBranchPred(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool unknown() const { return m_e == BP_UNKNOWN; }
     bool likely() const { return m_e == BP_LIKELY; }
@@ -767,7 +767,7 @@ public:
     inline VVarAttrClocker(en _e)
         : m_e{_e} {}
     explicit inline VVarAttrClocker(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool unknown() const { return m_e == CLOCKER_UNKNOWN; }
     VVarAttrClocker invert() const {
@@ -809,7 +809,7 @@ public:
     inline VAlwaysKwd(en _e)
         : m_e{_e} {}
     explicit inline VAlwaysKwd(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"always", "always_ff", "always_latch", "always_comb"};
@@ -832,7 +832,7 @@ public:
     inline VCaseType(en _e)
         : m_e{_e} {}
     explicit inline VCaseType(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
 inline bool operator==(const VCaseType& lhs, const VCaseType& rhs) { return lhs.m_e == rhs.m_e; }
@@ -851,7 +851,7 @@ public:
     inline AstDisplayType(en _e)
         : m_e{_e} {}
     explicit inline AstDisplayType(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool addNewline() const { return m_e != DT_WRITE; }
     bool needScopeTracking() const { return m_e != DT_DISPLAY && m_e != DT_WRITE; }
@@ -883,7 +883,7 @@ public:
     inline VDumpCtlType(en _e)
         : m_e{_e} {}
     explicit inline VDumpCtlType(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"$dumpfile",  "$dumpvars", "$dumpall", "$dumpflush",
@@ -913,7 +913,7 @@ public:
     inline VParseRefExp(en _e)
         : m_e{_e} {}
     explicit inline VParseRefExp(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"", "$root", "TEXT", "PREDOT"};
@@ -1027,7 +1027,7 @@ public:
     inline VUseType(en _e)
         : m_e{_e} {}
     explicit inline VUseType(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     bool isInclude() const { return m_e == IMP_INCLUDE || m_e == INT_INCLUDE; }
     bool isFwdClass() const { return m_e == IMP_FWD_CLASS || m_e == INT_FWD_CLASS; }
     operator en() const { return m_e; }

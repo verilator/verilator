@@ -51,7 +51,7 @@ public:
     inline VWidthMinUsage(en _e)
         : m_e{_e} {}
     explicit inline VWidthMinUsage(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
 inline bool operator==(const VWidthMinUsage& lhs, const VWidthMinUsage& rhs) {

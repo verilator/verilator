@@ -62,7 +62,7 @@ public:
         : m_e{_e} {}
     explicit V3LangCode(const char* textp);
     explicit inline V3LangCode(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
 

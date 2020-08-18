@@ -174,12 +174,10 @@ void V3Error::vlAbort() {
 // Global Functions
 
 void V3Error::suppressThisWarning() {
-    if (s_errorCode >= V3ErrorCode::EC_MIN) {
 #ifndef _V3ERROR_NO_GLOBAL_
-        V3Stats::addStatSum(string("Warnings, Suppressed ") + s_errorCode.ascii(), 1);
+    V3Stats::addStatSum(string("Warnings, Suppressed ") + s_errorCode.ascii(), 1);
 #endif
-        s_errorSuppressed = true;
-    }
+    s_errorSuppressed = true;
 }
 
 string V3Error::warnMore() { return string(msgPrefix().size(), ' '); }

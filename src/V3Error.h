@@ -135,7 +135,7 @@ public:
         : m_e{_e} {}
     explicit V3ErrorCode(const char* msgp);  // Matching code or ERROR
     explicit inline V3ErrorCode(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
         // clang-format off
