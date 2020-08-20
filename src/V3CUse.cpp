@@ -107,7 +107,7 @@ class CUseDTypeVisitor : public AstNVisitor {
 public:
     // CONSTRUCTORS
     explicit CUseDTypeVisitor(AstNodeModule* nodep, CUseState& stater)
-        : m_stater{stater} {  // Need () or GCC 4.8 false warning
+        : m_stater(stater) {  // Need () or GCC 4.8 false warning
         iterate(nodep);
     }
     virtual ~CUseDTypeVisitor() override {}
