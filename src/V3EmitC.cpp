@@ -1252,7 +1252,7 @@ public:
     // CONSTRUCTORS
     explicit EmitVarTspSorter(const MTaskIdSet& mtaskIds)
         : m_mtaskIds{mtaskIds}
-        , m_serial{++m_serialNext} {}
+        , m_serial(++m_serialNext) {}  // Need () or GCC 4.8 false warning
     virtual ~EmitVarTspSorter() {}
     // METHODS
     virtual bool operator<(const TspStateBase& other) const override {
