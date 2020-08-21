@@ -941,8 +941,8 @@ private:
             if (!m_doGenerate) {
                 // Must check bounds before adding a select that truncates the bound
                 // Note we've already subtracted off LSB
-                if ((nodep->declRange().hi() > adtypep->declRange().hi())
-                    || nodep->declRange().lo() < adtypep->declRange().lo()) {
+                if ((nodep->declRange().hi() > adtypep->declRange().hi() - adtypep->declRange().lo())
+                    || nodep->declRange().lo() < adtypep->declRange().lo() - adtypep->declRange().lo()) {
                     // Other simulators warn too
                     nodep->v3error("Slice selection index '" << nodep->declRange() << "'"
                                                              << " outside data type's '"
