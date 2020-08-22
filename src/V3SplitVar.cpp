@@ -359,7 +359,7 @@ public:
                 iterateChildren(nodep);
             }
             explicit Visitor(RefsInModule& p)
-                : m_parent{p} {}
+                : m_parent(p) {}  // Need () or GCC 4.8 false warning
         } v(*this);
         v.iterate(nodep);
     }

@@ -288,7 +288,7 @@ private:
 public:
     // CONSTRUCTORS
     ModuleFilesXmlVisitor(AstNetlist* nodep, std::ostream& os)
-        : m_os{os} {
+        : m_os(os) {  // Need () or GCC 4.8 false warning
         // Operate on whole netlist
         nodep->accept(*this);
         // Xml output
@@ -360,7 +360,7 @@ private:
 public:
     // CONSTRUCTORS
     HierCellsXmlVisitor(AstNetlist* nodep, std::ostream& os)
-        : m_os{os} {
+        : m_os(os) {  // Need () or GCC 4.8 false warning
         // Operate on whole netlist
         nodep->accept(*this);
     }
