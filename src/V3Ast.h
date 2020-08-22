@@ -2675,6 +2675,9 @@ public:
     AstNode* fvarp() const { return op1p(); }
     void addFvarp(AstNode* nodep) { addNOp1p(nodep); }
     bool isFunction() const { return fvarp() != nullptr; }
+    // op2 = Class/package scope
+    AstNode* packagep() const { return op2p(); }
+    void packagep(AstNode* nodep) { setNOp2p(nodep); }
     // op3 = Statements/Ports/Vars
     AstNode* stmtsp() const { return op3p(); }  // op3 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp3p(nodep); }

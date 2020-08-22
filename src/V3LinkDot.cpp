@@ -2637,6 +2637,9 @@ private:
         if (nodep->isExtern()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: extern class methods");
         }
+        if (nodep->packagep()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: extern function definition");
+        }
         VSymEnt* oldCurSymp = m_curSymp;
         {
             m_ftaskp = nodep;

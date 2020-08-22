@@ -129,6 +129,7 @@ struct V3ParseBisonYYSType {
         AstClass* classp;
         AstConst* constp;
         AstFork* forkp;
+        AstFunc* funcp;
         AstMemberDType* memberp;
         AstNodeModule* modulep;
         AstNodeUOrStructDType* uorstructp;
