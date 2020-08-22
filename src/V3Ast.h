@@ -2627,7 +2627,8 @@ private:
     bool m_taskPublic : 1;  // Public task
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_classMethod : 1;  // Class method
-    bool m_extern : 1;  // Extern prototype
+    bool m_externProto : 1;  // Extern prototype
+    bool m_externDef : 1;  // Extern definition
     bool m_prototype : 1;  // Just a prototype
     bool m_dpiExport : 1;  // DPI exported
     bool m_dpiImport : 1;  // DPI imported
@@ -2646,7 +2647,8 @@ public:
         , m_taskPublic{false}
         , m_attrIsolateAssign{false}
         , m_classMethod{false}
-        , m_extern{false}
+        , m_externProto{false}
+        , m_externDef{false}
         , m_prototype{false}
         , m_dpiExport{false}
         , m_dpiImport{false}
@@ -2694,8 +2696,10 @@ public:
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     void classMethod(bool flag) { m_classMethod = flag; }
     bool classMethod() const { return m_classMethod; }
-    void isExtern(bool flag) { m_extern = flag; }
-    bool isExtern() const { return m_extern; }
+    void isExternProto(bool flag) { m_externProto = flag; }
+    bool isExternProto() const { return m_externProto; }
+    void isExternDef(bool flag) { m_externDef = flag; }
+    bool isExternDef() const { return m_externDef; }
     void prototype(bool flag) { m_prototype = flag; }
     bool prototype() const { return m_prototype; }
     void dpiExport(bool flag) { m_dpiExport = flag; }

@@ -134,6 +134,13 @@ private:
         // NodeTask: Remember its name for later resolution
         // Remember the existing symbol table scope
         if (m_classp) nodep->classMethod(true);
+        // V3LinkDot moved the isExternDef into the class, the extern proto was
+        // checked to exist, and now isn't needed
+        nodep->isExternDef(false);
+        if (nodep->isExternProto()) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
         VLifetime origLifetime = m_lifetime;
         {
             m_lifetime = nodep->lifetime();

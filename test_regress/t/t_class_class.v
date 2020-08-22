@@ -12,6 +12,7 @@ class Cls;
    class SubCls;
       int smembera;
       int smemberb;
+      // TODO put extern function here or in t_class_extern.v to check link
    endclass : SubCls
    SubCls sc;
 endclass : Cls

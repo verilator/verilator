@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Support hierarchical Verilation (#2206). [Yutetsu TAKATSUKASA]
 
+****  Support class extern.
+
 ****  Fix false DECLFILENAME on black-boxed modules (#2430). [Philipp Wagner]
 
 

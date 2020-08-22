@@ -1,7 +1,0 @@
-%Error-UNSUPPORTED: t/t_class_extern.v:8:24: Unsupported: extern class methods
-    8 |   extern function void extfunc();
-      |                        ^~~~~~~
-%Error-UNSUPPORTED: t/t_class_extern.v:11:15: Unsupported: extern function definition
-   11 | function void Cls::extfunc();
-      |               ^~~
-%Error: Exiting due to

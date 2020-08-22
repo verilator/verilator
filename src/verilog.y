@@ -6028,11 +6028,11 @@ class_method<nodep>:		// ==IEEE: class_method
 	|	yPURE yVIRTUAL__ETC memberQualListE method_prototype ';'
 			{ $$ = $4; $3.applyToNodes($4); $4->pureVirtual(true); $4->isVirtual(true); }
 	|	yEXTERN memberQualListE method_prototype ';'
-			{ $$ = $3; $2.applyToNodes($3); $3->isExtern(true); }
+			{ $$ = $3; $2.applyToNodes($3); $3->isExternProto(true); }
 	//			// IEEE: "method_qualifierE class_constructor_declaration"
 	//			// part of function_declaration
 	|	yEXTERN memberQualListE class_constructor_prototype
-			{ $$ = $3; $2.applyToNodes($3); $3->isExtern(true); }
+			{ $$ = $3; $2.applyToNodes($3); $3->isExternProto(true); }
 	;
 
 // IEEE: class_constructor_prototype
