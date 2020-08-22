@@ -2722,10 +2722,10 @@ class AstNodeFTaskRef : public AstNodeStmt {
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
 private:
     AstNodeFTask* m_taskp = nullptr;  // [AfterLink] Pointer to task referenced
+    AstNodeModule* m_packagep = nullptr;  // Package hierarchy
     string m_name;  // Name of variable
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
-    AstNodeModule* m_packagep = nullptr;  // Package hierarchy
     bool m_pli = false;  // Pli system call ($name)
 public:
     AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
@@ -2739,10 +2739,7 @@ public:
         addNOp3p(pinsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
-    virtual const char* broken() const override {
-        BROKEN_RTN(m_taskp && !m_taskp->brokeExists());
-        return nullptr;
-    }
+    virtual const char* broken() const override;
     virtual void cloneRelink() override {
         if (m_taskp && m_taskp->clonep()) { m_taskp = m_taskp->clonep(); }
     }
@@ -2940,6 +2937,12 @@ inline int AstNodeArrayDType::lsb() const { return rangep()->lsbConst(); }
 inline int AstNodeArrayDType::elementsConst() const { return rangep()->elementsConst(); }
 inline VNumRange AstNodeArrayDType::declRange() const {
     return VNumRange(msb(), lsb(), rangep()->littleEndian());
+}
+
+inline const char* AstNodeFTaskRef::broken() const {
+    BROKEN_RTN(m_taskp && !m_taskp->brokeExists());
+    BROKEN_RTN(m_packagep && !m_packagep->brokeExists());
+    return nullptr;
 }
 
 inline void AstIfaceRefDType::cloneRelink() {
