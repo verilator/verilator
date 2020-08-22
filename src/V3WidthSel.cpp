@@ -351,8 +351,9 @@ private:
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {  // Slice
-                AstSliceSel* newp = new AstSliceSel(nodep->fileline(), fromp,
-                                                    VNumRange(VNumRange::LeftRight(), msb, lsb));
+                AstSliceSel* newp = new AstSliceSel(
+                    nodep->fileline(), fromp,
+                    VNumRange(VNumRange::LeftRight(), msb - fromRange.lo(), lsb - fromRange.lo()));
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }

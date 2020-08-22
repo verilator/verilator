@@ -941,17 +941,21 @@ private:
             if (!m_doGenerate) {
                 // Must check bounds before adding a select that truncates the bound
                 // Note we've already subtracted off LSB
-                if ((nodep->declRange().hi() > adtypep->declRange().hi())
-                    || nodep->declRange().lo() < adtypep->declRange().lo()) {
+                const int subtracted = adtypep->declRange().lo();
+                // Add subtracted value to get the original range
+                const VNumRange declRange{nodep->declRange().hi() + subtracted,
+                                          nodep->declRange().lo() + subtracted,
+                                          nodep->declRange().littleEndian()};
+                if ((declRange.hi() > adtypep->declRange().hi())
+                    || declRange.lo() < adtypep->declRange().lo()) {
                     // Other simulators warn too
-                    nodep->v3error("Slice selection index '" << nodep->declRange() << "'"
+                    nodep->v3error("Slice selection index '" << declRange << "'"
                                                              << " outside data type's '"
                                                              << adtypep->declRange() << "'");
-                } else if ((nodep->declRange().littleEndian()
-                            != adtypep->declRange().littleEndian())
-                           && nodep->declRange().hi() != nodep->declRange().lo()) {
+                } else if ((declRange.littleEndian() != adtypep->declRange().littleEndian())
+                           && declRange.hi() != declRange.lo()) {
                     nodep->v3error("Slice selection '"
-                                   << nodep->declRange() << "'"
+                                   << declRange << "'"
                                    << " has backward indexing versus data type's '"
                                    << adtypep->declRange() << "'");
                 }
