@@ -992,13 +992,36 @@ class LinkDotFindVisitor : public AstNVisitor {
         // Remember the existing symbol table scope
         VSymEnt* oldCurSymp = m_curSymp;
         {
+            // Change to appropriate package if extern declaration (vs definition)
+            if (nodep->packagep()) {
+                AstClassOrPackageRef* cpackagerefp = VN_CAST(nodep->packagep(), ClassOrPackageRef);
+                if (!cpackagerefp) {
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: extern function definition with class-in-class");
+                } else {
+                    AstClass* classp = VN_CAST(cpackagerefp->classOrPackagep(), Class);
+                    if (!classp) {
+                        nodep->v3error("Extern declaration's scope is not a defined class");
+                    } else {
+                        m_curSymp = m_statep->getNodeSym(classp);
+                        if (!nodep->isExternDef()) {
+                            // Move it to proper spot under the target class
+                            nodep->unlinkFrBack();
+                            classp->addStmtp(nodep);
+                            nodep->isExternDef(true);  // So we check there's a matching extern
+                            nodep->packagep()->unlinkFrBack()->deleteTree();
+                        }
+                    }
+                }
+            }
             // Create symbol table for the task's vars
-            m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_packagep);
+            string name = string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
+            m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_packagep);
             m_curSymp->fallbackp(oldCurSymp);
             // Convert the func's range to the output variable
             // This should probably be done in the Parser instead, as then we could
             // just attach normal signal attributes to it.
-            if (nodep->fvarp() && !VN_IS(nodep->fvarp(), Var)) {
+            if (!nodep->isExternProto() && nodep->fvarp() && !VN_IS(nodep->fvarp(), Var)) {
                 AstNodeDType* dtypep = VN_CAST(nodep->fvarp(), NodeDType);
                 // If unspecified, function returns one bit; however when we
                 // support NEW() it could also return the class reference.
@@ -2634,8 +2657,15 @@ private:
         if (nodep->classMethod() && nodep->lifetime().isStatic()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' class method");
         }
-        if (nodep->isExtern()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: extern class methods");
+        if (nodep->isExternDef()) {
+            if (!m_curSymp->findIdFallback("extern " + nodep->name())) {
+                nodep->v3error("extern not found that declares " + nodep->prettyNameQ());
+            }
+        }
+        if (nodep->isExternProto()) {
+            if (!m_curSymp->findIdFallback(nodep->name())) {
+                nodep->v3error("definition not found for extern " + nodep->prettyNameQ());
+            }
         }
         VSymEnt* oldCurSymp = m_curSymp;
         {

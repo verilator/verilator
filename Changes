@@ -7,6 +7,12 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    C++11 or newer compilers are now required.
 
+**    Support hierarchical Verilation (#2206). [Yutetsu TAKATSUKASA]
+
+****  Support class extern.
+
+****  Fix false DECLFILENAME on black-boxed modules (#2430). [Philipp Wagner]
+
 
 * Verilator 4.040 2020-08-15
 

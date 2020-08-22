@@ -98,6 +98,7 @@ public:
         PINMISSING,     // Cell pin not specified
         PINNOCONNECT,   // Cell pin not connected
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
+        PKGNODECL,      // Error: Package/class needs to be predeclared
         PROCASSWIRE,    // Procedural assignment on wire
         REALCVT,        // Real conversion
         REDEFMACRO,     // Redefining existing define macro
@@ -135,7 +136,7 @@ public:
         : m_e{_e} {}
     explicit V3ErrorCode(const char* msgp);  // Matching code or ERROR
     explicit inline V3ErrorCode(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
         // clang-format off
@@ -159,7 +160,7 @@ public:
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LITENDIAN", "MODDUP",
             "MULTIDRIVEN", "MULTITOP",
-            "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PROCASSWIRE",
+            "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PKGNODECL", "PROCASSWIRE",
             "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
@@ -182,7 +183,7 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const {
         return (m_e == ASSIGNIN || m_e == BLKANDNBLK || m_e == BLKLOOPINIT || m_e == CONTASSREG
-                || m_e == IMPURE || m_e == PROCASSWIRE  //
+                || m_e == IMPURE || m_e == PKGNODECL || m_e == PROCASSWIRE  //
                 || m_e == TIMESCALEMOD);  // Says IEEE
     }
     // Warnings to mention manual

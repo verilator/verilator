@@ -42,7 +42,7 @@ if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
   if [ "$COVERAGE" != 1 ]; then
     autoconf
     ./configure --enable-longtests --enable-ccwarn
-    "$MAKE" -j "$NPROC"
+    "$MAKE" -j "$NPROC" -k
     if [ "$TRAVIS_OS_NAME" = "osx" ]; then
       file bin/verilator_bin
       file bin/verilator_bin_dbg
@@ -72,7 +72,7 @@ elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
     # it as data rather than a Mach-O). Unclear if this is an OS X issue or
     # one for Travis. Remove the file and re-link...
     rm bin/verilator_bin_dbg
-    "$MAKE" -j "$NPROC"
+    "$MAKE" -j "$NPROC" -k
   elif [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
     export VERILATOR_TEST_NO_GDB=1 # Disable for now, ideally should run
     export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable

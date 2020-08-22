@@ -394,12 +394,17 @@ _MY_LDLIBS_CHECK_IFELSE(
    fi])
 AC_SUBST(CFG_LIBS)
 
-# Set CFG_WITH_THREADED if can support threading
-AC_MSG_CHECKING(whether $CXX supports Verilated threads)
-ACO_SAVE_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_STD_NEWEST $CFG_CXXFLAGS_NO_UNUSED"
-AC_LINK_IFELSE(
-     [AC_LANG_PROGRAM([#include <thread>], [[ ]])],
+# Need C++11 at least
+#Alternative: AX_CXX_COMPILE_STDCXX([11])
+AC_DEFUN([_MY_CXX_CHECK_CXX_VER],
+   [# _MY_CXX_CHECK_CXX_VER(flag) -- Check if compiler runs C++11
+    # Set $_my_result
+    AC_LINK_IFELSE(
+     [AC_LANG_PROGRAM([#include <thread>
+#if (__cplusplus < 201103L)
+# error "Too old"
+#endif
+    ], [[ ]])],
      [_my_result=yes
       if test -s conftest.err; then
         if grep -e "$1" conftest.err >/dev/null; then
@@ -407,13 +412,18 @@ AC_LINK_IFELSE(
         fi
       fi],
      [_my_result=no])
-CFG_WITH_THREADED=$_my_result
-AC_SUBST(CFG_WITH_THREADED)
-AC_MSG_RESULT($CFG_WITH_THREADED)
-CXXFLAGS="$ACO_SAVE_CXXFLAGS"
+   ])
 
-# Check compiler flag
-if test "$CFG_WITH_THREADED" = "no" ; then
+AC_MSG_CHECKING(whether $CXX supports C++11)
+_MY_CXX_CHECK_CXX_VER()
+AC_MSG_RESULT($_my_result)
+if test "$_my_result" = "no" ; then
+   CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_STD_NEWEST"
+   AC_MSG_CHECKING(whether $CXX supports C++11 with $CFG_CXXFLAGS_STD_NEWEST)
+   _MY_CXX_CHECK_CXX_VER()
+   AC_MSG_RESULT($_my_result)
+fi
+if test "$_my_result" = "no" ; then
    AC_MSG_NOTICE([[]])
    AC_MSG_ERROR([[the $CXX compiler appears to not support C++11.
 

@@ -301,6 +301,15 @@ class AstSenTree;
 // Bison 3.0 and newer
 BISONPRE_VERSION(3.0,%define parse.error verbose)
 
+// We run bison with the -d argument. This tells it to generate a
+// header file with token names. Old versions of bison pasted the
+// contents of that file into the generated source as well; newer
+// versions just include it.
+//
+// Since we run bison through ../bisonpre, it doesn't know the correct
+// header file name, so we need to tell it.
+BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
+
 // When writing Bison patterns we use yTOKEN instead of "token",
 // so Bison will error out on unknown "token"s.
 
@@ -3772,33 +3781,43 @@ lifetime<lifetime>:		// ==IEEE: lifetime
 	;
 
 taskId<ftaskp>:
-		tfIdScoped
-			{ $$ = new AstTask($<fl>1, *$<strp>1, nullptr);
+		id
+			{ $$ = new AstTask($<fl>$, *$1, nullptr);
+			  SYMP->pushNewUnderNodeOrCurrent($$, nullptr); }
+	//
+	|	id/*interface_identifier*/ '.' id
+			{ $$ = new AstTask($<fl>$, *$3, nullptr);
+			  BBUNSUP($2, "Unsupported: Out of block function declaration");
+			  SYMP->pushNewUnderNodeOrCurrent($$, nullptr); }
+	//
+	|	packageClassScope id
+			{ $$ = new AstTask($<fl>$, *$2, nullptr);
+			  $$->packagep($1);
 			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
 	;
 
 funcId<ftaskp>:			// IEEE: function_data_type_or_implicit + part of function_body_declaration
 	//			// IEEE: function_data_type_or_implicit must be expanded here to prevent conflict
 	//			// function_data_type expanded here to prevent conflicts with implicit_type:empty vs data_type:ID
-		/**/			tfIdScoped
-			{ $$ = new AstFunc($<fl>1,*$<strp>1,nullptr,
-					   new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
+		/**/ fIdScoped
+			{ $$ = $1;
+			  $$->addFvarp(new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
 			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
-	|	signingE rangeList	tfIdScoped
-			{ $$ = new AstFunc($<fl>3,*$<strp>3,nullptr,
-					   GRAMMARP->addRange(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $1), $2,true));
+	|	signingE rangeList fIdScoped
+			{ $$ = $3;
+			  $$->addFvarp(GRAMMARP->addRange(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $1), $2,true));
 			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>3); }
-	|	signing			tfIdScoped
-			{ $$ = new AstFunc($<fl>2,*$<strp>2,nullptr,
-					   new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $1));
+	|	signing	fIdScoped
+			{ $$ = $2;
+			  $$->addFvarp(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $1));
 			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
-	|	data_type		tfIdScoped
-			{ $$ = new AstFunc($<fl>2,*$<strp>2,nullptr,$1);
+	|	data_type fIdScoped
+			{ $$ = $2;
+			  $$->addFvarp($1);
 			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
 	//			// To verilator tasks are the same as void functions (we separately detect time passing)
-	|	yVOID tfIdScoped
-			{ $$ = new AstTask($<fl>2, *$<strp>2, nullptr);
-			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
+	|	yVOID taskId
+			{ $$ = $2; }
 	;
 
 funcIdNew<ftaskp>:		// IEEE: from class_constructor_declaration
@@ -3812,23 +3831,29 @@ funcIdNew<ftaskp>:		// IEEE: from class_constructor_declaration
 			  SYMP->pushNewUnder($$, nullptr); }
 	|	packageClassScopeNoId yNEW__PAREN
 			{ $$ = new AstFunc($<fl>2, "new", nullptr, nullptr);
-			  BBUNSUP($<fl>2, "Unsupported: scoped new constructor");
+			  $$->packagep($1);
 			  $$->isConstructor(true);
 			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
 	;
 
-tfIdScoped<strp>:		// IEEE: part of function_body_declaration/task_body_declaration
+fIdScoped<funcp>:		// IEEE: part of function_body_declaration/task_body_declaration
  	//			// IEEE: [ interface_identifier '.' | class_scope ] function_identifier
 		id
-			{ $<fl>$ = $<fl>1; $<scp>$ = nullptr; $<strp>$ = $1; }
+			{ $<fl>$ = $<fl>1;
+			  $<scp>$ = nullptr;
+                          $$ = new AstFunc($<fl>$, *$1, nullptr, nullptr); }
 	//
 	|	id/*interface_identifier*/ '.' id
-			{ $<fl>$ = $<fl>3; $<scp>$ = nullptr; $<strp>$ = $3;
+			{ $<fl>$ = $<fl>1;
+			  $<scp>$ = nullptr;
+                          $$ = new AstFunc($<fl>$, *$1, nullptr, nullptr);
 			  BBUNSUP($2, "Unsupported: Out of block function declaration"); }
 	//
 	|	packageClassScope id
-			{ $<fl>$ = $<fl>2; $<scp>$ = $<scp>1; $<strp>$ = $<strp>2;
-			  BBUNSUP($<fl>1, "Unsupported: Out of class block function declaration"); }
+			{ $<fl>$ = $<fl>1;
+			  $<scp>$ = $<scp>1;
+			  $$ = new AstFunc($<fl>$, *$2, nullptr, nullptr);
+			  $$->packagep($1); }
 	;
 
 tfGuts<nodep>:
@@ -6003,11 +6028,11 @@ class_method<nodep>:		// ==IEEE: class_method
 	|	yPURE yVIRTUAL__ETC memberQualListE method_prototype ';'
 			{ $$ = $4; $3.applyToNodes($4); $4->pureVirtual(true); $4->isVirtual(true); }
 	|	yEXTERN memberQualListE method_prototype ';'
-			{ $$ = $3; $2.applyToNodes($3); $3->isExtern(true); }
+			{ $$ = $3; $2.applyToNodes($3); $3->isExternProto(true); }
 	//			// IEEE: "method_qualifierE class_constructor_declaration"
 	//			// part of function_declaration
 	|	yEXTERN memberQualListE class_constructor_prototype
-			{ $$ = $3; $2.applyToNodes($3); $3->isExtern(true); }
+			{ $$ = $3; $2.applyToNodes($3); $3->isExternProto(true); }
 	;
 
 // IEEE: class_constructor_prototype

@@ -1081,7 +1081,9 @@ const char* AstClassPackage::broken() const {
     return nullptr;
 }
 void AstClass::insertCache(AstNode* nodep) {
-    if (VN_IS(nodep, Var) || VN_IS(nodep, NodeFTask) || VN_IS(nodep, EnumItemRef)) {
+    bool doit = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
+                 || (VN_IS(nodep, NodeFTask) && !VN_CAST(nodep, NodeFTask)->isExternProto()));
+    if (doit) {
         if (m_members.find(nodep->name()) != m_members.end()) {
             nodep->v3error("Duplicate declaration of member name: " << nodep->prettyNameQ());
         } else {

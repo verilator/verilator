@@ -180,7 +180,7 @@ public:
 
     // CONSTRUCTORS
     explicit StatsReport(std::ofstream* aofp)
-        : os{*aofp} {
+        : os(*aofp) {  // Need () or GCC 4.8 false warning
         header();
         sumit();
         stars();

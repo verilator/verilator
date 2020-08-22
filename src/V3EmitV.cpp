@@ -704,7 +704,7 @@ class EmitVStreamVisitor : public EmitVBaseVisitor {
 
 public:
     EmitVStreamVisitor(AstNode* nodep, std::ostream& os)
-        : m_os{os} {
+        : m_os(os) {  // Need () or GCC 4.8 false warning
         iterate(nodep);
     }
     virtual ~EmitVStreamVisitor() override {}
@@ -743,7 +743,7 @@ public:
     int column() const { return m_column; }
     EmitVPrefixedFormatter(std::ostream& os, const string& prefix, int flWidth)
         : V3OutFormatter{"__STREAM", V3OutFormatter::LA_VERILOG}
-        , m_os{os}
+        , m_os(os)  // Need () or GCC 4.8 false warning
         , m_prefix{prefix}
         , m_flWidth{flWidth} {
         m_column = 0;

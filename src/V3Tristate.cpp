@@ -302,7 +302,7 @@ class TristatePinVisitor : public TristateBaseVisitor {
 public:
     // CONSTRUCTORS
     TristatePinVisitor(AstNode* nodep, TristateGraph& tgraph, bool lvalue)
-        : m_tgraph{tgraph}
+        : m_tgraph(tgraph)  // Need () or GCC 4.8 false warning
         , m_lvalue{lvalue} {
         iterate(nodep);
     }

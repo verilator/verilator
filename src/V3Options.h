@@ -45,7 +45,7 @@ public:
     inline VOptionBool(en _e)
         : m_e{_e} {}
     explicit inline VOptionBool(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool isDefault() const { return m_e == OPT_DEFAULT_FALSE || m_e == OPT_DEFAULT_TRUE; }
     bool isTrue() const { return m_e == OPT_TRUE || m_e == OPT_DEFAULT_TRUE; }
@@ -92,7 +92,7 @@ public:
     inline VTimescale(en _e)
         : m_e{_e} {}
     explicit inline VTimescale(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     // Construct from string
     VTimescale(const string& value, bool& badr);
     VTimescale(double value, bool& badr) {
@@ -174,7 +174,7 @@ public:
     inline TraceFormat(en _e = VCD)
         : m_e{_e} {}
     explicit inline TraceFormat(int _e)
-        : m_e{static_cast<en>(_e)} {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool fst() const { return m_e == FST; }
     string classBase() const {

@@ -310,11 +310,6 @@ bool FileLine::warnOff(const string& msg, bool flag) {
     V3ErrorCode code(msg.c_str());
     if (code < V3ErrorCode::EC_FIRST_WARN) {
         return false;
-#ifndef _V3ERROR_NO_GLOBAL_
-    } else if (v3Global.opt.lintOnly()  // Lint mode is allowed to suppress some errors
-               && code < V3ErrorCode::EC_MIN) {
-        return false;
-#endif
     } else {
         warnOff(code, flag);
         return true;
