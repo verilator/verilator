@@ -531,9 +531,9 @@ void V3ParseImp::tokenPipelineSym() {
                     // is missing package, and this confuses people
                     static int warned = false;
                     if (!warned++) {
-                        yylval.fl->v3error(
-                            "Package/class '" + *yylval.strp
-                            + "' not found, and needs to be predeclared (IEEE 1800-2017 26.3)");
+                        yylval.fl->v3warn(E_PKGNODECL, "Package/class '" + *yylval.strp
+                                                           + "' not found, and needs to be "
+                                                             "predeclared (IEEE 1800-2017 26.3)");
                     }
                 }
             } else if (token == yaID__LEX) {

@@ -4645,6 +4645,12 @@ signal.
 Disabled by default as this is a code style warning; it will simulate
 correctly.
 
+=item PKGNODECL
+
+Error that a package/class appears to have been referenced that has not yet
+been declared.  According to IEEE 1800-2017 26.3 all packages must be
+declared before being used.
+
 =item PROCASSWIRE
 
 Error that a procedural assignment is setting a wire. According to IEEE, a
