@@ -201,8 +201,8 @@ private:
             UINFO(2, "Link Module: " << nodep << endl);
             if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
                 && !v3Global.opt.isLibraryFile(nodep->fileline()->filename())
-                && !VN_IS(nodep, NotFoundModule)
-                && !nodep->recursiveClone() && !nodep->internal()) {
+                && !VN_IS(nodep, NotFoundModule) && !nodep->recursiveClone()
+                && !nodep->internal()) {
                 // We only complain once per file, otherwise library-like files
                 // have a huge mess of warnings
                 if (m_declfnWarned.find(nodep->fileline()->filename()) == m_declfnWarned.end()) {

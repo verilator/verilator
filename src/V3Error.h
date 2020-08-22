@@ -51,7 +51,6 @@ public:
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
         // Error codes:
         E_DETECTARRAY,  // Error: Unsupported: Can't detect changes on arrayed variable
-        E_PKGNODECL,    // Error: Package/class needs to be predeclared
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
         E_UNSUPPORTED,  // Error: Unsupported (generally)
         E_TASKNSVAR,    // Error: Task I/O not simple
@@ -99,6 +98,7 @@ public:
         PINMISSING,     // Cell pin not specified
         PINNOCONNECT,   // Cell pin not connected
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
+        PKGNODECL,      // Error: Package/class needs to be predeclared
         PROCASSWIRE,    // Procedural assignment on wire
         REALCVT,        // Real conversion
         REDEFMACRO,     // Redefining existing define macro
@@ -146,7 +146,7 @@ public:
             // Boolean
             " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
             // Errors
-            "DETECTARRAY", "PKGNODECL", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
+            "DETECTARRAY", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
@@ -160,7 +160,7 @@ public:
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LITENDIAN", "MODDUP",
             "MULTIDRIVEN", "MULTITOP",
-            "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PROCASSWIRE",
+            "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PKGNODECL", "PROCASSWIRE",
             "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
@@ -183,7 +183,7 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const {
         return (m_e == ASSIGNIN || m_e == BLKANDNBLK || m_e == BLKLOOPINIT || m_e == CONTASSREG
-                || m_e == IMPURE || m_e == PROCASSWIRE  //
+                || m_e == IMPURE || m_e == PKGNODECL || m_e == PROCASSWIRE  //
                 || m_e == TIMESCALEMOD);  // Says IEEE
     }
     // Warnings to mention manual
