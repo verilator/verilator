@@ -398,7 +398,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              '#'
 %token<fl>              '%'
 %token<fl>              '&'
-%token<fl>              '('
+%token<fl>              '('  // See also yP_PAR__STRENGTH
 %token<fl>              ')'
 %token<fl>              '*'
 %token<fl>              '+'
@@ -406,7 +406,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              '-'
 %token<fl>              '.'
 %token<fl>              '/'
-%token<fl>              ':'
+%token<fl>              ':'  // See also yP_COLON__BEGIN or yP_COLON__FORK
 %token<fl>              ';'
 %token<fl>              '<'
 %token<fl>              '='
@@ -840,6 +840,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yP_SSRIGHT      ">>>"
 %token<fl>              yP_POW          "**"
 
+%token<fl>              yP_COLON__BEGIN ":-begin"
+%token<fl>              yP_COLON__FORK  ":-fork"
 //UNSUP %token<fl>      yP_PAR__IGNORE  "(-ignored"     // Used when sequence_expr:expr:( is ignored
 %token<fl>              yP_PAR__STRENGTH "(-for-strength"
 
@@ -926,7 +928,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 
 // Verilog op precedence
 %right          yP_MINUSGT yP_LTMINUSGT
-%right          '?' ':'
+%right          '?' ':' yP_COLON__BEGIN yP_COLON__FORK
 %left           yP_OROR
 %left           yP_ANDAND
 %left           '|' yP_NOR
@@ -2339,9 +2341,10 @@ generate_block_or_null<nodep>:	// IEEE: generate_block_or_null (called from genc
 genItemBegin<nodep>:		// IEEE: part of generate_block
 		yBEGIN ~c~genItemList yEND		{ $$ = new AstBegin($1,"",$2,true,false); }
 	|	yBEGIN yEND				{ $$ = nullptr; }
-	|	id ':' yBEGIN ~c~genItemList yEND endLabelE
+	|	id yP_COLON__BEGIN yBEGIN ~c~genItemList yEND endLabelE
 			{ $$ = new AstBegin($<fl>1,*$1,$4,true,false); GRAMMARP->endLabel($<fl>6,*$1,$6); }
-	|	id ':' yBEGIN yEND endLabelE		{ $$ = nullptr; GRAMMARP->endLabel($<fl>5,*$1,$5); }
+	|	id yP_COLON__BEGIN yBEGIN yEND endLabelE
+			{ $$ = nullptr; GRAMMARP->endLabel($<fl>5,*$1,$5); }
 	|	yBEGIN ':' idAny ~c~genItemList yEND endLabelE
 			{ $$ = new AstBegin($<fl>3,*$3,$4,true,false); GRAMMARP->endLabel($<fl>6,*$3,$6); }
 	|	yBEGIN ':' idAny yEND endLabelE		{ $$ = nullptr; GRAMMARP->endLabel($<fl>5,*$3,$5); }
@@ -2466,8 +2469,8 @@ case_generate_itemList<nodep>:	// IEEE: { case_generate_itemList }
 //UNSUP	;
 
 case_generate_item<nodep>:	// ==IEEE: case_generate_item
-		caseCondList ':' generate_block_or_null		{ $$ = new AstCaseItem($2,$1,$3); }
-	|	yDEFAULT ':' generate_block_or_null		{ $$ = new AstCaseItem($1,nullptr,$3); }
+		caseCondList colon generate_block_or_null		{ $$ = new AstCaseItem($2,$1,$3); }
+	|	yDEFAULT colon generate_block_or_null		{ $$ = new AstCaseItem($1,nullptr,$3); }
 	|	yDEFAULT generate_block_or_null			{ $$ = new AstCaseItem($1,nullptr,$2); }
 	;
 
@@ -2878,35 +2881,45 @@ stmtBlock<nodep>:		// IEEE: statement + seq_block + par_block
 seq_block<nodep>:		// ==IEEE: seq_block
 	//			// IEEE doesn't allow declarations in unnamed blocks, but several simulators do.
 	//			// So need AstBegin's even if unnamed to scope variables down
-		seq_blockFront blockDeclStmtList yEND endLabelE	{ $$=$1; $1->addStmtsp($2); SYMP->popScope($1); GRAMMARP->endLabel($<fl>4,$1,$4); }
-	|	seq_blockFront /**/		 yEND endLabelE	{ $$=$1; SYMP->popScope($1); GRAMMARP->endLabel($<fl>3,$1,$3); }
+		seq_blockFront blockDeclStmtListE yEND endLabelE
+			{ $$ = $1; $1->addStmtsp($2);
+			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
+	;
+
+seq_blockPreId<nodep>:		// IEEE: seq_block, but called with leading ID
+		seq_blockFrontPreId blockDeclStmtListE yEND endLabelE
+        		{ $$ = $1; $1->addStmtsp($2);
+			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
 	;
 
 par_block<nodep>:		// ==IEEE: par_block
-		par_blockFront blockDeclStmtList yJOIN endLabelE
+		par_blockFront blockDeclStmtListE yJOIN endLabelE
 			{ $$ = $1; $1->addStmtsp($2);
 			  $1->joinType(VJoinType::JOIN);
 			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
-	|	par_blockFront /**/		 yJOIN endLabelE
-			{ $$ = $1;
+	|	par_blockFront blockDeclStmtListE yJOIN_ANY endLabelE
+			{ $$ = $1; $1->addStmtsp($2);
+			  $1->joinType(VJoinType::JOIN_ANY);
+			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
+	|	par_blockFront blockDeclStmtListE yJOIN_NONE endLabelE
+			{ $$ = $1; $1->addStmtsp($2);
+			  $1->joinType(VJoinType::JOIN_NONE);
+			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
+	;
+
+par_blockPreId<nodep>:		// ==IEEE: par_block but called with leading ID
+		par_blockFrontPreId blockDeclStmtListE yJOIN endLabelE
+			{ $$ = $1; $1->addStmtsp($2);
 			  $1->joinType(VJoinType::JOIN);
-			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>3, $1, $3); }
-	|	par_blockFront blockDeclStmtList yJOIN_ANY endLabelE
+			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
+	|	par_blockFrontPreId blockDeclStmtListE yJOIN_ANY endLabelE
 			{ $$ = $1; $1->addStmtsp($2);
 			  $1->joinType(VJoinType::JOIN_ANY);
 			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
-	|	par_blockFront /**/		 yJOIN_ANY endLabelE
-			{ $$ = $1;
-			  $1->joinType(VJoinType::JOIN_ANY);
-			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>3, $1, $3); }
-	|	par_blockFront blockDeclStmtList yJOIN_NONE endLabelE
+	|	par_blockFrontPreId blockDeclStmtListE yJOIN_NONE endLabelE
 			{ $$ = $1; $1->addStmtsp($2);
 			  $1->joinType(VJoinType::JOIN_NONE);
 			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
-	|	par_blockFront /**/		 yJOIN_NONE endLabelE
-			{ $$ = $1;
-			  $1->joinType(VJoinType::JOIN_NONE);
-			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>3, $1, $3); }
 	;
 
 seq_blockFront<beginp>:		// IEEE: part of seq_block
@@ -2919,11 +2932,27 @@ par_blockFront<forkp>:		// IEEE: part of par_block
 	|	yFORK ':' idAny/*new-block_identifier*/	{ $$ = new AstFork($<fl>3, *$3, nullptr); SYMP->pushNew($$); }
 	;
 
+seq_blockFrontPreId<beginp>:	// IEEE: part of seq_block/stmt with leading id
+		id/*block_identifier*/ yP_COLON__BEGIN yBEGIN
+	 		{ $$ = new AstBegin($3, *$1, nullptr); SYMP->pushNew($$); }
+	;
+
+par_blockFrontPreId<forkp>:	// IEEE: part of par_block/stmt with leading id
+		id/*block_identifier*/ yP_COLON__FORK yFORK
+	 		{ $$ = new AstFork($3, *$1, nullptr); SYMP->pushNew($$); }
+	;
+
+
 blockDeclStmtList<nodep>:	// IEEE: { block_item_declaration } { statement or null }
 	//			// The spec seems to suggest a empty declaration isn't ok, but most simulators take it
 		block_item_declarationList		{ $$ = $1; }
 	|	block_item_declarationList stmtList	{ $$ = $1->addNextNull($2); }
 	|	stmtList				{ $$ = $1; }
+	;
+
+blockDeclStmtListE<nodep>:	// IEEE: [ { block_item_declaration } { statement or null } ]
+		/*empty*/				{ $$ = nullptr; }
+	|	blockDeclStmtList			{ $$ = $1; }
 	;
 
 block_item_declarationList<nodep>:	// IEEE: [ block_item_declaration ]
@@ -2948,6 +2977,9 @@ stmt<nodep>:			// IEEE: statement_or_null == function_statement_or_null
 	|	id/*block_identifier*/ ':' statement_item	{ $$ = new AstBegin($<fl>1, *$1, $3); }
 	//			// from _or_null
 	|	';'					{ $$ = nullptr; }
+	//			// labeled par_block/seq_block with leading ':'
+	|	seq_blockPreId				{ $$ = $1; }
+	|	par_blockPreId				{ $$ = $1; }
 	;
 
 statement_item<nodep>:		// IEEE: statement_item
@@ -3227,21 +3259,21 @@ case_insideListE<caseitemp>:	// IEEE: [ { case_inside_item } ]
 	;
 
 case_itemList<caseitemp>:	// IEEE: { case_item + ... }
-		caseCondList ':' stmtBlock		{ $$ = new AstCaseItem($2,$1,$3); }
-	|	yDEFAULT ':' stmtBlock			{ $$ = new AstCaseItem($1,nullptr,$3); }
+		caseCondList colon stmtBlock		{ $$ = new AstCaseItem($2,$1,$3); }
+	|	yDEFAULT colon stmtBlock			{ $$ = new AstCaseItem($1,nullptr,$3); }
 	|	yDEFAULT stmtBlock			{ $$ = new AstCaseItem($1,nullptr,$2); }
-	|	case_itemList caseCondList ':' stmtBlock	{ $$ = $1;$1->addNext(new AstCaseItem($3,$2,$4)); }
+	|	case_itemList caseCondList colon stmtBlock	{ $$ = $1;$1->addNext(new AstCaseItem($3,$2,$4)); }
 	|       case_itemList yDEFAULT stmtBlock		{ $$ = $1;$1->addNext(new AstCaseItem($2,nullptr,$3)); }
-	|	case_itemList yDEFAULT ':' stmtBlock		{ $$ = $1;$1->addNext(new AstCaseItem($2,nullptr,$4)); }
+	|	case_itemList yDEFAULT colon stmtBlock		{ $$ = $1;$1->addNext(new AstCaseItem($2,nullptr,$4)); }
 	;
 
 case_inside_itemList<caseitemp>:	// IEEE: { case_inside_item + open_range_list ... }
-		open_range_list ':' stmtBlock		{ $$ = new AstCaseItem($2,$1,$3); }
-	|	yDEFAULT ':' stmtBlock			{ $$ = new AstCaseItem($1,nullptr,$3); }
+		open_range_list colon stmtBlock		{ $$ = new AstCaseItem($2,$1,$3); }
+	|	yDEFAULT colon stmtBlock			{ $$ = new AstCaseItem($1,nullptr,$3); }
 	|	yDEFAULT stmtBlock			{ $$ = new AstCaseItem($1,nullptr,$2); }
-	|	case_inside_itemList open_range_list ':' stmtBlock { $$ = $1;$1->addNext(new AstCaseItem($3,$2,$4)); }
+	|	case_inside_itemList open_range_list colon stmtBlock { $$ = $1;$1->addNext(new AstCaseItem($3,$2,$4)); }
 	|       case_inside_itemList yDEFAULT stmtBlock		{ $$ = $1;$1->addNext(new AstCaseItem($2,nullptr,$3)); }
-	|	case_inside_itemList yDEFAULT ':' stmtBlock	{ $$ = $1;$1->addNext(new AstCaseItem($2,nullptr,$4)); }
+	|	case_inside_itemList yDEFAULT colon stmtBlock	{ $$ = $1;$1->addNext(new AstCaseItem($2,nullptr,$4)); }
 	;
 
 open_range_list<nodep>:		// ==IEEE: open_range_list + open_value_range
@@ -6158,6 +6190,15 @@ constraintStaticE<cbool>:  // IEEE: part of extern_constraint_declaration
 timeNumAdjusted<nodep>:		// Time constant, adjusted to module's time units/precision
 		yaTIMENUM
 			{ $$ = new AstTimeImport($<fl>1, new AstConst($<fl>1, AstConst::RealDouble(), $1)); }
+	;
+
+//**********************************************************************
+// Generic tokens
+
+colon<fl>:			// Generic colon that isn't making a label (e.g. in a case_item)
+		':'					{ $$ = $1; }
+	|	yP_COLON__BEGIN				{ $$ = $1; }
+	|	yP_COLON__FORK				{ $$ = $1; }
 	;
 
 //**********************************************************************

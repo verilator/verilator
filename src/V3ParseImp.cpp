@@ -382,6 +382,7 @@ void V3ParseImp::tokenPipeline() {
     int token = yylval.token;
     // If a paren, read another
     if (token == '('  //
+        || token == ':'  //
         || token == yCONST__LEX  //
         || token == yGLOBAL__LEX  //
         || token == yLOCAL__LEX  //
@@ -402,6 +403,12 @@ void V3ParseImp::tokenPipeline() {
         if (token == '('
             && (nexttok == ygenSTRENGTH || nexttok == ySUPPLY0 || nexttok == ySUPPLY1)) {
             token = yP_PAR__STRENGTH;
+        } else if (token == ':') {
+            if (nexttok == yBEGIN) {
+                token = yP_COLON__BEGIN;
+            } else if (nexttok == yFORK) {
+                token = yP_COLON__FORK;
+            }
         } else if (token == yCONST__LEX) {
             if (nexttok == yREF) {
                 token = yCONST__REF;
