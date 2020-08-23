@@ -264,6 +264,15 @@ public:
             puts("static void __Vmtask__final(bool even_cycle, void* symtab);\n");
         }
     }
+    void ccallIterateArgs(AstNodeCCall* nodep) {
+        puts(nodep->argTypes());
+        bool comma = (nodep->argTypes() != "");
+        for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
+            if (comma) puts(", ");
+            iterate(subnodep);
+            comma = true;
+        }
+    }
 
     // VISITORS
     virtual void visit(AstNodeAssign* nodep) override {
@@ -373,13 +382,7 @@ public:
         }
         puts(nodep->funcp()->nameProtect());
         puts("(");
-        puts(nodep->argTypes());
-        bool comma = (nodep->argTypes() != "");
-        for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
-            if (comma) puts(", ");
-            iterate(subnodep);
-            comma = true;
-        }
+        ccallIterateArgs(nodep);
         if (VN_IS(nodep->backp(), NodeMath) || VN_IS(nodep->backp(), CReturn)) {
             // We should have a separate CCall for math and statement usage, but...
             puts(")");
@@ -1485,6 +1488,13 @@ class EmitCImp : EmitCStmts {
         puts(funcNameProtect(nodep, m_modp));
         puts("(" + cFuncArgs(nodep) + ")");
         if (nodep->isConst().trueKnown()) puts(" const");
+
+        // TODO perhaps better to have a new AstCCtorInit so we can pass arguments
+        // rather than requiring a string here
+        if (!nodep->ctorInits().empty()) {
+            puts(": ");
+            puts(nodep->ctorInits());
+        }
         puts(" {\n");
 
         // "+" in the debug indicates a print from the model
@@ -2982,7 +2992,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     if (AstClass* classp = VN_CAST(modp, Class)) {
         puts("class " + prefixNameProtect(modp));
-        if (classp->extendsp()) puts(" : public " + classp->extendsp()->classp()->nameProtect());
+        if (classp->extendsp())
+            puts(" : public " + prefixNameProtect(classp->extendsp()->classp()));
         puts(" {\n");
     } else if (optSystemC() && modp->isTop()) {
         puts("SC_MODULE(" + prefixNameProtect(modp) + ") {\n");

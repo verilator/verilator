@@ -104,11 +104,14 @@ private:
 
     // TYPES
     typedef std::map<std::pair<AstScope*, AstVar*>, AstVarScope*> VarToScopeMap;
+    typedef std::map<AstNodeFTask*, AstClass*> FuncToClassMap;
     typedef std::vector<AstInitial*> Initials;
     // MEMBERS
     VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
+    FuncToClassMap m_funcToClassMap;  // Map for ctor func -> class
     AstAssignW* m_assignwp = nullptr;  // Current assignment
     AstNodeFTask* m_ctorp = nullptr;  // Class constructor
+    AstClass* m_classp = nullptr;  // Current class
     V3Graph m_callGraph;  // Task call graph
     TaskBaseVertex* m_curVxp;  // Current vertex we're adding to
     Initials m_initialps;  // Initial blocks to move
@@ -124,6 +127,14 @@ public:
         const auto iter = m_varToScopeMap.find(make_pair(scopep, nodep));
         UASSERT_OBJ(iter != m_varToScopeMap.end(), nodep, "No scope for var");
         return iter->second;
+    }
+    AstClass* getClassp(AstNodeFTask* nodep) {
+        AstClass* classp = m_funcToClassMap[nodep];
+        UASSERT_OBJ(classp, nodep, "No class for ctor func");
+        return classp;
+    }
+    void remapFuncClassp(AstNodeFTask* nodep, AstNodeFTask* newp) {
+        m_funcToClassMap[newp] = getClassp(nodep);
     }
     bool ftaskNoInline(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->noInline(); }
     AstCFunc* ftaskCFuncp(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->cFuncp(); }
@@ -202,6 +213,8 @@ private:
         if (nodep->isConstructor()) {
             m_curVxp->noInline(true);
             m_ctorp = nodep;
+            UASSERT_OBJ(m_classp, nodep, "Ctor not under class");
+            m_funcToClassMap[nodep] = m_classp;
         }
         iterateChildren(nodep);
         m_curVxp = lastVxp;
@@ -229,6 +242,7 @@ private:
         // Move initial statements into the constructor
         m_initialps.clear();
         m_ctorp = nullptr;
+        m_classp = nodep;
         {  // Find m_initialps, m_ctor
             iterateChildren(nodep);
         }
@@ -246,6 +260,7 @@ private:
         }
         m_initialps.clear();
         m_ctorp = nullptr;
+        m_classp = nullptr;
     }
     virtual void visit(AstInitial* nodep) override {
         m_initialps.push_back(nodep);
@@ -312,7 +327,7 @@ class TaskVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Each module:
-    //    AstNodeFTask::user    // True if its been expanded
+    //    AstNodeFTask::user1   // True if its been expanded
     // Each funccall
     //  to TaskRelinkVisitor:
     //    AstVar::user2p        // AstVarScope* to replace varref with
@@ -1035,7 +1050,14 @@ private:
         cfuncp->dpiImportWrapper(nodep->dpiImport());
         cfuncp->isStatic(!(nodep->dpiImport() || nodep->taskPublic() || nodep->classMethod()));
         cfuncp->pure(nodep->pure());
-        cfuncp->isConstructor(nodep->name() == "new");
+        if (nodep->name() == "new") {
+            cfuncp->isConstructor(true);
+            AstClass* classp = m_statep->getClassp(nodep);
+            if (classp->extendsp()) {
+                cfuncp->ctorInits(EmitCBaseVisitor::prefixNameProtect(classp->extendsp()->classp())
+                                  + "(vlSymsp)");
+            }
+        }
         // cfuncp->dpiImport   // Not set in the wrapper - the called function has it set
         if (cfuncp->dpiExport()) cfuncp->cname(nodep->cname());
 
@@ -1278,6 +1300,8 @@ private:
                     m_statep->checkPurity(nodep);
                 }
                 AstNodeFTask* clonedFuncp = nodep->cloneTree(false);
+                if (nodep->isConstructor()) m_statep->remapFuncClassp(nodep, clonedFuncp);
+
                 AstCFunc* cfuncp = makeUserFunc(clonedFuncp, m_statep->ftaskNoInline(nodep));
                 if (cfuncp) {
                     nodep->addNextHere(cfuncp);

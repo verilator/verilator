@@ -304,7 +304,7 @@ class AstClass : public AstNodeModule {
     // MEMBERS
     MemberNameMap m_members;  // Members or method children
     AstClassPackage* m_packagep = nullptr;  // Class package this is under
-    bool m_virtual;  // Virtual class
+    bool m_virtual = false;  // Virtual class
     void insertCache(AstNode* nodep);
 
 public:
@@ -329,7 +329,7 @@ public:
         addStmtp(nodep);
     }
     AstClassExtends* extendsp() const { return VN_CAST(op4p(), ClassExtends); }
-    void extendsp(AstNode* nodep) { addNOp2p(nodep); }
+    void extendsp(AstNode* nodep) { addNOp4p(nodep); }
     void clearCache() { m_members.clear(); }
     void repairCache();
     AstNode* findMember(const string& name) const {
@@ -346,13 +346,15 @@ class AstClassExtends : public AstNode {
 public:
     AstClassExtends(FileLine* fl, AstNode* classOrPkgsp)
         : ASTGEN_SUPER(fl) {
-        setNOp1p(classOrPkgsp);  // Only for parser
+        setNOp2p(classOrPkgsp);  // Only for parser
     }
     ASTNODE_NODE_FUNCS(ClassExtends)
-    virtual string verilogKwd() const override { return "extends"; }
     virtual bool hasDType() const override { return true; }
-    AstNodeDType* classOrPkgsp() const { return VN_CAST(op1p(), NodeDType); }
-    void classOrPkgsp(AstNodeDType* nodep) { setOp1p(nodep); }
+    virtual string verilogKwd() const override { return "extends"; }
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
+    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNode* classOrPkgsp() const { return op2p(); }
+    void classOrPkgsp(AstNode* nodep) { setOp2p(nodep); }
     AstClass* classp() const;  // Class being extended (after link)
 };
 
@@ -8512,7 +8514,8 @@ private:
     string m_name;
     string m_cname;  // C name, for dpiExports
     string m_rtnType;  // void, bool, or other return type
-    string m_argTypes;
+    string m_argTypes;  // Argument types
+    string m_ctorInits;  // Constructor sub-class inits
     string m_ifdef;  // #ifdef symbol around this function
     VBoolOrUnknown m_isConst;  // Function is declared const (*this not changed)
     VBoolOrUnknown m_isStatic;  // Function is declared static (no this)
@@ -8574,7 +8577,7 @@ public:
     virtual bool same(const AstNode* samep) const override {
         const AstCFunc* asamep = static_cast<const AstCFunc*>(samep);
         return ((funcType() == asamep->funcType()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
-                && (argTypes() == asamep->argTypes())
+                && (argTypes() == asamep->argTypes()) && (ctorInits() == asamep->ctorInits())
                 && (!(dpiImport() || dpiExport()) || name() == asamep->name()));
     }
     //
@@ -8606,6 +8609,8 @@ public:
     void funcPublic(bool flag) { m_funcPublic = flag; }
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
+    void ctorInits(const string& str) { m_ctorInits = str; }
+    string ctorInits() const { return m_ctorInits; }
     void ifdef(const string& str) { m_ifdef = str; }
     string ifdef() const { return m_ifdef; }
     void funcType(AstCFuncType flag) { m_funcType = flag; }

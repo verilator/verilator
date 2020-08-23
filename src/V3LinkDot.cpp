@@ -76,6 +76,10 @@
 //######################################################################
 // Matcher classes (for suggestion matching)
 
+class LinkNodeMatcherClass : public VNodeMatcher {
+public:
+    virtual bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, Class); }
+};
 class LinkNodeMatcherFTask : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, NodeFTask); }
@@ -2679,13 +2683,6 @@ private:
     virtual void visit(AstClass* nodep) override {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
-        for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
-            if (AstClassExtends* eitemp = VN_CAST(itemp, ClassExtends)) {
-                // Replace abstract reference with hard pointer
-                // Will need later resolution when deal with parameters
-                eitemp->v3warn(E_UNSUPPORTED, "Unsupported: class extends");
-            }
-        }
         VSymEnt* oldCurSymp = m_curSymp;
         VSymEnt* oldModSymp = m_modSymp;
         {
@@ -2694,6 +2691,39 @@ private:
             m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getNodeSym(nodep);
             m_modp = nodep;
             iterateChildren(nodep);
+        }
+        for (AstNode* itemp = nodep->extendsp(); itemp; itemp = itemp->nextp()) {
+            if (AstClassExtends* cextp = VN_CAST(itemp, ClassExtends)) {
+                // Replace abstract reference with hard pointer
+                // Will need later resolution when deal with parameters
+                if (cextp->childDTypep() || cextp->dtypep()) continue;  // Already converted
+                AstClassOrPackageRef* cpackagerefp
+                    = VN_CAST(cextp->classOrPkgsp(), ClassOrPackageRef);
+                if (!cpackagerefp) {
+                    cextp->v3error("Attempting to extend using a non-class ");
+                } else {
+                    VSymEnt* foundp = m_curSymp->findIdFallback(cpackagerefp->name());
+                    bool ok = false;
+                    if (foundp) {
+                        if (AstClass* classp = VN_CAST(foundp->nodep(), Class)) {
+                            AstClassRefDType* newp
+                                = new AstClassRefDType{nodep->fileline(), classp};
+                            cextp->childDTypep(newp);
+                            VL_DO_DANGLING(cpackagerefp->unlinkFrBack()->deleteTree(),
+                                           cpackagerefp);
+                            ok = true;
+                        }
+                    }
+                    if (!ok) {
+                        string suggest = m_statep->suggestSymFallback(
+                            m_curSymp, cpackagerefp->name(), LinkNodeMatcherClass{});
+                        cpackagerefp->v3error(
+                            "Class to extend not found: "
+                            << cpackagerefp->prettyNameQ() << endl
+                            << (suggest.empty() ? "" : cpackagerefp->warnMore() + suggest));
+                    }
+                }
+            }
         }
         // V3Width when determines types needs to find enum values and such
         // so add members pointing to appropriate enum values
