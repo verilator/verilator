@@ -569,8 +569,10 @@ private:
         iterateChildren(nodep);
         AstAlways* alwaysp = VN_CAST(nodep->backp(), Always);
         if (alwaysp && alwaysp->keyword() == VAlwaysKwd::ALWAYS_COMB) {
-            alwaysp->v3error("Timing control statements not legal under always_comb\n"
+            alwaysp->v3error("Timing control statements not legal under always_comb "
+                             "(IEEE 1800-2017 9.2.2.2.2)\n"
                              << nodep->warnMore() << "... Suggest use a normal 'always'");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (alwaysp && !alwaysp->sensesp()) {
             // Verilator is still ony supporting SenTrees under an always,
             // so allow the parser to handle everything and shim to
@@ -580,13 +582,8 @@ private:
                 alwaysp->sensesp(sensesp);
             }
             if (nodep->stmtsp()) alwaysp->addStmtp(nodep->stmtsp()->unlinkFrBackWithNext());
-        } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: timing control statement in this location\n"
-                                             << nodep->warnMore()
-                                             << "... Suggest have one timing control statement "
-                                             << "per procedure, at the top of the procedure");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     virtual void visit(AstNode* nodep) override {
