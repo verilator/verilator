@@ -7,15 +7,10 @@
 module t (/*AUTOARG*/);
 
    initial begin
-      // With no statements this is a NOP
-      fork
-      join
-      fork
-      join_any
-      fork
-      join_none
-      // With one statement this is supported and optimized to a begin/end
       fork : fblk
+         begin
+            $write("Forked");
+         end
          begin
             $write("*-* All Finished *-*\n");
             $finish;

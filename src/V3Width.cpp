@@ -562,9 +562,14 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
-        if (v3Global.opt.bboxUnsup()) {
-            AstBegin* newp
-                = new AstBegin(nodep->fileline(), nodep->name(), nodep->stmtsp()->unlinkFrBack());
+        if (v3Global.opt.bboxUnsup()
+            // With no statements, begin is identical
+            || !nodep->stmtsp()
+            // With one statement, a begin block does as good as a fork/join or join_any
+            || (!nodep->stmtsp()->nextp() && !nodep->joinType().joinNone())) {
+            AstNode* stmtsp = nullptr;
+            if (nodep->stmtsp()) stmtsp = nodep->stmtsp()->unlinkFrBack();
+            AstBegin* newp = new AstBegin{nodep->fileline(), nodep->name(), stmtsp};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
