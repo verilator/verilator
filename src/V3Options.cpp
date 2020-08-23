@@ -1015,6 +1015,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 m_debugCollision = flag;
             } else if (onoff(sw, "-debug-exit-parse", flag /*ref*/)) {  // Undocumented
                 m_debugExitParse = flag;
+            } else if (onoff(sw, "-debug-exit-uvm", flag /*ref*/)) {  // Undocumented
+                m_debugExitUvm = flag;
             } else if (onoff(sw, "-debug-leak", flag /*ref*/)) {
                 m_debugLeak = flag;
             } else if (onoff(sw, "-debug-nondeterminism", flag /*ref*/)) {

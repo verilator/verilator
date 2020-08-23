@@ -116,6 +116,10 @@ static void process() {
         cout << "--debug-exit-parse: Exiting after parse\n";
         exit(0);
     }
+    if (v3Global.opt.debugExitUvm()) {
+        cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
+        exit(0);
+    }
 
     // Convert parseref's to varrefs, and other directly post parsing fixups
     V3LinkParse::linkParse(v3Global.rootp());

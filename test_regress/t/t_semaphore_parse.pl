@@ -13,7 +13,7 @@ scenarios(vlt => 1);
 top_filename("t_semaphore.v");
 
 lint(
-    verilator_flags2 => ["--debug-exit-parse"],
+    verilator_flags2 => ["--debug-exit-uvm"],
     );
 
 ok(1);

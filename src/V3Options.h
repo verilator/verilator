@@ -266,6 +266,7 @@ private:
     bool m_debugCheck = false;      // main switch: --debug-check
     bool m_debugCollision = false;  // main switch: --debug-collision
     bool m_debugExitParse = false;  // main switch: --debug-exit-parse
+    bool m_debugExitUvm = false;    // main switch: --debug-exit-uvm
     bool m_debugLeak = true;        // main switch: --debug-leak
     bool m_debugNondeterminism = false;  // main switch: --debug-nondeterminism
     bool m_debugPartition = false;  // main switch: --debug-partition
@@ -469,6 +470,7 @@ public:
     bool debugCheck() const { return m_debugCheck; }
     bool debugCollision() const { return m_debugCollision; }
     bool debugExitParse() const { return m_debugExitParse; }
+    bool debugExitUvm() const { return m_debugExitUvm; }
     bool debugLeak() const { return m_debugLeak; }
     bool debugNondeterminism() const { return m_debugNondeterminism; }
     bool debugPartition() const { return m_debugPartition; }
