@@ -56,9 +56,11 @@ module Test (/*AUTOARG*/
       // In clock expression
       $write("dly0=%0d, in=%0d, stable=%0d, past=%0d\n", dly0, in, $stable(dly0), $past(dly0));
       if ($stable(dly0)) $stop;
+      if (!$changed(dly0)) $stop;
    end
 
    assert property (@(posedge clk) !$stable(dly0));
+   assert property (@(posedge clk) $changed(dly0));
 endmodule
 
 module Test2 (/*AUTOARG*/
@@ -74,8 +76,10 @@ module Test2 (/*AUTOARG*/
    always @(posedge clk) begin
       dly0 <= in;
       if (!$stable(dly0[31:4])) $stop;
+      if ($changed(dly0[31:4])) $stop;
    end
 
    default clocking @(posedge clk); endclocking
    assert property ($stable(dly0[31:4]));
+   assert property (!$changed(dly0[31:4]));
 endmodule

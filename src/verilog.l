@@ -420,6 +420,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <S05,S09,S12,S17,SAX>{
   /*     System Tasks */
   "$bits"               { FL; return yD_BITS; }
+  "$changed"            { FL; return yD_CHANGED; }
   "$countbits"          { FL; return yD_COUNTBITS; }
   "$countones"          { FL; return yD_COUNTONES; }
   "$dimensions"         { FL; return yD_DIMENSIONS; }

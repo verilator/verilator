@@ -690,6 +690,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_C            "$c"
 %token<fl>              yD_CAST         "$cast"
 %token<fl>              yD_CEIL         "$ceil"
+%token<fl>              yD_CHANGED      "$changed"
 %token<fl>              yD_CLOG2        "$clog2"
 %token<fl>              yD_COS          "$cos"
 %token<fl>              yD_COSH         "$cosh"
@@ -3619,6 +3620,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_BITSTOSHORTREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); UNSUPREAL($1); }
 	|	yD_CAST '(' expr ',' expr ')'		{ $$ = new AstCastDynamic($1, $3, $5); }
 	|	yD_CEIL '(' expr ')'			{ $$ = new AstCeilD($1,$3); }
+	|	yD_CHANGED '(' expr ')'			{ $$ = new AstLogNot($1, new AstStable($1, $3)); }
+	|	yD_CHANGED '(' expr ',' expr ')'	{ $$ = $3; BBUNSUP($1, "Unsupported: $changed and clock arguments"); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
 	|	yD_COS '(' expr ')'			{ $$ = new AstCosD($1,$3); }
 	|	yD_COSH '(' expr ')'			{ $$ = new AstCoshD($1,$3); }
