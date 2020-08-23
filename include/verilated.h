@@ -643,9 +643,19 @@ extern void VL_PRINTF_MT(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 /// Print a debug message from internals with standard prefix, with printf style format
 extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 
-extern IData VL_RANDOM_I(int obits);  ///< Randomize a signal
-extern QData VL_RANDOM_Q(int obits);  ///< Randomize a signal
+extern vluint64_t vl_rand64() VL_MT_SAFE;
+inline IData VL_RANDOM_I(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_I(obits); }
+inline QData VL_RANDOM_Q(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_Q(obits); }
 extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);  ///< Randomize a signal
+inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
+    vluint64_t rnd = vl_rand64();
+    if (VL_LIKELY(hi > lo)) {
+        // Modulus isn't very fast but it's common that hi-low is power-of-two
+        return (rnd % (hi - lo)) + lo;
+    } else {
+        return (rnd % (lo - hi)) + hi;
+    }
+}
 
 /// Init time only, so slow is fine
 extern IData VL_RAND_RESET_I(int obits);  ///< Random reset a signal

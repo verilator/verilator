@@ -4093,11 +4093,12 @@ All specify blocks and timing checks are ignored.
 Monitor and strobe are not supported, convert to always_comb $display or
 similar.
 
-=item $random
+=item $random, $urandom, $urandom_range
 
-$random does not support the optional argument to set the seed.  Use the
-srand function in C to accomplish this, and note there is only one random
-number generator (not one per module).
+$random and $urandom do not support the optional argument to set the seed.
+Use +verilator+seed argument to set the seed.  There is one random seed per
+C thread, not per module for $random, nor per object for random stability
+of $urandom/$urandom_range.
 
 =item $readmemb, $readmemh
 

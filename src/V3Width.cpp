@@ -1101,6 +1101,19 @@ private:
             nodep->dtypeSetSigned32();  // Says the spec
         }
     }
+    virtual void visit(AstURandom* nodep) override {
+        if (m_vup->prelim()) {
+            nodep->dtypeSetUInt32();  // Says the spec
+        }
+    }
+    virtual void visit(AstURandomRange* nodep) override {
+        if (m_vup->prelim()) {
+            nodep->dtypeSetUInt32();  // Says the spec
+            AstNodeDType* expDTypep = nodep->findUInt32DType();
+            iterateCheck(nodep, "LHS", nodep->lhsp(), SELF, FINAL, expDTypep, EXTEND_EXP);
+            iterateCheck(nodep, "RHS", nodep->rhsp(), SELF, FINAL, expDTypep, EXTEND_EXP);
+        }
+    }
     virtual void visit(AstUnbounded* nodep) override {
         nodep->dtypeSetSigned32();  // Used in int context
         if (!VN_IS(nodep->backp(), IsUnbounded) && !VN_IS(nodep->backp(), BracketArrayDType)
@@ -1793,8 +1806,7 @@ private:
         if (nodep->lvalue() && nodep->varp()->direction() == VDirection::CONSTREF) {
             nodep->v3error("Assigning to const ref variable: " << nodep->prettyNameQ());
         } else if (nodep->lvalue() && nodep->varp()->isConst() && !m_paramsOnly
-                   && (!m_ftaskp || !m_ftaskp->isConstructor())
-                   && !VN_IS(m_procedurep, Initial)) {
+                   && (!m_ftaskp || !m_ftaskp->isConstructor()) && !VN_IS(m_procedurep, Initial)) {
             // Too loose, but need to allow our generated first assignment
             // Move this to a property of the AstInitial block
             nodep->v3error("Assigning to const variable: " << nodep->prettyNameQ());

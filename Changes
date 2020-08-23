@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support class extern.
 
+****  Support $urandom, $urandom_range without stability.
+
 ****  Fix false DECLFILENAME on black-boxed modules (#2430). [Philipp Wagner]
 
 ****  Fix naming of "id : begin" blocks.

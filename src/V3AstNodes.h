@@ -5213,6 +5213,50 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
+class AstURandom : public AstNodeTermop {
+    // $urandom
+public:
+    explicit AstURandom(FileLine* fl)
+        : ASTGEN_SUPER(fl) {
+        dtypeSetUInt32();  // Says IEEE
+    }
+    ASTNODE_NODE_FUNCS(URandom)
+    virtual string emitVerilog() override { return "%f$urandom"; }
+    virtual string emitC() override { return "VL_RANDOM_%nq(%nw)"; }
+    virtual bool cleanOut() const override { return true; }
+    virtual bool isGateOptimizable() const override { return false; }
+    virtual bool isPredictOptimizable() const override { return false; }
+    virtual int instrCount() const override { return instrCountPli(); }
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+
+class AstURandomRange : public AstNodeBiop {
+    // $urandom_range
+public:
+    explicit AstURandomRange(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {
+        dtypeSetUInt32();  // Says IEEE
+    }
+    ASTNODE_NODE_FUNCS(URandomRange)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+        return new AstURandomRange(fileline(), lhsp, rhsp);
+    }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        V3ERROR_NA;
+    }
+    virtual string emitVerilog() override { return "%f$urandom_range(%l, %r)"; }
+    virtual string emitC() override { return "VL_URANDOM_RANGE_%nq(%li, %ri)"; }
+    virtual bool cleanOut() const override { return true; }
+    virtual bool cleanLhs() const override { return true; }
+    virtual bool cleanRhs() const override { return true; }
+    virtual bool sizeMattersLhs() const override { return false; }
+    virtual bool sizeMattersRhs() const override { return false; }
+    virtual bool isGateOptimizable() const override { return false; }
+    virtual bool isPredictOptimizable() const override { return false; }
+    virtual int instrCount() const override { return instrCountPli(); }
+};
+
 class AstTime : public AstNodeTermop {
     VTimescale m_timeunit;  // Parent module time unit
 public:

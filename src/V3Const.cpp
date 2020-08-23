@@ -2209,8 +2209,8 @@ private:
 
     TREEOP1("AstSel{warnSelect(nodep)}",        "NEVER");
     // Generic constants on both side.  Do this first to avoid other replacements
-    TREEOPC("AstNodeBiop {$lhsp.castConst, $rhsp.castConst}",  "replaceConst(nodep)");
-    TREEOPC("AstNodeUniop{$lhsp.castConst, !nodep->isOpaque()}",  "replaceConst(nodep)");
+    TREEOPC("AstNodeBiop {$lhsp.castConst, $rhsp.castConst, nodep->isPredictOptimizable()}",  "replaceConst(nodep)");
+    TREEOPC("AstNodeUniop{$lhsp.castConst, !nodep->isOpaque(), nodep->isPredictOptimizable()}",  "replaceConst(nodep)");
     TREEOPC("AstNodeQuadop{$lhsp.castConst, $rhsp.castConst, $thsp.castConst, $fhsp.castConst}",  "replaceConst(nodep)");
     // Zero on one side or the other
     TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");

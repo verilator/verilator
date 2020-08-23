@@ -788,6 +788,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_UNIT         "$unit"
 %token<fl>              yD_UNPACKED_DIMENSIONS "$unpacked_dimensions"
 %token<fl>              yD_UNSIGNED     "$unsigned"
+%token<fl>              yD_URANDOM      "$urandom"
+%token<fl>              yD_URANDOM_RANGE "$urandom_range"
 %token<fl>              yD_VALUEPLUSARGS "$value$plusargs"
 %token<fl>              yD_WARNING      "$warning"
 %token<fl>              yD_WRITE        "$write"
@@ -3696,7 +3698,10 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_UNGETC '(' expr ',' expr ')'		{ $$ = new AstFUngetC($1, $5, $3); }  // Arg swap to file first
 	|	yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_UNPK_DIMENSIONS,$3); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }
-	|	yD_VALUEPLUSARGS '(' expr ',' expr ')'	{ $$ = new AstValuePlusArgs($1,$3,$5); }
+	|	yD_URANDOM '(' expr ')'			{ $$ = new AstURandom($1); BBUNSUP($1, "Unsupported: Seed on $urandom. Suggest use +verilator+seed+ runtime flag"); }
+	|	yD_URANDOM parenE			{ $$ = new AstURandom($1); }
+	|	yD_URANDOM_RANGE '(' expr ',' expr ')'	{ $$ = new AstURandomRange($1, $3, $5); }
+	|	yD_VALUEPLUSARGS '(' expr ',' expr ')'	{ $$ = new AstValuePlusArgs($1, $3, $5); }
 	;
 
 elaboration_system_task<nodep>:	// IEEE: elaboration_system_task (1800-2009)
