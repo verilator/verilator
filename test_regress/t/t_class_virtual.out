@@ -1,4 +1,7 @@
+%Error-UNSUPPORTED: t/t_class_virtual.v:8:25: Unsupported: 'virtual' class method
+    8 |    virtual function int hello;
+      |                         ^~~~~
 %Error-UNSUPPORTED: t/t_class_virtual.v:7:9: Unsupported: virtual class
-    7 | virtual class VC;
+    7 | virtual class VBase;
       |         ^~~~~
 %Error: Exiting due to
