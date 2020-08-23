@@ -517,7 +517,7 @@ public:  // But only for verilated*.cpp
         const VerilatedFpList fdlist = fdToFpList(fdi);
         for (const auto& i : fdlist) {
             if (VL_UNLIKELY(!i)) continue;
-            fwrite(output.c_str(), 1, output.size(), i);
+            (void)fwrite(output.c_str(), 1, output.size(), i);
         }
     }
     static void fdClose(IData fdi) VL_MT_SAFE {
