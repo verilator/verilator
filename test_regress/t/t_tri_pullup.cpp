@@ -6,7 +6,7 @@
 
 #include "Vt_tri_pullup.h"
 
-Vt_tri_pullup* tb = nullptr;
+VM_PREFIX* tb = nullptr;
 
 double sc_time_stamp() { return 0; }
 

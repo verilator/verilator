@@ -20,8 +20,8 @@
 struct MyMon {
     vluint32_t* sigsp[2];
     MyMon() {
-        sigsp[0] = nullptr;
-        sigsp[1] = nullptr;
+        sigsp[0] = NULL;
+        sigsp[1] = NULL;
     }
 };
 MyMon mons[2];

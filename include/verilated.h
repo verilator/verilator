@@ -163,7 +163,7 @@ private:
 
 public:
     explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr)
-        : m_mutexr{mutexr} {
+        : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
         m_mutexr.lock();
     }
     ~VerilatedLockGuard() VL_RELEASE() { m_mutexr.unlock(); }

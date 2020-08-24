@@ -1758,7 +1758,7 @@ static const char* formatBinary(int nBits, vluint32_t bits) {
 VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData start, QData end)
     : m_hex{hex}
     , m_bits{bits}
-    , m_filename{filename}
+    , m_filename(filename)  // Need () or GCC 4.8 false warning
     , m_end{end}
     , m_addr{start}
     , m_linenum{0} {

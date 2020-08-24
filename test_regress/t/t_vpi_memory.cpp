@@ -52,7 +52,7 @@ unsigned int main_time = 0;
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = nullptr  EXP = !nullptr\n", FILENM, __LINE__); \
+        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
         return __LINE__; \
     }
 
@@ -116,7 +116,7 @@ int _mon_check_memory() {
     s_vpi_error_info e;
 
     vpi_printf((PLI_BYTE8*)"Check memory vpi ...\n");
-    mem_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted("mem0"), nullptr);
+    mem_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted("mem0"), NULL);
     CHECK_RESULT_NZ(mem_h);
     // check type
     int vpitype = vpi_get(vpiType, mem_h);
@@ -127,7 +127,7 @@ int _mon_check_memory() {
     cnt = 0;
     while ((lcl_h = vpi_scan(iter_h))) {
         value.value.integer = ++cnt;
-        vpi_put_value(lcl_h, &value, nullptr, vpiNoDelay);
+        vpi_put_value(lcl_h, &value, NULL, vpiNoDelay);
         // check size and range
         if (int status = _mon_check_range(lcl_h, 32, 31, 0)) return status;
     }
@@ -176,7 +176,7 @@ int _mon_check_memory() {
     CHECK_RESULT(value.value.integer, 1);
 
     // check writing to vpiConstant
-    vpi_put_value(side_h, &value, nullptr, vpiNoDelay);
+    vpi_put_value(side_h, &value, NULL, vpiNoDelay);
     CHECK_RESULT_NZ(vpi_chk_error(&e));
 
     return 0;  // Ok
@@ -198,7 +198,7 @@ static int mon_check_vpi() {
 
     vpi_value.format = vpiIntVal;
     vpi_value.value.integer = mon_check();
-    vpi_put_value(href, &vpi_value, nullptr, vpiNoDelay);
+    vpi_put_value(href, &vpi_value, NULL, vpiNoDelay);
 
     return 0;
 }

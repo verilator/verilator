@@ -52,7 +52,7 @@ unsigned int callback_count_start_of_sim = 0;
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = nullptr  EXP = !nullptr\n", __FILE__, __LINE__); \
+        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", __FILE__, __LINE__); \
         return __LINE__; \
     }
 

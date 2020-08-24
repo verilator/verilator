@@ -5,7 +5,7 @@
 
 #include "Vt_tri_inz.h"
 
-Vt_tri_inz* tb = nullptr;
+VM_PREFIX* tb = nullptr;
 bool pass = true;
 
 double sc_time_stamp() { return 0; }

@@ -44,7 +44,7 @@ unsigned int main_time = 0;
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = nullptr  EXP = !nullptr\n", FILENM, __LINE__); \
+        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
         return __LINE__; \
     }
 
@@ -57,7 +57,7 @@ unsigned int main_time = 0;
 
 extern "C" {
 int mon_check() {
-    vpiHandle it = vpi_iterate(vpiModule, nullptr);
+    vpiHandle it = vpi_iterate(vpiModule, NULL);
     CHECK_RESULT_NZ(it);
 
     vpiHandle topmod = vpi_scan(it);
@@ -104,7 +104,7 @@ static int mon_check_vpi() {
 
     vpi_value.format = vpiIntVal;
     vpi_value.value.integer = mon_check();
-    vpi_put_value(href, &vpi_value, nullptr, vpiNoDelay);
+    vpi_put_value(href, &vpi_value, NULL, vpiNoDelay);
 
     return 0;
 }
