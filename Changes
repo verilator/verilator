@@ -19,6 +19,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix class constructor error on assignments to const.
 
+****  Fix splitting eval functions with --output-split-cfuncs (#2368). [Geza Lore]
+
 
 * Verilator 4.040 2020-08-15
 
