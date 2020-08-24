@@ -4199,17 +4199,7 @@ default as a code style warning.
 =item BLKANDNBLK
 
 BLKANDNBLK is an error that a variable comes from a mix of blocking and
-non-blocking assignments.  Generally, this is caused by a register driven
-by both combo logic and a flop:
-
-      always @ (posedge clk)  foo[0] <= ...
-      always @* foo[1] = ...
-
-Simply use a different register for the flop:
-
-      always @ (posedge clk)  foo_flopped[0] <= ...
-      always @* foo[0] = foo_flopped[0];
-      always @* foo[1] = ...
+non-blocking assignments.
 
 This is not illegal in SystemVerilog, but a violation of good coding
 practice. Verilator reports this as an error, because ignoring this warning
@@ -4219,6 +4209,24 @@ It is generally safe to disable this error (with a "// verilator lint_off
 BLKANDNBLK" metacomment or the -Wno-BLKANDNBLK option) when one of the
 assignments is inside a public task, or when the blocking and non-blocking
 assignments have non-overlapping bits and structure members.
+
+Generally, this is caused by a register driven by both combo logic and a
+flop:
+
+      logic [1:0] foo;
+      always @ (posedge clk)  foo[0] <= ...
+      always @* foo[1] = ...
+
+Simply use a different register for the flop:
+
+      logic [1:0] foo;
+      always @ (posedge clk)  foo_flopped[0] <= ...
+      always @* foo[0] = foo_flopped[0];
+      always @* foo[1] = ...
+
+Or, this may also avoid the error:
+
+      logic [1:0] foo /*verilator split_var*/;
 
 =item BLKSEQ
 
