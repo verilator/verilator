@@ -275,10 +275,6 @@ public:
         return m_index;
     }
     AstNode* context() const { return m_contextp; }
-    std::pair<int, int> range() const {
-        UASSERT_OBJ(VN_IS(m_nodep, SliceSel), m_nodep, "not slice sel");
-        return std::make_pair(m_msb, m_lsb);
-    }
     bool lvalue() const { return m_lvalue; }
     bool ftask() const { return m_ftask; }
     bool operator<(const UnpackRef& other) const {
@@ -584,16 +580,16 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
         if (AstVarRef* refp = isTargetVref(nodep->fromp())) {
             AstUnpackArrayDType* dtypep
                 = VN_CAST(refp->varp()->dtypep()->skipRefp(), UnpackArrayDType);
-            if (dtypep->lsb() <= nodep->declRange().lo()
-                && nodep->declRange().hi() <= dtypep->msb()) {  // Range is ok
-                UINFO(4, "add " << nodep << " for " << refp->varp()->prettyName() << "\n");
-                m_refs.tryAdd(m_contextp, refp, nodep, nodep->declRange().hi(),
-                              nodep->declRange().lo(), m_inFTask);
-            } else {
-                nodep->v3warn(SPLITVAR, refp->prettyNameQ()
-                                            << notSplitMsg << "index if out of range.\n");
-                m_refs.remove(refp->varp());
-            }
+            // declRange() of AstSliceSel is shifted by dtypep->declRange().lo() in V3WidthSel.cpp
+            // restore the original decl range here.
+            const VNumRange selRange{nodep->declRange().hi() + dtypep->declRange().lo(),
+                                     nodep->declRange().lo() + dtypep->declRange().lo(),
+                                     nodep->declRange().littleEndian()};
+            UASSERT_OBJ(dtypep->lsb() <= selRange.lo() && selRange.hi() <= dtypep->msb(), nodep,
+                        "Range check for AstSliceSel must have been finished in V3Width.cpp");
+            UINFO(4, "add " << nodep << " for " << refp->varp()->prettyName() << "\n");
+            m_refs.tryAdd(m_contextp, refp, nodep, nodep->declRange().hi(),
+                          nodep->declRange().lo(), m_inFTask);
         } else {
             iterateChildren(nodep);
         }
