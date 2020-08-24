@@ -10,14 +10,13 @@ virtual class VBase;
    endfunction
 endclass
 
-`ifndef VERILATOR
-virtual class VA extends VBase;
+class VA extends VBase;
    virtual function int hello;
       return 2;
    endfunction
 endclass
 
-virtual class VB extends VBase;
+class VB extends VBase;
    virtual function int hello;
       return 3;
    endfunction
@@ -28,6 +27,10 @@ module t;
       VA va = new;
       VB vb = new;
       VBase b;
+
+      if (va.hello() != 2) $stop;
+      if (vb.hello() != 3) $stop;
+
       b = va;
       if (b.hello() != 2) $stop;
       b = vb;
@@ -36,4 +39,3 @@ module t;
       $finish;
    end
 endmodule
-`endif

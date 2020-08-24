@@ -9,7 +9,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Support hierarchical Verilation (#2206). [Yutetsu TAKATSUKASA]
 
-****  Support class extern.
+****  Support (with limitations) class extern, class extends, virtual class.
 
 ****  Support $urandom, $urandom_range without stability.
 

@@ -1036,7 +1036,7 @@ private:
         // Unless public, v3Descope will not uniquify function names even if duplicate per-scope,
         // so make it unique now.
         string suffix;  // So, make them unique
-        if (!nodep->taskPublic()) suffix = "_" + m_scopep->nameDotless();
+        if (!nodep->taskPublic() && !nodep->classMethod()) suffix = "_" + m_scopep->nameDotless();
         string name = ((nodep->name() == "new") ? "new" : prefix + nodep->name() + suffix);
         AstCFunc* cfuncp = new AstCFunc(
             nodep->fileline(), name, m_scopep,
@@ -1049,6 +1049,7 @@ private:
         cfuncp->dpiExport(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
         cfuncp->isStatic(!(nodep->dpiImport() || nodep->taskPublic() || nodep->classMethod()));
+        cfuncp->isVirtual(nodep->isVirtual());
         cfuncp->pure(nodep->pure());
         if (nodep->name() == "new") {
             cfuncp->isConstructor(true);

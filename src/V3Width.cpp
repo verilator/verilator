@@ -2028,7 +2028,6 @@ private:
     virtual void visit(AstClass* nodep) override {
         if (nodep->didWidthAndSet()) return;
         userIterateChildren(nodep, nullptr);  // First size all members
-        if (nodep->isVirtual()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: virtual class");
         nodep->repairCache();
     }
     virtual void visit(AstClassRefDType* nodep) override {
@@ -2739,7 +2738,10 @@ private:
             // Either made explicitly or V3LinkDot made implicitly
             classp->v3fatalSrc("Can't find class's new");
         }
-
+        if (classp->isVirtual()) {
+            nodep->v3error(
+                "Illegal to call 'new' using an abstract virtual class (IEEE 1800-2017 8.21)");
+        }
         userIterate(nodep->taskp(), nullptr);
         userIterateChildren(nodep, nullptr);
         processFTaskRefArgs(nodep);
@@ -3770,9 +3772,6 @@ private:
             nodep->dtypeSetLogicBool();
             nodep->didWidth(true);
             return;
-        }
-        if (nodep->isVirtual() || nodep->pureVirtual()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'virtual' class method");
         }
         // Function hasn't been widthed, so make it so.
         // Would use user1 etc, but V3Width called from too many places to spend a user
