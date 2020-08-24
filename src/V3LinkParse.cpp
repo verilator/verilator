@@ -421,7 +421,7 @@ private:
             return;
         }
         AstNode* arrayp = nodep->arrayp();  // Maybe different node since bracketp looked
-        if (!VN_IS(arrayp, ParseRef)) {
+        if (!VN_IS(arrayp, ParseRef) && !VN_IS(arrayp, Dot)) {
             // Code below needs to use other then attributes to figure out the bounds
             // Also need to deal with queues, etc
             arrayp->v3warn(E_UNSUPPORTED, "Unsupported: foreach on non-simple variable reference");
@@ -442,14 +442,11 @@ private:
             AstNode* varp
                 = new AstVar(fl, AstVarType::BLOCKTEMP, varsp->name(), nodep->findSigned32DType());
             // These will be the left and right dimensions and size of the array:
-            AstNode* leftp = new AstAttrOf(fl, AstAttrType::DIM_LEFT,
-                                           new AstVarRef(fl, arrayp->name(), false),
+            AstNode* leftp = new AstAttrOf(fl, AstAttrType::DIM_LEFT, arrayp->cloneTree(false),
                                            new AstConst(fl, dimension));
-            AstNode* rightp = new AstAttrOf(fl, AstAttrType::DIM_RIGHT,
-                                            new AstVarRef(fl, arrayp->name(), false),
+            AstNode* rightp = new AstAttrOf(fl, AstAttrType::DIM_RIGHT, arrayp->cloneTree(false),
                                             new AstConst(fl, dimension));
-            AstNode* sizep = new AstAttrOf(fl, AstAttrType::DIM_SIZE,
-                                           new AstVarRef(fl, arrayp->name(), false),
+            AstNode* sizep = new AstAttrOf(fl, AstAttrType::DIM_SIZE, arrayp->cloneTree(false),
                                            new AstConst(fl, dimension));
             AstNode* stmtsp = varp;
             // Assign left-dimension into the loop var:

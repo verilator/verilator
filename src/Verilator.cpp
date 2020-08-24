@@ -116,13 +116,15 @@ static void process() {
         cout << "--debug-exit-parse: Exiting after parse\n";
         exit(0);
     }
+
+    // Convert parseref's to varrefs, and other directly post parsing fixups
+    V3LinkParse::linkParse(v3Global.rootp());
     if (v3Global.opt.debugExitUvm()) {
+        V3Error::abortIfErrors();
         cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
         exit(0);
     }
 
-    // Convert parseref's to varrefs, and other directly post parsing fixups
-    V3LinkParse::linkParse(v3Global.rootp());
     // Cross-link signal names
     // Cross-link dotted hierarchical references
     V3LinkDot::linkDotPrimary(v3Global.rootp());
