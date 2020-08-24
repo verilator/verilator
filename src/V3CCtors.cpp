@@ -170,10 +170,12 @@ void V3CCtors::cctorsAll() {
                 }
             }
         }
-        if (VN_IS(modp, Class)) {
+        if (AstClass* classp = VN_CAST(modp, Class)) {
             AstCFunc* funcp = new AstCFunc(modp->fileline(), "~", nullptr, "");
             funcp->isDestructor(true);
             funcp->isStatic(false);
+            // If can be referred to by base pointer, need virtual delete
+            funcp->isVirtual(classp->isExtended());
             funcp->slow(false);
             modp->addStmtp(funcp);
         }

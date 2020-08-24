@@ -1095,7 +1095,11 @@ void AstClass::repairCache() {
     clearCache();
     for (AstNode* itemp = membersp(); itemp; itemp = itemp->nextp()) { insertCache(itemp); }
 }
-void AstClass::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstClass::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isExtended()) str << " [EXT]";
+    if (isVirtual()) str << " [VIRT]";
+}
 AstClass* AstClassExtends::classp() const {
     AstClassRefDType* refp = VN_CAST(dtypep(), ClassRefDType);
     UASSERT_OBJ(refp, this, "class extends non-ref");

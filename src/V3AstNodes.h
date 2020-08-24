@@ -305,6 +305,7 @@ class AstClass : public AstNodeModule {
     MemberNameMap m_members;  // Members or method children
     AstClassPackage* m_packagep = nullptr;  // Class package this is under
     bool m_virtual = false;  // Virtual class
+    bool m_extended = false;  // Is extension or extended by other classes
     void insertCache(AstNode* nodep);
 
 public:
@@ -336,6 +337,8 @@ public:
         const auto it = m_members.find(name);
         return (it == m_members.end()) ? nullptr : it->second;
     }
+    bool isExtended() const { return m_extended; }
+    void isExtended(bool flag) { m_extended = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
 };

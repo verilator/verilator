@@ -2709,6 +2709,8 @@ private:
                             AstClassRefDType* newp
                                 = new AstClassRefDType{nodep->fileline(), classp};
                             cextp->childDTypep(newp);
+                            classp->isExtended(true);
+                            nodep->isExtended(true);
                             VL_DO_DANGLING(cpackagerefp->unlinkFrBack()->deleteTree(),
                                            cpackagerefp);
                             ok = true;
