@@ -360,25 +360,22 @@ private:
     }
 
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
-        unsigned origPastNum = m_modPastNum;
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_modPastNum);
         {
             m_modp = nodep;
             m_modPastNum = 0;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
-        m_modPastNum = origPastNum;
     }
     virtual void visit(AstBegin* nodep) override {
         // This code is needed rather than a visitor in V3Begin,
         // because V3Assert is called before V3Begin
-        AstBegin* lastp = m_beginp;
+        VL_RESTORER(m_beginp);
         {
             m_beginp = nodep;
             iterateChildren(nodep);
         }
-        m_beginp = lastp;
     }
 
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }

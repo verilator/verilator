@@ -626,12 +626,11 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
     virtual void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);

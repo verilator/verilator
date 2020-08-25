@@ -68,17 +68,16 @@ private:
         }
     }
     virtual void visit(AstNodeAssign* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->lhsp());
             m_setRefLvalue = false;
             iterateAndNextNull(nodep->rhsp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFOpen* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
@@ -86,102 +85,90 @@ private:
             iterateAndNextNull(nodep->filenamep());
             iterateAndNextNull(nodep->modep());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFOpenMcd* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
             m_setRefLvalue = false;
             iterateAndNextNull(nodep->filenamep());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFClose* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFError* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
             iterateAndNextNull(nodep->strp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFFlush* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFGetC* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFGetS* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
             iterateAndNextNull(nodep->strgp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFRead* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->memp());
             iterateAndNextNull(nodep->filep());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFScanF* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
             iterateAndNextNull(nodep->exprsp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFUngetC* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstSScanF* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->exprsp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstSysIgnore* nodep) override {
         // Can't know if lvalue or not; presume so as stricter
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         iterateChildren(nodep);
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstReadMem* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->memp());
@@ -190,30 +177,27 @@ private:
             iterateAndNextNull(nodep->lsbp());
             iterateAndNextNull(nodep->msbp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstValuePlusArgs* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = false;
             iterateAndNextNull(nodep->searchp());
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->outp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstSFormat* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->lhsp());
             m_setRefLvalue = false;
             iterateAndNextNull(nodep->fmtp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     void prepost_visit(AstNodeTriop* nodep) {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             m_setRefLvalue = false;
             iterateAndNextNull(nodep->lhsp());
@@ -221,7 +205,6 @@ private:
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->thsp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
     virtual void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
@@ -230,7 +213,7 @@ private:
 
     // Nodes that change LValue state
     virtual void visit(AstSel* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {
             iterateAndNextNull(nodep->lhsp());
             // Only set lvalues on the from
@@ -238,34 +221,30 @@ private:
             iterateAndNextNull(nodep->rhsp());
             iterateAndNextNull(nodep->thsp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstNodeSel* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {  // Only set lvalues on the from
             iterateAndNextNull(nodep->lhsp());
             m_setRefLvalue = false;
             iterateAndNextNull(nodep->rhsp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstCellArrayRef* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {  // selp is not an lvalue
             m_setRefLvalue = false;
             iterateAndNextNull(nodep->selp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstNodePreSel* nodep) override {
-        bool last_setRefLvalue = m_setRefLvalue;
+        VL_RESTORER(m_setRefLvalue);
         {  // Only set lvalues on the from
             iterateAndNextNull(nodep->lhsp());
             m_setRefLvalue = false;
             iterateAndNextNull(nodep->rhsp());
             iterateAndNextNull(nodep->thsp());
         }
-        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstNodeFTask* nodep) override {
         m_ftaskp = nodep;

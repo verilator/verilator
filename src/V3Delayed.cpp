@@ -362,12 +362,13 @@ private:
     }
     virtual void visit(AstActive* nodep) override {
         m_activep = nodep;
-        bool oldinit = m_inInitial;
-        m_inInitial = nodep->hasInitial();
-        AstNode::user3ClearTree();  // Two sets to same variable in different
-                                    // actives must use different vars.
-        iterateChildren(nodep);
-        m_inInitial = oldinit;
+        VL_RESTORER(m_inInitial);
+        {
+            m_inInitial = nodep->hasInitial();
+            // Two sets to same variable in different actives must use different vars.
+            AstNode::user3ClearTree();
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstAssignDly* nodep) override {
         m_inDly = true;
@@ -465,10 +466,11 @@ private:
             "For statements should have been converted to while statements in V3Begin");
     }
     virtual void visit(AstWhile* nodep) override {
-        bool oldloop = m_inLoop;
-        m_inLoop = true;
-        iterateChildren(nodep);
-        m_inLoop = oldloop;
+        VL_RESTORER(m_inLoop);
+        {
+            m_inLoop = true;
+            iterateChildren(nodep);
+        }
     }
 
     //--------------------

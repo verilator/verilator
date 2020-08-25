@@ -143,23 +143,22 @@ private:
     }
     virtual void visit(AstUnpackArrayDType* nodep) override {
         for (int index = 0; index < nodep->elementsConst(); ++index) {
-            AstNode* origVEp = m_varEqnp;
-            AstNode* origNLEp = m_newLvEqnp;
-            AstNode* origNREp = m_newRvEqnp;
+            VL_RESTORER(m_varEqnp);
+            VL_RESTORER(m_newLvEqnp);
+            VL_RESTORER(m_newRvEqnp);
+            {
+                m_varEqnp = new AstArraySel(nodep->fileline(), m_varEqnp->cloneTree(true), index);
+                m_newLvEqnp
+                    = new AstArraySel(nodep->fileline(), m_newLvEqnp->cloneTree(true), index);
+                m_newRvEqnp
+                    = new AstArraySel(nodep->fileline(), m_newRvEqnp->cloneTree(true), index);
 
-            m_varEqnp = new AstArraySel(nodep->fileline(), m_varEqnp->cloneTree(true), index);
-            m_newLvEqnp = new AstArraySel(nodep->fileline(), m_newLvEqnp->cloneTree(true), index);
-            m_newRvEqnp = new AstArraySel(nodep->fileline(), m_newRvEqnp->cloneTree(true), index);
+                iterate(nodep->subDTypep()->skipRefp());
 
-            iterate(nodep->subDTypep()->skipRefp());
-
-            m_varEqnp->deleteTree();
-            m_newLvEqnp->deleteTree();
-            m_newRvEqnp->deleteTree();
-
-            m_varEqnp = origVEp;
-            m_newLvEqnp = origNLEp;
-            m_newRvEqnp = origNREp;
+                m_varEqnp->deleteTree();
+                m_newLvEqnp->deleteTree();
+                m_newRvEqnp->deleteTree();
+            }
         }
     }
     virtual void visit(AstNodeUOrStructDType* nodep) override {

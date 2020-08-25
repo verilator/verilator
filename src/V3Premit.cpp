@@ -186,13 +186,12 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             m_funcp = nullptr;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
     virtual void visit(AstCFunc* nodep) override {
         m_funcp = nodep;
@@ -318,31 +317,28 @@ private:
     virtual void visit(AstSel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         {  // Only the 'from' is part of the assignment LHS
-            bool prevAssign = m_assignLhs;
+            VL_RESTORER(m_assignLhs);
             m_assignLhs = false;
             iterateAndNextNull(nodep->lsbp());
             iterateAndNextNull(nodep->widthp());
-            m_assignLhs = prevAssign;
         }
         checkNode(nodep);
     }
     virtual void visit(AstArraySel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         {  // Only the 'from' is part of the assignment LHS
-            bool prevAssign = m_assignLhs;
+            VL_RESTORER(m_assignLhs);
             m_assignLhs = false;
             iterateAndNextNull(nodep->bitp());
-            m_assignLhs = prevAssign;
         }
         checkNode(nodep);
     }
     virtual void visit(AstAssocSel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         {  // Only the 'from' is part of the assignment LHS
-            bool prevAssign = m_assignLhs;
+            VL_RESTORER(m_assignLhs);
             m_assignLhs = false;
             iterateAndNextNull(nodep->bitp());
-            m_assignLhs = prevAssign;
         }
         checkNode(nodep);
     }

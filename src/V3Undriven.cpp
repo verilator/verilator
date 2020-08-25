@@ -370,38 +370,36 @@ private:
 
     // Don't know what black boxed calls do, assume in+out
     virtual void visit(AstSysIgnore* nodep) override {
-        bool prevMark = m_inBBox;
-        m_inBBox = true;
-        iterateChildren(nodep);
-        m_inBBox = prevMark;
+        VL_RESTORER(m_inBBox);
+        {
+            m_inBBox = true;
+            iterateChildren(nodep);
+        }
     }
 
     virtual void visit(AstAssign* nodep) override {
-        bool prevProc = m_inProcAssign;
+        VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
             iterateChildren(nodep);
         }
-        m_inProcAssign = prevProc;
     }
     virtual void visit(AstAssignDly* nodep) override {
-        bool prevProc = m_inProcAssign;
+        VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
             iterateChildren(nodep);
         }
-        m_inProcAssign = prevProc;
     }
     virtual void visit(AstAssignW* nodep) override {
-        bool prevCont = m_inContAssign;
+        VL_RESTORER(m_inContAssign);
         {
             m_inContAssign = true;
             iterateChildren(nodep);
         }
-        m_inContAssign = prevCont;
     }
     virtual void visit(AstAlways* nodep) override {
-        AstAlways* prevAlwp = m_alwaysCombp;
+        VL_RESTORER(m_alwaysCombp);
         {
             AstNode::user2ClearTree();
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   " << nodep << endl);
@@ -413,14 +411,14 @@ private:
             iterateChildren(nodep);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
         }
-        m_alwaysCombp = prevAlwp;
     }
 
     virtual void visit(AstNodeFTask* nodep) override {
-        AstNodeFTask* prevTaskp = m_taskp;
-        m_taskp = nodep;
-        iterateChildren(nodep);
-        m_taskp = prevTaskp;
+        VL_RESTORER(m_taskp);
+        {
+            m_taskp = nodep;
+            iterateChildren(nodep);
+        }
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os

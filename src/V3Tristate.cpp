@@ -1281,10 +1281,10 @@ class TristateVisitor : public TristateBaseVisitor {
 
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(8, nodep << endl);
-        AstNodeModule* origModp = m_modp;
-        bool origGraphing = m_graphing;
-        int origUnique = m_unique;
-        VarMap origLhsmap = m_lhsmap;
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_graphing);
+        VL_RESTORER(m_unique);
+        VL_RESTORER(m_lhsmap);
         // Not preserved, needs pointer instead: TristateGraph origTgraph = m_tgraph;
         UASSERT_OBJ(m_tgraph.empty(), nodep, "Unsupported: NodeModule under NodeModule");
         {
@@ -1308,10 +1308,6 @@ class TristateVisitor : public TristateBaseVisitor {
             // Insert new logic for all tristates
             insertTristates(nodep);
         }
-        m_modp = origModp;
-        m_graphing = origGraphing;
-        m_unique = origUnique;
-        m_lhsmap = origLhsmap;
         m_tgraph.clear();  // Recursion not supported
     }
 

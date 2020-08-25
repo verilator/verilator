@@ -135,28 +135,24 @@ private:
             double ifInstrs = 0.0;
             double elseInstrs = 0.0;
             if (nodep->branchPred() != VBranchPred::BP_UNLIKELY) {  // Check if
-                double prevInstr = m_instrs;
-                bool prevCounting = m_counting;
+                VL_RESTORER(m_instrs);
+                VL_RESTORER(m_counting);
                 {
                     m_counting = false;
                     m_instrs = 0.0;
                     iterateAndNextConstNull(nodep->ifsp());
                     ifInstrs = m_instrs;
                 }
-                m_instrs = prevInstr;
-                m_counting = prevCounting;
             }
             if (nodep->branchPred() != VBranchPred::BP_LIKELY) {  // Check else
-                double prevInstr = m_instrs;
-                bool prevCounting = m_counting;
+                VL_RESTORER(m_instrs);
+                VL_RESTORER(m_counting);
                 {
                     m_counting = false;
                     m_instrs = 0.0;
                     iterateAndNextConstNull(nodep->elsesp());
                     elseInstrs = m_instrs;
                 }
-                m_instrs = prevInstr;
-                m_counting = prevCounting;
             }
             // Now collect the stats
             if (m_counting) {

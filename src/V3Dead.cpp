@@ -120,7 +120,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             if (!nodep->dead()) {
@@ -135,7 +135,6 @@ private:
                 }
             }
         }
-        m_modp = origModp;
     }
     virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);

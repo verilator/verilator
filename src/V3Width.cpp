@@ -1259,7 +1259,7 @@ private:
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstAttrOf* nodep) override {
-        AstAttrOf* oldAttr = m_attrp;
+        VL_RESTORER(m_attrp);
         m_attrp = nodep;
         userIterateAndNext(nodep->fromp(), WidthVP(SELF, BOTH).p());
         if (nodep->dimp()) userIterateAndNext(nodep->dimp(), WidthVP(SELF, BOTH).p());
@@ -1381,7 +1381,6 @@ private:
             break;
         }
         }
-        m_attrp = oldAttr;
     }
     virtual void visit(AstPull* nodep) override {
         // May have select underneath, let seek natural size

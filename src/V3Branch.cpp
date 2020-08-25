@@ -67,8 +67,8 @@ private:
     // VISITORS
     virtual void visit(AstNodeIf* nodep) override {
         UINFO(4, " IF: " << nodep << endl);
-        int lastLikely = m_likely;
-        int lastUnlikely = m_unlikely;
+        VL_RESTORER(m_likely);
+        VL_RESTORER(m_unlikely);
         {
             // Do if
             reset();
@@ -88,8 +88,6 @@ private:
                 nodep->branchPred(VBranchPred::BP_UNLIKELY);
             }  // else leave unknown
         }
-        m_likely = lastLikely;
-        m_unlikely = lastUnlikely;
     }
     virtual void visit(AstNodeCCall* nodep) override {
         checkUnlikely(nodep);

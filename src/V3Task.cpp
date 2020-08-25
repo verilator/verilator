@@ -1154,14 +1154,13 @@ private:
     void iterateIntoFTask(AstNodeFTask* nodep) {
         // Iterate into the FTask we are calling.  Note it may be under a different
         // scope then the caller, so we need to restore state.
-        AstScope* oldscopep = m_scopep;
-        InsertMode prevInsMode = m_insMode;
-        AstNode* prevInsStmtp = m_insStmtp;
-        m_scopep = m_statep->getScope(nodep);
-        iterate(nodep);
-        m_scopep = oldscopep;
-        m_insMode = prevInsMode;
-        m_insStmtp = prevInsStmtp;
+        VL_RESTORER(m_scopep);
+        VL_RESTORER(m_insMode);
+        VL_RESTORER(m_insStmtp);
+        {
+            m_scopep = m_statep->getScope(nodep);
+            iterate(nodep);
+        }
     }
     AstNode* insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
@@ -1193,16 +1192,14 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
-        int origNCalls = m_modNCalls;
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_modNCalls);
         {
             m_modp = nodep;
             m_insStmtp = nullptr;
             m_modNCalls = 0;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
-        m_modNCalls = origNCalls;
     }
     virtual void visit(AstTopScope* nodep) override {
         m_topScopep = nodep;
@@ -1270,8 +1267,8 @@ private:
     }
     virtual void visit(AstNodeFTask* nodep) override {
         UINFO(4, " Inline   " << nodep << endl);
-        InsertMode prevInsMode = m_insMode;
-        AstNode* prevInsStmtp = m_insStmtp;
+        VL_RESTORER(m_insMode);
+        VL_RESTORER(m_insStmtp);
         m_insMode = IM_BEFORE;
         m_insStmtp = nodep->stmtsp();  // Might be null if no statements, but we won't use it
         if (!nodep->user1SetOnce()) {  // Just one creation needed per function
@@ -1335,8 +1332,6 @@ private:
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
-        m_insMode = prevInsMode;
-        m_insStmtp = prevInsStmtp;
     }
     virtual void visit(AstWhile* nodep) override {
         // Special, as statements need to be put in different places

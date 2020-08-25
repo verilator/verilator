@@ -136,13 +136,12 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             m_constXCvt = true;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
     virtual void visit(AstAssignDly* nodep) override {
         m_assigndlyp = nodep;

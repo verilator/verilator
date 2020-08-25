@@ -481,7 +481,7 @@ private:
     virtual void visit(AstNodeModule* nodep) override {
         V3Config::applyModule(nodep);
 
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             // Module: Create sim table for entire module and iterate
             cleanFileline(nodep);
@@ -490,7 +490,6 @@ private:
             m_valueModp = nodep;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
         m_valueModp = nodep;
     }
     void visitIterateNoValueMod(AstNode* nodep) {

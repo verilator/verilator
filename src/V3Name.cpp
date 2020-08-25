@@ -68,12 +68,11 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
     // Add __PVT__ to names of local signals
     virtual void visit(AstVar* nodep) override {

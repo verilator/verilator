@@ -37,7 +37,27 @@ class AstNetlist;
 class V3HierBlockPlan;
 
 //======================================================================
-// Statics
+// Restorer
+
+/// Save a given variable's value on the stack, restoring it at
+/// end-of-stope.
+// Object must be named, or it will not persist until end-of-scope.
+// Constructor needs () or GCC 4.8 false warning.
+#define VL_RESTORER(var) const VRestorer<decltype(var)> restorer_##var(var);
+
+// Object used by VL_RESTORER.  This object must be an auto variable, not
+// allocated on the heap or otherwise.
+template <typename T> class VRestorer {
+    T& m_ref;  // Reference to object we're saving and restoring
+    const T m_saved;  // Value saved, for later restore
+
+public:
+    VRestorer(T& permr)
+        : m_ref(permr)
+        , m_saved(permr) {}
+    ~VRestorer() { m_ref = m_saved; }
+    VL_UNCOPYABLE(VRestorer);
+};
 
 //######################################################################
 

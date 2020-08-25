@@ -239,8 +239,8 @@ private:
                 // Unroll now, as have no other method to get right signal names
                 AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
                 for (int i = nodep->lsb(); i <= nodep->msb(); ++i) {
-                    const string oldShowname = m_traShowname;
-                    AstNode* const oldValuep = m_traValuep;
+                    VL_RESTORER(m_traShowname);
+                    VL_RESTORER(m_traValuep);
                     {
                         m_traShowname += string("(") + cvtToStr(i) + string(")");
                         m_traValuep = new AstArraySel(
@@ -250,8 +250,6 @@ private:
                         iterate(subtypep);
                         VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);
                     }
-                    m_traShowname = oldShowname;
-                    m_traValuep = oldValuep;
                 }
             }
         }
@@ -266,8 +264,8 @@ private:
             } else {
                 AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
                 for (int i = nodep->lsb(); i <= nodep->msb(); ++i) {
-                    const string oldShowname = m_traShowname;
-                    AstNode* const oldValuep = m_traValuep;
+                    VL_RESTORER(m_traShowname);
+                    VL_RESTORER(m_traValuep);
                     {
                         m_traShowname += string("(") + cvtToStr(i) + string(")");
                         m_traValuep = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
@@ -277,8 +275,6 @@ private:
                         iterate(subtypep);
                         VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);
                     }
-                    m_traShowname = oldShowname;
-                    m_traValuep = oldValuep;
                 }
             }
         }
@@ -296,8 +292,8 @@ private:
                 for (const AstMemberDType* itemp = nodep->membersp(); itemp;
                      itemp = VN_CAST_CONST(itemp->nextp(), MemberDType)) {
                     AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
-                    const string oldShowname = m_traShowname;
-                    AstNode* const oldValuep = m_traValuep;
+                    VL_RESTORER(m_traShowname);
+                    VL_RESTORER(m_traValuep);
                     {
                         m_traShowname += string(" ") + itemp->prettyName();
                         if (VN_IS(nodep, StructDType)) {
@@ -311,8 +307,6 @@ private:
                             iterate(subtypep);
                         }
                     }
-                    m_traShowname = oldShowname;
-                    m_traValuep = oldValuep;
                 }
             }
         }

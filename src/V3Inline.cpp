@@ -518,12 +518,11 @@ private:
         }
     }
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
     virtual void visit(AstCell* nodep) override {
         if (nodep->modp()->user1()) {  // Marked with inline request
@@ -638,7 +637,7 @@ private:
         if (nodep->isTop()) { iterateChildren(nodep); }
     }
     virtual void visit(AstCell* nodep) override {
-        string oldScope = m_scope;
+        VL_RESTORER(m_scope);
         if (m_scope.empty()) {
             m_scope = nodep->name();
         } else {
@@ -668,8 +667,6 @@ private:
             nodep->addIntfRefp(new AstIntfRef(nodep->fileline(), m_scope));
             // No need to iterate on interface cells
         }
-
-        m_scope = oldScope;
     }
     virtual void visit(AstAssignVarScope* nodep) override {
         // Reference

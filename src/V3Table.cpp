@@ -404,18 +404,15 @@ private:
     // VISITORS
     virtual void visit(AstNetlist* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
-        int origModTables = m_modTables;
-        ModTableVector origModTableVscs = m_modTableVscs;
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_modTables);
+        VL_RESTORER(m_modTableVscs);
         {
             m_modp = nodep;
             m_modTables = 0;
             m_modTableVscs.clear();
             iterateChildren(nodep);
         }
-        m_modp = origModp;
-        m_modTables = origModTables;
-        m_modTableVscs = origModTableVscs;
     }
     virtual void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);

@@ -410,20 +410,18 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
     }
 
     void setContextAndIterateChildren(AstNode* nodep) {
-        AstNode* origContextp = m_contextp;
+        VL_RESTORER(m_contextp);
         {
             m_contextp = nodep;
             iterateChildren(nodep);
         }
-        m_contextp = origContextp;
     }
     void setContextAndIterate(AstNode* contextp, AstNode* nodep) {
-        AstNode* origContextp = m_contextp;
+        VL_RESTORER(m_contextp);
         {
             m_contextp = contextp;
             iterate(nodep);
         }
-        m_contextp = origContextp;
     }
     void pushDeletep(AstNode* nodep) {  // overriding AstNVisitor::pusDeletep()
         UASSERT_OBJ(m_modp, nodep, "Must not nullptr");
@@ -472,7 +470,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
         if (AstNode* bodysp = nodep->bodysp()) iterate(bodysp);
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
-        AstNode* origContextp = m_contextp;
+        VL_RESTORER(m_contextp);
         {
             m_contextp = nodep;
             AstNodeFTask* ftaskp = nodep->taskp();
@@ -508,7 +506,6 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
                 m_foundTargetVar.clear();
             }
         }
-        m_contextp = origContextp;
     }
     virtual void visit(AstPin* nodep) override {
         UINFO(5, nodep->modVarp()->prettyNameQ() << " pin \n");

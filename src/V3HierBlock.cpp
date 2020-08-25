@@ -241,7 +241,7 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
         UINFO(5, "Checking " << nodep->prettyNameQ() << " from "
                              << (m_hierBlockp ? m_hierBlockp->prettyNameQ() : string("null"))
                              << std::endl);
-        AstModule* const prevModp = m_modp;
+        VL_RESTORER(m_modp);
         AstModule* const prevHierBlockp = m_hierBlockp;
         ModuleSet prevReferred;
         V3HierBlock::GParams prevGParams;
@@ -260,7 +260,6 @@ class HierBlockUsageCollectVisitor : public AstNVisitor {
             m_hierBlockp = prevHierBlockp;
             m_referred = prevReferred;
         }
-        m_modp = prevModp;
         m_gparams = prevGParams;
     }
     virtual void visit(AstCell* nodep) override {

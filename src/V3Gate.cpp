@@ -412,13 +412,12 @@ private:
         replaceAssigns();
     }
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             m_activeReducible = true;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
     virtual void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);
@@ -469,10 +468,11 @@ private:
         iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts"), nullptr);
     }
     virtual void visit(AstAlwaysPublic* nodep) override {
-        bool lastslow = m_inSlow;
-        m_inSlow = true;
-        iterateNewStmt(nodep, "AlwaysPublic", nullptr);
-        m_inSlow = lastslow;
+        VL_RESTORER(m_inSlow);
+        {
+            m_inSlow = true;
+            iterateNewStmt(nodep, "AlwaysPublic", nullptr);
+        }
     }
     virtual void visit(AstCFunc* nodep) override {
         iterateNewStmt(nodep, "User C Function", "User C Function");
@@ -487,10 +487,12 @@ private:
         m_inSenItem = false;
     }
     virtual void visit(AstInitial* nodep) override {
-        bool lastslow = m_inSlow;
-        m_inSlow = true;
-        iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts"), nullptr);
-        m_inSlow = lastslow;
+        VL_RESTORER(m_inSlow);
+        {
+            m_inSlow = true;
+            iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts"),
+                           nullptr);
+        }
     }
     virtual void visit(AstAssignAlias* nodep) override {  //
         iterateNewStmt(nodep, nullptr, nullptr);
@@ -502,10 +504,11 @@ private:
         iterateNewStmt(nodep, "CoverToggle", "CoverToggle");
     }
     virtual void visit(AstTraceDecl* nodep) override {
-        const bool lastslow = m_inSlow;
-        m_inSlow = true;
-        iterateNewStmt(nodep, "Tracing", "Tracing");
-        m_inSlow = lastslow;
+        VL_RESTORER(m_inSlow);
+        {
+            m_inSlow = true;
+            iterateNewStmt(nodep, "Tracing", "Tracing");
+        }
     }
     virtual void visit(AstConcat* nodep) override {
         UASSERT_OBJ(!(VN_IS(nodep->backp(), NodeAssign)

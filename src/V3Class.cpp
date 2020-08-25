@@ -75,22 +75,20 @@ private:
                                         classScopep->aboveScopep(), classScopep->aboveCellp());
         packagep->addStmtp(scopep);
         // Iterate
-        string prevPrefix = m_prefix;
+        VL_RESTORER(m_prefix);
         {
             m_classScopep = classScopep;
             m_prefix = nodep->name() + "__02e";  // .
             iterateChildren(nodep);
         }
-        m_prefix = prevPrefix;
         m_classScopep = nullptr;
     }
     virtual void visit(AstPackage* nodep) override {
-        string prevPrefix = m_prefix;
+        VL_RESTORER(m_prefix);
         {
             m_prefix = nodep->name() + "__03a__03a";  // ::
             iterateChildren(nodep);
         }
-        m_prefix = prevPrefix;
     }
 
     virtual void visit(AstVar* nodep) override {

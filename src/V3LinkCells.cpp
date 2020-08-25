@@ -195,7 +195,7 @@ private:
     }
     virtual void visit(AstNodeModule* nodep) override {
         // Module: Pick up modnames, so we can resolve cells later
-        AstNodeModule* oldModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             UINFO(2, "Link Module: " << nodep << endl);
@@ -233,7 +233,6 @@ private:
             iterateChildren(nodep);
             nodep->checkTree();
         }
-        m_modp = oldModp;
     }
 
     virtual void visit(AstIfaceRefDType* nodep) override {
@@ -273,14 +272,13 @@ private:
         if (modp) {
             AstNode* cellsp = nodep->cellsp()->unlinkFrBackWithNext();
             // Module may have already linked, so need to pick up these new cells
-            AstNodeModule* oldModp = m_modp;
+            VL_RESTORER(m_modp);
             {
                 m_modp = modp;
                 // Important that this adds to end, as next iterate assumes does all cells
                 modp->addStmtp(cellsp);
                 iterateAndNextNull(cellsp);
             }
-            m_modp = oldModp;
         }
         pushDeletep(nodep->unlinkFrBack());
     }
