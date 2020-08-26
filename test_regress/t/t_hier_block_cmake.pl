@@ -22,7 +22,7 @@ compile(
     v_flags2 => ['t/t_hier_block.cpp'],
     verilator_flags2 => ['--stats',
                          '--hierarchical',
-                         '--CFLAGS', "'-pipe -DCPP_MACRO=cplusplus -time'",
+                         '--CFLAGS', "'-pipe -DCPP_MACRO=cplusplus '",
                          '--make cmake',
                          ($Self->{vltmt} ? ' --threads 6' : '')],
     );
