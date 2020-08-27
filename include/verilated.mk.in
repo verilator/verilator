@@ -205,7 +205,8 @@ endif
 #   1. Extract object files from .a
 #   2. Create a new archive from extracted .o and given .o
 %.a:
-	if test $(words $(filter %.a,$^)) -eq 0; then \
+	@echo "Archive $(AR) -cr $@ $^"
+	@if test $(words $(filter %.a,$^)) -eq 0; then \
 		$(AR) -cr $@ $^; \
 		$(RANLIB) $@; \
 	else \
