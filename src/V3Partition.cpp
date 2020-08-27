@@ -1502,9 +1502,9 @@ private:
         // to cart around. Just make a few pairs.
         auto it = shortestPrereqs.cbegin();
         for (unsigned i = 0; exhaustive || (i < 3); ++i) {
-            if (it == shortestPrereqs.end()) break;
+            if (it == shortestPrereqs.cend()) break;
             LogicMTask* ap = *(it++);
-            if (it == shortestPrereqs.end()) break;
+            if (it == shortestPrereqs.cend()) break;
             LogicMTask* bp = *(it++);
             makeSiblingMC(ap, bp);
         }

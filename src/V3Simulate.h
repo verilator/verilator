@@ -1011,7 +1011,7 @@ private:
             string format = nodep->text();
             auto pos = format.cbegin();
             bool inPct = false;
-            for (; pos != format.end(); ++pos) {
+            for (; pos != format.cend(); ++pos) {
                 if (!inPct && pos[0] == '%') {
                     inPct = true;
                 } else if (!inPct) {  // Normal text

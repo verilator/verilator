@@ -578,7 +578,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
         ++pos;
     }
     string fmtsize;
-    for (; pos != vformat.end() && (isdigit(pos[0]) || pos[0] == '.'); ++pos) {
+    for (; pos != vformat.cend() && (isdigit(pos[0]) || pos[0] == '.'); ++pos) {
         fmtsize += pos[0];
     }
     string str;

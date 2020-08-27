@@ -2890,13 +2890,13 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons, const VarVec& nonanons,
         if (anonL1s != 1)
             puts("// Anonymous structures to workaround compiler member-count bugs\n");
         auto it = anons.cbegin();
-        for (int l3 = 0; l3 < anonL3s && it != anons.end(); ++l3) {
+        for (int l3 = 0; l3 < anonL3s && it != anons.cend(); ++l3) {
             if (anonL3s != 1) puts("struct {\n");
-            for (int l2 = 0; l2 < anonL2s && it != anons.end(); ++l2) {
+            for (int l2 = 0; l2 < anonL2s && it != anons.cend(); ++l2) {
                 if (anonL2s != 1) puts("struct {\n");
-                for (int l1 = 0; l1 < anonL1s && it != anons.end(); ++l1) {
+                for (int l1 = 0; l1 < anonL1s && it != anons.cend(); ++l1) {
                     if (anonL1s != 1) puts("struct {\n");
-                    for (int l0 = 0; l0 < lim && it != anons.end(); ++l0) {
+                    for (int l0 = 0; l0 < lim && it != anons.cend(); ++l0) {
                         const AstVar* varp = *it;
                         emitVarCmtChg(varp, &curVarCmt);
                         emitVarDecl(varp, prefixIfImp);
