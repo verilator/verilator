@@ -76,6 +76,7 @@
 #include "V3ProtectLib.h"
 #include "V3Region.h"
 #include "V3RegionPropagate.h"
+#include "V3RegionSplit.h"
 #include "V3Reloop.h"
 #include "V3Scope.h"
 #include "V3Scoreboard.h"
@@ -342,8 +343,11 @@ static void process() {
         // Order the code; form SBLOCKs and BLOCKCALLs
         V3Order::orderAll(v3Global.rootp());
 
+        // Split statements from different regions into separate functions
+        V3RegionSplit::splitRegions(v3Global.rootp());
+
         // Propagate region information to CFuncs
-        V3RegionPropagate::propagateRegions(v3Global.rootp());
+        // V3RegionPropagate::propagateRegions(v3Global.rootp());
 
         // Change generated clocks to look at delayed signals
         V3GenClk::genClkAll(v3Global.rootp());
