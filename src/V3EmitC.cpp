@@ -2758,6 +2758,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
          + EmitCBaseVisitor::symClassVar() + ") {\n");
     puts("vlSymsp->__Vm_didInit = true;\n");
     puts(protect("_eval_initial") + "(vlSymsp);\n");
+    puts(protect("_eval_re_initial") + "(vlSymsp);\n");
     if (v3Global.opt.trace()) puts("vlSymsp->__Vm_activity = true;\n");
     emitSettleLoop((protect("_eval_settle") + "(vlSymsp);\n"  //
                     + protect("_eval") + "(vlSymsp);"),

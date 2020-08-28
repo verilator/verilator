@@ -51,8 +51,9 @@ private:
     AstNodeModule* m_modp;  // Current module
     AstTopScope* m_topScopep;  // Current top scope
     AstScope* m_scopep;  // Current scope
-    AstCFunc* m_evalFuncp;  // Top eval function we are creating
-    AstCFunc* m_initFuncp;  // Top initial function we are creating
+    AstCFunc* m_evalFuncp;  // Top eval active function we are creating
+    AstCFunc* m_initFuncp;  // Top initial active function we are creating
+    AstCFunc* m_initReFuncp;  // Top initial reactive function we are creating
     AstCFunc* m_finalFuncp;  // Top final function we are creating
     AstCFunc* m_settleFuncp;  // Top settlement function we are creating
     AstSenTree* m_lastSenp;  // Last sensitivity match, so we can detect duplicates.
@@ -193,6 +194,17 @@ private:
             m_initFuncp = funcp;
         }
         {
+            AstCFunc* funcp = new AstCFunc(nodep->fileline(), "_eval_re_initial", m_scopep);
+            funcp->argTypes(EmitCBaseVisitor::symClassVar());
+            funcp->dontCombine(true);
+            funcp->slow(true);
+            funcp->symProlog(true);
+            funcp->isStatic(true);
+            funcp->entryPoint(true);
+            m_scopep->addActivep(funcp);
+            m_initReFuncp = funcp;
+        }
+        {
             AstCFunc* funcp = new AstCFunc(nodep->fileline(), "final", m_scopep);
             funcp->skipDecl(true);
             funcp->dontCombine(true);
@@ -312,7 +324,17 @@ private:
         m_settleFuncp->addStmtsp(stmtsp);  // add to top level function
     }
     void addToInitial(AstNode* stmtsp) {
-        m_initFuncp->addStmtsp(stmtsp);  // add to top level function
+        AstNodeCCall* nodep = dynamic_cast<AstNodeCCall*>(stmtsp);
+        if (nodep) {
+            VRegion region = nodep->region();
+            if (region.isReactive()) {
+                m_initReFuncp->addStmtsp(stmtsp);  // add to top level reactive function
+            } else {
+                m_initFuncp->addStmtsp(stmtsp);  // add to top level default function
+            }
+        } else {
+            m_initFuncp->addStmtsp(stmtsp);  // add to top level active function
+        }
     }
     virtual void visit(AstActive* nodep) VL_OVERRIDE {
         // Careful if adding variables here, ACTIVES can be under other ACTIVES
@@ -405,6 +427,7 @@ public:
         m_modp = NULL;
         m_evalFuncp = NULL;
         m_initFuncp = NULL;
+        m_initReFuncp = NULL;
         m_finalFuncp = NULL;
         m_settleFuncp = NULL;
         m_topScopep = NULL;
