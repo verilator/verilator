@@ -57,7 +57,7 @@ private:
     AstCFunc* m_finalFuncp;  // Top final function we are creating
     AstCFunc* m_settleFuncp;  // Top settlement function we are creating
     AstSenTree* m_lastSenp;  // Last sensitivity match, so we can detect duplicates.
-    AstIf* m_lastIfp;  // Last sensitivity if active to add more under
+    AstIf* m_lastIfp [VRegion::MAX];  // Last sensitivity if active to add more under
     AstMTaskBody* m_mtaskBodyp;  // Current mtask body
 
     // METHODS
@@ -151,15 +151,37 @@ private:
         }
         return senEqnp;
     }
-    AstIf* makeActiveIf(AstSenTree* sensesp) {
-        AstNode* senEqnp = createSenseEquation(sensesp->sensesp());
-        UASSERT_OBJ(senEqnp, sensesp, "No sense equation, shouldn't be in sequent activation.");
-        AstIf* newifp = new AstIf(sensesp->fileline(), senEqnp, NULL, NULL);
-        return newifp;
+    void addIfToEval(AstIf* ifarrp[]) {
+        for (int i = 0; i < VRegion::MAX; i++)
+            addToEvalLoop(ifarrp[i]);
+    }
+    void addIfStmts(AstIf* ifarrp[], AstNode *nodep) {
+        AstNode* nextstmtp;
+        for (AstNode *stmtp = nodep; stmtp; stmtp = nextstmtp) {
+            VRegion region = VRegion::ACTIVE;
+            nextstmtp = stmtp->nextp();
+            if (const AstCCall* ccallp = VN_CAST(stmtp, CCall)) {
+                region = ccallp->region();
+            }
+            UINFO(4, " ADD STMT " << region << " nextp: " << stmtp->nextp() << " backp: " << stmtp->backp() << " " << stmtp << endl);
+            if(stmtp->backp())
+                stmtp->unlinkFrBack();
+            ifarrp[region.m_e]->addIfsp(stmtp);
+        }
+    }
+    void makeActiveIf(AstSenTree* sensesp, AstIf* ifarrp[]) {
+        for (int i = 0; i < VRegion::MAX; i++) {
+            AstNode* senEqnp = createSenseEquation(sensesp->sensesp());
+            UASSERT_OBJ(senEqnp, sensesp, "No sense equation, shouldn't be in sequent activation.");
+            AstIf* newifp = new AstIf(sensesp->fileline(), senEqnp, NULL, NULL);
+            UINFO(4, " ACTIVE IF " << newifp << " " << senEqnp << endl);
+            ifarrp[i] = newifp;
+        }
     }
     void clearLastSen() {
         m_lastSenp = NULL;
-        m_lastIfp = NULL;
+        for (int i = 0; i < VRegion::MAX; i++)
+            m_lastIfp[i] = NULL;
     }
 
     // VISITORS
@@ -346,6 +368,8 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (m_mtaskBodyp) {
             UINFO(4, "  TR ACTIVE  " << nodep << endl);
+            UASSERT_OBJ(false, nodep, "Unhandled case");
+            /*
             AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
             if (nodep->hasClocked()) {
                 UASSERT_OBJ(!nodep->hasInitial(), nodep,
@@ -369,6 +393,7 @@ private:
                 m_mtaskBodyp->addStmtsp(stmtsp);
             }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            */
         } else {
             UINFO(4, "  ACTIVE  " << nodep << endl);
             AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
@@ -382,11 +407,11 @@ private:
                     clearLastSen();
                     m_lastSenp = nodep->sensesp();
                     // Make a new if statement
-                    m_lastIfp = makeActiveIf(m_lastSenp);
-                    addToEvalLoop(m_lastIfp);
+                    makeActiveIf(m_lastSenp, m_lastIfp);
+                    addIfToEval(m_lastIfp);
                 }
                 // Move statements to if
-                m_lastIfp->addIfsp(stmtsp);
+                addIfStmts(m_lastIfp, stmtsp);
             } else if (nodep->hasInitial()) {
                 // Don't need to: clearLastSen();, as we're adding it to different cfunc
                 // Move statements to function
@@ -432,7 +457,6 @@ public:
         m_settleFuncp = NULL;
         m_topScopep = NULL;
         m_lastSenp = NULL;
-        m_lastIfp = NULL;
         m_scopep = NULL;
         m_mtaskBodyp = NULL;
         //
