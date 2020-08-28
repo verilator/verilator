@@ -229,6 +229,7 @@ RAW_OBJS = \
 	V3Premit.o \
 	V3ProtectLib.o \
 	V3Region.o \
+	V3RegionPropagate.o \
 	V3Reloop.o \
 	V3Scope.o \
 	V3Scoreboard.o \
