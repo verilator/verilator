@@ -2358,7 +2358,7 @@ private:
             newp->didWidth(true);
         } else if (nodep->name() == "delete") {  // function void delete([input integer index])
             methodOkArguments(nodep, 0, 1);
-            methodCallLValue(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), true);
             if (!nodep->pinsp()) {
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           "clear", nullptr);
@@ -2387,20 +2387,24 @@ private:
         VL_DANGLING(index_exprp);  // May have been edited
         return VN_CAST(nodep->pinsp(), Arg)->exprp();
     }
-    void methodCallLValue(AstMethodCall* nodep, AstNode* childp, bool lvalue) {
-        AstNodeVarRef* varrefp = VN_CAST(childp, NodeVarRef);
-        if (!varrefp) {
+    void methodCallLValueRecurse(AstMethodCall* nodep, AstNode* childp, bool lvalue) {
+        if (AstNodeVarRef* varrefp = VN_CAST(childp, NodeVarRef)) {
+            if (lvalue) varrefp->lvalue(true);
+        } else if (AstMemberSel* ichildp = VN_CAST(childp, MemberSel)) {
+            methodCallLValueRecurse(nodep, ichildp->fromp(), lvalue);
+        } else if (AstNodeSel* ichildp = VN_CAST(childp, NodeSel)) {
+            methodCallLValueRecurse(nodep, ichildp->fromp(), lvalue);
+        } else {
+            UINFO(1, "    Related node: " << childp << endl);
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Non-variable on LHS of built-in method '"
                                              << nodep->prettyName() << "'");
-        } else {
-            if (lvalue) varrefp->lvalue(true);
         }
     }
     void methodCallDyn(AstMethodCall* nodep, AstDynArrayDType* adtypep) {
         AstCMethodHard* newp = nullptr;
         if (nodep->name() == "at") {  // Created internally for []
             methodOkArguments(nodep, 1, 1);
-            methodCallLValue(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), true);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "at",
                                       nullptr);
             newp->dtypeFrom(adtypep->subDTypep());
@@ -2415,7 +2419,7 @@ private:
             newp->protect(false);
         } else if (nodep->name() == "delete") {  // function void delete()
             methodOkArguments(nodep, 0, 0);
-            methodCallLValue(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), true);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "clear",
                                       nullptr);
             newp->makeStatement();
@@ -2433,7 +2437,7 @@ private:
         AstCMethodHard* newp = nullptr;
         if (nodep->name() == "at") {  // Created internally for []
             methodOkArguments(nodep, 1, 1);
-            methodCallLValue(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), true);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "at",
                                       nullptr);
             newp->dtypeFrom(adtypep->subDTypep());
@@ -2449,7 +2453,7 @@ private:
             newp->protect(false);
         } else if (nodep->name() == "delete") {  // function void delete([input integer index])
             methodOkArguments(nodep, 0, 1);
-            methodCallLValue(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), true);
             if (!nodep->pinsp()) {
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           "clear", nullptr);
@@ -2476,7 +2480,7 @@ private:
             }
         } else if (nodep->name() == "insert") {
             methodOkArguments(nodep, 2, 2);
-            methodCallLValue(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), true);
             AstNode* index_exprp = methodCallQueueIndexExpr(nodep);
             AstArg* argp = VN_CAST(nodep->pinsp()->nextp(), Arg);
             iterateCheckTyped(nodep, "insert value", argp->exprp(), adtypep->subDTypep(), BOTH);
@@ -2497,7 +2501,7 @@ private:
             }
         } else if (nodep->name() == "pop_front" || nodep->name() == "pop_back") {
             methodOkArguments(nodep, 0, 0);
-            methodCallLValue(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), true);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), nullptr);
             newp->dtypeFrom(adtypep->subDTypep());
@@ -2506,7 +2510,7 @@ private:
             if (!nodep->firstAbovep()) { newp->makeStatement(); }
         } else if (nodep->name() == "push_back" || nodep->name() == "push_front") {
             methodOkArguments(nodep, 1, 1);
-            methodCallLValue(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), true);
             AstArg* argp = VN_CAST(nodep->pinsp(), Arg);
             iterateCheckTyped(nodep, "push value", argp->exprp(), adtypep->subDTypep(), BOTH);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),

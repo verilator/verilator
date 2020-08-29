@@ -23,6 +23,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix splitting eval functions with --output-split-cfuncs (#2368). [Geza Lore]
 
+****  Fix queues as class members (#2525). [nanduraj1]
+
 
 * Verilator 4.040 2020-08-15
 

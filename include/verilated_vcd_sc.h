@@ -66,9 +66,9 @@ private:
     virtual void set_time_unit(double v, sc_time_unit tu) {}  // LCOV_EXCL_LINE
 
 //--------------------------------------------------
-    // SystemC 2.1.v1
-# define DECL_TRACE_METHOD_A(tp) virtual void trace(const tp& object, const std::string& name);
-# define DECL_TRACE_METHOD_B(tp) \
+// SystemC 2.1.v1
+#define DECL_TRACE_METHOD_A(tp) virtual void trace(const tp& object, const std::string& name);
+#define DECL_TRACE_METHOD_B(tp) \
     virtual void trace(const tp& object, const std::string& name, int width);
 
     virtual void write_comment(const std::string&);
