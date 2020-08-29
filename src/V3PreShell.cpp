@@ -61,8 +61,6 @@ protected:
             s_preprocp->defineCmdLine(prefl, "VERILATOR", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator3", "1");  // LEAK_OK
-            s_preprocp->defineCmdLine(prefl, "systemc_clock",
-                                      "/*verilator systemc_clock*/");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "coverage_block_off",
                                       "/*verilator coverage_block_off*/");  // LEAK_OK
             if (prefl->language().systemVerilog()) {

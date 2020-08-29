@@ -800,7 +800,6 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_WRITEMEMH    "$writememh"
 %token<fl>              yD_WRITEO       "$writeo"
 
-%token<fl>              yVL_CLOCK               "/*verilator sc_clock*/"
 %token<fl>              yVL_CLOCKER             "/*verilator clocker*/"
 %token<fl>              yVL_CLOCK_ENABLE        "/*verilator clock_enable*/"
 %token<fl>              yVL_COVERAGE_BLOCK_OFF  "/*verilator coverage_block_off*/"
@@ -2563,8 +2562,7 @@ sigAttrList<nodep>:
 	;
 
 sigAttr<nodep>:
-		yVL_CLOCK				{ $$ = new AstAttrOf($1,AstAttrType::VAR_CLOCK); }
-	|	yVL_CLOCKER				{ $$ = new AstAttrOf($1,AstAttrType::VAR_CLOCKER); }
+		yVL_CLOCKER				{ $$ = new AstAttrOf($1,AstAttrType::VAR_CLOCKER); }
 	|	yVL_NO_CLOCKER				{ $$ = new AstAttrOf($1,AstAttrType::VAR_NO_CLOCKER); }
 	|	yVL_CLOCK_ENABLE			{ $$ = new AstAttrOf($1,AstAttrType::VAR_CLOCK_ENABLE); }
 	|	yVL_PUBLIC				{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC); v3Global.dpi(true); }

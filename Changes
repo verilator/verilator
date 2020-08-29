@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    C++11 or newer compilers are now required.
 
+**    SystemC 2.3.0 or newer (SYSTEMC_VERSION >= 20111121) is now required.
+
 **    Support hierarchical Verilation (#2206). [Yutetsu TAKATSUKASA]
 
 ****  Support (with limitations) class extern, class extends, virtual class.

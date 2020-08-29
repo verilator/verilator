@@ -1858,7 +1858,6 @@ void EmitCStmts::emitVarCtors(bool* firstp) {
     if (!m_ctorVarsVec.empty()) {
         ofp()->indentInc();
         puts("\n");
-        puts("#if (SYSTEMC_VERSION>20011000)\n");  // SystemC 2.0.1 and newer
         for (const AstVar* varp : m_ctorVarsVec) {
             bool isArray = !VN_CAST(varp->dtypeSkipRefp(), BasicDType);
             if (isArray) {
@@ -1873,7 +1872,7 @@ void EmitCStmts::emitVarCtors(bool* firstp) {
                 puts(")");
             }
         }
-        puts("\n#endif\n");
+        puts("\n");
         ofp()->indentDec();
     }
 }

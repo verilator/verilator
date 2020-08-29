@@ -20,6 +20,5 @@
 `define VERILATOR 1
 `define WITH_ARG(a) (a)(a)
 `define coverage_block_off /*verilator coverage_block_off*/
-`define systemc_clock /*verilator systemc_clock*/
 `define verilator 1
 `define verilator3 1

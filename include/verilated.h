@@ -61,7 +61,7 @@
 
 // Version check
 #if defined(SYSTEMC_VERSION) && (SYSTEMC_VERSION < 20111121)
-# warning "Verilator soon requires SystemC 2.3.*; see manual for deprecated other versions."
+# warning "Verilator requires SystemC 2.3.* or newer."
 #endif
 // clang-format on
 
@@ -846,13 +846,8 @@ extern int VL_TIME_STR_CONVERT(const char* strp) VL_PURE;
 
 /// Return current simulation time
 #if defined(SYSTEMC_VERSION)
-# if SYSTEMC_VERSION > 20011000
 // Already defined: extern sc_time sc_time_stamp();
 inline vluint64_t vl_time_stamp64() { return sc_time_stamp().value(); }
-# else  // Before SystemC changed to integral time representation
-// Already defined: extern double sc_time_stamp();
-inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_stamp()); }
-# endif
 #else  // Non-SystemC
 # ifdef VL_TIME_STAMP64
 extern vluint64_t vl_time_stamp64();

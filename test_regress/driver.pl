@@ -1848,11 +1848,7 @@ sub _print_advance_time {
     else { $set = "topp->"; }
 
     if ($self->sc) {
-        print $fh "#if (SYSTEMC_VERSION>=20070314)\n";
         print $fh "        sc_start(${time}, $Self->{sc_time_resolution});\n";
-        print $fh "#else\n";
-        print $fh "        sc_start(${time});\n";
-        print $fh "#endif\n";
     } else {
         if ($action) {
             print $fh "        ${set}eval();\n";

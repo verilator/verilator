@@ -266,11 +266,6 @@ private:
             UASSERT_OBJ(typep, nodep, "Attribute not attached to typedef");
             typep->attrPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_CLOCK) {
-            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            nodep->v3warn(DEPRECATED, "sc_clock is deprecated and will be removed");
-            m_varp->attrScClocked(true);
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == AstAttrType::VAR_CLOCK_ENABLE) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClockEn(true);

@@ -3690,10 +3690,11 @@ for more information.
 
 =item /*verilator sc_clock*/
 
-Deprecated.  Used after an input declaration to indicate the signal
-should be declared in SystemC as a sc_clock instead of a bool.  This was
-needed in SystemC 1.1 and 1.2 only; versions 2.0 and later do not require
-clock pins to be sc_clocks and this is no longer needed.
+Deprecated and ignored.  Previously used after an input declaration to
+indicate the signal should be declared in SystemC as a sc_clock instead of
+a bool.  This was needed in SystemC 1.1 and 1.2 only; versions 2.0 and
+later do not require clock pins to be sc_clocks and this is no longer
+needed and is ignored.
 
 =item /*verilator sc_bv*/
 
@@ -5055,13 +5056,6 @@ The following deprecated items are scheduled for future removal:
 Verilator currently requires C++11 or newer compilers.  Verilator will
 require C++14 or newer compilers for both compiling Verilator and compiling
 Verilated models no sooner than January 2022.
-
-=item SystemC 2.2 and earlier support
-
-Support for SystemC versions 2.2 and earlier including the related sc_clock
-variable attribute will be removed no sooner than September 2020.  The
-supported versions will be SystemC 2.3.0 (SYSTEMC_VERSION 20111121) and
-later (presently 2.3.0, 2.3.1, 2.3.2, 2.3.3).
 
 =item Configuration File -msg
 
