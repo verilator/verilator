@@ -256,8 +256,16 @@ public:
                         + v3Global.opt.protectLibName(false) + "\n");
             } else {
                 of.puts(v3Global.opt.protectLibName(true) + ": " + protectLibDeps + "\n");
+                // Linker on mac emits an error if all symbols are not found here,
+                // but some symbols that are referred as "DPI-C" can not be found at this moment.
+                // So add dynamic_lookup
+                of.puts("ifeq ($(shell uname -s),Darwin)\n");
+                of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -undefined "
+                        "dynamic_lookup -shared -o $@ $^\n");
+                of.puts("else\n");
                 of.puts(
                     "\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ $^\n");
+                of.puts("endif\n");
                 of.puts("\n");
                 of.puts("lib" + v3Global.opt.protectLib() + ": "
                         + v3Global.opt.protectLibName(false) + " "
