@@ -250,12 +250,16 @@ public:
             // The rule to create .a is defined in verilated.mk, so just define dependency here.
             of.puts(v3Global.opt.protectLibName(false) + ": " + protectLibDeps + "\n");
             of.puts("\n");
-            of.puts(v3Global.opt.protectLibName(true) + ": " + protectLibDeps + "\n");
-            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ $^\n");
-            of.puts("\n");
-
-            of.puts("lib" + v3Global.opt.protectLib() + ": " + v3Global.opt.protectLibName(false)
-                    + " " + v3Global.opt.protectLibName(true) + "\n");
+            if (v3Global.opt.hierChild()) {
+                // Hierarchical child does not need .so because hierTop() will create .so from .a
+                of.puts("lib" + v3Global.opt.protectLib() + ": " + v3Global.opt.protectLibName(false) + "\n");
+            } else {
+                of.puts(v3Global.opt.protectLibName(true) + ": " + protectLibDeps + "\n");
+                of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ $^\n");
+                of.puts("\n");
+                of.puts("lib" + v3Global.opt.protectLib() + ": " + v3Global.opt.protectLibName(false)
+                        + " " + v3Global.opt.protectLibName(true) + "\n");
+            }
         }
 
         of.puts("\n");
