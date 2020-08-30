@@ -35,8 +35,9 @@ before_install:
   - clang++ -E -dM -c -x c++ /dev/null | sort
 
 # Install all dependencies
+# We run twice to attempt on failure to recover from temp network problems
 install:
-  - ./ci/travis-install.bash
+  - ./ci/travis-install.bash || ./ci/travis-install.bash
 
 before_script:
   # ccache maintenance
