@@ -261,7 +261,7 @@ public:
                 // So add dynamic_lookup
                 of.puts("ifeq ($(shell uname -s),Darwin)\n");
                 of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -undefined "
-                        "dynamic_lookup -shared -o $@ $^\n");
+                        "dynamic_lookup -shared -flat_namespace -o $@ $^\n");
                 of.puts("else\n");
                 of.puts(
                     "\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ $^\n");
