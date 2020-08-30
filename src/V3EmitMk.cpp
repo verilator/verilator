@@ -331,8 +331,11 @@ class EmitMkHierVerilation {
 
         of.puts("# Libraries of hierarchical blocks\n");
         of.puts("VM_HIER_LIBS := \\\n");
-        for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end(); ++it) {
-            of.puts("\t" + it->second->hierLib(true) + " \\\n");
+        const V3HierBlockPlan::HierVector blocks
+            = m_planp->hierBlocksSorted();  // leaf comes first
+        // List in order of leaf-last order so that linker can resolve dependency
+        for (auto it = blocks.rbegin(); it != blocks.rend(); ++it) {
+            of.puts("\t" + (*it)->hierLib(true) + " \\\n");
         }
         of.puts("\n");
 
