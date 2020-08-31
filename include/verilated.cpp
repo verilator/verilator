@@ -70,7 +70,12 @@ VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
 
 Verilated::CommandArgValues Verilated::s_args;
 
-VerilatedImp VerilatedImp::s_s;
+VerilatedImp::VerilatedImpU VerilatedImp::s_s;
+
+struct VerilatedImpInitializer {
+    VerilatedImpInitializer() { VerilatedImp::setup(); }
+    ~VerilatedImpInitializer() { VerilatedImp::teardown(); }
+} g_VerilatedImpInitializer;
 
 //===========================================================================
 // User definable functions
@@ -265,8 +270,8 @@ Verilated::NonSerialized::~NonSerialized() {
     }
 }
 
-size_t Verilated::serialized2Size() VL_PURE { return sizeof(VerilatedImp::s_s.m_ser); }
-void* Verilated::serialized2Ptr() VL_MT_UNSAFE { return &VerilatedImp::s_s.m_ser; }
+size_t Verilated::serialized2Size() VL_PURE { return sizeof(VerilatedImp::s_s.v.m_ser); }
+void* Verilated::serialized2Ptr() VL_MT_UNSAFE { return &VerilatedImp::s_s.v.m_ser; }
 
 //===========================================================================
 // Random -- Mostly called at init time, so not inline.
@@ -2423,28 +2428,59 @@ void Verilated::endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
 #endif
 
 //===========================================================================
+// VerilatedImp:: Constructors
+
+// verilated.o may exist both in protect-lib and main module.
+// Both the main module and the protec-lib refer the same instance of
+// static variables such as Verilated or VerilatedImplData.
+// This is important to share the state such as Verilated::gotFinish.
+// But the sharing may cause double-free error when shutting down because destructors
+// are called twice.
+// 1st time:From protec-lib shared object on the way of unloading after exitting main()
+// 2nd time:From main executable.
+//
+// To avoid the trouble, all member variables are enclosed in VerilatedImpU union.
+// ctor nor dtor of members are not called automatically.
+// VerilatedImp::setup() and teardown() guarantees to initialize/destruct just once.
+
+void VerilatedImp::setup() {
+    static bool done = false;
+    if (!done) {
+        new (&VerilatedImp::s_s) VerilatedImpData();
+        done = true;
+    }
+}
+void VerilatedImp::teardown() {
+    static bool done = false;
+    if (!done) {
+        VerilatedImp::s_s.~VerilatedImpU();
+        done = true;
+    }
+}
+
+//===========================================================================
 // VerilatedImp:: Methods
 
 std::string VerilatedImp::timeFormatSuffix() VL_MT_SAFE {
-    const VerilatedLockGuard lock(s_s.m_sergMutex);
-    return s_s.m_serg.m_timeFormatSuffix;
+    const VerilatedLockGuard lock(s_s.v.m_sergMutex);
+    return s_s.v.m_serg.m_timeFormatSuffix;
 }
 void VerilatedImp::timeFormatSuffix(const std::string& value) VL_MT_SAFE {
-    const VerilatedLockGuard lock(s_s.m_sergMutex);
-    s_s.m_serg.m_timeFormatSuffix = value;
+    const VerilatedLockGuard lock(s_s.v.m_sergMutex);
+    s_s.v.m_serg.m_timeFormatSuffix = value;
 }
-void VerilatedImp::timeFormatUnits(int value) VL_MT_SAFE { s_s.m_ser.m_timeFormatUnits = value; }
+void VerilatedImp::timeFormatUnits(int value) VL_MT_SAFE { s_s.v.m_ser.m_timeFormatUnits = value; }
 void VerilatedImp::timeFormatPrecision(int value) VL_MT_SAFE {
-    s_s.m_ser.m_timeFormatPrecision = value;
+    s_s.v.m_ser.m_timeFormatPrecision = value;
 }
-void VerilatedImp::timeFormatWidth(int value) VL_MT_SAFE { s_s.m_ser.m_timeFormatWidth = value; }
+void VerilatedImp::timeFormatWidth(int value) VL_MT_SAFE { s_s.v.m_ser.m_timeFormatWidth = value; }
 
 void VerilatedImp::internalsDump() VL_MT_SAFE {
-    const VerilatedLockGuard lock(s_s.m_argMutex);
+    const VerilatedLockGuard lock(s_s.v.m_argMutex);
     VL_PRINTF_MT("internalsDump:\n");
     versionDump();
     VL_PRINTF_MT("  Argv:");
-    for (const auto& i : s_s.m_argVec) VL_PRINTF_MT(" %s", i.c_str());
+    for (const auto& i : s_s.v.m_argVec) VL_PRINTF_MT(" %s", i.c_str());
     VL_PRINTF_MT("\n");
     scopesDump();
     exportsDump();
@@ -2454,22 +2490,22 @@ void VerilatedImp::versionDump() VL_MT_SAFE {
     VL_PRINTF_MT("  Version: %s %s\n", Verilated::productName(), Verilated::productVersion());
 }
 
-void VerilatedImp::commandArgs(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex) {
-    const VerilatedLockGuard lock(s_s.m_argMutex);
-    s_s.m_argVec.clear();  // Always clear
+void VerilatedImp::commandArgs(int argc, const char** argv) VL_EXCLUDES(s_s.v.m_argMutex) {
+    const VerilatedLockGuard lock(s_s.v.m_argMutex);
+    s_s.v.m_argVec.clear();  // Always clear
     commandArgsAddGuts(argc, argv);
 }
-void VerilatedImp::commandArgsAdd(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex) {
-    const VerilatedLockGuard lock(s_s.m_argMutex);
+void VerilatedImp::commandArgsAdd(int argc, const char** argv) VL_EXCLUDES(s_s.v.m_argMutex) {
+    const VerilatedLockGuard lock(s_s.v.m_argMutex);
     commandArgsAddGuts(argc, argv);
 }
-void VerilatedImp::commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(s_s.m_argMutex) {
-    if (!s_s.m_argVecLoaded) s_s.m_argVec.clear();
+void VerilatedImp::commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(s_s.v.m_argMutex) {
+    if (!s_s.v.m_argVecLoaded) s_s.v.m_argVec.clear();
     for (int i = 0; i < argc; ++i) {
-        s_s.m_argVec.push_back(argv[i]);
+        s_s.v.m_argVec.push_back(argv[i]);
         commandArgVl(argv[i]);
     }
-    s_s.m_argVecLoaded = true;  // Can't just test later for empty vector, no arguments is ok
+    s_s.v.m_argVecLoaded = true;  // Can't just test later for empty vector, no arguments is ok
 }
 void VerilatedImp::commandArgVl(const std::string& arg) {
     if (0 == strncmp(arg.c_str(), "+verilator+", strlen("+verilator+"))) {
