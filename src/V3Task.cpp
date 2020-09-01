@@ -321,6 +321,25 @@ public:
 };
 
 //######################################################################
+
+class TaskRegionVisitor : public AstNVisitor {
+    // Update region information for tasks inlined in reactive regions
+private:
+    virtual void visit(AstNodeStmt* nodep) override {
+        nodep->region(nodep->region().toReactive());
+        iterateChildren(nodep);
+    }
+
+    //--------------------
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit TaskRegionVisitor(AstNode* nodep) { iterate(nodep); }
+    virtual ~TaskRegionVisitor() override {}
+};
+
+//######################################################################
 // Task state, as a visitor of each AstNode
 
 class TaskVisitor : public AstNVisitor {
@@ -396,7 +415,11 @@ private:
             = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe nullptr
         AstNode* beginp
             = new AstComment(refp->fileline(), string("Function: ") + refp->name(), true);
-        if (newbodysp) beginp->addNext(newbodysp);
+        if (newbodysp) {
+            beginp->addNext(newbodysp);
+            if (v3Global.opt.stratifiedScheduler())
+                if (refp->region().isReactive()) TaskRegionVisitor regionVisitor(newbodysp);
+        }
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-newbegi:");
         //
         // Create input variables
@@ -533,6 +556,8 @@ private:
             ccallp = new AstCCall(refp->fileline(), cfuncp);
             beginp->addNext(ccallp);
         }
+        // Add region informatiopn
+        if (v3Global.opt.stratifiedScheduler()) ccallp->region(refp->region());
 
         // Convert complicated outputs to temp signals
         V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
