@@ -8557,6 +8557,7 @@ private:
     string m_argTypes;  // Argument types
     string m_ctorInits;  // Constructor sub-class inits
     string m_ifdef;  // #ifdef symbol around this function
+    VRegion m_region;  // Region
     VBoolOrUnknown m_isConst;  // Function is declared const (*this not changed)
     VBoolOrUnknown m_isStatic;  // Function is declared static (no this)
     bool m_dontCombine : 1;  // V3Combine shouldn't compare this func tree, it's special
@@ -8679,6 +8680,8 @@ public:
     void dpiImport(bool flag) { m_dpiImport = flag; }
     bool dpiImportWrapper() const { return m_dpiImportWrapper; }
     void dpiImportWrapper(bool flag) { m_dpiImportWrapper = flag; }
+    void region(const VRegion& flag) { m_region = flag; }
+    VRegion region() const { return m_region; }
     //
     // If adding node accessors, see below emptyBody
     AstNode* argsp() const { return op1p(); }

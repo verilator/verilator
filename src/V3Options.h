@@ -303,6 +303,7 @@ private:
     bool m_relativeIncludes = false; // main switch: --relative-includes
     bool m_reportUnoptflat = false; // main switch: --report-unoptflat
     bool m_savable = false;         // main switch: --savable
+    bool m_stratifiedScheduler = false; // main switch: --stratified-scheduler
     bool m_structsPacked = true;    // main switch: --structs-packed
     bool m_systemC = false;         // main switch: --sc: System C instead of simple C++
     bool m_stats = false;           // main switch: --stats
@@ -454,6 +455,7 @@ public:
     bool savable() const { return m_savable; }
     bool stats() const { return m_stats; }
     bool statsVars() const { return m_statsVars; }
+    bool stratifiedScheduler() const { return m_stratifiedScheduler; }
     bool structsPacked() const { return m_structsPacked; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
     bool autoflush() const { return m_autoflush; }

@@ -1103,6 +1103,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (onoff(sw, "-stats-vars", flag /*ref*/)) {
                 m_statsVars = flag;
                 m_stats |= flag;
+            } else if (onoff(sw, "-stratified-scheduler",
+                             flag /*ref*/)) {  // Undocumented, experimental
+                m_stratifiedScheduler = flag;
             } else if (onoff(sw, "-structs-unpacked", flag /*ref*/)) {
                 m_structsPacked = flag;
             } else if (!strcmp(sw, "-sv")) {
