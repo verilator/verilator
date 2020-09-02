@@ -1218,6 +1218,7 @@ public:
     virtual void visit(AstCFile*) override {}  // Handled outside the Visit class
     virtual void visit(AstCellInline*) override {}  // Handled outside visit (in EmitCSyms)
     virtual void visit(AstCUse*) override {}  // Handled outside the Visit class
+    virtual void visit(AstDelay*) override {}
     // Default
     virtual void visit(AstNode* nodep) override {
         puts(string("\n???? // ") + nodep->prettyTypeName() + "\n");
