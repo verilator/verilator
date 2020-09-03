@@ -1,15 +1,13 @@
-%Error: t/t_pp_line_bad.v:100: `line was not properly formed with '`line number "filename" level'
-`line 100
-^
-%Error: somefile:100: `line was not properly formed with '`line number "filename" level'
-`line 100
-^
-%Error: somefile:100: `line was not properly formed with '`line number "filename" level'
-%Error-internal-no-contents
-^
-%Error: t/t_pp_line_bad.v:6: Define or directive not defined: '`line'
-`line
-^~~~~
-%Error: somefile:100: `line was not properly formed with '`line number "filename" level'
-        t/t_pp_line_bad.v:101: ... note: In file included from t_pp_line_bad.v
+%Error: t/t_pp_line_bad.v:100:1: `line was not properly formed with '`line number "filename" level'
+  100 | `line 100
+      | ^
+%Error: somefile:100:1: `line was not properly formed with '`line number "filename" level'
+  100 | `line 100
+      | ^
+%Error: somefile:100:1: `line was not properly formed with '`line number "filename" level'
+%Error: t/t_pp_line_bad.v:7:1: Define or directive not defined: '`line'
+    7 | `line
+      | ^~~~~
+%Error: somefile:100:1: `line was not properly formed with '`line number "filename" level'
+        t/t_pp_line_bad.v:101:1: ... note: In file included from t_pp_line_bad.v
 %Error: Exiting due to

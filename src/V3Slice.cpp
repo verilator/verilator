@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // Slice TRANSFORMATIONS:
@@ -46,8 +42,6 @@
 #include "V3Slice.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
-
 //*************************************************************************
 
 class SliceVisitor : public AstNVisitor {
@@ -56,11 +50,11 @@ class SliceVisitor : public AstNVisitor {
     //  AstNodeAssign::user1()      -> bool.  True if find is complete
     //  AstNodeUniop::user1()       -> bool.  True if find is complete
     //  AstArraySel::user1p()       -> AstVarRef. The VarRef that the final ArraySel points to
-    AstUser1InUse       m_inuser1;
+    AstUser1InUse m_inuser1;
 
     // STATE
-    AstNode*            m_assignp;      // Assignment we are under
-    bool                m_assignError;  // True if the current assign already has an error
+    AstNode* m_assignp = nullptr;  // Assignment we are under
+    bool m_assignError = false;  // True if the current assign already has an error
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -70,96 +64,100 @@ class SliceVisitor : public AstNVisitor {
         AstUnpackArrayDType* arrayp = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
         if (!arrayp) {  // V3Width should have complained, but...
             if (!m_assignError) {
-                nodep->v3error(nodep->prettyTypeName()
-                               <<" is not an unpacked array, but is in an unpacked array context");
+                nodep->v3error(
+                    nodep->prettyTypeName()
+                    << " is not an unpacked array, but is in an unpacked array context");
             }
             m_assignError = true;
             return nodep->cloneTree(false);  // Likely will cause downstream errors
         }
         if (arrayp->rangep()->elementsConst() != elements) {
-            if (!m_assignError) nodep->v3error("Slices of arrays in assignments have different unpacked dimensions, "
-                                               <<elements<<" versus "
-                                               <<arrayp->rangep()->elementsConst());
+            if (!m_assignError) {
+                nodep->v3error(
+                    "Slices of arrays in assignments have different unpacked dimensions, "
+                    << elements << " versus " << arrayp->rangep()->elementsConst());
+            }
             m_assignError = true;
-            elements = 1; offset = 0;
+            elements = 1;
+            offset = 0;
         }
         AstNode* newp;
         if (AstInitArray* initp = VN_CAST(nodep, InitArray)) {
-            UINFO(9,"  cloneInitArray("<<elements<<","<<offset<<") "<<nodep<<endl);
+            UINFO(9, "  cloneInitArray(" << elements << "," << offset << ") " << nodep << endl);
             int leOffset = !arrayp->rangep()->littleEndian()
-                ? arrayp->rangep()->elementsConst()-1-offset : offset;
+                               ? arrayp->rangep()->elementsConst() - 1 - offset
+                               : offset;
             AstNode* itemp = initp->getIndexDefaultedValuep(leOffset);
             if (!itemp) {
-                nodep->v3error("Array initialization has too few elements, need element "<<offset);
+                nodep->v3error("Array initialization has too few elements, need element "
+                               << offset);
                 itemp = initp->initsp();
             }
             newp = itemp->cloneTree(false);
-        }
-        else if (AstNodeCond* snodep = VN_CAST(nodep, NodeCond)) {
-            UINFO(9,"  cloneCond("<<elements<<","<<offset<<") "<<nodep<<endl);
+        } else if (AstNodeCond* snodep = VN_CAST(nodep, NodeCond)) {
+            UINFO(9, "  cloneCond(" << elements << "," << offset << ") " << nodep << endl);
             return snodep->cloneType(snodep->condp()->cloneTree(false),
                                      cloneAndSel(snodep->expr1p(), elements, offset),
                                      cloneAndSel(snodep->expr2p(), elements, offset));
-        }
-        else if (AstSliceSel* snodep = VN_CAST(nodep, SliceSel)) {
-            UINFO(9,"  cloneSliceSel("<<elements<<","<<offset<<") "<<nodep<<endl);
+        } else if (AstSliceSel* snodep = VN_CAST(nodep, SliceSel)) {
+            UINFO(9, "  cloneSliceSel(" << elements << "," << offset << ") " << nodep << endl);
             int leOffset = (snodep->declRange().lo()
                             + (!snodep->declRange().littleEndian()
-                               ? snodep->declRange().elements()-1-offset : offset));
+                                   ? snodep->declRange().elements() - 1 - offset
+                                   : offset));
             newp = new AstArraySel(nodep->fileline(), snodep->fromp()->cloneTree(false), leOffset);
-        }
-        else if (VN_IS(nodep, ArraySel)
-                 || VN_IS(nodep, NodeVarRef)
-                 || VN_IS(nodep, NodeSel)) {
-            UINFO(9,"  cloneSel("<<elements<<","<<offset<<") "<<nodep<<endl);
+        } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)) {
+            UINFO(9, "  cloneSel(" << elements << "," << offset << ") " << nodep << endl);
             int leOffset = !arrayp->rangep()->littleEndian()
-                ? arrayp->rangep()->elementsConst()-1-offset : offset;
+                               ? arrayp->rangep()->elementsConst() - 1 - offset
+                               : offset;
             newp = new AstArraySel(nodep->fileline(), nodep->cloneTree(false), leOffset);
-        }
-        else {
-            if (!m_assignError) nodep->v3error(nodep->prettyTypeName()<<" unexpected in assignment to unpacked array");
+        } else {
+            if (!m_assignError) {
+                nodep->v3error(nodep->prettyTypeName()
+                               << " unexpected in assignment to unpacked array");
+            }
             m_assignError = true;
             newp = nodep->cloneTree(false);  // Likely will cause downstream errors
         }
         return newp;
     }
 
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         // Called recursively on newly created assignments
-        if (!nodep->user1()
-            && !VN_IS(nodep, AssignAlias)) {
+        if (!nodep->user1() && !VN_IS(nodep, AssignAlias)) {
             nodep->user1(true);
             m_assignError = false;
-            if (debug()>=9) { cout<<endl; nodep->dumpTree(cout, " Deslice-In: "); }
+            if (debug() >= 9) nodep->dumpTree(cout, " Deslice-In: ");
             AstNodeDType* dtp = nodep->lhsp()->dtypep()->skipRefp();
             if (AstUnpackArrayDType* arrayp = VN_CAST(dtp, UnpackArrayDType)) {
                 // Left and right could have different msb/lsbs/endianness, but #elements is common
                 // and all variables are realigned to start at zero
                 // Assign of a little endian'ed slice to a big endian one must reverse the elements
-                AstNode* newlistp = NULL;
+                AstNode* newlistp = nullptr;
                 int elements = arrayp->rangep()->elementsConst();
                 for (int offset = 0; offset < elements; ++offset) {
                     AstNode* newp = nodep->cloneType  // AstNodeAssign
-                        (cloneAndSel(nodep->lhsp(), elements, offset),
-                         cloneAndSel(nodep->rhsp(), elements, offset));
-                    if (debug()>=9) { newp->dumpTree(cout, "-new "); }
+                                    (cloneAndSel(nodep->lhsp(), elements, offset),
+                                     cloneAndSel(nodep->rhsp(), elements, offset));
+                    if (debug() >= 9) { newp->dumpTree(cout, "-new "); }
                     newlistp = AstNode::addNextNull(newlistp, newp);
                 }
-                if (debug()>=9) { cout<<endl; nodep->dumpTree(cout, " Deslice-Dn: "); }
-                nodep->replaceWith(newlistp); VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                if (debug() >= 9) nodep->dumpTree(cout, " Deslice-Dn: ");
+                nodep->replaceWith(newlistp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 // Normal edit iterator will now iterate on all of the expansion assignments
                 // This will potentially call this function again to resolve next level of slicing
                 return;
             }
             m_assignp = nodep;
             iterateChildren(nodep);
-            m_assignp = NULL;
+            m_assignp = nullptr;
         }
     }
 
-    virtual void visit(AstInitArray* nodep) VL_OVERRIDE {
-        UASSERT_OBJ(!m_assignp, nodep,
-                    "Array initialization should have been removed earlier");
+    virtual void visit(AstInitArray* nodep) override {
+        UASSERT_OBJ(!m_assignp, nodep, "Array initialization should have been removed earlier");
     }
 
     void expandBiOp(AstNodeBiop* nodep) {
@@ -167,31 +165,32 @@ class SliceVisitor : public AstNVisitor {
             nodep->user1(true);
             // If it's an unpacked array, blow it up into comparing each element
             AstNodeDType* fromDtp = nodep->lhsp()->dtypep()->skipRefp();
-            UINFO(9, "  Bi-Eq/Neq expansion "<<nodep<<endl);
+            UINFO(9, "  Bi-Eq/Neq expansion " << nodep << endl);
             if (AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
-                AstNodeBiop* logp = NULL;
+                AstNodeBiop* logp = nullptr;
                 if (!VN_IS(nodep->lhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
-                    nodep->lhsp()->v3error("Slice operator "<<nodep->lhsp()->prettyTypeName()
-                                           <<" on non-slicable (e.g. non-vector) left-hand-side operand");
-                }
-                else if (!VN_IS(nodep->rhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
-                    nodep->rhsp()->v3error("Slice operator "<<nodep->rhsp()->prettyTypeName()
-                                           <<" on non-slicable (e.g. non-vector) right-hand-side operand");
-                }
-                else {
+                    nodep->lhsp()->v3error(
+                        "Slice operator "
+                        << nodep->lhsp()->prettyTypeName()
+                        << " on non-slicable (e.g. non-vector) left-hand-side operand");
+                } else if (!VN_IS(nodep->rhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
+                    nodep->rhsp()->v3error(
+                        "Slice operator "
+                        << nodep->rhsp()->prettyTypeName()
+                        << " on non-slicable (e.g. non-vector) right-hand-side operand");
+                } else {
                     for (int index = 0; index < adtypep->rangep()->elementsConst(); ++index) {
                         // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
                         AstNodeBiop* clonep
-                            = VN_CAST(nodep->cloneType
-                                      (new AstArraySel(nodep->fileline(),
-                                                       nodep->lhsp()->cloneTree(false),
-                                                       index),
-                                       new AstArraySel(nodep->fileline(),
-                                                       nodep->rhsp()->cloneTree(false),
-                                                       index)),
+                            = VN_CAST(nodep->cloneType(
+                                          new AstArraySel(nodep->fileline(),
+                                                          nodep->lhsp()->cloneTree(false), index),
+                                          new AstArraySel(nodep->fileline(),
+                                                          nodep->rhsp()->cloneTree(false), index)),
                                       NodeBiop);
-                        if (!logp) logp = clonep;
-                        else {
+                        if (!logp) {
+                            logp = clonep;
+                        } else {
                             switch (nodep->type()) {
                             case AstType::atEq:  // FALLTHRU
                             case AstType::atEqCase:
@@ -216,41 +215,24 @@ class SliceVisitor : public AstNVisitor {
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstEq* nodep) VL_OVERRIDE {
-        expandBiOp(nodep);
-    }
-    virtual void visit(AstNeq* nodep) VL_OVERRIDE {
-        expandBiOp(nodep);
-    }
-    virtual void visit(AstEqCase* nodep) VL_OVERRIDE {
-        expandBiOp(nodep);
-    }
-    virtual void visit(AstNeqCase* nodep) VL_OVERRIDE {
-        expandBiOp(nodep);
-    }
+    virtual void visit(AstEq* nodep) override { expandBiOp(nodep); }
+    virtual void visit(AstNeq* nodep) override { expandBiOp(nodep); }
+    virtual void visit(AstEqCase* nodep) override { expandBiOp(nodep); }
+    virtual void visit(AstNeqCase* nodep) override { expandBiOp(nodep); }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit SliceVisitor(AstNetlist* nodep) {
-        m_assignp = NULL;
-        m_assignError = false;
-        iterate(nodep);
-    }
-    virtual ~SliceVisitor() {}
+    explicit SliceVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~SliceVisitor() override {}
 };
 
 //######################################################################
 // Link class functions
 
 void V3Slice::sliceAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    {
-        SliceVisitor visitor(nodep);
-    }  // Destruct before checking
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    { SliceVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("slice", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

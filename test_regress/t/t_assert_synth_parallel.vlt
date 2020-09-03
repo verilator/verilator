@@ -2,7 +2,8 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2019 by Stefan Wallentowitz.
+// SPDX-License-Identifier: CC0-1.0
 
 `verilator_config
 
-parallel_case -file "t/t_assert_synth.v" -lines 54
+parallel_case -file "t/t_assert_synth.v" -lines 55

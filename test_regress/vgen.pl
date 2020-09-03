@@ -322,7 +322,7 @@ sub rnd_op {
     }
     my $chooseweight = rnd($totweight);
     $totweight = 0;
-    foreach my $opref (values %Ops) {
+    foreach my $opref (sort {$a->{name} cmp $b->{name}} values %Ops) {
         if (_rnd_op_ok($opref,$paramref)) {
             $totweight += $opref->{weight};
             if ($chooseweight < $totweight) {
@@ -1046,14 +1046,12 @@ Include some signed arithmetic in the generated code.  Experimental.
 
 =head1 DISTRIBUTION
 
-Copyright 2001-2020 by Wilson Snyder.  Verilator is free software; you can
-redistribute it and/or modify it under the terms of either the GNU Lesser
-General Public License Version 3 or the Perl Artistic License Version 2.0.
+Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License Version 3 or the Perl Artistic License
+Version 2.0.
 
-This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-more details.
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 =head1 AUTHORS
 

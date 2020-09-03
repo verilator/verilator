@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2005 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2005 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -73,4 +74,19 @@ module t (/*AUTOARG*/
       endcase
    end
 
+   // Additional constant folding check - this used to trigger a bug
+   reg [23:0] a;
+   reg [3:0]  b;
+
+   initial begin
+     a = 24'd0;
+     b = 4'b0111;
+     a[3*(b[2:0]+0)+:3] = 3'd7; // Check LSB expression goes to 32-bits
+     if (a != 24'b11100000_00000000_00000000) $stop;
+
+     a = 24'd0;
+     b = 4'b0110;
+     a[3*(b[2:0]+0)-:3] = 3'd7; // Check MSB expression goes to 32-bits
+     if (a != 24'b00000111_00000000_00000000) $stop;
+   end
 endmodule

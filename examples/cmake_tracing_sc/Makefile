@@ -6,10 +6,9 @@
 # This makefile is here for testing the examples and should
 # generally not be added to a CMake project.
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This file ONLY is placed under the Creative Commons Public Domain, for
+# any use, without warranty, 2020 by Wilson Snyder.
+# SPDX-License-Identifier: CC0-1.0
 #
 ######################################################################
 
@@ -86,11 +85,11 @@ run:
 	@echo "-- Verilator CMake SystemC tracing example"
 
 	@echo
-	@echo "-- CMake ----------------"
+	@echo "-- VERILATE ----------------"
 	mkdir -p build && cd build && cmake ..
 
 	@echo
-	@echo "-- COMPILE -----------------"
+	@echo "-- BUILD -------------------"
 	cmake --build build
 
 	@echo

@@ -1,9 +1,0 @@
-%Error: t/t_dpi_openreg_bad.v:13: Unsized/open arrays ('[]') are only supported in DPI imports
-                                : ... In instance t
-   reg a [];
-       ^
-%Error: t/t_dpi_openreg_bad.v:14: Unsized/open arrays ('[]') are only supported in DPI imports
-                                : ... In instance t
-   input b [];
-         ^
-%Error: Exiting due to

@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2018 by Rod Steward.
+// SPDX-License-Identifier: CC0-1.0
 
 module IOBUF ( input T, input I, output O, inout IO );
    assign O = IO;

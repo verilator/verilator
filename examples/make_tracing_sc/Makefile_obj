@@ -5,10 +5,9 @@
 #
 # This is executed in the object directory, and called by ../Makefile
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This file ONLY is placed under the Creative Commons Public Domain, for
+# any use, without warranty, 2020 by Wilson Snyder.
+# SPDX-License-Identifier: CC0-1.0
 #
 #######################################################################
 
@@ -38,15 +37,15 @@ endif
 # If you build your own rules from scratch, note you need to include
 # SystemC as follows (Vtop.mk file includes verilated.mk with these
 # already).
-# CPPFLAGS += $(SYSTEMC_CXX_FLAGS) -I$(SYSTEMC_INCLUDE)
-# LDFLAGS  += $(SYSTEMC_CXX_FLAGS) -L$(SYSTEMC_LIBDIR)
+# CPPFLAGS += $(SYSTEMC_CXX_FLAGS) $(addprefix -I, $(SYSTEMC_INCLUDE))
+# LDFLAGS  += $(SYSTEMC_CXX_FLAGS) $(addprefix -L, $(SYSTEMC_LIBDIR))
 
 # See the benchmarking section of bin/verilator.
 # Support class optimizations.  This includes the tracing and symbol table.
 # SystemC takes minutes to optimize, thus it is off by default.
 OPT_SLOW =
 # Fast path optimizations.  Most time is spent in these classes.
-OPT_FAST = -O2 -fstrict-aliasing
+OPT_FAST = -Os -fstrict-aliasing
 #OPT_FAST = -O
 #OPT_FAST =
 

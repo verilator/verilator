@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: --protect-lib example module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2019 by Todd Strader.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2019 by Todd Strader.
+// SPDX-License-Identifier: CC0-1.0
 //======================================================================
 
 // See examples/tracing_c for notes on tracing
@@ -16,12 +17,10 @@
 #endif
 
 vluint64_t main_time = 0;
-double sc_time_stamp() {
-    return main_time;
-}
+double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    if (0 && argc && argv && env) {}
+    if (false && argc && argv && env) {}
 
     Verilated::debug(0);
     Verilated::randReset(2);
@@ -32,9 +31,9 @@ int main(int argc, char** argv, char** env) {
 
 #if VM_TRACE
     // When tracing, the contents of the secret module will not be seen
-    VerilatedVcdC* tfp = NULL;
+    VerilatedVcdC* tfp = nullptr;
     const char* flag = Verilated::commandArgsPlusMatch("trace");
-    if (flag && 0==strcmp(flag, "+trace")) {
+    if (flag && 0 == strcmp(flag, "+trace")) {
         Verilated::traceEverOn(true);
         VL_PRINTF("Enabling waves into logs/vlt_dump.vcd...\n");
         tfp = new VerilatedVcdC;
@@ -61,11 +60,15 @@ int main(int argc, char** argv, char** env) {
 
     // Close trace if opened
 #if VM_TRACE
-    if (tfp) { tfp->close(); tfp = NULL; }
+    if (tfp) {
+        tfp->close();
+        tfp = nullptr;
+    }
 #endif
 
     // Destroy model
-    delete top; top = NULL;
+    delete top;
+    top = nullptr;
 
     // Fin
     exit(0);

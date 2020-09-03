@@ -1,0 +1,12 @@
+%Error: t/t_hier_block0_bad.v:20:11: 'sub0' has hier_block metacomment, hierarchical verilation supports only integer/floating point/string parameters
+                                   : ... In instance t
+   20 |    sub0 #(UNPACKED) i_sub0(.clk(clk), .in(8'(count)), .out(out0));
+      |           ^~~~~~~~
+%Error: t/t_hier_block0_bad.v:22:12: 'sub1' has hier_block metacomment, but 'parameter type' is not supported
+                                   : ... In instance t
+   22 |    sub1 #(.T(logic[7:0])) i_sub1(.in(out0), .out(out1));
+      |            ^
+%Error: t/t_hier_block0_bad.v:26:42: Cannot access inside hierarchical block
+   26 |       $display("%d %d %d", count, i_sub0.ff, out1);
+      |                                          ^~
+%Error: Exiting due to

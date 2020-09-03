@@ -1,0 +1,199 @@
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:12:8: Unsupported: AMS reserved word not implemented: 'above'
+   12 |    int above;
+      |        ^~~~~
+%Error: t/t_vams_kwd_bad.v:12:13: syntax error, unexpected ';', expecting IDENTIFIER or randomize
+   12 |    int above;
+      |             ^
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:13:8: Unsupported: AMS reserved word not implemented: 'abs'
+   13 |    int abs;
+      |        ^~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:14:8: Unsupported: AMS reserved word not implemented: 'absdelay'
+   14 |    int absdelay;
+      |        ^~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:15:8: Unsupported: AMS reserved word not implemented: 'abstol'
+   15 |    int abstol;
+      |        ^~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:16:8: Unsupported: AMS reserved word not implemented: 'ac_stim'
+   16 |    int ac_stim;
+      |        ^~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:17:8: Unsupported: AMS reserved word not implemented: 'access'
+   17 |    int access;
+      |        ^~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:18:8: Unsupported: AMS reserved word not implemented: 'acos'
+   18 |    int acos;
+      |        ^~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:19:8: Unsupported: AMS reserved word not implemented: 'acosh'
+   19 |    int acosh;
+      |        ^~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:20:8: Unsupported: AMS reserved word not implemented: 'aliasparam'
+   20 |    int aliasparam;
+      |        ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:21:8: Unsupported: AMS reserved word not implemented: 'analog'
+   21 |    int analog;
+      |        ^~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:22:8: Unsupported: AMS reserved word not implemented: 'analysis'
+   22 |    int analysis;
+      |        ^~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:23:8: Unsupported: AMS reserved word not implemented: 'assert'
+   23 |    int assert;
+      |        ^~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:24:8: Unsupported: AMS reserved word not implemented: 'branch'
+   24 |    int branch;
+      |        ^~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:25:8: Unsupported: AMS reserved word not implemented: 'connect'
+   25 |    int connect;
+      |        ^~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:26:8: Unsupported: AMS reserved word not implemented: 'connectmodule'
+   26 |    int connectmodule;
+      |        ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:27:8: Unsupported: AMS reserved word not implemented: 'connectrules'
+   27 |    int connectrules;
+      |        ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:28:8: Unsupported: AMS reserved word not implemented: 'continuous'
+   28 |    int continuous;
+      |        ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:29:8: Unsupported: AMS reserved word not implemented: 'cross'
+   29 |    int cross;
+      |        ^~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:30:8: Unsupported: AMS reserved word not implemented: 'ddt'
+   30 |    int ddt;
+      |        ^~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:31:8: Unsupported: AMS reserved word not implemented: 'ddt_nature'
+   31 |    int ddt_nature;
+      |        ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:32:8: Unsupported: AMS reserved word not implemented: 'ddx'
+   32 |    int ddx;
+      |        ^~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:33:8: Unsupported: AMS reserved word not implemented: 'discipline'
+   33 |    int discipline;
+      |        ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:34:8: Unsupported: AMS reserved word not implemented: 'discrete'
+   34 |    int discrete;
+      |        ^~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:35:8: Unsupported: AMS reserved word not implemented: 'domain'
+   35 |    int domain;
+      |        ^~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:36:8: Unsupported: AMS reserved word not implemented: 'driver_update'
+   36 |    int driver_update;
+      |        ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:37:8: Unsupported: AMS reserved word not implemented: 'endconnectrules'
+   37 |    int endconnectrules;
+      |        ^~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:38:8: Unsupported: AMS reserved word not implemented: 'enddiscipline'
+   38 |    int enddiscipline;
+      |        ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:39:8: Unsupported: AMS reserved word not implemented: 'endnature'
+   39 |    int endnature;
+      |        ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:40:8: Unsupported: AMS reserved word not implemented: 'endparamset'
+   40 |    int endparamset;
+      |        ^~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:41:8: Unsupported: AMS reserved word not implemented: 'exclude'
+   41 |    int exclude;
+      |        ^~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:42:8: Unsupported: AMS reserved word not implemented: 'final_step'
+   42 |    int final_step;
+      |        ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:43:8: Unsupported: AMS reserved word not implemented: 'flicker_noise'
+   43 |    int flicker_noise;
+      |        ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:44:8: Unsupported: AMS reserved word not implemented: 'flow'
+   44 |    int flow;
+      |        ^~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:45:8: Unsupported: AMS reserved word not implemented: 'from'
+   45 |    int from;
+      |        ^~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:46:8: Unsupported: AMS reserved word not implemented: 'ground'
+   46 |    int ground;
+      |        ^~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:47:8: Unsupported: AMS reserved word not implemented: 'idt'
+   47 |    int idt;
+      |        ^~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:48:8: Unsupported: AMS reserved word not implemented: 'idt_nature'
+   48 |    int idt_nature;
+      |        ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:49:8: Unsupported: AMS reserved word not implemented: 'idtmod'
+   49 |    int idtmod;
+      |        ^~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:50:8: Unsupported: AMS reserved word not implemented: 'inf'
+   50 |    int inf;
+      |        ^~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:51:8: Unsupported: AMS reserved word not implemented: 'initial_step'
+   51 |    int initial_step;
+      |        ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:52:8: Unsupported: AMS reserved word not implemented: 'laplace_nd'
+   52 |    int laplace_nd;
+      |        ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:53:8: Unsupported: AMS reserved word not implemented: 'laplace_np'
+   53 |    int laplace_np;
+      |        ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:54:8: Unsupported: AMS reserved word not implemented: 'laplace_zd'
+   54 |    int laplace_zd;
+      |        ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:55:8: Unsupported: AMS reserved word not implemented: 'laplace_zp'
+   55 |    int laplace_zp;
+      |        ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:56:8: Unsupported: AMS reserved word not implemented: 'last_crossing'
+   56 |    int last_crossing;
+      |        ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:57:8: Unsupported: AMS reserved word not implemented: 'limexp'
+   57 |    int limexp;
+      |        ^~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:58:8: Unsupported: AMS reserved word not implemented: 'max'
+   58 |    int max;
+      |        ^~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:59:8: Unsupported: AMS reserved word not implemented: 'merged'
+   59 |    int merged;
+      |        ^~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:60:8: Unsupported: AMS reserved word not implemented: 'min'
+   60 |    int min;
+      |        ^~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:61:8: Unsupported: AMS reserved word not implemented: 'nature'
+   61 |    int nature;
+      |        ^~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:62:8: Unsupported: AMS reserved word not implemented: 'net_resolution'
+   62 |    int net_resolution;
+      |        ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:63:8: Unsupported: AMS reserved word not implemented: 'noise_table'
+   63 |    int noise_table;
+      |        ^~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:64:8: Unsupported: AMS reserved word not implemented: 'paramset'
+   64 |    int paramset;
+      |        ^~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:65:8: Unsupported: AMS reserved word not implemented: 'potential'
+   65 |    int potential;
+      |        ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:66:8: Unsupported: AMS reserved word not implemented: 'resolveto'
+   66 |    int resolveto;
+      |        ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:67:8: Unsupported: AMS reserved word not implemented: 'slew'
+   67 |    int slew;
+      |        ^~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:68:8: Unsupported: AMS reserved word not implemented: 'split'
+   68 |    int split;
+      |        ^~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:69:8: Unsupported: AMS reserved word not implemented: 'timer'
+   69 |    int timer;
+      |        ^~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:70:8: Unsupported: AMS reserved word not implemented: 'transition'
+   70 |    int transition;
+      |        ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:71:8: Unsupported: AMS reserved word not implemented: 'units'
+   71 |    int units;
+      |        ^~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:72:8: Unsupported: AMS reserved word not implemented: 'white_noise'
+   72 |    int white_noise;
+      |        ^~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:73:8: Unsupported: AMS reserved word not implemented: 'zi_nd'
+   73 |    int zi_nd;
+      |        ^~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:74:8: Unsupported: AMS reserved word not implemented: 'zi_np'
+   74 |    int zi_np;
+      |        ^~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:75:8: Unsupported: AMS reserved word not implemented: 'zi_zd'
+   75 |    int zi_zd;
+      |        ^~~~~
+%Error-UNSUPPORTED: t/t_vams_kwd_bad.v:76:8: Unsupported: AMS reserved word not implemented: 'zi_zp'
+   76 |    int zi_zp;
+      |        ^~~~~
+%Error: Exiting due to

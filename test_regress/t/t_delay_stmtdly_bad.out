@@ -1,14 +1,26 @@
-%Warning-ASSIGNDLY: t/t_delay.v:19: Unsupported: Ignoring delay on this assignment/primitive.
-   assign #(1.2000000000000000) dly1 = dly0 + 32'h1;
-          ^
+%Warning-ASSIGNDLY: t/t_delay.v:23:13: Unsupported: Ignoring delay on this assignment/primitive.
+   23 |    assign #(1.2000000000000000) dly1 = dly0 + 32'h1;
+      |             ^~~~~~~~~~~~~~~~~~
                     ... Use "/* verilator lint_off ASSIGNDLY */" and lint_on around source to disable this message.
-%Warning-ASSIGNDLY: t/t_delay.v:24: Unsupported: Ignoring delay on this assignment/primitive.
-         dly0 <= #0 32'h11;
-                 ^
-%Warning-ASSIGNDLY: t/t_delay.v:27: Unsupported: Ignoring delay on this assignment/primitive.
-         dly0 <= #0.12 dly0 + 32'h12;
-                 ^
-%Warning-STMTDLY: t/t_delay.v:33: Unsupported: Ignoring delay on this delayed statement.
-         #100 $finish;
-         ^
+%Warning-ASSIGNDLY: t/t_delay.v:28:19: Unsupported: Ignoring delay on this assignment/primitive.
+   28 |          dly0 <= #0 32'h11;
+      |                   ^
+%Warning-ASSIGNDLY: t/t_delay.v:31:19: Unsupported: Ignoring delay on this assignment/primitive.
+   31 |          dly0 <= #0.12 dly0 + 32'h12;
+      |                   ^~~~
+%Warning-ASSIGNDLY: t/t_delay.v:39:25: Unsupported: Ignoring delay on this assignment/primitive.
+   39 |          dly0 <= #(dly_s.dly) 32'h55;
+      |                         ^
+%Warning-STMTDLY: t/t_delay.v:44:11: Unsupported: Ignoring delay on this delayed statement.
+                                   : ... In instance t
+   44 |          #100 $finish;
+      |           ^~~
+%Warning-UNUSED: t/t_delay.v:21:12: Signal is not used: 'dly_s'
+                                  : ... In instance t
+   21 |    dly_s_t dly_s;
+      |            ^~~~~
+%Warning-BLKSEQ: t/t_delay.v:38:20: Blocking assignments (=) in sequential (flop or latch) block
+                                  : ... Suggest delayed assignments (<=)
+   38 |          dly_s.dly = 55;
+      |                    ^
 %Error: Exiting due to

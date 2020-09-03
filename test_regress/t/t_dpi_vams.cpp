@@ -2,8 +2,9 @@
 //
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2010 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2010 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
 #include "Vt_dpi_vams.h"
@@ -35,7 +36,7 @@ unsigned int main_time = 0;
 
 double sc_time_stamp() { return main_time; }
 
-VM_PREFIX* topp = NULL;
+VM_PREFIX* topp = nullptr;
 
 int main(int argc, char* argv[]) {
     topp = new VM_PREFIX;

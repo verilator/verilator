@@ -1,0 +1,7 @@
+%Error: t/t_iff.v:64:15: syntax error, unexpected iff, expecting ')' or ',' or or
+   64 |    always @(d iff enable == 1) begin
+      |               ^~~
+%Error: t/t_iff.v:69:35: syntax error, unexpected iff, expecting ')'
+   69 |    assert property (@(posedge clk iff enable)
+      |                                   ^~~
+%Error: Exiting due to

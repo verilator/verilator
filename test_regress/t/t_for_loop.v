@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2003 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2003 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -100,6 +101,13 @@ module t (/*AUTOARG*/
 	 if (i != 20) $stop;
 	 for (i=30; i<10; i++) ;
 	 if (i != 30) $stop;
+	 // Comma
+	 loops = 0;
+	 for (i=0; i<20; ++i, ++loops);
+	 if (loops !== 20) $stop;
+	 loops = 0;
+	 for (i=0; i<20; ++loops, ++i);
+	 if (loops !== 20) $stop;
 	 //
 	 $write("*-* All Finished *-*\n");
 	 $finish;

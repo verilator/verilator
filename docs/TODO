@@ -4,6 +4,7 @@
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 * Language support:
 ** Fix ordering of each bit separately in a signal (mips)
@@ -22,17 +23,10 @@
 ** Assertions
 ** Tristate support
 
-* Configure/Make/Install
-** Distribute with flex/bison already expanded?
-   Flex library not needed.  Probably too difficult to be worth it.
-
 * Testing:
-** Capture all inputs into global "rerun it" file
 ** Code to make wrapper that sets signals, so can do comparison checks
 ** New random program generator
 ** Better graph viewer with search and zoom
-** Port and test against opencores.org code
-** // verilator debug in code so can see only tree affecting those nodes
 
 * Usability:
 ** Detect and pre-remove most UNOPTFLATs

@@ -2,16 +2,19 @@
 ######################################################################
 # DESCRIPTION: Makefile commands for all verilated target files
 #
-# Copyright 2003-2020 by Wilson Snyder. Verilator is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU Lesser
-# General Public License Version 3 or the Perl Artistic License Version 2.0.
+# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 ######################################################################
 
 PERL = @PERL@
 CXX = @CXX@
 LINK = @CXX@
-AR     = ar
+AR = ar
 RANLIB = ranlib
+OBJCACHE ?= @OBJCACHE@
 
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
@@ -81,27 +84,29 @@ CPPFLAGS += $(VM_USER_CFLAGS)
 LDFLAGS  += $(VM_USER_LDFLAGS)
 LDLIBS   += $(VM_USER_LDLIBS)
 
-# See the benchmarking section of bin/verilator.
-# Support class optimizations.  This includes the tracing and symbol table.
-# SystemC takes minutes to optimize, thus it is off by default.
-#OPT_SLOW =
-# Fast path optimizations.  Most time is spent in these classes.
-#OPT_FAST = -O2 -fstrict-aliasing
-#OPT_FAST = -O
-#OPT_FAST =
+######################################################################
+# Optimization control.
 
-#######################################################################
-##### Aggregates
+# See also the BENCHMARKING & OPTIMIZATION section of the manual.
 
-VM_CLASSES += $(VM_CLASSES_FAST) $(VM_CLASSES_SLOW)
-VM_SUPPORT += $(VM_SUPPORT_FAST) $(VM_SUPPORT_SLOW)
+# Optimization flags for non performance-critical/rarely executed code.
+# No optimization by default, which improves compilation speed.
+OPT_SLOW =
+# Optimization for performance critical/hot code. Most time is spent in these
+# routines. Optimizing by default for improved execution speed.
+OPT_FAST = -Os
+# Optimization applied to the common run-time library used by verilated models.
+# For compatibility this is called OPT_GLOBAL even though it only applies to
+# files in the run-time library. Normally there should be no need for the user
+# to change this as the library is small, but can have significant speed impact.
+OPT_GLOBAL = -Os
 
 #######################################################################
 ##### SystemC builds
 
 ifeq ($(VM_SC),1)
-  CPPFLAGS += $(SYSTEMC_CXX_FLAGS) -I$(SYSTEMC_INCLUDE)
-  LDFLAGS  += $(SYSTEMC_CXX_FLAGS) -L$(SYSTEMC_LIBDIR)
+  CPPFLAGS += $(SYSTEMC_CXX_FLAGS) $(addprefix -I, $(SYSTEMC_INCLUDE))
+  LDFLAGS  += $(SYSTEMC_CXX_FLAGS) $(addprefix -L, $(SYSTEMC_LIBDIR))
   SC_LIBS   = -lsystemc
  ifneq ($(wildcard $(SYSTEMC_LIBDIR)/*numeric_bit*),)
   # Systemc 1.2.1beta
@@ -112,85 +117,127 @@ endif
 #######################################################################
 ##### Threaded builds
 
+ifneq ($(VM_C11),0)
+ ifneq ($(VM_C11),)
+  VK_C11=1
+ endif
+endif
+
 ifneq ($(VM_THREADS),0)
  ifneq ($(VM_THREADS),)
   CPPFLAGS += -DVL_THREADED
+  VK_C11=1
   VK_LIBS_THREADED=1
  endif
 endif
 
-ifneq ($(VM_TRACE_THREADED),0)
- ifneq ($(VM_TRACE_THREADED),)
+ifneq ($(VM_TRACE_THREADS),0)
+ ifneq ($(VM_TRACE_THREADS),)
+  ifeq ($(findstring -DVL_THREADED,$(CPPFLAGS)),)
+   $(error VM_TRACE_THREADS requires VM_THREADS)
+  endif
   CPPFLAGS += -DVL_TRACE_THREADED
+  VK_C11=1
   VK_LIBS_THREADED=1
+ endif
+endif
+
+
+ifneq ($(VM_TRACE_FST_WRITER_THREAD),0)
+ ifneq ($(VM_TRACE_FST_WRITER_THREAD),)
+  CPPFLAGS += -DVL_TRACE_FST_WRITER_THREAD
+  VK_C11=1
+  VK_LIBS_THREADED=1
+ endif
+endif
+
+ifneq ($(VK_C11),0)
+ ifneq ($(VK_C11),)
+  # Need C++11 at least, so always default to newest
+  CPPFLAGS += $(CFG_CXXFLAGS_STD_NEWEST)
  endif
 endif
 
 ifneq ($(VK_LIBS_THREADED),0)
  ifneq ($(VK_LIBS_THREADED),)
-  # Need C++11 at least, so always default to newest
-  CPPFLAGS += $(CFG_CXXFLAGS_STD_NEWEST)
   LDLIBS += $(CFG_LDLIBS_THREADS)
  endif
 endif
 
 #######################################################################
-##### Stub
+### Aggregates
 
-preproc:
-
-#######################################################################
-##### C/H builds
-
-LIBS   += -lm -lstdc++
+VM_FAST += $(VM_CLASSES_FAST) $(VM_SUPPORT_FAST)
+VM_SLOW += $(VM_CLASSES_SLOW) $(VM_SUPPORT_SLOW)
 
 #######################################################################
-# Overall Objects Linking
+### Overall Objects Linking
 
-VK_CLASSES_H   = $(addsuffix .h, $(VM_CLASSES))
-VK_CLASSES_CPP = $(addsuffix .cpp, $(VM_CLASSES))
-
-VK_SUPPORT_CPP = $(addsuffix .cpp, $(VM_SUPPORT))
+VK_FAST_OBJS = $(addsuffix .o, $(VM_FAST))
+VK_SLOW_OBJS = $(addsuffix .o, $(VM_SLOW))
 
 VK_USER_OBJS   = $(addsuffix .o, $(VM_USER_CLASSES))
 
+# Note VM_GLOBAL_FAST and VM_GLOBAL_SLOW holds the files required from the
+# run-time library. In practice everything is actually in VM_GLOBAL_FAST,
+# but keeping the distinction for compatibility for now.
 VK_GLOBAL_OBJS = $(addsuffix .o, $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW))
 
 ifneq ($(VM_PARALLEL_BUILDS),1)
-  # Fast building, all .cpp's in one fell swoop
-  # This saves about 5 sec per module, but can be slower if only a little changes
-  VK_OBJS += $(VM_PREFIX)__ALLcls.o   $(VM_PREFIX)__ALLsup.o
-  all_cpp:   $(VM_PREFIX)__ALLcls.cpp $(VM_PREFIX)__ALLsup.cpp
-  $(VM_PREFIX)__ALLcls.cpp: $(VK_CLASSES_CPP)
+  # Fast build for small designs: All .cpp files in one fell swoop. This
+  # saves total compute, but can be slower if only a little changes. It is
+  # also a lot slower for medium to large designs when the speed of the C
+  # compiler dominates, which in this mode is not parallelizable.
+
+  VK_OBJS += $(VM_PREFIX)__ALL.o
+  $(VM_PREFIX)__ALL.cpp: $(addsuffix .cpp, $(VM_FAST) $(VM_SLOW))
 	$(VERILATOR_INCLUDER) -DVL_INCLUDE_OPT=include $^ > $@
-  $(VM_PREFIX)__ALLsup.cpp: $(VK_SUPPORT_CPP)
-	$(VERILATOR_INCLUDER) -DVL_INCLUDE_OPT=include $^ > $@
+  all_cpp: $(VM_PREFIX)__ALL.cpp
 else
-  #Slow way of building... Each .cpp file by itself
-  VK_OBJS += $(addsuffix .o, $(VM_CLASSES) $(VM_SUPPORT))
+  # Parallel build: Each .cpp file by itself. This can be somewhat slower for
+  # very small designs and examples, but is a lot faster for large designs.
+
+  VK_OBJS += $(VK_FAST_OBJS) $(VK_SLOW_OBJS)
 endif
 
-$(VM_PREFIX)__ALL.a: $(VK_OBJS)
-	$(AR) -cr $@ $^
-	$(RANLIB) $@
+# When archiving just objects (.o), single $(AR) run is enough.
+# When merging objects (.o) and archives (.a), the following steps are taken.
+#   1. Extract object files from .a
+#   2. Create a new archive from extracted .o and given .o
+%.a:
+	@echo "Archive $(AR) -cr $@ $^"
+	@if test $(words $(filter %.a,$^)) -eq 0; then \
+		$(AR) -cr $@ $^; \
+		$(RANLIB) $@; \
+	else \
+		$(RM) -rf $*__tmpdir; \
+		for archive in $(filter %.a,$^); do \
+			mkdir -p $*__tmpdir/$$(basename $${archive}); \
+			cd $*__tmpdir/$$(basename $${archive}); \
+			$(AR) -x ../../$${archive}; \
+			cd ../..; \
+		done; \
+		$(AR) -cr $@ $(filter %.o,$^) $*__tmpdir/*/*.o; \
+		$(RM) -rf $*__tmpdir; \
+	fi
+
+$(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
+
 
 ######################################################################
 ### Compile rules
 
 ifneq ($(VM_DEFAULT_RULES),0)
-$(VM_PREFIX)__ALLcls.o: $(VM_PREFIX)__ALLcls.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-
-$(VM_PREFIX)__ALLsup.o: $(VM_PREFIX)__ALLsup.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
-
-# VM_GLOBAL_FAST files including verilated.o use this rule
+# Anything not in $(VK_SLOW_OBJS) or $(VK_GLOBAL_OBJS), including verilated.o
+# and user files passed on the Verilator command line use this rule.
 %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
 
-%__Slow.o: %__Slow.cpp
+$(VK_SLOW_OBJS): %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
 
+$(VK_GLOBAL_OBJS): %.o: %.cpp
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_GLOBAL) -c -o $@ $<
 endif
 
 #Default rule embedded in make:

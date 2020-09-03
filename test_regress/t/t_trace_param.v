@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2014 by Jonathon Donaldson.
+// SPDX-License-Identifier: CC0-1.0
 
 package my_funcs;
    function automatic int simple_func (input int value);

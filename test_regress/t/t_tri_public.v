@@ -1,9 +1,10 @@
-// DESCRIPTION: Verilator: Unsupported tristate constructur error
+// DESCRIPTION: Verilator: Unsupported tristate construct error
 //
 // This is a compile only regression test of tristate handling for bug514
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2017 by Rob Stoddard.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Outputs

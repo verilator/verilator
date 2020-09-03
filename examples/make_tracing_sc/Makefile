@@ -5,10 +5,9 @@
 # This calls the object directory makefile.  That allows the objects to
 # be placed in the "current directory" which simplifies the Makefile.
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This file ONLY is placed under the Creative Commons Public Domain, for
+# any use, without warranty, 2020 by Wilson Snyder.
+# SPDX-License-Identifier: CC0-1.0
 #
 ######################################################################
 # Check for sanity to avoid later confusion
@@ -38,7 +37,7 @@ VERILATOR_FLAGS += -sc --exe
 # Generate makefile dependencies (not shown as complicates the Makefile)
 #VERILATOR_FLAGS += -MMD
 # Optimize
-VERILATOR_FLAGS += -O2 -x-assign 0
+VERILATOR_FLAGS += -Os -x-assign 0
 # Warn abount lint issues; may not want this on less solid designs
 VERILATOR_FLAGS += -Wall
 # Make waveforms
@@ -76,10 +75,12 @@ run:
 
 	@echo
 	@echo "-- COMPILE -----------------"
-# To compile, we can either just do what Verilator asks,
-# or call a submakefile where we can override the rules ourselves
-#	$(MAKE) -j 4 -C obj_dir -f Vtop.mk
-	$(MAKE) -j 4 -C obj_dir -f ../Makefile_obj
+# To compile, we can either
+# 1. Pass --build to Verilator by editing VERILATOR_FLAGS above.
+# 2. Or, run the make rules Verilator does:
+#	$(MAKE) -j -C obj_dir -f Vtop.mk
+# 3. Or, call a submakefile where we can override the rules ourselves:
+	$(MAKE) -j -C obj_dir -f ../Makefile_obj
 
 	@echo
 	@echo "-- RUN ---------------------"

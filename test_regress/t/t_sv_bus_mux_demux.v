@@ -2,6 +2,7 @@
 //                                                                            //
 // This file is placed into the Public Domain, for any use, without warranty. //
 // 2012 by Iztok Jeras                                                        //
+// SPDX-License-Identifier: CC0-1.0                                         //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -190,4 +191,4 @@ always @ (posedge clk, posedge rst)
 if (rst)  bso_rdy = 1'b0;
 else      bso_rdy = 1'b1;
 
-endmodule : sv_bus_mux_demux_tb
+endmodule

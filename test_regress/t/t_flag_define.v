@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2014 by Wilson Snyder
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2014 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 //
 // Special cases of "string parameters" :
 // This table compares obtain results from big-3 simulators to Verilator
@@ -105,6 +106,16 @@ module t;
       if (`STRINGIFY(`LIT3) !== "32'h600D600D") $stop;
 `else
       $write("%%Error: Missing define\n"); $stop;
+`endif
+
+`ifndef CMD_DEF
+      $write("%%Error: Missing define\n"); $stop;
+`endif
+`ifndef CMD_DEF2
+      $write("%%Error: Missing define\n"); $stop;
+`endif
+`ifdef CMD_UNDEF
+      $write("%%Error: Extra define\n"); $stop;
 `endif
 
       $write("*-* All Finished *-*\n");

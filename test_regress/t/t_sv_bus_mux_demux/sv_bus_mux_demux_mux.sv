@@ -2,6 +2,7 @@
 //                                                                            //
 // This file is placed into the Public Domain, for any use, without warranty. //
 // 2012 by Iztok Jeras                                                        //
+// SPDX-License-Identifier: CC0-1.0                                         //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -55,7 +56,7 @@ else               str_vld <= bus_trn | (str_vld & ~pkt_end);
 
 // packet byte counter
 always @ (posedge clk, posedge rst)
-if (rst)           pkt_cnt <= 4'd0;
+if (rst)           pkt_cnt <= '0;
 else if (str_trn)  pkt_cnt <= pkt_cnt + 3'd1;
 
 // packet byte counter end

@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2020 by Stefan Wallentowitz
+// without warranty, 2020 by Stefan Wallentowitz.
+// SPDX-License-Identifier: CC0-1.0
 
 module t();
   logic din [0:15];

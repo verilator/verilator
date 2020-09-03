@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog example module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2017 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2017 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 //======================================================================
 
 // Include common routines
@@ -18,7 +19,7 @@ int main(int argc, char** argv, char** env) {
     // e.g. examples/c_tracing.
 
     // Prevent unused variable warnings
-    if (0 && argc && argv && env) {}
+    if (false && argc && argv && env) {}
 
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
     Vtop* top = new Vtop;

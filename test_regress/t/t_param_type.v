@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2012 by Iztok Jeras.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -48,6 +49,10 @@ module t (/*AUTOARG*/
    mod_typ #(.TYP (bit [23:0]    )) mod_ar1d (clk, cnt_ar1d[24-1:0], siz_ar1d);
    mod_typ #(.TYP (bit [3:0][3:0])) mod_ar2d (clk, cnt_ar2d[16-1:0], siz_ar2d);
 
+   // double types
+   mod_typ2 #(.WIDTH1(3), .WIDTH2(3), .TYP1(bit [2:0])) mod2_3_3();
+   mod_typ2 #(.WIDTH1(3), .WIDTH2(5), .TYP1(bit [2:0]), .TYP2(bit[4:0])) mod2_3_5();
+
 endmodule : t
 
 
@@ -65,5 +70,24 @@ module mod_typ #(
      cnt <= cnt + 1;
 
    assign siz = $bits (cnt);
+
+endmodule
+
+module mod_typ2
+  #(
+    parameter int WIDTH1 = 0,
+    parameter int WIDTH2 = WIDTH1,
+    parameter type TYP1 = byte,
+    // Below we need to imply that TYP2 is a type
+    TYP2 = TYP1
+    )();
+
+   TYP1 t1;
+   TYP2 t2;
+
+   initial begin
+      if ($bits(t1) != WIDTH1) $stop;
+      if ($bits(t2) != WIDTH2) $stop;
+   end
 
 endmodule

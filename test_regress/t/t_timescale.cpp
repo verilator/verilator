@@ -1,4 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2020 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
 
@@ -8,14 +11,13 @@ unsigned long long main_time = 0;
 double sc_time_stamp() { return (double)main_time; }
 
 #include <iostream>
-using namespace std;
 
 #define FILENM "t_timescale.cpp"
 
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
-        cout << dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
-             << "   EXP = " << (exp) << endl; \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
+                  << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 

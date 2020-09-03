@@ -1,8 +1,8 @@
-%Error: t/t_tri_pull_bad.v:10: Unsupported: Conflicting pull directions.
-                             : ... In instance t
-   pulldown p2(A);
-            ^~
-        t/t_tri_pull_bad.v:9: ... Location of conflicting pull.
-   pullup p1(A);
-          ^~
+%Error-UNSUPPORTED: t/t_tri_pull_bad.v:13:13: Unsupported: Conflicting pull directions.
+                                            : ... In instance t
+   13 |    pulldown p2(A);
+      |             ^~
+                    t/t_tri_pull_bad.v:12:11: ... Location of conflicting pull.
+   12 |    pullup p1(A);
+      |           ^~
 %Error: Exiting due to

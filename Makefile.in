@@ -7,15 +7,11 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
+# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
-#
-# Verilator is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 #****************************************************************************/
 #
@@ -93,7 +89,6 @@ datarootdir = @datarootdir@
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
-CFG_WITH_THREADED = @CFG_WITH_THREADED@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 
 #### End of system configuration section. ####
@@ -207,12 +202,6 @@ EXAMPLES_FIRST = \
 	examples/make_hello_sc \
 
 EXAMPLES = $(EXAMPLES_FIRST) $(filter-out $(EXAMPLES_FIRST), $(sort $(wildcard examples/*)))
-
-ifeq ($(OBJCACHE_JOBS),)
-ifneq ($(OBJCACHE_HOSTS),)
-export OBJCACHE_JOBS := -j $(shell objcache --jobs "$(OBJCACHE_HOSTS)")
-endif
-endif
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
 VL_INST_MAN_FILES = verilator.1 verilator_coverage.1 verilator_gantt.1 verilator_profcfunc.1
@@ -346,6 +335,7 @@ installdata:
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_c
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_sc
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_protect_lib
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/xml_py
 	cd $(srcdir) \
 	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
@@ -380,8 +370,8 @@ uninstall:
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_c
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_sc
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_protect_lib
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/xml_py
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples
-	-rmdir $(DESTDIR)$(pkgdatadir)/cmake
 	-rmdir $(DESTDIR)$(pkgdatadir)
 	-rmdir $(DESTDIR)$(pkgconfigdir)
 
@@ -434,6 +424,9 @@ CPPCHECK_CPP = $(wildcard \
 CPPCHECK_H = $(wildcard \
 	$(srcdir)/include/*.h \
 	$(srcdir)/src/*.h )
+CPPCHECK_YL = $(wildcard \
+	$(srcdir)/src/*.y \
+	$(srcdir)/src/*.l )
 CPPCHECK = src/cppcheck_filtered
 CPPCHECK_FLAGS = --enable=all --inline-suppr \
 	--suppress=unusedScopedObject --suppress=cstyleCast --suppress=useInitializationList \
@@ -444,7 +437,7 @@ CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
 
 cppcheck: $(CPPCHECK_DEP)
 %.cppcheck: %.cpp
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $<
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 -DVL_THREADED=1 $(CPPCHECK_INC) $<
 
 CLANGTIDY = clang-tidy
 CLANGTIDY_FLAGS = -config=''
@@ -464,6 +457,14 @@ analyzer-src:
 analyzer-include:
 	-rm -rf examples/*/obj*
 	scan-build $(MAKE) -k examples
+
+CLANGFORMAT = clang-format
+CLANGFORMAT_FLAGS = -i
+
+clang-format:
+	@$(CLANGFORMAT) --version | egrep 10.0 > /dev/null \
+		|| echo "*** You are not using clang-format 10.0, indents may differ from master's ***"
+	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CPPCHECK_CPP) $(CPPCHECK_H) $(CPPCHECK_YL)
 
 ftp: info
 
@@ -543,9 +544,6 @@ dist-file-list:
 	@echo "begin-dist-file-list:";  # Scripts look for this
 	@echo $(wildcard $(DISTFILES))
 	@echo "end-dist-file-list:";  # Scripts look for this
-
-print-cfg-with-threaded:
-	@echo $(CFG_WITH_THREADED)
 
 ######################################################################
 # Distributions

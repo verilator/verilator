@@ -1,5 +1,5 @@
 -V{t#,#}- Verilated::debug is on. Message prefix indicates {<thread>,<sequence_number>}.
 -V{t#,#}+    Vt_unopt_converge_initial_run_bad::_change_request
--V{t#,#}        CHANGE: t/t_unopt_converge_initial.v:18: x
-%Error: t/t_unopt_converge_initial.v:6: Verilated model didn't DC converge
+-V{t#,#}        CHANGE: t/t_unopt_converge_initial.v:19: x
+%Error: t/t_unopt_converge_initial.v:7: Verilated model didn't DC converge
 Aborting...

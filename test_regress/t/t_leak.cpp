@@ -6,13 +6,14 @@
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 #include <cstdlib>
 #include <cstdio>
 #include <verilated.h>
 #include "Vt_leak.h"
 
-unsigned int main_time = false;
+unsigned int main_time = 0;
 double sc_time_stamp() { return main_time; }
 
 long long get_memory_usage() {
@@ -64,15 +65,15 @@ int main(int argc, char* argv[]) {
     vluint64_t firstUsage = get_memory_usage();
 
     // Warmup phase
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 10; i++) {
         make_and_destroy();
     }
     firstUsage = get_memory_usage();
     printf("Memory size %" VL_PRI64 "d bytes\n", firstUsage);
 
-    int loops = 100*1000;
+    int loops = 10;
     for (int left = loops; left > 0;) {
-        for (int j = 0; j < 1000; ++j, --left) {
+        for (int j = 0; j < 1; ++j, --left) {
             make_and_destroy();
         }
     }

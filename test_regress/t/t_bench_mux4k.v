@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2008 by Lane Brooks.
+// SPDX-License-Identifier: CC0-1.0
 //
 // This implements a 4096:1 mux via two stages of 64:1 muxing.
 

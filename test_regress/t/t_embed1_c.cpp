@@ -3,13 +3,9 @@
 //
 // Copyright 2011-2011 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -50,7 +46,7 @@ Vt_embed1_child* __get_modelp() {
     svScope scope = svGetScope();
     if (!scope) {
         vl_fatal(__FILE__, __LINE__, __FILE__, "svGetScope failed");
-        return NULL;
+        return nullptr;
     }
 
     void* __modelp = svGetUserData(scope, &T_Embed_Child_Unique);

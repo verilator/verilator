@@ -3,13 +3,9 @@
 //
 // Copyright 2010-2011 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -34,7 +30,6 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-using namespace std;
 
 #include "TestSimulator.h"
 #include "TestVpi.h"
@@ -45,11 +40,11 @@ using namespace std;
 #define TEST_MSG \
     if (0) printf
 
-unsigned int main_time = false;
-unsigned int callback_count = false;
-unsigned int callback_count_half = false;
-unsigned int callback_count_quad = false;
-unsigned int callback_count_strs = false;
+unsigned int main_time = 0;
+unsigned int callback_count = 0;
+unsigned int callback_count_half = 0;
+unsigned int callback_count_quad = 0;
+unsigned int callback_count_strs = 0;
 unsigned int callback_count_strs_max = 500;
 
 //======================================================================
@@ -69,15 +64,15 @@ unsigned int callback_count_strs_max = 500;
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
-        cout << dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
-             << "   EXP = " << (exp) << endl; \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
+                  << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_HEX(got, exp) \
     if ((got) != (exp)) { \
-        cout << dec << "%Error: " << FILENM << ":" << __LINE__ << hex << ": GOT = " << (got) \
-             << "   EXP = " << (exp) << endl; \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << std::hex \
+                  << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 
@@ -277,7 +272,7 @@ int _mon_check_var() {
         vpi_get_value(vh10, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer, 4);
         p = vpi_get_str(vpiType, vh10);
-        CHECK_RESULT_CSTR(p, "*undefined*");
+        CHECK_RESULT_CSTR(p, "vpiConstant");
     }
     {
         TestVpiHandle vh10 = vpi_handle(vpiRightRange, vh4);
@@ -285,7 +280,7 @@ int _mon_check_var() {
         vpi_get_value(vh10, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer, 3);
         p = vpi_get_str(vpiType, vh10);
-        CHECK_RESULT_CSTR(p, "*undefined*");
+        CHECK_RESULT_CSTR(p, "vpiConstant");
     }
     {
         TestVpiHandle vh10 = vpi_iterate(vpiMemoryWord, vh4);
@@ -301,13 +296,13 @@ int _mon_check_var() {
         vpi_get_value(vh12, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer, 2);
         p = vpi_get_str(vpiType, vh12);
-        CHECK_RESULT_CSTR(p, "*undefined*");
+        CHECK_RESULT_CSTR(p, "vpiConstant");
         TestVpiHandle vh13 = vpi_handle(vpiRightRange, vh11);
         CHECK_RESULT_NZ(vh13);
         vpi_get_value(vh13, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer, 1);
         p = vpi_get_str(vpiType, vh13);
-        CHECK_RESULT_CSTR(p, "*undefined*");
+        CHECK_RESULT_CSTR(p, "vpiConstant");
     }
 
     return 0;

@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -42,23 +38,22 @@ struct GraphPCNode {
     // operation. We'll use this in pathExistsInternal() to avoid checking
     // the same node twice, and again in updateHalfCriticalPath() to assert
     // there are no cycles.
-    vluint64_t m_seenAtGeneration;
+    vluint64_t m_seenAtGeneration = 0;
 
     // CONSTRUCTORS
-    GraphPCNode() : m_seenAtGeneration(0) {
+    GraphPCNode() {
         for (int w = 0; w < GraphWay::NUM_WAYS; w++) m_cp[w] = 0;
     }
-    ~GraphPCNode() { }
+    ~GraphPCNode() {}
 };
 
 //######################################################################
 // GraphPathChecker implementation
 
 GraphPathChecker::GraphPathChecker(const V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-    : GraphAlg<const V3Graph>(graphp, edgeFuncp)
-    , m_generation(0) {
-    for (V3GraphVertex* vxp = graphp->verticesBeginp();
-         vxp; vxp = vxp->verticesNextp()) {
+    : GraphAlg<const V3Graph>{graphp, edgeFuncp}
+    , m_generation{0} {
+    for (V3GraphVertex* vxp = graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
         // Setup tracking structure for each node.  If delete a vertex
         // there would be a leak, but ok as accept only const V3Graph*'s.
         vxp->userp(new GraphPCNode);
@@ -70,11 +65,10 @@ GraphPathChecker::GraphPathChecker(const V3Graph* graphp, V3EdgeFuncP edgeFuncp)
 
 GraphPathChecker::~GraphPathChecker() {
     // Free every GraphPCNode
-    for (V3GraphVertex* vxp = m_graphp->verticesBeginp();
-         vxp; vxp = vxp->verticesNextp()) {
+    for (V3GraphVertex* vxp = m_graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
         GraphPCNode* nodep = static_cast<GraphPCNode*>(vxp->userp());
         VL_DO_DANGLING(delete nodep, nodep);
-        vxp->userp(NULL);
+        vxp->userp(nullptr);
     }
 }
 
@@ -83,8 +77,7 @@ void GraphPathChecker::initHalfCriticalPaths(GraphWay way, bool checkOnly) {
     GraphWay rev = way.invert();
     while (const V3GraphVertex* vertexp = order.nextp()) {
         unsigned critPathCost = 0;
-        for (V3GraphEdge* edgep = vertexp->beginp(rev);
-             edgep; edgep = edgep->nextp(rev)) {
+        for (V3GraphEdge* edgep = vertexp->beginp(rev); edgep; edgep = edgep->nextp(rev)) {
             if (!m_edgeFuncp(edgep)) continue;
 
             V3GraphVertex* wrelativep = edgep->furtherp(rev);
@@ -94,16 +87,15 @@ void GraphPathChecker::initHalfCriticalPaths(GraphWay way, bool checkOnly) {
 
         GraphPCNode* ourUserp = static_cast<GraphPCNode*>(vertexp->userp());
         if (checkOnly) {
-            UASSERT_OBJ(ourUserp->m_cp[way] == critPathCost,
-                        vertexp, "Validation of critical paths failed");
+            UASSERT_OBJ(ourUserp->m_cp[way] == critPathCost, vertexp,
+                        "Validation of critical paths failed");
         } else {
             ourUserp->m_cp[way] = critPathCost;
         }
     }
 }
 
-bool GraphPathChecker::pathExistsInternal(const V3GraphVertex* ap,
-                                          const V3GraphVertex* bp,
+bool GraphPathChecker::pathExistsInternal(const V3GraphVertex* ap, const V3GraphVertex* bp,
                                           unsigned* costp) {
     GraphPCNode* auserp = static_cast<GraphPCNode*>(ap->userp());
     GraphPCNode* buserp = static_cast<GraphPCNode*>(bp->userp());
@@ -122,31 +114,23 @@ bool GraphPathChecker::pathExistsInternal(const V3GraphVertex* ap,
     if (ap == bp) return true;
 
     // Rule out an a->b path based on their CPs
-    if (auserp->m_cp[GraphWay::REVERSE] < buserp->m_cp[GraphWay::REVERSE] + 1) {
-        return false;
-    }
-    if (buserp->m_cp[GraphWay::FORWARD] < auserp->m_cp[GraphWay::FORWARD] + 1) {
-        return false;
-    }
+    if (auserp->m_cp[GraphWay::REVERSE] < buserp->m_cp[GraphWay::REVERSE] + 1) return false;
+    if (buserp->m_cp[GraphWay::FORWARD] < auserp->m_cp[GraphWay::FORWARD] + 1) return false;
 
     // Slow path; visit some extended family
     bool foundPath = false;
-    for (V3GraphEdge* edgep = ap->outBeginp();
-         edgep && !foundPath; edgep = edgep->outNextp()) {
+    for (V3GraphEdge* edgep = ap->outBeginp(); edgep && !foundPath; edgep = edgep->outNextp()) {
         if (!m_edgeFuncp(edgep)) continue;
 
         unsigned childCost;
-        if (pathExistsInternal(edgep->top(), bp, &childCost)) {
-            foundPath = true;
-        }
+        if (pathExistsInternal(edgep->top(), bp, &childCost)) foundPath = true;
         if (costp) *costp += childCost;
     }
 
     return foundPath;
 }
 
-bool GraphPathChecker::pathExistsFrom(const V3GraphVertex* fromp,
-                                      const V3GraphVertex* top) {
+bool GraphPathChecker::pathExistsFrom(const V3GraphVertex* fromp, const V3GraphVertex* top) {
     incGeneration();
     return pathExistsInternal(fromp, top);
 }
@@ -155,12 +139,10 @@ bool GraphPathChecker::isTransitiveEdge(const V3GraphEdge* edgep) {
     const V3GraphVertex* fromp = edgep->fromp();
     const V3GraphVertex* top = edgep->top();
     incGeneration();
-    for (const V3GraphEdge* fromOutp = fromp->outBeginp();
-         fromOutp; fromOutp = fromOutp->outNextp()) {
+    for (const V3GraphEdge* fromOutp = fromp->outBeginp(); fromOutp;
+         fromOutp = fromOutp->outNextp()) {
         if (fromOutp == edgep) continue;
-        if (pathExistsInternal(fromOutp->top(), top)) {
-            return true;
-        }
+        if (pathExistsInternal(fromOutp->top(), top)) return true;
     }
     return false;
 }

@@ -3,13 +3,9 @@
 //
 // Copyright 2010-2011 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -32,8 +28,8 @@
 #define DEBUG \
     if (0) printf
 
-unsigned int main_time = false;
-unsigned int callback_count = false;
+unsigned int main_time = 0;
+unsigned int callback_count = 0;
 
 //======================================================================
 
@@ -75,6 +71,7 @@ unsigned int callback_count = false;
 
 int _mon_check_unimpl(p_cb_data cb_data) {
     static TestVpiHandle cb, clk_h;
+    vpiHandle handle;
     if (cb_data) {
         // this is the callback
         s_vpi_error_info info;
@@ -127,6 +124,33 @@ int _mon_check_unimpl(p_cb_data cb_data) {
         CHECK_RESULT(callback_count, 16);
         vpi_handle_by_multi_index(NULL, 0, NULL);
         CHECK_RESULT(callback_count, 17);
+        vpi_control(0);
+        CHECK_RESULT(callback_count, 18);
+
+        s_vpi_time time_s;
+        time_s.type = 0;
+        vpi_get_time(NULL, &time_s);
+        CHECK_RESULT(callback_count, 19);
+
+        handle = vpi_put_value(NULL, NULL, NULL, 0);
+        CHECK_RESULT(callback_count, 20);
+        CHECK_RESULT(handle, 0);
+
+        handle = vpi_handle(0, NULL);
+        CHECK_RESULT(callback_count, 21);
+        CHECK_RESULT(handle, 0);
+
+        vpi_iterate(0, NULL);
+        CHECK_RESULT(callback_count, 22);
+
+        handle = vpi_register_cb(NULL);
+        CHECK_RESULT(callback_count, 23);
+        CHECK_RESULT(handle, 0);
+        s_cb_data cb_data_s;
+        cb_data_s.reason = 0;  // Bad
+        handle = vpi_register_cb(&cb_data_s);
+        CHECK_RESULT(callback_count, 24);
+        CHECK_RESULT(handle, 0);
     }
     return 0;  // Ok
 }
@@ -177,7 +201,9 @@ int main(int argc, char** argv, char** env) {
         if (tfp) tfp->dump(main_time);
 #endif
     }
-    CHECK_RESULT(callback_count, 17);
+    if (!callback_count) {
+        vl_fatal(FILENM, __LINE__, "main", "%Error: never got callbacks");
+    }
     if (!Verilated::gotFinish()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }

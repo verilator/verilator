@@ -5,10 +5,9 @@
 # This is an example cmake script to build a verilog to systemc project
 # using cmake and verilator.
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This file ONLY is placed under the Creative Commons Public Domain, for
+# any use, without warranty, 2020 by Wilson Snyder.
+# SPDX-License-Identifier: CC0-1.0
 #
 ######################################################################
 
@@ -34,5 +33,5 @@ add_executable(example ../make_tracing_c/sim_main.cpp)
 # Add the Verilated circuit to the target
 verilate(example COVERAGE TRACE
   INCLUDE_DIRS "../make_tracing_c"
-  VERILATOR_ARGS -f ../make_tracing_c/input.vc -O2 -x-assign 0
+  VERILATOR_ARGS -f ../make_tracing_c/input.vc -Os -x-assign 0
   SOURCES ../make_tracing_c/top.v)

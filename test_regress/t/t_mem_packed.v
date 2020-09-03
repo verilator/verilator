@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2009 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2009 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -17,7 +18,7 @@ module t (/*AUTOARG*/
    //logic [3:3] [2:2] [1:1] log_p; //14
 
    integer cyc; initial cyc = 0;
-`ifdef iverilog
+`ifdef IVERILOG
    reg [7:0] arr [3:0];
    wire [7:0] arr_w [3:0];
 `else

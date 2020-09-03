@@ -1,11 +1,12 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2010 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
+# Copyright 2010 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 use Cwd;
 
@@ -24,7 +25,7 @@ if (!-r "$root/.git") {
         check_finished => 0);
     # Install into temp area
     print "Install...\n";
-    run(cmd => ["cd $root && make DESTDIR=$destdir install-all"],
+    run(cmd => ["cd $root && $ENV{MAKE} DESTDIR=$destdir install-all"],
         check_finished => 0);
 
     # Check we can run a test
@@ -34,7 +35,7 @@ if (!-r "$root/.git") {
 
     # Uninstall
     print "Uninstall...\n";
-    run(cmd => ["cd $root && make DESTDIR=$destdir uninstall"],
+    run(cmd => ["cd $root && $ENV{MAKE} DESTDIR=$destdir uninstall"],
         check_finished => 0);
 
     # Check empty

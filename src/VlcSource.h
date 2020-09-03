@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -35,17 +31,14 @@ private:
     // MEMBERS
     int m_lineno;  ///< Line number
     int m_column;  ///< Column number
-    vluint64_t m_count;  ///< Count
-    bool m_ok;  ///< Coverage is above threshold
+    vluint64_t m_count = 0;  ///< Count
+    bool m_ok = false;  ///< Coverage is above threshold
 
 public:
     // CONSTRUCTORS
-    VlcSourceCount(int lineno, int column) {
-        m_lineno = lineno;
-        m_column = column;
-        m_count = 0;
-        m_ok = false;
-    }
+    VlcSourceCount(int lineno, int column)
+        : m_lineno{lineno}
+        , m_column{column} {}
     ~VlcSourceCount() {}
 
     // ACCESSORS
@@ -73,15 +66,13 @@ public:
 private:
     // MEMBERS
     string m_name;  //< Name of the source file
-    bool m_needed;  //< Need to annotate; has low coverage
+    bool m_needed = false;  //< Need to annotate; has low coverage
     LinenoMap m_lines;  //< Map of each annotated line
 
 public:
     // CONSTRUCTORS
-    explicit VlcSource(const string& name) {
-        m_name = name;
-        m_needed = false;
-    }
+    explicit VlcSource(const string& name)
+        : m_name{name} {}
     ~VlcSource() {}
 
     // ACCESSORS
@@ -93,9 +84,7 @@ public:
     // METHODS
     void incCount(int lineno, int column, vluint64_t count, bool ok) {
         LinenoMap::iterator lit = m_lines.find(lineno);
-        if (lit == m_lines.end()) {
-            lit = m_lines.insert(make_pair(lineno, ColumnMap())).first;
-        }
+        if (lit == m_lines.end()) lit = m_lines.insert(make_pair(lineno, ColumnMap())).first;
         ColumnMap& cmap = lit->second;
         ColumnMap::iterator cit = cmap.find(column);
         if (cit == cmap.end()) {
@@ -124,7 +113,6 @@ public:
     NameMap::iterator begin() { return m_sources.begin(); }
     NameMap::iterator end() { return m_sources.end(); }
 
-public:
     // CONSTRUCTORS
     VlcSources() {}
     ~VlcSources() {}

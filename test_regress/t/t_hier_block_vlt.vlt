@@ -1,0 +1,8 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2020 by Yutetsu TAKATSUKASA
+
+`verilator_config
+hier_block -module "sub?"
+hier_block -module "delay"

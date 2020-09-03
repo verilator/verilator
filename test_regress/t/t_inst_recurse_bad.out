@@ -1,5 +1,5 @@
-%Error: t/t_inst_recurse_bad.v:17: Unsupported: Recursive multiple modules (module instantiates something leading back to itself): 'looped'
-        ... note: self-recursion (module instantiating itself directly) is supported.
-module looped ( );
-       ^~~~~~
+%Error-UNSUPPORTED: t/t_inst_recurse_bad.v:18:8: Unsupported: Recursive multiple modules (module instantiates something leading back to itself): 'looped'
+                    ... note: self-recursion (module instantiating itself directly) is supported.
+   18 | module looped ( );
+      |        ^~~~~~
 %Error: Exiting due to

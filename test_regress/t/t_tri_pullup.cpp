@@ -1,11 +1,12 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2008 by Lane Brooks
+// without warranty, 2008 by Lane Brooks.
+// SPDX-License-Identifier: CC0-1.0
 
 #include "Vt_tri_pullup.h"
 
-Vt_tri_pullup* tb = NULL;
+VM_PREFIX* tb = nullptr;
 
 double sc_time_stamp() { return 0; }
 

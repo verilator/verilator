@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // DESCOPE TRANSFORMATIONS:
@@ -34,7 +30,6 @@
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
 
-#include <cstdarg>
 #include <map>
 
 //######################################################################
@@ -50,11 +45,11 @@ private:
     typedef std::multimap<string, AstCFunc*> FuncMmap;
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
-    AstScope* m_scopep;  // Current scope
-    bool m_modSingleton;  // m_modp is only instanced once
-    bool m_allowThis;  // Allow function non-static
-    bool m_needThis;  // Make function non-static
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstScope* m_scopep = nullptr;  // Current scope
+    bool m_modSingleton = false;  // m_modp is only instanced once
+    bool m_allowThis = false;  // Allow function non-static
+    bool m_needThis = false;  // Make function non-static
     FuncMmap m_modFuncs;  // Name of public functions added
 
     // METHODS
@@ -81,7 +76,7 @@ private:
     // Sets 'hierThisr' true if the object is local to this scope
     // (and could be made into a function-local later in V3Localize),
     // false if the object is in another scope.
-    string descopedName(const AstScope* scopep, bool& hierThisr, const AstVar* varp = NULL) {
+    string descopedName(const AstScope* scopep, bool& hierThisr, const AstVar* varp = nullptr) {
         UASSERT(scopep, "Var/Func not scoped");
         hierThisr = (scopep == m_scopep);
 
@@ -113,6 +108,9 @@ private:
         // The risk that this prevents combining identical logic from differently-
         // named but identical modules seems low.
         if (m_modSingleton) relativeRefOk = false;
+        //
+        // Class methods need relative
+        if (m_modp && VN_IS(m_modp, Class)) relativeRefOk = true;
 
         if (varp && varp->isFuncLocal()) {
             hierThisr = true;
@@ -120,8 +118,7 @@ private:
         } else if (relativeRefOk && scopep == m_scopep) {
             m_needThis = true;
             return "this->";
-        } else if (relativeRefOk && scopep->aboveScopep()
-                   && scopep->aboveScopep()==m_scopep) {
+        } else if (relativeRefOk && scopep->aboveScopep() && scopep->aboveScopep() == m_scopep) {
             // Reference to scope of cell directly under this module, can just "cell->"
             string name = scopep->name();
             string::size_type pos;
@@ -151,7 +148,7 @@ private:
         for (FuncMmap::iterator it = m_modFuncs.begin(); it != m_modFuncs.end(); ++it) {
             string name = it->first;
             AstCFunc* topFuncp = it->second;
-            FuncMmap::iterator nextIt1 = it;
+            auto nextIt1 = it;
             ++nextIt1;
             bool moreOfSame1 = (nextIt1 != m_modFuncs.end() && nextIt1->first == name);
             if (moreOfSame1) {
@@ -174,16 +171,16 @@ private:
                      eachIt != m_modFuncs.end() && eachIt->first == name; ++eachIt) {
                     it = eachIt;
                     AstCFunc* funcp = eachIt->second;
-                    FuncMmap::iterator nextIt2 = eachIt;
+                    auto nextIt2 = eachIt;
                     ++nextIt2;
                     bool moreOfSame = (nextIt2 != m_modFuncs.end() && nextIt2->first == name);
                     UASSERT_OBJ(funcp->scopep(), funcp, "Not scoped");
 
                     UINFO(6, "     Wrapping " << name << " " << funcp << endl);
-                    UINFO(6, "  at " << newfuncp->argTypes()
-                          << " und " << funcp->argTypes() << endl);
+                    UINFO(6,
+                          "  at " << newfuncp->argTypes() << " und " << funcp->argTypes() << endl);
                     funcp->declPrivate(true);
-                    AstNode* argsp = NULL;
+                    AstNode* argsp = nullptr;
                     for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
                         if (AstVar* portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
@@ -205,7 +202,7 @@ private:
                                 new AstCMath(funcp->fileline(),
                                              string("&(") + funcp->scopep()->nameVlSym() + ")",
                                              64)),
-                            returnp, NULL);
+                            returnp, nullptr);
                         newfuncp->addStmtsp(ifp);
                     } else {
                         newfuncp->addStmtsp(returnp);
@@ -216,7 +213,7 @@ private:
                 // newfuncp->addStmtsp(new AstDisplay(newfuncp->fileline(),
                 //                                   AstDisplayType::DT_WARNING,
                 //                                   string("%%Error: ")+name+"() called with bad
-                //                                   scope", NULL));
+                //                                   scope", nullptr));
                 // newfuncp->addStmtsp(new AstStop(newfuncp->fileline()));
                 if (debug() >= 9) newfuncp->dumpTree(cout, "   newfunc: ");
             } else {
@@ -228,8 +225,8 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
-        AstNodeModule* origModp = m_modp;
+    virtual void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             m_modFuncs.clear();
@@ -237,19 +234,18 @@ private:
             iterateChildren(nodep);
             makePublicFuncWrappers();
         }
-        m_modp = origModp;
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         m_scopep = nodep;
         iterateChildren(nodep);
-        m_scopep = NULL;
+        m_scopep = nullptr;
     }
-    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarScope* nodep) override {
         // Delete the varscope when we're finished
         nodep->unlinkFrBack();
         pushDeletep(nodep);
     }
-    virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
         // Convert the hierch name
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
@@ -257,10 +253,10 @@ private:
         nodep->hiername(descopedName(nodep->varScopep()->scopep(), hierThis /*ref*/,
                                      nodep->varScopep()->varp()));
         nodep->hierThis(hierThis);
-        nodep->varScopep(NULL);
+        nodep->varScopep(nullptr);
     }
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
-        // UINFO(9,"       "<<nodep<<endl);
+    virtual void visit(AstNodeCCall* nodep) override {
+        // UINFO(9, "       " << nodep << endl);
         iterateChildren(nodep);
         // Convert the hierch name
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
@@ -268,9 +264,9 @@ private:
         bool hierThis;
         nodep->hiername(descopedName(nodep->funcp()->scopep(), hierThis /*ref*/));
         // Can't do this, as we may have more calls later
-        // nodep->funcp()->scopep(NULL);
+        // nodep->funcp()->scopep(nullptr);
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         if (!nodep->user1()) {
             m_needThis = false;
             m_allowThis = nodep->isStatic().falseUnknown();  // Non-static or unknown if static
@@ -291,29 +287,20 @@ private:
             }
         }
     }
-    virtual void visit(AstVar*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstVar*) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit DescopeVisitor(AstNetlist* nodep)
-        : m_modp(NULL)
-        , m_scopep(NULL)
-        , m_modSingleton(false)
-        , m_allowThis(false)
-        , m_needThis(false) {
-        iterate(nodep);
-    }
-    virtual ~DescopeVisitor() {}
+    explicit DescopeVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~DescopeVisitor() override {}
 };
 
 //######################################################################
 // Descope class functions
 
 void V3Descope::descopeAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    {
-        DescopeVisitor visitor (nodep);
-    }  // Destruct before checking
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    { DescopeVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("descope", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

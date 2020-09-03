@@ -11,10 +11,11 @@
 #     add_executable(simulator <your-c-sources>)
 #     verilate(simulator SOURCES <your-hdl-sources>)
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
+# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 ######################################################################
 
@@ -115,7 +116,7 @@ define_property(TARGET
 function(verilate TARGET)
   cmake_parse_arguments(VERILATE "COVERAGE;TRACE;TRACE_FST;SYSTEMC"
                                  "PREFIX;TOP_MODULE;THREADS;DIRECTORY"
-                                 "SOURCES;VERILATOR_ARGS;INCLUDE_DIRS;OPT_SLOW;OPT_FAST"
+                                 "SOURCES;VERILATOR_ARGS;INCLUDE_DIRS;OPT_SLOW;OPT_FAST;OPT_GLOBAL"
                                  ${ARGN})
   if (NOT VERILATE_SOURCES)
     message(FATAL_ERROR "Need at least one source")
@@ -162,7 +163,9 @@ function(verilate TARGET)
   endforeach()
 
   string(TOLOWER ${CMAKE_CXX_COMPILER_ID} COMPILER)
-  if (NOT COMPILER MATCHES "msvc|clang")
+  if (COMPILER STREQUAL "appleclang")
+    set(COMPILER clang)
+  elseif (NOT COMPILER MATCHES "^msvc$|^clang$")
     set(COMPILER gcc)
   endif()
 
@@ -287,6 +290,11 @@ function(verilate TARGET)
       set_property(SOURCE "${VFAST}" APPEND_STRING PROPERTY COMPILE_FLAGS " ${OPT_FAST}")
     endforeach()
   endforeach()
+  foreach(VGLOBAL ${${VERILATE_PREFIX}_GLOBAL})
+    foreach(OPT_GLOBAL ${VERILATE_OPT_GLOBAL} ${${VERILATE_PREFIX}_USER_CFLAGS})
+      set_property(SOURCE "${VGLOBAL}" APPEND_STRING PROPERTY COMPILE_FLAGS " ${OPT_GLOBAL}")
+    endforeach()
+  endforeach()
 
   target_include_directories(${TARGET} PUBLIC "${VERILATOR_ROOT}/include"
                                                "${VERILATOR_ROOT}/include/vltstd")
@@ -304,12 +312,7 @@ function(verilate TARGET)
     "$<$<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>:${VERILATOR_MT_CFLAGS}>"
   )
 
-  # SystemC requires the C++ version to match the library version, avoid setting anything here
-  set(GEN_THREADED $<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>)
-  set(GEN_SYSTEMC $<BOOL:$<TARGET_PROPERTY:VERILATOR_SYSTEMC>>)
-  target_compile_features(${TARGET} PRIVATE
-    $<$<AND:${GEN_THREADED},$<NOT:${GEN_SYSTEMC}>>:cxx_std_11>
-  )
+  target_compile_features(${TARGET} PRIVATE cxx_std_11)
 endfunction()
 
 function(_verilator_find_systemc)

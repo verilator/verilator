@@ -1,0 +1,13 @@
+%Error-UNSUPPORTED: t/t_class_static_order.v:23:16: Unsupported: 'static' class members
+                                                  : ... In instance t
+   23 |    static ClsZ z = new;
+      |                ^
+%Error-UNSUPPORTED: t/t_class_static_order.v:34:16: Unsupported: 'static' class members
+                                                  : ... In instance t
+   34 |    static ClsA a = new;
+      |                ^
+%Error-UNSUPPORTED: t/t_class_static_order.v:35:16: Unsupported: 'static' class members
+                                                  : ... In instance t
+   35 |    static ClsB b = new;
+      |                ^
+%Error: Exiting due to

@@ -1,0 +1,5 @@
+%Error: t/t_inst_misarray2_bad.v:10:17: Illegal input port connection 'i_data', mismatch between port which is not an array, and expression which is an array. (IEEE 1800-2017 7.6)
+                                      : ... In instance t
+   10 |                .i_data(fft_oQ[6:0])
+      |                 ^~~~~~
+%Error: Exiting due to

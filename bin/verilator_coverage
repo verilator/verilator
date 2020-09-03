@@ -6,11 +6,6 @@
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
 ######################################################################
 
 require 5.006_001;
@@ -161,6 +156,8 @@ verilator_coverage - Verilator coverage analyzer
 
     verilator_coverage  -write merged.dat -read <datafiles>...
 
+    verilator_coverage  -write-info merged.info -read <datafiles>...
+
 Verilator_coverage processes Verilator coverage reports.
 
 With --anotate, it reads the specified data file and generates annotated
@@ -229,8 +226,20 @@ Displays program version and exits.
 =item --write I<filename>
 
 Specifies the aggregate coverage results, summed across all the files,
-should be written to the given filename.  This is useful in scripts to
-combine many sequential runs into one master coverage file.
+should be written to the given filename in verilator_coverage data format.
+This is useful in scripts to combine many sequential runs into one master
+coverage file.
+
+=item --write-info I<filename.info>
+
+Specifies the aggregate coverage results, summed across all the files,
+should be written to the given filename in C<lcov> .info format.
+This may be used to use C<lcov> to aggregate or generate reports.
+
+The info format loses data compared to the Verilator coverage data format;
+the info will all forms of coverage converted to line style coverage, and
+if there are multiple coverage points on a single line, the minimum
+coverage across those points will be used to report coverage of the line.
 
 =back
 
@@ -269,10 +278,12 @@ Specifies a module search directory.
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2020 by Wilson Snyder.  Verilator is free software; you can
-redistribute it and/or modify the Verilator internals under the terms of
-either the GNU Lesser General Public License Version 3 or the Perl Artistic
-License Version 2.0.
+Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+can redistribute it and/or modify the Verilator internals under the terms
+of either the GNU Lesser General Public License Version 3 or the Perl
+Artistic License Version 2.0.
+
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 =head1 AUTHORS
 
@@ -280,7 +291,7 @@ Wilson Snyder <wsnyder@wsnyder.org>
 
 =head1 SEE ALSO
 
-C<verilator>
+C<verilator>, C<lcov>
 
 L<verilator_coverage --help> which is the source for this document.
 

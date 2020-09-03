@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -30,33 +26,37 @@
 
 class V3LanguageWords {
     // List of common reserved keywords
-  private:
-    typedef std::map<string,string> KeywordMap;
+private:
+    typedef std::map<string, string> KeywordMap;
     struct Singleton {
         KeywordMap s_kwdMap;  // List of keywords, and what language applies
         Singleton() { init(); }
-        void addKwd(const string& kwd, const string& why) {
-            s_kwdMap.insert(make_pair(kwd, why));
-        }
+        void addKwd(const string& kwd, const string& why) { s_kwdMap.insert(make_pair(kwd, why)); }
         void init();
     };
-  public:
+
+public:
     typedef KeywordMap::const_iterator const_iterator;
     // METHODS
     static const_iterator begin() { return s().s_kwdMap.begin(); }
     static const_iterator end() { return s().s_kwdMap.end(); }
     static string isKeyword(const string& kwd) {
-        KeywordMap::iterator it = s().s_kwdMap.find(kwd);
+        const auto it = vlstd::as_const(s().s_kwdMap).find(kwd);
         if (it == s().s_kwdMap.end()) return "";
         return it->second;
     }
+
 private:
-    static Singleton& s() { static Singleton s_s; return s_s; }
+    static Singleton& s() {
+        static Singleton s_s;
+        return s_s;
+    }
 };
 
 inline void V3LanguageWords::Singleton::init() {
     // C++ keywords
-    addKwd("NULL",                  "C++ common word");
+    // clang-format off
+    addKwd("nullptr",                  "C++ common word");
     addKwd("abort",                 "C++ common word");
     addKwd("alignas",               "C++11 keyword");
     addKwd("alignof",               "C++11 keyword");
@@ -246,6 +246,7 @@ inline void V3LanguageWords::Singleton::init() {
     addKwd("`undefineall",              "Verilog preprocessor directive");
     addKwd("`verilator_config",         "Verilator preprocessor directive");
     addKwd("`verilog",                  "Verilator preprocessor directive");
+    // clang-format on
 }
 
 #endif  // Guard

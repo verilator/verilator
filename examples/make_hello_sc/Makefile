@@ -5,10 +5,9 @@
 # This calls the object directory makefile.  That allows the objects to
 # be placed in the "current directory" which simplifies the Makefile.
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This file ONLY is placed under the Creative Commons Public Domain, for
+# any use, without warranty, 2020 by Wilson Snyder.
+# SPDX-License-Identifier: CC0-1.0
 #
 ######################################################################
 # Check for sanity to avoid later confusion
@@ -44,10 +43,8 @@ endif
 
 run:
 	@echo "-- Verilator hello-world simple example"
-	@echo "-- VERILATE ----------------"
-	$(VERILATOR) -sc --exe top.v sc_main.cpp
-	@echo "-- COMPILE -----------------"
-	$(MAKE) -j 4 -C obj_dir -f Vtop.mk
+	@echo "-- VERILATE & COMPILE ------"
+	$(VERILATOR) -sc --exe --build -j top.v sc_main.cpp
 	@echo "-- RUN ---------------------"
 	obj_dir/Vtop
 	@echo "-- DONE --------------------"

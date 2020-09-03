@@ -1,0 +1,4 @@
+%Error: t/t_fork_func_bad.v:11:10: Return isn't legal under fork (IEEE 1800-2017 9.2.3)
+   11 |          return 0;   
+      |          ^~~~~~
+%Error: Exiting due to

@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2012 by Iztok Jeras.
+// SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
    // Inputs
@@ -26,7 +27,7 @@ module t (/*AUTOARG*/
 
    // msg926
    logic [3:0][31:0] packedArray;
-   initial packedArray <= '0;
+   initial packedArray = '0;
 
    // event counter
    always @ (posedge clk) begin

@@ -4,6 +4,7 @@
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 // Global is the most likely usage scenario
 import "DPI-C" dpii_sys_task = function void \$dpii_sys (int i);

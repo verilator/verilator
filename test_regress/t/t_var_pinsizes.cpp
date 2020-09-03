@@ -1,8 +1,11 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2020 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 #include VM_PREFIX_INCLUDE
 
-VM_PREFIX* tb = NULL;
+VM_PREFIX* tb = nullptr;
 
 double sc_time_stamp() { return 0; }
 

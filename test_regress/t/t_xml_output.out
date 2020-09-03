@@ -11,14 +11,14 @@
     <file id="d" filename="t/t_xml_output.v" language="1800-2017"/>
   </module_files>
   <cells>
-    <cell fl="d6" loc="d,6,8,6,9" name="m" submodname="m" hier="m"/>
+    <cell fl="d7" loc="d,7,8,7,9" name="m" submodname="m" hier="m"/>
   </cells>
   <netlist>
-    <module fl="d6" loc="d,6,8,6,9" name="m" origName="m">
-      <var fl="d7" loc="d,7,10,7,13" name="clk" tag="foo_op" dtype_id="1" dir="input" vartype="logic" origName="clk"/>
+    <module fl="d7" loc="d,7,8,7,9" name="m" origName="m">
+      <var fl="d8" loc="d,8,10,8,13" name="clk" tag="foo_op" dtype_id="1" dir="input" vartype="logic" origName="clk"/>
     </module>
     <typetable fl="a0" loc="a,0,0,0,0">
-      <basicdtype fl="d7" loc="d,7,10,7,13" id="1" name="logic"/>
+      <basicdtype fl="d8" loc="d,8,10,8,13" id="1" name="logic"/>
     </typetable>
   </netlist>
 </verilator_xml>

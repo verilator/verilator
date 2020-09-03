@@ -1,0 +1,4 @@
+%Error: t/t_enum_recurse_bad2.v:7:14: Self-referential enumerated type definition
+    7 | typedef enum foo_t { A  = 'b0, B = 'b1 } foo_t;
+      |              ^~~~~
+%Error: Exiting due to

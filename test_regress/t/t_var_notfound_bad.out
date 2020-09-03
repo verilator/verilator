@@ -1,24 +1,24 @@
-%Error: t/t_var_notfound_bad.v:17: Can't find definition of variable: 'nf'
-      nf = 0;   
-      ^~
-%Error: t/t_var_notfound_bad.v:18: Can't find definition of 'subsubz' in dotted scope/variable: 'sub.subsubz'
-      sub.subsubz.inss = 0;   
-          ^~~~~~~
+%Error: t/t_var_notfound_bad.v:18:7: Can't find definition of variable: 'nf'
+   18 |       nf = 0;   
+      |       ^~
+%Error: t/t_var_notfound_bad.v:19:11: Can't find definition of 'subsubz' in dotted scope/variable: 'sub.subsubz'
+   19 |       sub.subsubz.inss = 0;   
+      |           ^~~~~~~
         ... Known scopes under 'sub': subsub
-%Error: t/t_var_notfound_bad.v:19: Can't find definition of task/function: 'nofunc'
-                                 : ... Suggested alternative: 'notfunc'
-      i = nofunc();   
-          ^~~~~~
-%Error: t/t_var_notfound_bad.v:20: Can't find definition of 'nofuncs' in dotted task/function: 'sub.nofuncs'
-                                 : ... Suggested alternative: 'notfuncs'
-      i = sub.nofuncs();   
-              ^~~~~~~
-        ... Known scopes under 'nofuncs': <no cells found>
-%Error: t/t_var_notfound_bad.v:21: Can't find definition of task/function: 'notask'
-                                 : ... Suggested alternative: 'nottask'
-      notask();   
-      ^~~~~~
-%Error: t/t_var_notfound_bad.v:22: Found definition of 'a_var' as a VAR but expected a task/function
-      a_var();   
-      ^~~~~
+%Error: t/t_var_notfound_bad.v:20:11: Can't find definition of task/function: 'nofunc'
+                                    : ... Suggested alternative: 'notfunc'
+   20 |       i = nofunc();   
+      |           ^~~~~~
+%Error: t/t_var_notfound_bad.v:21:15: Can't find definition of 'nofuncs' in dotted task/function: 'sub.nofuncs'
+                                    : ... Suggested alternative: 'notfuncs'
+   21 |       i = sub.nofuncs();   
+      |               ^~~~~~~
+        ... Known scopes under 'nofuncs': sub
+%Error: t/t_var_notfound_bad.v:22:7: Can't find definition of task/function: 'notask'
+                                   : ... Suggested alternative: 'nottask'
+   22 |       notask();   
+      |       ^~~~~~
+%Error: t/t_var_notfound_bad.v:23:7: Found definition of 'a_var' as a VAR but expected a task/function
+   23 |       a_var();   
+      |       ^~~~~
 %Error: Exiting due to

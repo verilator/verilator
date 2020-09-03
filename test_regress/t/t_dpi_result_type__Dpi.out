@@ -1,0 +1,155 @@
+// Verilated -*- C++ -*-
+// DESCRIPTION: Verilator output: Prototypes for DPI import and export functions.
+//
+// Verilator includes this file in all generated .cpp files that use DPI functions.
+// Manually include this file where DPI .c import functions are declared to ensure
+// the C functions match the expectations of the DPI imports.
+
+#include "svdpi.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
+    
+    // DPI EXPORTS
+    // DPI export at t/t_dpi_result_type.v:393:24
+    extern svBitVecVal e_array_2_state_1();
+    // DPI export at t/t_dpi_result_type.v:400:24
+    extern svBitVecVal e_array_2_state_32();
+    // DPI export at t/t_dpi_result_type.v:284:17
+    extern svBit e_bit();
+    // DPI export at t/t_dpi_result_type.v:377:19
+    extern svBit e_bit_t();
+    // DPI export at t/t_dpi_result_type.v:206:18
+    extern char e_byte();
+    // DPI export at t/t_dpi_result_type.v:299:20
+    extern char e_byte_t();
+    // DPI export at t/t_dpi_result_type.v:212:27
+    extern unsigned char e_byte_unsigned();
+    // DPI export at t/t_dpi_result_type.v:305:29
+    extern unsigned char e_byte_unsigned_t();
+    // DPI export at t/t_dpi_result_type.v:270:21
+    extern void* e_chandle();
+    // DPI export at t/t_dpi_result_type.v:363:23
+    extern void* e_chandle_t();
+    // DPI export at t/t_dpi_result_type.v:230:17
+    extern int e_int();
+    // DPI export at t/t_dpi_result_type.v:323:19
+    extern int e_int_t();
+    // DPI export at t/t_dpi_result_type.v:236:26
+    extern unsigned int e_int_unsigned();
+    // DPI export at t/t_dpi_result_type.v:329:28
+    extern unsigned int e_int_unsigned_t();
+    // DPI export at t/t_dpi_result_type.v:291:19
+    extern svLogic e_logic();
+    // DPI export at t/t_dpi_result_type.v:384:21
+    extern svLogic e_logic_t();
+    // DPI export at t/t_dpi_result_type.v:242:21
+    extern long long e_longint();
+    // DPI export at t/t_dpi_result_type.v:335:23
+    extern long long e_longint_t();
+    // DPI export at t/t_dpi_result_type.v:248:30
+    extern unsigned long long e_longint_unsigned();
+    // DPI export at t/t_dpi_result_type.v:341:32
+    extern unsigned long long e_longint_unsigned_t();
+    // DPI export at t/t_dpi_result_type.v:255:18
+    extern double e_real();
+    // DPI export at t/t_dpi_result_type.v:348:20
+    extern double e_real_t();
+    // DPI export at t/t_dpi_result_type.v:218:22
+    extern short e_shortint();
+    // DPI export at t/t_dpi_result_type.v:311:24
+    extern short e_shortint_t();
+    // DPI export at t/t_dpi_result_type.v:224:31
+    extern unsigned short e_shortint_unsigned();
+    // DPI export at t/t_dpi_result_type.v:317:33
+    extern unsigned short e_shortint_unsigned_t();
+    // DPI export at t/t_dpi_result_type.v:277:20
+    extern const char* e_string();
+    // DPI export at t/t_dpi_result_type.v:370:22
+    extern const char* e_string_t();
+    // DPI export at t/t_dpi_result_type.v:410:30
+    extern svBitVecVal e_struct_2_state_1();
+    // DPI export at t/t_dpi_result_type.v:417:32
+    extern svBitVecVal e_struct_2_state_32();
+    // DPI export at t/t_dpi_result_type.v:425:29
+    extern svBitVecVal e_union_2_state_1();
+    // DPI export at t/t_dpi_result_type.v:432:30
+    extern svBitVecVal e_union_2_state_32();
+    // DPI export at t/t_dpi_result_type.v:200:18
+    extern void e_void();
+    
+    // DPI IMPORTS
+    // DPI import at t/t_dpi_result_type.v:443:41
+    extern void check_exports();
+    // DPI import at t/t_dpi_result_type.v:115:39
+    extern svBitVecVal i_array_2_state_1();
+    // DPI import at t/t_dpi_result_type.v:116:39
+    extern svBitVecVal i_array_2_state_32();
+    // DPI import at t/t_dpi_result_type.v:92:46
+    extern svBit i_bit();
+    // DPI import at t/t_dpi_result_type.v:110:48
+    extern svBit i_bit_t();
+    // DPI import at t/t_dpi_result_type.v:78:46
+    extern char i_byte();
+    // DPI import at t/t_dpi_result_type.v:96:48
+    extern char i_byte_t();
+    // DPI import at t/t_dpi_result_type.v:79:46
+    extern unsigned char i_byte_unsigned();
+    // DPI import at t/t_dpi_result_type.v:97:48
+    extern unsigned char i_byte_unsigned_t();
+    // DPI import at t/t_dpi_result_type.v:90:46
+    extern void* i_chandle();
+    // DPI import at t/t_dpi_result_type.v:108:48
+    extern void* i_chandle_t();
+    // DPI import at t/t_dpi_result_type.v:82:46
+    extern int i_int();
+    // DPI import at t/t_dpi_result_type.v:100:48
+    extern int i_int_t();
+    // DPI import at t/t_dpi_result_type.v:83:46
+    extern unsigned int i_int_unsigned();
+    // DPI import at t/t_dpi_result_type.v:101:48
+    extern unsigned int i_int_unsigned_t();
+    // DPI import at t/t_dpi_result_type.v:93:46
+    extern svLogic i_logic();
+    // DPI import at t/t_dpi_result_type.v:111:48
+    extern svLogic i_logic_t();
+    // DPI import at t/t_dpi_result_type.v:84:46
+    extern long long i_longint();
+    // DPI import at t/t_dpi_result_type.v:102:48
+    extern long long i_longint_t();
+    // DPI import at t/t_dpi_result_type.v:85:46
+    extern unsigned long long i_longint_unsigned();
+    // DPI import at t/t_dpi_result_type.v:103:48
+    extern unsigned long long i_longint_unsigned_t();
+    // DPI import at t/t_dpi_result_type.v:86:46
+    extern double i_real();
+    // DPI import at t/t_dpi_result_type.v:104:48
+    extern double i_real_t();
+    // DPI import at t/t_dpi_result_type.v:80:46
+    extern short i_shortint();
+    // DPI import at t/t_dpi_result_type.v:98:48
+    extern short i_shortint_t();
+    // DPI import at t/t_dpi_result_type.v:81:46
+    extern unsigned short i_shortint_unsigned();
+    // DPI import at t/t_dpi_result_type.v:99:48
+    extern unsigned short i_shortint_unsigned_t();
+    // DPI import at t/t_dpi_result_type.v:91:46
+    extern const char* i_string();
+    // DPI import at t/t_dpi_result_type.v:109:48
+    extern const char* i_string_t();
+    // DPI import at t/t_dpi_result_type.v:121:47
+    extern svBitVecVal i_struct_2_state_1();
+    // DPI import at t/t_dpi_result_type.v:122:47
+    extern svBitVecVal i_struct_2_state_32();
+    // DPI import at t/t_dpi_result_type.v:125:46
+    extern svBitVecVal i_union_2_state_1();
+    // DPI import at t/t_dpi_result_type.v:126:46
+    extern svBitVecVal i_union_2_state_32();
+    // DPI import at t/t_dpi_result_type.v:77:46
+    extern void i_void();
+    
+#ifdef __cplusplus
+}
+#endif

@@ -19,8 +19,9 @@
 // thus matching the behaviour of a 4-state simulator. This is reportedly also
 // the behaviour of commercial cycle accurate modelling tools as well.
 //
-// This file ONLY is placed into the Public Domain, for any use, without
-// warranty, 2012 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2012 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 `timescale 1ns/1ns
 

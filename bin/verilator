@@ -5,11 +5,7 @@
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 ######################################################################
 
@@ -188,11 +184,14 @@ sub run {
             if (($status & 127) == 4  # SIGILL
                 || ($status & 127) == 8  # SIGFPA
                 || ($status & 127) == 11) {  # SIGSEGV
-                warn "%Error: Verilator internal fault, sorry.  Consider trying --debug --gdbbt\n" if !$Debug;
+                warn "%Error: Verilator internal fault, sorry. "
+                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
             } elsif (($status & 127) == 6) {  # SIGABRT
-                warn "%Error: Verilator aborted.  Consider trying --debug --gdbbt\n" if !$Debug;
+                warn "%Error: Verilator aborted. "
+                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
             } else {
-                warn "%Error: Verilator threw signal $status.  Consider trying --debug --gdbbt\n" if !$Debug;
+                warn "%Error: Verilator threw signal $status. "
+                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
             }
         }
         if (!$opt_quiet_exit && ($status != 256 || $Debug)) {  # i.e. not normal exit(1)
@@ -225,6 +224,7 @@ __END__
 
 Verilator - Translate and simulate SystemVerilog code using C++/SystemC
 
+
 =head1 SYNOPSIS
 
     verilator --help
@@ -233,31 +233,43 @@ Verilator - Translate and simulate SystemVerilog code using C++/SystemC
     verilator --sc [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
     verilator --lint-only -Wall [source_files.v]...
 
+
 =head1 DESCRIPTION
 
-Verilator converts synthesizable (generally not behavioral) Verilog code,
-plus some Synthesis, SystemVerilog and a small subset of Verilog AMS into
-C++ or SystemC code.  It is not a traditional simulator, but a compiler.
+The "Verilator" package converts all synthesizable, and many behavioral,
+Verilog and SystemVerilog designs into a C++ or SystemC model that after
+compiling can be executed.  Verilator is not a traditional simulator, but a
+compiler.
 
-Verilator is invoked with parameters similar to GCC, Cadence
-Verilog-XL/NC-Verilog, or Synopsys's VCS.  It reads the specified Verilog
-code, lints it, and optionally adds coverage and waveform tracing code.
-For C++ and SystemC formats, it outputs .cpp and .h files.
+Verilator is typically used as follows:
 
-The files created by Verilator are then compiled with C++.  The user writes
-a little C++ wrapper file, which instantiates the top level module, and
-passes this filename on the command line.  These C files are compiled in
-C++, and linked with the Verilated files.
+1. The C<verilator> executable is invoked with parameters similar to GCC,
+Cadence Verilog-XL/NC-Verilog, or Synopsys VCS.  C<verilator> reads the
+specified user's SystemVerilog code, lints it, optionally adds coverage and
+waveform tracing support, and compiles the design into a source level C++
+or SystemC "model".  The resulting model's C++ or SystemC code is output as
+.cpp and .h files. This is referred to as "verilating" and the process is
+"to verilate"; the output is a "verilated" model.
 
-The resulting executable will perform the actual simulation.
+2. For simulation, a small user written C++ wrapper file is required, the
+"wrapper".  This wrapper defines the C++ function `main()` which
+instantiates the Verilated model as a C++/SystemC object.
 
-To get started, jump down to "EXAMPLE C++ EXECUTION".
+3. The user main wrapper, the files created by Verilator, a "runtime
+library" provided by Verilator, and if applicable the SystemC libraries are
+then compiled using a C++ compiler to create a simulation executable.
+
+4. The resulting executable will perform the actual simulation, during
+"simulation runtime".
+
+To get started, jump down to the L</"EXAMPLE C++ EXECUTION"> section.
 
 
 =head1 ARGUMENT SUMMARY
 
-This is a short summary of the arguments to Verilator itself.  See the
-detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
+This is a short summary of the arguments to the "verilator" executable.
+See L</"VERILATION ARGUMENTS"> for the detailed descriptions of these
+arguments.
 
     {file.v}                    Verilog package, module and top module filenames
     {file.c/cc/cpp}             Optional C++ files to compile in
@@ -275,11 +287,12 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
     --bin <filename>            Override Verilator binary
-     -CFLAGS <flags>            C++ Compiler flags for makefile
+    --build                     Build model executable/library after Verilation
+     -CFLAGS <flags>            C++ compiler flags for makefile
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
     --clk <signal-name>         Mark specified signal as clock
-    --make <make-system>        Generate scripts for specified make system
+    --make <build-tool>         Generate scripts for specified build tool
     --compiler <compiler-name>  Tune for specified C++ compiler
     --converge-limit <loops>    Tune convergence settle time
     --coverage                  Enable all coverage
@@ -300,19 +313,23 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --dump-tree                 Enable dumping .tree files
     --dump-treei <level>        Enable dumping .tree files at a level
     --dump-treei-<srcfile> <level>  Enable dumping .tree file at a source file at a level
+    --dump-tree-addrids         Use short identifiers instead of addresses
      -E                         Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
      -F <file>                  Parse options from a file, relatively
      -f <file>                  Parse options from a file
      -FI <file>                 Force include of a file
-     -G<name>=<value>           Overwrite toplevel parameter
+    --flatten                   Force inlining of all modules, tasks and functions
+     -G<name>=<value>           Overwrite top-level parameter
     --gdb                       Run Verilator under GDB interactively
     --gdbbt                     Run Verilator under GDB for backtrace
     --generate-key              Create random key for --protect-key
     --getenv <var>              Get environment variable with defaults
     --help                      Display this help
+    --hierarchical              Enable hierarchical Verilation
      -I<dir>                    Directory to search for includes
+     -j <jobs>                  Parallelism for --build
     --gate-stmts <value>        Tune gate optimizer depth
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
@@ -323,6 +340,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --language <lang>           Default language standard to parse
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
+     -MAKEFLAGS <flags>         Options to make during --build
     --max-num-width <value>     Maximum number width (default: 64K)
     --MMD                       Create .d dependency files
     --MP                        Create phony dependency targets
@@ -338,8 +356,9 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
     --no-order-clock-delay      Disable ordering clock enable assignments
+    --no-verilate               Skip verilation and just compile previously Verilated code.
     --output-split <statements>          Split .cpp files into pieces
-    --output-split-cfuncs <statements>   Split .cpp functions
+    --output-split-cfuncs <statements>   Split model functions
     --output-split-ctrace <statements>   Split tracing functions
      -P                         Disable line numbers and blanks with -E
     --pins-bv <bits>            Specify types for top level ports
@@ -372,16 +391,18 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --threads <threads>         Enable multithreading
     --threads-dpi <mode>        Enable multithreaded DPI
     --threads-max-mtasks <mtasks>  Tune maximum mtask partitioning
+    --timescale <timescale>     Sets default timescale
+    --timescale-override <timescale>  Overrides all timescales
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
-    --trace-depth <levels>      Depth of tracing
     --trace-coverage            Enable tracing of coverage
+    --trace-depth <levels>      Depth of tracing
     --trace-fst                 Enable FST waveform creation
-    --trace-fst-thread          Enable FST threaded waveform creation
     --trace-max-array <depth>   Maximum bit width for tracing
     --trace-max-width <width>   Maximum array depth for tracing
     --trace-params              Enable tracing of parameters
     --trace-structs             Enable tracing structure names
+    --trace-threads <threads>   Enable waveform creation on separate threads
     --trace-underscore          Enable tracing of _signals
      -U<var>                    Undefine preprocessor define
     --unroll-count <loops>      Tune maximum loop iterations
@@ -393,6 +414,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
     --version                   Displays program version and exits
     --vpi                       Enable VPI compiles
+    --waiver-output <filename>  Create a waiver file based on the linter warnings
      -Wall                      Enable all style warnings
      -Werror-<message>          Convert warnings to errors
      -Wfuture-<message>         Disable unknown message warnings
@@ -409,9 +431,9 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --xml-output                XML output filename
      -y <dir>                   Directory to search for modules
 
-This is a short summary of the arguments to simulation runtime Verilated
-arguments.  detailed descriptions in L</"SIMULATION RUNTIME ARGUMENTS"> for
-more information.
+This is a short summary of the simulation runtime arguments, i.e. for the
+final Verilated simulation runtime models.  See L</"SIMULATION RUNTIME
+ARGUMENTS"> for the detailed description of these arguments.
 
      +verilator+debug                  Enable debugging
      +verilator+debugi+<value>         Enable debugging at a level
@@ -421,13 +443,15 @@ more information.
      +verilator+prof+threads+window+I<value>   Set profile duration
      +verilator+rand+reset+I<value>    Set random reset technique
      +verilator+seed+I<value>          Set random seed
+     +verilator+noassert               Disable assert checking
      +verilator+V                      Verbose version and config
      +verilator+version                Show version and exit
 
 
 =head1 VERILATION ARGUMENTS
 
-The following are the arguments that may be passed to Verilator itself.
+The following are the arguments that may be passed to the "verilator"
+executable.
 
 =over 4
 
@@ -437,16 +461,13 @@ Specifies the Verilog file containing the top module to be Verilated.
 
 =item {file.c/.cc/.cpp/.cxx}
 
-Specifies optional C++ files to be linked in with the Verilog code.  The
-file path should either be absolute, or relative to where the make will be
-executed from, or add to your makefile's VPATH the appropriate directory to
-find the file.
+Used with --exe to specify optional C++ files to be linked in with the
+Verilog code.  The file path should either be absolute, or relative to
+where the make will be executed from, or add to your makefile's VPATH the
+appropriate directory to find the file.
 
-If any C++ files are specified in this way, Verilator will include a make
-rule that generates a I<module> executable.  Without any C++ files,
-Verilator will stop at the I<module>__ALL.a library, and presume you'll
-continue linking with make rules you write yourself.  See also the -CFLAGS
-option.
+See also the -CFLAGS and -LDFLAGS options, which are useful when the C++
+files need special compiler flags.
 
 =item {file.a/.o/.so}
 
@@ -494,9 +515,10 @@ preferable option is to edit the code to repair new keywords, or add
 appropriate C<`begin_keywords>.
 
 B<Note> C<`begin_keywords> is a SystemVerilog construct, which specifies
-I<only> which the set of keywords is to be recognized. Whatever set is
-chosen, the semantics will be those of SystemVerilog. By contrast
-C<+1364-1995ext+> etc. specify both the syntax I<and> semantics to be used.
+I<only> the set of keywords to be recognized. This also controls some error
+messages that vary between language standards.  Note at present Verilator
+tends to be overly permissive, e.g. it will accept many grammar and other
+semantic extensions which might not be legal when set to an older standard.
 
 =item --assert
 
@@ -505,18 +527,20 @@ Enable all assertions.
 =item --autoflush
 
 After every $display or $fdisplay, flush the output stream.  This ensures
-that messages will appear immediately but may reduce performance; for best
-performance call "fflush(stdout)" occasionally in the main C loop.
-Defaults off, which will buffer output as provided by the normal C stdio
-calls.
+that messages will appear immediately but may reduce performance. For best
+performance call "fflush(stdout)" occasionally in the C++ main loop.
+Defaults to off, which will buffer output as provided by the normal C/C++
+standard library IO.
 
 =item --bbox-sys
 
-Black box any unknown $system task or function calls.  System tasks will be
-simply become no-operations, and system functions will be replaced by
+Black box any unknown $system task or function calls.  System tasks will
+simply become no-operations, and system functions will be replaced with
 unsized zero.  Arguments to such functions will be parsed, but not
 otherwise checked.  This prevents errors when linting in the presence of
 company specific PLI calls.
+
+Using this argument will likely cause incorrect simulation.
 
 =item --bbox-unsup
 
@@ -525,12 +549,21 @@ cmos and tran gate primitives, deassign statements, and mixed edge errors.
 This may enable linting the rest of the design even when unsupported
 constructs are present.
 
+Using this argument will likely cause incorrect simulation.
+
 =item --bin I<filename>
 
 Rarely needed.  Override the default filename for Verilator itself.  When a
 dependency (.d) file is created, this filename will become a source
 dependency, such that a change in this binary will have make rebuild the
 output files.
+
+=item --build
+
+After generating the SystemC/C++ code, Verilator will invoke the toolchain to
+build the model library (and executable when C<--exe> is also used). Verilator
+manages the build itself, and for this --build requires GNU Make to be
+available on the platform.
 
 =item -CFLAGS I<flags>
 
@@ -540,7 +573,7 @@ the shell (C<-CFLAGS "-a -b">), or use multiple -CFLAGS arguments
 (C<-CFLAGS -a -CFLAGS -b>).
 
 When make is run on the generated makefile these will be passed to the C++
-compiler (gcc/g++/msvc++).
+compiler (g++/clang++/msvc++).
 
 =item --cc
 
@@ -548,10 +581,10 @@ Specifies C++ without SystemC output mode; see also --sc.
 
 =item --cdc
 
-Experimental.  Perform some clock domain crossing checks and issue related
-warnings (CDCRSTLOGIC) and then exit; if warnings other than CDC warnings
-are needed make a second run with --lint-only.  Additional warning
-information is also written to the file {prefix}__cdc.txt.
+Permanently experimental.  Perform some clock domain crossing checks and
+issue related warnings (CDCRSTLOGIC) and then exit; if warnings other than
+CDC warnings are needed make a second run with --lint-only.  Additional
+warning information is also written to the file {prefix}__cdc.txt.
 
 Currently only checks some items that other CDC tools missed; if you have
 interest in adding more traditional CDC checks, please contact the authors.
@@ -577,23 +610,30 @@ If clock signals are assigned to vectors and then later used individually,
 Verilator will attempt to decompose the vector and connect the single-bit
 clock signals directly.  This should be transparent to the user.
 
-=item --make I<make-system>
+=item --make I<build-tool>
 
-Generates a script for the specified make system.
+Generates a script for the specified build tool.
 
-Supported make systems are gmake and cmake. Both can be specified.
-If no make system is specified, gmake is assumed.
+Supported values are C<gmake> for GNU Make and C<cmake> for CMake.  Both can be
+specified together.  If no build tool is specified, gmake is assumed.  The
+executable of gmake can be configured via environment variable "MAKE".
+
+When using --build Verilator takes over the responsibility of building the
+model library/executable.  For this reason --make cannot be specified when
+using --build.
 
 =item --compiler I<compiler-name>
 
-Enables tunings and workarounds for the specified C++ compiler.
+Enables workarounds for the specified C++ compiler, either C<clang>,
+C<gcc>, or C<msvc>.  Currently this does not change any performance tuning
+flags, but it may in the future.
 
 =over 4
 
 =item clang
 
 Tune for clang.  This may reduce execution speed as it enables several
-workarounds to avoid silly hardcoded limits in clang.  This includes
+workarounds to avoid silly hard-coded limits in clang.  This includes
 breaking deep structures as for msvc as described below.
 
 =item gcc
@@ -604,7 +644,7 @@ compliant C++ compiler.  Currently the default.
 =item msvc
 
 Tune for Microsoft Visual C++.  This may reduce execution speed as it
-enables several workarounds to avoid silly hardcoded limits in MSVC++.
+enables several workarounds to avoid silly hard-coded limits in MSVC++.
 This includes breaking deeply nested parenthesized expressions into
 sub-expressions to avoid error C1009, and breaking deep blocks into
 functions to avoid error C1061.
@@ -625,10 +665,9 @@ Enables all forms of coverage, alias for "--coverage-line --coverage-toggle
 
 Specifies basic block line coverage analysis code should be inserted.
 
-Coverage analysis adds statements at each code flow change point, which are
-the branches of IF and CASE statements, a super-set of normal Verilog Line
-Coverage.  At each such branch a unique counter is incremented.  At the end
-of a test, the counters along with the filename and line number
+Coverage analysis adds statements at each code flow change point (e.g. at
+branches).  At each such branch a unique counter is incremented.  At the
+end of a test, the counters along with the filename and line number
 corresponding to each counter are written into logs/coverage.dat.
 
 Verilator automatically disables coverage of branches that have a $stop in
@@ -692,13 +731,13 @@ the comment "DefaultClock":
 
 =item -DI<var>=I<value>
 
-Defines the given preprocessor symbol, without allowing.  Similar to
-+define; +define is fairly standard across Verilog tools while -D is an
-alias for GCC compatibility.
+Defines the given preprocessor symbol.  Similar to +define, but does not
+allow multiple definitions with a single option using plus signs.  +define
+is fairly standard across Verilog tools while -D is similar to GCC.
 
 =item --debug
 
-Select the debug built image of Verilator (if available), and enable more
+Select the debug executable of Verilator (if available), and enable more
 internal assertions (equivalent to C<--debug-check>), debugging messages
 (equivalent to C<--debugi 4>), and intermediate form dump files (equivalent
 to C<--dump-treei 3>).
@@ -710,15 +749,15 @@ changing debug verbosity.  Enabled automatically when --debug specified.
 
 =item --no-debug-leak
 
-In --debug mode, by default Verilator intentionally leaks AstNode's
+In --debug mode, by default Verilator intentionally leaks AstNode instances
 instead of freeing them, so that each node pointer is unique in the
 resulting tree files and dot files.
 
 This option disables the leak. This may avoid out-of-memory errors
 when Verilating large models in --debug mode.
 
-Outside of --debug mode, AstNode's should never be leaked and this option
-has no effect.
+Outside of --debug mode, AstNode instances should never be leaked and this
+option has no effect.
 
 =item --debugi I<level>
 
@@ -753,13 +792,14 @@ then the latest SystemVerilog language (IEEE 1800-2017) is used.
 =item +define+I<var>=I<value>+I<var2>=I<value2>...
 
 Defines the given preprocessor symbol, or multiple symbols if separated by
-plusses.  Similar to -D; +define is fairly standard across Verilog tools
-while -D is an alias for GCC compatibility.
+plus signs.  Similar to -D; +define is fairly standard across Verilog tools
+while -D is similar to GCC.
 
 =item --dpi-hdr-only
 
 Only generate the DPI header file.  This option has no effect on the name
-or location of the file.
+or location of the emitted DPI header file, it is output in C<--Mdir> as it
+would be without this option.
 
 =item --dump-defines
 
@@ -785,8 +825,16 @@ large and not desired.
 Rarely needed - for developer use.  Set internal tree dumping level
 globally to a specific dumping level or set the specified Verilator source
 file to the specified tree dumping level (e.g. C<--dump-treei-V3Order 9>).
-Level 0 disbles dumps and is equivalent to "--no-dump-tree".  Level 9
+Level 0 disables dumps and is equivalent to "--no-dump-tree".  Level 9
 enables dumping of every stage.
+
+=item --dump-tree-addrids
+
+Rarely needed - for developer use.  Replace AST node addresses with short
+identifiers in tree dumps to enhance readability.  Each unique pointer value
+is mapped to a unique identifier, but note that this is not necessarily
+unique per node instance as an address might get reused by a newly allocated
+node after a node with the same address has been dumped then freed.
 
 =item -E
 
@@ -832,6 +880,12 @@ specified file might be used to contain define prototypes of custom
 VL_VPRINTF functions, and may need to include verilatedos.h as this file is
 included before any other standard includes.
 
+=item --flatten
+
+Force flattening of the design's hierarchy, with all modules, tasks and
+functions inlined. Typically used with C<--xml-only>. Note flattening
+large designs may require significant CPU time, memory and storage.
+
 =item -GI<name>=I<value>
 
 Overwrites the given parameter of the toplevel module. The value is limited
@@ -841,7 +895,7 @@ to basic data literals:
 
 =item Verilog integer literals
 
-The standard verilog integer literals are supported, so values like 32'h8,
+The standard Verilog integer literals are supported, so values like 32'h8,
 2'b00, 4 etc. are allowed. Care must be taken that the single quote (I') is
 properly escaped in an interactive shell, e.g., as -GWIDTH=8\'hx.
 
@@ -852,12 +906,15 @@ octal (0..) or binary (0b..) notation.
 
 =item Double literals
 
-Double literals must contain a dot (.) and/or an exponent (e).
+Double literals must be one of the following styles:
+  - contains a dot (.) (e.g. 1.23)
+  - contains an exponent (e/E) (e.g. 12e3)
+  - contains p/P for hexadecimal floating point in C99 (e.g. 0x123.ABCp1)
 
 =item Strings
 
-String must in double quotes (""). On the command line it is required to escape
-them properly, e.g. as -GSTR="\"My String\"" or -GSTR='"My String"'.
+Strings must be in double quotes (""). They must be escaped properly on the
+command line, e.g. as -GSTR="\"My String\"" or -GSTR='"My String"'.
 
 =back
 
@@ -895,6 +952,12 @@ immediately. This can be useful in makefiles. See also -V, and the various
 
 Displays this message and program version and exits.
 
+=item --hierarchical
+
+Enable hierarchical Verilation otherwise /*verilator hier_block*/ metacomment
+is ignored.
+See L</"HIERARCHICAL VERILATION">.
+
 =item -II<dir>
 
 See -y.
@@ -921,8 +984,16 @@ Tune the inlining of modules.  The default value of 2000 specifies that up
 to 2000 new operations may be added to the model by inlining, if more than
 this number of operations would result, the module is not inlined.  Larger
 values, or a value < 1 will inline everything, will lead to longer compile
-times, but potentially faster simulation runtimes.  This setting is ignored
+times, but potentially faster simulation speed.  This setting is ignored
 for very small modules; they will always be inlined, if allowed.
+
+=item -j <value>
+
+Specify the level of parallelism for --build. <value> must be a positive
+integer specifying the maximum number of parallel build jobs, or can be
+omitted. When <value> is omitted, the build will not try to limit the number of
+parallel build jobs but attempt to execute all independent build steps in
+parallel.
 
 =item -LDFLAGS I<flags>
 
@@ -969,6 +1040,14 @@ stylistic and not enabled by default.
 If the design is not to be completely Verilated see also the --bbox-sys and
 --bbox-unsup options.
 
+=item -MAKEFLAGS <string>
+
+When using --build, add the specified flag to the invoked make command line.
+For multiple flags either pass them as a single argument with space separators
+quoted in the shell (e.g. C<-MAKEFLAGS "-a -b">), or use multiple -MAKEFLAGS
+arguments (e.g. C<-MAKEFLAGS -l -MAKEFLAGS -k>). Use of this option should not
+be required for simple builds using the host toolchain.
+
 =item --max-num-width I<value>
 
 Set the maximum number literal width (e.g. in 1024'd22 this it the 1024).
@@ -979,7 +1058,7 @@ Defaults to 64K.
 
 Enable/disable creation of .d dependency files, used for make dependency
 detection, similar to gcc -MMD option.  By default this option is enabled
-for --cc or --sp modes.
+for --cc or --sc modes.
 
 =item --MP
 
@@ -1004,7 +1083,7 @@ Prevent the specified signal from being marked as clock. See C<--clk>.
 
 =item --no-decoration
 
-When creating output Verilated code, minimize comments, whitespace, symbol
+When creating output Verilated code, minimize comments, white space, symbol
 names and other decorative items, at the cost of greatly reduced
 readability. This may assist C++ compile times. This will not typically
 change the ultimate model's performance, but may in some cases.
@@ -1034,7 +1113,7 @@ with extra loads and stores to handle the (imaginary) aliasing. Using only
 
 Rarely needed.  Disables or enables skipping execution of Verilator if all
 source files are identical, and all output files exist with newer dates.
-By default this option is enabled for --cc or --sp modes only.
+By default this option is enabled for --cc or --sc modes only.
 
 =item +notimingchecks
 
@@ -1048,7 +1127,7 @@ Disables optimization of the model.
 
 Enables slow optimizations for the code Verilator itself generates (as
 opposed to "-CFLAGS -O3" which effects the C compiler's optimization.  -O3
-may reduce simulation runtimes at the cost of compile time.  This currently
+may improve simulation performance at the cost of compile time.  This currently
 sets --inline-mult -1.
 
 =item -OI<optimization-letter>
@@ -1074,31 +1153,33 @@ developers.
 
 Enables splitting the output .cpp files into multiple outputs.  When a C++
 file exceeds the specified number of operations, a new file will be created
-at the next function boundary.  In addition, any infrequently executed
-"cold" routines will be placed into __Slow files.  This accelerates
-compilation by as optimization can be disabled on the routines in __Slow,
-and the remaining files can be compiled on parallel machines.  Using
---output-split should have only a trivial impact on performance.  On one
-design --output-split 20000 resulted in splitting into approximately
-one-minute-compile chunks.
+at the next function boundary.  In addition, if the total output code size
+exceeds the specified value, VM_PARALLEL_BUILDS will be set to 1 by default
+in the generated make files, making parallel compilation possible. Using
+--output-split should have only a trivial impact on model performance. But
+can greatly improve C++ compilation speed. The use of I<ccache> (set for you
+if present at configure time) is also more effective with this option.
 
-Typically when using this, make with VM_PARALLEL_BUILDS=1, and use
-I<ccache>.
+This option is on by default with a value of 20000. To disable, pass with a
+value of 0.
 
 =item --output-split-cfuncs I<statements>
 
-Enables splitting functions in the output .cpp files into multiple
-functions.  When a generated function exceeds the specified number of
-operations, a new function will be created.  With --output-split, this will
-enable GCC to compile faster, at a small loss in performance that gets
-worse with decreasing split values.  Note that this option is stronger than
---output-split in the sense that --output-split will not split inside a
-function.
+Enables splitting functions in the output .cpp files into multiple functions.
+When a generated function exceeds the specified number of operations, a new
+function will be created.  With --output-split, this will enable the C++
+compiler to compile faster, at a small loss in performance that gets worse with
+decreasing split values.  Note that this option is stronger than --output-split
+in the sense that --output-split will not split inside a function.
+
+Defaults to the value of --output-split, unless explicitly specified.
 
 =item --output-split-ctrace I<statements>
 
-Enables splitting trace functions in the output .cpp files into
-multiple functions.  Defaults to same setting as --output-split-cfuncs.
+Similar to --output-split-cfuncs, enables splitting trace functions in the
+output .cpp files into multiple functions.
+
+Defaults to the value of --output-split, unless explicitly specified.
 
 =item -P
 
@@ -1140,16 +1221,17 @@ Likewise pins of width 9-16 will use uint16_t instead of uint32_t.
 
 =item --pipe-filter I<command>
 
-Rarely needed and experimental.  Verilator will spawn the specified command
-as a subprocess pipe, to allow the command to perform custom edits on the
-Verilog code before it reaches Verilator.
+Rarely needed.  Verilator will spawn the specified command as a subprocess
+pipe, to allow the command to perform custom edits on the Verilog code
+before it reaches Verilator.
 
 Before reading each Verilog file, Verilator will pass the file name to the
-subprocess' stdin with 'read_verilog "<filename>"'.  The filter may then
-read the file and perform any filtering it desires, and feeds the new file
-contents back to Verilator on stdout with 'Content-Length'.  Output to
-stderr from the filter feeds through to Verilator's stdout and if the
-filter exits with non-zero status Verilator terminates.  See the
+subprocess' stdin with 'read "<filename>"'.  The filter may then read the file
+and perform any filtering it desires, and feeds the new file contents back to
+Verilator on stdout by first emitting a line defining the length in bytes of
+the filtered output 'Content-Length: <bytes>', followed by the new filtered
+contents. Output to stderr from the filter feeds through to Verilator's stdout
+and if the filter exits with non-zero status Verilator terminates.  See the
 t/t_pipe_filter test for an example.
 
 To debug the output of the filter, try using the -E option to see
@@ -1239,6 +1321,10 @@ This allows for the secure delivery of sensitive IP without the need for
 encrypted RTL (i.e. IEEE P1735).  See examples/make_protect_lib in the
 distribution for a demonstration of how to build and use the DPI library.
 
+When using --protect-lib it is advised to also use C<--timescale-override
+/1fs> to ensure the model has a time resolution that is always compatible
+with the time precision of the upper instantiating module.
+
 =item --private
 
 Opposite of --public.  Is the default; this option exists for backwards
@@ -1258,12 +1344,12 @@ inlining.  This will also turn off inlining as if all modules had a
 =item --public-flat-rw
 
 Declares all variables, ports and wires public as if they had /*verilator
-public_flat_rw*/ comments.  This will make them VPI accessible by their
-flat name, but not turn off module inlining.  This is particularly useful
-in combination with --vpi. This may also in some rare cases result in
-mis-simulation of generated clocks.  Instead of this global switch, marking
-only those signals that need public_flat_rw is typically significantly
-better performing.
+public_flat_rw @ (<variable's_source_process_edge>)*/ comments.  This will
+make them VPI accessible by their flat name, but not turn off module
+inlining.  This is particularly useful in combination with --vpi. This may
+also in some rare cases result in mis-simulation of generated clocks.
+Instead of this global switch, marking only those signals that need
+public_flat_rw is typically significantly better performing.
 
 =item -pvalue+I<name>=I<value>
 
@@ -1272,7 +1358,8 @@ detailed description.
 
 =item --quiet-exit
 
-When exiting due to an error, do not display the "Command Failed" message.
+When exiting due to an error, do not display the "Exiting due to Errors"
+nor "Command Failed" messages.
 
 =item --relative-includes
 
@@ -1300,6 +1387,11 @@ printing. For example:
 
 will generate a PDF Vt_unoptflat_simple_2_35_unoptflat.dot.pdf from the DOT
 file.
+
+As an alternative, the I<xdot> command can be used to view DOT files
+interactively:
+
+    xdot Vt_unoptflat_simple_2_35_unoptflat.dot
 
 =item --rr
 
@@ -1343,6 +1435,13 @@ Creates more detailed statistics, including a list of all the variables by
 size (plain --stats just gives a count).  See --stats, which is implied by
 this.
 
+=item --structs-packed
+
+Converts all unpacked structures to packed structures and issues a UNPACKED
+warning.  Currently this is the default and --no-structs-packed will not
+work.  Specifying this option allows for forward compatibility when a
+future version of Verilator no longer always packs unpacked structures.
+
 =item -sv
 
 Specifies SystemVerilog language features should be enabled; equivalent to
@@ -1369,7 +1468,8 @@ L</"MULTITHREADING">.
 
 =item --threads-dpi pure
 
-When using --dpi with --threads, control what DPI tasks are thread safe.
+When using --threads, controls which DPI imported tasks and functions are
+considered thread safe.
 
 With --threads-dpi all, enable Verilator to assume all DPI imports are
 threadsafe, and to use thread-local storage for communication with DPI,
@@ -1389,12 +1489,30 @@ Rarely needed.  When using --threads, specify the number of mtasks the
 model is to be partitioned into. If unspecified, Verilator approximates a
 good value.
 
+=item --timescale I<timeunit>/I<timeprecision>
+
+Sets default timescale, timeunit and timeprecision for when `timescale does
+not occur in sources.  Default is "1ps/1ps" (to match SystemC).  This is
+overridden by C<--timescale-override>.
+
+=item --timescale-override I<timeunit>/I<timeprecision>
+
+=item --timescale-override /I<timeprecision>
+
+Overrides all `timescales in sources. The timeunit may be left empty to
+specify only to override the timeprecision, e.g. "/1fs".
+
+The time precision must be consistent with SystemC's
+sc_set_time_resolution, or the C++ code instantiating the Verilated module.
+As 1fs is the finest time precision it may be desirable to always use a
+precision of 1fs.
+
 =item --top-module I<topname>
 
 When the input Verilog contains more than one top level module, specifies
-the name of the top level Verilog module to become the top, and sets the
-default for if --prefix is not used.  This is not needed with standard
-designs with only one top.  See also the MULTITOP warning section.
+the name of the Verilog module to become the top level module, and sets the
+default for --prefix if not explicitly specified.  This is not needed with
+standard designs with only one top.  See also the MULTITOP warning section.
 
 =item --trace
 
@@ -1404,12 +1522,14 @@ C<--trace-fst>.
 Verilator will generate additional {prefix}__Trace*.cpp files that will
 need to be compiled.  In addition verilated_vcd_sc.cpp (for SystemC traces)
 or verilated_vcd_c.cpp (for both) must be compiled and linked in.  If using
-the Verilator generated Makefiles, these files will be added as source
-targets for you.  If you're not using the Verilator makefiles, you will
+the Verilator generated Makefiles, these files will be added to the source
+file lists for you.  If you are not using the Verilator Makefiles, you will
 need to add these to your Makefile manually.
 
 Having tracing compiled in may result in some small performance losses,
-even when waveforms are not turned on during model execution.
+even when tracing is not turned on during model execution.
+
+See also C<--trace-threads>.
 
 =item --trace-coverage
 
@@ -1421,25 +1541,19 @@ already visible.
 
 The added signal will be a 32-bit value which will increment on each
 coverage occurrence. Due to this, this option may greatly increase trace
-file sizes and simulation runtime.
+file sizes and reduce simulation speed.
 
 =item --trace-depth I<levels>
 
 Specify the number of levels deep to enable tracing, for example
 --trace-level 1 to only see the top level's signals.  Defaults to the
 entire model.  Using a small number will decrease visibility, but greatly
-improve simulation runtime and trace file size.
+improve simulation performance and trace file size.
 
 =item --trace-fst
 
-Enable FST waveform tracing in the model. This overrides C<--trace> and
-C<--trace-fst-thread>.  See also C<--trace-fst-thread>.
-
-=item --trace-fst-thread
-
-Enable FST waveform tracing in the model, using a separate thread. This is
-typically faster in simulation runtime but slower in total computes than
-C<--trace-fst>.  This overrides C<--trace> and C<--trace-fst>.
+Enable FST waveform tracing in the model. This overrides C<--trace>.
+See also C<--trace-threads>.
 
 =item --trace-max-array I<depth>
 
@@ -1463,6 +1577,15 @@ Enable tracing to show the name of packed structure, union, and packed
 array fields, rather than a single combined packed bus.  Due to VCD file
 format constraints this may result in significantly slower trace times and
 larger trace files.
+
+=item --trace-threads I<threads>
+
+Enable waveform tracing using separate threads. This is typically faster in
+simulation runtime but uses more total compute. This option is independent of,
+and works with, both C<--trace> and C<--trace-fst>. Different trace formats can
+take advantage of more trace threads to varying degrees. Currently VCD tracing
+can utilize at most --trace-threads 1, and FST tracing can utilize at most
+--trace-threads 2. This overrides C<--no-threads>.
 
 =item --trace-underscore
 
@@ -1500,6 +1623,12 @@ Read the filename as a Verilog library.  Any modules in the file may be
 used to resolve cell instantiations in the top level module, else ignored.
 Note -v is fairly standard across Verilog tools.
 
+=item --no-verilate
+
+When using --build, disable generation of C++/SystemC code, and execute only
+the build. This can be useful for rebuilding Verilated code produced by a
+previous invocation of Verilator.
+
 =item  +verilog1995ext+I<ext>
 
 =item  +verilog2001ext+I<ext>
@@ -1514,15 +1643,26 @@ Displays program version and exits.
 
 Enable use of VPI and linking against the verilated_vpi.cpp files.
 
+=item --waiver-output <filename>
+
+Generate a waiver file which contains all waiver statements to suppress the
+warnings emitted during this Verilator run. This in particular is useful as
+a starting point for solving linter warnings or suppressing them
+systematically.
+
+The generated file is in the Verilator Configuration format, see
+L</"CONFIGURATION FILES">, and can directly be consumed by Verilator. The
+standard file extension is .vlt.
+
 =item -Wall
 
 Enable all code style warnings, including code style warnings that are
-normally disabled by default. Equivelent to "-Wwarn-lint -Wwarn-style".
+normally disabled by default. Equivalent to "-Wwarn-lint -Wwarn-style".
 Excludes some specialty warnings, i.e. IMPERFECTSCH.
 
 =item -Werror-I<message>
 
-Convert the specified warning message into an error message.  This is
+Promote the specified warning message into an error message.  This is
 generally to discourage users from violating important site-wide rules, for
 example C<-Werror-NOUNOPTFLAT>.
 
@@ -1536,20 +1676,19 @@ supports which the older version does not support.
 
 =item -Wno-I<message>
 
-Disable the specified warning message, or in some cases where noted here
-disable an error.  This will override any lint_on directives in the source,
-i.e. the warning will still not be printed.
+Disable the specified warning/error message.  This will override any lint_on
+directives in the source, i.e. the warning will still not be printed.
 
 =item -Wno-context
 
 Disable showing the suspected context of the warning message by quoting the
-source text at the suspected location.  This is used to appease tools which
-process the error messages may get confused by lines from the original
+source text at the suspected location.  This can be used to appease tools which
+process the warning messages but may get confused by lines from the original
 source.
 
 =item -Wno-fatal
 
-When warnings are detected, print them, but do not exit the simulator.
+When warnings are detected, print them, but do not terminate Verilator.
 
 Having warning messages in builds is sloppy.  It is strongly recommended
 you cleanup your code, use inline lint_off, or use -Wno-... flags rather
@@ -1579,8 +1718,8 @@ already disabled).  This is equivalent to "-Wno-DECLFILENAME -Wno-DEFPARAM
 
 Warn on any construct demanded by IEEE, and disable all Verilator
 extensions that may interfere with IEEE compliance to the standard defined
-with --language (etc).  Similar to GCC's -Wpedantic.  Rarely used, and
-intended only for strict compliance tests.
+with --default-language (etc).  Similar to GCC's -Wpedantic.  Rarely used,
+and intended only for strict compliance tests.
 
 =item -Wwarn-I<message>
 
@@ -1610,23 +1749,26 @@ Enable all code style related warning messages.  This is equivalent to
 
 =item --x-assign unique
 
-Controls the two-state value that is replaced when an assignment to X is
-encountered. C<--x-assign fast>, the default, converts all Xs to whatever is
-best for performance.  C<--x-assign 0> converts all Xs to 0s, and is also fast.
-C<--x-assign 1> converts all Xs to 1s, this is nearly as fast as 0, but more
-likely to find reset bugs as active high logic will fire.  C<--x-assign unique>
-will call a function to determine the value, this allows randomization of
-all Xs to find reset bugs and is the slowest, but safest for finding reset
-bugs in code.
+Controls the two-state value that is substituted when an explicit X value is
+encountered in the source. C<--x-assign fast>, the default, converts all Xs to
+whatever is best for performance.  C<--x-assign 0> converts all Xs to 0s, and
+is also fast.  C<--x-assign 1> converts all Xs to 1s, this is nearly as fast as
+0, but more likely to find reset bugs as active high logic will fire. Using
+C<--x-assign unique> will result in all explicit Xs being replaced by a
+constant value determined at runtime. The value is determined by calling a
+function at initialization time. This enables randomization of Xs with
+different seeds on different executions. This method is the slowest, but safest
+for finding reset bugs.
 
-If using --x-assign unique, you may want to seed your random number
-generator such that each regression run gets a different randomization
-sequence.  Use the system's srand48() or for Windows srand() function to do
-this.  You'll probably also want to print any seeds selected, and code to
-enable rerunning with that same seed so you can reproduce bugs.
+If using --x-assign unique, you may want to seed your random number generator
+such that each regression run gets a different randomization sequence. The
+simplest is to use the +verilator+seed runtime option.  Alternatively use the
+system's srand48() or for Windows srand() function to do this.  You'll probably
+also want to print any seeds selected, and code to enable rerunning with that
+same seed so you can reproduce bugs.
 
-B<Note.> This option applies only to variables which are explicitly assigned
-to X in the Verilog source code. Initial values of clocks are set to 0 unless
+B<Note.> This option applies only to values which are explicitly written as
+X in the Verilog source code. Initial values of clocks are set to 0 unless
 --x-initial-edge is specified. Initial values of all other state holding
 variables are controlled with --x-initial.
 
@@ -1699,8 +1841,8 @@ Filename for XML output file. Using this option automatically sets
 
 Add the directory to the list of directories that should be searched for
 include files or libraries.  The three flags -y, +incdir and -I have
-similar effect; +incdir and +y are fairly standard across Verilog tools while -I
-is an alias for GCC compatibility.
+similar effect; +incdir and +y are fairly standard across Verilog tools while
+-I is used by many C++ compilers.
 
 Verilator defaults to the current directory ("-y .") and any specified
 --Mdir, though these default paths are used after any user specified
@@ -1741,20 +1883,21 @@ Display help and exit.
 
 =item +verilator+prof+threads+file+I<filename>
 
-When using --prof-threads at simulation runtime, the filename to dump to.
-Defaults to "profile_threads.dat".
+When a model was Verilated using --prof-threads, sets the simulation runtime
+filename to dump to.  Defaults to "profile_threads.dat".
 
 =item +verilator+prof+threads+start+I<value>
 
-When using --prof-threads at simulation runtime, Verilator will wait until
-$time is at this value, then start the profiling warmup, then
-capturing. Generally this should be set to some time that is well within
-the normal operation of the simulation, i.e. outside of reset. If 0, the
-dump is disabled. Defaults to 1.
+When a model was Verilated using --prof-threads, the simulation runtime will
+wait until $time is at this value (expressed in units of the time
+precision), then start the profiling warmup, then capturing. Generally this
+should be set to some time that is well within the normal operation of the
+simulation, i.e. outside of reset. If 0, the dump is disabled. Defaults to
+1.
 
 =item +verilator+prof+threads+window+I<value>
 
-When using --prof-threads at simulation runtime, after $time reaches
+When a model was Verilated using --prof-threads, after $time reaches
 +verilator+prof+threads+start, Verilator will warm up the profiling for
 this number of eval() calls, then will capture the profiling of this number
 of eval() calls.  Defaults to 2, which makes sense for a
@@ -1772,6 +1915,11 @@ all-ones.  2 = Randomize.  See L</"Unknown states">.
 For $random and "-x-initial unique", set the simulation runtime random seed
 value.  If zero or not specified picks a value from the system random
 number generator.
+
+=item +verilator+noassert
+
+Disable assert checking per runtime argument. This is the same as calling
+"Verilated::assertOn(false)" in the model.
 
 =item +verilator+V
 
@@ -1810,8 +1958,8 @@ We'll compile this example into C++.
     EOF
 
 See the README in the source kit for various ways to install or point to
-Verilator binaries.  In brief, if you are running Verilator that came from
-your operating system (as an RPM), or did a "make install" to place
+Verilator binaries.  In brief, if you installed Verilator using the package
+manager of your operating system, or did a "make install" to place
 Verilator into your default path, you do not need anything special in your
 environment, and should not have VERILATOR_ROOT set.  However, if you
 installed Verilator from sources and want to run Verilator out of where you
@@ -1823,20 +1971,17 @@ compiled Verilator, you need to point to the kit:
 
 Now we run Verilator on our little example.
 
-    verilator -Wall --cc our.v --exe sim_main.cpp
+    verilator -Wall --cc our.v --exe --build sim_main.cpp
 
 We can see the source code under the "obj_dir" directory.  See the FILES
 section below for descriptions of some of the files that were created.
 
     ls -l obj_dir
 
-We then can compile it
-
-    make -j -C obj_dir -f Vour.mk Vour
-
 (Verilator included a default compile rule and link rule, since we used
---exe and passed a .cpp file on the Verilator command line.  You can also
-write your own compile rules, as we'll show in the SYSTEMC section.)
+--exe and passed a .cpp file on the Verilator command line.  Verilator also
+then used C<make> to build a final executable.  You can also write your own
+compile rules, and run make yourself as we'll show in the SYSTEMC section.)
 
 And now we run it
 
@@ -1872,7 +2017,7 @@ This is an example similar to the above, but using SystemC.
       #include "Vour.h"
       int sc_main(int argc, char** argv) {
           Verilated::commandArgs(argc, argv);
-          sc_clock clk ("clk", 10, 0.5, 3, true);
+          sc_clock clk("clk", 10, SC_NS, 0.5, 3, SC_NS, true);
           Vour* top;
           top = new Vour("top");
           top->clk(clk);
@@ -1883,8 +2028,8 @@ This is an example similar to the above, but using SystemC.
     EOF
 
 See the README in the source kit for various ways to install or point to
-Verilator binaries.  In brief, if you are running Verilator that came from
-your operating system (as an RPM), or did a "make install" to place
+Verilator binaries.  In brief, if you installed Verilator using the package
+manager of your operating system, or did a "make install" to place
 Verilator into your default path, you do not need anything special in your
 environment, and should not have VERILATOR_ROOT set.  However, if you
 installed Verilator from sources and want to run Verilator out of where you
@@ -1900,19 +2045,19 @@ Now we run Verilator on our little example.
 
 We then can compile it
 
-    cd obj_dir
-    make -j -f Vour.mk Vour__ALL.a
-    make -j -f Vour.mk ../sc_main.o verilated.o
+    make -j -C obj_dir -f Vour.mk Vour__ALL.a
+    make -j -C obj_dir -f Vour.mk ../sc_main.o verilated.o
 
 And link with SystemC.  Note your path to the libraries may vary,
 depending on the operating system.
 
+    cd obj_dir
     export SYSTEMC_LIBDIR=/path/to/where/libsystemc.a/exists
     export LD_LIBRARY_PATH=$SYSTEMC_LIBDIR:$LD_LIBRARY_PATH
     # Might be needed if SystemC 2.3.0
     export SYSTEMC_CXX_FLAGS=-pthread
 
-    g++ -L$SYSTEMC_LIBDIR ../sc_main.o Vour__ALL*.o verilated.o \
+    g++ -L$SYSTEMC_LIBDIR ../sc_main.o Vour__ALL.a verilated.o \
               -o Vour -lsystemc
 
 And now we run it
@@ -1930,13 +2075,46 @@ when your source changes it will automatically run all of these steps.  See
 the examples directory in the distribution.
 
 
+=head1 EVALUATION LOOP
+
+When using SystemC, evaluation of the Verilated model is managed by the SystemC
+kernel, and for the most part can be ignored.  When using C++, the user
+must call eval(), or eval_step() and eval_end_step().
+
+1. When there is a single design instantiated at the C++ level that needs to
+evaluate, just call designp->eval().
+
+2. When there are multiple designs instantiated at the C++ level that
+need to evaluate, call first_designp->eval_step() then ->eval_step() on all
+other designs.  Then call ->eval_end_step() on the first design then all
+other designs.  If there is only a single design, you would call
+eval_step() then eval_end_step(); in fact eval() described above is just a
+wrapper which calls these two functions.
+
+When eval() is called Verilator looks for changes in clock signals and
+evaluates related sequential always blocks, such as computing always_ff @
+(posedge...) outputs.  Then Verilator evaluates combinatorial logic.
+
+Note combinatorial logic is not computed before sequential always blocks
+are computed (for speed reasons). Therefore it is best to set any non-clock
+inputs up with a separate eval() call before changing clocks.
+
+Alternatively, if all always_ff statements use only the posedge of clocks,
+or all inputs go directly to always_ff statements, as is typical, then you
+can change non-clock inputs on the negative edge of the input clock, which
+will be faster as there will be fewer eval() calls.
+
+For more information on evaluation, see docs/internals.adoc in the
+distribution.
+
+
 =head1 BENCHMARKING & OPTIMIZATION
 
-For best performance, run Verilator with the "-O3 --x-assign fast
---x-initial fast --noassert" flags.  The -O3 flag will require longer
-compile times, and "--x-assign fast --x-initial fast" may increase the risk
-of reset bugs in trade for performance; see the above documentation for
-these flags.
+For best performance, run Verilator with the "-O3 --x-assign fast --x-initial
+fast --noassert" flags.  The -O3 flag will require longer time to run
+Verilator, and "--x-assign fast --x-initial fast" may increase the risk of
+reset bugs in trade for performance; see the above documentation for these
+flags.
 
 If using Verilated multithreaded, use C<numactl> to ensure you are using
 non-conflicting hardware resources. See L</"MULTITHREADING">.
@@ -1948,46 +2126,69 @@ simple change to a clock latch used to gate clocks and gained a 60%
 performance improvement.
 
 Beyond that, the performance of a Verilated model depends mostly on your
-C++ compiler and size of your CPU's caches.
+C++ compiler and size of your CPU's caches. Experience shows that large models
+are often limited by the size of the instruction cache, and as such reducing
+code size if possible can be beneficial.
 
-By default, the lib/verilated.mk file has optimization turned off.  This is
-for the benefit of new users, as it improves compile times at the cost of
-simulation runtimes.  To add optimization as the default, set one of three variables,
-OPT, OPT_FAST, or OPT_SLOW lib/verilated.mk.  Or, use the -CFLAGS and/or
--LDFLAGS option on the verilator command line to pass the flags directly to
-the compiler or linker.  Or, just for one run, pass them on the command
-line to make:
+The supplied $VERILATOR_ROOT/include/verilated.mk file uses the OPT, OPT_FAST,
+OPT_SLOW and OPT_GLOBAL variables to control optimization. You can set these
+when compiling the output of Verilator with Make, for example:
 
-    make OPT_FAST="-O2 -fno-stack-protector" -f Vour.mk Vour__ALL.a
+    make OPT_FAST="-Os -march=native" -f Vour.mk Vour__ALL.a
 
-OPT_FAST specifies optimizations for those programs that are part of the
-fast path, mostly code that is executed every cycle.  OPT_SLOW specifies
-optimizations for slow-path files (plus tracing), which execute only
-rarely, yet take a long time to compile with optimization on.  OPT
-specifies overall optimization and affects all compiles, including those
-OPT_FAST and OPT_SLOW control.  For best results, use OPT="-O2", and link
-with "-static".  Nearly the same results can be had with much better
-compile times with OPT_FAST="-O1 -fstrict-aliasing".  Higher optimization
-such as "-O3" may help, but gcc compile times may be excessive under O3 on
-even medium sized designs.  Alternatively, some larger designs report
-better performance using "-Os".
+OPT_FAST specifies optimization flags for those parts of the model that are on
+the fast path. This is mostly code that is executed every cycle. OPT_SLOW
+applies to slow-path code, which executes rarely, often only once at the
+beginning or end of simulation. Note that OPT_SLOW is ignored if
+VM_PARALLEL_BUILDS is not 1, in which case all generated code will be compiled
+in a single compilation unit using OPT_FAST. See also the C<--output-split>
+option. The OPT_GLOBAL variable applies to common code in the runtime library
+used by Verilated models (shipped in $VERILATOR_ROOT/include). Additional C++
+files passed on the verilator command line use OPT_FAST. The OPT variable
+applies to all compilation units in addition to the specific OPT_* variables
+described above.
 
-Unfortunately, using the optimizer with SystemC files can result in
-compiles taking several minutes.  (The SystemC libraries have many little
-inlined functions that drive the compiler nuts.)
+You can also use the -CFLAGS and/or -LDFLAGS options on the verilator command
+line to pass flags directly to the compiler or linker.
 
-For best results, use GCC 3.3 or newer.  GCC 3.2 and earlier have
-optimization bugs around pointer aliasing detection, which can result in 2x
-performance losses.
+The default values of the OPT_* variables are chosen to yield good simulation
+speed with reasonable C++ compilation times. To this end, OPT_FAST is set to
+"-Os" by default. Higher optimization such as "-O2" or "-O3" may help (though
+often they provide only a very small performance benefit), but compile times
+may be excessively large even with medium sized designs. Compilation times can
+be improved at the expense of simulation speed by reducing optimization, for
+example with OPT_FAST="-O0". Often good simulation speed can be achieved with
+OPT_FAST="-O1 -fstrict-aliasing" but with improved compilation times. Files
+controlled by OPT_SLOW have little effect on performance and therefore OPT_SLOW
+is empty by default (equivalent to "-O0") for improved compilation speed. In
+common use-cases there should be little benefit in changing OPT_SLOW.
+OPT_GLOBAL is set to "-Os" by default and there should rarely be a need to
+change it. As the runtime library is small in comparison to a lot of Verilated
+models, disabling optimization on the runtime library should not have a
+serious effect on overall compilation time, but may have detrimental effect on
+simulation speed, especially with tracing. In addition to the above, for best
+results use OPT="-march=native", the latest Clang compiler (about 10% faster
+than GCC), and link statically.
 
-If you will be running many simulations on a single compile, investigate
-feedback driven compilation.  With GCC, using -fprofile-arcs, then
+Generally the answer to which optimization level gives the best user experience
+depends on the use case and some experimentation can pay dividends. For a
+speedy debug cycle during development, especially on large designs where C++
+compilation speed can dominate, consider using lower optimization to get to an
+executable faster. For throughput oriented use cases, for example regressions,
+it is usually worth spending extra compilation time to reduce total CPU time.
+
+If you will be running many simulations on a single model, you can investigate
+profile guided optimization. With GCC, using -fprofile-arcs, then
 -fbranch-probabilities will yield another 15% or so.
 
 Modern compilers also support link-time optimization (LTO), which can help
-especially if you link in DPI code.  To enable LTO on GCC, pass "-flto" in
-both compilation and link.  Note LTO may cause excessive compile times on
-large designs.
+especially if you link in DPI code. To enable LTO on GCC, pass "-flto" in both
+compilation and link. Note LTO may cause excessive compile times on large
+designs.
+
+Unfortunately, using the optimizer with SystemC files can result in compilation
+taking several minutes. (The SystemC libraries have many little inlined
+functions that drive the compiler nuts.)
 
 If you are using your own makefiles, you may want to compile the Verilated
 code with -DVL_INLINE_OPT=inline. This will inline functions, however this
@@ -1999,14 +2200,14 @@ either oprofile or gprof to see where in the C++ code the time is spent.
 Run the gprof output through verilator_profcfunc and it will tell you what
 Verilog line numbers on which most of the time is being spent.
 
-When done, please let the author know the results.  I like to keep tabs on
+When done, please let the author know the results.  We like to keep tabs on
 how Verilator compares, and may be able to suggest additional improvements.
 
 
 =head1 FILES
 
-All output files are placed in the output directory name specified with the
--Mdir option, or "obj_dir" if not specified.
+All output files are placed in the output directory specified with the
+C<--Mdir> option, or "obj_dir" if not specified.
 
 Verilator creates the following files in the output directory:
 
@@ -2014,10 +2215,13 @@ For --make gmake, it creates:
 
     {prefix}.mk                         // Make include file for compiling
     {prefix}_classes.mk                 // Make include file with class names
+    {prefix}_hier.mk                    // Make file for hierarchy blocks
+    {prefix}_hierMkArgs.f               // Arguments for hierarchical Verilation.
 
 For --make cmake, it creates:
 
     {prefix}.cmake                      // CMake include script for compiling
+    {prefix}_hierCMakeArgs.f            // Arguments for hierarchical Verilation.
 
 For -cc and -sc mode, it also creates:
 
@@ -2028,6 +2232,13 @@ For -cc and -sc mode, it also creates:
     {prefix}{each_verilog_module}.cpp   // Lower level internal C++ files
     {prefix}{each_verilog_module}.h     // Lower level internal header files
     {prefix}{each_verilog_module}{__n}.cpp   // Additional lower C++ files (--output-split)
+
+For --hierarchy mode, it creates:
+    {prefix}__hierVer.d                 // Make dependencies of the top module in the
+                                           hierarchical Verilation
+    {prefix}__hier.dir/                 // Directory to store .dot, .vpp, .tree of the
+                                           top module in the hierarchical Verilation
+    V{hier_block}/                      // Directory to Verilate each hierarchy block
 
 In certain debug and other modes, it also creates:
 
@@ -2045,7 +2256,7 @@ In certain debug and other modes, it also creates:
 
 It also creates internal files that can be mostly ignored:
 
-    {mod_prefix}_{each_verilog_module}{__n}.vpp  // Post-processed verilog
+    {mod_prefix}_{each_verilog_module}{__n}.vpp  // Pre-processed verilog
     {prefix}__ver.d                     // Make dependencies (-MMD)
     {prefix}__verFiles.dat              // Timestamps for skip-identical
     {prefix}{misc}.dot                  // Debugging graph files (--debug)
@@ -2059,9 +2270,7 @@ After running Make, the C++ compiler may produce the following:
     {mod_prefix}{misc}.o                // Intermediate objects
     {prefix}                            // Final executable (w/--exe argument)
     {prefix}__ALL.a                     // Library of all Verilated objects
-    {prefix}__ALLboth.cpp               // Include of classes for single compile
-    {prefix}__ALLcls.cpp                // Include of user classes for single compile
-    {prefix}__ALLsup.cpp                // Include of support files for single compile
+    {prefix}__ALL.cpp                   // Include of all code for single compile
     {prefix}{misc}.d                    // Intermediate dependencies
     {prefix}{misc}.o                    // Intermediate objects
 
@@ -2074,14 +2283,21 @@ After running Make, the C++ compiler may produce the following:
 
 A generic Linux/OS variable specifying what directories have shared object
 (.so) files.  This path should include SystemC and any other shared objects
-needed at simultion runtime.
+needed at simulation runtime.
+
+=item MAKE
+
+Names the executable of the make command invoked when using the --build option.
+Some operating systems may require "gmake" to this variable to launch GNU make.
+If this variable is not specified, "make" is used.
 
 =item OBJCACHE
 
 Optionally specifies a caching or distribution program to place in front of
-all runs of the C++ Compiler.  For example, "objcache --read --write", or
-"ccache".  If using distcc or icecc/icecream, they would generally be run
-under either objcache or ccache; see the documentation for those programs.
+all runs of the C++ compiler.  For example, "ccache".  If using distcc or
+icecc/icecream, they would generally be run under cache; see the
+documentation for those programs.  If OBJCACHE is not set, and at configure
+time ccache was present, ccache will be used as a default.
 
 =item SYSTEMC
 
@@ -2140,22 +2356,23 @@ Specifies the directory containing the distribution kit.  This is used to
 find the executable, Perl library, and include files.  If not specified, it
 will come from a default optionally specified at configure time (before
 Verilator was compiled).  It should not be specified if using a pre-compiled
-Verilator RPM as the hardcoded value should be correct.
+Verilator package as the hard-coded value should be correct.
 
 =back
 
 
 =head1 CONNECTING TO C++
 
-Verilator creates a .h and .cpp file for the top level module and all
-modules under it.  See the examples directory in the kit for examples.
+Verilator creates a I<prefix>.h and I<prefix>.cpp file for the top level
+module, together with additional .h and .cpp files for internals. See the
+examples directory in the kit for examples.
 
-After the modules are completed, there will be a I<module>.mk file that may
-be used with Make to produce a I<module>__ALL.a file with all required
-objects in it.  This is then linked with the user's top level to create the
-simulation executable.
+After the model is created, there will be a I<prefix>.mk file that may
+be used with Make to produce a I<prefix>__ALL.a file with all required
+objects in it.  This is then linked with the user's C++ main loop to
+create the simulation executable.
 
-The user must write the top level of the simulation.  Here's a simple
+The user must write the C++ main loop of the simulation.  Here is a simple
 example:
 
         #include <verilated.h>          // Defines common routines
@@ -2166,7 +2383,8 @@ example:
 
         vluint64_t main_time = 0;       // Current simulation time
         // This is a 64-bit integer to reduce wrap over issues and
-        // allow modulus.  You can also use a double, if you wish.
+        // allow modulus.  This is in units of the timeprecision
+        // used in Verilog (or from --timescale-override)
 
         double sc_time_stamp () {       // Called by $time in Verilog
             return main_time;           // converts to double, to match
@@ -2200,10 +2418,10 @@ example:
             delete top;
         }
 
-Note signals are read and written as member variables of the lower module.
+Note signals are read and written as member variables of the model.
 You call the eval() method to evaluate the model.  When the simulation is
-complete call the final() method to wrap up any SystemVerilog final blocks,
-and complete any assertions.
+complete call the final() method to execute any SystemVerilog final blocks,
+and complete any assertions. See L</"EVALUATION LOOP">.
 
 
 =head1 CONNECTING TO SYSTEMC
@@ -2233,7 +2451,7 @@ the original Synopsys-only DPI.
 In the SYSTEMC example above, if you wanted to import C++ functions into
 Verilog, put in our.v:
 
-   import "DPI-C" function integer add (input integer a, input integer b);
+   import "DPI-C" function int add (input int a, input int b);
 
    initial begin
       $display("%x + %x = %x", 1, 2, add(1,2));
@@ -2274,7 +2492,7 @@ called from C++:
 Then after Verilating, Verilator will create a file Vour__Dpi.h with the
 prototype to call this function:
 
-    extern bool publicSetBool(bool in_bool);
+    extern void publicSetBool(svBit in_bool);
 
 From the sc_main.cpp file, you'd then:
 
@@ -2299,9 +2517,9 @@ respect to that top level module, then the scope could be set with
 
     #include "svdpi.h"
     ...
-    svSetScope(svGetScopeFromName("dut"));
+    svSetScope(svGetScopeFromName("TOP.dut"));
 
-(Remember that Verilator adds a "V" to the top of the module hierarchy.)
+(Remember that Verilator adds a "TOP" to the top of the module hierarchy.)
 
 Scope can also be set from within a DPI imported C function that has been
 called from Verilog by querying the scope of that function. See the
@@ -2521,7 +2739,7 @@ Verilator and add the generated C++ sources to the target specified.
     verilate(target SOURCES source ... [TOP_MODULE top] [PREFIX name]
              [TRACE] [TRACE_FST] [SYSTEMC] [COVERAGE]
              [INCLUDE_DIRS dir ...] [OPT_SLOW ...] [OPT_FAST ...]
-             [DIRECTORY dir] [VERILATOR_ARGS ...])
+             [OPT_GLOBAL ..] [DIRECTORY dir] [VERILATOR_ARGS ...])
 
 Lowercase and ... should be replaced with arguments, the uppercase parts
 delimit the arguments and can be passed in any order, or left out entirely
@@ -2552,9 +2770,9 @@ the SystemC include an library path.
   (same as above).
 
 - When using Accellera's SystemC with CMake support, a CMake target is
-available that will easen above steps. This will only work if the SystemC
-installation can be found by CMake. This can be configured by setting the
-CMAKE_PREFIX_PATH variable during CMake configuration.
+available that simplifies the above steps. This will only work if the
+SystemC installation can be found by CMake. This can be configured by
+setting the CMAKE_PREFIX_PATH variable during CMake configuration.
 
 Don't forget to set the same C++ standard for the Verilated sources as the
 SystemC library. This can be specified using the SYSTEMC_CXX_FLAGS environment
@@ -2568,15 +2786,15 @@ Name of a target created by add_executable or add_library.
 
 =item SOURCES
 
-List of verilog files to Verilate. Must have at least one file.
+List of Verilog files to Verilate. Must have at least one file.
 
 =item PREFIX
 
 Optional. Sets the Verilator output prefix. Defaults to the name of the
-first hdl source with a "V" prepended. Must be unique in each call to
+first source file with a "V" prepended. Must be unique in each call to
 verilate(), so this is necessary if you build a module multiple times with
 different parameters. Must be a valid C++ identifier, i.e. contains no
-whitespace and only characters A-Z, a-z, 0-9 or _.
+white space and only characters A-Z, a-z, 0-9 or _.
 
 =item TOP_MODULE
 
@@ -2612,6 +2830,11 @@ optimization level to improve compile times with large designs.
 
 Optional. Set compiler flags for the fast path.
 
+=item OPT_GLOBAL
+
+Optional. Set compiler flags for the common runtime library used by Verilated
+models.
+
 =item DIRECTORY
 
 Optional. Set the verilator output directory. It is preferable to use the
@@ -2624,31 +2847,75 @@ here, use DIRECTORY or PREFIX.
 
 =back
 
-=head2 Cadence NC-SystemC Models
+=head1 HIERARCHICAL VERILATION
 
-Similar to compiling Verilated designs with gcc, Verilated designs may be
-compiled inside other simulators that support C++ or SystemC models.  One
-such simulator is Cadence's NC-SystemC, part of their Incisive Verification
-Suite.  (Highly recommended.)
+Large designs may take long (e.g. 10+ minutes) and huge memory (e.g. 100+GB)
+to Verilate. One workaround is hierarchical Verilation, it is to Verilate
+each moderate size of building blocks and finally combine the building blocks.
+The building block will be called "hierarchy block" later.
 
-Using the example files above, the following command will build the model
-underneath NC:
+The current hierarchical Verilation is based on protect-lib. Each hierarchy
+block is Verilated to protect-lib. User modules of the hierarchy blocks will see
+a tiny wrapper generated by protect-lib instead of the actual design.
 
-   cd obj_dir
-   ncsc_run \
-        sc_main.cpp \
-        Vour__ALLcls.cpp \
-        Vour__ALLsup.cpp \
-        verilated.cpp
+=head2 Usage
 
-For larger designs you'll want to automate this using makefiles, which pull
-the names of the .cpp files to compile in from the make variables generated
-in obj_dir/Vour_classes.mk.
+All user need to do is mark moderate size of module as hierarchy block and pass
+--hierarchical option to verilator command.
+There are two ways to mark a module:
 
+  a) Write /* verilator hier_block */ metacomment in HDL code
+      See L</"LANGUAGE EXTENSIONS"> for more detail.
+  b) add hier_block line in the configuration file.
+     See C<hier_block> in L</"CONFIGURATION FILES"> for example.
+
+You don't have to take care of hierarchical blocks when compiling
+Verilated C++ code. You can compile as usual.
+    make -C obj_dir -f Vtop_module_name.mk
+
+See also "Overlapping Verilation and compilation" to get executable quickly.
+
+=head2 Limitations
+
+Because hierarchy blocks are Verilated to protect-lib, they have some
+ limitations such as:
+
+   The block cannot be accessed using dot (.) from upper module.
+   Signals in the block cannot be traced.
+   Modport cannot be used at the hirarchical block boundary.
+
+On the other hand, the following usage is supported.
+
+    - Nested hierarchy block. A hierarchy block may instantiate other
+      hierarchy blocks.
+    - Parameterized hierarchy block. Parameters of a hierarchy block can be
+      overridden using #(.param_name(value)) construct.
+
+The simulation speed may not be as fast as flat Verilation, in which
+all modules are globally scheduled.
+
+=head2 Overlapping Verilation and compilation
+
+Verilator needs to run N + 2 times in hierarchical Verilation, where N is
+the number of hierarchy blocks.
+1 of 2 is for the top module which refers wrappers of all other hierarchy
+blocks.
+The other 1 of 2 is the initial run that searches modules marked with
+/*verilator hier_block*/ metacomment and creates a plan and write in
+(prefix)_hier.mk.
+This initial run internally invokes other N + 1 runs, so you don't have
+to care about these N + 1 times of run.
+
+If -j <jobs> option is specified, Verilation for hierarchy blocks
+runs in parallel.
+
+If --build option is also specified, C++ compilation also runs as soon as
+a hierarchy block is Verilated. C++ compilation and Verilation for
+other hierarchy blocks run simultaneously.
 
 =head1 MULTITHREADING
 
-Verilator experimentally supports multithreading.
+Verilator supports multithreaded simulation models.
 
 With --no-threads, the default, the model is not thread safe, and any use
 of more than one thread calling into one or even different Verilated models
@@ -2658,7 +2925,7 @@ performance.
 With --threads 1, the generated model is single threaded, however the
 support libraries are multithread safe. This allows different
 instantiations of model(s) to potentially each be run under a different
-thread.  All threading is the responsibility of the user's C++ testbench.
+thread. All threading is the responsibility of the user's C++ testbench.
 
 With --threads N, where N is at least 2, the generated model will be
 designed to run in parallel on N threads. The thread calling eval()
@@ -2668,9 +2935,6 @@ oversubscribe the available CPU cores. Under CPU oversubscription, the
 Verilated model should not livelock nor deadlock, however, you can expect
 performance to be far worse than it would be with proper ratio of
 threads and CPU cores.
-
-With --trace-fst-thread, tracing occurs in a separate thread from the main
-simulation thread(s). This option is orthogonal to --threads.
 
 The remainder of this section describe behavior with --threads 1 or
 --threads N (not --no-threads).
@@ -2685,12 +2949,28 @@ be done by a "main thread". In most cases the eval thread and main thread
 are the same thread (i.e. the user's top C++ testbench runs on a single
 thread), but this is not required.
 
+The --trace-threads options can be used to produce trace dumps using multiple
+threads. If --trace-threads is set without --threads, then --trace-threads will
+imply --threads 1, i.e.: the support libraries will be thread safe.
+
+With --trace-threads 0, trace dumps are produced on the main thread. This again
+gives the highest single thread performance.
+
+With --trace-threads N, where N is at least 1, N additional threads will be
+created and managed by the trace files (e.g.: VerilatedVcdC or VerilatedFstC),
+to generate the trace dump. The main thread will be released to proceed with
+execution as soon as possible, though some blocking of the main thread is still
+necessary while capturing the trace. Different trace formats can utilize a
+various number of threads. See the --trace-threads option.
+
 When running a multithreaded model, the default Linux task scheduler often
 works against the model, by assuming threads are short lived, and thus
 often schedules threads using multiple hyperthreads within the same
 physical core. For best performance use the C<numactl> program to (when the
-threading count fits) select unique physical cores on the same socket. For
-example, if a model was Verilated with "--threads 4", we consult
+threading count fits) select unique physical cores on the same socket. The
+same applies for --trace-threads as well.
+
+As an example, if a model was Verilated with "--threads 4", we consult
 
    egrep 'processor|physical id|core id' /proc/cpuinfo
 
@@ -2719,7 +2999,7 @@ If using --coverage, the coverage routines are fully thread safe.
 If using --dpi, Verilator assumes pure DPI imports are thread safe,
 balancing performance versus safety. See --threads-dpi.
 
-If using --savable, the save/restore classes are not multithreaded and are
+If using --savable, the save/restore classes are not multithreaded and
 must be called only by the eval thread.
 
 If using --sc, the SystemC kernel is not thread safe, therefore the eval
@@ -2734,6 +3014,7 @@ thread.
 
 =back
 
+
 =head1 CONFIGURATION FILES
 
 In addition to the command line, warnings and other features may be
@@ -2746,13 +3027,13 @@ extension. An example:
 
 This disables WIDTH warnings globally, and CASEX for a specific file.
 
-Configuration files are parsed after the normal Verilog preprocessing, so
-`ifdefs, `defines, and comments may be used as if it were normal Verilog
-code.
+Configuration files are fed through the normal Verilog preprocessor prior to
+parsing, so `ifdefs, `defines, and comments may be used as if it were normal
+Verilog code.
 
 Note that file or line-specific configuration only applies to files read
 after the configuration file. It is therefore recommended to pass the
-configuration file to Verilator as first file.
+configuration file to Verilator as the first file.
 
 The grammar of configuration commands is as follows:
 
@@ -2789,7 +3070,7 @@ enabled/disabled.  This will override all later lint warning enables for
 the specified region.
 
 If -match is set the linter warnings are matched against this (wildcard)
-string and are waived in case they match iff rule and file (with wildcard)
+string and are waived in case they match and iff rule and file (with wildcard)
 also match.
 
 In previous versions -rule was named -msg. The latter is deprecated, but
@@ -2806,7 +3087,7 @@ and range of line numbers (or all lines if omitted).
 For tracing_off, cells below any module in the files/ranges specified will
 also not be traced.
 
-=item clock_enable -module "<modulename>" -signal "<signame>"
+=item clock_enable -module "<modulename>" -var "<signame>"
 
 Indicate the signal is used to gate a clock, and the user takes responsibility
 for insuring there are no races related to it.
@@ -2814,13 +3095,13 @@ for insuring there are no races related to it.
 Same as /*verilator clock_enable*/, see L</"LANGUAGE EXTENSIONS"> for
 more information and an example.
 
-=item clocker -module "<modulename>" [-task "<taskname>"] -signal "<signame>"
+=item clocker -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
-=item clocker -module "<modulename>" [-function "<funcname>"] -signal "<signame>"
+=item clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
-=item no_clocker -module "<modulename>" [-task "<taskname>"] -signal "<signame>"
+=item no_clocker -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
-=item no_clocker -module "<modulename>" [-function "<funcname>"] -signal "<signame>"
+=item no_clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
 Indicate the signal is used as clock or not. This information is used by
 Verilator to mark the signal as clocker and propagate the clocker attribute
@@ -2850,21 +3131,21 @@ formally prove the directive to be true, or failing that, will insert
 the appropriate code to detect failing cases at simulation runtime and
 print an "Assertion failed" error message.
 
+=item hier_block -module "<modulename>"
+
+Specifies that the module is a unit of hierarchical Verilation.
+Note that the setting is ignored unless --hierachical option is specified.
+See L</"HIERARCHICAL VERILATION"> for more information.
+
 =item inline -module "<modulename>"
 
-Specifies the module may be inlined into any modules that use this
-module.  This is useful to speed up simulation runtime with some small
-loss of trace visibility and modularity.  Note signals under inlined
-submodules will be named I<submodule>__DOT__I<subsignal> as C++ does
-not allow "." in signal names.  When tracing such signals the tracing
-routines will replace the __DOT__ with the period.
+Specifies the module may be inlined into any modules that use this module.
+Same as /*verilator inline_module*/, and see that under L</"LANGUAGE
+EXTENSIONS"> for more information.
 
-Same as /*verilator inline_module*/, see L</"LANGUAGE EXTENSIONS"> for
-more information.
+=item isolate_assignments -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
-=item isolate_assignments -module "<modulename>" [-task "<taskname>"] -signal "<signame>"
-
-=item isolate_assignments -module "<modulename>" [-function "<funcname>"] -signal "<signame>"
+=item isolate_assignments -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
 =item isolate_assignments -module "<modulename>" -function "<fname>"
 
@@ -2878,13 +3159,9 @@ EXTENSIONS"> for more information.
 
 =item no_inline -module "<modulename>"
 
-Specifies the module should not be inlined into any modules that use
-this module.  This is useful especially at the top level module to
-reduce the size of the interface class, to aid compile time at a small
-performance loss.
-
-Same as /*verilator no_inline_module*/, see L</"LANGUAGE EXTENSIONS">
-for more information.
+Specifies the module should not be inlined into any modules that use this
+module.  Same as /*verilator no_inline_module*/, and see that under
+L</"LANGUAGE EXTENSIONS"> for more information.
 
 =item no_inline [-module "<modulename>"] -task "<taskname>"
 
@@ -2899,30 +3176,51 @@ outside the task itself.
 Same as /*verilator no_inline_task*/, see L</"LANGUAGE EXTENSIONS">
 for more information.
 
-=item sc_bv -module "<modulename>" [-task "<taskname>"] -signal "<signame>"
+=item public [-module "<modulename>"] [-task/-function "<taskname>"]
+    -var "<signame>"
 
-=item sc_bv -module "<modulename>" [-function "<funcname>"] -signal "<signame>"
+=item public_flat [-module "<modulename>"] [-task/-function "<taskname>"]
+    -var "<signame>"
+
+=item public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"]
+    -var "<signame>"
+
+=item public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"]
+    -var "<signame>" "@(edge)"
+
+Sets the variable to be public.  Same as /*verilator public*/ or
+/*verilator public_flat*/ etc, see those under L</"LANGUAGE EXTENSIONS">
+for more information.
+
+=item sc_bv -module "<modulename>" [-task "<taskname>"] -var "<signame>"
+
+=item sc_bv -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
 Sets the port to be of sc_bv<I<width>> type, instead of bool, vluint32_t or
-vluint64_t.  This may be useful if the port width is parameterized and
-different of such modules interface a templated module (such as a transactor)
-or for other reasons.  In general you should avoid using this attribute when
-not necessary as with increasing usage of sc_bv the performance decreases
-significantly.
+vluint64_t.  Same as /*verilator sc_bv*/, see that under L</"LANGUAGE
+EXTENSIONS"> for more information.
 
-Same as /*verilator sc_bv*/, see L</"LANGUAGE EXTENSIONS"> for more
-information.
+=item sformat [-module "<modulename>"] [-task "<taskname>"] -var "<signame>"
 
-=item sformat [-module "<modulename>"] [-task "<taskname>"] -signal "<signame>"
+=item sformat [-module "<modulename>"] [-function "<funcname>"] -var "<signame>"
 
-=item sformat [-module "<modulename>"] [-function "<funcname>"] -signal "<signame>"
-
-Final input of a function or task "input string" to indicate the
-function or task should pass all remaining arguments through
-$sformatf.  This allows creation of DPI functions with $display like
+Must be applied to the final argument of type "input string" of a function or
+task to indicate the function or task should pass all remaining arguments
+through $sformatf.  This allows creation of DPI functions with $display like
 behavior.  See the test_regress/t/t_dpi_display.v file for an example.
 
 Same as /*verilator sformat*/, see L</"LANGUAGE EXTENSIONS"> for more
+information.
+
+=item split_var [-module "<modulename>"] [-task "<taskname>"] -var "<varname>"
+
+=item split_var [-module "<modulename>"] [-function "<funcname>"] -var "<varname>"
+
+Break the variable into multiple pieces typically to resolve UNOPTFLAT
+performance issues. Typically the variables to attach this to are
+recommended by Verilator itself, see UNOPTFLAT.
+
+Same as /*verilator split_var*/, see L</"LANGUAGE EXTENSIONS"> for more
 information.
 
 =back
@@ -2945,11 +3243,11 @@ uwire keyword.
 =head2 SystemVerilog 2005 (IEEE 1800-2005) Support
 
 Verilator supports ==? and !=? operators, ++ and -- in some contexts,
-$bits, $countones, $error, $fatal, $info, $isunknown, $onehot, $onehot0,
-$unit, $warning, always_comb, always_ff, always_latch, bit, byte, chandle,
-const, do-while, enum, export, final, import, int, interface, logic,
-longint, modport, package, program, shortint, struct, time, typedef, union,
-var, void, priority case/if, and unique case/if.
+$bits, $countbits, $countones, $error, $fatal, $info, $isunknown, $onehot,
+$onehot0, $unit, $warning, always_comb, always_ff, always_latch, bit, byte,
+chandle, const, do-while, enum, export, final, import, int, interface,
+logic, longint, modport, package, program, shortint, struct, time, typedef,
+union, var, void, priority case/if, and unique case/if.
 
 It also supports .name and .* interconnection.
 
@@ -3053,12 +3351,13 @@ each different output width.
 Format arguments may use C fprintf sizes after the % escape.  Per the
 Verilog standard, %x prints a number with the natural width, and %0x prints
 a number with minimum width.  Verilator extends this so %5x prints 5 digits
-per the C standard (it's unspecified in Verilog).
+per the C standard (this is unspecified in Verilog, but was incorporated
+into the 1800-2009).
 
 =item `coverage_block_off
 
 Specifies the entire begin/end block should be ignored for coverage
-analysis.  Must be inside a basic block, e.g. within a begin/end pair.
+analysis.  Must be inside a code block, e.g. within a begin/end pair.
 Same as /* verilator coverage_block_off */ and C<coverage_block_off> in
 L</"CONFIGURATION FILES">.
 
@@ -3122,7 +3421,7 @@ default when --language is 1800-*.
 =item `verilator3
 
 The VERILATOR, verilator and verilator3 defines are set by default so you
-may `ifdef around compiler specific constructs.
+may `ifdef around tool specific constructs.
 
 =item `verilator_config
 
@@ -3186,14 +3485,23 @@ Specifies that following lines of code should have coverage re-enabled (if
 appropriate --coverage flags are passed) after being disabled earlier with
 /*verilator coverage_off*/.
 
+=item /*verilator hier_block*/
+
+Specifies that the module is a unit of hierarchical Verilation.
+This metacomment must be between
+ "module module_name(...);" and "endmodule".
+The module will not be inlined nor uniquified for each instance in
+hierarchical Verilation.
+Note that the metacomment is ignored unless --hierachical option is specified.
+
+See L</"HIERARCHICAL VERILATION"> for more information.
+
 =item /*verilator inline_module*/
 
 Specifies the module the comment appears in may be inlined into any modules
-that use this module.  This is useful to speed up simulation runtime with some
-small loss of trace visibility and modularity.  Note signals under inlined
-submodules will be named I<submodule>__DOT__I<subsignal> as C++ does not
-allow "." in signal names.  When tracing such signals the tracing routines
-will replace the __DOT__ with the period.
+that use this module.  This is useful to speed up simulation runtime.  Note
+if using "--public" that signals under inlined submodules will be named
+I<submodule>__DOT__I<subsignal> as C++ does not allow "." in signal names.
 
 Same as C<inline> in configuration files, see L</"CONFIGURATION FILES">
 for more information.
@@ -3268,9 +3576,7 @@ and if it was off before the lint_off it will remain off.
 =item /*verilator no_inline_module*/
 
 Specifies the module the comment appears in should not be inlined into any
-modules that use this module.  This is useful especially at the top level
-module to reduce the size of the interface class, to aid compile time at a
-small performance loss.
+modules that use this module.
 
 Same as C<no_inline> in configuration files, see L</"CONFIGURATION
 FILES"> for more information.
@@ -3384,31 +3690,62 @@ for more information.
 
 =item /*verilator sc_clock*/
 
-Deprecated.  Used after an input declaration to indicate the signal
-should be declared in SystemC as a sc_clock instead of a bool.  This was
-needed in SystemC 1.1 and 1.2 only; versions 2.0 and later do not require
-clock pins to be sc_clocks and this is no longer needed.
+Deprecated and ignored.  Previously used after an input declaration to
+indicate the signal should be declared in SystemC as a sc_clock instead of
+a bool.  This was needed in SystemC 1.1 and 1.2 only; versions 2.0 and
+later do not require clock pins to be sc_clocks and this is no longer
+needed and is ignored.
 
 =item /*verilator sc_bv*/
 
 Used after a port declaration.  It sets the port to be of sc_bv<I<width>>
-type, instead of bool, vluint32_t or vluint64_t.  This may be useful if
-the port width is parameterized and different of such modules interface
-a templated module (such as a transactor) or for other reasons.  In general
-you should avoid using this attribute when not necessary as with increasing
-usage of sc_bv the performance decreases significantly.
+type, instead of bool, vluint32_t or vluint64_t.  This may be useful if the
+port width is parameterized and the instantiating C++ code wants to always
+have a sc_bv so it can accept any width.  In general you should avoid using
+this attribute when not necessary as with increasing usage of sc_bv the
+performance decreases significantly.
 
 Same as C<sc_bv> in configuration files, see L</"CONFIGURATION FILES">
 for more information.
 
 =item /*verilator sformat*/
 
-Attached to the final input of a function or task "input string" to
+Attached to the final argument of type "input string" of a function or task to
 indicate the function or task should pass all remaining arguments through
-$sformatf.  This allows creation of DPI functions with $display like
-behavior.  See the test_regress/t/t_dpi_display.v file for an example.
+$sformatf.  This allows creation of DPI functions with $display like behavior.
+See the test_regress/t/t_dpi_display.v file for an example.
 
 Same as C<sformat> in configuration files, see L</"CONFIGURATION FILES">
+for more information.
+
+=item /*verilator split_var*/
+
+Attached to a variable or a net declaration to break the variable into
+multiple pieces typically to resolve UNOPTFLAT performance issues.
+Typically the variables to attach this to are recommended by Verilator
+itself, see UNOPTFLAT below.
+
+For example, Verilator will internally convert a variable with the
+metacomment such as:
+
+    logic [7:0] x [0:1]  /*verilator split_var*/;
+
+To:
+
+    logic [7:0] x__BRA__0__KET__ /*verilator split_var*/;
+    logic [7:0] x__BRA__1__KET__ /*verilator split_var*/;
+
+Note that the generated packed variables retain the split_var metacomment
+because they may be split into further smaller pieces according to the
+access patterns.
+
+This only supports unpacked arrays, packed arrays, and packed structs of
+integer types (reg, logic, bit, byte, int...); otherwise if a split was
+requested but cannot occur a SPLITVAR warning is issued.  Splitting large
+arrays may slow down the Verilation speed, so use this only on variables
+that require it.
+
+Same as C<split_var> in configuration files, see L</"CONFIGURATION FILES">
 for more information.
 
 =item /*verilator tag <text...>*/
@@ -3434,29 +3771,24 @@ declared.
 
 =head1 LANGUAGE LIMITATIONS
 
-There are some limitations and lack of features relative to a commercial
-simulator, by intent.  User beware.
-
-It is strongly recommended you use a lint tool before running this program.
-Verilator isn't designed to easily uncover common mistakes that a lint
-program will find for you.
+There are some limitations and lack of features relative to the major
+closed-source simulators, by intent.
 
 =head2 Synthesis Subset
 
-Verilator supports only the Synthesis subset with a few minor additions
-such as $stop, $finish and $display.  That is, you cannot use hierarchical
-references, events or similar features of the Verilog language.  It also
-simulates as Synopsys's Design Compiler would; namely a block of the form:
+Verilator supports the Synthesis subset with other verification constructs
+being added over time. Verilator also simulates events as Synopsys's Design
+Compiler would; namely given a block of the form:
 
         always @ (x)   y = x & z;
 
 This will recompute y when there is even a potential for change in x or a
 change in z, that is when the flops computing x or z evaluate (which is
 what Design Compiler will synthesize.)  A compliant simulator would only
-calculate y if x changes.  Use Verilog-Mode's /*AS*/ or Verilog 2001's
-always @* to reduce missing activity items.  Avoid putting $displays in
-combo blocks, as they may print multiple times when not desired, even on
-compliant simulators as event ordering is not specified.
+calculate y if x changes.  We recommend using always_comb to make the code
+run the same everywhere.  Also avoid putting $displays in combo blocks, as
+they may print multiple times when not desired, even on compliant
+simulators as event ordering is not specified.
 
 =head2 Signal Naming
 
@@ -3471,29 +3803,22 @@ ___05F (5F is the hex code of an underscore.)
 Verilator only supports "bind" to a target module name, not an instance
 path.
 
+=head2 Class
+
+Verilator class support is limited but in active development.  Verilator
+supports members, and methods. Verilator does not support class static
+members, class extend, or class parameters.
+
 =head2 Dotted cross-hierarchy references
 
 Verilator supports dotted references to variables, functions and tasks in
-different modules. However, references into named blocks and function-local
-variables are not supported.  The portion before the dot must have a
-constant value; for example a[2].b is acceptable, while a[x].b is not.
+different modules. The portion before the dot must have a constant value;
+for example a[2].b is acceptable, while a[x].b is generally not.
 
 References into generated and arrayed instances use the instance names
 specified in the Verilog standard; arrayed instances are named
 {cellName}[{instanceNumber}] in Verilog, which becomes
 {cellname}__BRA__{instanceNumber}__KET__ inside the generated C++ code.
-
-Verilator creates numbered "genblk" when a begin: name is not specified
-around a block inside a generate statement.  These numbers may differ
-between other simulators, but the Verilog specification does not allow
-users to use these names, so it should not matter.
-
-If you are having trouble determining where a dotted path goes wrong, note
-that Verilator will print a list of known scopes to help your debugging.
-
-=head2 Floating Point
-
-Short floating point (shortreal) numbers are converted to real.
 
 =head2 Latches
 
@@ -3503,7 +3828,7 @@ optimizations will be disabled around the latch.
 
 =head2 Structures and Unions
 
-Verilator only presently supports packed structs and packed unions.  Rand
+Presently Verilator only supports packed structs and packed unions.  Rand
 and randc tags on members are simply ignored.  All structures and unions
 are represented as a single vector, which means that generating one member
 of a structure from blocking, and another from non-blocking assignments is
@@ -3519,28 +3844,31 @@ Verilator is mostly a two state simulator, not a four state simulator.
 However, it has two features which uncover most initialization bugs
 (including many that a four state simulator will miss.)
 
-Identity comparisons (=== or !==) are converted to standard ==/!== when
-neither side is a constant.  This may make the expression result differ
-from a four state simulator.  An === comparison to X will always be false,
-so that Verilog code which checks for uninitialized logic will not fire.
+Identity comparisons (=== or !==) are converted to standard ==/!= when neither
+side is a constant.  This may make the expression yield a different result
+compared to a four state simulator.  An === comparison to X will always be
+false, so that Verilog code which checks for uninitialized logic will not fire.
 
-Assigning a variable to a X will actually assign the variable to a random
-value (see the --x-assign switch and +verilator+rand+reset simulation
-runtime switch.)  Thus if the value is actually used, the random value
-should cause downstream errors.  Integers also randomize, even though the
-Verilog 2001 specification says they initialize to zero.
+Assigning X to a variable will actually assign a constant value as
+determined by the --x-assign switch.  This allows runtime randomization,
+thus if the value is actually used, the random value should cause
+downstream errors.  Integers also get randomized, even though the Verilog
+2001 specification says they initialize to zero.  Note however that
+randomization happens at initialization time and hence during a single
+simulation run, the same constant (but random) value will be used every
+time the assignment is executed.
 
 All variables, depending on --x-initial setting, are typically randomly
 initialized using a function.  By running several random simulation runs
-you can determine that reset is working correctly.  On the first run, the
-function initializes variables to zero.  On the second, have it initialize
+you can determine that reset is working correctly.  On the first run, have the
+function initialize variables to zero.  On the second, have it initialize
 variables to one.  On the third and following runs have it initialize them
 randomly.  If the results match, reset works.  (Note this is what the
 hardware will really do.)  In practice, just setting all variables to one
 at startup finds most problems (since typically control signals are
 active-high).
 
---x-assign applies to variables explicitly initialized or assigned to
+--x-assign applies to variables explicitly initialized or assigned an
 X. Uninitialized clocks are initialized to zero, while all other state
 holding variables are initialized to a random value.  Event driven
 simulators will generally trigger an edge on a transition from X to 1
@@ -3589,18 +3917,12 @@ different.)
 
 =head2 Generated Clocks
 
-Verilator attempts to deal with generated and enabled clocks correctly,
+Verilator attempts to deal with generated and gated clocks correctly,
 however some cases cause problems in the scheduling algorithm which is
 optimized for performance.  The safest option is to have all clocks as
 primary inputs to the model, or wires directly attached to primary inputs.
 For proper behavior clock enables may also need the /*verilator
 clock_enable*/ attribute.
-
-=head2 Ranges must be big-bit-endian
-
-Bit ranges must be numbered with the MSB being numbered greater or the same
-as the LSB.  Little-bit-endian buses [0:15] are not supported as they
-aren't easily made compatible with C++.
 
 =head2 Gate Primitives
 
@@ -3610,7 +3932,8 @@ primitives are not supported.  Tables are not supported.
 
 =head2 Specify blocks
 
-All specify blocks and timing checks are ignored.
+All specify blocks and timing checks are ignored. All min:typ:max delays
+use the typical value.
 
 =head2 Array Initialization
 
@@ -3639,7 +3962,6 @@ coverage section.
 
 Verilator does not support SEREs yet.  All assertion and coverage
 statements must be simple expressions that complete in one cycle.
-(Arguably SEREs are much of the point, but one must start somewhere.)
 
 =head2 Encrypted Verilog
 
@@ -3657,7 +3979,7 @@ This section describes specific limitations for each language keyword.
 `begin_keywords, `begin_keywords, `define, `else, `elsif, `end_keywords,
 `endif, `error, `ifdef, `ifndef, `include, `line, `systemc_ctor,
 `systemc_dtor, `systemc_header, `systemc_imp_header,
-`systemc_implementation, `systemc_interface, `timescale, `undef, `verilog
+`systemc_implementation, `systemc_interface, `undef, `verilog
 
 Fully supported.
 
@@ -3673,9 +3995,8 @@ Generally supported.
 
 =item ++, -- operators
 
-Increment/decrement can only be used as standalone statements or in for
-loops.  They cannot be used as side effect operators inside more complicate
-expressions ("a = b++;").
+Increment/decrement can only be used as standalone statements or in certain
+limited cases.
 
 =item '{} operator
 
@@ -3716,70 +4037,69 @@ Interfaces and modports, including with generated data types are supported.
 Generate blocks around modports are not supported, nor are virtual
 interfaces nor unnamed interfaces.
 
-=item priority if, unique if
+=item shortreal
 
-Priority and unique if's are treated as normal ifs and not asserted to be
-full nor unique.
+Short floating point (shortreal) numbers are converted to real. Most other
+simulators either do not support float, or convert likewise.
 
 =item specify specparam
 
 All specify blocks and timing checks are ignored.
-
-=item string
-
-String is supported only to the point that they can be assigned,
-concatenated, compared, and passed to DPI imports.  Standard method calls
-on strings are not supported.
-
-=item timeunit, timeprecision
-
-All timing control statements are ignored.
 
 =item uwire
 
 Verilator does not perform warning checking on uwires, it treats the uwire
 keyword as if it were the normal wire keyword.
 
-=item $bits, $countones, $error, $fatal, $finish, $info, $isunknown,
-$onehot, $onehot0, $readmemb, $readmemh, $signed, $stime, $stop, $time,
-$unsigned, $warning.
+=item $bits, $countbits, $countones, $error, $fatal, $finish, $info,
+$isunknown, $onehot, $onehot0, $readmemb, $readmemh, $signed, $stime, $stop,
+$time, $unsigned, $warning.
 
 Generally supported.
 
-=item $display, $write, $fdisplay, $fwrite, $swrite
+=item $dump/$dumpports and related
 
-$display and friends must have a constant format string as the first
-argument (as with C's printf).  The rare usage which lists variables
-standalone without a format is not supported.
+$dumpfile or $dumpports will create a VCD or FST file (which is based on
+the --trace argument given when the model was Verilated). This will take
+effect starting at the next eval() call.  If you have multiple Verilated
+designs under the same C model, then this will dump signals only from the
+design containing the $dumpvars.
 
-=item $displayb, $displayh, $displayo, $writeb, $writeh, $writeo, etc
+$dumpvars and $dumpports module identifier is ignored; the traced instances
+will always start at the top of the design. The levels argument is also
+ignored, use tracing_on/tracing_off pragmas instead.
 
-The sized display functions are rarely used and so not supported.  Replace
-them with a $write with the appropriate format specifier.
+$dumpportson/$dumpportsoff/$dumpportsall/$dumpportslimit filename argument
+is ignored, only a single trace file may be active at once.
+
+$dumpall/$dumpportsall, $dumpon/$dumpportson, $dumpoff/$dumpportsoff, and
+$dumplimit/$dumpportlimit are currently ignored.
 
 =item $finish, $stop
 
 The rarely used optional parameter to $finish and $stop is ignored.
 
-=item $fopen, $fclose, $fdisplay, $feof, $fflush, $fgetc, $fgets, $fscanf, $fwrite
+=item $fopen, $fclose, $fdisplay, $ferror, $feof, $fflush, $fgetc, $fgets,
+$fscanf, $fwrite, $fscanf, $sscanf
 
-File descriptors passed to the file PLI calls must be file descriptors, not
-MCDs, which includes the mode parameter to $fopen being mandatory.
-
-=item $fscanf, $sscanf
-
-The formats %r, %v, and %z are not supported.
+Generally supported.
 
 =item $fullskew, $hold, $nochange, $period, $recovery, $recrem, $removal,
 $setup, $setuphold, $skew, $timeskew, $width
 
 All specify blocks and timing checks are ignored.
 
-=item $random
+=item $monitor, $strobe
 
-$random does not support the optional argument to set the seed.  Use the
-srand function in C to accomplish this, and note there is only one random
-number generator (not one per module).
+Monitor and strobe are not supported, convert to always_comb $display or
+similar.
+
+=item $random, $urandom, $urandom_range
+
+$random and $urandom do not support the optional argument to set the seed.
+Use +verilator+seed argument to set the seed.  There is one random seed per
+C thread, not per module for $random, nor per object for random stability
+of $urandom/$urandom_range.
 
 =item $readmemb, $readmemh
 
@@ -3796,13 +4116,6 @@ Supported, but the instantiating C++/SystemC testbench must call
 to register the command line before calling $test$plusargs or
 $value$plusargs.
 
-=item $timeformat
-
-Not supported as Verilator needs to determine all formatting at compile
-time.  Generally you can just ifdef them out for no ill effect.  Note also
-VL_TIME_MULTIPLIER can be defined at compile time to move the decimal point
-when displaying all times, model wide.
-
 =back
 
 
@@ -3810,7 +4123,7 @@ when displaying all times, model wide.
 
 Warnings may be disabled in three ways.  First, when the warning is
 printed it will include a warning code.  Simply surround the offending
-line with a warn_off/warn_on pair:
+line with a lint_off/lint_on pair:
 
         // verilator lint_off UNSIGNED
         if (`DEF_THAT_IS_EQ_ZERO <= 3) $stop;
@@ -3826,7 +4139,24 @@ checking across the designs, and prevents other users from compiling your
 code without knowing the magic set of disables needed to successfully
 compile your design.
 
-List of all warnings:
+=head2 Error and Warning Format
+
+Warnings and errors printed by Verilator always match this regular
+expression:
+
+        %(Error|Warning)(-[A-Z0-9_]+)?: ((\S+):(\d+):((\d+):)? )?.*
+
+Errors and warning start with a percent sign (historical heritage from
+Digital Equipment Corporation).  Some errors or warning have a code
+attached, with meanings described below.  Some errors also have a filename,
+line number and optional column number (starting at column 1 to match GCC).
+
+Following the error message, Verilator will typically show the user's
+source code corresponding to the error, prefixed by the line number and a "
+| ".  Following this is typically an arrow and ~ pointing at the error on
+the source line directly above.
+
+=head2 List of all warnings
 
 =over 4
 
@@ -3834,7 +4164,7 @@ List of all warnings:
 
 Warns that an always_comb block has a variable which is set after it is
 used.  This may cause simulation-synthesis mismatches, as not all
-commercial simulators allow this ordering.
+simulators allow this ordering.
 
     always_comb begin
        a = b;
@@ -3869,18 +4199,8 @@ default as a code style warning.
 
 =item BLKANDNBLK
 
-BLKANDNBLK is an error that a variable comes from a mix of blocked and
-non-blocking assignments.  Generally, this is caused by a register driven
-by both combo logic and a flop:
-
-      always @ (posedge clk)  foo[0] <= ...
-      always @* foo[1] = ...
-
-Simply use a different register for the flop:
-
-      always @ (posedge clk)  foo_flopped[0] <= ...
-      always @* foo[0] = foo_flopped[0];
-      always @* foo[1] = ...
+BLKANDNBLK is an error that a variable comes from a mix of blocking and
+non-blocking assignments.
 
 This is not illegal in SystemVerilog, but a violation of good coding
 practice. Verilator reports this as an error, because ignoring this warning
@@ -3888,8 +4208,26 @@ may make Verilator simulations differ from other simulators.
 
 It is generally safe to disable this error (with a "// verilator lint_off
 BLKANDNBLK" metacomment or the -Wno-BLKANDNBLK option) when one of the
-assignments is inside a public task, or when the blocked and non-blocking
+assignments is inside a public task, or when the blocking and non-blocking
 assignments have non-overlapping bits and structure members.
+
+Generally, this is caused by a register driven by both combo logic and a
+flop:
+
+      logic [1:0] foo;
+      always @ (posedge clk)  foo[0] <= ...
+      always @* foo[1] = ...
+
+Simply use a different register for the flop:
+
+      logic [1:0] foo;
+      always @ (posedge clk)  foo_flopped[0] <= ...
+      always @* foo[0] = foo_flopped[0];
+      always @* foo[1] = ...
+
+Or, this may also avoid the error:
+
+      logic [1:0] foo /*verilator split_var*/;
 
 =item BLKSEQ
 
@@ -3936,7 +4274,7 @@ simulators.
 
 Warns that a backslash is followed by a space then a newline. Likely the
 intent was to have a backslash directly followed by a newline (e.g. when
-making a `define) and there's accidentally whitespace at the end of the
+making a `define) and there's accidentally white space at the end of the
 line.  If the space is not accidental, suggest removing the backslash in
 the code as it serves no function.
 
@@ -4082,10 +4420,10 @@ For example:
 This code will toggle forever, and thus to prevent an infinite loop, the
 executable will give the didn't converge error.
 
-To debug this, first is to review any UNOPTFLAT warnings that were ignored.
+To debug this, first review any UNOPTFLAT warnings that were ignored.
 Though typically it is safe to ignore UNOPTFLAT (at a performance cost), at
-the time of issuing a UNOPTFLAT Verilator didn't know if they would
-eventually converge and assumed the would.
+the time of issuing a UNOPTFLAT Verilator did not know if the logic would
+eventually converge and assumed it would.
 
 Next, run Verilator with --prof-cfuncs.  Run make on the generated files
 with "CPP_FLAGS=-DVL_DEBUG", to allow enabling simulation runtime debug
@@ -4115,23 +4453,21 @@ correctly.
 
 =item GENCLK
 
-Warns that the specified signal is generated, but is also being used as a
-clock.  Verilator needs to evaluate sequential logic multiple times in this
-situation. In somewhat contrived cases having any generated clock can
-reduce performance by almost a factor of two.  For fastest results,
-generate ALL clocks outside in C++/SystemC and make them primary inputs to
-your Verilog model.  (However once need to you have even one, don't sweat
-additional ones.)
+Deprecated and no longer used as a warning.  Used to indicate that the
+specified signal was is generated inside the model, and also being used as
+a clock.
 
-Ignoring this warning may make Verilator simulations differ from other
-simulators.
+=item HIERBLOCK
 
+Warns that the top module is marked as a hierarchy block
+by hier_block metacomment, which is not legal.  This setting on the top module will be ignored.
 =item IFDEPTH
 
 Warns that if/if else statements have exceeded the depth specified with
---if-depth, as they are likely to result in slow priority encoders.  Unique
-and priority if statements are ignored.  Solutions include changing the
-code to a case statement, or a SystemVerilog 'unique if' or 'priority if'.
+--if-depth, as they are likely to result in slow priority encoders.  Statements
+below unique and priority if statements are ignored.  Solutions include
+changing the code to a case statement, or a SystemVerilog 'unique if' or
+'priority if'.
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.
@@ -4192,7 +4528,7 @@ simulators.
 Warns that an `include filename specifies an absolute path.  This means the
 code will not work on any other system with a different file system layout.
 Instead of using absolute paths, relative paths (preferably without any
-directory specified whatever) should be used, and +incdir used on the
+directory specified whatsoever) should be used, and +incdir used on the
 command line to specify the top include source directories.
 
 Disabled by default as this is a code style warning; it will simulate
@@ -4201,10 +4537,10 @@ correctly.
 =item INFINITELOOP
 
 Warns that a while or for statement has a condition that is always true.
-and thus result in an infinite loop if the statement ever executes.
+and thus results in an infinite loop if the statement ever executes.
 
 This might be unintended behavior if the loop body contains statements that
-in other statements that would make time pass, which Verilator is ignoring
+in other simulators would make time pass, which Verilator is ignoring
 due to e.g. STMTDLY warnings being disabled.
 
 Ignoring this warning will only suppress the lint check, it will simulate
@@ -4287,7 +4623,7 @@ removed as part of the Verilog module elaboration process.)
 3. Multiple modules are intended to be design tops, e.g. when linting a
 library file.  As multiple modules are desired, disable the MULTITOP
 warning.  All input/outputs will go uniquely to each module, with any
-conflicting and identical signal names being uniquified by adding a prefix
+conflicting and identical signal names being made unique by adding a prefix
 based on the top module name followed by __02E (a Verilator-encoded ASCII
 ".').  This renaming is done even if the two modules' signals seem
 identical, e.g. multiple modules with a "clk" input.
@@ -4318,6 +4654,12 @@ signal.
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.
+
+=item PKGNODECL
+
+Error that a package/class appears to have been referenced that has not yet
+been declared.  According to IEEE 1800-2017 26.3 all packages must be
+declared before being used.
 
 =item PROCASSWIRE
 
@@ -4374,6 +4716,29 @@ Ignoring this warning may make Verilator simulations differ from other
 simulators, if the increased precision of real affects your model or DPI
 calls.
 
+=item SPLITVAR
+
+Warns that a variable with a C<split_var> metacomment was not split.
+Some possible reasons for this are:
+
+* The datatype of the variable is not supported for splitting. (e.g. is a
+real).
+
+* The access pattern of the variable can not be determined
+statically. (e.g. is accessed as a memory).
+
+* The index of the array exceeds the array size.
+
+* The variable is accessed from outside using dotted reference.
+(e.g. top.instance0.variable0 = 1).
+
+* The variable is not declared in a module, but in a package or an
+interface.
+
+* The variable is a parameter, localparam, genvar, or queue.
+
+* The variable is tristate or bidirectional. (e.g. inout or ref).
+
 =item STMTDLY
 
 Warns that you have a statement with a delayed time in front of it, for
@@ -4387,7 +4752,7 @@ simulators.
 =item SYMRSVDWORD
 
 Warning that a symbol matches a C++ reserved word and using this as a symbol
-name would result in odd C compiler errors.  You may disable this warning,
+name would result in odd C++ compiler errors.  You may disable this warning,
 but the symbol will be renamed by Verilator to avoid the conflict.
 
 =item SYNCASYNCNET
@@ -4435,11 +4800,23 @@ increases.
 Ignoring this warning will only slow simulations, it will simulate
 correctly.
 
+=item TIMESCALEMOD
+
+Error that `timescale is used in some but not all modules.
+Recommend using --timescale argument, or in front of all modules use:
+
+   `include "timescale.vh"
+
+Then in that file set the timescale.
+
+This is an error due to IEEE specifications, but it may be disabled similar
+to warnings.  Ignoring this error may result in a module having an
+unexpected timescale.
 
 =item UNDRIVEN
 
-Warns that the specified signal is never sourced.  Verilator is fairly
-liberal in the usage calculations; making a signal public, or loading only
+Warns that the specified signal has no source.  Verilator is fairly
+liberal in the usage calculations; making a signal public, or setting only
 a single array element marks the entire signal as driven.
 
 Disabled by default as this is a code style warning; it will simulate
@@ -4449,7 +4826,7 @@ correctly.
 
 Warns that due to some construct, optimization of the specified signal or
 block is disabled.  The construct should be cleaned up to improve
-simulation runtime.
+simulation performance.
 
 A less obvious case of this is when a module instantiates two submodules.
 Inside submodule A, signal I is input and signal O is output.  Likewise in
@@ -4465,12 +4842,12 @@ correctly.
 =item UNOPTFLAT
 
 Warns that due to some construct, optimization of the specified signal is
-disabled.  The signal specified includes a complete scope to the signal; it
+disabled.  The signal reported includes a complete scope to the signal; it
 may be only one particular usage of a multiply instantiated block.  The
-construct should be cleaned up to improve simulation runtime; two times better
-performance may be possible by fixing these warnings.
+construct should be cleaned up to improve simulation performance; two times
+better performance may be possible by fixing these warnings.
 
-Unlike the UNOPT warning, this occurs after netlist flattening, and
+Unlike the UNOPT warning, this occurs after flattening the netlist, and
 indicates a more basic problem, as the less obvious case described under
 UNOPT does not apply.
 
@@ -4504,6 +4881,11 @@ The most complicated UNOPTFLAT path we've seen was due to low bits of a bus
 being generated from an always statement that consumed high bits of the
 same bus processed by another series of always blocks.  The fix is the
 same; split it into two separate signals generated from each block.
+
+Another way to resolve this warning is to add a C<split_var> metacomment
+described above. This will cause the variable to be split internally,
+potentially resolving the conflict. If you run with --report-unoptflat
+Verilator will suggest possible candidates for C<split_var>.
 
 The UNOPTFLAT warning may also be due to clock enables, identified from the
 reported path going through a clock gating cell.  To fix these, use the
@@ -4542,15 +4924,26 @@ correctly.
 Warns that unpacked structs and unions are not supported.
 
 Ignoring this warning will make Verilator treat the structure as packed,
-which may make Verilator simulations differ from other simulators.
+which may make Verilator simulations differ from other simulators. This
+downgrading may also result what would normally be a legal unpacked
+struct/array inside an unpacked struct/array becoming an illegal unpacked
+struct/array inside a packed struct/array.
 
 =item UNSIGNED
 
 Warns that you are comparing a unsigned value in a way that implies it is
-signed, for example "X < 0" will always be true when X is unsigned.
+signed, for example "X < 0" will always be false when X is unsigned.
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
+
+=item UNSUPPORTED
+
+UNSUPPORTED is an error that the construct might be legal according to IEEE
+but is not currently supported.
+
+This error may be ignored with --bbox-unsup, however this will make the
+design simulate incorrectly; see the details under --bbox-unsup.
 
 =item UNUSED
 
@@ -4574,9 +4967,9 @@ The reduction AND and constant zeros mean the net will always be zero, so
 won't use simulation runtime.  The redundant leading and trailing zeros avoid
 syntax errors if there are no signals between them.  The magic name
 "unused" (-unused-regexp) is recognized by Verilator and suppresses
-warnings; if using other lint tools, either teach to tool to ignore signals
-with "unused" in the name, or put the appropriate lint_off around the wire.
-Having unused signals in one place makes it easy to find what is unused,
+warnings; if using other lint tools, either teach it to the tool to ignore
+signals with "unused" in the name, or put the appropriate lint_off around the
+wire.  Having unused signals in one place makes it easy to find what is unused,
 and reduces the number of lint_off pragmas, reducing bugs.
 
 =item USERINFO, USERWARN, USERERROR, USERFATAL
@@ -4658,17 +5051,11 @@ The following deprecated items are scheduled for future removal:
 
 =over 4
 
-=item Pre-C++11 compiler support
+=item C++11 compiler support
 
-Verilator supports pre-C++11 compilers for non-threaded models when
-configured with --enable-prec11.  This flag will be removed and C++11
-compilers will be required for both compiling Verilator and compiling
-Verilated models no sooner than September 2020.
-
-=item SystemC 2.1 and earlier support
-
-Support for SystemC versions 2.1 and earlier and the related sc_clock
-variable attribute will be removed no sooner than July 2020.
+Verilator currently requires C++11 or newer compilers.  Verilator will
+require C++14 or newer compilers for both compiling Verilator and compiling
+Verilated models no sooner than January 2022.
 
 =item Configuration File -msg
 
@@ -4689,18 +5076,19 @@ for removal no sooner than January 2021.
 
 =item Can I contribute?
 
-Please contribute!  Just file an issue asking for a merge, or ask on the
-forums if looking for something to help on.  For more information see our
+Please contribute!  Just submit a pull request, or raise an issue to discuss
+if looking for something to help on.  For more information see our
 contributor agreement.
 
-=item How commonly is Verilator used?
+=item How widely is Verilator used?
 
-Verilator is used by many of the largest silicon design companies, and all
-the way down to college projects.  Verilator is a "big 4" simulator,
+Verilator is used by many of the largest silicon design companies, and all the
+way down to college projects.  Verilator is one of the "big 4" simulators,
 meaning one of the 4 main SystemVerilog simulators available, namely the
-commercial products Synopsys' VCS (tm), Mentor's ModelSim (tm), Cadence
-Incisive/NC-Verilog/NC-Sim, and the open-source Verilator.  The three
-commercial choices are commonly collectively called the "big 3" simulators.
+commercial products Synopsys VCS (tm), Mentor Questa/ModelSim (tm), Cadence
+Xcelium/Incisive/NC-Verilog/NC-Sim (tm), and the open-source Verilator.  The
+three commercial offerings are often collectively called the "big 3"
+simulators.
 
 =item Does Verilator run under Windows?
 
@@ -4709,28 +5097,27 @@ C++, but this is not tested every release.
 
 =item Can you provide binaries?
 
-Verilator is available as a RPM for Debian/Ubuntu, SuSE, Fedora, and other
-distributions; this is done by porters and may slightly lag the primary
-distribution.  If there isn't a binary build for your distribution, how
-about you set one up?  Please contact the authors for assistance.
+You can install Verilator via the system package manager (apt, yum, etc.) on
+many Linux distributions, including Debian, Ubuntu, SuSE, Fedora, and others.
+These packages are provided by the Linux distributions and generally will lag
+the version of the mainline Verilator repository.  If no binary package is
+available for your distribution, how about you set one up?  Please contact the
+authors for assistance.
 
-Note people sometimes request binaries when they are having problems with
-their C++ compiler. Alas, binaries won't help this, as in the end a fully
-working C++ compiler is required to compile the output of Verilator.
+=item How can it be faster than (name-a-big-3-closed-source-simulator)?
 
-=item How can it be faster than (name-the-commercial-simulator)?
-
-Generally, the implied part is of the question is "... with all of the
+Generally, the implied part of the question is "... with all of the
 manpower they can put into developing it."
 
-Most commercial simulators have to be Verilog compliant, meaning event
-driven.  This prevents them from being able to reorder blocks and make
-netlist-style optimizations, which are where most of the gains come from.
+Most simulators have to be compliant with the complete IEEE 1364 (Verilog) and
+IEEE 1800 (SystemVerilog) standards, meaning they have to be event driven.
+This prevents them from being able to reorder blocks and make netlist-style
+optimizations, which are where most of the gains come from.
 
-Non-compliance shouldn't be scary.  Your synthesis program isn't compliant,
-so your simulator shouldn't have to be -- and Verilator is closer to the
-synthesis interpretation, so this is a good thing for getting working
-silicon.
+You should not be scared by non-compliance.  Your synthesis tool isn't
+compliant with the whole standard to start with, so your simulator need not be
+either.  Verilator is closer to the synthesis interpretation, so this is a good
+thing for getting working silicon.
 
 =item Will Verilator output remain under my own license?
 
@@ -4743,7 +5130,7 @@ However, Verilator output (the Verilated code) only "include"s the licensed
 files, and so you are NOT required to release any output from Verilator.
 
 You also have the option of using the Perl Artistic License, which again
-does not require you release your Verilog or generated code, and also
+does not require you to release your Verilog or generated code, and also
 allows you to modify Verilator for internal use without distributing the
 modified version.  But please contribute back to the community!
 
@@ -4759,31 +5146,30 @@ and large tests under the LGPL/Artistic, unless requested otherwise.
 =item Why is running Verilator (to create a model) so slow?
 
 Verilator needs more memory than the resulting simulator will require, as
-Verilator creates internally all of the state of the resulting generated
-simulator in order to optimize it.  If it takes more than a minute or so
-(and you're not using --debug since debug is disk bound), see if your
+Verilator internally creates all of the state of the resulting generated
+simulator in order to optimize it.  If it takes more than a few minutes or
+so (and you're not using --debug since debug mode is disk bound), see if your
 machine is paging; most likely you need to run it on a machine with more
-memory.  Verilator is a full 64-bit application and may use more than 4GB,
-but about 1GB is the maximum typically needed, and very large commercial
-designs have topped 16GB.
+memory. Very large designs are known to have topped 16GB resident set size.
 
 =item How do I generate waveforms (traces) in C++?
 
 See the next question for tracing in SystemC mode.
 
-Add the --trace switch to Verilator, and in your top level C code, call
-Verilated::traceEverOn(true).  Then create a VerilatedVcdC object, and
-in your main loop call "trace_object->dump(time)" every time step, and
-finally call "trace_object->close()".  For an example, see below and the
-examples/make_tracing_c/sim_main.cpp file of the distribution.
+A. Add the --trace switch to Verilator, and in your top level C code, call
+Verilated::traceEverOn(true).  Then you may use $dumpfile and $dumpvars to
+enable traces, same as with any Verilog simulator. See
+C<examples/make_tracing_c>.
 
-You also need to compile verilated_vcd_c.cpp and add it to your link,
-preferably by adding the dependencies in $(VK_GLOBAL_OBJS) to your
-Makefile's link rule.  This is done for you if using the Verilator --exe
-flag.
-
-Note you can also call ->trace on multiple Verilated objects with the same
-trace file if you want all data to land in the same output file.
+B. Or, for finer-grained control, or C++ files with multiple Verilated
+modules you may also create the trace purely from C++.  Create a
+VerilatedVcdC object, and in your main loop call "trace_object->dump(time)"
+every time step, and finally call "trace_object->close()".  You also need
+to compile verilated_vcd_c.cpp and add it to your link, preferably by
+adding the dependencies in $(VK_GLOBAL_OBJS) to your Makefile's link rule.
+This is done for you if using the Verilator --exe flag.  Note you can also
+call ->trace on multiple Verilated objects with the same trace file if you
+want all data to land in the same output file.
 
     #include "verilated_vcd_c.h"
     ...
@@ -4803,15 +5189,21 @@ trace file if you want all data to land in the same output file.
 
 =item How do I generate waveforms (traces) in SystemC?
 
-Add the --trace switch to Verilator, and in your top level C sc_main code,
-include verilated_vcd_sc.h.  Then call Verilated::traceEverOn(true).  Then
-create a VerilatedVcdSc object as you would create a normal SystemC trace
-file.  For an example, see the call to VerilatedVcdSc in the
-examples/make_tracing_sc/sc_main.cpp file of the distribution, and below.
+A. Add the --trace switch to Verilator, and in your top level sc_main, call
+Verilated::traceEverOn(true).  Then you may use $dumpfile and $dumpvars to
+enable traces, same as with any Verilog simulator, see the non-SystemC
+example in C<examples/make_tracing_c>. This will trace only the module
+containing the $dumpvar.
+
+B. Or, you may create a trace purely from SystemC, which may trace all
+Verilated designs in the SystemC model. Create a VerilatedVcdSc object as
+you would create a normal SystemC trace file.  For an example, see the call
+to VerilatedVcdSc in the examples/make_tracing_sc/sc_main.cpp file of the
+distribution, and below.
 
 Alternatively you may use the C++ trace mechanism described in the previous
-question, however the timescale and timeprecision will not inherited from
-your SystemC settings.
+question, note the timescale and timeprecision will be inherited from your
+SystemC settings.
 
 You also need to compile verilated_vcd_sc.cpp and verilated_vcd_c.cpp and
 add them to your link, preferably by adding the dependencies in
@@ -4820,6 +5212,12 @@ using the Verilator --exe flag.
 
 Note you can also call ->trace on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
+
+When using SystemC 2.3, the SystemC library must have been built with the
+experimental simulation phase callback based tracing disabled. This is
+disabled by default when building SystemC with its configure based build
+system, but when building SystemC with CMake, you must pass
+-DENABLE_PHASE_CALLBACKS_TRACING=OFF to disable this feature.
 
     #include "verilated_vcd_sc.h"
     ...
@@ -4837,52 +5235,60 @@ trace file if you want all data to land in the same output file.
 
 =item How do I generate FST waveforms (traces) in C++?
 
-FST a format by GTKWave.
-This version provides a basic FST support.
-To dump FST format, add the --trace-fst switch to Verilator and change the include
-path in the testbench to:
+FST is a trace file format developed by GTKWave.  Verilator provides basic FST
+support.  To dump traces in FST format, add the --trace-fst switch to Verilator
+and either A. use $dumpfile/$dumpvars in Verilog as described in the VCD
+example above, or B. in C++ change the include described in the VCD example
+above:
 
     #include "verilated_fst_c.h"
     VerilatedFstC* tfp = new VerilatedFstC;
 
-Note that currently supporting both FST and VCD in a single simulation is impossible,
-but such requirement could be rare.
+Note that currently supporting both FST and VCD in a single simulation is
+impossible, but such requirement should be rare.  You can however ifdef
+around the trace format in your C++ main loop, and select VCD or FST at
+build time, should you require.
 
-=item How do I generate FST waveforms (traces) in SystemC?
+=item How do I generate FST waveforms (aka dumps or traces) in SystemC?
 
 The FST library from GTKWave does not currently support SystemC; use VCD
 format instead.
 
-=item How do I view waveforms (traces)?
+=item How do I view waveforms (aka dumps or traces)?
 
-Verilator makes standard VCD (Value Change Dump) and FST files.  VCD files are viewable
-with the public domain GTKWave (recommended) or Dinotrace (legacy)
-programs, or any of the many commercial offerings;
-FST is supported by GTKWave only.
+Verilator creates standard VCD (Value Change Dump) and FST files.  VCD files
+are viewable with the open source GTKWave (recommended) or Dinotrace (legacy)
+programs, or any of the many closed-source offerings; FST is supported only by
+GTKWave.
 
 =item How do I reduce the size of large waveform (trace) files?
 
 First, instead of calling VerilatedVcdC->open at the beginning of time,
-delay calling it until the time stamp where you want to tracing to begin.
+delay calling it until the time stamp where you want tracing to begin.
 Likewise you can also call VerilatedVcdC->open before the end of time
-(perhaps a short period after you detect a verification error.)
+(perhaps a short period after you detect a verification error).
 
 Next, add /*verilator tracing_off*/ to any very low level modules you never
 want to trace (such as perhaps library cells).  Finally, use the
 --trace-depth option to limit the depth of tracing, for example
 --trace-depth 1 to see only the top level signals.
 
-Also be sure you write your trace files to a local solid-state disk,
-instead of to a network disk.  Network disks are generally far slower.
+Also be sure you write your trace files to a local solid-state drive,
+instead of to a network drive.  Network drives are generally far slower.
+
+You can also consider using FST tracing instead of VCD. FST dumps are a
+fraction of the size of the equivalent VCD. FST tracing can be slower than
+VCD tracing, but it might be the only option if the VCD file size is
+prohibitively large.
 
 =item How do I do coverage analysis?
 
 Verilator supports both block (line) coverage and user inserted functional
 coverage.
 
-First, run verilator with the --coverage option.  If you're using your own
+First, run verilator with the --coverage option.  If you are using your own
 makefile, compile the model with the GCC flag -DVM_COVERAGE (if using
-Verilator's, it will do this for you.)
+the makefile provided by Verilator, it will do this for you).
 
 At the end of your test, call VerilatedCov::write passing the name of the
 coverage data file (typically "logs/coverage.dat").
@@ -4890,13 +5296,17 @@ coverage data file (typically "logs/coverage.dat").
 Run each of your tests in different directories.  Each test will create a
 logs/coverage.dat file.
 
-After running all of your tests, verilator_coverage is executed.
-Verilator_coverage reads the logs/coverage.dat file(s), and creates an
+After running all of your tests, execute the verilator_coverage tool.  The
+verilator_coverage tool reads the logs/coverage.dat file(s), and creates an
 annotated source code listing showing code coverage details.
 
 For an example, after running 'make test' in the Verilator distribution,
 see the examples/make_tracing_c/logs directory.  Grep for lines starting
 with '%' to see what lines Verilator believes need more coverage.
+
+Info files can be written by verilator_coverage for import to C<lcov>.
+This enables use of C<genhtml> for HTML reports and importing reports to
+sites such as L<https://codecov.io>.
 
 =item Where is the translate_off command?  (How do I ignore a construct?)
 
@@ -4911,9 +5321,10 @@ the "VERILATOR" define for you, so just wrap the code in an ifndef region:
 
 Most synthesis tools similarly define SYNTHESIS for you.
 
-=item Why do I get "unexpected `do'" or "unexpected `bit'" errors?
+=item Why do I get "unexpected C<do>" or "unexpected C<bit>" errors?
 
-Do, bit, ref, return, and other words are now SystemVerilog keywords.  You
+The words C<do>, C<bit>, C<ref>, C<return>, and others are reserved keywords
+in SystemVerilog.  Older Verilog code might use these as identifiers.  You
 should change your code to not use them to ensure it works with newer
 tools.  Alternatively, surround them by the Verilog 2005/SystemVerilog
 begin_keywords pragma to indicate Verilog 2001 code.
@@ -4922,14 +5333,8 @@ begin_keywords pragma to indicate Verilog 2001 code.
       integer bit; initial bit = 1;
    `end_keywords
 
-If you want the whole file to be parsed as Verilog 2001, just create a
-file with
-
-   `begin_keywords "1364-2001"
-
-and add it before other Verilog files on the command line.  (Note this will
-also change the default for --prefix, so if you're not using --prefix, you
-will now need to.)
+If you want the whole design to be parsed as Verilog 2001, please see the
+C<--default-language> option.
 
 =item How do I prevent my assertions from firing during reset?
 
@@ -4970,16 +5375,21 @@ test_regress/t/t_extend_class files show an example of how to do this.
 =item How do I get faster build times?
 
 When running make pass the make variable VM_PARALLEL_BUILDS=1 so that
-builds occur in parallel.
+builds occur in parallel. Note this is now set by default if an output
+file was large enough to be split due to the --output-split option.
 
-Use a recent compiler.  Newer compilers tend do be faster, with the
-now relatively old GCC 3.0 to 3.3 being horrible.
+Verilator emits any infrequently executed "cold" routines into separate
+__Slow.cpp files. This can accelerate compilation as optimization can be
+disabled on these routines. See the OPT_FAST and OPT_SLOW make variables
+and the BENCHMARKING & OPTIMIZATION section of the manual.
+
+Use a recent compiler.  Newer compilers tend to be faster.
 
 Compile in parallel on many machines and use caching; see the web for the
 ccache, distcc and icecream packages. ccache will skip GCC runs between
-identical source builds, even across different users.  You can use the
-OBJCACHE environment variable to use these CC wrappers. Also see the
---output-split option.
+identical source builds, even across different users.  If ccache was
+installed when Verilator was built it is used, or see OBJCACHE environment
+variable to override this. Also see the --output-split option.
 
 To reduce the compile time of classes that use a Verilated module (e.g. a
 top CPP file) you may wish to add /*verilator no_inline_module*/ to your
@@ -4994,16 +5404,23 @@ uses one large symbol table, as that results in 2-3 less assembly
 instructions for each signal access.  This makes the execution time 10-15%
 faster, but can result in more compilations when something changes.
 
-=item How do I access functions/tasks in C?
+=item How do I access Verilog functions/tasks in C?
 
 Use the SystemVerilog Direct Programming Interface.  You write a Verilog
 function or task with input/outputs that match what you want to call in
-with C.  Then mark that function as an external function.  See the DPI
-chapter in the manual.
+with C.  Then mark that function as a DPI export function.  See the DPI
+chapter in the IEEE Standard.
+
+=item How do I access C++ functions/tasks in Verilog?
+
+Use the SystemVerilog Direct Programming Interface.  You write a Verilog
+function or task with input/outputs that match what you want to call in
+with C.  Then mark that function as a DPI import function.  See the DPI
+chapter in the IEEE Standard.
 
 =item How do I access signals in C?
 
-The best thing is to make a SystemVerilog "export DPI task" or function
+The best thing to do is to make a SystemVerilog "export DPI" task or function
 that accesses that signal, as described in the DPI chapter in the manual
 and DPI tutorials on the web.  This will allow Verilator to better optimize
 the model and should be portable across simulators.
@@ -5013,17 +5430,21 @@ be accessing with a /*verilator public*/ comment before the closing
 semicolon.  Then scope into the C++ class to read the value of the signal,
 as you would any other member variable.
 
-Signals are the smallest of 8-bit chars, 16-bit shorts, 32-bit longs, or
-64-bit long longs that fits the width of the signal.  Generally, you can
-use just uint32_t's for 1 to 32 bits, or vluint64_t for 1 to 64 bits, and
-the compiler will properly up-convert smaller entities.
+Signals are the smallest of 8-bit unsigned chars (equivalent to uint8_t),
+16-bit unsigned shorts (uint16_t), 32-bit unsigned longs (uint32_t), or
+64-bit unsigned long longs (uint64_t) that fits the width of the signal.
+Generally, you can use just uint32_t's for 1 to 32 bits, or vluint64_t for
+1 to 64 bits, and the compiler will properly up-convert smaller entities.
+Note even signed ports are declared as unsigned; you must sign extend
+yourself to the appropriate signal width.
 
 Signals wider than 64 bits are stored as an array of 32-bit uint32_t's.
 Thus to read bits 31:0, access signal[0], and for bits 63:32, access
 signal[1].  Unused bits (for example bit numbers 65-96 of a 65-bit vector)
-will always be zero.  if you change the value you must make sure to pack
-zeros in the unused bits or core-dumps may result.  (Because Verilator
-strips array bound checks where it believes them to be unnecessary.)
+will always be zero.  If you change the value you must make sure to pack
+zeros in the unused bits or core-dumps may result, because Verilator strips
+array bound checks where it believes them to be unnecessary to improve
+performance.
 
 In the SYSTEMC example above, if you had in our.v:
 
@@ -5064,7 +5485,7 @@ SystemC module *may* be faster.)
 
 =head1 BUGS
 
-First, check the coding limitations section.
+First, check the L<LANGUAGE LIMITATIONS> section.
 
 Next, try the --debug switch.  This will enable additional internal
 assertions, and may help identify the problem.
@@ -5077,7 +5498,7 @@ follows:
     cp -p t/t_EXAMPLE.pl t/t_BUG.pl
     cp -p t/t_EXAMPLE.v t/t_BUG.v
 
-There are many hits on how to write a good test in the driver.pl
+There are many hints on how to write a good test in the driver.pl
 documentation which can be seen by running:
 
     cd $VERILATOR_ROOT  # Need the original distribution kit
@@ -5091,7 +5512,7 @@ outputs.  Now, the following should fail:
     cd test_regress
     t/t_BUG.pl  # Run on Verilator
     t/t_BUG.pl --debug # Run on Verilator, passing --debug to Verilator
-    t/t_BUG.pl --vcs  # Run on a commercial simulator
+    t/t_BUG.pl --vcs  # Run on VCS simulator
     t/t_BUG.pl --nc|--iv|--ghdl  # Likewise on other simulators
 
 The test driver accepts a number of options, many of which mirror the main
@@ -5134,7 +5555,7 @@ In 2018, Verilator 4.000 was released with multithreaded support.
 
 Currently, various language features and performance enhancements are added
 as the need arises.  Verilator is now about 3x faster than in 2002, and is
-faster than many popular commercial simulators.
+faster than most (if not every) other simulator.
 
 
 =head1 AUTHORS
@@ -5150,83 +5571,92 @@ Major concepts by Paul Wasson, Duane Galbi, John Coiner and Jie Xu.
 
 Many people have provided ideas and other assistance with Verilator.
 
-The major corporate sponsors of Verilator, by providing significant
-contributions of time or funds include include Atmel Corporation, Cavium
+Verilator is receiving major development support from the CHIPS Alliance.
+
+Previous major corporate sponsors of Verilator, by providing significant
+contributions of time or funds included include Atmel Corporation, Cavium
 Inc., Compaq Corporation, Digital Equipment Corporation, Embecosm Ltd.,
 Hicamp Systems, Intel Corporation, Mindspeed Technologies Inc., MicroTune
 Inc., picoChip Designs Ltd., Sun Microsystems Inc., Nauticus Networks Inc.,
 and SiCortex Inc.
 
 The people who have contributed major functionality are Byron Bradley,
-Jeremy Bennett, Lane Brooks, John Coiner, Duane Galbi, Todd Strader, Paul
-Wasson, Jie Xu, and Wilson Snyder.  Major testers included Jeff Dutton,
-Jonathon Donaldson, Ralf Karge, David Hewson, Iztok Jeras, Wim Michiels,
-Alex Solomatnikov, Sebastien Van Cauwenberghe, Gene Weber, and Clifford
-Wolf.
+Jeremy Bennett, Lane Brooks, John Coiner, Duane Galbi, Geza Lore, Todd
+Strader, Stefan Wallentowitz, Paul Wasson, Jie Xu, and Wilson Snyder.
+Major testers included Jeff Dutton, Jonathon Donaldson, Ralf Karge, David
+Hewson, Iztok Jeras, Wim Michiels, Alex Solomatnikov, Sebastien Van
+Cauwenberghe, Gene Weber, and Clifford Wolf.
 
-Some of the people who have provided ideas and feedback for Verilator
+Some of the people who have provided ideas, and feedback for Verilator
 include: David Addison, Tariq B. Ahmad, Nikana Anastasiadis, Hans Van
 Antwerpen, Vasu Arasanipalai, Jens Arm, Sharad Bagri, Matthew Ballance,
 Andrew Bardsley, Matthew Barr, Geoff Barrett, Julius Baxter, Jeremy
-Bennett, Michael Berman, Victor Besyakov, David Binderman, Piotr Binkowski,
-Johan Bjork, David Black, Tymoteusz Blazejczyk, Daniel Bone, Gregg
-Bouchard, Christopher Boumenot, Nick Bowler, Byron Bradley, Bryan Brady,
-Maarten De Braekeleer, Charlie Brej, J Briquet, Lane Brooks, John Brownlee,
-Jeff Bush, Lawrence Butcher, Tony Bybell, Ted Campbell, Chris Candler,
-Lauren Carlson, Donal Casey, Sebastien Van Cauwenberghe, Alex Chadwick,
-Terry Chen, Yi-Chung Chen, Enzo Chi, Robert A. Clark, Allan Cochrane, John
-Coiner, Gianfranco Costamagna, George Cuan, Joe DErrico, Lukasz Dalek,
-Laurens van Dam, Gunter Dannoritzer, Ashutosh Das, Bernard Deadman, John
-Demme, Mike Denio, John Deroo, Philip Derrick, John Dickol, Ruben Diez,
-Danny Ding, Jacko Dirks, Ivan Djordjevic, Jonathon Donaldson, Leendert van
-Doorn, Sebastian Dressler, Alex Duller, Jeff Dutton, Tomas Dzetkulic,
-Usuario Eda, Charles Eddleston, Chandan Egbert, Joe Eiler, Ahmed
-El-Mahmoudy, Trevor Elbourne, Robert Farrell, Eugen Fekete, Fabrizio
-Ferrandi, Udi Finkelstein, Brian Flachs, Andrea Foletto, Bob Fredieu, Duane
-Galbi, Benjamin Gartner, Christian Gelinek, Peter Gerst, Glen Gibb, Shankar
-Giri, Dan Gisselquist, Sam Gladstone, Amir Gonnen, Chitlesh Goorah, Sergi
-Granell, Al Grant, Xuan Guo, Driss Hafdi, Neil Hamilton, Oyvind Harboe,
+Bennett, Michael Berman, Victor Besyakov, Moinak Bhattacharyya, David
+Binderman, Piotr Binkowski, Johan Bjork, David Black, Tymoteusz Blazejczyk,
+Daniel Bone, Gregg Bouchard, Christopher Boumenot, Nick Bowler, Byron
+Bradley, Bryan Brady, Maarten De Braekeleer, Charlie Brej, J Briquet, Lane
+Brooks, John Brownlee, Jeff Bush, Lawrence Butcher, Tony Bybell, Ted
+Campbell, Chris Candler, Lauren Carlson, Donal Casey, Sebastien Van
+Cauwenberghe, Alex Chadwick, Terry Chen, Yi-Chung Chen, Enzo Chi, Robert
+A. Clark, Allan Cochrane, John Coiner, Gianfranco Costamagna, Sean Cross,
+George Cuan, Joe DErrico, Lukasz Dalek, Laurens van Dam, Gunter
+Dannoritzer, Ashutosh Das, Bernard Deadman, John Demme, Mike Denio, John
+Deroo, Philip Derrick, John Dickol, Ruben Diez, Danny Ding, Jacko Dirks,
+Ivan Djordjevic, Jonathon Donaldson, Leendert van Doorn, Sebastian
+Dressler, Alex Duller, Jeff Dutton, Tomas Dzetkulic, Usuario Eda, Charles
+Eddleston, Chandan Egbert, Joe Eiler, Ahmed El-Mahmoudy, Trevor Elbourne,
+Mats Engstrom, Robert Farrell, Eugen Fekete, Fabrizio Ferrandi, Udi
+Finkelstein, Brian Flachs, Andrea Foletto, Bob Fredieu, Duane Galbi,
+Benjamin Gartner, Christian Gelinek, Peter Gerst, Glen Gibb, Michael
+Gielda, Shankar Giri, Dan Gisselquist, Petr Gladkikh, Sam Gladstone, Amir
+Gonnen, Chitlesh Goorah, Kai Gossner, Sergi Granell, Al Grant, Alexander
+Grobman, Xuan Guo, Driss Hafdi, Neil Hamilton, James Hanlon, Oyvind Harboe,
 Jannis Harder, Junji Hashimoto, Thomas Hawkins, Mitch Hayenga, Robert
-Henry, David Hewson, Jamey Hicks, Joel Holdsworth, Andrew Holme, Hiroki
-Honda, Alex Hornung, David Horton, Jae Hossell, Alan Hunter, James
-Hutchinson, Jamie Iles, Ben Jackson, Shareef Jalloq, Krzysztof Jankowski,
-HyungKi Jeong, Iztok Jeras, James Johnson, Christophe Joly, Franck Jullien,
-James Jung, Mike Kagen, Arthur Kahlich, Kaalia Kahn, Guy-Armand Kamendje,
-Vasu Kandadi, Kanad Kanhere, Patricio Kaplan, Pieter Kapsenberg, Ralf
-Karge, Dan Katz, Sol Katzman, Jonathan Kimmitt, Olof Kindgren, Kevin
-Kiningham, Dan Kirkham, Sobhan Klnv, Gernot Koch, Soon Koh, Steve Kolecki,
-Brett Koonce, Will Korteland, Wojciech Koszek, Varun Koyyalagunta, David
-Kravitz, Roland Kruse, Sergey Kvachonok, Ed Lander, Steve Lang, Stephane
-Laurent, Walter Lavino, Christian Leber, Larry Lee, Igor Lesik, John Li,
-Eivind Liland, Yu Sheng Lin, Charlie Lind, Andrew Ling, Paul Liu, Derek
-Lockhart, Jake Longo, Arthur Low, Stefan Ludwig, Dan Lussier, Fred Ma,
-Duraid Madina, Affe Mao, Julien Margetts, Mark Marshall, Alfonso Martinez,
-Yves Mathieu, Patrick Maupin, Jason McMullan, Elliot Mednick, Wim Michiels,
-Miodrag Milanovic, Wai Sum Mong, Peter Monsson, Sean Moore, Dennis
-Muhlestein, John Murphy, Matt Myers, Richard Myers, Dimitris Nalbantis,
-Peter Nelson, Bob Newgard, Cong Van Nguyen, Paul Nitza, Yossi Nivin, Pete
-Nixon, Lisa Noack, Mark Nodine, Andreas Olofsson, Aleksander Osman, James
-Pallister, Brad Parker, Dan Petrisko, Maciej Piechotka, David Pierce,
-Dominic Plunkett, David Poole, Mike Popoloski, Roman Popov, Rich Porter,
-Niranjan Prabhu, Usha Priyadharshini, Mark Jackson Pulver, Prateek Puri,
-Marshal Qiao, Danilo Ramos, Chris Randall, Anton Rapp, Josh Redford, Odd
-Magne Reitan, Frederic Requin, Frederick Requin, Alberto Del Rio, Eric
-Rippey, Oleg Rodionov, Paul Rolfe, Arjen Roodselaar, Tobias Rosenkranz, Jan
-Egil Ruud, Denis Rystsov, John Sanguinetti, Galen Seitz, Salman Sheikh, Hao
-Shi, Mike Shinkarovsky, Rafael Shirakawa, Jeffrey Short, Anderson Ignacio
-Da Silva, Rodney Sinclair, Steven Slatter, Brian Small, Garrett Smith,
-Wilson Snyder, Stan Sokorac, Alex Solomatnikov, Wei Song, Art Stamness,
-John Stevenson, Patrick Stewart, Rob Stoddard, Todd Strader, John Stroebel,
-Sven Stucki, Howard Su, Emerson Suguimoto, Gene Sullivan, Renga
-Sundararajan, Rupert Swarbrick, Yutetsu Takatsukasa, Peter Tengstrand,
-Wesley Terpstra, Rui Terra, Stefan Thiede, Gary Thomas, Ian Thompson, Kevin
-Thompson, Mike Thyer, Hans Tichelaar, Viktor Tomov, Steve Tong, Michael
-Tresidder, Neil Turton, Bogdan Vukobratovic, Holger Waechtler, Philipp
-Wagner, Stefan Wallentowitz, Shawn Wang, Paul Wasson, Greg Waters, Thomas
-Watts, Eugene Weber, David Welch, Thomas J Whatson, Leon Wildman, Gerald
-Williams, Trevor Williams, Jeff Winston, Joshua Wise, Clifford Wolf, Johan
-Wouters, Junyi Xi, Ding Xiaoliang, Jie Xu, Mandy Xu, Luke Yang, and Amir
-Yazdanbakhsh.
+Henry, Stephen Henry, David Hewson, Jamey Hicks, Joel Holdsworth, Andrew
+Holme, Hiroki Honda, Alex Hornung, David Horton, Peter Horvath, Jae
+Hossell, Alan Hunter, James Hutchinson, Jamie Iles, Ben Jackson, Shareef
+Jalloq, Krzysztof Jankowski, HyungKi Jeong, Iztok Jeras, James Johnson,
+Christophe Joly, Franck Jullien, James Jung, Mike Kagen, Arthur Kahlich,
+Kaalia Kahn, Guy-Armand Kamendje, Vasu Kandadi, Kanad Kanhere, Patricio
+Kaplan, Pieter Kapsenberg, Ralf Karge, Dan Katz, Sol Katzman, Ian Kennedy,
+Jonathan Kimmitt, Olof Kindgren, Kevin Kiningham, Dan Kirkham, Sobhan Klnv,
+Gernot Koch, Soon Koh, Nathan Kohagen, Steve Kolecki, Brett Koonce, Will
+Korteland, Wojciech Koszek, Varun Koyyalagunta, David Kravitz, Roland
+Kruse, Sergey Kvachonok, Charles Eric LaForest, Ed Lander, Steve Lang,
+Stephane Laurent, Walter Lavino, Christian Leber, Larry Lee, Igor Lesik,
+John Li, Eivind Liland, Yu Sheng Lin, Charlie Lind, Andrew Ling, Jiuyang
+Liu, Paul Liu, Derek Lockhart, Jake Longo, Geza Lore, Arthur Low, Stefan
+Ludwig, Dan Lussier, Fred Ma, Duraid Madina, Affe Mao, Julien Margetts,
+Mark Marshall, Alfonso Martinez, Yves Mathieu, Patrick Maupin, Jason
+McMullan, Elliot Mednick, Wim Michiels, Miodrag Milanovic, Wai Sum Mong,
+Peter Monsson, Sean Moore, Dennis Muhlestein, John Murphy, Matt Myers,
+Nathan Myers, Richard Myers, Dimitris Nalbantis, Peter Nelson, Bob Newgard,
+Cong Van Nguyen, Paul Nitza, Yossi Nivin, Pete Nixon, Lisa Noack, Mark
+Nodine, Kuba Ober, Andreas Olofsson, Aleksander Osman, James Pallister,
+Vassilis Papaefstathiou, Brad Parker, Dan Petrisko, Maciej Piechotka, David
+Pierce, Dominic Plunkett, David Poole, Mike Popoloski, Roman Popov, Rich
+Porter, Niranjan Prabhu, Usha Priyadharshini, Mark Jackson Pulver, Prateek
+Puri, Marshal Qiao, Danilo Ramos, Chris Randall, Anton Rapp, Josh Redford,
+Odd Magne Reitan, Frederic Requin, Frederick Requin, Dustin Richmond,
+Alberto Del Rio, Eric Rippey, Oleg Rodionov, Ludwig Rogiers, Paul Rolfe,
+Arjen Roodselaar, Tobias Rosenkranz, Huang Rui, Jan Egil Ruud, Denis
+Rystsov, John Sanguinetti, Galen Seitz, Salman Sheikh, Hao Shi, Mike
+Shinkarovsky, Rafael Shirakawa, Jeffrey Short, Anderson Ignacio Da Silva,
+Rodney Sinclair, Steven Slatter, Brian Small, Garrett Smith, Tim Snyder,
+Maciej Sobkowski, Stan Sokorac, Alex Solomatnikov, Wei Song, Art Stamness,
+David Stanford, John Stevenson, Pete Stevenson, Patrick Stewart, Rob
+Stoddard, Todd Strader, John Stroebel, Sven Stucki, Howard Su, Emerson
+Suguimoto, Gene Sullivan, Qingyao Sun, Renga Sundararajan, Rupert
+Swarbrick, Yutetsu Takatsukasa, Peter Tengstrand, Wesley Terpstra, Rui
+Terra, Stefan Thiede, Gary Thomas, Ian Thompson, Kevin Thompson, Mike
+Thyer, Hans Tichelaar, Viktor Tomov, Steve Tong, Michael Tresidder, Neil
+Turton, Srini Vemuri, Yuri Victorovich, Bogdan Vukobratovic, Holger
+Waechtler, Philipp Wagner, Stefan Wallentowitz, Shawn Wang, Paul Wasson,
+Greg Waters, Thomas Watts, Eugene Weber, David Welch, Thomas J Whatson,
+Marco Widmer, Leon Wildman, Daniel Wilkerson, Gerald Williams, Trevor
+Williams, Jan Van Winkel, Jeff Winston, Joshua Wise, Clifford Wolf, Tobias
+Wolfel, Johan Wouters, Junyi Xi, Ding Xiaoliang, Jie Xu, Mandy Xu,
+Takatsukasa Y, Luke Yang, and Amir Yazdanbakhsh.
 
 Thanks to them, and all those we've missed including above, or wished to
 remain anonymous.
@@ -5236,10 +5666,15 @@ remain anonymous.
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2020 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
 redistribute it and/or modify the Verilator internals under the terms of
 either the GNU Lesser General Public License Version 3 or the Perl Artistic
 License Version 2.0.
+
+All Verilog and C++/SystemC code quoted within this documentation file are
+released as Creative Commons Public Domain (CC0).  Many example files and
+test files are likewise released under CC0 into effectively the Public
+Domain as described in the files themselves.
 
 
 =head1 SEE ALSO
@@ -5248,8 +5683,11 @@ L<verilator_coverage>, L<verilator_gantt>, L<verilator_profcfunc>, L<make>,
 
 L<verilator --help> which is the source for this document,
 
-and internals.txt in the distribution.
+and docs/internals.adoc in the distribution.
 
 =cut
 
 ######################################################################
+# Local Variables:
+# fill-column: 75
+# End:

@@ -1,0 +1,4 @@
+%Error: t/t_class_extends.v:25:4: Can't find typedef: 'T'
+   25 |    T imemberc;
+      |    ^
+%Error: Exiting due to

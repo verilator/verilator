@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2011 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2011 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 module t;
 
@@ -45,6 +46,7 @@ module t;
       if (signed'(4'hf) > 4'sh0) $stop;
       if (4'hf < 4'h0) $stop;
       if (unsigned'(4'shf) < 4'h0) $stop;
+      if (const'(4'shf) !== 4'shf) $stop;
       if (4'(allones) !== 4'hf) $stop;
       if (6'(allones) !== 6'h3f) $stop;
       if ((4)'(allones) !== 4'hf) $stop;

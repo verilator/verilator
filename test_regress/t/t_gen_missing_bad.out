@@ -1,13 +1,10 @@
-%Error: t/t_gen_missing.v:42: Cannot find file containing module: 'foo_not_needed'
-                   foo_not_needed i_foo(.x(foo[j]), .y(bar[j]));
-                   ^~~~~~~~~~~~~~
+%Error: t/t_gen_missing.v:43:20: Cannot find file containing module: 'foo_not_needed'
+   43 |                    foo_not_needed i_foo(.x(foo[j]), .y(bar[j]));
+      |                    ^~~~~~~~~~~~~~
         ... Looked in:
              t/foo_not_needed
              t/foo_not_needed.v
              t/foo_not_needed.sv
-             obj_dir//foo_not_needed
-             obj_dir//foo_not_needed.v
-             obj_dir//foo_not_needed.sv
              ../include/foo_not_needed
              ../include/foo_not_needed.v
              ../include/foo_not_needed.sv

@@ -1,24 +1,28 @@
 # DESCRIPTION: Dockerfile for image to run Verilator inside
 #
-# Copyright 2020 by Stefan Wallentowitz. This program is free
-# software; you can redistribute it and/or modify it under the terms
-# of either the GNU Lesser General Public License Version 3 or the
-# Perl Artistic License Version 2.0.
+# Copyright 2020 by Stefan Wallentowitz. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive \
     && apt-get install --no-install-recommends -y \
-                        autoconf=2.69-11 \
-                        bc=1.07.1-2 \
-                        bison=2:3.0.4.dfsg-1build1 \
-                        build-essential=12.4ubuntu1 \
-                        ca-certificates=20180409 \
-                        flex=2.6.4-6 \
-                        git=1:2.17.1-1ubuntu0.5 \
-                        libfl-dev=2.6.4-6 \
-                        perl=5.26.1-6ubuntu0.3 \
-                        python3=3.6.7-1~18.04 \
+                        autoconf \
+                        bc \
+                        bison \
+                        build-essential \
+                        ca-certificates \
+                        ccache \
+                        flex \
+                        git \
+                        libfl-dev \
+                        libgoogle-perftools-dev \
+                        perl \
+                        python3 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

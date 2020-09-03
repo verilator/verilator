@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_fork.v:10:14: Unsupported: fork statements
+                                    : ... In instance t
+   10 |       fork : fblk
+      |              ^~~~
+%Error: Exiting due to

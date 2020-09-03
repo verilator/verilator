@@ -1,175 +1,145 @@
 # DESCRIPTION: Travis-CI config
 #
-# Copyright 2003-2019 by Todd Strader. Verilator is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU Lesser
-# General Public License Version 3 or the Perl Artistic License Version 2.0.
+# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 version: ~> 1.0
 
-os: linux
 language: cpp
-cache: ccache
-
-env:
-  global:
-    - VERILATOR_CACHE=$HOME/verilator_cache
-    - VERILATOR_ROOT=$PWD
-    - VERILATOR_NUM_JOBS=$(echo `nproc` + 1 | bc)
-    - VERILATOR_CONFIG_FLAGS="--enable-maintainer-mode --enable-longtests"
-    - VERILATOR_AUTHOR_SITE=1
-    - OBJCACHE=ccache
 
 cache:
   directories:
-    - $VERILATOR_CACHE
+    - $HOME/.ccache
 
-before_install:
-# Perl modules needed for testing
-  - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker Bit::Vector
-  - sudo apt-get install gdb gtkwave
-  - sudo apt-get install libgoogle-perftools-dev
-before_script:
-  - bash -x ci/build_vcddiff.sh
-  - bash -x ci/build_verilator.sh
-after_script:
-  - ccache -s
+env:
+  global:
+    - VERILATOR_ROOT=$TRAVIS_BUILD_DIR
 
+# The list and order of build stages
 stages:
-  - "Build Verilator"
-  - test
+  - build # Build Verilator
+  - test  # Run tests
 
+# Dump info about the environment for debugging
+before_install:
+  # To dump the script that Travis itself is executing, add 'cat $0' here
+  - cd "$TRAVIS_BUILD_DIR" # Skipping the git clone in later stages requires this
+  - export CCACHE_MAXSIZE=$(ci/travis-ccache-size.bash) # Set here after the 'cd'
+  - env | sort
+  - ls -lA .
+  - ls -lA bin
+  - g++ -E -dM -c -x c++ /dev/null | sort
+  - clang++ -E -dM -c -x c++ /dev/null | sort
+
+# Install all dependencies
+# We run twice to attempt on failure to recover from temp network problems
+install:
+  - ./ci/travis-install.bash || ./ci/travis-install.bash
+
+before_script:
+  # ccache maintenance
+  - ./ci/travis-ccache-maint.bash
+  # Don't produce core dumps (esp. on FreeBSD)
+  - ulimit -c 0
+  # On Focal, set the SystemC installation location
+  - |
+    if [ "$TRAVIS_DIST" = "focal" ] && [ "$M32" != "1" ]; then
+      export SYSTEMC_INCLUDE=/usr/include
+      export SYSTEMC_LIBDIR=/usr/lib/x86_64-linux-gnu
+    fi
+  # Override compiler for M32
+  - |
+    if [ "$M32" = "1" ]; then
+      export CC="$CC -m32"
+      export CXX="$CXX -m32"
+      unset M32 # verilated.mk actually references $(M32) so unset
+    fi
+
+before_cache:
+  - ccache -s -z
+
+# All jobs run the same script
+script: ./ci/travis-script.bash
+
+# Enumerate all the jobs
 jobs:
   include:
-    - if: type != cron
-      stage: "Build Verilator"
-      name: Build Verilator
-      compiler: gcc
-      script: echo "Done building Verilator"
-# Non-cron build will just run on whatever linux flavor we get
-    - if: type != cron
-      stage: test
-      name: Dist test
-      compiler: gcc
-      script: ci/test.sh dist
-    - if: type != cron
-      stage: test
-      name: Vlt test
-      compiler: gcc
-      script: ci/test.sh vlt
-    - if: type != cron
-      stage: test
-      name: Vltmt test
-      compiler: gcc
-      script: ci/test.sh vltmt
-# Cron builds try different OS/compiler combinations
-    - if: type = cron
-      stage: "Build Verilator"
-      name: Build xenial gcc Verilator
-      os: linux
-      dist: xenial
-      compiler: gcc
-      script: echo "Done building Verilator"
-    - if: type = cron
-      stage: test
-      name: Xenial gcc dist test
-      os: linux
-      dist: xenial
-      compiler: gcc
-      script: ci/test.sh dist
-    - if: type = cron
-      stage: test
-      name: Xenial gcc vlt test
-      os: linux
-      dist: xenial
-      compiler: gcc
-      script: ci/test.sh vlt
-    - if: type = cron
-      stage: test
-      name: Xenial gcc vltmt test
-      os: linux
-      dist: xenial
-      compiler: gcc
-      script: ci/test.sh vltmt
-    - if: type = cron
-      stage: "Build Verilator"
-      name: Build xenial clang Verilator
-      os: linux
-      dist: xenial
-      compiler: clang
-      script: echo "Done building Verilator"
-    - if: type = cron
-      stage: test
-      name: Xenial clang dist test
-      os: linux
-      dist: xenial
-      compiler: clang
-      script: ci/test.sh dist
-    - if: type = cron
-      stage: test
-      name: Xenial clang vlt test
-      os: linux
-      dist: xenial
-      compiler: clang
-      script: ci/test.sh vlt
-    - if: type = cron
-      stage: test
-      name: Xenial clang vltmt test
-      os: linux
-      dist: xenial
-      compiler: clang
-      script: ci/test.sh vltmt
-#    - if: type = cron
-#      stage: "Build Verilator"
-#      name: Build OSX gcc Verilator
-#      os: osx
-#      compiler: gcc
-#      script: echo "Done building Verilator"
-#    - if: type = cron
-#      stage: test
-#      name: OSX gcc dist test
-#      os: osx
-#      compiler: gcc
-#      script: ci/test.sh dist
-#    - if: type = cron
-#      stage: test
-#      name: OSX gcc vlt test
-#      os: osx
-#      compiler: gcc
-#      script: ci/test.sh vlt
-#    - if: type = cron
-#      stage: test
-#      name: OSX gcc vltmt test
-#      os: osx
-#      compiler: gcc
-#      script: ci/test.sh vltmt
-    - if: type = cron
-      stage: "Build Verilator"
-      name: Build trusty gcc Verilator
-      os: linux
-      dist: trusty
-      compiler: gcc
-      script: echo "Done building Verilator"
-    - if: type = cron
-      stage: test
-      name: Trusty gcc dist test
-      os: linux
-      dist: trusty
-      compiler: gcc
-      script: ci/test.sh dist
-    - if: type = cron
-      stage: test
-      name: Trusty gcc vlt test
-      os: linux
-      dist: trusty
-      compiler: gcc
-      script: ci/test.sh vlt
-    - if: type = cron
-      stage: test
-      os: linux
-      dist: trusty
-      name: Trusty gcc vltmt test
-      compiler: gcc
-      script: ci/test.sh vltmt
+    ############################################################################
+    # Jobs in the 'build' stage
+    ############################################################################
+    # GCC builds
+    - {stage: build, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {create: {name: trusty-gcc,   paths: .}}}
+    - {stage: build, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {create: {name: xenial-gcc,   paths: .}}}
+    - {stage: build, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {create: {name: bionic-gcc,   paths: .}}}
+    - {stage: build,                   os: linux, dist: focal,  compiler: gcc,   workspaces: {create: {name: focal-gcc,    paths: .}}}
+    # Clang builds
+    - {stage: build, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {create: {name: xenial-clang, paths: .}}}
+    - {stage: build,                   os: linux, dist: focal,  compiler: clang, workspaces: {create: {name: focal-clang,  paths: .}}}
+    # Coverage build
+    - {stage: build, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {create: {name: coverage,     paths: .}}, env: COVERAGE=1}
+    # 32-bit build
+    - {stage: build, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {create: {name: focal-gcc-m32, paths: .}}, env: M32=1}
+    # OS X build
+    - {stage: build, if: type  = cron, os: osx, osx_image: xcode11.6, compiler: clang, workspaces: {create: {name: osx-xcode11.6, paths: .}}}
+    # FreeBSD build
+    - {stage: build, if: type  = cron, os: freebsd, compiler: clang, workspaces: {create: {name: freebsd, paths: .}}}
+    ############################################################################
+    # Jobs in the 'test' stage
+    ############################################################################
+    # GCC tests
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: trusty, compiler: gcc,   workspaces: {use: trusty-gcc},   git: {clone: false}, env: TESTS=vltmt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: gcc,   workspaces: {use: xenial-gcc},   git: {clone: false}, env: TESTS=vltmt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: bionic, compiler: gcc,   workspaces: {use: bionic-gcc},   git: {clone: false}, env: TESTS=vltmt-1}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc},    git: {clone: false}, env: TESTS=vltmt-1}
+    # Clang tests
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: xenial, compiler: clang, workspaces: {use: xenial-clang}, git: {clone: false}, env: TESTS=vltmt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type != cron, os: linux, dist: focal,  compiler: clang, workspaces: {use: focal-clang},  git: {clone: false}, env: TESTS=vltmt-1}
+    # Coverage tests
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-dist}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt-2}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vlt-3}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt-0}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt-1}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt-2}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: coverage},     git: {clone: false}, env: TESTS=coverage-vltmt-3}
+    # 32-bit tests
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc-m32}, git: {clone: false}, env: [M32=1, TESTS=dist-vlt-0]}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc-m32}, git: {clone: false}, env: [M32=1, TESTS=dist-vlt-1]}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc-m32}, git: {clone: false}, env: [M32=1, TESTS=vltmt-0]}
+    - {stage: test, if: type  = cron, os: linux, dist: focal,  compiler: gcc,   workspaces: {use: focal-gcc-m32}, git: {clone: false}, env: [M32=1, TESTS=vltmt-1]}
+    # OS X tests
+    - {stage: test, if: type  = cron, os: osx, osx_image: xcode11.6, compiler: clang, workspaces: {use: osx-xcode11.6},  git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: osx, osx_image: xcode11.6, compiler: clang, workspaces: {use: osx-xcode11.6},  git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: osx, osx_image: xcode11.6, compiler: clang, workspaces: {use: osx-xcode11.6},  git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: osx, osx_image: xcode11.6, compiler: clang, workspaces: {use: osx-xcode11.6},  git: {clone: false}, env: TESTS=vltmt-1}
+    # FreeBSD tests
+    - {stage: test, if: type  = cron, os: freebsd, compiler: clang, workspaces: {use: freebsd}, git: {clone: false}, env: TESTS=dist-vlt-0}
+    - {stage: test, if: type  = cron, os: freebsd, compiler: clang, workspaces: {use: freebsd}, git: {clone: false}, env: TESTS=dist-vlt-1}
+    - {stage: test, if: type  = cron, os: freebsd, compiler: clang, workspaces: {use: freebsd}, git: {clone: false}, env: TESTS=vltmt-0}
+    - {stage: test, if: type  = cron, os: freebsd, compiler: clang, workspaces: {use: freebsd}, git: {clone: false}, env: TESTS=vltmt-1}
 
 notifications:
   email:

@@ -1,0 +1,10 @@
+[0] In top.t: Hi
+Time scale of t is 1ns / 1ps
+Time: '                   0' 10ns=10000
+Time: ' 0-my-ms' 10ns=0-my-ms
+Time: ' 0.0-my-ms' 10ns=0.0-my-ms
+Time: '  0.00-my-us' 10ns=0.01-my-us
+Time: '  0.000-my-ns' 10ns=10.000-my-ns
+Time: '  0.000-my-ps' 10ns=10000.000-my-ps
+Time: '  0.0000-my-fs' 10ns=10000000.0000-my-fs
+*-* All Finished *-*

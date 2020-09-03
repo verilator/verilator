@@ -1,15 +1,11 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2012 by Wilson Snyder. This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Copyright 2012 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-// more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 // Contributed by Jeremy Bennett and Jie Xu
 //
@@ -250,7 +246,7 @@ int main() {
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         a = 1 - (int)a_read();
-        a_write(a);
+        a_write(reinterpret_cast<const svBitVecVal*>(&a));
         logReg(dut->clk, "write a", a, " (before clk)");
         a = a_read();
         logReg(dut->clk, "read  a", a, " (before clk)");
@@ -279,7 +275,7 @@ int main() {
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         b = (int)b_read() - 1;
-        b_write((const svBitVecVal*)&b);
+        b_write(reinterpret_cast<const svBitVecVal*>(&b));
         logRegHex(dut->clk, "write b", 8, b, " (before clk)");
         b = (int)b_read();
         logRegHex(dut->clk, "read  b", 8, b, " (before clk)");
@@ -308,7 +304,7 @@ int main() {
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         mem32 = (int)mem32_read() - 1;
-        mem32_write((const svBitVecVal*)&mem32);
+        mem32_write(reinterpret_cast<const svBitVecVal*>(&mem32));
         logRegHex(dut->clk, "write mem32", 8, mem32, " (before clk)");
         mem32 = (int)mem32_read();
         logRegHex(dut->clk, "read  mem32", 8, mem32, " (before clk)");
@@ -430,7 +426,7 @@ int main() {
         logRegHex(dut->clk, "read  b [3:0]", 4, b_slice, " (before write)");
 
         b_slice--;
-        b_slice_write((const svBitVecVal*)&b_slice);
+        b_slice_write(reinterpret_cast<const svBitVecVal*>(&b_slice));
         logRegHex(dut->clk, "write b [3:0]", 4, b_slice, " (before clk)");
 
         int b_after = (int)b_read();
@@ -469,7 +465,7 @@ int main() {
         logRegHex(dut->clk, "read  mem32 [7:6,2:0]", 5, mem32_slice, " (before write)");
 
         mem32_slice--;
-        mem32_slice_write((const svBitVecVal*)&mem32_slice);
+        mem32_slice_write(reinterpret_cast<const svBitVecVal*>(&mem32_slice));
         logRegHex(dut->clk, "write mem32 [7:6,2:0]", 5, mem32_slice, " (before clk)");
 
         int mem32_after = (int)mem32_read();
@@ -549,8 +545,8 @@ int main() {
 
         e = 0x05 | (i << 4);
         f = 0xa0 | i;
-        e_write((const svBitVecVal*)&e);
-        f_write((const svBitVecVal*)&f);
+        e_write(reinterpret_cast<const svBitVecVal*>(&e));
+        f_write(reinterpret_cast<const svBitVecVal*>(&f));
 
         e = (int)e_read();
         f = (int)f_read();
@@ -596,7 +592,7 @@ int main() {
         logRegHex(dut->clk, "read  e    ", 8, e, " (before write)");
 
         int l1 = 0x5a5a;
-        l1_write((const svBitVecVal*)&l1);
+        l1_write(reinterpret_cast<const svBitVecVal*>(&l1));
         logRegHex(dut->clk, "write l1   ", 15, l1, " (before clk)");
 
         int b_after = (int)b_read();
@@ -645,7 +641,7 @@ int main() {
         logRegHex(dut->clk, "read  f ", 8, f, " (before write)");
 
         int l2 = 0xa5 + i;
-        l2_write((const svBitVecVal*)&l2);
+        l2_write(reinterpret_cast<const svBitVecVal*>(&l2));
         logRegHex(dut->clk, "write l2", 8, l2, " (before clk)");
 
         int e_after = (int)e_read();

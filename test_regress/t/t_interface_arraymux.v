@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2017 by John Stevenson.
+// SPDX-License-Identifier: CC0-1.0
 
 package pkg;
    typedef logic [31:0] unique_id_t;
@@ -38,6 +39,19 @@ module ThingMuxOH
     the_intf.t things_in [NTHINGS-1:0],
     the_intf.i thing_out
     );
+    assign thing_out.valid = things_in[0].valid;
+endmodule
+
+module ThingMuxShort
+  #(
+    parameter NTHINGS = 1,
+    parameter       M = 5 )
+   (
+    input logic [NTHINGS-1:0] select_oh,
+    the_intf.t things_in [NTHINGS],
+    the_intf.i thing_out
+    );
+    assign thing_out.valid = things_in[0].valid;
 endmodule
 
 module Thinker
@@ -54,8 +68,10 @@ module Thinker
 
    the_intf #(.M(M)) curr_things [N-1:0] ();
    the_intf #(.M(M)) prev_things [N-1:0] ();
+   the_intf #(.M(M)) s_things [N] ();
    the_intf #(.M(M)) curr_thing ();
    the_intf #(.M(M)) prev_thing ();
+   the_intf #(.M(M)) s_thing ();
 
    logic [N-1:0] select_oh;
 
@@ -76,6 +92,15 @@ module Thinker
     .select_oh( select_oh   ),
     .things_in( prev_things ),
     .thing_out( prev_thing  ));
+
+   // 3rd mux, using short array nomenclature:
+   ThingMuxShort #(
+    .NTHINGS  ( N           ),
+    .M        ( M           ))
+   s_thing_mux(
+    .select_oh( select_oh   ),
+    .things_in( s_things ),
+    .thing_out( s_thing  ));
 
 endmodule
 

@@ -13,15 +13,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -34,8 +30,8 @@
 #include "V3Error.h"
 
 #include <map>
-#include VL_INCLUDE_UNORDERED_MAP
-#include VL_INCLUDE_UNORDERED_SET
+#include <unordered_map>
+#include <unordered_set>
 
 //######################################################################
 // SortByValueMap
@@ -44,11 +40,11 @@
 /// value-sorted order.  Values need not be unique. Uses T_KeyCompare to
 /// break ties in the sort when values collide.
 
-template <typename T_Key, typename T_Value, class T_KeyCompare = std::less<T_Key> >
+template <typename T_Key, typename T_Value, class T_KeyCompare = std::less<T_Key>>
 class SortByValueMap {
     // TYPES
 private:
-    typedef vl_unordered_map<T_Key, T_Value> Key2Val;
+    typedef std::unordered_map<T_Key, T_Value> Key2Val;
     typedef std::set<T_Key, T_KeyCompare> KeySet;
     typedef std::map<T_Value, KeySet> Val2Keys;
 
@@ -68,6 +64,7 @@ public:
         typedef void pointer;
         typedef std::ptrdiff_t difference_type;
         typedef std::bidirectional_iterator_tag iterator_category;
+
     protected:
         friend class SortByValueMap;
 
@@ -75,19 +72,17 @@ public:
         typename KeySet::iterator m_keyIt;
         typename Val2Keys::iterator m_valIt;
         SortByValueMap* m_sbvmp;
-        bool m_end;  // At the end()
+        bool m_end = true;  // At the end()
 
         // CONSTRUCTORS
         explicit const_iterator(SortByValueMap* sbmvp)  // for end()
-            : m_sbvmp(sbmvp)
-            , m_end(true) {}
-        const_iterator(typename Val2Keys::iterator valIt,
-                       typename KeySet::iterator keyIt,
+            : m_sbvmp{sbmvp} {}
+        const_iterator(typename Val2Keys::iterator valIt, typename KeySet::iterator keyIt,
                        SortByValueMap* sbvmp)
-            : m_keyIt(keyIt)
-            , m_valIt(valIt)
-            , m_sbvmp(sbvmp)
-            , m_end(false) {}
+            : m_keyIt{keyIt}
+            , m_valIt{valIt}
+            , m_sbvmp{sbvmp}
+            , m_end{false} {}
 
         // METHODS
         void advanceUntilValid() {
@@ -129,7 +124,7 @@ public:
                 // No more values but it's not defined to decrement an
                 // iterator past the beginning.
                 v3fatalSrc("Decremented iterator past beginning");
-                return;
+                return;  // LCOV_EXCL_LINE
             }
             --m_valIt;
             // Should find a value here, as Every value bucket is supposed
@@ -139,6 +134,7 @@ public:
             --m_keyIt;
             UASSERT(m_keyIt != m_valIt->second.end(), "Value bucket should have key");
         }
+
     public:
         const T_Key& key() const { return *m_keyIt; }
         const T_Value& value() const { return m_valIt->first; }
@@ -155,15 +151,10 @@ public:
             // sequences.  So check m_end before comparing m_valIt, and
             // compare m_valIt's before comparing m_keyIt to ensure nothing
             // here is undefined.
-            if (m_end || other.m_end) {
-                return m_end && other.m_end;
-            }
-            return ((m_valIt == other.m_valIt)
-                    && (m_keyIt == other.m_keyIt));
+            if (m_end || other.m_end) return m_end && other.m_end;
+            return ((m_valIt == other.m_valIt) && (m_keyIt == other.m_keyIt));
         }
-        bool operator!=(const const_iterator& other) const {
-            return (!this->operator==(other));
-        }
+        bool operator!=(const const_iterator& other) const { return (!this->operator==(other)); }
 
         // WARNING: Cleverness.
         //
@@ -212,11 +203,10 @@ public:
 
         // CONSTRUCTORS
         explicit iterator(SortByValueMap* sbvmp)
-            : const_iterator(sbvmp) {}
-        iterator(typename Val2Keys::iterator valIt,
-                 typename KeySet::iterator keyIt,
+            : const_iterator{sbvmp} {}
+        iterator(typename Val2Keys::iterator valIt, typename KeySet::iterator keyIt,
                  SortByValueMap* sbvmp)
-            : const_iterator(valIt, keyIt, sbvmp) {}
+            : const_iterator{valIt, keyIt, sbvmp} {}
 
         // METHODS
         iterator& operator++() {
@@ -252,72 +242,56 @@ private:
     }
     void removeKeyFromOldVal(iterator it) {
         it.m_valIt->second.erase(it.m_keyIt);
-        if (it.m_valIt->second.empty()) {
-            m_vals.erase(it.m_valIt);
-        }
+        if (it.m_valIt->second.empty()) m_vals.erase(it.m_valIt);
     }
 
 public:
     iterator begin() {
-        typename Val2Keys::iterator valIt = m_vals.begin();
-        if (valIt == m_vals.end()) {
-            return end();
-        }
-        typename KeySet::const_iterator keyIt = valIt->second.begin();
+        const auto valIt = m_vals.begin();
+        if (valIt == m_vals.end()) return end();
+        const auto keyIt = valIt->second.begin();
         return iterator(valIt, keyIt, this);
     }
     const_iterator begin() const {
         SortByValueMap* mutp = const_cast<SortByValueMap*>(this);
-        typename Val2Keys::iterator valIt = mutp->m_vals.begin();
-        if (valIt == mutp->m_vals.end()) {
-            return end();
-        }
-        typename KeySet::const_iterator keyIt = valIt->second.begin();
+        const auto valIt = mutp->m_vals.begin();
+        if (valIt == mutp->m_vals.end()) return end();
+        const auto keyIt = valIt->second.begin();
         return const_iterator(valIt, keyIt, mutp);
     }
-    iterator end() {
-        return iterator(this);
-    }
+    iterator end() { return iterator(this); }
     const_iterator end() const {
         // Safe to cast away const; the const_iterator will still enforce
         // it. Same for the const begin() below.
         return const_iterator(const_cast<SortByValueMap*>(this));
     }
-    reverse_iterator rbegin() {
-        return reverse_iterator(end());
-    }
-    reverse_iterator rend() {
-        return reverse_iterator(begin());
-    }
-    const_reverse_iterator rbegin() const {
-        return const_reverse_iterator(end());
-    }
-    const_reverse_iterator rend() const {
-        return const_reverse_iterator(begin());
-    }
+    reverse_iterator rbegin() { return reverse_iterator(end()); }
+    reverse_iterator rend() { return reverse_iterator(begin()); }
+    const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
+    const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
 
     iterator find(const T_Key& k) {
-        typename Key2Val::iterator kvit = m_keys.find(k);
+        const auto kvit = m_keys.find(k);
         if (kvit == m_keys.end()) return end();
 
-        typename Val2Keys::iterator valIt = m_vals.find(kvit->second);
-        typename KeySet::iterator keyIt = valIt->second.find(k);
+        const auto valIt = m_vals.find(kvit->second);
+        const auto keyIt = valIt->second.find(k);
         return iterator(valIt, keyIt, this);
     }
     const_iterator find(const T_Key& k) const {
         SortByValueMap* mutp = const_cast<SortByValueMap*>(this);
-        typename Key2Val::iterator kvit = mutp->m_keys.find(k);
+        const auto kvit = mutp->m_keys.find(k);
         if (kvit == mutp->m_keys.end()) return end();
 
-        typename Val2Keys::iterator valIt = mutp->m_vals.find(kvit->second);
-        typename KeySet::iterator keyIt = valIt->second.find(k);
+        const auto valIt = mutp->m_vals.find(kvit->second);
+        const auto keyIt = valIt->second.find(k);
         return const_iterator(valIt, keyIt, mutp);
     }
     void set(const T_Key& k, const T_Value& v) {
-        typename Key2Val::iterator kvit = m_keys.find(k);
+        const auto kvit = m_keys.find(k);
         if (kvit != m_keys.end()) {
             if (kvit->second == v) {
-                return;  // Same value already present; stop.
+                return;  // LCOV_EXCL_LINE // Same value already present; stop.
             }
             // Must remove element from m_vals[oldValue]
             removeKeyFromOldVal(k, kvit->second);
@@ -326,7 +300,7 @@ public:
         m_vals[v].insert(k);
     }
     size_t erase(const T_Key& k) {
-        typename Key2Val::iterator kvit = m_keys.find(k);
+        const auto kvit = m_keys.find(k);
         if (kvit == m_keys.end()) return 0;
         removeKeyFromOldVal(k, kvit->second);
         m_keys.erase(kvit);
@@ -339,17 +313,13 @@ public:
     void erase(const reverse_iterator& it) {
         erase(*it);  // Dereferencing returns a copy of the forward iterator
     }
-    bool has(const T_Key& k) const {
-        return (m_keys.find(k) != m_keys.end());
-    }
-    bool empty() const {
-        return m_keys.empty();
-    }
+    bool has(const T_Key& k) const { return (m_keys.find(k) != m_keys.end()); }
+    bool empty() const { return m_keys.empty(); }
     // Look up a value. Returns a reference for efficiency. Note this must
     // be a const reference, otherwise the client could corrupt the sorted
     // order of m_byValue by reaching through and changing the value.
     const T_Value& at(const T_Key& k) const {
-        typename Key2Val::const_iterator kvit = m_keys.find(k);
+        const auto kvit = m_keys.find(k);
         UASSERT(kvit != m_keys.end(), "at() lookup key not found");
         return kvit->second;
     }
@@ -379,16 +349,14 @@ private:
 /// when the subset of elements whose scores change is much smaller than
 /// the full set size.
 
-template <typename T_Elem,
-          typename T_Score,
-          class T_ElemCompare = std::less<T_Elem> >
+template <typename T_Elem, typename T_Score, class T_ElemCompare = std::less<T_Elem>>
 class V3Scoreboard {
 private:
     // TYPES
-    typedef vl_unordered_set<const T_Elem*> NeedRescoreSet;
+    typedef std::unordered_set<const T_Elem*> NeedRescoreSet;
     class CmpElems {
     public:
-        bool operator() (const T_Elem* const& ap, const T_Elem* const& bp) const {
+        bool operator()(const T_Elem* const& ap, const T_Elem* const& bp) const {
             T_ElemCompare cmp;
             return cmp.operator()(*ap, *bp);
         }
@@ -405,8 +373,8 @@ private:
 public:
     // CONSTRUCTORS
     explicit V3Scoreboard(UserScoreFnp scoreFnp, bool slowAsserts)
-        : m_scoreFnp(scoreFnp)
-        , m_slowAsserts(slowAsserts) {}
+        : m_scoreFnp{scoreFnp}
+        , m_slowAsserts{slowAsserts} {}
     ~V3Scoreboard() {}
 
     // METHODS
@@ -416,8 +384,7 @@ public:
     // bestp() until after the next rescore().
     void addElem(const T_Elem* elp) {
         if (m_slowAsserts) {
-            UASSERT(!contains(elp),
-                    "Adding element to scoreboard that was already in scoreboard");
+            UASSERT(!contains(elp), "Adding element to scoreboard that was already in scoreboard");
         }
         m_unknown.insert(elp);
     }
@@ -440,7 +407,7 @@ public:
     }
 
     // Get the best element, with the lowest score (lower is better), among
-    // elements whose scores are known. Returns NULL if no elements with
+    // elements whose scores are known. Returns nullptr if no elements with
     // known scores exist.
     //
     // Note: This does not automatically rescore. Client must call
@@ -448,8 +415,8 @@ public:
     // reflected in the result of bestp(). Otherwise, bestp() only
     // considers elements that aren't pending rescore.
     const T_Elem* bestp() {
-        typename SortedMap::iterator result = m_sorted.begin();
-        if (VL_UNLIKELY(result == m_sorted.end())) return NULL;
+        const auto result = m_sorted.begin();
+        if (VL_UNLIKELY(result == m_sorted.end())) return nullptr;
         return (*result).key();
     }
 
@@ -474,23 +441,18 @@ public:
     bool needsRescore() { return !m_unknown.empty(); }
     // False if elp's score is known to V3Scoreboard,
     // else true if elp's score is unknown until the next rescore().
-    bool needsRescore(const T_Elem* elp) {
-        return (m_unknown.find(elp) != m_unknown.end());
-    }
+    bool needsRescore(const T_Elem* elp) { return (m_unknown.find(elp) != m_unknown.end()); }
     // Retrieve the last known score for an element.
     T_Score cachedScore(const T_Elem* elp) {
-        typename SortedMap::iterator result = m_sorted.find(elp);
-        UASSERT(result != m_sorted.end(),
-                "V3Scoreboard::cachedScore() failed to find element");
+        const auto result = m_sorted.find(elp);
+        UASSERT(result != m_sorted.end(), "V3Scoreboard::cachedScore() failed to find element");
         return (*result).value();
     }
     // For each element whose score is unknown to V3Scoreboard,
     // call the client's scoring function to get a new score,
     // and sort all elements by their current score.
     void rescore() {
-        for (typename NeedRescoreSet::iterator it = m_unknown.begin();
-             it != m_unknown.end(); ++it) {
-            const T_Elem* elp = *it;
+        for (const T_Elem* elp : m_unknown) {
             T_Score sortScore = m_scoreFnp(elp);
             m_sorted.set(elp, sortScore);
         }
@@ -504,7 +466,7 @@ private:
 //######################################################################
 
 namespace V3ScoreboardBase {
-    void selfTest();
-}
+void selfTest();
+}  // namespace V3ScoreboardBase
 
 #endif  // Guard

@@ -1,0 +1,5 @@
+%Error: t/t_class_copy_bad.v:19:16: New-as-copier passed different data type 'CLASSREFDTYPE 'Cls'' then expected 'CLASSREFDTYPE 'Other''
+                                  : ... In instance t
+   19 |       c1 = new co;   
+      |                ^~
+%Error: Exiting due to

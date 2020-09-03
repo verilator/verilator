@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -30,7 +26,7 @@
 #include <list>
 
 class LogicMTask;
-typedef vl_unordered_map<const MTaskMoveVertex*, LogicMTask*> Vx2MTaskMap;
+typedef std::unordered_map<const MTaskMoveVertex*, LogicMTask*> Vx2MTaskMap;
 
 //*************************************************************************
 /// V3Partition takes the fine-grained logic graph from V3Order and
@@ -44,7 +40,7 @@ class V3Partition {
 public:
     // CONSTRUCTORS
     explicit V3Partition(V3Graph* fineDepsGraphp)
-        : m_fineDepsGraphp(fineDepsGraphp) {}
+        : m_fineDepsGraphp{fineDepsGraphp} {}
     ~V3Partition() {}
 
     // METHODS
@@ -65,6 +61,7 @@ public:
     // Operate on the final ExecMTask graph, immediately prior to code
     // generation time.
     static void finalize();
+
 private:
     static void finalizeCosts(V3Graph* execMTaskGraphp);
     static void setupMTaskDeps(V3Graph* mtasksp, const Vx2MTaskMap* vx2mtaskp);
@@ -79,19 +76,18 @@ private:
 class PartPtrIdMap {
 private:
     // TYPES
-    typedef vl_unordered_map <const void*, vluint64_t> PtrMap;
+    typedef std::unordered_map<const void*, vluint64_t> PtrMap;
     // MEMBERS
-    mutable vluint64_t m_nextId;
+    mutable vluint64_t m_nextId = 0;
     mutable PtrMap m_id;
+
 public:
     // CONSTRUCTORS
-    PartPtrIdMap() : m_nextId(0) {}
+    PartPtrIdMap() {}
     // METHODS
     vluint64_t findId(const void* ptrp) const {
-        PtrMap::iterator it = m_id.find(ptrp);
-        if (it != m_id.end()) {
-            return it->second;
-        }
+        const auto it = m_id.find(ptrp);
+        if (it != m_id.end()) return it->second;
         m_id[ptrp] = m_nextId;
         return m_nextId++;
     }

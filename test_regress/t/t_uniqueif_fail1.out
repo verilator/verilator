@@ -1,0 +1,4 @@
+testing fail 1:           1
+[10] %Error: t_uniqueif.v:74: Assertion failed in top.t: 'unique if' statement violated
+%Error: t/t_uniqueif.v:74: Verilog $stop
+Aborting...

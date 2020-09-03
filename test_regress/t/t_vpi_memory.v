@@ -4,6 +4,7 @@
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 `ifdef USE_VPI_NOT_DPI
 //We call it via $c so we can verify DPI isn't required - see bug572
@@ -32,7 +33,7 @@ extern "C" int mon_check();
 `ifdef VERILATOR
       status = $c32("mon_check()");
 `endif
-`ifdef iverilog
+`ifdef IVERILOG
      status = $mon_check();
 `endif
 `ifndef USE_VPI_NOT_DPI

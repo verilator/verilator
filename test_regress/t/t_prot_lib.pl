@@ -1,14 +1,15 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Makes the test run with tracing enabled by default, can be overridden
 # with --notrace
 unshift(@ARGV, "--trace");
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2019 by Todd Strader. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
+# Copyright 2019 by Todd Strader. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 scenarios(
     vlt => 1,
@@ -34,11 +35,13 @@ while (1) {
                 $secret_dir,
                 "--protect-lib",
                 $secret_prefix,
-                "t/t_prot_lib_secret.v"]);
+                "t/t_prot_lib_secret.v"],
+        verilator_run => 1,
+        );
     last if $Self->{errors};
 
     run(logfile => "$secret_dir/secret_gcc.log",
-        cmd=>["make",
+        cmd=>[$ENV{MAKE},
               "-C",
               $secret_dir,
               "-f",
@@ -48,7 +51,7 @@ while (1) {
     compile(
         verilator_flags2 => ["$secret_dir/secret.sv",
                              "-LDFLAGS",
-                             "'-L$secret_prefix -lsecret -static'"],
+                             "$secret_prefix/libsecret.a"],
         xsim_flags2 => ["$secret_dir/secret.sv"],
         );
 

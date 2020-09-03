@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -27,9 +23,6 @@
 #include "V3GraphDfa.h"
 #include "V3Stats.h"
 
-#include <cstdarg>
-#include <iomanip>
-
 //######################################################################
 // Assert class functions
 
@@ -38,30 +31,28 @@ private:
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user()         -> bool.  True if processed
-    AstUser1InUse       m_inuser1;
+    AstUser1InUse m_inuser1;
 
     // STATE
-    AstNodeModule*      m_modp;         // Last module
-    AstBegin*   m_beginp;       // Last begin
-    unsigned    m_modPastNum;   // Module past numbering
-    VDouble0    m_statCover;  // Statistic tracking
-    VDouble0    m_statAsNotImm;  // Statistic tracking
-    VDouble0    m_statAsImm;    // Statistic tracking
-    VDouble0    m_statAsFull;   // Statistic tracking
+    AstNodeModule* m_modp = nullptr;  // Last module
+    AstBegin* m_beginp = nullptr;  // Last begin
+    unsigned m_modPastNum = 0;  // Module past numbering
+    VDouble0 m_statCover;  // Statistic tracking
+    VDouble0 m_statAsNotImm;  // Statistic tracking
+    VDouble0 m_statAsImm;  // Statistic tracking
+    VDouble0 m_statAsFull;  // Statistic tracking
 
     // METHODS
     string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message) {
-        return (string("[%0t] "+prefix+": ")+nodep->fileline()->filebasename()
-                +":"+cvtToStr(nodep->fileline()->lineno())
-                +": Assertion failed in %m"
-                +((message != "")?": ":"")+message
-                +"\n");
+        return (string("[%0t] " + prefix + ": ") + nodep->fileline()->filebasename() + ":"
+                + cvtToStr(nodep->fileline()->lineno()) + ": Assertion failed in %m"
+                + ((message != "") ? ": " : "") + message + "\n");
     }
     void replaceDisplay(AstDisplay* nodep, const string& prefix) {
         nodep->displayType(AstDisplayType::DT_WRITE);
         nodep->fmtp()->text(assertDisplayMessage(nodep, prefix, nodep->fmtp()->text()));
         // cppcheck-suppress nullPointer
-        AstNode* timenewp = new AstTime(nodep->fileline());
+        AstNode* timenewp = new AstTime(nodep->fileline(), m_modp->timeunit());
         if (AstNode* timesp = nodep->fmtp()->exprsp()) {
             timesp->unlinkFrBackWithNext();
             timenewp->addNext(timesp);
@@ -81,17 +72,17 @@ private:
                         // If assertions are off, have constant propagation rip them out later
                         // This allows syntax errors and such to be detected normally.
                         (v3Global.opt.assertOn()
-                         ? static_cast<AstNode*>(new AstCMath(fl, "Verilated::assertOn()", 1))
-                         : static_cast<AstNode*>(new AstConst(fl, AstConst::LogicFalse()))),
-                        nodep, NULL);
+                             ? static_cast<AstNode*>(new AstCMath(fl, "Verilated::assertOn()", 1))
+                             : static_cast<AstNode*>(new AstConst(fl, AstConst::LogicFalse()))),
+                        nodep, nullptr);
         newp->user1(true);  // Don't assert/cover this if
         return newp;
     }
 
     AstNode* newFireAssertUnchecked(AstNode* nodep, const string& message) {
         // Like newFireAssert() but omits the asserts-on check
-        AstDisplay* dispp = new AstDisplay(nodep->fileline(),
-                                           AstDisplayType::DT_ERROR, message, NULL, NULL);
+        AstDisplay* dispp = new AstDisplay(nodep->fileline(), AstDisplayType::DT_ERROR, message,
+                                           nullptr, nullptr);
         AstNode* bodysp = dispp;
         replaceDisplay(dispp, "%%Error");  // Convert to standard DISPLAY format
         bodysp->addNext(new AstStop(nodep->fileline(), true));
@@ -121,9 +112,9 @@ private:
             sentreep->unlinkFrBack();
         }
         //
-        AstNode* bodysp = NULL;
+        AstNode* bodysp = nullptr;
         bool selfDestruct = false;
-        AstIf* ifp = NULL;
+        AstIf* ifp = nullptr;
         if (AstCover* snodep = VN_CAST(nodep, Cover)) {
             ++m_statCover;
             if (!v3Global.opt.coverageUser()) {
@@ -133,33 +124,37 @@ private:
                 AstCoverInc* covincp = VN_CAST(snodep->coverincp(), CoverInc);
                 UASSERT_OBJ(covincp, snodep, "Missing AstCoverInc under assertion");
                 covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
-                if (message!="") covincp->declp()->comment(message);
+                if (message != "") covincp->declp()->comment(message);
                 bodysp = covincp;
             }
 
             if (bodysp && passsp) bodysp = bodysp->addNext(passsp);
-            ifp = new AstIf(nodep->fileline(), propp, bodysp, NULL);
+            ifp = new AstIf(nodep->fileline(), propp, bodysp, nullptr);
             bodysp = ifp;
         } else if (VN_IS(nodep, Assert)) {
-            if (nodep->immediate()) ++m_statAsImm;
-            else ++m_statAsNotImm;
+            if (nodep->immediate()) {
+                ++m_statAsImm;
+            } else {
+                ++m_statAsNotImm;
+            }
             if (passsp) passsp = newIfAssertOn(passsp);
             if (failsp) failsp = newIfAssertOn(failsp);
             if (!failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
             ifp = new AstIf(nodep->fileline(), propp, passsp, failsp);
-            // It's more LIKELY that we'll take the NULL if clause
+            // It's more LIKELY that we'll take the nullptr if clause
             // than the sim-killing else clause:
             ifp->branchPred(VBranchPred::BP_LIKELY);
-            bodysp = ifp;
+            bodysp = newIfAssertOn(ifp);
         } else {
             nodep->v3fatalSrc("Unknown node type");
         }
 
         AstNode* newp;
         if (sentreep) {
-            newp = new AstAlways(nodep->fileline(),
-                                 VAlwaysKwd::ALWAYS, sentreep, bodysp);
-        } else { newp = bodysp; }
+            newp = new AstAlways(nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, bodysp);
+        } else {
+            newp = bodysp;
+        }
         // Install it
         if (selfDestruct) {
             // Delete it after making the tree.  This way we can tell the user
@@ -174,11 +169,11 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstIf* nodep) VL_OVERRIDE {
+    virtual void visit(AstIf* nodep) override {
         if (nodep->user1SetOnce()) return;
         if (nodep->uniquePragma() || nodep->unique0Pragma()) {
             AstNodeIf* ifp = nodep;
-            AstNode* propp = NULL;
+            AstNode* propp = nullptr;
             bool hasDefaultElse = false;
             do {
                 // If this statement ends with 'else if', then nextIf will point to the
@@ -190,7 +185,7 @@ private:
                 iterateAndNextNull(ifp->ifsp());
 
                 // If the last else is not an else if, recurse into that too.
-                if (ifp->elsesp() && !nextifp) {
+                if (ifp->elsesp() && !nextifp) {  //
                     iterateAndNextNull(ifp->elsesp());
                 }
 
@@ -203,14 +198,12 @@ private:
                 }
 
                 // Record if this ends with an 'else' that does not have an if
-                if (ifp->elsesp() && !nextifp) {
-                    hasDefaultElse = true;
-                }
+                if (ifp->elsesp() && !nextifp) hasDefaultElse = true;
 
                 ifp = nextifp;
             } while (ifp);
 
-            AstNode *newifp = nodep->cloneTree(false);
+            AstNode* newifp = nodep->cloneTree(false);
             bool allow_none = nodep->unique0Pragma();
 
             // Empty case means no property
@@ -219,12 +212,11 @@ private:
             // Note: if this ends with an 'else', then we don't need to validate that one of the
             // predicates evaluates to true.
             AstNode* ohot = ((allow_none || hasDefaultElse)
-                             ? static_cast<AstNode*>(new AstOneHot0(nodep->fileline(), propp))
-                             : static_cast<AstNode*>(new AstOneHot(nodep->fileline(), propp)));
-            AstIf* checkifp = new AstIf(nodep->fileline(),
-                                        new AstLogNot(nodep->fileline(), ohot),
-                                        newFireAssert(nodep, "'unique if' statement violated"),
-                                        newifp);
+                                 ? static_cast<AstNode*>(new AstOneHot0(nodep->fileline(), propp))
+                                 : static_cast<AstNode*>(new AstOneHot(nodep->fileline(), propp)));
+            AstIf* checkifp
+                = new AstIf(nodep->fileline(), new AstLogNot(nodep->fileline(), ohot),
+                            newFireAssert(nodep, "'unique if' statement violated"), newifp);
             checkifp->branchPred(VBranchPred::BP_UNLIKELY);
             nodep->replaceWith(checkifp);
             pushDeletep(nodep);
@@ -234,20 +226,21 @@ private:
     }
 
     //========== Case assertions
-    virtual void visit(AstCase* nodep) VL_OVERRIDE {
+    virtual void visit(AstCase* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             bool has_default = false;
-            for (AstCaseItem* itemp = nodep->itemsp();
-                 itemp; itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+            for (AstCaseItem* itemp = nodep->itemsp(); itemp;
+                 itemp = VN_CAST(itemp->nextp(), CaseItem)) {
                 if (itemp->isDefault()) has_default = true;
             }
             if (nodep->fullPragma() || nodep->priorityPragma()) {
                 // Simply need to add a default if there isn't one already
                 ++m_statAsFull;
                 if (!has_default) {
-                    nodep->addItemsp(new AstCaseItem(nodep->fileline(), NULL/*DEFAULT*/,
-                                                     newFireAssert(nodep, "synthesis full_case, but non-match found")));
+                    nodep->addItemsp(new AstCaseItem(
+                        nodep->fileline(), nullptr /*DEFAULT*/,
+                        newFireAssert(nodep, "synthesis full_case, but non-match found")));
                 }
             }
             if (nodep->parallelPragma() || nodep->uniquePragma() || nodep->unique0Pragma()) {
@@ -257,13 +250,16 @@ private:
                 if (!has_default && !nodep->itemsp()) {
                     // Not parallel, but harmlessly so.
                 } else {
-                    AstNode* propp = NULL;
-                    for (AstCaseItem* itemp = nodep->itemsp();
-                         itemp; itemp=VN_CAST(itemp->nextp(), CaseItem)) {
-                        for (AstNode* icondp = itemp->condsp();
-                             icondp!=NULL; icondp=icondp->nextp()) {
+                    AstNode* propp = nullptr;
+                    for (AstCaseItem* itemp = nodep->itemsp(); itemp;
+                         itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+                        for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
                             AstNode* onep;
-                            if (nodep->casex() || nodep->casez() || nodep->caseInside()) {
+                            if (AstInsideRange* rcondp = VN_CAST(icondp, InsideRange)) {
+                                onep = rcondp->newAndFromInside(nodep->exprp(),
+                                                                rcondp->lhsp()->cloneTree(true),
+                                                                rcondp->rhsp()->cloneTree(true));
+                            } else if (nodep->casex() || nodep->casez() || nodep->caseInside()) {
                                 onep = AstEqWild::newTyped(itemp->fileline(),
                                                            nodep->exprp()->cloneTree(false),
                                                            icondp->cloneTree(false));
@@ -272,8 +268,11 @@ private:
                                                        nodep->exprp()->cloneTree(false),
                                                        icondp->cloneTree(false));
                             }
-                            if (propp) propp = new AstConcat(icondp->fileline(), onep, propp);
-                            else propp = onep;
+                            if (propp) {
+                                propp = new AstConcat(icondp->fileline(), onep, propp);
+                            } else {
+                                propp = onep;
+                            }
                         }
                     }
                     // Empty case means no property
@@ -282,12 +281,13 @@ private:
                     bool allow_none = has_default || nodep->unique0Pragma();
                     AstNode* ohot
                         = (allow_none
-                           ? static_cast<AstNode*>(new AstOneHot0(nodep->fileline(), propp))
-                           : static_cast<AstNode*>(new AstOneHot(nodep->fileline(), propp)));
-                    AstIf* ifp = new AstIf(nodep->fileline(),
-                                           new AstLogNot(nodep->fileline(), ohot),
-                                           newFireAssert(nodep, "synthesis parallel_case, but multiple matches found"),
-                                           NULL);
+                               ? static_cast<AstNode*>(new AstOneHot0(nodep->fileline(), propp))
+                               : static_cast<AstNode*>(new AstOneHot(nodep->fileline(), propp)));
+                    AstIf* ifp = new AstIf(
+                        nodep->fileline(), new AstLogNot(nodep->fileline(), ohot),
+                        newFireAssert(nodep,
+                                      "synthesis parallel_case, but multiple matches found"),
+                        nullptr);
                     ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     nodep->addNotParallelp(ifp);
                 }
@@ -296,7 +296,7 @@ private:
     }
 
     //========== Past
-    virtual void visit(AstPast* nodep) VL_OVERRIDE {
+    virtual void visit(AstPast* nodep) override {
         iterateChildren(nodep);
         uint32_t ticks = 1;
         if (nodep->ticksp()) {
@@ -304,96 +304,86 @@ private:
                         "Expected constant ticks, checked in V3Width");
             ticks = VN_CAST(nodep->ticksp(), Const)->toUInt();
         }
-        UASSERT_OBJ(ticks>=1, nodep, "0 tick should have been checked in V3Width");
+        UASSERT_OBJ(ticks >= 1, nodep, "0 tick should have been checked in V3Width");
         AstNode* inp = nodep->exprp()->unlinkFrBack();
-        AstVar* invarp = NULL;
-        AstSenTree* sentreep = nodep->sentreep(); sentreep->unlinkFrBack();
-        AstAlways* alwaysp = new AstAlways(nodep->fileline(), VAlwaysKwd::ALWAYS,
-                                           sentreep, NULL);
+        AstVar* invarp = nullptr;
+        AstSenTree* sentreep = nodep->sentreep();
+        sentreep->unlinkFrBack();
+        AstAlways* alwaysp
+            = new AstAlways(nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, nullptr);
         m_modp->addStmtp(alwaysp);
-        for (uint32_t i=0; i<ticks; ++i) {
+        for (uint32_t i = 0; i < ticks; ++i) {
             AstVar* outvarp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
-                                         "_Vpast_"+cvtToStr(m_modPastNum++)+"_"+cvtToStr(i),
+                                         "_Vpast_" + cvtToStr(m_modPastNum++) + "_" + cvtToStr(i),
                                          inp->dtypep());
             m_modp->addStmtp(outvarp);
             AstNode* assp = new AstAssignDly(nodep->fileline(),
-                                             new AstVarRef(nodep->fileline(), outvarp, true),
-                                             inp);
+                                             new AstVarRef(nodep->fileline(), outvarp, true), inp);
             alwaysp->addStmtp(assp);
-            //if (debug()>-9) assp->dumpTree(cout, "-ass: ");
+            // if (debug() >= 9) assp->dumpTree(cout, "-ass: ");
             invarp = outvarp;
             inp = new AstVarRef(nodep->fileline(), invarp, false);
         }
         nodep->replaceWith(inp);
     }
-    virtual void visit(AstSampled* nodep) VL_OVERRIDE {
+    virtual void visit(AstSampled* nodep) override {
         nodep->replaceWith(nodep->exprp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     //========== Statements
-    virtual void visit(AstDisplay* nodep) VL_OVERRIDE {
+    virtual void visit(AstDisplay* nodep) override {
         iterateChildren(nodep);
         // Replace the special types with standard text
-        if (nodep->displayType()==AstDisplayType::DT_INFO) {
+        if (nodep->displayType() == AstDisplayType::DT_INFO) {
             replaceDisplay(nodep, "-Info");
-        } else if (nodep->displayType()==AstDisplayType::DT_WARNING) {
+        } else if (nodep->displayType() == AstDisplayType::DT_WARNING) {
             replaceDisplay(nodep, "%%Warning");
-        } else if (nodep->displayType()==AstDisplayType::DT_ERROR
-                   || nodep->displayType()==AstDisplayType::DT_FATAL) {
+        } else if (nodep->displayType() == AstDisplayType::DT_ERROR
+                   || nodep->displayType() == AstDisplayType::DT_FATAL) {
             replaceDisplay(nodep, "%%Error");
         }
     }
 
-    virtual void visit(AstAssert* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssert* nodep) override {
         iterateChildren(nodep);
         newPslAssertion(nodep, nodep->failsp());
     }
-    virtual void visit(AstCover* nodep) VL_OVERRIDE {
+    virtual void visit(AstCover* nodep) override {
         iterateChildren(nodep);
-        newPslAssertion(nodep, NULL);
+        newPslAssertion(nodep, nullptr);
     }
-    virtual void visit(AstRestrict* nodep) VL_OVERRIDE {
+    virtual void visit(AstRestrict* nodep) override {
         iterateChildren(nodep);
         // IEEE says simulator ignores these
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
-        AstNodeModule* origModp = m_modp;
-        unsigned origPastNum = m_modPastNum;
+    virtual void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_modPastNum);
         {
             m_modp = nodep;
             m_modPastNum = 0;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
-        m_modPastNum = origPastNum;
     }
-    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
+    virtual void visit(AstBegin* nodep) override {
         // This code is needed rather than a visitor in V3Begin,
         // because V3Assert is called before V3Begin
-        AstBegin* lastp = m_beginp;
+        VL_RESTORER(m_beginp);
         {
             m_beginp = nodep;
             iterateChildren(nodep);
         }
-        m_beginp = lastp;
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
-    explicit AssertVisitor(AstNetlist* nodep) {
-        m_beginp = NULL;
-        m_modp = NULL;
-        m_modPastNum = 0;
-        // Process
-        iterate(nodep);
-    }
-    virtual ~AssertVisitor() {
+    explicit AssertVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~AssertVisitor() override {
         V3Stats::addStat("Assertions, assert non-immediate statements", m_statAsNotImm);
         V3Stats::addStat("Assertions, assert immediate statements", m_statAsImm);
         V3Stats::addStat("Assertions, cover statements", m_statCover);
@@ -405,9 +395,7 @@ public:
 // Top Assert class
 
 void V3Assert::assertAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    {
-        AssertVisitor visitor (nodep);
-    }  // Destruct before checking
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    { AssertVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("assert", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

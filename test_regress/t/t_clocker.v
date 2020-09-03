@@ -4,6 +4,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2015 by Jie Xu.
+// SPDX-License-Identifier: CC0-1.0
 
 localparam ID_MSB = 1;
 
