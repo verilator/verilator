@@ -25,6 +25,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix queues as class members (#2525). [nanduraj1]
 
+****  Add support for assume property. [Peter Monsson]
+
 
 * Verilator 4.040 2020-08-15
 
