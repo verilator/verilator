@@ -22,7 +22,6 @@ module t (/*AUTOARG*/
                 .clk                    (clk),
                 .in                     (in[31:0]));
 
-
    always @ (posedge clk) begin
       if (cyc!=0) begin
          cyc <= cyc + 1;
@@ -43,7 +42,9 @@ module Test (/*AUTOARG*/
    input clk;
    input [31:0] in;
 
-   reg [31:0]   dly0 = -1;
+   reg [31:0]   dly0 = 0;
+   reg [31:0]   dly1 = 1;
+   reg [31:0]   dly2 = -1;
 
    // If called in an assertion, sequence, or property, the appropriate clocking event.
    // Otherwise, if called in a disable condition or a clock expression in an assertion, sequence, or prop, explicit.
@@ -53,15 +54,22 @@ module Test (/*AUTOARG*/
 
    always @(posedge clk) begin
       dly0 <= in;
+      dly1 <= in;
+      dly2 <= in;
       // In clock expression
-      $write("dly0=%0d, in=%0d, stable=%0d, past=%0d\n", dly0, in, $stable(dly0), $past(dly0));
-      if ($stable(dly0)) $stop;
-      if (!$changed(dly0)) $stop;
+      $write("in=%0d, dly0=%0d, rose=%0d, past=%0d\n", in, dly0, $rose(dly0), $past(dly0));
+      if ($rose(dly0[4])) $stop;
+      if ($fell(dly1[4])) $stop;
+      if ($stable(dly2)) $stop;
+      if (!$changed(dly2)) $stop;
    end
 
-   assert property (@(posedge clk) !$stable(dly0));
-   assert property (@(posedge clk) $changed(dly0));
+   assert property (@(posedge clk) $rose(dly0) || dly0%2==0);
+   assert property (@(posedge clk) $fell(dly1) || dly1%2==1);
+   assert property (@(posedge clk) !$stable(dly2));
+   assert property (@(posedge clk) $changed(dly2));
 endmodule
+
 
 module Test2 (/*AUTOARG*/
    // Inputs
@@ -72,14 +80,26 @@ module Test2 (/*AUTOARG*/
    input [31:0] in;
 
    reg [31:0]   dly0;
+   reg [31:0]   dly1 = 1;
+   reg [31:0]   dly2;
 
    always @(posedge clk) begin
       dly0 <= in;
-      if (!$stable(dly0[31:4])) $stop;
-      if ($changed(dly0[31:4])) $stop;
+      dly1 <= in;
+      dly2 <= in;
+      if ($rose(dly0[31:4])) $stop;
+      if ($fell(dly1[31:4])) $stop;
+      if (!$stable(dly2[31:4])) $stop;
+      if ($changed(dly2[31:4])) $stop;
    end
 
    default clocking @(posedge clk); endclocking
-   assert property ($stable(dly0[31:4]));
-   assert property (!$changed(dly0[31:4]));
+   assert property ($rose(dly0[0]) || dly0%2==0);
+
+   default clocking @(posedge clk); endclocking
+   assert property ($fell(dly1[0]) || dly1%2==1);
+
+   default clocking @(posedge clk); endclocking
+   assert property ($stable(dly2[31:4]));
+   assert property (!$changed(dly2[31:4]));
 endmodule
