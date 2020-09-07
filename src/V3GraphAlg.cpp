@@ -81,7 +81,7 @@ private:
     void vertexIterate(V3GraphVertex* vertexp) {
         // Clear marks
         for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            edgep->top()->userp(NULL);
+            edgep->top()->userp(nullptr);
         }
         // Mark edges and detect duplications
         for (V3GraphEdge *nextp, *edgep = vertexp->outBeginp(); edgep; edgep = nextp) {
@@ -119,8 +119,8 @@ private:
 
 public:
     GraphRemoveRedundant(V3Graph* graphp, V3EdgeFuncP edgeFuncp, bool sumWeights)
-        : GraphAlg<>(graphp, edgeFuncp)
-        , m_sumWeights(sumWeights) {
+        : GraphAlg<>{graphp, edgeFuncp}
+        , m_sumWeights{sumWeights} {
         main();
     }
     ~GraphRemoveRedundant() {}
@@ -140,13 +140,13 @@ void V3Graph::removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp) {
 class GraphAlgRemoveTransitiveEdges : GraphAlg<> {
 public:
     explicit GraphAlgRemoveTransitiveEdges(V3Graph* graphp)
-        : GraphAlg<>(graphp, NULL) {}
+        : GraphAlg<>(graphp, nullptr) {}
     void go() {
         GraphPathChecker checker(m_graphp);
         for (V3GraphVertex* vxp = m_graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            V3GraphEdge* deletep = NULL;
+            V3GraphEdge* deletep = nullptr;
             for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                if (deletep) VL_DO_CLEAR(deletep->unlinkDelete(), deletep = NULL);
+                if (deletep) VL_DO_CLEAR(deletep->unlinkDelete(), deletep = nullptr);
                 // It should be safe to modify the graph, despite using
                 // the GraphPathChecker, as none of the modifications will
                 // change what can be reached from what, nor should they
@@ -284,7 +284,7 @@ private:
 
 public:
     GraphAlgStrongly(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-        : GraphAlg<>(graphp, edgeFuncp) {
+        : GraphAlg<>{graphp, edgeFuncp} {
         m_currentDfs = 0;
         main();
     }
@@ -336,7 +336,7 @@ private:
 
 public:
     GraphAlgRank(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-        : GraphAlg<>(graphp, edgeFuncp) {
+        : GraphAlg<>{graphp, edgeFuncp} {
         main();
     }
     ~GraphAlgRank() {}
@@ -389,7 +389,7 @@ private:
 
 public:
     GraphAlgRLoops(V3Graph* graphp, V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp)
-        : GraphAlg<>(graphp, edgeFuncp) {
+        : GraphAlg<>{graphp, edgeFuncp} {
         m_done = false;
         main(vertexp);
     }
@@ -433,8 +433,8 @@ private:
 public:
     GraphAlgSubtrees(V3Graph* graphp, V3Graph* loopGraphp, V3EdgeFuncP edgeFuncp,
                      V3GraphVertex* vertexp)
-        : GraphAlg<>(graphp, edgeFuncp)
-        , m_loopGraphp(loopGraphp) {
+        : GraphAlg<>{graphp, edgeFuncp}
+        , m_loopGraphp{loopGraphp} {
         // Vertex::m_userp - New vertex if we have seen this vertex already
         // Edge::m_userp - New edge if we have seen this edge already
         m_graphp->userClearVertices();
@@ -487,9 +487,7 @@ void V3Graph::sortVertices() {
     }
     std::stable_sort(vertices.begin(), vertices.end(), GraphSortVertexCmp());
     this->verticesUnlink();
-    for (std::vector<V3GraphVertex*>::iterator it = vertices.begin(); it != vertices.end(); ++it) {
-        (*it)->verticesPushBack(this);
-    }
+    for (V3GraphVertex* ip : vertices) ip->verticesPushBack(this);
 }
 
 void V3Graph::sortEdges() {
@@ -507,10 +505,7 @@ void V3Graph::sortEdges() {
         // We know the vector contains all of the edges that were
         // there originally (didn't delete or add)
         vertexp->outUnlink();
-        for (std::vector<V3GraphEdge*>::const_iterator it = edges.begin(); it != edges.end();
-             ++it) {
-            (*it)->outPushBack();
-        }
+        for (V3GraphEdge* edgep : edges) edgep->outPushBack();
         // Prep for next
         edges.clear();
     }

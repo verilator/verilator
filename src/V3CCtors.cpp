@@ -48,11 +48,11 @@ private:
 public:
     void add(AstNode* nodep) {
         if (v3Global.opt.outputSplitCFuncs() && v3Global.opt.outputSplitCFuncs() < m_numStmts) {
-            m_funcp = NULL;
+            m_funcp = nullptr;
         }
         if (!m_funcp) {
             m_funcp = new AstCFunc(m_modp->fileline(), m_basename + "_" + cvtToStr(++m_funcNum),
-                                   NULL, "void");
+                                   nullptr, "void");
             m_funcp->isStatic(false);
             m_funcp->declPrivate(true);
             m_funcp->slow(!VN_IS(m_modp, Class));  // Only classes construct on fast path
@@ -78,7 +78,7 @@ public:
         m_modp = nodep;
         m_numStmts = 0;
         m_funcNum = 0;
-        m_tlFuncp = new AstCFunc(nodep->fileline(), basename, NULL, "void");
+        m_tlFuncp = new AstCFunc(nodep->fileline(), basename, nullptr, "void");
         m_tlFuncp->declPrivate(true);
         m_tlFuncp->isStatic(false);
         m_tlFuncp->slow(!VN_IS(m_modp, Class));  // Only classes construct on fast path
@@ -97,7 +97,7 @@ private:
 
 void V3CCtors::evalAsserts() {
     AstNodeModule* modp = v3Global.rootp()->modulesp();  // Top module wrapper
-    AstCFunc* funcp = new AstCFunc(modp->fileline(), "_eval_debug_assertions", NULL, "void");
+    AstCFunc* funcp = new AstCFunc(modp->fileline(), "_eval_debug_assertions", nullptr, "void");
     funcp->declPrivate(true);
     funcp->isStatic(false);
     funcp->slow(false);
@@ -170,10 +170,12 @@ void V3CCtors::cctorsAll() {
                 }
             }
         }
-        if (VN_IS(modp, Class)) {
-            AstCFunc* funcp = new AstCFunc(modp->fileline(), "~", NULL, "");
+        if (AstClass* classp = VN_CAST(modp, Class)) {
+            AstCFunc* funcp = new AstCFunc(modp->fileline(), "~", nullptr, "");
             funcp->isDestructor(true);
             funcp->isStatic(false);
+            // If can be referred to by base pointer, need virtual delete
+            funcp->isVirtual(classp->isExtended());
             funcp->slow(false);
             modp->addStmtp(funcp);
         }

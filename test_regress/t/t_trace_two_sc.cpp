@@ -48,19 +48,11 @@ int sc_main(int argc, char** argv) {
 #endif
     {
         clk = false;
-#if (SYSTEMC_VERSION>=20070314)
         sc_start(10, SC_NS);
-#else
-        sc_start(10);
-#endif
     }
     while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
         clk = !clk;
-#if (SYSTEMC_VERSION>=20070314)
         sc_start(5, SC_NS);
-#else
-        sc_start(5);
-#endif
     }
     if (!Verilated::gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");

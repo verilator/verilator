@@ -52,11 +52,11 @@ private:
     AstUser2InUse m_inuser2;
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
-    bool m_constXCvt;  // Convert X's
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstAssignW* m_assignwp = nullptr;  // Current assignment
+    AstAssignDly* m_assigndlyp = nullptr;  // Current assignment
+    bool m_constXCvt = false;  // Convert X's
     VDouble0 m_statUnkVars;  // Statistic tracking
-    AstAssignW* m_assignwp;  // Current assignment
-    AstAssignDly* m_assigndlyp;  // Current assignment
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -82,9 +82,9 @@ private:
             // of multiple statements.  Perhaps someday make all wassigns into always's?
             UINFO(5, "     IM_WireRep  " << m_assignwp << endl);
             m_assignwp->convertToAlways();
-            VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = NULL);
+            VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = nullptr);
         }
-        bool needDly = (m_assigndlyp != NULL);
+        bool needDly = (m_assigndlyp != nullptr);
         if (m_assigndlyp) {
             // Delayed assignments become normal assignments,
             // then the temp created becomes the delayed assignment
@@ -92,7 +92,7 @@ private:
                                           m_assigndlyp->lhsp()->unlinkFrBackWithNext(),
                                           m_assigndlyp->rhsp()->unlinkFrBackWithNext());
             m_assigndlyp->replaceWith(newp);
-            VL_DO_CLEAR(pushDeletep(m_assigndlyp), m_assigndlyp = NULL);
+            VL_DO_CLEAR(pushDeletep(m_assigndlyp), m_assigndlyp = nullptr);
         }
         AstNode* prep = nodep;
 
@@ -125,7 +125,7 @@ private:
                                  new AstAssignDly(fl, prep, new AstVarRef(fl, varp, false)))
                                      : static_cast<AstNode*>(
                                          new AstAssign(fl, prep, new AstVarRef(fl, varp, false)))),
-                            NULL);
+                            nullptr);
             newp->branchPred(VBranchPred::BP_LIKELY);
             if (debug() >= 9) newp->dumpTree(cout, "     _new: ");
             abovep->addNextStmt(newp, abovep);
@@ -134,33 +134,32 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             m_constXCvt = true;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
-    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignDly* nodep) override {
         m_assigndlyp = nodep;
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        m_assigndlyp = NULL;
+        m_assigndlyp = nullptr;
     }
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignW* nodep) override {
         m_assignwp = nodep;
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        m_assignwp = NULL;
+        m_assignwp = nullptr;
     }
-    virtual void visit(AstCaseItem* nodep) VL_OVERRIDE {
+    virtual void visit(AstCaseItem* nodep) override {
         m_constXCvt = false;  // Avoid losing the X's in casex
         iterateAndNextNull(nodep->condsp());
         m_constXCvt = true;
         iterateAndNextNull(nodep->bodysp());
     }
-    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeDType* nodep) override {
         m_constXCvt = false;  // Avoid losing the X's in casex
         iterateChildren(nodep);
         m_constXCvt = true;
@@ -237,11 +236,11 @@ private:
         }
     }
 
-    virtual void visit(AstEqCase* nodep) VL_OVERRIDE { visitEqNeqCase(nodep); }
-    virtual void visit(AstNeqCase* nodep) VL_OVERRIDE { visitEqNeqCase(nodep); }
-    virtual void visit(AstEqWild* nodep) VL_OVERRIDE { visitEqNeqWild(nodep); }
-    virtual void visit(AstNeqWild* nodep) VL_OVERRIDE { visitEqNeqWild(nodep); }
-    virtual void visit(AstIsUnknown* nodep) VL_OVERRIDE {
+    virtual void visit(AstEqCase* nodep) override { visitEqNeqCase(nodep); }
+    virtual void visit(AstNeqCase* nodep) override { visitEqNeqCase(nodep); }
+    virtual void visit(AstEqWild* nodep) override { visitEqNeqWild(nodep); }
+    virtual void visit(AstNeqWild* nodep) override { visitEqNeqWild(nodep); }
+    virtual void visit(AstIsUnknown* nodep) override {
         iterateChildren(nodep);
         // Ahh, we're two state, so this is easy
         UINFO(4, " ISUNKNOWN->0 " << nodep << endl);
@@ -249,7 +248,7 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstConst* nodep) VL_OVERRIDE {
+    virtual void visit(AstConst* nodep) override {
         if (m_constXCvt && nodep->num().isFourState()) {
             UINFO(4, " CONST4 " << nodep << endl);
             if (debug() >= 9) nodep->dumpTree(cout, "  Const_old: ");
@@ -306,7 +305,7 @@ private:
         }
     }
 
-    virtual void visit(AstSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstSel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
@@ -353,7 +352,7 @@ private:
     // visit(AstSliceSel) not needed as its bounds are constant and checked
     // in V3Width.
 
-    virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
+    virtual void visit(AstArraySel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             if (debug() == 9) nodep->dumpTree(cout, "-in: ");
@@ -424,18 +423,12 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit UnknownVisitor(AstNetlist* nodep) {
-        m_modp = NULL;
-        m_assigndlyp = NULL;
-        m_assignwp = NULL;
-        m_constXCvt = false;
-        iterate(nodep);
-    }
-    virtual ~UnknownVisitor() {  //
+    explicit UnknownVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~UnknownVisitor() override {  //
         V3Stats::addStat("Unknowns, variables created", m_statUnkVars);
     }
 };

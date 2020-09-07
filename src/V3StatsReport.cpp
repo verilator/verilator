@@ -25,7 +25,7 @@
 
 #include <iomanip>
 #include <map>
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 //######################################################################
 // Stats dumping
@@ -59,7 +59,7 @@ class StatsReport {
         }
 
         // Process duplicates
-        V3Statistic* lastp = NULL;
+        V3Statistic* lastp = nullptr;
         for (ByName::iterator it = byName.begin(); it != byName.end(); ++it) {
             V3Statistic* repp = it->second;
             if (lastp && lastp->sumit() && lastp->printit() && lastp->name() == repp->name()
@@ -117,7 +117,7 @@ class StatsReport {
         size_t maxWidth = 0;
         typedef std::vector<string> Stages;
         Stages stages;
-        vl_unordered_map<string, int> stageInt;
+        std::unordered_map<string, int> stageInt;
         typedef std::multimap<string, const V3Statistic*> ByName;
         ByName byName;
         // * is always first
@@ -135,12 +135,10 @@ class StatsReport {
 
         // Header
         os << "  Stat     " << std::left << std::setw(maxWidth - 5 - 2) << "";
-        for (Stages::const_iterator it = stages.begin(); it != stages.end(); ++it) {
-            os << "  " << std::left << std::setw(9) << *it;
-        }
+        for (const string& i : stages) os << "  " << std::left << std::setw(9) << i;
         os << endl;
         os << "  -------- " << std::left << std::setw(maxWidth - 5 - 2) << "";
-        for (Stages::const_iterator it = stages.begin(); it != stages.end(); ++it) {
+        for (auto it = stages.begin(); it != stages.end(); ++it) {
             os << "  " << std::left << std::setw(9) << "-------";
         }
         // os<<endl;
@@ -182,7 +180,7 @@ public:
 
     // CONSTRUCTORS
     explicit StatsReport(std::ofstream* aofp)
-        : os(*aofp) {
+        : os(*aofp) {  // Need () or GCC 4.8 false warning
         header();
         sumit();
         stars();
@@ -231,7 +229,7 @@ void V3Stats::statsReport() {
     UINFO(2, __FUNCTION__ << ": " << endl);
 
     // Open stats file
-    string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__stats.txt";
+    string filename = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix() + "__stats.txt";
     std::ofstream* ofp(V3File::new_ofstream(filename));
     if (ofp->fail()) v3fatal("Can't write " << filename);
 

@@ -35,11 +35,11 @@ class VlcOptions {
     // MEMBERS (general options)
     // clang-format off
     string m_annotateOut;       // main switch: --annotate I<output_directory>
-    bool m_annotateAll;         // main switch: --annotate-all
-    int m_annotateMin;          // main switch: --annotate-min I<count>
+    bool m_annotateAll=false;         // main switch: --annotate-all
+    int m_annotateMin=10;          // main switch: --annotate-min I<count>
     VlStringSet m_readFiles;    // main switch: --read
-    bool m_rank;                // main switch: --rank
-    bool m_unlink;              // main switch: --unlink
+    bool m_rank=false;                // main switch: --rank
+    bool m_unlink=false;              // main switch: --unlink
     string m_writeFile;         // main switch: --write
     string m_writeInfoFile;     // main switch: --write-info
     // clang-format on
@@ -51,12 +51,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlcOptions() {
-        m_annotateAll = false;
-        m_annotateMin = 10;
-        m_rank = false;
-        m_unlink = false;
-    }
+    VlcOptions() {}
     ~VlcOptions() {}
 
     // METHODS

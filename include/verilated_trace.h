@@ -87,7 +87,7 @@ class VerilatedTraceCommand {
 public:
     // These must all fit in 4 bit at the moment, as the tracing routines
     // pack parameters in the top bits.
-    enum {
+    enum : vluint8_t {
         CHG_BIT_0 = 0x0,
         CHG_BIT_1 = 0x1,
         CHG_CDATA = 0x2,
@@ -130,11 +130,11 @@ private:
         };
         void* m_userp;  // The user pointer to pass to the callback (the symbol table)
         CallbackRecord(initCb_t cb, void* userp)
-            : m_initCb(cb)
-            , m_userp(userp) {}
+            : m_initCb{cb}
+            , m_userp{userp} {}
         CallbackRecord(dumpCb_t cb, void* userp)
-            : m_dumpCb(cb)
-            , m_userp(userp) {}
+            : m_dumpCb{cb}
+            , m_userp{userp} {}
     };
 
     vluint32_t* m_sigs_oldvalp;  ///< Old value store

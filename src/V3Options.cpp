@@ -53,7 +53,7 @@
 class V3OptionsImp {
 public:
     // TYPES
-    typedef std::map<string, std::set<string> > DirMap;  // Directory listing
+    typedef std::map<string, std::set<string>> DirMap;  // Directory listing
 
     // STATE
     std::list<string> m_allArgs;  // List of every argument encountered
@@ -122,7 +122,7 @@ V3LangCode::V3LangCode(const char* textp) {
 // VTimescale class functions
 
 VTimescale::VTimescale(const string& value, bool& badr)
-    : m_e(VTimescale::NONE) {
+    : m_e{VTimescale::NONE} {
     badr = true;
     string spaceless = VString::removeWhitespace(value);
     for (int i = TS_100S; i < _ENUM_END; ++i) {
@@ -134,6 +134,95 @@ VTimescale::VTimescale(const string& value, bool& badr)
         }
     }
 }
+
+//######################################################################
+// V3HierarchicalBlockOption class functions
+
+// Parse "--hierarchical-block orig_name,mangled_name,param0_name,param0_value,... " option.
+// The format of value is as same as -G option. (can be string literal surrounded by ")
+V3HierarchicalBlockOption::V3HierarchicalBlockOption(const string& opts) {
+    V3StringList vals;
+    bool inStr = false;
+    string cur;
+    static const string hierBlock("--hierarchical-block");
+    FileLine cmdfl(FileLine::commandLineFilename());
+    // Split by ','. If ',' appears between "", that is not a separator.
+    for (string::const_iterator it = opts.begin(); it != opts.end();) {
+        if (inStr) {
+            if (*it == '\\') {
+                ++it;
+                if (it == opts.end()) {
+                    cmdfl.v3error(hierBlock + " must not end with \\");
+                    break;
+                }
+                if (*it != '"' && *it != '\\') {
+                    cmdfl.v3error(hierBlock + " does not allow '" + *it + "' after \\");
+                    break;
+                }
+                cur.push_back(*it);
+                ++it;
+            } else if (*it == '"') {  // end of string
+                cur.push_back(*it);
+                vals.push_back(cur);
+                cur.clear();
+                ++it;
+                if (it != opts.end()) {
+                    if (*it != ',') {
+                        cmdfl.v3error(hierBlock + " expects ',', but '" + *it + "' is passed");
+                        break;
+                    }
+                    ++it;
+                    if (it == opts.end()) {
+                        cmdfl.v3error(hierBlock + " must not end with ','");
+                        break;
+                    }
+                    inStr = *it == '"';
+                    cur.push_back(*it);
+                    ++it;
+                }
+            } else {
+                cur.push_back(*it);
+                ++it;
+            }
+        } else {
+            if (*it == '"') {
+                cmdfl.v3error(hierBlock + " does not allow '\"' in the middle of literal");
+                break;
+            }
+            if (*it == ',') {  // end of this parameter
+                vals.push_back(cur);
+                cur.clear();
+                ++it;
+                if (it == opts.end()) {
+                    cmdfl.v3error(hierBlock + " must not end with ','");
+                    break;
+                }
+                inStr = *it == '"';
+            }
+            cur.push_back(*it);
+            ++it;
+        }
+    }
+    if (!cur.empty()) vals.push_back(cur);
+    if (vals.size() >= 2) {
+        if (vals.size() % 2) {
+            cmdfl.v3error(hierBlock + " requires the number of entries to be even");
+        }
+        m_origName = vals[0];
+        m_mangledName = vals[1];
+    } else {
+        cmdfl.v3error(hierBlock + " requires at least two comma-separated values");
+    }
+    for (size_t i = 2; i + 1 < vals.size(); i += 2) {
+        const bool inserted = m_parameters.insert(std::make_pair(vals[i], vals[i + 1])).second;
+        if (!inserted) {
+            cmdfl.v3error("Module name '" + vals[i] + "' is duplicated in " + hierBlock);
+        }
+    }
+}
+
+//######################################################################
+// V3Options class functions
 
 void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr,
                               VTimescale& precr, bool allowEmpty) {
@@ -296,10 +385,45 @@ void V3Options::addArg(const string& arg) { m_impp->m_allArgs.push_back(arg); }
 
 string V3Options::allArgsString() const {
     string out;
+    for (const string& i : m_impp->m_allArgs) {
+        if (out != "") out += " ";
+        out += i;
+    }
+    return out;
+}
+
+// Delete some options for Verilation of the hierarchical blocks.
+string V3Options::allArgsStringForHierBlock(bool forTop) const {
+    std::set<string> vFiles;
+    for (V3StringList::const_iterator it = m_vFiles.begin(); it != m_vFiles.end(); ++it)
+        vFiles.insert(*it);
+    string out;
     for (std::list<string>::const_iterator it = m_impp->m_allArgs.begin();
          it != m_impp->m_allArgs.end(); ++it) {
+        int skip = 0;
+        if (it->length() >= 2 && (*it)[0] == '-' && (*it)[1] == '-') {
+            skip = 2;
+        } else if (it->length() >= 1 && (*it)[0] == '-') {
+            skip = 1;
+        }
+        if (skip > 0) {  // *it is an option
+            const string opt = it->substr(skip);  // Remove '-' in the beginning
+            const int numStrip = stripOptionsForChildRun(opt, forTop);
+            if (numStrip) {
+                UASSERT(0 <= numStrip && numStrip <= 2, "should be one of 0, 1, 2");
+                if (numStrip == 2) ++it;
+                continue;
+            }
+        } else {  // Not an option
+            if (vFiles.find(*it) != vFiles.end()  // Remove HDL
+                || m_cppFiles.find(*it) != m_cppFiles.end()) {  // Remove C++
+                continue;
+            }
+        }
         if (out != "") out += " ";
-        out += *it;
+        // Don't use opt here because '-' is removed in it
+        // Use double quote because *it may contain whitespaces
+        out += '"' + VString::quoteAny(*it, '"', '\\') + '"';
     }
     return out;
 }
@@ -344,7 +468,7 @@ string V3Options::fileExists(const string& filename) {
     string dir = V3Os::filenameDir(filename);
     string basename = V3Os::filenameNonDir(filename);
 
-    V3OptionsImp::DirMap::iterator diriter = m_impp->m_dirMap.find(dir);
+    auto diriter = m_impp->m_dirMap.find(dir);
     if (diriter == m_impp->m_dirMap.end()) {
         // Read the listing
         m_impp->m_dirMap.insert(std::make_pair(dir, std::set<string>()));
@@ -359,7 +483,7 @@ string V3Options::fileExists(const string& filename) {
     }
     // Find it
     std::set<string>* filesetp = &(diriter->second);
-    std::set<string>::iterator fileiter = filesetp->find(basename);
+    const auto fileiter = filesetp->find(basename);
     if (fileiter == filesetp->end()) {
         return "";  // Not found
     }
@@ -370,9 +494,8 @@ string V3Options::fileExists(const string& filename) {
 }
 
 string V3Options::filePathCheckOneDir(const string& modname, const string& dirname) {
-    for (std::list<string>::iterator extIter = m_impp->m_libExtVs.begin();
-         extIter != m_impp->m_libExtVs.end(); ++extIter) {
-        string fn = V3Os::filenameFromDirBase(dirname, modname + *extIter);
+    for (const string& i : m_impp->m_libExtVs) {
+        string fn = V3Os::filenameFromDirBase(dirname, modname + i);
         string exists = fileExists(fn);
         if (exists != "") {
             // Strip ./, it just looks ugly
@@ -383,19 +506,34 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
     return "";
 }
 
+// Checks if a option needs to be stripped for child run of hierarchical Verilation.
+// 0: Keep the option including its argument
+// 1: Delete the option which has no argument
+// 2: Delete the option and its argument
+int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) const {
+    if (opt == "Mdir" || opt == "clk" || opt == "f" || opt == "j" || opt == "l2-name"
+        || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib" || opt == "protect-key"
+        || opt == "top-module" || opt == "v") {
+        return 2;
+    }
+    if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
+        || opt == "hierarchical" || (opt.length() > 2 && opt.substr(0, 2) == "G=")) {
+        return 1;
+    }
+    return 0;
+}
+
 string V3Options::filePath(FileLine* fl, const string& modname, const string& lastpath,
                            const string& errmsg) {  // Error prefix or "" to suppress error
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
-    for (std::list<string>::iterator dirIter = m_impp->m_incDirUsers.begin();
-         dirIter != m_impp->m_incDirUsers.end(); ++dirIter) {
-        string exists = filePathCheckOneDir(modname, *dirIter);
+    for (const string& dir : m_impp->m_incDirUsers) {
+        string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
-    for (std::list<string>::iterator dirIter = m_impp->m_incDirFallbacks.begin();
-         dirIter != m_impp->m_incDirFallbacks.end(); ++dirIter) {
-        string exists = filePathCheckOneDir(modname, *dirIter);
+    for (const string& dir : m_impp->m_incDirFallbacks) {
+        string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
     }
 
@@ -426,19 +564,15 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
                         << endl);
         }
         std::cerr << V3Error::warnMore() << "... Looked in:" << endl;
-        for (std::list<string>::iterator dirIter = m_impp->m_incDirUsers.begin();
-             dirIter != m_impp->m_incDirUsers.end(); ++dirIter) {
-            for (std::list<string>::iterator extIter = m_impp->m_libExtVs.begin();
-                 extIter != m_impp->m_libExtVs.end(); ++extIter) {
-                string fn = V3Os::filenameFromDirBase(*dirIter, modname + *extIter);
+        for (const string& dir : m_impp->m_incDirUsers) {
+            for (const string& ext : m_impp->m_libExtVs) {
+                string fn = V3Os::filenameFromDirBase(dir, modname + ext);
                 std::cerr << V3Error::warnMore() << "     " << fn << endl;
             }
         }
-        for (std::list<string>::iterator dirIter = m_impp->m_incDirFallbacks.begin();
-             dirIter != m_impp->m_incDirFallbacks.end(); ++dirIter) {
-            for (std::list<string>::iterator extIter = m_impp->m_libExtVs.begin();
-                 extIter != m_impp->m_libExtVs.end(); ++extIter) {
-                string fn = V3Os::filenameFromDirBase(*dirIter, modname + *extIter);
+        for (const string& dir : m_impp->m_incDirFallbacks) {
+            for (const string& ext : m_impp->m_libExtVs) {
+                string fn = V3Os::filenameFromDirBase(dir, modname + ext);
                 std::cerr << V3Error::warnMore() << "     " << fn << endl;
             }
         }
@@ -454,7 +588,7 @@ V3LangCode V3Options::fileLanguage(const string& filename) {
     string::size_type pos;
     if ((pos = ext.rfind('.')) != string::npos) {
         ext.erase(0, pos + 1);
-        std::map<string, V3LangCode>::iterator it = m_impp->m_langExts.find(ext);
+        const auto it = m_impp->m_langExts.find(ext);
         if (it != m_impp->m_langExts.end()) return it->second;
     }
     return m_defaultLanguage;
@@ -599,6 +733,19 @@ void V3Options::notify() {
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_cmake) m_gmake = true;
 
+    if (m_hierarchical && (m_hierChild || !m_hierBlocks.empty())) {
+        cmdfl->v3error(
+            "--hierarchical must not be set with --hierarchical-child or --hierarchical-block");
+    }
+    if (m_hierChild && m_hierBlocks.empty()) {
+        cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
+    }
+    if (m_hierarchical && m_protectLib.empty() && m_protectKey.empty()) {
+        // Key for hierarchical Verilation is fixed to be ccache friendly when the aim of this run
+        // is not to create protec-lib.
+        m_protectKey = "VL-KEY-HIERARCHICAL";
+    }
+
     if (protectIds()) {
         if (allPublic()) {
             // We always call protect() on names, we don't check if public or not
@@ -672,7 +819,7 @@ string V3Options::protectKeyDefaulted() {
 void V3Options::throwSigsegv() {  // LCOV_EXCL_START
 #if !(defined(VL_CPPCHECK) || defined(__clang_analyzer__))
     // clang-format off
-    { char* zp = NULL; *zp = 0; }  // Intentional core dump, ignore warnings here
+    { char* zp = nullptr; *zp = 0; }  // Intentional core dump, ignore warnings here
     // clang-format on
 #endif
 }  // LCOV_EXCL_STOP
@@ -868,6 +1015,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 m_debugCollision = flag;
             } else if (onoff(sw, "-debug-exit-parse", flag /*ref*/)) {  // Undocumented
                 m_debugExitParse = flag;
+            } else if (onoff(sw, "-debug-exit-uvm", flag /*ref*/)) {  // Undocumented
+                m_debugExitUvm = flag;
             } else if (onoff(sw, "-debug-leak", flag /*ref*/)) {
                 m_debugLeak = flag;
             } else if (onoff(sw, "-debug-nondeterminism", flag /*ref*/)) {
@@ -896,6 +1045,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 m_exe = flag;
             } else if (onoff(sw, "-flatten", flag /*ref*/)) {
                 m_flatten = flag;
+            } else if (onoff(sw, "-hierarchical", flag /*ref*/)) {
+                m_hierarchical = flag;
+            } else if (onoff(sw, "-hierarchical-child", flag /*ref*/)) {
+                m_hierChild = flag;
             } else if (onoff(sw, "-ignc", flag /*ref*/)) {
                 m_ignc = flag;
             } else if (onoff(sw, "-inhibit-sim", flag /*ref*/)) {
@@ -1081,6 +1234,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 shift;
                 cout << V3Options::getenvBuiltins(argv[i]) << endl;
                 exit(0);
+            } else if (!strcmp(sw, "-hierarchical-block") && (i + 1) < argc) {
+                shift;
+                V3HierarchicalBlockOption opt(argv[i]);
+                m_hierBlocks.insert(std::make_pair(opt.mangledName(), opt));
             } else if (!strncmp(sw, "-I", 2)) {
                 addIncDirUser(parseFileArg(optdir, string(sw + strlen("-I"))));
             } else if (!strcmp(sw, "-if-depth") && (i + 1) < argc) {
@@ -1423,7 +1580,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     // Read the specified -f filename and process as arguments
     UINFO(1, "Reading Options File " << filename << endl);
 
-    const vl_unique_ptr<std::ifstream> ifp(V3File::new_ifstream(filename));
+    const std::unique_ptr<std::ifstream> ifp(V3File::new_ifstream(filename));
     if (ifp->fail()) {
         fl->v3error("Cannot open -f command file: " + filename);
         return;
@@ -1469,7 +1626,12 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     std::vector<string> args;
 
     // Parse file using a state machine, taking into account quoted strings and escaped chars
-    enum state { ST_IN_OPTION, ST_ESCAPED_CHAR, ST_IN_QUOTED_STR, ST_IN_DOUBLE_QUOTED_STR };
+    enum state : uint8_t {
+        ST_IN_OPTION,
+        ST_ESCAPED_CHAR,
+        ST_IN_QUOTED_STR,
+        ST_IN_DOUBLE_QUOTED_STR
+    };
 
     state st = ST_IN_OPTION;
     state last_st = ST_IN_OPTION;
@@ -1545,10 +1707,8 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     // Convert to argv style arg list and parse them
     std::vector<char*> argv;
     argv.reserve(args.size() + 1);
-    for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it) {
-        argv.push_back(const_cast<char*>(it->c_str()));
-    }
-    argv.push_back(NULL);  // argv is NULL-terminated
+    for (const string& i : args) argv.push_back(const_cast<char*>(i.c_str()));
+    argv.push_back(nullptr);  // argv is nullptr-terminated
     parseOptsList(fl, optdir, static_cast<int>(argv.size() - 1), argv.data());
 }
 
@@ -1623,106 +1783,9 @@ void V3Options::showVersion(bool verbose) {
 V3Options::V3Options() {
     m_impp = new V3OptionsImp;
 
-    m_assert = false;
-    m_autoflush = false;
-    m_bboxSys = false;
-    m_bboxUnsup = false;
-    m_build = false;
-    m_cdc = false;
-    m_cmake = false;
-    m_context = true;
-    m_coverageLine = false;
-    m_coverageToggle = false;
-    m_coverageUnderscore = false;
-    m_coverageUser = false;
-    m_debugCheck = false;
-    m_debugCollision = false;
-    m_debugExitParse = false;
-    m_debugLeak = true;
-    m_debugNondeterminism = false;
-    m_debugPartition = false;
-    m_debugProtect = false;
-    m_debugSelfTest = false;
-    m_decoration = true;
-    m_dpiHdrOnly = false;
-    m_dumpDefines = false;
-    m_exe = false;
-    m_flatten = false;
-    m_ignc = false;
-    m_inhibitSim = false;
-    m_lintOnly = false;
-    m_gmake = false;
-    m_makePhony = false;
-    m_main = false;
-    m_orderClockDly = true;
-    m_outFormatOk = false;
-    m_pedantic = false;
-    m_pinsBv = 65;
-    m_pinsScUint = false;
-    m_pinsScBigUint = false;
-    m_pinsUint8 = false;
-    m_ppComments = false;
-    m_profCFuncs = false;
-    m_profThreads = false;
-    m_protectIds = false;
-    m_preprocOnly = false;
-    m_preprocNoLine = false;
-    m_public = false;
-    m_publicFlatRW = false;
-    m_quietExit = false;
-    m_relativeCFuncs = true;
-    m_relativeIncludes = false;
-    m_reportUnoptflat = false;
-    m_savable = false;
-    m_stats = false;
-    m_statsVars = false;
-    m_structsPacked = true;
-    m_systemC = false;
-    m_threads = 0;
-    m_threadsDpiPure = true;
-    m_threadsDpiUnpure = false;
-    m_threadsCoarsen = true;
-    m_threadsMaxMTasks = 0;
-    m_trace = false;
-    m_traceCoverage = false;
     m_traceFormat = TraceFormat::VCD;
-    m_traceParams = true;
-    m_traceStructs = false;
-    m_traceUnderscore = false;
-    m_traceThreads = 0;
-    m_underlineZero = false;
-    m_verilate = true;
-    m_vpi = false;
-    m_xInitialEdge = false;
-    m_xmlOnly = false;
-
-    m_buildJobs = 1;
-    m_convergeLimit = 100;
-    m_dumpTree = 0;
-    m_dumpTreeAddrids = false;
-    m_gateStmts = 100;
-    m_ifDepth = 0;
-    m_inlineMult = 2000;
-    m_maxNumWidth = 65536;
-    m_moduleRecursion = 100;
-    m_outputSplit = 20000;
-    m_outputSplitCFuncs = -1;
-    m_outputSplitCTrace = -1;
-    m_traceDepth = 0;
-    m_traceMaxArray = 32;
-    m_traceMaxWidth = 256;
-    m_unrollCount = 64;
-    m_unrollStmts = 30000;
-
-    m_compLimitBlocks = 0;
-    m_compLimitMembers = 64;
-    m_compLimitParens = 0;
 
     m_makeDir = "obj_dir";
-    m_bin = "";
-    m_flags = "";
-    m_waiverOutput = "";
-    m_l2Name = "";
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";
 
@@ -1739,7 +1802,7 @@ V3Options::V3Options() {
     addIncDirFallback(".");  // Looks better than {long_cwd_path}/...
 }
 
-V3Options::~V3Options() { VL_DO_CLEAR(delete m_impp, m_impp = NULL); }
+V3Options::~V3Options() { VL_DO_CLEAR(delete m_impp, m_impp = nullptr); }
 
 void V3Options::setDebugMode(int level) {
     V3Error::debugDefault(level);
@@ -1750,7 +1813,7 @@ void V3Options::setDebugMode(int level) {
 }
 
 void V3Options::setDebugSrcLevel(const string& srcfile, int level) {
-    DebugSrcMap::iterator iter = m_debugSrcs.find(srcfile);
+    const auto iter = m_debugSrcs.find(srcfile);
     if (iter != m_debugSrcs.end()) {
         iter->second = level;
     } else {
@@ -1762,7 +1825,7 @@ int V3Options::debugSrcLevel(const string& srcfile_path, int default_level) {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
     string srcfile = V3Os::filenameNonDirExt(srcfile_path);
-    DebugSrcMap::iterator iter = m_debugSrcs.find(srcfile);
+    const auto iter = m_debugSrcs.find(srcfile);
     if (iter != m_debugSrcs.end()) {
         return iter->second;
     } else {
@@ -1771,7 +1834,7 @@ int V3Options::debugSrcLevel(const string& srcfile_path, int default_level) {
 }
 
 void V3Options::setDumpTreeLevel(const string& srcfile, int level) {
-    DebugSrcMap::iterator iter = m_dumpTrees.find(srcfile);
+    const auto iter = m_dumpTrees.find(srcfile);
     if (iter != m_dumpTrees.end()) {
         iter->second = level;
     } else {
@@ -1783,7 +1846,7 @@ int V3Options::dumpTreeLevel(const string& srcfile_path) {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
     string srcfile = V3Os::filenameNonDirExt(srcfile_path);
-    DebugSrcMap::iterator iter = m_dumpTrees.find(srcfile);
+    const auto iter = m_dumpTrees.find(srcfile);
     if (iter != m_dumpTrees.end()) {
         return iter->second;
     } else {

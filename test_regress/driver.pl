@@ -1848,11 +1848,7 @@ sub _print_advance_time {
     else { $set = "topp->"; }
 
     if ($self->sc) {
-        print $fh "#if (SYSTEMC_VERSION>=20070314)\n";
         print $fh "        sc_start(${time}, $Self->{sc_time_resolution});\n";
-        print $fh "#else\n";
-        print $fh "        sc_start(${time});\n";
-        print $fh "#endif\n";
     } else {
         if ($action) {
             print $fh "        ${set}eval();\n";
@@ -2250,10 +2246,8 @@ sub cxx_version {
     return $_Cxx_Version;
 }
 
-our $_Cfg_With_Threaded;
 sub cfg_with_threaded {
-    $_Cfg_With_Threaded ||= `$ENV{MAKE} -C $ENV{VERILATOR_ROOT} -f Makefile print-cfg-with-threaded`;
-    return ($_Cfg_With_Threaded =~ /yes/i) ? 1:0;
+    return 1;  # C++11 now always required
 }
 
 sub tries {

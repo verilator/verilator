@@ -6,7 +6,7 @@
 #include VM_PREFIX_INCLUDE
 #include "Vt_sc_names.h"
 
-VM_PREFIX* tb = NULL;
+VM_PREFIX* tb = nullptr;
 
 int sc_main(int argc, char* argv[]) {
     tb = new VM_PREFIX("tb");

@@ -65,10 +65,10 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeIf* nodep) override {
         UINFO(4, " IF: " << nodep << endl);
-        int lastLikely = m_likely;
-        int lastUnlikely = m_unlikely;
+        VL_RESTORER(m_likely);
+        VL_RESTORER(m_unlikely);
         {
             // Do if
             reset();
@@ -88,28 +88,25 @@ private:
                 nodep->branchPred(VBranchPred::BP_UNLIKELY);
             }  // else leave unknown
         }
-        m_likely = lastLikely;
-        m_unlikely = lastUnlikely;
     }
-    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCCall* nodep) override {
         checkUnlikely(nodep);
         nodep->funcp()->user1Inc();
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         checkUnlikely(nodep);
         m_cfuncsp.push_back(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         checkUnlikely(nodep);
         iterateChildren(nodep);
     }
 
     // METHODS
     void calc_tasks() {
-        for (CFuncVec::iterator it = m_cfuncsp.begin(); it != m_cfuncsp.end(); ++it) {
-            AstCFunc* nodep = *it;
+        for (AstCFunc* nodep : m_cfuncsp) {
             if (!nodep->dontInline()) nodep->isInline(true);
         }
     }
@@ -121,7 +118,7 @@ public:
         iterateChildren(nodep);
         calc_tasks();
     }
-    virtual ~BranchVisitor() {}
+    virtual ~BranchVisitor() override {}
 };
 
 //######################################################################

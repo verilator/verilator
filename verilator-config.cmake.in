@@ -312,12 +312,7 @@ function(verilate TARGET)
     "$<$<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>:${VERILATOR_MT_CFLAGS}>"
   )
 
-  # SystemC requires the C++ version to match the library version, avoid setting anything here
-  set(GEN_THREADED $<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>)
-  set(GEN_SYSTEMC $<BOOL:$<TARGET_PROPERTY:VERILATOR_SYSTEMC>>)
-  target_compile_features(${TARGET} PRIVATE
-    $<$<AND:${GEN_THREADED},$<NOT:${GEN_SYSTEMC}>>:cxx_std_11>
-  )
+  target_compile_features(${TARGET} PRIVATE cxx_std_11)
 endfunction()
 
 function(_verilator_find_systemc)

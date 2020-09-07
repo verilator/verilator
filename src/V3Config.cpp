@@ -60,10 +60,10 @@ public:
     // Access an entity and resolve wildcards that match it
     T* resolve(const string& name) {
         // Lookup if it was resolved before, typically not
-        typename Map::iterator it = m_mapResolved.find(name);
+        auto it = m_mapResolved.find(name);
         if (VL_UNLIKELY(it != m_mapResolved.end())) { return &it->second; }
 
-        T* newp = NULL;
+        T* newp = nullptr;
         // Cannot be resolved, create if matched
 
         // Update this entity with all matches in the wildcards
@@ -87,8 +87,8 @@ public:
     AstAttrType m_type;  // Type of attribute
     AstSenTree* m_sentreep;  // Sensitivity tree for public_flat_rw
     V3ConfigVarAttr(AstAttrType type, AstSenTree* sentreep)
-        : m_type(type)
-        , m_sentreep(sentreep) {}
+        : m_type{type}
+        , m_sentreep{sentreep} {}
 };
 
 // Overload vector with the required update function and to apply all entries
@@ -105,7 +105,7 @@ public:
             AstNode* newp = new AstAttrOf(varp->fileline(), it->m_type);
             varp->addAttrsp(newp);
             if (it->m_type == AstAttrType::VAR_PUBLIC_FLAT_RW && it->m_sentreep) {
-                newp->addNext(new AstAlwaysPublic(varp->fileline(), it->m_sentreep, NULL));
+                newp->addNext(new AstAlwaysPublic(varp->fileline(), it->m_sentreep, nullptr));
             }
         }
     }
@@ -118,15 +118,12 @@ typedef V3ConfigWildcardResolver<V3ConfigVar> V3ConfigVarResolver;
 
 class V3ConfigFTask {
     V3ConfigVarResolver m_vars;  // Variables in function/task
-    bool m_isolate;  // Isolate function return
-    bool m_noinline;  // Don't inline function/task
-    bool m_public;  // Public function/task
+    bool m_isolate = false;  // Isolate function return
+    bool m_noinline = false;  // Don't inline function/task
+    bool m_public = false;  // Public function/task
 
 public:
-    V3ConfigFTask()
-        : m_isolate(false)
-        , m_noinline(false)
-        , m_public(false) {}
+    V3ConfigFTask() {}
     void update(const V3ConfigFTask& f) {
         // Don't overwrite true with false
         if (f.m_isolate) m_isolate = true;
@@ -141,7 +138,7 @@ public:
     void setNoInline(bool set) { m_noinline = set; }
     void setPublic(bool set) { m_public = set; }
 
-    void apply(AstNodeFTask* ftaskp) {
+    void apply(AstNodeFTask* ftaskp) const {
         if (m_noinline)
             ftaskp->addStmtsp(new AstPragma(ftaskp->fileline(), AstPragmaType::NO_INLINE_TASK));
         if (m_public)
@@ -157,28 +154,23 @@ typedef V3ConfigWildcardResolver<V3ConfigFTask> V3ConfigFTaskResolver;
 // Modules have tasks, variables, named blocks and properties
 
 class V3ConfigModule {
-    typedef vl_unordered_set<string> StringSet;
+    typedef std::unordered_set<string> StringSet;
     typedef std::set<AstPragmaType> PragmaSet;
 
     V3ConfigFTaskResolver m_tasks;  // Functions/tasks in module
     V3ConfigVarResolver m_vars;  // Variables in module
     StringSet m_coverageOffBlocks;  // List of block names for coverage_off
     PragmaSet m_modPragmas;  // List of Pragmas for modules
-    bool m_inline;  // Whether to force the inline
-    bool m_inlineValue;  // The inline value (on/off)
+    bool m_inline = false;  // Whether to force the inline
+    bool m_inlineValue = false;  // The inline value (on/off)
 
 public:
-    V3ConfigModule()
-        : m_inline(false)
-        , m_inlineValue(false) {}
+    V3ConfigModule() {}
 
     void update(const V3ConfigModule& m) {
         m_tasks.update(m.m_tasks);
         m_vars.update(m.m_vars);
-        for (StringSet::const_iterator it = m.m_coverageOffBlocks.begin();
-             it != m.m_coverageOffBlocks.end(); ++it) {
-            m_coverageOffBlocks.insert(*it);
-        }
+        for (const string& i : m.m_coverageOffBlocks) m_coverageOffBlocks.insert(i);
         if (!m_inline) {
             m_inline = m.m_inline;
             m_inlineValue = m.m_inlineValue;
@@ -215,9 +207,8 @@ public:
     void applyBlock(AstNodeBlock* nodep) {
         AstPragmaType pragma = AstPragmaType::COVERAGE_BLOCK_OFF;
         if (!nodep->unnamed()) {
-            for (StringSet::const_iterator it = m_coverageOffBlocks.begin();
-                 it != m_coverageOffBlocks.end(); ++it) {
-                if (VString::wildmatch(nodep->name(), *it)) {
+            for (const string& i : m_coverageOffBlocks) {
+                if (VString::wildmatch(nodep->name(), i)) {
                     nodep->addStmtsp(new AstPragma(nodep->fileline(), pragma));
                 }
             }
@@ -239,9 +230,9 @@ public:
     V3ErrorCode m_code;  // Error code
     bool m_on;  // True to enable message
     V3ConfigIgnoresLine(V3ErrorCode code, int lineno, bool on)
-        : m_lineno(lineno)
-        , m_code(code)
-        , m_on(on) {}
+        : m_lineno{lineno}
+        , m_code{code}
+        , m_on{on} {}
     ~V3ConfigIgnoresLine() {}
     inline bool operator<(const V3ConfigIgnoresLine& rh) const {
         if (m_lineno < rh.m_lineno) return true;

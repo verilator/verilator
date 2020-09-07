@@ -37,10 +37,10 @@ private:
     // NODE STATE
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
-    AstCFunc* m_funcp;  // Current function
-    int m_depth;  // How deep in an expression
-    int m_deepNum;  // How many functions made
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstCFunc* m_funcp = nullptr;  // Current function
+    int m_depth = 0;  // How deep in an expression
+    int m_deepNum = 0;  // How many functions made
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -50,7 +50,7 @@ private:
         nodep->unlinkFrBack(&relinkHandle);
         // Create function
         string name = m_funcp->name() + "__deep" + cvtToStr(++m_deepNum);
-        AstCFunc* funcp = new AstCFunc(nodep->fileline(), name, NULL);
+        AstCFunc* funcp = new AstCFunc(nodep->fileline(), name, nullptr);
         funcp->argTypes(EmitCBaseVisitor::symClassVar());
         funcp->symProlog(true);
         funcp->slow(m_funcp->slow());
@@ -66,27 +66,24 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             m_deepNum = 0;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         // We recurse into this.
-        int lastDepth = m_depth;
-        AstCFunc* lastFuncp = m_funcp;
+        VL_RESTORER(m_depth);
+        VL_RESTORER(m_funcp);
         {
             m_depth = 0;
             m_funcp = nodep;
             iterateChildren(nodep);
         }
-        m_depth = lastDepth;
-        m_funcp = lastFuncp;
     }
     void visitStmt(AstNodeStmt* nodep) {
         m_depth++;
@@ -104,7 +101,7 @@ private:
         }
         m_depth--;
     }
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
         } else {
@@ -112,22 +109,15 @@ private:
         }
     }
 
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
     //--------------------
-    virtual void visit(AstVar*) VL_OVERRIDE {}  // Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstVar*) override {}  // Don't hit varrefs under vars
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit DepthBlockVisitor(AstNetlist* nodep) {
-        m_modp = NULL;
-        m_funcp = NULL;
-        m_depth = 0;
-        m_deepNum = 0;
-        //
-        iterate(nodep);
-    }
-    virtual ~DepthBlockVisitor() {}
+    explicit DepthBlockVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~DepthBlockVisitor() override {}
 };
 
 //######################################################################

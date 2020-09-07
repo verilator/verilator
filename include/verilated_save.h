@@ -34,7 +34,7 @@ protected:
     // For speed, keep m_cp as the first member of this structure
     vluint8_t* m_cp;  ///< Current pointer into m_bufp buffer
     vluint8_t* m_bufp;  ///< Output buffer
-    bool m_isOpen;  ///< True indicates open file/stream
+    bool m_isOpen = false;  ///< True indicates open file/stream
     std::string m_filename;  ///< Filename, for error messages
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
 
@@ -49,13 +49,12 @@ protected:
 
 public:
     VerilatedSerialize() {
-        m_isOpen = false;
         m_bufp = new vluint8_t[bufferSize()];
         m_cp = m_bufp;
     }
     virtual ~VerilatedSerialize() {
         close();
-        if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = NULL);
+        if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = nullptr);
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }
@@ -94,8 +93,8 @@ protected:
     // For speed, keep m_cp as the first member of this structure
     vluint8_t* m_cp;  ///< Current pointer into m_bufp buffer
     vluint8_t* m_bufp;  ///< Output buffer
-    vluint8_t* m_endp;  ///< Last valid byte in m_bufp buffer
-    bool m_isOpen;  ///< True indicates open file/stream
+    vluint8_t* m_endp = nullptr;  ///< Last valid byte in m_bufp buffer
+    bool m_isOpen = false;  ///< True indicates open file/stream
     std::string m_filename;  ///< Filename, for error messages
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
 
@@ -111,14 +110,12 @@ protected:
 
 public:
     VerilatedDeserialize() {
-        m_isOpen = false;
         m_bufp = new vluint8_t[bufferSize()];
         m_cp = m_bufp;
-        m_endp = NULL;
     }
     virtual ~VerilatedDeserialize() {
         close();
-        if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = NULL);
+        if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = nullptr);
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }
@@ -159,19 +156,18 @@ private:
 
 class VerilatedSave : public VerilatedSerialize {
 private:
-    int m_fd;  ///< File descriptor we're writing to
+    int m_fd = -1;  ///< File descriptor we're writing to
 
 public:
     // CONSTRUCTORS
-    VerilatedSave()
-        : m_fd(-1) {}
-    virtual ~VerilatedSave() VL_OVERRIDE { close(); }
+    VerilatedSave() {}
+    virtual ~VerilatedSave() override { close(); }
     // METHODS
     /// Open the file; call isOpen() to see if errors
     void open(const char* filenamep) VL_MT_UNSAFE_ONE;
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
-    virtual void close() VL_OVERRIDE VL_MT_UNSAFE_ONE;
-    virtual void flush() VL_OVERRIDE VL_MT_UNSAFE_ONE;
+    virtual void close() override VL_MT_UNSAFE_ONE;
+    virtual void flush() override VL_MT_UNSAFE_ONE;
 };
 
 //=============================================================================
@@ -180,21 +176,20 @@ public:
 
 class VerilatedRestore : public VerilatedDeserialize {
 private:
-    int m_fd;  ///< File descriptor we're writing to
+    int m_fd = -1;  ///< File descriptor we're writing to
 
 public:
     // CONSTRUCTORS
-    VerilatedRestore()
-        : m_fd(-1) {}
-    virtual ~VerilatedRestore() VL_OVERRIDE { close(); }
+    VerilatedRestore() {}
+    virtual ~VerilatedRestore() override { close(); }
 
     // METHODS
     /// Open the file; call isOpen() to see if errors
     void open(const char* filenamep) VL_MT_UNSAFE_ONE;
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
-    virtual void close() VL_OVERRIDE VL_MT_UNSAFE_ONE;
-    virtual void flush() VL_OVERRIDE VL_MT_UNSAFE_ONE {}
-    virtual void fill() VL_OVERRIDE VL_MT_UNSAFE_ONE;
+    virtual void close() override VL_MT_UNSAFE_ONE;
+    virtual void flush() override VL_MT_UNSAFE_ONE {}
+    virtual void fill() override VL_MT_UNSAFE_ONE;
 };
 
 //=============================================================================
@@ -257,10 +252,9 @@ VerilatedSerialize& operator<<(VerilatedSerialize& os, VlAssocArray<T_Key, T_Val
     os << rhs.atDefault();
     vluint32_t len = rhs.size();
     os << len;
-    for (typename VlAssocArray<T_Key, T_Value>::const_iterator it = rhs.begin(); it != rhs.end();
-         ++it) {
-        T_Key index = it->first;  // Copy to get around const_iterator
-        T_Value value = it->second;
+    for (const auto& i : rhs) {
+        T_Key index = i.first;  // Copy to get around const_iterator
+        T_Value value = i.second;
         os << index << value;
     }
     return os;

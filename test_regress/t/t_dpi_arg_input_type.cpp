@@ -145,7 +145,7 @@ void i_shortreal(float i) {
 void i_chandle(void* i) {
     static int n = 0;
     printf("i_chandle %d\n", n);
-    if (i != NULL) stop();
+    if (i) stop();
     n++;
 }
 
@@ -256,7 +256,7 @@ void i_shortreal_t(float i) {
 void i_chandle_t(void* i) {
     static int n = 0;
     printf("i_chandle_t %d\n", n);
-    if (i != NULL) stop();
+    if (i) stop();
     n++;
 }
 

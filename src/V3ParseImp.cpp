@@ -41,7 +41,7 @@
 //======================================================================
 // Globals
 
-V3ParseImp* V3ParseImp::s_parsep = NULL;
+V3ParseImp* V3ParseImp::s_parsep = nullptr;
 
 int V3ParseSym::s_anonNum = 0;
 
@@ -195,7 +195,7 @@ double V3ParseImp::lexParseTimenum(const char* textp) {
         if (*sp != '_') *dp++ = *sp;
     }
     *dp++ = '\0';
-    double d = strtod(strgp, NULL);
+    double d = strtod(strgp, nullptr);
     string suffix(sp);
 
     double divisor = 1;
@@ -292,8 +292,8 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     if (v3Global.opt.preprocOnly() || v3Global.opt.keepTempFiles()) {
         // Create output file with all the preprocessor output we buffered up
         string vppfilename
-            = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_" + modname + ".vpp";
-        std::ofstream* ofp = NULL;
+            = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix() + "_" + modname + ".vpp";
+        std::ofstream* ofp = nullptr;
         std::ostream* osp;
         if (v3Global.opt.preprocOnly()) {
             osp = &cout;
@@ -382,6 +382,7 @@ void V3ParseImp::tokenPipeline() {
     int token = yylval.token;
     // If a paren, read another
     if (token == '('  //
+        || token == ':'  //
         || token == yCONST__LEX  //
         || token == yGLOBAL__LEX  //
         || token == yLOCAL__LEX  //
@@ -402,6 +403,12 @@ void V3ParseImp::tokenPipeline() {
         if (token == '('
             && (nexttok == ygenSTRENGTH || nexttok == ySUPPLY0 || nexttok == ySUPPLY1)) {
             token = yP_PAR__STRENGTH;
+        } else if (token == ':') {
+            if (nexttok == yBEGIN) {
+                token = yP_COLON__BEGIN;
+            } else if (nexttok == yFORK) {
+                token = yP_COLON__FORK;
+            }
         } else if (token == yCONST__LEX) {
             if (nexttok == yREF) {
                 token = yCONST__REF;
@@ -489,7 +496,7 @@ void V3ParseImp::tokenPipelineSym() {
             // if (debug() >= 7) V3ParseImp::parsep()->symp()->dump(cout, " -symtree: ");
             foundp = look_underp->findIdFallback(*(yylval.strp));
             // "consume" it.  Must set again if want another token under temp scope
-            V3ParseImp::parsep()->symp()->nextId(NULL);
+            V3ParseImp::parsep()->symp()->nextId(nullptr);
         } else {
             UINFO(7, "   tokenPipelineSym: find upward "
                          << V3ParseImp::parsep()->symp()->symCurrentp() << " for '"
@@ -519,10 +526,10 @@ void V3ParseImp::tokenPipelineSym() {
                    && (*(yylval.strp) == "mailbox"  // IEEE-standard class
                        || *(yylval.strp) == "process"  // IEEE-standard class
                        || *(yylval.strp) == "semaphore")) {  // IEEE-standard class
-            yylval.scp = NULL;
+            yylval.scp = nullptr;
             if (token == yaID__LEX) token = yaID__aTYPE;
         } else {  // Not found
-            yylval.scp = NULL;
+            yylval.scp = nullptr;
             if (token == yaID__CC) {
                 // IEEE does require this, but we may relax this as UVM breaks it, so allow bbox
                 // for today
@@ -531,9 +538,9 @@ void V3ParseImp::tokenPipelineSym() {
                     // is missing package, and this confuses people
                     static int warned = false;
                     if (!warned++) {
-                        yylval.fl->v3error(
-                            "Package/class '" + *yylval.strp
-                            + "' not found, and needs to be predeclared (IEEE 1800-2017 26.3)");
+                        yylval.fl->v3warn(PKGNODECL, "Package/class '" + *yylval.strp
+                                                         + "' not found, and needs to be "
+                                                           "predeclared (IEEE 1800-2017 26.3)");
                     }
                 }
             } else if (token == yaID__LEX) {
@@ -550,7 +557,7 @@ int V3ParseImp::tokenToBison() {
     tokenPipelineSym();  // sets yylval
     m_bisonLastFileline = yylval.fl;
 
-    // yylval.scp = NULL;   // Symbol table not yet needed - no packages
+    // yylval.scp = nullptr;   // Symbol table not yet needed - no packages
     if (debugFlex() >= 6 || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
         cout << "tokenToBison  " << yylval << endl;
     }
@@ -579,7 +586,7 @@ V3Parse::V3Parse(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* symp) {
     m_impp = new V3ParseImp(rootp, filterp, symp);
 }
 V3Parse::~V3Parse() {  //
-    VL_DO_CLEAR(delete m_impp, m_impp = NULL);
+    VL_DO_CLEAR(delete m_impp, m_impp = nullptr);
 }
 void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrary,
                         const string& errmsg) {

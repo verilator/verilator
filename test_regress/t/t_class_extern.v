@@ -5,17 +5,23 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-  extern function void extfunc();
+  extern task extcls();
+  extern function int extone();
 endclass
 
-function void Cls::extfunc();
+function int Cls::extone();
+   return 1;
+endfunction
+
+task Cls::extcls();
    $write("*-* All Finished *-*\n");
    $finish;
-endfunction
+endtask
 
 module t (/*AUTOARG*/);
    initial begin
-      Cls c;
-      c.extfunc();
+      Cls c = new;
+      if (c.extone() != 1) $stop;
+      c.extcls();
    end
 endmodule

@@ -37,15 +37,15 @@ class VOptionBool {
     // Class to track options that are either not specified (and default
     // true/false), versus user setting the option to true or false
 public:
-    enum en { OPT_DEFAULT_FALSE = 0, OPT_DEFAULT_TRUE, OPT_TRUE, OPT_FALSE, _ENUM_END };
+    enum en : uint8_t { OPT_DEFAULT_FALSE = 0, OPT_DEFAULT_TRUE, OPT_TRUE, OPT_FALSE, _ENUM_END };
     enum en m_e;
     inline VOptionBool()
-        : m_e(OPT_DEFAULT_FALSE) {}
+        : m_e{OPT_DEFAULT_FALSE} {}
     // cppcheck-suppress noExplicitConstructor
     inline VOptionBool(en _e)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit inline VOptionBool(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool isDefault() const { return m_e == OPT_DEFAULT_FALSE || m_e == OPT_DEFAULT_TRUE; }
     bool isTrue() const { return m_e == OPT_TRUE || m_e == OPT_DEFAULT_TRUE; }
@@ -71,7 +71,7 @@ inline std::ostream& operator<<(std::ostream& os, const VOptionBool& rhs) {
 
 class VTimescale {
 public:
-    enum en {
+    enum en : uint8_t {
         // clang-format off
         TS_100S = 0, TS_10S = 1, TS_1S = 2,
         TS_100MS = 3, TS_10MS = 4, TS_1MS = 5,
@@ -83,16 +83,16 @@ public:
         NONE = 18,
         _ENUM_END
     };
-    enum { TS_DEFAULT = TS_1PS };
+    enum : uint8_t { TS_DEFAULT = TS_1PS };
     enum en m_e;
     // CONSTRUCTOR
     inline VTimescale()
-        : m_e(NONE) {}
+        : m_e{NONE} {}
     // cppcheck-suppress noExplicitConstructor
     inline VTimescale(en _e)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit inline VTimescale(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     // Construct from string
     VTimescale(const string& value, bool& badr);
     VTimescale(double value, bool& badr) {
@@ -169,12 +169,12 @@ inline std::ostream& operator<<(std::ostream& os, const VTimescale& rhs) {
 
 class TraceFormat {
 public:
-    enum en { VCD = 0, FST } m_e;
+    enum en : uint8_t { VCD = 0, FST } m_e;
     // cppcheck-suppress noExplicitConstructor
     inline TraceFormat(en _e = VCD)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit inline TraceFormat(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     bool fst() const { return m_e == FST; }
     string classBase() const {
@@ -194,6 +194,31 @@ inline bool operator==(TraceFormat::en lhs, const TraceFormat& rhs) { return lhs
 
 typedef std::vector<string> V3StringList;
 typedef std::set<string> V3StringSet;
+
+//######################################################################
+
+// Information given by --hierarchical-block option
+class V3HierarchicalBlockOption {
+public:
+    // key:parameter name, value:value (as string)
+    typedef std::map<string, string> ParamStrMap;
+
+private:
+    string m_origName;  // module name
+    // module name after uniquified
+    // same as m_origName for non-parameterized module
+    string m_mangledName;
+    // overriding parameter values specified by -G option
+    ParamStrMap m_parameters;
+
+public:
+    explicit V3HierarchicalBlockOption(const string& optstring);
+    const string& origName() const { return m_origName; }
+    const string& mangledName() const { return m_mangledName; }
+    const ParamStrMap params() const { return m_parameters; }
+};
+
+typedef std::map<string, V3HierarchicalBlockOption> V3HierBlockOptSet;
 
 //######################################################################
 // V3Options - Command line options
@@ -221,107 +246,111 @@ private:
     DebugSrcMap m_debugSrcs;    // argument: --debugi-<srcfile>=<level>
     DebugSrcMap m_dumpTrees;    // argument: --dump-treei-<srcfile>=<level>
     std::map<string,string> m_parameters;  // Parameters
+    std::map<string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
 
-    bool        m_preprocOnly;  // main switch: -E
-    bool        m_makePhony;    // main switch: -MP
-    bool        m_preprocNoLine;// main switch: -P
-    bool        m_assert;       // main switch: --assert
-    bool        m_autoflush;    // main switch: --autoflush
-    bool        m_bboxSys;      // main switch: --bbox-sys
-    bool        m_bboxUnsup;    // main switch: --bbox-unsup
-    bool        m_build;        // main switch: --build
-    bool        m_cdc;          // main switch: --cdc
-    bool        m_cmake;        // main switch: --make cmake
-    bool        m_context;      // main switch: --Wcontext
-    bool        m_coverageLine; // main switch: --coverage-block
-    bool        m_coverageToggle;// main switch: --coverage-toggle
-    bool        m_coverageUnderscore;// main switch: --coverage-underscore
-    bool        m_coverageUser; // main switch: --coverage-func
-    bool        m_debugCheck;   // main switch: --debug-check
-    bool        m_debugCollision;  // main switch: --debug-collision
-    bool        m_debugExitParse;  // main switch: --debug-exit-parse
-    bool        m_debugLeak;    // main switch: --debug-leak
-    bool        m_debugNondeterminism;  // main switch: --debug-nondeterminism
-    bool        m_debugPartition;  // main switch: --debug-partition
-    bool        m_debugProtect;  // main switch: --debug-protect
-    bool        m_debugSelfTest;  // main switch: --debug-self-test
-    bool        m_decoration;   // main switch: --decoration
-    bool        m_dpiHdrOnly;   // main switch: --dpi-hdr-only
-    bool        m_dumpDefines;  // main switch: --dump-defines
-    bool        m_exe;          // main switch: --exe
-    bool        m_flatten;      // main switch: --flatten
-    bool        m_ignc;         // main switch: --ignc
-    bool        m_inhibitSim;   // main switch: --inhibit-sim
-    bool        m_lintOnly;     // main switch: --lint-only
-    bool        m_gmake;        // main switch: --make gmake
-    bool        m_main;         // main swithc: --main
-    bool        m_orderClockDly;// main switch: --order-clock-delay
-    bool        m_outFormatOk;  // main switch: --cc, --sc or --sp was specified
-    bool        m_pedantic;     // main switch: --Wpedantic
-    bool        m_pinsScUint;   // main switch: --pins-sc-uint
-    bool        m_pinsScBigUint;// main switch: --pins-sc-biguint
-    bool        m_pinsUint8;    // main switch: --pins-uint8
-    bool        m_ppComments;   // main switch: --pp-comments
-    bool        m_profCFuncs;   // main switch: --prof-cfuncs
-    bool        m_profThreads;  // main switch: --prof-threads
-    bool        m_protectIds;   // main switch: --protect-ids
-    bool        m_public;       // main switch: --public
-    bool        m_publicFlatRW;  // main switch: --public-flat-rw
-    bool        m_quietExit;  // main switch: --quiet-exit
-    bool        m_relativeCFuncs; // main switch: --relative-cfuncs
-    bool        m_relativeIncludes; // main switch: --relative-includes
-    bool        m_reportUnoptflat; // main switch: --report-unoptflat
-    bool        m_savable;      // main switch: --savable
-    bool        m_structsPacked;  // main switch: --structs-packed
-    bool        m_systemC;      // main switch: --sc: System C instead of simple C++
-    bool        m_stats;        // main switch: --stats
-    bool        m_statsVars;    // main switch: --stats-vars
-    bool        m_threadsCoarsen;  // main switch: --threads-coarsen
-    bool        m_threadsDpiPure;  // main switch: --threads-dpi all/pure
-    bool        m_threadsDpiUnpure;  // main switch: --threads-dpi all
-    bool        m_trace;        // main switch: --trace
-    bool        m_traceCoverage;  // main switch: --trace-coverage
-    bool        m_traceParams;  // main switch: --trace-params
-    bool        m_traceStructs; // main switch: --trace-structs
-    bool        m_traceUnderscore;// main switch: --trace-underscore
-    bool        m_underlineZero;// main switch: --underline-zero; undocumented old Verilator 2
-    bool        m_verilate;     // main swith: --verilate
-    bool        m_vpi;          // main switch: --vpi
-    bool        m_xInitialEdge; // main switch: --x-initial-edge
-    bool        m_xmlOnly;      // main switch: --xml-only
+    bool m_preprocOnly = false;     // main switch: -E
+    bool m_makePhony = false;       // main switch: -MP
+    bool m_preprocNoLine = false;   // main switch: -P
+    bool m_assert = false;          // main switch: --assert
+    bool m_autoflush = false;       // main switch: --autoflush
+    bool m_bboxSys = false;         // main switch: --bbox-sys
+    bool m_bboxUnsup = false;       // main switch: --bbox-unsup
+    bool m_build = false;           // main switch: --build
+    bool m_cdc = false;             // main switch: --cdc
+    bool m_cmake = false;           // main switch: --make cmake
+    bool m_context = true;          // main switch: --Wcontext
+    bool m_coverageLine = false;    // main switch: --coverage-block
+    bool m_coverageToggle = false;  // main switch: --coverage-toggle
+    bool m_coverageUnderscore = false;  // main switch: --coverage-underscore
+    bool m_coverageUser = false;    // main switch: --coverage-func
+    bool m_debugCheck = false;      // main switch: --debug-check
+    bool m_debugCollision = false;  // main switch: --debug-collision
+    bool m_debugExitParse = false;  // main switch: --debug-exit-parse
+    bool m_debugExitUvm = false;    // main switch: --debug-exit-uvm
+    bool m_debugLeak = true;        // main switch: --debug-leak
+    bool m_debugNondeterminism = false;  // main switch: --debug-nondeterminism
+    bool m_debugPartition = false;  // main switch: --debug-partition
+    bool m_debugProtect = false;    // main switch: --debug-protect
+    bool m_debugSelfTest = false;   // main switch: --debug-self-test
+    bool m_decoration = true;       // main switch: --decoration
+    bool m_dpiHdrOnly = false;      // main switch: --dpi-hdr-only
+    bool m_dumpDefines = false;     // main switch: --dump-defines
+    bool m_dumpTreeAddrids = false; // main switch: --dump-tree-addrids
+    bool m_exe = false;             // main switch: --exe
+    bool m_flatten = false;         // main switch: --flatten
+    bool m_hierarchical = false;    // main switch: --hierarchical
+    bool m_hierChild = false;       // main switch: --hierarchical-child
+    bool m_ignc = false;            // main switch: --ignc
+    bool m_inhibitSim = false;      // main switch: --inhibit-sim
+    bool m_lintOnly = false;        // main switch: --lint-only
+    bool m_gmake = false;           // main switch: --make gmake
+    bool m_main = false;            // main swithc: --main
+    bool m_orderClockDly = true;    // main switch: --order-clock-delay
+    bool m_outFormatOk = false;     // main switch: --cc, --sc or --sp was specified
+    bool m_pedantic = false;        // main switch: --Wpedantic
+    bool m_pinsScUint = false;      // main switch: --pins-sc-uint
+    bool m_pinsScBigUint = false;   // main switch: --pins-sc-biguint
+    bool m_pinsUint8 = false;       // main switch: --pins-uint8
+    bool m_ppComments = false;      // main switch: --pp-comments
+    bool m_profCFuncs = false;      // main switch: --prof-cfuncs
+    bool m_profThreads = false;     // main switch: --prof-threads
+    bool m_protectIds = false;      // main switch: --protect-ids
+    bool m_public = false;          // main switch: --public
+    bool m_publicFlatRW = false;    // main switch: --public-flat-rw
+    bool m_quietExit = false;       // main switch: --quiet-exit
+    bool m_relativeCFuncs = true;   // main switch: --relative-cfuncs
+    bool m_relativeIncludes = false; // main switch: --relative-includes
+    bool m_reportUnoptflat = false; // main switch: --report-unoptflat
+    bool m_savable = false;         // main switch: --savable
+    bool m_structsPacked = true;    // main switch: --structs-packed
+    bool m_systemC = false;         // main switch: --sc: System C instead of simple C++
+    bool m_stats = false;           // main switch: --stats
+    bool m_statsVars = false;       // main switch: --stats-vars
+    bool m_threadsCoarsen = true;   // main switch: --threads-coarsen
+    bool m_threadsDpiPure = true;   // main switch: --threads-dpi all/pure
+    bool m_threadsDpiUnpure = false;  // main switch: --threads-dpi all
+    bool m_trace = false;           // main switch: --trace
+    bool m_traceCoverage = false;   // main switch: --trace-coverage
+    bool m_traceParams = true;      // main switch: --trace-params
+    bool m_traceStructs = false;    // main switch: --trace-structs
+    bool m_traceUnderscore = false; // main switch: --trace-underscore
+    bool m_underlineZero = false;   // main switch: --underline-zero; undocumented old Verilator 2
+    bool m_verilate = true;         // main swith: --verilate
+    bool m_vpi = false;             // main switch: --vpi
+    bool m_xInitialEdge = false;    // main switch: --x-initial-edge
+    bool m_xmlOnly = false;         // main switch: --xml-only
 
-    int         m_buildJobs;    // main switch: -j
-    int         m_convergeLimit;// main switch: --converge-limit
-    int         m_dumpTree;     // main switch: --dump-tree
-    bool        m_dumpTreeAddrids;// main switch: --dump-tree-addrids
-    int         m_gateStmts;    // main switch: --gate-stmts
-    int         m_ifDepth;      // main switch: --if-depth
-    int         m_inlineMult;   // main switch: --inline-mult
+    int         m_buildJobs = 1;    // main switch: -j
+    int         m_convergeLimit = 100;  // main switch: --converge-limit
+    int         m_dumpTree = 0;     // main switch: --dump-tree
+    int         m_gateStmts = 100;    // main switch: --gate-stmts
+    int         m_ifDepth = 0;      // main switch: --if-depth
+    int         m_inlineMult = 2000;   // main switch: --inline-mult
     VOptionBool m_makeDepend;  // main switch: -MMD
-    int         m_maxNumWidth;  // main switch: --max-num-width
-    int         m_moduleRecursion;// main switch: --module-recursion-depth
-    int         m_outputSplit;  // main switch: --output-split
-    int         m_outputSplitCFuncs;// main switch: --output-split-cfuncs
-    int         m_outputSplitCTrace;// main switch: --output-split-ctrace
-    int         m_pinsBv;       // main switch: --pins-bv
+    int         m_maxNumWidth = 65536;  // main switch: --max-num-width
+    int         m_moduleRecursion = 100;  // main switch: --module-recursion-depth
+    int         m_outputSplit = 20000;  // main switch: --output-split
+    int         m_outputSplitCFuncs = -1;  // main switch: --output-split-cfuncs
+    int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
+    int         m_pinsBv = 65;       // main switch: --pins-bv
     VOptionBool m_skipIdentical;  // main switch: --skip-identical
-    int         m_threads;      // main switch: --threads (0 == --no-threads)
-    int         m_threadsMaxMTasks;  // main switch: --threads-max-mtasks
+    int         m_threads = 0;      // main switch: --threads (0 == --no-threads)
+    int         m_threadsMaxMTasks = 0;  // main switch: --threads-max-mtasks
     VTimescale  m_timeDefaultPrec;  // main switch: --timescale
     VTimescale  m_timeDefaultUnit;  // main switch: --timescale
     VTimescale  m_timeOverridePrec;  // main switch: --timescale-override
     VTimescale  m_timeOverrideUnit;  // main switch: --timescale-override
-    int         m_traceDepth;   // main switch: --trace-depth
+    int         m_traceDepth = 0;   // main switch: --trace-depth
     TraceFormat m_traceFormat;  // main switch: --trace or --trace-fst
-    int         m_traceMaxArray;// main switch: --trace-max-array
-    int         m_traceMaxWidth;// main switch: --trace-max-width
-    int         m_traceThreads; // main switch: --trace-threads
-    int         m_unrollCount;  // main switch: --unroll-count
-    int         m_unrollStmts;  // main switch: --unroll-stmts
+    int         m_traceMaxArray = 32;  // main switch: --trace-max-array
+    int         m_traceMaxWidth = 256; // main switch: --trace-max-width
+    int         m_traceThreads = 0; // main switch: --trace-threads
+    int         m_unrollCount = 64;  // main switch: --unroll-count
+    int         m_unrollStmts = 30000;  // main switch: --unroll-stmts
 
-    int         m_compLimitBlocks;  // compiler selection; number of nested blocks
-    int         m_compLimitMembers;  // compiler selection; number of members in struct before make anon array
-    int         m_compLimitParens;  // compiler selection; number of nested parens
+    int         m_compLimitBlocks = 0;  // compiler selection; number of nested blocks
+    int         m_compLimitMembers = 64;  // compiler selection; number of members in struct before make anon array
+    int         m_compLimitParens = 0;  // compiler selection; number of nested parens
 
     string      m_bin;          // main switch: --bin {binary}
     string      m_exeName;      // main switch: -o {name}
@@ -386,6 +415,7 @@ private:
     string parseFileArg(const string& optdir, const string& relfilename);
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
+    int stripOptionsForChildRun(const string& opt, bool forTop) const;
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(V3Options);
@@ -440,6 +470,7 @@ public:
     bool debugCheck() const { return m_debugCheck; }
     bool debugCollision() const { return m_debugCollision; }
     bool debugExitParse() const { return m_debugExitParse; }
+    bool debugExitUvm() const { return m_debugExitUvm; }
     bool debugLeak() const { return m_debugLeak; }
     bool debugNondeterminism() const { return m_debugNondeterminism; }
     bool debugPartition() const { return m_debugPartition; }
@@ -595,10 +626,23 @@ public:
         return m_traceFormat.sourceName() + (systemC() ? "_sc" : "_c");
     }
 
+    bool hierarchical() const { return m_hierarchical; }
+    bool hierChild() const { return m_hierChild; }
+    bool hierTop() const { return !m_hierChild && !m_hierBlocks.empty(); }
+    const V3HierBlockOptSet& hierBlocks() const { return m_hierBlocks; }
+    // Directory to save .tree, .dot, .dat, .vpp for hierarchical block top
+    // Returns makeDir() unless top module of hierarchical verilation.
+    string hierTopDataDir() const {
+        return hierTop() ? (makeDir() + '/' + prefix() + "__hier.dir") : makeDir();
+    }
+
     // METHODS (from main)
     static string version();
     static string argString(int argc, char** argv);  ///< Return list of arguments as simple string
     string allArgsString() const;  ///< Return all passed arguments as simple string
+    // Return options for child hierarchical blocks when forTop==false, otherwise returns args for
+    // the top module.
+    string allArgsStringForHierBlock(bool forTop) const;
     void bin(const string& flag) { m_bin = flag; }
     void parseOpts(FileLine* fl, int argc, char** argv);
     void parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv);

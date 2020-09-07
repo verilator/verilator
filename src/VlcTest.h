@@ -35,21 +35,17 @@ private:
     string m_name;  //< Name of the test
     double m_computrons;  //< Runtime for the test
     vluint64_t m_testrun;  //< Test run number, for database use
-    vluint64_t m_rank;  //< Execution rank suggestion
-    vluint64_t m_rankPoints;  //< Ranked additional points
-    vluint64_t m_user;  //< User data for algorithms (not persisted in .dat file)
+    vluint64_t m_rank = 0;  //< Execution rank suggestion
+    vluint64_t m_rankPoints = 0;  //< Ranked additional points
+    vluint64_t m_user = 0;  //< User data for algorithms (not persisted in .dat file)
     VlcBuckets m_buckets;  //< Coverage data for each coverage point
 
 public:
     // CONSTRUCTORS
-    VlcTest(const string& name, vluint64_t testrun, double comp) {
-        m_name = name;
-        m_computrons = comp;
-        m_testrun = testrun;
-        m_rank = 0;
-        m_rankPoints = 0;
-        m_user = 0;
-    }
+    VlcTest(const string& name, vluint64_t testrun, double comp)
+        : m_name{name}
+        , m_computrons{comp}
+        , m_testrun{testrun} {}
     ~VlcTest() {}
 
     // ACCESSORS
@@ -106,18 +102,14 @@ public:
     // CONSTRUCTORS
     VlcTests() {}
     ~VlcTests() {
-        for (VlcTests::ByName::iterator it = begin(); it != end(); ++it) {
-            VL_DO_CLEAR(delete *it, *it = NULL);
-        }
+        for (auto it = begin(); it != end(); ++it) { VL_DO_CLEAR(delete *it, *it = nullptr); }
     }
 
     // METHODS
     void dump(bool bucketsToo) {
         UINFO(2, "dumpTests...\n");
         VlcTest::dumpHeader();
-        for (VlcTests::ByName::const_iterator it = begin(); it != end(); ++it) {
-            (*it)->dump(bucketsToo);
-        }
+        for (const auto& testp : m_tests) testp->dump(bucketsToo);
     }
     VlcTest* newTest(const string& name, vluint64_t testrun, double comp) {
         VlcTest* testp = new VlcTest(name, testrun, comp);
@@ -125,7 +117,7 @@ public:
         return testp;
     }
     void clearUser() {
-        for (ByName::iterator it = m_tests.begin(); it != m_tests.end(); ++it) (*it)->user(0);
+        for (const auto& testp : m_tests) testp->user(0);
     }
 };
 

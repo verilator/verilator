@@ -50,8 +50,8 @@ private:
     Code2SymbolType m_code2symbol;
     Local2FstDtype m_local2fstdtype;
     std::list<std::string> m_curScope;
-    fstHandle* m_symbolp;  ///< same as m_code2symbol, but as an array
-    char* m_strbuf;  ///< String buffer long enough to hold maxBits() chars
+    fstHandle* m_symbolp = nullptr;  ///< same as m_code2symbol, but as an array
+    char* m_strbuf = nullptr;  ///< String buffer long enough to hold maxBits() chars
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
@@ -63,11 +63,11 @@ protected:
     // Implementation of VerilatedTrace interface
 
     // Implementations of protected virtual methods for VerilatedTrace
-    void emitTimeChange(vluint64_t timeui) VL_OVERRIDE;
+    virtual void emitTimeChange(vluint64_t timeui) override;
 
     // Hooks called from VerilatedTrace
-    bool preFullDump() VL_OVERRIDE { return isOpen(); }
-    bool preChangeDump() VL_OVERRIDE { return isOpen(); }
+    virtual bool preFullDump() override { return isOpen(); }
+    virtual bool preChangeDump() override { return isOpen(); }
 
     // Implementations of duck-typed methods for VerilatedTrace. These are
     // called from only one place (namely full*) so always inline them.
@@ -83,7 +83,7 @@ public:
     //=========================================================================
     // External interface to client code
 
-    explicit VerilatedFst(void* fst = NULL);
+    explicit VerilatedFst(void* fst = nullptr);
     ~VerilatedFst();
 
     /// Open the file; call isOpen() to see if errors
@@ -93,7 +93,7 @@ public:
     /// Flush any remaining data to this file
     void flush() VL_MT_UNSAFE;
     /// Is file open?
-    bool isOpen() const { return m_fst != NULL; }
+    bool isOpen() const { return m_fst != nullptr; }
 
     //=========================================================================
     // Internal interface to Verilator generated code
@@ -135,8 +135,8 @@ class VerilatedFstC {
     VL_UNCOPYABLE(VerilatedFstC);
 
 public:
-    explicit VerilatedFstC(void* filep = NULL)
-        : m_sptrace(filep) {}
+    explicit VerilatedFstC(void* filep = nullptr)
+        : m_sptrace{filep} {}
     ~VerilatedFstC() { close(); }
     /// Routines can only be called from one thread; allow next call from different thread
     void changeThread() { spTrace()->changeThread(); }

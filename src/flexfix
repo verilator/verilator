@@ -34,6 +34,8 @@ foreach my $line (<STDIN>) {
     $line =~ s!--accepting rule at line %d !--accepting rule at line %ld !g;
     # Fix compiler warning filenames
     $line =~ s!(#line \d+ ".*)_pretmp!$1!;
+    # Fix 'register' storage class specifier is deprecated and incompatible with C++17
+    $line =~ s!register !!g;
 
     print "$line";
 }

@@ -387,10 +387,8 @@ changed; if clear, checking those signals for changes may be skipped.
 
 === Compiler Version and C++11
 
-Verilator supports GCC 4.4.7 and newer.  GCC 4.4.7 does not support C++11,
-therefore C++11 is generally not required.  Exceptions may be made to
-require C++11 for features that are only practical with C++11,
-e.g. threads.
+Verilator requires C++11. Verilator does not require any newer versions,
+but is maintained to build successfully with C++14/C++17/C++20.
 
 === Indentation and Naming Style
 

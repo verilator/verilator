@@ -13,6 +13,9 @@ module t;
       valuea = $random(10);
       valueb = $random(10);
       if (valuea !== valueb) $stop;
+      valuea = $urandom(10);
+      valueb = $urandom(10);
+      if (valuea !== valueb) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

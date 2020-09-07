@@ -31,17 +31,14 @@ private:
     // MEMBERS
     int m_lineno;  ///< Line number
     int m_column;  ///< Column number
-    vluint64_t m_count;  ///< Count
-    bool m_ok;  ///< Coverage is above threshold
+    vluint64_t m_count = 0;  ///< Count
+    bool m_ok = false;  ///< Coverage is above threshold
 
 public:
     // CONSTRUCTORS
-    VlcSourceCount(int lineno, int column) {
-        m_lineno = lineno;
-        m_column = column;
-        m_count = 0;
-        m_ok = false;
-    }
+    VlcSourceCount(int lineno, int column)
+        : m_lineno{lineno}
+        , m_column{column} {}
     ~VlcSourceCount() {}
 
     // ACCESSORS
@@ -69,15 +66,13 @@ public:
 private:
     // MEMBERS
     string m_name;  //< Name of the source file
-    bool m_needed;  //< Need to annotate; has low coverage
+    bool m_needed = false;  //< Need to annotate; has low coverage
     LinenoMap m_lines;  //< Map of each annotated line
 
 public:
     // CONSTRUCTORS
-    explicit VlcSource(const string& name) {
-        m_name = name;
-        m_needed = false;
-    }
+    explicit VlcSource(const string& name)
+        : m_name{name} {}
     ~VlcSource() {}
 
     // ACCESSORS

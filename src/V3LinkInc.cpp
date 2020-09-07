@@ -50,17 +50,17 @@
 class LinkIncVisitor : public AstNVisitor {
 private:
     // TYPES
-    enum InsertMode {
+    enum InsertMode : uint8_t {
         IM_BEFORE,  // Pointing at statement ref is in, insert before this
         IM_AFTER,  // Pointing at last inserted stmt, insert after
         IM_WHILE_PRECOND  // Pointing to for loop, add to body end
     };
 
     // STATE
-    int m_modIncrementsNum;  // Var name counter
-    InsertMode m_insMode;  // How to insert
-    AstNode* m_insStmtp;  // Where to insert statement
-    bool m_unsupportedHere;  // Used to detect where it's not supported yet
+    int m_modIncrementsNum = 0;  // Var name counter
+    InsertMode m_insMode = IM_BEFORE;  // How to insert
+    AstNode* m_insStmtp = nullptr;  // Where to insert statement
+    bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
 
 private:
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
@@ -86,41 +86,41 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         // Reset increments count
         m_modIncrementsNum = 0;
         iterateChildren(nodep);
     }
-    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
+    virtual void visit(AstWhile* nodep) override {
         // Special, as statements need to be put in different places
         // Preconditions insert first just before themselves (the normal
         // rule for other statement types)
-        m_insStmtp = NULL;  // First thing should be new statement
+        m_insStmtp = nullptr;  // First thing should be new statement
         iterateAndNextNull(nodep->precondsp());
         // Conditions insert first at end of precondsp.
         m_insMode = IM_WHILE_PRECOND;
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->condp());
         // Body insert just before themselves
-        m_insStmtp = NULL;  // First thing should be new statement
+        m_insStmtp = nullptr;  // First thing should be new statement
         iterateAndNextNull(nodep->bodysp());
         iterateAndNextNull(nodep->incsp());
         // Done the loop
-        m_insStmtp = NULL;  // Next thing should be new statement
+        m_insStmtp = nullptr;  // Next thing should be new statement
     }
-    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeIf* nodep) override {
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->condp());
-        m_insStmtp = NULL;
+        m_insStmtp = nullptr;
         iterateAndNextNull(nodep->ifsp());
         iterateAndNextNull(nodep->elsesp());
-        m_insStmtp = NULL;
+        m_insStmtp = nullptr;
     }
-    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
     }
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
             return;
@@ -128,7 +128,7 @@ private:
         m_insMode = IM_BEFORE;
         m_insStmtp = nodep;
         iterateChildren(nodep);
-        m_insStmtp = NULL;  // Next thing should be new statement
+        m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void unsupported_visit(AstNode* nodep) {
         m_unsupportedHere = true;
@@ -136,11 +136,11 @@ private:
         iterateChildren(nodep);
         m_unsupportedHere = false;
     }
-    virtual void visit(AstLogAnd* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
-    virtual void visit(AstLogOr* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
-    virtual void visit(AstLogEq* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
-    virtual void visit(AstLogIf* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
-    virtual void visit(AstNodeCond* nodep) VL_OVERRIDE { unsupported_visit(nodep); }
+    virtual void visit(AstLogAnd* nodep) override { unsupported_visit(nodep); }
+    virtual void visit(AstLogOr* nodep) override { unsupported_visit(nodep); }
+    virtual void visit(AstLogEq* nodep) override { unsupported_visit(nodep); }
+    virtual void visit(AstLogIf* nodep) override { unsupported_visit(nodep); }
+    virtual void visit(AstNodeCond* nodep) override { unsupported_visit(nodep); }
     void prepost_visit(AstNodeTriop* nodep) {
         // Check if we are underneath a statement
         if (!m_insStmtp) {
@@ -225,23 +225,17 @@ private:
         nodep->replaceWith(new AstVarRef(varrefp->fileline(), varp, true));
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstPreAdd* nodep) VL_OVERRIDE { prepost_visit(nodep); }
-    virtual void visit(AstPostAdd* nodep) VL_OVERRIDE { prepost_visit(nodep); }
-    virtual void visit(AstPreSub* nodep) VL_OVERRIDE { prepost_visit(nodep); }
-    virtual void visit(AstPostSub* nodep) VL_OVERRIDE { prepost_visit(nodep); }
-    virtual void visit(AstGenFor* nodep) VL_OVERRIDE { iterateChildren(nodep); }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
+    virtual void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
+    virtual void visit(AstPreSub* nodep) override { prepost_visit(nodep); }
+    virtual void visit(AstPostSub* nodep) override { prepost_visit(nodep); }
+    virtual void visit(AstGenFor* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit LinkIncVisitor(AstNetlist* nodep) {
-        m_modIncrementsNum = 0;
-        m_insMode = IM_BEFORE;
-        m_insStmtp = NULL;
-        m_unsupportedHere = false;
-        iterate(nodep);
-    }
-    virtual ~LinkIncVisitor() {}
+    explicit LinkIncVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~LinkIncVisitor() override {}
 };
 
 //######################################################################

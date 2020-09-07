@@ -35,7 +35,7 @@
 class V3ErrorCode {
 public:
     // clang-format off
-    enum en {
+    enum en: uint8_t  {
         EC_MIN=0,       // Keep first
         //
         EC_INFO,        // General information out
@@ -80,6 +80,7 @@ public:
         DEPRECATED,     // Feature will be deprecated
         ENDLABEL,       // End lable name mismatch
         GENCLK,         // Generated Clock
+        HIERBLOCK,      // Ignored hierarchical block setting
         IFDEPTH,        // If statements too deep
         IGNOREDRETURN,  // Ignoring return value (function as task)
         IMPERFECTSCH,   // Imperfect schedule (disabled by default)
@@ -97,6 +98,7 @@ public:
         PINMISSING,     // Cell pin not specified
         PINNOCONNECT,   // Cell pin not connected
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
+        PKGNODECL,      // Error: Package/class needs to be predeclared
         PROCASSWIRE,    // Procedural assignment on wire
         REALCVT,        // Real conversion
         REDEFMACRO,     // Redefining existing define macro
@@ -128,13 +130,13 @@ public:
     // clang-format on
     enum en m_e;
     inline V3ErrorCode()
-        : m_e(EC_MIN) {}
+        : m_e{EC_MIN} {}
     // cppcheck-suppress noExplicitConstructor
     inline V3ErrorCode(en _e)
-        : m_e(_e) {}
+        : m_e{_e} {}
     explicit V3ErrorCode(const char* msgp);  // Matching code or ERROR
     explicit inline V3ErrorCode(int _e)
-        : m_e(static_cast<en>(_e)) {}
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     const char* ascii() const {
         // clang-format off
@@ -152,13 +154,13 @@ public:
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
             "DEFPARAM", "DECLFILENAME", "DEPRECATED",
-            "ENDLABEL", "GENCLK",
+            "ENDLABEL", "GENCLK", "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LITENDIAN", "MODDUP",
             "MULTIDRIVEN", "MULTITOP",
-            "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PROCASSWIRE",
+            "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PKGNODECL", "PROCASSWIRE",
             "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
@@ -181,7 +183,7 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const {
         return (m_e == ASSIGNIN || m_e == BLKANDNBLK || m_e == BLKLOOPINIT || m_e == CONTASSREG
-                || m_e == IMPURE || m_e == PROCASSWIRE  //
+                || m_e == IMPURE || m_e == PKGNODECL || m_e == PROCASSWIRE  //
                 || m_e == TIMESCALEMOD);  // Says IEEE
     }
     // Warnings to mention manual
@@ -238,7 +240,7 @@ private:
     static MessagesSet s_messages;  // What errors we've outputted
     static ErrorExitCb s_errorExitCb;  // Callback when error occurs for dumping
 
-    enum MaxErrors { MAX_ERRORS = 50 };  // Fatal after this may errors
+    static constexpr unsigned MAX_ERRORS = 50;  // Fatal after this may errors
 
     V3Error() {
         std::cerr << ("Static class");

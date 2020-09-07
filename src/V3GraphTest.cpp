@@ -55,20 +55,20 @@ class V3GraphTestVertex : public V3GraphVertex {
 
 public:
     V3GraphTestVertex(V3Graph* graphp, const string& name)
-        : V3GraphVertex(graphp)
-        , m_name(name) {}
-    virtual ~V3GraphTestVertex() {}
+        : V3GraphVertex{graphp}
+        , m_name{name} {}
+    virtual ~V3GraphTestVertex() override {}
     // ACCESSORS
-    virtual string name() const { return m_name; }
+    virtual string name() const override { return m_name; }
 };
 
 class V3GraphTestVarVertex : public V3GraphTestVertex {
 public:
     V3GraphTestVarVertex(V3Graph* graphp, const string& name)
-        : V3GraphTestVertex(graphp, name) {}
-    virtual ~V3GraphTestVarVertex() {}
+        : V3GraphTestVertex{graphp, name} {}
+    virtual ~V3GraphTestVarVertex() override {}
     // ACCESSORS
-    virtual string dotColor() const { return "blue"; }
+    virtual string dotColor() const override { return "blue"; }
 };
 
 //######################################################################
@@ -77,8 +77,8 @@ public:
 
 class V3GraphTestStrong : public V3GraphTest {
 public:
-    virtual string name() { return "strong"; }
-    virtual void runTest() {
+    virtual string name() override { return "strong"; }
+    virtual void runTest() override {
         V3Graph* gp = &m_graph;
         // Verify we break edges at a good point
         // A simple alg would make 3 breaks, below only requires b->i to break
@@ -115,8 +115,8 @@ public:
 
 class V3GraphTestAcyc : public V3GraphTest {
 public:
-    virtual string name() { return "acyc"; }
-    virtual void runTest() {
+    virtual string name() override { return "acyc"; }
+    virtual void runTest() override {
         V3Graph* gp = &m_graph;
         // Verify we break edges at a good point
         // A simple alg would make 3 breaks, below only requires b->i to break
@@ -143,8 +143,8 @@ public:
 
 class V3GraphTestVars : public V3GraphTest {
 public:
-    virtual string name() { return "vars"; }
-    virtual void runTest() {
+    virtual string name() override { return "vars"; }
+    virtual void runTest() override {
         V3Graph* gp = &m_graph;
 
         V3GraphTestVertex* clk = new V3GraphTestVarVertex(gp, "$clk");
@@ -265,18 +265,18 @@ class DfaTestVertex : public DfaVertex {
 
 public:
     DfaTestVertex(DfaGraph* graphp, const string& name)
-        : DfaVertex(graphp)
-        , m_name(name) {}
-    virtual ~DfaTestVertex() {}
+        : DfaVertex{graphp}
+        , m_name{name} {}
+    virtual ~DfaTestVertex() override {}
     // ACCESSORS
-    virtual string name() const { return m_name; }
+    virtual string name() const override { return m_name; }
 };
 
 class V3GraphTestDfa : public V3GraphTest {
 
 public:
-    virtual string name() { return "dfa"; }
-    virtual void runTest() {
+    virtual string name() override { return "dfa"; }
+    virtual void runTest() override {
         DfaGraph* gp = &m_graph;
 
         // NFA Pattern for ( (LR) | (L*R)) Z
@@ -330,8 +330,8 @@ class V3GraphTestImport : public V3GraphTest {
 #endif
 
 public:
-    virtual string name() { return "import"; }
-    virtual void runTest() {
+    virtual string name() override { return "import"; }
+    virtual void runTest() override {
         DfaGraph* gp = &m_graph;
         if (V3GraphTest::debug()) DfaGraph::debug(9);
         dotImport();

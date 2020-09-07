@@ -61,7 +61,7 @@
 
 // Version check
 #if defined(SYSTEMC_VERSION) && (SYSTEMC_VERSION < 20111121)
-# warning "Verilator soon requires SystemC 2.3.*; see manual for deprecated other versions."
+# warning "Verilator requires SystemC 2.3.* or newer."
 #endif
 // clang-format on
 
@@ -94,7 +94,7 @@ class VerilatedVcdSc;
 class VerilatedFst;
 class VerilatedFstC;
 
-enum VerilatedVarType {
+enum VerilatedVarType : vluint8_t {
     VLVT_UNKNOWN = 0,
     VLVT_PTR,  // Pointer to something
     VLVT_UINT8,  // AKA CData
@@ -163,7 +163,7 @@ private:
 
 public:
     explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr)
-        : m_mutexr(mutexr) {
+        : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
         m_mutexr.lock();
     }
     ~VerilatedLockGuard() VL_RELEASE() { m_mutexr.unlock(); }
@@ -203,7 +203,7 @@ public:
     /// The constructor establishes the thread id for all later calls.
     /// If necessary, a different class could be made that inits it otherwise.
     VerilatedAssertOneThread()
-        : m_threadid(VL_THREAD_ID()) {}
+        : m_threadid{VL_THREAD_ID()} {}
     ~VerilatedAssertOneThread() { check(); }
     // METHODS
     /// Check that the current thread ID is the same as the construction thread ID
@@ -313,21 +313,21 @@ public:  // But for internal use only
 
 class VerilatedScope {
 public:
-    typedef enum {
+    typedef enum : vluint8_t {
         SCOPE_MODULE,
         SCOPE_OTHER
     } Type;  // Type of a scope, currently module is only interesting
 private:
     // Fastpath:
-    VerilatedSyms* m_symsp;  ///< Symbol table
-    void** m_callbacksp;  ///< Callback table pointer (Fastpath)
-    int m_funcnumMax;  ///< Maxium function number stored (Fastpath)
+    VerilatedSyms* m_symsp = nullptr;  ///< Symbol table
+    void** m_callbacksp = nullptr;  ///< Callback table pointer (Fastpath)
+    int m_funcnumMax = 0;  ///< Maxium function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
-    VerilatedVarNameMap* m_varsp;  ///< Variable map
-    const char* m_namep;  ///< Scope name (Slowpath)
-    const char* m_identifierp;  ///< Identifier of scope (with escapes removed)
-    vlsint8_t m_timeunit;  ///< Timeunit in negative power-of-10
-    Type m_type;  ///< Type of the scope
+    VerilatedVarNameMap* m_varsp = nullptr;  ///< Variable map
+    const char* m_namep = nullptr;  ///< Scope name (Slowpath)
+    const char* m_identifierp = nullptr;  ///< Identifier of scope (with escapes removed)
+    vlsint8_t m_timeunit = 0;  ///< Timeunit in negative power-of-10
+    Type m_type = SCOPE_OTHER;  ///< Type of the scope
 
 public:  // But internals only - called from VerilatedModule's
     VerilatedScope();
@@ -393,8 +393,8 @@ class Verilated {
     static struct NonSerialized {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
-        vluint64_t s_profThreadsStart;  ///< +prof+threads starting time
-        vluint32_t s_profThreadsWindow;  ///< +prof+threads window size
+        vluint64_t s_profThreadsStart = 1;  ///< +prof+threads starting time
+        vluint32_t s_profThreadsWindow = 2;  ///< +prof+threads window size
         // Slow path
         const char* s_profThreadsFilenamep;  ///< +prof+threads filename
         NonSerialized();
@@ -405,23 +405,22 @@ class Verilated {
     // assumption is that the restore is allowed to pass different arguments
     static struct CommandArgValues {
         VerilatedMutex m_argMutex;  ///< Mutex for s_args members, when VL_THREADED
-        int argc;
-        const char** argv;
-        CommandArgValues()
-            : argc(0)
-            , argv(NULL) {}
+        int argc = 0;
+        const char** argv = nullptr;
+        CommandArgValues() {}
         ~CommandArgValues() {}
     } s_args;
 
     // Not covered by mutex, as per-thread
     static VL_THREAD_LOCAL struct ThreadLocal {
 #ifdef VL_THREADED
-        vluint32_t t_mtaskId;  ///< Current mtask# executing on this thread
-        vluint32_t t_endOfEvalReqd;  ///< Messages may be pending, thread needs endOf-eval calls
+        vluint32_t t_mtaskId = 0;  ///< Current mtask# executing on this thread
+        vluint32_t t_endOfEvalReqd
+            = 0;  ///< Messages may be pending, thread needs endOf-eval calls
 #endif
-        const VerilatedScope* t_dpiScopep;  ///< DPI context scope
-        const char* t_dpiFilename;  ///< DPI context filename
-        int t_dpiLineno;  ///< DPI context line number
+        const VerilatedScope* t_dpiScopep = nullptr;  ///< DPI context scope
+        const char* t_dpiFilename = nullptr;  ///< DPI context filename
+        int t_dpiLineno = 0;  ///< DPI context line number
 
         ThreadLocal();
         ~ThreadLocal();
@@ -561,8 +560,8 @@ public:
         t_s.t_dpiFilename = filenamep;
         t_s.t_dpiLineno = lineno;
     }
-    static void dpiClearContext() VL_MT_SAFE { t_s.t_dpiScopep = NULL; }
-    static bool dpiInContext() VL_MT_SAFE { return t_s.t_dpiScopep != NULL; }
+    static void dpiClearContext() VL_MT_SAFE { t_s.t_dpiScopep = nullptr; }
+    static bool dpiInContext() VL_MT_SAFE { return t_s.t_dpiScopep != nullptr; }
     static const char* dpiFilenamep() VL_MT_SAFE { return t_s.t_dpiFilename; }
     static int dpiLineno() VL_MT_SAFE { return t_s.t_dpiLineno; }
     static int exportFuncNum(const char* namep) VL_MT_SAFE;
@@ -644,9 +643,19 @@ extern void VL_PRINTF_MT(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 /// Print a debug message from internals with standard prefix, with printf style format
 extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 
-extern IData VL_RANDOM_I(int obits);  ///< Randomize a signal
-extern QData VL_RANDOM_Q(int obits);  ///< Randomize a signal
+extern vluint64_t vl_rand64() VL_MT_SAFE;
+inline IData VL_RANDOM_I(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_I(obits); }
+inline QData VL_RANDOM_Q(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_Q(obits); }
 extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);  ///< Randomize a signal
+inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
+    vluint64_t rnd = vl_rand64();
+    if (VL_LIKELY(hi > lo)) {
+        // Modulus isn't very fast but it's common that hi-low is power-of-two
+        return (rnd % (hi - lo)) + lo;
+    } else {
+        return (rnd % (lo - hi)) + hi;
+    }
+}
 
 /// Init time only, so slow is fine
 extern IData VL_RAND_RESET_I(int obits);  ///< Random reset a signal
@@ -837,13 +846,8 @@ extern int VL_TIME_STR_CONVERT(const char* strp) VL_PURE;
 
 /// Return current simulation time
 #if defined(SYSTEMC_VERSION)
-# if SYSTEMC_VERSION > 20011000
 // Already defined: extern sc_time sc_time_stamp();
 inline vluint64_t vl_time_stamp64() { return sc_time_stamp().value(); }
-# else  // Before SystemC changed to integral time representation
-// Already defined: extern double sc_time_stamp();
-inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_stamp()); }
-# endif
 #else  // Non-SystemC
 # ifdef VL_TIME_STAMP64
 extern vluint64_t vl_time_stamp64();

@@ -33,8 +33,8 @@
 class EmitCBaseVisitor : public AstNVisitor {
 public:
     // STATE
-    V3OutCFile* m_ofp;
-    bool m_trackText;  // Always track AstText nodes
+    V3OutCFile* m_ofp = nullptr;
+    bool m_trackText = false;  // Always track AstText nodes
     // METHODS
     V3OutCFile* ofp() const { return m_ofp; }
     void puts(const string& str) { ofp()->puts(str); }
@@ -106,11 +106,8 @@ public:
     }
 
     // CONSTRUCTORS
-    EmitCBaseVisitor() {
-        m_ofp = NULL;
-        m_trackText = false;
-    }
-    virtual ~EmitCBaseVisitor() {}
+    EmitCBaseVisitor() {}
+    virtual ~EmitCBaseVisitor() override {}
 };
 
 //######################################################################
@@ -119,20 +116,17 @@ public:
 class EmitCBaseCounterVisitor : public AstNVisitor {
 private:
     // MEMBERS
-    int m_count;  // Number of statements
+    int m_count = 0;  // Number of statements
     // VISITORS
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         m_count++;
         iterateChildren(nodep);
     }
 
 public:
     // CONSTRUCTORS
-    explicit EmitCBaseCounterVisitor(AstNode* nodep) {
-        m_count = 0;
-        iterate(nodep);
-    }
-    virtual ~EmitCBaseCounterVisitor() {}
+    explicit EmitCBaseCounterVisitor(AstNode* nodep) { iterate(nodep); }
+    virtual ~EmitCBaseCounterVisitor() override {}
     int count() const { return m_count; }
 };
 

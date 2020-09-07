@@ -159,7 +159,7 @@ void i_shortreal(float* x) {
 void i_chandle(void** x) {
     static int n = 0;
     printf("i_chandle %d\n", n);
-    if (*x != NULL) stop();
+    if (*x) stop();
     *x = (n % 2) ? reinterpret_cast<void*>(&i_chandle) : 0;
     n++;
 }
@@ -287,7 +287,7 @@ void i_shortreal_t(float* x) {
 void i_chandle_t(void** x) {
     static int n = 0;
     printf("i_chandle_t %d\n", n);
-    if (*x != NULL) stop();
+    if (*x) stop();
     *x = (n % 2) ? 0 : reinterpret_cast<void*>(&i_chandle_t);
     n++;
 }
@@ -961,10 +961,10 @@ void check_exports() {
     e_chandle(&x_chandle);
     e_string(&x_string);
     if ((n % 2) == 0) {
-        if (x_chandle != NULL) stop();
+        if (x_chandle) stop();
         if (strcmp(x_string, "Hello") != 0) stop();
     } else {
-        if (x_chandle != NULL) stop();
+        if (x_chandle) stop();
         if (strcmp(x_string, "World") != 0) stop();
     }
 

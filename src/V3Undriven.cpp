@@ -43,7 +43,7 @@ class UndrivenVarEntry {
     std::vector<bool> m_wholeFlags;  // Used/Driven on whole vector
     std::vector<bool> m_bitFlags;  // Used/Driven on each subbit
 
-    enum { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAGS_PER_BIT = 2 };
+    enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAGS_PER_BIT = 2 };
 
     VL_DEBUG_FUNC;  // Declare debug()
 
@@ -70,7 +70,7 @@ private:
     bool drivenFlag(int bit) const {
         return m_wholeFlags[FLAG_DRIVEN] || m_bitFlags[bit * FLAGS_PER_BIT + FLAG_DRIVEN];
     }
-    enum BitNamesWhich { BN_UNUSED, BN_UNDRIVEN, BN_BOTH };
+    enum BitNamesWhich : uint8_t { BN_UNUSED, BN_UNDRIVEN, BN_BOTH };
     string bitNames(BitNamesWhich which) {
         string bits;
         bool prev = false;
@@ -238,11 +238,11 @@ private:
 
     // STATE
     std::vector<UndrivenVarEntry*> m_entryps[3];  // Nodes to delete when we are finished
-    bool m_inBBox;  // In black box; mark as driven+used
-    bool m_inContAssign;  // In continuous assignment
-    bool m_inProcAssign;  // In procedural assignment
-    AstNodeFTask* m_taskp;  // Current task
-    AstAlways* m_alwaysCombp;  // Current always if combo, otherwise NULL
+    bool m_inBBox = false;  // In black box; mark as driven+used
+    bool m_inContAssign = false;  // In continuous assignment
+    bool m_inProcAssign = false;  // In procedural assignment
+    AstNodeFTask* m_taskp = nullptr;  // Current task
+    AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -282,7 +282,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
             // For assigns and non-combo always, do just usr==1, to look
             // for module-wide undriven etc.
@@ -303,15 +303,15 @@ private:
         // Discover variables used in bit definitions, etc
         iterateChildren(nodep);
     }
-    virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
+    virtual void visit(AstArraySel* nodep) override {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
         iterateChildren(nodep);
     }
-    virtual void visit(AstSliceSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstSliceSel* nodep) override {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
         iterateChildren(nodep);
     }
-    virtual void visit(AstSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstSel* nodep) override {
         AstNodeVarRef* varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
         AstConst* constp = VN_CAST(nodep->lsbp(), Const);
         if (varrefp && constp && !constp->num().isFourState()) {
@@ -334,7 +334,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeVarRef* nodep) override {
         // Any variable
         if (nodep->lvalue()
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
@@ -369,94 +369,79 @@ private:
     }
 
     // Don't know what black boxed calls do, assume in+out
-    virtual void visit(AstSysIgnore* nodep) VL_OVERRIDE {
-        bool prevMark = m_inBBox;
-        m_inBBox = true;
-        iterateChildren(nodep);
-        m_inBBox = prevMark;
+    virtual void visit(AstSysIgnore* nodep) override {
+        VL_RESTORER(m_inBBox);
+        {
+            m_inBBox = true;
+            iterateChildren(nodep);
+        }
     }
 
-    virtual void visit(AstAssign* nodep) VL_OVERRIDE {
-        bool prevProc = m_inProcAssign;
+    virtual void visit(AstAssign* nodep) override {
+        VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
             iterateChildren(nodep);
         }
-        m_inProcAssign = prevProc;
     }
-    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
-        bool prevProc = m_inProcAssign;
+    virtual void visit(AstAssignDly* nodep) override {
+        VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
             iterateChildren(nodep);
         }
-        m_inProcAssign = prevProc;
     }
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
-        bool prevCont = m_inContAssign;
+    virtual void visit(AstAssignW* nodep) override {
+        VL_RESTORER(m_inContAssign);
         {
             m_inContAssign = true;
             iterateChildren(nodep);
         }
-        m_inContAssign = prevCont;
     }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
-        AstAlways* prevAlwp = m_alwaysCombp;
+    virtual void visit(AstAlways* nodep) override {
+        VL_RESTORER(m_alwaysCombp);
         {
             AstNode::user2ClearTree();
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   " << nodep << endl);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
                 m_alwaysCombp = nodep;
             } else {
-                m_alwaysCombp = NULL;
+                m_alwaysCombp = nullptr;
             }
             iterateChildren(nodep);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
         }
-        m_alwaysCombp = prevAlwp;
     }
 
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
-        AstNodeFTask* prevTaskp = m_taskp;
-        m_taskp = nodep;
-        iterateChildren(nodep);
-        m_taskp = prevTaskp;
+    virtual void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_taskp);
+        {
+            m_taskp = nodep;
+            iterateChildren(nodep);
+        }
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os
-    virtual void visit(AstPrimitive*) VL_OVERRIDE {}
+    virtual void visit(AstPrimitive*) override {}
 
     // Coverage artifacts etc shouldn't count as a sink
-    virtual void visit(AstCoverDecl*) VL_OVERRIDE {}
-    virtual void visit(AstCoverInc*) VL_OVERRIDE {}
-    virtual void visit(AstCoverToggle*) VL_OVERRIDE {}
-    virtual void visit(AstTraceDecl*) VL_OVERRIDE {}
-    virtual void visit(AstTraceInc*) VL_OVERRIDE {}
+    virtual void visit(AstCoverDecl*) override {}
+    virtual void visit(AstCoverInc*) override {}
+    virtual void visit(AstCoverToggle*) override {}
+    virtual void visit(AstTraceDecl*) override {}
+    virtual void visit(AstTraceInc*) override {}
 
     // iterate
-    virtual void visit(AstConst* nodep) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstConst* nodep) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit UndrivenVisitor(AstNetlist* nodep) {
-        m_inBBox = false;
-        m_inContAssign = false;
-        m_inProcAssign = false;
-        m_taskp = NULL;
-        m_alwaysCombp = NULL;
-        iterate(nodep);
-    }
-    virtual ~UndrivenVisitor() {
-        for (std::vector<UndrivenVarEntry*>::iterator it = m_entryps[1].begin();
-             it != m_entryps[1].end(); ++it) {
-            (*it)->reportViolations();
-        }
+    explicit UndrivenVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~UndrivenVisitor() override {
+        for (UndrivenVarEntry* ip : m_entryps[1]) ip->reportViolations();
         for (int usr = 1; usr < 3; ++usr) {
-            for (std::vector<UndrivenVarEntry*>::iterator it = m_entryps[usr].begin();
-                 it != m_entryps[usr].end(); ++it) {
-                delete (*it);
-            }
+            for (UndrivenVarEntry* ip : m_entryps[usr]) delete ip;
         }
     }
 };

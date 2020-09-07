@@ -10,14 +10,21 @@ module t (/*AUTOARG*/);
 
    logic [31:0] larray_assign [0:3];
 
+   logic [31:0] array_assign2 [6:3];
+
+   logic [31:0] larray_assign2 [3:6];
    initial begin
       array_assign[1:3] = '{32'd4, 32'd3, 32'd2};
       larray_assign[3:1] = '{32'd4, 32'd3, 32'd2};
+      array_assign2[4:6] = '{32'd4, 32'd3, 32'd2};
+      larray_assign2[6:4] = '{32'd4, 32'd3, 32'd2};
 
       array_assign[4:3] = '{32'd4, 32'd3};
       array_assign[1:-1] = '{32'd4, 32'd3};
       array_assign[1:1] = '{32'd4};  // Ok
       larray_assign[1:1] = '{32'd4};  // Ok
+      array_assign2[4:4] = '{32'd4};  // Ok
+      larray_assign2[4:4] = '{32'd4};  // Ok
 
       $write("*-* All Finished *-*\n");
       $finish;

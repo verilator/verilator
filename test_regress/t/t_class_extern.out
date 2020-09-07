@@ -1,4 +1,0 @@
-%Error-UNSUPPORTED: t/t_class_extern.v:11:15: Unsupported: Out of class block function declaration
-   11 | function void Cls::extfunc();
-      |               ^~~
-%Error: Exiting due to

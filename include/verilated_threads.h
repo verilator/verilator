@@ -119,23 +119,16 @@ class VlProfileRec {
 protected:
     friend class VlThreadPool;
     enum VlProfileE { TYPE_MTASK_RUN, TYPE_BARRIER };
-    VlProfileE m_type;  // Record type
-    vluint32_t m_mtaskId;  // Mtask we're logging
-    vluint32_t m_predictTime;  // How long scheduler predicted would take
-    vluint64_t m_startTime;  // Tick at start of execution
-    vluint64_t m_endTime;  // Tick at end of execution
+    VlProfileE m_type = TYPE_BARRIER;  // Record type
+    vluint32_t m_mtaskId = 0;  // Mtask we're logging
+    vluint32_t m_predictTime = 0;  // How long scheduler predicted would take
+    vluint64_t m_startTime = 0;  // Tick at start of execution
+    vluint64_t m_endTime = 0;  // Tick at end of execution
     unsigned m_cpu;  // Execution CPU number (at start anyways)
 public:
     class Barrier {};
     VlProfileRec() {}
-    explicit VlProfileRec(Barrier) {
-        m_type = TYPE_BARRIER;
-        m_mtaskId = 0;
-        m_predictTime = 0;
-        m_startTime = 0;
-        m_endTime = 0;
-        m_cpu = getcpu();
-    }
+    explicit VlProfileRec(Barrier) { m_cpu = getcpu(); }
     void startRecord(vluint64_t time, uint32_t mtask, uint32_t predict) {
         m_type = VlProfileRec::TYPE_MTASK_RUN;
         m_mtaskId = mtask;
@@ -174,13 +167,13 @@ private:
         VlThrSymTab m_sym;  // Symbol table to execute
         bool m_evenCycle;  // Even/odd for flag alternation
         ExecRec()
-            : m_fnp(NULL)
-            , m_sym(NULL)
-            , m_evenCycle(false) {}
+            : m_fnp{nullptr}
+            , m_sym{nullptr}
+            , m_evenCycle{false} {}
         ExecRec(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym)
-            : m_fnp(fnp)
-            , m_sym(sym)
-            , m_evenCycle(evenCycle) {}
+            : m_fnp{fnp}
+            , m_sym{sym}
+            , m_evenCycle{evenCycle} {}
     };
 
     // MEMBERS

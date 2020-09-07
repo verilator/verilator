@@ -30,8 +30,8 @@
 
 #include <algorithm>
 #include <map>
-#include VL_INCLUDE_UNORDERED_MAP
-#include VL_INCLUDE_UNORDERED_SET
+#include <unordered_map>
+#include <unordered_set>
 
 //######################################################################
 // Scope class functions
@@ -45,17 +45,17 @@ private:
     AstUser2InUse m_inuser2;
 
     // TYPES
-    typedef vl_unordered_map<AstNodeModule*, AstScope*> PackageScopeMap;
+    typedef std::unordered_map<AstNodeModule*, AstScope*> PackageScopeMap;
     // These cannot be unordered unless make a specialized hashing pair (gcc-8)
     typedef std::map<std::pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
-    typedef std::set<std::pair<AstVarRef*, AstScope*> > VarRefScopeSet;
+    typedef std::set<std::pair<AstVarRef*, AstScope*>> VarRefScopeSet;
 
     // STATE, inside processing a single module
-    AstNodeModule* m_modp;  // Current module
-    AstScope* m_scopep;  // Current scope we are building
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstScope* m_scopep = nullptr;  // Current scope we are building
     // STATE, for passing down one level of hierarchy (may need save/restore)
-    AstCell* m_aboveCellp;  // Cell that instantiates this module
-    AstScope* m_aboveScopep;  // Scope that instantiates this scope
+    AstCell* m_aboveCellp = nullptr;  // Cell that instantiates this module
+    AstScope* m_aboveScopep = nullptr;  // Scope that instantiates this scope
 
     PackageScopeMap m_packageScopes;  // Scopes for each package
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
@@ -70,11 +70,11 @@ private:
             AstVarRef* nodep = it->first;
             AstScope* scopep = it->second;
             if (nodep->packagep() && !nodep->varp()->isClassMember()) {
-                PackageScopeMap::iterator it2 = m_packageScopes.find(nodep->packagep());
+                const auto it2 = m_packageScopes.find(nodep->packagep());
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
             }
-            VarScopeMap::iterator it3 = m_varScopes.find(make_pair(nodep->varp(), scopep));
+            const auto it3 = m_varScopes.find(make_pair(nodep->varp(), scopep));
             UASSERT_OBJ(it3 != m_varScopes.end(), nodep, "Can't locate varref scope");
             AstVarScope* varscp = it3->second;
             nodep->varScopep(varscp);
@@ -82,19 +82,19 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         AstNodeModule* modp = nodep->topModulep();
         if (!modp) {
             nodep->v3error("No top level module found");
             return;
         }
         // Operate starting at the top of the hierarchy
-        m_aboveCellp = NULL;
-        m_aboveScopep = NULL;
+        m_aboveCellp = nullptr;
+        m_aboveScopep = nullptr;
         iterate(modp);
         cleanupVarRefs();
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         // Create required blocks and add to module
         string scopename;
         if (!m_aboveScopep) {
@@ -117,9 +117,9 @@ private:
         // Now for each child cell, iterate the module this cell points to
         for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp = cellnextp->nextp()) {
             if (AstCell* cellp = VN_CAST(cellnextp, Cell)) {
-                AstScope* oldScopep = m_scopep;
-                AstCell* oldAbCellp = m_aboveCellp;
-                AstScope* oldAbScopep = m_aboveScopep;
+                VL_RESTORER(m_scopep);
+                VL_RESTORER(m_aboveCellp);
+                VL_RESTORER(m_aboveScopep);
                 {
                     m_aboveCellp = cellp;
                     m_aboveScopep = m_scopep;
@@ -127,10 +127,6 @@ private:
                     UASSERT_OBJ(modp, cellp, "Unlinked mod");
                     iterate(modp);  // Recursive call to visit(AstNodeModule)
                 }
-                // Done, restore vars
-                m_scopep = oldScopep;
-                m_aboveCellp = oldAbCellp;
-                m_aboveScopep = oldAbScopep;
             }
         }
 
@@ -151,11 +147,11 @@ private:
 
         // ***Note m_scopep is passed back to the caller of the routine (above)
     }
-    virtual void visit(AstClass* nodep) VL_OVERRIDE {
+    virtual void visit(AstClass* nodep) override {
         // Create required blocks and add to module
-        AstScope* oldScopep = m_scopep;
-        AstCell* oldAbCellp = m_aboveCellp;
-        AstScope* oldAbScopep = m_aboveScopep;
+        VL_RESTORER(m_scopep);
+        VL_RESTORER(m_aboveCellp);
+        VL_RESTORER(m_aboveScopep);
         {
             m_aboveScopep = m_scopep;
 
@@ -179,18 +175,14 @@ private:
 
             iterateChildren(nodep);
         }
-        // Done, restore vars
-        m_scopep = oldScopep;
-        m_aboveCellp = oldAbCellp;
-        m_aboveScopep = oldAbScopep;
     }
-    virtual void visit(AstCellInline* nodep) VL_OVERRIDE {  //
+    virtual void visit(AstCellInline* nodep) override {  //
         nodep->scopep(m_scopep);
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstActive* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Actives now made after scoping");
     }
-    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeProcedure* nodep) override {
         // Add to list of blocks under this scope
         UINFO(4, "    Move " << nodep << endl);
         AstNode* clonep = nodep->cloneTree(false);
@@ -198,7 +190,7 @@ private:
         m_scopep->addActivep(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
-    virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignAlias* nodep) override {
         // Add to list of blocks under this scope
         UINFO(4, "    Move " << nodep << endl);
         AstNode* clonep = nodep->cloneTree(false);
@@ -206,7 +198,7 @@ private:
         m_scopep->addActivep(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
-    virtual void visit(AstAssignVarScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignVarScope* nodep) override {
         // Copy under the scope but don't recurse
         UINFO(4, "    Move " << nodep << endl);
         AstNode* clonep = nodep->cloneTree(false);
@@ -214,7 +206,7 @@ private:
         m_scopep->addActivep(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignW* nodep) override {
         // Add to list of blocks under this scope
         UINFO(4, "    Move " << nodep << endl);
         AstNode* clonep = nodep->cloneTree(false);
@@ -222,7 +214,7 @@ private:
         m_scopep->addActivep(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
-    virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlwaysPublic* nodep) override {
         // Add to list of blocks under this scope
         UINFO(4, "    Move " << nodep << endl);
         AstNode* clonep = nodep->cloneTree(false);
@@ -230,7 +222,7 @@ private:
         m_scopep->addActivep(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
-    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {
+    virtual void visit(AstCoverToggle* nodep) override {
         // Add to list of blocks under this scope
         UINFO(4, "    Move " << nodep << endl);
         AstNode* clonep = nodep->cloneTree(false);
@@ -238,7 +230,7 @@ private:
         m_scopep->addActivep(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         // Add to list of blocks under this scope
         UINFO(4, "    CFUNC " << nodep << endl);
         AstCFunc* clonep = nodep->cloneTree(false);
@@ -248,7 +240,7 @@ private:
         // We iterate under the *clone*
         iterateChildren(clonep);
     }
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTask* nodep) override {
         // Add to list of blocks under this scope
         UINFO(4, "    FTASK " << nodep << endl);
         AstNodeFTask* clonep;
@@ -264,7 +256,7 @@ private:
         // We iterate under the *clone*
         iterateChildren(clonep);
     }
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         // Make new scope variable
         if (!nodep->user1p()) {
             AstVarScope* varscp = new AstVarScope(nodep->fileline(), m_scopep, nodep);
@@ -282,12 +274,12 @@ private:
             m_scopep->addVarp(varscp);
         }
     }
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         // VarRef needs to point to VarScope
         // Make sure variable has made user1p.
         UASSERT_OBJ(nodep->varp(), nodep, "Unlinked");
         if (nodep->varp()->isIfaceRef()) {
-            nodep->varScopep(NULL);
+            nodep->varScopep(nullptr);
         } else {
             // We may have not made the variable yet, and we can't make it now as
             // the var's referenced package etc might not be created yet.
@@ -295,7 +287,7 @@ private:
             m_varRefScopes.insert(make_pair(nodep, m_scopep));
         }
     }
-    virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
+    virtual void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()
         string prefix = string("__DOT__") + m_scopep->name();
         // TOP and above will be the user's name().
@@ -311,24 +303,17 @@ private:
         if (afterp) nodep->scopeEntrp(afterp);
         iterateChildren(nodep);
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         // Scope that was made by this module for different cell;
         // Want to ignore blocks under it, so just do nothing
     }
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit ScopeVisitor(AstNetlist* nodep) {
-        m_aboveCellp = NULL;
-        m_aboveScopep = NULL;
-        m_modp = NULL;
-        m_scopep = NULL;
-        //
-        iterate(nodep);
-    }
-    virtual ~ScopeVisitor() {}
+    explicit ScopeVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~ScopeVisitor() override {}
 };
 
 //######################################################################
@@ -337,17 +322,17 @@ public:
 class ScopeCleanupVisitor : public AstNVisitor {
 private:
     // STATE
-    AstScope* m_scopep;  // Current scope we are building
+    AstScope* m_scopep = nullptr;  // Current scope we are building
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         // Want to ignore blocks under it
         m_scopep = nodep;
         iterateChildren(nodep);
-        m_scopep = NULL;
+        m_scopep = nullptr;
     }
 
     virtual void movedDeleteOrIterate(AstNode* nodep) {
@@ -362,20 +347,20 @@ private:
         }
     }
 
-    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
-    virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
-    virtual void visit(AstAssignVarScope* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
-    virtual void visit(AstAssignW* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
-    virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
-    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE { movedDeleteOrIterate(nodep); }
+    virtual void visit(AstNodeProcedure* nodep) override { movedDeleteOrIterate(nodep); }
+    virtual void visit(AstAssignAlias* nodep) override { movedDeleteOrIterate(nodep); }
+    virtual void visit(AstAssignVarScope* nodep) override { movedDeleteOrIterate(nodep); }
+    virtual void visit(AstAssignW* nodep) override { movedDeleteOrIterate(nodep); }
+    virtual void visit(AstAlwaysPublic* nodep) override { movedDeleteOrIterate(nodep); }
+    virtual void visit(AstCoverToggle* nodep) override { movedDeleteOrIterate(nodep); }
+    virtual void visit(AstNodeFTask* nodep) override { movedDeleteOrIterate(nodep); }
+    virtual void visit(AstCFunc* nodep) override { movedDeleteOrIterate(nodep); }
 
-    virtual void visit(AstVarXRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarXRef* nodep) override {
         // The crossrefs are dealt with in V3LinkDot
-        nodep->varp(NULL);
+        nodep->varp(nullptr);
     }
-    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTaskRef* nodep) override {
         // The crossrefs are dealt with in V3LinkDot
         UINFO(9, "   Old pkg-taskref " << nodep << endl);
         if (nodep->packagep()) {
@@ -386,27 +371,24 @@ private:
             nodep->taskp(newp);
             UINFO(9, "   New pkg-taskref " << nodep << endl);
         } else if (!VN_IS(nodep, MethodCall)) {
-            nodep->taskp(NULL);
+            nodep->taskp(nullptr);
             UINFO(9, "   New pkg-taskref " << nodep << endl);
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstModportFTaskRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstModportFTaskRef* nodep) override {
         // The crossrefs are dealt with in V3LinkDot
-        nodep->ftaskp(NULL);
+        nodep->ftaskp(nullptr);
         iterateChildren(nodep);
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit ScopeCleanupVisitor(AstNetlist* nodep) {
-        m_scopep = NULL;
-        iterate(nodep);
-    }
-    virtual ~ScopeCleanupVisitor() {}
+    explicit ScopeCleanupVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~ScopeCleanupVisitor() override {}
 };
 
 //######################################################################

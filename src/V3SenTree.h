@@ -25,7 +25,7 @@
 #include "V3Ast.h"
 #include "V3Hashed.h"
 
-#include VL_INCLUDE_UNORDERED_SET
+#include <unordered_set>
 
 //######################################################################
 // Collect SenTrees under the entire scope
@@ -48,7 +48,7 @@ private:
     };
 
     // MEMBERS
-    typedef vl_unordered_set<AstSenTree*, HashSenTree, EqSenTree> Set;
+    typedef std::unordered_set<AstSenTree*, HashSenTree, EqSenTree> Set;
     Set m_trees;  // Set of sensitive blocks, for folding.
 
 public:
@@ -59,8 +59,8 @@ public:
     void add(AstSenTree* nodep) { m_trees.insert(nodep); }
 
     AstSenTree* find(AstSenTree* likep) {
-        AstSenTree* resultp = NULL;
-        Set::iterator it = m_trees.find(likep);
+        AstSenTree* resultp = nullptr;
+        const auto it = m_trees.find(likep);
         if (it != m_trees.end()) resultp = *it;
         return resultp;
     }
@@ -74,15 +74,14 @@ private:
 class SenTreeFinder {
 private:
     // STATE
-    AstTopScope* m_topScopep;  // Top scope to add global SenTrees to
+    AstTopScope* m_topScopep = nullptr;  // Top scope to add global SenTrees to
     SenTreeSet m_trees;  // Set of global SenTrees
 
     VL_UNCOPYABLE(SenTreeFinder);
 
 public:
     // CONSTRUCTORS
-    SenTreeFinder()
-        : m_topScopep(NULL) {}
+    SenTreeFinder() {}
 
     // METHODS
     AstSenTree* getSenTree(AstSenTree* senTreep) {

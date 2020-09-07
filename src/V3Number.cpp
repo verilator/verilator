@@ -25,7 +25,8 @@
 #include <cerrno>
 #include <cmath>
 
-#define MAX_SPRINTF_DOUBLE_SIZE 1100  // Maximum characters with a sprintf %e/%f/%g (really 1079)
+constexpr int MAX_SPRINTF_DOUBLE_SIZE
+    = 1100;  // Maximum characters with a sprintf %e/%f/%g (really 1079)
 
 // Number operations build output in-place so can't call e.g. foo.opX(foo)
 #define NUM_ASSERT_OP_ARGS1(arg1) \
@@ -567,8 +568,8 @@ string V3Number::displayed(AstNode* nodep, const string& vformat) const {
 }
 
 string V3Number::displayed(FileLine* fl, const string& vformat) const {
-    string::const_iterator pos = vformat.begin();
-    UASSERT(pos != vformat.end() && pos[0] == '%',
+    auto pos = vformat.cbegin();
+    UASSERT(pos != vformat.cend() && pos[0] == '%',
             "$display-like function with non format argument " << *this);
     ++pos;
     bool left = false;
@@ -577,7 +578,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
         ++pos;
     }
     string fmtsize;
-    for (; pos != vformat.end() && (isdigit(pos[0]) || pos[0] == '.'); ++pos) {
+    for (; pos != vformat.cend() && (isdigit(pos[0]) || pos[0] == '.'); ++pos) {
         fmtsize += pos[0];
     }
     string str;
@@ -1451,7 +1452,7 @@ V3Number& V3Number::opAtoN(const V3Number& lhs, int base) {
     str.erase(std::remove(str.begin(), str.end(), '_'), str.end());
 
     errno = 0;
-    long v = std::strtol(str.c_str(), NULL, base);
+    auto v = std::strtol(str.c_str(), nullptr, base);
     if (errno != 0) v = 0;
     return setLongS(static_cast<vlsint32_t>(v));
 }
@@ -2160,11 +2161,7 @@ V3Number& V3Number::opExtendXZ(const V3Number& lhs, uint32_t lbits) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < width(); bit++) {
-        char extendWith = lhs.bitIsExtend(bit, lbits);
-        if (extendWith == '1' || extendWith == 1) extendWith = 0;
-        setBit(bit, lhs.bitIsExtend(bit, lbits));
-    }
+    for (int bit = 0; bit < width(); bit++) { setBit(bit, lhs.bitIsExtend(bit, lbits)); }
     return *this;
 }
 
@@ -2400,14 +2397,14 @@ V3Number& V3Number::opToLowerN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_STRING_ARGS1(lhs);
     std::string out = lhs.toString();
-    for (std::string::iterator it = out.begin(); it != out.end(); ++it) { *it = tolower(*it); }
+    for (auto& cr : out) cr = tolower(cr);
     return setString(out);
 }
 V3Number& V3Number::opToUpperN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_STRING_ARGS1(lhs);
     std::string out = lhs.toString();
-    for (std::string::iterator it = out.begin(); it != out.end(); ++it) { *it = toupper(*it); }
+    for (auto& cr : out) cr = toupper(cr);
     return setString(out);
 }
 

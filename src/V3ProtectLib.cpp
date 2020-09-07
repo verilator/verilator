@@ -30,40 +30,40 @@
 
 class ProtectVisitor : public AstNVisitor {
 private:
-    AstVFile* m_vfilep;  // DPI-enabled Verilog wrapper
-    AstCFile* m_cfilep;  // C implementation of DPI functions
+    AstVFile* m_vfilep = nullptr;  // DPI-enabled Verilog wrapper
+    AstCFile* m_cfilep = nullptr;  // C implementation of DPI functions
     // Verilog text blocks
-    AstTextBlock* m_modPortsp;  // Module port list
-    AstTextBlock* m_comboPortsp;  // Combo function port list
-    AstTextBlock* m_seqPortsp;  // Sequential function port list
-    AstTextBlock* m_comboIgnorePortsp;  // Combo ignore function port list
-    AstTextBlock* m_comboDeclsp;  // Combo signal declaration list
-    AstTextBlock* m_seqDeclsp;  // Sequential signal declaration list
-    AstTextBlock* m_tmpDeclsp;  // Temporary signal declaration list
-    AstTextBlock* m_hashValuep;  // CPP hash value
-    AstTextBlock* m_comboParamsp;  // Combo function parameter list
-    AstTextBlock* m_clkSensp;  // Clock sensitivity list
-    AstTextBlock* m_comboIgnoreParamsp;  // Combo ignore parameter list
-    AstTextBlock* m_seqParamsp;  // Sequential parameter list
-    AstTextBlock* m_nbAssignsp;  // Non-blocking assignment list
-    AstTextBlock* m_seqAssignsp;  // Sequential assignment list
-    AstTextBlock* m_comboAssignsp;  // Combo assignment list
+    AstTextBlock* m_modPortsp = nullptr;  // Module port list
+    AstTextBlock* m_comboPortsp = nullptr;  // Combo function port list
+    AstTextBlock* m_seqPortsp = nullptr;  // Sequential function port list
+    AstTextBlock* m_comboIgnorePortsp = nullptr;  // Combo ignore function port list
+    AstTextBlock* m_comboDeclsp = nullptr;  // Combo signal declaration list
+    AstTextBlock* m_seqDeclsp = nullptr;  // Sequential signal declaration list
+    AstTextBlock* m_tmpDeclsp = nullptr;  // Temporary signal declaration list
+    AstTextBlock* m_hashValuep = nullptr;  // CPP hash value
+    AstTextBlock* m_comboParamsp = nullptr;  // Combo function parameter list
+    AstTextBlock* m_clkSensp = nullptr;  // Clock sensitivity list
+    AstTextBlock* m_comboIgnoreParamsp = nullptr;  // Combo ignore parameter list
+    AstTextBlock* m_seqParamsp = nullptr;  // Sequential parameter list
+    AstTextBlock* m_nbAssignsp = nullptr;  // Non-blocking assignment list
+    AstTextBlock* m_seqAssignsp = nullptr;  // Sequential assignment list
+    AstTextBlock* m_comboAssignsp = nullptr;  // Combo assignment list
     // C text blocks
-    AstTextBlock* m_cHashValuep;  // CPP hash value
-    AstTextBlock* m_cComboParamsp;  // Combo function parameter list
-    AstTextBlock* m_cComboInsp;  // Combo input copy list
-    AstTextBlock* m_cComboOutsp;  // Combo output copy list
-    AstTextBlock* m_cSeqParamsp;  // Sequential parameter list
-    AstTextBlock* m_cSeqClksp;  // Sequential clock copy list
-    AstTextBlock* m_cSeqOutsp;  // Sequential output copy list
-    AstTextBlock* m_cIgnoreParamsp;  // Combo ignore parameter list
+    AstTextBlock* m_cHashValuep = nullptr;  // CPP hash value
+    AstTextBlock* m_cComboParamsp = nullptr;  // Combo function parameter list
+    AstTextBlock* m_cComboInsp = nullptr;  // Combo input copy list
+    AstTextBlock* m_cComboOutsp = nullptr;  // Combo output copy list
+    AstTextBlock* m_cSeqParamsp = nullptr;  // Sequential parameter list
+    AstTextBlock* m_cSeqClksp = nullptr;  // Sequential clock copy list
+    AstTextBlock* m_cSeqOutsp = nullptr;  // Sequential output copy list
+    AstTextBlock* m_cIgnoreParamsp = nullptr;  // Combo ignore parameter list
     string m_libName;
     string m_topName;
-    bool m_foundTop;  // Have seen the top module
-    bool m_hasClk;  // True if the top module has sequential logic
+    bool m_foundTop = false;  // Have seen the top module
+    bool m_hasClk = false;  // True if the top module has sequential logic
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         m_vfilep
             = new AstVFile(nodep->fileline(), v3Global.opt.makeDir() + "/" + m_libName + ".sv");
         nodep->addFilesp(m_vfilep);
@@ -73,7 +73,7 @@ private:
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         if (!nodep->isTop()) {
             return;
         } else {
@@ -376,7 +376,7 @@ private:
         m_cfilep->tblockp(txtp);
     }
 
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         if (!nodep->isIO()) return;
         if (VN_IS(nodep->dtypep(), UnpackArrayDType)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: unpacked arrays with protect-lib on "
@@ -397,7 +397,7 @@ private:
         }
     }
 
-    virtual void visit(AstNode*) VL_OVERRIDE {}
+    virtual void visit(AstNode*) override {}
 
     string cInputConnection(AstVar* varp) {
         string frstmt;
@@ -486,35 +486,8 @@ private:
 
 public:
     explicit ProtectVisitor(AstNode* nodep)
-        : m_vfilep(NULL)
-        , m_cfilep(NULL)
-        , m_modPortsp(NULL)
-        , m_comboPortsp(NULL)
-        , m_seqPortsp(NULL)
-        , m_comboIgnorePortsp(NULL)
-        , m_comboDeclsp(NULL)
-        , m_seqDeclsp(NULL)
-        , m_tmpDeclsp(NULL)
-        , m_hashValuep(NULL)
-        , m_comboParamsp(NULL)
-        , m_clkSensp(NULL)
-        , m_comboIgnoreParamsp(NULL)
-        , m_seqParamsp(NULL)
-        , m_nbAssignsp(NULL)
-        , m_seqAssignsp(NULL)
-        , m_comboAssignsp(NULL)
-        , m_cHashValuep(NULL)
-        , m_cComboParamsp(NULL)
-        , m_cComboInsp(NULL)
-        , m_cComboOutsp(NULL)
-        , m_cSeqParamsp(NULL)
-        , m_cSeqClksp(NULL)
-        , m_cSeqOutsp(NULL)
-        , m_cIgnoreParamsp(NULL)
-        , m_libName(v3Global.opt.protectLib())
-        , m_topName(v3Global.opt.prefix())
-        , m_foundTop(false)
-        , m_hasClk(false) {
+        : m_libName{v3Global.opt.protectLib()}
+        , m_topName{v3Global.opt.prefix()} {
         iterate(nodep);
     }
 };

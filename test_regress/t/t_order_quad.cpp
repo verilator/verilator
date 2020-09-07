@@ -15,7 +15,7 @@ unsigned int main_time = 0;
 
 double sc_time_stamp() { return main_time; }
 
-VM_PREFIX* topp = NULL;
+VM_PREFIX* topp = nullptr;
 bool fail = false;
 
 void check(QData got, QData exp) {

@@ -38,17 +38,16 @@ private:
     // MEMBERS
     static int s_anonNum;  // Number of next anonymous object (parser use only)
     VSymGraph m_syms;  // Graph of symbol tree
-    VSymEnt* m_symTableNextId;  // Symbol table for next lexer lookup (parser use only)
+    VSymEnt* m_symTableNextId = nullptr;  // Symbol table for next lexer lookup (parser use only)
     VSymEnt* m_symCurrentp;  // Active symbol table for additions/lookups
     SymStack m_sympStack;  // Stack of upper nodes with pending symbol tables
 
 public:
     // CONSTRUCTORS
     explicit V3ParseSym(AstNetlist* rootp)
-        : m_syms(rootp) {
+        : m_syms{rootp} {
         s_anonNum = 0;  // Number of next anonymous object
         pushScope(findNewTable(rootp));
-        m_symTableNextId = NULL;
         m_symCurrentp = symCurrentp();
     }
     ~V3ParseSym() {}
@@ -77,11 +76,11 @@ public:
             UINFO(9, "symTableNextId under " << entp << "-" << entp->type().ascii() << endl);
             m_symTableNextId = getTable(entp);
         } else {
-            UINFO(9, "symTableNextId under NULL" << endl);
-            m_symTableNextId = NULL;
+            UINFO(9, "symTableNextId under nullptr" << endl);
+            m_symTableNextId = nullptr;
         }
     }
-    void reinsert(AstNode* nodep, VSymEnt* parentp = NULL) {
+    void reinsert(AstNode* nodep, VSymEnt* parentp = nullptr) {
         reinsert(nodep, parentp, nodep->name());
     }
     void reinsert(AstNode* nodep, VSymEnt* parentp, string name) {
@@ -91,7 +90,7 @@ public:
         }
         parentp->reinsert(name, findNewTable(nodep));
     }
-    void pushNew(AstNode* nodep) { pushNewUnder(nodep, NULL); }
+    void pushNew(AstNode* nodep) { pushNewUnder(nodep, nullptr); }
     void pushNewUnder(AstNode* nodep, VSymEnt* parentp) {
         if (!parentp) parentp = symCurrentp();
         VSymEnt* symp
@@ -104,7 +103,7 @@ public:
         if (parentp) {
             pushNewUnder(nodep, findNewTable(parentp));
         } else {
-            pushNewUnder(nodep, NULL);
+            pushNewUnder(nodep, nullptr);
         }
     }
     void pushScope(VSymEnt* symp) {
@@ -128,8 +127,7 @@ public:
     }
     void showUpward() {
         UINFO(1, "ParseSym Stack:\n");
-        for (SymStack::reverse_iterator it = m_sympStack.rbegin(); it != m_sympStack.rend();
-             ++it) {
+        for (auto it = m_sympStack.rbegin(); it != m_sympStack.rend(); ++it) {
             VSymEnt* symp = *it;
             UINFO(1, "    " << symp->nodep() << endl);
         }
@@ -142,7 +140,7 @@ public:
         if (foundp) {
             return foundp->nodep();
         } else {
-            return NULL;
+            return nullptr;
         }
     }
     void importExtends(AstNode* classp) {

@@ -52,12 +52,13 @@
 
 class CaseLintVisitor : public AstNVisitor {
 private:
-    AstNodeCase* m_caseExprp;  // Under a CASE value node, if so the relevant case statement
+    AstNodeCase* m_caseExprp
+        = nullptr;  // Under a CASE value node, if so the relevant case statement
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    virtual void visit(AstNodeCase* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCase* nodep) override {
         if (VN_IS(nodep, Case) && VN_CAST(nodep, Case)->casex()) {
             nodep->v3warn(CASEX, "Suggest casez (with ?'s) in place of casex (with X's)");
         }
@@ -81,10 +82,10 @@ private:
                  itemp = VN_CAST(itemp->nextp(), CaseItem)) {
                 iterateAndNextNull(itemp->condsp());
             }
-            m_caseExprp = NULL;
+            m_caseExprp = nullptr;
         }
     }
-    virtual void visit(AstConst* nodep) VL_OVERRIDE {
+    virtual void visit(AstConst* nodep) override {
         // See also neverItem
         if (m_caseExprp && nodep->num().isFourState()) {
             if (VN_IS(m_caseExprp, GenCase)) {
@@ -105,15 +106,12 @@ private:
             }
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit CaseLintVisitor(AstNodeCase* nodep) {
-        m_caseExprp = NULL;
-        iterate(nodep);
-    }
-    virtual ~CaseLintVisitor() {}
+    explicit CaseLintVisitor(AstNodeCase* nodep) { iterate(nodep); }
+    virtual ~CaseLintVisitor() override {}
 };
 
 //######################################################################
@@ -131,9 +129,9 @@ private:
     VDouble0 m_statCaseSlow;  // Statistic tracking
 
     // Per-CASE
-    int m_caseWidth;  // Width of valueItems
-    int m_caseItems;  // Number of caseItem unique values
-    bool m_caseNoOverlapsAllCovered;  // Proven to be synopsys parallel_case compliant
+    int m_caseWidth = 0;  // Width of valueItems
+    int m_caseItems = 0;  // Number of caseItem unique values
+    bool m_caseNoOverlapsAllCovered = false;  // Proven to be synopsys parallel_case compliant
     // For each possible value, the case branch we need
     AstNode* m_valueItem[1 << CASE_OVERLAP_WIDTH];
 
@@ -161,7 +159,7 @@ private:
         }
         UINFO(8, "Simple case statement: " << nodep << endl);
         // Zero list of items for each value
-        for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) m_valueItem[i] = NULL;
+        for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) m_valueItem[i] = nullptr;
         // Now pick up the values for each assignment
         // We can cheat and use uint32_t's because we only support narrow case's
         bool bitched = false;
@@ -218,7 +216,7 @@ private:
         }
 
         // Convert valueItem from AstCaseItem* to the expression
-        // Not done earlier, as we may now have a NULL because it's just a ";" NOP branch
+        // Not done earlier, as we may now have a nullptr because it's just a ";" NOP branch
         for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
             m_valueItem[i] = VN_CAST(m_valueItem[i], CaseItem)->bodysp();
         }
@@ -324,13 +322,13 @@ private:
                 hadDefault = true;
             } else {
                 // Expressioned clause
-                AstNode* icondNextp = NULL;
-                AstNode* ifexprp = NULL;  // If expression to test
+                AstNode* icondNextp = nullptr;
+                AstNode* ifexprp = nullptr;  // If expression to test
                 for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondNextp) {
                     icondNextp = icondp->nextp();
                     icondp->unlinkFrBack();
 
-                    AstNode* condp = NULL;  // Default is to use and1p/and2p
+                    AstNode* condp = nullptr;  // Default is to use and1p/and2p
                     AstConst* iconstp = VN_CAST(icondp, Const);
                     if (iconstp && neverItem(nodep, iconstp)) {
                         // X in casez can't ever be executed
@@ -377,8 +375,9 @@ private:
         if (!hadDefault) {
             // If there was no default, add a empty one, this greatly simplifies below code
             // and constant propagation will just eliminate it for us later.
-            nodep->addItemsp(new AstCaseItem(
-                nodep->fileline(), new AstConst(nodep->fileline(), AstConst::LogicTrue()), NULL));
+            nodep->addItemsp(
+                new AstCaseItem(nodep->fileline(),
+                                new AstConst(nodep->fileline(), AstConst::LogicTrue()), nullptr));
         }
         if (debug() >= 9) nodep->dumpTree(cout, "    _comp_COND: ");
         // Now build the IF statement tree
@@ -388,9 +387,9 @@ private:
         // should pull out the most common item from here and instead make
         // it the first IF branch.
         int depth = 0;
-        AstNode* grouprootp = NULL;
-        AstIf* groupnextp = NULL;
-        AstIf* itemnextp = NULL;
+        AstNode* grouprootp = nullptr;
+        AstIf* groupnextp = nullptr;
+        AstIf* itemnextp = nullptr;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_CAST(itemp->nextp(), CaseItem)) {
             AstNode* istmtsp = itemp->bodysp();  // Maybe null -- no action.
@@ -400,9 +399,9 @@ private:
             {  // Prepare for next group
                 if (++depth > CASE_ENCODER_GROUP_DEPTH) depth = 1;
                 if (depth == 1) {  // First group or starting new group
-                    itemnextp = NULL;
+                    itemnextp = nullptr;
                     AstIf* newp
-                        = new AstIf(itemp->fileline(), ifexprp->cloneTree(true), NULL, NULL);
+                        = new AstIf(itemp->fileline(), ifexprp->cloneTree(true), nullptr, nullptr);
                     if (groupnextp) {
                         groupnextp->addElsesp(newp);
                     } else {
@@ -422,7 +421,7 @@ private:
                     VL_DO_DANGLING(itemexprp->deleteTree(), itemexprp);
                     itemexprp = new AstConst(itemp->fileline(), AstConst::LogicTrue());
                 }
-                AstIf* newp = new AstIf(itemp->fileline(), itemexprp, istmtsp, NULL);
+                AstIf* newp = new AstIf(itemp->fileline(), itemexprp, istmtsp, nullptr);
                 if (itemnextp) {
                     itemnextp->addElsesp(newp);
                 } else {
@@ -467,7 +466,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstCase* nodep) VL_OVERRIDE {
+    virtual void visit(AstCase* nodep) override {
         V3Case::caseLint(nodep);
         iterateChildren(nodep);
         if (debug() >= 9) nodep->dumpTree(cout, " case_old: ");
@@ -482,18 +481,15 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit CaseVisitor(AstNetlist* nodep) {
-        m_caseWidth = 0;
-        m_caseItems = 0;
-        m_caseNoOverlapsAllCovered = false;
-        for (uint32_t i = 0; i < (1UL << CASE_OVERLAP_WIDTH); ++i) m_valueItem[i] = NULL;
+        for (uint32_t i = 0; i < (1UL << CASE_OVERLAP_WIDTH); ++i) m_valueItem[i] = nullptr;
         iterate(nodep);
     }
-    virtual ~CaseVisitor() {
+    virtual ~CaseVisitor() override {
         V3Stats::addStat("Optimizations, Cases parallelized", m_statCaseFast);
         V3Stats::addStat("Optimizations, Cases complex", m_statCaseSlow);
     }

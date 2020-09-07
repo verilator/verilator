@@ -47,12 +47,12 @@ private:
     typedef std::vector<AstNodeBlock*> BlockStack;
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
-    AstNodeFTask* m_ftaskp;  // Current function/task
-    AstWhile* m_loopp;  // Current loop
-    bool m_loopInc;  // In loop increment
-    bool m_inFork;  // Under fork
-    int m_modRepeatNum;  // Repeat counter
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstWhile* m_loopp = nullptr;  // Current loop
+    bool m_loopInc = false;  // In loop increment
+    bool m_inFork = false;  // Under fork
+    int m_modRepeatNum = 0;  // Repeat counter
     BlockStack m_blockStack;  // All begin blocks above current node
 
     // METHODS
@@ -63,7 +63,7 @@ private:
         UINFO(4, "Create label for " << nodep << endl);
         if (VN_IS(nodep, JumpLabel)) return VN_CAST(nodep, JumpLabel);  // Done
 
-        AstNode* underp = NULL;
+        AstNode* underp = nullptr;
         bool under_and_next = true;
         if (VN_IS(nodep, NodeBlock)) {
             underp = VN_CAST(nodep, NodeBlock)->stmtsp();
@@ -80,7 +80,7 @@ private:
             }
         } else {
             nodep->v3fatalSrc("Unknown jump point for break/disable/continue");
-            return NULL;
+            return nullptr;
         }
         // Skip over variables as we'll just move them in a moment
         // Also this would otherwise prevent us from using a label twice
@@ -92,7 +92,7 @@ private:
         if (VN_IS(underp, JumpLabel)) {
             return VN_CAST(underp, JumpLabel);
         } else {  // Move underp stuff to be under a new label
-            AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), NULL);
+            AstJumpBlock* blockp = new AstJumpBlock(nodep->fileline(), nullptr);
             AstJumpLabel* labelp = new AstJumpLabel(nodep->fileline(), blockp);
             blockp->labelp(labelp);
 
@@ -117,35 +117,32 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         if (nodep->dead()) return;
-        AstNodeModule* origModp = m_modp;
-        int origRepeatNum = m_modRepeatNum;
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_modRepeatNum);
         {
             m_modp = nodep;
             m_modRepeatNum = 0;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
-        m_modRepeatNum = origRepeatNum;
     }
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTask* nodep) override {
         m_ftaskp = nodep;
         iterateChildren(nodep);
-        m_ftaskp = NULL;
+        m_ftaskp = nullptr;
     }
-    virtual void visit(AstNodeBlock* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeBlock* nodep) override {
         UINFO(8, "  " << nodep << endl);
-        bool oldFork = m_inFork;
+        VL_RESTORER(m_inFork);
         m_blockStack.push_back(nodep);
         {
             m_inFork = m_inFork || VN_IS(nodep, Fork);
             iterateChildren(nodep);
         }
         m_blockStack.pop_back();
-        m_inFork = oldFork;
     }
-    virtual void visit(AstRepeat* nodep) VL_OVERRIDE {
+    virtual void visit(AstRepeat* nodep) override {
         // So later optimizations don't need to deal with them,
         //    REPEAT(count,body) -> loop=count,WHILE(loop>0) { body, loop-- }
         // Note var can be signed or unsigned based on original number.
@@ -173,7 +170,7 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstWait* nodep) VL_OVERRIDE {
+    virtual void visit(AstWait* nodep) override {
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: wait statements");
         // Statements we'll just execute immediately; equivalent to if they followed this
         if (AstNode* bodysp = nodep->bodysp()) {
@@ -184,21 +181,21 @@ private:
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
+    virtual void visit(AstWhile* nodep) override {
         // Don't need to track AstRepeat/AstFor as they have already been converted
-        AstWhile* lastLoopp = m_loopp;
-        bool lastInc = m_loopInc;
-        m_loopp = nodep;
-        m_loopInc = false;
-        iterateAndNextNull(nodep->precondsp());
-        iterateAndNextNull(nodep->condp());
-        iterateAndNextNull(nodep->bodysp());
-        m_loopInc = true;
-        iterateAndNextNull(nodep->incsp());
-        m_loopInc = lastInc;
-        m_loopp = lastLoopp;
+        VL_RESTORER(m_loopp);
+        VL_RESTORER(m_loopInc);
+        {
+            m_loopp = nodep;
+            m_loopInc = false;
+            iterateAndNextNull(nodep->precondsp());
+            iterateAndNextNull(nodep->condp());
+            iterateAndNextNull(nodep->bodysp());
+            m_loopInc = true;
+            iterateAndNextNull(nodep->incsp());
+        }
     }
-    virtual void visit(AstReturn* nodep) VL_OVERRIDE {
+    virtual void visit(AstReturn* nodep) override {
         iterateChildren(nodep);
         AstFunc* funcp = VN_CAST(m_ftaskp, Func);
         if (m_inFork) {
@@ -226,7 +223,7 @@ private:
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstBreak* nodep) VL_OVERRIDE {
+    virtual void visit(AstBreak* nodep) override {
         iterateChildren(nodep);
         if (!m_loopp) {
             nodep->v3error("break isn't underneath a loop");
@@ -238,7 +235,7 @@ private:
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstContinue* nodep) VL_OVERRIDE {
+    virtual void visit(AstContinue* nodep) override {
         iterateChildren(nodep);
         if (!m_loopp) {
             nodep->v3error("continue isn't underneath a loop");
@@ -251,12 +248,11 @@ private:
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstDisable* nodep) VL_OVERRIDE {
+    virtual void visit(AstDisable* nodep) override {
         UINFO(8, "   DISABLE " << nodep << endl);
         iterateChildren(nodep);
-        AstNodeBlock* blockp = NULL;
-        for (BlockStack::reverse_iterator it = m_blockStack.rbegin(); it != m_blockStack.rend();
-             ++it) {
+        AstNodeBlock* blockp = nullptr;
+        for (auto it = m_blockStack.rbegin(); it != m_blockStack.rend(); ++it) {
             UINFO(9, "    UNDERBLK  " << *it << endl);
             if ((*it)->name() == nodep->name()) {
                 blockp = *it;
@@ -277,24 +273,16 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         // if (debug() >= 9) { UINFO(0, "\n"); beginp->dumpTree(cout, "  labelo: "); }
     }
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (m_loopInc && nodep->varp()) nodep->varp()->usedLoopIdx(true);
     }
-    virtual void visit(AstConst*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstConst*) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit LinkJumpVisitor(AstNetlist* nodep) {
-        m_modp = NULL;
-        m_ftaskp = NULL;
-        m_inFork = false;
-        m_loopp = NULL;
-        m_loopInc = false;
-        m_modRepeatNum = 0;
-        iterate(nodep);
-    }
-    virtual ~LinkJumpVisitor() {}
+    explicit LinkJumpVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~LinkJumpVisitor() override {}
 };
 
 //######################################################################

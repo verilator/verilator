@@ -46,7 +46,7 @@ Vt_embed1_child* __get_modelp() {
     svScope scope = svGetScope();
     if (!scope) {
         vl_fatal(__FILE__, __LINE__, __FILE__, "svGetScope failed");
-        return NULL;
+        return nullptr;
     }
 
     void* __modelp = svGetUserData(scope, &T_Embed_Child_Unique);

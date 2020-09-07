@@ -43,19 +43,19 @@ class EmitCSyms : EmitCBaseVisitor {
         string m_type;
         ScopeData(const string& symName, const string& prettyName, int timeunit,
                   const string& type)
-            : m_symName(symName)
-            , m_prettyName(prettyName)
-            , m_timeunit(timeunit)
-            , m_type(type) {}
+            : m_symName{symName}
+            , m_prettyName{prettyName}
+            , m_timeunit{timeunit}
+            , m_type{type} {}
     };
     struct ScopeFuncData {
         AstScopeName* m_scopep;
         AstCFunc* m_funcp;
         AstNodeModule* m_modp;
         ScopeFuncData(AstScopeName* scopep, AstCFunc* funcp, AstNodeModule* modp)
-            : m_scopep(scopep)
-            , m_funcp(funcp)
-            , m_modp(modp) {}
+            : m_scopep{scopep}
+            , m_funcp{funcp}
+            , m_modp{modp} {}
     };
     struct ScopeVarData {
         string m_scopeName;
@@ -65,11 +65,11 @@ class EmitCSyms : EmitCBaseVisitor {
         AstScope* m_scopep;
         ScopeVarData(const string& scopeName, const string& varBasePretty, AstVar* varp,
                      AstNodeModule* modp, AstScope* scopep)
-            : m_scopeName(scopeName)
-            , m_varBasePretty(varBasePretty)
-            , m_varp(varp)
-            , m_modp(modp)
-            , m_scopep(scopep) {}
+            : m_scopeName{scopeName}
+            , m_varBasePretty{varBasePretty}
+            , m_varp{varp}
+            , m_modp{modp}
+            , m_scopep{scopep} {}
     };
     typedef std::map<string, ScopeFuncData> ScopeFuncs;
     typedef std::map<string, ScopeVarData> ScopeVars;
@@ -94,8 +94,8 @@ class EmitCSyms : EmitCBaseVisitor {
     };
 
     // STATE
-    AstCFunc* m_funcp;  // Current function
-    AstNodeModule* m_modp;  // Current module
+    AstCFunc* m_funcp = nullptr;  // Current function
+    AstNodeModule* m_modp = nullptr;  // Current module
     std::vector<ScopeModPair> m_scopes;  // Every scope by module
     std::vector<AstCFunc*> m_dpis;  // DPI functions
     std::vector<ModVarPair> m_modVars;  // Each public {mod,var}
@@ -104,11 +104,11 @@ class EmitCSyms : EmitCBaseVisitor {
     ScopeVars m_scopeVars;  // Each {scope,public-var}
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
     ScopeNameHierarchy m_vpiScopeHierarchy;  // The actual hierarchy of scopes
-    int m_coverBins;  // Coverage bin number
+    int m_coverBins = 0;  // Coverage bin number
     bool m_dpiHdrOnly;  // Only emit the DPI header
-    int m_numStmts;  // Number of statements output
-    int m_funcNum;  // CFunc split function number
-    V3OutCFile* m_ofpBase;  // Base (not split) C file
+    int m_numStmts = 0;  // Number of statements output
+    int m_funcNum = 0;  // CFunc split function number
+    V3OutCFile* m_ofpBase = nullptr;  // Base (not split) C file
     std::map<int, bool> m_usesVfinal;  // Split method uses __Vfinal
 
     // METHODS
@@ -120,7 +120,7 @@ class EmitCSyms : EmitCBaseVisitor {
     void emitDpiHdr();
     void emitDpiImp();
 
-    void nameCheck(AstNode* nodep) {
+    static void nameCheck(AstNode* nodep) {
         // Prevent GCC compile time error; name check all things that reach C++ code
         if (nodep->name() != ""
             && !(VN_IS(nodep, CFunc)
@@ -139,7 +139,7 @@ class EmitCSyms : EmitCBaseVisitor {
         }
     }
 
-    string scopeSymString(const string& scpname) {
+    static string scopeSymString(const string& scpname) {
         string out = scpname;
         string::size_type pos;
         while ((pos = out.find("__PVT__")) != string::npos) out.replace(pos, 7, "");
@@ -150,7 +150,7 @@ class EmitCSyms : EmitCBaseVisitor {
         return out;
     }
 
-    string scopeDecodeIdentifier(const string& scpname) {
+    static string scopeDecodeIdentifier(const string& scpname) {
         string out = scpname;
         // Remove hierarchy
         string::size_type pos = out.rfind('.');
@@ -168,7 +168,7 @@ class EmitCSyms : EmitCBaseVisitor {
 
     void varHierarchyScopes(string scp) {
         while (!scp.empty()) {
-            ScopeNames::const_iterator scpit = m_vpiScopeCandidates.find(scp);
+            const auto scpit = m_vpiScopeCandidates.find(scp);
             if ((scpit != m_vpiScopeCandidates.end())
                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
                 m_scopeNames.insert(make_pair(scpit->second.m_symName, scpit->second));
@@ -252,7 +252,7 @@ class EmitCSyms : EmitCBaseVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         // Collect list of scopes
         iterateChildren(nodep);
         varsExpand();
@@ -274,16 +274,15 @@ class EmitCSyms : EmitCBaseVisitor {
             if (!m_dpiHdrOnly) emitDpiImp();
         }
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         nameCheck(nodep);
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
-    virtual void visit(AstCellInline* nodep) VL_OVERRIDE {
+    virtual void visit(AstCellInline* nodep) override {
         if (v3Global.opt.vpi()) {
             string type = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
             string name = nodep->scopep()->name() + "__DOT__" + nodep->name();
@@ -293,7 +292,7 @@ class EmitCSyms : EmitCBaseVisitor {
                 make_pair(name, ScopeData(scopeSymString(name), name_dedot, timeunit, type)));
         }
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         if (VN_IS(m_modp, Class)) return;  // The ClassPackage is what is visible
         nameCheck(nodep);
 
@@ -307,7 +306,7 @@ class EmitCSyms : EmitCBaseVisitor {
                                                    timeunit, "SCOPE_MODULE")));
         }
     }
-    virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
+    virtual void visit(AstScopeName* nodep) override {
         string name = nodep->scopeSymName();
         // UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()
         // <<" ss"<<name<<endl);
@@ -329,38 +328,32 @@ class EmitCSyms : EmitCBaseVisitor {
             }
         }
     }
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildren(nodep);
         if (nodep->isSigUserRdPublic()) { m_modVars.push_back(make_pair(m_modp, nodep)); }
     }
-    virtual void visit(AstCoverDecl* nodep) VL_OVERRIDE {
+    virtual void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
         if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
             nodep->binNum(m_coverBins++);
         }
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         nameCheck(nodep);
         if (nodep->dpiImport() || nodep->dpiExportWrapper()) m_dpis.push_back(nodep);
         m_funcp = nodep;
         iterateChildren(nodep);
-        m_funcp = NULL;
+        m_funcp = nullptr;
     }
 
     //---------------------------------------
-    virtual void visit(AstConst*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstConst*) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     explicit EmitCSyms(AstNetlist* nodep, bool dpiHdrOnly)
-        : m_dpiHdrOnly(dpiHdrOnly) {
-        m_funcp = NULL;
-        m_modp = NULL;
-        m_coverBins = 0;
-        m_numStmts = 0;
-        m_funcNum = 0;
-        m_ofpBase = NULL;
+        : m_dpiHdrOnly{dpiHdrOnly} {
         iterate(nodep);
     }
 };
@@ -496,14 +489,14 @@ void EmitCSyms::emitSymHdr() {
     puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
 
     ofp()->putsEndGuard();
-    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
 
 void EmitCSyms::closeSplit() {
     if (!m_ofp || m_ofp == m_ofpBase) return;
 
     puts("}\n");
-    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
 
 void EmitCSyms::checkSplit(bool usesVfinal) {
@@ -617,7 +610,7 @@ void EmitCSyms::emitSymImp() {
     puts("    : __Vm_namep(namep)\n");  // No leak, as gets destroyed when the top is destroyed
     if (v3Global.needTraceDumper()) {
         puts("    , __Vm_dumping(false)\n");
-        puts("    , __Vm_dumperp(NULL)\n");
+        puts("    , __Vm_dumperp(nullptr)\n");
     }
     if (v3Global.opt.trace()) {
         puts("    , __Vm_activity(false)\n");
@@ -710,8 +703,8 @@ void EmitCSyms::emitSymImp() {
                  ++lit) {
                 string fromname = scopeSymString(it->first);
                 string toname = scopeSymString(*lit);
-                ScopeNames::const_iterator from = m_scopeNames.find(fromname);
-                ScopeNames::const_iterator to = m_scopeNames.find(toname);
+                const auto from = vlstd::as_const(m_scopeNames).find(fromname);
+                const auto to = vlstd::as_const(m_scopeNames).find(toname);
                 UASSERT(from != m_scopeNames.end(), fromname + " not in m_scopeNames");
                 UASSERT(to != m_scopeNames.end(), toname + " not in m_scopeNames");
                 puts("__Vhier.add(");
@@ -806,16 +799,16 @@ void EmitCSyms::emitSymImp() {
             if (varp->isParam()) {
                 if (varp->vlEnumType() == "VLVT_STRING") {
                     puts(", const_cast<void*>(static_cast<const void*>(");
-                    puts(varName.c_str());
+                    puts(varName);
                     puts(".c_str())), ");
                 } else {
                     puts(", const_cast<void*>(static_cast<const void*>(&(");
-                    puts(varName.c_str());
+                    puts(varName);
                     puts("))), ");
                 }
             } else {
                 puts(", &(");
-                puts(varName.c_str());
+                puts(varName);
                 puts("), ");
             }
 
@@ -835,7 +828,7 @@ void EmitCSyms::emitSymImp() {
 
     m_ofpBase->puts("}\n");
     closeSplit();
-    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
 
 //######################################################################
@@ -865,8 +858,7 @@ void EmitCSyms::emitDpiHdr() {
 
     int firstExp = 0;
     int firstImp = 0;
-    for (std::vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
-        AstCFunc* nodep = *it;
+    for (AstCFunc* nodep : m_dpis) {
         if (nodep->dpiExportWrapper()) {
             if (!firstExp++) puts("\n// DPI EXPORTS\n");
             puts("// DPI export" + ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
@@ -915,8 +907,7 @@ void EmitCSyms::emitDpiImp() {
     puts("#include \"" + topClassName() + ".h\"\n");
     puts("\n");
 
-    for (std::vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
-        AstCFunc* nodep = *it;
+    for (AstCFunc* nodep : m_dpis) {
         if (nodep->dpiExportWrapper()) {
             puts("#ifndef _VL_DPIDECL_" + nodep->name() + "\n");
             puts("#define _VL_DPIDECL_" + nodep->name() + "\n");

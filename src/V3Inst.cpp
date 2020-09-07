@@ -42,21 +42,21 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstCell* m_cellp;  // Current cell
+    AstCell* m_cellp = nullptr;  // Current cell
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstCell* nodep) VL_OVERRIDE {
+    virtual void visit(AstCell* nodep) override {
         UINFO(4, "  CELL   " << nodep << endl);
         m_cellp = nodep;
         // VV*****  We reset user1p() on each cell!!!
         AstNode::user1ClearTree();
         iterateChildren(nodep);
-        m_cellp = NULL;
+        m_cellp = nullptr;
     }
-    virtual void visit(AstPin* nodep) VL_OVERRIDE {
+    virtual void visit(AstPin* nodep) override {
         // PIN(p,expr) -> ASSIGNW(VARXREF(p),expr)    (if sub's input)
         //            or  ASSIGNW(expr,VARXREF(p))    (if sub's output)
         UINFO(4, "   PIN  " << nodep << endl);
@@ -113,7 +113,7 @@ private:
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
-    virtual void visit(AstUdpTable* nodep) VL_OVERRIDE {
+    virtual void visit(AstUdpTable* nodep) override {
         if (!v3Global.opt.bboxUnsup()) {
             // If we support primitives, update V3Undriven to remove special case
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Verilog 1995 UDP Tables. "
@@ -122,21 +122,17 @@ private:
     }
 
     // Save some time
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}
-    virtual void visit(AstNodeAssign*) VL_OVERRIDE {}
-    virtual void visit(AstAlways*) VL_OVERRIDE {}
+    virtual void visit(AstNodeMath*) override {}
+    virtual void visit(AstNodeAssign*) override {}
+    virtual void visit(AstAlways*) override {}
 
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit InstVisitor(AstNetlist* nodep) {
-        m_cellp = NULL;
-        //
-        iterate(nodep);
-    }
-    virtual ~InstVisitor() {}
+    explicit InstVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~InstVisitor() override {}
 };
 
 //######################################################################
@@ -151,15 +147,15 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         if (VN_IS(nodep->dtypep(), IfaceRefDType)) {
             UINFO(8, "   dm-1-VAR    " << nodep << endl);
             insert(nodep);
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // METHODS
@@ -168,11 +164,11 @@ public:
         m_modVarNameMap.insert(make_pair(nodep->name(), nodep));
     }
     AstVar* find(const string& name) {
-        VarNameMap::iterator it = m_modVarNameMap.find(name);
+        const auto it = m_modVarNameMap.find(name);
         if (it != m_modVarNameMap.end()) {
             return it->second;
         } else {
-            return NULL;
+            return nullptr;
         }
     }
     void dump() {
@@ -190,7 +186,7 @@ public:
         m_modVarNameMap.clear();
         iterate(nodep);
     }
-    virtual ~InstDeModVarVisitor() {}
+    virtual ~InstDeModVarVisitor() override {}
 };
 
 //######################################################################
@@ -199,19 +195,20 @@ class InstDeVisitor : public AstNVisitor {
     // Find all cells with arrays, and convert to non-arrayed
 private:
     // STATE
-    AstRange* m_cellRangep;  // Range for arrayed instantiations, NULL for normal instantiations
-    int m_instSelNum;  // Current instantiation count 0..N-1
+    AstRange* m_cellRangep
+        = nullptr;  // Range for arrayed instantiations, nullptr for normal instantiations
+    int m_instSelNum = 0;  // Current instantiation count 0..N-1
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
 
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         if (VN_IS(nodep->dtypep(), UnpackArrayDType)
             && VN_IS(VN_CAST(nodep->dtypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)) {
             UINFO(8, "   dv-vec-VAR    " << nodep << endl);
             AstUnpackArrayDType* arrdtype = VN_CAST(nodep->dtypep(), UnpackArrayDType);
-            AstNode* prevp = NULL;
+            AstNode* prevp = nullptr;
             for (int i = arrdtype->lsb(); i <= arrdtype->msb(); ++i) {
                 string varNewName = nodep->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 UINFO(8, "VAR name insert " << varNewName << "  " << nodep << endl);
@@ -219,7 +216,7 @@ private:
                     AstIfaceRefDType* ifaceRefp
                         = VN_CAST(arrdtype->subDTypep(), IfaceRefDType)->cloneTree(false);
                     arrdtype->addNextHere(ifaceRefp);
-                    ifaceRefp->cellp(NULL);
+                    ifaceRefp->cellp(nullptr);
 
                     AstVar* varNewp = nodep->cloneTree(false);
                     varNewp->name(varNewName);
@@ -242,7 +239,7 @@ private:
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstCell* nodep) VL_OVERRIDE {
+    virtual void visit(AstCell* nodep) override {
         UINFO(4, "  CELL   " << nodep << endl);
         // Find submodule vars
         UASSERT_OBJ(nodep->modp(), nodep, "Unlinked");
@@ -279,7 +276,7 @@ private:
                     AstUnpackArrayDType* arrdtype = VN_CAST(ifaceVarp->dtypep(), UnpackArrayDType);
                     AstIfaceRefDType* origIfaceRefp
                         = VN_CAST(arrdtype->subDTypep(), IfaceRefDType);
-                    origIfaceRefp->cellp(NULL);
+                    origIfaceRefp->cellp(nullptr);
                     AstVar* varNewp = ifaceVarp->cloneTree(false);
                     AstIfaceRefDType* ifaceRefp
                         = VN_CAST(arrdtype->subDTypep(), IfaceRefDType)->cloneTree(false);
@@ -305,7 +302,7 @@ private:
             }
 
             // Done.  Delete original
-            m_cellRangep = NULL;
+            m_cellRangep = nullptr;
             if (isIface) {
                 ifaceVarp->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(ifaceVarp), ifaceVarp);
@@ -313,12 +310,12 @@ private:
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {
-            m_cellRangep = NULL;
+            m_cellRangep = nullptr;
             iterateChildren(nodep);
         }
     }
 
-    virtual void visit(AstPin* nodep) VL_OVERRIDE {
+    virtual void visit(AstPin* nodep) override {
         // Any non-direct pins need reconnection with a part-select
         if (!nodep->exprp()) return;  // No-connect
         if (m_cellRangep) {
@@ -394,20 +391,20 @@ private:
             AstUnpackArrayDType* pinArrp = VN_CAST(pinVarp->dtypep(), UnpackArrayDType);
             if (!pinArrp || !VN_IS(pinArrp->subDTypep(), IfaceRefDType)) return;
             // Arrayed pin/var attaches to arrayed submodule lower port/var, expand it
-            AstNode* prevp = NULL;
-            AstNode* prevPinp = NULL;
+            AstNode* prevp = nullptr;
+            AstNode* prevPinp = nullptr;
             // Clone the var referenced by the pin, and clone each var referenced by the varref
             // Clone pin varp:
             for (int i = pinArrp->lsb(); i <= pinArrp->msb(); ++i) {
                 string varNewName = pinVarp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
-                AstVar* varNewp = NULL;
+                AstVar* varNewp = nullptr;
 
                 // Only clone the var once for all usages of a given child module
                 if (!pinVarp->backp()) {
                     varNewp = m_deModVars.find(varNewName);
                 } else {
                     AstIfaceRefDType* ifaceRefp = VN_CAST(pinArrp->subDTypep(), IfaceRefDType);
-                    ifaceRefp->cellp(NULL);
+                    ifaceRefp->cellp(nullptr);
                     varNewp = pinVarp->cloneTree(false);
                     varNewp->name(varNewName);
                     varNewp->origName(varNewp->origName() + "__BRA__" + cvtToStr(i) + "__KET__");
@@ -461,18 +458,13 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit InstDeVisitor(AstNetlist* nodep) {
-        m_cellRangep = NULL;
-        m_instSelNum = 0;
-        //
-        iterate(nodep);
-    }
-    virtual ~InstDeVisitor() {}
+    explicit InstDeVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~InstDeVisitor() override {}
 };
 
 //######################################################################
@@ -516,14 +508,14 @@ public:
                        && cellp->modp()->unconnectedDrive().isSetFalse()) {
                 pinp->exprp(new AstConst(pinp->fileline(), AstConst::StringToParse(), "'0"));
             } else {
-                return NULL;
+                return nullptr;
             }
         }
         AstVarRef* connectRefp = VN_CAST(pinp->exprp(), VarRef);
         AstVarXRef* connectXRefp = VN_CAST(pinp->exprp(), VarXRef);
-        AstBasicDType* pinBasicp = VN_CAST(pinVarp->dtypep(), BasicDType);  // Maybe NULL
-        AstBasicDType* connBasicp = NULL;
-        AstAssignW* assignp = NULL;
+        AstBasicDType* pinBasicp = VN_CAST(pinVarp->dtypep(), BasicDType);  // Maybe nullptr
+        AstBasicDType* connBasicp = nullptr;
+        AstAssignW* assignp = nullptr;
         if (connectRefp) connBasicp = VN_CAST(connectRefp->varp()->dtypep(), BasicDType);
         //
         if (!alwaysCvt && connectRefp && connectRefp->varp()->dtypep()->sameTree(pinVarp->dtypep())

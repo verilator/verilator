@@ -47,12 +47,12 @@ private:
 
     // STATE
     // Below state needs to be preserved between each module call.
-    AstNodeModule* m_modp;  // Current module
-    AstClass* m_classp;  // Class we're inside
-    AstNodeFTask* m_ftaskp;  // Function or task we're inside
-    AstNodeCoverOrAssert* m_assertp;  // Current assertion
-    VLifetime m_lifetime;  // Propagating lifetime
-    int m_senitemCvtNum;  // Temporary signal counter
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstClass* m_classp = nullptr;  // Class we're inside
+    AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
+    AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
+    VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
+    int m_senitemCvtNum = 0;  // Temporary signal counter
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -61,13 +61,13 @@ private:
     // TODO: Most of these visitors are here for historical reasons.
     // TODO: ExpectDecriptor can move to data type resolution, and the rest
     // TODO: could move to V3LinkParse to get them out of the way of elaboration
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         // Module: Create sim table for entire module and iterate
         UINFO(8, "MODULE " << nodep << endl);
         if (nodep->dead()) return;
-        AstNodeModule* origModp = m_modp;
-        VLifetime origLifetime = m_lifetime;
-        int origSenitemCvtNum = m_senitemCvtNum;
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_lifetime);
+        VL_RESTORER(m_senitemCvtNum);
         {
             m_modp = nodep;
             m_senitemCvtNum = 0;
@@ -75,23 +75,18 @@ private:
             if (m_lifetime.isNone()) m_lifetime = VLifetime::STATIC;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
-        m_senitemCvtNum = origSenitemCvtNum;
-        m_lifetime = origLifetime;
     }
-    virtual void visit(AstClass* nodep) VL_OVERRIDE {
-        AstClass* origClassp = m_classp;
-        VLifetime origLifetime = m_lifetime;
+    virtual void visit(AstClass* nodep) override {
+        VL_RESTORER(m_classp);
+        VL_RESTORER(m_lifetime);
         {
             m_classp = nodep;
             m_lifetime = nodep->lifetime();
             if (m_lifetime.isNone()) m_lifetime = VLifetime::AUTOMATIC;
             iterateChildren(nodep);
         }
-        m_classp = origClassp;
-        m_lifetime = origLifetime;
     }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
+    virtual void visit(AstInitial* nodep) override {
         iterateChildren(nodep);
         // Initial assignments under function/tasks can just be simple
         // assignments without the initial
@@ -99,13 +94,13 @@ private:
             VL_DO_DANGLING(nodep->replaceWith(nodep->bodysp()->unlinkFrBackWithNext()), nodep);
         }
     }
-    virtual void visit(AstNodeCoverOrAssert* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCoverOrAssert* nodep) override {
         if (m_assertp) nodep->v3error("Assert not allowed under another assert");
         m_assertp = nodep;
         iterateChildren(nodep);
-        m_assertp = NULL;
+        m_assertp = nullptr;
     }
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         if (m_classp && !nodep->isParam()) nodep->varType(AstVarType::MEMBER);
         if (m_classp && nodep->isParam())
@@ -124,16 +119,23 @@ private:
         }
     }
 
-    virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeVarRef* nodep) override {
         // VarRef: Resolve its reference
         if (nodep->varp()) { nodep->varp()->usedParam(true); }
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTask* nodep) override {
         // NodeTask: Remember its name for later resolution
         // Remember the existing symbol table scope
         if (m_classp) nodep->classMethod(true);
+        // V3LinkDot moved the isExternDef into the class, the extern proto was
+        // checked to exist, and now isn't needed
+        nodep->isExternDef(false);
+        if (nodep->isExternProto()) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
         VLifetime origLifetime = m_lifetime;
         {
             m_lifetime = nodep->lifetime();
@@ -141,18 +143,18 @@ private:
             m_ftaskp = nodep;
             iterateChildren(nodep);
         }
-        m_ftaskp = NULL;
+        m_ftaskp = nullptr;
         m_lifetime = origLifetime;
         if (nodep->dpiExport()) { nodep->scopeNamep(new AstScopeName(nodep->fileline())); }
     }
-    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
         if (nodep->taskp() && (nodep->taskp()->dpiContext() || nodep->taskp()->dpiExport())) {
             nodep->scopeNamep(new AstScopeName(nodep->fileline()));
         }
     }
 
-    virtual void visit(AstSenItem* nodep) VL_OVERRIDE {
+    virtual void visit(AstSenItem* nodep) override {
         // Remove bit selects, and bark if it's not a simple variable
         iterateChildren(nodep);
         if (nodep->isClocked()) {
@@ -219,7 +221,7 @@ private:
         }
     }
 
-    virtual void visit(AstNodePreSel* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodePreSel* nodep) override {
         if (!nodep->attrp()) {
             iterateChildren(nodep);
             // Constification may change the fromp() to a constant, which will lose the
@@ -245,7 +247,7 @@ private:
                 // From {...}[...] syntax in IEEE 2017
                 if (basefromp) { UINFO(1, "    Related node: " << basefromp << endl); }
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Select of concatenation");
-                nodep = NULL;
+                nodep = nullptr;
             } else {
                 if (basefromp) { UINFO(1, "    Related node: " << basefromp << endl); }
                 nodep->v3fatalSrc("Illegal bit select; no signal/member being extracted from");
@@ -253,7 +255,7 @@ private:
         }
     }
 
-    virtual void visit(AstCaseItem* nodep) VL_OVERRIDE {
+    virtual void visit(AstCaseItem* nodep) override {
         // Move default caseItems to the bottom of the list
         // That saves us from having to search each case list twice, for non-defaults and defaults
         iterateChildren(nodep);
@@ -265,8 +267,18 @@ private:
         }
     }
 
-    virtual void visit(AstPragma* nodep) VL_OVERRIDE {
-        if (nodep->pragType() == AstPragmaType::PUBLIC_MODULE) {
+    virtual void visit(AstPragma* nodep) override {
+        if (nodep->pragType() == AstPragmaType::HIER_BLOCK) {
+            UASSERT_OBJ(m_modp, nodep, "HIER_BLOCK not under a module");
+            // If this is hierarchical mode which is to create protect-lib,
+            // sub modules do not have hier_block meta comment in the source code.
+            // But .vlt files may still mark a module which is actually a protect-lib wrapper
+            // hier_block. AstNodeModule::hierBlock() can be true only when --hierarchical is
+            // specified.
+            m_modp->hierBlock(v3Global.opt.hierarchical());
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (nodep->pragType() == AstPragmaType::PUBLIC_MODULE) {
             UASSERT_OBJ(m_modp, nodep, "PUBLIC_MODULE not under a module");
             m_modp->modPublic(true);
             nodep->unlinkFrBack();
@@ -294,8 +306,7 @@ private:
         bool inPct = false;
         bool inIgnore = false;
         string fmt;
-        for (string::const_iterator it = format.begin(); it != format.end(); ++it) {
-            char ch = *it;
+        for (const char ch : format) {
             if (!inPct && ch == '%') {
                 inPct = true;
                 inIgnore = false;
@@ -406,39 +417,39 @@ private:
         if (filep && filep->varp()) filep->varp()->attrFileDescr(true);
     }
 
-    virtual void visit(AstFOpen* nodep) VL_OVERRIDE {
+    virtual void visit(AstFOpen* nodep) override {
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
-    virtual void visit(AstFOpenMcd* nodep) VL_OVERRIDE {
+    virtual void visit(AstFOpenMcd* nodep) override {
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
-    virtual void visit(AstFClose* nodep) VL_OVERRIDE {
+    virtual void visit(AstFClose* nodep) override {
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
-    virtual void visit(AstFError* nodep) VL_OVERRIDE {
+    virtual void visit(AstFError* nodep) override {
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
-    virtual void visit(AstFEof* nodep) VL_OVERRIDE {
+    virtual void visit(AstFEof* nodep) override {
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
-    virtual void visit(AstFRead* nodep) VL_OVERRIDE {
+    virtual void visit(AstFRead* nodep) override {
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
-    virtual void visit(AstFScanF* nodep) VL_OVERRIDE {
+    virtual void visit(AstFScanF* nodep) override {
         iterateChildren(nodep);
         expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
-    virtual void visit(AstSScanF* nodep) VL_OVERRIDE {
+    virtual void visit(AstSScanF* nodep) override {
         iterateChildren(nodep);
         expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
-    virtual void visit(AstSFormatF* nodep) VL_OVERRIDE {
+    virtual void visit(AstSFormatF* nodep) override {
         iterateChildren(nodep);
         // Cleanup old-school displays without format arguments
         if (!nodep->hasFormat()) {
@@ -461,14 +472,14 @@ private:
         }
     }
 
-    virtual void visit(AstUdpTable* nodep) VL_OVERRIDE {
+    virtual void visit(AstUdpTable* nodep) override {
         UINFO(5, "UDPTABLE  " << nodep << endl);
         if (!v3Global.opt.bboxUnsup()) {
             // We don't warn until V3Inst, so that UDPs that are in libraries and
             // never used won't result in any warnings.
         } else {
             // Massive hack, just tie off all outputs so our analysis can proceed
-            AstVar* varoutp = NULL;
+            AstVar* varoutp = nullptr;
             for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 if (AstVar* varp = VN_CAST(stmtp, Var)) {
                     if (varp->isReadOnly()) {
@@ -491,36 +502,28 @@ private:
         }
     }
 
-    virtual void visit(AstScCtor* nodep) VL_OVERRIDE {
+    virtual void visit(AstScCtor* nodep) override {
         // Constructor info means the module must remain public
         m_modp->modPublic(true);
         iterateChildren(nodep);
     }
-    virtual void visit(AstScDtor* nodep) VL_OVERRIDE {
+    virtual void visit(AstScDtor* nodep) override {
         // Destructor info means the module must remain public
         m_modp->modPublic(true);
         iterateChildren(nodep);
     }
-    virtual void visit(AstScInt* nodep) VL_OVERRIDE {
+    virtual void visit(AstScInt* nodep) override {
         // Special class info means the module must remain public
         m_modp->modPublic(true);
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit LinkResolveVisitor(AstNetlist* rootp)
-        : m_lifetime(VLifetime::STATIC) {  // Static outside a module/class
-        m_classp = NULL;
-        m_ftaskp = NULL;
-        m_modp = NULL;
-        m_assertp = NULL;
-        m_senitemCvtNum = 0;
-        iterate(rootp);
-    }
-    virtual ~LinkResolveVisitor() {}
+    explicit LinkResolveVisitor(AstNetlist* rootp) { iterate(rootp); }
+    virtual ~LinkResolveVisitor() override {}
 };
 
 //######################################################################
@@ -531,40 +534,35 @@ public:
 class LinkBotupVisitor : public AstNVisitor {
 private:
     // STATE
-    AstNodeModule* m_modp;  // Current module
+    AstNodeModule* m_modp = nullptr;  // Current module
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITs
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.
         iterateChildrenBackwards(nodep);
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
-        AstNodeModule* origModp = m_modp;
+    virtual void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
-    virtual void visit(AstCell* nodep) VL_OVERRIDE {
+    virtual void visit(AstCell* nodep) override {
         // Parent module inherits child's publicity
         if (nodep->modp()->modPublic()) m_modp->modPublic(true);
         //** No iteration for speed
     }
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit LinkBotupVisitor(AstNetlist* rootp) {
-        m_modp = NULL;
-        //
-        iterate(rootp);
-    }
-    virtual ~LinkBotupVisitor() {}
+    explicit LinkBotupVisitor(AstNetlist* rootp) { iterate(rootp); }
+    virtual ~LinkBotupVisitor() override {}
 };
 
 //######################################################################

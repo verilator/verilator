@@ -7,7 +7,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.040 2020-08-15],
+AC_INIT([Verilator],[4.100 2020-09-07],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -112,22 +112,6 @@ AC_ARG_ENABLE([longtests],
               )
 AC_SUBST(CFG_WITH_LONGTESTS)
 AC_MSG_RESULT($CFG_WITH_LONGTESTS)
-
-# CFG_WITH_PREC11
-AC_MSG_CHECKING(whether allow pre-C++11)
-AC_ARG_ENABLE([prec11-final],
-              [AS_HELP_STRING([--enable-prec11-final],
-                              [enable pre-C++11 compilers for Verilator binary
-                               and Verilated makefiles])],
-              [case "${enableval}" in
-                yes) CFG_WITH_PREC11=yes ;;
-                no)  CFG_WITH_PREC11=no ;;
-                *)   AC_MSG_ERROR([bad value ${enableval} for --enable-prec11-final]) ;;
-               esac],
-              [CFG_WITH_PREC11=no;]
-              )
-AC_SUBST(CFG_WITH_PREC11)
-AC_MSG_RESULT($CFG_WITH_PREC11)
 
 # Compiler flags (ensure they are not empty to avoid configure defaults)
 CFLAGS+=" "
@@ -410,12 +394,17 @@ _MY_LDLIBS_CHECK_IFELSE(
    fi])
 AC_SUBST(CFG_LIBS)
 
-# Set CFG_WITH_THREADED if can support threading
-AC_MSG_CHECKING(whether $CXX supports Verilated threads)
-ACO_SAVE_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_STD_NEWEST $CFG_CXXFLAGS_NO_UNUSED"
-AC_LINK_IFELSE(
-     [AC_LANG_PROGRAM([#include <thread>], [[ ]])],
+# Need C++11 at least
+#Alternative: AX_CXX_COMPILE_STDCXX([11])
+AC_DEFUN([_MY_CXX_CHECK_CXX_VER],
+   [# _MY_CXX_CHECK_CXX_VER(flag) -- Check if compiler runs C++11
+    # Set $_my_result
+    AC_LINK_IFELSE(
+     [AC_LANG_PROGRAM([#include <thread>
+#if (__cplusplus < 201103L)
+# error "Too old"
+#endif
+    ], [[ ]])],
      [_my_result=yes
       if test -s conftest.err; then
         if grep -e "$1" conftest.err >/dev/null; then
@@ -423,24 +412,24 @@ AC_LINK_IFELSE(
         fi
       fi],
      [_my_result=no])
-CFG_WITH_THREADED=$_my_result
-AC_SUBST(CFG_WITH_THREADED)
-AC_MSG_RESULT($CFG_WITH_THREADED)
-CXXFLAGS="$ACO_SAVE_CXXFLAGS"
+   ])
 
-# Check compiler flag
-if test "$CFG_WITH_THREADED" = "no" ; then
-   if test "$CFG_WITH_PREC11" = "no" ; then
-      AC_MSG_NOTICE([[]])
-      AC_MSG_ERROR([[the $CXX compiler appears to not support C++11.
+AC_MSG_CHECKING(whether $CXX supports C++11)
+_MY_CXX_CHECK_CXX_VER()
+AC_MSG_RESULT($_my_result)
+if test "$_my_result" = "no" ; then
+   CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_STD_NEWEST"
+   CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE $CFG_CXXFLAGS_STD_NEWEST"
+   AC_MSG_CHECKING(whether $CXX supports C++11 with $CFG_CXXFLAGS_STD_NEWEST)
+   _MY_CXX_CHECK_CXX_VER()
+   AC_MSG_RESULT($_my_result)
+fi
+if test "$_my_result" = "no" ; then
+   AC_MSG_NOTICE([[]])
+   AC_MSG_ERROR([[the $CXX compiler appears to not support C++11.
 
-Verilator will require a C++11 or newer compiler for all releases starting
-September 2020.  Please investigate a C++11 build environment now so you
-will be ready.  Until then you may rerun configure with the
---enable-prec11-final argument to enable reduced functionality with such
-older compilers. Thanks.]])
+Verilator requires a C++11 or newer compiler.]])
 
-   fi
 fi
 
 # Checks for library functions.

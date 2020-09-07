@@ -200,9 +200,29 @@ else
   VK_OBJS += $(VK_FAST_OBJS) $(VK_SLOW_OBJS)
 endif
 
-$(VM_PREFIX)__ALL.a: $(VK_OBJS)
-	$(AR) -cr $@ $^
-	$(RANLIB) $@
+# When archiving just objects (.o), single $(AR) run is enough.
+# When merging objects (.o) and archives (.a), the following steps are taken.
+#   1. Extract object files from .a
+#   2. Create a new archive from extracted .o and given .o
+%.a:
+	@echo "Archive $(AR) -cr $@ $^"
+	@if test $(words $(filter %.a,$^)) -eq 0; then \
+		$(AR) -cr $@ $^; \
+		$(RANLIB) $@; \
+	else \
+		$(RM) -rf $*__tmpdir; \
+		for archive in $(filter %.a,$^); do \
+			mkdir -p $*__tmpdir/$$(basename $${archive}); \
+			cd $*__tmpdir/$$(basename $${archive}); \
+			$(AR) -x ../../$${archive}; \
+			cd ../..; \
+		done; \
+		$(AR) -cr $@ $(filter %.o,$^) $*__tmpdir/*/*.o; \
+		$(RM) -rf $*__tmpdir; \
+	fi
+
+$(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
+
 
 ######################################################################
 ### Compile rules

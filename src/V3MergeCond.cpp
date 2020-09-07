@@ -55,7 +55,8 @@
 class CheckMergeableVisitor : public AstNVisitor {
 private:
     // STATE
-    bool m_mergeable;  // State tracking whether tree being processed is a mergeable condition
+    bool m_mergeable
+        = false;  // State tracking whether tree being processed is a mergeable condition
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -67,7 +68,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         if (!m_mergeable) return;
         // Clear if node is impure
         if (!nodep->isPure()) {
@@ -76,7 +77,7 @@ private:
         }
         iterateChildrenConst(nodep);
     }
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (!m_mergeable) return;
         // Clear if it's an LValue referencing a marked variable
         if (nodep->lvalue() && nodep->varp()->user1()) {
@@ -85,8 +86,7 @@ private:
     }
 
 public:
-    CheckMergeableVisitor()
-        : m_mergeable(false) {}
+    CheckMergeableVisitor() {}
 
     // Return false if this node should not be merged at all because:
     // - It contains an impure expression
@@ -104,8 +104,8 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE { nodep->varp()->user1(1); }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildrenConst(nodep); }
+    virtual void visit(AstVarRef* nodep) override { nodep->varp()->user1(1); }
+    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // Remove marks from AstVars (clear user1)
@@ -126,11 +126,11 @@ private:
     VDouble0 m_statMergedItems;  // Statistic tracking
     VDouble0 m_statLongestList;  // Statistic tracking
 
-    AstNode* m_mgFirstp;  // First node in merged sequence
-    AstNode* m_mgCondp;  // The condition of the first node
-    AstNode* m_mgLastp;  // Last node in merged sequence
-    const AstNode* m_mgNextp;  // Next node in list being examined
-    uint32_t m_listLenght;  // Length of current list
+    AstNode* m_mgFirstp = nullptr;  // First node in merged sequence
+    AstNode* m_mgCondp = nullptr;  // The condition of the first node
+    AstNode* m_mgLastp = nullptr;  // Last node in merged sequence
+    const AstNode* m_mgNextp = nullptr;  // Next node in list being examined
+    uint32_t m_listLenght = 0;  // Length of current list
 
     CheckMergeableVisitor m_checkMergeable;  // Sub visitor for encapsulation & speed
     MarkVarsVisitor m_markVars;  // Sub visitor for encapsulation & speed
@@ -150,7 +150,7 @@ private:
                 if (VN_IS(andp->lhsp(), Const)) { return condp; }
             }
         }
-        return NULL;
+        return nullptr;
     }
 
     // Apply (_ & 1'b1). This is necessary because this pass is after V3Clean,
@@ -204,7 +204,7 @@ private:
 
             // Create equivalent 'if' statement and insert it before the first node
             AstIf* const ifp
-                = new AstIf(m_mgCondp->fileline(), m_mgCondp->unlinkFrBack(), NULL, NULL);
+                = new AstIf(m_mgCondp->fileline(), m_mgCondp->unlinkFrBack(), nullptr, nullptr);
             m_mgFirstp->replaceWith(ifp);
             ifp->addNextHere(m_mgFirstp);
             // Unzip the list and insert under branches
@@ -212,7 +212,7 @@ private:
             do {
                 // Grab next pointer and unlink
                 AstNode* const currp = nextp;
-                nextp = currp != m_mgLastp ? currp->nextp() : NULL;
+                nextp = currp != m_mgLastp ? currp->nextp() : nullptr;
                 currp->unlinkFrBack();
                 // Skip over comments
                 if (VN_IS(currp, Comment)) {
@@ -235,10 +235,10 @@ private:
             } while (nextp);
         }
         // Reset state
-        m_mgFirstp = NULL;
-        m_mgCondp = NULL;
-        m_mgLastp = NULL;
-        m_mgNextp = NULL;
+        m_mgFirstp = nullptr;
+        m_mgCondp = nullptr;
+        m_mgLastp = nullptr;
+        m_mgNextp = nullptr;
         m_markVars.clear();
     }
 
@@ -264,7 +264,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         AstNode* const rhsp = nodep->rhsp();
         if (AstNodeCond* const condp = extractCond(rhsp)) {
             if (!m_checkMergeable(nodep)) {
@@ -292,13 +292,13 @@ private:
                 // Is it a 'lhs = cond & value' or 'lhs = value & cond'?
                 if (AstAnd* const andp = VN_CAST(rhsp, And)) {
                     if (andp->lhsp()->sameTree(m_mgCondp) || andp->rhsp()->sameTree(m_mgCondp)) {
-                        addToList(nodep, NULL);
+                        addToList(nodep, nullptr);
                         return;
                     }
                 }
                 // Is it simply 'lhs = cond'?
                 if (rhsp->sameTree(m_mgCondp)) {
-                    addToList(nodep, NULL);
+                    addToList(nodep, nullptr);
                     return;
                 }
             }
@@ -306,30 +306,25 @@ private:
             mergeEnd();
         }
     }
-    virtual void visit(AstComment*) VL_OVERRIDE {}  // Skip over comments
+    virtual void visit(AstComment*) override {}  // Skip over comments
     // For speed, only iterate what is necessary.
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE { iterateAndNextNull(nodep->modulesp()); }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE { iterateAndNextNull(nodep->stmtsp()); }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override { iterateAndNextNull(nodep->modulesp()); }
+    virtual void visit(AstNodeModule* nodep) override { iterateAndNextNull(nodep->stmtsp()); }
+    virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Close list, if there is one at the end of the function
         if (m_mgFirstp) mergeEnd();
     }
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE { iterateChildren(nodep); }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNodeStmt* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override {}
 
 public:
     // CONSTRUCTORS
     explicit MergeCondVisitor(AstNetlist* nodep) {
-        m_mgFirstp = NULL;
-        m_mgCondp = NULL;
-        m_mgLastp = NULL;
-        m_mgNextp = NULL;
-        m_listLenght = 0;
         m_markVars.clear();
         iterate(nodep);
     }
-    virtual ~MergeCondVisitor() {
+    virtual ~MergeCondVisitor() override {
         V3Stats::addStat("Optimizations, MergeCond merges", m_statMerges);
         V3Stats::addStat("Optimizations, MergeCond merged items", m_statMergedItems);
         V3Stats::addStat("Optimizations, MergeCond longest merge", m_statLongestList);

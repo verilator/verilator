@@ -131,17 +131,13 @@ public:
     FileLine* m_curFilelinep;  // Current processing point (see also m_tokFilelinep)
     V3PreLex* m_lexp;  // Lexer, for resource tracking
     std::deque<string> m_buffers;  // Buffer of characters to process
-    int m_ignNewlines;  // Ignore multiline newlines
-    bool m_eof;  // "EOF" buffer
-    bool m_file;  // Buffer is start of new file
-    int m_termState;  // Termination fsm
+    int m_ignNewlines = 0;  // Ignore multiline newlines
+    bool m_eof = false;  // "EOF" buffer
+    bool m_file = false;  // Buffer is start of new file
+    int m_termState = 0;  // Termination fsm
     VPreStream(FileLine* fl, V3PreLex* lexp)
-        : m_curFilelinep(fl)
-        , m_lexp(lexp)
-        , m_ignNewlines(0)
-        , m_eof(false)
-        , m_file(false)
-        , m_termState(0) {
+        : m_curFilelinep{fl}
+        , m_lexp{lexp} {
         lexStreamDepthAdd(1);
     }
     ~VPreStream() { lexStreamDepthAdd(-1); }
@@ -157,37 +153,28 @@ class V3PreLex {
 public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     V3PreProcImp* m_preimpp;  // Preprocessor lexor belongs to
     std::stack<VPreStream*> m_streampStack;  // Stack of processing files
-    int m_streamDepth;  // Depth of stream processing
+    int m_streamDepth = 0;  // Depth of stream processing
     YY_BUFFER_STATE m_bufferState;  // Flex state
     FileLine* m_tokFilelinep;  // Starting position of current token
 
     // State to lexer
     static V3PreLex* s_currentLexp;  ///< Current lexing point
-    int m_keepComments;  ///< Emit comments in output text
-    int m_keepWhitespace;  ///< Emit all whitespace in output text
-    bool m_pedantic;  ///< Obey standard; don't Substitute `error
+    int m_keepComments = 0;  ///< Emit comments in output text
+    int m_keepWhitespace = 1;  ///< Emit all whitespace in output text
+    bool m_pedantic = false;  ///< Obey standard; don't Substitute `error
 
     // State from lexer
-    int m_formalLevel;  // Parenthesis counting inside def formals
-    int m_parenLevel;  // Parenthesis counting inside def args
-    bool m_defCmtSlash;  // /*...*/ comment in define had \ ending
-    bool m_defQuote;  // Definition value inside quote
+    int m_formalLevel = 0;  // Parenthesis counting inside def formals
+    int m_parenLevel = 0;  // Parenthesis counting inside def args
+    bool m_defCmtSlash = false;  // /*...*/ comment in define had \ ending
+    bool m_defQuote = false;  // Definition value inside quote
     string m_defValue;  // Definition value being built.
-    int m_enterExit;  // For VL_LINE, the enter/exit level
+    int m_enterExit = 0;  // For VL_LINE, the enter/exit level
 
     // CONSTRUCTORS
-    V3PreLex(V3PreProcImp* preimpp, FileLine* filelinep) {
-        m_preimpp = preimpp;
-        m_streamDepth = 0;
-        m_keepComments = 0;
-        m_keepWhitespace = 1;
-        m_pedantic = false;
-        m_formalLevel = 0;
-        m_parenLevel = 0;
-        m_defQuote = false;
-        m_defCmtSlash = false;
-        m_tokFilelinep = filelinep;
-        m_enterExit = 0;
+    V3PreLex(V3PreProcImp* preimpp, FileLine* filelinep)
+        : m_preimpp{preimpp}
+        , m_tokFilelinep{filelinep} {
         initFirstBuffer(filelinep);
     }
     ~V3PreLex() {
@@ -195,7 +182,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
             delete m_streampStack.top();
             m_streampStack.pop();
         }
-        VL_DO_CLEAR(yy_delete_buffer(m_bufferState), m_bufferState = NULL);
+        VL_DO_CLEAR(yy_delete_buffer(m_bufferState), m_bufferState = nullptr);
     }
 
     // Called by V3PreLex.l from lexer

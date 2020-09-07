@@ -41,6 +41,7 @@ module t (/*AUTOARG*/
          `checkh($high(q), -1);
          `checkh($size(q), 0);
          `checkh($dimensions(q), 1);
+         // $bits is unsupported in several other simulators, see bug1646
          // Unsup: `checkh($bits(q), 0);
 
          q.push_back(1'b1);

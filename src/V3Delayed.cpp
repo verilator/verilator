@@ -86,15 +86,15 @@ private:
     AstUser4InUse m_inuser4;
     AstUser5InUse m_inuser5;
 
-    enum VarUsage { VU_NONE = 0, VU_DLY = 1, VU_NONDLY = 2 };
+    enum VarUsage : uint8_t { VU_NONE = 0, VU_DLY = 1, VU_NONDLY = 2 };
 
     // STATE
-    AstActive* m_activep;  // Current activate
-    AstCFunc* m_cfuncp;  // Current public C Function
-    AstAssignDly* m_nextDlyp;  // Next delayed assignment in a list of assignments
-    bool m_inDly;  // True in delayed assignments
-    bool m_inLoop;  // True in for loops
-    bool m_inInitial;  // True in initial blocks
+    AstActive* m_activep = nullptr;  // Current activate
+    AstCFunc* m_cfuncp = nullptr;  // Current public C Function
+    AstAssignDly* m_nextDlyp = nullptr;  // Next delayed assignment in a list of assignments
+    bool m_inDly = false;  // True in delayed assignments
+    bool m_inLoop = false;  // True in for loops
+    bool m_inInitial = false;  // True in initial blocks
     typedef std::map<std::pair<AstNodeModule*, string>, AstVar*> VarMap;
     VarMap m_modVarMap;  // Table of new var names created under module
     VDouble0 m_statSharedSet;  // Statistic tracking
@@ -120,7 +120,7 @@ private:
         AstVar* varp;
         AstNodeModule* addmodp = oldvarscp->scopep()->modp();
         // We need a new AstVar, but only one for all scopes, to match the new AstVarScope
-        VarMap::iterator it = m_modVarMap.find(make_pair(addmodp, name));
+        const auto it = m_modVarMap.find(make_pair(addmodp, name));
         if (it != m_modVarMap.end()) {
             // Created module's AstVar earlier under some other scope
             varp = it->second;
@@ -189,9 +189,9 @@ private:
         // See top of this file for transformation
         // Return the new LHS for the assignment, Null = unlink
         // Find selects
-        AstNode* newlhsp = NULL;  // NULL = unlink old assign
-        AstSel* bitselp = NULL;
-        AstArraySel* arrayselp = NULL;
+        AstNode* newlhsp = nullptr;  // nullptr = unlink old assign
+        AstSel* bitselp = nullptr;
+        AstArraySel* arrayselp = nullptr;
         if (VN_IS(lhsp, Sel)) {
             bitselp = VN_CAST(lhsp, Sel);
             arrayselp = VN_CAST(bitselp->fromp(), ArraySel);
@@ -226,7 +226,7 @@ private:
                 string bitvarname = (string("__Vdlyvdim") + cvtToStr(dimension) + "__"
                                      + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
                 AstVarScope* bitvscp
-                    = createVarSc(varrefp->varScopep(), bitvarname, dimp->width(), NULL);
+                    = createVarSc(varrefp->varScopep(), bitvarname, dimp->width(), nullptr);
                 AstAssign* bitassignp = new AstAssign(
                     nodep->fileline(), new AstVarRef(nodep->fileline(), bitvscp, true), dimp);
                 nodep->addNextHere(bitassignp);
@@ -235,7 +235,7 @@ private:
         }
         //
         //=== Bitselect: __Vdlyvlsb__
-        AstNode* bitreadp = NULL;  // Code to read Vdlyvlsb
+        AstNode* bitreadp = nullptr;  // Code to read Vdlyvlsb
         if (bitselp) {
             AstNode* lsbvaluep = bitselp->lsbp()->unlinkFrBack();
             if (VN_IS(bitselp->fromp(), Const)) {
@@ -245,7 +245,7 @@ private:
                 string bitvarname = (string("__Vdlyvlsb__") + oldvarp->shortName() + "__v"
                                      + cvtToStr(modVecNum));
                 AstVarScope* bitvscp
-                    = createVarSc(varrefp->varScopep(), bitvarname, lsbvaluep->width(), NULL);
+                    = createVarSc(varrefp->varScopep(), bitvarname, lsbvaluep->width(), nullptr);
                 AstAssign* bitassignp = new AstAssign(
                     nodep->fileline(), new AstVarRef(nodep->fileline(), bitvscp, true), lsbvaluep);
                 nodep->addNextHere(bitassignp);
@@ -269,7 +269,7 @@ private:
         //
         //=== Setting/not setting boolean: __Vdlyvset__
         AstVarScope* setvscp;
-        AstAssignPre* setinitp = NULL;
+        AstAssignPre* setinitp = nullptr;
 
         if (nodep->user3p()) {
             // Simplistic optimization.  If the previous statement in same scope was also a =>,
@@ -281,7 +281,7 @@ private:
         } else {  // Create new one
             string setvarname
                 = (string("__Vdlyvset__") + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
-            setvscp = createVarSc(varrefp->varScopep(), setvarname, 1, NULL);
+            setvscp = createVarSc(varrefp->varScopep(), setvarname, 1, nullptr);
             setinitp = new AstAssignPre(nodep->fileline(),
                                         new AstVarRef(nodep->fileline(), setvscp, true),
                                         new AstConst(nodep->fileline(), 0));
@@ -316,7 +316,7 @@ private:
             checkActivePost(varrefp, oldactivep);
             if (setinitp) oldactivep->addStmtsp(setinitp);
         } else {  // first time we've dealt with this memory
-            finalp = new AstAlwaysPost(nodep->fileline(), NULL /*sens*/, NULL /*body*/);
+            finalp = new AstAlwaysPost(nodep->fileline(), nullptr /*sens*/, nullptr /*body*/);
             UINFO(9, "     Created " << finalp << endl);
             AstActive* newactp = createActivePost(varrefp);
             newactp->addStmtsp(finalp);
@@ -332,8 +332,9 @@ private:
             UASSERT_OBJ(postLogicp, nodep,
                         "Delayed assignment misoptimized; prev var found w/o associated IF");
         } else {
-            postLogicp = new AstIf(nodep->fileline(),
-                                   new AstVarRef(nodep->fileline(), setvscp, false), NULL, NULL);
+            postLogicp
+                = new AstIf(nodep->fileline(), new AstVarRef(nodep->fileline(), setvscp, false),
+                            nullptr, nullptr);
             UINFO(9, "     Created " << postLogicp << endl);
             finalp->addBodysp(postLogicp);
             finalp->user3p(setvscp);  // Remember IF's vset variable
@@ -344,34 +345,35 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         // VV*****  We reset all userp() on the netlist
         m_modVarMap.clear();
         iterateChildren(nodep);
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         AstNode::user3ClearTree();
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         m_cfuncp = nodep;
         iterateChildren(nodep);
-        m_cfuncp = NULL;
+        m_cfuncp = nullptr;
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {
+    virtual void visit(AstActive* nodep) override {
         m_activep = nodep;
-        bool oldinit = m_inInitial;
-        m_inInitial = nodep->hasInitial();
-        AstNode::user3ClearTree();  // Two sets to same variable in different
-                                    // actives must use different vars.
-        iterateChildren(nodep);
-        m_inInitial = oldinit;
+        VL_RESTORER(m_inInitial);
+        {
+            m_inInitial = nodep->hasInitial();
+            // Two sets to same variable in different actives must use different vars.
+            AstNode::user3ClearTree();
+            iterateChildren(nodep);
+        }
     }
-    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
+    virtual void visit(AstAssignDly* nodep) override {
         m_inDly = true;
         m_nextDlyp
-            = VN_CAST(nodep->nextp(), AssignDly);  // Next assignment in same block, maybe NULL.
+            = VN_CAST(nodep->nextp(), AssignDly);  // Next assignment in same block, maybe nullptr.
         if (m_cfuncp) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Delayed assignment inside public function/task");
@@ -399,10 +401,10 @@ private:
             iterateChildren(nodep);
         }
         m_inDly = false;
-        m_nextDlyp = NULL;
+        m_nextDlyp = nullptr;
     }
 
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (!nodep->user2Inc()) {  // Not done yet
             if (m_inDly && nodep->lvalue()) {
                 UINFO(4, "AssignDlyVar: " << nodep << endl);
@@ -421,7 +423,7 @@ private:
                 }
                 if (!dlyvscp) {  // First use of this delayed variable
                     string newvarname = (string("__Vdly__") + nodep->varp()->shortName());
-                    dlyvscp = createVarSc(oldvscp, newvarname, 0, NULL);
+                    dlyvscp = createVarSc(oldvscp, newvarname, 0, nullptr);
                     AstNodeAssign* prep;
                     AstBasicDType* basicp = oldvscp->dtypep()->basicp();
                     if (basicp && basicp->isEventValue()) {
@@ -459,33 +461,25 @@ private:
         }
     }
 
-    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
+    virtual void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin");
     }
-    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
-        bool oldloop = m_inLoop;
-        m_inLoop = true;
-        iterateChildren(nodep);
-        m_inLoop = oldloop;
+    virtual void visit(AstWhile* nodep) override {
+        VL_RESTORER(m_inLoop);
+        {
+            m_inLoop = true;
+            iterateChildren(nodep);
+        }
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit DelayedVisitor(AstNetlist* nodep) {
-        m_inDly = false;
-        m_activep = NULL;
-        m_cfuncp = NULL;
-        m_nextDlyp = NULL;
-        m_inLoop = false;
-        m_inInitial = false;
-
-        iterate(nodep);
-    }
-    virtual ~DelayedVisitor() {
+    explicit DelayedVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~DelayedVisitor() override {
         V3Stats::addStat("Optimizations, Delayed shared-sets", m_statSharedSet);
     }
 };

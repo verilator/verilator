@@ -16,8 +16,7 @@ compile(
     verilator_make_cmake => 1,
     );
 
-system("cmake --version");
-if ($? != 0) {
+if (!$Self->have_cmake) {
     skip("cmake is not installed");
 } else {
     my $cmakecache = $Self->{obj_dir}."/CMakeCache.txt";

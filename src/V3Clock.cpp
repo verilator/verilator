@@ -48,16 +48,16 @@ private:
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
-    AstTopScope* m_topScopep;  // Current top scope
-    AstScope* m_scopep;  // Current scope
-    AstCFunc* m_evalFuncp;  // Top eval function we are creating
-    AstCFunc* m_initFuncp;  // Top initial function we are creating
-    AstCFunc* m_finalFuncp;  // Top final function we are creating
-    AstCFunc* m_settleFuncp;  // Top settlement function we are creating
-    AstSenTree* m_lastSenp;  // Last sensitivity match, so we can detect duplicates.
-    AstIf* m_lastIfp;  // Last sensitivity if active to add more under
-    AstMTaskBody* m_mtaskBodyp;  // Current mtask body
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstTopScope* m_topScopep = nullptr;  // Current top scope
+    AstScope* m_scopep = nullptr;  // Current scope
+    AstCFunc* m_evalFuncp = nullptr;  // Top eval function we are creating
+    AstCFunc* m_initFuncp = nullptr;  // Top initial function we are creating
+    AstCFunc* m_finalFuncp = nullptr;  // Top final function we are creating
+    AstCFunc* m_settleFuncp = nullptr;  // Top settlement function we are creating
+    AstSenTree* m_lastSenp = nullptr;  // Last sensitivity match, so we can detect duplicates.
+    AstIf* m_lastIfp = nullptr;  // Last sensitivity if active to add more under
+    AstMTaskBody* m_mtaskBodyp = nullptr;  // Current mtask body
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -101,11 +101,11 @@ private:
         // BOTHEDGE:  var ^ var_last
         // HIGHEDGE:  var
         // LOWEDGE:  ~var
-        AstNode* newp = NULL;
+        AstNode* newp = nullptr;
         if (nodep->edgeType() == VEdgeType::ET_ILLEGAL) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Complicated event expression in sensitive activity list");
-            return NULL;
+            return nullptr;
         }
         AstVarScope* clkvscp = nodep->varrefp()->varScopep();
         if (nodep->edgeType() == VEdgeType::ET_POSEDGE) {
@@ -138,7 +138,7 @@ private:
     }
     AstNode* createSenseEquation(AstSenItem* nodesp) {
         // Nodep may be a list of elements; we need to walk it
-        AstNode* senEqnp = NULL;
+        AstNode* senEqnp = nullptr;
         for (AstSenItem* senp = nodesp; senp; senp = VN_CAST(senp->nextp(), SenItem)) {
             AstNode* const senOnep = createSenItemEquation(senp);
             if (senEqnp) {
@@ -153,16 +153,53 @@ private:
     AstIf* makeActiveIf(AstSenTree* sensesp) {
         AstNode* senEqnp = createSenseEquation(sensesp->sensesp());
         UASSERT_OBJ(senEqnp, sensesp, "No sense equation, shouldn't be in sequent activation.");
-        AstIf* newifp = new AstIf(sensesp->fileline(), senEqnp, NULL, NULL);
+        AstIf* newifp = new AstIf(sensesp->fileline(), senEqnp, nullptr, nullptr);
         return newifp;
     }
     void clearLastSen() {
-        m_lastSenp = NULL;
-        m_lastIfp = NULL;
+        m_lastSenp = nullptr;
+        m_lastIfp = nullptr;
+    }
+    void splitCheck(AstCFunc* ofuncp) {
+        if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
+        if (EmitCBaseCounterVisitor(ofuncp->stmtsp()).count() < v3Global.opt.outputSplitCFuncs())
+            return;
+
+        int funcnum = 0;
+        int func_stmts = 0;
+        AstCFunc* funcp = nullptr;
+
+        // Unlink all statements, then add item by item to new sub-functions
+        AstBegin* tempp = new AstBegin{ofuncp->fileline(), "[EditWrapper]",
+                                       ofuncp->stmtsp()->unlinkFrBackWithNext()};
+        if (ofuncp->finalsp()) tempp->addStmtsp(ofuncp->finalsp()->unlinkFrBackWithNext());
+        while (tempp->stmtsp()) {
+            AstNode* itemp = tempp->stmtsp()->unlinkFrBack();
+            int stmts = EmitCBaseCounterVisitor(itemp).count();
+            if (!funcp || (func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
+                // Make a new function
+                funcp = new AstCFunc{ofuncp->fileline(), ofuncp->name() + cvtToStr(++funcnum),
+                                     m_topScopep->scopep()};
+                funcp->argTypes(EmitCBaseVisitor::symClassVar());
+                funcp->dontCombine(true);
+                funcp->symProlog(true);
+                funcp->isStatic(true);
+                funcp->slow(ofuncp->slow());
+                m_topScopep->scopep()->addActivep(funcp);
+                //
+                AstCCall* callp = new AstCCall{funcp->fileline(), funcp};
+                callp->argTypes("vlSymsp");
+                ofuncp->addStmtsp(callp);
+                func_stmts = 0;
+            }
+            funcp->addStmtsp(itemp);
+            func_stmts += stmts;
+        }
+        VL_DO_DANGLING(tempp->deleteTree(), tempp);
     }
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstTopScope* nodep) override {
         UINFO(4, " TOPSCOPE   " << nodep << endl);
         m_topScopep = nodep;
         m_scopep = nodep->scopep();
@@ -172,28 +209,29 @@ private:
         AstNode::user1ClearTree();
         // Make top functions
         {
-            AstCFunc* funcp = new AstCFunc(nodep->fileline(), "_eval", m_scopep);
+            AstCFunc* funcp = new AstCFunc{nodep->fileline(), "_eval", m_topScopep->scopep()};
             funcp->argTypes(EmitCBaseVisitor::symClassVar());
             funcp->dontCombine(true);
             funcp->symProlog(true);
             funcp->isStatic(true);
             funcp->entryPoint(true);
-            m_scopep->addActivep(funcp);
+            m_topScopep->scopep()->addActivep(funcp);
             m_evalFuncp = funcp;
         }
         {
-            AstCFunc* funcp = new AstCFunc(nodep->fileline(), "_eval_initial", m_scopep);
+            AstCFunc* funcp
+                = new AstCFunc{nodep->fileline(), "_eval_initial", m_topScopep->scopep()};
             funcp->argTypes(EmitCBaseVisitor::symClassVar());
             funcp->dontCombine(true);
             funcp->slow(true);
             funcp->symProlog(true);
             funcp->isStatic(true);
             funcp->entryPoint(true);
-            m_scopep->addActivep(funcp);
+            m_topScopep->scopep()->addActivep(funcp);
             m_initFuncp = funcp;
         }
         {
-            AstCFunc* funcp = new AstCFunc(nodep->fileline(), "final", m_scopep);
+            AstCFunc* funcp = new AstCFunc{nodep->fileline(), "final", m_topScopep->scopep()};
             funcp->skipDecl(true);
             funcp->dontCombine(true);
             funcp->slow(true);
@@ -204,38 +242,44 @@ private:
                                                                  + " = this->__VlSymsp;\n"));
             funcp->addInitsp(
                 new AstCStmt(nodep->fileline(), EmitCBaseVisitor::symTopAssign() + "\n"));
-            m_scopep->addActivep(funcp);
+            m_topScopep->scopep()->addActivep(funcp);
             m_finalFuncp = funcp;
         }
         {
-            AstCFunc* funcp = new AstCFunc(nodep->fileline(), "_eval_settle", m_scopep);
+            AstCFunc* funcp
+                = new AstCFunc{nodep->fileline(), "_eval_settle", m_topScopep->scopep()};
             funcp->argTypes(EmitCBaseVisitor::symClassVar());
             funcp->dontCombine(true);
             funcp->slow(true);
             funcp->isStatic(true);
             funcp->symProlog(true);
             funcp->entryPoint(true);
-            m_scopep->addActivep(funcp);
+            m_topScopep->scopep()->addActivep(funcp);
             m_settleFuncp = funcp;
         }
         // Process the activates
         iterateChildren(nodep);
+        UINFO(4, " TOPSCOPE iter done " << nodep << endl);
+        // Split large functions
+        splitCheck(m_evalFuncp);
+        splitCheck(m_initFuncp);
+        splitCheck(m_finalFuncp);
+        splitCheck(m_settleFuncp);
         // Done, clear so we can detect errors
         UINFO(4, " TOPSCOPEDONE " << nodep << endl);
         clearLastSen();
-        m_topScopep = NULL;
-        m_scopep = NULL;
+        m_topScopep = nullptr;
+        m_scopep = nullptr;
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         // UINFO(4, " MOD   " << nodep << endl);
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         // UINFO(4, " SCOPE   " << nodep << endl);
         m_scopep = nodep;
         iterateChildren(nodep);
@@ -244,9 +288,9 @@ private:
             movep->unlinkFrBackWithNext();
             m_evalFuncp->addFinalsp(movep);
         }
-        m_scopep = NULL;
+        m_scopep = nullptr;
     }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlways* nodep) override {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
@@ -255,7 +299,7 @@ private:
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstAlwaysPost* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlwaysPost* nodep) override {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
@@ -264,7 +308,7 @@ private:
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {
+    virtual void visit(AstCoverToggle* nodep) override {
         // nodep->dumpTree(cout, "ct:");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
@@ -272,7 +316,7 @@ private:
         AstNode* origp = nodep->origp()->unlinkFrBack();
         AstNode* changep = nodep->changep()->unlinkFrBack();
         AstIf* newp = new AstIf(nodep->fileline(), new AstXor(nodep->fileline(), origp, changep),
-                                incp, NULL);
+                                incp, nullptr);
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
@@ -281,7 +325,7 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
+    virtual void visit(AstInitial* nodep) override {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
@@ -290,7 +334,7 @@ private:
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Link to global function
         if (nodep->formCallTree()) {
@@ -300,7 +344,7 @@ private:
             m_finalFuncp->addStmtsp(callp);
         }
     }
-    virtual void visit(AstSenTree* nodep) VL_OVERRIDE {
+    virtual void visit(AstSenTree* nodep) override {
         // Delete it later; Actives still pointing to it
         nodep->unlinkFrBack();
         pushDeletep(nodep);
@@ -314,7 +358,7 @@ private:
     void addToInitial(AstNode* stmtsp) {
         m_initFuncp->addStmtsp(stmtsp);  // add to top level function
     }
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {
+    virtual void visit(AstActive* nodep) override {
         // Careful if adding variables here, ACTIVES can be under other ACTIVES
         // Need to save and restore any member state in AstUntilStable block
         if (!m_topScopep || !nodep->stmtsp()) {
@@ -382,7 +426,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
-    virtual void visit(AstExecGraph* nodep) VL_OVERRIDE {
+    virtual void visit(AstExecGraph* nodep) override {
         for (m_mtaskBodyp = VN_CAST(nodep->op1p(), MTaskBody); m_mtaskBodyp;
              m_mtaskBodyp = VN_CAST(m_mtaskBodyp->nextp(), MTaskBody)) {
             clearLastSen();
@@ -397,28 +441,17 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit ClockVisitor(AstNetlist* nodep) {
-        m_modp = NULL;
-        m_evalFuncp = NULL;
-        m_initFuncp = NULL;
-        m_finalFuncp = NULL;
-        m_settleFuncp = NULL;
-        m_topScopep = NULL;
-        m_lastSenp = NULL;
-        m_lastIfp = NULL;
-        m_scopep = NULL;
-        m_mtaskBodyp = NULL;
-        //
         iterate(nodep);
         // Allow downstream modules to find _eval()
         // easily without iterating through the tree.
         nodep->evalp(m_evalFuncp);
     }
-    virtual ~ClockVisitor() {}
+    virtual ~ClockVisitor() override {}
 };
 
 //######################################################################
