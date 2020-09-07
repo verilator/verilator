@@ -1013,6 +1013,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 m_debugCheck = flag;
             } else if (onoff(sw, "-debug-collision", flag /*ref*/)) {  // Undocumented
                 m_debugCollision = flag;
+            } else if (onoff(sw, "-debug-emitv", flag /*ref*/)) {  // Undocumented
+                m_debugEmitV = flag;
             } else if (onoff(sw, "-debug-exit-parse", flag /*ref*/)) {  // Undocumented
                 m_debugExitParse = flag;
             } else if (onoff(sw, "-debug-exit-uvm", flag /*ref*/)) {  // Undocumented

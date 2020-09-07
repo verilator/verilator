@@ -265,6 +265,7 @@ private:
     bool m_coverageUser = false;    // main switch: --coverage-func
     bool m_debugCheck = false;      // main switch: --debug-check
     bool m_debugCollision = false;  // main switch: --debug-collision
+    bool m_debugEmitV = false;      // main switch: --debug-emitv
     bool m_debugExitParse = false;  // main switch: --debug-exit-parse
     bool m_debugExitUvm = false;    // main switch: --debug-exit-uvm
     bool m_debugLeak = true;        // main switch: --debug-leak
@@ -469,6 +470,7 @@ public:
     bool coverageUser() const { return m_coverageUser; }
     bool debugCheck() const { return m_debugCheck; }
     bool debugCollision() const { return m_debugCollision; }
+    bool debugEmitV() const { return m_debugEmitV; }
     bool debugExitParse() const { return m_debugExitParse; }
     bool debugExitUvm() const { return m_debugExitUvm; }
     bool debugLeak() const { return m_debugLeak; }
