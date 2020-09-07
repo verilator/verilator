@@ -1096,6 +1096,14 @@ private:
         }
     }
 
+    virtual void visit(AstImplication* nodep) override {
+        if (m_vup->prelim()) {
+            iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
+            iterateCheckBool(nodep, "RHS", nodep->rhsp(), BOTH);
+            nodep->dtypeSetLogicBool();
+        }
+    }
+    
     virtual void visit(AstRand* nodep) override {
         if (m_vup->prelim()) {
             nodep->dtypeSetSigned32();  // Says the spec

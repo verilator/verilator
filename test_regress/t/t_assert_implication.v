@@ -55,4 +55,9 @@ module Test
      0 |-> 1
    );
 
+   assert property (
+     @(posedge clk)
+     0 |=> 1
+   );
+
 endmodule

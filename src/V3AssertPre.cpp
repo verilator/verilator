@@ -137,6 +137,29 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
+    virtual void visit(AstImplication* nodep) override {
+        if (nodep->sentreep()) return;  // Already processed
+        iterateChildren(nodep);
+
+	FileLine* fl = nodep->fileline();
+        AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
+        AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
+
+	if (VN_IS(nodep->abovep(), PropClocked)) {
+	    printf("This never happens?");
+	}
+	
+	AstNode* past = new AstPast(fl, lhsp, nullptr);
+        past->dtypeFrom(lhsp);
+        AstNode* exprp = new AstOr(fl,
+				   new AstNot(fl, past),
+				   rhsp);
+        exprp->dtypeSetLogicBool();
+        nodep->replaceWith(exprp);
+        nodep->sentreep(newSenTree(nodep));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    
     virtual void visit(AstPropClocked* nodep) override {
         // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
