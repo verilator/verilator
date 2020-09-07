@@ -671,7 +671,6 @@ public:
                     const string& errmsg);
     void filePathLookedMsg(FileLine* fl, const string& modname);
     V3LangCode fileLanguage(const string& filename);
-    static bool fileStatDir(const string& filename);
     static bool fileStatNormal(const string& filename);
     static void fileNfsFlush(const string& filename);
 

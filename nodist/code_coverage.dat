@@ -48,12 +48,14 @@ exclude_line_regexp(qr/(\bv3fatalSrc\b
                     |\bVL_UNCOVERABLE\b
                     |\bVL_FATAL
                     |\bUASSERT
+                    |\bNUM_ASSERT
                     |\bERROR_RSVD_WORD
                     |\bV3ERROR_NA
                     |\bUINFO\b)/x);
 
 # Exclude for branch coverage only
 exclude_branch_regexp(qr/(\bdebug\(\)
+                         |\bassert\(
                          |\bSELF_CHECK)/x);
 
 1;

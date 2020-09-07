@@ -431,15 +431,6 @@ string V3Options::allArgsStringForHierBlock(bool forTop) const {
 //######################################################################
 // File searching
 
-bool V3Options::fileStatDir(const string& filename) {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-    struct stat sstat;  // Stat information
-    int err = stat(filename.c_str(), &sstat);
-    if (err != 0) return false;
-    if (!S_ISDIR(sstat.st_mode)) return false;
-    return true;
-}
-
 bool V3Options::fileStatNormal(const string& filename) {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     struct stat sstat;  // Stat information
@@ -651,9 +642,9 @@ string V3Options::getenvSYSTEMC_ARCH() {
         struct utsname uts;
         uname(&uts);
         string sysname = VString::downcase(uts.sysname);  // aka  'uname -s'
-        if (VString::wildmatch(sysname.c_str(), "*solaris*")) {
+        if (VL_UNCOVERABLE(VString::wildmatch(sysname.c_str(), "*solaris*"))) {
             var = "gccsparcOS5";
-        } else if (VString::wildmatch(sysname.c_str(), "*cygwin*")) {
+        } else if (VL_UNCOVERABLE(VString::wildmatch(sysname.c_str(), "*cygwin*"))) {
             var = "cygwin";
         } else {
             var = "linux";
