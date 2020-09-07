@@ -64,11 +64,11 @@ private:
         UASSERT_OBJ(m_funcp, nodep, "Deep expression not under a function");
         m_funcp->addInitsp(varp);
         // Replace node tree with reference to var
-        AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, false);
+        AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
         nodep->replaceWith(newp);
         // Put assignment before the referencing statement
-        AstAssign* assp = new AstAssign(nodep->fileline(),
-                                        new AstVarRef(nodep->fileline(), varp, true), nodep);
+        AstAssign* assp = new AstAssign(
+            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE), nodep);
         AstNRelinker linker2;
         m_stmtp->unlinkFrBack(&linker2);
         assp->addNext(m_stmtp);

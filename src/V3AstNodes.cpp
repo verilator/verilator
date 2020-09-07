@@ -1431,7 +1431,7 @@ void AstVarScope::dump(std::ostream& str) const {
 void AstVarXRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
-    if (lvalue()) {
+    if (access().isWrite()) {
         str << " [LV] => ";
     } else {
         str << " [RV] <- ";
@@ -1449,7 +1449,7 @@ void AstVarXRef::dump(std::ostream& str) const {
 void AstVarRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
-    if (lvalue()) {
+    if (access().isWrite()) {
         str << " [LV] => ";
     } else {
         str << " [RV] <- ";

@@ -130,8 +130,8 @@ private:
             m_modp->addStmtp(varp);
             UINFO(5, "New coverage trace: " << varp << endl);
             AstAssign* assp = new AstAssign(
-                incp->fileline(), new AstVarRef(incp->fileline(), varp, true),
-                new AstAdd(incp->fileline(), new AstVarRef(incp->fileline(), varp, false),
+                incp->fileline(), new AstVarRef(incp->fileline(), varp, VAccess::WRITE),
+                new AstAdd(incp->fileline(), new AstVarRef(incp->fileline(), varp, VAccess::READ),
                            new AstConst(incp->fileline(), AstConst::WidthedValue(), 32, 1)));
             incp->addNext(assp);
         }
@@ -288,8 +288,9 @@ private:
                 // This is necessarily an O(n^2) expansion, which is why
                 // we limit coverage to signals with < 256 bits.
 
-                ToggleEnt newvec(string(""), new AstVarRef(nodep->fileline(), nodep, false),
-                                 new AstVarRef(nodep->fileline(), chgVarp, true));
+                ToggleEnt newvec(string(""),
+                                 new AstVarRef(nodep->fileline(), nodep, VAccess::READ),
+                                 new AstVarRef(nodep->fileline(), chgVarp, VAccess::WRITE));
                 toggleVarRecurse(nodep->dtypeSkipRefp(), 0, newvec, nodep, chgVarp);
                 newvec.cleanup();
             }

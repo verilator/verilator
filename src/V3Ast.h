@@ -123,6 +123,33 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 //######################################################################
 
+class VAccess {
+public:
+    enum en : uint8_t { READ, WRITE };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[] = {"RD", "WR"};
+        return names[m_e];
+    }
+    inline VAccess()
+        : m_e{READ} {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VAccess(en _e)
+        : m_e{_e} {}
+    explicit inline VAccess(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    operator en() const { return m_e; }
+    VAccess invert() const { return (m_e == WRITE) ? VAccess(READ) : VAccess(WRITE); }
+    bool isRead() const { return m_e == READ; }
+    bool isWrite() const { return m_e == WRITE; }
+};
+inline bool operator==(const VAccess& lhs, const VAccess& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VAccess& lhs, VAccess::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VAccess::en lhs, const VAccess& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VAccess& rhs) { return os << rhs.ascii(); }
+
+//######################################################################
+
 class VSigning {
 public:
     enum en : uint8_t {
@@ -2255,7 +2282,7 @@ public:
 class AstNodeVarRef : public AstNodeMath {
     // An AstVarRef or AstVarXRef
 private:
-    bool m_lvalue;  // Left hand side assignment
+    VAccess m_access;  // Left hand side assignment
     AstVar* m_varp;  // [AfterLink] Pointer to variable itself
     AstVarScope* m_varScopep = nullptr;  // Varscope for hierarchy
     AstNodeModule* m_packagep = nullptr;  // Package hierarchy
@@ -2264,15 +2291,15 @@ private:
     bool m_hierThis = false;  // Hiername points to "this" function
 
 public:
-    AstNodeVarRef(AstType t, FileLine* fl, const string& name, bool lvalue)
+    AstNodeVarRef(AstType t, FileLine* fl, const string& name, const VAccess& access)
         : AstNodeMath{t, fl}
-        , m_lvalue{lvalue}
+        , m_access{access}
         , m_name{name} {
         this->varp(nullptr);
     }
-    AstNodeVarRef(AstType t, FileLine* fl, const string& name, AstVar* varp, bool lvalue)
+    AstNodeVarRef(AstType t, FileLine* fl, const string& name, AstVar* varp, const VAccess& access)
         : AstNodeMath{t, fl}
-        , m_lvalue{lvalue}
+        , m_access{access}
         , m_name{name} {
         // May have varp==nullptr
         this->varp(varp);
@@ -2284,8 +2311,8 @@ public:
     virtual void cloneRelink() override;
     virtual string name() const override { return m_name; }  // * = Var name
     virtual void name(const string& name) override { m_name = name; }
-    bool lvalue() const { return m_lvalue; }
-    void lvalue(bool lval) { m_lvalue = lval; }  // Avoid using this; Set in constructor
+    VAccess access() const { return m_access; }
+    void access(const VAccess& flag) { m_access = flag; }  // Avoid using this; Set in constructor
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
     void varp(AstVar* varp);
     AstVarScope* varScopep() const { return m_varScopep; }

@@ -1932,7 +1932,7 @@ list_of_tf_variable_identifiers<nodep>: // ==IEEE: list_of_tf_variable_identifie
 tf_variable_identifier<varp>:		// IEEE: part of list_of_tf_variable_identifiers
 		id variable_dimensionListE sigAttrListE exprEqE
 			{ $$ = VARDONEA($<fl>1,*$1, $2, $3);
-			  if ($4) $$->addNext(new AstAssign($4->fileline(), new AstVarRef($<fl>1, *$1, true), $4)); }
+                          if ($4) $$->addNext(new AstAssign($4->fileline(), new AstVarRef($<fl>1, *$1, VAccess::WRITE), $4)); }
 	;
 
 variable_declExpr<nodep>:		// IEEE: part of variable_decl_assignment - rhs of expr
@@ -2432,7 +2432,8 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 
 genvar_initialization<nodep>:	// ==IEEE: genvar_initialization
 		varRefBase '=' expr			{ $$ = new AstAssign($2,$1,$3); }
-	|	yGENVAR genvar_identifierDecl '=' constExpr	{ $$ = $2; $2->addNext(new AstAssign($3,new AstVarRef($2->fileline(),$2,true), $4)); }
+	|	yGENVAR genvar_identifierDecl '=' constExpr
+			{ $$ = $2; $2->addNext(new AstAssign($3, new AstVarRef($2->fileline(), $2, VAccess::WRITE), $4)); }
 	;
 
 genvar_iteration<nodep>:	// ==IEEE: genvar_iteration
@@ -2542,7 +2543,7 @@ netSigList<varp>:		// IEEE: list_of_port_identifiers
 netSig<varp>:			// IEEE: net_decl_assignment -  one element from list_of_port_identifiers
 		netId sigAttrListE			{ $$ = VARDONEA($<fl>1,*$1, nullptr, $2); }
 	|	netId sigAttrListE '=' expr		{ $$ = VARDONEA($<fl>1,*$1, nullptr, $2);
-							  $$->addNext(new AstAssignW($3, new AstVarRef($<fl>1, *$1, true), $4)); }
+							  $$->addNext(new AstAssignW($3, new AstVarRef($<fl>1, *$1, VAccess::WRITE), $4)); }
 	|	netId variable_dimensionList sigAttrListE	{ $$ = VARDONEA($<fl>1,*$1, $2, $3); }
 	;
 
@@ -3386,12 +3387,12 @@ for_initializationItem<nodep>:		// IEEE: variable_assignment + for_variable_decl
 		data_type idAny/*new*/ '=' expr
 			{ VARRESET_NONLIST(VAR); VARDTYPE($1);
 			  $$ = VARDONEA($<fl>2,*$2,nullptr,nullptr);
-			  $$->addNext(new AstAssign($3, new AstVarRef($<fl>2, *$2, true), $4));}
+			  $$->addNext(new AstAssign($3, new AstVarRef($<fl>2, *$2, VAccess::WRITE), $4)); }
 	//			// IEEE-2012:
 	|	yVAR data_type idAny/*new*/ '=' expr
 			{ VARRESET_NONLIST(VAR); VARDTYPE($2);
 			  $$ = VARDONEA($<fl>3,*$3,nullptr,nullptr);
-			  $$->addNext(new AstAssign($4, new AstVarRef($<fl>3, *$3, true), $5));}
+			  $$->addNext(new AstAssign($4, new AstVarRef($<fl>3, *$3, VAccess::WRITE), $5)); }
 	//			// IEEE: variable_assignment
 	//			// UNSUP variable_lvalue below
 	|	varRefBase '=' expr			{ $$ = new AstAssign($2, $1, $3); }
@@ -4860,7 +4861,7 @@ idArrayedForeach<nodep>:	// IEEE: id + select (under foreach expression)
 
 // VarRef without any dots or vectorizaion
 varRefBase<varrefp>:
-		id					{ $$ = new AstVarRef($<fl>1,*$1,false);}
+		id					{ $$ = new AstVarRef($<fl>1, *$1, VAccess::READ); }
 	;
 
 // yaSTRING shouldn't be used directly, instead via an abstraction below

@@ -313,9 +313,9 @@ private:
             UASSERT_OBJ(exprconstp || exprvarrefp, nodep,
                         "Unknown interconnect type; pinReconnectSimple should have cleared up");
             if (exprconstp) {
-                m_modp->addStmtp(new AstAssignW(nodep->fileline(),
-                                                new AstVarRef(nodep->fileline(), nodep, true),
-                                                exprconstp->cloneTree(true)));
+                m_modp->addStmtp(new AstAssignW(
+                    nodep->fileline(), new AstVarRef(nodep->fileline(), nodep, VAccess::WRITE),
+                    exprconstp->cloneTree(true)));
             } else if (nodep->user3()) {
                 // Public variable at the lower module end - we need to make sure we propagate
                 // the logic changes up and down; if we aliased, we might
@@ -323,20 +323,22 @@ private:
                 UINFO(9, "public pin assign: " << exprvarrefp << endl);
                 UASSERT_OBJ(!nodep->isNonOutput(), nodep, "Outputs only - inputs use AssignAlias");
                 m_modp->addStmtp(new AstAssignW(
-                    nodep->fileline(), new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
-                    new AstVarRef(nodep->fileline(), nodep, false)));
+                    nodep->fileline(),
+                    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), VAccess::WRITE),
+                    new AstVarRef(nodep->fileline(), nodep, VAccess::READ)));
             } else if (nodep->isSigPublic() && VN_IS(nodep->dtypep(), UnpackArrayDType)) {
                 // Public variable at this end and it is an unpacked array. We need to assign
                 // instead of aliased, because otherwise it will pass V3Slice and invalid
                 // code will be emitted.
                 UINFO(9, "assign to public and unpacked: " << nodep << endl);
                 m_modp->addStmtp(new AstAssignW(
-                    nodep->fileline(), new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
-                    new AstVarRef(nodep->fileline(), nodep, false)));
+                    nodep->fileline(),
+                    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), VAccess::WRITE),
+                    new AstVarRef(nodep->fileline(), nodep, VAccess::READ)));
             } else if (nodep->isIfaceRef()) {
                 m_modp->addStmtp(new AstAssignVarScope(
-                    nodep->fileline(), new AstVarRef(nodep->fileline(), nodep, true),
-                    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), false)));
+                    nodep->fileline(), new AstVarRef(nodep->fileline(), nodep, VAccess::WRITE),
+                    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), VAccess::READ)));
                 AstNode* nodebp = exprvarrefp->varp();
                 nodep->fileline()->modifyStateInherit(nodebp->fileline());
                 nodebp->fileline()->modifyStateInherit(nodep->fileline());
@@ -344,8 +346,8 @@ private:
                 // Do to inlining child's variable now within the same
                 // module, so a AstVarRef not AstVarXRef below
                 m_modp->addStmtp(new AstAssignAlias(
-                    nodep->fileline(), new AstVarRef(nodep->fileline(), nodep, true),
-                    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), false)));
+                    nodep->fileline(), new AstVarRef(nodep->fileline(), nodep, VAccess::WRITE),
+                    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), VAccess::READ)));
                 AstNode* nodebp = exprvarrefp->varp();
                 nodep->fileline()->modifyStateInherit(nodebp->fileline());
                 nodebp->fileline()->modifyStateInherit(nodep->fileline());

@@ -401,7 +401,7 @@ private:
             && !VN_IS(nodep->varp()->dtypeSkipRefp(), UnpackArrayDType)
             && !VN_IS(nodep->varp()->dtypeSkipRefp(), StructDType))
             clearOptimizable(nodep, "Array references/not basic");
-        if (nodep->lvalue()) {
+        if (nodep->access().isWrite()) {
             if (m_inDlyAssign) {
                 if (!(vscp->user1() & VU_LVDLY)) {
                     vscp->user1(vscp->user1() | VU_LVDLY);
@@ -433,7 +433,7 @@ private:
             }
         }
         if (!m_checkOnly && optimizable()) {  // simulating
-            UASSERT_OBJ(!nodep->lvalue(), nodep,
+            UASSERT_OBJ(!nodep->access().isWrite(), nodep,
                         "LHS varref should be handled in AstAssign visitor.");
             {
                 // Return simulation value - copy by reference instead of value for speed

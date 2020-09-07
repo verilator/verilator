@@ -201,7 +201,7 @@ private:
                 if (nodep->valuep()) {
                     m_traValuep = nodep->valuep()->cloneTree(true);
                 } else {
-                    m_traValuep = new AstVarRef(nodep->fileline(), nodep, false);
+                    m_traValuep = new AstVarRef(nodep->fileline(), nodep, VAccess::READ);
                 }
                 // Recurse into data type of the signal; the visitors will call addTraceDecl()
                 iterate(varp->dtypep()->skipRefToEnump());

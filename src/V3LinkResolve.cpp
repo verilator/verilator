@@ -183,9 +183,10 @@ private:
                 }
                 addwherep->addNext(newvarp);
 
-                sensp->replaceWith(new AstVarRef(sensp->fileline(), newvarp, false));
+                sensp->replaceWith(new AstVarRef(sensp->fileline(), newvarp, VAccess::READ));
                 AstAssignW* assignp = new AstAssignW(
-                    sensp->fileline(), new AstVarRef(sensp->fileline(), newvarp, true), sensp);
+                    sensp->fileline(), new AstVarRef(sensp->fileline(), newvarp, VAccess::WRITE),
+                    sensp);
                 addwherep->addNext(assignp);
             }
         } else {  // Old V1995 sensitivity list; we'll probably mostly ignore
@@ -490,7 +491,8 @@ private:
                         varoutp = varp;
                         // Tie off
                         m_modp->addStmtp(new AstAssignW(
-                            varp->fileline(), new AstVarRef(varp->fileline(), varp, true),
+                            varp->fileline(),
+                            new AstVarRef(varp->fileline(), varp, VAccess::WRITE),
                             new AstConst(varp->fileline(), AstConst::LogicFalse())));
                     } else {
                         varp->v3error("Only inputs and outputs are allowed in udp modules");

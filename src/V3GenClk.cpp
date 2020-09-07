@@ -67,9 +67,9 @@ private:
             m_topModp->addStmtp(newvarp);
             AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopetopp, newvarp);
             m_scopetopp->addVarp(newvscp);
-            AstAssign* asninitp
-                = new AstAssign(vscp->fileline(), new AstVarRef(vscp->fileline(), newvscp, true),
-                                new AstVarRef(vscp->fileline(), vscp, false));
+            AstAssign* asninitp = new AstAssign(
+                vscp->fileline(), new AstVarRef(vscp->fileline(), newvscp, VAccess::WRITE),
+                new AstVarRef(vscp->fileline(), vscp, VAccess::READ));
             m_scopetopp->addFinalClkp(asninitp);
             //
             vscp->user2p(newvscp);
@@ -98,7 +98,7 @@ private:
                 UINFO(8, "  VarActReplace " << nodep << endl);
                 // Replace with the new variable
                 AstVarScope* newvscp = genInpClk(vscp);
-                AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->lvalue());
+                AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->access());
                 nodep->replaceWith(newrefp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
@@ -186,7 +186,7 @@ private:
             UINFO(8, "  VarAct " << nodep << endl);
             vscp->user1(true);
         }
-        if (m_assignp && nodep->lvalue() && vscp->user1()) {
+        if (m_assignp && nodep->access().isWrite() && vscp->user1()) {
             // Variable was previously used as a clock, and is now being set
             // Thus a unordered generated clock...
             UINFO(8, "  VarSetAct " << nodep << endl);

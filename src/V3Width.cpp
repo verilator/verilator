@@ -1356,7 +1356,7 @@ private:
                     AstVar* varp
                         = dimensionVarp(nodep->fromp()->dtypep(), nodep->attrType(), msbdim);
                     AstNode* dimp = nodep->dimp()->unlinkFrBack();
-                    AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
+                    AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
                     varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
                     AstNode* newp = new AstArraySel(nodep->fileline(), varrefp, dimp);
                     nodep->replaceWith(newp);
@@ -1805,13 +1805,13 @@ private:
         //  nodep->varp()->dumpTree(cout, " forvar "); }
         // Note genvar's are also entered as integers
         nodep->dtypeFrom(nodep->varp());
-        if (VN_IS(nodep->backp(), NodeAssign) && nodep->lvalue()) {  // On LHS
+        if (VN_IS(nodep->backp(), NodeAssign) && nodep->access().isWrite()) {  // On LHS
             UASSERT_OBJ(nodep->dtypep(), nodep, "LHS var should be dtype completed");
         }
         // if (debug() >= 9) nodep->dumpTree(cout, "  VRout ");
-        if (nodep->lvalue() && nodep->varp()->direction() == VDirection::CONSTREF) {
+        if (nodep->access().isWrite() && nodep->varp()->direction() == VDirection::CONSTREF) {
             nodep->v3error("Assigning to const ref variable: " << nodep->prettyNameQ());
-        } else if (nodep->lvalue() && nodep->varp()->isConst() && !m_paramsOnly
+        } else if (nodep->access().isWrite() && nodep->varp()->isConst() && !m_paramsOnly
                    && (!m_ftaskp || !m_ftaskp->isConstructor()) && !VN_IS(m_procedurep, Initial)) {
             // Too loose, but need to allow our generated first assignment
             // Move this to a property of the AstInitial block
@@ -2311,7 +2311,7 @@ private:
             }
             int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
             AstVar* varp = enumVarp(adtypep, attrType, (1ULL << selwidth) - 1);
-            AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
+            AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
             varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
             AstNode* newp = new AstArraySel(
                 nodep->fileline(), varrefp,
@@ -2358,7 +2358,7 @@ private:
             newp->didWidth(true);
         } else if (nodep->name() == "delete") {  // function void delete([input integer index])
             methodOkArguments(nodep, 0, 1);
-            methodCallLValueRecurse(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             if (!nodep->pinsp()) {
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           "clear", nullptr);
@@ -2387,13 +2387,13 @@ private:
         VL_DANGLING(index_exprp);  // May have been edited
         return VN_CAST(nodep->pinsp(), Arg)->exprp();
     }
-    void methodCallLValueRecurse(AstMethodCall* nodep, AstNode* childp, bool lvalue) {
+    void methodCallLValueRecurse(AstMethodCall* nodep, AstNode* childp, const VAccess& access) {
         if (AstNodeVarRef* varrefp = VN_CAST(childp, NodeVarRef)) {
-            if (lvalue) varrefp->lvalue(true);
+            varrefp->access(access);
         } else if (AstMemberSel* ichildp = VN_CAST(childp, MemberSel)) {
-            methodCallLValueRecurse(nodep, ichildp->fromp(), lvalue);
+            methodCallLValueRecurse(nodep, ichildp->fromp(), access);
         } else if (AstNodeSel* ichildp = VN_CAST(childp, NodeSel)) {
-            methodCallLValueRecurse(nodep, ichildp->fromp(), lvalue);
+            methodCallLValueRecurse(nodep, ichildp->fromp(), access);
         } else {
             UINFO(1, "    Related node: " << childp << endl);
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Non-variable on LHS of built-in method '"
@@ -2404,7 +2404,7 @@ private:
         AstCMethodHard* newp = nullptr;
         if (nodep->name() == "at") {  // Created internally for []
             methodOkArguments(nodep, 1, 1);
-            methodCallLValueRecurse(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "at",
                                       nullptr);
             newp->dtypeFrom(adtypep->subDTypep());
@@ -2419,7 +2419,7 @@ private:
             newp->protect(false);
         } else if (nodep->name() == "delete") {  // function void delete()
             methodOkArguments(nodep, 0, 0);
-            methodCallLValueRecurse(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "clear",
                                       nullptr);
             newp->makeStatement();
@@ -2437,7 +2437,7 @@ private:
         AstCMethodHard* newp = nullptr;
         if (nodep->name() == "at") {  // Created internally for []
             methodOkArguments(nodep, 1, 1);
-            methodCallLValueRecurse(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "at",
                                       nullptr);
             newp->dtypeFrom(adtypep->subDTypep());
@@ -2453,7 +2453,7 @@ private:
             newp->protect(false);
         } else if (nodep->name() == "delete") {  // function void delete([input integer index])
             methodOkArguments(nodep, 0, 1);
-            methodCallLValueRecurse(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             if (!nodep->pinsp()) {
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           "clear", nullptr);
@@ -2480,7 +2480,7 @@ private:
             }
         } else if (nodep->name() == "insert") {
             methodOkArguments(nodep, 2, 2);
-            methodCallLValueRecurse(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             AstNode* index_exprp = methodCallQueueIndexExpr(nodep);
             AstArg* argp = VN_CAST(nodep->pinsp()->nextp(), Arg);
             iterateCheckTyped(nodep, "insert value", argp->exprp(), adtypep->subDTypep(), BOTH);
@@ -2501,7 +2501,7 @@ private:
             }
         } else if (nodep->name() == "pop_front" || nodep->name() == "pop_back") {
             methodOkArguments(nodep, 0, 0);
-            methodCallLValueRecurse(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), nullptr);
             newp->dtypeFrom(adtypep->subDTypep());
@@ -2510,7 +2510,7 @@ private:
             if (!nodep->firstAbovep()) { newp->makeStatement(); }
         } else if (nodep->name() == "push_back" || nodep->name() == "push_front") {
             methodOkArguments(nodep, 1, 1);
-            methodCallLValueRecurse(nodep, nodep->fromp(), true);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             AstArg* argp = VN_CAST(nodep->pinsp(), Arg);
             iterateCheckTyped(nodep, "push value", argp->exprp(), adtypep->subDTypep(), BOTH);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
@@ -2672,10 +2672,10 @@ private:
             AstNodeVarRef* fromp = VN_CAST(nodep->fromp()->unlinkFrBack(), VarRef);
             AstNode* rhsp = arg0p->exprp()->unlinkFrBack();
             AstNode* thsp = arg1p->exprp()->unlinkFrBack();
-            AstVarRef* varrefp = new AstVarRef(nodep->fileline(), fromp->varp(), false);
+            AstVarRef* varrefp = new AstVarRef(nodep->fileline(), fromp->varp(), VAccess::READ);
             AstNode* newp = new AstAssign(nodep->fileline(), fromp,
                                           new AstPutcN(nodep->fileline(), varrefp, rhsp, thsp));
-            fromp->lvalue(true);
+            fromp->access(VAccess::WRITE);
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else if (nodep->name() == "getc") {
@@ -5082,7 +5082,7 @@ private:
         AstNode* newp = new AstAssign(
             nodep->fileline(), fromp,
             new AstSFormatF(nodep->fileline(), format, false, argp->exprp()->unlinkFrBack()));
-        fromp->lvalue(true);
+        fromp->access(VAccess::WRITE);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }

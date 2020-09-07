@@ -153,15 +153,15 @@ private:
                                   nodep->findSigned32DType());
         varp->usedLoopIdx(true);
         m_modp->addStmtp(varp);
-        AstNode* initsp = new AstAssign(nodep->fileline(),
-                                        new AstVarRef(nodep->fileline(), varp, true), countp);
+        AstNode* initsp = new AstAssign(
+            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE), countp);
         AstNode* decp = new AstAssign(
-            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, true),
-            new AstSub(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, false),
+            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE),
+            new AstSub(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::READ),
                        new AstConst(nodep->fileline(), 1)));
         AstNode* zerosp = new AstConst(nodep->fileline(), AstConst::Signed32(), 0);
-        AstNode* condp
-            = new AstGtS(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, false), zerosp);
+        AstNode* condp = new AstGtS(nodep->fileline(),
+                                    new AstVarRef(nodep->fileline(), varp, VAccess::READ), zerosp);
         AstNode* bodysp = nodep->bodysp();
         if (bodysp) bodysp->unlinkFrBackWithNext();
         AstNode* newp = new AstWhile(nodep->fileline(), condp, bodysp, decp);
@@ -213,7 +213,7 @@ private:
                 // Set output variable to return value
                 nodep->addPrev(new AstAssign(
                     nodep->fileline(),
-                    new AstVarRef(nodep->fileline(), VN_CAST(funcp->fvarp(), Var), true),
+                    new AstVarRef(nodep->fileline(), VN_CAST(funcp->fvarp(), Var), VAccess::WRITE),
                     nodep->lhsp()->unlinkFrBackWithNext()));
             }
             // Jump to the end of the function call

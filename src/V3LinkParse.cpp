@@ -226,9 +226,9 @@ private:
             } else if (VN_IS(m_modp, Class)) {
                 // 2. Class member init become initials (as might call functions)
                 // later move into class constructor
-                nodep->addNextHere(
-                    new AstInitial(fl, new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
-                                                     nodep->valuep()->unlinkFrBack())));
+                nodep->addNextHere(new AstInitial(
+                    fl, new AstAssign(fl, new AstVarRef(fl, nodep->name(), VAccess::WRITE),
+                                      nodep->valuep()->unlinkFrBack())));
             } else if (!m_ftaskp && nodep->isNonOutput()) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Default value on module input: "
                                                  << nodep->prettyNameQ());
@@ -239,11 +239,13 @@ private:
                 FileLine* newfl = new FileLine(fl);
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
                 nodep->addNextHere(new AstInitial(
-                    newfl, new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), true),
-                                         nodep->valuep()->unlinkFrBack())));
+                    newfl,
+                    new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), VAccess::WRITE),
+                                  nodep->valuep()->unlinkFrBack())));
             }  // 4. Under blocks, it's an initial value to be under an assign
             else {
-                nodep->addNextHere(new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
+                nodep->addNextHere(new AstAssign(fl,
+                                                 new AstVarRef(fl, nodep->name(), VAccess::WRITE),
                                                  nodep->valuep()->unlinkFrBack()));
             }
         }
@@ -333,7 +335,8 @@ private:
             // lvalue is true, because we know we have a verilator public_flat_rw
             // but someday we may be more general
             bool lvalue = m_varp->isSigUserRWPublic();
-            nodep->addStmtp(new AstVarRef(nodep->fileline(), m_varp, lvalue));
+            nodep->addStmtp(
+                new AstVarRef(nodep->fileline(), m_varp, lvalue ? VAccess::WRITE : VAccess::READ));
         }
     }
 
@@ -445,7 +448,8 @@ private:
                                            new AstConst(fl, dimension));
             AstNode* stmtsp = varp;
             // Assign left-dimension into the loop var:
-            stmtsp->addNext(new AstAssign(fl, new AstVarRef(fl, varp->name(), true), leftp));
+            stmtsp->addNext(
+                new AstAssign(fl, new AstVarRef(fl, varp->name(), VAccess::WRITE), leftp));
             // This will turn into a constant bool for static arrays
             AstNode* notemptyp = new AstGt(fl, sizep, new AstConst(fl, 0));
             // This will turn into a bool constant, indicating whether
@@ -454,14 +458,15 @@ private:
             AstNode* comparep = new AstCond(
                 fl, countupp->cloneTree(true),
                 // Left increments up to right
-                new AstLte(fl, new AstVarRef(fl, varp->name(), false), rightp->cloneTree(true)),
+                new AstLte(fl, new AstVarRef(fl, varp->name(), VAccess::READ),
+                           rightp->cloneTree(true)),
                 // Left decrements down to right
-                new AstGte(fl, new AstVarRef(fl, varp->name(), false), rightp));
+                new AstGte(fl, new AstVarRef(fl, varp->name(), VAccess::READ), rightp));
             // This will reduce to comparep for static arrays
             AstNode* condp = new AstAnd(fl, notemptyp, comparep);
             AstNode* incp = new AstAssign(
-                fl, new AstVarRef(fl, varp->name(), true),
-                new AstAdd(fl, new AstVarRef(fl, varp->name(), false),
+                fl, new AstVarRef(fl, varp->name(), VAccess::WRITE),
+                new AstAdd(fl, new AstVarRef(fl, varp->name(), VAccess::READ),
                            new AstCond(fl, countupp, new AstConst(fl, 1), new AstConst(fl, -1))));
             stmtsp->addNext(new AstWhile(fl, condp, newp, incp));
             newp = new AstBegin(nodep->fileline(), "", stmtsp, false, true);

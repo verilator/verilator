@@ -1026,7 +1026,8 @@ private:
             UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
             if (m_inSenTree) {
                 // Add CLOCK dependency... This is a root of the tree we'll trace
-                UASSERT_OBJ(!nodep->lvalue(), nodep, "How can a sensitivity be setting a var?");
+                UASSERT_OBJ(!nodep->access().isWrite(), nodep,
+                            "How can a sensitivity be setting a var?");
                 OrderVarVertex* varVxp = newVarUserVertex(varscp, WV_STD);
                 varVxp->isClock(true);
                 new OrderEdge(&m_graph, varVxp, m_activeSenVxp, WEIGHT_MEDIUM);
@@ -1036,7 +1037,7 @@ private:
                 // We don't want to add extra edges if the logic block has many usages of same var
                 bool gen = false;
                 bool con = false;
-                if (nodep->lvalue()) {
+                if (nodep->access().isWrite()) {
                     gen = !(varscp->user4() & VU_GEN);
                 } else {
                     con = !(varscp->user4() & VU_CON);
