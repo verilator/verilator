@@ -128,6 +128,11 @@ public:
         return m_dtypep;
     }
     AstNodeDType* dtypeNullp() const { return m_dtypep; }
+    AstNodeDType* dtypeNullSkipRefp() const {
+        AstNodeDType* dtp = dtypeNullp();
+        if (dtp) dtp = dtp->skipRefp();
+        return dtp;
+    }
     AstNodeDType* dtypeOverridep(AstNodeDType* defaultp) const {
         if (m_stage == PRELIM) v3fatalSrc("Parent dtype should be a final-stage action");
         return m_dtypep ? m_dtypep : defaultp;
@@ -478,7 +483,7 @@ private:
         //   signed: Unsigned  (11.8.1)
         //   width: LHS + RHS
         if (m_vup->prelim()) {
-            AstNodeDType* vdtypep = m_vup->dtypeNullp();
+            AstNodeDType* vdtypep = m_vup->dtypeNullSkipRefp();
             if (vdtypep
                 && (VN_IS(vdtypep, AssocArrayDType)  //
                     || VN_IS(vdtypep, DynArrayDType)  //
@@ -602,7 +607,7 @@ private:
         //   LHS, RHS is self-determined
         //   width: value(LHS) * width(RHS)
         if (m_vup->prelim()) {
-            AstNodeDType* vdtypep = m_vup->dtypeNullp();
+            AstNodeDType* vdtypep = m_vup->dtypeNullSkipRefp();
             if (vdtypep
                 && (VN_IS(vdtypep, AssocArrayDType) || VN_IS(vdtypep, DynArrayDType)
                     || VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, UnpackArrayDType))) {
@@ -2725,7 +2730,7 @@ private:
 
     virtual void visit(AstNew* nodep) override {
         if (nodep->didWidthAndSet()) return;
-        AstClassRefDType* refp = VN_CAST(m_vup->dtypeNullp(), ClassRefDType);
+        AstClassRefDType* refp = VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType);
         if (!refp) {  // e.g. int a = new;
             nodep->v3error("new() not expected in this context");
             return;
@@ -2751,7 +2756,7 @@ private:
     }
     virtual void visit(AstNewCopy* nodep) override {
         if (nodep->didWidthAndSet()) return;
-        AstClassRefDType* refp = VN_CAST(m_vup->dtypeNullp(), ClassRefDType);
+        AstClassRefDType* refp = VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType);
         if (!refp) {  // e.g. int a = new;
             nodep->v3error("new() not expected in this context");
             return;
@@ -2766,7 +2771,7 @@ private:
     }
     virtual void visit(AstNewDynamic* nodep) override {
         if (nodep->didWidthAndSet()) return;
-        AstDynArrayDType* adtypep = VN_CAST(m_vup->dtypeNullp(), DynArrayDType);
+        AstDynArrayDType* adtypep = VN_CAST(m_vup->dtypeNullSkipRefp(), DynArrayDType);
         if (!adtypep) {  // e.g. int a = new;
             nodep->v3error(
                 "dynamic new() not expected in this context (data type must be dynamic array)");
