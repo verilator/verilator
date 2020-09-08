@@ -539,10 +539,13 @@ public:
     }
     virtual bool same(const AstNode* samep) const override {
         const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
+        if (!asamep->subDTypep()) return false;
+        if (!asamep->keyDTypep()) return false;
         return (subDTypep() == asamep->subDTypep() && keyDTypep() == asamep->keyDTypep());
     }
     virtual bool similarDType(AstNodeDType* samep) const override {
         const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
+        if (!asamep->subDTypep()) return false;
         return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     virtual string prettyDTypeName() const override;
@@ -635,10 +638,12 @@ public:
     }
     virtual bool same(const AstNode* samep) const override {
         const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
+        if (!asamep->subDTypep()) return false;
         return subDTypep() == asamep->subDTypep();
     }
     virtual bool similarDType(AstNodeDType* samep) const override {
         const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
+        if (!asamep->subDTypep()) return false;
         return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     virtual string prettyDTypeName() const override;
@@ -741,10 +746,12 @@ public:
     }
     virtual bool same(const AstNode* samep) const override {
         const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
+        if (!asamep->subDTypep()) return false;
         return (subDTypep() == asamep->subDTypep());
     }
     virtual bool similarDType(AstNodeDType* samep) const override {
         const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
+        if (!asamep->subDTypep()) return false;
         return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     virtual void dumpSmall(std::ostream& str) const override;
@@ -1104,10 +1111,12 @@ public:
     }
     virtual bool same(const AstNode* samep) const override {
         const AstQueueDType* asamep = static_cast<const AstQueueDType*>(samep);
+        if (!asamep->subDTypep()) return false;
         return (subDTypep() == asamep->subDTypep());
     }
     virtual bool similarDType(AstNodeDType* samep) const override {
         const AstQueueDType* asamep = static_cast<const AstQueueDType*>(samep);
+        if (!asamep->subDTypep()) return false;
         return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     virtual void dumpSmall(std::ostream& str) const override;
