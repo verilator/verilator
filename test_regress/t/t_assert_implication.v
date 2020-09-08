@@ -20,7 +20,7 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       if (cyc!=0) begin
          cyc <= cyc + 1;
-	 $display("cyc=%0d", cyc);
+         $display("cyc=%0d", cyc);
          if (cyc==10) begin
             $write("*-* All Finished *-*\n");
             $finish;
