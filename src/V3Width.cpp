@@ -1103,7 +1103,7 @@ private:
             nodep->dtypeSetLogicBool();
         }
     }
-    
+
     virtual void visit(AstRand* nodep) override {
         if (m_vup->prelim()) {
             nodep->dtypeSetSigned32();  // Says the spec
