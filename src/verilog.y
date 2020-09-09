@@ -5267,8 +5267,7 @@ pexpr<nodep>:  // IEEE: property_expr  (The name pexpr is important as regexps j
 	//UNSUP: This rule has been super-specialized to what is supported now
 	//UNSUP remove below
 		expr yP_ORMINUSGT pexpr			{ $$ = new AstLogOr($2, new AstLogNot($2, $1), $3); }
-	|	expr yP_OREQGT pexpr			{ $$ = new AstImplication($2, $1, $3); } // This handles disable iff in the past time step incorrectly
-//	|	expr yP_OREQGT pexpr			{ $$ = new AstLogOr($2, new AstLogNot($2, new AstPast($2, $1, nullptr)), $3); } // This handles disable iff in the past time step incorrectly
+	|	expr yP_OREQGT pexpr			{ $$ = new AstImplication($2, $1, $3); }
 	|	expr					{ $$ = $1; }
 	//UNSUP remove above, use below:
 	//
