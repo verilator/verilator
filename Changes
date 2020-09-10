@@ -32,6 +32,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add support for assume property. [Peter Monsson]
 
+****  Add support for |=> inside properties (#1292). [Peter Monsson]
+
 
 * Verilator 4.040 2020-08-15
 

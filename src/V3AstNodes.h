@@ -8244,6 +8244,32 @@ public:
     void isDefault(bool flag) { m_default = flag; }
 };
 
+class AstImplication : public AstNodeMath {
+    // Verilog |-> |=>
+    // Parents: math
+    // Children: expression
+public:
+    AstImplication(FileLine* fl, AstNode* lhs, AstNode* rhs)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(lhs);
+        setOp2p(rhs);
+    }
+    ASTNODE_NODE_FUNCS(Implication)
+    virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    virtual int instrCount() const override { return widthInstrs(); }
+    AstNode* lhsp() const { return op1p(); }
+    AstNode* rhsp() const { return op2p(); }
+    void lhsp(AstNode* nodep) { return setOp1p(nodep); }
+    void rhsp(AstNode* nodep) { return setOp2p(nodep); }
+    AstSenTree* sentreep() const { return VN_CAST(op4p(), SenTree); }  // op4 = clock domain
+    void sentreep(AstSenTree* sentreep) { addOp4p(sentreep); }  // op4 = clock domain
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+
 //======================================================================
 // Assertions
 

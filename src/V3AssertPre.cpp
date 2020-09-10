@@ -39,6 +39,8 @@ private:
     AstSenItem* m_senip = nullptr;  // Last sensitivity
     // Reset each always:
     AstSenItem* m_seniAlwaysp = nullptr;  // Last sensitivity in always
+    // Reset each assertion:
+    AstNode* m_disablep = nullptr;  // Last disable
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -58,7 +60,10 @@ private:
         }
         return newp;
     }
-    void clearAssertInfo() { m_senip = nullptr; }
+    void clearAssertInfo() {
+        m_senip = nullptr;
+        m_disablep = nullptr;
+    }
 
     // VISITORS
     //========== Statements
@@ -130,7 +135,25 @@ private:
         AstNode* past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstEq(fl, past,
-                          exprp->cloneTree(false));  // new AstVarRef(fl, exprp, true)
+                          exprp->cloneTree(false));
+        exprp->dtypeSetLogicBool();
+        nodep->replaceWith(exprp);
+        nodep->sentreep(newSenTree(nodep));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
+    virtual void visit(AstImplication* nodep) override {
+        if (nodep->sentreep()) return;  // Already processed
+
+        FileLine* fl = nodep->fileline();
+        AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
+        AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
+
+        if (m_disablep) { lhsp = new AstAnd(fl, new AstNot(fl, m_disablep), lhsp); }
+
+        AstNode* past = new AstPast(fl, lhsp, nullptr);
+        past->dtypeFrom(lhsp);
+        AstNode* exprp = new AstOr(fl, new AstNot(fl, past), rhsp);
         exprp->dtypeSetLogicBool();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
@@ -145,6 +168,7 @@ private:
         // Block is the new expression to evaluate
         AstNode* blockp = nodep->propp()->unlinkFrBack();
         if (nodep->disablep()) {
+            m_disablep = nodep->disablep()->cloneTree(false);
             if (VN_IS(nodep->backp(), Cover)) {
                 blockp = new AstAnd(
                     nodep->disablep()->fileline(),
