@@ -1456,6 +1456,7 @@ class AstNode {
     bool m_didWidth : 1;  // Did V3Width computation
     bool m_doingWidth : 1;  // Inside V3Width
     bool m_protect : 1;  // Protect name if protection is on
+    bool m_dynamic : 1;  // Needs dynamic scheduling
     //          // Space for more bools here
 
     // This member ordering both allows 64 bit alignment and puts associated data together
@@ -1563,6 +1564,9 @@ public:
     bool brokeExists() const;
     bool brokeExistsAbove() const;
     bool brokeExistsBelow() const;
+
+    bool dynamic() const { return m_dynamic; }
+    void dynamic(const bool flag) { m_dynamic = flag; }
 
     // CONSTRUCTORS
     virtual ~AstNode() {}

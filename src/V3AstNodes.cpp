@@ -1038,6 +1038,10 @@ void AstNode::dump(std::ostream& str) const {
             str << "  " << V3OutFormatter::quoteNameControls(name());
         }
     }
+    if (dynamic())
+        str << " [DYNAMIC-SCHED]";
+    else
+        str << " [STATIC-SCHED]";
 }
 
 void AstNodeProcedure::dump(std::ostream& str) const { this->AstNode::dump(str); }
