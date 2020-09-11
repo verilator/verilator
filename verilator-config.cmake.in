@@ -221,14 +221,8 @@ function(verilate TARGET)
                           ${${VERILATE_PREFIX}_CLASSES_SLOW}
                           ${${VERILATE_PREFIX}_SUPPORT_FAST}
                           ${${VERILATE_PREFIX}_SUPPORT_SLOW})
-  foreach(GENERATED_C_SOURCE ${GENERATED_C_SOURCES})
-    get_filename_component(C_OUTPUT_NAME_WE "${GENERATED_C_SOURCE}" NAME_WE)
-    if(C_OUTPUT_NAME_WE MATCHES ".*Trace.*")
-      continue()
-    endif()
-    list(APPEND GENERATED_H_SOURCES "${VDIR}/${C_OUTPUT_NAME_WE}.h")
-  endforeach()
-  set(GENERATED_SOURCES ${GENERATED_C_SOURCES} ${GENERATED_H_SOURCES})
+  # No need for .h's as the .cpp will get written same time
+  set(GENERATED_SOURCES ${GENERATED_C_SOURCES})
 
   add_custom_command(OUTPUT ${GENERATED_SOURCES} "${VCMAKE}"
                      COMMAND ${VERILATOR_COMMAND}
