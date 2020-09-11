@@ -623,10 +623,8 @@ static void verilate(const string& argString) {
 
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
-#ifdef VL_LEAK_CHECKS
     // Cleanup memory for valgrind leak analysis
     v3Global.clear();
-#endif
     FileLine::deleteAllRemaining();
 }
 
