@@ -1114,6 +1114,7 @@ void AstClass::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isExtended()) str << " [EXT]";
     if (isVirtual()) str << " [VIRT]";
+    if (isPredefined()) str << " [PRE]";
 }
 AstClass* AstClassExtends::classp() const {
     AstClassRefDType* refp = VN_CAST(dtypep(), ClassRefDType);

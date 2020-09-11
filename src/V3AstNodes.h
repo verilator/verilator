@@ -306,6 +306,7 @@ class AstClass : public AstNodeModule {
     AstClassPackage* m_packagep = nullptr;  // Class package this is under
     bool m_virtual = false;  // Virtual class
     bool m_extended = false;  // Is extension or extended by other classes
+    bool m_predefined = false;  // Is a predefined class
     void insertCache(AstNode* nodep);
 
 public:
@@ -341,6 +342,8 @@ public:
     void isExtended(bool flag) { m_extended = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
+    bool isPredefined() const { return m_predefined; }
+    void isPredefined(bool flag) { m_predefined = flag; }
 };
 
 class AstClassExtends : public AstNode {
