@@ -1,3 +1,9 @@
+// DESCRIPTION: Verilator: Test for issue #2267
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2020 by James Pallister.
+// SPDX-License-Identifier: CC0-1.0
+
 module mod_a;
    mod_inner u_inner;
    mod_a_mon u_a_mon;
