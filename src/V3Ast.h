@@ -1449,7 +1449,6 @@ class AstNode {
         if (nodep) nodep->m_backp = this;
     }
 
-    void init();  // initialize value of AstNode
 private:
     AstNode* cloneTreeIter();
     AstNode* cloneTreeIterList();
@@ -1469,15 +1468,7 @@ public:
 
 protected:
     // CONSTRUCTORS
-    AstNode(AstType t)
-        : m_type{t} {
-        init();
-    }
-    AstNode(AstType t, FileLine* fl)
-        : m_type{t} {
-        init();
-        m_fileline = fl;
-    }
+    AstNode(AstType t, FileLine* fl);
     virtual AstNode* clone() = 0;  // Generally, cloneTree is what you want instead
     virtual void cloneRelink() {}
     void cloneRelinkTree();
