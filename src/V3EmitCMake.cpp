@@ -232,7 +232,7 @@ class CMakeEmitter {
                 const string vFile = hblockp->vFileIfNecessary();
                 if (!vFile.empty()) *of << vFile << " ";
                 const V3StringList& vFiles = v3Global.opt.vFiles();
-                for (const string& i : vFiles) *of << V3Os::filenameRealPath(i);
+                for (const string& i : vFiles) *of << V3Os::filenameRealPath(i) << " ";
                 *of << " VERILATOR_ARGS ";
                 *of << "-f " << deslash(hblockp->commandArgsFileName(true))
                     << " -CFLAGS -fPIC"  // hierarchical block will be static, but may be linked
