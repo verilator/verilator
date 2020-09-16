@@ -87,8 +87,10 @@ const char* AstNodeUOrStructDType::broken() const {
     return nullptr;
 }
 
+void AstNodeStmt::dump(std::ostream& str) const { this->AstNode::dump(str); }
+
 void AstNodeCCall::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     if (funcp()) {
         str << " " << funcp()->name() << " => ";
         funcp()->dump(str);
@@ -1119,11 +1121,11 @@ void AstClassRefDType::dumpSmall(std::ostream& str) const {
     str << "class:" << name();
 }
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     if (immediate()) str << " [IMMEDIATE]";
 }
 void AstDisplay::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     // str<<" "<<displayType().ascii();
 }
 void AstEnumItemRef::dump(std::ostream& str) const {
@@ -1167,7 +1169,7 @@ void AstInitArray::dump(std::ostream& str) const {
     }
 }
 void AstJumpGo::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     str << " -> ";
     if (labelp()) {
         labelp()->dump(str);
@@ -1176,7 +1178,7 @@ void AstJumpGo::dump(std::ostream& str) const {
     }
 }
 void AstJumpLabel::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     str << " -> ";
     if (blockp()) {
         blockp()->dump(str);
@@ -1194,7 +1196,7 @@ void AstMemberSel::dump(std::ostream& str) const {
     }
 }
 void AstMethodCall::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     if (isStatement()) str << " [STMT]";
     str << " -> ";
     if (taskp()) {
@@ -1235,7 +1237,7 @@ void AstPin::dump(std::ostream& str) const {
     if (svImplicit()) str << " [.SV]";
 }
 void AstPrintTimeScale::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     str << " " << timeunit();
 }
 void AstTime::dump(std::ostream& str) const {
@@ -1522,7 +1524,7 @@ void AstActive::dump(std::ostream& str) const {
     }
 }
 void AstNodeFTaskRef::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
     str << " -> ";
     if (dotted() != "") { str << ".=" << dotted() << " "; }
@@ -1554,7 +1556,7 @@ void AstBegin::dump(std::ostream& str) const {
     if (implied()) str << " [IMPLIED]";
 }
 void AstCoverDecl::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     if (!page().empty()) str << " page=" << page();
     if (!linescov().empty()) str << " lc=" << linescov();
     if (this->dataDeclNullp()) {
@@ -1565,7 +1567,7 @@ void AstCoverDecl::dump(std::ostream& str) const {
     }
 }
 void AstCoverInc::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     str << " -> ";
     if (declp()) {
         declp()->dump(str);
@@ -1578,7 +1580,7 @@ void AstFork::dump(std::ostream& str) const {
     if (!joinType().join()) str << " [" << joinType() << "]";
 }
 void AstTraceInc::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     str << " -> ";
     if (declp()) {
         declp()->dump(str);

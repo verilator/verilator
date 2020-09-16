@@ -2176,8 +2176,11 @@ public:
     // METHODS
     bool isStatement() const { return m_statement; }  // Really a statement
     void statement(bool flag) { m_statement = flag; }
-    virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
-    virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
+    virtual void addNextStmt(AstNode* newp,
+                             AstNode* belowp) override;  // Stop statement searchback here
+    virtual void addBeforeStmt(AstNode* newp,
+                               AstNode* belowp) override;  // Stop statement searchback here
+    virtual void dump(std::ostream& str = std::cout) const override;
 };
 
 class AstNodeAssign : public AstNodeStmt {
