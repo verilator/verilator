@@ -1587,6 +1587,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
         string oline;
         // cppcheck-suppress StlMissingComparison
         char lastch = ' ';
+        bool space_begin = true;  // At beginning or leading spaces only
         for (string::const_iterator pos = line.begin(); pos != line.end(); lastch = *pos++) {
             if (inCmt) {
                 if (*pos == '*' && *(pos + 1) == '/') {
@@ -1596,11 +1597,15 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
             } else if (*pos == '/' && *(pos + 1) == '/'
                        && (pos == line.begin() || isspace(lastch))) {  // But allow /file//path
                 break;  // Ignore to EOL
+            } else if (*pos == '#' && space_begin) {  // Only # at [spaced] begin of line
+                break;  // Ignore to EOL
             } else if (*pos == '/' && *(pos + 1) == '*') {
                 inCmt = true;
+                space_begin = false;
                 // cppcheck-suppress StlMissingComparison
                 ++pos;
             } else {
+                if (!isspace(*pos)) space_begin = false;
                 oline += *pos;
             }
         }
