@@ -1907,6 +1907,7 @@ public:
         : AstNode{t, fl} {}
     ASTNODE_BASE_FUNCS(NodeMath)
     // METHODS
+    virtual void dump(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     // For documentation on emitC format see EmitCStmts::emitOpName

@@ -1061,6 +1061,9 @@ string AstBasicDType::prettyDTypeName() const {
     }
     return os.str();
 }
+
+void AstNodeMath::dump(std::ostream& str) const { this->AstNode::dump(str); }
+
 void AstCCast::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " sz" << size();
@@ -1131,7 +1134,7 @@ void AstDisplay::dump(std::ostream& str) const {
     // str<<" "<<displayType().ascii();
 }
 void AstEnumItemRef::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeMath::dump(str);
     str << " -> ";
     if (itemp()) {
         itemp()->dump(str);
@@ -1189,7 +1192,7 @@ void AstJumpLabel::dump(std::ostream& str) const {
     }
 }
 void AstMemberSel::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeMath::dump(str);
     str << " -> ";
     if (varp()) {
         varp()->dump(str);
