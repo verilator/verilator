@@ -1439,8 +1439,9 @@ void AstVarScope::dump(std::ostream& str) const {
         str << " ->UNLINKED";
     }
 }
+void AstNodeVarRef::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
 void AstVarXRef::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeVarRef::dump(str);
     if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
     if (access().isWrite()) {
         str << " [LV] => ";
@@ -1458,7 +1459,7 @@ void AstVarXRef::dump(std::ostream& str) const {
     }
 }
 void AstVarRef::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeVarRef::dump(str);
     if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
     if (access().isWrite()) {
         str << " [LV] => ";

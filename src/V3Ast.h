@@ -2304,6 +2304,7 @@ public:
         this->varp(varp);
     }
     ASTNODE_BASE_FUNCS(NodeVarRef)
+    virtual void dump(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual const char* broken() const override;
     virtual int instrCount() const override { return widthInstrs(); }
