@@ -2160,6 +2160,7 @@ public:
     }
     ASTNODE_BASE_FUNCS(NodeProcedure)
     // METHODS
+    virtual void dump(std::ostream& str) const override;
     AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }

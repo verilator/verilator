@@ -1037,8 +1037,10 @@ void AstNode::dump(std::ostream& str) const {
     }
 }
 
+void AstNodeProcedure::dump(std::ostream& str) const { this->AstNode::dump(str); }
+
 void AstAlways::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeProcedure::dump(str);
     if (keyword() != VAlwaysKwd::ALWAYS) str << " [" << keyword().ascii() << "]";
 }
 
