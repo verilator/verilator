@@ -82,7 +82,7 @@ private:
         FileLine* fl = nodep->fileline();
         // Need to know the existence of clk before createSvFile()
         m_hasClk = checkIfClockExists(nodep);
-        createSvFile(fl);
+        createSvFile(fl, nodep);
         createCppFile(fl);
 
         iterateChildren(nodep);
@@ -124,7 +124,7 @@ private:
         addComment(txtp, fl, "Evaluates the secret module's final process");
     }
 
-    void createSvFile(FileLine* fl) {
+    void createSvFile(FileLine* fl, AstNodeModule* modp) {
         // Comments
         AstTextBlock* txtp = new AstTextBlock(fl);
         addComment(txtp, fl, "Wrapper module for DPI protected library");
@@ -135,18 +135,28 @@ private:
                    "See instructions in your simulator for how"
                    " to use DPI libraries\n");
 
+        bool timescaleShown = false;
+        if (v3Global.opt.hierChild() && !modp->timeunit().isNone()) {
+            // Emit timescale for hierarhical verilation
+            timescaleShown = true;
+            txtp->addText(fl, string("`timescale ") + modp->timeunit().ascii() + "/"
+                                  + v3Global.rootp()->timeprecision().ascii() + "\n\n");
+        }
         // Module declaration
         m_modPortsp = new AstTextBlock(fl, "module " + m_libName + " (\n", false, true);
         txtp->addNodep(m_modPortsp);
         txtp->addText(fl, ");\n\n");
 
         // Timescale
-        addComment(txtp, fl,
-                   "Precision of submodule"
-                   " (commented out to avoid requiring timescale on all modules)");
-        addComment(txtp, fl, string("timeunit ") + v3Global.rootp()->timeunit().ascii() + ";");
-        addComment(txtp, fl,
-                   string("timeprecision ") + v3Global.rootp()->timeprecision().ascii() + ";\n");
+        if (!timescaleShown) {
+            addComment(txtp, fl,
+                       "Precision of submodule"
+                       " (commented out to avoid requiring timescale on all modules)");
+            addComment(txtp, fl, string("timeunit ") + v3Global.rootp()->timeunit().ascii() + ";");
+            addComment(txtp, fl,
+                       string("timeprecision ") + v3Global.rootp()->timeprecision().ascii()
+                           + ";\n");
+        }
 
         // DPI declarations
         hashComment(txtp, fl);
