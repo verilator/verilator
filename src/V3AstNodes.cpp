@@ -1362,15 +1362,16 @@ void AstPackageImport::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " -> " << packagep();
 }
+void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
 void AstSel::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeTriop::dump(str);
     if (declRange().ranged()) {
         str << " decl" << declRange() << "]";
         if (declElWidth() != 1) str << "/" << declElWidth();
     }
 }
 void AstSliceSel::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeTriop::dump(str);
     if (declRange().ranged()) str << " decl" << declRange();
 }
 void AstMTaskBody::dump(std::ostream& str) const {

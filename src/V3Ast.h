@@ -2008,6 +2008,7 @@ public:
     void rhsp(AstNode* nodep) { return setOp2p(nodep); }
     void thsp(AstNode* nodep) { return setOp3p(nodep); }
     // METHODS
+    virtual void dump(std::ostream& str) const override;
     // Set out to evaluation of a AstConst'ed
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths)
