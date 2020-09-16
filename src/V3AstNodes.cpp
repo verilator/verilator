@@ -1610,10 +1610,11 @@ void AstNodeText::dump(std::ostream& str) const {
     str << " \"" << out << "\"";
 }
 
-void AstVFile::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstNodeFile::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstVFile::dump(std::ostream& str) const { this->AstNodeFile::dump(str); }
 
 void AstCFile::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeFile::dump(str);
     if (source()) str << " [SRC]";
     if (slow()) str << " [SLOW]";
 }
