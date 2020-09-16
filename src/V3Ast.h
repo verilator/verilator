@@ -2889,6 +2889,7 @@ public:
     AstNodeRange(AstType t, FileLine* fl)
         : AstNode{t, fl} {}
     ASTNODE_BASE_FUNCS(NodeRange)
+    virtual void dump(std::ostream& str) const override;
 };
 
 //######################################################################

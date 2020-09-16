@@ -1264,8 +1264,9 @@ void AstTypedef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (attrPublic()) str << " [PUBLIC]";
 }
+void AstNodeRange::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstRange::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeRange::dump(str);
     if (littleEndian()) str << " [LITTLE]";
 }
 void AstRefDType::dump(std::ostream& str) const {
