@@ -1063,9 +1063,10 @@ string AstBasicDType::prettyDTypeName() const {
 }
 
 void AstNodeMath::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstNodeUniop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
 
 void AstCCast::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeUniop::dump(str);
     str << " sz" << size();
 }
 void AstCell::dump(std::ostream& str) const {
@@ -1256,7 +1257,7 @@ void AstTimeD::dump(std::ostream& str) const {
     str << " " << timeunit();
 }
 void AstTimeImport::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeUniop::dump(str);
     str << " " << timeunit();
 }
 void AstTypedef::dump(std::ostream& str) const {

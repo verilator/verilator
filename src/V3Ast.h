@@ -1945,6 +1945,7 @@ public:
     AstNode* lhsp() const { return op1p(); }
     void lhsp(AstNode* nodep) { return setOp1p(nodep); }
     // METHODS
+    virtual void dump(std::ostream& str) const override;
     // Set out to evaluation of a AstConst'ed lhs
     virtual void numberOperate(V3Number& out, const V3Number& lhs) = 0;
     virtual bool cleanLhs() const = 0;
