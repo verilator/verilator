@@ -1245,12 +1245,14 @@ void AstPrintTimeScale::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     str << " " << timeunit();
 }
+
+void AstNodeTermop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
 void AstTime::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeTermop::dump(str);
     str << " " << timeunit();
 }
 void AstTimeD::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeTermop::dump(str);
     str << " " << timeunit();
 }
 void AstTimeImport::dump(std::ostream& str) const {

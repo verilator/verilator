@@ -1930,6 +1930,7 @@ public:
     // See checkTreeIter also that asserts no children
     // cppcheck-suppress functionConst
     void iterateChildren(AstNVisitor& v) {}
+    virtual void dump(std::ostream& str) const override;
 };
 
 class AstNodeUniop : public AstNodeMath {
