@@ -1907,6 +1907,7 @@ public:
         : AstNode{t, fl} {}
     ASTNODE_BASE_FUNCS(NodeMath)
     // METHODS
+    virtual void dump(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     // For documentation on emitC format see EmitCStmts::emitOpName
@@ -1929,6 +1930,7 @@ public:
     // See checkTreeIter also that asserts no children
     // cppcheck-suppress functionConst
     void iterateChildren(AstNVisitor& v) {}
+    virtual void dump(std::ostream& str) const override;
 };
 
 class AstNodeUniop : public AstNodeMath {
@@ -1943,6 +1945,7 @@ public:
     AstNode* lhsp() const { return op1p(); }
     void lhsp(AstNode* nodep) { return setOp1p(nodep); }
     // METHODS
+    virtual void dump(std::ostream& str) const override;
     // Set out to evaluation of a AstConst'ed lhs
     virtual void numberOperate(V3Number& out, const V3Number& lhs) = 0;
     virtual bool cleanLhs() const = 0;
@@ -2005,6 +2008,7 @@ public:
     void rhsp(AstNode* nodep) { return setOp2p(nodep); }
     void thsp(AstNode* nodep) { return setOp3p(nodep); }
     // METHODS
+    virtual void dump(std::ostream& str) const override;
     // Set out to evaluation of a AstConst'ed
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths)
@@ -2160,6 +2164,7 @@ public:
     }
     ASTNODE_BASE_FUNCS(NodeProcedure)
     // METHODS
+    virtual void dump(std::ostream& str) const override;
     AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
@@ -2176,8 +2181,11 @@ public:
     // METHODS
     bool isStatement() const { return m_statement; }  // Really a statement
     void statement(bool flag) { m_statement = flag; }
-    virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
-    virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
+    virtual void addNextStmt(AstNode* newp,
+                             AstNode* belowp) override;  // Stop statement searchback here
+    virtual void addBeforeStmt(AstNode* newp,
+                               AstNode* belowp) override;  // Stop statement searchback here
+    virtual void dump(std::ostream& str = std::cout) const override;
 };
 
 class AstNodeAssign : public AstNodeStmt {
@@ -2296,6 +2304,7 @@ public:
         this->varp(varp);
     }
     ASTNODE_BASE_FUNCS(NodeVarRef)
+    virtual void dump(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual const char* broken() const override;
     virtual int instrCount() const override { return widthInstrs(); }
@@ -2880,6 +2889,7 @@ public:
     AstNodeRange(AstType t, FileLine* fl)
         : AstNode{t, fl} {}
     ASTNODE_BASE_FUNCS(NodeRange)
+    virtual void dump(std::ostream& str) const override;
 };
 
 //######################################################################

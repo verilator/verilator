@@ -8496,6 +8496,7 @@ public:
         m_name = name;
     }
     ASTNODE_BASE_FUNCS(NodeFile)
+    virtual void dump(std::ostream& str) const override;
     virtual string name() const override { return m_name; }
     virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode* samep) const override { return true; }
