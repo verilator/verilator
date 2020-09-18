@@ -93,7 +93,7 @@ static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of
     string topModuleFile;
     if (hblockp) topModuleFile = hblockp->vFileIfNecessary();
     if (!forCMake) {
-        if (!topModuleFile.empty()) *of << topModuleFile << " ";
+        if (!topModuleFile.empty()) *of << topModuleFile << "\n";
         const V3StringList& vFiles = v3Global.opt.vFiles();
         for (const string& i : vFiles) *of << i << "\n";
     }
