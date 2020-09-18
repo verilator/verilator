@@ -229,6 +229,8 @@ class CMakeEmitter {
                     *of << deslash(" ${CMAKE_CURRENT_BINARY_DIR}/" + (*child)->hierWrapper(true));
                 }
                 *of << " ";
+                const string vFile = hblockp->vFileIfNecessary();
+                if (!vFile.empty()) *of << vFile << " ";
                 const V3StringList& vFiles = v3Global.opt.vFiles();
                 for (const string& i : vFiles) *of << V3Os::filenameRealPath(i);
                 *of << " VERILATOR_ARGS ";
