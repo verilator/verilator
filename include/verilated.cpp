@@ -913,10 +913,11 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         output += "0123456789abcdef"[charval];
                     }
                     break;
-                default:
+                default: {  // LCOV_EXCL_START
                     std::string msg = std::string("Unknown _vl_vsformat code: ") + pos[0];
                     VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
                     break;
+                }  // LCOV_EXCL_STOP
                 }  // switch
             }
             }  // switch
@@ -1182,10 +1183,12 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     }
                     break;
                 }
-                default:
+                default: {  // LCOV_EXCL_START
                     std::string msg = std::string("Unknown _vl_vsscanf code: ") + pos[0];
                     VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
                     break;
+                }  // LCOV_EXCL_STOP
+
                 }  // switch
 
                 if (!inIgnore) ++got;
@@ -2596,7 +2599,7 @@ vluint32_t VerilatedVarProps::entSize() const {
     case VLVT_UINT32: size = sizeof(IData); break;
     case VLVT_UINT64: size = sizeof(QData); break;
     case VLVT_WDATA: size = VL_WORDS_I(packed().elements()) * sizeof(IData); break;
-    default: size = 0; break;
+    default: size = 0; break;  // LCOV_EXCL_LINE
     }
     return size;
 }

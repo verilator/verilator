@@ -37,6 +37,7 @@ module t (/*AUTOARG*/
    reg [15:0]    pubflat_r;
    wire [15:0]    pubflat_w = pubflat;
    int            fd;
+   int            i;
 
    task t;
       $display("stmt");
@@ -85,7 +86,7 @@ module t (/*AUTOARG*/
       fo = cyc;
       sub.inc(fo, sum);
       sum = sub.f(sum);
-      $display("sum = %d", sum);
+      $display("[%0t] sum = %d", $time, sum);
 
       $c(";");
       $display("%d", $c("0"));
@@ -136,6 +137,8 @@ module t (/*AUTOARG*/
       str = $sformatf("cyc=%d", cyc);
       $display("str = %s", str);
       $display("[%t] [%t]", $time, $realtime);
+      $sscanf("foo=5", "foo=%d", i);
+      if (i != 5) $stop;
    end
 endmodule
 

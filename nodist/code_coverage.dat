@@ -46,6 +46,7 @@ remove_gcda_regexp(qr!test_regress/.*/(Vt_|Vtop_).*\.gcda!);
 exclude_line_regexp(qr/(\bv3fatalSrc\b
                     |\bfatalSrc\b
                     |\bVL_UNCOVERABLE\b
+                    |\bVL_UNREACHABLE\b
                     |\bVL_FATAL
                     |\bUASSERT
                     |\bNUM_ASSERT

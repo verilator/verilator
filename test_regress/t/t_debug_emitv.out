@@ -5,6 +5,7 @@ module Vt_debug_emitv;
     logic logic [15:0]  t.pubflat;
     logic logic [15:0]  t.pubflat_r;
     int signed int [31:0]  t.fd;
+    int signed int [31:0]  t.i;
     int signed int [31:0]  t.cyc;
     int signed int [31:0]  t.fo;
     int signed int [31:0]  t.sum;
@@ -76,7 +77,7 @@ module Vt_debug_emitv;
             end
         end
         t.sum = __Vfunc_t.sub.f__3__Vfuncout;
-        $display("sum = %~", t.sum);
+        $display("[%0t] sum = %~", $timet.sum, t.sum);
         $c(;);
         $display("%d", $c(0));
         $fopen(72'h2f6465762f6e756c6c);
@@ -165,6 +166,11 @@ module Vt_debug_emitv;
         ;
         $display("str = %@", t.str);
         $display("[%t] [%^]", $time$realtime, $realtime);
+        $sscanf(40'h666f6f3d35, "foo=%d", t.i);
+        ;
+        if ((32'sh5 != t.i)) begin
+            $stop;
+        end
     end
     /*verilator public_flat_rw @(posedge clk)@(negedge 
                                                clk) t.pubflat*/
