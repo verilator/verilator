@@ -218,8 +218,8 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
              child != m_children.end(); ++child) {
             *of << v3Global.opt.makeDir() << "/" << (*child)->hierWrapper(true) << "\n";
         }
+        *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     }
-    *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     V3HierWriteCommonInputs(this, of.get(), forCMake);
     const V3StringList& commandOpts = commandArgs(false);
     for (const string& opt : commandOpts) *of << opt << "\n";

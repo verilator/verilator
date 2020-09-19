@@ -204,15 +204,14 @@ class CMakeEmitter {
             *of << "# Verilate hierarchical blocks\n";
             // Sorted hierarchical blocks in order of leaf-first.
             const V3HierBlockPlan::HierVector& hierBlocks = planp->hierBlocksSorted();
-            const string topTarget = v3Global.opt.protectLib().empty() ? v3Global.opt.prefix()
-                                                                       : v3Global.opt.protectLib();
+            *of << "get_target_property(TOP_TARGET_NAME \"${TARGET}\" NAME)\n";
             for (V3HierBlockPlan::HierVector::const_iterator it = hierBlocks.begin();
                  it != hierBlocks.end(); ++it) {
                 const V3HierBlock* hblockp = *it;
                 const V3HierBlock::HierBlockSet& children = hblockp->children();
                 const string prefix = hblockp->hierPrefix();
                 *of << "add_library(" << prefix << " STATIC)\n";
-                *of << "target_link_libraries(" << topTarget << " PRIVATE " << prefix << ")\n";
+                *of << "target_link_libraries(${TOP_TARGET_NAME}  PRIVATE " << prefix << ")\n";
                 if (!children.empty()) {
                     *of << "target_link_libraries(" << prefix << " INTERFACE";
                     for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
@@ -223,16 +222,17 @@ class CMakeEmitter {
                 }
                 *of << "verilate(" << prefix << " PREFIX " << prefix << " TOP_MODULE "
                     << hblockp->modp()->name() << " DIRECTORY "
-                    << deslash("${CMAKE_CURRENT_BINARY_DIR}/" + prefix) << " SOURCES ";
+                    << deslash(v3Global.opt.makeDir() + "/" + prefix) << " SOURCES ";
                 for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
                      child != children.end(); ++child) {
-                    *of << deslash(" ${CMAKE_CURRENT_BINARY_DIR}/" + (*child)->hierWrapper(true));
+                    *of << " "
+                        << deslash(v3Global.opt.makeDir() + "/" + (*child)->hierWrapper(true));
                 }
                 *of << " ";
                 const string vFile = hblockp->vFileIfNecessary();
                 if (!vFile.empty()) *of << vFile << " ";
                 const V3StringList& vFiles = v3Global.opt.vFiles();
-                for (const string& i : vFiles) *of << V3Os::filenameRealPath(i);
+                for (const string& i : vFiles) *of << V3Os::filenameRealPath(i) << " ";
                 *of << " VERILATOR_ARGS ";
                 *of << "-f " << deslash(hblockp->commandArgsFileName(true))
                     << " -CFLAGS -fPIC"  // hierarchical block will be static, but may be linked
@@ -240,11 +240,12 @@ class CMakeEmitter {
                     << ")\n";
             }
             *of << "\n# Verilate the top module that refers protect-lib wrappers of above\n";
-            *of << "verilate(" << topTarget << " PREFIX " << v3Global.opt.prefix()
-                << " TOP_MODULE " << v3Global.rootp()->topModulep()->name() << " DIRECTORY "
-                << deslash("${CMAKE_CURRENT_BINARY_DIR}/" + topTarget + ".dir") << " SOURCES ";
+            *of << "verilate(${TOP_TARGET_NAME} PREFIX " << v3Global.opt.prefix() << " TOP_MODULE "
+                << v3Global.rootp()->topModulep()->name() << " DIRECTORY "
+                << deslash(v3Global.opt.makeDir()) << " SOURCES ";
             for (V3HierBlockPlan::const_iterator it = planp->begin(); it != planp->end(); ++it) {
-                *of << deslash(" ${CMAKE_CURRENT_BINARY_DIR}/" + it->second->hierWrapper(true));
+                *of << " "
+                    << deslash(v3Global.opt.makeDir() + "/" + it->second->hierWrapper(true));
             }
             *of << " " << deslash(cmake_list(v3Global.opt.vFiles()));
             *of << " VERILATOR_ARGS ";
