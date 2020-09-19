@@ -59,9 +59,13 @@ module t;
 
       i = 12;
       $fwrite(file, "d: "); $fwrite(file, i); $fwrite(file, " "); $fdisplay(file, i);
+      $fdisplay(file);
       $fwriteh(file, "h: "); $fwriteh(file, i); $fwriteh(file, " "); $fdisplayh(file, i);
+      $fdisplayh(file);
       $fwriteo(file, "o: "); $fwriteo(file, i); $fwriteo(file, " "); $fdisplayo(file, i);
+      $fdisplayo(file);
       $fwriteb(file, "b: "); $fwriteb(file, i); $fwriteb(file, " "); $fdisplayb(file, i);
+      $fdisplayb(file);
 
       $fflush(file);
       $fflush();

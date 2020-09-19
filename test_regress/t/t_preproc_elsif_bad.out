@@ -1,0 +1,16 @@
+%Error: t/t_preproc_elsif_bad.v:9:8: `elsif with no matching `if
+    9 | `elsif A
+      |        ^
+%Error: t/t_preproc_elsif_bad.v:10:1: `endif with no matching `if
+   10 | `endif
+      | ^~~~~~
+%Error: t/t_preproc_elsif_bad.v:12:1: `else with no matching `if
+   12 | `else
+      | ^~~~~
+%Error: t/t_preproc_elsif_bad.v:13:1: `endif with no matching `if
+   13 | `endif
+      | ^~~~~~
+%Error: t/t_preproc_elsif_bad.v:15:8: Expecting `error string. Found: INCLUDE
+   15 | `error `include
+      |        ^~~~~~~~
+%Error: Exiting due to
