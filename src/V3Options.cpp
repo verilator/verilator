@@ -504,7 +504,7 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
 int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) const {
     if (opt == "Mdir" || opt == "clk" || opt == "f" || opt == "j" || opt == "l2-name"
         || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib" || opt == "protect-key"
-        || opt == "top-module" || opt == "v") {
+        || opt == "threads" || opt == "top-module" || opt == "v") {
         return 2;
     }
     if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
