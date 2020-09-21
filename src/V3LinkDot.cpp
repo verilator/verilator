@@ -1128,6 +1128,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                         AstVar* newp
                             = new AstVar(nodep->fileline(), AstVarType(AstVarType::GPARAM),
                                          nodep->name(), nodep);
+                        newp->combineType(nodep);
                         string svalue = v3Global.opt.parameter(nodep->name());
                         if (AstNode* valuep
                             = AstConst::parseParamLiteral(nodep->fileline(), svalue)) {
