@@ -58,7 +58,7 @@ private:
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (AstVarScope* newvscp = reinterpret_cast<AstVarScope*>(vscp->user4p())) {
             UINFO(9, "  Replace " << nodep << " to " << newvscp << endl);
-            AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->lvalue());
+            AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->access());
             nodep->replaceWith(newrefp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
@@ -284,7 +284,7 @@ private:
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
 
         LifeLocation loc(m_execMTaskp, ++m_sequence);
-        if (nodep->lvalue()) {
+        if (nodep->access().isWrite()) {
             m_writes[vscp].insert(loc);
         } else {
             m_reads[vscp].insert(loc);

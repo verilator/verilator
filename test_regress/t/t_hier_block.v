@@ -9,6 +9,10 @@
 `define HIER_BLOCK /*verilator hier_block*/
 `endif
 
+`ifndef PROTLIB_TOP
+`timescale 1ns/1ps
+`endif
+
 interface byte_ifs(input clk);
    logic [7:0] data;
    modport sender(input clk, output data);

@@ -91,8 +91,9 @@ module Test1 #(
    bufif1 bufb1  (drv_1, drv_b[1], ~drv_e[1]);
    bufif1 bufa2  (drv_2, drv_a[2],  drv_e[2]);
    bufif1 bufb2  (drv_2, drv_b[2], ~drv_e[2]);
-   bufif1 bufa3  (drv_3, drv_a[3],  drv_e[3]);
-   bufif1 bufb3  (drv_3, drv_b[3], ~drv_e[3]);
+   bufif1
+     bufa3  (drv_3, drv_a[3],  drv_e[3]),
+     bufb3  (drv_3, drv_b[3], ~drv_e[3]);
    assign drv = {drv_3,drv_2,drv_1,drv_0};
 
 endmodule

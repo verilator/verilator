@@ -154,7 +154,7 @@ public:
         // Called by TableSimulateVisitor on each unique varref encountered
         UINFO(9, "   SimVARREF " << nodep << endl);
         AstVarScope* vscp = nodep->varScopep();
-        if (nodep->lvalue()) {
+        if (nodep->access().isWrite()) {
             m_outWidth += nodep->varp()->dtypeSkipRefp()->widthTotalBytes();
             m_outVarps.push_back(vscp);
         } else {
@@ -255,7 +255,7 @@ private:
         // First var in inVars becomes the LSB of the concat
         AstNode* concatp = nullptr;
         for (AstVarScope* invscp : m_inVarps) {
-            AstVarRef* refp = new AstVarRef(nodep->fileline(), invscp, false);
+            AstVarRef* refp = new AstVarRef(nodep->fileline(), invscp, VAccess::READ);
             if (concatp) {
                 concatp = new AstConcat(nodep->fileline(), refp, concatp);
             } else {
@@ -263,8 +263,9 @@ private:
             }
         }
 
-        AstNode* stmtsp = new AstAssign(
-            nodep->fileline(), new AstVarRef(nodep->fileline(), indexVscp, true), concatp);
+        AstNode* stmtsp
+            = new AstAssign(nodep->fileline(),
+                            new AstVarRef(nodep->fileline(), indexVscp, VAccess::WRITE), concatp);
         return stmtsp;
     }
 
@@ -372,10 +373,11 @@ private:
         // Set each output from array ref into our table
         int outnum = 0;
         for (AstVarScope* outvscp : m_outVarps) {
-            AstNode* alhsp = new AstVarRef(nodep->fileline(), outvscp, true);
+            AstNode* alhsp = new AstVarRef(nodep->fileline(), outvscp, VAccess::WRITE);
             AstNode* arhsp = new AstArraySel(
-                nodep->fileline(), new AstVarRef(nodep->fileline(), m_tableVarps[outnum], false),
-                new AstVarRef(nodep->fileline(), indexVscp, false));
+                nodep->fileline(),
+                new AstVarRef(nodep->fileline(), m_tableVarps[outnum], VAccess::READ),
+                new AstVarRef(nodep->fileline(), indexVscp, VAccess::READ));
             AstNode* outasnp
                 = (m_assignDly
                        ? static_cast<AstNode*>(new AstAssignDly(nodep->fileline(), alhsp, arhsp))
@@ -389,9 +391,10 @@ private:
                 outsetp = new AstIf(
                     nodep->fileline(),
                     new AstAnd(nodep->fileline(),
-                               new AstArraySel(nodep->fileline(),
-                                               new AstVarRef(nodep->fileline(), chgVscp, false),
-                                               new AstVarRef(nodep->fileline(), indexVscp, false)),
+                               new AstArraySel(
+                                   nodep->fileline(),
+                                   new AstVarRef(nodep->fileline(), chgVscp, VAccess::READ),
+                                   new AstVarRef(nodep->fileline(), indexVscp, VAccess::READ)),
                                new AstConst(nodep->fileline(), outputChgMask)),
                     outsetp, nullptr);
             }

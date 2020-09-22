@@ -35,6 +35,12 @@ AstNetlist* V3Global::makeNetlist() {
     return newp;
 }
 
+void V3Global::clear() {
+#ifdef VL_LEAK_CHECK
+    if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = nullptr);
+#endif
+}
+
 void V3Global::shutdown() {
     VL_DO_CLEAR(delete m_hierPlanp, m_hierPlanp = nullptr);  // delete nullptr is safe
 }

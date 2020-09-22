@@ -184,8 +184,9 @@ private:
                     for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
                         if (AstVar* portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
-                                AstNode* newp
-                                    = new AstVarRef(portp->fileline(), portp, portp->isWritable());
+                                AstNode* newp = new AstVarRef(portp->fileline(), portp,
+                                                              portp->isWritable() ? VAccess::WRITE
+                                                                                  : VAccess::READ);
                                 argsp = argsp ? argsp->addNextNull(newp) : newp;
                             }
                         }

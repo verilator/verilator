@@ -106,6 +106,7 @@ static void reportStatsIfEnabled() {
         V3Stats::statsFinalAll(v3Global.rootp());
         V3Stats::statsReport();
     }
+    if (v3Global.opt.debugEmitV()) V3EmitV::debugEmitV("final");
 }
 
 static void process() {
@@ -363,6 +364,7 @@ static void process() {
         V3ActiveTop::activeTopAll(v3Global.rootp());
 
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "PreOrder");
+        if (v3Global.opt.debugEmitV()) V3EmitV::debugEmitV("preorder");
 
         // Order the code; form SBLOCKs and BLOCKCALLs
         V3Order::orderAll(v3Global.rootp());
@@ -621,10 +623,8 @@ static void verilate(const string& argString) {
 
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
-#ifdef VL_LEAK_CHECKS
     // Cleanup memory for valgrind leak analysis
     v3Global.clear();
-#endif
     FileLine::deleteAllRemaining();
 }
 

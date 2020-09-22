@@ -139,7 +139,7 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
     if (VL_UNLIKELY(!fp)) {
         VL_FATAL_MT(filenamep, 0, "", "+prof+threads+file file not writable");
         // cppcheck-suppress resourceLeak   // bug, doesn't realize fp is nullptr
-        return;
+        return;  // LCOV_EXCL_LINE
     }
 
     // TODO Perhaps merge with verilated_coverage output format, so can

@@ -661,7 +661,7 @@ private:
             // We use weight of one for normal edges,
             // Weight of CDC_WEIGHT_ASYNC to indicate feeds async (for reporting)
             // When simplify we'll take the MAX weight
-            if (nodep->lvalue()) {
+            if (nodep->access().isWrite()) {
                 new V3GraphEdge(&m_graph, m_logicVertexp, varvertexp, 1);
                 if (m_inDly) {
                     varvertexp->fromFlop(true);

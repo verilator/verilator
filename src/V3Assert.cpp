@@ -317,12 +317,12 @@ private:
                                          "_Vpast_" + cvtToStr(m_modPastNum++) + "_" + cvtToStr(i),
                                          inp->dtypep());
             m_modp->addStmtp(outvarp);
-            AstNode* assp = new AstAssignDly(nodep->fileline(),
-                                             new AstVarRef(nodep->fileline(), outvarp, true), inp);
+            AstNode* assp = new AstAssignDly(
+                nodep->fileline(), new AstVarRef(nodep->fileline(), outvarp, VAccess::WRITE), inp);
             alwaysp->addStmtp(assp);
             // if (debug() >= 9) assp->dumpTree(cout, "-ass: ");
             invarp = outvarp;
-            inp = new AstVarRef(nodep->fileline(), invarp, false);
+            inp = new AstVarRef(nodep->fileline(), invarp, VAccess::READ);
         }
         nodep->replaceWith(inp);
     }

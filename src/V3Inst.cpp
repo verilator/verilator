@@ -76,17 +76,17 @@ private:
             if (nodep->modVarp()->isInoutish()) {
                 nodep->v3fatalSrc("Unsupported: Verilator is a 2-state simulator");
             } else if (nodep->modVarp()->isWritable()) {
-                AstNode* rhsp
-                    = new AstVarXRef(exprp->fileline(), nodep->modVarp(), m_cellp->name(), false);
+                AstNode* rhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(),
+                                               m_cellp->name(), VAccess::READ);
                 AstAssignW* assp = new AstAssignW(exprp->fileline(), exprp, rhsp);
                 m_cellp->addNextHere(assp);
             } else if (nodep->modVarp()->isNonOutput()) {
                 // Don't bother moving constants now,
                 // we'll be pushing the const down to the cell soon enough.
-                AstNode* assp = new AstAssignW(
-                    exprp->fileline(),
-                    new AstVarXRef(exprp->fileline(), nodep->modVarp(), m_cellp->name(), true),
-                    exprp);
+                AstNode* assp = new AstAssignW(exprp->fileline(),
+                                               new AstVarXRef(exprp->fileline(), nodep->modVarp(),
+                                                              m_cellp->name(), VAccess::WRITE),
+                                               exprp);
                 m_cellp->addNextHere(assp);
                 if (debug() >= 9) assp->dumpTree(cout, "     _new: ");
             } else if (nodep->modVarp()->isIfaceRef()
@@ -96,8 +96,8 @@ private:
                                     IfaceRefDType))) {
                 // Create an AstAssignVarScope for Vars to Cells so we can
                 // link with their scope later
-                AstNode* lhsp
-                    = new AstVarXRef(exprp->fileline(), nodep->modVarp(), m_cellp->name(), false);
+                AstNode* lhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(),
+                                               m_cellp->name(), VAccess::READ);
                 const AstVarRef* refp = VN_CAST(exprp, VarRef);
                 const AstVarXRef* xrefp = VN_CAST(exprp, VarXRef);
                 UASSERT_OBJ(refp || xrefp, exprp,
@@ -379,8 +379,9 @@ private:
                 }
                 string index = AstNode::encodeNumber(constp->toSInt());
                 AstVarRef* varrefp = VN_CAST(arrselp->lhsp(), VarRef);
-                AstVarXRef* newp = new AstVarXRef(
-                    nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__", "", true);
+                AstVarXRef* newp = new AstVarXRef(nodep->fileline(),
+                                                  varrefp->name() + "__BRA__" + index + "__KET__",
+                                                  "", VAccess::WRITE);
                 newp->dtypep(nodep->modVarp()->dtypep());
                 newp->packagep(varrefp->packagep());
                 arrselp->addNextHere(newp);
@@ -438,7 +439,8 @@ private:
                 }
                 if (!varrefp) { newp->exprp()->v3error("Unexpected connection to arrayed port"); }
                 string newname = varrefp->name() + "__BRA__" + cvtToStr(i + offset) + "__KET__";
-                AstVarXRef* newVarXRefp = new AstVarXRef(nodep->fileline(), newname, "", true);
+                AstVarXRef* newVarXRefp
+                    = new AstVarXRef(nodep->fileline(), newname, "", VAccess::WRITE);
                 newVarXRefp->varp(newp->modVarp());
                 newp->exprp()->unlinkFrBack()->deleteTree();
                 newp->exprp(newVarXRefp);
@@ -553,18 +555,19 @@ public:
                                     " direct one-to-one connection (without any expression)");
             } else if (pinVarp->isWritable()) {
                 // See also V3Inst
-                AstNode* rhsp = new AstVarRef(pinp->fileline(), newvarp, false);
+                AstNode* rhsp = new AstVarRef(pinp->fileline(), newvarp, VAccess::READ);
                 UINFO(5, "pinRecon width " << pinVarp->width() << " >? " << rhsp->width() << " >? "
                                            << pinexprp->width() << endl);
                 rhsp = extendOrSel(pinp->fileline(), rhsp, pinVarp);
-                pinp->exprp(new AstVarRef(newvarp->fileline(), newvarp, true));
+                pinp->exprp(new AstVarRef(newvarp->fileline(), newvarp, VAccess::WRITE));
                 AstNode* rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
                 assignp = new AstAssignW(pinp->fileline(), pinexprp, rhsSelp);
             } else {
                 // V3 width should have range/extended to make the widths correct
                 assignp = new AstAssignW(pinp->fileline(),
-                                         new AstVarRef(pinp->fileline(), newvarp, true), pinexprp);
-                pinp->exprp(new AstVarRef(pinexprp->fileline(), newvarp, false));
+                                         new AstVarRef(pinp->fileline(), newvarp, VAccess::WRITE),
+                                         pinexprp);
+                pinp->exprp(new AstVarRef(pinexprp->fileline(), newvarp, VAccess::READ));
             }
             if (assignp) cellp->addNextHere(assignp);
             // if (debug()) { pinp->dumpTree(cout, "-  out:"); }

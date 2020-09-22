@@ -199,9 +199,9 @@ public:
             m_newvscp = new AstVarScope(m_vscp->fileline(), m_statep->m_scopetopp, newvarp);
             m_statep->m_scopetopp->addVarp(m_newvscp);
 
-            m_varEqnp = new AstVarRef(m_vscp->fileline(), m_vscp, false);
-            m_newLvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, true);
-            m_newRvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, false);
+            m_varEqnp = new AstVarRef(m_vscp->fileline(), m_vscp, VAccess::READ);
+            m_newLvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, VAccess::WRITE);
+            m_newRvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, VAccess::READ);
         }
         iterate(vscp->dtypep()->skipRefp());
         m_varEqnp->deleteTree();

@@ -123,6 +123,33 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 //######################################################################
 
+class VAccess {
+public:
+    enum en : uint8_t { READ, WRITE };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[] = {"RD", "WR"};
+        return names[m_e];
+    }
+    inline VAccess()
+        : m_e{READ} {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VAccess(en _e)
+        : m_e{_e} {}
+    explicit inline VAccess(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    operator en() const { return m_e; }
+    VAccess invert() const { return (m_e == WRITE) ? VAccess(READ) : VAccess(WRITE); }
+    bool isRead() const { return m_e == READ; }
+    bool isWrite() const { return m_e == WRITE; }
+};
+inline bool operator==(const VAccess& lhs, const VAccess& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VAccess& lhs, VAccess::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VAccess::en lhs, const VAccess& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VAccess& rhs) { return os << rhs.ascii(); }
+
+//######################################################################
+
 class VSigning {
 public:
     enum en : uint8_t {
@@ -1422,7 +1449,6 @@ class AstNode {
         if (nodep) nodep->m_backp = this;
     }
 
-    void init();  // initialize value of AstNode
 private:
     AstNode* cloneTreeIter();
     AstNode* cloneTreeIterList();
@@ -1442,15 +1468,7 @@ public:
 
 protected:
     // CONSTRUCTORS
-    AstNode(AstType t)
-        : m_type{t} {
-        init();
-    }
-    AstNode(AstType t, FileLine* fl)
-        : m_type{t} {
-        init();
-        m_fileline = fl;
-    }
+    AstNode(AstType t, FileLine* fl);
     virtual AstNode* clone() = 0;  // Generally, cloneTree is what you want instead
     virtual void cloneRelink() {}
     void cloneRelinkTree();
@@ -1889,6 +1907,7 @@ public:
         : AstNode{t, fl} {}
     ASTNODE_BASE_FUNCS(NodeMath)
     // METHODS
+    virtual void dump(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     // For documentation on emitC format see EmitCStmts::emitOpName
@@ -1911,6 +1930,7 @@ public:
     // See checkTreeIter also that asserts no children
     // cppcheck-suppress functionConst
     void iterateChildren(AstNVisitor& v) {}
+    virtual void dump(std::ostream& str) const override;
 };
 
 class AstNodeUniop : public AstNodeMath {
@@ -1925,6 +1945,7 @@ public:
     AstNode* lhsp() const { return op1p(); }
     void lhsp(AstNode* nodep) { return setOp1p(nodep); }
     // METHODS
+    virtual void dump(std::ostream& str) const override;
     // Set out to evaluation of a AstConst'ed lhs
     virtual void numberOperate(V3Number& out, const V3Number& lhs) = 0;
     virtual bool cleanLhs() const = 0;
@@ -1987,6 +2008,7 @@ public:
     void rhsp(AstNode* nodep) { return setOp2p(nodep); }
     void thsp(AstNode* nodep) { return setOp3p(nodep); }
     // METHODS
+    virtual void dump(std::ostream& str) const override;
     // Set out to evaluation of a AstConst'ed
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths)
@@ -2142,6 +2164,7 @@ public:
     }
     ASTNODE_BASE_FUNCS(NodeProcedure)
     // METHODS
+    virtual void dump(std::ostream& str) const override;
     AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
@@ -2158,8 +2181,11 @@ public:
     // METHODS
     bool isStatement() const { return m_statement; }  // Really a statement
     void statement(bool flag) { m_statement = flag; }
-    virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
-    virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
+    virtual void addNextStmt(AstNode* newp,
+                             AstNode* belowp) override;  // Stop statement searchback here
+    virtual void addBeforeStmt(AstNode* newp,
+                               AstNode* belowp) override;  // Stop statement searchback here
+    virtual void dump(std::ostream& str = std::cout) const override;
 };
 
 class AstNodeAssign : public AstNodeStmt {
@@ -2255,7 +2281,7 @@ public:
 class AstNodeVarRef : public AstNodeMath {
     // An AstVarRef or AstVarXRef
 private:
-    bool m_lvalue;  // Left hand side assignment
+    VAccess m_access;  // Left hand side assignment
     AstVar* m_varp;  // [AfterLink] Pointer to variable itself
     AstVarScope* m_varScopep = nullptr;  // Varscope for hierarchy
     AstNodeModule* m_packagep = nullptr;  // Package hierarchy
@@ -2264,28 +2290,29 @@ private:
     bool m_hierThis = false;  // Hiername points to "this" function
 
 public:
-    AstNodeVarRef(AstType t, FileLine* fl, const string& name, bool lvalue)
+    AstNodeVarRef(AstType t, FileLine* fl, const string& name, const VAccess& access)
         : AstNodeMath{t, fl}
-        , m_lvalue{lvalue}
+        , m_access{access}
         , m_name{name} {
         this->varp(nullptr);
     }
-    AstNodeVarRef(AstType t, FileLine* fl, const string& name, AstVar* varp, bool lvalue)
+    AstNodeVarRef(AstType t, FileLine* fl, const string& name, AstVar* varp, const VAccess& access)
         : AstNodeMath{t, fl}
-        , m_lvalue{lvalue}
+        , m_access{access}
         , m_name{name} {
         // May have varp==nullptr
         this->varp(varp);
     }
     ASTNODE_BASE_FUNCS(NodeVarRef)
+    virtual void dump(std::ostream& str) const override;
     virtual bool hasDType() const override { return true; }
     virtual const char* broken() const override;
     virtual int instrCount() const override { return widthInstrs(); }
     virtual void cloneRelink() override;
     virtual string name() const override { return m_name; }  // * = Var name
     virtual void name(const string& name) override { m_name = name; }
-    bool lvalue() const { return m_lvalue; }
-    void lvalue(bool lval) { m_lvalue = lval; }  // Avoid using this; Set in constructor
+    VAccess access() const { return m_access; }
+    void access(const VAccess& flag) { m_access = flag; }  // Avoid using this; Set in constructor
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
     void varp(AstVar* varp);
     AstVarScope* varScopep() const { return m_varScopep; }
@@ -2862,6 +2889,7 @@ public:
     AstNodeRange(AstType t, FileLine* fl)
         : AstNode{t, fl} {}
     ASTNODE_BASE_FUNCS(NodeRange)
+    virtual void dump(std::ostream& str) const override;
 };
 
 //######################################################################

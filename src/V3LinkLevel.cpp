@@ -233,9 +233,10 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                         varp->trace(false);
                     }
 
-                    AstPin* pinp
-                        = new AstPin(oldvarp->fileline(), 0, varp->name(),
-                                     new AstVarRef(varp->fileline(), varp, oldvarp->isWritable()));
+                    AstPin* pinp = new AstPin(
+                        oldvarp->fileline(), 0, varp->name(),
+                        new AstVarRef(varp->fileline(), varp,
+                                      oldvarp->isWritable() ? VAccess::WRITE : VAccess::READ));
                     // Skip length and width comp; we know it's a direct assignment
                     pinp->modVarp(oldvarp);
                     cellp->addPinsp(pinp);

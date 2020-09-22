@@ -12,6 +12,8 @@ module t (/*AUTOARG*/
    );
    input clk;
 
+   parameter TOP_PARAM /*verilator public*/ = 20;
+
    a #(1) a1 ();
    b #(2) b2 ();
 

@@ -83,7 +83,7 @@ AstNode* V3ParseGrammar::argWrapList(AstNode* nodep) {
 
 AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name, int value) {
     return new AstAssignW(
-        fileline, new AstVarRef(fileline, name, true),
+        fileline, new AstVarRef(fileline, name, VAccess::WRITE),
         new AstConst(fileline, AstConst::StringToParse(), (value ? "'1" : "'0")));
 }
 

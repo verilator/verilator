@@ -1,5 +1,7 @@
 [0] In top.t: Hi
 Time scale of t is 1ns / 1ps
+Time scale of t is 1ns / 1ps
+Time scale of t is 1ns / 1ps
 Time: '                   0' 10ns=10000
 Time: ' 0-my-ms' 10ns=0-my-ms
 Time: ' 0.0-my-ms' 10ns=0.0-my-ms

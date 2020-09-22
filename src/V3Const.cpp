@@ -314,7 +314,7 @@ private:
         // It was an expression, then got constified.  In reality, the WordSel
         // must be wrapped in a Cond, that will be false.
         return (VN_IS(nodep->rhsp(), Const) && VN_IS(nodep->fromp(), NodeVarRef)
-                && !VN_CAST_CONST(nodep->fromp(), NodeVarRef)->lvalue()
+                && !VN_CAST_CONST(nodep->fromp(), NodeVarRef)->access().isWrite()
                 && (static_cast<int>(VN_CAST_CONST(nodep->rhsp(), Const)->toUInt())
                     >= VN_CAST(nodep->fromp(), NodeVarRef)->varp()->widthWords()));
     }
@@ -1132,18 +1132,22 @@ private:
                                             VFlagLogicPacked(), msb2 - lsb2 + 1);
                 m_modp->addStmtp(temp1p);
                 m_modp->addStmtp(temp2p);
-                AstNodeAssign* asn1ap = VN_CAST(
-                    nodep->cloneType(new AstVarRef(sel1p->fileline(), temp1p, true), sel1p),
-                    NodeAssign);
-                AstNodeAssign* asn2ap = VN_CAST(
-                    nodep->cloneType(new AstVarRef(sel2p->fileline(), temp2p, true), sel2p),
-                    NodeAssign);
-                AstNodeAssign* asn1bp = VN_CAST(
-                    nodep->cloneType(lc1p, new AstVarRef(sel1p->fileline(), temp1p, false)),
-                    NodeAssign);
-                AstNodeAssign* asn2bp = VN_CAST(
-                    nodep->cloneType(lc2p, new AstVarRef(sel2p->fileline(), temp2p, false)),
-                    NodeAssign);
+                AstNodeAssign* asn1ap
+                    = VN_CAST(nodep->cloneType(
+                                  new AstVarRef(sel1p->fileline(), temp1p, VAccess::WRITE), sel1p),
+                              NodeAssign);
+                AstNodeAssign* asn2ap
+                    = VN_CAST(nodep->cloneType(
+                                  new AstVarRef(sel2p->fileline(), temp2p, VAccess::WRITE), sel2p),
+                              NodeAssign);
+                AstNodeAssign* asn1bp
+                    = VN_CAST(nodep->cloneType(
+                                  lc1p, new AstVarRef(sel1p->fileline(), temp1p, VAccess::READ)),
+                              NodeAssign);
+                AstNodeAssign* asn2bp
+                    = VN_CAST(nodep->cloneType(
+                                  lc2p, new AstVarRef(sel2p->fileline(), temp2p, VAccess::READ)),
+                              NodeAssign);
                 asn1ap->dtypeFrom(temp1p);
                 asn1bp->dtypeFrom(temp1p);
                 asn2ap->dtypeFrom(temp2p);
@@ -1601,7 +1605,7 @@ private:
             // if (debug()) valuep->dumpTree(cout, "  visitvaref: ");
             iterateAndNextNull(nodep->varp()->valuep());  // May change nodep->varp()->valuep()
             AstNode* valuep = nodep->varp()->valuep();
-            if (!nodep->lvalue()
+            if (!nodep->access().isWrite()
                 && ((!m_params  // Can reduce constant wires into equations
                      && m_doNConst
                      && v3Global.opt.oConst()

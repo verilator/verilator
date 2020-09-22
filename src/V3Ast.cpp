@@ -58,9 +58,10 @@ std::ostream& operator<<(std::ostream& os, AstType rhs);
 //######################################################################
 // Creators
 
-void AstNode::init() {
+AstNode::AstNode(AstType t, FileLine* fl)
+    : m_type{t}
+    , m_fileline{fl} {
     editCountInc();
-    m_fileline = nullptr;
     m_nextp = nullptr;
     m_backp = nullptr;
     m_headtailp = this;  // When made, we're a list of only a single element
