@@ -5,15 +5,15 @@
    29 |    constraint order { solve length before header; }
       |                             ^~~~~~
 %Error-UNSUPPORTED: t/t_randomize.v:32:16: Unsupported: dist :/
-   32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5};
+   32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5, 400};
       |                ^
 %Error-UNSUPPORTED: t/t_randomize.v:32:32: Unsupported: dist :=
-   32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5};
+   32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5, 400};
       |                                ^~~
 %Error-UNSUPPORTED: t/t_randomize.v:32:42: Unsupported: dist :=
-   32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5};
+   32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5, 400};
       |                                          ^~~
 %Error-UNSUPPORTED: t/t_randomize.v:32:9: Unsupported: dist
-   32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5};
+   32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5, 400};
       |         ^~~~
 %Error: Exiting due to

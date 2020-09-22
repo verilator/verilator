@@ -448,9 +448,9 @@ private:
                     AstVarScope* tempvscp
                         = createVarScope(portp, namePrefix + "__" + portp->shortName());
                     portp->user2p(tempvscp);
-                    AstAssign* assp
-                        = new AstAssign(pinp->fileline(), pinp,
-                                        new AstVarRef(tempvscp->fileline(), tempvscp, false));
+                    AstAssign* assp = new AstAssign(
+                        pinp->fileline(), pinp,
+                        new AstVarRef(tempvscp->fileline(), tempvscp, VAccess::READ));
                     assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
                                                     true);  // Ok if in <= block
                     // Put assignment BEHIND of all other statements
@@ -461,7 +461,8 @@ private:
                         = createVarScope(portp, namePrefix + "__" + portp->shortName());
                     portp->user2p(inVscp);
                     AstAssign* assp = new AstAssign(
-                        pinp->fileline(), new AstVarRef(inVscp->fileline(), inVscp, true), pinp);
+                        pinp->fileline(),
+                        new AstVarRef(inVscp->fileline(), inVscp, VAccess::WRITE), pinp);
                     assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
                                                     true);  // Ok if in <= block
                     // Put assignment in FRONT of all other statements
@@ -571,10 +572,10 @@ private:
                     AstVarScope* newvscp
                         = createVarScope(portp, namePrefix + "__" + portp->shortName());
                     portp->user2p(newvscp);
-                    pinp->replaceWith(new AstVarRef(newvscp->fileline(), newvscp, true));
-                    AstAssign* assp
-                        = new AstAssign(pinp->fileline(), pinp,
-                                        new AstVarRef(newvscp->fileline(), newvscp, false));
+                    pinp->replaceWith(new AstVarRef(newvscp->fileline(), newvscp, VAccess::WRITE));
+                    AstAssign* assp = new AstAssign(
+                        pinp->fileline(), pinp,
+                        new AstVarRef(newvscp->fileline(), newvscp, VAccess::READ));
                     assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
                                                     true);  // Ok if in <= block
                     // Put assignment BEHIND of all other statements
@@ -608,7 +609,7 @@ private:
             ccallp->addArgsp(exprp);
         }
 
-        if (outvscp) ccallp->addArgsp(new AstVarRef(refp->fileline(), outvscp, true));
+        if (outvscp) ccallp->addArgsp(new AstVarRef(refp->fileline(), outvscp, VAccess::WRITE));
 
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-nitask: ");
         return beginp;
@@ -661,7 +662,7 @@ private:
         bool useSetWSvlv = V3Task::dpiToInternalFrStmt(portp, frName, frstmt);
         if (useSetWSvlv) {
             AstNode* linesp = new AstText(portp->fileline(), frstmt);
-            linesp->addNext(new AstVarRef(portp->fileline(), portvscp, true));
+            linesp->addNext(new AstVarRef(portp->fileline(), portvscp, VAccess::WRITE));
             linesp->addNext(new AstText(portp->fileline(), "," + frName + ");"));
             return new AstCStmt(portp->fileline(), linesp);
         }
@@ -675,7 +676,7 @@ private:
             }
         }
         AstNode* newp = new AstAssign(
-            portp->fileline(), new AstVarRef(portp->fileline(), portvscp, true),
+            portp->fileline(), new AstVarRef(portp->fileline(), portvscp, VAccess::WRITE),
             new AstSel(portp->fileline(), new AstCMath(portp->fileline(), frstmt, cwidth, false),
                        0, portp->width()));
         return newp;
@@ -741,7 +742,8 @@ private:
                     outvscp->varp()->protect(false);
                     portp->protect(false);
                     AstVarRef* refp
-                        = new AstVarRef(portp->fileline(), outvscp, portp->isWritable());
+                        = new AstVarRef(portp->fileline(), outvscp,
+                                        portp->isWritable() ? VAccess::WRITE : VAccess::READ);
                     argnodesp = argnodesp->addNextNull(refp);
 
                     if (portp->isNonOutput()) {
@@ -765,7 +767,8 @@ private:
             AstVarScope* outvscp = createFuncVar(dpip, portp->name() + "__Vcvt", portp);
             // No information exposure; is already visible in import/export func template
             outvscp->varp()->protect(false);
-            AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp, portp->isWritable());
+            AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp,
+                                            portp->isWritable() ? VAccess::WRITE : VAccess::READ);
             argnodesp = argnodesp->addNextNull(refp);
         }
 
@@ -1134,8 +1137,8 @@ private:
 
         // Return statement
         if (rtnvscp && nodep->taskPublic()) {
-            cfuncp->addFinalsp(new AstCReturn(rtnvscp->fileline(),
-                                              new AstVarRef(rtnvscp->fileline(), rtnvscp, false)));
+            cfuncp->addFinalsp(new AstCReturn(
+                rtnvscp->fileline(), new AstVarRef(rtnvscp->fileline(), rtnvscp, VAccess::READ)));
         }
         // Replace variable refs
         // Iteration requires a back, so put under temporary node
@@ -1245,7 +1248,7 @@ private:
             visitp = insertBeforeStmt(nodep, beginp);
         } else if (!nodep->isStatement()) {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
-            AstVarRef* outrefp = new AstVarRef(nodep->fileline(), outvscp, false);
+            AstVarRef* outrefp = new AstVarRef(nodep->fileline(), outvscp, VAccess::READ);
             nodep->replaceWith(outrefp);
             // Insert new statements
             visitp = insertBeforeStmt(nodep, beginp);

@@ -79,15 +79,15 @@ private:
         vscp->user1p(newvscp);
         m_scopep->addVarp(newvscp);
         // Add init
-        AstNode* fromp = new AstVarRef(newvarp->fileline(), vscp, false);
+        AstNode* fromp = new AstVarRef(newvarp->fileline(), vscp, VAccess::READ);
         if (v3Global.opt.xInitialEdge()) fromp = new AstNot(fromp->fileline(), fromp);
         AstNode* newinitp = new AstAssign(
-            vscp->fileline(), new AstVarRef(newvarp->fileline(), newvscp, true), fromp);
+            vscp->fileline(), new AstVarRef(newvarp->fileline(), newvscp, VAccess::WRITE), fromp);
         addToInitial(newinitp);
         // At bottom, assign them
-        AstAssign* finalp
-            = new AstAssign(vscp->fileline(), new AstVarRef(vscp->fileline(), newvscp, true),
-                            new AstVarRef(vscp->fileline(), vscp, false));
+        AstAssign* finalp = new AstAssign(vscp->fileline(),
+                                          new AstVarRef(vscp->fileline(), newvscp, VAccess::WRITE),
+                                          new AstVarRef(vscp->fileline(), vscp, VAccess::READ));
         m_evalFuncp->addFinalsp(finalp);
         //
         UINFO(4, "New Last: " << newvscp << endl);
@@ -112,25 +112,28 @@ private:
             AstVarScope* lastVscp = getCreateLastClk(clkvscp);
             newp = new AstAnd(
                 nodep->fileline(),
-                new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(), false),
-                new AstNot(nodep->fileline(), new AstVarRef(nodep->fileline(), lastVscp, false)));
+                new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(), VAccess::READ),
+                new AstNot(nodep->fileline(),
+                           new AstVarRef(nodep->fileline(), lastVscp, VAccess::READ)));
         } else if (nodep->edgeType() == VEdgeType::ET_NEGEDGE) {
             AstVarScope* lastVscp = getCreateLastClk(clkvscp);
             newp = new AstAnd(
                 nodep->fileline(),
                 new AstNot(nodep->fileline(),
-                           new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(), false)),
-                new AstVarRef(nodep->fileline(), lastVscp, false));
+                           new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(),
+                                         VAccess::READ)),
+                new AstVarRef(nodep->fileline(), lastVscp, VAccess::READ));
         } else if (nodep->edgeType() == VEdgeType::ET_BOTHEDGE) {
             AstVarScope* lastVscp = getCreateLastClk(clkvscp);
             newp = new AstXor(
                 nodep->fileline(),
-                new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(), false),
-                new AstVarRef(nodep->fileline(), lastVscp, false));
+                new AstVarRef(nodep->fileline(), nodep->varrefp()->varScopep(), VAccess::READ),
+                new AstVarRef(nodep->fileline(), lastVscp, VAccess::READ));
         } else if (nodep->edgeType() == VEdgeType::ET_HIGHEDGE) {
-            newp = new AstVarRef(nodep->fileline(), clkvscp, false);
+            newp = new AstVarRef(nodep->fileline(), clkvscp, VAccess::READ);
         } else if (nodep->edgeType() == VEdgeType::ET_LOWEDGE) {
-            newp = new AstNot(nodep->fileline(), new AstVarRef(nodep->fileline(), clkvscp, false));
+            newp = new AstNot(nodep->fileline(),
+                              new AstVarRef(nodep->fileline(), clkvscp, VAccess::READ));
         } else {
             nodep->v3fatalSrc("Bad edge type");
         }

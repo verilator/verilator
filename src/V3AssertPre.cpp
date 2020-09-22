@@ -134,8 +134,7 @@ private:
         AstNode* exprp = nodep->exprp()->unlinkFrBack();
         AstNode* past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
-        exprp = new AstEq(fl, past,
-                          exprp->cloneTree(false));
+        exprp = new AstEq(fl, past, exprp->cloneTree(false));
         exprp->dtypeSetLogicBool();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));

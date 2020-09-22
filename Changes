@@ -3,7 +3,16 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
-* Verilator 4.099 devel
+* Verilator 4.101 devel
+
+****  Support const object new() assignments.
+
+****  Support # as a comment in -f files (#2497). [phantom-killua]
+
+****  Fix -G dropping public indication (#2561). [Andrew Goessling]
+
+
+* Verilator 4.100 2020-09-07
 
 **    C++11 or newer compilers are now required.
 
@@ -58,6 +67,10 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix casting non-self-determined subexpressions (#2493). [phantom-killua]
 
 ****  Fix SystemC net names (#2500). [Edgar E. Iglesias]
+
+****  Fix build with Bison 3.7 and newer (#2505). [Rupert Swarbrick]
+
+****  Fix slice of unpacked array (#2506) (#2507). [Yutetsu TAKATSUKASA]
 
 
 * Verilator 4.038 2020-07-11

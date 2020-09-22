@@ -80,6 +80,7 @@
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3HierBlock.h"
+#include "V3Os.h"
 #include "V3String.h"
 #include "V3Stats.h"
 
@@ -88,13 +89,18 @@ static string V3HierCommandArgsFileName(const string& prefix, bool forCMake) {
            + (forCMake ? "_hierCMakeArgs.f" : "_hierMkArgs.f");
 }
 
-static void V3HierWriteCommonInputs(std::ostream* of, bool forCMake) {
+static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of, bool forCMake) {
+    string topModuleFile;
+    if (hblockp) topModuleFile = hblockp->vFileIfNecessary();
     if (!forCMake) {
+        if (!topModuleFile.empty()) *of << topModuleFile << "\n";
         const V3StringList& vFiles = v3Global.opt.vFiles();
         for (const string& i : vFiles) *of << i << "\n";
     }
     const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
-    for (const string& i : libraryFiles) *of << "-v " << i << "\n";
+    for (const string& i : libraryFiles) {
+        if (V3Os::filenameRealPath(i) != topModuleFile) *of << "-v " << i << "\n";
+    }
 }
 
 //######################################################################
@@ -194,6 +200,15 @@ string V3HierBlock::hierGenerated(bool withDir) const {
     return hierWrapper(withDir) + ' ' + hierMk(withDir);
 }
 
+string V3HierBlock::vFileIfNecessary() const {
+    const string filename = V3Os::filenameRealPath(m_modp->fileline()->filename());
+    for (const string v : v3Global.opt.vFiles()) {
+        // Already listed in vFiles, so no need to add the file.
+        if (filename == V3Os::filenameRealPath(v)) return "";
+    }
+    return filename;
+}
+
 void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     std::unique_ptr<std::ofstream> of(V3File::new_ofstream(commandArgsFileName(forCMake)));
     *of << "--cc\n";
@@ -203,9 +218,9 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
              child != m_children.end(); ++child) {
             *of << v3Global.opt.makeDir() << "/" << (*child)->hierWrapper(true) << "\n";
         }
+        *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     }
-    *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
-    V3HierWriteCommonInputs(of.get(), forCMake);
+    V3HierWriteCommonInputs(this, of.get(), forCMake);
     const V3StringList& commandOpts = commandArgs(false);
     for (const string& opt : commandOpts) *of << opt << "\n";
     *of << hierBlockArgs().front() << "\n";
@@ -394,7 +409,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
             *of << it->second->hierWrapper(true) << "\n";
         }
     }
-    V3HierWriteCommonInputs(of.get(), forCMake);
+    V3HierWriteCommonInputs(nullptr, of.get(), forCMake);
     if (!forCMake) {
         const V3StringSet& cppFiles = v3Global.opt.cppFiles();
         for (const string& i : cppFiles) *of << i << "\n";

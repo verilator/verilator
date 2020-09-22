@@ -135,9 +135,13 @@ module t;
 
       // Displays without format, must use default
       $write("d: "); $write(nine); $write(" "); $display(nine);
+      $write; $display;
       $writeh("h: "); $writeh(nine); $writeh(" "); $displayh(nine);
+      $writeh; $displayh;
       $writeo("o: "); $writeo(nine); $writeo(" "); $displayo(nine);
+      $writeb; $displayb;
       $writeb("b: "); $writeb(nine); $writeb(" "); $displayb(nine);
+      $writeo; $displayo;
 
       $display("[%0t] %s%s%s", $time,
                "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");

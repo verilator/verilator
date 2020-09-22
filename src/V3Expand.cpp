@@ -94,7 +94,7 @@ private:
     void fixCloneLvalue(AstNode* nodep) {
         // In AstSel transforms, we call clone() on VarRefs that were lvalues,
         // but are now being used on the RHS of the assignment
-        if (VN_IS(nodep, VarRef)) VN_CAST(nodep, VarRef)->lvalue(false);
+        if (VN_IS(nodep, VarRef)) VN_CAST(nodep, VarRef)->access(VAccess::READ);
         // Iterate
         if (nodep->op1p()) fixCloneLvalue(nodep->op1p());
         if (nodep->op2p()) fixCloneLvalue(nodep->op2p());

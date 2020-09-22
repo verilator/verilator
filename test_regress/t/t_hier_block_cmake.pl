@@ -13,38 +13,28 @@ clean_objs();
 scenarios(simulator => 1);
 top_filename("t/t_hier_block.v");
 
-# Travis environment offers 2 VCPUs, 2 thread setting causes the following warning.
-# %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
-# So use 6 threads here though it's not optimal in performace wise, but ok.
-compile(
-    verilator_make_gmake => 0,
-    verilator_make_cmake => 1,
-    v_flags2 => ['t/t_hier_block.cpp'],
-    verilator_flags2 => ['--stats',
-                         '--hierarchical',
-                         '--CFLAGS', "'-pipe -DCPP_MACRO=cplusplus '",
-                         '--make cmake',
-                         ($Self->{vltmt} ? ' --threads 6' : '')],
+if (!$Self->have_cmake) {
+    $Self->skip("Test requires CMake; ignore error since not available or version too old\n");
+} else {
+    run(logfile => "$Self->{obj_dir}/cmake.log",
+        cmd => ['cd "' . $Self->{obj_dir} . '" && cmake ' . $Self->{t_dir} . '/t_hier_block_cmake',
+            "-DCMAKE_PREFIX_PATH=$ENV{VERILATOR_ROOT}",
+            ($Self->{vltmt} ? '-DTEST_THREADS=6' : '')
+        ]);
+
+    run(logfile => "$Self->{obj_dir}/build.log",
+        cmd => ['cd "' . $Self->{obj_dir} . '" && cmake --build', '.']
     );
 
-if (!$Self->have_cmake) {
-    skip("cmake is not installed");
-} else {
-    my $cmakecache = $Self->{obj_dir}."/CMakeCache.txt";
-    if (! -e $cmakecache) {
-        error("$cmakecache does not exist.")
-    }
-
-    execute(
-        check_finished => 1,
-        );
-
-file_grep($Self->{obj_dir} . "/Vsub0/sub0.sv", /^module\s+(\S+)\s+/, "sub0");
-file_grep($Self->{obj_dir} . "/Vsub1/sub1.sv", /^module\s+(\S+)\s+/, "sub1");
-file_grep($Self->{obj_dir} . "/Vsub2/sub2.sv", /^module\s+(\S+)\s+/, "sub2");
-file_grep($Self->{obj_dir} . '/Vt_hier_block_cmake__stats.txt', qr/HierBlock,\s+Hierarchical blocks\s+(\d+)/i, 10);
-file_grep($Self->{run_log_filename}, qr/MACRO:(\S+) is defined/i, "cplusplus");
-
+    run(logfile => "$Self->{obj_dir}/run.log",
+        cmd => ['cd "' . $Self->{obj_dir} . '" && ./t_hier_block_cmake', '.']
+    );
+    my $target_dir = $Self->{obj_dir} .'/CMakeFiles/t_hier_block_cmake.dir/Vt_hier_block.dir/';
+    file_grep($target_dir . 'Vsub0/sub0.sv', /^module\s+(\S+)\s+/, "sub0");
+    file_grep($target_dir . 'Vsub1/sub1.sv', /^module\s+(\S+)\s+/, "sub1");
+    file_grep($target_dir . 'Vsub2/sub2.sv', /^module\s+(\S+)\s+/, "sub2");
+    file_grep($target_dir . 'Vt_hier_block__stats.txt', qr/HierBlock,\s+Hierarchical blocks\s+(\d+)/i, 10);
+    file_grep($Self->{obj_dir} . '/run.log', qr/MACRO:(\S+) is defined/i, "cplusplus");
 }
 
 ok(1);

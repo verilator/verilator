@@ -170,6 +170,8 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	test_regress/t/t*/*.v* \
 	test_regress/t/t*/*/*.sv* \
 	test_regress/t/t*/*/*.v* \
+	test_regress/t/t*/*.cpp \
+	test_regress/t/t*/CMakeLists.txt \
 	test_regress/t/*.cpp \
 	test_regress/t/*.h \
 	test_regress/t/*.dat \
