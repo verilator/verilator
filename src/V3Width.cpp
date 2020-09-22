@@ -2554,6 +2554,7 @@ private:
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
             if (AstNodeFTask* ftaskp = VN_CAST(classp->findMember(nodep->name()), NodeFTask)) {
+                userIterate(ftaskp, nullptr);
                 nodep->taskp(ftaskp);
                 nodep->dtypeFrom(ftaskp);
                 if (VN_IS(ftaskp, Task)) nodep->makeStatement();
