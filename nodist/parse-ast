@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+
+import re
+import argparse
+import termcolor
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("-i", "--input", help="Input AST dump")
+parser.add_argument("-o", "--output", help="HTML output")
+parser.add_argument("-f", "--fill", help="Propagate region data to lower nodes lacking region info", action='store_true')
+
+args = parser.parse_args()
+
+regions = {
+    'ACTIVE': ('#E74C3C', 'white'),
+    'INACTIVE': ('#8E44AD', 'red'),
+    'NBA': ('#3498DB', 'green'),
+    'OBSERVED': ('#16A085', 'yellow'),
+    'REACTIVE': ('#2ECC71', 'blue'),
+    'REINACTIVE': ('#F39C12', 'magenta'),
+    'RENBA': ('#D35400', 'cyan'),
+}
+
+sched_variants = {
+    'STATIC-SCHED': ('#1D8348', 'green'),
+    'DYNAMIC-SCHED': ('#B03A2E', 'red'),
+}
+
+def_color = ('#7F8C8D', 'grey')
+
+if args.output:
+    html = open(args.output, 'w')
+else:
+    html = None
+
+last_region = None
+last_region_depth = 0
+
+with open(args.input, 'r') as tree:
+    for line in tree:
+        line = line.rstrip()
+        region = None
+        sched = None
+
+        for key in regions:
+            if re.search(r"\[{}\]".format(key), line):
+                region = key
+
+        for key in sched_variants:
+            if re.search(r"\[{}\]".format(key), line):
+                sched = key
+
+        if args.fill:
+            depth = re.match("[:0-3]+", line.strip())
+            if depth:
+                depth = depth.group(0).count(":")
+
+                if last_region_depth < depth and region is None:
+                    region = last_region
+                else:
+                    last_region_depth = depth
+                    last_region = region
+
+        if region:
+            color = regions[region]
+        else:
+            color = def_color
+
+        if html:
+            html.write('<div style="background-color:{}">'.format(color[0]))
+            if sched is not None:
+                html.write('<div style="background-color:{}; display: inline">{} </div>'.format(sched_variants[sched][0], sched))
+            if region is not None:
+                html.write('<div style="display: inline">{}: </div>'.format(region))
+            html.write('<div style="display: inline">')
+            html.write(line)
+            html.write('</div>')
+            html.write('</div>\n')
+        else:
+            if sched is not None:
+                termcolor.cprint(sched, sched_variants[sched][1], end=' ')
+            if region is not None:
+                termcolor.cprint(region, color[1], end=': ')
+            termcolor.cprint(line, color[1])
