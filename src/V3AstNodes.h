@@ -2186,7 +2186,7 @@ public:
 private:
     class VlArgTypeRecursed;
     VlArgTypeRecursed vlArgTypeRecurse(bool forFunc, const AstNodeDType* dtypep,
-                                       bool compound = false) const;
+                                       bool compound) const;
 };
 
 class AstDefParam : public AstNode {

@@ -333,7 +333,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     string ostatic;
     if (isStatic() && namespc.empty()) ostatic = "static ";
 
-    VlArgTypeRecursed info = vlArgTypeRecurse(forFunc, dtypep());
+    VlArgTypeRecursed info = vlArgTypeRecurse(forFunc, dtypep(), false);
 
     string oname;
     if (named) {
