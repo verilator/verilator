@@ -35,7 +35,8 @@ module t(/*AUTOARG*/);
 
       // Range
       for (int test = 0; test < 20; ++test) begin
-         v1 = $urandom_range(0, 2);
+         v1 = 2;
+         v1 = $urandom_range(0, v1);
          if (v1 != 0 && v1 != 1) $stop;
          v1 = $urandom_range(2, 0);
          if (v1 != 0 && v1 != 1) $stop;
