@@ -2711,6 +2711,8 @@ private:
     bool m_pure : 1;  // DPI import pure (vs. virtual pure)
     bool m_pureVirtual : 1;  // Pure virtual
     bool m_virtual : 1;  // Virtual method in class
+    bool m_dynamicValid : 1;  // Already visited in V3Dynamic visitor
+    bool m_dynamicWeak : 1;  // Weak dynamic flag, discarded after inlining
     VLifetime m_lifetime;  // Lifetime
 public:
     AstNodeFTask(AstType t, FileLine* fl, const string& name, AstNode* stmtsp)
@@ -2730,7 +2732,9 @@ public:
         , m_isConstructor{false}
         , m_pure{false}
         , m_pureVirtual{false}
-        , m_virtual{false} {
+        , m_virtual{false}
+        , m_dynamicValid{false}
+        , m_dynamicWeak{false} {
         addNOp3p(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
@@ -2792,6 +2796,10 @@ public:
     bool pureVirtual() const { return m_pureVirtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
     bool isVirtual() const { return m_virtual; }
+    void isDynamicValid(bool flag) { m_dynamicValid = flag; }
+    bool isDynamicValid() const { return m_dynamicValid; }
+    void isDynamicWeak(bool flag) { m_dynamicWeak = flag; }
+    bool isDynamicWeak() const { return m_dynamicWeak; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
 };
