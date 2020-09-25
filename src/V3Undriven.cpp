@@ -122,7 +122,7 @@ public:
         }
 	return result;
     }
-    bool drivenNonZ() {
+    void drivenNonZ() {
         m_wholeFlags[FLAG_DRIVEN_NON_Z] = true;
     }
     bool isDrivenNonZ() {
@@ -329,17 +329,13 @@ private:
             if (nodep->isNonOutput() || nodep->isSigPublic() || nodep->isSigUserRWPublic()
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
                 entryp->drivenWhole();
-//              nodep->dumpTree(cout, "imp 1: "); //TODO: not to be used in check
             }
             if (nodep->isWritable() || nodep->isSigPublic() || nodep->isSigUserRWPublic()
                 || nodep->isSigUserRdPublic()
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
                 entryp->usedWhole();
             }
-            if (nodep->valuep()) {
-                entryp->drivenWhole();
-//              nodep->dumpTree(cout, "imp 2: "); //TODO: Never happens?
-            }
+            if (nodep->valuep()) entryp->drivenWhole();
         }
         // Discover variables used in bit definitions, etc
         iterateChildren(nodep);
@@ -376,7 +372,6 @@ private:
                     }
                     entryp->drivenBit(lsb, nodep->width());
                     if (!m_constHasZ) entryp->drivenBitNonZ(lsb, nodep->width());
-//                  nodep->dumpTree(cout, "imp 4: ");
                 }
                 if (m_inBBox || !varrefp->access().isWrite()) entryp->usedBit(lsb, nodep->width());
             }
@@ -421,7 +416,6 @@ private:
                 }
                 entryp->drivenWhole();
                 if (!m_constHasZ) entryp->drivenNonZ();
-//              nodep->dumpTree(cout, "imp 3: ");
             }
             if (m_inBBox || !nodep->access().isWrite() || fdrv) entryp->usedWhole();
         }
