@@ -203,7 +203,7 @@ private:
     }
     virtual void visit(AstVarXRef* nodep) override {
         UINFO(9, "   VARXREF " << nodep << endl);
-        if (m_namedScope != "" && nodep->inlinedDots() == "") {
+        if (m_namedScope != "" && nodep->inlinedDots() == "" && !m_ftaskp) {
             nodep->inlinedDots(m_namedScope);
             UINFO(9, "    rescope to " << nodep << endl);
         }
