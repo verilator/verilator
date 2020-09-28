@@ -94,6 +94,45 @@ inline std::ostream& operator<<(std::ostream& os, const AstType& rhs) { return o
 
 //######################################################################
 
+class VRegion {
+public:
+    enum en { NONE, ACTIVE, INACTIVE, NBA, OBSERVED, REACTIVE, REINACTIVE, RENBA };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[]
+            = {"NONE", "ACTIVE", "INACTIVE", "NBA", "OBSERVED", "REACTIVE", "REINACTIVE", "RENBA"};
+        return names[m_e];
+    }
+    inline VRegion()
+        : m_e(NONE) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VRegion(en _e)
+        : m_e(_e) {}
+    explicit inline VRegion(int _e)
+        : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+    bool isNone() const { return m_e == NONE; }
+    bool isActive() const { return (m_e == ACTIVE || m_e == INACTIVE || m_e == NBA); }
+    bool isReactive() const { return (m_e == REACTIVE || m_e == REINACTIVE || m_e == RENBA); }
+    VRegion toReactive() const {
+        switch (m_e) {
+        case ACTIVE: return REACTIVE;
+        case INACTIVE: return REINACTIVE;
+        case NBA: return RENBA;
+        case REACTIVE:  // FALLTHRU
+        case REINACTIVE:  // FALLTHRU
+        case RENBA: return m_e;
+        default: return NONE;
+        }
+    }
+};
+inline bool operator==(const VRegion& lhs, const VRegion& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VRegion& lhs, VRegion::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VRegion::en lhs, const VRegion& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VRegion& rhs) { return os << rhs.ascii(); }
+
+//######################################################################
+
 class VLifetime {
 public:
     enum en : uint8_t { NONE, AUTOMATIC, STATIC };
@@ -2173,6 +2212,7 @@ public:
 class AstNodeStmt : public AstNode {
     // Statement -- anything that's directly under a function
     bool m_statement;  // Really a statement (e.g. not a function with return)
+    VRegion m_region;  // Region
 public:
     AstNodeStmt(AstType t, FileLine* fl, bool statement = true)
         : AstNode{t, fl}
@@ -2181,6 +2221,8 @@ public:
     // METHODS
     bool isStatement() const { return m_statement; }  // Really a statement
     void statement(bool flag) { m_statement = flag; }
+    VRegion region() const { return m_region; }
+    void region(const VRegion& flag) { m_region = flag; }
     virtual void addNextStmt(AstNode* newp,
                              AstNode* belowp) override;  // Stop statement searchback here
     virtual void addBeforeStmt(AstNode* newp,

@@ -75,6 +75,7 @@
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3ProtectLib.h"
+#include "V3Region.h"
 #include "V3Reloop.h"
 #include "V3Scope.h"
 #include "V3Scoreboard.h"
@@ -186,6 +187,9 @@ static void process() {
     // Signal based lint checks, no change to structures
     // Must be before first constification pass drops dead code
     V3Undriven::undrivenAll(v3Global.rootp());
+
+    // Add region information to nodes
+    if (v3Global.opt.stratifiedScheduler()) V3Region::assignRegions(v3Global.rootp());
 
     // Assertion insertion
     //    After we've added block coverage, but before other nasty transforms
