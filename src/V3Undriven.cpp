@@ -366,10 +366,11 @@ private:
                     if (m_inContAssign && !m_constHasZ &&
 			entryp->isDrivenBitNonZ(lsb, nodep->width()) &&
 			entryp->isDrivenBit(lsb, nodep->width())) {
-			nodep->v3warn(MULTIDRIVEN,
+			nodep->v3warn(MULTIPLEDRIVERS,
 				      "Multiple assignments to wire "
                                       << varrefp->prettyNameQ());
                     }
+//                  nodep->dumpTree(cout, "sel: ");
                     entryp->drivenBit(lsb, nodep->width());
                     if (!m_constHasZ) entryp->drivenBitNonZ(lsb, nodep->width());
                 }
@@ -381,6 +382,7 @@ private:
         }
     }
     virtual void visit(AstNodeVarRef* nodep) override {
+        AstArraySel* arrayselp = VN_CAST(nodep->backp(), ArraySel);
         // Any variable
         if (nodep->access().isWrite()
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
@@ -409,13 +411,15 @@ private:
                     warnAlwCombOrder(nodep);
                 }
                 if (m_inContAssign && !m_constHasZ && entryp->isDrivenNonZ() &&
-                    entryp->isDrivenWhole()) {
-                    nodep->v3warn(MULTIDRIVEN,
+                    entryp->isDrivenWhole() && !arrayselp &&
+                    !VN_IS(nodep, VarXRef)) { // We ignore assigments in arraysel scopes as we don't track arrays in UndrivenVarEntry. Also ignoring VarXRef
+                    nodep->v3warn(MULTIPLEDRIVERS,
                                   "Multiple assignments to wire "
                                   << nodep->prettyNameQ());
                 }
+//              nodep->dumpTree(cout, "varref: ");
                 entryp->drivenWhole();
-                if (!m_constHasZ) entryp->drivenNonZ();
+                if (m_inContAssign && !m_constHasZ && !arrayselp) entryp->drivenNonZ();
             }
             if (m_inBBox || !nodep->access().isWrite() || fdrv) entryp->usedWhole();
         }
@@ -448,6 +452,7 @@ private:
         VL_RESTORER(m_inContAssign);
         VL_RESTORER(m_constHasZ);
         {
+//	    nodep->dumpTree(cout, "assign: ");
             m_inContAssign = true;
             iterateChildren(nodep);
         }
