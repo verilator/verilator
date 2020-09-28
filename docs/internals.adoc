@@ -758,6 +758,15 @@ may be required to setup the system for fuzzing.
 
 == Debugging
 
+=== Debug Levels
+
+The "UINFO" calls in the source indicate a debug level. Messages level 3
+and below are globally enabled with `--debug`. Higher levels may be
+controlled with `--debugi <level>`.  An individual source file levels may
+be controlled with `-debugi-<srcfile> <level>`.  For example `--debug
+--debugi 5 --debugi-V3Width 9` will use the debug binary at default debug
+level 5, with the V3Width.cpp file at level 9.
+
 === --debug
 
 When you run with `--debug` there are two primary output file types placed
