@@ -116,21 +116,19 @@ public:
         m_wholeFlags[FLAG_DRIVEN] = true;
     }
     bool isDrivenWhole() {
-	bool result = m_wholeFlags[FLAG_DRIVEN];
+        bool result = m_wholeFlags[FLAG_DRIVEN];
         for (int bit = (m_bitFlags.size() / FLAGS_PER_BIT) - 1; bit >= 0; --bit) {
             result |= m_bitFlags[bit * FLAGS_PER_BIT + FLAG_DRIVEN];
         }
-	return result;
+        return result;
     }
-    void drivenNonZ() {
-        m_wholeFlags[FLAG_DRIVEN_NON_Z] = true;
-    }
+    void drivenNonZ() { m_wholeFlags[FLAG_DRIVEN_NON_Z] = true; }
     bool isDrivenNonZ() {
         bool result = m_wholeFlags[FLAG_DRIVEN_NON_Z];
         for (int bit = (m_bitFlags.size() / FLAGS_PER_BIT) - 1; bit >= 0; --bit) {
             result |= m_bitFlags[bit * FLAGS_PER_BIT + FLAG_DRIVEN_NON_Z];
         }
-	return result;
+        return result;
     }
     void usedBit(int bit, int width) {
         UINFO(9, "set u[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name() << endl);
@@ -139,11 +137,11 @@ public:
         }
     }
     bool isDrivenBit(int bit, int width) {
-	bool result = m_wholeFlags[FLAG_DRIVEN];
+        bool result = m_wholeFlags[FLAG_DRIVEN];
         for (int i = 0; i < width; i++) {
             if (bitNumOk(bit + i)) result |= m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN];
         }
-	return result;
+        return result;
     }
     void drivenBit(int bit, int width) {
         UINFO(9, "set d[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name() << endl);
@@ -153,15 +151,17 @@ public:
     }
     void drivenBitNonZ(int bit, int width) {
         for (int i = 0; i < width; i++) {
-            if (bitNumOk(bit + i)) m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN_NON_Z] = true;
+            if (bitNumOk(bit + i))
+                m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN_NON_Z] = true;
         }
     }
     bool isDrivenBitNonZ(int bit, int width) {
-	bool result = m_wholeFlags[FLAG_DRIVEN_NON_Z];
+        bool result = m_wholeFlags[FLAG_DRIVEN_NON_Z];
         for (int i = 0; i < width; i++) {
-            if (bitNumOk(bit + i)) result |= m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN_NON_Z];
+            if (bitNumOk(bit + i))
+                result |= m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN_NON_Z];
         }
-	return result;
+        return result;
     }
     bool isUsedNotDrivenBit(int bit, int width) const {
         for (int i = 0; i < width; i++) {
@@ -310,7 +310,7 @@ private:
             && !m_inBBox  // We may have falsely considered a SysIgnore as a driver
             && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
             && !varp->fileline()->warnIsOff(
-                V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
+                   V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
             nodep->v3warn(ALWCOMBORDER,
                           "Always_comb variable driven after use: " << nodep->prettyNameQ());
             varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER,
@@ -363,14 +363,13 @@ private:
                         warnAlwCombOrder(varrefp);
                     }
 
-                    if (m_inContAssign && !m_constHasZ &&
-			entryp->isDrivenBitNonZ(lsb, nodep->width()) &&
-			entryp->isDrivenBit(lsb, nodep->width())) {
-			nodep->v3warn(MULTIPLEDRIVERS,
-				      "Multiple assignments to wire "
-                                      << varrefp->prettyNameQ());
+                    if (m_inContAssign && !m_constHasZ
+                        && entryp->isDrivenBitNonZ(lsb, nodep->width())
+                        && entryp->isDrivenBit(lsb, nodep->width())) {
+                        nodep->v3warn(MULTIPLEDRIVERS,
+                                      "Multiple assignments to wire " << varrefp->prettyNameQ());
                     }
-//                  nodep->dumpTree(cout, "sel: ");
+                    //                  nodep->dumpTree(cout, "sel: ");
                     entryp->drivenBit(lsb, nodep->width());
                     if (!m_constHasZ) entryp->drivenBitNonZ(lsb, nodep->width());
                 }
@@ -393,7 +392,9 @@ private:
                                                << " (IEEE 1800-2017 6.5): "
                                                << nodep->prettyNameQ());
             }
-            if (m_inContAssign && !nodep->varp()->varType().isContAssignable() // TODO: This one is incorrectly set for out reg. #1369
+            if (m_inContAssign
+                && !nodep->varp()->varType().isContAssignable()  // TODO: This one is incorrectly
+                                                                 // set for out reg. #1369
                 && !nodep->fileline()->language().systemVerilog()) {
                 nodep->v3warn(CONTASSREG,
                               "Continuous assignment to reg, perhaps intended wire"
@@ -410,14 +411,16 @@ private:
                     UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp) << endl);
                     warnAlwCombOrder(nodep);
                 }
-                if (m_inContAssign && !m_constHasZ && entryp->isDrivenNonZ() &&
-                    entryp->isDrivenWhole() && !arrayselp &&
-                    !VN_IS(nodep, VarXRef)) { // We ignore assigments in arraysel scopes as we don't track arrays in UndrivenVarEntry. Also ignoring VarXRef
+                if (m_inContAssign && !m_constHasZ && entryp->isDrivenNonZ()
+                    && entryp->isDrivenWhole() && !arrayselp
+                    && !VN_IS(
+                           nodep,
+                           VarXRef)) {  // We ignore assigments in arraysel scopes as we don't
+                                        // track arrays in UndrivenVarEntry. Also ignoring VarXRef
                     nodep->v3warn(MULTIPLEDRIVERS,
-                                  "Multiple assignments to wire "
-                                  << nodep->prettyNameQ());
+                                  "Multiple assignments to wire " << nodep->prettyNameQ());
                 }
-//              nodep->dumpTree(cout, "varref: ");
+                //              nodep->dumpTree(cout, "varref: ");
                 entryp->drivenWhole();
                 if (m_inContAssign && !m_constHasZ && !arrayselp) entryp->drivenNonZ();
             }
@@ -452,7 +455,7 @@ private:
         VL_RESTORER(m_inContAssign);
         VL_RESTORER(m_constHasZ);
         {
-//	    nodep->dumpTree(cout, "assign: ");
+            //	    nodep->dumpTree(cout, "assign: ");
             m_inContAssign = true;
             iterateChildren(nodep);
         }
@@ -491,9 +494,7 @@ private:
     virtual void visit(AstTraceInc*) override {}
 
     // iterate
-    virtual void visit(AstConst* nodep) override {
-	m_constHasZ |= nodep->num().hasZ();
-    }
+    virtual void visit(AstConst* nodep) override { m_constHasZ |= nodep->num().hasZ(); }
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
