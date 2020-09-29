@@ -366,7 +366,7 @@ private:
                     if (m_inContAssign && !m_constHasZ
                         && entryp->isDrivenBitNonZ(lsb, nodep->width())
                         && entryp->isDrivenBit(lsb, nodep->width())) {
-                        nodep->v3warn(MULTIPLEDRIVERS,
+                        nodep->v3warn(MULTIDRIVERS,
                                       "Multiple assignments to wire " << varrefp->prettyNameQ());
                     }
                     //                  nodep->dumpTree(cout, "sel: ");
@@ -417,7 +417,7 @@ private:
                            nodep,
                            VarXRef)) {  // We ignore assigments in arraysel scopes as we don't
                                         // track arrays in UndrivenVarEntry. Also ignoring VarXRef
-                    nodep->v3warn(MULTIPLEDRIVERS,
+                    nodep->v3warn(MULTIDRIVERS,
                                   "Multiple assignments to wire " << nodep->prettyNameQ());
                 }
                 //              nodep->dumpTree(cout, "varref: ");

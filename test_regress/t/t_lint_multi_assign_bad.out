@@ -1,38 +1,34 @@
-%Warning-MULTIDRIVEN: t/t_lint_multi_assign_bad.v:83:11: Multiple assignments to wire 'bad0'
-                                                       : ... In instance t.test
+%Warning-MULTIDRIVERS: t/t_lint_multi_assign_bad.v:83:11: Multiple assignments to wire 'bad0'
+                                                        : ... In instance t.test
    83 |    assign bad0 = 1;
       |           ^~~~
-                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
-%Warning-MULTIDRIVEN: t/t_lint_multi_assign_bad.v:84:11: Multiple assignments to wire 'bad0'
-                                                       : ... In instance t.test
+                       ... Use "/* verilator lint_off MULTIDRIVERS */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVERS: t/t_lint_multi_assign_bad.v:84:11: Multiple assignments to wire 'bad0'
+                                                        : ... In instance t.test
    84 |    assign bad0 = 0;
       |           ^~~~
-%Warning-MULTIDRIVEN: t/t_lint_multi_assign_bad.v:87:11: Multiple assignments to wire 'bad1'
-                                                       : ... In instance t.test
+%Warning-MULTIDRIVERS: t/t_lint_multi_assign_bad.v:87:11: Multiple assignments to wire 'bad1'
+                                                        : ... In instance t.test
    87 |    assign bad1 = 1;
       |           ^~~~
-%Warning-MULTIDRIVEN: t/t_lint_multi_assign_bad.v:90:11: Multiple assignments to wire 'bad2'
-                                                       : ... In instance t.test
+%Warning-MULTIDRIVERS: t/t_lint_multi_assign_bad.v:90:11: Multiple assignments to wire 'bad2'
+                                                        : ... In instance t.test
    90 |    assign bad2 = 1;
       |           ^~~~
-%Warning-MULTIDRIVEN: t/t_lint_multi_assign_bad.v:101:11: Multiple assignments to wire 'bad10'
-                                                        : ... In instance t.test
-  101 |    assign bad10 = 1;
-      |           ^~~~~
-%Warning-MULTIDRIVEN: t/t_lint_multi_assign_bad.v:139:17: Multiple assignments to wire 'bad200'
-                                                        : ... In instance t.test
+%Warning-MULTIDRIVERS: t/t_lint_multi_assign_bad.v:139:17: Multiple assignments to wire 'bad200'
+                                                         : ... In instance t.test
   139 |    assign bad200[1:0] = 0;
       |                 ^
-%Warning-MULTIDRIVEN: t/t_lint_multi_assign_bad.v:143:17: Multiple assignments to wire 'bad201'
-                                                        : ... In instance t.test
+%Warning-MULTIDRIVERS: t/t_lint_multi_assign_bad.v:143:17: Multiple assignments to wire 'bad201'
+                                                         : ... In instance t.test
   143 |    assign bad201[2:1] = 1;
       |                 ^
-%Warning-MULTIDRIVEN: t/t_lint_multi_assign_bad.v:147:17: Multiple assignments to wire 'bad202'
-                                                        : ... In instance t.test
+%Warning-MULTIDRIVERS: t/t_lint_multi_assign_bad.v:147:17: Multiple assignments to wire 'bad202'
+                                                         : ... In instance t.test
   147 |    assign bad202[1:0] = 0;
       |                 ^
-%Warning-MULTIDRIVEN: t/t_lint_multi_assign_bad.v:151:11: Multiple assignments to wire 'bad203'
-                                                        : ... In instance t.test
+%Warning-MULTIDRIVERS: t/t_lint_multi_assign_bad.v:151:11: Multiple assignments to wire 'bad203'
+                                                         : ... In instance t.test
   151 |    assign bad203 = 0;
       |           ^~~~~~
 %Error: Exiting due to

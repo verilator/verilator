@@ -98,7 +98,7 @@ module Test (/*AUTOARG*/
 
    reg bad10;
    initial bad10 = 0;
-   assign bad10 = 1;
+   assign bad10 = 1; //TODO: this is not failing
 
    reg bad11;
    assign bad11 = 0;
