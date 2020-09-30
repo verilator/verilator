@@ -22,6 +22,15 @@
 #include "verilatedos.h"
 #include "verilated.h"  // for VerilatedMutex and clang annotations
 
+#ifndef VL_THREADED
+// Hitting this likely means verilated_threads.cpp is being compiled when
+// 'verilator --threads' was not used.  'verilator --threads' sets
+// VL_THREADED.
+// Alternatively it is always safe but may harm performance to always
+// define VL_THREADED for all compiles.
+# error "verilated_threads.h/cpp expected VL_THREADED (from verilator --threads)"
+#endif
+
 #include <condition_variable>
 #include <set>
 #include <vector>
