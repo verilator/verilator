@@ -280,6 +280,7 @@ private:
     AstNodeFTask* m_taskp = nullptr;  // Current task
     AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
     bool m_constHasZ = false;  // Discovered a z in a const
+    bool m_nodeIsBufIf = false;  // Discovered a bufif node in parse tree
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -363,7 +364,7 @@ private:
                         warnAlwCombOrder(varrefp);
                     }
 
-                    if (m_inContAssign && !m_constHasZ
+                    if (m_inContAssign && !m_constHasZ && !m_nodeIsBufIf
                         && entryp->isDrivenBitNonZ(lsb, nodep->width())
                         && entryp->isDrivenBit(lsb, nodep->width())) {
                         nodep->v3warn(MULTIDRIVERS,
@@ -371,7 +372,7 @@ private:
                     }
                     //                  nodep->dumpTree(cout, "sel: ");
                     entryp->drivenBit(lsb, nodep->width());
-                    if (!m_constHasZ) entryp->drivenBitNonZ(lsb, nodep->width());
+                    if (!m_constHasZ && !m_nodeIsBufIf) entryp->drivenBitNonZ(lsb, nodep->width());
                 }
                 if (m_inBBox || !varrefp->access().isWrite()) entryp->usedBit(lsb, nodep->width());
             }
@@ -411,8 +412,8 @@ private:
                     UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp) << endl);
                     warnAlwCombOrder(nodep);
                 }
-                if (m_inContAssign && !m_constHasZ && entryp->isDrivenNonZ()
-                    && entryp->isDrivenWhole() && !arrayselp
+                if (m_inContAssign && !m_constHasZ && !m_nodeIsBufIf && entryp->isDrivenNonZ()
+                    && entryp->isDrivenWhole() && !arrayselp && !VN_IS(nodep->backp(), Sel)
                     && !VN_IS(
                            nodep,
                            VarXRef)) {  // We ignore assigments in arraysel scopes as we don't
@@ -422,7 +423,9 @@ private:
                 }
                 //              nodep->dumpTree(cout, "varref: ");
                 entryp->drivenWhole();
-                if (m_inContAssign && !m_constHasZ && !arrayselp) entryp->drivenNonZ();
+                if (m_inContAssign && !m_constHasZ && !m_nodeIsBufIf && !arrayselp
+                    && !VN_IS(nodep->backp(), Sel))
+                    entryp->drivenNonZ();
             }
             if (m_inBBox || !nodep->access().isWrite() || fdrv) entryp->usedWhole();
         }
@@ -454,8 +457,9 @@ private:
     virtual void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_inContAssign);
         VL_RESTORER(m_constHasZ);
+        VL_RESTORER(m_nodeIsBufIf);
         {
-            //	    nodep->dumpTree(cout, "assign: ");
+            // nodep->dumpTree(cout, "assign: ");
             m_inContAssign = true;
             iterateChildren(nodep);
         }
@@ -481,6 +485,11 @@ private:
             m_taskp = nodep;
             iterateChildren(nodep);
         }
+    }
+
+    virtual void visit(AstBufIf1* nodep) override {
+        m_nodeIsBufIf = true;
+        iterateChildren(nodep);
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os
