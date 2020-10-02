@@ -87,7 +87,10 @@ const char* AstNodeUOrStructDType::broken() const {
     return nullptr;
 }
 
-void AstNodeStmt::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstNodeStmt::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (!region().isNone()) str << " [" << region() << "]";
+}
 
 void AstNodeCCall::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
@@ -1035,6 +1038,10 @@ void AstNode::dump(std::ostream& str) const {
             str << "  " << V3OutFormatter::quoteNameControls(name());
         }
     }
+    if (dynamic())
+        str << " [DYNAMIC-SCHED]";
+    else
+        str << " [STATIC-SCHED]";
 }
 
 void AstNodeProcedure::dump(std::ostream& str) const { this->AstNode::dump(str); }
@@ -1107,6 +1114,7 @@ void AstClass::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isExtended()) str << " [EXT]";
     if (isVirtual()) str << " [VIRT]";
+    if (isPredefined()) str << " [PRE]";
 }
 AstClass* AstClassExtends::classp() const {
     AstClassRefDType* refp = VN_CAST(dtypep(), ClassRefDType);
@@ -1627,6 +1635,7 @@ void AstCFunc::dump(std::ostream& str) const {
     } else if (isStatic().trueUnknown()) {
         str << " [STATIC]";
     }
+    if (!region().isNone()) str << " [" << region() << "]";
     if (dpiImport()) str << " [DPII]";
     if (dpiExport()) str << " [DPIX]";
     if (dpiExportWrapper()) str << " [DPIXWR]";

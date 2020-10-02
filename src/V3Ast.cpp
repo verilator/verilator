@@ -77,6 +77,7 @@ AstNode::AstNode(AstType t, FileLine* fl)
     m_didWidth = false;
     m_doingWidth = false;
     m_protect = true;
+    m_dynamic = false;
     m_user1u = VNUser(0);
     m_user1Cnt = 0;
     m_user2u = VNUser(0);

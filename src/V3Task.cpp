@@ -321,6 +321,25 @@ public:
 };
 
 //######################################################################
+
+class TaskRegionVisitor : public AstNVisitor {
+    // Update region information for tasks inlined in reactive regions
+private:
+    virtual void visit(AstNodeStmt* nodep) override {
+        nodep->region(nodep->region().toReactive());
+        iterateChildren(nodep);
+    }
+
+    //--------------------
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit TaskRegionVisitor(AstNode* nodep) { iterate(nodep); }
+    virtual ~TaskRegionVisitor() override {}
+};
+
+//######################################################################
 // Task state, as a visitor of each AstNode
 
 class TaskVisitor : public AstNVisitor {
@@ -346,6 +365,8 @@ private:
     // STATE
     TaskStateVisitor* m_statep;  // Common state between visitors
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstNodeProcedure* m_procp = nullptr; // Current procedure
+    AstNodeFTask* m_ftaskp = nullptr; // Current FTask
     AstTopScope* m_topScopep = nullptr;  // Current top scope
     AstScope* m_scopep = nullptr;  // Current scope
     InsertMode m_insMode = IM_BEFORE;  // How to insert
@@ -396,7 +417,11 @@ private:
             = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe nullptr
         AstNode* beginp
             = new AstComment(refp->fileline(), string("Function: ") + refp->name(), true);
-        if (newbodysp) beginp->addNext(newbodysp);
+        if (newbodysp) {
+            beginp->addNext(newbodysp);
+            if (v3Global.opt.stratifiedScheduler())
+                if (refp->region().isReactive()) TaskRegionVisitor regionVisitor(newbodysp);
+        }
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-newbegi:");
         //
         // Create input variables
@@ -533,6 +558,8 @@ private:
             ccallp = new AstCCall(refp->fileline(), cfuncp);
             beginp->addNext(ccallp);
         }
+        // Add region informatiopn
+        if (v3Global.opt.stratifiedScheduler()) ccallp->region(refp->region());
 
         // Convert complicated outputs to temp signals
         V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
@@ -1230,14 +1257,31 @@ private:
             outvscp
                 = createVarScope(VN_CAST(nodep->taskp()->fvarp(), Var), namePrefix + "__Vfuncout");
         }
+        // Dynamic scheduling support
+        UASSERT_OBJ(m_procp == nullptr || m_ftaskp == nullptr, nodep, "We are both inside AstNodeProcedure and AstFTask");
+        bool dynamic = false;
+        bool dynamicWeak = false;
         // Create cloned statements
         AstNode* beginp;
         AstCNew* cnewp = nullptr;
         if (m_statep->ftaskNoInline(nodep->taskp())) {
             // This may share VarScope's with a public task, if any.  Yuk.
             beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
+            dynamic = nodep->taskp()->dynamic() || nodep->taskp()->isDynamicWeak(); // dynamicWeak becomes dynamic if not inlined
+            UINFO(4, "  FTask dynamic: " << dynamic << " NoInline " << nodep << endl);
         } else {
             beginp = createInlinedFTask(nodep, namePrefix, outvscp);
+            dynamic = nodep->taskp()->dynamic();
+            dynamicWeak = nodep->taskp()->isDynamicWeak(); // drop dynamicWeak if inlined into AstProcedure
+            UINFO(4, "  FTask dynamic: " << dynamic << " weak dynamic: " << dynamicWeak << " Inline " << nodep << endl);
+        }
+        if (m_procp) {
+            UINFO(4, " dynamic to procp " << m_procp << endl);
+            m_procp->dynamic(m_procp->dynamic() | dynamic);
+        } else if (m_ftaskp) {
+            UINFO(4, " dynamic to ftaskp " << m_ftaskp << endl);
+            m_ftaskp->isDynamicWeak(m_ftaskp->isDynamicWeak() | dynamicWeak);
+            m_ftaskp->dynamic(m_ftaskp->dynamic() | dynamic);
         }
         // Replace the ref
         AstNode* visitp = nullptr;
@@ -1268,10 +1312,21 @@ private:
         // Visit nodes that normal iteration won't find
         if (visitp) iterateAndNextNull(visitp);
     }
+    virtual void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_procp);
+        {
+            UINFO(4, " AstNodeProcedure " << nodep << endl);
+            m_procp = nodep;
+            iterateChildren(nodep);
+        }
+
+    }
     virtual void visit(AstNodeFTask* nodep) override {
         UINFO(4, " Inline   " << nodep << endl);
         VL_RESTORER(m_insMode);
         VL_RESTORER(m_insStmtp);
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
         m_insMode = IM_BEFORE;
         m_insStmtp = nodep->stmtsp();  // Might be null if no statements, but we won't use it
         if (!nodep->user1SetOnce()) {  // Just one creation needed per function

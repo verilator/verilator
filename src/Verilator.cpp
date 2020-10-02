@@ -41,6 +41,7 @@
 #include "V3Depth.h"
 #include "V3DepthBlock.h"
 #include "V3Descope.h"
+#include "V3Dynamic.h"
 #include "V3EmitC.h"
 #include "V3EmitCMain.h"
 #include "V3EmitCMake.h"
@@ -75,6 +76,7 @@
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3ProtectLib.h"
+#include "V3Region.h"
 #include "V3Reloop.h"
 #include "V3Scope.h"
 #include "V3Scoreboard.h"
@@ -187,6 +189,9 @@ static void process() {
     // Must be before first constification pass drops dead code
     V3Undriven::undrivenAll(v3Global.rootp());
 
+    // Add region information to nodes
+    if (v3Global.opt.stratifiedScheduler()) V3Region::assignRegions(v3Global.rootp());
+
     // Assertion insertion
     //    After we've added block coverage, but before other nasty transforms
     V3AssertPre::assertPreAll(v3Global.rootp());
@@ -268,6 +273,11 @@ static void process() {
         // Relocate classes (after linkDot)
         V3Class::classAll(v3Global.rootp());
     }
+
+    //--DYNAMIC SCHEDULING METADATA--------------
+
+    // Determine which parts of the code need dynamic scheduling
+    V3Dynamic::markDynamic(v3Global.rootp());
 
     //--SCOPE BASED OPTIMIZATIONS--------------
 

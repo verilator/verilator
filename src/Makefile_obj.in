@@ -181,6 +181,7 @@ RAW_OBJS = \
 	V3Depth.o \
 	V3DepthBlock.o \
 	V3Descope.o \
+	V3Dynamic.o \
 	V3EmitC.o \
 	V3EmitCInlines.o \
 	V3EmitCSyms.o \
@@ -229,6 +230,7 @@ RAW_OBJS = \
 	V3PreShell.o \
 	V3Premit.o \
 	V3ProtectLib.o \
+	V3Region.o \
 	V3Reloop.o \
 	V3Scope.o \
 	V3Scoreboard.o \

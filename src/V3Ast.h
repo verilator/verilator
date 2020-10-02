@@ -94,6 +94,45 @@ inline std::ostream& operator<<(std::ostream& os, const AstType& rhs) { return o
 
 //######################################################################
 
+class VRegion {
+public:
+    enum en { NONE, ACTIVE, INACTIVE, NBA, OBSERVED, REACTIVE, REINACTIVE, RENBA };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[]
+            = {"NONE", "ACTIVE", "INACTIVE", "NBA", "OBSERVED", "REACTIVE", "REINACTIVE", "RENBA"};
+        return names[m_e];
+    }
+    inline VRegion()
+        : m_e(NONE) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VRegion(en _e)
+        : m_e(_e) {}
+    explicit inline VRegion(int _e)
+        : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+    bool isNone() const { return m_e == NONE; }
+    bool isActive() const { return (m_e == ACTIVE || m_e == INACTIVE || m_e == NBA); }
+    bool isReactive() const { return (m_e == REACTIVE || m_e == REINACTIVE || m_e == RENBA); }
+    VRegion toReactive() const {
+        switch (m_e) {
+        case ACTIVE: return REACTIVE;
+        case INACTIVE: return REINACTIVE;
+        case NBA: return RENBA;
+        case REACTIVE:  // FALLTHRU
+        case REINACTIVE:  // FALLTHRU
+        case RENBA: return m_e;
+        default: return NONE;
+        }
+    }
+};
+inline bool operator==(const VRegion& lhs, const VRegion& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VRegion& lhs, VRegion::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VRegion::en lhs, const VRegion& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VRegion& rhs) { return os << rhs.ascii(); }
+
+//######################################################################
+
 class VLifetime {
 public:
     enum en : uint8_t { NONE, AUTOMATIC, STATIC };
@@ -1417,6 +1456,7 @@ class AstNode {
     bool m_didWidth : 1;  // Did V3Width computation
     bool m_doingWidth : 1;  // Inside V3Width
     bool m_protect : 1;  // Protect name if protection is on
+    bool m_dynamic : 1;  // Needs dynamic scheduling
     //          // Space for more bools here
 
     // This member ordering both allows 64 bit alignment and puts associated data together
@@ -1524,6 +1564,9 @@ public:
     bool brokeExists() const;
     bool brokeExistsAbove() const;
     bool brokeExistsBelow() const;
+
+    bool dynamic() const { return m_dynamic; }
+    void dynamic(const bool flag) { m_dynamic = flag; }
 
     // CONSTRUCTORS
     virtual ~AstNode() {}
@@ -2173,6 +2216,7 @@ public:
 class AstNodeStmt : public AstNode {
     // Statement -- anything that's directly under a function
     bool m_statement;  // Really a statement (e.g. not a function with return)
+    VRegion m_region;  // Region
 public:
     AstNodeStmt(AstType t, FileLine* fl, bool statement = true)
         : AstNode{t, fl}
@@ -2181,6 +2225,8 @@ public:
     // METHODS
     bool isStatement() const { return m_statement; }  // Really a statement
     void statement(bool flag) { m_statement = flag; }
+    VRegion region() const { return m_region; }
+    void region(const VRegion& flag) { m_region = flag; }
     virtual void addNextStmt(AstNode* newp,
                              AstNode* belowp) override;  // Stop statement searchback here
     virtual void addBeforeStmt(AstNode* newp,
@@ -2665,6 +2711,8 @@ private:
     bool m_pure : 1;  // DPI import pure (vs. virtual pure)
     bool m_pureVirtual : 1;  // Pure virtual
     bool m_virtual : 1;  // Virtual method in class
+    bool m_dynamicValid : 1;  // Already visited in V3Dynamic visitor
+    bool m_dynamicWeak : 1;  // Weak dynamic flag, discarded after inlining
     VLifetime m_lifetime;  // Lifetime
 public:
     AstNodeFTask(AstType t, FileLine* fl, const string& name, AstNode* stmtsp)
@@ -2684,7 +2732,9 @@ public:
         , m_isConstructor{false}
         , m_pure{false}
         , m_pureVirtual{false}
-        , m_virtual{false} {
+        , m_virtual{false}
+        , m_dynamicValid{false}
+        , m_dynamicWeak{false} {
         addNOp3p(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
@@ -2746,6 +2796,10 @@ public:
     bool pureVirtual() const { return m_pureVirtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
     bool isVirtual() const { return m_virtual; }
+    void isDynamicValid(bool flag) { m_dynamicValid = flag; }
+    bool isDynamicValid() const { return m_dynamicValid; }
+    void isDynamicWeak(bool flag) { m_dynamicWeak = flag; }
+    bool isDynamicWeak() const { return m_dynamicWeak; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
 };
