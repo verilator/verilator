@@ -279,8 +279,7 @@ private:
     bool m_inProcAssign = false;  // In procedural assignment
     AstNodeFTask* m_taskp = nullptr;  // Current task
     AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
-    bool m_constHasZ = false;  // Discovered a z in a const
-    bool m_nodeIsBufIf = false;  // Discovered a bufif node in parse tree
+    bool m_hasZ = false;  // Discovered a z in a const or a bufif node in parse tree
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -364,7 +363,7 @@ private:
                         warnAlwCombOrder(varrefp);
                     }
 
-                    if (m_inContAssign && !m_constHasZ && !m_nodeIsBufIf
+                    if (m_inContAssign && !m_hasZ
                         && entryp->isDrivenBitNonZ(lsb, nodep->width())
                         && entryp->isDrivenBit(lsb, nodep->width())) {
                         nodep->v3warn(MULTIDRIVERS,
@@ -372,7 +371,7 @@ private:
                     }
                     //                  nodep->dumpTree(cout, "sel: ");
                     entryp->drivenBit(lsb, nodep->width());
-                    if (!m_constHasZ && !m_nodeIsBufIf) entryp->drivenBitNonZ(lsb, nodep->width());
+                    if (m_inContAssign && !m_hasZ) entryp->drivenBitNonZ(lsb, nodep->width());
                 }
                 if (m_inBBox || !varrefp->access().isWrite()) entryp->usedBit(lsb, nodep->width());
             }
@@ -382,7 +381,10 @@ private:
         }
     }
     virtual void visit(AstNodeVarRef* nodep) override {
-        AstArraySel* arrayselp = VN_CAST(nodep->backp(), ArraySel);
+	bool ignoreMultDrivers = VN_IS(nodep->backp(), Sel) || //Sel was not constant
+	    VN_IS(nodep->backp(), ArraySel) || // arrays are not tracked in UndrivenVarEntry
+	    m_hasZ; // z's can be multidriven
+
         // Any variable
         if (nodep->access().isWrite()
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
@@ -412,20 +414,17 @@ private:
                     UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp) << endl);
                     warnAlwCombOrder(nodep);
                 }
-                if (m_inContAssign && !m_constHasZ && !m_nodeIsBufIf && entryp->isDrivenNonZ()
-                    && entryp->isDrivenWhole() && !arrayselp && !VN_IS(nodep->backp(), Sel)
+                if (m_inContAssign && entryp->isDrivenNonZ()
+                    && entryp->isDrivenWhole() && !ignoreMultDrivers
                     && !VN_IS(
                            nodep,
-                           VarXRef)) {  // We ignore assigments in arraysel scopes as we don't
-                                        // track arrays in UndrivenVarEntry. Also ignoring VarXRef
+                           VarXRef)) {  //Ignore interface variables
                     nodep->v3warn(MULTIDRIVERS,
                                   "Multiple assignments to wire " << nodep->prettyNameQ());
                 }
-                //              nodep->dumpTree(cout, "varref: ");
+                //nodep->dumpTree(cout, "varref: ");
                 entryp->drivenWhole();
-                if (m_inContAssign && !m_constHasZ && !m_nodeIsBufIf && !arrayselp
-                    && !VN_IS(nodep->backp(), Sel))
-                    entryp->drivenNonZ();
+                if (m_inContAssign && !ignoreMultDrivers) entryp->drivenNonZ();
             }
             if (m_inBBox || !nodep->access().isWrite() || fdrv) entryp->usedWhole();
         }
@@ -456,8 +455,7 @@ private:
     }
     virtual void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_inContAssign);
-        VL_RESTORER(m_constHasZ);
-        VL_RESTORER(m_nodeIsBufIf);
+        VL_RESTORER(m_hasZ);
         {
             // nodep->dumpTree(cout, "assign: ");
             m_inContAssign = true;
@@ -488,7 +486,7 @@ private:
     }
 
     virtual void visit(AstBufIf1* nodep) override {
-        m_nodeIsBufIf = true;
+        m_hasZ = true;
         iterateChildren(nodep);
     }
 
@@ -503,7 +501,7 @@ private:
     virtual void visit(AstTraceInc*) override {}
 
     // iterate
-    virtual void visit(AstConst* nodep) override { m_constHasZ |= nodep->num().hasZ(); }
+    virtual void visit(AstConst* nodep) override { m_hasZ |= nodep->num().hasZ(); }
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
