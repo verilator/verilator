@@ -228,6 +228,9 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
          ++child) {
         *of << (*child)->hierBlockArgs().front() << "\n";
     }
+    // Hierarchical blocks should not use multi-threading,
+    // but needs to be thread safe when top is multi-threaded.
+    if (v3Global.opt.threads() > 0) { *of << "--threads 1\n"; }
     *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
 }
 
@@ -425,6 +428,9 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     if (!v3Global.opt.protectLib().empty()) {
         *of << "--protect-lib " << v3Global.opt.protectLib() << "\n";
         *of << "--protect-key " << v3Global.opt.protectKeyDefaulted() << "\n";
+    }
+    if (v3Global.opt.threads() > 0) {
+        *of << "--threads " << cvtToStr(v3Global.opt.threads()) << "\n";
     }
     *of << (v3Global.opt.systemC() ? "--sc" : "--cc") << "\n";
     *of << v3Global.opt.allArgsStringForHierBlock(true) << "\n";
