@@ -108,6 +108,7 @@ public:
     void operator delete(void* objp, size_t size) {}
 #endif
     void fallbackp(VSymEnt* entp) { m_fallbackp = entp; }
+    VSymEnt* fallbackp() const { return m_fallbackp; }
     void parentp(VSymEnt* entp) { m_parentp = entp; }
     VSymEnt* parentp() const { return m_parentp; }
     void packagep(AstNodeModule* entp) { m_packagep = entp; }
