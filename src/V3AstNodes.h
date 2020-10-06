@@ -2360,8 +2360,8 @@ public:
             return (varScopep() == samep->varScopep());
         } else {
             return (hiername() == samep->hiername()
-                   && (hiername() != "" || samep->hiername() != "")
-                   && varp()->name() == samep->varp()->name());
+                    && (hiername() != "" || samep->hiername() != "")
+                    && varp()->name() == samep->varp()->name());
         }
     }
     virtual int instrCount() const override {
