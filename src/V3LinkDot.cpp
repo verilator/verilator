@@ -1962,7 +1962,15 @@ private:
             m_ds.m_dotPos = DP_SCOPE;
 
             if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this") {
-                m_ds.m_dotSymp = m_ds.m_dotSymp->fallbackp();
+                VSymEnt* classSymbolTable = m_ds.m_dotSymp;
+                do {
+                    classSymbolTable = classSymbolTable->fallbackp();
+                } while (classSymbolTable && !VN_IS(classSymbolTable->nodep(), Class));
+                m_ds.m_dotSymp = classSymbolTable;
+                if(!classSymbolTable) {
+                    nodep->v3error("'this' used outside class");
+                    m_ds.m_dotErr = true;
+                }
             } else if (VN_IS(nodep->lhsp(), ClassOrPackageRef)) {
                 // m_ds.m_dotText communicates the cell prefix between stages
                 // if (!start) { nodep->lhsp()->v3error("Package reference may not be embedded in
