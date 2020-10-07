@@ -183,10 +183,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit SplitAsVisitor(AstNetlist* nodep) {
-        AstNode::user1ClearTree();  // user1p() used on entire tree
-        iterate(nodep);
-    }
+    explicit SplitAsVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~SplitAsVisitor() override {
         V3Stats::addStat("Optimizations, isolate_assignments blocks", m_statSplits);
     }

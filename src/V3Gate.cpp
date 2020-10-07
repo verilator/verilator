@@ -525,10 +525,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit GateVisitor(AstNode* nodep) {
-        AstNode::user1ClearTree();
-        iterate(nodep);
-    }
+    explicit GateVisitor(AstNode* nodep) { iterate(nodep); }
     virtual ~GateVisitor() override {
         V3Stats::addStat("Optimizations, Gate sigs deleted", m_statSigs);
         V3Stats::addStat("Optimizations, Gate inputs replaced", m_statRefs);

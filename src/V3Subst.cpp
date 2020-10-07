@@ -365,11 +365,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit SubstVisitor(AstNode* nodep) {
-        AstNode::user1ClearTree();  // user1p() used on entire tree
-        AstNode::user2ClearTree();  // user2p() used on entire tree
-        iterate(nodep);
-    }
+    explicit SubstVisitor(AstNode* nodep) { iterate(nodep); }
     virtual ~SubstVisitor() override {
         V3Stats::addStat("Optimizations, Substituted temps", m_statSubsts);
         for (SubstVarEntry* ip : m_entryps) {

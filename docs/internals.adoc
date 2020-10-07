@@ -586,7 +586,7 @@ dealing with. For example a visitor might not implement separate `visit`
 methods for `AstIf` and `AstGenIf`, but just a single method for the base
 class:
 
-   void visit (AstNodeIf* nodep)
+   void visit(AstNodeIf* nodep)
 
 However that method might want to specify additional code if it is called
 for `AstGenIf`. Verilator does this by providing a `VN_IS` method for each
@@ -672,7 +672,7 @@ Set to 1 to indicate that the compilation or execution is intended to fail.
 For example the following would specify that compilation requires two
 defines and is expected to fail.
 
-   compile (
+   compile(
       verilator_flags2 => ["-DSMALL_CLOCK -DGATED_COMMENT"],
       fails => 1,
       );

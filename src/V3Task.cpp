@@ -1374,7 +1374,6 @@ public:
     // CONSTRUCTORS
     TaskVisitor(AstNetlist* nodep, TaskStateVisitor* statep)
         : m_statep{statep} {
-        AstNode::user1ClearTree();
         iterate(nodep);
     }
     virtual ~TaskVisitor() override {}
