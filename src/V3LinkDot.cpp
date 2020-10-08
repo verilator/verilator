@@ -1962,12 +1962,12 @@ private:
             m_ds.m_dotPos = DP_SCOPE;
 
             if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this") {
-                VSymEnt* classSymbolTable = m_ds.m_dotSymp;
+                VSymEnt* classSymp = m_ds.m_dotSymp;
                 do {
-                    classSymbolTable = classSymbolTable->fallbackp();
-                } while (classSymbolTable && !VN_IS(classSymbolTable->nodep(), Class));
-                m_ds.m_dotSymp = classSymbolTable;
-                if(!classSymbolTable) {
+                    classSymp = classSymp->fallbackp();
+                } while (classSymp && !VN_IS(classSymp->nodep(), Class));
+                m_ds.m_dotSymp = classSymp;
+                if (!classSymp) {
                     nodep->v3error("'this' used outside class");
                     m_ds.m_dotErr = true;
                 }
