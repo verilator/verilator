@@ -28,7 +28,7 @@
 // VL_THREADED.
 // Alternatively it is always safe but may harm performance to always
 // define VL_THREADED for all compiles.
-# error "verilated_threads.h/cpp expected VL_THREADED (from verilator --threads)"
+#error "verilated_threads.h/cpp expected VL_THREADED (from verilator --threads)"
 #endif
 
 #include <condition_variable>

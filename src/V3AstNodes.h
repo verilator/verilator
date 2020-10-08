@@ -2359,7 +2359,9 @@ public:
         if (varScopep()) {
             return (varScopep() == samep->varScopep());
         } else {
-            return (hiername() == samep->hiername() && varp()->name() == samep->varp()->name());
+            return (hiername() == samep->hiername()
+                    && (hiername() != "" || samep->hiername() != "")
+                    && varp()->name() == samep->varp()->name());
         }
     }
     virtual int instrCount() const override {

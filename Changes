@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support # as a comment in -f files (#2497). [phantom-killua]
 
+****  Support 'this' (#2585). [Rafal Kapuscik]
+
 ****  Fix -G dropping public indication (#2561). [Andrew Goessling]
 
 ****  Fix $urandom_range passed variable (#2563). [nanduraj1]

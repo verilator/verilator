@@ -1961,8 +1961,18 @@ private:
             m_ds.m_dotp = nodep;  // Always, not just at start
             m_ds.m_dotPos = DP_SCOPE;
 
-            // m_ds.m_dotText communicates the cell prefix between stages
-            if (VN_IS(nodep->lhsp(), ClassOrPackageRef)) {
+            if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this") {
+                VSymEnt* classSymp = m_ds.m_dotSymp;
+                do {
+                    classSymp = classSymp->fallbackp();
+                } while (classSymp && !VN_IS(classSymp->nodep(), Class));
+                m_ds.m_dotSymp = classSymp;
+                if (!classSymp) {
+                    nodep->v3error("'this' used outside class");
+                    m_ds.m_dotErr = true;
+                }
+            } else if (VN_IS(nodep->lhsp(), ClassOrPackageRef)) {
+                // m_ds.m_dotText communicates the cell prefix between stages
                 // if (!start) { nodep->lhsp()->v3error("Package reference may not be embedded in
                 // dotted reference"); m_ds.m_dotErr=true; }
                 m_ds.m_dotPos = DP_PACKAGE;
@@ -2019,21 +2029,14 @@ private:
         // Generally resolved during Primay, but might be at param time under AstUnlinkedRef
         UASSERT_OBJ(m_statep->forPrimary() || m_statep->forPrearray(), nodep,
                     "ParseRefs should no longer exist");
-        if (nodep->name() == "this") {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: this");
-        } else if (nodep->name() == "super") {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
-        }
+        if (nodep->name() == "super") { nodep->v3warn(E_UNSUPPORTED, "Unsupported: super"); }
         DotStates lastStates = m_ds;
         bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         if (start) {
             m_ds.init(m_curSymp);
             // Note m_ds.m_dot remains nullptr; this is a reference not under a dot
         }
-        if (nodep->name() == "this") {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: this");
-            m_ds.m_dotErr = true;
-        } else if (nodep->name() == "super") {
+        if (nodep->name() == "super") {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
             m_ds.m_dotErr = true;
         }
