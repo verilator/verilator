@@ -633,6 +633,11 @@ module pcc2_cfg;
 endmodule
 
 //======================================================================
+// Verilog-Perl bug1668
+`define stringify(text) `"text`"
+`stringify(`NOT_DEFINED_STR)
+
+//======================================================================
 // IEEE mandated predefines
 `undefineall  // undefineall should have no effect on these
 predef `SV_COV_START 0

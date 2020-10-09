@@ -1401,7 +1401,10 @@ int V3PreProcImp::getStateToken() {
                 if (m_off) {
                     goto next_tok;
                 } else {
-                    return VP_TEXT;
+                    // We want final text of `name, but that would cause
+                    // recursion, so use a special character to get it through
+                    unputDefrefString(string("`\032") + name);
+                    goto next_tok;
                 }
             } else {
                 string params = defParams(name);
