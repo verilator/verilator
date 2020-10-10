@@ -631,9 +631,26 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     virtual void visit(AstVar* nodep) override {
         putfs(nodep, nodep->verilogKwd());
         puts(" ");
-        iterate(nodep->dtypep());
-        puts(" ");
-        puts(nodep->prettyName());
+        std::vector<AstUnpackArrayDType*> unpackps;
+        for (AstNodeDType* dtypep = nodep->dtypep(); dtypep;) {
+            if (AstUnpackArrayDType* unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
+                unpackps.push_back(unpackp);
+                dtypep = unpackp->subDTypep();
+            } else {
+                iterate(dtypep);
+                puts(" ");
+                puts(nodep->prettyName());
+                dtypep = nullptr;
+            }
+        }
+        // If nodep is an unpacked array, append unpacked dimensions
+        for (auto unpackp : unpackps) {
+            puts("[");
+            puts(cvtToStr(unpackp->rangep()->leftConst()));
+            puts(":");
+            puts(cvtToStr(unpackp->rangep()->rightConst()));
+            puts("]");
+        }
         if (!m_suppressVarSemi) {
             puts(";\n");
         } else {
