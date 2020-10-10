@@ -629,8 +629,10 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     virtual void visit(AstTopScope* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstScope* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstVar* nodep) override {
-        putfs(nodep, nodep->verilogKwd());
-        puts(" ");
+        if (nodep->isIO()) {
+            putfs(nodep, nodep->verilogKwd());
+            puts(" ");
+        }
         std::vector<AstUnpackArrayDType*> unpackps;
         for (AstNodeDType* dtypep = nodep->dtypep(); dtypep;) {
             if (AstUnpackArrayDType* unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
