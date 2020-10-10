@@ -1,18 +1,18 @@
 module Vt_debug_emitv;
     input logic clk;
     input logic in;
-     signed int [31:0] [0:2] t.array;
-    logic logic [15:0]  t.pubflat;
-    logic logic [15:0]  t.pubflat_r;
-    int signed int [31:0]  t.fd;
-    int signed int [31:0]  t.i;
-    int signed int [31:0]  t.cyc;
-    int signed int [31:0]  t.fo;
-    int signed int [31:0]  t.sum;
-    string string t.str;
-    int signed int [31:0]  t._Vpast_0_0;
-    int signed int [31:0]  t._Vpast_1_0;
-    int signed int [31:0]  t.unnamedblk3.i;
+    signed int [31:0]  t.array[0:2];
+    logic [15:0]  t.pubflat;
+    logic [15:0]  t.pubflat_r;
+    signed int [31:0]  t.fd;
+    signed int [31:0]  t.i;
+    signed int [31:0]  t.cyc;
+    signed int [31:0]  t.fo;
+    signed int [31:0]  t.sum;
+    string t.str;
+    signed int [31:0]  t._Vpast_0_0;
+    signed int [31:0]  t._Vpast_1_0;
+    signed int [31:0]  t.unnamedblk3.i;
     @(*)@([settle])@([initial])@(posedge clk)@(negedge 
                                                clk)always @(
                                                             *)@(
@@ -198,12 +198,12 @@ module Vt_debug_emitv;
     always @(negedge clk) begin
         $display("negedge clk, pfr = %x", t.pubflat_r);
     end
-    int signed int [31:0]  __Vtask_t.sub.inc__2__i;
-    int signed int [31:0]  __Vtask_t.sub.inc__2__o;
-    int signed int [31:0]  __Vfunc_t.sub.f__3__Vfuncout;
-    int signed int [31:0]  __Vfunc_t.sub.f__3__v;
-    logic logic [15:0]  __Vdly__t.pubflat_r;
-    int signed int [31:0]  __Vdly__t.cyc;
-    int signed int [31:0]  __Vdly__t._Vpast_0_0;
-    int signed int [31:0]  __Vdly__t._Vpast_1_0;
+    signed int [31:0]  __Vtask_t.sub.inc__2__i;
+    signed int [31:0]  __Vtask_t.sub.inc__2__o;
+    signed int [31:0]  __Vfunc_t.sub.f__3__Vfuncout;
+    signed int [31:0]  __Vfunc_t.sub.f__3__v;
+    logic [15:0]  __Vdly__t.pubflat_r;
+    signed int [31:0]  __Vdly__t.cyc;
+    signed int [31:0]  __Vdly__t._Vpast_0_0;
+    signed int [31:0]  __Vdly__t._Vpast_1_0;
 endmodule
