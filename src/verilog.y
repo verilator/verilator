@@ -110,6 +110,20 @@ public:
             return new AstGatePin(rangep->fileline(), exprp, rangep->cloneTree(true));
         }
     }
+    AstNode* createTypedef(FileLine* fl, const string& name, AstNode* attrsp, AstNodeDType* basep,
+                           AstNodeRange* rangep) {
+        AstNode* nodep = new AstTypedef(fl, name, attrsp, VFlagChildDType(),
+                                        GRAMMARP->createArray(basep, rangep, false));
+        SYMP->reinsert(nodep);
+        PARSEP->tagNodep(nodep);
+        return nodep;
+    }
+    AstNode* createTypedefFwd(FileLine* fl, const string& name) {
+        AstNode* nodep = new AstTypedefFwd(fl, name);
+        SYMP->reinsert(nodep);
+        PARSEP->tagNodep(nodep);
+        return nodep;
+    }
     void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) {
         endLabel(fl, nodep->prettyName(), endnamep);
     }
@@ -2153,19 +2167,19 @@ implicit_typeE<dtypep>:		// IEEE: part of *data_type_or_implicit
 type_declaration<nodep>:	// ==IEEE: type_declaration
 	//			// Use idAny, as we can redeclare a typedef on an existing typedef
 		yTYPEDEF data_type idAny variable_dimensionListE dtypeAttrListE ';'
-	/**/	{ $$ = new AstTypedef($<fl>3, *$3, $5, VFlagChildDType(), GRAMMARP->createArray($2,$4,false));
-		  SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'	{ $$ = nullptr; BBUNSUP($1, "Unsupported: SystemVerilog 2005 typedef in this context"); }
+			{ $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, $2, $4); }
+	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: SystemVerilog 2005 typedef in this context"); }
 	//			// Combines into above "data_type id" rule
 	//			// Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
 	//UNSUP			// Below should be idAny to allow duplicate forward defs; need to expand
 	//			// data_type to exclude IDs, or add id__SEMI rule
-	|	yTYPEDEF id ';'				{ $$ = nullptr; $$ = new AstTypedefFwd($<fl>2, *$2); SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	|	yTYPEDEF yENUM idAny ';'		{ $$ = nullptr; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	|	yTYPEDEF ySTRUCT idAny ';'		{ $$ = nullptr; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	|	yTYPEDEF yUNION idAny ';'		{ $$ = nullptr; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	|	yTYPEDEF yCLASS idAny ';'		{ $$ = nullptr; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	|	yTYPEDEF yINTERFACE yCLASS idAny ';'	{ $$ = nullptr; $$ = new AstTypedefFwd($<fl>4, *$4); SYMP->reinsert($$); PARSEP->tagNodep($$); }
+	|	yTYPEDEF id ';'				{ $$ = GRAMMARP->createTypedefFwd($<fl>2, *$2); }
+	|	yTYPEDEF yENUM idAny ';'		{ $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
+	|	yTYPEDEF ySTRUCT idAny ';'		{ $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
+	|	yTYPEDEF yUNION idAny ';'		{ $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
+	|	yTYPEDEF yCLASS idAny ';'		{ $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
+	|	yTYPEDEF yINTERFACE yCLASS idAny ';'	{ $$ = GRAMMARP->createTypedefFwd($<fl>4, *$4); }
 	;
 
 dtypeAttrListE<nodep>:
