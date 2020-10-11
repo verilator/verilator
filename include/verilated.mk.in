@@ -54,6 +54,7 @@ VK_CPPFLAGS_ALWAYS += \
 		-DVM_COVERAGE=$(VM_COVERAGE) \
 		-DVM_SC=$(VM_SC) \
 		-DVM_TRACE=$(VM_TRACE) \
+		-DVM_TRACE_FST=$(VM_TRACE_FST) \
 		$(CFG_CXXFLAGS_NO_UNUSED) \
 
 ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
