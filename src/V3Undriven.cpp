@@ -42,6 +42,7 @@ class UndrivenVarEntry {
     AstVar* m_varp;  // Variable this tracks
     std::vector<bool> m_wholeFlags;  // Used/Driven on whole vector
     std::vector<bool> m_bitFlags;  // Used/Driven on each subbit
+    AstNode* m_context = nullptr;
 
     enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAG_DRIVEN_NON_Z = 2, FLAGS_PER_BIT = 3 };
 
@@ -107,6 +108,12 @@ private:
     }
 
 public:
+    void setContext(AstNode * context) {
+	m_context = context;
+    }
+    AstNode* getContext() {
+	return m_context;
+    }
     void usedWhole() {
         UINFO(9, "set u[*] " << m_varp->name() << endl);
         m_wholeFlags[FLAG_USED] = true;
@@ -280,6 +287,8 @@ private:
     AstNodeFTask* m_taskp = nullptr;  // Current task
     AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
     bool m_hasZ = false;  // Discovered a z in a const or a bufif node in parse tree
+    AstNode* m_context = nullptr;
+    bool m_sensesp = false;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -414,6 +423,20 @@ private:
                     UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp) << endl);
                     warnAlwCombOrder(nodep);
                 }
+
+		//TODO: ignore if initial and always_ff or similar
+		AstNode* context = entryp->getContext();
+		if (m_context && (m_context != context)
+		    && entryp->isDrivenNonZ()
+		    && entryp->isDrivenWhole() && !ignoreMultDrivers
+                    && !(VN_IS(context,Initial) && m_sensesp)
+                    && !VN_IS(
+                        nodep,
+                        VarXRef)) {
+                    nodep->v3warn(MULTIDRIVERS,
+                                  "Multiple assignments to " << nodep->prettyNameQ());
+
+                }
                 if (m_inContAssign && entryp->isDrivenNonZ()
                     && entryp->isDrivenWhole() && !ignoreMultDrivers
                     && !VN_IS(
@@ -424,6 +447,10 @@ private:
                 }
                 //nodep->dumpTree(cout, "varref: ");
                 entryp->drivenWhole();
+                if (m_context && !ignoreMultDrivers) {
+                    entryp->setContext(m_context);
+                    entryp->drivenNonZ();
+                }
                 if (m_inContAssign && !ignoreMultDrivers) entryp->drivenNonZ();
             }
             if (m_inBBox || !nodep->access().isWrite() || fdrv) entryp->usedWhole();
@@ -443,6 +470,7 @@ private:
         VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
+//          nodep->dumpTree(cout, "proc: ");
             iterateChildren(nodep);
         }
     }
@@ -464,6 +492,8 @@ private:
     }
     virtual void visit(AstAlways* nodep) override {
         VL_RESTORER(m_alwaysCombp);
+        VL_RESTORER(m_context);
+        VL_RESTORER(m_sensesp);
         {
             AstNode::user2ClearTree();
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   " << nodep << endl);
@@ -472,8 +502,18 @@ private:
             } else {
                 m_alwaysCombp = nullptr;
             }
+            m_context = nodep;
+	    m_sensesp = nullptr != nodep->sensesp();
             iterateChildren(nodep);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
+        }
+    }
+
+    virtual void visit(AstInitial* nodep) override {
+        VL_RESTORER(m_context);
+        {
+            m_context = nodep;
+            iterateChildren(nodep);
         }
     }
 

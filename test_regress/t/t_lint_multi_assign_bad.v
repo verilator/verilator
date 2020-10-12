@@ -22,16 +22,6 @@ module t (/*AUTOARG*/
 	      .in			(in[31:0]),
 	      .bad1                     (bad1));
 
-//   wire_test wt (.rst			(cyc>3),
-//		 .in1			(cyc[0]),
-//		 .in2			(cyc[1]),
-//		 .mux			(cyc[2]),
-//		 .out			(),
-//		 /*AUTOINST*/
-//		 // Inputs
-//		 .clk			(clk));
-
-
    always @ (posedge clk) begin
       if (cyc!=0) begin
          cyc <= cyc + 1;
@@ -149,5 +139,24 @@ module Test (/*AUTOARG*/
    wire [3:0] bad203;
    assign bad203[1:0] = 1;
    assign bad203 = 0;
+
+
+   // This is an ASSIGNW
+   wire [3:0] bad300 = 1;
+   assign bad300 = 0;
+
+   // This is an INITIAL
+   reg [3:0] bad301 = 1;
+   assign bad301 = 0;
+
+   reg [3:0] bad302 = 1;
+   always_comb bad302 = 0; //ALWAYS: ASSIGN
+
+   reg [3:0] bad303 = 1; //INITIAL
+   always @(*) bad303 = 0; //ALWAYS: ASSIGN
+
+   // Triggers PROCASSWIRE
+   reg [3:0] bad304 = 1; //ASSIGNW
+   always_ff @(posedge clk) bad304 <= 0; //ALWAYS: ASSIGNDLY
 
 endmodule
