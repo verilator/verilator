@@ -108,12 +108,8 @@ private:
     }
 
 public:
-    void setContext(AstNode * context) {
-	m_context = context;
-    }
-    AstNode* getContext() {
-	return m_context;
-    }
+    void setContext(AstNode* context) { m_context = context; }
+    AstNode* getContext() { return m_context; }
     void usedWhole() {
         UINFO(9, "set u[*] " << m_varp->name() << endl);
         m_wholeFlags[FLAG_USED] = true;
@@ -372,8 +368,7 @@ private:
                         warnAlwCombOrder(varrefp);
                     }
 
-                    if (m_inContAssign && !m_hasZ
-                        && entryp->isDrivenBitNonZ(lsb, nodep->width())
+                    if (m_inContAssign && !m_hasZ && entryp->isDrivenBitNonZ(lsb, nodep->width())
                         && entryp->isDrivenBit(lsb, nodep->width())) {
                         nodep->v3warn(MULTIDRIVERS,
                                       "Multiple assignments to wire " << varrefp->prettyNameQ());
@@ -390,9 +385,10 @@ private:
         }
     }
     virtual void visit(AstNodeVarRef* nodep) override {
-	bool ignoreMultDrivers = VN_IS(nodep->backp(), Sel) || //Sel was not constant
-	    VN_IS(nodep->backp(), ArraySel) || // arrays are not tracked in UndrivenVarEntry
-	    m_hasZ; // z's can be multidriven
+        bool ignoreMultDrivers = VN_IS(nodep->backp(), Sel) ||  // Sel was not constant
+                                 VN_IS(nodep->backp(), ArraySel)
+                                 ||  // arrays are not tracked in UndrivenVarEntry
+                                 m_hasZ;  // z's can be multidriven
 
         // Any variable
         if (nodep->access().isWrite()
@@ -424,28 +420,22 @@ private:
                     warnAlwCombOrder(nodep);
                 }
 
-		//TODO: ignore if initial and always_ff or similar
-		AstNode* context = entryp->getContext();
-		if (m_context && (m_context != context)
-		    && entryp->isDrivenNonZ()
-		    && entryp->isDrivenWhole() && !ignoreMultDrivers
-                    && !(VN_IS(context,Initial) && m_sensesp)
-                    && !VN_IS(
-                        nodep,
-                        VarXRef)) {
+                // TODO: ignore if initial and always_ff or similar
+                AstNode* context = entryp->getContext();
+                if (m_context && (m_context != context) && entryp->isDrivenNonZ()
+                    && entryp->isDrivenWhole() && !ignoreMultDrivers
+                    && !(VN_IS(context, Initial) && m_sensesp) && !VN_IS(nodep, VarXRef)) {
                     nodep->v3warn(MULTIDRIVERS,
                                   "Multiple assignments to " << nodep->prettyNameQ());
-
                 }
-                if (m_inContAssign && entryp->isDrivenNonZ()
-                    && entryp->isDrivenWhole() && !ignoreMultDrivers
-                    && !VN_IS(
-                           nodep,
-                           VarXRef)) {  //Ignore interface variables
+                if (m_inContAssign && entryp->isDrivenNonZ() && entryp->isDrivenWhole()
+                    && !ignoreMultDrivers
+                    && !VN_IS(nodep,
+                              VarXRef)) {  // Ignore interface variables
                     nodep->v3warn(MULTIDRIVERS,
                                   "Multiple assignments to wire " << nodep->prettyNameQ());
                 }
-                //nodep->dumpTree(cout, "varref: ");
+                // nodep->dumpTree(cout, "varref: ");
                 entryp->drivenWhole();
                 if (m_context && !ignoreMultDrivers) {
                     entryp->setContext(m_context);
@@ -470,7 +460,7 @@ private:
         VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
-//          nodep->dumpTree(cout, "proc: ");
+            //          nodep->dumpTree(cout, "proc: ");
             iterateChildren(nodep);
         }
     }
@@ -503,7 +493,7 @@ private:
                 m_alwaysCombp = nullptr;
             }
             m_context = nodep;
-	    m_sensesp = nullptr != nodep->sensesp();
+            m_sensesp = nullptr != nodep->sensesp();
             iterateChildren(nodep);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
         }
