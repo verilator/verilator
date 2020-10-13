@@ -6008,7 +6008,14 @@ packageClassScopeItem<nodep>:	// IEEE: package_scope or [package_scope]::[class_
 		idCC
 	/*mid*/		{ SYMP->nextId($<scp>1); }
 	/*cont*/    yP_COLONCOLON
-			{ $$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, nullptr); $<scp>$ = $<scp>1; }
+			{
+				if (*$1 == "process") {
+					*$1 = "process__Vpkg";
+					$<scp>1 = SYMP->symCurrentp()->findIdFallback(*$1)->nodep();
+				}
+				$$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, nullptr);
+				$<scp>$ = $<scp>1;
+			}
 	//
 	|	idCC parameter_value_assignment
 	/*mid*/		{ SYMP->nextId($<scp>1); }   // Change next *after* we handle parameters, not before

@@ -20,9 +20,26 @@
 namespace V3Builtin {
 
 void defineProcessClass(AstNetlist* rootp, V3ParseSym& parseSyms) {
-    auto* processPackagep = new AstPackage(rootp->fileline(), "process");
+    auto* processClassp = new AstClass(rootp->fileline(), "process");
+    // Member tasks
+    auto* killTaskp = new AstTask(rootp->fileline(), "kill", nullptr);
+    processClassp->addMembersp(killTaskp);
+    auto* awaitTaskp = new AstTask(rootp->fileline(), "await", nullptr);
+    processClassp->addMembersp(awaitTaskp);
+    auto* suspendTaskp = new AstTask(rootp->fileline(), "suspend", nullptr);
+    processClassp->addMembersp(suspendTaskp);
+    auto* resumeTaskp = new AstTask(rootp->fileline(), "resume", nullptr);
+    processClassp->addMembersp(resumeTaskp);
+
+    // Unit package for the class
+    auto* unitPackagep = rootp->dollarUnitPkgAddp();
+    parseSyms.reinsert(unitPackagep, parseSyms.symRootp());
+    unitPackagep->addStmtp(processClassp);
+
+    // Create a 'process' package to emulate static functions
+    auto* processPackagep = new AstPackage(rootp->fileline(), "process__Vpkg");
     auto* selfFuncp = new AstFunc(rootp->fileline(), "self", nullptr,
-                                  new AstBasicDType(rootp->fileline(), AstBasicDTypeKwd::LOGIC));
+                                  new AstClassRefDType(rootp->fileline(), processClassp));
     rootp->addModulep(processPackagep);
     parseSyms.pushNew(processPackagep);
     processPackagep->addStmtp(selfFuncp);
