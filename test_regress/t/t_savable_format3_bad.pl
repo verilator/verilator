@@ -25,7 +25,9 @@ execute(
 -r "$Self->{obj_dir}/saved.vltsv" or error("Saved.vltsv not created\n");
 
 # Break the header
-run(cmd => ["sed -i.bak 's/vltsaved/vltNOTed/' $Self->{obj_dir}/saved.vltsv"]);
+file_sed("$Self->{obj_dir}/saved.vltsv",
+         "$Self->{obj_dir}/saved.vltsv",
+         sub { s/vltsaved/vltNOTed/g; });
 
 execute(
     all_run_flags => ['+save_restore=1'],
