@@ -21,15 +21,22 @@ namespace V3Builtin {
 
 void defineProcessClass(AstNetlist* rootp, V3ParseSym& parseSyms) {
     auto* processClassp = new AstClass(rootp->fileline(), "process");
+
     // Member tasks
     auto* killTaskp = new AstTask(rootp->fileline(), "kill", nullptr);
-    processClassp->addMembersp(killTaskp);
     auto* awaitTaskp = new AstTask(rootp->fileline(), "await", nullptr);
-    processClassp->addMembersp(awaitTaskp);
     auto* suspendTaskp = new AstTask(rootp->fileline(), "suspend", nullptr);
-    processClassp->addMembersp(suspendTaskp);
     auto* resumeTaskp = new AstTask(rootp->fileline(), "resume", nullptr);
+    auto* srandomTaskp = new AstTask(rootp->fileline(), "srandom", nullptr);
+    auto* getRandstateTaskp = new AstTask(rootp->fileline(), "get_randstate", nullptr);
+    auto* setRandstateTaskp = new AstTask(rootp->fileline(), "set_randstate", nullptr);
+    processClassp->addMembersp(killTaskp);
+    processClassp->addMembersp(awaitTaskp);
+    processClassp->addMembersp(suspendTaskp);
     processClassp->addMembersp(resumeTaskp);
+    processClassp->addMembersp(srandomTaskp);
+    processClassp->addMembersp(getRandstateTaskp);
+    processClassp->addMembersp(setRandstateTaskp);
 
     // Unit package for the class
     auto* unitPackagep = rootp->dollarUnitPkgAddp();
