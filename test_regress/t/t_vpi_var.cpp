@@ -427,7 +427,7 @@ int _mon_check_string() {
         vpi_get_value(vh1, &v);
         if (vpi_chk_error(&e)) { printf("%%vpi_chk_error : %s\n", e.message); }
 
-        (void)vpi_chk_error(nullptr);
+        (void)vpi_chk_error(NULL);
 
         CHECK_RESULT_CSTR_STRIP(v.value.str, text_test_obs[i].initial);
 
