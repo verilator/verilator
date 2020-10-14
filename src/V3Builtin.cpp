@@ -76,6 +76,15 @@ void defineProcessClass(AstNetlist* rootp, V3ParseSym& parseSyms) {
     parseSyms.popScope(stateTypedefp);
 
     parseSyms.popScope(processPackagep);
+
+    // Member function 'status'
+    auto* statusFuncp
+        = new AstFunc(rootp->fileline(), "status", nullptr,
+                      new AstRefDType(rootp->fileline(), "state",
+                                      new AstClassOrPackageRef(rootp->fileline(), "process__Vpkg",
+                                                               processPackagep, nullptr),
+                                      nullptr));
+    processClassp->addMembersp(statusFuncp);
 }
 
 }  // namespace V3Builtin
