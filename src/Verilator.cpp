@@ -549,9 +549,9 @@ static void verilate(const string& argString) {
     }
     // Undocumented debugging - cannot be a switch as then command line
     // would mismatch forcing non-identicalness when we set it
-    if (!V3Os::getenvStr("VERILATOR_DEBUG_SKIP_IDENTICAL", "").empty()) {
+    if (!V3Os::getenvStr("VERILATOR_DEBUG_SKIP_IDENTICAL", "").empty()) {  // LCOV_EXCL_START
         v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
-    }
+    }  // LCOV_EXCL_STOP
 
     //--FRONTEND------------------
 

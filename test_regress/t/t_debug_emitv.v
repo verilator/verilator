@@ -87,6 +87,7 @@ module t (/*AUTOARG*/
       sub.inc(fo, sum);
       sum = sub.f(sum);
       $display("[%0t] sum = %d", $time, sum);
+      $display("a?= $d", $c(1) ? $c32(20) : $c32(30));
 
       $c(";");
       $display("%d", $c("0"));
@@ -136,7 +137,7 @@ module t (/*AUTOARG*/
 
       str = $sformatf("cyc=%d", cyc);
       $display("str = %s", str);
-      $display("[%t] [%t]", $time, $realtime);
+      $display("%% [%t] [%t] to=%o td=%d", $time, $realtime, $time, $time);
       $sscanf("foo=5", "foo=%d", i);
       if (i != 5) $stop;
    end

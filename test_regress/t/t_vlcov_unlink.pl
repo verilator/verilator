@@ -8,22 +8,25 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+use File::Copy;
+
 scenarios(dist => 1);
 
-foreach my $basename ("t_vlcov_data_a.dat",
-                      "t_vlcov_data_b.dat",
-                      "t_vlcov_data_c.dat",
-                      "t_vlcov_data_d.dat",
-    ) {
-    run(cmd => ["../bin/verilator_coverage",
-                "t/${basename}",
-                "--debug",
-                "--debugi 9",
-        ],
-        tee => $Self->{verbose},
-        verilator_run => 1,
-        );
-}
+my $tmp = "$Self->{obj_dir}/copied.dat";
+File::Copy::copy("$Self->{t_dir}/t_vlcov_data_a.dat", $tmp);
+
+run(cmd => ["../bin/verilator_coverage",
+            "--unlink",
+            $tmp,
+            "--write", "$Self->{obj_dir}/output.dat"],
+    verilator_run => 1,
+    );
+
+files_identical("$Self->{obj_dir}/output.dat", "t/t_vlcov_data_a.dat");
+
+# --unlink should have removed it
+!-r $tmp or error("Not unlinked");
 
 ok(1);
+
 1;

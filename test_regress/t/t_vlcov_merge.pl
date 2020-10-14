@@ -11,6 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(dist => 1);
 
 run(cmd => ["../bin/verilator_coverage",
+            "--no-unlink", "--nounlink",
             "--write", "$Self->{obj_dir}/coverage.dat",
             "t/t_vlcov_data_a.dat",
             "t/t_vlcov_data_b.dat",
@@ -19,6 +20,10 @@ run(cmd => ["../bin/verilator_coverage",
     ],
     verilator_run => 1,
     );
+
+# Not deleted e.g. parsed --no-unlink properly
+files_identical("$Self->{t_dir}/t_vlcov_data_a.dat",
+                "$Self->{t_dir}/t_vlcov_data_a.dat");
 
 # Older clib's didn't properly sort maps, but the coverage data doesn't
 # really care about ordering. So avoid false failures by sorting.

@@ -48,7 +48,7 @@ public:
 
 private:
     static Singleton& s() {
-        static Singleton s_s;
+        static Singleton s_s;  // LCOV_EXCL_BR_LINE
         return s_s;
     }
 };

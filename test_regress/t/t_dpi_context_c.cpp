@@ -74,6 +74,7 @@ int dpic_line() {
         printf("%%Warning: svGetCallerInfo failed\n");
         return 0;
     }
+    if (svGetCallerInfo(nullptr, nullptr)) {}  // Check doesn't segflt
     return lineno;
 }
 

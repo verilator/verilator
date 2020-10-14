@@ -78,6 +78,8 @@ module Vt_debug_emitv;
         end
         t.sum = __Vfunc_t.sub.f__3__Vfuncout;
         $display("[%0t] sum = %~", $timet.sum, t.sum);
+        $display("a?= $d%d", ($c(32'sh1) ? $c(32'sh14)
+                               : $c(32'sh1e)));
         $c(;);
         $display("%d", $c(0));
         $fopen(72'h2f6465762f6e756c6c);
@@ -165,7 +167,9 @@ module Vt_debug_emitv;
         t.str = $sformatf("cyc=%~", t.cyc);
         ;
         $display("str = %@", t.str);
-        $display("[%t] [%^]", $time$realtime, $realtime);
+        $display("%% [%t] [%^] to=%o td=%d", $time$realtime
+                 $time$time, $realtime$time$time, $time
+                 $time, $time);
         $sscanf(40'h666f6f3d35, "foo=%d", t.i);
         ;
         if ((32'sh5 != t.i)) begin

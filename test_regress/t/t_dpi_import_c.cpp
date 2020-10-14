@@ -189,7 +189,9 @@ int dpii_t_void() { return svIsDisabledState(); }
 int dpii_t_void_context() { return svIsDisabledState(); }
 int dpii_t_int(int i, int* o) {
     *o = i;
-    return svIsDisabledState();  // Tasks generally need this
+    bool disabled = svIsDisabledState();  // Tasks generally need this
+    svAckDisabledState();
+    return disabled;
 }
 #endif
 

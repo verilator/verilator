@@ -106,8 +106,14 @@ int _mon_check_mcd() {
     status = vpi_mcd_printf(mcd, (PLI_BYTE8*)"hello %s", "vpi_mcd_printf");
     CHECK_RESULT(status, strlen("hello vpi_mcd_printf"));
 
+    status = vpi_mcd_printf(0, (PLI_BYTE8*)"empty");
+    CHECK_RESULT(status, 0);
+
     status = vpi_mcd_flush(mcd);
     CHECK_RESULT(status, 0);
+
+    status = vpi_mcd_flush(0);
+    CHECK_RESULT(status, 1);
 
     status = vpi_mcd_close(mcd);
     // Icarus says 'error' on ones we're not using, so check only used ones return 0.
@@ -420,6 +426,8 @@ int _mon_check_string() {
         v.format = vpiStringVal;
         vpi_get_value(vh1, &v);
         if (vpi_chk_error(&e)) { printf("%%vpi_chk_error : %s\n", e.message); }
+
+        (void)vpi_chk_error(nullptr);
 
         CHECK_RESULT_CSTR_STRIP(v.value.str, text_test_obs[i].initial);
 
