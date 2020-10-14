@@ -38,15 +38,36 @@ void defineProcessClass(AstNetlist* rootp, V3ParseSym& parseSyms) {
 
     // Create a 'process' package to emulate static functions
     auto* processPackagep = new AstPackage(rootp->fileline(), "process__Vpkg");
-    auto* selfFuncp = new AstFunc(rootp->fileline(), "self", nullptr,
-                                  new AstClassRefDType(rootp->fileline(), processClassp));
+    processPackagep->inLibrary(true);
     rootp->addModulep(processPackagep);
     parseSyms.pushNew(processPackagep);
+
+    // Function 'process::self'
+    auto* selfFuncp = new AstFunc(rootp->fileline(), "self", nullptr,
+                                  new AstClassRefDType(rootp->fileline(), processClassp));
     processPackagep->addStmtp(selfFuncp);
-    processPackagep->inLibrary(true);
-    processPackagep->lifetime(VLifetime::NONE);
     parseSyms.pushNew(selfFuncp);
     parseSyms.popScope(selfFuncp);
+
+    // Enum 'process::state'
+    auto* finishedEnumItemp = new AstEnumItem(rootp->fileline(), "FINISHED", nullptr, nullptr);
+    auto* runningEnumItemp = new AstEnumItem(rootp->fileline(), "RUNNING", nullptr, nullptr);
+    auto* waitingEnumItemp = new AstEnumItem(rootp->fileline(), "WAITING", nullptr, nullptr);
+    auto* suspendedEnumItemp = new AstEnumItem(rootp->fileline(), "SUSPENDED", nullptr, nullptr);
+    auto* killedEnumItemp = new AstEnumItem(rootp->fileline(), "KILLED", nullptr, nullptr);
+    finishedEnumItemp->addNext(runningEnumItemp);
+    runningEnumItemp->addNext(waitingEnumItemp);
+    waitingEnumItemp->addNext(suspendedEnumItemp);
+    suspendedEnumItemp->addNext(killedEnumItemp);
+    auto* stateEnump = new AstEnumDType(
+        rootp->fileline(), VFlagChildDType(),
+        new AstBasicDType(rootp->fileline(), AstBasicDTypeKwd::INT), finishedEnumItemp);
+    auto* stateTypedefp
+        = new AstTypedef(rootp->fileline(), "state", nullptr, VFlagChildDType(), stateEnump);
+    processPackagep->addStmtp(stateTypedefp);
+    parseSyms.pushNew(stateTypedefp);
+    parseSyms.popScope(stateTypedefp);
+
     parseSyms.popScope(processPackagep);
 }
 

@@ -6006,19 +6006,27 @@ packageClassScopeItem<nodep>:	// IEEE: package_scope or [package_scope]::[class_
 	//			// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
 	//			//vv mid rule action needed otherwise we might not have NextId in time to parse the id token
 		idCC
-	/*mid*/		{ SYMP->nextId($<scp>1); }
-	/*cont*/    yP_COLONCOLON
-			{
+	/*mid*/	{
 				if (*$1 == "process") {
 					*$1 = "process__Vpkg";
 					$<scp>1 = SYMP->symCurrentp()->findIdFallback(*$1)->nodep();
 				}
+				SYMP->nextId($<scp>1);
+			}
+	/*cont*/    yP_COLONCOLON
+			{
 				$$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, nullptr);
 				$<scp>$ = $<scp>1;
 			}
 	//
 	|	idCC parameter_value_assignment
-	/*mid*/		{ SYMP->nextId($<scp>1); }   // Change next *after* we handle parameters, not before
+	/*mid*/	{
+				if (*$1 == "process") {
+					*$1 = "process__Vpkg";
+					$<scp>1 = SYMP->symCurrentp()->findIdFallback(*$1)->nodep();
+				}
+				SYMP->nextId($<scp>1);
+			}   // Change next *after* we handle parameters, not before
 	/*cont*/    yP_COLONCOLON
 			{ $$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, $2); $<scp>$ = $<scp>1; }
 	;
