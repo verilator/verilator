@@ -1022,7 +1022,7 @@ private:
         }
     }
     virtual void visit(AstNodeVarRef* nodep) override {
-        if (m_inTimedEvent && nodep->lvalue()) {
+        if (m_inTimedEvent && nodep->access().isWrite()) {
             // Ignore var being set under AstTimedEvent, it is being set in the
             // "future" not in this time cycle
         } else if (m_scopep) {

@@ -123,7 +123,7 @@ public:
     }
     AstNode* newFsmEqConst(FileLine* fl, int state) {
         return new AstEq(fl, new AstConst(fl, state),
-                         new AstVarRef(fl, getCreateFsmVarScp(fl), false));
+                         new AstVarRef(fl, getCreateFsmVarScp(fl), VAccess::READ));
     }
     string fsmName() const { return "__vProc" + cvtToStr(m_procNum) + "Fsm"; }
 
@@ -185,7 +185,7 @@ class TimingProcedureVisitor : public AstNVisitor {
             AstNode* stmtp = new AstAssign(
                 labelp->fileline(),
                 new AstVarRef(labelp->fileline(), m_state.getCreateFsmVarScp(labelp->fileline()),
-                              true),
+                              VAccess::WRITE),
                 new AstConst(labelp->fileline(), 0));
             stmtp->addNext(new AstJumpGo(labelp->fileline(), labelp));
             AstIf* ifp = new AstIf(labelp->fileline(),
@@ -240,14 +240,15 @@ class TimingProcedureVisitor : public AstNVisitor {
         iterateChildren(nodep);
         int state = nodep->user1();
         UASSERT_OBJ(state, nodep, "delay state not assigned in TimingVisitor::AstDelay");
-        AstNode* newp = new AstAssign(
-            nodep->fileline(),
-            new AstVarRef(nodep->fileline(), m_state.getCreateFsmVarScp(nodep->fileline()), true),
-            new AstConst(nodep->fileline(), state));
+        AstNode* newp = new AstAssign(nodep->fileline(),
+                                      new AstVarRef(nodep->fileline(),
+                                                    m_state.getCreateFsmVarScp(nodep->fileline()),
+                                                    VAccess::WRITE),
+                                      new AstConst(nodep->fileline(), state));
         newp->addNext(new AstTimedEvent(
             nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
             new AstVarRef(nodep->fileline(), m_state.getCreateEventVarScp(nodep->fileline()),
-                          true)));
+                          VAccess::WRITE)));
         newp->addNext(new AstJumpGo(nodep->fileline(), m_exitLabelp));
         if (m_newProc) {
             AstJumpLabel* restoreLabelp = newLabelp(nodep);
@@ -331,7 +332,7 @@ private:
                     fl, new AstSenItem(
                             fl, VEdgeType::ET_HIGHEDGE,
                             new AstVarRef(fl, m_state.getCreateEventVarScp(nodep->fileline()),
-                                          false)));
+                                          VAccess::READ)));
                 alwaysp = new AstAlways(fl, VAlwaysKwd::ALWAYS, sensesp,
                                         nodep->bodysp()->cloneTree(true));
                 nodep->addNext(alwaysp);
