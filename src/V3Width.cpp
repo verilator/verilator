@@ -1717,7 +1717,8 @@ private:
                 nodep->dtypep(newp);
                 v3Global.rootp()->typeTablep()->addTypesp(newp);
             }
-        } else if (nodep->isIO() && nodep->dtypeSkipRefp()->name() != "process"
+        } else if (nodep->isIO()
+                   && nodep->dtypeSkipRefp()->name() != v3Global.builtin().processClassp()->name()
                    && !(VN_IS(nodep->dtypeSkipRefp(), BasicDType)
                         || VN_IS(nodep->dtypeSkipRefp(), NodeArrayDType)
                         || VN_IS(nodep->dtypeSkipRefp(), NodeUOrStructDType))) {

@@ -14,13 +14,12 @@
 //
 //*************************************************************************
 
-#include "V3Builtin.h"
+#include "V3Ast.h"
 #include "V3FileLine.h"
+#include "V3ParseSym.h"
 
-namespace V3Builtin {
-
-void defineProcessClass(AstNetlist* rootp, V3ParseSym& parseSyms) {
-    auto* processClassp = new AstClass(rootp->fileline(), "process");
+void V3Builtin::makeProcessClass(AstNetlist* rootp, V3ParseSym& parseSyms) {
+    m_processClassp = new AstClass(rootp->fileline(), "process__builtin_cls");
 
     // Member tasks
     auto* killTaskp = new AstTask(rootp->fileline(), "kill", nullptr);
@@ -30,29 +29,29 @@ void defineProcessClass(AstNetlist* rootp, V3ParseSym& parseSyms) {
     auto* srandomTaskp = new AstTask(rootp->fileline(), "srandom", nullptr);
     auto* getRandstateTaskp = new AstTask(rootp->fileline(), "get_randstate", nullptr);
     auto* setRandstateTaskp = new AstTask(rootp->fileline(), "set_randstate", nullptr);
-    processClassp->addMembersp(killTaskp);
-    processClassp->addMembersp(awaitTaskp);
-    processClassp->addMembersp(suspendTaskp);
-    processClassp->addMembersp(resumeTaskp);
-    processClassp->addMembersp(srandomTaskp);
-    processClassp->addMembersp(getRandstateTaskp);
-    processClassp->addMembersp(setRandstateTaskp);
+    m_processClassp->addMembersp(killTaskp);
+    m_processClassp->addMembersp(awaitTaskp);
+    m_processClassp->addMembersp(suspendTaskp);
+    m_processClassp->addMembersp(resumeTaskp);
+    m_processClassp->addMembersp(srandomTaskp);
+    m_processClassp->addMembersp(getRandstateTaskp);
+    m_processClassp->addMembersp(setRandstateTaskp);
 
     // Unit package for the class
     auto* unitPackagep = rootp->dollarUnitPkgAddp();
     parseSyms.reinsert(unitPackagep, parseSyms.symRootp());
-    unitPackagep->addStmtp(processClassp);
+    unitPackagep->addStmtp(m_processClassp);
 
     // Create a 'process' package to emulate static functions
-    auto* processPackagep = new AstPackage(rootp->fileline(), "process__Vpkg");
-    processPackagep->inLibrary(true);
-    rootp->addModulep(processPackagep);
-    parseSyms.pushNew(processPackagep);
+    m_processPackagep = new AstPackage(rootp->fileline(), "process__builtin_pkg");
+    m_processPackagep->inLibrary(true);
+    rootp->addModulep(m_processPackagep);
+    parseSyms.pushNew(m_processPackagep);
 
     // Function 'process::self'
     auto* selfFuncp = new AstFunc(rootp->fileline(), "self", nullptr,
-                                  new AstClassRefDType(rootp->fileline(), processClassp));
-    processPackagep->addStmtp(selfFuncp);
+                                  new AstClassRefDType(rootp->fileline(), m_processClassp));
+    m_processPackagep->addStmtp(selfFuncp);
     parseSyms.pushNew(selfFuncp);
     parseSyms.popScope(selfFuncp);
 
@@ -71,20 +70,18 @@ void defineProcessClass(AstNetlist* rootp, V3ParseSym& parseSyms) {
         new AstBasicDType(rootp->fileline(), AstBasicDTypeKwd::INT), finishedEnumItemp);
     auto* stateTypedefp
         = new AstTypedef(rootp->fileline(), "state", nullptr, VFlagChildDType(), stateEnump);
-    processPackagep->addStmtp(stateTypedefp);
+    m_processPackagep->addStmtp(stateTypedefp);
     parseSyms.pushNew(stateTypedefp);
     parseSyms.popScope(stateTypedefp);
 
-    parseSyms.popScope(processPackagep);
+    parseSyms.popScope(m_processPackagep);
 
     // Member function 'status'
-    auto* statusFuncp
-        = new AstFunc(rootp->fileline(), "status", nullptr,
-                      new AstRefDType(rootp->fileline(), "state",
-                                      new AstClassOrPackageRef(rootp->fileline(), "process__Vpkg",
-                                                               processPackagep, nullptr),
-                                      nullptr));
-    processClassp->addMembersp(statusFuncp);
+    auto* statusFuncp = new AstFunc(
+        rootp->fileline(), "status", nullptr,
+        new AstRefDType(rootp->fileline(), "state",
+                        new AstClassOrPackageRef(rootp->fileline(), "process__builtin_pkg",
+                                                 m_processPackagep, nullptr),
+                        nullptr));
+    m_processClassp->addMembersp(statusFuncp);
 }
-
-}  // namespace V3Builtin

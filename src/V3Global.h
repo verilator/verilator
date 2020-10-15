@@ -29,6 +29,7 @@
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Options.h"
+#include "V3Builtin.h"
 
 #include <string>
 #include <unordered_map>
@@ -92,6 +93,7 @@ class V3Global {
     AstNetlist* m_rootp;  // Root of entire netlist
     V3HierBlockPlan* m_hierPlanp;  // Hierarchical verilation plan, nullptr unless hier_block
     VWidthMinUsage m_widthMinUsage;  // What AstNode::widthMin() is used for
+    V3Builtin m_builtin; // Builtin classes
 
     int m_debugFileNumber = 0;  // Number to append to debug files created
     bool m_assertDTypesResolved = false;  // Tree should have dtypep()'s
@@ -124,6 +126,7 @@ public:
     // ACCESSORS (general)
     AstNetlist* rootp() const { return m_rootp; }
     VWidthMinUsage widthMinUsage() const { return m_widthMinUsage; }
+    V3Builtin& builtin() { return m_builtin; }
     bool assertDTypesResolved() const { return m_assertDTypesResolved; }
 
     // METHODS

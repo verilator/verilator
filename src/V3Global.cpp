@@ -19,7 +19,6 @@
 
 #include "V3Global.h"
 #include "V3Ast.h"
-#include "V3Builtin.h"
 #include "V3File.h"
 #include "V3HierBlock.h"
 #include "V3LinkCells.h"
@@ -56,7 +55,7 @@ void V3Global::readFiles() {
     VInFilter filter(v3Global.opt.pipeFilter());
     V3ParseSym parseSyms(v3Global.rootp());  // Symbol table must be common across all parsing
 
-    V3Builtin::defineProcessClass(v3Global.rootp(), parseSyms);
+    m_builtin.makeProcessClass(v3Global.rootp(), parseSyms);
 
     V3Parse parser(v3Global.rootp(), &filter, &parseSyms);
     // Read top module

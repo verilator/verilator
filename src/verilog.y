@@ -4741,12 +4741,26 @@ idAny<strp>:			// Any kind of identifier
 
 idType<strp>:			// IEEE: class_identifier or other type identifier
 	//			// Used where reference is needed
-		yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
+	yaID__aTYPE		{
+						if (*$1 == "process" && !$<scp>$) {
+							*$1 = "process__builtin_cls";
+							$<scp>$ = v3Global.builtin().processClassp();
+						}
+						$$ = $1;
+						$<fl>$=$<fl>1;
+					}
 	;
 
 idCC<strp>:			// IEEE: class/package then ::
 				// lexer matches this:  yaID_LEX [ '#' '(' ... ')' ] yP_COLONCOLON
-		yaID__CC				{ $$ = $1; $<fl>$=$<fl>1; }
+	yaID__CC		{
+						if (*$1 == "process" && !$<scp>$) {
+							*$1 = "process__builtin_pkg";
+							$<scp>$ = v3Global.builtin().processPackagep();
+						}
+						$$ = $1;
+						$<fl>$=$<fl>1;
+					}
 	;
 
 idRandomize<strp>:		// Keyword as an identifier
@@ -6006,27 +6020,12 @@ packageClassScopeItem<nodep>:	// IEEE: package_scope or [package_scope]::[class_
 	//			// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
 	//			//vv mid rule action needed otherwise we might not have NextId in time to parse the id token
 		idCC
-	/*mid*/	{
-				if (*$1 == "process") {
-					*$1 = "process__Vpkg";
-					$<scp>1 = SYMP->symCurrentp()->findIdFallback(*$1)->nodep();
-				}
-				SYMP->nextId($<scp>1);
-			}
+	/*mid*/		{ SYMP->nextId($<scp>1); }
 	/*cont*/    yP_COLONCOLON
-			{
-				$$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, nullptr);
-				$<scp>$ = $<scp>1;
-			}
+			{ $$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, nullptr); $<scp>$ = $<scp>1; }
 	//
 	|	idCC parameter_value_assignment
-	/*mid*/	{
-				if (*$1 == "process") {
-					*$1 = "process__Vpkg";
-					$<scp>1 = SYMP->symCurrentp()->findIdFallback(*$1)->nodep();
-				}
-				SYMP->nextId($<scp>1);
-			}   // Change next *after* we handle parameters, not before
+	/*mid*/		{ SYMP->nextId($<scp>1); }   // Change next *after* we handle parameters, not before
 	/*cont*/    yP_COLONCOLON
 			{ $$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, $2); $<scp>$ = $<scp>1; }
 	;

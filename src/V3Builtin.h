@@ -20,13 +20,24 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Ast.h"
-#include "V3ParseSym.h"
+class AstClass;
+class AstPackage;
+class AstNetlist;
+class V3ParseSym;
 
-namespace V3Builtin {
+class V3Builtin {
+    AstClass* m_processClassp;
+    AstPackage* m_processPackagep;
 
-void defineProcessClass(AstNetlist* rootp, V3ParseSym& parseSyms);
+public:
+    V3Builtin()
+        : m_processClassp{nullptr}
+        , m_processPackagep{nullptr} {}
 
-}  // namespace V3Builtin
+    void makeProcessClass(AstNetlist* rootp, V3ParseSym& parseSyms);
+
+    AstClass* processClassp() { return m_processClassp; }
+    AstPackage* processPackagep() { return m_processPackagep; }
+};
 
 #endif  // Guard
