@@ -156,7 +156,8 @@ sub report {
     print "\nAnalysis:\n";
     printf "  Total threads             = %d\n", $nthreads;
     printf "  Total mtasks              = %d\n", scalar(keys %Mtasks);
-    printf "  Total cpus used           = %d\n", scalar(keys %{$Global{cpus}});
+    my $ncpus = scalar(keys %{$Global{cpus}});
+    printf "  Total cpus used           = %d\n", $ncpus;
     printf "  Total yields              = %d\n", $Global{stats}{yields};
     printf "  Total eval time           = %d rdtsc ticks\n", $Global{last_end};
     printf "  Longest mtask time        = %d rdtsc ticks\n", $long_mtask_time;
@@ -206,6 +207,12 @@ sub report {
     print "  stddev = " . ($stddev) . "\n";
     print "  e ^ stddev = " . exp($stddev). "\n";
     print "\n";
+
+    if ($nthreads > $ncpus) {
+        print "%Warning: There were fewer CPUs ($ncpus) then threads ($nthreads).\n";
+        print "        : See docs on use of numactl.\n";
+        print "\n";
+    }
 }
 
 sub report_graph {

@@ -300,7 +300,7 @@ private:
         //
         AstVarScope* vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
-        if (nodep->lvalue()) {
+        if (nodep->access().isWrite()) {
             m_sideEffect = true;  // $sscanf etc may have RHS vars that are lvalues
             m_lifep->complexAssign(vscp);
         } else {

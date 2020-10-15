@@ -167,7 +167,14 @@ class CUseVisitor : public AstNVisitor {
                 stmt += comma;
                 comma = ", ";
                 stmt += itemp->origNameProtect();
-                stmt += ":\" + VL_TO_STRING(";
+                stmt += ":\" + ";
+                if (itemp->isWide()) {
+                    stmt += "VL_TO_STRING_W(";
+                    stmt += cvtToStr(itemp->widthWords());
+                    stmt += ", ";
+                } else {
+                    stmt += "VL_TO_STRING(";
+                }
                 stmt += itemp->nameProtect();
                 stmt += ");\n";
                 nodep->user1(true);  // So what we extend dumps this

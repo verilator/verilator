@@ -99,13 +99,13 @@ private:
                 FileLine* fl = bodyp->fileline();
                 AstVar* itp = findCreateVarTemp(fl, m_mgCfuncp);
 
-                AstNode* initp = new AstAssign(fl, new AstVarRef(fl, itp, true),
+                AstNode* initp = new AstAssign(fl, new AstVarRef(fl, itp, VAccess::WRITE),
                                                new AstConst(fl, m_mgIndexLo));
-                AstNode* condp
-                    = new AstLte(fl, new AstVarRef(fl, itp, false), new AstConst(fl, m_mgIndexHi));
+                AstNode* condp = new AstLte(fl, new AstVarRef(fl, itp, VAccess::READ),
+                                            new AstConst(fl, m_mgIndexHi));
                 AstNode* incp = new AstAssign(
-                    fl, new AstVarRef(fl, itp, true),
-                    new AstAdd(fl, new AstConst(fl, 1), new AstVarRef(fl, itp, false)));
+                    fl, new AstVarRef(fl, itp, VAccess::WRITE),
+                    new AstAdd(fl, new AstConst(fl, 1), new AstVarRef(fl, itp, VAccess::READ)));
                 AstWhile* whilep = new AstWhile(fl, condp, nullptr, incp);
                 initp->addNext(whilep);
                 bodyp->replaceWith(initp);
@@ -113,11 +113,11 @@ private:
 
                 // Replace constant index with new loop index
                 AstNode* lbitp = m_mgSelLp->bitp();
-                lbitp->replaceWith(new AstVarRef(fl, itp, false));
+                lbitp->replaceWith(new AstVarRef(fl, itp, VAccess::READ));
                 VL_DO_DANGLING(lbitp->deleteTree(), lbitp);
                 if (m_mgSelRp) {  // else constant and no replace
                     AstNode* rbitp = m_mgSelRp->bitp();
-                    rbitp->replaceWith(new AstVarRef(fl, itp, false));
+                    rbitp->replaceWith(new AstVarRef(fl, itp, VAccess::READ));
                     VL_DO_DANGLING(rbitp->deleteTree(), lbitp);
                 }
                 if (debug() >= 9) initp->dumpTree(cout, "-new: ");

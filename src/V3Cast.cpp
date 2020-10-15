@@ -154,9 +154,9 @@ private:
         }
     }
     virtual void visit(AstVarRef* nodep) override {
-        if (!nodep->lvalue() && !VN_IS(nodep->backp(), CCast) && VN_IS(nodep->backp(), NodeMath)
-            && !VN_IS(nodep->backp(), ArraySel) && nodep->backp()->width()
-            && castSize(nodep) != castSize(nodep->varp())) {
+        if (nodep->access().isRead() && !VN_IS(nodep->backp(), CCast)
+            && VN_IS(nodep->backp(), NodeMath) && !VN_IS(nodep->backp(), ArraySel)
+            && nodep->backp()->width() && castSize(nodep) != castSize(nodep->varp())) {
             // Cast vars to IData first, else below has upper bits wrongly set
             //  CData x=3; out = (QData)(x<<30);
             insertCast(nodep, castSize(nodep));

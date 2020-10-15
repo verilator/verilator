@@ -1,0 +1,4 @@
+# SystemC::Coverage-3
+C 'f../../t/t_cover_lib_c.cppl44pagesp_user/t_cover_lib_cokept_onehmain' 100
+C 'f../../t/t_cover_lib_c.cppl45pagesp_user/t_cover_lib_cokept_twohmain' 210
+C 'f../../t/t_cover_lib_c.cppl46pagesp_user/t_cover_lib_colost_threehmain' 220

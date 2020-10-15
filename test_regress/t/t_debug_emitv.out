@@ -1,0 +1,206 @@
+module Vt_debug_emitv;
+    input logic clk;
+    input logic in;
+     signed int [31:0] [0:2] t.array;
+    logic logic [15:0]  t.pubflat;
+    logic logic [15:0]  t.pubflat_r;
+    int signed int [31:0]  t.fd;
+    int signed int [31:0]  t.i;
+    int signed int [31:0]  t.cyc;
+    int signed int [31:0]  t.fo;
+    int signed int [31:0]  t.sum;
+    string string t.str;
+    int signed int [31:0]  t._Vpast_0_0;
+    int signed int [31:0]  t._Vpast_1_0;
+    int signed int [31:0]  t.unnamedblk3.i;
+    @(*)@([settle])@([initial])@(posedge clk)@(negedge 
+                                               clk)always @(
+                                                            *)@(
+                                                                [settle])@(
+                                                                           [initial])@(
+                                                                                posedge 
+                                                                                clk)@(
+                                                                                negedge 
+                                                                                clk) begin
+        $display("stmt");
+    end
+    always @([settle])@([initial])@(posedge clk)@(negedge 
+                                                  clk) begin
+        $display("stmt");
+    end
+    initial begin
+        // Function: f
+        $write("stmt\nstmt           0          99\n");
+        // Function: t
+        $display("stmt");
+        // Function: f
+        $write("stmt\nstmt           1          -1\n");
+        // Function: t
+        $display("stmt");
+        // Function: f
+        $display("stmt");
+        $display("stmt           2          -2");
+        // Function: t
+        $display("stmt");
+        $display("stmt");
+    end
+    
+    ???? // CFUNC '_final_TOP'
+    $_CSTMT(Vt_debug_emitv* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
+    );
+    // FINAL
+    $display("stmt");
+    always @(posedge clk)@(negedge clk) begin
+        $display("posedge clk");
+    end
+    always @(posedge clk)@(negedge clk) begin
+        __Vdly__t.pubflat_r <= t.pubflat;
+    end
+    always @(posedge clk)@(negedge clk) begin
+        __Vdly__t.cyc <= (32'sh1 + t.cyc);
+        t.fo = t.cyc;
+        // Function: inc
+        __Vtask_t.sub.inc__2__i = t.fo;
+        __Vtask_t.sub.inc__2__o = (32'h1 + __Vtask_t.sub.inc__2__i[31:1]);
+        t.sum = __Vtask_t.sub.inc__2__o;
+        // Function: f
+        __Vfunc_t.sub.f__3__v = t.sum;
+        begin : label0
+            begin : label0
+                if ((32'sh0 == __Vfunc_t.sub.f__3__v)) begin
+                    __Vfunc_t.sub.f__3__Vfuncout = 32'sh21;
+                    disable label0;
+                end
+                __Vfunc_t.sub.f__3__Vfuncout = (32'h1 
+                                                + __Vfunc_t.sub.f__3__v[2]);
+                disable label0;
+            end
+        end
+        t.sum = __Vfunc_t.sub.f__3__Vfuncout;
+        $display("[%0t] sum = %~", $timet.sum, t.sum);
+        $display("a?= $d%d", ($c(32'sh1) ? $c(32'sh14)
+                               : $c(32'sh1e)));
+        $c(;);
+        $display("%d", $c(0));
+        $fopen(72'h2f6465762f6e756c6c);
+        $fclose(t.fd);
+        $fopen(72'h2f6465762f6e756c6c, 8'h72);
+        $fgetc(t.fd);
+        $fflush(t.fd);
+        $fscanf(t.fd, "%d", t.sum);
+        ;
+        $fdisplay(32'h69203d20, "%d", t.sum);
+        $fwrite(t.fd, "hello");
+        $readmemh(t.fd, t.array);
+        $readmemh(t.fd, t.array, 32'sh0);
+        $readmemh(t.fd, t.array, 32'sh0, 32'sh0);
+        t.sum = 32'sh0;
+        t.unnamedblk3.i = 32'sh0;
+        begin : label0
+            while ((t.unnamedblk3.i < t.cyc)) begin
+                t.sum = (t.sum + t.unnamedblk3.i);
+                if ((32'sha < t.sum)) begin
+                    disable label0;
+                end
+                else begin
+                    t.sum = (32'sh1 + t.sum);
+                end
+                t.unnamedblk3.i = (32'h1 + t.unnamedblk3.i);
+            end
+        end
+        if ((32'sh63 == t.cyc)) begin
+            $finish;
+        end
+        if ((32'sh64 == t.cyc)) begin
+            $stop;
+        end
+        if (in) begin
+            $display("1");
+        end
+        else begin
+            $display("default");
+        end
+        if (in) begin
+            $display("1");
+        end
+        else begin
+            $display("default");
+        end
+        if (in) begin
+            $display("1");
+        end
+        else begin
+            $display("default");
+        end
+        if (in) begin
+            $display("1");
+        end
+        else begin
+            $display("default");
+        end
+        if (in) begin
+            $display("1");
+        end
+        else begin
+            $display("0");
+        end
+        priority if (in) begin
+            $display("1");
+        end
+        else begin
+            $display("0");
+        end
+        unique if (in) begin
+            $display("1");
+        end
+        else begin
+            $display("0");
+        end
+        unique0 if (in) begin
+            $display("1");
+        end
+        else begin
+            $display("0");
+        end
+        $display("%d%d", t._Vpast_0_0t._Vpast_1_0, 
+                 t._Vpast_1_0);
+        t.str = $sformatf("cyc=%~", t.cyc);
+        ;
+        $display("str = %@", t.str);
+        $display("%% [%t] [%^] to=%o td=%d", $time$realtime
+                 $time$time, $realtime$time$time, $time
+                 $time, $time);
+        $sscanf(40'h666f6f3d35, "foo=%d", t.i);
+        ;
+        if ((32'sh5 != t.i)) begin
+            $stop;
+        end
+    end
+    /*verilator public_flat_rw @(posedge clk)@(negedge 
+                                               clk) t.pubflat*/
+    always @(posedge clk)@(negedge clk) begin
+        __Vdly__t._Vpast_0_0 <= t.cyc;
+    end
+    always @(posedge clk)@(negedge clk) begin
+        __Vdly__t._Vpast_1_0 <= t.cyc;
+    end
+    __Vdly__t._Vpast_1_0 = t._Vpast_1_0;
+    t._Vpast_1_0 = __Vdly__t._Vpast_1_0;
+    __Vdly__t._Vpast_0_0 = t._Vpast_0_0;
+    t._Vpast_0_0 = __Vdly__t._Vpast_0_0;
+    __Vdly__t.cyc = t.cyc;
+    t.cyc = __Vdly__t.cyc;
+    __Vdly__t.pubflat_r = t.pubflat_r;
+    t.pubflat_r = __Vdly__t.pubflat_r;
+    always @(negedge clk) begin
+        $display("negedge clk, pfr = %x", t.pubflat_r);
+    end
+    int signed int [31:0]  __Vtask_t.sub.inc__2__i;
+    int signed int [31:0]  __Vtask_t.sub.inc__2__o;
+    int signed int [31:0]  __Vfunc_t.sub.f__3__Vfuncout;
+    int signed int [31:0]  __Vfunc_t.sub.f__3__v;
+    logic logic [15:0]  __Vdly__t.pubflat_r;
+    int signed int [31:0]  __Vdly__t.cyc;
+    int signed int [31:0]  __Vdly__t._Vpast_0_0;
+    int signed int [31:0]  __Vdly__t._Vpast_1_0;
+endmodule

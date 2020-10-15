@@ -199,30 +199,33 @@ private:
         // Define what operation will we be doing
         AstNode* operp;
         if (VN_IS(nodep, PostSub) || VN_IS(nodep, PreSub)) {
-            operp = new AstSub(fl, new AstVarRef(fl, varrefp->varp(), false), newconstp);
+            operp = new AstSub(fl, new AstVarRef(fl, varrefp->varp(), VAccess::READ), newconstp);
         } else {
-            operp = new AstAdd(fl, new AstVarRef(fl, varrefp->varp(), false), newconstp);
+            operp = new AstAdd(fl, new AstVarRef(fl, varrefp->varp(), VAccess::READ), newconstp);
         }
 
         if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PreSub)) {
             // PreAdd/PreSub operations
             // Immediately after declaration - increment it by one
-            m_insStmtp->addHereThisAsNext(new AstAssign(fl, new AstVarRef(fl, varp, true), operp));
+            m_insStmtp->addHereThisAsNext(
+                new AstAssign(fl, new AstVarRef(fl, varp, VAccess::WRITE), operp));
             // Immediately after incrementing - assign it to the original variable
-            m_insStmtp->addHereThisAsNext(new AstAssign(
-                fl, new AstVarRef(fl, varrefp->varp(), true), new AstVarRef(fl, varp, false)));
+            m_insStmtp->addHereThisAsNext(
+                new AstAssign(fl, new AstVarRef(fl, varrefp->varp(), VAccess::WRITE),
+                              new AstVarRef(fl, varp, VAccess::READ)));
         } else {
             // PostAdd/PostSub operations
             // assign the original variable to the temporary one
-            m_insStmtp->addHereThisAsNext(new AstAssign(
-                fl, new AstVarRef(fl, varp, true), new AstVarRef(fl, varrefp->varp(), false)));
+            m_insStmtp->addHereThisAsNext(
+                new AstAssign(fl, new AstVarRef(fl, varp, VAccess::WRITE),
+                              new AstVarRef(fl, varrefp->varp(), VAccess::READ)));
             // Increment the original variable by one
             m_insStmtp->addHereThisAsNext(
-                new AstAssign(fl, new AstVarRef(fl, varrefp->varp(), true), operp));
+                new AstAssign(fl, new AstVarRef(fl, varrefp->varp(), VAccess::WRITE), operp));
         }
 
         // Replace the node with the temporary
-        nodep->replaceWith(new AstVarRef(varrefp->fileline(), varp, true));
+        nodep->replaceWith(new AstVarRef(varrefp->fileline(), varp, VAccess::WRITE));
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }

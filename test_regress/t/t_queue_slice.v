@@ -16,7 +16,11 @@ module t (/*AUTOARG*/);
       int    i;
 
       q.push_front("non-empty");
-      i = q.size(); `checkh(i, 0);
+      i = q.size(); `checkh(i, 1);
+      v = $sformatf("%p", q); `checks(v, "'{\"non-empty\"} ");
+
+      q = '{"q", "b", "c", "d", "e", "f"};
+      v = $sformatf("%p", q); `checks(v, "'{\"q\", \"b\", \"c\", \"d\", \"e\", \"f\"} ");
 
       q = {"q", "b", "c", "d", "e", "f"};
       v = $sformatf("%p", q); `checks(v, "'{\"q\", \"b\", \"c\", \"d\", \"e\", \"f\"} ");
@@ -28,7 +32,15 @@ module t (/*AUTOARG*/);
       q.insert(2, "ins2");
       v = q[0]; `checks(v, "ins0");
       v = q[2]; `checks(v, "ins2");
-      v = $sformatf("%p", q); `checks(v, "'{need_update, \"q\", \"b\", \"c\", \"d\", \"e\", \"f\"} ");
+      v = $sformatf("%p", q); `checks(v, "'{\"ins0\", \"q\", \"ins2\", \"c\", \"d\", \"e\", \"f\"} ");
+
+      // Slicing
+      q = {"q", "b", "c", "d", "e", "f"};
+      q = q[2:3];
+      v = $sformatf("%p", q); `checks(v, "'{\"c\", \"d\"} ");
+      q = {"q", "b", "c", "d", "e", "f"};
+      q = q[3:$];
+      v = $sformatf("%p", q); `checks(v, "'{\"d\", \"e\", \"f\"} ");
 
       // Similar using implied notation
       q = {q, "f1"};  // push_front
@@ -36,7 +48,7 @@ module t (/*AUTOARG*/);
       q = {"b1", q};  // push_back
       q = {"b2", q};  // push_back
       q = {q[0], q[2:$]};  // delete element 1
-      v = $sformatf("%p", q); `checks(v, "'{need_update, \"q\", \"b\", \"c\", \"d\", \"e\", \"f\"} ");
+      v = $sformatf("%p", q); `checks(v, "'{\"b2\", \"d\", \"e\", \"f\", \"f1\", \"f2\"} ");
 
       begin
          string ai[$] = { "Foo", "Bar" };
@@ -52,25 +64,7 @@ module t (/*AUTOARG*/);
          v = q.pop_front(); `checks(v, "CC");
       end
 
-      // Unpacked methods also allowed. Not supported yet.
-      // find()
-      // find_index()
-      // find_first()
-      // find_first_index()
-      // find_last()
-      // find_last_index()
-      // min()
-      // max()
-      // unique()
-      // unique_index()
-      // reverse()
-      // sort()
-      // rsort()
-      // shuffle()
-      // sum()
-      // product()
-      // and()
-      // or()
-      // xor()
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 endmodule

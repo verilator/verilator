@@ -58,7 +58,7 @@ private:
     }
     virtual void visit(AstVarRef* nodep) override {
         // it's LHS var is used so need a deep temporary
-        if (nodep->lvalue()) {
+        if (nodep->access().isWrite()) {
             nodep->varp()->user4(true);
         } else {
             if (nodep->varp()->user4()) {
@@ -173,11 +173,11 @@ private:
         AstVar* varp = getBlockTemp(nodep);
         if (noSubst) varp->noSubst(true);  // Do not remove varrefs to this in V3Const
         // Replace node tree with reference to var
-        AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, false);
+        AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
         linker.relink(newp);
         // Put assignment before the referencing statement
-        AstAssign* assp = new AstAssign(nodep->fileline(),
-                                        new AstVarRef(nodep->fileline(), varp, true), nodep);
+        AstAssign* assp = new AstAssign(
+            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE), nodep);
         insertBeforeStmt(assp);
         if (debug() > 8) assp->dumpTree(cout, "deepou:");
         nodep->user1(true);  // Don't add another assignment

@@ -383,7 +383,7 @@ protected:
                 SplitVarStdVertex* vstdp = reinterpret_cast<SplitVarStdVertex*>(vscp->user1p());
 
                 // SPEEDUP: We add duplicate edges, that should be fixed
-                if (m_inDly && nodep->lvalue()) {
+                if (m_inDly && nodep->access().isWrite()) {
                     UINFO(4, "     VARREFDLY: " << nodep << endl);
                     // Delayed variable is different from non-delayed variable
                     if (!vscp->user2p()) {
@@ -398,7 +398,7 @@ protected:
                         new SplitLVEdge(&m_graph, vpostp, vxp);
                     }
                 } else {  // Nondelayed assignment
-                    if (nodep->lvalue()) {
+                    if (nodep->access().isWrite()) {
                         // Non-delay; need to maintain existing ordering
                         // with all consumers of the signal
                         UINFO(4, "     VARREFLV: " << nodep << endl);

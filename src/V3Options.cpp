@@ -431,15 +431,6 @@ string V3Options::allArgsStringForHierBlock(bool forTop) const {
 //######################################################################
 // File searching
 
-bool V3Options::fileStatDir(const string& filename) {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-    struct stat sstat;  // Stat information
-    int err = stat(filename.c_str(), &sstat);
-    if (err != 0) return false;
-    if (!S_ISDIR(sstat.st_mode)) return false;
-    return true;
-}
-
 bool V3Options::fileStatNormal(const string& filename) {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     struct stat sstat;  // Stat information
@@ -513,7 +504,7 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
 int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) const {
     if (opt == "Mdir" || opt == "clk" || opt == "f" || opt == "j" || opt == "l2-name"
         || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib" || opt == "protect-key"
-        || opt == "top-module" || opt == "v") {
+        || opt == "threads" || opt == "top-module" || opt == "v") {
         return 2;
     }
     if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
@@ -651,9 +642,9 @@ string V3Options::getenvSYSTEMC_ARCH() {
         struct utsname uts;
         uname(&uts);
         string sysname = VString::downcase(uts.sysname);  // aka  'uname -s'
-        if (VString::wildmatch(sysname.c_str(), "*solaris*")) {
+        if (VL_UNCOVERABLE(VString::wildmatch(sysname.c_str(), "*solaris*"))) {
             var = "gccsparcOS5";
-        } else if (VString::wildmatch(sysname.c_str(), "*cygwin*")) {
+        } else if (VL_UNCOVERABLE(VString::wildmatch(sysname.c_str(), "*cygwin*"))) {
             var = "cygwin";
         } else {
             var = "linux";
@@ -1013,6 +1004,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 m_debugCheck = flag;
             } else if (onoff(sw, "-debug-collision", flag /*ref*/)) {  // Undocumented
                 m_debugCollision = flag;
+            } else if (onoff(sw, "-debug-emitv", flag /*ref*/)) {  // Undocumented
+                m_debugEmitV = flag;
             } else if (onoff(sw, "-debug-exit-parse", flag /*ref*/)) {  // Undocumented
                 m_debugExitParse = flag;
             } else if (onoff(sw, "-debug-exit-uvm", flag /*ref*/)) {  // Undocumented
@@ -1594,6 +1587,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
         string oline;
         // cppcheck-suppress StlMissingComparison
         char lastch = ' ';
+        bool space_begin = true;  // At beginning or leading spaces only
         for (string::const_iterator pos = line.begin(); pos != line.end(); lastch = *pos++) {
             if (inCmt) {
                 if (*pos == '*' && *(pos + 1) == '/') {
@@ -1603,11 +1597,15 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
             } else if (*pos == '/' && *(pos + 1) == '/'
                        && (pos == line.begin() || isspace(lastch))) {  // But allow /file//path
                 break;  // Ignore to EOL
+            } else if (*pos == '#' && space_begin) {  // Only # at [spaced] begin of line
+                break;  // Ignore to EOL
             } else if (*pos == '/' && *(pos + 1) == '*') {
                 inCmt = true;
+                space_begin = false;
                 // cppcheck-suppress StlMissingComparison
                 ++pos;
             } else {
+                if (!isspace(*pos)) space_begin = false;
                 oline += *pos;
             }
         }

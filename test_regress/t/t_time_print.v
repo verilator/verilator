@@ -16,6 +16,8 @@ module t;
 
       $write("[%0t] In %m: Hi\n", $time);
       $printtimescale;
+      $printtimescale();
+      $printtimescale(t);
 
       $write("Time: '%t' 10ns=%0t\n", $time, t);
       $timeformat(-3, 0, "-my-ms", 8);

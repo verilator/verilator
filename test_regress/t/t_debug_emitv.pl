@@ -10,10 +10,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-compile(
-    fails => 1,
-    expect_filename => $Self->{golden_filename},
+lint(
+    # We also have dump-tree turned on, so hit a lot of AstNode*::dump() functions
+    # Likewise XML
+    v_flags => ["--lint-only --dump-treei 9 --debug-emitv"],
     );
+
+files_identical("$Self->{obj_dir}/$Self->{VM_PREFIX}__preorder.v", $Self->{golden_filename});
 
 ok(1);
 1;

@@ -49,7 +49,7 @@ private:
 
     // METHODS
     virtual void visit(AstVarRef* nodep) override {
-        if (nodep->lvalue() && !m_splitVscp && nodep->varp()->attrIsolateAssign()) {
+        if (nodep->access().isWrite() && !m_splitVscp && nodep->varp()->attrIsolateAssign()) {
             m_splitVscp = nodep->varScopep();
         }
     }
@@ -76,7 +76,7 @@ private:
 
     // METHODS
     virtual void visit(AstVarRef* nodep) override {
-        if (nodep->lvalue()) {
+        if (nodep->access().isWrite()) {
             if (nodep->varScopep() == m_splitVscp) {
                 UINFO(6, "       CL VAR " << nodep << endl);
                 m_matches = true;
@@ -183,10 +183,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit SplitAsVisitor(AstNetlist* nodep) {
-        AstNode::user1ClearTree();  // user1p() used on entire tree
-        iterate(nodep);
-    }
+    explicit SplitAsVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~SplitAsVisitor() override {
         V3Stats::addStat("Optimizations, isolate_assignments blocks", m_statSplits);
     }

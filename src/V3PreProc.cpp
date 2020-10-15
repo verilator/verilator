@@ -26,6 +26,7 @@
 #include "V3PreShell.h"
 #include "V3String.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <fstream>
 #include <stack>
@@ -540,10 +541,7 @@ void V3PreProcImp::unputString(const string& strg) {
 }
 
 void V3PreProcImp::unputDefrefString(const string& strg) {
-    int multiline = 0;
-    for (size_t i = 0; i < strg.length(); i++) {
-        if (strg[i] == '\n') multiline++;
-    }
+    int multiline = std::count(strg.begin(), strg.end(), '\n');
     unputString(strg);
     // A define that inserts multiple newlines are really attributed to one source line,
     // so temporarily don't increment lineno.
@@ -1320,7 +1318,7 @@ int V3PreProcImp::getStateToken() {
                 // multiline "..." without \ escapes.
                 // The spec is silent about this either way; simulators vary
                 string::size_type pos;
-                while ((pos = out.find('\n')) != string::npos) out.replace(pos, 1, " ");
+                std::replace(out.begin(), out.end(), '\n', ' ');
                 unputString(string("\"") + out + "\"");
                 statePop();
                 goto next_tok;
@@ -1403,7 +1401,10 @@ int V3PreProcImp::getStateToken() {
                 if (m_off) {
                     goto next_tok;
                 } else {
-                    return VP_TEXT;
+                    // We want final text of `name, but that would cause
+                    // recursion, so use a special character to get it through
+                    unputDefrefString(string("`\032") + name);
+                    goto next_tok;
                 }
             } else {
                 string params = defParams(name);

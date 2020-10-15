@@ -1128,6 +1128,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                         AstVar* newp
                             = new AstVar(nodep->fileline(), AstVarType(AstVarType::GPARAM),
                                          nodep->name(), nodep);
+                        newp->combineType(nodep);
                         string svalue = v3Global.opt.parameter(nodep->name());
                         if (AstNode* valuep
                             = AstConst::parseParamLiteral(nodep->fileline(), svalue)) {
@@ -1960,8 +1961,18 @@ private:
             m_ds.m_dotp = nodep;  // Always, not just at start
             m_ds.m_dotPos = DP_SCOPE;
 
-            // m_ds.m_dotText communicates the cell prefix between stages
-            if (VN_IS(nodep->lhsp(), ClassOrPackageRef)) {
+            if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this") {
+                VSymEnt* classSymp = m_ds.m_dotSymp;
+                do {
+                    classSymp = classSymp->fallbackp();
+                } while (classSymp && !VN_IS(classSymp->nodep(), Class));
+                m_ds.m_dotSymp = classSymp;
+                if (!classSymp) {
+                    nodep->v3error("'this' used outside class");
+                    m_ds.m_dotErr = true;
+                }
+            } else if (VN_IS(nodep->lhsp(), ClassOrPackageRef)) {
+                // m_ds.m_dotText communicates the cell prefix between stages
                 // if (!start) { nodep->lhsp()->v3error("Package reference may not be embedded in
                 // dotted reference"); m_ds.m_dotErr=true; }
                 m_ds.m_dotPos = DP_PACKAGE;
@@ -2018,21 +2029,14 @@ private:
         // Generally resolved during Primay, but might be at param time under AstUnlinkedRef
         UASSERT_OBJ(m_statep->forPrimary() || m_statep->forPrearray(), nodep,
                     "ParseRefs should no longer exist");
-        if (nodep->name() == "this") {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: this");
-        } else if (nodep->name() == "super") {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
-        }
+        if (nodep->name() == "super") { nodep->v3warn(E_UNSUPPORTED, "Unsupported: super"); }
         DotStates lastStates = m_ds;
         bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         if (start) {
             m_ds.init(m_curSymp);
             // Note m_ds.m_dot remains nullptr; this is a reference not under a dot
         }
-        if (nodep->name() == "this") {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: this");
-            m_ds.m_dotErr = true;
-        } else if (nodep->name() == "super") {
+        if (nodep->name() == "super") {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
             m_ds.m_dotErr = true;
         }
@@ -2132,7 +2136,7 @@ private:
                         m_ds.m_dotPos = DP_SCOPE;
                         UINFO(9, " cell -> iface varref " << foundp->nodep() << endl);
                         AstNode* newp
-                            = new AstVarRef(ifaceRefVarp->fileline(), ifaceRefVarp, false);
+                            = new AstVarRef(ifaceRefVarp->fileline(), ifaceRefVarp, VAccess::READ);
                         nodep->replaceWith(newp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     } else if (VN_IS(cellp->modp(), NotFoundModule)) {
@@ -2150,7 +2154,7 @@ private:
                     m_ds.m_dotSymp = m_statep->getNodeSym(ifacerefp->ifaceViaCellp());
                     m_ds.m_dotPos = DP_SCOPE;
                     ok = true;
-                    AstNode* newp = new AstVarRef(nodep->fileline(), varp, false);
+                    AstNode* newp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 } else if (allowVar) {
@@ -2158,7 +2162,7 @@ private:
                     if (m_ds.m_dotText != "") {
                         AstVarXRef* refp
                             = new AstVarXRef(nodep->fileline(), nodep->name(), m_ds.m_dotText,
-                                             false);  // lvalue'ness computed later
+                                             VAccess::READ);  // lvalue'ness computed later
                         refp->varp(varp);
                         if (varp->attrSplitVar()) {
                             refp->v3warn(
@@ -2188,8 +2192,9 @@ private:
                             newp = refp;
                         }
                     } else {
-                        AstVarRef* refp = new AstVarRef(nodep->fileline(), varp,
-                                                        false);  // lvalue'ness computed later
+                        AstVarRef* refp
+                            = new AstVarRef(nodep->fileline(), varp,
+                                            VAccess::READ);  // lvalue'ness computed later
                         refp->packagep(foundp->packagep());
                         newp = refp;
                     }
@@ -2224,7 +2229,7 @@ private:
                     m_ds.m_dotPos = DP_SCOPE;
                     ok = true;
                     AstVar* varp = makeIfaceModportVar(nodep->fileline(), cellp, ifacep, modportp);
-                    AstVarRef* refp = new AstVarRef(varp->fileline(), varp, false);
+                    AstVarRef* refp = new AstVarRef(varp->fileline(), varp, VAccess::READ);
                     nodep->replaceWith(refp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
@@ -2274,7 +2279,8 @@ private:
                 if (checkImplicit) {
                     // Create if implicit, and also if error (so only complain once)
                     // Else if a scope is allowed, making a signal won't help error cascade
-                    AstVarRef* newp = new AstVarRef(nodep->fileline(), nodep->name(), false);
+                    AstVarRef* newp
+                        = new AstVarRef(nodep->fileline(), nodep->name(), VAccess::READ);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     createImplicitVar(m_curSymp, newp, m_modp, m_modSymp, err);
@@ -2293,7 +2299,7 @@ private:
             UINFO(9, " linkVarRef se" << cvtToHex(m_curSymp) << "  n=" << nodep << endl);
             UASSERT_OBJ(m_curSymp, nodep, "nullptr lookup symbol table");
             VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());
-            if (AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->lvalue()) : nullptr) {
+            if (AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr) {
                 nodep->varp(varp);
                 // Generally set by parse, but might be an import
                 nodep->packagep(foundp->packagep());
@@ -2333,7 +2339,7 @@ private:
                                            okSymp);  // Maybe nullptr
             if (!m_statep->forScopeCreation()) {
                 VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
-                AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->lvalue()) : nullptr;
+                AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr;
                 nodep->varp(varp);
                 UINFO(7, "         Resolved " << nodep << endl);  // Also prints varp
                 if (!nodep->varp()) {
@@ -2349,7 +2355,7 @@ private:
                 if (!m_statep->forPrearray() && !m_statep->forScopeCreation()) {
                     if (VN_IS(nodep->dtypep(), IfaceRefDType)) {
                         AstVarRef* newrefp
-                            = new AstVarRef(nodep->fileline(), nodep->varp(), nodep->lvalue());
+                            = new AstVarRef(nodep->fileline(), nodep->varp(), nodep->access());
                         nodep->replaceWith(newrefp);
                         VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     }
@@ -2373,7 +2379,7 @@ private:
                     nodep->varp(vscp->varp());
                     nodep->varScopep(vscp);
                     UINFO(7, "         Resolved " << nodep << endl);  // Also prints taskp
-                    AstVarRef* newvscp = new AstVarRef(nodep->fileline(), vscp, nodep->lvalue());
+                    AstVarRef* newvscp = new AstVarRef(nodep->fileline(), vscp, nodep->access());
                     nodep->replaceWith(newvscp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     UINFO(9, "         new " << newvscp << endl);  // Also prints taskp

@@ -595,11 +595,11 @@ string V3PreLex::cleanDbgStrg(const string& in) {
 }
 
 void V3PreLex::unused() {
-    if (0) {
+    if (VL_UNCOVERABLE(false)) {  // LCOV_EXCL_START
         // Prevent unused warnings
         yy_top_state();
         yyerror((char*)"");
-    }
+    }  // LCOV_EXCL_STOP
 }
 
 /*###################################################################

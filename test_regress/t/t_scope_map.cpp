@@ -115,6 +115,9 @@ int main(int argc, char** argv, char** env) {
     tfp->dump((unsigned int)(main_time));
     ++main_time;
 
+    // Code coverage of historical flush function
+    Verilated::flushCall();
+
     for (VerilatedScopeNameMap::const_iterator it = scopeMapp->begin(); it != scopeMapp->end();
          ++it) {
         VerilatedVarNameMap* varNameMap = it->second->varsp();
@@ -159,5 +162,6 @@ int main(int argc, char** argv, char** env) {
     tfp->close();
     top->final();
     VL_PRINTF("*-* All Finished *-*\n");
+
     return 0;
 }
