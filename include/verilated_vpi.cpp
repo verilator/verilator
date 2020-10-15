@@ -109,8 +109,8 @@ class VerilatedVpioCb : public VerilatedVpio {
 public:
     // cppcheck-suppress uninitVar  // m_value
     VerilatedVpioCb(const t_cb_data* cbDatap, QData time)
-        : m_cbData{*cbDatap}
-        , m_time{time} {
+        : m_cbData(*cbDatap)
+        , m_time(time) {  // Need () or GCC 4.8 false warning
         m_value.format = cbDatap->value ? cbDatap->value->format : vpiSuppressVal;
         m_cbData.value = &m_value;
     }

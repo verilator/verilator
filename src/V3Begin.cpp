@@ -71,12 +71,11 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
     virtual void visit(AstNodeFTask* nodep) override {
         UINFO(8, "  " << nodep << endl);
@@ -91,8 +90,8 @@ private:
         // naming; so that any begin's inside the function will rename
         // inside the function.
         // Process children
-        string oldScope = m_namedScope;
-        string oldUnnamed = m_unnamedScope;
+        VL_RESTORER(m_namedScope);
+        VL_RESTORER(m_unnamedScope);
         {
             m_namedScope = "";
             m_unnamedScope = "";
@@ -100,8 +99,6 @@ private:
             iterateChildren(nodep);
             m_ftaskp = nullptr;
         }
-        m_namedScope = oldScope;
-        m_unnamedScope = oldUnnamed;
     }
     virtual void visit(AstBegin* nodep) override {
         // Begin blocks were only useful in variable creation, change names and delete
@@ -206,7 +203,7 @@ private:
     }
     virtual void visit(AstVarXRef* nodep) override {
         UINFO(9, "   VARXREF " << nodep << endl);
-        if (m_namedScope != "" && nodep->inlinedDots() == "") {
+        if (m_namedScope != "" && nodep->inlinedDots() == "" && !m_ftaskp) {
             nodep->inlinedDots(m_namedScope);
             UINFO(9, "    rescope to " << nodep << endl);
         }
@@ -232,7 +229,7 @@ private:
     // VISITORS - LINT CHECK
     virtual void visit(AstIf* nodep) override {  // not AstNodeIf; other types not covered
         // Check IFDEPTH warning - could be in other transform files if desire
-        int prevIfDepth = m_ifDepth;
+        VL_RESTORER(m_ifDepth);
         if (m_ifDepth == -1 || v3Global.opt.ifDepth() < 1) {  // Turned off
         } else if (nodep->uniquePragma() || nodep->unique0Pragma() || nodep->priorityPragma()) {
             m_ifDepth = -1;
@@ -243,7 +240,6 @@ private:
             m_ifDepth = -1;
         }
         iterateChildren(nodep);
-        m_ifDepth = prevIfDepth;
     }
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

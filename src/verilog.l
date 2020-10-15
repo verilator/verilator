@@ -256,10 +256,12 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$tanh"               { FL; return yD_TANH; }
   "$test$plusargs"      { FL; return yD_TESTPLUSARGS; }
   "$time"               { FL; return yD_TIME; }
-  "$timeskew"           { FL; return yaTIMINGSPEC; }
   "$timeformat"         { FL; return yD_TIMEFORMAT; }
+  "$timeskew"           { FL; return yaTIMINGSPEC; }
   "$typename"           { FL; return yD_TYPENAME; }
   "$ungetc"             { FL; return yD_UNGETC; }
+  "$urandom"            { FL; return yD_URANDOM; }
+  "$urandom_range"      { FL; return yD_URANDOM_RANGE; }
   "$value$plusargs"     { FL; return yD_VALUEPLUSARGS; }
   "$width"              { FL; return yaTIMINGSPEC; }
   "$write"              { FL; return yD_WRITE; }
@@ -418,6 +420,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <S05,S09,S12,S17,SAX>{
   /*     System Tasks */
   "$bits"               { FL; return yD_BITS; }
+  "$changed"            { FL; return yD_CHANGED; }
   "$countbits"          { FL; return yD_COUNTBITS; }
   "$countones"          { FL; return yD_COUNTONES; }
   "$dimensions"         { FL; return yD_DIMENSIONS; }
@@ -713,10 +716,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator public_flat_rw*/"        { FL; return yVL_PUBLIC_FLAT_RW; }  // The @(edge) is converted by the preproc
   "/*verilator public_module*/"         { FL; return yVL_PUBLIC_MODULE; }
   "/*verilator sc_bv*/"                 { FL; return yVL_SC_BV; }
-  "/*verilator sc_clock*/"              { FL; return yVL_CLOCK; }
+  "/*verilator sc_clock*/"              { FL; yylval.fl->v3warn(DEPRECATED, "sc_clock is ignored"); FL_BRK; }
   "/*verilator sformat*/"               { FL; return yVL_SFORMAT; }
   "/*verilator split_var*/"             { FL; return yVL_SPLIT_VAR; }
-  "/*verilator systemc_clock*/"         { FL; return yVL_CLOCK; }
   "/*verilator tag"[^*]*"*/"            { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexParseTag(yytext));
                                           return yVL_TAG; }
   "/*verilator tracing_off*/"           { FL_FWD; PARSEP->lexFileline()->tracingOn(false); FL_BRK; }

@@ -7,10 +7,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(simulator => 1);
+scenarios(vlt_all => 1);
 
 compile(
-    verilator_flags2 => ['--assert'],
+    verilator_flags2 => ['--hierarchical',
+                         '-y', $Self->{t_dir} . '/t_flag_relinc_dir/chip',
+                         '+incdir+'. $Self->{t_dir} . '/t_flag_relinc_dir/include'],
     );
 
 execute(

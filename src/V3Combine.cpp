@@ -195,12 +195,11 @@ private:
 #ifdef VL_COMBINE_STATEMENTS
     void hashFunctions(AstCFunc* nodep) {
         // Compute hash of all statement trees in the function
-        CombineState oldState = m_state;
+        VL_RESTORER(m_state);
         {
             m_state = STATE_HASH;
             iterate(nodep);
         }
-        m_state = oldState;
     }
 #endif
     void walkEmptyFuncs() {

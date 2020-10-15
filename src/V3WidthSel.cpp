@@ -280,7 +280,7 @@ private:
                               "Unsupported: String array operation on non-variable");
             }
             AstNode* newp;
-            if (varrefp && varrefp->lvalue()) {
+            if (varrefp && varrefp->access().isWrite()) {
                 newp = new AstGetcRefN(nodep->fileline(), fromp, rhsp);
             } else {
                 newp = new AstGetcN(nodep->fileline(), fromp, rhsp);

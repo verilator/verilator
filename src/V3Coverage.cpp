@@ -130,8 +130,8 @@ private:
             m_modp->addStmtp(varp);
             UINFO(5, "New coverage trace: " << varp << endl);
             AstAssign* assp = new AstAssign(
-                incp->fileline(), new AstVarRef(incp->fileline(), varp, true),
-                new AstAdd(incp->fileline(), new AstVarRef(incp->fileline(), varp, false),
+                incp->fileline(), new AstVarRef(incp->fileline(), varp, VAccess::WRITE),
+                new AstAdd(incp->fileline(), new AstVarRef(incp->fileline(), varp, VAccess::READ),
                            new AstConst(incp->fileline(), AstConst::WidthedValue(), 32, 1)));
             incp->addNext(assp);
         }
@@ -210,7 +210,7 @@ private:
     // VISITORS - BOTH
     virtual void visit(AstNodeModule* nodep) override {
         AstNodeModule* origModp = m_modp;
-        CheckState lastState = m_state;
+        VL_RESTORER(m_state);
         {
             createHandle(nodep);
             m_modp = nodep;
@@ -224,7 +224,6 @@ private:
             iterateChildren(nodep);
         }
         m_modp = origModp;
-        m_state = lastState;
     }
 
     virtual void visit(AstNodeProcedure* nodep) override { iterateProcedure(nodep); }
@@ -233,8 +232,8 @@ private:
         if (!nodep->dpiImport()) iterateProcedure(nodep);
     }
     void iterateProcedure(AstNode* nodep) {
-        CheckState lastState = m_state;
-        bool oldtog = m_inToggleOff;
+        VL_RESTORER(m_state);
+        VL_RESTORER(m_inToggleOff);
         {
             m_inToggleOff = true;
             createHandle(nodep);
@@ -255,8 +254,6 @@ private:
                 }
             }
         }
-        m_state = lastState;
-        m_inToggleOff = oldtog;
     }
 
     // VISITORS - TOGGLE COVERAGE
@@ -291,8 +288,9 @@ private:
                 // This is necessarily an O(n^2) expansion, which is why
                 // we limit coverage to signals with < 256 bits.
 
-                ToggleEnt newvec(string(""), new AstVarRef(nodep->fileline(), nodep, false),
-                                 new AstVarRef(nodep->fileline(), chgVarp, true));
+                ToggleEnt newvec(string(""),
+                                 new AstVarRef(nodep->fileline(), nodep, VAccess::READ),
+                                 new AstVarRef(nodep->fileline(), chgVarp, VAccess::WRITE));
                 toggleVarRecurse(nodep->dtypeSkipRefp(), 0, newvec, nodep, chgVarp);
                 newvec.cleanup();
             }
@@ -464,7 +462,7 @@ private:
         // as we already have a warning when there is no default.
         UINFO(4, " CASEI: " << nodep << endl);
         if (m_state.lineCoverageOn(nodep)) {
-            CheckState lastState = m_state;
+            VL_RESTORER(m_state);
             {
                 createHandle(nodep);
                 iterateAndNextNull(nodep->bodysp());
@@ -476,12 +474,11 @@ private:
                                                  traceNameForLine(nodep, "case")));
                 }
             }
-            m_state = lastState;
         }
     }
     virtual void visit(AstCover* nodep) override {
         UINFO(4, " COVER: " << nodep << endl);
-        CheckState lastState = m_state;
+        VL_RESTORER(m_state);
         {
             m_state.m_on = true;  // Always do cover blocks, even if there's a $stop
             createHandle(nodep);
@@ -494,7 +491,6 @@ private:
                                              m_beginHier + "_vlCoverageUserTrace"));
             }
         }
-        m_state = lastState;
     }
     virtual void visit(AstStop* nodep) override {
         UINFO(4, "  STOP: " << nodep << endl);
@@ -517,8 +513,8 @@ private:
         // generate blocks; each point should get separate consideration.
         // (Currently ignored for line coverage, since any generate iteration
         // covers the code in that line.)
-        string oldHier = m_beginHier;
-        bool oldtog = m_inToggleOff;
+        VL_RESTORER(m_beginHier);
+        VL_RESTORER(m_inToggleOff);
         {
             m_inToggleOff = true;
             if (nodep->name() != "") {
@@ -527,8 +523,6 @@ private:
             iterateChildren(nodep);
             lineTrack(nodep);
         }
-        m_beginHier = oldHier;
-        m_inToggleOff = oldtog;
     }
 
     // VISITORS - BOTH

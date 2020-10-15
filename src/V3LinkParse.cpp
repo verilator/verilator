@@ -226,9 +226,9 @@ private:
             } else if (VN_IS(m_modp, Class)) {
                 // 2. Class member init become initials (as might call functions)
                 // later move into class constructor
-                nodep->addNextHere(
-                    new AstInitial(fl, new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
-                                                     nodep->valuep()->unlinkFrBack())));
+                nodep->addNextHere(new AstInitial(
+                    fl, new AstAssign(fl, new AstVarRef(fl, nodep->name(), VAccess::WRITE),
+                                      nodep->valuep()->unlinkFrBack())));
             } else if (!m_ftaskp && nodep->isNonOutput()) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Default value on module input: "
                                                  << nodep->prettyNameQ());
@@ -239,11 +239,13 @@ private:
                 FileLine* newfl = new FileLine(fl);
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
                 nodep->addNextHere(new AstInitial(
-                    newfl, new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), true),
-                                         nodep->valuep()->unlinkFrBack())));
+                    newfl,
+                    new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), VAccess::WRITE),
+                                  nodep->valuep()->unlinkFrBack())));
             }  // 4. Under blocks, it's an initial value to be under an assign
             else {
-                nodep->addNextHere(new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
+                nodep->addNextHere(new AstAssign(fl,
+                                                 new AstVarRef(fl, nodep->name(), VAccess::WRITE),
                                                  nodep->valuep()->unlinkFrBack()));
             }
         }
@@ -265,11 +267,6 @@ private:
             AstTypedef* typep = VN_CAST(nodep->backp(), Typedef);
             UASSERT_OBJ(typep, nodep, "Attribute not attached to typedef");
             typep->attrPublic(true);
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_CLOCK) {
-            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            nodep->v3warn(DEPRECATED, "sc_clock is deprecated and will be removed");
-            m_varp->attrScClocked(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == AstAttrType::VAR_CLOCK_ENABLE) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
@@ -338,7 +335,8 @@ private:
             // lvalue is true, because we know we have a verilator public_flat_rw
             // but someday we may be more general
             bool lvalue = m_varp->isSigUserRWPublic();
-            nodep->addStmtp(new AstVarRef(nodep->fileline(), m_varp, lvalue));
+            nodep->addStmtp(
+                new AstVarRef(nodep->fileline(), m_varp, lvalue ? VAccess::WRITE : VAccess::READ));
         }
     }
 
@@ -421,7 +419,7 @@ private:
             return;
         }
         AstNode* arrayp = nodep->arrayp();  // Maybe different node since bracketp looked
-        if (!VN_IS(arrayp, ParseRef)) {
+        if (!VN_IS(arrayp, ParseRef) && !VN_IS(arrayp, Dot)) {
             // Code below needs to use other then attributes to figure out the bounds
             // Also need to deal with queues, etc
             arrayp->v3warn(E_UNSUPPORTED, "Unsupported: foreach on non-simple variable reference");
@@ -442,18 +440,16 @@ private:
             AstNode* varp
                 = new AstVar(fl, AstVarType::BLOCKTEMP, varsp->name(), nodep->findSigned32DType());
             // These will be the left and right dimensions and size of the array:
-            AstNode* leftp = new AstAttrOf(fl, AstAttrType::DIM_LEFT,
-                                           new AstVarRef(fl, arrayp->name(), false),
+            AstNode* leftp = new AstAttrOf(fl, AstAttrType::DIM_LEFT, arrayp->cloneTree(false),
                                            new AstConst(fl, dimension));
-            AstNode* rightp = new AstAttrOf(fl, AstAttrType::DIM_RIGHT,
-                                            new AstVarRef(fl, arrayp->name(), false),
+            AstNode* rightp = new AstAttrOf(fl, AstAttrType::DIM_RIGHT, arrayp->cloneTree(false),
                                             new AstConst(fl, dimension));
-            AstNode* sizep = new AstAttrOf(fl, AstAttrType::DIM_SIZE,
-                                           new AstVarRef(fl, arrayp->name(), false),
+            AstNode* sizep = new AstAttrOf(fl, AstAttrType::DIM_SIZE, arrayp->cloneTree(false),
                                            new AstConst(fl, dimension));
             AstNode* stmtsp = varp;
             // Assign left-dimension into the loop var:
-            stmtsp->addNext(new AstAssign(fl, new AstVarRef(fl, varp->name(), true), leftp));
+            stmtsp->addNext(
+                new AstAssign(fl, new AstVarRef(fl, varp->name(), VAccess::WRITE), leftp));
             // This will turn into a constant bool for static arrays
             AstNode* notemptyp = new AstGt(fl, sizep, new AstConst(fl, 0));
             // This will turn into a bool constant, indicating whether
@@ -462,14 +458,15 @@ private:
             AstNode* comparep = new AstCond(
                 fl, countupp->cloneTree(true),
                 // Left increments up to right
-                new AstLte(fl, new AstVarRef(fl, varp->name(), false), rightp->cloneTree(true)),
+                new AstLte(fl, new AstVarRef(fl, varp->name(), VAccess::READ),
+                           rightp->cloneTree(true)),
                 // Left decrements down to right
-                new AstGte(fl, new AstVarRef(fl, varp->name(), false), rightp));
+                new AstGte(fl, new AstVarRef(fl, varp->name(), VAccess::READ), rightp));
             // This will reduce to comparep for static arrays
             AstNode* condp = new AstAnd(fl, notemptyp, comparep);
             AstNode* incp = new AstAssign(
-                fl, new AstVarRef(fl, varp->name(), true),
-                new AstAdd(fl, new AstVarRef(fl, varp->name(), false),
+                fl, new AstVarRef(fl, varp->name(), VAccess::WRITE),
+                new AstAdd(fl, new AstVarRef(fl, varp->name(), VAccess::READ),
                            new AstCond(fl, countupp, new AstConst(fl, 1), new AstConst(fl, -1))));
             stmtsp->addNext(new AstWhile(fl, condp, newp, incp));
             newp = new AstBegin(nodep->fileline(), "", stmtsp, false, true);
@@ -484,7 +481,7 @@ private:
     virtual void visit(AstNodeModule* nodep) override {
         V3Config::applyModule(nodep);
 
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             // Module: Create sim table for entire module and iterate
             cleanFileline(nodep);
@@ -493,7 +490,6 @@ private:
             m_valueModp = nodep;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
         m_valueModp = nodep;
     }
     void visitIterateNoValueMod(AstNode* nodep) {
@@ -569,8 +565,10 @@ private:
         iterateChildren(nodep);
         AstAlways* alwaysp = VN_CAST(nodep->backp(), Always);
         if (alwaysp && alwaysp->keyword() == VAlwaysKwd::ALWAYS_COMB) {
-            alwaysp->v3error("Timing control statements not legal under always_comb\n"
+            alwaysp->v3error("Timing control statements not legal under always_comb "
+                             "(IEEE 1800-2017 9.2.2.2.2)\n"
                              << nodep->warnMore() << "... Suggest use a normal 'always'");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (alwaysp && !alwaysp->sensesp()) {
             // Verilator is still ony supporting SenTrees under an always,
             // so allow the parser to handle everything and shim to
@@ -580,13 +578,8 @@ private:
                 alwaysp->sensesp(sensesp);
             }
             if (nodep->stmtsp()) alwaysp->addStmtp(nodep->stmtsp()->unlinkFrBackWithNext());
-        } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: timing control statement in this location\n"
-                                             << nodep->warnMore()
-                                             << "... Suggest have one timing control statement "
-                                             << "per procedure, at the top of the procedure");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     virtual void visit(AstNode* nodep) override {

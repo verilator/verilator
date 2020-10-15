@@ -65,6 +65,10 @@ public:
         of.puts("VM_TRACE = ");
         of.puts(v3Global.opt.trace() ? "1" : "0");
         of.puts("\n");
+        of.puts("# Tracing output mode in FST format?  0/1 (from --trace-fst)\n");
+        of.puts("VM_TRACE_FST = ");
+        of.puts(v3Global.opt.trace() && v3Global.opt.traceFormat().fst() ? "1" : "0");
+        of.puts("\n");
         of.puts("# Tracing threaded output mode?  0/1/N threads (from --trace-thread)\n");
         of.puts("VM_TRACE_THREADS = ");
         of.puts(cvtToStr(v3Global.opt.trueTraceThreads()));
@@ -252,12 +256,27 @@ public:
             // The rule to create .a is defined in verilated.mk, so just define dependency here.
             of.puts(v3Global.opt.protectLibName(false) + ": " + protectLibDeps + "\n");
             of.puts("\n");
-            of.puts(v3Global.opt.protectLibName(true) + ": " + protectLibDeps + "\n");
-            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ $^\n");
-            of.puts("\n");
-
-            of.puts("lib" + v3Global.opt.protectLib() + ": " + v3Global.opt.protectLibName(false)
-                    + " " + v3Global.opt.protectLibName(true) + "\n");
+            if (v3Global.opt.hierChild()) {
+                // Hierarchical child does not need .so because hierTop() will create .so from .a
+                of.puts("lib" + v3Global.opt.protectLib() + ": "
+                        + v3Global.opt.protectLibName(false) + "\n");
+            } else {
+                of.puts(v3Global.opt.protectLibName(true) + ": " + protectLibDeps + "\n");
+                // Linker on mac emits an error if all symbols are not found here,
+                // but some symbols that are referred as "DPI-C" can not be found at this moment.
+                // So add dynamic_lookup
+                of.puts("ifeq ($(shell uname -s),Darwin)\n");
+                of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -undefined "
+                        "dynamic_lookup -shared -flat_namespace -o $@ $^\n");
+                of.puts("else\n");
+                of.puts(
+                    "\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ $^\n");
+                of.puts("endif\n");
+                of.puts("\n");
+                of.puts("lib" + v3Global.opt.protectLib() + ": "
+                        + v3Global.opt.protectLibName(false) + " "
+                        + v3Global.opt.protectLibName(true) + "\n");
+            }
         }
 
         of.puts("\n");
@@ -318,8 +337,11 @@ class EmitMkHierVerilation {
 
         of.puts("# Libraries of hierarchical blocks\n");
         of.puts("VM_HIER_LIBS := \\\n");
-        for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end(); ++it) {
-            of.puts("\t" + it->second->hierLib(true) + " \\\n");
+        const V3HierBlockPlan::HierVector blocks
+            = m_planp->hierBlocksSorted();  // leaf comes first
+        // List in order of leaf-last order so that linker can resolve dependency
+        for (auto it = blocks.rbegin(); it != blocks.rend(); ++it) {
+            of.puts("\t" + (*it)->hierLib(true) + " \\\n");
         }
         of.puts("\n");
 

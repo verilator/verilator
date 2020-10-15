@@ -5,7 +5,7 @@
 
 #include "Vt_tri_select.h"
 
-Vt_tri_select* tb = nullptr;
+VM_PREFIX* tb = nullptr;
 
 double sc_time_stamp() { return 0; }
 

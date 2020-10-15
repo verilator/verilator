@@ -85,6 +85,8 @@ public:
     string hierMk(bool withDir) const;
     string hierLib(bool withDir) const;
     string hierGenerated(bool withDir) const;
+    // Returns the original HDL file if it is not included in v3Global.opt.vFiles().
+    string vFileIfNecessary() const;
     // Write command line argumuents to .f file for this hierarchical block
     void writeCommandArgsFile(bool forCMake) const;
     string commandArgsFileName(bool forCMake) const;

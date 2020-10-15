@@ -2017,7 +2017,7 @@ This is an example similar to the above, but using SystemC.
       #include "Vour.h"
       int sc_main(int argc, char** argv) {
           Verilated::commandArgs(argc, argv);
-          sc_clock clk ("clk", 10, 0.5, 3, true);
+          sc_clock clk("clk", 10, SC_NS, 0.5, 3, SC_NS, true);
           Vour* top;
           top = new Vour("top");
           top->clk(clk);
@@ -3690,10 +3690,11 @@ for more information.
 
 =item /*verilator sc_clock*/
 
-Deprecated.  Used after an input declaration to indicate the signal
-should be declared in SystemC as a sc_clock instead of a bool.  This was
-needed in SystemC 1.1 and 1.2 only; versions 2.0 and later do not require
-clock pins to be sc_clocks and this is no longer needed.
+Deprecated and ignored.  Previously used after an input declaration to
+indicate the signal should be declared in SystemC as a sc_clock instead of
+a bool.  This was needed in SystemC 1.1 and 1.2 only; versions 2.0 and
+later do not require clock pins to be sc_clocks and this is no longer
+needed and is ignored.
 
 =item /*verilator sc_bv*/
 
@@ -4093,11 +4094,12 @@ All specify blocks and timing checks are ignored.
 Monitor and strobe are not supported, convert to always_comb $display or
 similar.
 
-=item $random
+=item $random, $urandom, $urandom_range
 
-$random does not support the optional argument to set the seed.  Use the
-srand function in C to accomplish this, and note there is only one random
-number generator (not one per module).
+$random and $urandom do not support the optional argument to set the seed.
+Use +verilator+seed argument to set the seed.  There is one random seed per
+C thread, not per module for $random, nor per object for random stability
+of $urandom/$urandom_range.
 
 =item $readmemb, $readmemh
 
@@ -4198,17 +4200,7 @@ default as a code style warning.
 =item BLKANDNBLK
 
 BLKANDNBLK is an error that a variable comes from a mix of blocking and
-non-blocking assignments.  Generally, this is caused by a register driven
-by both combo logic and a flop:
-
-      always @ (posedge clk)  foo[0] <= ...
-      always @* foo[1] = ...
-
-Simply use a different register for the flop:
-
-      always @ (posedge clk)  foo_flopped[0] <= ...
-      always @* foo[0] = foo_flopped[0];
-      always @* foo[1] = ...
+non-blocking assignments.
 
 This is not illegal in SystemVerilog, but a violation of good coding
 practice. Verilator reports this as an error, because ignoring this warning
@@ -4218,6 +4210,24 @@ It is generally safe to disable this error (with a "// verilator lint_off
 BLKANDNBLK" metacomment or the -Wno-BLKANDNBLK option) when one of the
 assignments is inside a public task, or when the blocking and non-blocking
 assignments have non-overlapping bits and structure members.
+
+Generally, this is caused by a register driven by both combo logic and a
+flop:
+
+      logic [1:0] foo;
+      always @ (posedge clk)  foo[0] <= ...
+      always @* foo[1] = ...
+
+Simply use a different register for the flop:
+
+      logic [1:0] foo;
+      always @ (posedge clk)  foo_flopped[0] <= ...
+      always @* foo[0] = foo_flopped[0];
+      always @* foo[1] = ...
+
+Or, this may also avoid the error:
+
+      logic [1:0] foo /*verilator split_var*/;
 
 =item BLKSEQ
 
@@ -5046,13 +5056,6 @@ The following deprecated items are scheduled for future removal:
 Verilator currently requires C++11 or newer compilers.  Verilator will
 require C++14 or newer compilers for both compiling Verilator and compiling
 Verilated models no sooner than January 2022.
-
-=item SystemC 2.2 and earlier support
-
-Support for SystemC versions 2.2 and earlier including the related sc_clock
-variable attribute will be removed no sooner than September 2020.  The
-supported versions will be SystemC 2.3.0 (SYSTEMC_VERSION 20111121) and
-later (presently 2.3.0, 2.3.1, 2.3.2, 2.3.3).
 
 =item Configuration File -msg
 

@@ -535,7 +535,7 @@ private:
                         nodep->addNext(new AstInitial(
                             nodep->fileline(),
                             new AstAssign(nodep->fileline(),
-                                          new AstVarRef(nodep->fileline(), nodep, true),
+                                          new AstVarRef(nodep->fileline(), nodep, VAccess::WRITE),
                                           nodep->valuep()->cloneTree(true))));
                         if (m_ftaskp) {
                             // We put the initial in wrong place under a function.  We

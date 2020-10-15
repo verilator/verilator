@@ -143,23 +143,22 @@ private:
     }
     virtual void visit(AstUnpackArrayDType* nodep) override {
         for (int index = 0; index < nodep->elementsConst(); ++index) {
-            AstNode* origVEp = m_varEqnp;
-            AstNode* origNLEp = m_newLvEqnp;
-            AstNode* origNREp = m_newRvEqnp;
+            VL_RESTORER(m_varEqnp);
+            VL_RESTORER(m_newLvEqnp);
+            VL_RESTORER(m_newRvEqnp);
+            {
+                m_varEqnp = new AstArraySel(nodep->fileline(), m_varEqnp->cloneTree(true), index);
+                m_newLvEqnp
+                    = new AstArraySel(nodep->fileline(), m_newLvEqnp->cloneTree(true), index);
+                m_newRvEqnp
+                    = new AstArraySel(nodep->fileline(), m_newRvEqnp->cloneTree(true), index);
 
-            m_varEqnp = new AstArraySel(nodep->fileline(), m_varEqnp->cloneTree(true), index);
-            m_newLvEqnp = new AstArraySel(nodep->fileline(), m_newLvEqnp->cloneTree(true), index);
-            m_newRvEqnp = new AstArraySel(nodep->fileline(), m_newRvEqnp->cloneTree(true), index);
+                iterate(nodep->subDTypep()->skipRefp());
 
-            iterate(nodep->subDTypep()->skipRefp());
-
-            m_varEqnp->deleteTree();
-            m_newLvEqnp->deleteTree();
-            m_newRvEqnp->deleteTree();
-
-            m_varEqnp = origVEp;
-            m_newLvEqnp = origNLEp;
-            m_newRvEqnp = origNREp;
+                m_varEqnp->deleteTree();
+                m_newLvEqnp->deleteTree();
+                m_newRvEqnp->deleteTree();
+            }
         }
     }
     virtual void visit(AstNodeUOrStructDType* nodep) override {
@@ -200,9 +199,9 @@ public:
             m_newvscp = new AstVarScope(m_vscp->fileline(), m_statep->m_scopetopp, newvarp);
             m_statep->m_scopetopp->addVarp(m_newvscp);
 
-            m_varEqnp = new AstVarRef(m_vscp->fileline(), m_vscp, false);
-            m_newLvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, true);
-            m_newRvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, false);
+            m_varEqnp = new AstVarRef(m_vscp->fileline(), m_vscp, VAccess::READ);
+            m_newLvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, VAccess::WRITE);
+            m_newRvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, VAccess::READ);
         }
         iterate(vscp->dtypep()->skipRefp());
         m_varEqnp->deleteTree();

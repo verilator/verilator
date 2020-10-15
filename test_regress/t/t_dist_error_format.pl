@@ -38,6 +38,7 @@ sub formats {
             my $lineno = 0;
             foreach my $line (split /\n/, $wholefile) {
                 ++$lineno;
+                $line =~ s/(\$display|\$write).*\".*%(Error|Warning)//;
                 if ($line =~ /(Error|Warning)/) {
                     # These formats are documented in bin/verilator
                     # Error with fileline

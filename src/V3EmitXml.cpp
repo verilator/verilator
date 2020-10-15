@@ -160,7 +160,6 @@ class EmitXmlFileVisitor : public AstNVisitor {
             puts(" localparam=\"true\"");
         }
         if (nodep->attrScBv()) puts(" sc_bv=\"true\"");
-        if (nodep->attrScClocked()) puts(" sc_clock=\"true\"");
         if (nodep->attrSFormat()) puts(" sformat=\"true\"");
         outputChildrenEnd(nodep, "");
     }

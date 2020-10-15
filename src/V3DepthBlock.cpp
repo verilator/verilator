@@ -68,25 +68,22 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             m_deepNum = 0;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
     virtual void visit(AstCFunc* nodep) override {
         // We recurse into this.
-        int lastDepth = m_depth;
-        AstCFunc* lastFuncp = m_funcp;
+        VL_RESTORER(m_depth);
+        VL_RESTORER(m_funcp);
         {
             m_depth = 0;
             m_funcp = nodep;
             iterateChildren(nodep);
         }
-        m_depth = lastDepth;
-        m_funcp = lastFuncp;
     }
     void visitStmt(AstNodeStmt* nodep) {
         m_depth++;

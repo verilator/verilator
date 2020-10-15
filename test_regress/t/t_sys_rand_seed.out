@@ -4,4 +4,10 @@
 %Error-UNSUPPORTED: t/t_sys_rand_seed.v:14:16: Unsupported: Seed on $random. Suggest use +verilator+seed+ runtime flag
    14 |       valueb = $random(10);
       |                ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_rand_seed.v:16:16: Unsupported: Seed on $urandom. Suggest use +verilator+seed+ runtime flag
+   16 |       valuea = $urandom(10);
+      |                ^~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_rand_seed.v:17:16: Unsupported: Seed on $urandom. Suggest use +verilator+seed+ runtime flag
+   17 |       valueb = $urandom(10);
+      |                ^~~~~~~~
 %Error: Exiting due to

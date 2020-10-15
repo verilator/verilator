@@ -65,9 +65,9 @@ private:
         // Module: Create sim table for entire module and iterate
         UINFO(8, "MODULE " << nodep << endl);
         if (nodep->dead()) return;
-        AstNodeModule* origModp = m_modp;
-        VLifetime origLifetime = m_lifetime;
-        int origSenitemCvtNum = m_senitemCvtNum;
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_lifetime);
+        VL_RESTORER(m_senitemCvtNum);
         {
             m_modp = nodep;
             m_senitemCvtNum = 0;
@@ -75,21 +75,16 @@ private:
             if (m_lifetime.isNone()) m_lifetime = VLifetime::STATIC;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
-        m_senitemCvtNum = origSenitemCvtNum;
-        m_lifetime = origLifetime;
     }
     virtual void visit(AstClass* nodep) override {
-        AstClass* origClassp = m_classp;
-        VLifetime origLifetime = m_lifetime;
+        VL_RESTORER(m_classp);
+        VL_RESTORER(m_lifetime);
         {
             m_classp = nodep;
             m_lifetime = nodep->lifetime();
             if (m_lifetime.isNone()) m_lifetime = VLifetime::AUTOMATIC;
             iterateChildren(nodep);
         }
-        m_classp = origClassp;
-        m_lifetime = origLifetime;
     }
     virtual void visit(AstInitial* nodep) override {
         iterateChildren(nodep);
@@ -188,9 +183,10 @@ private:
                 }
                 addwherep->addNext(newvarp);
 
-                sensp->replaceWith(new AstVarRef(sensp->fileline(), newvarp, false));
+                sensp->replaceWith(new AstVarRef(sensp->fileline(), newvarp, VAccess::READ));
                 AstAssignW* assignp = new AstAssignW(
-                    sensp->fileline(), new AstVarRef(sensp->fileline(), newvarp, true), sensp);
+                    sensp->fileline(), new AstVarRef(sensp->fileline(), newvarp, VAccess::WRITE),
+                    sensp);
                 addwherep->addNext(assignp);
             }
         } else {  // Old V1995 sensitivity list; we'll probably mostly ignore
@@ -495,7 +491,8 @@ private:
                         varoutp = varp;
                         // Tie off
                         m_modp->addStmtp(new AstAssignW(
-                            varp->fileline(), new AstVarRef(varp->fileline(), varp, true),
+                            varp->fileline(),
+                            new AstVarRef(varp->fileline(), varp, VAccess::WRITE),
                             new AstConst(varp->fileline(), AstConst::LogicFalse())));
                     } else {
                         varp->v3error("Only inputs and outputs are allowed in udp modules");
@@ -550,12 +547,11 @@ private:
         iterateChildrenBackwards(nodep);
     }
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
     virtual void visit(AstCell* nodep) override {
         // Parent module inherits child's publicity

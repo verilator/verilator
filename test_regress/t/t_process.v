@@ -34,6 +34,7 @@ module t(/*AUTOARG*/);
       if (0) p.await();
       if (0) p.suspend();
       if (0) p.resume();
+      // See also t_urandom.pl
       p.srandom(0);
       p.set_randstate(p.get_randstate());
 

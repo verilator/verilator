@@ -17,6 +17,7 @@ foreach my $basename ("t_vlcov_data_a.dat",
     ) {
     run(cmd => ["../bin/verilator_coverage",
                 "t/${basename}",
+                "--debug",
                 "--debugi 9",
         ],
         tee => $Self->{verbose},

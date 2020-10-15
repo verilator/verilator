@@ -1,0 +1,4 @@
+%Error: t/t_class_uses_this_bad.v:15:12: 'this' used outside class
+   15 |        this.addr = 2;
+      |            ^
+%Error: Exiting due to

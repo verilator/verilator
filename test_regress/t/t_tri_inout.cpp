@@ -6,7 +6,7 @@
 
 #include "Vt_tri_inout.h"
 
-Vt_tri_inout* tb = nullptr;
+VM_PREFIX* tb = nullptr;
 
 double sc_time_stamp() { return 0; }
 

@@ -118,14 +118,14 @@ private:
             m_modp->addStmtp(varp);
 
             AstNode* abovep = prep->backp();  // Grab above point before lose it w/ next replace
-            prep->replaceWith(new AstVarRef(fl, varp, true));
-            AstIf* newp
-                = new AstIf(fl, condp,
-                            (needDly ? static_cast<AstNode*>(
-                                 new AstAssignDly(fl, prep, new AstVarRef(fl, varp, false)))
-                                     : static_cast<AstNode*>(
-                                         new AstAssign(fl, prep, new AstVarRef(fl, varp, false)))),
-                            nullptr);
+            prep->replaceWith(new AstVarRef(fl, varp, VAccess::WRITE));
+            AstIf* newp = new AstIf(
+                fl, condp,
+                (needDly ? static_cast<AstNode*>(
+                     new AstAssignDly(fl, prep, new AstVarRef(fl, varp, VAccess::READ)))
+                         : static_cast<AstNode*>(
+                             new AstAssign(fl, prep, new AstVarRef(fl, varp, VAccess::READ)))),
+                nullptr);
             newp->branchPred(VBranchPred::BP_LIKELY);
             if (debug() >= 9) newp->dumpTree(cout, "     _new: ");
             abovep->addNextStmt(newp, abovep);
@@ -136,13 +136,12 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             m_constXCvt = true;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
     virtual void visit(AstAssignDly* nodep) override {
         m_assigndlyp = nodep;
@@ -282,12 +281,13 @@ private:
                 ++m_statUnkVars;
                 AstNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
-                AstNodeVarRef* newref1p = new AstVarRef(nodep->fileline(), newvarp, false);
+                AstNodeVarRef* newref1p = new AstVarRef(nodep->fileline(), newvarp, VAccess::READ);
                 replaceHandle.relink(newref1p);  // Replace const with varref
                 AstInitial* newinitp = new AstInitial(
                     nodep->fileline(),
                     new AstAssign(
-                        nodep->fileline(), new AstVarRef(nodep->fileline(), newvarp, true),
+                        nodep->fileline(),
+                        new AstVarRef(nodep->fileline(), newvarp, VAccess::WRITE),
                         new AstOr(
                             nodep->fileline(), new AstConst(nodep->fileline(), numb1),
                             new AstAnd(nodep->fileline(), new AstConst(nodep->fileline(), numbx),
@@ -313,7 +313,7 @@ private:
             AstNode* basefromp = AstArraySel::baseFromp(nodep);
             bool lvalue = false;
             if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
-                lvalue = varrefp->lvalue();
+                lvalue = varrefp->access().isWrite();
             }
             // Find range of dtype we are selecting from
             // Similar code in V3Const::warnSelect
@@ -361,7 +361,7 @@ private:
             AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
             bool lvalue = false;
             if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
-                lvalue = varrefp->lvalue();
+                lvalue = varrefp->access().isWrite();
             } else if (VN_IS(basefromp, Const)) {
                 // If it's a PARAMETER[bit], then basefromp may be a constant instead of a varrefp
             } else {

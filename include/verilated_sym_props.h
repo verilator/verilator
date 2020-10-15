@@ -106,13 +106,13 @@ public:
     VerilatedVarProps(VerilatedVarType vltype, int vlflags)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags{VerilatedVarFlags(vlflags)}
+        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
         , m_pdims{0}
         , m_udims{0} {}
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags{VerilatedVarFlags(vlflags)}
+        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
         , m_pdims{0}
         , m_udims{udims} {
         initUnpacked(ulims);
@@ -122,7 +122,7 @@ public:
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags{VerilatedVarFlags(vlflags)}
+        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
         , m_pdims{1}
         , m_udims{0}
         , m_packed{pl, pr} {}
@@ -130,7 +130,7 @@ public:
                       int udims, const int* ulims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags{VerilatedVarFlags(vlflags)}
+        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
         , m_pdims{1}
         , m_udims{udims}
         , m_packed{pl, pr} {

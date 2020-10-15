@@ -1,0 +1,7 @@
+%Error: t/t_preproc_defarg_bad.v:13:4: Illegal text before '(' that starts define arguments
+%Error: t/t_preproc_defarg_bad.v:13:8: Define passed too many arguments: A1
+%Error: t/t_preproc_defarg_bad.v:15:4: Illegal text before '(' that starts define arguments
+%Error: t/t_preproc_defarg_bad.v:16:10: Define passed too many arguments: A2
+%Error: t/t_preproc_defarg_bad.v:21:1: EOF in define argument list
+%Error: t/t_preproc_defarg_bad.v:21:1: Expecting ( to begin argument list for define reference `A2
+%Error: Exiting due to

@@ -61,7 +61,7 @@
 
 // Version check
 #if defined(SYSTEMC_VERSION) && (SYSTEMC_VERSION < 20111121)
-# warning "Verilator soon requires SystemC 2.3.*; see manual for deprecated other versions."
+# warning "Verilator requires SystemC 2.3.* or newer."
 #endif
 // clang-format on
 
@@ -168,7 +168,7 @@ private:
 
 public:
     explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr)
-        : m_mutexr{mutexr} {
+        : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
         m_mutexr.lock();
     }
     ~VerilatedLockGuard() VL_RELEASE() { m_mutexr.unlock(); }
@@ -507,6 +507,7 @@ public:
     static void addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
     static void removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
     static void runFlushCallbacks() VL_MT_SAFE;
+    static void flushCall() VL_MT_SAFE { runFlushCallbacks(); }  // Deprecated
     /// Callbacks to run prior to termination
     static void addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
     static void removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
@@ -660,9 +661,19 @@ extern void VL_PRINTF_MT(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 /// Print a debug message from internals with standard prefix, with printf style format
 extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 
-extern IData VL_RANDOM_I(int obits);  ///< Randomize a signal
-extern QData VL_RANDOM_Q(int obits);  ///< Randomize a signal
+extern vluint64_t vl_rand64() VL_MT_SAFE;
+inline IData VL_RANDOM_I(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_I(obits); }
+inline QData VL_RANDOM_Q(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_Q(obits); }
 extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);  ///< Randomize a signal
+inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
+    vluint64_t rnd = vl_rand64();
+    if (VL_LIKELY(hi > lo)) {
+        // Modulus isn't very fast but it's common that hi-low is power-of-two
+        return (rnd % (hi - lo)) + lo;
+    } else {
+        return (rnd % (lo - hi)) + hi;
+    }
+}
 
 /// Init time only, so slow is fine
 extern IData VL_RAND_RESET_I(int obits);  ///< Random reset a signal
@@ -853,13 +864,8 @@ extern int VL_TIME_STR_CONVERT(const char* strp) VL_PURE;
 
 /// Return current simulation time
 #if defined(SYSTEMC_VERSION)
-# if SYSTEMC_VERSION > 20011000
 // Already defined: extern sc_time sc_time_stamp();
 inline vluint64_t vl_time_stamp64() { return sc_time_stamp().value(); }
-# else  // Before SystemC changed to integral time representation
-// Already defined: extern double sc_time_stamp();
-inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_stamp()); }
-# endif
 #else  // Non-SystemC
 # ifdef VL_TIME_STAMP64
 extern vluint64_t vl_time_stamp64();

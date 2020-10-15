@@ -42,9 +42,10 @@
 // clang-format on
 
 // CONSTANTS
-static const char* const VLTSAVE_HEADER_STR
-    = "verilatorsave01\n";  ///< Value of first bytes of each file
-static const char* const VLTSAVE_TRAILER_STR = "vltsaved";  ///< Value of last bytes of each file
+/// Value of first bytes of each file (must be multiple of 8 bytes)
+static const char* const VLTSAVE_HEADER_STR = "verilatorsave01\n";
+/// Value of last bytes of each file (must be multiple of 8 bytes)
+static const char* const VLTSAVE_TRAILER_STR = "vltsaved";
 
 //=============================================================================
 //=============================================================================
@@ -64,10 +65,10 @@ VerilatedDeserialize& VerilatedDeserialize::readAssert(const void* __restrict da
                                                        size_t size) VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(readDiffers(datap, size))) {
         std::string fn = filename();
-        std::string msg
-            = "Can't deserialize save-restore file as was made from different model:" + filename();
+        std::string msg = "Can't deserialize save-restore file as was made from different model: "
+                          + filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
-        close();
+        // Die before we close() as close would infinite loop
     }
     return *this;  // For function chaining
 }
@@ -88,9 +89,11 @@ void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR)))) {
         std::string fn = filename();
         std::string msg
-            = std::string("Can't deserialize; file has wrong header signature: ") + filename();
+            = std::string(
+                  "Can't deserialize; file has wrong header signature, or file not found: ")
+              + filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
-        close();
+        // Die before we close() as close would infinite loop
     }
     os.read(Verilated::serialized1Ptr(), Verilated::serialized1Size());
     os.read(Verilated::serialized2Ptr(), Verilated::serialized2Size());
@@ -109,7 +112,7 @@ void VerilatedDeserialize::trailer() VL_MT_UNSAFE_ONE {
         std::string msg = std::string("Can't deserialize; file has wrong end-of-file signature: ")
                           + filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
-        close();
+        // Die before we close() as close would infinite loop
     }
 }
 

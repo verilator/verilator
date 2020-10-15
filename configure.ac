@@ -7,7 +7,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.099 devel],
+AC_INIT([Verilator],[4.103 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -419,6 +419,7 @@ _MY_CXX_CHECK_CXX_VER()
 AC_MSG_RESULT($_my_result)
 if test "$_my_result" = "no" ; then
    CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_STD_NEWEST"
+   CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE $CFG_CXXFLAGS_STD_NEWEST"
    AC_MSG_CHECKING(whether $CXX supports C++11 with $CFG_CXXFLAGS_STD_NEWEST)
    _MY_CXX_CHECK_CXX_VER()
    AC_MSG_RESULT($_my_result)

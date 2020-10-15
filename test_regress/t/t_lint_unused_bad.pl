@@ -11,7 +11,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(linter => 1);
 
 lint(
-    verilator_flags2 => ["--lint-only --bbox-sys --bbox-unsup -Wall -Wno-DECLFILENAME"],
+    verilator_flags2 => ["--lint-only --bbox-sys --bbox-unsup -Wall -Wno-DECLFILENAME",
+                         "--unused-regexp 'cmdln*'"],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

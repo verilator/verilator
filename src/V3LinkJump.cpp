@@ -119,15 +119,13 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         if (nodep->dead()) return;
-        AstNodeModule* origModp = m_modp;
-        int origRepeatNum = m_modRepeatNum;
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_modRepeatNum);
         {
             m_modp = nodep;
             m_modRepeatNum = 0;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
-        m_modRepeatNum = origRepeatNum;
     }
     virtual void visit(AstNodeFTask* nodep) override {
         m_ftaskp = nodep;
@@ -136,14 +134,13 @@ private:
     }
     virtual void visit(AstNodeBlock* nodep) override {
         UINFO(8, "  " << nodep << endl);
-        bool oldFork = m_inFork;
+        VL_RESTORER(m_inFork);
         m_blockStack.push_back(nodep);
         {
             m_inFork = m_inFork || VN_IS(nodep, Fork);
             iterateChildren(nodep);
         }
         m_blockStack.pop_back();
-        m_inFork = oldFork;
     }
     virtual void visit(AstRepeat* nodep) override {
         // So later optimizations don't need to deal with them,
@@ -156,15 +153,15 @@ private:
                                   nodep->findSigned32DType());
         varp->usedLoopIdx(true);
         m_modp->addStmtp(varp);
-        AstNode* initsp = new AstAssign(nodep->fileline(),
-                                        new AstVarRef(nodep->fileline(), varp, true), countp);
+        AstNode* initsp = new AstAssign(
+            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE), countp);
         AstNode* decp = new AstAssign(
-            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, true),
-            new AstSub(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, false),
+            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE),
+            new AstSub(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::READ),
                        new AstConst(nodep->fileline(), 1)));
         AstNode* zerosp = new AstConst(nodep->fileline(), AstConst::Signed32(), 0);
-        AstNode* condp
-            = new AstGtS(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, false), zerosp);
+        AstNode* condp = new AstGtS(nodep->fileline(),
+                                    new AstVarRef(nodep->fileline(), varp, VAccess::READ), zerosp);
         AstNode* bodysp = nodep->bodysp();
         if (bodysp) bodysp->unlinkFrBackWithNext();
         AstNode* newp = new AstWhile(nodep->fileline(), condp, bodysp, decp);
@@ -186,17 +183,17 @@ private:
     }
     virtual void visit(AstWhile* nodep) override {
         // Don't need to track AstRepeat/AstFor as they have already been converted
-        AstWhile* lastLoopp = m_loopp;
-        bool lastInc = m_loopInc;
-        m_loopp = nodep;
-        m_loopInc = false;
-        iterateAndNextNull(nodep->precondsp());
-        iterateAndNextNull(nodep->condp());
-        iterateAndNextNull(nodep->bodysp());
-        m_loopInc = true;
-        iterateAndNextNull(nodep->incsp());
-        m_loopInc = lastInc;
-        m_loopp = lastLoopp;
+        VL_RESTORER(m_loopp);
+        VL_RESTORER(m_loopInc);
+        {
+            m_loopp = nodep;
+            m_loopInc = false;
+            iterateAndNextNull(nodep->precondsp());
+            iterateAndNextNull(nodep->condp());
+            iterateAndNextNull(nodep->bodysp());
+            m_loopInc = true;
+            iterateAndNextNull(nodep->incsp());
+        }
     }
     virtual void visit(AstReturn* nodep) override {
         iterateChildren(nodep);
@@ -216,7 +213,7 @@ private:
                 // Set output variable to return value
                 nodep->addPrev(new AstAssign(
                     nodep->fileline(),
-                    new AstVarRef(nodep->fileline(), VN_CAST(funcp->fvarp(), Var), true),
+                    new AstVarRef(nodep->fileline(), VN_CAST(funcp->fvarp(), Var), VAccess::WRITE),
                     nodep->lhsp()->unlinkFrBackWithNext()));
             }
             // Jump to the end of the function call

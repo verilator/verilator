@@ -117,9 +117,9 @@ private:
         // Now for each child cell, iterate the module this cell points to
         for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp = cellnextp->nextp()) {
             if (AstCell* cellp = VN_CAST(cellnextp, Cell)) {
-                AstScope* oldScopep = m_scopep;
-                AstCell* oldAbCellp = m_aboveCellp;
-                AstScope* oldAbScopep = m_aboveScopep;
+                VL_RESTORER(m_scopep);
+                VL_RESTORER(m_aboveCellp);
+                VL_RESTORER(m_aboveScopep);
                 {
                     m_aboveCellp = cellp;
                     m_aboveScopep = m_scopep;
@@ -127,10 +127,6 @@ private:
                     UASSERT_OBJ(modp, cellp, "Unlinked mod");
                     iterate(modp);  // Recursive call to visit(AstNodeModule)
                 }
-                // Done, restore vars
-                m_scopep = oldScopep;
-                m_aboveCellp = oldAbCellp;
-                m_aboveScopep = oldAbScopep;
             }
         }
 
@@ -153,9 +149,9 @@ private:
     }
     virtual void visit(AstClass* nodep) override {
         // Create required blocks and add to module
-        AstScope* oldScopep = m_scopep;
-        AstCell* oldAbCellp = m_aboveCellp;
-        AstScope* oldAbScopep = m_aboveScopep;
+        VL_RESTORER(m_scopep);
+        VL_RESTORER(m_aboveCellp);
+        VL_RESTORER(m_aboveScopep);
         {
             m_aboveScopep = m_scopep;
 
@@ -179,10 +175,6 @@ private:
 
             iterateChildren(nodep);
         }
-        // Done, restore vars
-        m_scopep = oldScopep;
-        m_aboveCellp = oldAbCellp;
-        m_aboveScopep = oldAbScopep;
     }
     virtual void visit(AstCellInline* nodep) override {  //
         nodep->scopep(m_scopep);

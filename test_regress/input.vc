@@ -1,5 +1,5 @@
 
-+librescan +libext+.v
++librescan +notimingchecks +libext+.v
  -y t
  +incdir+t
  +incdir+../include

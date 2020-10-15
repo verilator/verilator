@@ -111,7 +111,7 @@ void V3CCtors::evalAsserts() {
                     int lastWordWidth = varp->width() % storedWidth;
                     if (lastWordWidth != 0) {
                         // if (signal & CONST(upper_non_clean_mask)) { fail; }
-                        AstNode* newp = new AstVarRef(varp->fileline(), varp, false);
+                        AstNode* newp = new AstVarRef(varp->fileline(), varp, VAccess::READ);
                         if (varp->isWide()) {
                             newp = new AstWordSel(
                                 varp->fileline(), newp,
@@ -151,8 +151,9 @@ void V3CCtors::cctorsAll() {
             for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
                 if (AstVar* varp = VN_CAST(np, Var)) {
                     if (!varp->isIfaceParent() && !varp->isIfaceRef() && !varp->noReset()) {
-                        var_reset.add(new AstCReset(varp->fileline(),
-                                                    new AstVarRef(varp->fileline(), varp, true)));
+                        var_reset.add(
+                            new AstCReset(varp->fileline(),
+                                          new AstVarRef(varp->fileline(), varp, VAccess::WRITE)));
                     }
                 }
             }
@@ -170,10 +171,12 @@ void V3CCtors::cctorsAll() {
                 }
             }
         }
-        if (VN_IS(modp, Class)) {
+        if (AstClass* classp = VN_CAST(modp, Class)) {
             AstCFunc* funcp = new AstCFunc(modp->fileline(), "~", nullptr, "");
             funcp->isDestructor(true);
             funcp->isStatic(false);
+            // If can be referred to by base pointer, need virtual delete
+            funcp->isVirtual(classp->isExtended());
             funcp->slow(false);
             modp->addStmtp(funcp);
         }

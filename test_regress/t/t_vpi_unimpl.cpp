@@ -41,7 +41,7 @@ unsigned int callback_count = 0;
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = nullptr  EXP = !nullptr\n", FILENM, __LINE__); \
+        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
         return __LINE__; \
     }
 
@@ -81,7 +81,7 @@ int _mon_check_unimpl(p_cb_data cb_data) {
     } else {
         // setup and install
         static t_cb_data cb_data;
-        clk_h = vpi_handle_by_name((PLI_BYTE8*)"t.clk", nullptr);
+        clk_h = vpi_handle_by_name((PLI_BYTE8*)"t.clk", NULL);
 
         cb_data.reason = cbPLIError;
         cb_data.cb_rtn = _mon_check_unimpl;  // this function
@@ -90,60 +90,60 @@ int _mon_check_unimpl(p_cb_data cb_data) {
         CHECK_RESULT_NZ(cb);
 
         // now exercise unimplemented fns
-        vpi_get_cb_info(cb, nullptr);
+        vpi_get_cb_info(cb, NULL);
         CHECK_RESULT(callback_count, 1);
-        vpi_register_systf(nullptr);
+        vpi_register_systf(NULL);
         CHECK_RESULT(callback_count, 2);
-        vpi_get_systf_info(nullptr, nullptr);
+        vpi_get_systf_info(NULL, NULL);
         CHECK_RESULT(callback_count, 3);
-        vpi_handle_multi(0, nullptr, nullptr);
+        vpi_handle_multi(0, NULL, NULL);
         CHECK_RESULT(callback_count, 4);
-        vpi_get64(0, nullptr);
+        vpi_get64(0, NULL);
         CHECK_RESULT(callback_count, 5);
-        vpi_get_delays(nullptr, nullptr);
+        vpi_get_delays(NULL, NULL);
         CHECK_RESULT(callback_count, 6);
-        vpi_put_delays(nullptr, nullptr);
+        vpi_put_delays(NULL, NULL);
         CHECK_RESULT(callback_count, 7);
-        vpi_get_value_array(nullptr, nullptr, nullptr, 0);
+        vpi_get_value_array(NULL, NULL, NULL, 0);
         CHECK_RESULT(callback_count, 8);
-        vpi_put_value_array(nullptr, nullptr, nullptr, 0);
+        vpi_put_value_array(NULL, NULL, NULL, 0);
         CHECK_RESULT(callback_count, 9);
-        vpi_get_time(nullptr, nullptr);
+        vpi_get_time(NULL, NULL);
         CHECK_RESULT(callback_count, 10);
         vpi_mcd_name(0);
         CHECK_RESULT(callback_count, 11);
-        vpi_compare_objects(nullptr, nullptr);
+        vpi_compare_objects(NULL, NULL);
         CHECK_RESULT(callback_count, 12);
-        vpi_get_data(0, nullptr, 0);
+        vpi_get_data(0, NULL, 0);
         CHECK_RESULT(callback_count, 13);
-        vpi_put_data(0, nullptr, 0);
+        vpi_put_data(0, NULL, 0);
         CHECK_RESULT(callback_count, 14);
-        vpi_get_userdata(nullptr);
+        vpi_get_userdata(NULL);
         CHECK_RESULT(callback_count, 15);
-        vpi_put_userdata(nullptr, nullptr);
+        vpi_put_userdata(NULL, NULL);
         CHECK_RESULT(callback_count, 16);
-        vpi_handle_by_multi_index(nullptr, 0, nullptr);
+        vpi_handle_by_multi_index(NULL, 0, NULL);
         CHECK_RESULT(callback_count, 17);
         vpi_control(0);
         CHECK_RESULT(callback_count, 18);
 
         s_vpi_time time_s;
         time_s.type = 0;
-        vpi_get_time(nullptr, &time_s);
+        vpi_get_time(NULL, &time_s);
         CHECK_RESULT(callback_count, 19);
 
-        handle = vpi_put_value(nullptr, nullptr, nullptr, 0);
+        handle = vpi_put_value(NULL, NULL, NULL, 0);
         CHECK_RESULT(callback_count, 20);
         CHECK_RESULT(handle, 0);
 
-        handle = vpi_handle(0, nullptr);
+        handle = vpi_handle(0, NULL);
         CHECK_RESULT(callback_count, 21);
         CHECK_RESULT(handle, 0);
 
-        vpi_iterate(0, nullptr);
+        vpi_iterate(0, NULL);
         CHECK_RESULT(callback_count, 22);
 
-        handle = vpi_register_cb(nullptr);
+        handle = vpi_register_cb(NULL);
         CHECK_RESULT(callback_count, 23);
         CHECK_RESULT(handle, 0);
         s_cb_data cb_data_s;
@@ -157,7 +157,7 @@ int _mon_check_unimpl(p_cb_data cb_data) {
 
 int mon_check() {
     // Callback from initial block in monitor
-    if (int status = _mon_check_unimpl(nullptr)) return status;
+    if (int status = _mon_check_unimpl(NULL)) return status;
     return 0;  // Ok
 }
 

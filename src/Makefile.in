@@ -81,6 +81,10 @@ prefiles:: config_rev.h
 config_rev.h:	${srcdir}/config_rev.pl $(GIT_CHANGE_DEP)
 	$(PERL) ${srcdir}/config_rev.pl ${srcdir} >$@
 
+# Human convenience
+clang-format:
+	$(MAKE) -C .. $@
+
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
 	-rm -rf obj_* *.log *.dmp *.vpd core

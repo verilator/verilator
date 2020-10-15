@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class ClsNoArg;
-   int imembera;
+   const int imembera;  // Ok for new() to assign to a const
    function new();
       imembera = 5;
-   endfunction
+   endfunction : new
 endclass
 
 class ClsArg;

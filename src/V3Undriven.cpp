@@ -318,7 +318,7 @@ private:
             for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
                 UndrivenVarEntry* entryp = getEntryp(varrefp->varp(), usr);
                 int lsb = constp->toUInt();
-                if (m_inBBox || varrefp->lvalue()) {
+                if (m_inBBox || varrefp->access().isWrite()) {
                     // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
                     if (usr == 2 && m_alwaysCombp
                         && entryp->isUsedNotDrivenBit(lsb, nodep->width())) {
@@ -327,7 +327,7 @@ private:
                     }
                     entryp->drivenBit(lsb, nodep->width());
                 }
-                if (m_inBBox || !varrefp->lvalue()) entryp->usedBit(lsb, nodep->width());
+                if (m_inBBox || !varrefp->access().isWrite()) entryp->usedBit(lsb, nodep->width());
             }
         } else {
             // else other varrefs handled as unknown mess in AstVarRef
@@ -336,7 +336,7 @@ private:
     }
     virtual void visit(AstNodeVarRef* nodep) override {
         // Any variable
-        if (nodep->lvalue()
+        if (nodep->access().isWrite()
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
             if (m_inProcAssign && !nodep->varp()->varType().isProcAssignable()
                 && !nodep->varp()->isDeclTyped()  //
@@ -355,53 +355,51 @@ private:
         }
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
             UndrivenVarEntry* entryp = getEntryp(nodep->varp(), usr);
-            bool fdrv = nodep->lvalue()
+            bool fdrv = nodep->access().isWrite()
                         && nodep->varp()->attrFileDescr();  // FD's are also being read from
-            if (m_inBBox || nodep->lvalue()) {
+            if (m_inBBox || nodep->access().isWrite()) {
                 if (usr == 2 && m_alwaysCombp && entryp->isUsedNotDrivenAny()) {
                     UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp) << endl);
                     warnAlwCombOrder(nodep);
                 }
                 entryp->drivenWhole();
             }
-            if (m_inBBox || !nodep->lvalue() || fdrv) entryp->usedWhole();
+            if (m_inBBox || !nodep->access().isWrite() || fdrv) entryp->usedWhole();
         }
     }
 
     // Don't know what black boxed calls do, assume in+out
     virtual void visit(AstSysIgnore* nodep) override {
-        bool prevMark = m_inBBox;
-        m_inBBox = true;
-        iterateChildren(nodep);
-        m_inBBox = prevMark;
+        VL_RESTORER(m_inBBox);
+        {
+            m_inBBox = true;
+            iterateChildren(nodep);
+        }
     }
 
     virtual void visit(AstAssign* nodep) override {
-        bool prevProc = m_inProcAssign;
+        VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
             iterateChildren(nodep);
         }
-        m_inProcAssign = prevProc;
     }
     virtual void visit(AstAssignDly* nodep) override {
-        bool prevProc = m_inProcAssign;
+        VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
             iterateChildren(nodep);
         }
-        m_inProcAssign = prevProc;
     }
     virtual void visit(AstAssignW* nodep) override {
-        bool prevCont = m_inContAssign;
+        VL_RESTORER(m_inContAssign);
         {
             m_inContAssign = true;
             iterateChildren(nodep);
         }
-        m_inContAssign = prevCont;
     }
     virtual void visit(AstAlways* nodep) override {
-        AstAlways* prevAlwp = m_alwaysCombp;
+        VL_RESTORER(m_alwaysCombp);
         {
             AstNode::user2ClearTree();
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   " << nodep << endl);
@@ -413,14 +411,14 @@ private:
             iterateChildren(nodep);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
         }
-        m_alwaysCombp = prevAlwp;
     }
 
     virtual void visit(AstNodeFTask* nodep) override {
-        AstNodeFTask* prevTaskp = m_taskp;
-        m_taskp = nodep;
-        iterateChildren(nodep);
-        m_taskp = prevTaskp;
+        VL_RESTORER(m_taskp);
+        {
+            m_taskp = nodep;
+            iterateChildren(nodep);
+        }
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os

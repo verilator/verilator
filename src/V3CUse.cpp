@@ -86,12 +86,11 @@ class CUseDTypeVisitor : public AstNVisitor {
         // No class.h, it's inside the class package's h file
         m_stater.newUse(nodep, VUseType::IMP_INCLUDE, nodep->classp()->packagep()->name());
         // Need to include extends() when we implement, but no need for pointers to know
-        bool oldImpOnly = m_impOnly;
+        VL_RESTORER(m_impOnly);
         {
             m_impOnly = true;
             iterateChildren(nodep->classp());  // This also gets all extend classes
         }
-        m_impOnly = oldImpOnly;
     }
     virtual void visit(AstNodeDType* nodep) override {
         if (nodep->user2SetOnce()) return;  // Process once
@@ -168,7 +167,14 @@ class CUseVisitor : public AstNVisitor {
                 stmt += comma;
                 comma = ", ";
                 stmt += itemp->origNameProtect();
-                stmt += ":\" + VL_TO_STRING(";
+                stmt += ":\" + ";
+                if (itemp->isWide()) {
+                    stmt += "VL_TO_STRING_W(";
+                    stmt += cvtToStr(itemp->widthWords());
+                    stmt += ", ";
+                } else {
+                    stmt += "VL_TO_STRING(";
+                }
                 stmt += itemp->nameProtect();
                 stmt += ");\n";
                 nodep->user1(true);  // So what we extend dumps this

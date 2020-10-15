@@ -228,9 +228,10 @@ private:
                 AstVarScope* bitvscp
                     = createVarSc(varrefp->varScopep(), bitvarname, dimp->width(), nullptr);
                 AstAssign* bitassignp = new AstAssign(
-                    nodep->fileline(), new AstVarRef(nodep->fileline(), bitvscp, true), dimp);
+                    nodep->fileline(), new AstVarRef(nodep->fileline(), bitvscp, VAccess::WRITE),
+                    dimp);
                 nodep->addNextHere(bitassignp);
-                dimreadps.push_front(new AstVarRef(nodep->fileline(), bitvscp, false));
+                dimreadps.push_front(new AstVarRef(nodep->fileline(), bitvscp, VAccess::READ));
             }
         }
         //
@@ -247,9 +248,10 @@ private:
                 AstVarScope* bitvscp
                     = createVarSc(varrefp->varScopep(), bitvarname, lsbvaluep->width(), nullptr);
                 AstAssign* bitassignp = new AstAssign(
-                    nodep->fileline(), new AstVarRef(nodep->fileline(), bitvscp, true), lsbvaluep);
+                    nodep->fileline(), new AstVarRef(nodep->fileline(), bitvscp, VAccess::WRITE),
+                    lsbvaluep);
                 nodep->addNextHere(bitassignp);
-                bitreadp = new AstVarRef(nodep->fileline(), bitvscp, false);
+                bitreadp = new AstVarRef(nodep->fileline(), bitvscp, VAccess::READ);
             }
         }
         //
@@ -263,8 +265,8 @@ private:
                 = (string("__Vdlyvval__") + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
             AstVarScope* valvscp
                 = createVarSc(varrefp->varScopep(), valvarname, 0, nodep->rhsp()->dtypep());
-            newlhsp = new AstVarRef(nodep->fileline(), valvscp, true);
-            valreadp = new AstVarRef(nodep->fileline(), valvscp, false);
+            newlhsp = new AstVarRef(nodep->fileline(), valvscp, VAccess::WRITE);
+            valreadp = new AstVarRef(nodep->fileline(), valvscp, VAccess::READ);
         }
         //
         //=== Setting/not setting boolean: __Vdlyvset__
@@ -283,11 +285,11 @@ private:
                 = (string("__Vdlyvset__") + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
             setvscp = createVarSc(varrefp->varScopep(), setvarname, 1, nullptr);
             setinitp = new AstAssignPre(nodep->fileline(),
-                                        new AstVarRef(nodep->fileline(), setvscp, true),
+                                        new AstVarRef(nodep->fileline(), setvscp, VAccess::WRITE),
                                         new AstConst(nodep->fileline(), 0));
-            AstAssign* setassignp
-                = new AstAssign(nodep->fileline(), new AstVarRef(nodep->fileline(), setvscp, true),
-                                new AstConst(nodep->fileline(), AstConst::LogicTrue()));
+            AstAssign* setassignp = new AstAssign(
+                nodep->fileline(), new AstVarRef(nodep->fileline(), setvscp, VAccess::WRITE),
+                new AstConst(nodep->fileline(), AstConst::LogicTrue()));
             nodep->addNextHere(setassignp);
         }
         if (m_nextDlyp) {  // Tell next assigndly it can share the variable
@@ -332,9 +334,9 @@ private:
             UASSERT_OBJ(postLogicp, nodep,
                         "Delayed assignment misoptimized; prev var found w/o associated IF");
         } else {
-            postLogicp
-                = new AstIf(nodep->fileline(), new AstVarRef(nodep->fileline(), setvscp, false),
-                            nullptr, nullptr);
+            postLogicp = new AstIf(nodep->fileline(),
+                                   new AstVarRef(nodep->fileline(), setvscp, VAccess::READ),
+                                   nullptr, nullptr);
             UINFO(9, "     Created " << postLogicp << endl);
             finalp->addBodysp(postLogicp);
             finalp->user3p(setvscp);  // Remember IF's vset variable
@@ -362,12 +364,13 @@ private:
     }
     virtual void visit(AstActive* nodep) override {
         m_activep = nodep;
-        bool oldinit = m_inInitial;
-        m_inInitial = nodep->hasInitial();
-        AstNode::user3ClearTree();  // Two sets to same variable in different
-                                    // actives must use different vars.
-        iterateChildren(nodep);
-        m_inInitial = oldinit;
+        VL_RESTORER(m_inInitial);
+        {
+            m_inInitial = nodep->hasInitial();
+            // Two sets to same variable in different actives must use different vars.
+            AstNode::user3ClearTree();
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstAssignDly* nodep) override {
         m_inDly = true;
@@ -405,7 +408,7 @@ private:
 
     virtual void visit(AstVarRef* nodep) override {
         if (!nodep->user2Inc()) {  // Not done yet
-            if (m_inDly && nodep->lvalue()) {
+            if (m_inDly && nodep->access().isWrite()) {
                 UINFO(4, "AssignDlyVar: " << nodep << endl);
                 markVarUsage(nodep->varScopep(), VU_DLY);
                 UASSERT_OBJ(m_activep, nodep, "<= not under sensitivity block");
@@ -428,16 +431,19 @@ private:
                     if (basicp && basicp->isEventValue()) {
                         // Events go to zero on next timestep unless reactivated
                         prep = new AstAssignPre(
-                            nodep->fileline(), new AstVarRef(nodep->fileline(), dlyvscp, true),
+                            nodep->fileline(),
+                            new AstVarRef(nodep->fileline(), dlyvscp, VAccess::WRITE),
                             new AstConst(nodep->fileline(), AstConst::LogicFalse()));
                     } else {
-                        prep = new AstAssignPre(nodep->fileline(),
-                                                new AstVarRef(nodep->fileline(), dlyvscp, true),
-                                                new AstVarRef(nodep->fileline(), oldvscp, false));
+                        prep = new AstAssignPre(
+                            nodep->fileline(),
+                            new AstVarRef(nodep->fileline(), dlyvscp, VAccess::WRITE),
+                            new AstVarRef(nodep->fileline(), oldvscp, VAccess::READ));
                     }
                     AstNodeAssign* postp = new AstAssignPost(
-                        nodep->fileline(), new AstVarRef(nodep->fileline(), oldvscp, true),
-                        new AstVarRef(nodep->fileline(), dlyvscp, false));
+                        nodep->fileline(),
+                        new AstVarRef(nodep->fileline(), oldvscp, VAccess::WRITE),
+                        new AstVarRef(nodep->fileline(), dlyvscp, VAccess::READ));
                     postp->lhsp()->user2(true);  // Don't detect this assignment
                     oldvscp->user1p(dlyvscp);  // So we can find it later
                     // Make new ACTIVE with identical sensitivity tree
@@ -446,11 +452,11 @@ private:
                     newactp->addStmtsp(prep);  // Add to FRONT of statements
                     newactp->addStmtsp(postp);
                 }
-                AstVarRef* newrefp = new AstVarRef(nodep->fileline(), dlyvscp, true);
+                AstVarRef* newrefp = new AstVarRef(nodep->fileline(), dlyvscp, VAccess::WRITE);
                 newrefp->user2(true);  // No reason to do it again
                 nodep->replaceWith(newrefp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            } else if (!m_inDly && nodep->lvalue()) {
+            } else if (!m_inDly && nodep->access().isWrite()) {
                 // UINFO(9, "NBA " << nodep << endl);
                 if (!m_inInitial) {
                     UINFO(4, "AssignNDlyVar: " << nodep << endl);
@@ -465,10 +471,11 @@ private:
             "For statements should have been converted to while statements in V3Begin");
     }
     virtual void visit(AstWhile* nodep) override {
-        bool oldloop = m_inLoop;
-        m_inLoop = true;
-        iterateChildren(nodep);
-        m_inLoop = oldloop;
+        VL_RESTORER(m_inLoop);
+        {
+            m_inLoop = true;
+            iterateChildren(nodep);
+        }
     }
 
     //--------------------

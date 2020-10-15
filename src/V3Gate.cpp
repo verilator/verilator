@@ -220,7 +220,7 @@ private:
         if (nodep->varScopep()->varp()->isSc()) {
             clearSimple("SystemC sig");  // Don't want to eliminate the VL_ASSIGN_SI's
         }
-        if (nodep->lvalue()) {
+        if (nodep->access().isWrite()) {
             if (m_lhsVarRef) clearSimple(">1 lhs varRefs");
             m_lhsVarRef = nodep;
         } else {
@@ -412,13 +412,12 @@ private:
         replaceAssigns();
     }
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             m_activeReducible = true;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
     virtual void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);
@@ -449,7 +448,7 @@ private:
                 vvertexp->setIsClock();
                 // For SYNCASYNCNET
                 varscp->user2(true);
-            } else if (m_activep && m_activep->hasClocked() && !nodep->lvalue()) {
+            } else if (m_activep && m_activep->hasClocked() && !nodep->access().isWrite()) {
                 if (varscp->user2()) {
                     if (!vvertexp->rstAsyncNodep()) vvertexp->rstAsyncNodep(nodep);
                 } else {
@@ -458,7 +457,7 @@ private:
             }
             // We use weight of one; if we ref the var more than once, when we simplify,
             // the weight will increase
-            if (nodep->lvalue()) {
+            if (nodep->access().isWrite()) {
                 new V3GraphEdge(&m_graph, m_logicVertexp, vvertexp, 1);
             } else {
                 new V3GraphEdge(&m_graph, vvertexp, m_logicVertexp, 1);
@@ -469,10 +468,11 @@ private:
         iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts"), nullptr);
     }
     virtual void visit(AstAlwaysPublic* nodep) override {
-        bool lastslow = m_inSlow;
-        m_inSlow = true;
-        iterateNewStmt(nodep, "AlwaysPublic", nullptr);
-        m_inSlow = lastslow;
+        VL_RESTORER(m_inSlow);
+        {
+            m_inSlow = true;
+            iterateNewStmt(nodep, "AlwaysPublic", nullptr);
+        }
     }
     virtual void visit(AstCFunc* nodep) override {
         iterateNewStmt(nodep, "User C Function", "User C Function");
@@ -487,10 +487,12 @@ private:
         m_inSenItem = false;
     }
     virtual void visit(AstInitial* nodep) override {
-        bool lastslow = m_inSlow;
-        m_inSlow = true;
-        iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts"), nullptr);
-        m_inSlow = lastslow;
+        VL_RESTORER(m_inSlow);
+        {
+            m_inSlow = true;
+            iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts"),
+                           nullptr);
+        }
     }
     virtual void visit(AstAssignAlias* nodep) override {  //
         iterateNewStmt(nodep, nullptr, nullptr);
@@ -502,10 +504,11 @@ private:
         iterateNewStmt(nodep, "CoverToggle", "CoverToggle");
     }
     virtual void visit(AstTraceDecl* nodep) override {
-        const bool lastslow = m_inSlow;
-        m_inSlow = true;
-        iterateNewStmt(nodep, "Tracing", "Tracing");
-        m_inSlow = lastslow;
+        VL_RESTORER(m_inSlow);
+        {
+            m_inSlow = true;
+            iterateNewStmt(nodep, "Tracing", "Tracing");
+        }
     }
     virtual void visit(AstConcat* nodep) override {
         UASSERT_OBJ(!(VN_IS(nodep->backp(), NodeAssign)
@@ -522,10 +525,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit GateVisitor(AstNode* nodep) {
-        AstNode::user1ClearTree();
-        iterate(nodep);
-    }
+    explicit GateVisitor(AstNode* nodep) { iterate(nodep); }
     virtual ~GateVisitor() override {
         V3Stats::addStat("Optimizations, Gate sigs deleted", m_statSigs);
         V3Stats::addStat("Optimizations, Gate inputs replaced", m_statRefs);
@@ -842,7 +842,7 @@ private:
             // It's possible we substitute into something that will be reduced more later,
             // however, as we never delete the top Always/initial statement, all should be well.
             m_didReplace = true;
-            UASSERT_OBJ(!nodep->lvalue(), nodep,
+            UASSERT_OBJ(!nodep->access().isWrite(), nodep,
                         "Can't replace lvalue assignments with const var");
             AstNode* substp = m_replaceTreep->cloneTree(false);
             UASSERT_OBJ(
@@ -856,7 +856,8 @@ private:
             // to throw warnings that point to a PIN rather than where the pin us used.
             if (VN_IS(substp, VarRef)) substp->fileline(nodep->fileline());
             // Make the substp an rvalue like nodep. This facilitates the hashing in dedupe.
-            if (AstNodeVarRef* varrefp = VN_CAST(substp, NodeVarRef)) varrefp->lvalue(false);
+            if (AstNodeVarRef* varrefp = VN_CAST(substp, NodeVarRef))
+                varrefp->access(VAccess::READ);
             hashReplace(nodep, substp);
             nodep->replaceWith(substp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1511,7 +1512,7 @@ private:
                     UINFO(9, "CLK DECOMP Connecting - " << assignp->lhsp() << endl);
                     UINFO(9, "                   to - " << m_clk_vsp << endl);
                     AstNode* rhsp = assignp->rhsp();
-                    rhsp->replaceWith(new AstVarRef(rhsp->fileline(), m_clk_vsp, false));
+                    rhsp->replaceWith(new AstVarRef(rhsp->fileline(), m_clk_vsp, VAccess::READ));
                     while (V3GraphEdge* edgep = lvertexp->inBeginp()) {
                         VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
                     }

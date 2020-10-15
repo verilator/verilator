@@ -23,7 +23,7 @@ compile(
                          '--stats',
                          '--hierarchical',
                          ($Self->{vltmt} ? ' --threads 6' : ''),
-                         '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus -time"'
+                         '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"'
     ],
     );
 

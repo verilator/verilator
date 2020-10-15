@@ -317,12 +317,12 @@ private:
                                          "_Vpast_" + cvtToStr(m_modPastNum++) + "_" + cvtToStr(i),
                                          inp->dtypep());
             m_modp->addStmtp(outvarp);
-            AstNode* assp = new AstAssignDly(nodep->fileline(),
-                                             new AstVarRef(nodep->fileline(), outvarp, true), inp);
+            AstNode* assp = new AstAssignDly(
+                nodep->fileline(), new AstVarRef(nodep->fileline(), outvarp, VAccess::WRITE), inp);
             alwaysp->addStmtp(assp);
             // if (debug() >= 9) assp->dumpTree(cout, "-ass: ");
             invarp = outvarp;
-            inp = new AstVarRef(nodep->fileline(), invarp, false);
+            inp = new AstVarRef(nodep->fileline(), invarp, VAccess::READ);
         }
         nodep->replaceWith(inp);
     }
@@ -360,25 +360,22 @@ private:
     }
 
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
-        unsigned origPastNum = m_modPastNum;
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_modPastNum);
         {
             m_modp = nodep;
             m_modPastNum = 0;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
-        m_modPastNum = origPastNum;
     }
     virtual void visit(AstBegin* nodep) override {
         // This code is needed rather than a visitor in V3Begin,
         // because V3Assert is called before V3Begin
-        AstBegin* lastp = m_beginp;
+        VL_RESTORER(m_beginp);
         {
             m_beginp = nodep;
             iterateChildren(nodep);
         }
-        m_beginp = lastp;
     }
 
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }

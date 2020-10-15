@@ -44,21 +44,9 @@ int sc_main(int argc, char* argv[]) {
     // General logfile
     ios::sync_with_stdio();
 
-    // Defaults time
-#if (SYSTEMC_VERSION > 20011000)
-#else
-    sc_time dut(1.0, sc_ns);
-    sc_set_default_time_unit(dut);
-#endif
-
     // Define clocks
-#if (SYSTEMC_VERSION >= 20070314)
     sc_clock clk("clk", 10, SC_NS, 0.5, 3, SC_NS, true);
     sc_clock fastclk("fastclk", 2, SC_NS, 0.5, 2, SC_NS, true);
-#else
-    sc_clock clk("clk", 10, 0.5, 3, true);
-    sc_clock fastclk("fastclk", 2, 0.5, 2, true);
-#endif
 
     // Define interconnect
     sc_signal<bool> reset_l;
@@ -89,11 +77,7 @@ int sc_main(int argc, char* argv[]) {
 
     // You must do one evaluation before enabling waves, in order to allow
     // SystemC to interconnect everything for testing.
-#if (SYSTEMC_VERSION >= 20070314)
     sc_start(1, SC_NS);
-#else
-    sc_start(1);
-#endif
 
 #if VM_TRACE
     // If verilator was invoked with --trace argument,
@@ -125,11 +109,7 @@ int sc_main(int argc, char* argv[]) {
         }
 
         // Simulate 1ns
-#if (SYSTEMC_VERSION >= 20070314)
         sc_start(1, SC_NS);
-#else
-        sc_start(1);
-#endif
     }
 
     // Final model cleanup

@@ -1848,11 +1848,7 @@ sub _print_advance_time {
     else { $set = "topp->"; }
 
     if ($self->sc) {
-        print $fh "#if (SYSTEMC_VERSION>=20070314)\n";
         print $fh "        sc_start(${time}, $Self->{sc_time_resolution});\n";
-        print $fh "#else\n";
-        print $fh "        sc_start(${time});\n";
-        print $fh "#endif\n";
     } else {
         if ($action) {
             print $fh "        ${set}eval();\n";
@@ -2083,6 +2079,7 @@ sub files_identical {
                     && !/^-node:/
                     && !/^dot [^\n]+\n/
                     && !/^In file: .*\/sc_.*:\d+/
+                    && !/^libgcov.*/
             } @l1;
             @l1 = map {
                 s/(Internal Error: [^\n]+\.cpp):[0-9]+:/$1:#:/;
@@ -2322,6 +2319,21 @@ sub write_wholefile {
     my $fh = IO::File->new(">$filename") or die "%Error: $! writing $filename,";
     print $fh $contents;
     $fh->close;
+    delete $_File_Contents_Cache{$filename};
+}
+
+sub file_sed {
+    my $self = (ref $_[0]? shift : $Self);
+    my $infilename = shift;
+    my $outfilename = shift;
+    my $editcb = shift;
+    my $contents = $self->file_contents($infilename);
+    {
+        $_ = $contents;
+        $editcb->($contents);
+        $contents = $_;
+    }
+    $self->write_wholefile($outfilename, $contents);
 }
 
 #######################################################################

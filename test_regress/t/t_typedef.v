@@ -4,11 +4,15 @@
 // any use, without warranty, 2009 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+package pkg;
+   typedef bit pkg_bit_t;
+endpackage
+
 program t;
    parameter SIZE = 5;
 
    typedef vec_t;  // Forward
-   //UNSUP typedef vec_t;  // Multi-forward is ok
+   typedef vec_t;  // Multi-forward is ok
 
    typedef reg [SIZE-1:0] vec_t;
    vec_t a; initial a =0;
@@ -19,6 +23,8 @@ program t;
    typedef int array_t [3];
    typedef array_t array2_t [2];
    array2_t ar [1];
+
+   typedef pkg::pkg_bit_t lcl_pkg_bit_t;
 
    // Define before use
    // Not sure how well supported this is elsewhere

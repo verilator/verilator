@@ -168,7 +168,7 @@ private:
             for (V3GraphEdge* edgep = vtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                 TristateVertex* vvertexp = dynamic_cast<TristateVertex*>(edgep->fromp());
                 if (const AstVarRef* refp = VN_CAST(vvertexp->nodep(), VarRef)) {
-                    if (refp->lvalue()
+                    if (refp->access().isWrite()
                         // Doesn't hurt to not check if already set, but by doing so when we
                         // print out the debug messages, we'll see this node at level 0 instead.
                         && !vvertexp->isTristate()) {
@@ -276,12 +276,12 @@ class TristatePinVisitor : public TristateBaseVisitor {
     bool m_lvalue;  // Flip to be an LVALUE
     // VISITORS
     virtual void visit(AstVarRef* nodep) override {
-        if (m_lvalue && !nodep->lvalue()) {
+        if (m_lvalue && !nodep->access().isWrite()) {
             UINFO(9, "  Flip-to-LValue " << nodep << endl);
-            nodep->lvalue(true);
-        } else if (!m_lvalue && nodep->lvalue()) {
+            nodep->access(VAccess::WRITE);
+        } else if (!m_lvalue && nodep->access().isWrite()) {
             UINFO(9, "  Flip-to-RValue " << nodep << endl);
-            nodep->lvalue(false);
+            nodep->access(VAccess::READ);
             // Mark the ex-output as tristated
             UINFO(9, "  setTristate-subpin " << nodep->varp() << endl);
             m_tgraph.setTristate(nodep->varp());
@@ -489,7 +489,7 @@ class TristateVisitor : public TristateBaseVisitor {
                     UINFO(8, "  Adding driver to var " << varp << endl);
                     AstConst* constp = new AstConst(varp->fileline(), AstConst::WidthedValue(),
                                                     varp->width(), 0);
-                    AstVarRef* varrefp = new AstVarRef(varp->fileline(), varp, true);
+                    AstVarRef* varrefp = new AstVarRef(varp->fileline(), varp, VAccess::WRITE);
                     AstNode* newp = new AstAssignW(varp->fileline(), varrefp, constp);
                     UINFO(9, "       newoev " << newp << endl);
                     varrefp->user1p(new AstConst(varp->fileline(), AstConst::WidthedValue(),
@@ -577,24 +577,25 @@ class TristateVisitor : public TristateBaseVisitor {
                 nodep->addStmtp(newenp);
 
                 AstNode* enassp = new AstAssignW(
-                    refp->fileline(), new AstVarRef(refp->fileline(), newenp, true), getEnp(refp));
+                    refp->fileline(), new AstVarRef(refp->fileline(), newenp, VAccess::WRITE),
+                    getEnp(refp));
                 UINFO(9, "       newass " << enassp << endl);
                 nodep->addStmtp(enassp);
 
                 // now append this driver to the driver logic.
-                AstNode* ref1p = new AstVarRef(refp->fileline(), newlhsp, false);
-                AstNode* ref2p = new AstVarRef(refp->fileline(), newenp, false);
+                AstNode* ref1p = new AstVarRef(refp->fileline(), newlhsp, VAccess::READ);
+                AstNode* ref2p = new AstVarRef(refp->fileline(), newenp, VAccess::READ);
                 AstNode* andp = new AstAnd(refp->fileline(), ref1p, ref2p);
 
                 // or this to the others
                 orp = (!orp) ? andp : new AstOr(refp->fileline(), orp, andp);
 
                 if (envarp) {
-                    AstNode* ref3p = new AstVarRef(refp->fileline(), newenp, false);
+                    AstNode* ref3p = new AstVarRef(refp->fileline(), newenp, VAccess::READ);
                     enp = (!enp) ? ref3p : new AstOr(ref3p->fileline(), enp, ref3p);
                 }
-                AstNode* tmp = new AstNot(newenp->fileline(),
-                                          new AstVarRef(newenp->fileline(), newenp, false));
+                AstNode* tmp = new AstNot(
+                    newenp->fileline(), new AstVarRef(newenp->fileline(), newenp, VAccess::READ));
                 undrivenp = ((!undrivenp) ? tmp : new AstAnd(refp->fileline(), tmp, undrivenp));
             }
             if (!undrivenp) {  // No drivers on the bus
@@ -621,11 +622,12 @@ class TristateVisitor : public TristateBaseVisitor {
             }
             if (envarp) {
                 nodep->addStmtp(new AstAssignW(
-                    enp->fileline(), new AstVarRef(envarp->fileline(), envarp, true), enp));
+                    enp->fileline(), new AstVarRef(envarp->fileline(), envarp, VAccess::WRITE),
+                    enp));
             }
             // __out (child) or <in> (parent) = drive-value expression
-            AstNode* assp = new AstAssignW(lhsp->fileline(),
-                                           new AstVarRef(lhsp->fileline(), lhsp, true), orp);
+            AstNode* assp = new AstAssignW(
+                lhsp->fileline(), new AstVarRef(lhsp->fileline(), lhsp, VAccess::WRITE), orp);
             assp->user2(U2_BOTH);  // Don't process further; already resolved
             if (debug() >= 9) assp->dumpTree(cout, "-lhsp-eqn: ");
             nodep->addStmtp(assp);
@@ -647,7 +649,7 @@ class TristateVisitor : public TristateBaseVisitor {
                 // due to the pinReconnectSimple call in visit AstPin.
                 // We can ignore the output override by making a temporary
                 AstVar* varp = getCreateUnconnVarp(nodep, nodep->dtypep());
-                AstNode* newp = new AstVarRef(nodep->fileline(), varp, true);
+                AstNode* newp = new AstVarRef(nodep->fileline(), varp, VAccess::WRITE);
                 UINFO(9, " const->" << newp << endl);
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -945,10 +947,12 @@ class TristateVisitor : public TristateBaseVisitor {
                                        ->num();  // visit(AstConst) already split into en/ones
                 const V3Number& oneIfEnOne = constp->num();
                 AstVar* envarp = getCreateEnVarp(varrefp->varp());
-                AstNode* newp = new AstLogAnd(
-                    fl, new AstEq(fl, new AstConst(fl, oneIfEn), new AstVarRef(fl, envarp, false)),
-                    // Keep the caseeq if there are X's present
-                    new AstEqCase(fl, new AstConst(fl, oneIfEnOne), varrefp));
+                AstNode* newp
+                    = new AstLogAnd(fl,
+                                    new AstEq(fl, new AstConst(fl, oneIfEn),
+                                              new AstVarRef(fl, envarp, VAccess::READ)),
+                                    // Keep the caseeq if there are X's present
+                                    new AstEqCase(fl, new AstConst(fl, oneIfEnOne), varrefp));
                 if (neq) newp = new AstLogNot(fl, newp);
                 UINFO(9, "       newceq " << newp << endl);
                 if (debug() >= 9) nodep->dumpTree(cout, "-caseeq-old: ");
@@ -992,7 +996,7 @@ class TristateVisitor : public TristateBaseVisitor {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported pullup/down (weak driver) construct.");
         } else {
             if (m_graphing) {
-                varrefp->lvalue(true);
+                varrefp->access(VAccess::WRITE);
                 m_logicp = nodep;
                 m_tgraph.setTristate(nodep);
                 associateLogic(nodep, varrefp->varp());
@@ -1004,7 +1008,7 @@ class TristateVisitor : public TristateBaseVisitor {
                 // current limitation of this implementation is that a pullup/down
                 // gets applied to all bits of a bus and a bus cannot have drivers
                 // in opposite directions on individual pins.
-                varrefp->lvalue(true);
+                varrefp->access(VAccess::WRITE);
                 m_tgraph.didProcess(nodep);
                 m_tgraph.didProcess(varrefp->varp());
                 setPullDirection(varrefp->varp(), nodep);
@@ -1082,7 +1086,9 @@ class TristateVisitor : public TristateBaseVisitor {
                 AstVar* ucVarp = getCreateUnconnVarp(nodep, nodep->modVarp()->dtypep());
                 nodep->exprp(new AstVarRef(nodep->fileline(), ucVarp,
                                            // We converted, so use declaration output state
-                                           nodep->modVarp()->declDirection().isWritable()));
+                                           nodep->modVarp()->declDirection().isWritable()
+                                               ? VAccess::WRITE
+                                               : VAccess::READ));
                 m_tgraph.setTristate(ucVarp);
                 // We don't need a driver on the wire; the lack of one will default to tristate
             } else if (inDeclProcessing) {  // Not an input that was a converted tristate
@@ -1103,15 +1109,16 @@ class TristateVisitor : public TristateBaseVisitor {
                                             nodep->name() + "__en" + cvtToStr(m_unique++),
                                             VFlagBitPacked(), enModVarp->width());
                 UINFO(9, "       newenv " << enVarp << endl);
-                AstPin* enpinp = new AstPin(nodep->fileline(), nodep->pinNum(),
-                                            enModVarp->name(),  // should be {var}"__en"
-                                            new AstVarRef(nodep->fileline(), enVarp, true));
+                AstPin* enpinp
+                    = new AstPin(nodep->fileline(), nodep->pinNum(),
+                                 enModVarp->name(),  // should be {var}"__en"
+                                 new AstVarRef(nodep->fileline(), enVarp, VAccess::WRITE));
                 enpinp->modVarp(enModVarp);
                 UINFO(9, "       newpin " << enpinp << endl);
                 enpinp->user2(U2_BOTH);  // don't iterate the pin later
                 nodep->addNextHere(enpinp);
                 m_modp->addStmtp(enVarp);
-                enrefp = new AstVarRef(nodep->fileline(), enVarp, false);
+                enrefp = new AstVarRef(nodep->fileline(), enVarp, VAccess::READ);
                 UINFO(9, "       newvrf " << enrefp << endl);
                 if (debug() >= 9) enpinp->dumpTree(cout, "-pin-ena: ");
             }
@@ -1215,7 +1222,7 @@ class TristateVisitor : public TristateBaseVisitor {
     virtual void visit(AstVarRef* nodep) override {
         UINFO(9, dbgState() << nodep << endl);
         if (m_graphing) {
-            if (nodep->lvalue()) {
+            if (nodep->access().isWrite()) {
                 associateLogic(nodep, nodep->varp());
             } else {
                 associateLogic(nodep->varp(), nodep);
@@ -1226,11 +1233,11 @@ class TristateVisitor : public TristateBaseVisitor {
             // Detect all var lhs drivers and adds them to the
             // VarMap so that after the walk through the module we can expand
             // any tristate logic on the driver.
-            if (nodep->lvalue() && m_tgraph.isTristate(nodep->varp())) {
+            if (nodep->access().isWrite() && m_tgraph.isTristate(nodep->varp())) {
                 UINFO(9, "     Ref-to-lvalue " << nodep << endl);
                 m_tgraph.didProcess(nodep);
                 mapInsertLhsVarRef(nodep);
-            } else if (!nodep->lvalue()
+            } else if (!nodep->access().isWrite()
                        // Not already processed, nor varref from visit(AstPin) creation
                        && !nodep->user1p()
                        // Reference to another tristate variable
@@ -1240,7 +1247,7 @@ class TristateVisitor : public TristateBaseVisitor {
                 // Then propagate the enable from the original variable
                 UINFO(9, "     Ref-to-tri " << nodep << endl);
                 AstVar* enVarp = getCreateEnVarp(nodep->varp());
-                nodep->user1p(new AstVarRef(nodep->fileline(), enVarp, false));
+                nodep->user1p(new AstVarRef(nodep->fileline(), enVarp, VAccess::READ));
             }
             if (m_alhs) {}  // NOP; user1() already passed down from assignment
         }
@@ -1254,9 +1261,9 @@ class TristateVisitor : public TristateBaseVisitor {
             if (nodep->user2() & U2_GRAPHING) return;  // Already processed
             nodep->user2(U2_GRAPHING);
             if (nodep->isPulldown() || nodep->isPullup()) {
-                AstNode* newp
-                    = new AstPull(nodep->fileline(), new AstVarRef(nodep->fileline(), nodep, true),
-                                  nodep->isPullup());
+                AstNode* newp = new AstPull(
+                    nodep->fileline(), new AstVarRef(nodep->fileline(), nodep, VAccess::WRITE),
+                    nodep->isPullup());
                 UINFO(9, "       newpul " << newp << endl);
                 nodep->addNextHere(newp);
                 // We'll iterate on the new AstPull later
@@ -1281,10 +1288,10 @@ class TristateVisitor : public TristateBaseVisitor {
 
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(8, nodep << endl);
-        AstNodeModule* origModp = m_modp;
-        bool origGraphing = m_graphing;
-        int origUnique = m_unique;
-        VarMap origLhsmap = m_lhsmap;
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_graphing);
+        VL_RESTORER(m_unique);
+        VL_RESTORER(m_lhsmap);
         // Not preserved, needs pointer instead: TristateGraph origTgraph = m_tgraph;
         UASSERT_OBJ(m_tgraph.empty(), nodep, "Unsupported: NodeModule under NodeModule");
         {
@@ -1308,10 +1315,6 @@ class TristateVisitor : public TristateBaseVisitor {
             // Insert new logic for all tristates
             insertTristates(nodep);
         }
-        m_modp = origModp;
-        m_graphing = origGraphing;
-        m_unique = origUnique;
-        m_lhsmap = origLhsmap;
         m_tgraph.clear();  // Recursion not supported
     }
 

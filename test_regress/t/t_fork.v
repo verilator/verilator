@@ -9,6 +9,9 @@ module t (/*AUTOARG*/);
    initial begin
       fork : fblk
          begin
+            $write("Forked");
+         end
+         begin
             $write("*-* All Finished *-*\n");
             $finish;
          end

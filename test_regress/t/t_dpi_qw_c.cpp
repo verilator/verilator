@@ -33,7 +33,7 @@ void poke_value(int i) {
 #endif
 
     svScope scope = svGetScopeFromName("top.t.a");
-    if (scope == nullptr) {
+    if (scope == NULL) {
         printf("%%Error: null scope for top.t.a\n");
         return;
     }

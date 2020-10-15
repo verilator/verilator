@@ -29,7 +29,7 @@ class Packet;
    constraint order { solve length before header; }
    constraint dis {
       disable soft x;
-      x dist { [100:102] :/ 1, 200 := 2, 300 := 5};
+      x dist { [100:102] :/ 1, 200 := 2, 300 := 5, 400};
    }
 
 endclass

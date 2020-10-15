@@ -87,8 +87,10 @@ const char* AstNodeUOrStructDType::broken() const {
     return nullptr;
 }
 
+void AstNodeStmt::dump(std::ostream& str) const { this->AstNode::dump(str); }
+
 void AstNodeCCall::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     if (funcp()) {
         str << " " << funcp()->name() << " => ";
         funcp()->dump(str);
@@ -331,7 +333,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     string ostatic;
     if (isStatic() && namespc.empty()) ostatic = "static ";
 
-    VlArgTypeRecursed info = vlArgTypeRecurse(forFunc, dtypep());
+    VlArgTypeRecursed info = vlArgTypeRecurse(forFunc, dtypep(), false);
 
     string oname;
     if (named) {
@@ -1035,8 +1037,10 @@ void AstNode::dump(std::ostream& str) const {
     }
 }
 
+void AstNodeProcedure::dump(std::ostream& str) const { this->AstNode::dump(str); }
+
 void AstAlways::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeProcedure::dump(str);
     if (keyword() != VAlwaysKwd::ALWAYS) str << " [" << keyword().ascii() << "]";
 }
 
@@ -1057,8 +1061,12 @@ string AstBasicDType::prettyDTypeName() const {
     }
     return os.str();
 }
+
+void AstNodeMath::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstNodeUniop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
+
 void AstCCast::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeUniop::dump(str);
     str << " sz" << size();
 }
 void AstCell::dump(std::ostream& str) const {
@@ -1095,7 +1103,11 @@ void AstClass::repairCache() {
     clearCache();
     for (AstNode* itemp = membersp(); itemp; itemp = itemp->nextp()) { insertCache(itemp); }
 }
-void AstClass::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstClass::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isExtended()) str << " [EXT]";
+    if (isVirtual()) str << " [VIRT]";
+}
 AstClass* AstClassExtends::classp() const {
     AstClassRefDType* refp = VN_CAST(dtypep(), ClassRefDType);
     UASSERT_OBJ(refp, this, "class extends non-ref");
@@ -1115,15 +1127,15 @@ void AstClassRefDType::dumpSmall(std::ostream& str) const {
     str << "class:" << name();
 }
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     if (immediate()) str << " [IMMEDIATE]";
 }
 void AstDisplay::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     // str<<" "<<displayType().ascii();
 }
 void AstEnumItemRef::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeMath::dump(str);
     str << " -> ";
     if (itemp()) {
         itemp()->dump(str);
@@ -1163,7 +1175,7 @@ void AstInitArray::dump(std::ostream& str) const {
     }
 }
 void AstJumpGo::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     str << " -> ";
     if (labelp()) {
         labelp()->dump(str);
@@ -1172,7 +1184,7 @@ void AstJumpGo::dump(std::ostream& str) const {
     }
 }
 void AstJumpLabel::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     str << " -> ";
     if (blockp()) {
         blockp()->dump(str);
@@ -1181,7 +1193,7 @@ void AstJumpLabel::dump(std::ostream& str) const {
     }
 }
 void AstMemberSel::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeMath::dump(str);
     str << " -> ";
     if (varp()) {
         varp()->dump(str);
@@ -1190,7 +1202,7 @@ void AstMemberSel::dump(std::ostream& str) const {
     }
 }
 void AstMethodCall::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     if (isStatement()) str << " [STMT]";
     str << " -> ";
     if (taskp()) {
@@ -1231,27 +1243,30 @@ void AstPin::dump(std::ostream& str) const {
     if (svImplicit()) str << " [.SV]";
 }
 void AstPrintTimeScale::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     str << " " << timeunit();
 }
+
+void AstNodeTermop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
 void AstTime::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeTermop::dump(str);
     str << " " << timeunit();
 }
 void AstTimeD::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeTermop::dump(str);
     str << " " << timeunit();
 }
 void AstTimeImport::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeUniop::dump(str);
     str << " " << timeunit();
 }
 void AstTypedef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (attrPublic()) str << " [PUBLIC]";
 }
+void AstNodeRange::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstRange::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeRange::dump(str);
     if (littleEndian()) str << " [LITTLE]";
 }
 void AstRefDType::dump(std::ostream& str) const {
@@ -1348,15 +1363,16 @@ void AstPackageImport::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " -> " << packagep();
 }
+void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
 void AstSel::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeTriop::dump(str);
     if (declRange().ranged()) {
         str << " decl" << declRange() << "]";
         if (declElWidth() != 1) str << "/" << declElWidth();
     }
 }
 void AstSliceSel::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeTriop::dump(str);
     if (declRange().ranged()) str << " decl" << declRange();
 }
 void AstMTaskBody::dump(std::ostream& str) const {
@@ -1424,10 +1440,11 @@ void AstVarScope::dump(std::ostream& str) const {
         str << " ->UNLINKED";
     }
 }
+void AstNodeVarRef::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
 void AstVarXRef::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeVarRef::dump(str);
     if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
-    if (lvalue()) {
+    if (access().isWrite()) {
         str << " [LV] => ";
     } else {
         str << " [RV] <- ";
@@ -1443,9 +1460,9 @@ void AstVarXRef::dump(std::ostream& str) const {
     }
 }
 void AstVarRef::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeVarRef::dump(str);
     if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
-    if (lvalue()) {
+    if (access().isWrite()) {
         str << " [LV] => ";
     } else {
         str << " [RV] <- ";
@@ -1518,7 +1535,7 @@ void AstActive::dump(std::ostream& str) const {
     }
 }
 void AstNodeFTaskRef::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
     str << " -> ";
     if (dotted() != "") { str << ".=" << dotted() << " "; }
@@ -1550,7 +1567,7 @@ void AstBegin::dump(std::ostream& str) const {
     if (implied()) str << " [IMPLIED]";
 }
 void AstCoverDecl::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     if (!page().empty()) str << " page=" << page();
     if (!linescov().empty()) str << " lc=" << linescov();
     if (this->dataDeclNullp()) {
@@ -1561,7 +1578,7 @@ void AstCoverDecl::dump(std::ostream& str) const {
     }
 }
 void AstCoverInc::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     str << " -> ";
     if (declp()) {
         declp()->dump(str);
@@ -1574,7 +1591,7 @@ void AstFork::dump(std::ostream& str) const {
     if (!joinType().join()) str << " [" << joinType() << "]";
 }
 void AstTraceInc::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeStmt::dump(str);
     str << " -> ";
     if (declp()) {
         declp()->dump(str);
@@ -1593,10 +1610,11 @@ void AstNodeText::dump(std::ostream& str) const {
     str << " \"" << out << "\"";
 }
 
-void AstVFile::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstNodeFile::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstVFile::dump(std::ostream& str) const { this->AstNodeFile::dump(str); }
 
 void AstCFile::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeFile::dump(str);
     if (source()) str << " [SRC]";
     if (slow()) str << " [SLOW]";
 }

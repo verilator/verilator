@@ -2,16 +2,65 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
+* Verilator 4.103 devel
 
-* Verilator 4.099 devel
+
+* Verilator 4.102 2020-10-15
+
+****  Support const object new() assignments.
+
+****  Support # as a comment in -f files (#2497). [phantom-killua]
+
+****  Support 'this' (#2585). [Rafal Kapuscik]
+
+****  Support defines for FST tracing (#2592). [Markus Krause]
+
+****  Support |=> inside properties (#1292). [Peter Monsson]
+
+****  Fix timescale with --hierarchical (#2554). [Yutetsu TAKATSUKASA]
+
+****  Fix cmake build with --hierarchical (#2560). [Yutetsu TAKATSUKASA]
+
+****  Fix -G dropping public indication (#2561). [Andrew Goessling]
+
+****  Fix $urandom_range passed variable (#2563). [nanduraj1]
+
+****  Fix method calls to package class functions (#2565). [Peter Monsson]
+
+****  Fix class wide member display (#2567). [Nandu Raj P]
+
+****  Fix hierarchical references inside function (#2267) (#2572). [James Pallister]
+
+****  Fix flushCall for backward compatibility (#2580). [chenguokai]
+
+****  Fix preprocessor stringify of undefined macro. [Martin Whitaker]
+
+
+* Verilator 4.100 2020-09-07
 
 **    C++11 or newer compilers are now required.
 
+**    SystemC 2.3.0 or newer (SYSTEMC_VERSION >= 20111121) is now required.
+
 **    Support hierarchical Verilation (#2206). [Yutetsu TAKATSUKASA]
 
-****  Support class extern.
+****  Support (with limitations) class extern, class extends, virtual class.
+
+****  Support $urandom, $urandom_range without stability.
 
 ****  Fix false DECLFILENAME on black-boxed modules (#2430). [Philipp Wagner]
+
+****  Fix naming of "id : begin" blocks.
+
+****  Fix class constructor error on assignments to const.
+
+****  Fix splitting eval functions with --output-split-cfuncs (#2368). [Geza Lore]
+
+****  Fix queues as class members (#2525). [nanduraj1]
+
+****  Add support for assume property. [Peter Monsson]
+
+****  Add support for |=> inside properties (#1292). [Peter Monsson]
 
 
 * Verilator 4.040 2020-08-15
@@ -42,6 +91,10 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix casting non-self-determined subexpressions (#2493). [phantom-killua]
 
 ****  Fix SystemC net names (#2500). [Edgar E. Iglesias]
+
+****  Fix build with Bison 3.7 and newer (#2505). [Rupert Swarbrick]
+
+****  Fix slice of unpacked array (#2506) (#2507). [Yutetsu TAKATSUKASA]
 
 
 * Verilator 4.038 2020-07-11

@@ -578,7 +578,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
         ++pos;
     }
     string fmtsize;
-    for (; pos != vformat.end() && (isdigit(pos[0]) || pos[0] == '.'); ++pos) {
+    for (; pos != vformat.cend() && (isdigit(pos[0]) || pos[0] == '.'); ++pos) {
         fmtsize += pos[0];
     }
     string str;
@@ -1267,7 +1267,7 @@ V3Number& V3Number::opXor(const V3Number& lhs, const V3Number& rhs) {
             setBit(bit, 1);
         } else if (lhs.bitIs0(bit) && rhs.bitIs1(bit)) {
             setBit(bit, 1);
-        } else if (lhs.bitIsXZ(bit) && rhs.bitIsXZ(bit)) {
+        } else if (lhs.bitIsXZ(bit) || rhs.bitIsXZ(bit)) {
             setBit(bit, 'x');
         }
         // else zero

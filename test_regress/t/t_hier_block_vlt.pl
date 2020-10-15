@@ -21,7 +21,7 @@ compile(
     verilator_flags2 => ['--stats',
                          '--hierarchical',
                          '+define+USE_VLT', 't/t_hier_block_vlt.vlt',
-                         '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus -time"',
+                         '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"',
                          ($Self->{vltmt} ? ' --threads 6' : '')],
     );
 

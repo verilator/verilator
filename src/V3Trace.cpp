@@ -419,13 +419,13 @@ private:
         graphSimplify(false);
     }
 
-    AstNode* selectActivity(FileLine* flp, uint32_t acode, bool lvalue) {
-        return new AstArraySel(flp, new AstVarRef(flp, m_activityVscp, lvalue), acode);
+    AstNode* selectActivity(FileLine* flp, uint32_t acode, const VAccess& access) {
+        return new AstArraySel(flp, new AstVarRef(flp, m_activityVscp, access), acode);
     }
 
     void addActivitySetter(AstNode* insertp, uint32_t code) {
         FileLine* const fl = insertp->fileline();
-        AstAssign* const setterp = new AstAssign(fl, selectActivity(fl, code, true),
+        AstAssign* const setterp = new AstAssign(fl, selectActivity(fl, code, VAccess::WRITE),
                                                  new AstConst(fl, AstConst::LogicTrue()));
         if (AstCCall* const callp = VN_CAST(insertp, CCall)) {
             callp->addNextHere(setterp);
@@ -638,7 +638,7 @@ private:
                         condp = new AstConst(flp, 1);  // Always true, will be folded later
                     } else {
                         for (const uint32_t actCode : actSet) {
-                            AstNode* const selp = selectActivity(flp, actCode, false);
+                            AstNode* const selp = selectActivity(flp, actCode, VAccess::READ);
                             condp = condp ? new AstOr(flp, condp, selp) : selp;
                         }
                     }
@@ -651,7 +651,7 @@ private:
 
                 // Add TraceInc node
                 AstTraceDecl* const declp = vtxp->nodep();
-                AstTraceInc* const incp = new AstTraceInc(declp->fileline(), declp, false);
+                AstTraceInc* const incp = new AstTraceInc(declp->fileline(), declp, VAccess::READ);
                 ifp->addIfsp(incp);
                 subStmts += EmitCBaseCounterVisitor(incp).count();
 
@@ -686,7 +686,7 @@ private:
 
         // Clear fine grained activity flags
         for (uint32_t i = 0; i < m_activityNumber; ++i) {
-            AstNode* const clrp = new AstAssign(fl, selectActivity(fl, i, true),
+            AstNode* const clrp = new AstAssign(fl, selectActivity(fl, i, VAccess::WRITE),
                                                 new AstConst(fl, AstConst::LogicFalse()));
             cleanupFuncp->addStmtsp(clrp);
         }
@@ -845,7 +845,7 @@ private:
     virtual void visit(AstVarRef* nodep) override {
         if (m_tracep) {
             UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
-            UASSERT_OBJ(!nodep->lvalue(), nodep, "Lvalue in trace?  Should be const.");
+            UASSERT_OBJ(!nodep->access().isWrite(), nodep, "Lvalue in trace?  Should be const.");
             V3GraphVertex* varVtxp = nodep->varScopep()->user1u().toGraphVertex();
             if (!varVtxp) {
                 varVtxp = new TraceVarVertex(&m_graph, nodep->varScopep());
@@ -857,7 +857,7 @@ private:
                 || nodep->varp()->isSigPublic()) {  // Or ones user can change
                 new V3GraphEdge(&m_graph, m_alwaysVtxp, traceVtxp, 1);
             }
-        } else if (m_funcp && m_finding && nodep->lvalue()) {
+        } else if (m_funcp && m_finding && nodep->access().isWrite()) {
             UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
             V3GraphVertex* const funcVtxp = getCFuncVertexp(m_funcp);
             V3GraphVertex* const varVtxp = nodep->varScopep()->user1u().toGraphVertex();

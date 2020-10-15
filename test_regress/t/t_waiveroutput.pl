@@ -20,7 +20,8 @@ compile(
 
 files_identical("$out_filename", $Self->{golden_filename});
 
-run(cmd=>["sed 's/\\/\\/ lint_off/lint_off/g' $out_filename > $waiver_filename"]);
+file_sed($out_filename, $waiver_filename,
+         sub { s/\/\/ lint_off/lint_off/g; });
 
 compile(
     v_flags2 => [$waiver_filename],

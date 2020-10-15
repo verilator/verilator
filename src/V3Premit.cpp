@@ -58,7 +58,7 @@ private:
     }
     virtual void visit(AstVarRef* nodep) override {
         // it's LHS var is used so need a deep temporary
-        if (nodep->lvalue()) {
+        if (nodep->access().isWrite()) {
             nodep->varp()->user4(true);
         } else {
             if (nodep->varp()->user4()) {
@@ -173,11 +173,11 @@ private:
         AstVar* varp = getBlockTemp(nodep);
         if (noSubst) varp->noSubst(true);  // Do not remove varrefs to this in V3Const
         // Replace node tree with reference to var
-        AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, false);
+        AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
         linker.relink(newp);
         // Put assignment before the referencing statement
-        AstAssign* assp = new AstAssign(nodep->fileline(),
-                                        new AstVarRef(nodep->fileline(), varp, true), nodep);
+        AstAssign* assp = new AstAssign(
+            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE), nodep);
         insertBeforeStmt(assp);
         if (debug() > 8) assp->dumpTree(cout, "deepou:");
         nodep->user1(true);  // Don't add another assignment
@@ -186,13 +186,12 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             m_funcp = nullptr;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
     virtual void visit(AstCFunc* nodep) override {
         m_funcp = nodep;
@@ -318,31 +317,28 @@ private:
     virtual void visit(AstSel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         {  // Only the 'from' is part of the assignment LHS
-            bool prevAssign = m_assignLhs;
+            VL_RESTORER(m_assignLhs);
             m_assignLhs = false;
             iterateAndNextNull(nodep->lsbp());
             iterateAndNextNull(nodep->widthp());
-            m_assignLhs = prevAssign;
         }
         checkNode(nodep);
     }
     virtual void visit(AstArraySel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         {  // Only the 'from' is part of the assignment LHS
-            bool prevAssign = m_assignLhs;
+            VL_RESTORER(m_assignLhs);
             m_assignLhs = false;
             iterateAndNextNull(nodep->bitp());
-            m_assignLhs = prevAssign;
         }
         checkNode(nodep);
     }
     virtual void visit(AstAssocSel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         {  // Only the 'from' is part of the assignment LHS
-            bool prevAssign = m_assignLhs;
+            VL_RESTORER(m_assignLhs);
             m_assignLhs = false;
             iterateAndNextNull(nodep->bitp());
-            m_assignLhs = prevAssign;
         }
         checkNode(nodep);
     }

@@ -264,6 +264,15 @@ public:
             puts("static void __Vmtask__final(bool even_cycle, void* symtab);\n");
         }
     }
+    void ccallIterateArgs(AstNodeCCall* nodep) {
+        puts(nodep->argTypes());
+        bool comma = (nodep->argTypes() != "");
+        for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
+            if (comma) puts(", ");
+            iterate(subnodep);
+            comma = true;
+        }
+    }
 
     // VISITORS
     virtual void visit(AstNodeAssign* nodep) override {
@@ -373,13 +382,7 @@ public:
         }
         puts(nodep->funcp()->nameProtect());
         puts("(");
-        puts(nodep->argTypes());
-        bool comma = (nodep->argTypes() != "");
-        for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
-            if (comma) puts(", ");
-            iterate(subnodep);
-            comma = true;
-        }
+        ccallIterateArgs(nodep);
         if (VN_IS(nodep->backp(), NodeMath) || VN_IS(nodep->backp(), CReturn)) {
             // We should have a separate CCall for math and statement usage, but...
             puts(")");
@@ -1258,7 +1261,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit EmitVarTspSorter(const MTaskIdSet& mtaskIds)
-        : m_mtaskIds{mtaskIds} {
+        : m_mtaskIds(mtaskIds) {  // Cannot be {} or GCC 4.8 false warning
         m_serial = ++m_serialNext;  // Cannot be ()/{} or GCC 4.8 false warning
     }
     virtual ~EmitVarTspSorter() {}
@@ -1492,6 +1495,13 @@ class EmitCImp : EmitCStmts {
         puts(funcNameProtect(nodep, m_modp));
         puts("(" + cFuncArgs(nodep) + ")");
         if (nodep->isConst().trueKnown()) puts(" const");
+
+        // TODO perhaps better to have a new AstCCtorInit so we can pass arguments
+        // rather than requiring a string here
+        if (!nodep->ctorInits().empty()) {
+            puts(": ");
+            puts(nodep->ctorInits());
+        }
         puts(" {\n");
 
         // "+" in the debug indicates a print from the model
@@ -1855,7 +1865,6 @@ void EmitCStmts::emitVarCtors(bool* firstp) {
     if (!m_ctorVarsVec.empty()) {
         ofp()->indentInc();
         puts("\n");
-        puts("#if (SYSTEMC_VERSION>20011000)\n");  // SystemC 2.0.1 and newer
         for (const AstVar* varp : m_ctorVarsVec) {
             bool isArray = !VN_CAST(varp->dtypeSkipRefp(), BasicDType);
             if (isArray) {
@@ -1870,7 +1879,7 @@ void EmitCStmts::emitVarCtors(bool* firstp) {
                 puts(")");
             }
         }
-        puts("\n#endif\n");
+        puts("\n");
         ofp()->indentDec();
     }
 }
@@ -2899,13 +2908,13 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons, const VarVec& nonanons,
         if (anonL1s != 1)
             puts("// Anonymous structures to workaround compiler member-count bugs\n");
         auto it = anons.cbegin();
-        for (int l3 = 0; l3 < anonL3s && it != anons.end(); ++l3) {
+        for (int l3 = 0; l3 < anonL3s && it != anons.cend(); ++l3) {
             if (anonL3s != 1) puts("struct {\n");
-            for (int l2 = 0; l2 < anonL2s && it != anons.end(); ++l2) {
+            for (int l2 = 0; l2 < anonL2s && it != anons.cend(); ++l2) {
                 if (anonL2s != 1) puts("struct {\n");
-                for (int l1 = 0; l1 < anonL1s && it != anons.end(); ++l1) {
+                for (int l1 = 0; l1 < anonL1s && it != anons.cend(); ++l1) {
                     if (anonL1s != 1) puts("struct {\n");
-                    for (int l0 = 0; l0 < lim && it != anons.end(); ++l0) {
+                    for (int l0 = 0; l0 < lim && it != anons.cend(); ++l0) {
                         const AstVar* varp = *it;
                         emitVarCmtChg(varp, &curVarCmt);
                         emitVarDecl(varp, prefixIfImp);
@@ -3001,7 +3010,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     if (AstClass* classp = VN_CAST(modp, Class)) {
         puts("class " + prefixNameProtect(modp));
-        if (classp->extendsp()) puts(" : public " + classp->extendsp()->classp()->nameProtect());
+        if (classp->extendsp())
+            puts(" : public " + prefixNameProtect(classp->extendsp()->classp()));
         puts(" {\n");
     } else if (optSystemC() && modp->isTop()) {
         puts("SC_MODULE(" + prefixNameProtect(modp) + ") {\n");

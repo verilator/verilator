@@ -184,8 +184,9 @@ private:
                     for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
                         if (AstVar* portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
-                                AstNode* newp
-                                    = new AstVarRef(portp->fileline(), portp, portp->isWritable());
+                                AstNode* newp = new AstVarRef(portp->fileline(), portp,
+                                                              portp->isWritable() ? VAccess::WRITE
+                                                                                  : VAccess::READ);
                                 argsp = argsp ? argsp->addNextNull(newp) : newp;
                             }
                         }
@@ -226,7 +227,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             m_modFuncs.clear();
@@ -234,7 +235,6 @@ private:
             iterateChildren(nodep);
             makePublicFuncWrappers();
         }
-        m_modp = origModp;
     }
     virtual void visit(AstScope* nodep) override {
         m_scopep = nodep;

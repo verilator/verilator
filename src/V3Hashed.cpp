@@ -60,7 +60,7 @@ private:
                 nodep,
                 "Node " << nodep->prettyTypeName()
                         << " in statement position but not marked stmt (node under function)");
-            V3Hash oldHash = m_lowerHash;
+            VL_RESTORER(m_lowerHash);
             {
                 m_lowerHash = nodep->sameHash();
                 UASSERT_OBJ(!m_lowerHash.isIllegal(), nodep,
@@ -74,9 +74,8 @@ private:
                 // Store the hash value
                 nodep->user4(m_lowerHash.fullValue());
                 // UINFO(9, "    hashnode "<<m_lowerHash<<"  "<<nodep<<endl);
+                thisHash = m_lowerHash;
             }
-            thisHash = m_lowerHash;
-            m_lowerHash = oldHash;
         }
         // Update what will become the above node's hash
         m_lowerHash += m_cacheInUser4 ? V3Hashed::nodeHash(nodep) : thisHash;

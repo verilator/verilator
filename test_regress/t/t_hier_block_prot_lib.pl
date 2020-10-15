@@ -31,7 +31,7 @@ while (1) {
                 "PROTECT_KEY",
                 "t/t_hier_block.v",
                 "-DAS_PROT_LIB",
-                '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus -time"',
+                '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"',
                 $Self->{vltmt} ? ' --threads 1' : '',
                 "--build"],
         verilator_run => 1,
