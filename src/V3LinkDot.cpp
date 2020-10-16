@@ -2674,42 +2674,46 @@ private:
             // Until overridden by a SCOPE
             m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getNodeSym(nodep);
             m_modp = nodep;
-            iterateChildren(nodep);
-        }
-        for (AstNode* itemp = nodep->extendsp(); itemp; itemp = itemp->nextp()) {
-            if (AstClassExtends* cextp = VN_CAST(itemp, ClassExtends)) {
-                // Replace abstract reference with hard pointer
-                // Will need later resolution when deal with parameters
-                if (cextp->childDTypep() || cextp->dtypep()) continue;  // Already converted
-                AstClassOrPackageRef* cpackagerefp
-                    = VN_CAST(cextp->classOrPkgsp(), ClassOrPackageRef);
-                if (!cpackagerefp) {
-                    cextp->v3error("Attempting to extend using a non-class ");
-                } else {
-                    VSymEnt* foundp = m_curSymp->findIdFallback(cpackagerefp->name());
-                    bool ok = false;
-                    if (foundp) {
-                        if (AstClass* classp = VN_CAST(foundp->nodep(), Class)) {
-                            AstClassRefDType* newp
-                                = new AstClassRefDType{nodep->fileline(), classp};
-                            cextp->childDTypep(newp);
-                            classp->isExtended(true);
-                            nodep->isExtended(true);
-                            VL_DO_DANGLING(cpackagerefp->unlinkFrBack()->deleteTree(),
-                                           cpackagerefp);
-                            ok = true;
+            for (AstNode* itemp = nodep->extendsp(); itemp; itemp = itemp->nextp()) {
+                if (AstClassExtends* cextp = VN_CAST(itemp, ClassExtends)) {
+                    // Replace abstract reference with hard pointer
+                    // Will need later resolution when deal with parameters
+                    if (cextp->childDTypep() || cextp->dtypep()) continue;  // Already converted
+                    AstClassOrPackageRef* cpackagerefp
+                        = VN_CAST(cextp->classOrPkgsp(), ClassOrPackageRef);
+                    if (!cpackagerefp) {
+                        cextp->v3error("Attempting to extend using a non-class ");
+                    } else {
+                        VSymEnt* foundp = m_curSymp->findIdFallback(cpackagerefp->name());
+                        bool ok = false;
+                        if (foundp) {
+                            if (AstClass* classp = VN_CAST(foundp->nodep(), Class)) {
+                                UINFO(8, "Import to " << nodep << " from export class " << classp
+                                                      << endl);
+                                AstClassRefDType* newp
+                                    = new AstClassRefDType{nodep->fileline(), classp};
+                                cextp->childDTypep(newp);
+                                classp->isExtended(true);
+                                nodep->isExtended(true);
+                                VSymEnt* srcp = m_statep->getNodeSym(classp);
+                                m_curSymp->importFromClass(m_statep->symsp(), srcp);
+                                VL_DO_DANGLING(cpackagerefp->unlinkFrBack()->deleteTree(),
+                                               cpackagerefp);
+                                ok = true;
+                            }
                         }
-                    }
-                    if (!ok) {
-                        string suggest = m_statep->suggestSymFallback(
-                            m_curSymp, cpackagerefp->name(), LinkNodeMatcherClass{});
-                        cpackagerefp->v3error(
-                            "Class to extend not found: "
-                            << cpackagerefp->prettyNameQ() << endl
-                            << (suggest.empty() ? "" : cpackagerefp->warnMore() + suggest));
+                        if (!ok) {
+                            string suggest = m_statep->suggestSymFallback(
+                                m_curSymp, cpackagerefp->name(), LinkNodeMatcherClass{});
+                            cpackagerefp->v3error(
+                                "Class to extend not found: "
+                                << cpackagerefp->prettyNameQ() << endl
+                                << (suggest.empty() ? "" : cpackagerefp->warnMore() + suggest));
+                        }
                     }
                 }
             }
+            iterateChildren(nodep);
         }
         // V3Width when determines types needs to find enum values and such
         // so add members pointing to appropriate enum values
