@@ -104,12 +104,13 @@ private:
 
     // VISITs
     virtual void visit(AstNodeFTask* nodep) override {
-        V3Config::applyFTask(m_modp, nodep);
-
         if (!nodep->user1SetOnce()) {  // Process only once.
+            V3Config::applyFTask(m_modp, nodep);
             cleanFileline(nodep);
-            m_ftaskp = nodep;
-            iterateChildren(nodep);
+            {
+                m_ftaskp = nodep;
+                iterateChildren(nodep);
+            }
             m_ftaskp = nullptr;
         }
     }
