@@ -51,7 +51,6 @@ private:
     AstClass* m_classp = nullptr;  // Class we're inside
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
-    VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
     int m_senitemCvtNum = 0;  // Temporary signal counter
 
     // METHODS
@@ -66,23 +65,17 @@ private:
         UINFO(8, "MODULE " << nodep << endl);
         if (nodep->dead()) return;
         VL_RESTORER(m_modp);
-        VL_RESTORER(m_lifetime);
         VL_RESTORER(m_senitemCvtNum);
         {
             m_modp = nodep;
             m_senitemCvtNum = 0;
-            m_lifetime = nodep->lifetime();
-            if (m_lifetime.isNone()) m_lifetime = VLifetime::STATIC;
             iterateChildren(nodep);
         }
     }
     virtual void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
-        VL_RESTORER(m_lifetime);
         {
             m_classp = nodep;
-            m_lifetime = nodep->lifetime();
-            if (m_lifetime.isNone()) m_lifetime = VLifetime::AUTOMATIC;
             iterateChildren(nodep);
         }
     }
@@ -106,13 +99,6 @@ private:
         if (m_classp && nodep->isParam())
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: class parameter");
         if (m_ftaskp) nodep->funcLocal(true);
-        if (nodep->lifetime().isNone()) {
-            if (nodep->isFuncLocal() && nodep->isIO()) {
-                nodep->lifetime(VLifetime::AUTOMATIC);
-            } else {
-                nodep->lifetime(m_lifetime);
-            }
-        }
         if (nodep->isSigModPublic()) {
             nodep->sigModPublic(false);  // We're done with this attribute
             m_modp->modPublic(true);  // Avoid flattening if signals are exposed
@@ -136,15 +122,11 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        VLifetime origLifetime = m_lifetime;
         {
-            m_lifetime = nodep->lifetime();
-            if (m_lifetime.isNone()) m_lifetime = VLifetime::AUTOMATIC;
             m_ftaskp = nodep;
             iterateChildren(nodep);
         }
         m_ftaskp = nullptr;
-        m_lifetime = origLifetime;
         if (nodep->dpiExport()) { nodep->scopeNamep(new AstScopeName(nodep->fileline())); }
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {

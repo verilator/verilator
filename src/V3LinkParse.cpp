@@ -57,6 +57,7 @@ private:
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
     AstNodeDType* m_dtypep = nullptr;  // Current data type
+    VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -107,11 +108,17 @@ private:
         if (!nodep->user1SetOnce()) {  // Process only once.
             V3Config::applyFTask(m_modp, nodep);
             cleanFileline(nodep);
+            VL_RESTORER(m_ftaskp);
+            VL_RESTORER(m_lifetime);
             {
                 m_ftaskp = nodep;
+                m_lifetime = nodep->lifetime();
+                if (m_lifetime.isNone()) {
+                    // Automatic always until we support static
+                    m_lifetime = VLifetime::AUTOMATIC;
+                }
                 iterateChildren(nodep);
             }
-            m_ftaskp = nullptr;
         }
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
@@ -173,6 +180,13 @@ private:
 
     virtual void visit(AstVar* nodep) override {
         cleanFileline(nodep);
+        if (nodep->lifetime().isNone()) {
+            if (nodep->isFuncLocal() && nodep->isIO()) {
+                nodep->lifetime(VLifetime::AUTOMATIC);
+            } else {
+                nodep->lifetime(m_lifetime);
+            }
+        }
         if (nodep->isParam() && !nodep->valuep()
             && nodep->fileline()->language() < V3LangCode::L1800_2009) {
             nodep->v3error("Parameter requires default value, or use IEEE 1800-2009 or later.");
@@ -224,25 +238,20 @@ private:
             FileLine* fl = nodep->valuep()->fileline();
             if (nodep->isParam() || (m_ftaskp && nodep->isNonOutput())) {
                 // 1. Parameters and function inputs: It's a default to use if not overridden
-            } else if (VN_IS(m_modp, Class)) {
-                // 2. Class member init become initials (as might call functions)
-                // later move into class constructor
-                nodep->addNextHere(new AstInitial(
-                    fl, new AstAssign(fl, new AstVarRef(fl, nodep->name(), VAccess::WRITE),
-                                      nodep->valuep()->unlinkFrBack())));
-            } else if (!m_ftaskp && nodep->isNonOutput()) {
+            } else if (!m_ftaskp && !VN_IS(m_modp, Class) && nodep->isNonOutput()) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Default value on module input: "
                                                  << nodep->prettyNameQ());
                 nodep->valuep()->unlinkFrBack()->deleteTree();
-            }  // 3. Under modules, it's an initial value to be loaded at time 0 via an AstInitial
+            }  // 2. Under modules/class, it's an initial value to be loaded at time 0 via an
+               // AstInitial
             else if (m_valueModp) {
                 // Making an AstAssign (vs AstAssignW) to a wire is an error, suppress it
                 FileLine* newfl = new FileLine(fl);
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
-                nodep->addNextHere(new AstInitial(
-                    newfl,
-                    new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), VAccess::WRITE),
-                                  nodep->valuep()->unlinkFrBack())));
+                auto* assp
+                    = new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), VAccess::WRITE),
+                                    nodep->valuep()->unlinkFrBack());
+                nodep->addNextHere(new AstInitial(newfl, assp));
             }  // 4. Under blocks, it's an initial value to be under an assign
             else {
                 nodep->addNextHere(new AstAssign(fl,
@@ -483,12 +492,17 @@ private:
         V3Config::applyModule(nodep);
 
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_lifetime);
         {
             // Module: Create sim table for entire module and iterate
             cleanFileline(nodep);
             //
             m_modp = nodep;
             m_valueModp = nodep;
+            m_lifetime = nodep->lifetime();
+            if (m_lifetime.isNone()) {
+                m_lifetime = VN_IS(nodep, Class) ? VLifetime::AUTOMATIC : VLifetime::STATIC;
+            }
             iterateChildren(nodep);
         }
         m_valueModp = nodep;
