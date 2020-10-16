@@ -162,23 +162,25 @@ class CUseVisitor : public AstNVisitor {
         funcp->addStmtsp(new AstCStmt(nodep->fileline(), "std::string out;\n"));
         std::string comma;
         for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
-            if (VN_IS(itemp, Var)) {
-                string stmt = "out += \"";
-                stmt += comma;
-                comma = ", ";
-                stmt += itemp->origNameProtect();
-                stmt += ":\" + ";
-                if (itemp->isWide()) {
-                    stmt += "VL_TO_STRING_W(";
-                    stmt += cvtToStr(itemp->widthWords());
-                    stmt += ", ";
-                } else {
-                    stmt += "VL_TO_STRING(";
+            if (auto* varp = VN_CAST(itemp, Var)) {
+                if (!varp->isParam()) {
+                    string stmt = "out += \"";
+                    stmt += comma;
+                    comma = ", ";
+                    stmt += itemp->origNameProtect();
+                    stmt += ":\" + ";
+                    if (itemp->isWide()) {
+                        stmt += "VL_TO_STRING_W(";
+                        stmt += cvtToStr(itemp->widthWords());
+                        stmt += ", ";
+                    } else {
+                        stmt += "VL_TO_STRING(";
+                    }
+                    stmt += itemp->nameProtect();
+                    stmt += ");\n";
+                    nodep->user1(true);  // So what we extend dumps this
+                    funcp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
                 }
-                stmt += itemp->nameProtect();
-                stmt += ");\n";
-                nodep->user1(true);  // So what we extend dumps this
-                funcp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
             }
         }
         if (nodep->extendsp() && nodep->extendsp()->classp()->user1()) {

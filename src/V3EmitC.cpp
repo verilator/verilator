@@ -156,6 +156,7 @@ public:
     }
 
     void emitParams(AstNodeModule* modp, bool init, bool* firstp, string& sectionr) {
+        bool anyi = false;
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* varp = VN_CAST(nodep, Var)) {
                 if (varp->isParam() && (varp->isUsedParam() || varp->isSigPublic())) {
@@ -172,12 +173,15 @@ public:
                         }
                     } else if (varp->isString()) {
                         if (init) {
-                            emitCtorSep(firstp);
-                            puts(protect("var_" + varp->name()) + " (");
+                            puts("const std::string ");
+                            puts(prefixNameProtect(modp) + "::" + protect("var_" + varp->name())
+                                 + "(");
                             iterateAndNextNull(varp->valuep());
-                            puts(")");
+                            puts(");\n");
+                            anyi = true;
                         } else {
-                            puts("const std::string " + protect("var_" + varp->name()) + ";\n");
+                            puts("static const std::string " + protect("var_" + varp->name())
+                                 + ";\n");
                         }
                     } else if (!VN_IS(varp->valuep(), Const)) {  // Unsupported for output
                         // putsDecoration("// enum ..... "+varp->nameProtect()
@@ -187,10 +191,12 @@ public:
                                       ->isOpaque()) {  // Can't put out e.g. doubles
                     } else {
                         if (init) {
-                            emitCtorSep(firstp);
-                            puts(protect("var_" + varp->name()) + " (");
+                            puts(varp->isQuad() ? "const QData " : "const IData ");
+                            puts(prefixNameProtect(modp) + "::" + protect("var_" + varp->name())
+                                 + "(");
                             iterateAndNextNull(varp->valuep());
-                            puts(")");
+                            puts(");\n");
+                            anyi = true;
                         } else {
                             // enum
                             puts(varp->isQuad() ? "enum _QData" : "enum _IData");
@@ -198,13 +204,14 @@ public:
                             iterateAndNextNull(varp->valuep());
                             puts("};\n");
                             // var
-                            puts(varp->isQuad() ? "const QData " : "const IData ");
+                            puts(varp->isQuad() ? "static const QData " : "static const IData ");
                             puts(protect("var_" + varp->name()) + ";\n");
                         }
                     }
                 }
             }
         }
+        if (anyi) puts("\n");
     }
 
     struct CmpName {
@@ -2319,6 +2326,9 @@ void EmitCImp::emitMTaskVertexCtors(bool* firstp) {
 void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     puts("\n");
     bool first = true;
+    string section("");
+    emitParams(modp, true, &first, section /*ref*/);
+
     if (VN_IS(modp, Class)) {
         modp->v3fatalSrc("constructors should be AstCFuncs instead");
     } else if (optSystemC() && modp->isTop()) {
@@ -2329,8 +2339,7 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     }
     emitVarCtors(&first);
     if (modp->isTop() && v3Global.opt.mtasks()) emitMTaskVertexCtors(&first);
-    string section("");
-    emitParams(modp, true, &first, section /*ref*/);
+
     puts(" {\n");
     emitCellCtors(modp);
     emitSensitives();
