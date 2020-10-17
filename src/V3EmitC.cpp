@@ -1663,13 +1663,11 @@ class EmitCImp : EmitCStmts {
         } else if (AstInitArray* initarp = VN_CAST(varp->valuep(), InitArray)) {
             if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
                 if (initarp->defaultp()) {
-                    // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
-                    puts("{ int __Vi=0;");
-                    puts(" for (; __Vi<" + cvtToStr(adtypep->elementsConst()));
+                    puts("for (int __Vi=0; __Vi<" + cvtToStr(adtypep->elementsConst()));
                     puts("; ++__Vi) {\n");
                     emitSetVarConstant(varp->nameProtect() + "[__Vi]",
                                        VN_CAST(initarp->defaultp(), Const));
-                    puts("}}\n");
+                    puts("}\n");
                 }
                 const AstInitArray::KeyItemMap& mapr = initarp->map();
                 for (AstInitArray::KeyItemMap::const_iterator it = mapr.begin(); it != mapr.end();
@@ -1711,12 +1709,11 @@ class EmitCImp : EmitCStmts {
             UASSERT_OBJ(adtypep->msb() >= adtypep->lsb(), varp,
                         "Should have swapped msb & lsb earlier.");
             string ivar = string("__Vi") + cvtToStr(depth);
-            // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
-            string pre = ("{ int " + ivar + "=" + cvtToStr(0) + ";" + " for (; " + ivar + "<"
+            string pre = ("for (int " + ivar + "=" + cvtToStr(0) + "; " + ivar + "<"
                           + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
             string below = emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
                                                suffix + "[" + ivar + "]");
-            string post = "}}\n";
+            string post = "}\n";
             return below.empty() ? "" : pre + below + post;
         } else if (basicp && basicp->keyword() == AstBasicDTypeKwd::STRING) {
             // String's constructor deals with it
@@ -2508,10 +2505,8 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                             UASSERT_OBJ(arrayp->msb() >= arrayp->lsb(), varp,
                                         "Should have swapped msb & lsb earlier.");
                             string ivar = string("__Vi") + cvtToStr(vecnum);
-                            // MSVC++ pre V7 doesn't support 'for (int ...)',
-                            // so declare in sep block
-                            puts("{ int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0) + ";");
-                            puts(" for (; " + ivar + "<" + cvtToStr(arrayp->elementsConst()));
+                            puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0));
+                            puts("; " + ivar + "<" + cvtToStr(arrayp->elementsConst()));
                             puts("; ++" + ivar + ") {\n");
                             elementp = arrayp->subDTypep()->skipRefp();
                         }
@@ -2522,14 +2517,14 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                             && !(basicp && basicp->keyword() == AstBasicDTypeKwd::STRING)) {
                             int vecnum = vects++;
                             string ivar = string("__Vi") + cvtToStr(vecnum);
-                            puts("{ int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0) + ";");
-                            puts(" for (; " + ivar + "<" + cvtToStr(elementp->widthWords()));
+                            puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0));
+                            puts("; " + ivar + "<" + cvtToStr(elementp->widthWords()));
                             puts("; ++" + ivar + ") {\n");
                         }
                         puts("os" + op + varp->nameProtect());
                         for (int v = 0; v < vects; ++v) puts("[__Vi" + cvtToStr(v) + "]");
                         puts(";\n");
-                        for (int v = 0; v < vects; ++v) puts("}}\n");
+                        for (int v = 0; v < vects; ++v) puts("}\n");
                     }
                 }
             }
@@ -2597,16 +2592,14 @@ void EmitCImp::emitSensitives() {
                         UASSERT_OBJ(arrayp->msb() >= arrayp->lsb(), varp,
                                     "Should have swapped msb & lsb earlier.");
                         string ivar = string("__Vi") + cvtToStr(vecnum);
-                        // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
-                        puts("{ int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(arrayp->lsb())
-                             + ";");
-                        puts(" for (; " + ivar + "<=" + cvtToStr(arrayp->msb()));
+                        puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(arrayp->lsb()));
+                        puts("; " + ivar + "<=" + cvtToStr(arrayp->msb()));
                         puts("; ++" + ivar + ") {\n");
                     }
                     puts("sensitive << " + varp->nameProtect());
                     for (int v = 0; v < vects; ++v) puts("[__Vi" + cvtToStr(v) + "]");
                     puts(";\n");
-                    for (int v = 0; v < vects; ++v) puts("}}\n");
+                    for (int v = 0; v < vects; ++v) puts("}\n");
                 }
             }
         }
