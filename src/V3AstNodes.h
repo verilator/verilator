@@ -2182,11 +2182,6 @@ public:
     void addConsumingMTaskId(int id) { m_mtaskIds.insert(id); }
     const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
     string mtasksString() const;
-
-private:
-    class VlArgTypeRecursed;
-    VlArgTypeRecursed vlArgTypeRecurse(bool forFunc, const AstNodeDType* dtypep,
-                                       bool compound) const;
 };
 
 class AstDefParam : public AstNode {

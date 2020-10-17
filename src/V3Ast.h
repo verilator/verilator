@@ -2439,6 +2439,11 @@ public:
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
     }
+    string cType(const string& name, bool forFunc, bool isRef) const;
+
+private:
+    class CTypeRecursed;
+    CTypeRecursed cTypeRecurse(bool forFunc, bool compound) const;
 };
 
 class AstNodeUOrStructDType : public AstNodeDType {
