@@ -34,4 +34,20 @@
                                  : ... In instance t
    22 |       a.delete(k, "bad2");
       |         ^~~~~~
+%Error: t/t_assoc_meth_bad.v:24:9: Array method 'sort' not legal on associative arrays
+                                 : ... In instance t
+   24 |       a.sort;   
+      |         ^~~~
+%Error: t/t_assoc_meth_bad.v:25:9: Array method 'rsort' not legal on associative arrays
+                                 : ... In instance t
+   25 |       a.rsort;   
+      |         ^~~~~
+%Error: t/t_assoc_meth_bad.v:26:9: Array method 'reverse' not legal on associative arrays
+                                 : ... In instance t
+   26 |       a.reverse;   
+      |         ^~~~~~~
+%Error: t/t_assoc_meth_bad.v:27:9: Array method 'shuffle' not legal on associative arrays
+                                 : ... In instance t
+   27 |       a.shuffle;   
+      |         ^~~~~~~
 %Error: Exiting due to

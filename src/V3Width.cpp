@@ -2386,6 +2386,10 @@ private:
                 newp->protect(false);
                 newp->makeStatement();
             }
+        } else if (nodep->name() == "sort" || nodep->name() == "rsort"
+                   || nodep->name() == "reverse" || nodep->name() == "shuffle") {
+            nodep->v3error("Array method " << nodep->prettyNameQ()
+                                           << " not legal on associative arrays");
         } else {
             nodep->v3error("Unknown built-in associative array method " << nodep->prettyNameQ());
         }
