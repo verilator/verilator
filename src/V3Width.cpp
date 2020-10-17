@@ -513,6 +513,8 @@ private:
                     return;
                 }
             }
+        }
+        if (m_vup->final()) {
             if (nodep->lhsp()->isString() || nodep->rhsp()->isString()) {
                 AstNode* newp = new AstConcatN(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
                                                nodep->rhsp()->unlinkFrBack());
@@ -520,8 +522,6 @@ private:
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
-        }
-        if (m_vup->final()) {
             if (!nodep->dtypep()->widthSized()) {
                 // See also error in V3Number
                 nodeForUnsizedWarning(nodep)->v3warn(
