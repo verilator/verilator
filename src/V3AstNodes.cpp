@@ -314,14 +314,13 @@ string AstVar::verilogKwd() const {
 
 class AstVar::VlArgTypeRecursed {
 public:
-    bool m_isRef;  // Is it a reference?
     string m_type;  // The base type, e.g.: "Foo_t"s
     string m_dims;  // Array dimensions, e.g.: "[3][2][1]"
-    string render(const string& name) const {
+    string render(const string& name, bool isRef) const {
         string out;
         out += m_type;
         out += " ";
-        out += m_isRef ? "(&" + name + ")" : name;
+        out += isRef ? "(&" + name + ")" : name;
         out += m_dims;
         return out;
     }
@@ -333,21 +332,22 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     string ostatic;
     if (isStatic() && namespc.empty()) ostatic = "static ";
 
+    bool isRef = isDpiOpenArray() || (forFunc && (isWritable() || direction().isRefOrConstRef()));
+
     VlArgTypeRecursed info = vlArgTypeRecurse(forFunc, dtypep(), false);
+    if (forFunc && isReadOnly() && isRef) ostatic = ostatic + "const ";
 
     string oname;
     if (named) {
         if (!namespc.empty()) oname += namespc + "::";
         oname += VIdProtect::protectIf(name(), protect());
     }
-    return ostatic + info.render(oname);
+    return ostatic + info.render(oname, isRef);
 }
 
 AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDType* dtypep,
                                                    bool compound) const {
     VlArgTypeRecursed info;
-    info.m_isRef
-        = isDpiOpenArray() || (forFunc && (isWritable() || direction().isRefOrConstRef()));
 
     dtypep = dtypep->skipRefp();
     if (const AstAssocArrayDType* adtypep = VN_CAST_CONST(dtypep, AssocArrayDType)) {
@@ -409,8 +409,6 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
     }
 
     UASSERT_OBJ(!compound || info.m_dims.empty(), this, "Declaring C array inside compound type");
-
-    if (forFunc && isReadOnly() && info.m_isRef) { info.m_type = "const " + info.m_type; }
 
     return info;
 }
