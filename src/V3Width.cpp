@@ -3335,7 +3335,7 @@ private:
                         argp->unlinkFrBack(&handle);
                         AstCMath* newp = new AstCMath(nodep->fileline(), "VL_TO_STRING(", 0, true);
                         newp->addBodysp(argp);
-                        newp->addBodysp(new AstText(nodep->fileline(), ")"));
+                        newp->addBodysp(new AstText(nodep->fileline(), ")", true));
                         newp->dtypeSetString();
                         newp->pure(true);
                         newp->protect(false);
