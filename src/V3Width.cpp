@@ -4747,9 +4747,9 @@ private:
                             << " expected non-datatype " << side << " but '" << underp->name()
                             << "' is a datatype.");
         } else if (expDTypep == underp->dtypep()) {  // Perfect
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
+            underp = userIterateSubtreeReturnEdits(underp, WidthVP(expDTypep, FINAL).p());
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
+            underp = userIterateSubtreeReturnEdits(underp, WidthVP(expDTypep, FINAL).p());
         } else if (expDTypep->isDouble() && !underp->isDouble()) {
             AstNode* oldp = underp;  // Need FINAL on children; otherwise splice would block it
             underp = spliceCvtD(underp);
