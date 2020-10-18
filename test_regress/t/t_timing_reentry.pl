@@ -19,10 +19,9 @@ compile(
     make_top => 1,
     );
 
-# Will fail, unsupported
-#execute(
-#    check_finished => 1,
-#    );
+execute(
+    check_finished => 1,
+    ) if !$Self->{vlt_all};
 
 ok(1);
 1;

@@ -16,9 +16,9 @@ module t (/*AUTOARG*/);
       int i;
       aliases = '{ 1, 4, 6, 8};
       tofind = 6;
-      found = aliases.find(i) with (i == to_find);
+      found = aliases.find(i) with (i == tofind);
       // And as function
-      aliases.find(i) with (i == to_find);
+      aliases.find(i) with (i == tofind);
 
       // No parenthesis
       found = aliases.find with (item == i);
@@ -29,9 +29,12 @@ module t (/*AUTOARG*/);
       found = aliases.unique with (id);
       found = aliases.unique() with (id);
       found = aliases.unique(i) with (id);
-      found = aliases.or with (id);
-      found = aliases.and with (id);
-      found = aliases.xor with (id);
+      i = aliases.or(v) with (v);
+      i = aliases.and(v) with (v);
+      i = aliases.xor(v) with (v);
+
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 
 endmodule
