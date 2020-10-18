@@ -151,7 +151,9 @@ public:
         if (!m_dtypep) {
             str << "  VUP(s=" << m_stage << ",self)";
         } else {
-            str << "  VUP(s=" << m_stage << ",dt=" << cvtToHex(dtypep()) << ")";
+            str << "  VUP(s=" << m_stage << ",dt=" << cvtToHex(dtypep());
+            dtypep()->dumpSmall(str);
+            str << ")";
         }
     }
 };

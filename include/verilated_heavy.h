@@ -281,7 +281,7 @@ public:
     // Clear array. Verilog: function void delete([input index])
     void clear() { m_deque.clear(); }
     void erase(size_t index) {
-        if (VL_LIKELY(index < m_deque.size())) m_deque.erase(index);
+        if (VL_LIKELY(index < m_deque.size())) m_deque.erase(m_deque.begin() + index);
     }
 
     // Dynamic array new[] becomes a renew()
@@ -349,7 +349,7 @@ public:
     // function void q.insert(index, value);
     void insert(size_t index, const T_Value& value) {
         if (VL_UNLIKELY(index >= m_deque.size())) return;
-        m_deque[index] = value;
+        m_deque.insert(m_deque.begin() + index, value);
     }
 
     // For save/restore
