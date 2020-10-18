@@ -439,6 +439,15 @@ private:
             // if (debug() >= 9) newp->dumpTree(cout, "--SELEXnew: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (VN_IS(ddtypep, QueueDType)) {
+            auto* newp = new AstCMethodHard(nodep->fileline(), fromp, "slice", msbp);
+            msbp->addNext(lsbp);
+            newp->dtypep(ddtypep);
+            newp->didWidth(true);
+            newp->protect(false);
+            UINFO(6, "   new " << newp << endl);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {  // nullptr=bad extract, or unknown node type
             nodep->v3error("Illegal range select; type already selected, or bad dimension: "
                            << "data type is " << fromdata.m_errp->prettyDTypeNameQ());

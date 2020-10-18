@@ -3403,8 +3403,7 @@ assignment_pattern<patternp>:	// ==IEEE: assignment_pattern
 	//			// also IEEE "''{' array_pattern_key ':' ...
 	|	yP_TICKBRA patternMemberList '}'	{ $$ = new AstPattern($1,$2); }
 	//			// IEEE: Not in grammar, but in VMM
-	|	yP_TICKBRA '}'
-			{ $$ = new AstPattern($1, nullptr); $1->v3warn(E_UNSUPPORTED, "Unsupported: Empty '{}"); }
+	|	yP_TICKBRA '}'				{ $$ = new AstPattern($1, nullptr); }
 	;
 
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal

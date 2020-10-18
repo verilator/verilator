@@ -1575,6 +1575,22 @@ class EmitCImp : EmitCStmts {
         }
     }
 
+    virtual void visit(AstConsQueue* nodep) override {
+        putbs(nodep->dtypep()->cType("", false, false));
+        if (!nodep->lhsp()) {
+            puts("()");
+        } else {
+            puts("::cons(");
+            iterateAndNextNull(nodep->lhsp());
+            if (nodep->rhsp()) {
+                puts(", ");
+                putbs("");
+            }
+            iterateAndNextNull(nodep->rhsp());
+            puts(")");
+        }
+    }
+
     virtual void visit(AstChangeDet* nodep) override {  //
         m_blkChangeDetVec.push_back(nodep);
     }

@@ -272,6 +272,32 @@ public:
     }
     ~VlQueue() {}
     // Standard copy constructor works. Verilog: assoca = assocb
+    static VlQueue cons(const T_Value& lhs) {
+        VlQueue out;
+        out.push_back(lhs);
+        return out;
+    }
+    static VlQueue cons(const T_Value& lhs, const T_Value& rhs) {
+        VlQueue out;
+        out.push_back(rhs);
+        out.push_back(lhs);
+        return out;
+    }
+    static VlQueue cons(const VlQueue& lhs, const T_Value& rhs) {
+        VlQueue out = lhs;
+        out.push_front(rhs);
+        return out;
+    }
+    static VlQueue cons(const T_Value& lhs, const VlQueue& rhs) {
+        VlQueue out = rhs;
+        out.push_back(lhs);
+        return out;
+    }
+    static VlQueue cons(const VlQueue& lhs, const VlQueue& rhs) {
+        VlQueue out = rhs;
+        for (const auto& i : lhs.m_deque) out.push_back(i);
+        return out;
+    }
 
     // METHODS
     T_Value& atDefault() { return m_defaultValue; }
@@ -350,6 +376,15 @@ public:
     void insert(size_t index, const T_Value& value) {
         if (VL_UNLIKELY(index >= m_deque.size())) return;
         m_deque.insert(m_deque.begin() + index, value);
+    }
+
+    // Return slice q[lsb:msb]
+    VlQueue slice(size_t lsb, size_t msb) const {
+        VlQueue out;
+        if (VL_UNLIKELY(lsb >= m_deque.size())) lsb = m_deque.size() - 1;
+        if (VL_UNLIKELY(msb >= m_deque.size())) msb = m_deque.size() - 1;
+        for (size_t i = lsb; i <= msb; ++i) out.push_back(m_deque[i]);
+        return out;
     }
 
     // For save/restore

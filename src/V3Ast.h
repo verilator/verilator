@@ -1254,7 +1254,10 @@ public:
     /// along with all children and next(s). This is often better to use
     /// than an immediate deleteTree, as any pointers into this node will
     /// persist for the lifetime of the visitor
-    void pushDeletep(AstNode* nodep) { m_deleteps.push_back(nodep); }
+    void pushDeletep(AstNode* nodep) {
+        UASSERT_STATIC(nodep, "Cannot delete nullptr node");
+        m_deleteps.push_back(nodep);
+    }
     /// Call deleteTree on all previously pushDeletep()'ed nodes
     void doDeletes();
 

@@ -484,12 +484,20 @@ private:
         //   LHS, RHS is self-determined
         //   signed: Unsigned  (11.8.1)
         //   width: LHS + RHS
+        AstNodeDType* vdtypep = m_vup->dtypeNullSkipRefp();
+        if (VN_IS(vdtypep, QueueDType)) {
+            // Queue "element 0" is lhsp, so we need to swap arguments
+            auto* newp = new AstConsQueue(nodep->fileline(), nodep->rhsp()->unlinkFrBack(),
+                                          nodep->lhsp()->unlinkFrBack());
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            userIterateChildren(newp, m_vup);
+            return;
+        }
         if (m_vup->prelim()) {
-            AstNodeDType* vdtypep = m_vup->dtypeNullSkipRefp();
-            if (vdtypep
-                && (VN_IS(vdtypep, AssocArrayDType)  //
-                    || VN_IS(vdtypep, DynArrayDType)  //
-                    || VN_IS(vdtypep, QueueDType))) {
+            if (VN_IS(vdtypep, AssocArrayDType)  //
+                || VN_IS(vdtypep, DynArrayDType)  //
+                || VN_IS(vdtypep, QueueDType)) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Concatenation to form "
                                                  << vdtypep->prettyDTypeNameQ() << "data type");
             }
@@ -609,14 +617,6 @@ private:
         //   LHS, RHS is self-determined
         //   width: value(LHS) * width(RHS)
         if (m_vup->prelim()) {
-            AstNodeDType* vdtypep = m_vup->dtypeNullSkipRefp();
-            if (vdtypep
-                && (VN_IS(vdtypep, AssocArrayDType) || VN_IS(vdtypep, DynArrayDType)
-                    || VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, UnpackArrayDType))) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Replication to form "
-                                                 << vdtypep->prettyDTypeNameQ() << " data type");
-            }
-            iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
             const AstConst* constp = VN_CAST(nodep->rhsp(), Const);
@@ -631,6 +631,26 @@ private:
                                "1800-2017 11.4.12.1)");
                 times = 1;
             }
+
+            AstNodeDType* vdtypep = m_vup->dtypeNullSkipRefp();
+            if (VN_IS(vdtypep, QueueDType)) {
+                if (times != 1)
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Non-1 replication to form "
+                                                     << vdtypep->prettyDTypeNameQ()
+                                                     << " data type");
+                // Don't iterate lhsp as SELF, the potential Concat below needs
+                // the adtypep passed down to recognize the QueueDType
+                userIterateAndNext(nodep->lhsp(), WidthVP(vdtypep, BOTH).p());
+                nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+            if (VN_IS(vdtypep, AssocArrayDType) || VN_IS(vdtypep, DynArrayDType)
+                || VN_IS(vdtypep, UnpackArrayDType)) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Replication to form "
+                                                 << vdtypep->prettyDTypeNameQ() << " data type");
+            }
+            iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
             if (nodep->lhsp()->isString()) {
                 AstNode* newp = new AstReplicateN(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
                                                   nodep->rhsp()->unlinkFrBack());
@@ -1133,10 +1153,21 @@ private:
     }
     virtual void visit(AstUnbounded* nodep) override {
         nodep->dtypeSetSigned32();  // Used in int context
-        if (!VN_IS(nodep->backp(), IsUnbounded) && !VN_IS(nodep->backp(), BracketArrayDType)
-            && !(VN_IS(nodep->backp(), Var) && VN_CAST(nodep->backp(), Var)->isParam())) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");
+        if (VN_IS(nodep->backp(), IsUnbounded)) return;  // Ok, leave
+        if (VN_IS(nodep->backp(), BracketArrayDType)) return;  // Ok, leave
+        if (auto* varp = VN_CAST(nodep->backp(), Var)) {
+            if (varp->isParam()) return;  // Ok, leave
         }
+        // queue_slice[#:$]
+        if (auto* selp = VN_CAST(nodep->backp(), SelExtract)) {
+            if (VN_IS(selp->fromp()->dtypep(), QueueDType)) {
+                nodep->replaceWith(
+                    new AstConst(nodep->fileline(), AstConst::Signed32(), 0x7FFFFFFF));
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                return;
+            }
+        }
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");
     }
     virtual void visit(AstIsUnbounded* nodep) override {
         if (m_vup->prelim()) {
@@ -1928,6 +1959,38 @@ private:
         }
         nodep->dtypeFrom(nodep->itemp());
     }
+    virtual void visit(AstConsQueue* nodep) override {  //
+        // Type computed when constructed here
+        AstQueueDType* vdtypep = VN_CAST(m_vup->dtypep(), QueueDType);
+        UASSERT_OBJ(vdtypep, nodep, "ConsQueue requires queue upper parent data type");
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->lhsp(), WidthVP(vdtypep, PRELIM).p());
+            userIterateAndNext(nodep->rhsp(), WidthVP(vdtypep, PRELIM).p());
+            nodep->dtypeFrom(vdtypep);
+        }
+        if (m_vup->final()) {
+            // Arguments can be either elements of the queue or a queue itself
+            // Concats (part of tree of concats) must always become ConsQueue's
+            if (nodep->lhsp()) {
+                if (VN_IS(nodep->lhsp()->dtypep(), QueueDType)
+                    || VN_IS(nodep->lhsp(), ConsQueue)) {
+                    userIterateAndNext(nodep->lhsp(), WidthVP(vdtypep, FINAL).p());
+                } else {
+                    // Sub elements are not queues, but concats, must always pass concats down
+                    iterateCheckTyped(nodep, "LHS", nodep->lhsp(), vdtypep->subDTypep(), FINAL);
+                }
+            }
+            if (nodep->rhsp()) {
+                if (VN_IS(nodep->rhsp()->dtypep(), QueueDType)
+                    || VN_IS(nodep->rhsp(), ConsQueue)) {
+                    userIterateAndNext(nodep->rhsp(), WidthVP(vdtypep, FINAL).p());
+                } else {
+                    iterateCheckTyped(nodep, "RHS", nodep->rhsp(), vdtypep->subDTypep(), FINAL);
+                }
+            }
+            nodep->dtypeFrom(vdtypep);
+        }
+    }
     virtual void visit(AstInitItem* nodep) override {  //
         userIterateChildren(nodep, m_vup);
     }
@@ -2490,12 +2553,10 @@ private:
                     newp->didWidth(true);
                     newp->makeStatement();
                 } else {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: Queue .delete(index) method, as is O(n) "
-                                  "complexity and slow.");
                     newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                               "erase", index_exprp->unlinkFrBack());
                     newp->protect(false);
+                    newp->didWidth(true);
                     newp->makeStatement();
                 }
             }
@@ -2511,9 +2572,6 @@ private:
                 newp->protect(false);
                 newp->makeStatement();
             } else {
-                nodep->v3warn(
-                    E_UNSUPPORTED,
-                    "Unsupported: Queue .insert method, as is O(n) complexity and slow.");
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           nodep->name(), index_exprp->unlinkFrBack());
                 newp->addPinsp(argp->exprp()->unlinkFrBack());
@@ -2874,10 +2932,12 @@ private:
             while (const AstConstDType* vdtypep = VN_CAST(dtypep, ConstDType)) {
                 dtypep = vdtypep->subDTypep()->skipRefp();
             }
-            if (AstNodeUOrStructDType* vdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+            if (auto* vdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
                 VL_DO_DANGLING(patternUOrStruct(nodep, vdtypep, defaultp), nodep);
-            } else if (AstNodeArrayDType* vdtypep = VN_CAST(dtypep, NodeArrayDType)) {
+            } else if (auto* vdtypep = VN_CAST(dtypep, NodeArrayDType)) {
                 VL_DO_DANGLING(patternArray(nodep, vdtypep, defaultp), nodep);
+            } else if (auto* vdtypep = VN_CAST(dtypep, QueueDType)) {
+                VL_DO_DANGLING(patternQueue(nodep, vdtypep, defaultp), nodep);
             } else if (VN_IS(dtypep, BasicDType) && VN_CAST(dtypep, BasicDType)->isRanged()) {
                 VL_DO_DANGLING(patternBasic(nodep, dtypep, defaultp), nodep);
             } else {
@@ -3035,6 +3095,21 @@ private:
         } else {
             nodep->v3error("Assignment pattern with no members");
         }
+        // if (debug() >= 9) newp->dumpTree("-apat-out: ");
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+    }
+    void patternQueue(AstPattern* nodep, AstQueueDType* arrayp, AstPatMember* defaultp) {
+        AstNode* newp = new AstConsQueue(nodep->fileline());
+        newp->dtypeFrom(arrayp);
+        for (AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember); patp;
+             patp = VN_CAST(patp->nextp(), PatMember)) {
+            patp->dtypep(arrayp->subDTypep());
+            AstNode* valuep = patternMemberValueIterate(patp);
+            auto* newap = new AstConsQueue(nodep->fileline(), valuep, newp);
+            newap->dtypeFrom(arrayp);
+            newp = newap;
+        }
+        nodep->replaceWith(newp);
         // if (debug() >= 9) newp->dumpTree("-apat-out: ");
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }

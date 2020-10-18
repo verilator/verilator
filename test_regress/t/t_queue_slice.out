@@ -1,4 +1,0 @@
-%Error-UNSUPPORTED: t/t_queue_slice.v:21:11: Unsupported: Empty '{}
-   21 |       q = '{};
-      |           ^~
-%Error: Exiting due to
