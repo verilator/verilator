@@ -1413,13 +1413,13 @@ private:
         // Cleanup array size
         userIterateAndNext(nodep->rangep(), WidthVP(SELF, BOTH).p());
         nodep->dtypep(nodep);  // The array itself, not subDtype
-        if (VN_IS(nodep, UnpackArrayDType)) {
-            // Historically array elements have width of the ref type not the full array
-            nodep->widthFromSub(nodep->subDTypep());
-        } else {
-            int width = nodep->subDTypep()->width() * nodep->rangep()->elementsConst();
-            nodep->widthForce(width, width);
-        }
+        //if (VN_IS(nodep, UnpackArrayDType)) {
+        //    // Historically array elements have width of the ref type not the full array
+        //    nodep->widthFromSub(nodep->subDTypep());
+        // } else {
+        int width = nodep->subDTypep()->width() * nodep->rangep()->elementsConst();
+        nodep->widthForce(width, width);
+        //   }
         UINFO(4, "dtWidthed " << nodep << endl);
     }
     virtual void visit(AstAssocArrayDType* nodep) override {
@@ -4735,7 +4735,7 @@ private:
         UASSERT_OBJ(stage == FINAL, nodep, "Bad state to iterateCheck");
         UASSERT_OBJ(underp && underp->dtypep(), nodep,
                     "Node has no type");  // Perhaps forgot to do a prelim visit on it?
-        if (VN_IS(underp, NodeDType)) {  // Note the node itself, not node's data type
+        if (VN_IS(underp, NodeDType) && !VN_IS(nodep,StreamL) ) {  // Note the node itself, not node's data type
             // Must be near top of these checks as underp->dtypep() will look normal
             underp->v3error(ucfirst(nodep->prettyOperatorName())
                             << " expected non-datatype " << side << " but '" << underp->name()

@@ -659,6 +659,7 @@ inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
 }
 
 /// Init time only, so slow is fine
+extern IData VL_RAND_RESET_D(int obits);  ///< Random reset a signal
 extern IData VL_RAND_RESET_I(int obits);  ///< Random reset a signal
 extern QData VL_RAND_RESET_Q(int obits);  ///< Random reset a signal
 extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp);  ///< Random reset a signal
@@ -1974,6 +1975,25 @@ static inline QData VL_STREAML_FAST_QQI(int, int lbits, int, QData ld, IData rd_
     default:;
     }
     return ret >> (VL_QUADSIZE - lbits);
+}
+
+static inline IData VL_STREAML_UA_BYTE_III(int a, int lbits, int b, unsigned char ld[], IData rd) VL_PURE {
+    IData ret = 0;
+    IData result =0;
+    // Slice size should never exceed the lhs width
+    IData mask = VL_MASK_I(rd);
+    int ld_size = 4;
+    int ild = 0;//ld_size -1;
+    VL_PRINTF("VL_STREAML_UA_BYTE_III:a=%0d lbits =%0d b=%0d ,rd=%x \n",a,lbits,b,rd);
+    for (int istart = 0; istart < lbits; istart += rd) {
+        int ostart = lbits - rd - istart;
+        ostart = ostart > 0 ? ostart : 0;
+        ret |= (ld[ild] & mask)<<ild*8;
+        //ret |= ((ld[ild] >> istart) & mask) << ostart;
+        VL_PRINTF("VL_STREAML_UA_BYTE_III:ld_size=%0d ld[%0d]=%x ,mask=%x,istart=%x, ostart=%x, result=%x , ret=%x\n",ld_size,ild,ld[ild],mask,istart,ostart,result,ret);
+        ild++;
+    }
+    return ret;
 }
 
 // Regular "slow" streaming operators

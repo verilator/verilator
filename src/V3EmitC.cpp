@@ -1012,6 +1012,18 @@ public:
     }
     virtual void visit(AstStreamL* nodep) override {
         // Attempt to use a "fast" stream function for slice size = power of 2
+        if (VN_IS(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
+            const AstUnpackArrayDType* arrayp= VN_CAST_CONST(nodep->lhsp()->dtypep(), UnpackArrayDType);
+            string prefix = "VL_STREAML_";
+            switch(arrayp->subDTypep()->width()) {
+            case 8:  prefix = "VL_STREAML_UA_BYTE";break;
+            case 16: prefix = "VL_STREAML_UA_SHORTINT"; break;      
+            case 32: prefix = "VL_STREAML_UA_INT";break;
+            case 64: prefix = "VL_STREAML_UA_LONGINT"; break;  
+            }
+            emitOpName(nodep,prefix+"_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)", nodep->lhsp(),nodep->rhsp(), nullptr);
+            return; 
+        }
         if (!nodep->isWide()) {
             uint32_t isPow2 = VN_CAST(nodep->rhsp(), Const)->num().countOnes() == 1;
             uint32_t sliceSize = VN_CAST(nodep->rhsp(), Const)->toUInt();
