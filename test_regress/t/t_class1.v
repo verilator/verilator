@@ -15,8 +15,11 @@ module t (/*AUTOARG*/);
    initial begin
       Cls c;
       if (c != null) $stop;
+      if (c) $stop;
       $display("Display: null = \"%p\"", c);  // null
       c = new;
+      if (c == null) $stop;
+      if (!c) $stop;
       $display("Display: newed = \"%p\"", c);  // '{imembera:0, imemberb:0}
       c.imembera = 10;
       c.imemberb = 20;

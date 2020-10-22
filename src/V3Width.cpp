@@ -4781,6 +4781,12 @@ private:
                 = new AstNeqD(nodep->fileline(), underp,
                               new AstConst(nodep->fileline(), AstConst::RealDouble(), 0.0));
             linker.relink(newp);
+        } else if (VN_IS(underp->dtypep(), ClassRefDType)
+                   || (VN_IS(underp->dtypep(), BasicDType)
+                       && VN_CAST(underp->dtypep(), BasicDType)->keyword()
+                              == AstBasicDTypeKwd::CHANDLE)) {
+            // Allow warning-free "if (handle)"
+            VL_DO_DANGLING(fixWidthReduce(underp), underp);  // Changed
         } else if (!underp->dtypep()->basicp()) {
             nodep->v3error("Logical operator " << nodep->prettyTypeName()
                                                << " expects a non-complex data type on the "

@@ -4228,7 +4228,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// Indistinguishable from function_subroutine_call:method_call
 	//
 	|	'$'					{ $$ = new AstUnbounded($<fl>1); }
-	|	yNULL					{ $$ = new AstConst($1, AstConst::LogicFalse()); }
+	|	yNULL					{ $$ = new AstConst($1, AstConst::StringToParse(), "'0"); }
 	//			// IEEE: yTHIS
 	//			// See exprScope
 	//

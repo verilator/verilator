@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support queue slicing (#2326).
 
+****  Fix WIDTH warnings on comparisons with nullptr (#2602). [Rupert Swarbrick]
+
 
 * Verilator 4.102 2020-10-15
 
