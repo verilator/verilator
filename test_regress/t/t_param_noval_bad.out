@@ -2,7 +2,7 @@
                                   : ... In instance t
     7 | module t #(parameter P);
       |                      ^
-%Warning-WIDTH: t/t_param_noval_bad.v:10:7: Logical Operator GENFOR expects 1 bit on the For Test Condition, but For Test Condition's VARREF 'P' generates 32 bits.
+%Warning-WIDTH: t/t_param_noval_bad.v:10:7: Logical operator GENFOR expects 1 bit on the For Test Condition, but For Test Condition's VARREF 'P' generates 32 bits.
                                           : ... In instance t
    10 |       for (j=0; P; j++)
       |       ^~~

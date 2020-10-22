@@ -4782,7 +4782,7 @@ private:
                               new AstConst(nodep->fileline(), AstConst::RealDouble(), 0.0));
             linker.relink(newp);
         } else if (!underp->dtypep()->basicp()) {
-            nodep->v3error("Logical Operator " << nodep->prettyTypeName()
+            nodep->v3error("Logical operator " << nodep->prettyTypeName()
                                                << " expects a non-complex data type on the "
                                                << side << ".");
             underp->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
@@ -4792,7 +4792,7 @@ private:
             if (bad) {
                 {  // if (warnOn), but not needed here
                     if (debug() > 4) nodep->backp()->dumpTree(cout, "  back: ");
-                    nodep->v3warn(WIDTH, "Logical Operator "
+                    nodep->v3warn(WIDTH, "Logical operator "
                                              << nodep->prettyTypeName() << " expects 1 bit on the "
                                              << side << ", but " << side << "'s "
                                              << underp->prettyTypeName() << " generates "
