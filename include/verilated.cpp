@@ -1282,6 +1282,23 @@ IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
     return got;
 }
 
+// declared in verilated_heavy.h
+IData VL_FGETS_NI(std::string& str, IData fpi) VL_MT_SAFE {
+    str.clear();
+
+    // While threadsafe, each thread can only access different file handles
+    FILE* fp = VL_CVT_I_FP(fpi);
+    if (VL_UNLIKELY(!fp)) return 0;
+
+    while (true) {
+        const int c = getc(fp);
+        if (c == EOF) break;
+        str.push_back(c);
+        if (c == '\n') break;
+    }
+    return str.size();
+}
+
 IData VL_FERROR_IN(IData, std::string& outputr) VL_MT_SAFE {
     // We ignore lhs/fpi - IEEE says "most recent error" so probably good enough
     IData ret = errno;
