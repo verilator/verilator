@@ -134,6 +134,12 @@ module t;
 	 if (chars != 10) $stop;
 	 if (letterw != "\0\0\0\0\0\0widestuff\n") $stop;
 
+	 s = "";
+	 chars = $fgets(s, file);
+	 if (`verbose) $write("c=%0d w=%s", chars, s); // Output includes newline
+	 if (chars != 7) $stop;
+	 if (s != "string\n") $stop;
+
 	 // $sscanf
 	 if ($sscanf("x","")!=0) $stop;
 	 if ($sscanf("z","z")!=0) $stop;
