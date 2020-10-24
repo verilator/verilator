@@ -1,52 +1,52 @@
-%Error-UNSUPPORTED: t/t_assoc_method.v:38:19: Unsupported: with statements
-   38 |       qv = q.find with (item == 2);
+%Error-UNSUPPORTED: t/t_assoc_method.v:42:19: Unsupported: with statements
+   42 |       qv = q.find with (item == 2);
       |                   ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:40:25: Unsupported: with statements
-   40 |       qv = q.find_index with (item == 2); qv.sort;
+%Error-UNSUPPORTED: t/t_assoc_method.v:44:25: Unsupported: with statements
+   44 |       qv = q.find_first with (item == 2);
       |                         ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:42:25: Unsupported: with statements
-   42 |       qv = q.find_first with (item == 2);
-      |                         ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:44:31: Unsupported: with statements
-   44 |       qv = q.find_first_index with (item == 2);
-      |                               ^~~~
 %Error-UNSUPPORTED: t/t_assoc_method.v:46:24: Unsupported: with statements
    46 |       qv = q.find_last with (item == 2);
       |                        ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:48:30: Unsupported: with statements
-   48 |       qv = q.find_last_index with (item == 2);
-      |                              ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:51:19: Unsupported: with statements
-   51 |       qv = q.find with (item == 20);
+%Error-UNSUPPORTED: t/t_assoc_method.v:49:19: Unsupported: with statements
+   49 |       qv = q.find with (item == 20);
       |                   ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:53:25: Unsupported: with statements
-   53 |       qv = q.find_index with (item == 20); qv.sort;
+%Error-UNSUPPORTED: t/t_assoc_method.v:51:25: Unsupported: with statements
+   51 |       qv = q.find_first with (item == 20);
       |                         ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:55:25: Unsupported: with statements
-   55 |       qv = q.find_first with (item == 20);
-      |                         ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:57:31: Unsupported: with statements
-   57 |       qv = q.find_first_index with (item == 20);
-      |                               ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:59:24: Unsupported: with statements
-   59 |       qv = q.find_last with (item == 20);
+%Error-UNSUPPORTED: t/t_assoc_method.v:53:24: Unsupported: with statements
+   53 |       qv = q.find_last with (item == 20);
       |                        ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:61:30: Unsupported: with statements
-   61 |       qv = q.find_last_index with (item == 20);
+%Error-UNSUPPORTED: t/t_assoc_method.v:56:25: Unsupported: with statements
+   56 |       qi = q.find_index with (item == 2); qi.sort;
+      |                         ^~~~
+%Error-UNSUPPORTED: t/t_assoc_method.v:58:31: Unsupported: with statements
+   58 |       qi = q.find_first_index with (item == 2);
+      |                               ^~~~
+%Error-UNSUPPORTED: t/t_assoc_method.v:60:30: Unsupported: with statements
+   60 |       qi = q.find_last_index with (item == 2);
       |                              ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:77:17: Unsupported: with statements
-   77 |       i = q.sum with (item + 1); do if ((i) !== (32'h11)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_assoc_method.v",77, (i), (32'h11)); $stop; end while(0);;
+%Error-UNSUPPORTED: t/t_assoc_method.v:63:25: Unsupported: with statements
+   63 |       qi = q.find_index with (item == 20); qi.sort;
+      |                         ^~~~
+%Error-UNSUPPORTED: t/t_assoc_method.v:65:31: Unsupported: with statements
+   65 |       qi = q.find_first_index with (item == 20);
+      |                               ^~~~
+%Error-UNSUPPORTED: t/t_assoc_method.v:67:30: Unsupported: with statements
+   67 |       qi = q.find_last_index with (item == 20);
+      |                              ^~~~
+%Error-UNSUPPORTED: t/t_assoc_method.v:83:17: Unsupported: with statements
+   83 |       i = q.sum with (item + 1); do if ((i) !== (32'h11)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_assoc_method.v",83, (i), (32'h11)); $stop; end while(0);;
       |                 ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:79:21: Unsupported: with statements
-   79 |       i = q.product with (item + 1); do if ((i) !== (32'h168)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_assoc_method.v",79, (i), (32'h168)); $stop; end while(0);;
+%Error-UNSUPPORTED: t/t_assoc_method.v:85:21: Unsupported: with statements
+   85 |       i = q.product with (item + 1); do if ((i) !== (32'h168)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_assoc_method.v",85, (i), (32'h168)); $stop; end while(0);;
       |                     ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:86:17: Unsupported: with statements
-   86 |       i = q.and with (item + 1); do if ((i) !== (32'b1001)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_assoc_method.v",86, (i), (32'b1001)); $stop; end while(0);;
+%Error-UNSUPPORTED: t/t_assoc_method.v:92:17: Unsupported: with statements
+   92 |       i = q.and with (item + 1); do if ((i) !== (32'b1001)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_assoc_method.v",92, (i), (32'b1001)); $stop; end while(0);;
       |                 ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:88:16: Unsupported: with statements
-   88 |       i = q.or with (item + 1); do if ((i) !== (32'b1111)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_assoc_method.v",88, (i), (32'b1111)); $stop; end while(0);;
+%Error-UNSUPPORTED: t/t_assoc_method.v:94:16: Unsupported: with statements
+   94 |       i = q.or with (item + 1); do if ((i) !== (32'b1111)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_assoc_method.v",94, (i), (32'b1111)); $stop; end while(0);;
       |                ^~~~
-%Error-UNSUPPORTED: t/t_assoc_method.v:90:17: Unsupported: with statements
-   90 |       i = q.xor with (item + 1); do if ((i) !== (32'b0110)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_assoc_method.v",90, (i), (32'b0110)); $stop; end while(0);;
+%Error-UNSUPPORTED: t/t_assoc_method.v:96:17: Unsupported: with statements
+   96 |       i = q.xor with (item + 1); do if ((i) !== (32'b0110)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_assoc_method.v",96, (i), (32'b0110)); $stop; end while(0);;
       |                 ^~~~
 %Error: Exiting due to

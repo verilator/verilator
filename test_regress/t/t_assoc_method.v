@@ -11,8 +11,9 @@
 module t (/*AUTOARG*/);
    initial begin
       int q[int];
-      int qe[$];
-      int qv[$];
+      int qe[int];  // Empty
+      int qv[$];  // Value returns
+      int qi[$];  // Index returns
       int i;
       string v;
 
@@ -26,40 +27,45 @@ module t (/*AUTOARG*/);
       //q.reverse;  // Not legal on assoc - see t_assoc_meth_bad
       //q.shuffle;  // Not legal on assoc - see t_assoc_meth_bad
 
+      v = $sformatf("%p", qe); `checks(v, "'{}");
       qv = q.unique;
       v = $sformatf("%p", qv); `checks(v, "'{1, 2, 4, 3} ");
       qv = qe.unique;
       v = $sformatf("%p", qv); `checks(v, "'{}");
-      qv = q.unique_index; qv.sort;
-      v = $sformatf("%p", qv); `checks(v, "'{10, 11, 13, 14} ");
+      qi = q.unique_index; qi.sort;
+      v = $sformatf("%p", qi); `checks(v, "'{10, 11, 13, 14} ");
+      qv = qe.unique_index;
+      v = $sformatf("%p", qv); `checks(v, "'{}");
 
       // These require an with clause or are illegal
       // TODO add a lint check that with clause is provided
       qv = q.find with (item == 2);
       v = $sformatf("%p", qv); `checks(v, "'{2, 2} ");
-      qv = q.find_index with (item == 2); qv.sort;
-      v = $sformatf("%p", qv); `checks(v, "'{11, 12} ");
       qv = q.find_first with (item == 2);
       v = $sformatf("%p", qv); `checks(v, "'{2} ");
-      qv = q.find_first_index with (item == 2);
-      v = $sformatf("%p", qv); `checks(v, "'{11} ");
       qv = q.find_last with (item == 2);
       v = $sformatf("%p", qv); `checks(v, "'{2} ");
-      qv = q.find_last_index with (item == 2);
-      v = $sformatf("%p", qv); `checks(v, "'{12} ");
 
       qv = q.find with (item == 20);
       v = $sformatf("%p", qv); `checks(v, "'{}");
-      qv = q.find_index with (item == 20); qv.sort;
-      v = $sformatf("%p", qv); `checks(v, "'{}");
       qv = q.find_first with (item == 20);
-      v = $sformatf("%p", qv); `checks(v, "'{}");
-      qv = q.find_first_index with (item == 20);
       v = $sformatf("%p", qv); `checks(v, "'{}");
       qv = q.find_last with (item == 20);
       v = $sformatf("%p", qv); `checks(v, "'{}");
-      qv = q.find_last_index with (item == 20);
-      v = $sformatf("%p", qv); `checks(v, "'{}");
+
+      qi = q.find_index with (item == 2); qi.sort;
+      v = $sformatf("%p", qi); `checks(v, "'{11, 12} ");
+      qi = q.find_first_index with (item == 2);
+      v = $sformatf("%p", qi); `checks(v, "'{11} ");
+      qi = q.find_last_index with (item == 2);
+      v = $sformatf("%p", qi); `checks(v, "'{12} ");
+
+      qi = q.find_index with (item == 20); qi.sort;
+      v = $sformatf("%p", qi); `checks(v, "'{}");
+      qi = q.find_first_index with (item == 20);
+      v = $sformatf("%p", qi); `checks(v, "'{}");
+      qi = q.find_last_index with (item == 20);
+      v = $sformatf("%p", qi); `checks(v, "'{}");
 
       qv = q.min;
       v = $sformatf("%p", qv); `checks(v, "'{1} ");

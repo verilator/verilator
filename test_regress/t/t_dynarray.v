@@ -40,7 +40,7 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       begin
          `checkh(a.size, 0);
-         v = $sformatf("%p", a); `checks(v, "'{} ");
+         v = $sformatf("%p", a); `checks(v, "'{}");
 
          a = new [3];
          `checkh(a.size, 3);

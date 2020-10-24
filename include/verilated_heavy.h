@@ -202,6 +202,7 @@ public:
 
     // Dumping. Verilog: str = $sformatf("%p", assoc)
     std::string to_string() const {
+        if (m_map.empty()) return "'{}";  // No trailing space
         std::string out = "'{";
         std::string comma;
         for (const auto& i : m_map) {
@@ -393,6 +394,7 @@ public:
 
     // Dumping. Verilog: str = $sformatf("%p", assoc)
     std::string to_string() const {
+        if (m_deque.empty()) return "'{}";  // No trailing space
         std::string out = "'{";
         std::string comma;
         for (const auto& i : m_deque) {
