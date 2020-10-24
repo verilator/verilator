@@ -1252,51 +1252,42 @@ void _VL_STRING_TO_VINT(int obits, void* destp, size_t srclen, const char* srcp)
     for (; i < bytes; ++i) { *op++ = 0; }
 }
 
-IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
-    // While threadsafe, each thread can only access different file handles
-    FILE* fp = VL_CVT_I_FP(fpi);
-    if (VL_UNLIKELY(!fp)) return 0;
-
-    // The string needs to be padded with 0's in unused spaces in front of
-    // any read data.  This means we can't know in what location the first
-    // character will finally live, so we need to copy.  Yuk.
-    IData bytes = VL_BYTES_I(obits);
-    char buffer[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
-    // V3Emit has static check that bytes < VL_TO_STRING_MAX_WORDS, but be safe
-    if (VL_UNCOVERABLE(bytes > VL_TO_STRING_MAX_WORDS * VL_EDATASIZE)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: fgets buffer overrun");  // LCOV_EXCL_LINE
-    }
-
-    // We don't use fgets, as we must read \0s.
-    IData got = 0;
-    char* cp = buffer;
-    while (got < bytes) {
-        int c = getc(fp);  // getc() is threadsafe
-        if (c == EOF) break;
-        *cp++ = c;
-        got++;
-        if (c == '\n') break;
-    }
-
-    _VL_STRING_TO_VINT(obits, destp, got, buffer);
-    return got;
-}
-
-// declared in verilated_heavy.h
-IData VL_FGETS_NI(std::string& str, IData fpi) VL_MT_SAFE {
+static IData getLine(std::string& str, IData fpi, size_t maxLen) VL_MT_SAFE {
     str.clear();
 
     // While threadsafe, each thread can only access different file handles
     FILE* fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return 0;
 
-    while (true) {
-        const int c = getc(fp);
+    // We don't use fgets, as we must read \0s.
+    while (str.size() < maxLen) {
+        const int c = getc(fp);  // getc() is threadsafe
         if (c == EOF) break;
         str.push_back(c);
         if (c == '\n') break;
     }
     return str.size();
+}
+
+IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
+    std::string str;
+    const IData bytes = VL_BYTES_I(obits);
+    IData got = getLine(str, fpi, bytes);
+
+    if (VL_UNLIKELY(str.empty())) return 0;
+
+    // V3Emit has static check that bytes < VL_TO_STRING_MAX_WORDS, but be safe
+    if (VL_UNCOVERABLE(bytes < str.size())) {
+        VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: fgets buffer overrun");  // LCOV_EXCL_LINE
+    }
+
+    _VL_STRING_TO_VINT(obits, destp, got, str.data());
+    return got;
+}
+
+// declared in verilated_heavy.h
+IData VL_FGETS_NI(std::string& str, IData fpi) VL_MT_SAFE {
+    return getLine(str, fpi, std::numeric_limits<size_t>::max());
 }
 
 IData VL_FERROR_IN(IData, std::string& outputr) VL_MT_SAFE {
