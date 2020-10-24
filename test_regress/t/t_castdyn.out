@@ -1,9 +1,29 @@
-%Error-UNSUPPORTED: t/t_castdyn.v:12:11: Unsupported: $cast. Suggest try static cast.
+%Error-UNSUPPORTED: t/t_castdyn.v:28:11: Unsupported: $cast. Suggest try static cast.
                                        : ... In instance t
-   12 |       i = $cast(a, b);
+   28 |       i = $cast(ao, a);
       |           ^~~~~
-%Error-UNSUPPORTED: t/t_castdyn.v:14:7: Unsupported: $cast. Suggest try static cast.
+%Error-UNSUPPORTED: t/t_castdyn.v:32:7: Unsupported: $cast. Suggest try static cast.
                                       : ... In instance t
-   14 |       $cast(a, b);
+   32 |       $cast(ao, a);
       |       ^~~~~
+%Error-UNSUPPORTED: t/t_castdyn.v:35:11: Unsupported: $cast. Suggest try static cast.
+                                       : ... In instance t
+   35 |       i = $cast(ao, 2.1 * 3.7);
+      |           ^~~~~
+%Error-UNSUPPORTED: t/t_castdyn.v:39:11: Unsupported: $cast. Suggest try static cast.
+                                       : ... In instance t
+   39 |       i = $cast(bo, null);
+      |           ^~~~~
+%Error-UNSUPPORTED: t/t_castdyn.v:45:11: Unsupported: $cast. Suggest try static cast.
+                                       : ... In instance t
+   45 |       i = $cast(bao, b);
+      |           ^~~~~
+%Error-UNSUPPORTED: t/t_castdyn.v:51:11: Unsupported: $cast. Suggest try static cast.
+                                       : ... In instance t
+   51 |       i = $cast(bbo, b);
+      |           ^~~~~
+%Error-UNSUPPORTED: t/t_castdyn.v:57:11: Unsupported: $cast. Suggest try static cast.
+                                       : ... In instance t
+   57 |       i = $cast(bao, b);
+      |           ^~~~~
 %Error: Exiting due to
