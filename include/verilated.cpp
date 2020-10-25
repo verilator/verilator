@@ -1079,7 +1079,13 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 WData qowp[VL_WQ_WORDS_E];
                 VL_SET_WQ(qowp, 0ULL);
                 WDataOutP owp = qowp;
-                if (obits > VL_QUADSIZE) owp = va_arg(ap, WDataOutP);
+                if (obits == -1) {  // string
+                    owp = nullptr;
+                    if (VL_UNCOVERABLE(fmt != 's')) {
+                        VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: format other than %s is passed to string");  // LCOV_EXCL_LINE
+                    }
+                } else if (obits > VL_QUADSIZE) {owp = va_arg(ap, WDataOutP);}
+
                 for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
                 switch (fmt) {
                 case 'c': {
@@ -1093,11 +1099,13 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, nullptr);
                     if (!tmp[0]) goto done;
-                    int lpos = (static_cast<int>(strlen(tmp))) - 1;
-                    int lsb = 0;
-                    for (int i = 0; i < obits && lpos >= 0; --lpos) {
-                        _vl_vsss_setbit(owp, obits, lsb, 8, tmp[lpos]);
-                        lsb += 8;
+                    if (owp) {
+                        int lpos = (static_cast<int>(strlen(tmp))) - 1;
+                        int lsb = 0;
+                        for (int i = 0; i < obits && lpos >= 0; --lpos) {
+                            _vl_vsss_setbit(owp, obits, lsb, 8, tmp[lpos]);
+                            lsb += 8;
+                        }
                     }
                     break;
                 }
@@ -1194,6 +1202,9 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 if (!inIgnore) ++got;
                 // Reload data if non-wide (if wide, we put it in the right place directly)
                 if (obits == 0) {  // Due to inIgnore
+                } else if (obits == -1) { //string
+                    std::string* p = va_arg(ap, std::string*);
+                    *p = tmp;
                 } else if (obits <= VL_BYTESIZE) {
                     CData* p = va_arg(ap, CData*);
                     *p = owp[0];

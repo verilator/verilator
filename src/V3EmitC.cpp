@@ -2181,7 +2181,12 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const
     }
     emitDispState.pushFormat(pfmt);
     if (!ignore) {
-        emitDispState.pushArg(' ', nullptr, cvtToStr(argp->widthMin()));
+        if (argp->dtypep()->basicp()->keyword() == AstBasicDTypeKwd::STRING) {
+            // string in SystemVerilog is std::string in C++ which is not POD
+            emitDispState.pushArg(' ', nullptr, "-1");
+        } else {
+            emitDispState.pushArg(' ', nullptr, cvtToStr(argp->widthMin()));
+        }
         emitDispState.pushArg(fmtLetter, argp, "");
     } else {
         emitDispState.pushArg(fmtLetter, nullptr, "");
