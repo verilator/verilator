@@ -179,6 +179,12 @@ module t;
 	 `checkr(r, 0.1);
 	 if (letterq != 64'hfffffffffffc65a5) $stop;
 
+	 chars = $sscanf("scan from string",
+			 "scan %s string", s);
+	 if (`verbose) $write("c=%0d s=%s\n", chars, s);
+	 if (chars != 1) $stop;
+	 if (s != "from") $stop;
+
 	 // Cover quad and %e/%f
 	 chars = $sscanf("r=0.2",
 			 "r=%e", r);
@@ -250,6 +256,11 @@ module t;
 	 if (`verbose) $write("c=%0d l=%x\n", chars, letterl);
 	 if (chars != 1) $stop;
 	 if (letterl != "\n") $stop;
+
+	 chars = $fscanf(file, "%c%s not_included\n", letterl, s);
+	 if (`verbose) $write("c=%0d l=%s\n", chars, s);
+	 if (chars != 2) $stop;
+	 if (s != "BCD") $stop;
 
 	 // msg1229
 	 v_a = $fgetc(file);
