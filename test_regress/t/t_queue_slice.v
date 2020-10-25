@@ -13,6 +13,8 @@ module t (/*AUTOARG*/);
       string q[$];
       string v;
       int    i;
+      int    qi[$:5];
+      int    ri[$];
 
       q.push_front("non-empty");
       i = q.size(); `checkh(i, 1);
@@ -42,6 +44,9 @@ module t (/*AUTOARG*/);
       v = $sformatf("%p", q); `checks(v, "'{\"ins0\", \"q\", \"ins2\", \"c\", \"d\", \"e\", \"f\"} ");
 
       // Slicing
+      q = '{"q", "b", "c", "d", "e", "f"};
+      q = q[-1:0];
+      v = $sformatf("%p", q); `checks(v, "'{\"q\"} ");
       q = '{"q", "b", "c", "d", "e", "f"};
       q = q[2:3];
       v = $sformatf("%p", q); `checks(v, "'{\"c\", \"d\"} ");
@@ -80,7 +85,34 @@ module t (/*AUTOARG*/);
          v = q.pop_front(); `checks(v, "CC");
       end
 
+      begin
+         qi.push_back(0);
+         qi.push_back(1);
+         qi.push_back(2);
+         qi.push_back(3);
+         qi.push_back(4);
+         qi.push_back(5);
+
+         // Assignment to unsized queue from sized queue
+         ri = qi[ 2 : 4 ];
+         `checkh(ri.size, 3);
+         ri = qi[ 4 : 2 ];
+         `checkh(ri.size, 0);
+         ri = qi[ 2 : 2 ];
+         `checkh(ri.size, 1);
+         ri = qi[ -2 : 2 ]; // 2 - 0 + 1 = 3
+         `checkh(ri.size, 3);
+         ri = qi[ 2 : 10 ]; // 5 - 2 + 1 = 4
+         `checkh(ri.size, 4);
+
+         // Assignment from unsized to sized
+         ri = '{1,2,3,4,5,6,7,8,9};
+         qi = ri;
+         `checkh(qi.size, 5);
+      end
+
       $write("*-* All Finished *-*\n");
       $finish;
    end
+
 endmodule
