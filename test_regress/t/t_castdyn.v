@@ -53,9 +53,11 @@ module t (/*AUTOARG*/);
       if (b != bb) $stop;
 
       bb = new;
-      b = b;
+      b = bb;
+      bao = ba;
       i = $cast(bao, b);
       if (i != 0) $stop;
+      if (bao != ba) $stop;  // Unchanged
 
       $write("*-* All Finished *-*\n");
       $finish;

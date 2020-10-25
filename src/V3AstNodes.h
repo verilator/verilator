@@ -5835,6 +5835,10 @@ public:
 };
 
 class AstCastDynamic : public AstNodeBiop {
+    // Verilog $cast used as a function
+    // Task usage of $cast is converted during parse to assert($cast(...))
+    // Parents: MATH
+    // Children: MATH
 public:
     AstCastDynamic(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {}

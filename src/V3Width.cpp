@@ -1599,9 +1599,10 @@ private:
         nodep->widthFromSub(nodep->subDTypep());
     }
     virtual void visit(AstCastDynamic* nodep) override {
+        nodep->dtypeChgWidthSigned(32, 1, VSigning::SIGNED);  // Spec says integer return
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: $cast. Suggest try static cast.");
         AstNode* newp = new AstConst(nodep->fileline(), 1);
-        newp->dtypeSetSigned32();  // Spec says integer return
+        newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
