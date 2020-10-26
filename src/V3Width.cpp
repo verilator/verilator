@@ -1960,7 +1960,32 @@ private:
         }
         nodep->dtypeFrom(nodep->itemp());
     }
-    virtual void visit(AstConsQueue* nodep) override {  //
+    virtual void visit(AstConsAssoc* nodep) override {
+        // Type computed when constructed here
+        auto* vdtypep = VN_CAST(m_vup->dtypep(), AssocArrayDType);
+        UASSERT_OBJ(vdtypep, nodep, "ConsAssoc requires assoc upper parent data type");
+        if (m_vup->prelim()) {
+            nodep->dtypeFrom(vdtypep);
+            if (nodep->defaultp()) {
+                iterateCheck(nodep, "default", nodep->defaultp(), CONTEXT, FINAL, vdtypep->subDTypep(),
+                             EXTEND_EXP);
+            }
+        }
+    }
+    virtual void visit(AstSetAssoc* nodep) override {
+        // Type computed when constructed here
+        auto* vdtypep = VN_CAST(m_vup->dtypep(), AssocArrayDType);
+        UASSERT_OBJ(vdtypep, nodep, "SetsAssoc requires assoc upper parent data type");
+        if (m_vup->prelim()) {
+            nodep->dtypeFrom(vdtypep);
+            userIterateAndNext(nodep->lhsp(), WidthVP(vdtypep, BOTH).p());
+            iterateCheck(nodep, "key", nodep->keyp(), CONTEXT, FINAL, vdtypep->keyDTypep(),
+                         EXTEND_EXP);
+            iterateCheck(nodep, "value", nodep->valuep(), CONTEXT, FINAL, vdtypep->subDTypep(),
+                         EXTEND_EXP);
+        }
+    }
+    virtual void visit(AstConsQueue* nodep) override {
         // Type computed when constructed here
         AstQueueDType* vdtypep = VN_CAST(m_vup->dtypep(), QueueDType);
         UASSERT_OBJ(vdtypep, nodep, "ConsQueue requires queue upper parent data type");
@@ -2937,6 +2962,8 @@ private:
                 VL_DO_DANGLING(patternUOrStruct(nodep, vdtypep, defaultp), nodep);
             } else if (auto* vdtypep = VN_CAST(dtypep, NodeArrayDType)) {
                 VL_DO_DANGLING(patternArray(nodep, vdtypep, defaultp), nodep);
+            } else if (auto* vdtypep = VN_CAST(dtypep, AssocArrayDType)) {
+                VL_DO_DANGLING(patternAssoc(nodep, vdtypep, defaultp), nodep);
             } else if (auto* vdtypep = VN_CAST(dtypep, QueueDType)) {
                 VL_DO_DANGLING(patternQueue(nodep, vdtypep, defaultp), nodep);
             } else if (VN_IS(dtypep, BasicDType) && VN_CAST(dtypep, BasicDType)->isRanged()) {
@@ -3044,9 +3071,8 @@ private:
         }
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }
-    void patternArray(AstPattern* nodep, AstNodeArrayDType* vdtypep, AstPatMember* defaultp) {
-        AstNodeArrayDType* arrayp = VN_CAST(vdtypep, NodeArrayDType);
-        VNumRange range = arrayp->declRange();
+    void patternArray(AstPattern* nodep, AstNodeArrayDType* arrayDtp, AstPatMember* defaultp) {
+        VNumRange range = arrayDtp->declRange();
         PatVecMap patmap = patVectorMap(nodep, range);
         UINFO(9, "ent " << range.hi() << " to " << range.lo() << endl);
         AstNode* newp = nullptr;
@@ -3068,11 +3094,11 @@ private:
 
             if (patp) {
                 // Don't want the RHS an array
-                patp->dtypep(arrayp->subDTypep());
+                patp->dtypep(arrayDtp->subDTypep());
                 AstNode* valuep = patternMemberValueIterate(patp);
-                if (VN_IS(arrayp, UnpackArrayDType)) {
+                if (VN_IS(arrayDtp, UnpackArrayDType)) {
                     if (!newp) {
-                        AstInitArray* newap = new AstInitArray(nodep->fileline(), arrayp, nullptr);
+                        AstInitArray* newap = new AstInitArray(nodep->fileline(), arrayDtp, nullptr);
                         newp = newap;
                     }
                     VN_CAST(newp, InitArray)->addIndexValuep(ent - range.lo(), valuep);
@@ -3096,6 +3122,24 @@ private:
         } else {
             nodep->v3error("Assignment pattern with no members");
         }
+        // if (debug() >= 9) newp->dumpTree("-apat-out: ");
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+    }
+    void patternAssoc(AstPattern* nodep, AstAssocArrayDType* arrayDtp, AstPatMember* defaultp) {
+        AstNode* defaultValuep = nullptr;
+        if (defaultp) defaultValuep = defaultp->lhssp()->unlinkFrBack();
+        AstNode* newp = new AstConsAssoc(nodep->fileline(), defaultValuep);
+        newp->dtypeFrom(arrayDtp);
+        for (AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember); patp;
+             patp = VN_CAST(patp->nextp(), PatMember)) {
+            patp->dtypep(arrayDtp->subDTypep());
+            AstNode* valuep = patternMemberValueIterate(patp);
+            AstNode* keyp = patp->keyp();
+            auto* newap = new AstSetAssoc(nodep->fileline(), newp, keyp->unlinkFrBack(), valuep);
+            newap->dtypeFrom(arrayDtp);
+            newp = newap;
+        }
+        nodep->replaceWith(newp);
         // if (debug() >= 9) newp->dumpTree("-apat-out: ");
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }

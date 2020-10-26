@@ -4599,6 +4599,49 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
+class AstConsAssoc : public AstNodeMath {
+    // Construct an assoc array and return object, '{}
+    // Parents: math
+    // Children: expression (elements or other queues)
+public:
+    AstConsAssoc(FileLine* fl, AstNode* defaultp)
+        : ASTGEN_SUPER(fl) {
+        setNOp1p(defaultp);
+    }
+    ASTNODE_NODE_FUNCS(ConsAssoc)
+    virtual string emitVerilog() override { return "'{}"; }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    AstNode* defaultp() const { return op1p(); }
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+class AstSetAssoc : public AstNodeMath {
+    // Set an assoc array element and return object, '{}
+    // Parents: math
+    // Children: expression (elements or other queues)
+public:
+    AstSetAssoc(FileLine* fl, AstNode* lhsp, AstNode* keyp, AstNode* valuep)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(lhsp);
+        setNOp2p(keyp);
+        setOp3p(valuep);
+    }
+    ASTNODE_NODE_FUNCS(SetAssoc)
+    virtual string emitVerilog() override { return "'{}"; }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    AstNode* lhsp() const { return op1p(); }
+    AstNode* keyp() const { return op2p(); }
+    AstNode* valuep() const { return op3p(); }
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+
 class AstConsQueue : public AstNodeMath {
     // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
     // Parents: math

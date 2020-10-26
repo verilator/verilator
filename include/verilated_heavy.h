@@ -196,6 +196,16 @@ public:
             return it->second;
         }
     }
+    // Setting as a chained operation
+    VlAssocArray& set(const T_Key& index, const T_Value& value) {
+        at(index) = value;
+        return *this;
+    }
+    VlAssocArray& setDefault(const T_Value& value) {
+        atDefault() = value;
+        return *this;
+    }
+
     // For save/restore
     const_iterator begin() const { return m_map.begin(); }
     const_iterator end() const { return m_map.end(); }

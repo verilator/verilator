@@ -1575,6 +1575,24 @@ class EmitCImp : EmitCStmts {
         }
     }
 
+    virtual void visit(AstConsAssoc* nodep) override {
+        putbs(nodep->dtypep()->cType("", false, false));
+        puts("()");
+        if (nodep->defaultp()) {
+            putbs(".setDefault(");
+            iterateAndNextNull(nodep->defaultp());
+            puts(")");
+        }
+    }
+    virtual void visit(AstSetAssoc* nodep) override {
+        iterateAndNextNull(nodep->lhsp());
+        putbs(".set(");
+        iterateAndNextNull(nodep->keyp());
+        puts(", ");
+        putbs("");
+        iterateAndNextNull(nodep->valuep());
+        puts(")");
+    }
     virtual void visit(AstConsQueue* nodep) override {
         putbs(nodep->dtypep()->cType("", false, false));
         if (!nodep->lhsp()) {
