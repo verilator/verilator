@@ -7959,7 +7959,10 @@ public:
         V3ERROR_NA;
     }
     virtual string emitVerilog() override { return "%f$fgets(%l,%r)"; }
-    virtual string emitC() override { return "VL_FGETS_%nqX%rq(%lw, %P, &(%li), %ri)"; }
+    virtual string emitC() override {
+        return strgp()->dtypep()->basicp()->isString() ? "VL_FGETS_NI(%li, %ri)"
+                                                       : "VL_FGETS_%nqX%rq(%lw, %P, &(%li), %ri)";
+    }
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool cleanRhs() const override { return true; }

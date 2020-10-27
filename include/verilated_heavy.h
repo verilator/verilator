@@ -546,6 +546,8 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
 
+extern IData VL_FGETS_NI(std::string& destp, IData fpi);
+
 //======================================================================
 // Dumping
 
