@@ -111,5 +111,7 @@ endmodule
 
 module p;
    parameter PARAM = 1;
+   /* verilator lint_off MULTIDRIVERS */
    initial global_bit = 1;
+   /* verilator lint_on MULTIDRIVERS */
 endmodule
