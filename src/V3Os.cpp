@@ -49,23 +49,13 @@
 # include <direct.h>  // mkdir
 # include <psapi.h>   // GetProcessMemoryInfo
 # include <thread>
+// These macros taken from gdbsupport/gdb_wait.h in binutils-gdb
 # ifndef WIFEXITED
-#    define WIFEXITED(stat)  (((*((int *) &(stat))) & 0xC0000000) == 0)
-# endif
-# ifndef WEXITSTATUS
-#    define WEXITSTATUS(stat) (*((int *) &(stat)))
-# endif
-# ifndef WIFSIGNALED
-#    define WIFSIGNALED(stat) ((*((int *) &(stat))) & 0xC0000000)
-# endif
-# ifndef WTERMSIG
-#    define WTERMSIG(stat)    ((*((int *) &(stat))) & 0x7f)
-# endif
-# ifndef WIFSTOPPED
-#    define WIFSTOPPED(stat)  0
-# endif
-# ifndef WSTOPSIG
-#    define WSTOPSIG(stat)    (((*((int *) &(stat))) >> 8) & 0xff)
+#  ifdef __MINGW32__
+#   define WIFEXITED(w)	(((w) & 0xC0000000) == 0)
+#  else
+#   define WIFEXITED(w)	(((w) & 0377) == 0)
+#  endif
 # endif
 #else
 # include <sys/time.h>
