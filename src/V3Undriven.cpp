@@ -42,7 +42,8 @@ class UndrivenVarEntry {
     AstVar* m_varp;  // Variable this tracks
     std::vector<bool> m_wholeFlags;  // Used/Driven on whole vector
     std::vector<bool> m_bitFlags;  // Used/Driven on each subbit
-    AstNode* m_context = nullptr;
+    AstNode* m_assignment = nullptr; // The last assignment node for the whole vector
+    AstNode* m_block = nullptr; // The last block (initial, always, etc.) for the whole vector
 
     enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAG_DRIVEN_NON_Z = 2, FLAGS_PER_BIT = 3 };
 
@@ -108,8 +109,10 @@ private:
     }
 
 public:
-    void setContext(AstNode* context) { m_context = context; }
-    AstNode* getContext() { return m_context; }
+    void setBlock(AstNode* block) { m_block = block; }
+    AstNode* getBlock() { return m_block; }
+    void setAssignment(AstNode* assignment) { m_assignment = assignment; }
+    AstNode* getAssignment() { return m_assignment; }
     void usedWhole() {
         UINFO(9, "set u[*] " << m_varp->name() << endl);
         m_wholeFlags[FLAG_USED] = true;
@@ -283,8 +286,8 @@ private:
     AstNodeFTask* m_taskp = nullptr;  // Current task
     AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
     bool m_hasZ = false;  // Discovered a z in a const or a bufif node in parse tree
-    AstNode* m_context = nullptr;
-    bool m_sensesp = false;
+    AstNode* m_context = nullptr; // The current block level context (initial, always, etc.)
+    bool m_sensesp = false; // If the current block has a sense expression
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -373,7 +376,6 @@ private:
                         nodep->v3warn(MULTIDRIVERS,
                                       "Multiple assignments to wire " << varrefp->prettyNameQ());
                     }
-                    //                  nodep->dumpTree(cout, "sel: ");
                     entryp->drivenBit(lsb, nodep->width());
                     if (m_inContAssign && !m_hasZ) entryp->drivenBitNonZ(lsb, nodep->width());
                 }
@@ -420,28 +422,50 @@ private:
                     warnAlwCombOrder(nodep);
                 }
 
-                // TODO: ignore if initial and always_ff or similar
-                AstNode* context = entryp->getContext();
-                if (m_context && (m_context != context) && entryp->isDrivenNonZ()
+                // TODO: Add this to AstSel when working. Or should I?
+                AstNode* block = entryp->getBlock();
+                AstNode* assignment = entryp->getAssignment();
+                if (m_context && (m_context != block) && entryp->isDrivenNonZ()
                     && entryp->isDrivenWhole() && !ignoreMultDrivers
-                    && !(VN_IS(context, Initial) && m_sensesp) && !VN_IS(nodep, VarXRef)) {
-                    nodep->v3warn(MULTIDRIVERS,
-                                  "Multiple assignments to " << nodep->prettyNameQ());
-                }
+                    && !(VN_IS(block, Initial) && m_sensesp) && !VN_IS(nodep, VarXRef)) {
+		    if (assignment) {
+			nodep->v3warn(MULTIDRIVERS,
+				      "Multiple assignments to " << nodep->prettyNameQ() << endl
+				      << nodep->warnContextPrimary() << endl
+				      << assignment->warnOther()
+				      << "... Location of conflicting assignment.\n"
+				      << assignment->warnContextSecondary());
+		    } else {
+			nodep->v3warn(MULTIDRIVERS,
+				      "Multiple assignments to " << nodep->prettyNameQ());
+		    }
+		}
                 if (m_inContAssign && entryp->isDrivenNonZ() && entryp->isDrivenWhole()
                     && !ignoreMultDrivers
                     && !VN_IS(nodep,
                               VarXRef)) {  // Ignore interface variables
-                    nodep->v3warn(MULTIDRIVERS,
-                                  "Multiple assignments to wire " << nodep->prettyNameQ());
+		    if (assignment) {
+			nodep->v3warn(MULTIDRIVERS,
+				      "Multiple assignments to " << nodep->prettyNameQ() << endl
+				      << nodep->warnContextPrimary() << endl
+				      << assignment->warnOther()
+				      << "... Location of conflicting assignment.\n"
+				      << assignment->warnContextSecondary());
+		    } else {
+			nodep->v3warn(MULTIDRIVERS,
+				      "Multiple assignments to wire " << nodep->prettyNameQ());
+		    }
                 }
-                // nodep->dumpTree(cout, "varref: ");
                 entryp->drivenWhole();
                 if (m_context && !ignoreMultDrivers) {
-                    entryp->setContext(m_context);
+                    entryp->setBlock(m_context);
+                    entryp->setAssignment(nodep);
                     entryp->drivenNonZ();
                 }
-                if (m_inContAssign && !ignoreMultDrivers) entryp->drivenNonZ();
+                if (m_inContAssign && !ignoreMultDrivers) {
+                    entryp->setAssignment(nodep);
+		    entryp->drivenNonZ();
+		}
             }
             if (m_inBBox || !nodep->access().isWrite() || fdrv) entryp->usedWhole();
         }
@@ -460,7 +484,6 @@ private:
         VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
-            //          nodep->dumpTree(cout, "proc: ");
             iterateChildren(nodep);
         }
     }
@@ -475,7 +498,6 @@ private:
         VL_RESTORER(m_inContAssign);
         VL_RESTORER(m_hasZ);
         {
-            // nodep->dumpTree(cout, "assign: ");
             m_inContAssign = true;
             iterateChildren(nodep);
         }
