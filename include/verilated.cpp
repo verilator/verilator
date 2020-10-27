@@ -1082,9 +1082,13 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 if (obits == -1) {  // string
                     owp = nullptr;
                     if (VL_UNCOVERABLE(fmt != 's')) {
-                        VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: format other than %s is passed to string");  // LCOV_EXCL_LINE
+                        VL_FATAL_MT(
+                            __FILE__, __LINE__, "",
+                            "Internal: format other than %s is passed to string");  // LCOV_EXCL_LINE
                     }
-                } else if (obits > VL_QUADSIZE) {owp = va_arg(ap, WDataOutP);}
+                } else if (obits > VL_QUADSIZE) {
+                    owp = va_arg(ap, WDataOutP);
+                }
 
                 for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
                 switch (fmt) {
@@ -1202,7 +1206,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 if (!inIgnore) ++got;
                 // Reload data if non-wide (if wide, we put it in the right place directly)
                 if (obits == 0) {  // Due to inIgnore
-                } else if (obits == -1) { //string
+                } else if (obits == -1) {  // string
                     std::string* p = va_arg(ap, std::string*);
                     *p = tmp;
                 } else if (obits <= VL_BYTESIZE) {
