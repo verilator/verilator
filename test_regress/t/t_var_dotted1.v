@@ -10,6 +10,7 @@ module t (/*AUTOARG*/
    );
 
    // verilator lint_off MULTIDRIVEN
+   // verilator lint_off MULTIDRIVERS
 
    wire [31:0] outb0c0;
    wire [31:0] outb0c1;
