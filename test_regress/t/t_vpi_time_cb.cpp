@@ -234,7 +234,7 @@ int main(int argc, char** argv, char** env) {
         topp->eval();
         VerilatedVpi::callValueCbs();
         VerilatedVpi::callTimedCbs();
-        CHECK_RESULT(VerilatedVpi::cbNextDeadline(), main_time+1);
+        CHECK_RESULT(VerilatedVpi::cbNextDeadline(), main_time + 1);
         topp->clk = !topp->clk;
         // mon_do();
 #if VM_TRACE

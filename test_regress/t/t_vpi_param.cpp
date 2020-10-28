@@ -80,7 +80,6 @@ unsigned int main_time = 0;
 
 #define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
-
 int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verbose) {
     int vpi_type;
     TestVpiHandle param_h;
@@ -95,7 +94,9 @@ int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verb
     CHECK_RESULT_NZ(param_h);
     vpi_type = vpi_get(vpiType, param_h);
     CHECK_RESULT(vpi_type, vpiParameter);
-    if (verbose) {vpi_printf((PLI_BYTE8*)"  vpiType: %s (%d)\n", vpi_get_str(vpiType, param_h), vpi_type); }
+    if (verbose) {
+        vpi_printf((PLI_BYTE8*)"  vpiType: %s (%d)\n", vpi_get_str(vpiType, param_h), vpi_type);
+    }
 
     // attributes
     p = vpi_get_str(vpiName, param_h);
@@ -106,20 +107,28 @@ int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verb
     CHECK_RESULT_CSTR(p, "vpiParameter");
     vpi_type = vpi_get(vpiLocalParam, param_h);
     CHECK_RESULT_NZ(vpi_chk_error(&e));
-    if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
+    if (verbose && vpi_chk_error(&e)) {
+        vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
+    }
 
     // values
-    if (verbose) {vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str()); }
+    if (verbose) { vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str()); }
     value.value.integer = exp_value;
     vpi_put_value(param_h, &value, NULL, vpiNoDelay);
     CHECK_RESULT_NZ(vpi_chk_error(&e));
-    if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
+    if (verbose && vpi_chk_error(&e)) {
+        vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
+    }
 
-    if (verbose) {vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str()); }
+    if (verbose) { vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str()); }
     vpi_get_value(param_h, &value);
     CHECK_RESULT_NZ(!vpi_chk_error(&e));
-    if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
-    if (verbose) {vpi_printf((PLI_BYTE8*)"    value of %s: %d\n", name.c_str(), value.value.integer); }
+    if (verbose && vpi_chk_error(&e)) {
+        vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
+    }
+    if (verbose) {
+        vpi_printf((PLI_BYTE8*)"    value of %s: %d\n", name.c_str(), value.value.integer);
+    }
     CHECK_RESULT(value.value.integer, exp_value);
 
     return 0;
@@ -139,7 +148,9 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
     CHECK_RESULT_NZ(param_h);
     vpi_type = vpi_get(vpiType, param_h);
     CHECK_RESULT(vpi_type, vpiParameter);
-    if (verbose) {vpi_printf((PLI_BYTE8*)"  vpiType: %s (%d)\n", vpi_get_str(vpiType, param_h), vpi_type); }
+    if (verbose) {
+        vpi_printf((PLI_BYTE8*)"  vpiType: %s (%d)\n", vpi_get_str(vpiType, param_h), vpi_type);
+    }
 
     // attributes
     p = vpi_get_str(vpiName, param_h);
@@ -150,20 +161,28 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
     CHECK_RESULT_CSTR(p, "vpiParameter");
     vpi_type = vpi_get(vpiLocalParam, param_h);
     CHECK_RESULT_NZ(vpi_chk_error(&e));
-    if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
+    if (verbose && vpi_chk_error(&e)) {
+        vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
+    }
 
     // values
-    if (verbose) {vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str()); }
-    value.value.str = (PLI_BYTE8*) exp_value.c_str();
+    if (verbose) { vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str()); }
+    value.value.str = (PLI_BYTE8*)exp_value.c_str();
     vpi_put_value(param_h, &value, NULL, vpiNoDelay);
     CHECK_RESULT_NZ(vpi_chk_error(&e));
-    if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
+    if (verbose && vpi_chk_error(&e)) {
+        vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
+    }
 
-    if (verbose) {vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str()); }
+    if (verbose) { vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str()); }
     vpi_get_value(param_h, &value);
     CHECK_RESULT_NZ(!vpi_chk_error(&e));
-    if (verbose && vpi_chk_error(&e)) {vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message); }
-    if (verbose) {vpi_printf((PLI_BYTE8*)"    value of %s: %s\n", name.c_str(), value.value.str); }
+    if (verbose && vpi_chk_error(&e)) {
+        vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
+    }
+    if (verbose) {
+        vpi_printf((PLI_BYTE8*)"    value of %s: %s\n", name.c_str(), value.value.str);
+    }
     CHECK_RESULT_CSTR(value.value.str, exp_value.c_str());
 
     return 0;
@@ -213,8 +232,7 @@ static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*
 void vpi_compat_bootstrap(void) {
     p_vpi_systf_data systf_data_p;
     systf_data_p = &(vpi_systf_data[0]);
-    while (systf_data_p->type != 0)
-        vpi_register_systf(systf_data_p++);
+    while (systf_data_p->type != 0) vpi_register_systf(systf_data_p++);
 }
 
 // icarus entry

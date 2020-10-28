@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
     vluint64_t firstUsage = get_memory_usage();
 
     // Warmup phase
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; i++) {  //
         make_and_destroy();
     }
     firstUsage = get_memory_usage();
@@ -73,14 +73,15 @@ int main(int argc, char* argv[]) {
 
     int loops = 10;
     for (int left = loops; left > 0;) {
-        for (int j = 0; j < 1; ++j, --left) {
+        for (int j = 0; j < 1; ++j, --left) {  //
             make_and_destroy();
         }
     }
 
     vluint64_t leaked = get_memory_usage() - firstUsage;
     if (leaked > 64*1024) {  // Have to allow some slop for this code.
-        printf("Leaked %" VL_PRI64 "d bytes, or ~ %" VL_PRI64 "d bytes/construt\n", leaked, leaked/loops);
+        printf("Leaked %" VL_PRI64 "d bytes, or ~ %" VL_PRI64 "d bytes/construt\n",  //
+               leaked, leaked / loops);
         vl_fatal(__FILE__, __LINE__, "top", "Leaked memory\n");
     }
 

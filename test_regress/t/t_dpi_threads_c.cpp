@@ -33,8 +33,8 @@
 
 #ifdef NEED_EXTERNS
 extern "C" {
-    extern void dpii_sys_task();
-    extern int dpii_failure();
+extern void dpii_sys_task();
+extern int dpii_failure();
 }
 #endif
 
@@ -57,7 +57,8 @@ void dpii_sys_task() {
         st.failure = 1;
         std::cerr << "t_dpi_threads_c.cpp dpii_sys_task() saw threads collide.\n";
     } else {
-        std::cerr << "t_dpi_threads_c.cpp dpii_sys_task() no collision. @" << &st.task_is_running << "\n";
+        std::cerr << "t_dpi_threads_c.cpp dpii_sys_task() no collision. @" << &st.task_is_running
+                  << "\n";
     }
 
     // Spend some time in the DPI call, so that if we can have a collision

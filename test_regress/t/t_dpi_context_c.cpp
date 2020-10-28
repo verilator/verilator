@@ -35,10 +35,10 @@
 #ifdef NEED_EXTERNS
 extern "C" {
 
-    extern int dpic_line();
-    extern int dpic_save(int value);
-    extern int dpic_restore();
-    extern unsigned dpic_getcontext();
+extern int dpic_line();
+extern int dpic_save(int value);
+extern int dpic_restore();
+extern unsigned dpic_getcontext();
 }
 #endif
 
@@ -94,7 +94,8 @@ int dpic_save(int value) {
         int i;
     } vp;
 
-    vp.i = value; if (vp.i) { }
+    vp.i = value;
+    if (vp.i) {}
     if (svPutUserData(scope, &Dpic_Unique, vp.ptr)) {
         printf("%%Warning: svPutUserData failed\n");
         return 0;

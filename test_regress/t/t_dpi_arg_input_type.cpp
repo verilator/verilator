@@ -570,9 +570,7 @@ void i_union_4_state_128(CONSTARG svLogicVecVal* i) {
 
 void set_bvals(svLogicVecVal* v, unsigned n);
 void set_bvals(svLogicVecVal* v, unsigned n) {
-    for (unsigned i = 0; i < n; i++) {
-        v[i].bval = 0;
-    }
+    for (unsigned i = 0; i < n; i++) v[i].bval = 0;
 }
 
 void check_exports() {

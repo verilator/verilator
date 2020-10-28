@@ -38,29 +38,29 @@
 #ifdef NEED_EXTERNS
 
 extern "C" {
-    extern int dpix_run_tests();
+extern int dpix_run_tests();
 
-    extern int dpix_t_int(int i, int* o);
-    extern int dpix_t_renamed(int i, int* o);
+extern int dpix_t_int(int i, int* o);
+extern int dpix_t_renamed(int i, int* o);
 
-    extern int dpix_int123();
+extern int dpix_int123();
 
-    extern unsigned char dpix_f_bit(unsigned char i);
-    extern svBitVecVal   dpix_f_bit15(const svBitVecVal* i);
-    extern svBitVecVal   dpix_f_bit48(const svBitVecVal* i);
-    extern int           dpix_f_int(int i);
-    extern char          dpix_f_byte(char i);
-    extern short int     dpix_f_shortint(short int i);
-    extern long long     dpix_f_longint(long long i);
-    extern void*         dpix_f_chandle(void* i);
+extern unsigned char dpix_f_bit(unsigned char i);
+extern svBitVecVal dpix_f_bit15(const svBitVecVal* i);
+extern svBitVecVal dpix_f_bit48(const svBitVecVal* i);
+extern int dpix_f_int(int i);
+extern char dpix_f_byte(char i);
+extern short int dpix_f_shortint(short int i);
+extern long long dpix_f_longint(long long i);
+extern void* dpix_f_chandle(void* i);
 
-    extern int dpix_sub_inst(int i);
+extern int dpix_sub_inst(int i);
 
-    extern void dpix_t_reg(svLogic i, svLogic* o);
-    extern void dpix_t_reg15(const svLogicVecVal* i, svLogicVecVal* o);
-    extern void dpix_t_reg95(const svLogicVecVal* i, svLogicVecVal* o);
-    extern void dpix_t_integer(const svLogicVecVal* i, svLogicVecVal* o);
-    extern void dpix_t_time(const svLogicVecVal* i, svLogicVecVal* o);
+extern void dpix_t_reg(svLogic i, svLogic* o);
+extern void dpix_t_reg15(const svLogicVecVal* i, svLogicVecVal* o);
+extern void dpix_t_reg95(const svLogicVecVal* i, svLogicVecVal* o);
+extern void dpix_t_integer(const svLogicVecVal* i, svLogicVecVal* o);
+extern void dpix_t_time(const svLogicVecVal* i, svLogicVecVal* o);
 }
 
 #endif
@@ -115,10 +115,9 @@ int dpix_run_tests() {
 
 #ifndef CADENCE  // Unimplemented; how hard is it?
     printf("svDpiVersion: %s\n", svDpiVersion());
-    CHECK_RESULT(bool,
-                 strcmp(svDpiVersion(), "1800-2005")==0
-                 || strcmp(svDpiVersion(), "P1800-2005")==0
-                 , 1);
+    CHECK_RESULT(
+        bool,
+        strcmp(svDpiVersion(), "1800-2005") == 0 || strcmp(svDpiVersion(), "P1800-2005") == 0, 1);
 #endif
 
     CHECK_RESULT(int, dpix_int123(), 0x123);
@@ -173,7 +172,7 @@ int dpix_run_tests() {
         CHECK_RESULT(int, o_vec96[2], ~i_vec96[2]);
     }
 
-    extern void dpix_t_reg(svLogic i, svLogic* o);
+    extern void dpix_t_reg(svLogic i, svLogic * o);
     {
         svLogic i = 0;
         svLogic o;

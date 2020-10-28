@@ -23,7 +23,7 @@
 
 #ifdef NEED_EXTERNS
 extern "C" {
-    extern void dpix_task();
+extern void dpix_task();
 }
 #endif
 

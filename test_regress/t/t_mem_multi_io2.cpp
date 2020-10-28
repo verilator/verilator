@@ -61,9 +61,7 @@ int main()
     ASSIGN(i3, 13);
     for (int i = 0; i < 4; i++) {
         ASSIGN(i34[i], i);
-        for (int j = 0; j < 5; j++) {
-            ASSIGN(i345[i][j], i * 8 + j);
-        }
+        for (int j = 0; j < 5; j++) ASSIGN(i345[i][j], i * 8 + j);
     }
 
 #ifdef SYSTEMC_VERSION
@@ -75,9 +73,7 @@ int main()
     check("o3", READ(o3), 13);
     for (int i = 0; i < 4; i++) {
         check("o34", READ(o34[i]), i);
-        for (int j = 0; j < 5; j++) {
-            check("o345", READ(o345[i][j]), i * 8 + j);
-        }
+        for (int j = 0; j < 5; j++) check("o345", READ(o345[i][j]), i * 8 + j);
     }
 
     if (pass) {

@@ -30,28 +30,37 @@
 
 #ifdef NEED_EXTERNS
 extern "C" {
-    // If get ncsim: *F,NOFDPI: Function {foo} not found in default libdpi.
-    // Then probably forgot to list a function here.
+// If get ncsim: *F,NOFDPI: Function {foo} not found in default libdpi.
+// Then probably forgot to list a function here.
 
-    extern void dpii_unused(const svOpenArrayHandle u);
+extern void dpii_unused(const svOpenArrayHandle u);
 
-    extern void dpii_open_p0_u1(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_p1_u0(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_p1_u1(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_p1_u2(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_p1_u3(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_pw_u0(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_pw_u1(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_pw_u2(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_pw_u3(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
+extern void dpii_open_p0_u1(int c, int p, int u, const svOpenArrayHandle i,
+                            const svOpenArrayHandle o);
+extern void dpii_open_p1_u0(int c, int p, int u, const svOpenArrayHandle i,
+                            const svOpenArrayHandle o);
+extern void dpii_open_p1_u1(int c, int p, int u, const svOpenArrayHandle i,
+                            const svOpenArrayHandle o);
+extern void dpii_open_p1_u2(int c, int p, int u, const svOpenArrayHandle i,
+                            const svOpenArrayHandle o);
+extern void dpii_open_p1_u3(int c, int p, int u, const svOpenArrayHandle i,
+                            const svOpenArrayHandle o);
+extern void dpii_open_pw_u0(int c, int p, int u, const svOpenArrayHandle i,
+                            const svOpenArrayHandle o);
+extern void dpii_open_pw_u1(int c, int p, int u, const svOpenArrayHandle i,
+                            const svOpenArrayHandle o);
+extern void dpii_open_pw_u2(int c, int p, int u, const svOpenArrayHandle i,
+                            const svOpenArrayHandle o);
+extern void dpii_open_pw_u3(int c, int p, int u, const svOpenArrayHandle i,
+                            const svOpenArrayHandle o);
 
-    extern void dpii_open_bit(const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_byte(const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_int(const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_integer(const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_logic(const svOpenArrayHandle i, const svOpenArrayHandle o);
+extern void dpii_open_bit(const svOpenArrayHandle i, const svOpenArrayHandle o);
+extern void dpii_open_byte(const svOpenArrayHandle i, const svOpenArrayHandle o);
+extern void dpii_open_int(const svOpenArrayHandle i, const svOpenArrayHandle o);
+extern void dpii_open_integer(const svOpenArrayHandle i, const svOpenArrayHandle o);
+extern void dpii_open_logic(const svOpenArrayHandle i, const svOpenArrayHandle o);
 
-    extern int dpii_failure();
+extern int dpii_failure();
 }
 #endif
 
@@ -109,7 +118,7 @@ void dpii_unused(const svOpenArrayHandle u) {}
 
 void _dpii_all(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o) {
 #ifdef TEST_VERBOSE
-    printf("-:%s:%d: For case c=%d p=%d u=%d  data=%p\n",
+    printf("-:%s:%d: For case c=%d p=%d u=%d  data=%p\n",  //
            __FILE__, __LINE__, c, p, u, svGetArrayPtr(i));
 #endif
     (void)svGetArrayPtr(i);
@@ -238,23 +247,23 @@ void dpii_open_bit(const svOpenArrayHandle i, const svOpenArrayHandle o) {}
 
 void dpii_open_byte(const svOpenArrayHandle i, const svOpenArrayHandle o) {
     intptr_t arrPtr = (intptr_t)svGetArrayPtr(i);
-    CHECK_RESULT_HEX_NE(arrPtr, 0); // All the arrays should actually exist
+    CHECK_RESULT_HEX_NE(arrPtr, 0);  // All the arrays should actually exist
 #ifndef NC
     // NC always returns zero and warns
     int sizeInputOfArray = svSizeOfArray(i);
-    CHECK_RESULT_HEX_NE(sizeInputOfArray, 0); // None of the test cases have zero size
-    CHECK_RESULT_HEX_NE(svDimensions(i), 0); // All the test cases are unpacked arrays
+    CHECK_RESULT_HEX_NE(sizeInputOfArray, 0);  // None of the test cases have zero size
+    CHECK_RESULT_HEX_NE(svDimensions(i), 0);  // All the test cases are unpacked arrays
 #endif
 }
 
 void dpii_open_int(const svOpenArrayHandle i, const svOpenArrayHandle o) {
     intptr_t arrPtr = (intptr_t)svGetArrayPtr(i);
-    CHECK_RESULT_HEX_NE(arrPtr, 0); // All the arrays should actually exist
+    CHECK_RESULT_HEX_NE(arrPtr, 0);  // All the arrays should actually exist
 #ifndef NC
     // NC always returns zero and warns
     int sizeInputOfArray = svSizeOfArray(i);
-    CHECK_RESULT_HEX_NE(sizeInputOfArray, 0); // None of the test cases have zero size
-    CHECK_RESULT_HEX_NE(svDimensions(i), 0); // All the test cases are unpacked arrays
+    CHECK_RESULT_HEX_NE(sizeInputOfArray, 0);  // None of the test cases have zero size
+    CHECK_RESULT_HEX_NE(svDimensions(i), 0);  // All the test cases are unpacked arrays
 #endif
 }
 

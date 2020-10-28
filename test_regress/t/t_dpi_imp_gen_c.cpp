@@ -27,7 +27,7 @@
 
 #ifdef NEED_EXTERNS
 extern "C" {
-    extern void dpi_genvarTest();
+extern void dpi_genvarTest();
 }
 #endif
 

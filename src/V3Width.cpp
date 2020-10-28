@@ -1967,8 +1967,8 @@ private:
         if (m_vup->prelim()) {
             nodep->dtypeFrom(vdtypep);
             if (nodep->defaultp()) {
-                iterateCheck(nodep, "default", nodep->defaultp(), CONTEXT, FINAL, vdtypep->subDTypep(),
-                             EXTEND_EXP);
+                iterateCheck(nodep, "default", nodep->defaultp(), CONTEXT, FINAL,
+                             vdtypep->subDTypep(), EXTEND_EXP);
             }
         }
     }
@@ -3098,7 +3098,8 @@ private:
                 AstNode* valuep = patternMemberValueIterate(patp);
                 if (VN_IS(arrayDtp, UnpackArrayDType)) {
                     if (!newp) {
-                        AstInitArray* newap = new AstInitArray(nodep->fileline(), arrayDtp, nullptr);
+                        AstInitArray* newap
+                            = new AstInitArray(nodep->fileline(), arrayDtp, nullptr);
                         newp = newap;
                     }
                     VN_CAST(newp, InitArray)->addIndexValuep(ent - range.lo(), valuep);

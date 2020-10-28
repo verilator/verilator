@@ -69,9 +69,7 @@ void check_bvals(const svLogicVecVal* v, unsigned n) {
 
 void set_bvals(svLogicVecVal* v, unsigned n);
 void set_bvals(svLogicVecVal* v, unsigned n) {
-    for (unsigned i = 0; i < n; i++) {
-        v[i].bval = 0;
-    }
+    for (unsigned i = 0; i < n; i++) v[i].bval = 0;
 }
 
 // Basic types as per IEEE 1800-2017 35.5.6

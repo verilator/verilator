@@ -201,9 +201,7 @@ int main(int argc, char** argv, char** env) {
         if (tfp) tfp->dump(main_time);
 #endif
     }
-    if (!callback_count) {
-        vl_fatal(FILENM, __LINE__, "main", "%Error: never got callbacks");
-    }
+    if (!callback_count) vl_fatal(FILENM, __LINE__, "main", "%Error: never got callbacks");
     if (!Verilated::gotFinish()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }

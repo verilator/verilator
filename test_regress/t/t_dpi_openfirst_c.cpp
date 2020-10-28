@@ -28,11 +28,11 @@
 
 #ifdef NEED_EXTERNS
 extern "C" {
-    // If get ncsim: *F,NOFDPI: Function {foo} not found in default libdpi.
-    // Then probably forgot to list a function here.
+// If get ncsim: *F,NOFDPI: Function {foo} not found in default libdpi.
+// Then probably forgot to list a function here.
 
-    extern int dpii_failure();
-    extern void dpii_open_i(const svOpenArrayHandle i, const svOpenArrayHandle o);
+extern int dpii_failure();
+extern void dpii_open_i(const svOpenArrayHandle i, const svOpenArrayHandle o);
 }
 #endif
 

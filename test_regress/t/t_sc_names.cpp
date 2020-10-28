@@ -10,14 +10,12 @@ VM_PREFIX* tb = nullptr;
 
 int sc_main(int argc, char* argv[]) {
     tb = new VM_PREFIX("tb");
-    std::vector < sc_object* > ch = tb->get_child_objects();
+    std::vector<sc_object*> ch = tb->get_child_objects();
     bool found = false;
 
     /* We expect to find clk in here. */
     for (int i = 0; i < ch.size(); ++i) {
-        if (!strcmp(ch[i]->basename(), "clk")) {
-            found = true;
-        }
+        if (!strcmp(ch[i]->basename(), "clk")) found = true;
     }
 
     if (found) {

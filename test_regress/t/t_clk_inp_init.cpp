@@ -59,9 +59,7 @@ int main(int argc, char** argv, char** env) {
     // Verilated::debug(1);
 #endif
 
-    for (int seed = 123; seed < 133; ++seed) {
-        oneTest(seed);
-    }
+    for (int seed = 123; seed < 133; ++seed) oneTest(seed);
 
     return 0;
 }
