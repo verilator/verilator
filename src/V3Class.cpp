@@ -35,6 +35,7 @@ private:
     AstUser1InUse m_inuser1;
     string m_prefix;  // String prefix to add to name based on hier
     AstScope* m_classScopep = nullptr;  // Package moving scopes into
+    AstScope* m_packageScopep = nullptr;  // Class package scope
     typedef std::vector<std::pair<AstNode*, AstScope*>> MoveVector;
     MoveVector m_moves;
 
@@ -78,10 +79,12 @@ private:
         VL_RESTORER(m_prefix);
         {
             m_classScopep = classScopep;
+            m_packageScopep = scopep;
             m_prefix = nodep->name() + "__02e";  // .
             iterateChildren(nodep);
         }
         m_classScopep = nullptr;
+        m_packageScopep = nullptr;
     }
     virtual void visit(AstPackage* nodep) override {
         VL_RESTORER(m_prefix);
@@ -99,6 +102,12 @@ private:
         //    m_moves.push_back(make_pair(nodep, m_classScopep));
         //}
     }
+
+    virtual void visit(AstNodeFTask* nodep) override {
+        iterateChildren(nodep);
+        if (nodep->lifetime().isStatic()) { m_moves.push_back(make_pair(nodep, m_packageScopep)); }
+    }
+
     virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Don't move now, or wouldn't keep interating the class
@@ -117,7 +126,11 @@ public:
     explicit ClassVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~ClassVisitor() override {
         for (MoveVector::iterator it = m_moves.begin(); it != m_moves.end(); ++it) {
-            it->second->addVarp(it->first->unlinkFrBack());
+            if (VN_IS(it->first, NodeFTask)) {
+                it->second->addActivep(it->first->unlinkFrBack());
+            } else {
+                it->second->addVarp(it->first->unlinkFrBack());
+            }
         }
     }
 };

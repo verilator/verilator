@@ -2433,9 +2433,9 @@ private:
             if (cpackagerefp->paramsp()) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
             }
-            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->packagep(),
+            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->classOrPackagep(),
                         m_ds.m_dotp->lhsp(), "Bad package link");
-            nodep->packagep(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->packagep());
+            nodep->packagep(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->classOrPackagep());
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = nullptr;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
@@ -2642,9 +2642,6 @@ private:
     virtual void visit(AstNodeFTask* nodep) override {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
-        if (nodep->classMethod() && nodep->lifetime().isStatic()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' class method");
-        }
         if (nodep->isExternDef()) {
             if (!m_curSymp->findIdFallback("extern " + nodep->name())) {
                 nodep->v3error("extern not found that declares " + nodep->prettyNameQ());
