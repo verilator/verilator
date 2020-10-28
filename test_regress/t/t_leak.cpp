@@ -30,13 +30,12 @@ long long get_memory_usage() {
 
     int ps_ign;
     vluint64_t ps_vsize, ps_rss;
-    int items = fscanf(fp, ("%d (%*[^) ]) %*1s %d %*d %*d %*d %*d %u"
-                            " %u %u %u %u %d %d %d %d"
-                            " %*d %*d %*u %*u %d %" VL_PRI64 "u %" VL_PRI64 "u "),
-                       &ps_ign, &ps_ign, &ps_ign,
-                       &ps_ign, &ps_ign, &ps_ign, &ps_ign,
-                       &ps_ign, &ps_ign, &ps_ign, &ps_ign,
-                       &ps_ign, &ps_vsize, &ps_rss);
+    int items = fscanf(fp,
+                       ("%d (%*[^) ]) %*1s %d %*d %*d %*d %*d %u"
+                        " %u %u %u %u %d %d %d %d"
+                        " %*d %*d %*u %*u %d %" VL_PRI64 "u %" VL_PRI64 "u "),
+                       &ps_ign, &ps_ign, &ps_ign, &ps_ign, &ps_ign, &ps_ign, &ps_ign, &ps_ign,
+                       &ps_ign, &ps_ign, &ps_ign, &ps_ign, &ps_vsize, &ps_rss);
     fclose(fp);
     if (items >= 14) {
         return ps_vsize;
@@ -79,7 +78,7 @@ int main(int argc, char* argv[]) {
     }
 
     vluint64_t leaked = get_memory_usage() - firstUsage;
-    if (leaked > 64*1024) {  // Have to allow some slop for this code.
+    if (leaked > 64 * 1024) {  // Have to allow some slop for this code.
         printf("Leaked %" VL_PRI64 "d bytes, or ~ %" VL_PRI64 "d bytes/construt\n",  //
                leaked, leaked / loops);
         vl_fatal(__FILE__, __LINE__, "top", "Leaked memory\n");

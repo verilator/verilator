@@ -48,15 +48,17 @@ int main()
 #endif
 
     // loop through every possibility and check the result
+// clang-format off
 #ifdef SYSTEMC_VERSION
     sc_start(1, SC_NS);
-#  define ASSIGN(s,v) s.write(v)
-#  define READ(s) s.read()
+# define ASSIGN(s, v) s.write(v)
+# define READ(s) s.read()
 #else
     tb->eval();
-#  define ASSIGN(s,v) tb->s = (v)
-#  define READ(s) tb->s
+# define ASSIGN(s, v) tb->s = (v)
+# define READ(s) tb->s
 #endif
+    // clang-format on
 
     ASSIGN(i3, 13);
     for (int i = 0; i < 4; i++) {

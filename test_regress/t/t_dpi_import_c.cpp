@@ -15,6 +15,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # include "Vt_dpi_import__Dpi.h"
 #elif defined(VCS)
@@ -24,6 +25,7 @@
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 typedef struct {
     int a;

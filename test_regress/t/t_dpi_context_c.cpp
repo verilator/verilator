@@ -14,6 +14,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # ifdef T_DPI_CONTEXT_NOOPT
 #  include "Vt_dpi_context_noopt__Dpi.h"
@@ -31,6 +32,7 @@
 #ifdef VERILATOR
 # include "verilated.h"
 #endif
+// clang-format on
 
 #ifdef NEED_EXTERNS
 extern "C" {
@@ -126,7 +128,7 @@ int dpic_restore() {
 
 unsigned dpic_getcontext() {
     svScope scope = svGetScope();
-    printf("%%Info: svGetScope returned scope (%p) with name %s\n",
+    printf("%%Info: svGetScope returned scope (%p) with name %s\n",  //
            scope, svGetNameFromScope(scope));
     return (unsigned)(uintptr_t)scope;
 }

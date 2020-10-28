@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 
+// clang-format off
 #if defined(NCSC)
 // Used by NC's svdpi.h to pick up svLogicVecVal with _.aval and _.bval fields,
 // rather than the IEEE 1800-2005 version which has _.a and _.b fields.
@@ -46,6 +47,7 @@ typedef uint64_t sv_longint_unsigned_t;
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 //======================================================================
 // Implementations of imported functions

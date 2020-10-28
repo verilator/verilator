@@ -15,6 +15,7 @@
 
 #include "svdpi.h"
 
+// clang-format off
 #if defined(VERILATOR)  // Verilator
 # include "Vt_dpi_result_type__Dpi.h"
 typedef long long sv_longint_t;
@@ -41,6 +42,7 @@ typedef uint64_t sv_longint_unsigned_t;
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 //======================================================================
 // Implementations of imported functions

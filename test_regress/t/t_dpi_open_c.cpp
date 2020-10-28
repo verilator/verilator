@@ -16,6 +16,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # include "Vt_dpi_open__Dpi.h"
 #elif defined(VCS)
@@ -27,6 +28,7 @@
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 #ifdef NEED_EXTERNS
 extern "C" {
@@ -90,11 +92,13 @@ extern int dpii_failure();
 int failure = 0;
 int dpii_failure() { return failure; }
 
+// clang-format off
 #ifdef _WIN32
 # define T_PRI64 "I64"
 #else  // Linux or compliant Unix flavors
 # define T_PRI64 "ll"
 #endif
+// clang-format on
 
 #define CHECK_RESULT_HEX(got, exp) \
     do { \

@@ -13,6 +13,7 @@
 #include <cstring>
 #include "svdpi.h"
 
+// clang-format off
 #ifdef _WIN32
 # define T_PRI64 "I64"
 #else  // Linux or compliant Unix flavors
@@ -34,6 +35,7 @@
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 #ifdef NEED_EXTERNS
 
@@ -67,6 +69,7 @@ extern void dpix_t_time(const svLogicVecVal* i, svLogicVecVal* o);
 
 //======================================================================
 
+// clang-format off
 #define CHECK_RESULT(type, got, exp)            \
     if ((got) != (exp)) {                       \
         printf("%%Error: %s:%d:", __FILE__, __LINE__); \
@@ -77,6 +80,7 @@ extern void dpix_t_time(const svLogicVecVal* i, svLogicVecVal* o);
         printf("  EXP = %" T_PRI64 "x\n", u.l); \
         return __LINE__; \
     }
+// clang-format on
 #define CHECK_RESULT_NNULL(got) \
     if (!(got)) { \
         printf("%%Error: %s:%d: GOT = %p   EXP = !NULL\n", __FILE__, __LINE__, (got)); \
@@ -107,9 +111,9 @@ int dpix_run_tests() {
 #ifdef VERILATOR
     static int didDump = 0;
     if (didDump++ == 0) {
-# ifdef TEST_VERBOSE
+#ifdef TEST_VERBOSE
         Verilated::internalsDump();
-# endif
+#endif
     }
 #endif
 
@@ -183,7 +187,9 @@ int dpix_run_tests() {
         CHECK_RESULT(svLogic, o, 0);
     }
     {
-        svLogicVecVal i[1]; i[0].aval = 0x12; i[0].bval = 0;
+        svLogicVecVal i[1];
+        i[0].aval = 0x12;
+        i[0].bval = 0;
         svLogicVecVal o[1];
         dpix_t_reg15(i, o);
         CHECK_RESULT(int, o[0].aval, (~i[0].aval) & 0x7fff);
@@ -191,9 +197,12 @@ int dpix_run_tests() {
     }
     {
         svLogicVecVal i[3];
-        i[0].aval = 0x72912312; i[0].bval = 0;
-        i[1].aval = 0xab782a12; i[1].bval = 0;
-        i[2].aval = 0x8a413bd9; i[2].bval = 0;
+        i[0].aval = 0x72912312;
+        i[0].bval = 0;
+        i[1].aval = 0xab782a12;
+        i[1].bval = 0;
+        i[2].aval = 0x8a413bd9;
+        i[2].bval = 0;
         svLogicVecVal o[3];
         dpix_t_reg95(i, o);
         CHECK_RESULT(int, o[0].aval, ~i[0].aval);
@@ -206,8 +215,10 @@ int dpix_run_tests() {
 #if !defined(VCS) && !defined(CADENCE)
     {
         svLogicVecVal i[2];
-        i[0].aval = 0x72912312; i[0].bval = 0;
-        i[1].aval = 0xab782a12; i[1].bval = 0;
+        i[0].aval = 0x72912312;
+        i[0].bval = 0;
+        i[1].aval = 0xab782a12;
+        i[1].bval = 0;
         svLogicVecVal o[2];
         dpix_t_time(i, o);
         CHECK_RESULT(int, o[0].aval, ~i[0].aval);

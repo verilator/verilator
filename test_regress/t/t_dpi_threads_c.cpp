@@ -17,6 +17,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # ifdef T_DPI_THREADS_COLLIDE
 #  include "Vt_dpi_threads_collide__Dpi.h"
@@ -30,6 +31,7 @@
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 #ifdef NEED_EXTERNS
 extern "C" {

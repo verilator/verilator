@@ -14,6 +14,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # include "Vt_dpi_display__Dpi.h"
 #elif defined(VCS)
@@ -23,6 +24,7 @@
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 #ifdef NEED_EXTERNS
 extern "C" {
@@ -31,12 +33,12 @@ extern void dpii_display_call(const char* c);
 }
 #endif
 
+// clang-format off
 #ifndef VL_PRINTF
 # define VL_PRINTF printf
 #endif
+// clang-format on
 
 //======================================================================
 
-void dpii_display_call(const char* c) {
-    VL_PRINTF("dpii_display_call: '%s'\n", c);
-}
+void dpii_display_call(const char* c) { VL_PRINTF("dpii_display_call: '%s'\n", c); }

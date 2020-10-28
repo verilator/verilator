@@ -14,6 +14,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # include "Vt_flag_ldflags__Dpi.h"
 #else
@@ -28,5 +29,6 @@
 #ifndef CFLAGS2_FROM_CMDLINE
 # error "CFLAGS2_FROM_CMDLINE not set - not passed down?"
 #endif
+// clang-format on
 
 void dpii_c_library() {}
