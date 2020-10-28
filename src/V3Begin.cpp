@@ -69,6 +69,11 @@ private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
+    string dot(const string& a, const string& b) {
+        if (a == "") return b;
+        return a + "__DOT__" + b;
+    }
+
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -81,7 +86,7 @@ private:
         UINFO(8, "  " << nodep << endl);
         // Rename it
         if (m_unnamedScope != "") {
-            nodep->name(m_unnamedScope + "__DOT__" + nodep->name());
+            nodep->name(dot(m_unnamedScope, nodep->name()));
             UINFO(8, "     rename to " << nodep->name() << endl);
             m_statep->userMarkChanged(nodep);
         }
@@ -103,8 +108,8 @@ private:
     virtual void visit(AstBegin* nodep) override {
         // Begin blocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep << endl);
-        string oldScope = m_namedScope;
-        string oldUnnamed = m_unnamedScope;
+        VL_RESTORER(m_namedScope);
+        VL_RESTORER(m_unnamedScope);
         {
             UINFO(8, "nname " << m_namedScope << endl);
             if (nodep->name() != "") {  // Else unneeded unnamed block
@@ -114,18 +119,8 @@ private:
                 while ((pos = dottedname.find("__DOT__")) != string::npos) {
                     string ident = dottedname.substr(0, pos);
                     dottedname = dottedname.substr(pos + strlen("__DOT__"));
-                    if (nodep->name() != "") {
-                        if (m_namedScope == "") {
-                            m_namedScope = ident;
-                        } else {
-                            m_namedScope = m_namedScope + "__DOT__" + ident;
-                        }
-                    }
-                    if (m_unnamedScope == "") {
-                        m_unnamedScope = ident;
-                    } else {
-                        m_unnamedScope = m_unnamedScope + "__DOT__" + ident;
-                    }
+                    if (nodep->name() != "") m_namedScope = dot(m_namedScope, ident);
+                    m_unnamedScope = dot(m_unnamedScope, ident);
                     // Create CellInline for dotted var resolution
                     if (!m_ftaskp) {
                         AstCellInline* inlinep = new AstCellInline(
@@ -138,31 +133,29 @@ private:
             // Remap var names and replace lower Begins
             iterateAndNextNull(nodep->stmtsp());
             UASSERT_OBJ(!nodep->genforp(), nodep, "GENFORs should have been expanded earlier");
-        }
-        m_namedScope = oldScope;
-        m_unnamedScope = oldUnnamed;
 
-        // Cleanup
-        AstNode* addsp = nullptr;
-        if (AstNode* stmtsp = nodep->stmtsp()) {
-            stmtsp->unlinkFrBackWithNext();
-            if (addsp) {
-                addsp = addsp->addNextNull(stmtsp);
-            } else {
-                addsp = stmtsp;
+            // Cleanup
+            AstNode* addsp = nullptr;
+            if (AstNode* stmtsp = nodep->stmtsp()) {
+                stmtsp->unlinkFrBackWithNext();
+                if (addsp) {
+                    addsp = addsp->addNextNull(stmtsp);
+                } else {
+                    addsp = stmtsp;
+                }
             }
+            if (addsp) {
+                nodep->replaceWith(addsp);
+            } else {
+                nodep->unlinkFrBack();
+            }
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
-        if (addsp) {
-            nodep->replaceWith(addsp);
-        } else {
-            nodep->unlinkFrBack();
-        }
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     virtual void visit(AstVar* nodep) override {
         if (m_unnamedScope != "") {
             // Rename it
-            nodep->name(m_unnamedScope + "__DOT__" + nodep->name());
+            nodep->name(dot(m_unnamedScope, nodep->name()));
             m_statep->userMarkChanged(nodep);
             // Move to module
             nodep->unlinkFrBack();
@@ -176,7 +169,7 @@ private:
     virtual void visit(AstTypedef* nodep) override {
         if (m_unnamedScope != "") {
             // Rename it
-            nodep->name(m_unnamedScope + "__DOT__" + nodep->name());
+            nodep->name(dot(m_unnamedScope, nodep->name()));
             m_statep->userMarkChanged(nodep);
             // Move to module
             nodep->unlinkFrBack();
@@ -193,7 +186,7 @@ private:
         if (m_namedScope != "") {
             m_statep->userMarkChanged(nodep);
             // Rename it
-            nodep->name(m_namedScope + "__DOT__" + nodep->name());
+            nodep->name(dot(m_namedScope, nodep->name()));
             UINFO(8, "     rename to " << nodep->name() << endl);
             // Move to module
             nodep->unlinkFrBack();
