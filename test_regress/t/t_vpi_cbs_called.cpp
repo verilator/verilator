@@ -45,6 +45,7 @@ std::vector<CallbackState>::const_iterator state_iter;
 
 vpiHandle vh_test_cb = 0;
 unsigned int main_time = 0;
+bool got_error = false;
 
 #ifdef TEST_VERBOSE
 bool verbose = true;
@@ -55,6 +56,7 @@ bool verbose = false;
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
         printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", __FILE__, __LINE__); \
+        got_error = true; \
         return __LINE__; \
     }
 
@@ -63,6 +65,7 @@ bool verbose = false;
     if ((got) != (exp)) { \
         std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
                   << "   EXP = " << (exp) << std::endl; \
+        got_error = true; \
         return __LINE__; \
     }
 
@@ -188,6 +191,7 @@ static int test_callbacks(p_cb_data cb_data) {
     }
 
     int ret = register_cb(next_state);
+    if (ret) { return ret; }
 
     // Update iterators for next loop
     ++state_iter;
@@ -218,7 +222,7 @@ static int test_callbacks(p_cb_data cb_data) {
     return ret;
 }
 
-void register_test_callback() {
+static int register_test_callback() {
     t_cb_data cb_data;
     bzero(&cb_data, sizeof(cb_data));
     s_vpi_time t1;
@@ -231,10 +235,13 @@ void register_test_callback() {
     t1.low = 1;
     cb_data.time = &t1;
     cb_data.cb_rtn = test_callbacks;
-    vpi_register_cb(&cb_data);
+    vh_test_cb = vpi_register_cb(&cb_data);
+    CHECK_RESULT_NZ(vh_test_cb);
 
     cb_iter = cbs_to_test.cbegin();
     state_iter = cb_states.cbegin();
+
+    return 0;
 }
 
 double sc_time_stamp() { return main_time; }
@@ -279,10 +286,14 @@ int main(int argc, char** argv, char** env) {
         VerilatedVpi::callTimedCbs();
 
         main_time = VerilatedVpi::cbNextDeadline();
-        if (main_time == -1) {
+        if (main_time == -1 && !Verilated::gotFinish()) {
             if (verbose) { VL_PRINTF("-- { Sim Time %d , No more testcases } --\n", main_time); }
-            VL_PRINTF("*-* All Finished *-*\n");
-            Verilated::gotFinish(true);
+            if (got_error) {
+                vl_stop(__FILE__, __LINE__, "TOP-cpp");
+            } else {
+                VL_PRINTF("*-* All Finished *-*\n");
+                Verilated::gotFinish(true);
+            }
         }
 
         // Count updates on rising edge, so cycle through falling edge as well
