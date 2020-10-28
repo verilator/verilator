@@ -2066,12 +2066,7 @@ private:
                             "Bad package link");
                 AstClassOrPackageRef* cpackagerefp
                     = VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
-                packagep = cpackagerefp->packagep();
-                if (!packagep && cpackagerefp->classOrPackagep()) {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: Class '::' references: "
-                                      << AstNode::prettyNameQ(cpackagerefp->name()));
-                }
+                packagep = cpackagerefp->classOrPackagep();
                 UASSERT_OBJ(packagep, m_ds.m_dotp->lhsp(), "Bad package link");
                 m_ds.m_dotSymp = m_statep->getNodeSym(packagep);
                 m_ds.m_dotPos = DP_SCOPE;
