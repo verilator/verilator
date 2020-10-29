@@ -2732,7 +2732,7 @@ private:
                 if (cpackagerefp->packagep()) {
                     nodep->packagep(cpackagerefp->packagep());
                 } else {
-                    cpackagep->v3warn(E_UNSUPPORTED, "Unsupported: Class '::' reference");
+                    nodep->packagep(cpackagerefp->classOrPackagep());
                     // if (cpackagerefp->paramsp()) {
                     //    nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
                     // }

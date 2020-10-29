@@ -18,11 +18,14 @@ endclass : Cls
    Cls c;
    Cls d;
 
+   Cls::enum_t e;
+
    initial begin
       // Alternate between two versions to make sure we don't
       // constant propagate between them.
       c = new;
       d = new;
+      e = Cls::ENUM_VAL;
       c.imembera = 10;
       d.imembera = 11;
       c.imemberb = 20;
@@ -34,6 +37,8 @@ endclass : Cls
       if (Pkg::ENUMP_VAL != 33) $stop;
       if (Cls::ENUM_VAL != 22) $stop;
       if (c.ENUM_VAL != 22) $stop;
+      if (e != Cls::ENUM_VAL) $stop;
+      if (e != 22) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end
