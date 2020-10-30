@@ -892,10 +892,13 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
 
                 AstIfaceRefDType* pinIrefp = nullptr;
                 AstNode* exprp = pinp->exprp();
-                if (exprp && VN_IS(exprp, VarRef) && VN_CAST(exprp, VarRef)->varp()
-                    && VN_CAST(exprp, VarRef)->varp()->subDTypep()
-                    && VN_IS(VN_CAST(exprp, VarRef)->varp()->subDTypep(), IfaceRefDType)) {
-                    pinIrefp = VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(), IfaceRefDType);
+                AstVar* varp
+                    = (exprp && VN_IS(exprp, VarRef)) ? VN_CAST(exprp, VarRef)->varp() : nullptr;
+                if (varp && varp->subDTypep() && VN_IS(varp->subDTypep(), IfaceRefDType)) {
+                    pinIrefp = VN_CAST(varp->subDTypep(), IfaceRefDType);
+                } else if (varp && varp->subDTypep() && arraySubDTypep(varp->subDTypep())
+                           && VN_CAST(arraySubDTypep(varp->subDTypep()), IfaceRefDType)) {
+                    pinIrefp = VN_CAST(arraySubDTypep(varp->subDTypep()), IfaceRefDType);
                 } else if (exprp && exprp->op1p() && VN_IS(exprp->op1p(), VarRef)
                            && VN_CAST(exprp->op1p(), VarRef)->varp()
                            && VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()
@@ -906,13 +909,6 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
                     pinIrefp = VN_CAST(
                         arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()),
                         IfaceRefDType);
-                } else if (exprp && VN_IS(exprp, VarRef) && VN_CAST(exprp, VarRef)->varp()
-                           && VN_CAST(exprp, VarRef)->varp()->subDTypep()
-                           && arraySubDTypep(VN_CAST(exprp, VarRef)->varp()->subDTypep())
-                           && VN_CAST(arraySubDTypep(VN_CAST(exprp, VarRef)->varp()->subDTypep()),
-                                      IfaceRefDType)) {
-                    pinIrefp = VN_CAST(arraySubDTypep(VN_CAST(exprp, VarRef)->varp()->subDTypep()),
-                                       IfaceRefDType);
                 }
 
                 UINFO(9, "     portIfaceRef " << portIrefp << endl);

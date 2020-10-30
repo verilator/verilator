@@ -108,12 +108,6 @@ public:
         return varp->isParam();
     }
 };
-class LinkNodeMatcherVarOrScope : public VNodeMatcher {
-public:
-    virtual bool nodeMatch(const AstNode* nodep) const override {
-        return VN_IS(nodep, Var) || VN_IS(nodep, Scope);
-    }
-};
 
 //######################################################################
 // LinkDot state, as a visitor of each AstNode
@@ -1718,7 +1712,7 @@ private:
         VSymEnt* m_dotSymp;  // SymEnt for dotted AstParse lookup
         AstDot* m_dotp;  // Current dot
         bool m_unresolved;  // Unresolved, needs help from V3Param
-        AstNode* m_unlinkedScope;  // Unresolved scope, needs corresponding VarXRef
+        AstNode* m_unlinkedScopep;  // Unresolved scope, needs corresponding VarXRef
         bool m_dotErr;  // Error found in dotted resolution, ignore upwards
         string m_dotText;  // String of dotted names found in below parseref
         DotStates() { init(nullptr); }
@@ -1730,7 +1724,7 @@ private:
             m_dotErr = false;
             m_dotText = "";
             m_unresolved = false;
-            m_unlinkedScope = nullptr;
+            m_unlinkedScopep = nullptr;
         }
         string ascii() const {
             static const char* const names[] = {"NONE", "PACKAGE", "SCOPE", "FINAL", "MEMBER"};
@@ -1983,7 +1977,7 @@ private:
             }
             if (m_ds.m_unresolved
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
-                m_ds.m_unlinkedScope = nodep->lhsp();
+                m_ds.m_unlinkedScopep = nodep->lhsp();
             }
             if (!m_ds.m_dotErr) {  // Once something wrong, give up
                 // Top 'final' dot RHS is final RHS, else it's a
@@ -2173,19 +2167,19 @@ private:
                             varp->attrSplitVar(false);
                         }
                         m_ds.m_dotText = "";
-                        if (m_ds.m_unresolved && m_ds.m_unlinkedScope) {
+                        if (m_ds.m_unresolved && m_ds.m_unlinkedScopep) {
                             string dotted = refp->dotted();
                             size_t pos = dotted.find("__BRA__??__KET__");
                             // Arrays of interfaces all have the same parameters
                             if (pos != string::npos && varp->isParam()
-                                && VN_IS(m_ds.m_unlinkedScope, CellArrayRef)) {
+                                && VN_IS(m_ds.m_unlinkedScopep, CellArrayRef)) {
                                 refp->dotted(dotted.substr(0, pos));
                                 newp = refp;
                             } else {
                                 newp = new AstUnlinkedRef(nodep->fileline(),
                                                           VN_CAST(refp, VarXRef), refp->name(),
-                                                          m_ds.m_unlinkedScope->unlinkFrBack());
-                                m_ds.m_unlinkedScope = nullptr;
+                                                          m_ds.m_unlinkedScopep->unlinkFrBack());
+                                m_ds.m_unlinkedScopep = nullptr;
                                 m_ds.m_unresolved = false;
                             }
                         } else {
@@ -2439,12 +2433,12 @@ private:
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = nullptr;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
-            if (m_ds.m_unresolved && m_ds.m_unlinkedScope) {
+            if (m_ds.m_unresolved && m_ds.m_unlinkedScopep) {
                 AstNodeFTaskRef* newftaskp = nodep->cloneTree(false);
                 newftaskp->dotted(m_ds.m_dotText);
                 AstNode* newp = new AstUnlinkedRef(nodep->fileline(), newftaskp, nodep->name(),
-                                                   m_ds.m_unlinkedScope->unlinkFrBack());
-                m_ds.m_unlinkedScope = nullptr;
+                                                   m_ds.m_unlinkedScopep->unlinkFrBack());
+                m_ds.m_unlinkedScopep = nullptr;
                 m_ds.m_unresolved = false;
                 nodep->replaceWith(newp);
                 return;

@@ -278,8 +278,7 @@ private:
                         = VN_CAST(arrdtype->subDTypep(), IfaceRefDType);
                     origIfaceRefp->cellp(nullptr);
                     AstVar* varNewp = ifaceVarp->cloneTree(false);
-                    AstIfaceRefDType* ifaceRefp
-                        = VN_CAST(arrdtype->subDTypep(), IfaceRefDType)->cloneTree(false);
+                    AstIfaceRefDType* ifaceRefp = origIfaceRefp->cloneTree(false);
                     arrdtype->addNextHere(ifaceRefp);
                     ifaceRefp->cellp(newp);
                     ifaceRefp->cellName(newp->name());
