@@ -36,8 +36,11 @@ private:
     string m_prefix;  // String prefix to add to name based on hier
     AstScope* m_classScopep = nullptr;  // Package moving scopes into
     AstScope* m_packageScopep = nullptr;  // Class package scope
+    AstNodeFTask* m_ftaskp = nullptr;  // Current task
     typedef std::vector<std::pair<AstNode*, AstScope*>> MoveVector;
     MoveVector m_moves;
+    typedef std::map<AstNode*, AstVarScope*> VarToScopeMap;
+    VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
 
     // NODE STATE
     //  AstClass::user1()       -> bool.  True if iterated already
@@ -97,15 +100,22 @@ private:
     virtual void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         // Don't move now, or wouldn't keep interating the class
-        // TODO move class statics only
-        // if (m_classScopep) {
-        //    m_moves.push_back(make_pair(nodep, m_classScopep));
-        //}
+        // TODO move class statics too
+        if (m_ftaskp && m_ftaskp->lifetime().isStatic()) {
+            m_moves.push_back(make_pair(nodep, m_packageScopep));
+        }
+    }
+
+    virtual void visit(AstVarScope* nodep) override {
+        iterateChildren(nodep);
+        m_varToScopeMap.insert(make_pair(nodep->varp(), nodep));
     }
 
     virtual void visit(AstNodeFTask* nodep) override {
+        m_ftaskp = nodep;
         iterateChildren(nodep);
         if (nodep->lifetime().isStatic()) { m_moves.push_back(make_pair(nodep, m_packageScopep)); }
+        m_ftaskp = nullptr;
     }
 
     virtual void visit(AstCFunc* nodep) override {
@@ -128,8 +138,9 @@ public:
         for (MoveVector::iterator it = m_moves.begin(); it != m_moves.end(); ++it) {
             if (VN_IS(it->first, NodeFTask)) {
                 it->second->addActivep(it->first->unlinkFrBack());
-            } else {
-                it->second->addVarp(it->first->unlinkFrBack());
+            } else if (VN_IS(it->first, Var)) {
+                AstVarScope* scopep = m_varToScopeMap.at(it->first);
+                it->second->addVarp(scopep->unlinkFrBack());
             }
         }
     }
