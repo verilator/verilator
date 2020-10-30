@@ -181,8 +181,7 @@ public:
     T_Value& at(const T_Key& index) {
         const auto it = m_map.find(index);
         if (it == m_map.end()) {
-            std::pair<typename Map::iterator, bool> pit
-                = m_map.insert(std::make_pair(index, m_defaultValue));
+            const auto pit = m_map.insert(std::make_pair(index, m_defaultValue));
             return pit.first->second;
         }
         return it->second;

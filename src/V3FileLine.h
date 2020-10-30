@@ -39,7 +39,7 @@ class FileLine;
 //! source file (each with its own unique filename number).
 class FileLineSingleton {
     // TYPES
-    typedef std::map<string, int> FileNameNumMap;
+    typedef std::map<const string, int> FileNameNumMap;
     // MEMBERS
     FileNameNumMap m_namemap;  // filenameno for each filename
     std::deque<string> m_names;  // filename text for each filenameno

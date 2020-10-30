@@ -93,7 +93,7 @@ public:
 class VlcPoints {
 private:
     // MEMBERS
-    typedef std::map<string, vluint64_t> NameMap;  // Sorted by name (ordered)
+    typedef std::map<const string, vluint64_t> NameMap;  // Sorted by name (ordered)
     NameMap m_nameMap;  //< Name to point-number
     std::vector<VlcPoint> m_points;  //< List of all points
     vluint64_t m_numPoints = 0;  //< Total unique points

@@ -68,8 +68,8 @@
 class ParameterizedHierBlocks {
     typedef std::multimap<string, const V3HierarchicalBlockOption*> HierBlockOptsByOrigName;
     typedef HierBlockOptsByOrigName::const_iterator HierMapIt;
-    typedef std::map<string, AstNodeModule*> HierBlockModMap;
-    typedef std::map<string, AstConst*> ParamConstMap;
+    typedef std::map<const string, AstNodeModule*> HierBlockModMap;
+    typedef std::map<const string, AstConst*> ParamConstMap;
     typedef std::map<const V3HierarchicalBlockOption*, ParamConstMap> ParamsMap;
 
     // MEMBERS
@@ -218,17 +218,17 @@ private:
     typedef std::deque<std::pair<AstIfaceRefDType*, AstIfaceRefDType*>> IfaceRefRefs;
 
     // STATE
-    typedef std::map<AstNode*, AstNode*> CloneMap;
+    typedef std::map<const AstNode*, AstNode*> CloneMap;
     struct ModInfo {
         AstNodeModule* m_modp;  // Module with specified name
         CloneMap m_cloneMap;  // Map of old-varp -> new cloned varp
         explicit ModInfo(AstNodeModule* modp)
             : m_modp{modp} {}
     };
-    typedef std::map<string, ModInfo> ModNameMap;
+    typedef std::map<const string, ModInfo> ModNameMap;
     ModNameMap m_modNameMap;  // Hash of created module flavors by name
 
-    typedef std::map<string, string> LongMap;
+    typedef std::map<const string, string> LongMap;
     LongMap m_longMap;  // Hash of very long names to unique identity number
     int m_longId = 0;
 
@@ -237,7 +237,7 @@ private:
     V3StringSet m_allModuleNames;
 
     typedef std::pair<int, string> ValueMapValue;
-    typedef std::map<V3Hash, ValueMapValue> ValueMap;
+    typedef std::map<const V3Hash, ValueMapValue> ValueMap;
     ValueMap m_valueMap;  // Hash of node hash to (param value, name)
     int m_nextValue = 1;  // Next value to use in m_valueMap
 
@@ -370,7 +370,7 @@ private:
         }
     }
     void relinkPinsByName(AstPin* startpinp, AstNodeModule* modp) {
-        std::map<string, AstVar*> nameToPin;
+        std::map<const string, AstVar*> nameToPin;
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* varp = VN_CAST(stmtp, Var)) {
                 if (varp->isIO() || varp->isGParam() || varp->isIfaceRef()) {

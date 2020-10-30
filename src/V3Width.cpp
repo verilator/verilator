@@ -191,7 +191,7 @@ public:
 class WidthVisitor : public AstNVisitor {
 private:
     // TYPES
-    typedef std::map<std::pair<AstNodeDType*, AstAttrType>, AstVar*> TableMap;
+    typedef std::map<std::pair<const AstNodeDType*, AstAttrType>, AstVar*> TableMap;
     typedef std::map<int, AstPatMember*> PatVecMap;
 
     // STATE
@@ -1880,7 +1880,7 @@ private:
         // Assign missing values
         V3Number num(nodep, nodep->width(), 0);
         V3Number one(nodep, nodep->width(), 1);
-        std::map<V3Number, AstEnumItem*> inits;
+        std::map<const V3Number, AstEnumItem*> inits;
         for (AstEnumItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_CAST(itemp->nextp(), EnumItem)) {
             if (itemp->valuep()) {
@@ -2982,7 +2982,7 @@ private:
         // which member each AstPatMember corresponds to before we can
         // determine the dtypep for that PatMember's value, and then
         // width the initial value appropriately.
-        typedef std::map<AstMemberDType*, AstPatMember*> PatMap;
+        typedef std::map<const AstMemberDType*, AstPatMember*> PatMap;
         PatMap patmap;
         {
             AstMemberDType* memp = vdtypep->membersp();

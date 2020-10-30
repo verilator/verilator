@@ -108,7 +108,7 @@ public:
 class V3PreProcImp : public V3PreProc {
 public:
     // TYPES
-    typedef std::map<string, VDefine> DefinesMap;
+    typedef std::map<const string, VDefine> DefinesMap;
     typedef VInFilter::StrList StrList;
 
     // debug() -> see V3PreShellImp::debug; use --debugi-V3PreShell
@@ -585,7 +585,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
     string value = defValue(refp->name());
     UINFO(4, "defineValue    '" << V3PreLex::cleanDbgStrg(value) << "'" << endl);
 
-    std::map<string, string> argValueByName;
+    std::map<const string, string> argValueByName;
     {  // Parse argument list into map
         unsigned numArgs = 0;
         string argName;

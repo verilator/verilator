@@ -300,7 +300,7 @@ public:
 
 class AstClass : public AstNodeModule {
     // TYPES
-    typedef std::map<string, AstNode*> MemberNameMap;
+    typedef std::map<const string, AstNode*> MemberNameMap;
     // MEMBERS
     MemberNameMap m_members;  // Members or method children
     AstClassPackage* m_packagep = nullptr;  // Class package this is under

@@ -2453,7 +2453,7 @@ class AstNodeUOrStructDType : public AstNodeDType {
     // A struct or union; common handling
 private:
     // TYPES
-    typedef std::map<string, AstMemberDType*> MemberNameMap;
+    typedef std::map<const string, AstMemberDType*> MemberNameMap;
     // MEMBERS
     string m_name;  // Name from upper typedef, if any
     bool m_packed;

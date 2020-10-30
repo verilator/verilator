@@ -741,8 +741,8 @@ private:
 
         // Remove refs to traced values from TraceDecl nodes, these have now moved under
         // TraceInc
-        for (TraceVec::iterator it = traces.begin(); it != traces.end(); ++it) {
-            AstNode* const valuep = it->second->nodep()->valuep();
+        for (const auto& i : traces) {
+            AstNode* const valuep = i.second->nodep()->valuep();
             valuep->unlinkFrBack();
             valuep->deleteTree();
         }

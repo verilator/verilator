@@ -53,7 +53,7 @@
 class V3OptionsImp {
 public:
     // TYPES
-    typedef std::map<string, std::set<string>> DirMap;  // Directory listing
+    typedef std::map<const string, std::set<string>> DirMap;  // Directory listing
 
     // STATE
     std::list<string> m_allArgs;  // List of every argument encountered
@@ -61,7 +61,7 @@ public:
     std::set<string> m_incDirUserSet;  // Include directories (for removing duplicates)
     std::list<string> m_incDirFallbacks;  // Include directories (ordered)
     std::set<string> m_incDirFallbackSet;  // Include directories (for removing duplicates)
-    std::map<string, V3LangCode> m_langExts;  // Language extension map
+    std::map<const string, V3LangCode> m_langExts;  // Language extension map
     std::list<string> m_libExtVs;  // Library extensions (ordered)
     std::set<string> m_libExtVSet;  // Library extensions (for removing duplicates)
     DirMap m_dirMap;  // Directory listing
@@ -346,10 +346,7 @@ void V3Options::checkParameters() {
     if (!m_parameters.empty()) {
         std::stringstream msg;
         msg << "Parameters from the command line were not found in the design:";
-        for (std::map<string, string>::iterator it = m_parameters.begin();
-             it != m_parameters.end(); ++it) {
-            msg << " " << it->first;
-        }
+        for (const auto& i : m_parameters) msg << " " << i.first;
         v3error(msg.str());
     }
 }

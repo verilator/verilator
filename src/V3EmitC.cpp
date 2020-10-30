@@ -2874,7 +2874,7 @@ void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
     }
 
     // MacroTask mode.  Sort by MTask-affinity group first, size second.
-    typedef std::map<MTaskIdSet, VarSortMap> MTaskVarSortMap;
+    typedef std::map<const MTaskIdSet, VarSortMap> MTaskVarSortMap;
     MTaskVarSortMap m2v;
     for (VarSortMap::const_iterator it = vmap.begin(); it != vmap.end(); ++it) {
         int size_class = it->first;

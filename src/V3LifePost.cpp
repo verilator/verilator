@@ -183,9 +183,8 @@ private:
             return true;
         }
         if (before(assignPostLoc, loc)) return true;
-        for (std::set<LifeLocation>::iterator it = dlyVarAssigns.begin();
-             it != dlyVarAssigns.end(); ++it) {
-            if (!before(loc, *it)) return false;
+        for (const auto& i : dlyVarAssigns) {
+            if (!before(loc, i)) return false;
         }
         return true;
     }

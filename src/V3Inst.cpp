@@ -141,7 +141,7 @@ class InstDeModVarVisitor : public AstNVisitor {
     // Expand all module variables, and save names for later reference
 private:
     // STATE
-    typedef std::map<string, AstVar*> VarNameMap;
+    typedef std::map<const string, AstVar*> VarNameMap;
     VarNameMap m_modVarNameMap;  // Per module, name of cloned variables
 
     VL_DEBUG_FUNC;  // Declare debug()
