@@ -2965,7 +2965,7 @@ public:
     virtual V3Hash sameHash() const override { return V3Hash(m_classOrPackagep); }
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual string name() const override { return m_name; }  // * = Var name
-    AstNode* classOrPackagep() const { return m_classOrPackagep; }
+    AstNodeModule* classOrPackagep() const { return VN_CAST(m_classOrPackagep, NodeModule); }
     AstPackage* packagep() const { return VN_CAST(classOrPackagep(), Package); }
     void classOrPackagep(AstNode* nodep) { m_classOrPackagep = nodep; }
     AstPin* paramsp() const { return VN_CAST(op4p(), Pin); }
