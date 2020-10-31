@@ -74,6 +74,180 @@ public:
 };
 
 //===================================================================
+// Verilog queue and dynamic array container
+// There are no multithreaded locks on this; the base variable must
+// be protected by other means
+//
+// Bound here is the maximum size() allowed, e.g. 1 + SystemVerilog bound
+// For dynamic arrays it is always zero
+template <class T_Value, size_t T_MaxSize = 0> class VlQueue {
+private:
+    // TYPES
+    typedef std::deque<T_Value> Deque;
+
+public:
+    typedef typename Deque::const_iterator const_iterator;
+
+private:
+    // MEMBERS
+    Deque m_deque;  // State of the assoc array
+    T_Value m_defaultValue;  // Default value
+
+public:
+    // CONSTRUCTORS
+    VlQueue() {
+        // m_defaultValue isn't defaulted. Caller's constructor must do it.
+    }
+    ~VlQueue() {}
+
+    // Standard copy constructor works. Verilog: assoca = assocb
+    // Also must allow conversion from a different T_MaxSize queue
+    template <size_t U_MaxSize = 0> VlQueue operator=(const VlQueue<T_Value, U_MaxSize>& rhs) {
+        m_deque = rhs.privateDeque();
+        if (VL_UNLIKELY(T_MaxSize && T_MaxSize < m_deque.size())) m_deque.resize(T_MaxSize - 1);
+        return *this;
+    }
+
+    static VlQueue cons(const T_Value& lhs) {
+        VlQueue out;
+        out.push_back(lhs);
+        return out;
+    }
+    static VlQueue cons(const T_Value& lhs, const T_Value& rhs) {
+        VlQueue out;
+        out.push_back(rhs);
+        out.push_back(lhs);
+        return out;
+    }
+    static VlQueue cons(const VlQueue& lhs, const T_Value& rhs) {
+        VlQueue out = lhs;
+        out.push_front(rhs);
+        return out;
+    }
+    static VlQueue cons(const T_Value& lhs, const VlQueue& rhs) {
+        VlQueue out = rhs;
+        out.push_back(lhs);
+        return out;
+    }
+    static VlQueue cons(const VlQueue& lhs, const VlQueue& rhs) {
+        VlQueue out = rhs;
+        for (const auto& i : lhs.m_deque) out.push_back(i);
+        return out;
+    }
+
+    // METHODS
+    T_Value& atDefault() { return m_defaultValue; }
+    const Deque& privateDeque() const { return m_deque; }
+
+    // Size. Verilog: function int size(), or int num()
+    int size() const { return m_deque.size(); }
+    // Clear array. Verilog: function void delete([input index])
+    void clear() { m_deque.clear(); }
+    void erase(vlsint32_t index) {
+        if (VL_LIKELY(index >= 0 && index < m_deque.size()))
+            m_deque.erase(m_deque.begin() + index);
+    }
+
+    // Dynamic array new[] becomes a renew()
+    void renew(size_t size) {
+        clear();
+        m_deque.resize(size, atDefault());
+    }
+    // Dynamic array new[]() becomes a renew_copy()
+    void renew_copy(size_t size, const VlQueue<T_Value, T_MaxSize>& rhs) {
+        if (size == 0) {
+            clear();
+        } else {
+            *this = rhs;
+            m_deque.resize(size, atDefault());
+        }
+    }
+
+    // function void q.push_front(value)
+    void push_front(const T_Value& value) {
+        m_deque.push_front(value);
+        if (VL_UNLIKELY(T_MaxSize != 0 && m_deque.size() > T_MaxSize)) m_deque.pop_back();
+    }
+    // function void q.push_back(value)
+    void push_back(const T_Value& value) {
+        if (VL_LIKELY(T_MaxSize == 0 || m_deque.size() < T_MaxSize)) m_deque.push_back(value);
+    }
+    // function value_t q.pop_front();
+    T_Value pop_front() {
+        if (m_deque.empty()) return m_defaultValue;
+        T_Value v = m_deque.front();
+        m_deque.pop_front();
+        return v;
+    }
+    // function value_t q.pop_back();
+    T_Value pop_back() {
+        if (m_deque.empty()) return m_defaultValue;
+        T_Value v = m_deque.back();
+        m_deque.pop_back();
+        return v;
+    }
+
+    // Setting. Verilog: assoc[index] = v
+    // Can't just overload operator[] or provide a "at" reference to set,
+    // because we need to be able to insert only when the value is set
+    T_Value& at(vlsint32_t index) {
+        static T_Value s_throwAway;
+        // Needs to work for dynamic arrays, so does not use T_MaxSize
+        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
+            s_throwAway = atDefault();
+            return s_throwAway;
+        } else {
+            return m_deque[index];
+        }
+    }
+    // Accessing. Verilog: v = assoc[index]
+    const T_Value& at(vlsint32_t index) const {
+        static T_Value s_throwAway;
+        // Needs to work for dynamic arrays, so does not use T_MaxSize
+        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
+            return atDefault();
+        } else {
+            return m_deque[index];
+        }
+    }
+    // function void q.insert(index, value);
+    void insert(vlsint32_t index, const T_Value& value) {
+        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) return;
+        m_deque.insert(m_deque.begin() + index, value);
+    }
+
+    // Return slice q[lsb:msb]
+    VlQueue slice(vlsint32_t lsb, vlsint32_t msb) const {
+        VlQueue out;
+        if (VL_UNLIKELY(lsb < 0)) lsb = 0;
+        if (VL_UNLIKELY(lsb >= m_deque.size())) lsb = m_deque.size() - 1;
+        if (VL_UNLIKELY(msb >= m_deque.size())) msb = m_deque.size() - 1;
+        for (vlsint32_t i = lsb; i <= msb; ++i) out.push_back(m_deque[i]);
+        return out;
+    }
+
+    // For save/restore
+    const_iterator begin() const { return m_deque.begin(); }
+    const_iterator end() const { return m_deque.end(); }
+
+    // Dumping. Verilog: str = $sformatf("%p", assoc)
+    std::string to_string() const {
+        if (m_deque.empty()) return "'{}";  // No trailing space
+        std::string out = "'{";
+        std::string comma;
+        for (const auto& i : m_deque) {
+            out += comma + VL_TO_STRING(i);
+            comma = ", ";
+        }
+        return out + "} ";
+    }
+};
+
+template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
+    return obj.to_string();
+}
+
+//===================================================================
 // Verilog array container
 // Similar to std::array<WData, N>, but lighter weight, only methods needed
 // by Verilator, to help compile time.
@@ -253,180 +427,6 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
         QData addr = i.first;
         if (addr >= start && addr <= end) wmem.print(addr, true, &(i.second));
     }
-}
-
-//===================================================================
-// Verilog queue and dynamic array container
-// There are no multithreaded locks on this; the base variable must
-// be protected by other means
-//
-// Bound here is the maximum size() allowed, e.g. 1 + SystemVerilog bound
-// For dynamic arrays it is always zero
-template <class T_Value, size_t T_MaxSize = 0> class VlQueue {
-private:
-    // TYPES
-    typedef std::deque<T_Value> Deque;
-
-public:
-    typedef typename Deque::const_iterator const_iterator;
-
-private:
-    // MEMBERS
-    Deque m_deque;  // State of the assoc array
-    T_Value m_defaultValue;  // Default value
-
-public:
-    // CONSTRUCTORS
-    VlQueue() {
-        // m_defaultValue isn't defaulted. Caller's constructor must do it.
-    }
-    ~VlQueue() {}
-
-    // Standard copy constructor works. Verilog: assoca = assocb
-    // Also must allow conversion from a different T_MaxSize queue
-    template <size_t U_MaxSize = 0> VlQueue operator=(const VlQueue<T_Value, U_MaxSize>& rhs) {
-        m_deque = rhs.privateDeque();
-        if (VL_UNLIKELY(T_MaxSize && T_MaxSize < m_deque.size())) m_deque.resize(T_MaxSize - 1);
-        return *this;
-    }
-
-    static VlQueue cons(const T_Value& lhs) {
-        VlQueue out;
-        out.push_back(lhs);
-        return out;
-    }
-    static VlQueue cons(const T_Value& lhs, const T_Value& rhs) {
-        VlQueue out;
-        out.push_back(rhs);
-        out.push_back(lhs);
-        return out;
-    }
-    static VlQueue cons(const VlQueue& lhs, const T_Value& rhs) {
-        VlQueue out = lhs;
-        out.push_front(rhs);
-        return out;
-    }
-    static VlQueue cons(const T_Value& lhs, const VlQueue& rhs) {
-        VlQueue out = rhs;
-        out.push_back(lhs);
-        return out;
-    }
-    static VlQueue cons(const VlQueue& lhs, const VlQueue& rhs) {
-        VlQueue out = rhs;
-        for (const auto& i : lhs.m_deque) out.push_back(i);
-        return out;
-    }
-
-    // METHODS
-    T_Value& atDefault() { return m_defaultValue; }
-    const Deque& privateDeque() const { return m_deque; }
-
-    // Size. Verilog: function int size(), or int num()
-    int size() const { return m_deque.size(); }
-    // Clear array. Verilog: function void delete([input index])
-    void clear() { m_deque.clear(); }
-    void erase(vlsint32_t index) {
-        if (VL_LIKELY(index >= 0 && index < m_deque.size()))
-            m_deque.erase(m_deque.begin() + index);
-    }
-
-    // Dynamic array new[] becomes a renew()
-    void renew(size_t size) {
-        clear();
-        m_deque.resize(size, atDefault());
-    }
-    // Dynamic array new[]() becomes a renew_copy()
-    void renew_copy(size_t size, const VlQueue<T_Value, T_MaxSize>& rhs) {
-        if (size == 0) {
-            clear();
-        } else {
-            *this = rhs;
-            m_deque.resize(size, atDefault());
-        }
-    }
-
-    // function void q.push_front(value)
-    void push_front(const T_Value& value) {
-        m_deque.push_front(value);
-        if (VL_UNLIKELY(T_MaxSize != 0 && m_deque.size() > T_MaxSize)) m_deque.pop_back();
-    }
-    // function void q.push_back(value)
-    void push_back(const T_Value& value) {
-        if (VL_LIKELY(T_MaxSize == 0 || m_deque.size() < T_MaxSize)) m_deque.push_back(value);
-    }
-    // function value_t q.pop_front();
-    T_Value pop_front() {
-        if (m_deque.empty()) return m_defaultValue;
-        T_Value v = m_deque.front();
-        m_deque.pop_front();
-        return v;
-    }
-    // function value_t q.pop_back();
-    T_Value pop_back() {
-        if (m_deque.empty()) return m_defaultValue;
-        T_Value v = m_deque.back();
-        m_deque.pop_back();
-        return v;
-    }
-
-    // Setting. Verilog: assoc[index] = v
-    // Can't just overload operator[] or provide a "at" reference to set,
-    // because we need to be able to insert only when the value is set
-    T_Value& at(vlsint32_t index) {
-        static T_Value s_throwAway;
-        // Needs to work for dynamic arrays, so does not use T_MaxSize
-        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
-            s_throwAway = atDefault();
-            return s_throwAway;
-        } else {
-            return m_deque[index];
-        }
-    }
-    // Accessing. Verilog: v = assoc[index]
-    const T_Value& at(vlsint32_t index) const {
-        static T_Value s_throwAway;
-        // Needs to work for dynamic arrays, so does not use T_MaxSize
-        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
-            return atDefault();
-        } else {
-            return m_deque[index];
-        }
-    }
-    // function void q.insert(index, value);
-    void insert(vlsint32_t index, const T_Value& value) {
-        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) return;
-        m_deque.insert(m_deque.begin() + index, value);
-    }
-
-    // Return slice q[lsb:msb]
-    VlQueue slice(vlsint32_t lsb, vlsint32_t msb) const {
-        VlQueue out;
-        if (VL_UNLIKELY(lsb < 0)) lsb = 0;
-        if (VL_UNLIKELY(lsb >= m_deque.size())) lsb = m_deque.size() - 1;
-        if (VL_UNLIKELY(msb >= m_deque.size())) msb = m_deque.size() - 1;
-        for (vlsint32_t i = lsb; i <= msb; ++i) out.push_back(m_deque[i]);
-        return out;
-    }
-
-    // For save/restore
-    const_iterator begin() const { return m_deque.begin(); }
-    const_iterator end() const { return m_deque.end(); }
-
-    // Dumping. Verilog: str = $sformatf("%p", assoc)
-    std::string to_string() const {
-        if (m_deque.empty()) return "'{}";  // No trailing space
-        std::string out = "'{";
-        std::string comma;
-        for (const auto& i : m_deque) {
-            out += comma + VL_TO_STRING(i);
-            comma = ", ";
-        }
-        return out + "} ";
-    }
-};
-
-template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
-    return obj.to_string();
 }
 
 //===================================================================
