@@ -1267,7 +1267,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             }
             if (argp->nextp())
                 argp->nextp()->v3error("'with' function expects only up to one argument");
-            VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
+            VL_DO_DANGLING(argp->unlinkFrBackWithNext()->deleteTree(), argp);
         }
         // Type depends on the method used, let V3Width figure it out later
         auto* varp = new AstVar(argFl, AstVarType::WITH, name, VFlagChildDType(),

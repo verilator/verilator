@@ -4030,7 +4030,7 @@ array_methodWith<nodep>:
 	|	array_methodNoRoot parenE yWITH__PAREN '(' expr ')'
 			{ $$ = new AstWithParse($3, false, $1, $5); }
 	|	array_methodNoRoot '(' expr ')' yWITH__PAREN '(' expr ')'
-			{ $$ = new AstWithParse($5, false, $1, $7); $1->addPinsp($3); }
+			{ $$ = new AstWithParse($5, false, $1, $7); $1->addPinsp(new AstArg($<fl>3, "", $3)); }
 	;
 
 dpi_import_export<nodep>:	// ==IEEE: dpi_import_export

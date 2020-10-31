@@ -4117,7 +4117,6 @@ private:
     virtual void visit(AstWith* nodep) override {
         // Should otherwise be underneath a method call
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: with statements in this context");
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.  That's faster
