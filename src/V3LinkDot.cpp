@@ -2400,7 +2400,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstWith* nodep) override {
+    virtual void visit(AstWithParse* nodep) override {
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: with statements");
         nodep->replaceWith(nodep->funcrefp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);

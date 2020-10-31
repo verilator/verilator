@@ -3071,19 +3071,24 @@ public:
     void cname(const string& cname) { m_cname = cname; }
 };
 
-class AstWith : public AstNodeStmt {
+class AstWithParse : public AstNodeStmt {
+    // In early parse, FUNC(index) WITH equation-using-index
+    // Replaced with AstWith
+    // Parents: math|stmt
+    // Children: funcref, math
 public:
-    AstWith(FileLine* fl, bool stmt, AstNode* funcrefp, AstNode* argsp)
+    AstWithParse(FileLine* fl, bool stmt, AstNode* funcrefp, AstNode* exprp)
         : ASTGEN_SUPER(fl) {
         statement(stmt);
         setOp1p(funcrefp);
-        addNOp2p(argsp);
+        addNOp2p(exprp);
     }
-    ASTNODE_NODE_FUNCS(With)
+    ASTNODE_NODE_FUNCS(WithParse)
     virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode* samep) const override { return true; }
     //
     AstNode* funcrefp() const { return op1p(); }
+    AstNode* exprp() const { return op2p(); }
 };
 
 //######################################################################

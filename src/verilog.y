@@ -3496,9 +3496,9 @@ task_subroutine_callNoMethod<nodep>:	// function_subroutine_callNoMethod (as tas
 	//			// IEEE: tf_call
 		taskRef					{ $$ = $1; }
 	//			// funcref below not task ref to avoid conflict, must later handle either
-	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWith($2, true, $1, $4); }
+	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWithParse($2, true, $1, $4); }
 	//			// can call as method and yWITH without parenthesis
-	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWith($2, true, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
+	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWithParse($2, true, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
 	|	system_t_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
 	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3511,9 +3511,9 @@ task_subroutine_callNoMethod<nodep>:	// function_subroutine_callNoMethod (as tas
 function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as function)
 	//			// IEEE: tf_call
 		funcRef					{ $$ = $1; }
-	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWith($2, false, $1, $4); }
+	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWithParse($2, false, $1, $4); }
 	//			// can call as method and yWITH without parenthesis
-	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWith($2, false, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
+	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWithParse($2, false, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
 	|	system_f_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
 	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3521,7 +3521,7 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 	//			// We implement randomize as a normal funcRef, since randomize isn't a keyword
 	//			// Note yNULL is already part of expressions, so they come for free
 	|	funcRef yWITH__CUR constraint_block	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with' constraint"); }
-	|	funcRef yWITH__CUR '{' '}'		{ $$ = new AstWith($2, false, $1, nullptr); }
+	|	funcRef yWITH__CUR '{' '}'		{ $$ = new AstWithParse($2, false, $1, nullptr); }
 	;
 
 system_t_call<nodep>:		// IEEE: system_tf_call (as task)
@@ -4028,9 +4028,9 @@ array_methodNoRoot<ftaskrefp>:
 array_methodWith<nodep>:
 		array_methodNoRoot			{ $$ = $1; }
 	|	array_methodNoRoot parenE yWITH__PAREN '(' expr ')'
-			{ $$ = new AstWith($3, false, $1, $5); }
+			{ $$ = new AstWithParse($3, false, $1, $5); }
 	|	array_methodNoRoot '(' expr ')' yWITH__PAREN '(' expr ')'
-			{ $$ = new AstWith($5, false, $1, $7); $1->addPinsp($3); }
+			{ $$ = new AstWithParse($5, false, $1, $7); $1->addPinsp($3); }
 	;
 
 dpi_import_export<nodep>:	// ==IEEE: dpi_import_export
