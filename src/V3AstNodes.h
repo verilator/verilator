@@ -2360,7 +2360,7 @@ public:
         }
     }
     virtual int instrCount() const override {
-        return widthInstrs() * (access().isWrite() ? 1 : instrCountLd());
+        return widthInstrs() * (access().isWriteOnly() ? 1 : instrCountLd());
     }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }

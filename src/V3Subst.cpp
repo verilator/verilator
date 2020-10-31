@@ -306,7 +306,7 @@ private:
         iterate(nodep->rhsp());
         AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
         AstConst* constp = VN_CAST(nodep->rhsp(), Const);
-        if (varrefp && isSubstVar(varrefp->varp()) && !varrefp->access().isWrite() && constp) {
+        if (varrefp && isSubstVar(varrefp->varp()) && varrefp->access().isReadOnly() && constp) {
             // Nicely formed lvalues handled in NodeAssign
             // Other lvalues handled as unknown mess in AstVarRef
             int word = constp->toUInt();

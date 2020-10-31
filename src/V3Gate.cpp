@@ -842,7 +842,7 @@ private:
             // It's possible we substitute into something that will be reduced more later,
             // however, as we never delete the top Always/initial statement, all should be well.
             m_didReplace = true;
-            UASSERT_OBJ(!nodep->access().isWrite(), nodep,
+            UASSERT_OBJ(nodep->access().isReadOnly(), nodep,
                         "Can't replace lvalue assignments with const var");
             AstNode* substp = m_replaceTreep->cloneTree(false);
             UASSERT_OBJ(

@@ -433,7 +433,7 @@ private:
             }
         }
         if (!m_checkOnly && optimizable()) {  // simulating
-            UASSERT_OBJ(!nodep->access().isWrite(), nodep,
+            UASSERT_OBJ(nodep->access().isReadOnly(), nodep,
                         "LHS varref should be handled in AstAssign visitor.");
             {
                 // Return simulation value - copy by reference instead of value for speed

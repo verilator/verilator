@@ -845,7 +845,7 @@ private:
     virtual void visit(AstVarRef* nodep) override {
         if (m_tracep) {
             UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
-            UASSERT_OBJ(!nodep->access().isWrite(), nodep, "Lvalue in trace?  Should be const.");
+            UASSERT_OBJ(nodep->access().isReadOnly(), nodep, "Lvalue in trace?  Should be const.");
             V3GraphVertex* varVtxp = nodep->varScopep()->user1u().toGraphVertex();
             if (!varVtxp) {
                 varVtxp = new TraceVarVertex(&m_graph, nodep->varScopep());

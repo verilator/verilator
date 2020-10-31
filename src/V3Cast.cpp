@@ -154,7 +154,7 @@ private:
         }
     }
     virtual void visit(AstVarRef* nodep) override {
-        if (nodep->access().isRead() && !VN_IS(nodep->backp(), CCast)
+        if (nodep->access().isReadOnly() && !VN_IS(nodep->backp(), CCast)
             && VN_IS(nodep->backp(), NodeMath) && !VN_IS(nodep->backp(), ArraySel)
             && nodep->backp()->width() && castSize(nodep) != castSize(nodep->varp())) {
             // Cast vars to IData first, else below has upper bits wrongly set

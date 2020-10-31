@@ -280,10 +280,10 @@ private:
                               "Unsupported: String array operation on non-variable");
             }
             AstNode* newp;
-            if (varrefp && varrefp->access().isWrite()) {
-                newp = new AstGetcRefN(nodep->fileline(), fromp, rhsp);
-            } else {
+            if (varrefp && varrefp->access().isReadOnly()) {
                 newp = new AstGetcN(nodep->fileline(), fromp, rhsp);
+            } else {
+                newp = new AstGetcRefN(nodep->fileline(), fromp, rhsp);
             }
             UINFO(6, "   new " << newp << endl);
             nodep->replaceWith(newp);

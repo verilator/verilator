@@ -140,8 +140,9 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     VAccess invert() const { return (m_e == WRITE) ? VAccess(READ) : VAccess(WRITE); }
-    bool isRead() const { return m_e == READ; }
-    bool isWrite() const { return m_e == WRITE; }
+    bool isReadOnly() const { return m_e == READ; }  // False if/when support READWRITE
+    bool isWrite() const { return m_e == WRITE; }  // Need audit if/when support READWRITE
+    bool isWriteOnly() const { return m_e == WRITE; }  // False if/when support READWRITE
 };
 inline bool operator==(const VAccess& lhs, const VAccess& rhs) { return lhs.m_e == rhs.m_e; }
 inline bool operator==(const VAccess& lhs, VAccess::en rhs) { return lhs.m_e == rhs; }
