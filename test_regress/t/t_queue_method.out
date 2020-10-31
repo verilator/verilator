@@ -1,70 +1,201 @@
-%Error-UNSUPPORTED: t/t_queue_method.v:28:14: Unsupported: with statements
+%Error-UNSUPPORTED: t/t_queue_method.v:26:9: Unsupported/unknown built-in queue method 'sort'
+                                           : ... In instance t
+   26 |       q.sort;
+      |         ^~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:28:9: Unsupported/unknown built-in queue method 'sort'
+                                           : ... In instance t
    28 |       q.sort with (10 - item);
-      |              ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:30:17: Unsupported: with statements
+      |         ^~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:30:9: Unsupported/unknown built-in queue method 'sort'
+                                           : ... In instance t
    30 |       q.sort(x) with (10 - x);
-      |                 ^~~~
-%Error: t/t_queue_method.v:30:14: Can't find definition of variable: 'x'
-   30 |       q.sort(x) with (10 - x);
-      |              ^
-%Error-UNSUPPORTED: t/t_queue_method.v:32:18: Unsupported: with statements
+      |         ^~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:32:10: Unsupported/unknown built-in queue method 'sort'
+                                            : ... In instance t
    32 |       qe.sort(x) with (10 - x);
-      |                  ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:36:15: Unsupported: with statements
+      |          ^~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:34:9: Unsupported/unknown built-in queue method 'rsort'
+                                           : ... In instance t
+   34 |       q.rsort;
+      |         ^~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:36:9: Unsupported/unknown built-in queue method 'rsort'
+                                           : ... In instance t
    36 |       q.rsort with (10 - item);
-      |               ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:38:19: Unsupported: with statements
+      |         ^~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:38:10: Unsupported/unknown built-in queue method 'rsort'
+                                            : ... In instance t
    38 |       qe.rsort(x) with (10 - x);
-      |                   ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:62:19: Unsupported: with statements
+      |          ^~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:42:14: Unsupported/unknown built-in queue method 'unique'
+                                            : ... In instance t
+   42 |       qv = q.unique;
+      |              ^~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:44:15: Unsupported/unknown built-in queue method 'unique'
+                                            : ... In instance t
+   44 |       qv = qe.unique;
+      |               ^~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:46:14: Unsupported/unknown built-in queue method 'unique_index'
+                                            : ... In instance t
+   46 |       qi = q.unique_index; qv.sort;
+      |              ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:46:31: Unsupported/unknown built-in queue method 'sort'
+                                            : ... In instance t
+   46 |       qi = q.unique_index; qv.sort;
+      |                               ^~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:48:15: Unsupported/unknown built-in queue method 'unique_index'
+                                            : ... In instance t
+   48 |       qi = qe.unique_index;
+      |               ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:51:9: Unsupported/unknown built-in queue method 'reverse'
+                                           : ... In instance t
+   51 |       q.reverse;
+      |         ^~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:53:10: Unsupported/unknown built-in queue method 'reverse'
+                                            : ... In instance t
+   53 |       qe.reverse;
+      |          ^~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:55:9: Unsupported/unknown built-in queue method 'shuffle'
+                                           : ... In instance t
+   55 |       q.shuffle(); q.sort;
+      |         ^~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:55:22: Unsupported/unknown built-in queue method 'sort'
+                                            : ... In instance t
+   55 |       q.shuffle(); q.sort;
+      |                      ^~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:57:10: Unsupported/unknown built-in queue method 'shuffle'
+                                            : ... In instance t
+   57 |       qe.shuffle();
+      |          ^~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:62:14: Unsupported/unknown built-in queue method 'find'
+                                            : ... In instance t
    62 |       qv = q.find with (item == 2);
-      |                   ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:64:25: Unsupported: with statements
+      |              ^~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:64:14: Unsupported/unknown built-in queue method 'find_first'
+                                            : ... In instance t
    64 |       qv = q.find_first with (item == 2);
-      |                         ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:66:24: Unsupported: with statements
+      |              ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:66:14: Unsupported/unknown built-in queue method 'find_last'
+                                            : ... In instance t
    66 |       qv = q.find_last with (item == 2);
-      |                        ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:69:19: Unsupported: with statements
+      |              ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:69:14: Unsupported/unknown built-in queue method 'find'
+                                            : ... In instance t
    69 |       qv = q.find with (item == 20);
-      |                   ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:71:25: Unsupported: with statements
+      |              ^~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:71:14: Unsupported/unknown built-in queue method 'find_first'
+                                            : ... In instance t
    71 |       qv = q.find_first with (item == 20);
-      |                         ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:73:24: Unsupported: with statements
+      |              ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:73:14: Unsupported/unknown built-in queue method 'find_last'
+                                            : ... In instance t
    73 |       qv = q.find_last with (item == 20);
-      |                        ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:76:25: Unsupported: with statements
+      |              ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:76:14: Unsupported/unknown built-in queue method 'find_index'
+                                            : ... In instance t
    76 |       qi = q.find_index with (item == 2);
-      |                         ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:78:31: Unsupported: with statements
+      |              ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:77:10: Unsupported/unknown built-in queue method 'sort'
+                                            : ... In instance t
+   77 |       qi.sort; v = $sformatf("%p", qi); do if ((v) !== ("'{'h1, 'h2} ")) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", "t/t_queue_method.v",77, (v), ("'{'h1, 'h2} ")); $stop; end while(0);;
+      |          ^~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:78:14: Unsupported/unknown built-in queue method 'find_first_index'
+                                            : ... In instance t
    78 |       qi = q.find_first_index with (item == 2);
-      |                               ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:80:30: Unsupported: with statements
+      |              ^~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:80:14: Unsupported/unknown built-in queue method 'find_last_index'
+                                            : ... In instance t
    80 |       qi = q.find_last_index with (item == 2);
-      |                              ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:83:25: Unsupported: with statements
+      |              ^~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:83:14: Unsupported/unknown built-in queue method 'find_index'
+                                            : ... In instance t
    83 |       qi = q.find_index with (item == 20); qi.sort;
-      |                         ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:85:31: Unsupported: with statements
+      |              ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:83:47: Unsupported/unknown built-in queue method 'sort'
+                                            : ... In instance t
+   83 |       qi = q.find_index with (item == 20); qi.sort;
+      |                                               ^~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:85:14: Unsupported/unknown built-in queue method 'find_first_index'
+                                            : ... In instance t
    85 |       qi = q.find_first_index with (item == 20);
-      |                               ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:87:30: Unsupported: with statements
+      |              ^~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:87:14: Unsupported/unknown built-in queue method 'find_last_index'
+                                            : ... In instance t
    87 |       qi = q.find_last_index with (item == 20);
-      |                              ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:102:17: Unsupported: with statements
+      |              ^~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:90:14: Unsupported/unknown built-in queue method 'min'
+                                            : ... In instance t
+   90 |       qv = q.min;
+      |              ^~~
+%Error-UNSUPPORTED: t/t_queue_method.v:92:14: Unsupported/unknown built-in queue method 'max'
+                                            : ... In instance t
+   92 |       qv = q.max;
+      |              ^~~
+%Error-UNSUPPORTED: t/t_queue_method.v:94:15: Unsupported/unknown built-in queue method 'min'
+                                            : ... In instance t
+   94 |       qv = qe.min;
+      |               ^~~
+%Error-UNSUPPORTED: t/t_queue_method.v:96:15: Unsupported/unknown built-in queue method 'max'
+                                            : ... In instance t
+   96 |       qv = qe.max;
+      |               ^~~
+%Error-UNSUPPORTED: t/t_queue_method.v:100:13: Unsupported/unknown built-in queue method 'sum'
+                                             : ... In instance t
+  100 |       i = q.sum;
+      |             ^~~
+%Error-UNSUPPORTED: t/t_queue_method.v:102:13: Unsupported/unknown built-in queue method 'sum'
+                                             : ... In instance t
   102 |       i = q.sum with (item + 1);
-      |                 ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:106:21: Unsupported: with statements
+      |             ^~~
+%Error-UNSUPPORTED: t/t_queue_method.v:104:13: Unsupported/unknown built-in queue method 'product'
+                                             : ... In instance t
+  104 |       i = q.product;
+      |             ^~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:106:13: Unsupported/unknown built-in queue method 'product'
+                                             : ... In instance t
   106 |       i = q.product with (item + 1);
-      |                     ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:117:17: Unsupported: with statements
+      |             ^~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:109:14: Unsupported/unknown built-in queue method 'sum'
+                                             : ... In instance t
+  109 |       i = qe.sum;
+      |              ^~~
+%Error-UNSUPPORTED: t/t_queue_method.v:111:14: Unsupported/unknown built-in queue method 'product'
+                                             : ... In instance t
+  111 |       i = qe.product;
+      |              ^~~~~~~
+%Error-UNSUPPORTED: t/t_queue_method.v:115:13: Unsupported/unknown built-in queue method 'and'
+                                             : ... In instance t
+  115 |       i = q.and;
+      |             ^~~
+%Error-UNSUPPORTED: t/t_queue_method.v:117:13: Unsupported/unknown built-in queue method 'and'
+                                             : ... In instance t
   117 |       i = q.and with (item + 1);
-      |                 ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:121:16: Unsupported: with statements
+      |             ^~~
+%Error-UNSUPPORTED: t/t_queue_method.v:119:13: Unsupported/unknown built-in queue method 'or'
+                                             : ... In instance t
+  119 |       i = q.or;
+      |             ^~
+%Error-UNSUPPORTED: t/t_queue_method.v:121:13: Unsupported/unknown built-in queue method 'or'
+                                             : ... In instance t
   121 |       i = q.or with (item + 1);
-      |                ^~~~
-%Error-UNSUPPORTED: t/t_queue_method.v:125:17: Unsupported: with statements
+      |             ^~
+%Error-UNSUPPORTED: t/t_queue_method.v:123:13: Unsupported/unknown built-in queue method 'xor'
+                                             : ... In instance t
+  123 |       i = q.xor;
+      |             ^~~
+%Error-UNSUPPORTED: t/t_queue_method.v:125:13: Unsupported/unknown built-in queue method 'xor'
+                                             : ... In instance t
   125 |       i = q.xor with (item + 1);
-      |                 ^~~~
+      |             ^~~
+%Error-UNSUPPORTED: t/t_queue_method.v:128:14: Unsupported/unknown built-in queue method 'and'
+                                             : ... In instance t
+  128 |       i = qe.and;
+      |              ^~~
+%Error-UNSUPPORTED: t/t_queue_method.v:130:14: Unsupported/unknown built-in queue method 'or'
+                                             : ... In instance t
+  130 |       i = qe.or;
+      |              ^~
+%Error-UNSUPPORTED: t/t_queue_method.v:132:14: Unsupported/unknown built-in queue method 'xor'
+                                             : ... In instance t
+  132 |       i = qe.xor;
+      |              ^~~
 %Error: Exiting due to

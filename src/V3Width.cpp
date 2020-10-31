@@ -2267,6 +2267,7 @@ private:
         if (debug() >= 9) nodep->dumpTree("-mts-in: ");
         // Should check types the method requires, but at present we don't do much
         userIterate(nodep->fromp(), WidthVP(SELF, BOTH).p());
+        // Any AstWith is checked later when know types, in methodWithArgument
         for (AstArg* argp = VN_CAST(nodep->pinsp(), Arg); argp;
              argp = VN_CAST(argp->nextp(), Arg)) {
             if (argp->exprp()) userIterate(argp->exprp(), WidthVP(SELF, BOTH).p());
@@ -2302,6 +2303,12 @@ private:
     void methodOkArguments(AstMethodCall* nodep, int minArg, int maxArg) {
         int narg = 0;
         for (AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp()) {
+            if (VN_IS(argp, With)) {
+                argp->v3error("'with' not legal on this method");
+                // Delete all arguments as nextp() otherwise dangling
+                VL_DO_DANGLING(pushDeletep(argp->unlinkFrBackWithNext()), argp);
+                break;
+            }
             ++narg;
             UASSERT_OBJ(VN_IS(argp, Arg), nodep, "Method arg without Arg type");
         }
@@ -2483,6 +2490,7 @@ private:
                                            << " not legal on associative arrays");
         } else {
             nodep->v3error("Unknown built-in associative array method " << nodep->prettyNameQ());
+            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
         }
         if (newp) {
             newp->didWidth(true);
@@ -2536,6 +2544,7 @@ private:
         } else {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported/unknown built-in dynamic array method "
                                              << nodep->prettyNameQ());
+            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
         }
         if (newp) {
             newp->didWidth(true);
@@ -2623,8 +2632,9 @@ private:
             newp->protect(false);
             newp->makeStatement();
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported/unknown built-in associative array method "
-                                             << nodep->prettyNameQ());
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported/unknown built-in queue method " << nodep->prettyNameQ());
+            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
         }
         if (newp) {
             newp->didWidth(true);
@@ -2715,6 +2725,7 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
             nodep->v3error("Unknown built-in array method " << nodep->prettyNameQ());
+            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
         }
     }
     void methodCallEvent(AstMethodCall* nodep, AstBasicDType* adtypep) {
@@ -4102,6 +4113,11 @@ private:
         m_procedurep = nodep;
         userIterateChildren(nodep, nullptr);
         m_procedurep = nullptr;
+    }
+    virtual void visit(AstWith* nodep) override {
+        // Should otherwise be underneath a method call
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: with statements in this context");
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.  That's faster

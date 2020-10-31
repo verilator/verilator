@@ -3091,6 +3091,27 @@ public:
     AstNode* exprp() const { return op2p(); }
 };
 
+class AstWith : public AstNodeStmt {
+    // Used as argument to method, then to AstCMethodHard
+    // dtypep() contains the with lambda's return dtype
+    // Parents: funcref (similar to AstArg)
+    // Children: VAR that declares the index variable
+    // Children: math (equation establishing the with)
+public:
+    AstWith(FileLine* fl, AstVar* varp, AstNode* exprp)
+        : ASTGEN_SUPER(fl) {
+        addOp1p(varp);
+        addNOp2p(exprp);
+    }
+    ASTNODE_NODE_FUNCS(With)
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+    virtual bool hasDType() const override { return true; }
+    //
+    AstVar* varp() const { return VN_CAST(op1p(), Var); }
+    AstNode* exprp() const { return op2p(); }
+};
+
 //######################################################################
 
 class AstSenItem : public AstNode {

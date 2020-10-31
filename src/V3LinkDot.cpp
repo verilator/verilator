@@ -713,6 +713,7 @@ class LinkDotFindVisitor : public AstNVisitor {
     int m_blockNum = 0;  // Begin block number, 0=none seen
     bool m_explicitNew = false;  // Hit a "new" function
     int m_modBlockNum = 0;  // Begin block number in module, 0=none seen
+    int m_modWithNum = 0;  // With block number, 0=none seen
 
     // METHODS
     static int debug() { return LinkDotState::debug(); }
@@ -775,6 +776,7 @@ class LinkDotFindVisitor : public AstNVisitor {
         VL_RESTORER(m_paramNum);
         VL_RESTORER(m_blockNum);
         VL_RESTORER(m_modBlockNum);
+        VL_RESTORER(m_modWithNum);
         if (doit && nodep->user2()) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Identically recursive module (module instantiates "
@@ -801,6 +803,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             m_paramNum = 0;
             m_blockNum = 0;
             m_modBlockNum = 0;
+            m_modWithNum = 0;
             // m_modSymp/m_curSymp for non-packages set by AstCell above this module
             // Iterate
             nodep->user2(true);
@@ -836,6 +839,7 @@ class LinkDotFindVisitor : public AstNVisitor {
         VL_RESTORER(m_paramNum);
         VL_RESTORER(m_blockNum);
         VL_RESTORER(m_modBlockNum);
+        VL_RESTORER(m_modWithNum);
         {
             UINFO(4, "     Link Class: " << nodep << endl);
             VSymEnt* upperSymp = m_curSymp;
@@ -848,6 +852,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             m_paramNum = 0;
             m_blockNum = 0;
             m_modBlockNum = 0;
+            m_modWithNum = 0;
             m_explicitNew = false;
             // m_modSymp/m_curSymp for non-packages set by AstCell above this module
             // Iterate
@@ -1246,6 +1251,44 @@ class LinkDotFindVisitor : public AstNVisitor {
         UINFO(4, "  Link: " << nodep << endl);
         m_curSymp->exportStarStar(m_statep->symsp());
         // No longer needed, but can't delete until any multi-instantiated modules are expanded
+    }
+    virtual void visit(AstWithParse* nodep) override {
+        // Change WITHPARSE(FUNCREF, equation) to FUNCREF(WITH(equation))
+        auto funcrefp = VN_CAST(nodep->funcrefp(), NodeFTaskRef);
+        UASSERT_OBJ(funcrefp, nodep, "'with' only can operate on a function/task");
+        string name = "item";
+        FileLine* argFl = nodep->fileline();
+        if (auto argp = VN_CAST(funcrefp->pinsp(), Arg)) {
+            if (auto parserefp = VN_CAST(argp->exprp(), ParseRef)) {
+                name = parserefp->name();
+                argFl = parserefp->fileline();
+            } else {
+                argp->v3error("'with' function expects simple variable name");
+            }
+            if (argp->nextp())
+                argp->nextp()->v3error("'with' function expects only up to one argument");
+            VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
+        }
+        // Type depends on the method used, let V3Width figure it out later
+        auto* varp = new AstVar(argFl, AstVarType::WITH, name, VFlagChildDType(),
+                                new AstParseTypeDType(nodep->fileline()));
+        auto* newp = new AstWith(nodep->fileline(), varp, nodep->exprp()->unlinkFrBackWithNext());
+        funcrefp->addPinsp(newp);
+        nodep->replaceWith(funcrefp->unlinkFrBack());
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+    virtual void visit(AstWith* nodep) override {
+        // Symbol table needs nodep->name() as the index variable's name
+        // Iteration will pickup the AstVar we made under AstWith
+        VL_RESTORER(m_curSymp);
+        VSymEnt* const oldCurSymp = m_curSymp;
+        {
+            ++m_modWithNum;
+            m_curSymp = m_statep->insertBlock(m_curSymp, "__Vwith" + cvtToStr(m_modWithNum), nodep,
+                                              m_packagep);
+            m_curSymp->fallbackp(oldCurSymp);
+            iterateChildren(nodep);
+        }
     }
 
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -2400,11 +2443,6 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstWithParse* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: with statements");
-        nodep->replaceWith(nodep->funcrefp()->unlinkFrBack());
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    }
     virtual void visit(AstVar* nodep) override {
         checkNoDot(nodep);
         iterateChildren(nodep);
@@ -2657,6 +2695,16 @@ private:
         }
         m_ds.m_dotSymp = m_curSymp = oldCurSymp;
         m_ftaskp = nullptr;
+    }
+    virtual void visit(AstWith* nodep) override {
+        UINFO(5, "   " << nodep << endl);
+        checkNoDot(nodep);
+        VSymEnt* oldCurSymp = m_curSymp;
+        {
+            m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+            iterateChildren(nodep);
+        }
+        m_ds.m_dotSymp = m_curSymp = oldCurSymp;
     }
     virtual void visit(AstClass* nodep) override {
         UINFO(5, "   " << nodep << endl);

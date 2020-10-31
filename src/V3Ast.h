@@ -696,7 +696,8 @@ public:
         STMTTEMP,
         XTEMP,
         IFACEREF,  // Used to link Interfaces between modules
-        MEMBER
+        MEMBER,
+        WITH
     };
     enum en m_e;
     inline AstVarType()
@@ -711,7 +712,7 @@ public:
         static const char* const names[] = {
             "?",         "GPARAM",     "LPARAM",       "GENVAR",  "VAR",      "SUPPLY0", "SUPPLY1",
             "WIRE",      "WREAL",      "IMPLICITWIRE", "TRIWIRE", "TRI0",     "TRI1",    "PORT",
-            "BLOCKTEMP", "MODULETEMP", "STMTTEMP",     "XTEMP",   "IFACEREF", "MEMBER"};
+            "BLOCKTEMP", "MODULETEMP", "STMTTEMP",     "XTEMP",   "IFACEREF", "MEMBER",  "WITH"};
         return names[m_e];
     }
     bool isSignal() const {
@@ -727,7 +728,7 @@ public:
     bool isProcAssignable() const {
         return (m_e == GPARAM || m_e == LPARAM || m_e == GENVAR || m_e == VAR || m_e == BLOCKTEMP
                 || m_e == MODULETEMP || m_e == STMTTEMP || m_e == XTEMP || m_e == IFACEREF
-                || m_e == MEMBER);
+                || m_e == MEMBER || m_e == WITH);
     }
     bool isTemp() const {
         return (m_e == BLOCKTEMP || m_e == MODULETEMP || m_e == STMTTEMP || m_e == XTEMP);
