@@ -3372,7 +3372,7 @@ class EmitCTrace : EmitCStmts {
     AstUser1InUse m_inuser1;
 
     // MEMBERS
-    AstCFunc* m_funcp = nullptr;  // Function we're in now
+    AstCFunc* m_cfuncp = nullptr;  // Function we're in now
     bool m_slow;  // Making slow file
     int m_enumNum = 0;  // Enumeration number (whole netlist)
     int m_baseCode = -1;  // Code of first AstTraceInc in this function
@@ -3704,8 +3704,9 @@ class EmitCTrace : EmitCStmts {
     virtual void visit(AstNodeModule* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstCFunc* nodep) override {
         if (nodep->slow() != m_slow) return;
+        VL_RESTORER(m_cfuncp);
         if (nodep->funcType().isTrace()) {  // TRACE_*
-            m_funcp = nodep;
+            m_cfuncp = nodep;
 
             if (splitNeeded()) {
                 // Splitting file, so using parallel build.
@@ -3775,7 +3776,6 @@ class EmitCTrace : EmitCStmts {
             }
             puts("}\n");
         }
-        m_funcp = nullptr;
     }
     virtual void visit(AstTraceDecl* nodep) override {
         int enumNum = emitTraceDeclDType(nodep->dtypep());

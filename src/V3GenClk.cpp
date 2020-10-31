@@ -111,7 +111,6 @@ private:
         m_activep = nullptr;
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) override { iterateChildren(nodep); }
 
     //-----
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }

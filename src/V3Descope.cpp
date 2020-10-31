@@ -268,6 +268,8 @@ private:
         // nodep->funcp()->scopep(nullptr);
     }
     virtual void visit(AstCFunc* nodep) override {
+        VL_RESTORER(m_needThis);
+        VL_RESTORER(m_allowThis);
         if (!nodep->user1()) {
             m_needThis = false;
             m_allowThis = nodep->isStatic().falseUnknown();  // Non-static or unknown if static

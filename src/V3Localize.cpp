@@ -150,13 +150,15 @@ private:
     }
     virtual void visit(AstCFunc* nodep) override {
         UINFO(4, "  CFUNC " << nodep << endl);
-        m_cfuncp = nodep;
-        searchFuncStmts(nodep->argsp());
-        searchFuncStmts(nodep->initsp());
-        searchFuncStmts(nodep->stmtsp());
-        searchFuncStmts(nodep->finalsp());
-        iterateChildren(nodep);
-        m_cfuncp = nullptr;
+        VL_RESTORER(m_cfuncp);
+        {
+            m_cfuncp = nodep;
+            searchFuncStmts(nodep->argsp());
+            searchFuncStmts(nodep->initsp());
+            searchFuncStmts(nodep->stmtsp());
+            searchFuncStmts(nodep->finalsp());
+            iterateChildren(nodep);
+        }
     }
     void searchFuncStmts(AstNode* nodep) {
         // Search for basic assignments to allow moving non-blocktemps

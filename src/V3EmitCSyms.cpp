@@ -50,11 +50,11 @@ class EmitCSyms : EmitCBaseVisitor {
     };
     struct ScopeFuncData {
         AstScopeName* m_scopep;
-        AstCFunc* m_funcp;
+        AstCFunc* m_cfuncp;
         AstNodeModule* m_modp;
         ScopeFuncData(AstScopeName* scopep, AstCFunc* funcp, AstNodeModule* modp)
             : m_scopep{scopep}
-            , m_funcp{funcp}
+            , m_cfuncp{funcp}
             , m_modp{modp} {}
     };
     struct ScopeVarData {
@@ -94,7 +94,7 @@ class EmitCSyms : EmitCBaseVisitor {
     };
 
     // STATE
-    AstCFunc* m_funcp = nullptr;  // Current function
+    AstCFunc* m_cfuncp = nullptr;  // Current function
     AstNodeModule* m_modp = nullptr;  // Current module
     std::vector<ScopeModPair> m_scopes;  // Every scope by module
     std::vector<AstCFunc*> m_dpis;  // DPI functions
@@ -316,9 +316,9 @@ class EmitCSyms : EmitCBaseVisitor {
                 name, ScopeData(name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER")));
         }
         if (nodep->dpiExport()) {
-            UASSERT_OBJ(m_funcp, nodep, "ScopeName not under DPI function");
+            UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");
             m_scopeFuncs.insert(
-                make_pair(name + " " + m_funcp->name(), ScopeFuncData(nodep, m_funcp, m_modp)));
+                make_pair(name + " " + m_cfuncp->name(), ScopeFuncData(nodep, m_cfuncp, m_modp)));
         } else {
             if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
                 m_scopeNames.insert(
@@ -342,9 +342,11 @@ class EmitCSyms : EmitCBaseVisitor {
     virtual void visit(AstCFunc* nodep) override {
         nameCheck(nodep);
         if (nodep->dpiImport() || nodep->dpiExportWrapper()) m_dpis.push_back(nodep);
-        m_funcp = nodep;
-        iterateChildren(nodep);
-        m_funcp = nullptr;
+        VL_RESTORER(m_cfuncp);
+        {
+            m_cfuncp = nodep;
+            iterateChildren(nodep);
+        }
     }
 
     //---------------------------------------
@@ -397,7 +399,7 @@ void EmitCSyms::emitSymHdr() {
         puts("\n// DPI TYPES for DPI Export callbacks (Internal use)\n");
         std::map<const string, int> types;  // Remove duplicates and sort
         for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
-            AstCFunc* funcp = it->second.m_funcp;
+            AstCFunc* funcp = it->second.m_cfuncp;
             if (funcp->dpiExport()) {
                 string cbtype = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
                 types["typedef void (*" + cbtype + ") (" + cFuncArgs(funcp) + ");\n"] = 1;
@@ -721,7 +723,7 @@ void EmitCSyms::emitSymImp() {
         m_ofpBase->puts("for (int __Vfinal=0; __Vfinal<2; __Vfinal++) {\n");
         for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
             AstScopeName* scopep = it->second.m_scopep;
-            AstCFunc* funcp = it->second.m_funcp;
+            AstCFunc* funcp = it->second.m_cfuncp;
             AstNodeModule* modp = it->second.m_modp;
             if (funcp->dpiExport()) {
                 checkSplit(true);

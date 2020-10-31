@@ -241,13 +241,12 @@ private:
         UASSERT_OBJ(m_tracingCall || nodep == m_startNodep, nodep,
                     "AstCFunc not under AstCCall, or not start node");
         m_tracingCall = false;
-        bool saved_inCFunc = m_inCFunc;
-        m_inCFunc = true;
+        VL_RESTORER(m_inCFunc);
         {
+            m_inCFunc = true;
             VisitBase vb(this, nodep);
             iterateChildren(nodep);
         }
-        m_inCFunc = saved_inCFunc;
     }
     virtual void visit(AstNode* nodep) override {
         VisitBase vb(this, nodep);

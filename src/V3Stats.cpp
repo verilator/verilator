@@ -181,10 +181,12 @@ private:
             if (!m_tracingCall && !nodep->entryPoint()) return;
             m_tracingCall = false;
         }
-        m_cfuncp = nodep;
-        allNodes(nodep);
-        iterateChildrenConst(nodep);
-        m_cfuncp = nullptr;
+        VL_RESTORER(m_cfuncp);
+        {
+            m_cfuncp = nodep;
+            allNodes(nodep);
+            iterateChildrenConst(nodep);
+        }
     }
     virtual void visit(AstNode* nodep) override {
         allNodes(nodep);

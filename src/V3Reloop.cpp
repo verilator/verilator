@@ -142,9 +142,11 @@ private:
 
     // VISITORS
     virtual void visit(AstCFunc* nodep) override {
-        m_cfuncp = nodep;
-        iterateChildren(nodep);
-        m_cfuncp = nullptr;
+        VL_RESTORER(m_cfuncp);
+        {
+            m_cfuncp = nodep;
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstNodeAssign* nodep) override {
         if (!m_cfuncp) return;

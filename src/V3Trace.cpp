@@ -169,7 +169,7 @@ private:
     // STATE
     AstNodeModule* m_topModp = nullptr;  // Module to add variables to
     AstScope* m_topScopep = nullptr;  // Scope to add variables to
-    AstCFunc* m_funcp = nullptr;  // C function adding to graph
+    AstCFunc* m_cfuncp = nullptr;  // C function adding to graph
     AstTraceDecl* m_tracep = nullptr;  // Trace function adding to graph
     AstVarScope* m_activityVscp = nullptr;  // Activity variable
     uint32_t m_activityNumber = 0;  // Count of fields in activity variable
@@ -826,9 +826,11 @@ private:
                 new V3GraphEdge(&m_graph, activityVtxp, funcVtxp, 1);
             }
         }
-        m_funcp = nodep;
-        iterateChildren(nodep);
-        m_funcp = nullptr;
+        VL_RESTORER(m_cfuncp);
+        {
+            m_cfuncp = nodep;
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstTraceDecl* nodep) override {
         UINFO(8, "   TRACE " << nodep << endl);
@@ -836,7 +838,7 @@ private:
             V3GraphVertex* const vertexp = new TraceTraceVertex(&m_graph, nodep);
             nodep->user1p(vertexp);
 
-            UASSERT_OBJ(m_funcp, nodep, "Trace not under func");
+            UASSERT_OBJ(m_cfuncp, nodep, "Trace not under func");
             m_tracep = nodep;
             iterateChildren(nodep);
             m_tracep = nullptr;
@@ -857,9 +859,9 @@ private:
                 || nodep->varp()->isSigPublic()) {  // Or ones user can change
                 new V3GraphEdge(&m_graph, m_alwaysVtxp, traceVtxp, 1);
             }
-        } else if (m_funcp && m_finding && nodep->access().isWrite()) {
+        } else if (m_cfuncp && m_finding && nodep->access().isWrite()) {
             UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
-            V3GraphVertex* const funcVtxp = getCFuncVertexp(m_funcp);
+            V3GraphVertex* const funcVtxp = getCFuncVertexp(m_cfuncp);
             V3GraphVertex* const varVtxp = nodep->varScopep()->user1u().toGraphVertex();
             if (varVtxp) {  // else we're not tracing this signal
                 new V3GraphEdge(&m_graph, funcVtxp, varVtxp, 1);
