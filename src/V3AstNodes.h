@@ -1100,6 +1100,12 @@ public:
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
     }
+    AstQueueDType(FileLine* fl, AstNodeDType* dtp, AstNode* boundp)
+        : ASTGEN_SUPER(fl) {
+        setNOp2p(boundp);
+        refDTypep(dtp);
+        dtypep(dtp);
+    }
     ASTNODE_NODE_FUNCS(QueueDType)
     virtual const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
@@ -3091,6 +3097,29 @@ public:
     AstNode* exprp() const { return op2p(); }
 };
 
+class AstLambdaArgRef : public AstNodeMath {
+    // Lambda argument usage
+    // These are not AstVarRefs because we need to be able to delete/clone lambdas during
+    // optimizations and AstVar's are painful to remove.
+private:
+    string m_name;  // Name of variable
+
+public:
+    AstLambdaArgRef(FileLine* fl, const string& name)
+        : ASTGEN_SUPER(fl)
+        , m_name{name} {}
+    ASTNODE_NODE_FUNCS(LambdaArgRef)
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+    virtual string emitVerilog() override { return name(); }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return true; }
+    virtual bool hasDType() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    virtual string name() const override { return m_name; }  // * = Var name
+    virtual void name(const string& name) override { m_name = name; }
+};
+
 class AstWith : public AstNodeStmt {
     // Used as argument to method, then to AstCMethodHard
     // dtypep() contains the with lambda's return dtype
@@ -3098,17 +3127,21 @@ class AstWith : public AstNodeStmt {
     // Children: VAR that declares the index variable
     // Children: math (equation establishing the with)
 public:
-    AstWith(FileLine* fl, AstVar* varp, AstNode* exprp)
+    AstWith(FileLine* fl, AstLambdaArgRef* argrefp, AstNode* exprp)
         : ASTGEN_SUPER(fl) {
-        addOp1p(varp);
+        addOp1p(argrefp);
         addNOp2p(exprp);
     }
     ASTNODE_NODE_FUNCS(With)
     virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode* samep) const override { return true; }
     virtual bool hasDType() const override { return true; }
+    virtual const char* broken() const override {
+        BROKEN_RTN(!argrefp());  // varp needed to know lambda's arg dtype
+        return nullptr;
+    }
     //
-    AstVar* varp() const { return VN_CAST(op1p(), Var); }
+    AstLambdaArgRef* argrefp() const { return VN_CAST(op1p(), LambdaArgRef); }
     AstNode* exprp() const { return op2p(); }
 };
 
@@ -9028,6 +9061,7 @@ class AstTypeTable : public AstNode {
     // Container for hash of standard data types
     // Children:  NODEDTYPEs
     AstVoidDType* m_voidp = nullptr;
+    AstQueueDType* m_queueIndexp = nullptr;
     AstBasicDType* m_basicps[AstBasicDTypeKwd::_ENUM_MAX];
     //
     typedef std::map<VBasicTypeKey, AstBasicDType*> DetailedMap;
@@ -9042,6 +9076,7 @@ public:
     AstNodeDType* typesp() const { return VN_CAST(op1p(), NodeDType); }  // op1 = List of dtypes
     void addTypesp(AstNodeDType* nodep) { addOp1p(nodep); }
     AstVoidDType* findVoidDType(FileLine* fl);
+    AstQueueDType* findQueueIndexDType(FileLine* fl);
     AstBasicDType* findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd);
     AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, int width, int widthMin,
                                      VSigning numeric);

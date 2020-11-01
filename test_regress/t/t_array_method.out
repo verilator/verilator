@@ -26,10 +26,6 @@
                                 : ... In instance t
    38 |       qi = q.unique_index; qi.sort;
       |              ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_array_method.v:38:31: Unsupported/unknown built-in queue method 'sort'
-                                            : ... In instance t
-   38 |       qi = q.unique_index; qi.sort;
-      |                               ^~~~
 %Error: t/t_array_method.v:40:9: Unknown built-in array method 'reverse'
                                : ... In instance t
    40 |       q.reverse;
@@ -70,10 +66,6 @@
                                 : ... In instance t
    61 |       qi = q.find_index with (item == 2); qi.sort;
       |              ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_array_method.v:61:46: Unsupported/unknown built-in queue method 'sort'
-                                            : ... In instance t
-   61 |       qi = q.find_index with (item == 2); qi.sort;
-      |                                              ^~~~
 %Error: t/t_array_method.v:63:14: Unknown built-in array method 'find_first_index'
                                 : ... In instance t
    63 |       qi = q.find_first_index with (item == 2);
@@ -86,10 +78,6 @@
                                 : ... In instance t
    68 |       qi = q.find_index with (item == 20); qi.sort;
       |              ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_array_method.v:68:47: Unsupported/unknown built-in queue method 'sort'
-                                            : ... In instance t
-   68 |       qi = q.find_index with (item == 20); qi.sort;
-      |                                               ^~~~
 %Error: t/t_array_method.v:70:14: Unknown built-in array method 'find_first_index'
                                 : ... In instance t
    70 |       qi = q.find_first_index with (item == 20);

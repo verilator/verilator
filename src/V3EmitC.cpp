@@ -425,6 +425,18 @@ public:
         UASSERT_OBJ(!nodep->isStatement() || VN_IS(nodep->dtypep(), VoidDType), nodep,
                     "Statement of non-void data type");
     }
+    virtual void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
+    virtual void visit(AstWith* nodep) override {
+        // With uses a C++11 lambda
+        putbs("[=](");
+        if (auto* argrefp = nodep->argrefp()) {
+            putbs(argrefp->dtypep()->cType(nodep->argrefp()->nameProtect(), false, false));
+        }
+        // Probably fragile, V3Task may need to convert to a AstCReturn
+        puts(") { return ");
+        iterateAndNextNull(nodep->exprp());
+        puts("; }\n");
+    }
     virtual void visit(AstIntfRef* nodep) override {
         putsQuoted(VIdProtect::protectWordsIf(AstNode::vcdName(nodep->name()), nodep->protect()));
     }

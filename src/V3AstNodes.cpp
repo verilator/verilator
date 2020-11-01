@@ -875,6 +875,15 @@ AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
     return m_voidp;
 }
 
+AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
+    if (VL_UNLIKELY(!m_queueIndexp)) {
+        AstQueueDType* newp = new AstQueueDType(fl, AstNode::findUInt32DType(), nullptr);
+        addTypesp(newp);
+        m_queueIndexp = newp;
+    }
+    return m_queueIndexp;
+}
+
 AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) {
     if (m_basicps[kwd]) return m_basicps[kwd];
     //

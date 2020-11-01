@@ -15,6 +15,7 @@ module t (/*AUTOARG*/);
       int q[$];
       int qe[$];  // Empty
       int qv[$];  // Value returns
+      int qvunused[$];  // Value returns (unused)
       int qi[$];  // Index returns
       int i;
       string v;
@@ -73,12 +74,19 @@ module t (/*AUTOARG*/);
       qv = q.find_last with (item == 20);
       `checkh(qv.size, 0);
 
+      // Check gate eater with Lambda variable removal
+      qvunused = q.find with (item == 20);
+
       qi = q.find_index with (item == 2);
       qi.sort; v = $sformatf("%p", qi); `checks(v, "'{'h1, 'h2} ");
       qi = q.find_first_index with (item == 2);
       v = $sformatf("%p", qi); `checks(v, "'{'h1} ");
       qi = q.find_last_index with (item == 2);
       v = $sformatf("%p", qi); `checks(v, "'{'h2} ");
+
+      i = 2;
+      qi = q.find_index with (item == i);
+      qi.sort; v = $sformatf("%p", qi); `checks(v, "'{'h1, 'h2} ");
 
       qi = q.find_index with (item == 20); qi.sort;
       `checkh(qi.size, 0);
@@ -101,6 +109,13 @@ module t (/*AUTOARG*/);
       `checkh(i, 32'hc);
       i = q.sum with (item + 1);
       `checkh(i, 32'h11);
+      i = q.sum(myi) with (myi + 1);
+      `checkh(i, 32'h11);
+      i = q.sum with (1);  // unused 'index'
+      `checkh(i, 32'h5);
+      i = q.sum(unused) with (1);  // unused 'unused'
+      `checkh(i, 32'h5);
+
       i = q.product;
       `checkh(i, 32'h30);
       i = q.product with (item + 1);
@@ -108,6 +123,7 @@ module t (/*AUTOARG*/);
 
       i = qe.sum;
       `checkh(i, 32'h0);
+
       i = qe.product;
       `checkh(i, 32'h0);
 

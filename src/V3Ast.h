@@ -696,8 +696,7 @@ public:
         STMTTEMP,
         XTEMP,
         IFACEREF,  // Used to link Interfaces between modules
-        MEMBER,
-        WITH
+        MEMBER
     };
     enum en m_e;
     inline AstVarType()
@@ -712,7 +711,7 @@ public:
         static const char* const names[] = {
             "?",         "GPARAM",     "LPARAM",       "GENVAR",  "VAR",      "SUPPLY0", "SUPPLY1",
             "WIRE",      "WREAL",      "IMPLICITWIRE", "TRIWIRE", "TRI0",     "TRI1",    "PORT",
-            "BLOCKTEMP", "MODULETEMP", "STMTTEMP",     "XTEMP",   "IFACEREF", "MEMBER",  "WITH"};
+            "BLOCKTEMP", "MODULETEMP", "STMTTEMP",     "XTEMP",   "IFACEREF", "MEMBER"};
         return names[m_e];
     }
     bool isSignal() const {
@@ -728,7 +727,7 @@ public:
     bool isProcAssignable() const {
         return (m_e == GPARAM || m_e == LPARAM || m_e == GENVAR || m_e == VAR || m_e == BLOCKTEMP
                 || m_e == MODULETEMP || m_e == STMTTEMP || m_e == XTEMP || m_e == IFACEREF
-                || m_e == MEMBER || m_e == WITH);
+                || m_e == MEMBER);
     }
     bool isTemp() const {
         return (m_e == BLOCKTEMP || m_e == MODULETEMP || m_e == STMTTEMP || m_e == XTEMP);
@@ -1736,6 +1735,7 @@ public:
     AstNodeDType* findUInt32DType() { return findBasicDType(AstBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() { return findBasicDType(AstBasicDTypeKwd::UINT64); }
     AstNodeDType* findVoidDType() const;
+    AstNodeDType* findQueueIndexDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,

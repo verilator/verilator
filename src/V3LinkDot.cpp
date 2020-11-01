@@ -90,7 +90,9 @@ public:
 };
 class LinkNodeMatcherVar : public VNodeMatcher {
 public:
-    virtual bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, Var); }
+    virtual bool nodeMatch(const AstNode* nodep) const override {
+        return VN_IS(nodep, Var) || VN_IS(nodep, LambdaArgRef);
+    }
 };
 class LinkNodeMatcherVarIO : public VNodeMatcher {
 public:
@@ -1270,9 +1272,9 @@ class LinkDotFindVisitor : public AstNVisitor {
             VL_DO_DANGLING(argp->unlinkFrBackWithNext()->deleteTree(), argp);
         }
         // Type depends on the method used, let V3Width figure it out later
-        auto* varp = new AstVar(argFl, AstVarType::WITH, name, VFlagChildDType(),
-                                new AstParseTypeDType(nodep->fileline()));
-        auto* newp = new AstWith(nodep->fileline(), varp, nodep->exprp()->unlinkFrBackWithNext());
+        auto* argrefp = new AstLambdaArgRef(argFl, name);
+        auto* newp
+            = new AstWith(nodep->fileline(), argrefp, nodep->exprp()->unlinkFrBackWithNext());
         funcrefp->addPinsp(newp);
         nodep->replaceWith(funcrefp->unlinkFrBack());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1287,7 +1289,9 @@ class LinkDotFindVisitor : public AstNVisitor {
             m_curSymp = m_statep->insertBlock(m_curSymp, "__Vwith" + cvtToStr(m_modWithNum), nodep,
                                               m_packagep);
             m_curSymp->fallbackp(oldCurSymp);
-            iterateChildren(nodep);
+            UASSERT_OBJ(nodep->argrefp(), nodep, "Missing lambda argref");
+            // Insert argref's name into symbol table
+            m_statep->insertSym(m_curSymp, nodep->argrefp()->name(), nodep->argrefp(), nullptr);
         }
     }
 
@@ -1535,6 +1539,11 @@ class LinkDotScopeVisitor : public AstNVisitor {
         }
     }
     virtual void visit(AstNodeFTask* nodep) override {
+        VSymEnt* symp = m_statep->insertBlock(m_modSymp, nodep->name(), nodep, nullptr);
+        symp->fallbackp(m_modSymp);
+        // No recursion, we don't want to pick up variables
+    }
+    virtual void visit(AstWith* nodep) override {
         VSymEnt* symp = m_statep->insertBlock(m_modSymp, nodep->name(), nodep, nullptr);
         symp->fallbackp(m_modSymp);
         // No recursion, we don't want to pick up variables
@@ -2274,6 +2283,14 @@ private:
                 if (allowVar) {
                     AstNode* newp
                         = new AstEnumItemRef(nodep->fileline(), valuep, foundp->packagep());
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    ok = true;
+                    m_ds.m_dotText = "";
+                }
+            } else if (AstLambdaArgRef* argrefp = VN_CAST(foundp->nodep(), LambdaArgRef)) {
+                if (allowVar) {
+                    AstNode* newp = new AstLambdaArgRef(nodep->fileline(), argrefp->name());
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     ok = true;
