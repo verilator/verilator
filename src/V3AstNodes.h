@@ -3113,7 +3113,7 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
     virtual string emitVerilog() override { return name(); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
-    virtual bool cleanOut() const { return true; }
+    virtual bool cleanOut() const override { return true; }
     virtual bool hasDType() const override { return true; }
     virtual int instrCount() const override { return widthInstrs(); }
     virtual string name() const override { return m_name; }  // * = Var name
