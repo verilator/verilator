@@ -1453,12 +1453,8 @@ void AstVarScope::dump(std::ostream& str) const {
 void AstNodeVarRef::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
 void AstVarXRef::dump(std::ostream& str) const {
     this->AstNodeVarRef::dump(str);
-    if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
-    if (access().isWrite()) {
-        str << " [LV] => ";
-    } else {
-        str << " [RV] <- ";
-    }
+    if (packagep()) str << " pkg=" << nodeAddr(packagep());
+    str << " " << access().arrow() << " ";
     str << ".=" << dotted() << " ";
     if (inlinedDots() != "") str << " inline.=" << inlinedDots() << " - ";
     if (varScopep()) {
@@ -1471,12 +1467,8 @@ void AstVarXRef::dump(std::ostream& str) const {
 }
 void AstVarRef::dump(std::ostream& str) const {
     this->AstNodeVarRef::dump(str);
-    if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
-    if (access().isWrite()) {
-        str << " [LV] => ";
-    } else {
-        str << " [RV] <- ";
-    }
+    if (packagep()) str << " pkg=" << nodeAddr(packagep());
+    str << " " << access().arrow() << " ";
     if (varScopep()) {
         varScopep()->dump(str);
     } else if (varp()) {

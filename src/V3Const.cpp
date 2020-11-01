@@ -314,7 +314,7 @@ private:
         // It was an expression, then got constified.  In reality, the WordSel
         // must be wrapped in a Cond, that will be false.
         return (VN_IS(nodep->rhsp(), Const) && VN_IS(nodep->fromp(), NodeVarRef)
-                && !VN_CAST_CONST(nodep->fromp(), NodeVarRef)->access().isWrite()
+                && VN_CAST_CONST(nodep->fromp(), NodeVarRef)->access().isReadOnly()
                 && (static_cast<int>(VN_CAST_CONST(nodep->rhsp(), Const)->toUInt())
                     >= VN_CAST(nodep->fromp(), NodeVarRef)->varp()->widthWords()));
     }

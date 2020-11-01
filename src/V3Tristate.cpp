@@ -1237,7 +1237,7 @@ class TristateVisitor : public TristateBaseVisitor {
                 UINFO(9, "     Ref-to-lvalue " << nodep << endl);
                 m_tgraph.didProcess(nodep);
                 mapInsertLhsVarRef(nodep);
-            } else if (!nodep->access().isWrite()
+            } else if (nodep->access().isReadOnly()
                        // Not already processed, nor varref from visit(AstPin) creation
                        && !nodep->user1p()
                        // Reference to another tristate variable

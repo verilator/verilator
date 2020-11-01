@@ -451,7 +451,7 @@ private:
         }
 
         if (m_varModeReplace && nodep->varp() == m_forVarp && nodep->varScopep() == m_forVscp
-            && !nodep->access().isWrite()) {
+            && nodep->access().isReadOnly()) {
             AstNode* newconstp = m_varValuep->cloneTree(false);
             nodep->replaceWith(newconstp);
             pushDeletep(nodep);

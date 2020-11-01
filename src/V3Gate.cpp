@@ -448,7 +448,7 @@ private:
                 vvertexp->setIsClock();
                 // For SYNCASYNCNET
                 varscp->user2(true);
-            } else if (m_activep && m_activep->hasClocked() && !nodep->access().isWrite()) {
+            } else if (m_activep && m_activep->hasClocked() && nodep->access().isReadOnly()) {
                 if (varscp->user2()) {
                     if (!vvertexp->rstAsyncNodep()) vvertexp->rstAsyncNodep(nodep);
                 } else {

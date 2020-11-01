@@ -131,6 +131,10 @@ public:
         static const char* const names[] = {"RD", "WR"};
         return names[m_e];
     }
+    const char* arrow() const {
+        static const char* const names[] = {"[RV] <-", "[LV] =>"};
+        return names[m_e];
+    }
     inline VAccess()
         : m_e{READ} {}
     // cppcheck-suppress noExplicitConstructor
