@@ -6,6 +6,7 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+// clang-format off
 #include "verilatedos.h"
 #include VM_PREFIX_INCLUDE
 #include "Vt_trace_two_b.h"
@@ -17,6 +18,7 @@
 #  include "verilated_vcd_c.h"
 # endif
 #endif
+// clang-format on
 
 // Compile in place
 #include "Vt_trace_two_b.cpp"
@@ -39,6 +41,7 @@ int main(int argc, char** argv, char** env) {
     ap = new VM_PREFIX("topa");
     bp = new Vt_trace_two_b("topb");
 
+// clang-format off
 #ifdef TEST_HDR_TRACE
     Verilated::traceEverOn(true);
 # ifdef TEST_FST
@@ -53,6 +56,7 @@ int main(int argc, char** argv, char** env) {
     tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 # endif
 #endif
+    // clang-format on
 
 #ifdef TEST_HDR_TRACE
     ap->eval_step();

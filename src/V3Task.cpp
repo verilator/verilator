@@ -104,7 +104,7 @@ private:
 
     // TYPES
     typedef std::map<std::pair<AstScope*, AstVar*>, AstVarScope*> VarToScopeMap;
-    typedef std::map<AstNodeFTask*, AstClass*> FuncToClassMap;
+    typedef std::map<const AstNodeFTask*, AstClass*> FuncToClassMap;
     typedef std::vector<AstInitial*> Initials;
     // MEMBERS
     VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
@@ -341,7 +341,7 @@ private:
         IM_AFTER,  // Pointing at last inserted stmt, insert after
         IM_WHILE_PRECOND  // Pointing to for loop, add to body end
     };
-    typedef std::map<string, std::pair<AstNodeFTask*, string>> DpiNames;
+    typedef std::map<const string, std::pair<AstNodeFTask*, string>> DpiNames;
 
     // STATE
     TaskStateVisitor* m_statep;  // Common state between visitors
@@ -1388,7 +1388,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     // Missing pin/expr?  We return (pinvar, nullptr)
     // Extra   pin/expr?  We clean it up
 
-    typedef std::map<string, int> NameToIndex;
+    typedef std::map<const string, int> NameToIndex;
     NameToIndex nameToIndex;
     V3TaskConnects tconnects;
     UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");

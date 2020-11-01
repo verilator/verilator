@@ -34,7 +34,7 @@ class StatsVisitor : public AstNVisitor {
 private:
     // NODE STATE/TYPES
 
-    typedef std::map<string, int> NameMap;  // Number of times a name appears
+    typedef std::map<const string, int> NameMap;  // Number of times a name appears
 
     // STATE
     string m_stage;  // Name of the stage we are scanning
@@ -181,10 +181,12 @@ private:
             if (!m_tracingCall && !nodep->entryPoint()) return;
             m_tracingCall = false;
         }
-        m_cfuncp = nodep;
-        allNodes(nodep);
-        iterateChildrenConst(nodep);
-        m_cfuncp = nullptr;
+        VL_RESTORER(m_cfuncp);
+        {
+            m_cfuncp = nodep;
+            allNodes(nodep);
+            iterateChildrenConst(nodep);
+        }
     }
     virtual void visit(AstNode* nodep) override {
         allNodes(nodep);

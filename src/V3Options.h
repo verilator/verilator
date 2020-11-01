@@ -201,7 +201,7 @@ typedef std::set<string> V3StringSet;
 class V3HierarchicalBlockOption {
 public:
     // key:parameter name, value:value (as string)
-    typedef std::map<string, string> ParamStrMap;
+    typedef std::map<const string, string> ParamStrMap;
 
 private:
     string m_origName;  // module name
@@ -218,7 +218,7 @@ public:
     const ParamStrMap params() const { return m_parameters; }
 };
 
-typedef std::map<string, V3HierarchicalBlockOption> V3HierBlockOptSet;
+typedef std::map<const string, V3HierarchicalBlockOption> V3HierBlockOptSet;
 
 //######################################################################
 // V3Options - Command line options
@@ -227,7 +227,7 @@ class V3Options {
 public:
 private:
     // TYPES
-    typedef std::map<string, int> DebugSrcMap;
+    typedef std::map<const string, int> DebugSrcMap;
 
     // MEMBERS (general options)
     V3OptionsImp* m_impp;  // Slow hidden options
@@ -245,8 +245,8 @@ private:
     V3StringList m_forceIncs;   // argument: -FI
     DebugSrcMap m_debugSrcs;    // argument: --debugi-<srcfile>=<level>
     DebugSrcMap m_dumpTrees;    // argument: --dump-treei-<srcfile>=<level>
-    std::map<string,string> m_parameters;  // Parameters
-    std::map<string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
+    std::map<const string, string> m_parameters;  // Parameters
+    std::map<const string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
 
     bool m_preprocOnly = false;     // main switch: -E
     bool m_makePhony = false;       // main switch: -MP

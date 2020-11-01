@@ -280,10 +280,10 @@ private:
                               "Unsupported: String array operation on non-variable");
             }
             AstNode* newp;
-            if (varrefp && varrefp->access().isWrite()) {
-                newp = new AstGetcRefN(nodep->fileline(), fromp, rhsp);
-            } else {
+            if (varrefp && varrefp->access().isReadOnly()) {
                 newp = new AstGetcN(nodep->fileline(), fromp, rhsp);
+            } else {
+                newp = new AstGetcRefN(nodep->fileline(), fromp, rhsp);
             }
             UINFO(6, "   new " << newp << endl);
             nodep->replaceWith(newp);
@@ -437,6 +437,15 @@ private:
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp << endl);
             // if (debug() >= 9) newp->dumpTree(cout, "--SELEXnew: ");
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (VN_IS(ddtypep, QueueDType)) {
+            auto* newp = new AstCMethodHard(nodep->fileline(), fromp, "slice", msbp);
+            msbp->addNext(lsbp);
+            newp->dtypep(ddtypep);
+            newp->didWidth(true);
+            newp->protect(false);
+            UINFO(6, "   new " << newp << endl);
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {  // nullptr=bad extract, or unknown node type

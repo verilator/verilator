@@ -141,7 +141,7 @@ class InstDeModVarVisitor : public AstNVisitor {
     // Expand all module variables, and save names for later reference
 private:
     // STATE
-    typedef std::map<string, AstVar*> VarNameMap;
+    typedef std::map<const string, AstVar*> VarNameMap;
     VarNameMap m_modVarNameMap;  // Per module, name of cloned variables
 
     VL_DEBUG_FUNC;  // Declare debug()
@@ -278,8 +278,7 @@ private:
                         = VN_CAST(arrdtype->subDTypep(), IfaceRefDType);
                     origIfaceRefp->cellp(nullptr);
                     AstVar* varNewp = ifaceVarp->cloneTree(false);
-                    AstIfaceRefDType* ifaceRefp
-                        = VN_CAST(arrdtype->subDTypep(), IfaceRefDType)->cloneTree(false);
+                    AstIfaceRefDType* ifaceRefp = origIfaceRefp->cloneTree(false);
                     arrdtype->addNextHere(ifaceRefp);
                     ifaceRefp->cellp(newp);
                     ifaceRefp->cellName(newp->name());

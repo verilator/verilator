@@ -9,6 +9,7 @@
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 
+// clang-format off
 #include VM_PREFIX_INCLUDE
 #ifdef T_TRACE_PUBLIC_SIG_VLT
 # include "Vt_trace_public_sig_vlt_t.h"
@@ -17,6 +18,7 @@
 # include "Vt_trace_public_sig_t.h"
 # include "Vt_trace_public_sig_glbl.h"
 #endif
+// clang-format on
 
 unsigned long long main_time = 0;
 double sc_time_stamp() { return (double)main_time; }

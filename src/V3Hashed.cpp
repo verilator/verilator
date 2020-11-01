@@ -174,9 +174,8 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
     }
     *logp << "\n*** STATS:\n" << endl;
     *logp << "    #InBucket   Occurrences\n";
-    for (std::map<int, int>::iterator it = dist.begin(); it != dist.end(); ++it) {
-        *logp << "    " << std::setw(9) << it->first << "  " << std::setw(12) << it->second
-              << endl;
+    for (const auto& i : dist) {
+        *logp << "    " << std::setw(9) << i.first << "  " << std::setw(12) << i.second << endl;
     }
 
     *logp << "\n*** Dump:\n" << endl;

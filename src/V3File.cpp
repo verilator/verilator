@@ -331,7 +331,7 @@ void V3File::createMakeDir() {
 // VInFilterImp
 
 class VInFilterImp {
-    typedef std::map<string, string> FileContentsMap;
+    typedef std::map<const string, string> FileContentsMap;
     typedef VInFilter::StrList StrList;
 
     FileContentsMap m_contentsMap;  // Cache of file contents
@@ -954,7 +954,7 @@ void V3OutCFile::putsGuard() {
 
 class VIdProtectImp {
     // MEMBERS
-    typedef std::map<string, string> IdMap;
+    typedef std::map<const string, string> IdMap;
     IdMap m_nameMap;  // Map of old name into new name
     typedef std::unordered_set<std::string> IdSet;
     IdSet m_newIdSet;  // Which new names exist

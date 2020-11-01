@@ -9,10 +9,9 @@
 //
 //*************************************************************************
 
-// clang-format off
-
 #include "svdpi.h"
 
+// clang-format off
 #if defined(VERILATOR)  // Verilator
 # include "Vt_dpi_open_query__Dpi.h"
 #elif defined(VCS)  // VCS
@@ -24,7 +23,6 @@
 #else
 # error "Unknown simulator for DPI test"
 #endif
-
 // clang-format on
 
 //======================================================================

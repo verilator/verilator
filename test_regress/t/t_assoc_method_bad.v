@@ -20,5 +20,10 @@ module t (/*AUTOARG*/);
       v = a.last();  // Bad
       v = a.prev(k, "bad2");  // Bad
       a.delete(k, "bad2");
+
+      a.sort;  // Not legal on assoc
+      a.rsort;  // Not legal on assoc
+      a.reverse;  // Not legal on assoc
+      a.shuffle;  // Not legal on assoc
    end
 endmodule

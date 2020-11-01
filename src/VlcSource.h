@@ -101,7 +101,7 @@ public:
 class VlcSources {
 public:
     // TYPES
-    typedef std::map<string, VlcSource> NameMap;
+    typedef std::map<const string, VlcSource> NameMap;
 
 private:
     // MEMBERS

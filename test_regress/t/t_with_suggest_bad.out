@@ -1,0 +1,9 @@
+%Error: t/t_with_suggest_bad.v:16:25: Can't find definition of variable: 'itemm'
+                                    : ... Suggested alternative: 'item'
+   16 |       qv = q.find with (itemm == 2);
+      |                         ^~~~~
+%Error: t/t_with_suggest_bad.v:18:37: Can't find definition of variable: 'misspelledd'
+                                    : ... Suggested alternative: 'misspelled'
+   18 |       qv = q.find(misspelled) with (misspelledd == 2);
+      |                                     ^~~~~~~~~~~
+%Error: Exiting due to

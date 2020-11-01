@@ -1297,17 +1297,21 @@ private:
     virtual void visit(AstCFunc* nodep) override {
         // No ASSIGNW removals under funcs, we've long eliminated INITIALs
         // (We should perhaps rename the assignw's to just assigns)
-        m_wremove = false;
-        iterateChildren(nodep);
-        m_wremove = true;
+        VL_RESTORER(m_wremove);
+        {
+            m_wremove = false;
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstScope* nodep) override {
         // No ASSIGNW removals under scope, we've long eliminated INITIALs
-        m_scopep = nodep;
-        m_wremove = false;
-        iterateChildren(nodep);
-        m_wremove = true;
-        m_scopep = nullptr;
+        VL_RESTORER(m_wremove);
+        VL_RESTORER(m_scopep);
+        {
+            m_wremove = false;
+            m_scopep = nodep;
+            iterateChildren(nodep);
+        }
     }
 
     void swapSides(AstNodeBiCom* nodep) {
@@ -1605,7 +1609,7 @@ private:
             // if (debug()) valuep->dumpTree(cout, "  visitvaref: ");
             iterateAndNextNull(nodep->varp()->valuep());  // May change nodep->varp()->valuep()
             AstNode* valuep = nodep->varp()->valuep();
-            if (!nodep->access().isWrite()
+            if (nodep->access().isReadOnly()
                 && ((!m_params  // Can reduce constant wires into equations
                      && m_doNConst
                      && v3Global.opt.oConst()

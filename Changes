@@ -4,6 +4,14 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.103 devel
 
+****  Support queue and associative array 'with' statements. (#2616)
+
+****  Support queue slicing (#2326).
+
+****  Support associative array pattern assignments and defaults.
+
+****  Fix WIDTH warnings on comparisons with nullptr (#2602). [Rupert Swarbrick]
+
 
 * Verilator 4.102 2020-10-15
 

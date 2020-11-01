@@ -1261,6 +1261,9 @@ AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {
 AstNodeDType* AstNode::findVoidDType() const {
     return v3Global.rootp()->typeTablep()->findVoidDType(fileline());
 }
+AstNodeDType* AstNode::findQueueIndexDType() const {
+    return v3Global.rootp()->typeTablep()->findQueueIndexDType(fileline());
+}
 
 //######################################################################
 // AstNVisitor

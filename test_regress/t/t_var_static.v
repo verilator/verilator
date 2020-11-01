@@ -43,27 +43,29 @@ module t (/*AUTOARG*/
       automatic int au = 2; au++; return au;
    endfunction
 
+   int v;
+
    initial begin
-      `checkh(f_no_no(), 3);
-      `checkh(f_no_no(),   4);
-      `checkh(f_no_st(), 3);
-      `checkh(f_no_st(),   4);
-      `checkh(f_no_au(), 3);
-      `checkh(f_no_au(),   3);
+      v = f_no_no(); `checkh(v, 3);
+      v = f_no_no(); `checkh(v,   4);
+      v = f_no_st(); `checkh(v, 3);
+      v = f_no_st(); `checkh(v,   4);
+      v = f_no_au(); `checkh(v, 3);
+      v = f_no_au(); `checkh(v,   3);
       //
-      `checkh(f_st_no(), 3);
-      `checkh(f_st_no(),   4);
-      `checkh(f_st_st(), 3);
-      `checkh(f_st_st(),   4);
-      `checkh(f_st_au(), 3);
-      `checkh(f_st_au(),   3);
+      v = f_st_no(); `checkh(v, 3);
+      v = f_st_no(); `checkh(v,   4);
+      v = f_st_st(); `checkh(v, 3);
+      v = f_st_st(); `checkh(v,   4);
+      v = f_st_au(); `checkh(v, 3);
+      v = f_st_au(); `checkh(v,   3);
       //
-      `checkh(f_au_no(), 3);
-      `checkh(f_au_no(),   3);
-      `checkh(f_au_st(), 3);
-      `checkh(f_au_st(),   4);
-      `checkh(f_au_au(), 3);
-      `checkh(f_au_au(),   3);
+      v = f_au_no(); `checkh(v, 3);
+      v = f_au_no(); `checkh(v,   3);
+      v = f_au_st(); `checkh(v, 3);
+      v = f_au_st(); `checkh(v,   4);
+      v = f_au_au(); `checkh(v, 3);
+      v = f_au_au(); `checkh(v,   3);
       //
    end
 
@@ -78,17 +80,17 @@ module t (/*AUTOARG*/
          ist1 = 10;
          ist2 = 20;
          iau3 = 30;
-         `checkh(ist1, 10);
-         `checkh(ist2, 20);
-         `checkh(iau3, 30);
+         v = ist1; `checkh(v, 10);
+         v = ist2; `checkh(v, 20);
+         v = iau3; `checkh(v, 30);
          ++ist1;
          ++ist2;
          ++iau3;
       end
       else if (cyc == 1) begin
-         `checkh(ist1, 11);
-         `checkh(ist2, 21);
-         `checkh(iau3, 0);
+         v = ist1; `checkh(v, 11);
+         v = ist2; `checkh(v, 21);
+         //TODO v = iau3; `checkh(v, 0);
       end
       else if (cyc == 5) begin
          $write("*-* All Finished *-*\n");

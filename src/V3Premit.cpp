@@ -94,7 +94,7 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstCFunc* m_funcp = nullptr;  // Current block
+    AstCFunc* m_cfuncp = nullptr;  // Current block
     AstNode* m_stmtp = nullptr;  // Current statement
     AstWhile* m_inWhilep = nullptr;  // Inside while loop, special statement additions
     AstTraceInc* m_inTracep = nullptr;  // Inside while loop, special statement additions
@@ -141,7 +141,7 @@ private:
         string newvarname = (string("__Vtemp") + cvtToStr(m_modp->varNumGetInc()));
         AstVar* varp
             = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname, nodep->dtypep());
-        m_funcp->addInitsp(varp);
+        m_cfuncp->addInitsp(varp);
         return varp;
     }
 
@@ -189,18 +189,20 @@ private:
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
-            m_funcp = nullptr;
+            m_cfuncp = nullptr;
             iterateChildren(nodep);
         }
     }
     virtual void visit(AstCFunc* nodep) override {
-        m_funcp = nodep;
-        iterateChildren(nodep);
-        m_funcp = nullptr;
+        VL_RESTORER(m_cfuncp);
+        {
+            m_cfuncp = nodep;
+            iterateChildren(nodep);
+        }
     }
     void startStatement(AstNode* nodep) {
         m_assignLhs = false;
-        if (m_funcp) m_stmtp = nodep;
+        if (m_cfuncp) m_stmtp = nodep;
     }
     virtual void visit(AstWhile* nodep) override {
         UINFO(4, "  WHILE  " << nodep << endl);

@@ -82,13 +82,14 @@ module t (/*AUTOARG*/
          i = a.last(k); `checkh(i, 0);
 
          // Patterns & default
-`ifndef VERILATOR  // Unsupported: Pattern assignment
          a = '{ "f": "fooed", "b": "bared", default: "defaulted" };
          i = a.size(); `checkh(i, 2);  // Default doesn't count
          v = a["f"]; `checks(v, "fooed");
          v = a["b"]; `checks(v, "bared");
          v = a["NEXISTS"]; `checks(v, "defaulted");
-`endif
+
+         a = '{};
+         i = a.size(); `checkh(i, 0);
       end
 
       begin

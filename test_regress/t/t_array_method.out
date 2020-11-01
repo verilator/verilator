@@ -1,0 +1,117 @@
+%Error: t/t_array_method.v:24:9: Unknown built-in array method 'sort'
+                               : ... In instance t
+   24 |       q.sort;
+      |         ^~~~
+%Error: t/t_array_method.v:26:9: Unknown built-in array method 'sort'
+                               : ... In instance t
+   26 |       q.sort with (item == 2);
+      |         ^~~~
+%Error: t/t_array_method.v:28:9: Unknown built-in array method 'sort'
+                               : ... In instance t
+   28 |       q.sort(x) with (x == 3);
+      |         ^~~~
+%Error: t/t_array_method.v:31:9: Unknown built-in array method 'rsort'
+                               : ... In instance t
+   31 |       q.rsort;
+      |         ^~~~~
+%Error: t/t_array_method.v:33:9: Unknown built-in array method 'rsort'
+                               : ... In instance t
+   33 |       q.rsort with (item == 2);
+      |         ^~~~~
+%Error: t/t_array_method.v:36:14: Unknown built-in array method 'unique'
+                                : ... In instance t
+   36 |       qv = q.unique;
+      |              ^~~~~~
+%Error: t/t_array_method.v:38:14: Unknown built-in array method 'unique_index'
+                                : ... In instance t
+   38 |       qi = q.unique_index; qi.sort;
+      |              ^~~~~~~~~~~~
+%Error: t/t_array_method.v:40:9: Unknown built-in array method 'reverse'
+                               : ... In instance t
+   40 |       q.reverse;
+      |         ^~~~~~~
+%Error: t/t_array_method.v:42:9: Unknown built-in array method 'shuffle'
+                               : ... In instance t
+   42 |       q.shuffle(); q.sort;
+      |         ^~~~~~~
+%Error: t/t_array_method.v:42:22: Unknown built-in array method 'sort'
+                                : ... In instance t
+   42 |       q.shuffle(); q.sort;
+      |                      ^~~~
+%Error: t/t_array_method.v:47:14: Unknown built-in array method 'find'
+                                : ... In instance t
+   47 |       qv = q.find with (item == 2);
+      |              ^~~~
+%Error: t/t_array_method.v:49:14: Unknown built-in array method 'find_first'
+                                : ... In instance t
+   49 |       qv = q.find_first with (item == 2);
+      |              ^~~~~~~~~~
+%Error: t/t_array_method.v:51:14: Unknown built-in array method 'find_last'
+                                : ... In instance t
+   51 |       qv = q.find_last with (item == 2);
+      |              ^~~~~~~~~
+%Error: t/t_array_method.v:54:14: Unknown built-in array method 'find'
+                                : ... In instance t
+   54 |       qv = q.find with (item == 20);
+      |              ^~~~
+%Error: t/t_array_method.v:56:14: Unknown built-in array method 'find_first'
+                                : ... In instance t
+   56 |       qv = q.find_first with (item == 20);
+      |              ^~~~~~~~~~
+%Error: t/t_array_method.v:58:14: Unknown built-in array method 'find_last'
+                                : ... In instance t
+   58 |       qv = q.find_last with (item == 20);
+      |              ^~~~~~~~~
+%Error: t/t_array_method.v:61:14: Unknown built-in array method 'find_index'
+                                : ... In instance t
+   61 |       qi = q.find_index with (item == 2); qi.sort;
+      |              ^~~~~~~~~~
+%Error: t/t_array_method.v:63:14: Unknown built-in array method 'find_first_index'
+                                : ... In instance t
+   63 |       qi = q.find_first_index with (item == 2);
+      |              ^~~~~~~~~~~~~~~~
+%Error: t/t_array_method.v:65:14: Unknown built-in array method 'find_last_index'
+                                : ... In instance t
+   65 |       qi = q.find_last_index with (item == 2);
+      |              ^~~~~~~~~~~~~~~
+%Error: t/t_array_method.v:68:14: Unknown built-in array method 'find_index'
+                                : ... In instance t
+   68 |       qi = q.find_index with (item == 20); qi.sort;
+      |              ^~~~~~~~~~
+%Error: t/t_array_method.v:70:14: Unknown built-in array method 'find_first_index'
+                                : ... In instance t
+   70 |       qi = q.find_first_index with (item == 20);
+      |              ^~~~~~~~~~~~~~~~
+%Error: t/t_array_method.v:72:14: Unknown built-in array method 'find_last_index'
+                                : ... In instance t
+   72 |       qi = q.find_last_index with (item == 20);
+      |              ^~~~~~~~~~~~~~~
+%Error: t/t_array_method.v:75:14: Unknown built-in array method 'min'
+                                : ... In instance t
+   75 |       qv = q.min;
+      |              ^~~
+%Error: t/t_array_method.v:77:14: Unknown built-in array method 'max'
+                                : ... In instance t
+   77 |       qv = q.max;
+      |              ^~~
+%Error: t/t_array_method.v:83:17: 'with' not legal on this method
+                                : ... In instance t
+   83 |       i = q.sum with (item + 1); do if ((i) !== (32'h11)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method.v",83, (i), (32'h11)); $stop; end while(0);;
+      |                 ^~~~
+%Error: t/t_array_method.v:85:21: 'with' not legal on this method
+                                : ... In instance t
+   85 |       i = q.product with (item + 1); do if ((i) !== (32'h168)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method.v",85, (i), (32'h168)); $stop; end while(0);;
+      |                     ^~~~
+%Error: t/t_array_method.v:89:17: 'with' not legal on this method
+                                : ... In instance t
+   89 |       i = q.and with (item + 1); do if ((i) !== (32'b1001)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method.v",89, (i), (32'b1001)); $stop; end while(0);;
+      |                 ^~~~
+%Error: t/t_array_method.v:91:16: 'with' not legal on this method
+                                : ... In instance t
+   91 |       i = q.or with (item + 1); do if ((i) !== (32'b1111)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method.v",91, (i), (32'b1111)); $stop; end while(0);;
+      |                ^~~~
+%Error: t/t_array_method.v:93:17: 'with' not legal on this method
+                                : ... In instance t
+   93 |       i = q.xor with (item + 1); do if ((i) !== (32'hb)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method.v",93, (i), (32'hb)); $stop; end while(0);;
+      |                 ^~~~
+%Error: Exiting due to

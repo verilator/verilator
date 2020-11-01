@@ -140,8 +140,9 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
     VAccess invert() const { return (m_e == WRITE) ? VAccess(READ) : VAccess(WRITE); }
-    bool isRead() const { return m_e == READ; }
-    bool isWrite() const { return m_e == WRITE; }
+    bool isReadOnly() const { return m_e == READ; }  // False if/when support READWRITE
+    bool isWrite() const { return m_e == WRITE; }  // Need audit if/when support READWRITE
+    bool isWriteOnly() const { return m_e == WRITE; }  // False if/when support READWRITE
 };
 inline bool operator==(const VAccess& lhs, const VAccess& rhs) { return lhs.m_e == rhs.m_e; }
 inline bool operator==(const VAccess& lhs, VAccess::en rhs) { return lhs.m_e == rhs; }
@@ -1254,7 +1255,10 @@ public:
     /// along with all children and next(s). This is often better to use
     /// than an immediate deleteTree, as any pointers into this node will
     /// persist for the lifetime of the visitor
-    void pushDeletep(AstNode* nodep) { m_deleteps.push_back(nodep); }
+    void pushDeletep(AstNode* nodep) {
+        UASSERT_STATIC(nodep, "Cannot delete nullptr node");
+        m_deleteps.push_back(nodep);
+    }
     /// Call deleteTree on all previously pushDeletep()'ed nodes
     void doDeletes();
 
@@ -1731,6 +1735,7 @@ public:
     AstNodeDType* findUInt32DType() { return findBasicDType(AstBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() { return findBasicDType(AstBasicDTypeKwd::UINT64); }
     AstNodeDType* findVoidDType() const;
+    AstNodeDType* findQueueIndexDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
@@ -2439,13 +2444,18 @@ public:
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
     }
+    string cType(const string& name, bool forFunc, bool isRef) const;
+
+private:
+    class CTypeRecursed;
+    CTypeRecursed cTypeRecurse(bool forFunc, bool compound) const;
 };
 
 class AstNodeUOrStructDType : public AstNodeDType {
     // A struct or union; common handling
 private:
     // TYPES
-    typedef std::map<string, AstMemberDType*> MemberNameMap;
+    typedef std::map<const string, AstMemberDType*> MemberNameMap;
     // MEMBERS
     string m_name;  // Name from upper typedef, if any
     bool m_packed;

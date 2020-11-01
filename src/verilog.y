@@ -3403,8 +3403,7 @@ assignment_pattern<patternp>:	// ==IEEE: assignment_pattern
 	//			// also IEEE "''{' array_pattern_key ':' ...
 	|	yP_TICKBRA patternMemberList '}'	{ $$ = new AstPattern($1,$2); }
 	//			// IEEE: Not in grammar, but in VMM
-	|	yP_TICKBRA '}'
-			{ $$ = new AstPattern($1, nullptr); $1->v3warn(E_UNSUPPORTED, "Unsupported: Empty '{}"); }
+	|	yP_TICKBRA '}'				{ $$ = new AstPattern($1, nullptr); }
 	;
 
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal
@@ -3497,9 +3496,9 @@ task_subroutine_callNoMethod<nodep>:	// function_subroutine_callNoMethod (as tas
 	//			// IEEE: tf_call
 		taskRef					{ $$ = $1; }
 	//			// funcref below not task ref to avoid conflict, must later handle either
-	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWith($2, true, $1, $4); }
+	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWithParse($2, true, $1, $4); }
 	//			// can call as method and yWITH without parenthesis
-	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWith($2, true, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
+	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWithParse($2, true, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
 	|	system_t_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
 	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3512,9 +3511,9 @@ task_subroutine_callNoMethod<nodep>:	// function_subroutine_callNoMethod (as tas
 function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as function)
 	//			// IEEE: tf_call
 		funcRef					{ $$ = $1; }
-	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWith($2, false, $1, $4); }
+	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWithParse($2, false, $1, $4); }
 	//			// can call as method and yWITH without parenthesis
-	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWith($2, false, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
+	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWithParse($2, false, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
 	|	system_f_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
 	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3522,7 +3521,7 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 	//			// We implement randomize as a normal funcRef, since randomize isn't a keyword
 	//			// Note yNULL is already part of expressions, so they come for free
 	|	funcRef yWITH__CUR constraint_block	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with' constraint"); }
-	|	funcRef yWITH__CUR '{' '}'		{ $$ = new AstWith($2, false, $1, nullptr); }
+	|	funcRef yWITH__CUR '{' '}'		{ $$ = new AstWithParse($2, false, $1, nullptr); }
 	;
 
 system_t_call<nodep>:		// IEEE: system_tf_call (as task)
@@ -3625,6 +3624,9 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstWriteMem($1, true,  $3, $5, $7, nullptr); }
 	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstWriteMem($1, true,  $3, $5, $7, $9); }
 	//
+	|	yD_CAST '(' expr ',' expr ')'
+			{ $$ = new AstAssert($1, new AstCastDynamic($1, $3, $5), nullptr, nullptr, true); }
+	//
 	// Any system function as a task
 	|	system_f_call_or_t			{ $$ = new AstSysFuncAsTask($<fl>1, $1); }
 	;
@@ -3633,6 +3635,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 		yaD_PLI systemDpiArgsE			{ $$ = new AstFuncRef($<fl>1, *$1, $2); VN_CAST($$, FuncRef)->pli(true); }
 	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? nullptr : new AstUCFunc($1,$3)); }
+	|	yD_CAST '(' expr ',' expr ')'		{ $$ = new AstCastDynamic($1, $3, $5); }
 	|	yD_SYSTEM  '(' expr ')'			{ $$ = new AstSystemF($1,$3); }
 	//
 	|	system_f_call_or_t			{ $$ = $1; }
@@ -3655,7 +3658,6 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_BITS '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
 	|	yD_BITSTOREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); }
 	|	yD_BITSTOSHORTREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); UNSUPREAL($1); }
-	|	yD_CAST '(' expr ',' expr ')'		{ $$ = new AstCastDynamic($1, $3, $5); }
 	|	yD_CEIL '(' expr ')'			{ $$ = new AstCeilD($1,$3); }
 	|	yD_CHANGED '(' expr ')'			{ $$ = new AstLogNot($1, new AstStable($1, $3)); }
 	|	yD_CHANGED '(' expr ',' expr ')'	{ $$ = $3; BBUNSUP($1, "Unsupported: $changed and clock arguments"); }
@@ -4026,9 +4028,9 @@ array_methodNoRoot<ftaskrefp>:
 array_methodWith<nodep>:
 		array_methodNoRoot			{ $$ = $1; }
 	|	array_methodNoRoot parenE yWITH__PAREN '(' expr ')'
-			{ $$ = new AstWith($3, false, $1, $5); }
+			{ $$ = new AstWithParse($3, false, $1, $5); }
 	|	array_methodNoRoot '(' expr ')' yWITH__PAREN '(' expr ')'
-			{ $$ = new AstWith($5, false, $1, $7); $1->addPinsp($3); }
+			{ $$ = new AstWithParse($5, false, $1, $7); $1->addPinsp(new AstArg($<fl>3, "", $3)); }
 	;
 
 dpi_import_export<nodep>:	// ==IEEE: dpi_import_export
@@ -4229,7 +4231,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// Indistinguishable from function_subroutine_call:method_call
 	//
 	|	'$'					{ $$ = new AstUnbounded($<fl>1); }
-	|	yNULL					{ $$ = new AstConst($1, AstConst::LogicFalse()); }
+	|	yNULL					{ $$ = new AstConst($1, AstConst::StringToParse(), "'0"); }
 	//			// IEEE: yTHIS
 	//			// See exprScope
 	//

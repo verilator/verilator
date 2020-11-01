@@ -15,6 +15,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # include "Vt_dpi_string__Dpi.h"
 #elif defined(VCS)
@@ -24,18 +25,18 @@
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 #ifdef NEED_EXTERNS
 extern "C" {
 
-    extern int dpii_string(const char* s);
-
+extern int dpii_string(const char* s);
 }
 #endif
 
 //======================================================================
 
 int dpii_string(const char* s) {
-    printf("dpii_string: %s\n",s);
+    printf("dpii_string: %s\n", s);
     return strlen(s);
 }

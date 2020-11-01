@@ -51,8 +51,9 @@ int main() {
     vcore->i_clk_wr = 0;
     vcore->i_clk_rd = 0;
 
-    for (int i = 0; i < 256; ++i)
+    for (int i = 0; i < 256; ++i) {  //
         cycle();
+    }
 
     vcd->close();
     printf("*-* All Finished *-*\n");

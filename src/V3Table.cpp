@@ -222,7 +222,7 @@ private:
 
     void createTableVars(AstNode* nodep) {
         // Create table for each output
-        typedef std::map<string, int> NameCounts;
+        typedef std::map<const string, int> NameCounts;
         NameCounts namecounts;
         for (const AstVarScope* outvscp : m_outVarps) {
             AstVar* outvarp = outvscp->varp();

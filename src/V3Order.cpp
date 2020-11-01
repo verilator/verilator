@@ -36,6 +36,9 @@
 //                      assignments to avoid saving state, thus we prefer
 //                              a <= b ...      As the opposite order would
 //                              b <= c ...      require the old value of b.
+//                  Add edge consumed_var_POST->logic_vertex
+//                      This prevents a consumer of the "early" value to be
+//                      scheduled after we've changed to the next-cycle value
 //          For Logic
 //              Add vertex for this logic
 //                  Add edge logic_sensitive_vertex->logic_vertex
@@ -49,6 +52,7 @@
 //                  Add edge logic_sensitive_vertex->logic_vertex
 //                  Add edge logic_consumed_var->logic_vertex (same as if comb)
 //                  Add edge logic_vertex->logic_generated_var (same as if comb)
+//                  Add edge consumed_var_POST->logic_vertex (same as if comb)
 //
 //      For comb logic
 //          For comb logic

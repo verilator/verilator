@@ -33,7 +33,7 @@
 // cache of resolved entities. Entities stored in this container need an update
 // function that takes a reference of this type to join multiple entities into one.
 template <typename T> class V3ConfigWildcardResolver {
-    typedef std::map<string, T> Map;
+    typedef std::map<const string, T> Map;
 
     Map m_mapWildcard;  // Wildcard strings to entities
     Map m_mapResolved;  // Resolved strings to converged entities

@@ -134,6 +134,12 @@ module t;
 	 if (chars != 10) $stop;
 	 if (letterw != "\0\0\0\0\0\0widestuff\n") $stop;
 
+	 s = "";
+	 chars = $fgets(s, file);
+	 if (`verbose) $write("c=%0d w=%s", chars, s); // Output includes newline
+	 if (chars != 7) $stop;
+	 if (s != "string\n") $stop;
+
 	 // $sscanf
 	 if ($sscanf("x","")!=0) $stop;
 	 if ($sscanf("z","z")!=0) $stop;
@@ -172,6 +178,12 @@ module t;
 	 if (chars != 2) $stop;
 	 `checkr(r, 0.1);
 	 if (letterq != 64'hfffffffffffc65a5) $stop;
+
+	 chars = $sscanf("scan from string",
+			 "scan %s string", s);
+	 if (`verbose) $write("c=%0d s=%s\n", chars, s);
+	 if (chars != 1) $stop;
+	 if (s != "from") $stop;
 
 	 // Cover quad and %e/%f
 	 chars = $sscanf("r=0.2",
@@ -244,6 +256,11 @@ module t;
 	 if (`verbose) $write("c=%0d l=%x\n", chars, letterl);
 	 if (chars != 1) $stop;
 	 if (letterl != "\n") $stop;
+
+	 chars = $fscanf(file, "%c%s not_included\n", letterl, s);
+	 if (`verbose) $write("c=%0d l=%s\n", chars, s);
+	 if (chars != 2) $stop;
+	 if (s != "BCD") $stop;
 
 	 // msg1229
 	 v_a = $fgetc(file);
