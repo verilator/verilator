@@ -485,10 +485,19 @@ private:
         //   signed: Unsigned  (11.8.1)
         //   width: LHS + RHS
         AstNodeDType* vdtypep = m_vup->dtypeNullSkipRefp();
+        userIterateAndNext(vdtypep, WidthVP(SELF, BOTH).p());
         if (VN_IS(vdtypep, QueueDType)) {
             // Queue "element 0" is lhsp, so we need to swap arguments
             auto* newp = new AstConsQueue(nodep->fileline(), nodep->rhsp()->unlinkFrBack(),
                                           nodep->lhsp()->unlinkFrBack());
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            userIterateChildren(newp, m_vup);
+            return;
+        }
+        if (VN_IS(vdtypep, DynArrayDType)) {
+            auto* newp = new AstConsDynArray(nodep->fileline(), nodep->rhsp()->unlinkFrBack(),
+                                             nodep->lhsp()->unlinkFrBack());
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             userIterateChildren(newp, m_vup);
@@ -633,7 +642,7 @@ private:
             }
 
             AstNodeDType* vdtypep = m_vup->dtypeNullSkipRefp();
-            if (VN_IS(vdtypep, QueueDType)) {
+            if (VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, DynArrayDType)) {
                 if (times != 1)
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: Non-1 replication to form "
                                                      << vdtypep->prettyDTypeNameQ()
@@ -645,8 +654,7 @@ private:
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
-            if (VN_IS(vdtypep, AssocArrayDType) || VN_IS(vdtypep, DynArrayDType)
-                || VN_IS(vdtypep, UnpackArrayDType)) {
+            if (VN_IS(vdtypep, AssocArrayDType) || VN_IS(vdtypep, UnpackArrayDType)) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Replication to form "
                                                  << vdtypep->prettyDTypeNameQ() << " data type");
             }
@@ -1509,6 +1517,11 @@ private:
         }
         UINFO(4, "dtWidthed " << nodep << endl);
     }
+    virtual void visit(AstVoidDType* nodep) override {
+        if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        nodep->dtypep(nodep);
+        UINFO(4, "dtWidthed " << nodep << endl);
+    }
     virtual void visit(AstUnsizedArrayDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         // Iterate into subDTypep() to resolve that type and update pointer.
@@ -1983,6 +1996,38 @@ private:
                          EXTEND_EXP);
             iterateCheck(nodep, "value", nodep->valuep(), CONTEXT, FINAL, vdtypep->subDTypep(),
                          EXTEND_EXP);
+        }
+    }
+    virtual void visit(AstConsDynArray* nodep) override {
+        // Type computed when constructed here
+        AstDynArrayDType* vdtypep = VN_CAST(m_vup->dtypep(), DynArrayDType);
+        UASSERT_OBJ(vdtypep, nodep, "ConsDynArray requires queue upper parent data type");
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->lhsp(), WidthVP(vdtypep, PRELIM).p());
+            userIterateAndNext(nodep->rhsp(), WidthVP(vdtypep, PRELIM).p());
+            nodep->dtypeFrom(vdtypep);
+        }
+        if (m_vup->final()) {
+            // Arguments can be either elements of the queue or a queue itself
+            // Concats (part of tree of concats) must always become ConsDynArray's
+            if (nodep->lhsp()) {
+                if (VN_IS(nodep->lhsp()->dtypep(), DynArrayDType)
+                    || VN_IS(nodep->lhsp(), ConsDynArray)) {
+                    userIterateAndNext(nodep->lhsp(), WidthVP(vdtypep, FINAL).p());
+                } else {
+                    // Sub elements are not queues, but concats, must always pass concats down
+                    iterateCheckTyped(nodep, "LHS", nodep->lhsp(), vdtypep->subDTypep(), FINAL);
+                }
+            }
+            if (nodep->rhsp()) {
+                if (VN_IS(nodep->rhsp()->dtypep(), DynArrayDType)
+                    || VN_IS(nodep->rhsp(), ConsDynArray)) {
+                    userIterateAndNext(nodep->rhsp(), WidthVP(vdtypep, FINAL).p());
+                } else {
+                    iterateCheckTyped(nodep, "RHS", nodep->rhsp(), vdtypep->subDTypep(), FINAL);
+                }
+            }
+            nodep->dtypeFrom(vdtypep);
         }
     }
     virtual void visit(AstConsQueue* nodep) override {
@@ -2969,12 +3014,15 @@ private:
             while (const AstConstDType* vdtypep = VN_CAST(dtypep, ConstDType)) {
                 dtypep = vdtypep->subDTypep()->skipRefp();
             }
+            userIterateAndNext(dtypep, WidthVP(SELF, BOTH).p());
             if (auto* vdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
                 VL_DO_DANGLING(patternUOrStruct(nodep, vdtypep, defaultp), nodep);
             } else if (auto* vdtypep = VN_CAST(dtypep, NodeArrayDType)) {
                 VL_DO_DANGLING(patternArray(nodep, vdtypep, defaultp), nodep);
             } else if (auto* vdtypep = VN_CAST(dtypep, AssocArrayDType)) {
                 VL_DO_DANGLING(patternAssoc(nodep, vdtypep, defaultp), nodep);
+            } else if (auto* vdtypep = VN_CAST(dtypep, DynArrayDType)) {
+                VL_DO_DANGLING(patternDynArray(nodep, vdtypep, defaultp), nodep);
             } else if (auto* vdtypep = VN_CAST(dtypep, QueueDType)) {
                 VL_DO_DANGLING(patternQueue(nodep, vdtypep, defaultp), nodep);
             } else if (VN_IS(dtypep, BasicDType) && VN_CAST(dtypep, BasicDType)->isRanged()) {
@@ -3149,6 +3197,21 @@ private:
             AstNode* keyp = patp->keyp();
             auto* newap = new AstSetAssoc(nodep->fileline(), newp, keyp->unlinkFrBack(), valuep);
             newap->dtypeFrom(arrayDtp);
+            newp = newap;
+        }
+        nodep->replaceWith(newp);
+        // if (debug() >= 9) newp->dumpTree("-apat-out: ");
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+    }
+    void patternDynArray(AstPattern* nodep, AstDynArrayDType* arrayp, AstPatMember* defaultp) {
+        AstNode* newp = new AstConsDynArray(nodep->fileline());
+        newp->dtypeFrom(arrayp);
+        for (AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember); patp;
+             patp = VN_CAST(patp->nextp(), PatMember)) {
+            patp->dtypep(arrayp->subDTypep());
+            AstNode* valuep = patternMemberValueIterate(patp);
+            auto* newap = new AstConsDynArray(nodep->fileline(), valuep, newp);
+            newap->dtypeFrom(arrayp);
             newp = newap;
         }
         nodep->replaceWith(newp);

@@ -1593,6 +1593,21 @@ class EmitCImp : EmitCStmts {
         iterateAndNextNull(nodep->valuep());
         puts(")");
     }
+    virtual void visit(AstConsDynArray* nodep) override {
+        putbs(nodep->dtypep()->cType("", false, false));
+        if (!nodep->lhsp()) {
+            puts("()");
+        } else {
+            puts("::cons(");
+            iterateAndNextNull(nodep->lhsp());
+            if (nodep->rhsp()) {
+                puts(", ");
+                putbs("");
+            }
+            iterateAndNextNull(nodep->rhsp());
+            puts(")");
+        }
+    }
     virtual void visit(AstConsQueue* nodep) override {
         putbs(nodep->dtypep()->cType("", false, false));
         if (!nodep->lhsp()) {

@@ -4668,6 +4668,28 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
+class AstConsDynArray : public AstNodeMath {
+    // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
+    // Parents: math
+    // Children: expression (elements or other queues)
+public:
+    AstConsDynArray(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
+        : ASTGEN_SUPER(fl) {
+        setNOp1p(lhsp);
+        setNOp2p(rhsp);
+    }
+    ASTNODE_NODE_FUNCS(ConsDynArray)
+    virtual string emitVerilog() override { return "'{%l, %r}"; }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    AstNode* lhsp() const { return op1p(); }  // op1 = expression
+    AstNode* rhsp() const { return op2p(); }  // op2 = expression
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+
 class AstConsQueue : public AstNodeMath {
     // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
     // Parents: math

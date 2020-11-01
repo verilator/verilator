@@ -36,11 +36,18 @@ module t (/*AUTOARG*/
 
    pck256_t p256[];
 
+   string          s[] = { "hello", "sad", "world" };
+
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       begin
          `checkh(a.size, 0);
          v = $sformatf("%p", a); `checks(v, "'{}");
+
+         `checkh(s.size, 3);
+         `checks(s[0], "hello");
+         `checks(s[1], "sad");
+         `checks(s[2], "world");
 
          a = new [3];
          `checkh(a.size, 3);
@@ -54,22 +61,17 @@ module t (/*AUTOARG*/
          a.delete;
          `checkh(a.size, 0);
 
-         a = new [2];
-`ifdef verilator  // Unsupported pattern assignment
-         a[0] = 15; a[1] = 16;
-`else
          a = '{15, 16};
-`endif
          `checkh(a.size, 2);
          `checkh(a[0], 15);
          `checkh(a[1], 16)
 
-`ifdef verilator  // Unsupported pattern assignment
-         a = new [1];
-         a[0] = 17;
-`else
+         a = {17, 18};
+         `checkh(a.size, 2);
+         `checkh(a[0], 17);
+         `checkh(a[1], 18)
+
          a = '{17};
-`endif
          `checkh(a.size, 1);  // IEEE says resizes to smallest that fits pattern
          `checkh(a[0], 17);
 
@@ -122,7 +124,7 @@ module t (/*AUTOARG*/
          `checkh(b[0], 0);
          `checkh(b[1], 0);
          `checkh(b[2], 0);
-         `checkh(b[4], 0);
+         `checkh(b[3], 0);
 
          // test wide dynamic array
          p256 = new [11];
@@ -135,7 +137,7 @@ module t (/*AUTOARG*/
          `checkh(p256[1].header, 16'hcafe);
          `checkh(p256[1], {16'hcafe,{14{16'hbabe}},16'hdead});
 
-         `checkh(p256[0], '0);
+         //X's: `checkh(p256[0], 'x);
 
          p256[5] = '1;
          `checkh(p256[5], {32{8'hff}});
