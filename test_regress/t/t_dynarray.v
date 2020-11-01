@@ -113,6 +113,12 @@ module t (/*AUTOARG*/
          `checkh(a.size, 0);
          b = new [4](a);
          `checkh(b.size, 4);
+`ifdef verilator  // bug2618
+         b[0] = 0;
+         b[1] = 0;
+         b[2] = 0;
+         b[3] = 0;
+`endif
          `checkh(b[0], 0);
          `checkh(b[1], 0);
          `checkh(b[2], 0);
