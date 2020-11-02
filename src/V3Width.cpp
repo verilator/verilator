@@ -2621,8 +2621,8 @@ private:
                 userIterate(ftaskp, nullptr);
                 if (ftaskp->lifetime().isStatic()) {
                     AstNode* argsp = nullptr;
-                    AstNodeFTaskRef* newp = nullptr;
                     if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
+                    AstNodeFTaskRef* newp = nullptr;
                     if (VN_IS(ftaskp, Task)) {
                         newp = new AstTaskRef(nodep->fileline(), ftaskp->name(), argsp);
                     } else {

@@ -39,8 +39,6 @@ private:
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
     typedef std::vector<std::pair<AstNode*, AstScope*>> MoveVector;
     MoveVector m_moves;
-    typedef std::map<AstNode*, AstVarScope*> VarToScopeMap;
-    VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
 
     // NODE STATE
     //  AstClass::user1()       -> bool.  True if iterated already
@@ -80,14 +78,14 @@ private:
         packagep->addStmtp(scopep);
         // Iterate
         VL_RESTORER(m_prefix);
+        VL_RESTORER(m_classScopep);
+        VL_RESTORER(m_packageScopep);
         {
             m_classScopep = classScopep;
             m_packageScopep = scopep;
             m_prefix = nodep->name() + "__02e";  // .
             iterateChildren(nodep);
         }
-        m_classScopep = nullptr;
-        m_packageScopep = nullptr;
     }
     virtual void visit(AstPackage* nodep) override {
         VL_RESTORER(m_prefix);
@@ -108,14 +106,18 @@ private:
 
     virtual void visit(AstVarScope* nodep) override {
         iterateChildren(nodep);
-        m_varToScopeMap.insert(make_pair(nodep->varp(), nodep));
+        nodep->varp()->user1p(nodep);
     }
 
     virtual void visit(AstNodeFTask* nodep) override {
-        m_ftaskp = nodep;
-        iterateChildren(nodep);
-        if (nodep->lifetime().isStatic()) { m_moves.push_back(make_pair(nodep, m_packageScopep)); }
-        m_ftaskp = nullptr;
+        VL_RESTORER(m_ftaskp);
+        {
+            m_ftaskp = nodep;
+            iterateChildren(nodep);
+            if (nodep->lifetime().isStatic()) {
+                m_moves.push_back(make_pair(nodep, m_packageScopep));
+            }
+        }
     }
 
     virtual void visit(AstCFunc* nodep) override {
@@ -135,12 +137,12 @@ public:
     // CONSTRUCTORS
     explicit ClassVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~ClassVisitor() override {
-        for (MoveVector::iterator it = m_moves.begin(); it != m_moves.end(); ++it) {
-            if (VN_IS(it->first, NodeFTask)) {
-                it->second->addActivep(it->first->unlinkFrBack());
-            } else if (VN_IS(it->first, Var)) {
-                AstVarScope* scopep = m_varToScopeMap.at(it->first);
-                it->second->addVarp(scopep->unlinkFrBack());
+        for (auto moved : m_moves) {
+            if (VN_IS(moved.first, NodeFTask)) {
+                moved.second->addActivep(moved.first->unlinkFrBack());
+            } else if (VN_IS(moved.first, Var)) {
+                AstVarScope* scopep = VN_CAST(moved.first->user1p(), VarScope);
+                moved.second->addVarp(scopep->unlinkFrBack());
             }
         }
     }

@@ -8,10 +8,12 @@ class Cls;
 
    static task static_task(int x);
       $write("Called static task: %d\n", x);
+      if (x != 16) $stop;
    endtask
 
    static function int static_function(int x);
       $write("Called static function: %d\n", x);
+      if (x != 23) $stop;
       return 42;
    endfunction
 
@@ -24,6 +26,7 @@ module t (/*AUTOARG*/);
       Cls::static_task(16);
       x = Cls::static_function(23);
       $write("Static function result: %d\n", x);
+      if (x != 42) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

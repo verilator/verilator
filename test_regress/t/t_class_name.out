@@ -1,6 +1,0 @@
-t = 'top.t.unnamedblk1'
-unit_name = 'top.$unit'
-Below results vary with simulator.
-static_name = 'top.$unit.Cls'
-nonstatic_name = 'top.$unit.Cls'
-*-* All Finished *-*
