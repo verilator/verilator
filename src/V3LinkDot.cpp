@@ -446,6 +446,8 @@ public:
             if (!ifacerefp->ifaceViaCellp()) {
                 if (!ifacerefp->cellp()) {  // Probably a NotFoundModule, or a normal module if
                                             // made mistake
+                    UINFO(1, "Associated cell " << AstNode::prettyNameQ(ifacerefp->cellName())
+                                                << endl);
                     ifacerefp->v3error("Cannot find file containing interface: "
                                        << AstNode::prettyNameQ(ifacerefp->ifaceName()));
                     continue;
@@ -2025,7 +2027,7 @@ private:
             } else {
                 m_ds.m_dotPos = DP_SCOPE;
                 iterateAndNextNull(nodep->lhsp());
-                // if (debug()>=9) nodep->dumpTree("-dot-lho: ");
+                // if (debug() >= 9) nodep->dumpTree("-dot-lho: ");
             }
             if (m_ds.m_unresolved
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
@@ -2254,6 +2256,7 @@ private:
                 // A scope reference into an interface's modport (not
                 // necessarily at a pin connection)
                 UINFO(9, "cell-ref-to-modport " << m_ds.m_dotText << "  " << nodep << endl);
+                UINFO(9, "unlinked " << m_ds.m_unlinkedScopep << endl);
                 UINFO(9, "dotSymp " << m_ds.m_dotSymp << " " << m_ds.m_dotSymp->nodep() << endl);
                 // Iface was the previously dotted component
                 if (!m_ds.m_dotSymp || !VN_IS(m_ds.m_dotSymp->nodep(), Cell)
