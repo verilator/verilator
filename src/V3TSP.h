@@ -29,6 +29,8 @@ namespace V3TSP {
 
 class TspStateBase {
 public:
+    virtual ~TspStateBase() = default;
+
     // This is the cost function that the TSP sort will minimize.
     // All costs in V3TSP are int, chosen to match the type of
     // V3GraphEdge::weight() which will reflect each edge's cost.
