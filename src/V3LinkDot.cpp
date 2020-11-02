@@ -1861,8 +1861,8 @@ private:
     AstVar* makeIfaceModportVar(FileLine* fl, AstCell* cellp, AstIface* ifacep,
                                 AstModport* modportp) {
         // Create iface variable, using duplicate var when under same module scope
-        string varName = ifacep->name() + "__Vmp__" + modportp->name() + "__Viftop"
-                         + cvtToStr(++m_modportNum);
+        string varName
+            = cellp->name() + "__Vmp__" + modportp->name() + "__Viftop" + cvtToStr(++m_modportNum);
         AstIfaceRefDType* idtypep = new AstIfaceRefDType(fl, modportp->fileline(), cellp->name(),
                                                          ifacep->name(), modportp->name());
         idtypep->cellp(cellp);
