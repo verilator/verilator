@@ -22,7 +22,7 @@ scenarios(vlt => 1);
 
     sleep(2);  # Or else it might take < 1 second to compile and see no diff.
 
-    $ENV{VERILATOR_DEBUG_SKIP_IDENTICAL} = 1;
+    setenv('VERILATOR_DEBUG_SKIP_IDENTICAL', 1);
     compile();
 
     my @newstats = stat($outfile);

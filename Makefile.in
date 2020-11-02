@@ -89,7 +89,6 @@ datarootdir = @datarootdir@
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
-CFG_WITH_THREADED = @CFG_WITH_THREADED@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 
 #### End of system configuration section. ####
@@ -171,6 +170,8 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	test_regress/t/t*/*.v* \
 	test_regress/t/t*/*/*.sv* \
 	test_regress/t/t*/*/*.v* \
+	test_regress/t/t*/*.cpp \
+	test_regress/t/t*/CMakeLists.txt \
 	test_regress/t/*.cpp \
 	test_regress/t/*.h \
 	test_regress/t/*.dat \
@@ -425,6 +426,9 @@ CPPCHECK_CPP = $(wildcard \
 CPPCHECK_H = $(wildcard \
 	$(srcdir)/include/*.h \
 	$(srcdir)/src/*.h )
+CPPCHECK_YL = $(wildcard \
+	$(srcdir)/src/*.y \
+	$(srcdir)/src/*.l )
 CPPCHECK = src/cppcheck_filtered
 CPPCHECK_FLAGS = --enable=all --inline-suppr \
 	--suppress=unusedScopedObject --suppress=cstyleCast --suppress=useInitializationList \
@@ -435,7 +439,7 @@ CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
 
 cppcheck: $(CPPCHECK_DEP)
 %.cppcheck: %.cpp
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $<
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 -DVL_THREADED=1 $(CPPCHECK_INC) $<
 
 CLANGTIDY = clang-tidy
 CLANGTIDY_FLAGS = -config=''
@@ -458,11 +462,12 @@ analyzer-include:
 
 CLANGFORMAT = clang-format
 CLANGFORMAT_FLAGS = -i
+CLANGFORMAT_FILES = $(CPPCHECK_CPP) $(CPPCHECK_H) $(CPPCHECK_YL) test_regress/t/*.c*
 
 clang-format:
 	@$(CLANGFORMAT) --version | egrep 10.0 > /dev/null \
 		|| echo "*** You are not using clang-format 10.0, indents may differ from master's ***"
-	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CPPCHECK_CPP) $(CPPCHECK_H)
+	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
 ftp: info
 
@@ -542,9 +547,6 @@ dist-file-list:
 	@echo "begin-dist-file-list:";  # Scripts look for this
 	@echo $(wildcard $(DISTFILES))
 	@echo "end-dist-file-list:";  # Scripts look for this
-
-print-cfg-with-threaded:
-	@echo $(CFG_WITH_THREADED)
 
 ######################################################################
 # Distributions

@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_randomize.v:11:4: Unsupported: extern constraint
+   11 |    extern constraint ex;
+      |    ^~~~~~
+%Error-UNSUPPORTED: t/t_randomize.v:29:29: Unsupported: solve before
+   29 |    constraint order { solve length before header; }
+      |                             ^~~~~~
+%Error-UNSUPPORTED: t/t_randomize.v:32:9: Unsupported: dist
+   32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5, 400};
+      |         ^~~~
+%Error: Exiting due to

@@ -15,6 +15,7 @@
 
 #include "svdpi.h"
 
+// clang-format off
 #if defined(VERILATOR)  // Verilator
 # include "Vt_dpi_result_type__Dpi.h"
 typedef long long sv_longint_t;
@@ -41,6 +42,7 @@ typedef uint64_t sv_longint_unsigned_t;
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 //======================================================================
 // Implementations of imported functions
@@ -299,7 +301,7 @@ void check_exports() {
 #ifndef NO_SHORTREAL
     if (e_shortreal() != 1.0f * n + 0.25f) stop();
 #endif
-    if (e_chandle() != NULL) stop();
+    if (e_chandle()) stop();
     if ((n % 2) == 0) {
         if (strcmp(e_string(), "Hello") != 0) stop();
     } else {
@@ -323,7 +325,7 @@ void check_exports() {
 #ifndef NO_SHORTREAL
     if (e_shortreal_t() != 1.0f * (2 * n) + 0.25f) stop();
 #endif
-    if (e_chandle_t() != NULL) stop();
+    if (e_chandle_t()) stop();
     if ((n % 2) == 0) {
         if (strcmp(e_string_t(), "Hello") != 0) stop();
     } else {

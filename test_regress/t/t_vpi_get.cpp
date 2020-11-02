@@ -30,7 +30,6 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-using namespace std;
 
 #include "TestSimulator.h"
 #include "TestVpi.h"
@@ -60,15 +59,15 @@ unsigned int main_time = 0;
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
-        cout << dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
-             << "   EXP = " << (exp) << endl; \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
+                  << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_HEX(got, exp) \
     if ((got) != (exp)) { \
-        cout << dec << "%Error: " << FILENM << ":" << __LINE__ << hex << ": GOT = " << (got) \
-             << "   EXP = " << (exp) << endl; \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << std::hex \
+                  << ": GOT = " << (got) << "   EXP = " << (exp) << endl; \
         return __LINE__; \
     }
 
@@ -82,7 +81,9 @@ unsigned int main_time = 0;
 #define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
 static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int scalar, int type) {
-    s_vpi_value value = {.format = vpiIntVal, .value = {.integer = 0}};
+    s_vpi_value value;
+    value.format = vpiIntVal;
+    value.value.integer = 0;
     // check size of object
     int vpisize = vpi_get(vpiSize, handle);
     CHECK_RESULT(vpisize, size);
@@ -223,8 +224,7 @@ static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*
 void vpi_compat_bootstrap(void) {
     p_vpi_systf_data systf_data_p;
     systf_data_p = &(vpi_systf_data[0]);
-    while (systf_data_p->type != 0)
-        vpi_register_systf(systf_data_p++);
+    while (systf_data_p->type != 0) vpi_register_systf(systf_data_p++);
 }
 
 // icarus entry

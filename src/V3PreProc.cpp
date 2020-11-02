@@ -26,7 +26,7 @@
 #include "V3PreShell.h"
 #include "V3String.h"
 
-#include <cstdarg>
+#include <algorithm>
 #include <cstdlib>
 #include <fstream>
 #include <stack>
@@ -52,10 +52,10 @@ class VDefine {
     bool m_cmdline;  // Set on command line, don't `undefineall
 public:
     VDefine(FileLine* fl, const string& value, const string& params, bool cmdline)
-        : m_fileline(fl)
-        , m_value(value)
-        , m_params(params)
-        , m_cmdline(cmdline) {}
+        : m_fileline{fl}
+        , m_value{value}
+        , m_params{params}
+        , m_cmdline{cmdline} {}
     FileLine* fileline() const { return m_fileline; }
     string value() const { return m_value; }
     string params() const { return m_params; }
@@ -69,7 +69,7 @@ class VDefineRef {
     string m_name;  // Define last name being defined
     string m_params;  // Define parameter list for next expansion
     string m_nextarg;  // String being built for next argument
-    int m_parenLevel;  // Parenthesis counting inside def args (for PARENT not child)
+    int m_parenLevel = 0;  // Parenthesis counting inside def args (for PARENT not child)
 
     std::vector<string> m_args;  // List of define arguments
 public:
@@ -81,9 +81,8 @@ public:
     void parenLevel(int value) { m_parenLevel = value; }
     std::vector<string>& args() { return m_args; }
     VDefineRef(const string& name, const string& params)
-        : m_name(name)
-        , m_params(params)
-        , m_parenLevel(0) {}
+        : m_name{name}
+        , m_params{params} {}
     ~VDefineRef() {}
 };
 
@@ -98,8 +97,8 @@ public:
     bool on() const { return m_on; }
     bool everOn() const { return m_everOn; }
     VPreIfEntry(bool on, bool everOn)
-        : m_on(on)
-        , m_everOn(everOn || on) {}  // Note everOn includes new state
+        : m_on{on}
+        , m_everOn{everOn || on} {}  // Note everOn includes new state
     ~VPreIfEntry() {}
 };
 
@@ -109,7 +108,7 @@ public:
 class V3PreProcImp : public V3PreProc {
 public:
     // TYPES
-    typedef std::map<string, VDefine> DefinesMap;
+    typedef std::map<const string, VDefine> DefinesMap;
     typedef VInFilter::StrList StrList;
 
     // debug() -> see V3PreShellImp::debug; use --debugi-V3PreShell
@@ -118,13 +117,13 @@ public:
     DefinesMap m_defines;  ///< Map of defines
 
     // STATE
-    V3PreProc* m_preprocp;  ///< Object we're holding data for
-    V3PreLex* m_lexp;  ///< Current lexer state (NULL = closed)
+    V3PreProc* m_preprocp = nullptr;  ///< Object we're holding data for
+    V3PreLex* m_lexp = nullptr;  ///< Current lexer state (nullptr = closed)
     std::stack<V3PreLex*> m_includeStack;  ///< Stack of includers above current m_lexp
-    int m_lastLineno;  // Last line number (stall detection)
-    int m_tokensOnLine;  // Number of tokens on line (stall detection)
+    int m_lastLineno = 0;  // Last line number (stall detection)
+    int m_tokensOnLine = 0;  // Number of tokens on line (stall detection)
 
-    enum ProcState {
+    enum ProcState : uint8_t {
         ps_TOP,
         ps_DEFNAME_UNDEF,
         ps_DEFNAME_DEFINE,
@@ -141,7 +140,7 @@ public:
         ps_STRIFY
     };
     static const char* procStateName(ProcState s) {
-        static const char* states[]
+        static const char* const states[]
             = {"ps_TOP",           "ps_DEFNAME_UNDEF",  "ps_DEFNAME_DEFINE",
                "ps_DEFNAME_IFDEF", "ps_DEFNAME_IFNDEF", "ps_DEFNAME_ELSIF",
                "ps_DEFFORM",       "ps_DEFVALUE",       "ps_DEFPAREN",
@@ -151,23 +150,23 @@ public:
     }
 
     std::stack<ProcState> m_states;  ///< Current state of parser
-    int m_off;  ///< If non-zero, ifdef level is turned off, don't dump text
-    bool m_incError;  ///< Include error found
+    int m_off = 0;  ///< If non-zero, ifdef level is turned off, don't dump text
+    bool m_incError = false;  ///< Include error found
     string m_lastSym;  ///< Last symbol name found.
     string m_formals;  ///< Last formals found
 
     // For getRawToken/ `line insertion
     string m_lineCmt;  ///< Line comment(s) to be returned
-    bool m_lineCmtNl;  ///< Newline needed before inserting lineCmt
-    int m_lineAdd;  ///< Empty lines to return to maintain line count
-    bool m_rawAtBol;  ///< Last rawToken left us at beginning of line
+    bool m_lineCmtNl = false;  ///< Newline needed before inserting lineCmt
+    int m_lineAdd = 0;  ///< Empty lines to return to maintain line count
+    bool m_rawAtBol = true;  ///< Last rawToken left us at beginning of line
 
     // For getFinalToken
-    bool m_finAhead;  ///< Have read a token ahead
-    int m_finToken;  ///< Last token read
+    bool m_finAhead = false;  ///< Have read a token ahead
+    int m_finToken = 0;  ///< Last token read
     string m_finBuf;  ///< Last yytext read
-    bool m_finAtBol;  ///< Last getFinalToken left us at beginning of line
-    FileLine* m_finFilelinep;  ///< Location of last returned token (internal only)
+    bool m_finAtBol = true;  ///< Last getFinalToken left us at beginning of line
+    FileLine* m_finFilelinep = nullptr;  ///< Location of last returned token (internal only)
 
     // For stringification
     string m_strify;  ///< Text to be stringified
@@ -175,8 +174,8 @@ public:
     // For defines
     std::stack<VDefineRef> m_defRefs;  ///< Pending define substitution
     std::stack<VPreIfEntry> m_ifdefStack;  ///< Stack of true/false emitting evaluations
-    unsigned m_defDepth;  ///< How many `defines deep
-    bool m_defPutJoin;  ///< Insert `` after substitution
+    unsigned m_defDepth = 0;  ///< How many `defines deep
+    bool m_defPutJoin = false;  ///< Insert `` after substitution
 
     // For `` join
     std::stack<string> m_joinStack;  ///< Text on lhs of join
@@ -262,23 +261,6 @@ public:
     V3PreProcImp() {
         m_debug = 0;
         m_states.push(ps_TOP);
-        m_off = 0;
-        m_incError = false;
-        m_lineChars = "";
-        m_lastSym = "";
-        m_lineAdd = 0;
-        m_lineCmtNl = false;
-        m_rawAtBol = true;
-        m_finAhead = false;
-        m_finAtBol = true;
-        m_defDepth = 0;
-        m_defPutJoin = false;
-        m_finToken = 0;
-        m_finFilelinep = NULL;
-        m_lexp = NULL;
-        m_preprocp = NULL;
-        m_lastLineno = 0;
-        m_tokensOnLine = 0;
     }
     void configure(FileLine* filelinep) {
         // configure() separate from constructor to avoid calling abstract functions
@@ -287,13 +269,13 @@ public:
         m_finFilelinep->lineno(1);
         // Create lexer
         m_lexp = new V3PreLex(this, filelinep);
-        m_lexp->m_keepComments = m_preprocp->keepComments();
-        m_lexp->m_keepWhitespace = m_preprocp->keepWhitespace();
-        m_lexp->m_pedantic = m_preprocp->pedantic();
+        m_lexp->m_keepComments = keepComments();
+        m_lexp->m_keepWhitespace = keepWhitespace();
+        m_lexp->m_pedantic = pedantic();
         m_lexp->debug(debug() >= 5 ? debug() : 0);  // See also V3PreProc::debug() method
     }
     ~V3PreProcImp() {
-        if (m_lexp) VL_DO_CLEAR(delete m_lexp, m_lexp = NULL);
+        if (m_lexp) VL_DO_CLEAR(delete m_lexp, m_lexp = nullptr);
     }
 };
 
@@ -318,11 +300,11 @@ void V3PreProcImp::undefineall() {
     }
 }
 bool V3PreProcImp::defExists(const string& name) {
-    DefinesMap::iterator iter = m_defines.find(name);
+    const auto iter = m_defines.find(name);
     return (iter != m_defines.end());
 }
 string V3PreProcImp::defValue(const string& name) {
-    DefinesMap::iterator iter = m_defines.find(name);
+    const auto iter = m_defines.find(name);
     if (iter == m_defines.end()) {
         fileline()->v3error("Define or directive not defined: `" + name);
         return "";
@@ -330,7 +312,7 @@ string V3PreProcImp::defValue(const string& name) {
     return iter->second.value();
 }
 string V3PreProcImp::defParams(const string& name) {
-    DefinesMap::iterator iter = m_defines.find(name);
+    const auto iter = m_defines.find(name);
     if (iter == m_defines.end()) {
         fileline()->v3error("Define or directive not defined: `" + name);
         return "";
@@ -338,8 +320,8 @@ string V3PreProcImp::defParams(const string& name) {
     return iter->second.params();
 }
 FileLine* V3PreProcImp::defFileline(const string& name) {
-    DefinesMap::iterator iter = m_defines.find(name);
-    if (iter == m_defines.end()) return NULL;
+    const auto iter = m_defines.find(name);
+    if (iter == m_defines.end()) return nullptr;
     return iter->second.fileline();
 }
 void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
@@ -440,16 +422,18 @@ void V3PreProcImp::comment(const string& text) {
     bool vlcomment = false;
     if ((cp[0] == 'v' || cp[0] == 'V') && 0 == (strncmp(cp + 1, "erilator", 8))) {
         cp += strlen("verilator");
-        if (*cp == '_')
+        if (*cp == '_') {
             fileline()->v3error("Extra underscore in meta-comment;"
                                 " use /*verilator {...}*/ not /*verilator_{...}*/");
+        }
         vlcomment = true;
     } else if (0 == (strncmp(cp, "synopsys", strlen("synopsys")))) {
         cp += strlen("synopsys");
         synth = true;
-        if (*cp == '_')
+        if (*cp == '_') {
             fileline()->v3error("Extra underscore in meta-comment;"
                                 " use /*synopsys {...}*/ not /*synopsys_{...}*/");
+        }
     } else if (0 == (strncmp(cp, "cadence", strlen("cadence")))) {
         cp += strlen("cadence");
         synth = true;
@@ -549,7 +533,7 @@ void V3PreProcImp::unputString(const string& strg) {
     // However this can lead to "flex scanner push-back overflow"
     // so instead we scan from a temporary buffer, then on EOF return.
     // This is also faster than the old scheme, amazingly.
-    if (m_lexp->m_bufferState != m_lexp->currentBuffer()) {
+    if (VL_UNCOVERABLE(m_lexp->m_bufferState != m_lexp->currentBuffer())) {
         fatalSrc("bufferStack missing current buffer; will return incorrectly");
         // Hard to debug lost text as won't know till much later
     }
@@ -557,10 +541,7 @@ void V3PreProcImp::unputString(const string& strg) {
 }
 
 void V3PreProcImp::unputDefrefString(const string& strg) {
-    int multiline = 0;
-    for (size_t i = 0; i < strg.length(); i++) {
-        if (strg[i] == '\n') multiline++;
-    }
+    int multiline = std::count(strg.begin(), strg.end(), '\n');
     unputString(strg);
     // A define that inserts multiple newlines are really attributed to one source line,
     // so temporarily don't increment lineno.
@@ -604,7 +585,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
     string value = defValue(refp->name());
     UINFO(4, "defineValue    '" << V3PreLex::cleanDbgStrg(value) << "'" << endl);
 
-    std::map<string, string> argValueByName;
+    std::map<const string, string> argValueByName;
     {  // Parse argument list into map
         unsigned numArgs = 0;
         string argName;
@@ -688,7 +669,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
         string argName;
         bool quote = false;
         bool backslashesc = false;  // In \.....{space} block
-        // Note we go through the loop once more at the NULL end-of-string
+        // Note we go through the loop once more at the nullptr end-of-string
         for (const char* cp = value.c_str(); (*cp) || argName != ""; cp = (*cp ? cp + 1 : cp)) {
             // UINFO(4, "CH "<<*cp<<"  an "<<argName<<endl);
             if (!quote && *cp == '\\') {
@@ -705,7 +686,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
             }
             if (argName != "") {
                 // Found a possible variable substitution
-                std::map<string, string>::iterator iter = argValueByName.find(argName);
+                const auto iter = argValueByName.find(argName);
                 if (iter != argValueByName.end()) {
                     // Substitute
                     string subst = iter->second;
@@ -814,9 +795,7 @@ void V3PreProcImp::openFile(FileLine* fl, VInFilter* filterp, const string& file
     FileLine* flsp = new FileLine(filename);
     flsp->lineno(1);
     flsp->newContent();
-    for (StrList::iterator it = wholefile.begin(); it != wholefile.end(); ++it) {
-        flsp->contentp()->pushText(*it);
-    }
+    for (const string& i : wholefile) flsp->contentp()->pushText(i);
 
     // Create new stream structure
     m_lexp->scanNewFile(flsp);
@@ -1087,7 +1066,7 @@ int V3PreProcImp::getStateToken() {
                     stateChange(ps_DEFFORM);
                     m_lexp->pushStateDefForm();
                     goto next_tok;
-                } else {
+                } else {  // LCOV_EXCL_LINE
                     fatalSrc("Bad case\n");
                 }
                 goto next_tok;
@@ -1174,7 +1153,9 @@ int V3PreProcImp::getStateToken() {
                 stateChange(ps_DEFARG);
                 goto next_tok;
             } else {
-                if (m_defRefs.empty()) fatalSrc("Shouldn't be in DEFPAREN w/o active defref");
+                if (VL_UNCOVERABLE(m_defRefs.empty())) {
+                    fatalSrc("Shouldn't be in DEFPAREN w/o active defref");
+                }
                 VDefineRef* refp = &(m_defRefs.top());
                 error(string("Expecting ( to begin argument list for define reference `")
                       + refp->name() + "\n");
@@ -1183,7 +1164,9 @@ int V3PreProcImp::getStateToken() {
             }
         }
         case ps_DEFARG: {
-            if (m_defRefs.empty()) fatalSrc("Shouldn't be in DEFARG w/o active defref");
+            if (VL_UNCOVERABLE(m_defRefs.empty())) {
+                fatalSrc("Shouldn't be in DEFARG w/o active defref");
+            }
             VDefineRef* refp = &(m_defRefs.top());
             refp->nextarg(refp->nextarg() + m_lexp->m_defValue);
             m_lexp->m_defValue = "";
@@ -1208,7 +1191,9 @@ int V3PreProcImp::getStateToken() {
                     statePop();
                     if (state()
                         == ps_JOIN) {  // Handle {left}```FOO(ARG) where `FOO(ARG) might be empty
-                        if (m_joinStack.empty()) fatalSrc("`` join stack empty, but in a ``");
+                        if (VL_UNCOVERABLE(m_joinStack.empty())) {
+                            fatalSrc("`` join stack empty, but in a ``");
+                        }
                         string lhs = m_joinStack.top();
                         m_joinStack.pop();
                         out.insert(0, lhs);
@@ -1295,7 +1280,9 @@ int V3PreProcImp::getStateToken() {
         }
         case ps_JOIN: {
             if (tok == VP_SYMBOL || tok == VP_TEXT) {
-                if (m_joinStack.empty()) fatalSrc("`` join stack empty, but in a ``");
+                if (VL_UNCOVERABLE(m_joinStack.empty())) {
+                    fatalSrc("`` join stack empty, but in a ``");
+                }
                 string lhs = m_joinStack.top();
                 m_joinStack.pop();
                 UINFO(5, "`` LHS:" << lhs << endl);
@@ -1331,7 +1318,7 @@ int V3PreProcImp::getStateToken() {
                 // multiline "..." without \ escapes.
                 // The spec is silent about this either way; simulators vary
                 string::size_type pos;
-                while ((pos = out.find('\n')) != string::npos) out.replace(pos, 1, " ");
+                std::replace(out.begin(), out.end(), '\n', ' ');
                 unputString(string("\"") + out + "\"");
                 statePop();
                 goto next_tok;
@@ -1414,7 +1401,10 @@ int V3PreProcImp::getStateToken() {
                 if (m_off) {
                     goto next_tok;
                 } else {
-                    return VP_TEXT;
+                    // We want final text of `name, but that would cause
+                    // recursion, so use a special character to get it through
+                    unputDefrefString(string("`\032") + name);
+                    goto next_tok;
                 }
             } else {
                 string params = defParams(name);
@@ -1429,7 +1419,9 @@ int V3PreProcImp::getStateToken() {
                     if (m_defRefs.empty()) {
                         // Just output the substitution
                         if (state() == ps_JOIN) {  // Handle {left}```FOO where `FOO might be empty
-                            if (m_joinStack.empty()) fatalSrc("`` join stack empty, but in a ``");
+                            if (VL_UNCOVERABLE(m_joinStack.empty())) {
+                                fatalSrc("`` join stack empty, but in a ``");
+                            }
                             string lhs = m_joinStack.top();
                             m_joinStack.pop();
                             out.insert(0, lhs);
@@ -1500,9 +1492,9 @@ int V3PreProcImp::getStateToken() {
         case VP_COMMENT:  // Handled at top of loop
         case VP_DEFFORM:  // Handled by state=ps_DEFFORM;
         case VP_DEFVALUE:  // Handled by state=ps_DEFVALUE;
-        default:
+        default:  // LCOV_EXCL_LINE
             fatalSrc(string("Internal error: Unexpected token ") + tokenName(tok) + "\n");
-            break;
+            break;  // LCOV_EXCL_LINE
         }
         return tok;
     }
@@ -1518,7 +1510,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
     }
     int tok = m_finToken;
     buf = m_finBuf;
-    if (0 && debug() >= 5) {
+    if (false && debug() >= 5) {
         string bufcln = V3PreLex::cleanDbgStrg(buf);
         string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
         fprintf(stderr, "%s: FIN:      %-10s: %s\n", flcol.c_str(), tokenName(tok),
@@ -1575,7 +1567,7 @@ string V3PreProcImp::getline() {
     if (isEof()) return "";
     const char* rtnp;
     bool gotEof = false;
-    while (NULL == (rtnp = strchr(m_lineChars.c_str(), '\n')) && !gotEof) {
+    while (nullptr == (rtnp = strchr(m_lineChars.c_str(), '\n')) && !gotEof) {
         string buf;
         int tok = getFinalToken(buf /*ref*/);
         if (debug() >= 5) {

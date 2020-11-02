@@ -203,6 +203,7 @@ RAW_OBJS = \
 	V3GraphPathChecker.o \
 	V3GraphTest.o \
 	V3Hashed.o \
+	V3HierBlock.o \
 	V3Inline.o \
 	V3Inst.o \
 	V3InstrCount.o \
@@ -211,11 +212,13 @@ RAW_OBJS = \
 	V3LinkCells.o \
 	V3LinkDot.o \
 	V3LinkJump.o \
+	V3LinkInc.o \
 	V3LinkLValue.o \
 	V3LinkLevel.o \
 	V3LinkParse.o \
 	V3LinkResolve.o \
 	V3Localize.o \
+	V3MergeCond.o \
 	V3Name.o \
 	V3Number.o \
 	V3Options.o \
@@ -246,6 +249,7 @@ RAW_OBJS = \
 	V3Undriven.o \
 	V3Unknown.o \
 	V3Unroll.o \
+	V3Waiver.o \
 	V3Width.o \
 	V3WidthSel.o \
 
@@ -275,7 +279,6 @@ V3__CONCAT.cpp: $(addsuffix .cpp, $(basename $(RAW_OBJS)))
 
 $(TGT): $(PREDEP_H) $(OBJS)
 	@echo "      Linking $@..."
-	-rm -rf $@ $@.exe
 	${LINK} ${LDFLAGS} -o $@ $(OBJS) $(CCMALLOC) ${LIBS}
 
 V3Number_test: V3Number_test.o
@@ -287,21 +290,21 @@ V3Number_test: V3Number_test.o
 	$(PERL) $(ASTGEN) -I$(srcdir) $*.cpp
 
 %.o:	%.cpp
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $<
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
 %.o:	%.c
-	$(OBJCACHE) ${CC}  ${CFLAGS} ${CPPFLAGSWALL} -c $<
+	$(OBJCACHE) ${CC}  ${CFLAGS} ${CPPFLAGSWALL} -c $< -o $@
 
 V3ParseLex.o:	V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $<
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 V3ParseGrammar.o:	V3ParseGrammar.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $<
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 V3ParseImp.o:	V3ParseImp.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $<
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 V3PreProc.o:	V3PreProc.cpp V3PreLex.yy.cpp
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $<
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 #### Generated files
 

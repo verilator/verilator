@@ -24,7 +24,7 @@
 
 #include <vector>
 #include <iomanip>
-#include VL_INCLUDE_UNORDERED_MAP
+#include <unordered_map>
 
 //********************************************************************
 // VlcPoint - A coverage point (across all tests)
@@ -34,17 +34,14 @@ private:
     // MEMBERS
     string m_name;  //< Name of the point
     vluint64_t m_pointNum;  //< Point number
-    vluint64_t m_testsCovering;  //< Number tests with non-zero coverage of this point
-    vluint64_t m_count;  //< Count of hits across all tests
+    vluint64_t m_testsCovering = 0;  //< Number tests with non-zero coverage of this point
+    vluint64_t m_count = 0;  //< Count of hits across all tests
 
 public:
     // CONSTRUCTORS
-    VlcPoint(const string& name, int pointNum) {
-        m_name = name;
-        m_pointNum = pointNum;
-        m_testsCovering = 0;
-        m_count = 0;
-    }
+    VlcPoint(const string& name, vluint64_t pointNum)
+        : m_name{name}
+        , m_pointNum{pointNum} {}
     ~VlcPoint() {}
     // ACCESSORS
     const string& name() const { return m_name; }
@@ -58,6 +55,7 @@ public:
     string comment() const { return keyExtract(VL_CIK_COMMENT); }
     string type() const { return keyExtract(VL_CIK_TYPE); }
     string thresh() const { return keyExtract(VL_CIK_THRESH); }  // string as maybe ""
+    string linescov() const { return keyExtract(VL_CIK_LINESCOV); }
     int lineno() const { return atoi(keyExtract(VL_CIK_LINENO).c_str()); }
     int column() const { return atoi(keyExtract(VL_CIK_COLUMN).c_str()); }
     // METHODS
@@ -95,10 +93,10 @@ public:
 class VlcPoints {
 private:
     // MEMBERS
-    typedef std::map<string, vluint64_t> NameMap;  // Sorted by name (ordered)
+    typedef std::map<const string, vluint64_t> NameMap;  // Sorted by name (ordered)
     NameMap m_nameMap;  //< Name to point-number
     std::vector<VlcPoint> m_points;  //< List of all points
-    vluint64_t m_numPoints;  //< Total unique points
+    vluint64_t m_numPoints = 0;  //< Total unique points
 
 public:
     // ITERATORS
@@ -107,25 +105,23 @@ public:
     ByName::iterator begin() { return m_nameMap.begin(); }
     ByName::iterator end() { return m_nameMap.end(); }
 
-public:
     // CONSTRUCTORS
-    VlcPoints()
-        : m_numPoints(0) {}
+    VlcPoints() {}
     ~VlcPoints() {}
 
     // METHODS
     void dump() {
         UINFO(2, "dumpPoints...\n");
         VlcPoint::dumpHeader();
-        for (VlcPoints::ByName::const_iterator it = begin(); it != end(); ++it) {
-            const VlcPoint& point = pointNumber(it->second);
+        for (const auto& i : *this) {
+            const VlcPoint& point = pointNumber(i.second);
             point.dump();
         }
     }
     VlcPoint& pointNumber(vluint64_t num) { return m_points[num]; }
     vluint64_t findAddPoint(const string& name, vluint64_t count) {
         vluint64_t pointnum;
-        NameMap::const_iterator iter = m_nameMap.find(name);
+        const auto iter = m_nameMap.find(name);
         if (iter != m_nameMap.end()) {
             pointnum = iter->second;
             m_points[pointnum].countInc(count);

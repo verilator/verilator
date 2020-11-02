@@ -1,0 +1,19 @@
+%Error: t/t_func_return_bad.v:10:7: Return underneath a task shouldn't have return value
+   10 |       return 1;   
+      |       ^~~~~~
+%Error: t/t_func_return_bad.v:13:7: Return underneath a function should have return value
+   13 |       return;   
+      |       ^~~~~~
+%Error: t/t_func_return_bad.v:17:7: Return isn't underneath a task or function
+   17 |       return;   
+      |       ^~~~~~
+%Error: t/t_func_return_bad.v:18:7: continue isn't underneath a loop
+   18 |       continue;   
+      |       ^~~~~~~~
+%Error: t/t_func_return_bad.v:19:7: break isn't underneath a loop
+   19 |       break;   
+      |       ^~~~~
+%Error: t/t_func_return_bad.v:22:7: disable isn't underneath a begin with name: 'foo'
+   22 |       disable foo;   
+      |       ^~~~~~~
+%Error: Exiting due to

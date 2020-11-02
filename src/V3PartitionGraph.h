@@ -31,8 +31,8 @@
 class AbstractMTask : public V3GraphVertex {
 public:
     AbstractMTask(V3Graph* graphp)
-        : V3GraphVertex(graphp) {}
-    virtual ~AbstractMTask() {}
+        : V3GraphVertex{graphp} {}
+    virtual ~AbstractMTask() override {}
     virtual uint32_t id() const = 0;
     virtual uint32_t cost() const = 0;
 };
@@ -43,45 +43,40 @@ public:
     typedef std::list<MTaskMoveVertex*> VxList;
     // CONSTRUCTORS
     AbstractLogicMTask(V3Graph* graphp)
-        : AbstractMTask(graphp) {}
-    virtual ~AbstractLogicMTask() {}
+        : AbstractMTask{graphp} {}
+    virtual ~AbstractLogicMTask() override {}
     // METHODS
     // Set of logic vertices in this mtask. Order is not significant.
     virtual const VxList* vertexListp() const = 0;
-    virtual uint32_t id() const = 0;  // Unique id of this mtask.
-    virtual uint32_t cost() const = 0;
+    virtual uint32_t id() const override = 0;  // Unique id of this mtask.
+    virtual uint32_t cost() const override = 0;
 };
 
 class ExecMTask : public AbstractMTask {
 private:
     AstMTaskBody* m_bodyp;  // Task body
     uint32_t m_id;  // Unique id of this mtask.
-    uint32_t m_priority;  // Predicted critical path from the start of
+    uint32_t m_priority = 0;  // Predicted critical path from the start of
     // this mtask to the ends of the graph that are reachable from this
     // mtask. In abstract time units.
-    uint32_t m_cost;  // Predicted runtime of this mtask, in the same
+    uint32_t m_cost = 0;  // Predicted runtime of this mtask, in the same
     // abstract time units as priority().
-    uint32_t m_thread;  // Thread for static (pack_mtasks) scheduling,
+    uint32_t m_thread = 0xffffffff;  // Thread for static (pack_mtasks) scheduling,
     // or 0xffffffff if not yet assigned.
-    const ExecMTask* m_packNextp;  // Next for static (pack_mtasks) scheduling
-    bool m_threadRoot;  // Is root thread
+    const ExecMTask* m_packNextp = nullptr;  // Next for static (pack_mtasks) scheduling
+    bool m_threadRoot = false;  // Is root thread
     VL_UNCOPYABLE(ExecMTask);
 
 public:
     ExecMTask(V3Graph* graphp, AstMTaskBody* bodyp, uint32_t id)
-        : AbstractMTask(graphp)
-        , m_bodyp(bodyp)
-        , m_id(id)
-        , m_priority(0)
-        , m_cost(0)
-        , m_thread(0xffffffff)
-        , m_packNextp(NULL)
-        , m_threadRoot(false) {}
+        : AbstractMTask{graphp}
+        , m_bodyp{bodyp}
+        , m_id{id} {}
     AstMTaskBody* bodyp() const { return m_bodyp; }
-    virtual uint32_t id() const { return m_id; }
+    virtual uint32_t id() const override { return m_id; }
     uint32_t priority() const { return m_priority; }
     void priority(uint32_t pri) { m_priority = pri; }
-    virtual uint32_t cost() const { return m_cost; }
+    virtual uint32_t cost() const override { return m_cost; }
     void cost(uint32_t cost) { m_cost = cost; }
     void thread(uint32_t thread) { m_thread = thread; }
     uint32_t thread() const { return m_thread; }
@@ -93,7 +88,7 @@ public:
         // If this MTask maps to a C function, this should be the name
         return string("__Vmtask") + "__" + cvtToStr(m_id);
     }
-    string name() const { return string("mt") + cvtToStr(id()); }
+    virtual string name() const override { return string("mt") + cvtToStr(id()); }
     void dump(std::ostream& str) const {
         str << name() << "." << cvtToHex(this);
         if (priority() || cost()) str << " [pr=" << priority() << " c=" << cvtToStr(cost()) << "]";

@@ -10,4 +10,10 @@ module t (/*AUTOARG*/);
    parameter integer FOO3 = 32'd;
    parameter integer FOO4 = 32'h;
 
+   parameter integer FOO5 = 32'b2;
+   parameter integer FOO6 = 32'o8;
+
+   // See bug2432, this is questionable, some simulators take this, others do not
+   parameter logic [3:0] FOO7 = 1'b1?4'hF:4'h1;  // bug2432 - intentionally no spaces near ?
+
 endmodule

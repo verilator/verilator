@@ -32,10 +32,7 @@
 #include "V3CCtors.h"
 
 #include <algorithm>
-#include <cmath>
-#include <cstdarg>
 #include <map>
-#include <vector>
 
 class V3CCtorsVisitor {
 private:
@@ -49,14 +46,13 @@ private:
     int m_funcNum;  // Function number being built
 
 public:
-    AstCFunc* builtFuncp() const { return m_tlFuncp; }
     void add(AstNode* nodep) {
         if (v3Global.opt.outputSplitCFuncs() && v3Global.opt.outputSplitCFuncs() < m_numStmts) {
-            m_funcp = NULL;
+            m_funcp = nullptr;
         }
         if (!m_funcp) {
             m_funcp = new AstCFunc(m_modp->fileline(), m_basename + "_" + cvtToStr(++m_funcNum),
-                                   NULL, "void");
+                                   nullptr, "void");
             m_funcp->isStatic(false);
             m_funcp->declPrivate(true);
             m_funcp->slow(!VN_IS(m_modp, Class));  // Only classes construct on fast path
@@ -82,7 +78,7 @@ public:
         m_modp = nodep;
         m_numStmts = 0;
         m_funcNum = 0;
-        m_tlFuncp = new AstCFunc(nodep->fileline(), basename, NULL, "void");
+        m_tlFuncp = new AstCFunc(nodep->fileline(), basename, nullptr, "void");
         m_tlFuncp->declPrivate(true);
         m_tlFuncp->isStatic(false);
         m_tlFuncp->slow(!VN_IS(m_modp, Class));  // Only classes construct on fast path
@@ -101,7 +97,7 @@ private:
 
 void V3CCtors::evalAsserts() {
     AstNodeModule* modp = v3Global.rootp()->modulesp();  // Top module wrapper
-    AstCFunc* funcp = new AstCFunc(modp->fileline(), "_eval_debug_assertions", NULL, "void");
+    AstCFunc* funcp = new AstCFunc(modp->fileline(), "_eval_debug_assertions", nullptr, "void");
     funcp->declPrivate(true);
     funcp->isStatic(false);
     funcp->slow(false);
@@ -115,7 +111,7 @@ void V3CCtors::evalAsserts() {
                     int lastWordWidth = varp->width() % storedWidth;
                     if (lastWordWidth != 0) {
                         // if (signal & CONST(upper_non_clean_mask)) { fail; }
-                        AstNode* newp = new AstVarRef(varp->fileline(), varp, false);
+                        AstNode* newp = new AstVarRef(varp->fileline(), varp, VAccess::READ);
                         if (varp->isWide()) {
                             newp = new AstWordSel(
                                 varp->fileline(), newp,
@@ -146,19 +142,18 @@ void V3CCtors::cctorsAll() {
          modp = VN_CAST(modp->nextp(), NodeModule)) {
         // Process each module in turn
         {
-            AstCFunc* varResetFuncp;
             V3CCtorsVisitor var_reset(
                 modp, "_ctor_var_reset",
                 (VN_IS(modp, Class) ? EmitCBaseVisitor::symClassVar() : ""),
                 (VN_IS(modp, Class) ? "vlSymsp" : ""),
                 (VN_IS(modp, Class) ? "if (false && vlSymsp) {}  // Prevent unused\n" : ""));
-            varResetFuncp = var_reset.builtFuncp();
 
             for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
                 if (AstVar* varp = VN_CAST(np, Var)) {
                     if (!varp->isIfaceParent() && !varp->isIfaceRef() && !varp->noReset()) {
-                        var_reset.add(new AstCReset(varp->fileline(),
-                                                    new AstVarRef(varp->fileline(), varp, true)));
+                        var_reset.add(
+                            new AstCReset(varp->fileline(),
+                                          new AstVarRef(varp->fileline(), varp, VAccess::WRITE)));
                     }
                 }
             }
@@ -176,10 +171,12 @@ void V3CCtors::cctorsAll() {
                 }
             }
         }
-        if (VN_IS(modp, Class)) {
-            AstCFunc* funcp = new AstCFunc(modp->fileline(), "~", NULL, "");
+        if (AstClass* classp = VN_CAST(modp, Class)) {
+            AstCFunc* funcp = new AstCFunc(modp->fileline(), "~", nullptr, "");
             funcp->isDestructor(true);
             funcp->isStatic(false);
+            // If can be referred to by base pointer, need virtual delete
+            funcp->isVirtual(classp->isExtended());
             funcp->slow(false);
             modp->addStmtp(funcp);
         }

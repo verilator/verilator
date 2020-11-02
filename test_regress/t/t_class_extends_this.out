@@ -1,0 +1,25 @@
+%Error-UNSUPPORTED: t/t_class_extends_this.v:22:11: Unsupported: super
+   22 |       if (super.value != 1) $stop;
+      |           ^~~~~
+%Error: t/t_class_extends_this.v:22:11: Can't find definition of scope/variable: 'super'
+   22 |       if (super.value != 1) $stop;
+      |           ^~~~~
+%Error-UNSUPPORTED: t/t_class_extends_this.v:23:7: Unsupported: super
+   23 |       super.test();
+      |       ^~~~~
+%Error: t/t_class_extends_this.v:23:7: Can't find definition of scope/variable: 'super'
+   23 |       super.test();
+      |       ^~~~~
+%Error-UNSUPPORTED: t/t_class_extends_this.v:24:7: Unsupported: super
+   24 |       super.value = 10;
+      |       ^~~~~
+%Error: t/t_class_extends_this.v:24:7: Can't find definition of scope/variable: 'super'
+   24 |       super.value = 10;
+      |       ^~~~~
+%Error-UNSUPPORTED: t/t_class_extends_this.v:26:11: Unsupported: super
+   26 |       if (super.value != 10) $stop;
+      |           ^~~~~
+%Error: t/t_class_extends_this.v:26:11: Can't find definition of scope/variable: 'super'
+   26 |       if (super.value != 10) $stop;
+      |           ^~~~~
+%Error: Exiting due to

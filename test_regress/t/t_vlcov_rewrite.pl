@@ -20,6 +20,7 @@ foreach my $basename ("t_vlcov_data_a.dat",
                 "--write", "$Self->{obj_dir}/${basename}"
         ],
         tee => 0,
+        verilator_run => 1,
         );
     files_identical("$Self->{obj_dir}/${basename}", "t/${basename}");
 }

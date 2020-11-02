@@ -38,9 +38,8 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
 
-#define RELOOP_MIN_ITERS 40  // Need at least this many loops to do this optimization
+constexpr unsigned RELOOP_MIN_ITERS = 40;  // Need at least this many loops to do this optimization
 
 //######################################################################
 
@@ -56,18 +55,18 @@ private:
     // STATE
     VDouble0 m_statReloops;  // Statistic tracking
     VDouble0 m_statReItems;  // Statistic tracking
-    AstCFunc* m_cfuncp;  // Current block
+    AstCFunc* m_cfuncp = nullptr;  // Current block
 
     AssVec m_mgAssignps;  // List of assignments merging
-    AstCFunc* m_mgCfuncp;  // Parent C function
-    AstNode* m_mgNextp;  // Next node
-    AstNodeSel* m_mgSelLp;  // Parent select, NULL = idle
-    AstNodeSel* m_mgSelRp;  // Parent select, NULL = constant
-    AstNodeVarRef* m_mgVarrefLp;  // Parent varref
-    AstNodeVarRef* m_mgVarrefRp;  // Parent varref, NULL = constant
-    AstConst* m_mgConstRp;  // Parent RHS constant, NULL = sel
-    uint32_t m_mgIndexLo;  // Merge range
-    uint32_t m_mgIndexHi;  // Merge range
+    AstCFunc* m_mgCfuncp = nullptr;  // Parent C function
+    AstNode* m_mgNextp = nullptr;  // Next node
+    AstNodeSel* m_mgSelLp = nullptr;  // Parent select, nullptr = idle
+    AstNodeSel* m_mgSelRp = nullptr;  // Parent select, nullptr = constant
+    AstNodeVarRef* m_mgVarrefLp = nullptr;  // Parent varref
+    AstNodeVarRef* m_mgVarrefRp = nullptr;  // Parent varref, nullptr = constant
+    AstConst* m_mgConstRp = nullptr;  // Parent RHS constant, nullptr = sel
+    uint32_t m_mgIndexLo = 0;  // Merge range
+    uint32_t m_mgIndexHi = 0;  // Merge range
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -100,33 +99,32 @@ private:
                 FileLine* fl = bodyp->fileline();
                 AstVar* itp = findCreateVarTemp(fl, m_mgCfuncp);
 
-                AstNode* initp = new AstAssign(fl, new AstVarRef(fl, itp, true),
+                AstNode* initp = new AstAssign(fl, new AstVarRef(fl, itp, VAccess::WRITE),
                                                new AstConst(fl, m_mgIndexLo));
-                AstNode* condp
-                    = new AstLte(fl, new AstVarRef(fl, itp, false), new AstConst(fl, m_mgIndexHi));
+                AstNode* condp = new AstLte(fl, new AstVarRef(fl, itp, VAccess::READ),
+                                            new AstConst(fl, m_mgIndexHi));
                 AstNode* incp = new AstAssign(
-                    fl, new AstVarRef(fl, itp, true),
-                    new AstAdd(fl, new AstConst(fl, 1), new AstVarRef(fl, itp, false)));
-                AstWhile* whilep = new AstWhile(fl, condp, NULL, incp);
+                    fl, new AstVarRef(fl, itp, VAccess::WRITE),
+                    new AstAdd(fl, new AstConst(fl, 1), new AstVarRef(fl, itp, VAccess::READ)));
+                AstWhile* whilep = new AstWhile(fl, condp, nullptr, incp);
                 initp->addNext(whilep);
                 bodyp->replaceWith(initp);
                 whilep->addBodysp(bodyp);
 
                 // Replace constant index with new loop index
                 AstNode* lbitp = m_mgSelLp->bitp();
-                lbitp->replaceWith(new AstVarRef(fl, itp, false));
+                lbitp->replaceWith(new AstVarRef(fl, itp, VAccess::READ));
                 VL_DO_DANGLING(lbitp->deleteTree(), lbitp);
                 if (m_mgSelRp) {  // else constant and no replace
                     AstNode* rbitp = m_mgSelRp->bitp();
-                    rbitp->replaceWith(new AstVarRef(fl, itp, false));
+                    rbitp->replaceWith(new AstVarRef(fl, itp, VAccess::READ));
                     VL_DO_DANGLING(rbitp->deleteTree(), lbitp);
                 }
                 if (debug() >= 9) initp->dumpTree(cout, "-new: ");
                 if (debug() >= 9) whilep->dumpTree(cout, "-new: ");
 
                 // Remove remaining assigns
-                for (AssVec::iterator it = m_mgAssignps.begin(); it != m_mgAssignps.end(); ++it) {
-                    AstNodeAssign* assp = *it;
+                for (AstNodeAssign* assp : m_mgAssignps) {
                     if (assp != bodyp) {
                         VL_DO_DANGLING(assp->unlinkFrBack()->deleteTree(), assp);
                     }
@@ -134,21 +132,23 @@ private:
             }
             // Setup for next merge
             m_mgAssignps.clear();
-            m_mgSelLp = NULL;
-            m_mgSelRp = NULL;
-            m_mgVarrefLp = NULL;
-            m_mgVarrefRp = NULL;
-            m_mgConstRp = NULL;
+            m_mgSelLp = nullptr;
+            m_mgSelRp = nullptr;
+            m_mgVarrefLp = nullptr;
+            m_mgVarrefRp = nullptr;
+            m_mgConstRp = nullptr;
         }
     }
 
     // VISITORS
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
-        m_cfuncp = nodep;
-        iterateChildren(nodep);
-        m_cfuncp = NULL;
+    virtual void visit(AstCFunc* nodep) override {
+        VL_RESTORER(m_cfuncp);
+        {
+            m_cfuncp = nodep;
+            iterateChildren(nodep);
+        }
     }
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         if (!m_cfuncp) return;
 
         // Left select WordSel or ArraySel
@@ -178,7 +178,7 @@ private:
         // RHS is a constant or a select
         AstConst* rconstp = VN_CAST(nodep->rhsp(), Const);
         AstNodeSel* rselp = VN_CAST(nodep->rhsp(), NodeSel);
-        AstNodeVarRef* rvarrefp = NULL;
+        AstNodeVarRef* rvarrefp = nullptr;
         if (rconstp) {  // Ok
         } else {
             if (!rselp) {
@@ -233,26 +233,14 @@ private:
         UINFO(9, "Start merge i=" << index << " " << nodep << endl);
     }
     //--------------------
-    virtual void visit(AstVar*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstVar*) override {}  // Accelerate
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit ReloopVisitor(AstNetlist* nodep) {
-        m_cfuncp = NULL;
-        m_mgCfuncp = NULL;
-        m_mgNextp = NULL;
-        m_mgSelLp = NULL;
-        m_mgSelRp = NULL;
-        m_mgVarrefLp = NULL;
-        m_mgVarrefRp = NULL;
-        m_mgConstRp = NULL;
-        m_mgIndexLo = 0;
-        m_mgIndexHi = 0;
-        iterate(nodep);
-    }
-    virtual ~ReloopVisitor() {
+    explicit ReloopVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~ReloopVisitor() override {
         V3Stats::addStat("Optimizations, Reloops", m_statReloops);
         V3Stats::addStat("Optimizations, Reloop iterations", m_statReItems);
     }

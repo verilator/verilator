@@ -13,6 +13,7 @@ typedef interface class ic;
 class C #(parameter P=1);
    localparam LOCPAR = 10;
    int  imember;
+   static int istatic;
 
    local int loc;
    protected int prot;
@@ -34,3 +35,13 @@ endclass
 
 module t (/*AUTOARG*/);
 endmodule
+
+typedef class uvm_root;
+typedef class uvm_coreservice_t;
+
+class uvm_default_coreservice_t extends uvm_coreservice_t;
+   virtual function uvm_root get_root();
+      uvm_root::m_forward_task_call();
+      return uvm_root::m_uvm_get_root();
+   endfunction
+endclass

@@ -1,0 +1,12 @@
+// DESCRIPTION: Verilator output: Waivers generated with --waiver-output
+
+`verilator_config
+
+// Below you find suggested waivers. You have three options:
+//   1. Fix the reason for the linter warning
+//   2. Keep the waiver permanently if you are sure this is okay
+//   3. Keep the waiver temporarily to suppress the output
+
+lint_off -rule WIDTH -file "*t/t_waiveroutput.v" -match "Operator ASSIGN expects 1 bits on the Assign RHS, but Assign RHS's CONST '2'h3' generates 2 bits."
+
+lint_off -rule UNUSED -file "*t/t_waiveroutput.v" -match "Signal is not used: 'width_warn'"

@@ -13,7 +13,7 @@ unsigned int main_time = 0;
 
 double sc_time_stamp() { return main_time; }
 
-VM_PREFIX* topp = NULL;
+VM_PREFIX* topp = nullptr;
 
 void clockit(int clk1, int clk0) {
     topp->clks = clk1 << 1 | clk0;

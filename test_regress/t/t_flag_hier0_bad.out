@@ -1,0 +1,9 @@
+%Error: --hierarchical-block requires the number of entries to be even
+%Error: Module name 'param0' is duplicated in --hierarchical-block
+%Error: --hierarchical-block requires at least two comma-separated values
+%Error: --hierarchical-block must not end with \
+%Error: --hierarchical-block does not allow 'a' after \
+%Error: --hierarchical-block expects ',', but 'a' is passed
+%Error: --hierarchical-block must not end with ','
+%Error: --hierarchical-block does not allow '"' in the middle of literal
+%Error: Exiting due to

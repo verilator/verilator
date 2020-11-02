@@ -23,8 +23,6 @@
 #endif
 // clang-format on
 
-#include <cstdarg>
-
 //======================================================================
 // Statics
 
@@ -42,7 +40,7 @@ bool V3Error::s_describedEachWarn[V3ErrorCode::_ENUM_MAX];
 bool V3Error::s_describedWarnings = false;
 bool V3Error::s_pretendError[V3ErrorCode::_ENUM_MAX];
 V3Error::MessagesSet V3Error::s_messages;
-V3Error::ErrorExitCb V3Error::s_errorExitCb = NULL;
+V3Error::ErrorExitCb V3Error::s_errorExitCb = nullptr;
 
 struct v3errorIniter {
     v3errorIniter() { V3Error::init(); }
@@ -158,25 +156,28 @@ string V3Error::msgPrefix() {
 //======================================================================
 // Abort/exit
 
-void V3Error::vlAbort() {
+void V3Error::vlAbortOrExit() {
     if (V3Error::debugDefault()) {
         std::cerr << msgPrefix() << "Aborting since under --debug" << endl;
-        abort();
+        V3Error::vlAbort();
     } else {
         exit(1);
     }
+}
+
+void V3Error::vlAbort() {
+    VL_GCOV_FLUSH();
+    abort();
 }
 
 //======================================================================
 // Global Functions
 
 void V3Error::suppressThisWarning() {
-    if (s_errorCode >= V3ErrorCode::EC_MIN) {
 #ifndef _V3ERROR_NO_GLOBAL_
-        V3Stats::addStatSum(string("Warnings, Suppressed ") + s_errorCode.ascii(), 1);
+    V3Stats::addStatSum(string("Warnings, Suppressed ") + s_errorCode.ascii(), 1);
 #endif
-        s_errorSuppressed = true;
-    }
+    s_errorSuppressed = true;
 }
 
 string V3Error::warnMore() { return string(msgPrefix().size(), ' '); }
@@ -209,7 +210,7 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
     s_messages.insert(msg);
     if (!locationStr.empty()) {
         string locationMsg = warnMore() + locationStr + "\n";
-        size_t pos = msg.find("\n");
+        size_t pos = msg.find('\n');
         msg.insert(pos + 1, locationMsg);
     }
     // Output
@@ -274,7 +275,7 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
 #endif
             }
 
-            vlAbort();
+            vlAbortOrExit();
         } else if (isError(s_errorCode, s_errorSuppressed)) {
             // We don't dump tree on any error because a Visitor may be in middle of
             // a tree cleanup and cause a false broken problem.

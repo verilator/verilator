@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3FileLine_H_
-#define _V3FileLine_H_ 1
+#ifndef _V3FILELINE_H_
+#define _V3FILELINE_H_ 1
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -39,8 +39,7 @@ class FileLine;
 //! source file (each with its own unique filename number).
 class FileLineSingleton {
     // TYPES
-    typedef std::map<string, int> FileNameNumMap;
-    typedef std::map<string, V3LangCode> FileLangNumMap;
+    typedef std::map<const string, int> FileNameNumMap;
     // MEMBERS
     FileNameNumMap m_namemap;  // filenameno for each filename
     std::deque<string> m_names;  // filename text for each filenameno
@@ -52,8 +51,8 @@ class FileLineSingleton {
 protected:
     friend class FileLine;
     int nameToNumber(const string& filename);
-    const string numberToName(int filenameno) const { return m_names[filenameno]; }
-    const V3LangCode numberToLang(int filenameno) const { return m_languages[filenameno]; }
+    string numberToName(int filenameno) const { return m_names[filenameno]; }
+    V3LangCode numberToLang(int filenameno) const { return m_languages[filenameno]; }
     void numberToLang(int filenameno, const V3LangCode& l) { m_languages[filenameno] = l; }
     void clear() {
         m_namemap.clear();
@@ -61,7 +60,7 @@ protected:
         m_languages.clear();
     }
     void fileNameNumMapDumpXml(std::ostream& os);
-    static const string filenameLetters(int fileno);
+    static string filenameLetters(int fileno);
 };
 
 //! All source lines from a file/stream, to enable errors to show sources
@@ -90,7 +89,7 @@ std::ostream& operator<<(std::ostream& os, VFileContent* contentp);
 //! language is held in tables in the FileLineSingleton class.
 class FileLine {
     // CONSTANTS
-    enum { SHOW_SOURCE_MAX_LENGTH = 400 };  // Don't show source lines > this long
+    static constexpr unsigned SHOW_SOURCE_MAX_LENGTH = 400;  // Don't show source lines > this long
 
     // MEMBERS
     // Columns here means number of chars from beginning (i.e. tabs count as one)
@@ -103,6 +102,7 @@ class FileLine {
     VFileContent* m_contentp;  // Source text contents line is within
     FileLine* m_parent;  // Parent line that included this line
     std::bitset<V3ErrorCode::_ENUM_MAX> m_warnOn;
+    bool m_waive;  // Waive warning
 
 protected:
     // User routines should never need to change line numbers
@@ -126,25 +126,27 @@ private:
 
 public:
     explicit FileLine(const string& filename)
-        : m_firstLineno(0)
-        , m_firstColumn(0)
-        , m_lastLineno(0)
-        , m_lastColumn(0)
-        , m_filenameno(singleton().nameToNumber(filename))
-        , m_contentLineno(0)
-        , m_contentp(NULL)
-        , m_parent(NULL)
-        , m_warnOn(defaultFileLine().m_warnOn) {}
+        : m_firstLineno{0}
+        , m_firstColumn{0}
+        , m_lastLineno{0}
+        , m_lastColumn{0}
+        , m_filenameno{singleton().nameToNumber(filename)}
+        , m_contentLineno{0}
+        , m_contentp{nullptr}
+        , m_parent{nullptr}
+        , m_warnOn{defaultFileLine().m_warnOn}
+        , m_waive{false} {}
     explicit FileLine(FileLine* fromp)
-        : m_firstLineno(fromp->m_firstLineno)
-        , m_firstColumn(fromp->m_firstColumn)
-        , m_lastLineno(fromp->m_lastLineno)
-        , m_lastColumn(fromp->m_lastColumn)
-        , m_filenameno(fromp->m_filenameno)
-        , m_contentLineno(fromp->m_contentLineno)
-        , m_contentp(fromp->m_contentp)
-        , m_parent(fromp->m_parent)
-        , m_warnOn(fromp->m_warnOn) {}
+        : m_firstLineno{fromp->m_firstLineno}
+        , m_firstColumn{fromp->m_firstColumn}
+        , m_lastLineno{fromp->m_lastLineno}
+        , m_lastColumn{fromp->m_lastColumn}
+        , m_filenameno{fromp->m_filenameno}
+        , m_contentLineno{fromp->m_contentLineno}
+        , m_contentp{fromp->m_contentp}
+        , m_parent{fromp->m_parent}
+        , m_warnOn{fromp->m_warnOn}
+        , m_waive{fromp->m_waive} {}
     struct EmptySecret {};  // Constructor selection
     explicit FileLine(EmptySecret);
     FileLine* copyOrSameFileLine();
@@ -161,7 +163,7 @@ public:
         m_lastLineno = num;
         m_firstColumn = m_lastColumn = 1;
     }
-    void language(V3LangCode lang) { singleton().numberToLang(m_filenameno, lang); }
+    void language(V3LangCode lang) { singleton().numberToLang(filenameno(), lang); }
     void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }
     void parent(FileLine* fileline) { m_parent = fileline; }
     void lineDirective(const char* textp, int& enterExitRef);
@@ -187,21 +189,21 @@ public:
     string source() const;
     string prettySource() const;  // Source, w/stripped unprintables and newlines
     FileLine* parent() const { return m_parent; }
-    V3LangCode language() const { return singleton().numberToLang(m_filenameno); }
+    V3LangCode language() const { return singleton().numberToLang(filenameno()); }
     string ascii() const;
     string asciiLineCol() const;
-    const string filename() const { return singleton().numberToName(m_filenameno); }
+    int filenameno() const { return m_filenameno; }
+    string filename() const { return singleton().numberToName(filenameno()); }
     bool filenameIsGlobal() const {
         return (filename() == commandLineFilename() || filename() == builtInFilename());
     }
-    const string filenameLetters() const { return singleton().filenameLetters(m_filenameno); }
-    const string filebasename() const;
-    const string filebasenameNoExt() const;
-    const string profileFuncname() const;
-    const string xml() const {
-        return "fl=\"" + filenameLetters() + cvtToStr(lastLineno()) + "\"";
-    }
-    const string xmlDetailedLocation() const;
+    string filenameLetters() const { return FileLineSingleton::filenameLetters(filenameno()); }
+    string filebasename() const;
+    string filebasenameNoExt() const;
+    string firstColumnLetters() const;
+    string profileFuncname() const;
+    string xml() const { return "fl=\"" + filenameLetters() + cvtToStr(lastLineno()) + "\""; }
+    string xmlDetailedLocation() const;
     string lineDirectiveStrg(int enterExit) const;
 
     // Turn on/off warning messages on this line.
@@ -213,8 +215,11 @@ public:
     void warnStyleOff(bool flag);
     void warnStateFrom(const FileLine& from) { m_warnOn = from.m_warnOn; }
     void warnResetDefault() { warnStateFrom(defaultFileLine()); }
+    bool lastWarnWaived() { return m_waive; }
 
     // Specific flag ACCESSORS/METHODS
+    bool celldefineOn() const { return m_warnOn.test(V3ErrorCode::I_CELLDEFINE); }
+    void celldefineOn(bool flag) { warnOn(V3ErrorCode::I_CELLDEFINE, flag); }
     bool coverageOn() const { return m_warnOn.test(V3ErrorCode::I_COVERAGE); }
     void coverageOn(bool flag) { warnOn(V3ErrorCode::I_COVERAGE, flag); }
     bool tracingOn() const { return m_warnOn.test(V3ErrorCode::I_TRACING); }
@@ -262,16 +267,30 @@ public:
                 && m_lastLineno == rhs.m_lastLineno && m_lastColumn == rhs.m_lastColumn
                 && m_filenameno == rhs.m_filenameno && m_warnOn == rhs.m_warnOn);
     }
+    // Returns -1 if (*this) should come before rhs after sorted. 1 for the opposite case. 0 for
+    // equivalent.
+    int operatorCompare(const FileLine& rhs) const {
+        if (m_filenameno != rhs.m_filenameno) return (m_filenameno < rhs.m_filenameno) ? -1 : 1;
+        if (m_firstLineno != rhs.m_firstLineno)
+            return (m_firstLineno < rhs.m_firstLineno) ? -1 : 1;
+        if (m_firstColumn != rhs.m_firstColumn)
+            return (m_firstColumn < rhs.m_firstColumn) ? -1 : 1;
+        if (m_lastLineno != rhs.m_lastLineno) return (m_lastLineno < rhs.m_lastLineno) ? -1 : 1;
+        if (m_lastColumn != rhs.m_lastColumn) return (m_lastColumn < rhs.m_lastColumn) ? -1 : 1;
+        for (size_t i = 0; i < m_warnOn.size(); ++i) {
+            if (m_warnOn[i] != rhs.m_warnOn[i]) return (m_warnOn[i] < rhs.m_warnOn[i]) ? -1 : 1;
+        }
+        return 0;  // (*this) and rhs are equivalent
+    }
 
 private:
-    void v3errorEndFatalGuts(std::ostringstream& str);
     string warnContext(bool secondary) const;
 };
 std::ostream& operator<<(std::ostream& os, FileLine* fileline);
 
 inline void FileLine::v3errorEndFatal(std::ostringstream& str) {
     v3errorEnd(str);
-    assert(0);
+    assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE
 }
 

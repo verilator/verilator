@@ -25,10 +25,7 @@
 #include "V3Os.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <iostream>
-#include <list>
-#include <set>
 
 //######################################################################
 
@@ -64,8 +61,6 @@ protected:
             s_preprocp->defineCmdLine(prefl, "VERILATOR", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator3", "1");  // LEAK_OK
-            s_preprocp->defineCmdLine(prefl, "systemc_clock",
-                                      "/*verilator systemc_clock*/");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "coverage_block_off",
                                       "/*verilator coverage_block_off*/");  // LEAK_OK
             if (prefl->language().systemVerilog()) {
@@ -113,6 +108,7 @@ protected:
             modfileline->language(v3Global.opt.fileLanguage(modfilename));
             V3Parse::ppPushText(
                 parsep, (string("`begin_keywords \"") + modfileline->language().ascii() + "\"\n"));
+            // FileLine tracks and frees modfileline
         }
 
         while (!s_preprocp->isEof()) {
@@ -160,8 +156,8 @@ public:
 };
 
 V3PreShellImp V3PreShellImp::s_preImp;
-V3PreProc* V3PreShellImp::s_preprocp = NULL;
-VInFilter* V3PreShellImp::s_filterp = NULL;
+V3PreProc* V3PreShellImp::s_preprocp = nullptr;
+VInFilter* V3PreShellImp::s_filterp = nullptr;
 
 //######################################################################
 // Perl class functions

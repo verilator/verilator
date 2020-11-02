@@ -42,8 +42,6 @@
 #include "V3Slice.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
-
 //*************************************************************************
 
 class SliceVisitor : public AstNVisitor {
@@ -55,8 +53,8 @@ class SliceVisitor : public AstNVisitor {
     AstUser1InUse m_inuser1;
 
     // STATE
-    AstNode* m_assignp;  // Assignment we are under
-    bool m_assignError;  // True if the current assign already has an error
+    AstNode* m_assignp = nullptr;  // Assignment we are under
+    bool m_assignError = false;  // True if the current assign already has an error
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -125,21 +123,18 @@ class SliceVisitor : public AstNVisitor {
         return newp;
     }
 
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeAssign* nodep) override {
         // Called recursively on newly created assignments
         if (!nodep->user1() && !VN_IS(nodep, AssignAlias)) {
             nodep->user1(true);
             m_assignError = false;
-            if (debug() >= 9) {
-                cout << endl;
-                nodep->dumpTree(cout, " Deslice-In: ");
-            }
+            if (debug() >= 9) nodep->dumpTree(cout, " Deslice-In: ");
             AstNodeDType* dtp = nodep->lhsp()->dtypep()->skipRefp();
             if (AstUnpackArrayDType* arrayp = VN_CAST(dtp, UnpackArrayDType)) {
                 // Left and right could have different msb/lsbs/endianness, but #elements is common
                 // and all variables are realigned to start at zero
                 // Assign of a little endian'ed slice to a big endian one must reverse the elements
-                AstNode* newlistp = NULL;
+                AstNode* newlistp = nullptr;
                 int elements = arrayp->rangep()->elementsConst();
                 for (int offset = 0; offset < elements; ++offset) {
                     AstNode* newp = nodep->cloneType  // AstNodeAssign
@@ -148,10 +143,7 @@ class SliceVisitor : public AstNVisitor {
                     if (debug() >= 9) { newp->dumpTree(cout, "-new "); }
                     newlistp = AstNode::addNextNull(newlistp, newp);
                 }
-                if (debug() >= 9) {
-                    cout << endl;
-                    nodep->dumpTree(cout, " Deslice-Dn: ");
-                }
+                if (debug() >= 9) nodep->dumpTree(cout, " Deslice-Dn: ");
                 nodep->replaceWith(newlistp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 // Normal edit iterator will now iterate on all of the expansion assignments
@@ -160,11 +152,11 @@ class SliceVisitor : public AstNVisitor {
             }
             m_assignp = nodep;
             iterateChildren(nodep);
-            m_assignp = NULL;
+            m_assignp = nullptr;
         }
     }
 
-    virtual void visit(AstInitArray* nodep) VL_OVERRIDE {
+    virtual void visit(AstInitArray* nodep) override {
         UASSERT_OBJ(!m_assignp, nodep, "Array initialization should have been removed earlier");
     }
 
@@ -175,7 +167,7 @@ class SliceVisitor : public AstNVisitor {
             AstNodeDType* fromDtp = nodep->lhsp()->dtypep()->skipRefp();
             UINFO(9, "  Bi-Eq/Neq expansion " << nodep << endl);
             if (AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
-                AstNodeBiop* logp = NULL;
+                AstNodeBiop* logp = nullptr;
                 if (!VN_IS(nodep->lhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
                     nodep->lhsp()->v3error(
                         "Slice operator "
@@ -196,9 +188,9 @@ class SliceVisitor : public AstNVisitor {
                                           new AstArraySel(nodep->fileline(),
                                                           nodep->rhsp()->cloneTree(false), index)),
                                       NodeBiop);
-                        if (!logp)
+                        if (!logp) {
                             logp = clonep;
-                        else {
+                        } else {
                             switch (nodep->type()) {
                             case AstType::atEq:  // FALLTHRU
                             case AstType::atEqCase:
@@ -223,21 +215,17 @@ class SliceVisitor : public AstNVisitor {
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstEq* nodep) VL_OVERRIDE { expandBiOp(nodep); }
-    virtual void visit(AstNeq* nodep) VL_OVERRIDE { expandBiOp(nodep); }
-    virtual void visit(AstEqCase* nodep) VL_OVERRIDE { expandBiOp(nodep); }
-    virtual void visit(AstNeqCase* nodep) VL_OVERRIDE { expandBiOp(nodep); }
+    virtual void visit(AstEq* nodep) override { expandBiOp(nodep); }
+    virtual void visit(AstNeq* nodep) override { expandBiOp(nodep); }
+    virtual void visit(AstEqCase* nodep) override { expandBiOp(nodep); }
+    virtual void visit(AstNeqCase* nodep) override { expandBiOp(nodep); }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit SliceVisitor(AstNetlist* nodep) {
-        m_assignp = NULL;
-        m_assignError = false;
-        iterate(nodep);
-    }
-    virtual ~SliceVisitor() {}
+    explicit SliceVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~SliceVisitor() override {}
 };
 
 //######################################################################

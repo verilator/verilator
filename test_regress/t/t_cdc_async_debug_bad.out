@@ -1,0 +1,20 @@
+Edge Report for Vt_cdc_async_debug_bad
+  t_cdc_async_bad.v:    input     clk                                       SRC=@(*)  DST=@(posedge clk or negedge rst0_n or negedge t.__Vcellinp__flop4__rst_n or negedge t.rst1_n or negedge t.rst2_bad_n or negedge t.rst5_waive_n or negedge t.rst6a_bad_n or negedge t.rst6b_bad_n)
+  t_cdc_async_bad.v:    input     d                                         SRC=@(*)  DST=@(posedge clk or negedge rst0_n or negedge t.__Vcellinp__flop4__rst_n or negedge t.rst1_n or negedge t.rst2_bad_n or negedge t.rst5_waive_n or negedge t.rst6a_bad_n or negedge t.rst6b_bad_n)
+  t_cdc_async_bad.v:    input     rst0_n                                    SRC=@(*)  DST=@(posedge clk or negedge rst0_n or negedge t.rst2_bad_n or negedge t.rst5_waive_n or negedge t.rst6a_bad_n or negedge t.rst6b_bad_n)
+  t_cdc_async_bad.v:    output    q0                                        SRC=@(posedge clk or negedge rst0_n)  DST=
+  t_cdc_async_bad.v:    output    q1                                        SRC=@(posedge clk or negedge t.rst1_n)  DST=
+  t_cdc_async_bad.v:    output    q2                                        SRC=@(posedge clk or negedge t.rst2_bad_n)  DST=
+  t_cdc_async_bad.v:    output    q3                                        SRC=@(posedge clk or negedge t.rst2_bad_n)  DST=
+  t_cdc_async_bad.v:    output    q4                                        SRC=@(posedge clk or negedge t.__Vcellinp__flop4__rst_n)  DST=
+  t_cdc_async_bad.v:    output    q5                                        SRC=@(posedge clk or negedge t.rst5_waive_n)  DST=
+  t_cdc_async_bad.v:    output    q6a                                       SRC=@(posedge clk or negedge t.rst6a_bad_n)  DST=
+  t_cdc_async_bad.v:    output    q6b                                       SRC=@(posedge clk or negedge t.rst6b_bad_n)  DST=
+  t_cdc_async_bad.v:    wire      t.__Vcellinp__flop4__rst_n                SRC=@(posedge clk)  DST=@(posedge clk or negedge t.__Vcellinp__flop4__rst_n)
+  t_cdc_async_bad.v:    wire      t.rst1_n                                  SRC=@(posedge clk)  DST=@(posedge clk or negedge t.rst1_n or negedge t.rst2_bad_n or negedge t.rst5_waive_n or negedge t.rst6a_bad_n or negedge t.rst6b_bad_n)
+  t_cdc_async_bad.v:    wire      t.rst2_bad_n                              SRC=@(* or posedge clk)  DST=@(posedge clk or negedge t.rst2_bad_n)
+  t_cdc_async_bad.v:    wire      t.rst4_n                                  SRC=@(posedge clk)  DST=@(posedge clk or negedge t.__Vcellinp__flop4__rst_n)
+  t_cdc_async_bad.v:    wire      t.rst5_waive_n                            SRC=@(* or posedge clk)  DST=@(posedge clk or negedge t.rst5_waive_n)
+  t_cdc_async_bad.v:    wire      t.rst6_bad_n                              SRC=@(* or posedge clk)  DST=@(posedge clk or negedge t.rst6a_bad_n or negedge t.rst6b_bad_n)
+  t_cdc_async_bad.v:    wire      t.rst6a_bad_n                             SRC=@(* or posedge clk)  DST=@(posedge clk or negedge t.rst6a_bad_n)
+  t_cdc_async_bad.v:    wire      t.rst6b_bad_n                             SRC=@(* or posedge clk)  DST=@(posedge clk or negedge t.rst6b_bad_n)

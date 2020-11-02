@@ -25,7 +25,6 @@
 #include "V3Hashed.h"
 #include "V3Stats.h"
 
-#include <cstdarg>
 #include <vector>
 
 //######################################################################
@@ -55,20 +54,16 @@ private:
         // Note uses user4
         V3Hashed hashed;  // Duplicate code detection
         // Hash all of the original signals we toggle cover
-        for (ToggleList::iterator it = m_toggleps.begin(); it != m_toggleps.end(); ++it) {
-            AstCoverToggle* nodep = *it;
-            hashed.hashAndInsert(nodep->origp());
-        }
+        for (AstCoverToggle* nodep : m_toggleps) hashed.hashAndInsert(nodep->origp());
         // Find if there are any duplicates
-        for (ToggleList::iterator it = m_toggleps.begin(); it != m_toggleps.end(); ++it) {
-            AstCoverToggle* nodep = *it;
+        for (AstCoverToggle* nodep : m_toggleps) {
             // nodep->backp() is null if we already detected it's a duplicate and unlinked it.
             if (nodep->backp()) {
                 // Want to choose a base node, and keep finding duplicates that are identical.
                 // This prevents making chains where a->b, then c->d, then b->c, as we'll
                 // find a->b, a->c, a->d directly.
                 while (true) {
-                    V3Hashed::iterator dupit = hashed.findDuplicate(nodep->origp());
+                    const auto dupit = hashed.findDuplicate(nodep->origp());
                     if (dupit == hashed.end()) break;
                     //
                     AstNode* duporigp = hashed.iteratorNodep(dupit);
@@ -98,24 +93,24 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         // Find all Coverage's
         iterateChildren(nodep);
         // Simplify
         detectDuplicates();
     }
-    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {
+    virtual void visit(AstCoverToggle* nodep) override {
         m_toggleps.push_back(nodep);
         iterateChildren(nodep);
     }
     //--------------------
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeMath*) override {}  // Accelerate
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit CoverageJoinVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~CoverageJoinVisitor() {
+    virtual ~CoverageJoinVisitor() override {
         V3Stats::addStat("Coverage, Toggle points joined", m_statToggleJoins);
     }
 };

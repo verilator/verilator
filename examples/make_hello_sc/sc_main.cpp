@@ -23,25 +23,17 @@ int sc_main(int argc, char* argv[]) {
     // e.g. examples/c_tracing.
 
     // Prevent unused variable warnings
-    if (0 && argc && argv) {}
+    if (false && argc && argv) {}
 
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
     Vtop* top = new Vtop("top");
 
     // Initialize SC model
-#if (SYSTEMC_VERSION >= 20070314)
     sc_start(1, SC_NS);
-#else
-    sc_start(1);
-#endif
 
     // Simulate until $finish
     while (!Verilated::gotFinish()) {
-#if (SYSTEMC_VERSION >= 20070314)
         sc_start(1, SC_NS);
-#else
-        sc_start(1);
-#endif
     }
 
     // Final model cleanup

@@ -22,6 +22,15 @@
 #include "verilatedos.h"
 #include "verilated.h"  // for VerilatedMutex and clang annotations
 
+#ifndef VL_THREADED
+// Hitting this likely means verilated_threads.cpp is being compiled when
+// 'verilator --threads' was not used.  'verilator --threads' sets
+// VL_THREADED.
+// Alternatively it is always safe but may harm performance to always
+// define VL_THREADED for all compiles.
+#error "verilated_threads.h/cpp expected VL_THREADED (from verilator --threads)"
+#endif
+
 #include <condition_variable>
 #include <set>
 #include <vector>
@@ -119,23 +128,16 @@ class VlProfileRec {
 protected:
     friend class VlThreadPool;
     enum VlProfileE { TYPE_MTASK_RUN, TYPE_BARRIER };
-    VlProfileE m_type;  // Record type
-    vluint32_t m_mtaskId;  // Mtask we're logging
-    vluint32_t m_predictTime;  // How long scheduler predicted would take
-    vluint64_t m_startTime;  // Tick at start of execution
-    vluint64_t m_endTime;  // Tick at end of execution
+    VlProfileE m_type = TYPE_BARRIER;  // Record type
+    vluint32_t m_mtaskId = 0;  // Mtask we're logging
+    vluint32_t m_predictTime = 0;  // How long scheduler predicted would take
+    vluint64_t m_startTime = 0;  // Tick at start of execution
+    vluint64_t m_endTime = 0;  // Tick at end of execution
     unsigned m_cpu;  // Execution CPU number (at start anyways)
 public:
     class Barrier {};
     VlProfileRec() {}
-    explicit VlProfileRec(Barrier) {
-        m_type = TYPE_BARRIER;
-        m_mtaskId = 0;
-        m_predictTime = 0;
-        m_startTime = 0;
-        m_endTime = 0;
-        m_cpu = getcpu();
-    }
+    explicit VlProfileRec(Barrier) { m_cpu = getcpu(); }
     void startRecord(vluint64_t time, uint32_t mtask, uint32_t predict) {
         m_type = VlProfileRec::TYPE_MTASK_RUN;
         m_mtaskId = mtask;
@@ -174,13 +176,13 @@ private:
         VlThrSymTab m_sym;  // Symbol table to execute
         bool m_evenCycle;  // Even/odd for flag alternation
         ExecRec()
-            : m_fnp(NULL)
-            , m_sym(NULL)
-            , m_evenCycle(false) {}
+            : m_fnp{nullptr}
+            , m_sym{nullptr}
+            , m_evenCycle{false} {}
         ExecRec(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym)
-            : m_fnp(fnp)
-            , m_sym(sym)
-            , m_evenCycle(evenCycle) {}
+            : m_fnp{fnp}
+            , m_sym{sym}
+            , m_evenCycle{evenCycle} {}
     };
 
     // MEMBERS
@@ -234,7 +236,7 @@ public:
     inline void addTask(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym) {
         bool notify;
         {
-            VerilatedLockGuard lk(m_mutex);
+            const VerilatedLockGuard lk(m_mutex);
             m_ready.emplace_back(fnp, evenCycle, sym);
             m_ready_size.fetch_add(1, std::memory_order_relaxed);
             notify = m_waiting;

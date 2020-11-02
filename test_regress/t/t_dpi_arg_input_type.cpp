@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 
+// clang-format off
 #if defined(NCSC)
 // Used by NC's svdpi.h to pick up svLogicVecVal with _.aval and _.bval fields,
 // rather than the IEEE 1800-2005 version which has _.a and _.b fields.
@@ -51,6 +52,7 @@ typedef uint64_t sv_longint_unsigned_t;
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 //======================================================================
 // Implementations of imported functions
@@ -145,7 +147,7 @@ void i_shortreal(float i) {
 void i_chandle(void* i) {
     static int n = 0;
     printf("i_chandle %d\n", n);
-    if (i != NULL) stop();
+    if (i) stop();
     n++;
 }
 
@@ -256,7 +258,7 @@ void i_shortreal_t(float i) {
 void i_chandle_t(void* i) {
     static int n = 0;
     printf("i_chandle_t %d\n", n);
-    if (i != NULL) stop();
+    if (i) stop();
     n++;
 }
 
@@ -570,9 +572,7 @@ void i_union_4_state_128(CONSTARG svLogicVecVal* i) {
 
 void set_bvals(svLogicVecVal* v, unsigned n);
 void set_bvals(svLogicVecVal* v, unsigned n) {
-    for (unsigned i = 0; i < n; i++) {
-        v[i].bval = 0;
-    }
+    for (unsigned i = 0; i < n; i++) v[i].bval = 0;
 }
 
 void check_exports() {

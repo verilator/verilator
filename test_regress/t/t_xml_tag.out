@@ -55,27 +55,27 @@
       </modport>
     </iface>
     <typetable fl="a0" loc="a,0,0,0,0">
-      <basicdtype fl="d31" loc="d,31,26,31,27" id="5" name="logic" left="31" right="0"/>
       <basicdtype fl="d8" loc="d,8,4,8,11" id="6" name="integer" left="31" right="0"/>
       <basicdtype fl="d14" loc="d,14,11,14,17" id="1" name="logic"/>
+      <basicdtype fl="d21" loc="d,21,7,21,12" id="8" name="logic"/>
+      <basicdtype fl="d22" loc="d,22,7,22,12" id="9" name="logic"/>
+      <basicdtype fl="d23" loc="d,23,7,23,12" id="10" name="logic"/>
+      <basicdtype fl="d24" loc="d,24,7,24,12" id="11" name="logic"/>
       <structdtype fl="d20" loc="d,20,12,20,18" id="2" name="m.my_struct">
-        <memberdtype fl="d21" loc="d,21,16,21,19" id="8" name="clk" tag="this is clk" sub_dtype_id="9"/>
-        <memberdtype fl="d22" loc="d,22,16,22,17" id="10" name="k" sub_dtype_id="11"/>
-        <memberdtype fl="d23" loc="d,23,16,23,22" id="12" name="enable" tag="enable" sub_dtype_id="13"/>
-        <memberdtype fl="d24" loc="d,24,16,24,20" id="14" name="data" tag="data" sub_dtype_id="15"/>
+        <memberdtype fl="d21" loc="d,21,16,21,19" id="12" name="clk" tag="this is clk" sub_dtype_id="8"/>
+        <memberdtype fl="d22" loc="d,22,16,22,17" id="13" name="k" sub_dtype_id="9"/>
+        <memberdtype fl="d23" loc="d,23,16,23,22" id="14" name="enable" tag="enable" sub_dtype_id="10"/>
+        <memberdtype fl="d24" loc="d,24,16,24,20" id="15" name="data" tag="data" sub_dtype_id="11"/>
       </structdtype>
-      <basicdtype fl="d21" loc="d,21,7,21,12" id="9" name="logic"/>
-      <basicdtype fl="d22" loc="d,22,7,22,12" id="11" name="logic"/>
-      <basicdtype fl="d23" loc="d,23,7,23,12" id="13" name="logic"/>
-      <basicdtype fl="d24" loc="d,24,7,24,12" id="15" name="logic"/>
       <ifacerefdtype fl="d29" loc="d,29,8,29,12" id="3" modportname=""/>
+      <basicdtype fl="d31" loc="d,31,27,31,28" id="5" name="logic" left="31" right="0"/>
+      <refdtype fl="d31" loc="d,31,4,31,13" id="16" name="my_struct" sub_dtype_id="2"/>
       <unpackarraydtype fl="d31" loc="d,31,26,31,27" id="4" sub_dtype_id="2">
         <range fl="d31" loc="d,31,26,31,27">
-          <const fl="d31" loc="d,31,26,31,27" name="32&apos;h1" dtype_id="5"/>
-          <const fl="d31" loc="d,31,26,31,27" name="32&apos;h0" dtype_id="5"/>
+          <const fl="d31" loc="d,31,27,31,28" name="32&apos;h1" dtype_id="5"/>
+          <const fl="d31" loc="d,31,27,31,28" name="32&apos;h0" dtype_id="5"/>
         </range>
       </unpackarraydtype>
-      <refdtype fl="d31" loc="d,31,4,31,13" id="16" name="my_struct" sub_dtype_id="2"/>
       <basicdtype fl="d35" loc="d,35,21,35,27" id="7" name="string"/>
     </typetable>
   </netlist>

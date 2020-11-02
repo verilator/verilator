@@ -1,10 +1,7 @@
-%Error: t/t_class2.v:35:14: Unsupported: Hierarchical class references
-   35 |       if (Cls::ENUM_VAL != 22) $stop;
-      |              ^~
-%Error: t/t_class2.v:35:16: Unsupported: scoped class reference
+%Error-UNSUPPORTED: t/t_class2.v:35:16: Unsupported: Class '::' references: 'Cls'
    35 |       if (Cls::ENUM_VAL != 22) $stop;
       |                ^~~~~~~~
-%Error: t/t_class2.v:34:11: Unsupported: scoped class reference
-   34 |       if (Pkg::ENUMP_VAL != 33) $stop;
+%Error: Internal Error: t/t_class2.v:35:11: ../V3LinkDot.cpp:#: Bad package link
+   35 |       if (Cls::ENUM_VAL != 22) $stop;
       |           ^~~
-%Error: Exiting due to
+                        ... See the manual and https://verilator.org for more assistance.

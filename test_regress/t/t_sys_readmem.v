@@ -4,6 +4,14 @@
 // any use, without warranty, 2003 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+`ifdef WRITEMEM_BIN
+ `define READMEMX  $readmemb
+ `define WRITEMEMX $writememb
+`else
+ `define READMEMX  $readmemh
+ `define WRITEMEMX $writememh
+`endif
+
 module t;
 
    // verilator lint_off LITENDIAN
@@ -53,14 +61,16 @@ module t;
       begin
 `ifdef WRITEMEM_READ_BACK
          $readmemb("t/t_sys_readmem_b.mem", binary_nostart_tmp);
-         // Do a round-trip $writememh and $readmemh cycle.
+         // Do a round-trip $writememh(b) and $readmemh(b) cycle.
          // This covers $writememh and ensures we can read our
          // own memh output file.
+         // If WRITEMEM_BIN is also defined, use $writememb and
+         // $readmemb, otherwise use $writememh and $readmemh.
  `ifdef TEST_VERBOSE
          $display("-Writing %s", `OUT_TMP1);
  `endif
-         $writememh(`OUT_TMP1, binary_nostart_tmp);
-         $readmemh(`OUT_TMP1, binary_nostart);
+         `WRITEMEMX(`OUT_TMP1, binary_nostart_tmp);
+         `READMEMX(`OUT_TMP1, binary_nostart);
 `else
          $readmemb("t/t_sys_readmem_b.mem", binary_nostart);
 `endif
@@ -86,8 +96,8 @@ module t;
  `ifdef TEST_VERBOSE
          $display("-Writing %s", `OUT_TMP2);
  `endif
-         $writememh(`OUT_TMP2, binary_start_tmp, 4, 4+7);
-         $readmemh(`OUT_TMP2, binary_start, 4, 4+7);
+         `WRITEMEMX(`OUT_TMP2, binary_start_tmp, 4, 4+7);
+         `READMEMX(`OUT_TMP2, binary_start, 4, 4+7);
 `else
          $readmemb("t/t_sys_readmem_b_8.mem", binary_start, 4, 4+7);  // 4-11
 `endif
@@ -114,8 +124,8 @@ module t;
  `ifdef TEST_VERBOSE
          $display("-Writing %s", `OUT_TMP3);
  `endif
-         $writememh(`OUT_TMP3, hex_tmp, 0);
-         $readmemh(`OUT_TMP3, hex, 0);
+         `WRITEMEMX(`OUT_TMP3, hex_tmp, 0);
+         `READMEMX(`OUT_TMP3, hex, 0);
 `else
          $readmemh("t/t_sys_readmem_h.mem", hex, 0);
 `endif
@@ -136,8 +146,8 @@ module t;
  `ifdef TEST_VERBOSE
          $display("-Writing %s", `OUT_TMP4);
  `endif
-         $writememh(`OUT_TMP4, hex_align_tmp, 0);
-         $readmemh(`OUT_TMP4, hex_align, 0);
+         `WRITEMEMX(`OUT_TMP4, hex_align_tmp, 0);
+         `READMEMX(`OUT_TMP4, hex_align, 0);
 `else
          $readmemh("t/t_sys_readmem_align_h.mem", hex_align, 0);
 `endif
@@ -158,8 +168,8 @@ module t;
  `ifdef TEST_VERBOSE
          $display("-Writing %s", `OUT_TMP5);
  `endif
-         $writememh(fns_tmp, binary_string_tmp);
-         $readmemh(fns_tmp, binary_string);
+         `WRITEMEMX(fns_tmp, binary_string_tmp);
+         `READMEMX(fns_tmp, binary_string);
 `else
          $readmemb(fns, binary_string);
 `endif

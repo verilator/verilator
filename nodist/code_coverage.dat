@@ -21,7 +21,8 @@ source_globs("src/*.cpp",
              "include/*/*.c",
     );
 
-remove_source("/usr/include/*");
+# Note *'s are removed when using fastcov
+remove_source("/usr/*");
 remove_source("*/include/sysc/*");
 remove_source("*/V3ClkGater.cpp");
 remove_source("*/V3ClkGater.h");
@@ -37,7 +38,25 @@ remove_source("*include/gtkwave/*");
 remove_source("*test_regress/*");
 remove_source("*examples/*");
 
+# Remove collected coverage on each little test main file
+# Would just be removed with remove_source in later step
+remove_gcda_regexp(qr!test_regress/.*/(Vt_|Vtop_).*\.gcda!);
 
-exclude_line_regexp(qr/(\bv3fatalSrc\b|\bVL_UNCOVERABLE\b)/);
+# Exclude line entirely, also excludes from function and branch coverage
+exclude_line_regexp(qr/(\bv3fatalSrc\b
+                    |\bfatalSrc\b
+                    |\bVL_UNCOVERABLE\b
+                    |\bVL_UNREACHABLE\b
+                    |\bVL_FATAL
+                    |\bUASSERT
+                    |\bNUM_ASSERT
+                    |\bERROR_RSVD_WORD
+                    |\bV3ERROR_NA
+                    |\bUINFO\b)/x);
+
+# Exclude for branch coverage only
+exclude_branch_regexp(qr/(\bdebug\(\)
+                         |\bassert\(
+                         |\bSELF_CHECK)/x);
 
 1;

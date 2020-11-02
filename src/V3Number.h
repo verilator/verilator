@@ -164,9 +164,11 @@ public:
         opCleanThis();
     }
     // Create from a verilog 32'hxxxx number.
-    V3Number(AstNode* nodep, const char* sourcep) { V3NumberCreate(nodep, sourcep, NULL); }
+    V3Number(AstNode* nodep, const char* sourcep) { V3NumberCreate(nodep, sourcep, nullptr); }
     class FileLined {};  // Fileline based errors, for parsing only, otherwise pass nodep
-    V3Number(FileLined, FileLine* fl, const char* sourcep) { V3NumberCreate(NULL, sourcep, fl); }
+    V3Number(FileLined, FileLine* fl, const char* sourcep) {
+        V3NumberCreate(nullptr, sourcep, fl);
+    }
     class VerilogStringLiteral {};  // For creator type-overload selection
     V3Number(VerilogStringLiteral, AstNode* nodep, const string& str);
     class String {};
@@ -175,11 +177,11 @@ public:
         setString(value);
     }
     explicit V3Number(const V3Number* nump, int width = 1) {
-        init(NULL, width);
+        init(nullptr, width);
         m_fileline = nump->fileline();
     }
     V3Number(const V3Number* nump, int width, uint32_t value) {
-        init(NULL, width);
+        init(nullptr, width);
         m_value[0] = value;
         opCleanThis();
         m_fileline = nump->fileline();
@@ -267,7 +269,6 @@ public:
     bool isEqOne() const;
     bool isEqAllOnes(int optwidth = 0) const;
     bool isCaseEq(const V3Number& rhs) const;  // operator==
-    bool isLt(const V3Number& rhs) const;  // operator<
     bool isLtXZ(const V3Number& rhs) const;  // operator< with XZ compared
     void isSigned(bool ssigned) { m_signed = ssigned; }
     bool isAnyX() const;
@@ -335,7 +336,6 @@ public:
     V3Number& opSelInto(const V3Number& lhs, int lsbval, int width);
     V3Number& opToLowerN(const V3Number& lhs);
     V3Number& opToUpperN(const V3Number& lhs);
-    V3Number& opCond(const V3Number& lhs, const V3Number& if1s, const V3Number& if0s);
     V3Number& opCaseEq(const V3Number& lhs, const V3Number& rhs);
     V3Number& opCaseNeq(const V3Number& lhs, const V3Number& rhs);
     V3Number& opWildEq(const V3Number& lhs, const V3Number& rhs);
@@ -387,7 +387,8 @@ public:
     V3Number& opLteS(const V3Number& lhs, const V3Number& rhs);  // Signed
 
     // "D" - double (aka real) math
-    V3Number& opIToRD(const V3Number& lhs);
+    V3Number& opIToRD(const V3Number& lhs, bool isSigned = false);
+    V3Number& opISToRD(const V3Number& lhs) { return opIToRD(lhs, true); }
     V3Number& opRToIS(const V3Number& lhs);
     V3Number& opRToIRoundS(const V3Number& lhs);
     V3Number& opRealToBits(const V3Number& lhs);

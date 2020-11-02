@@ -1,0 +1,4 @@
+Model width =         40
+Restoring model from 'obj_vlt/t_savable_format1_bad/saved.vltsv'
+%Error: obj_vlt/t_savable_format1_bad/saved.vltsv:0: Can't deserialize save-restore file as was made from different model: obj_vlt/t_savable_format1_bad/saved.vltsv
+Aborting...

@@ -21,7 +21,6 @@
 #include "V3GraphDfa.h"
 #include "V3GraphAlg.h"
 
-#include <cstdarg>
 #include <map>
 #include <set>
 #include <stack>
@@ -31,7 +30,7 @@
 // Algorithms - find starting node
 
 DfaVertex* DfaGraph::findStart() {
-    DfaVertex* startp = NULL;
+    DfaVertex* startp = nullptr;
     for (V3GraphVertex* vertexp = this->verticesBeginp(); vertexp;
          vertexp = vertexp->verticesNextp()) {
         if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
@@ -84,7 +83,7 @@ private:
         return (nfaState(vertexp) && !(vertexp->user() == m_step));
     }
 
-    DfaVertex* newDfaVertex(DfaVertex* nfaTemplatep = NULL) {
+    DfaVertex* newDfaVertex(DfaVertex* nfaTemplatep = nullptr) {
         DfaVertex* vertexp = new DfaVertex(graphp());
         vertexp->color(1);  // Mark as dfa
         if (nfaTemplatep && nfaTemplatep->start()) vertexp->start(true);
@@ -134,11 +133,7 @@ private:
     uint32_t hashDfaOrigins(const DfaStates& nfasWithInput) {
         // Find the NFA states this dfa came from,
         uint32_t hash = 0;
-        for (DfaStates::const_iterator nfaIt = nfasWithInput.begin(); nfaIt != nfasWithInput.end();
-             ++nfaIt) {
-            DfaVertex* nfaStatep = *nfaIt;
-            hash ^= hashVertex(nfaStatep);
-        }
+        for (DfaVertex* nfaStatep : nfasWithInput) hash ^= hashVertex(nfaStatep);
         return hash;
     }
 
@@ -148,9 +143,7 @@ private:
         nextStep();
         // Mark all input vertexes
         int num1s = 0;
-        for (DfaStates::const_iterator nfaIt = nfasWithInput.begin(); nfaIt != nfasWithInput.end();
-             ++nfaIt) {
-            DfaVertex* nfaStatep = *nfaIt;
+        for (DfaVertex* nfaStatep : nfasWithInput) {
             nfaStatep->user(m_step);
             num1s++;
         }
@@ -183,7 +176,7 @@ private:
         // not depend on order of edges
         uint32_t hash = hashDfaOrigins(nfasWithInput);
 
-        std::pair<HashMap::iterator, HashMap::iterator> eqrange = m_hashMap.equal_range(hash);
+        const auto eqrange = m_hashMap.equal_range(hash);
         for (HashMap::iterator it = eqrange.first; it != eqrange.second; ++it) {
             DfaVertex* testp = it->second;
             if (compareDfaOrigins(nfasWithInput, testp)) {
@@ -191,10 +184,10 @@ private:
                 return testp;  // Identical
             }
         }
-        return NULL;  // No match
+        return nullptr;  // No match
     }
 
-    void findNfasWithInput(DfaVertex* dfaStatep, DfaInput input, DfaStates& nfasWithInput) {
+    void findNfasWithInput(DfaVertex* dfaStatep, const DfaInput& input, DfaStates& nfasWithInput) {
         // Return all NFA states, with the given input transition from
         // the nfa states a given dfa state was constructed from.
         nextStep();
@@ -372,7 +365,7 @@ private:
 
 public:
     GraphNfaToDfa(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-        : GraphAlg<>(graphp, edgeFuncp) {
+        : GraphAlg<>{graphp, edgeFuncp} {
         m_step = 0;
         main();
     }
@@ -501,7 +494,7 @@ private:
 
 public:
     DfaGraphReduce(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-        : GraphAlg<>(graphp, edgeFuncp) {
+        : GraphAlg<>{graphp, edgeFuncp} {
         if (debug() >= 6) m_graphp->dumpDotFilePrefixed("opt_in");
         optimize_accepting_out();
         if (debug() >= 6) m_graphp->dumpDotFilePrefixed("opt_acc");
@@ -546,7 +539,7 @@ private:
 
     void add_complement_edges() {
         // Find accepting vertex
-        DfaVertex* acceptp = NULL;
+        DfaVertex* acceptp = nullptr;
         for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
              vertexp = vertexp->verticesNextp()) {
             if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
@@ -593,7 +586,7 @@ private:
 
 public:
     DfaGraphComplement(V3Graph* dfagraphp, V3EdgeFuncP edgeFuncp)
-        : GraphAlg<>(dfagraphp, edgeFuncp) {
+        : GraphAlg<>{dfagraphp, edgeFuncp} {
         if (debug() >= 6) m_graphp->dumpDotFilePrefixed("comp_in");
 
         // Vertex::m_user begin: 1 indicates new edge, no more processing
@@ -603,7 +596,7 @@ public:
         add_complement_edges();
         if (debug() >= 6) m_graphp->dumpDotFilePrefixed("comp_preswap");
 
-        VL_DO_CLEAR(m_tempNewerReject->unlinkDelete(graphp()), m_tempNewerReject = NULL);
+        VL_DO_CLEAR(m_tempNewerReject->unlinkDelete(graphp()), m_tempNewerReject = nullptr);
         if (debug() >= 6) m_graphp->dumpDotFilePrefixed("comp_out");
     }
     ~DfaGraphComplement() {}

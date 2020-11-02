@@ -29,17 +29,14 @@
 #include "verilatedos.h"
 
 // Limited V3 headers here - this is a base class for Vlc etc
-#include "V3Global.h"
 #include "V3String.h"
 #include "V3Os.h"
 
 #include <cerrno>
-#include <climits>
+#include <climits>  // PATH_MAX (especially on FreeBSD)
 #include <cstdarg>
 #include <dirent.h>
-#include <fcntl.h>
 #include <fstream>
-#include <iomanip>
 #include <memory>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -52,8 +49,17 @@
 # include <direct.h>  // mkdir
 # include <psapi.h>   // GetProcessMemoryInfo
 # include <thread>
+// These macros taken from gdbsupport/gdb_wait.h in binutils-gdb
+# ifndef WIFEXITED
+#  ifdef __MINGW32__
+#   define WIFEXITED(w)	(((w) & 0xC0000000) == 0)
+#  else
+#   define WIFEXITED(w)	(((w) & 0377) == 0)
+#  endif
+# endif
 #else
 # include <sys/time.h>
+# include <sys/wait.h> // Needed on FreeBSD for WIFEXITED
 # include <unistd.h>  // usleep
 #endif
 // clang-format on
@@ -64,8 +70,9 @@
 string V3Os::getenvStr(const string& envvar, const string& defaultValue) {
 #if defined(_MSC_VER)
     // Note: MinGW does not offer _dupenv_s
-    char* envvalue;
-    if (_dupenv_s(&envvalue, nullptr, envvar.c_str()) == 0) {
+    char* envvalue = nullptr;
+    _dupenv_s(&envvalue, nullptr, envvar.c_str());
+    if (envvalue != nullptr) {
         const std::string result{envvalue};
         free(envvalue);
         return result;
@@ -138,7 +145,7 @@ string V3Os::filenameNonExt(const string& filename) {
 
 string V3Os::filenameSubstitute(const string& filename) {
     string out;
-    enum { NONE, PAREN, CURLY } brackets = NONE;
+    enum : uint8_t { NONE, PAREN, CURLY } brackets = NONE;
     for (string::size_type pos = 0; pos < filename.length(); ++pos) {
         if ((filename[pos] == '$') && (pos + 1 < filename.length())) {
             switch (filename[pos + 1]) {
@@ -242,8 +249,6 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
     }
 }
 
-std::string V3Os::getcwd() { return filenameRealPath("."); }
-
 //######################################################################
 // METHODS (random)
 
@@ -262,15 +267,15 @@ string V3Os::trueRandom(size_t size) {
     // Note: std::string.data() returns a non-const Char* from C++17 onwards.
     // For pre-C++17, this cast is OK in practice, even though it's UB.
 #if defined(_WIN32) || defined(__MINGW32__)
-    NTSTATUS hr = BCryptGenRandom(NULL, reinterpret_cast<BYTE*>(data), size,
+    NTSTATUS hr = BCryptGenRandom(nullptr, reinterpret_cast<BYTE*>(data), size,
                                   BCRYPT_USE_SYSTEM_PREFERRED_RNG);
     if (!BCRYPT_SUCCESS(hr)) { v3fatal("Could not acquire random data."); }
 #else
     std::ifstream is("/dev/urandom", std::ios::in | std::ios::binary);
     // This read uses the size of the buffer.
     // Flawfinder: ignore
-    if (!is.read(data, size)) {
-        v3fatal("Could not open /dev/urandom, no source of randomness. "
+    if (VL_UNCOVERABLE(!is.read(data, size))) {
+        v3fatal("Could not open /dev/urandom, no source of randomness. "  // LCOV_EXCL_LINE
                 "Try specifying a key instead.");
     }
 #endif
@@ -293,7 +298,7 @@ uint64_t V3Os::timeUsecs() {
 #else
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     timeval tv;
-    if (gettimeofday(&tv, NULL) < 0) return 0;
+    if (gettimeofday(&tv, nullptr) < 0) return 0;
     return static_cast<uint64_t>(tv.tv_sec) * 1000000 + tv.tv_usec;
 #endif
 }
@@ -313,15 +318,12 @@ uint64_t V3Os::memUsageBytes() {
     FILE* fp = fopen(statmFilename, "r");
     if (!fp) return 0;
     vluint64_t size, resident, share, text, lib, data, dt;  // All in pages
-    if (7
-        != fscanf(fp,
-                  "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64
-                  "u %" VL_PRI64 "u %" VL_PRI64 "u",
-                  &size, &resident, &share, &text, &lib, &data, &dt)) {
-        fclose(fp);
-        return 0;
-    }
+    int items = fscanf(fp,
+                       "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64
+                       "u %" VL_PRI64 "u %" VL_PRI64 "u",
+                       &size, &resident, &share, &text, &lib, &data, &dt);
     fclose(fp);
+    if (VL_UNCOVERABLE(7 != items)) return 0;
     return (text + data) * getpagesize();
 #endif
 }
@@ -342,9 +344,10 @@ void V3Os::u_sleep(int64_t usec) {
 int V3Os::system(const string& command) {
     UINFO(1, "Running system: " << command << endl);
     const int ret = ::system(command.c_str());
-    if (ret == -1) {
-        v3fatal("Failed to execute command:" << command << " " << strerror(errno));
-        return -1;
+    if (VL_UNCOVERABLE(ret == -1)) {
+        v3fatal("Failed to execute command:"  // LCOV_EXCL_LINE
+                << command << " " << strerror(errno));
+        return -1;  // LCOV_EXCL_LINE
     } else {
         UASSERT(WIFEXITED(ret), "system(" << command << ") returned unexpected value of " << ret);
         const int exit_code = WEXITSTATUS(ret);

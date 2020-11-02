@@ -1,0 +1,4 @@
+%Error-UNSUPPORTED: t/t_alias_unsup.v:46:4: Unsupported: alias statements
+   46 |    alias {a[7:0],a[15:8],a[23:16],a[31:24]} = b;
+      |    ^~~~~
+%Error: Exiting due to

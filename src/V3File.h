@@ -101,10 +101,10 @@ public:
 
 class V3OutFormatter {
     // TYPES
-    enum MiscConsts { MAXSPACE = 80 };  // After this indent, stop indenting more
+    static constexpr int MAXSPACE = 80;  // After this indent, stop indenting more
 public:
-    enum AlignClass { AL_AUTO = 0, AL_STATIC = 1 };
-    enum Language {
+    enum AlignClass : uint8_t { AL_AUTO = 0, AL_STATIC = 1 };
+    enum Language : uint8_t {
         LA_C = 0,
         LA_VERILOG = 1,
         LA_MK = 2,
@@ -117,13 +117,13 @@ private:
     Language m_lang;  // Indenting Verilog code
     int m_blockIndent;  // Characters per block indent
     int m_commaWidth;  // Width after which to break at ,'s
-    int m_lineno;
-    int m_column;
-    int m_nobreak;  // Basic operator or begin paren, don't break next
-    bool m_prependIndent;
-    int m_indentLevel;  // Current {} indentation
+    int m_lineno = 1;
+    int m_column = 0;
+    int m_nobreak = false;  // Basic operator or begin paren, don't break next
+    bool m_prependIndent = true;
+    int m_indentLevel = 0;  // Current {} indentation
     std::stack<int> m_parenVec;  // Stack of columns where last ( was
-    int m_bracketLevel;  // Intenting = { block, indicates number of {'s seen.
+    int m_bracketLevel = 0;  // Intenting = { block, indicates number of {'s seen.
 
     int endLevels(const char* strg);
     void putcNoTracking(char chr);
@@ -165,7 +165,7 @@ public:
         if (!m_parenVec.empty()) m_parenVec.pop();
     }
     // STATIC METHODS
-    static const string indentSpaces(int num);
+    static string indentSpaces(int num);
     // Add escaped characters to strings
     static string quoteNameControls(const string& namein, Language lang = LA_C);
 
@@ -182,24 +182,23 @@ class V3OutFile : public V3OutFormatter {
 
 public:
     V3OutFile(const string& filename, V3OutFormatter::Language lang);
-    virtual ~V3OutFile();
+    virtual ~V3OutFile() override;
     void putsForceIncs();
 
 private:
     // CALLBACKS
-    virtual void putcOutput(char chr) { fputc(chr, m_fp); }
+    virtual void putcOutput(char chr) override { fputc(chr, m_fp); }
 };
 
 class V3OutCFile : public V3OutFile {
-    int m_guard;  // Created header guard
+    int m_guard = false;  // Created header guard
     int m_private;  // 1 = Most recently emitted private:, 2 = public:
 public:
     explicit V3OutCFile(const string& filename)
-        : V3OutFile(filename, V3OutFormatter::LA_C)
-        , m_guard(false) {
+        : V3OutFile{filename, V3OutFormatter::LA_C} {
         resetPrivate();
     }
-    virtual ~V3OutCFile() {}
+    virtual ~V3OutCFile() override {}
     virtual void putsHeader() { puts("// Verilated -*- C++ -*-\n"); }
     virtual void putsIntTopInclude() { putsForceIncs(); }
     virtual void putsGuard();
@@ -222,10 +221,10 @@ public:
 class V3OutScFile : public V3OutCFile {
 public:
     explicit V3OutScFile(const string& filename)
-        : V3OutCFile(filename) {}
-    virtual ~V3OutScFile() {}
-    virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
-    virtual void putsIntTopInclude() {
+        : V3OutCFile{filename} {}
+    virtual ~V3OutScFile() override {}
+    virtual void putsHeader() override { puts("// Verilated -*- SystemC -*-\n"); }
+    virtual void putsIntTopInclude() override {
         putsForceIncs();
         puts("#include \"systemc.h\"\n");
         puts("#include \"verilated_sc.h\"\n");
@@ -235,26 +234,26 @@ public:
 class V3OutVFile : public V3OutFile {
 public:
     explicit V3OutVFile(const string& filename)
-        : V3OutFile(filename, V3OutFormatter::LA_VERILOG) {}
-    virtual ~V3OutVFile() {}
+        : V3OutFile{filename, V3OutFormatter::LA_VERILOG} {}
+    virtual ~V3OutVFile() override {}
     virtual void putsHeader() { puts("// Verilated -*- Verilog -*-\n"); }
 };
 
 class V3OutXmlFile : public V3OutFile {
 public:
     explicit V3OutXmlFile(const string& filename)
-        : V3OutFile(filename, V3OutFormatter::LA_XML) {
+        : V3OutFile{filename, V3OutFormatter::LA_XML} {
         blockIndent(2);
     }
-    virtual ~V3OutXmlFile() {}
+    virtual ~V3OutXmlFile() override {}
     virtual void putsHeader() { puts("<?xml version=\"1.0\" ?>\n"); }
 };
 
 class V3OutMkFile : public V3OutFile {
 public:
     explicit V3OutMkFile(const string& filename)
-        : V3OutFile(filename, V3OutFormatter::LA_MK) {}
-    virtual ~V3OutMkFile() {}
+        : V3OutFile{filename, V3OutFormatter::LA_MK} {}
+    virtual ~V3OutMkFile() override {}
     virtual void putsHeader() { puts("# Verilated -*- Makefile -*-\n"); }
     // No automatic indentation yet.
     void puts(const char* strg) { putsNoTracking(strg); }

@@ -31,7 +31,6 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-using namespace std;
 
 #include "TestSimulator.h"
 #include "TestVpi.h"
@@ -61,15 +60,15 @@ unsigned int callback_count_start_of_sim = 0;
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
-        cout << dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
-             << "   EXP = " << (exp) << endl; \
+        std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
+                  << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_HEX(got, exp) \
     if ((got) != (exp)) { \
-        cout << dec << "%Error: " << __FILE__ << ":" << __LINE__ << hex << ": GOT = " << (got) \
-             << "   EXP = " << (exp) << endl; \
+        std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << hex \
+                  << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 
@@ -168,7 +167,9 @@ static int _end_of_sim_cb(p_cb_data cb_data) {
 extern "C"
 #endif
 
+    // clang-format off
 void vpi_compat_bootstrap(void) {
+    // clang-format on
     t_cb_data cb_data;
     bzero(&cb_data, sizeof(cb_data));
 
@@ -198,11 +199,13 @@ int main(int argc, char** argv, char** env) {
 
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 
+// clang-format off
 #ifdef VERILATOR
 # ifdef TEST_VERBOSE
     Verilated::scopesDump();
 # endif
 #endif
+    // clang-format on
 
 #if VM_TRACE
     Verilated::traceEverOn(true);
@@ -218,7 +221,7 @@ int main(int argc, char** argv, char** env) {
         void* lib = dlopen(filenamep, RTLD_LAZY);
         void* bootstrap = dlsym(lib, "vpi_compat_bootstrap");
         if (!bootstrap) {
-            string msg = string("%Error: Could not dlopen ") + filenamep;
+            std::string msg = std::string("%Error: Could not dlopen ") + filenamep;
             vl_fatal(__FILE__, __LINE__, "main", msg.c_str());
         }
         ((void (*)(void))bootstrap)();
@@ -235,7 +238,7 @@ int main(int argc, char** argv, char** env) {
         topp->eval();
         VerilatedVpi::callValueCbs();
         VerilatedVpi::callTimedCbs();
-        CHECK_RESULT(VerilatedVpi::cbNextDeadline(), main_time+1);
+        CHECK_RESULT(VerilatedVpi::cbNextDeadline(), main_time + 1);
         topp->clk = !topp->clk;
         // mon_do();
 #if VM_TRACE

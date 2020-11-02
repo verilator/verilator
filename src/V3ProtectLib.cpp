@@ -20,7 +20,6 @@
 #include "V3Global.h"
 #include "V3String.h"
 #include "V3ProtectLib.h"
-#include "V3File.h"
 #include "V3Hashed.h"
 #include "V3Task.h"
 
@@ -31,39 +30,40 @@
 
 class ProtectVisitor : public AstNVisitor {
 private:
-    AstVFile* m_vfilep;  // DPI-enabled Verilog wrapper
-    AstCFile* m_cfilep;  // C implementation of DPI functions
+    AstVFile* m_vfilep = nullptr;  // DPI-enabled Verilog wrapper
+    AstCFile* m_cfilep = nullptr;  // C implementation of DPI functions
     // Verilog text blocks
-    AstTextBlock* m_modPortsp;  // Module port list
-    AstTextBlock* m_comboPortsp;  // Combo function port list
-    AstTextBlock* m_seqPortsp;  // Sequential function port list
-    AstTextBlock* m_comboIgnorePortsp;  // Combo ignore function port list
-    AstTextBlock* m_comboDeclsp;  // Combo signal declaration list
-    AstTextBlock* m_seqDeclsp;  // Sequential signal declaration list
-    AstTextBlock* m_tmpDeclsp;  // Temporary signal declaration list
-    AstTextBlock* m_hashValuep;  // CPP hash value
-    AstTextBlock* m_comboParamsp;  // Combo function parameter list
-    AstTextBlock* m_clkSensp;  // Clock sensitivity list
-    AstTextBlock* m_comboIgnoreParamsp;  // Combo ignore parameter list
-    AstTextBlock* m_seqParamsp;  // Sequential parameter list
-    AstTextBlock* m_nbAssignsp;  // Non-blocking assignment list
-    AstTextBlock* m_seqAssignsp;  // Sequential assignment list
-    AstTextBlock* m_comboAssignsp;  // Combo assignment list
+    AstTextBlock* m_modPortsp = nullptr;  // Module port list
+    AstTextBlock* m_comboPortsp = nullptr;  // Combo function port list
+    AstTextBlock* m_seqPortsp = nullptr;  // Sequential function port list
+    AstTextBlock* m_comboIgnorePortsp = nullptr;  // Combo ignore function port list
+    AstTextBlock* m_comboDeclsp = nullptr;  // Combo signal declaration list
+    AstTextBlock* m_seqDeclsp = nullptr;  // Sequential signal declaration list
+    AstTextBlock* m_tmpDeclsp = nullptr;  // Temporary signal declaration list
+    AstTextBlock* m_hashValuep = nullptr;  // CPP hash value
+    AstTextBlock* m_comboParamsp = nullptr;  // Combo function parameter list
+    AstTextBlock* m_clkSensp = nullptr;  // Clock sensitivity list
+    AstTextBlock* m_comboIgnoreParamsp = nullptr;  // Combo ignore parameter list
+    AstTextBlock* m_seqParamsp = nullptr;  // Sequential parameter list
+    AstTextBlock* m_nbAssignsp = nullptr;  // Non-blocking assignment list
+    AstTextBlock* m_seqAssignsp = nullptr;  // Sequential assignment list
+    AstTextBlock* m_comboAssignsp = nullptr;  // Combo assignment list
     // C text blocks
-    AstTextBlock* m_cHashValuep;  // CPP hash value
-    AstTextBlock* m_cComboParamsp;  // Combo function parameter list
-    AstTextBlock* m_cComboInsp;  // Combo input copy list
-    AstTextBlock* m_cComboOutsp;  // Combo output copy list
-    AstTextBlock* m_cSeqParamsp;  // Sequential parameter list
-    AstTextBlock* m_cSeqClksp;  // Sequential clock copy list
-    AstTextBlock* m_cSeqOutsp;  // Sequential output copy list
-    AstTextBlock* m_cIgnoreParamsp;  // Combo ignore parameter list
+    AstTextBlock* m_cHashValuep = nullptr;  // CPP hash value
+    AstTextBlock* m_cComboParamsp = nullptr;  // Combo function parameter list
+    AstTextBlock* m_cComboInsp = nullptr;  // Combo input copy list
+    AstTextBlock* m_cComboOutsp = nullptr;  // Combo output copy list
+    AstTextBlock* m_cSeqParamsp = nullptr;  // Sequential parameter list
+    AstTextBlock* m_cSeqClksp = nullptr;  // Sequential clock copy list
+    AstTextBlock* m_cSeqOutsp = nullptr;  // Sequential output copy list
+    AstTextBlock* m_cIgnoreParamsp = nullptr;  // Combo ignore parameter list
     string m_libName;
     string m_topName;
-    bool m_foundTop;  // Have seen the top module
+    bool m_foundTop = false;  // Have seen the top module
+    bool m_hasClk = false;  // True if the top module has sequential logic
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         m_vfilep
             = new AstVFile(nodep->fileline(), v3Global.opt.makeDir() + "/" + m_libName + ".sv");
         nodep->addFilesp(m_vfilep);
@@ -73,14 +73,16 @@ private:
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         if (!nodep->isTop()) {
             return;
         } else {
             UASSERT_OBJ(!m_foundTop, nodep, "Multiple root modules");
         }
         FileLine* fl = nodep->fileline();
-        createSvFile(fl);
+        // Need to know the existence of clk before createSvFile()
+        m_hasClk = checkIfClockExists(nodep);
+        createSvFile(fl, nodep);
         createCppFile(fl);
 
         iterateChildren(nodep);
@@ -122,7 +124,7 @@ private:
         addComment(txtp, fl, "Evaluates the secret module's final process");
     }
 
-    void createSvFile(FileLine* fl) {
+    void createSvFile(FileLine* fl, AstNodeModule* modp) {
         // Comments
         AstTextBlock* txtp = new AstTextBlock(fl);
         addComment(txtp, fl, "Wrapper module for DPI protected library");
@@ -133,18 +135,28 @@ private:
                    "See instructions in your simulator for how"
                    " to use DPI libraries\n");
 
+        bool timescaleShown = false;
+        if (v3Global.opt.hierChild() && !modp->timeunit().isNone()) {
+            // Emit timescale for hierarhical verilation
+            timescaleShown = true;
+            txtp->addText(fl, string("`timescale ") + modp->timeunit().ascii() + "/"
+                                  + v3Global.rootp()->timeprecision().ascii() + "\n\n");
+        }
         // Module declaration
         m_modPortsp = new AstTextBlock(fl, "module " + m_libName + " (\n", false, true);
         txtp->addNodep(m_modPortsp);
         txtp->addText(fl, ");\n\n");
 
         // Timescale
-        addComment(txtp, fl,
-                   "Precision of submodule"
-                   " (commented out to avoid requiring timescale on all modules)");
-        addComment(txtp, fl, string("timeunit ") + v3Global.rootp()->timeunit().ascii() + ";");
-        addComment(txtp, fl,
-                   string("timeprecision ") + v3Global.rootp()->timeprecision().ascii() + ";\n");
+        if (!timescaleShown) {
+            addComment(txtp, fl,
+                       "Precision of submodule"
+                       " (commented out to avoid requiring timescale on all modules)");
+            addComment(txtp, fl, string("timeunit ") + v3Global.rootp()->timeunit().ascii() + ";");
+            addComment(txtp, fl,
+                       string("timeprecision ") + v3Global.rootp()->timeprecision().ascii()
+                           + ";\n");
+        }
 
         // DPI declarations
         hashComment(txtp, fl);
@@ -163,14 +175,16 @@ private:
         txtp->addNodep(m_comboPortsp);
         txtp->addText(fl, ");\n\n");
         seqComment(txtp, fl);
-        m_seqPortsp = new AstTextBlock(fl,
-                                       "import \"DPI-C\" function longint " + m_libName
-                                           + "_protectlib_seq_update"
-                                             "(\n",
-                                       false, true);
-        m_seqPortsp->addText(fl, "chandle handle__V\n");
-        txtp->addNodep(m_seqPortsp);
-        txtp->addText(fl, ");\n\n");
+        if (m_hasClk) {
+            m_seqPortsp = new AstTextBlock(fl,
+                                           "import \"DPI-C\" function longint " + m_libName
+                                               + "_protectlib_seq_update"
+                                                 "(\n",
+                                           false, true);
+            m_seqPortsp->addText(fl, "chandle handle__V\n");
+            txtp->addNodep(m_seqPortsp);
+            txtp->addText(fl, ");\n\n");
+        }
         comboIgnoreComment(txtp, fl);
         m_comboIgnorePortsp = new AstTextBlock(fl,
                                                "import \"DPI-C\" function void " + m_libName
@@ -193,12 +207,12 @@ private:
         m_tmpDeclsp = new AstTextBlock(fl);
         txtp->addNodep(m_tmpDeclsp);
         txtp->addText(fl, "\ntime last_combo_seqnum__V;\n");
-        txtp->addText(fl, "time last_seq_seqnum__V;\n\n");
+        if (m_hasClk) { txtp->addText(fl, "time last_seq_seqnum__V;\n\n"); }
 
         // CPP hash value
         addComment(txtp, fl, "Hash value to make sure this file and the corresponding");
         addComment(txtp, fl, "library agree");
-        m_hashValuep = new AstTextBlock(fl, "localparam int protectlib_hash__V = ");
+        m_hashValuep = new AstTextBlock(fl, "localparam int protectlib_hash__V = 32'd");
         txtp->addNodep(m_hashValuep);
         txtp->addText(fl, "\n");
 
@@ -223,33 +237,41 @@ private:
         txtp->addText(fl, "end\n\n");
 
         // Sequential process
-        addComment(txtp, fl, "Evaluate clock edges");
-        m_clkSensp = new AstTextBlock(fl, "always @(", false, true);
-        txtp->addNodep(m_clkSensp);
-        txtp->addText(fl, ") begin\n");
-        m_comboIgnoreParamsp
-            = new AstTextBlock(fl, m_libName + "_protectlib_combo_ignore(\n", false, true);
-        m_comboIgnoreParamsp->addText(fl, "handle__V\n");
-        txtp->addNodep(m_comboIgnoreParamsp);
-        txtp->addText(fl, ");\n");
-        m_seqParamsp = new AstTextBlock(
-            fl, "last_seq_seqnum__V <= " + m_libName + "_protectlib_seq_update(\n", false, true);
-        m_seqParamsp->addText(fl, "handle__V\n");
-        txtp->addNodep(m_seqParamsp);
-        txtp->addText(fl, ");\n");
-        m_nbAssignsp = new AstTextBlock(fl);
-        txtp->addNodep(m_nbAssignsp);
-        txtp->addText(fl, "end\n\n");
+        if (m_hasClk) {
+            addComment(txtp, fl, "Evaluate clock edges");
+            m_clkSensp = new AstTextBlock(fl, "always @(", false, true);
+            txtp->addNodep(m_clkSensp);
+            txtp->addText(fl, ") begin\n");
+            m_comboIgnoreParamsp
+                = new AstTextBlock(fl, m_libName + "_protectlib_combo_ignore(\n", false, true);
+            m_comboIgnoreParamsp->addText(fl, "handle__V\n");
+            txtp->addNodep(m_comboIgnoreParamsp);
+            txtp->addText(fl, ");\n");
+            m_seqParamsp = new AstTextBlock(
+                fl, "last_seq_seqnum__V <= " + m_libName + "_protectlib_seq_update(\n", false,
+                true);
+            m_seqParamsp->addText(fl, "handle__V\n");
+            txtp->addNodep(m_seqParamsp);
+            txtp->addText(fl, ");\n");
+            m_nbAssignsp = new AstTextBlock(fl);
+            txtp->addNodep(m_nbAssignsp);
+            txtp->addText(fl, "end\n\n");
+        }
 
         // Select between combinatorial and sequential results
         addComment(txtp, fl, "Select between combinatorial and sequential results");
         txtp->addText(fl, "always @(*) begin\n");
-        m_seqAssignsp = new AstTextBlock(fl, "if (last_seq_seqnum__V > "
-                                             "last_combo_seqnum__V) begin\n");
-        txtp->addNodep(m_seqAssignsp);
-        m_comboAssignsp = new AstTextBlock(fl, "end else begin\n");
-        txtp->addNodep(m_comboAssignsp);
-        txtp->addText(fl, "end\n");
+        if (m_hasClk) {
+            m_seqAssignsp = new AstTextBlock(fl, "if (last_seq_seqnum__V > "
+                                                 "last_combo_seqnum__V) begin\n");
+            txtp->addNodep(m_seqAssignsp);
+            m_comboAssignsp = new AstTextBlock(fl, "end else begin\n");
+            txtp->addNodep(m_comboAssignsp);
+            txtp->addText(fl, "end\n");
+        } else {
+            m_comboAssignsp = new AstTextBlock(fl, "");
+            txtp->addNodep(m_comboAssignsp);
+        }
         txtp->addText(fl, "end\n\n");
 
         // Final
@@ -261,7 +283,7 @@ private:
 
     void castPtr(FileLine* fl, AstTextBlock* txtp) {
         txtp->addText(fl, m_topName
-                              + "_container* handlep__V = "
+                              + "_container* handlep__V = "  // LCOV_EXCL_LINE  // lcov bug
                                 "static_cast<"
                               + m_topName + "_container*>(vhandlep__V);\n");
     }
@@ -328,19 +350,21 @@ private:
         txtp->addText(fl, "return handlep__V->m_seqnum++;\n");
         txtp->addText(fl, "}\n\n");
 
-        seqComment(txtp, fl);
-        m_cSeqParamsp = new AstTextBlock(
-            fl, "long long " + m_libName + "_protectlib_seq_update(\n", false, true);
-        m_cSeqParamsp->addText(fl, "void* vhandlep__V\n");
-        txtp->addNodep(m_cSeqParamsp);
-        txtp->addText(fl, ")\n");
-        m_cSeqClksp = new AstTextBlock(fl, "{\n");
-        castPtr(fl, m_cSeqClksp);
-        txtp->addNodep(m_cSeqClksp);
-        m_cSeqOutsp = new AstTextBlock(fl, "handlep__V->eval();\n");
-        txtp->addNodep(m_cSeqOutsp);
-        txtp->addText(fl, "return handlep__V->m_seqnum++;\n");
-        txtp->addText(fl, "}\n\n");
+        if (m_hasClk) {
+            seqComment(txtp, fl);
+            m_cSeqParamsp = new AstTextBlock(
+                fl, "long long " + m_libName + "_protectlib_seq_update(\n", false, true);
+            m_cSeqParamsp->addText(fl, "void* vhandlep__V\n");
+            txtp->addNodep(m_cSeqParamsp);
+            txtp->addText(fl, ")\n");
+            m_cSeqClksp = new AstTextBlock(fl, "{\n");
+            castPtr(fl, m_cSeqClksp);
+            txtp->addNodep(m_cSeqClksp);
+            m_cSeqOutsp = new AstTextBlock(fl, "handlep__V->eval();\n");
+            txtp->addNodep(m_cSeqOutsp);
+            txtp->addText(fl, "return handlep__V->m_seqnum++;\n");
+            txtp->addText(fl, "}\n\n");
+        }
 
         comboIgnoreComment(txtp, fl);
         m_cIgnoreParamsp = new AstTextBlock(
@@ -362,14 +386,15 @@ private:
         m_cfilep->tblockp(txtp);
     }
 
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         if (!nodep->isIO()) return;
         if (VN_IS(nodep->dtypep(), UnpackArrayDType)) {
-            nodep->v3error("Unsupported: unpacked arrays with protect-lib on "
-                           << nodep->prettyNameQ());
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: unpacked arrays with protect-lib on "
+                                             << nodep->prettyNameQ());
         }
         if (nodep->direction() == VDirection::INPUT) {
             if (nodep->isUsedClock() || nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
+                UASSERT_OBJ(m_hasClk, nodep, "checkIfClockExists() didn't find this clock");
                 handleClock(nodep);
             } else {
                 handleDataInput(nodep);
@@ -377,12 +402,12 @@ private:
         } else if (nodep->direction() == VDirection::OUTPUT) {
             handleOutput(nodep);
         } else {
-            nodep->v3error(
-                "Unsupported: protect-lib port direction: " << nodep->direction().ascii());
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: protect-lib port direction: "
+                                             << nodep->direction().ascii());
         }
     }
 
-    virtual void visit(AstNode*) VL_OVERRIDE {}
+    virtual void visit(AstNode*) override {}
 
     string cInputConnection(AstVar* varp) {
         string frstmt;
@@ -397,8 +422,10 @@ private:
         FileLine* fl = varp->fileline();
         handleInput(varp);
         m_seqPortsp->addNodep(varp->cloneTree(false));
-        m_seqParamsp->addText(fl, varp->name() + "\n");
-        m_clkSensp->addText(fl, "edge(" + varp->name() + ")");
+        if (m_hasClk) {
+            m_seqParamsp->addText(fl, varp->name() + "\n");
+            m_clkSensp->addText(fl, "posedge " + varp->name() + " or negedge " + varp->name());
+        }
         m_cSeqParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
         m_cSeqClksp->addText(fl, cInputConnection(varp));
     }
@@ -409,7 +436,7 @@ private:
         m_comboPortsp->addNodep(varp->cloneTree(false));
         m_comboParamsp->addText(fl, varp->name() + "\n");
         m_comboIgnorePortsp->addNodep(varp->cloneTree(false));
-        m_comboIgnoreParamsp->addText(fl, varp->name() + "\n");
+        if (m_hasClk) { m_comboIgnoreParamsp->addText(fl, varp->name() + "\n"); }
         m_cComboParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
         m_cComboInsp->addText(fl, cInputConnection(varp));
         m_cIgnoreParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
@@ -422,61 +449,55 @@ private:
         m_modPortsp->addNodep(varp->cloneTree(false));
         m_comboPortsp->addNodep(varp->cloneTree(false));
         m_comboParamsp->addText(fl, varp->name() + "_combo__V\n");
-        m_seqPortsp->addNodep(varp->cloneTree(false));
-        m_seqParamsp->addText(fl, varp->name() + "_tmp__V\n");
+        if (m_hasClk) {
+            m_seqPortsp->addNodep(varp->cloneTree(false));
+            m_seqParamsp->addText(fl, varp->name() + "_tmp__V\n");
+        }
 
         AstNodeDType* comboDtypep = varp->dtypep()->cloneTree(false);
         m_comboDeclsp->addNodep(comboDtypep);
         m_comboDeclsp->addText(fl, " " + varp->name() + "_combo__V;\n");
 
-        AstNodeDType* seqDtypep = varp->dtypep()->cloneTree(false);
-        m_seqDeclsp->addNodep(seqDtypep);
-        m_seqDeclsp->addText(fl, " " + varp->name() + "_seq__V;\n");
+        if (m_hasClk) {
+            AstNodeDType* seqDtypep = varp->dtypep()->cloneTree(false);
+            m_seqDeclsp->addNodep(seqDtypep);
+            m_seqDeclsp->addText(fl, " " + varp->name() + "_seq__V;\n");
 
-        AstNodeDType* tmpDtypep = varp->dtypep()->cloneTree(false);
-        m_tmpDeclsp->addNodep(tmpDtypep);
-        m_tmpDeclsp->addText(fl, " " + varp->name() + "_tmp__V;\n");
+            AstNodeDType* tmpDtypep = varp->dtypep()->cloneTree(false);
+            m_tmpDeclsp->addNodep(tmpDtypep);
+            m_tmpDeclsp->addText(fl, " " + varp->name() + "_tmp__V;\n");
 
-        m_nbAssignsp->addText(fl, varp->name() + "_seq__V <= " + varp->name() + "_tmp__V;\n");
-        m_seqAssignsp->addText(fl, varp->name() + " = " + varp->name() + "_seq__V;\n");
+            m_nbAssignsp->addText(fl, varp->name() + "_seq__V <= " + varp->name() + "_tmp__V;\n");
+            m_seqAssignsp->addText(fl, varp->name() + " = " + varp->name() + "_seq__V;\n");
+        }
         m_comboAssignsp->addText(fl, varp->name() + " = " + varp->name() + "_combo__V;\n");
         m_cComboParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
         m_cComboOutsp->addText(fl,
                                V3Task::assignInternalToDpi(varp, true, "", "", "handlep__V->"));
-        m_cSeqParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
-        m_cSeqOutsp->addText(fl, V3Task::assignInternalToDpi(varp, true, "", "", "handlep__V->"));
+        if (m_hasClk) {
+            m_cSeqParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
+            m_cSeqOutsp->addText(fl,
+                                 V3Task::assignInternalToDpi(varp, true, "", "", "handlep__V->"));
+        }
+    }
+
+    static bool checkIfClockExists(AstNodeModule* modp) {
+        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* varp = VN_CAST(stmtp, Var)) {
+                if (varp->direction() == VDirection::INPUT
+                    && (varp->isUsedClock()
+                        || varp->attrClocker() == VVarAttrClocker::CLOCKER_YES)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
 public:
     explicit ProtectVisitor(AstNode* nodep)
-        : m_vfilep(NULL)
-        , m_cfilep(NULL)
-        , m_modPortsp(NULL)
-        , m_comboPortsp(NULL)
-        , m_seqPortsp(NULL)
-        , m_comboIgnorePortsp(NULL)
-        , m_comboDeclsp(NULL)
-        , m_seqDeclsp(NULL)
-        , m_tmpDeclsp(NULL)
-        , m_hashValuep(NULL)
-        , m_comboParamsp(NULL)
-        , m_clkSensp(NULL)
-        , m_comboIgnoreParamsp(NULL)
-        , m_seqParamsp(NULL)
-        , m_nbAssignsp(NULL)
-        , m_seqAssignsp(NULL)
-        , m_comboAssignsp(NULL)
-        , m_cHashValuep(NULL)
-        , m_cComboParamsp(NULL)
-        , m_cComboInsp(NULL)
-        , m_cComboOutsp(NULL)
-        , m_cSeqParamsp(NULL)
-        , m_cSeqClksp(NULL)
-        , m_cSeqOutsp(NULL)
-        , m_cIgnoreParamsp(NULL)
-        , m_libName(v3Global.opt.protectLib())
-        , m_topName(v3Global.opt.prefix())
-        , m_foundTop(false) {
+        : m_libName{v3Global.opt.protectLib()}
+        , m_topName{v3Global.opt.prefix()} {
         iterate(nodep);
     }
 };

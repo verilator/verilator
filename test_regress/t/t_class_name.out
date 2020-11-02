@@ -1,4 +1,5 @@
-%Error: t/t_class_name.v:12:4: Unsupported: 'static' class item
+%Error-UNSUPPORTED: t/t_class_name.v:12:16: Unsupported: 'static' class method
+                                          : ... In instance t
    12 |    static task static_name;
-      |    ^~~~~~
+      |                ^~~~~~~~~~~
 %Error: Exiting due to

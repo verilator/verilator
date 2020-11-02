@@ -38,6 +38,7 @@ VLCOVGEN_ITEM("name=>'filename',    short=>'f',  group=>1, default=>undef, descr
 VLCOVGEN_ITEM("name=>'groupdesc',   short=>'d',  group=>1, default=>'',    descr=>'Description of the covergroup this item belongs to'")
 VLCOVGEN_ITEM("name=>'groupname',   short=>'g',  group=>1, default=>'',    descr=>'Group name of the covergroup this item belongs to'")
 VLCOVGEN_ITEM("name=>'groupcmt',    short=>'O',  group=>1, default=>'',    ")
+VLCOVGEN_ITEM("name=>'linescov',    short=>'S',  group=>1, default=>'',    descr=>'List of comma-separated lines covered'")
 VLCOVGEN_ITEM("name=>'per_instance',short=>'P',  group=>1, default=>0,     descr=>'True if every hierarchy is independently counted; otherwise all hierarchies will be combined into a single count'")
 VLCOVGEN_ITEM("name=>'row0_name',   short=>'R0', group=>1, default=>undef, descr=>'The row title for the header line of this row'")
 VLCOVGEN_ITEM("name=>'row1_name',   short=>'R1', group=>1, default=>undef, ")
@@ -80,6 +81,7 @@ VLCOVGEN_ITEM("name=>'weight',      short=>'w',  group=>0, default=>undef, descr
 #define VL_CIK_HIER "h"
 #define VL_CIK_LIMIT "L"
 #define VL_CIK_LINENO "l"
+#define VL_CIK_LINESCOV "S"
 #define VL_CIK_PER_INSTANCE "P"
 #define VL_CIK_ROW0 "r0"
 #define VL_CIK_ROW0_NAME "R0"
@@ -121,6 +123,7 @@ public:
         if (key == "hier") return VL_CIK_HIER;
         if (key == "limit") return VL_CIK_LIMIT;
         if (key == "lineno") return VL_CIK_LINENO;
+        if (key == "linescov") return VL_CIK_LINESCOV;
         if (key == "per_instance") return VL_CIK_PER_INSTANCE;
         if (key == "row0") return VL_CIK_ROW0;
         if (key == "row0_name") return VL_CIK_ROW0_NAME;

@@ -34,6 +34,7 @@ public:
     static void addCoverageBlockOff(const string& module, const string& blockname);
     static void addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max);
     static void addWaiver(V3ErrorCode code, const string& filename, const string& message);
+    static void addModulePragma(const string& module, AstPragmaType pragma);
     static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
     static void addVarAttr(FileLine* fl, const string& module, const string& ftask,
                            const string& signal, AstAttrType type, AstSenTree* nodep);
@@ -43,7 +44,7 @@ public:
     static void applyModule(AstNodeModule* modulep);
     static void applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp);
     static void applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp);
-    static bool waive(FileLine* filelinep, V3ErrorCode code, const string& match);
+    static bool waive(FileLine* filelinep, V3ErrorCode code, const string& message);
 };
 
 #endif  // Guard

@@ -39,7 +39,7 @@
 // Static utility functions
 
 static double timescaleToDouble(const char* unitp) {
-    char* endp;
+    char* endp = nullptr;
     double value = strtod(unitp, &endp);
     // On error so we allow just "ns" to return 1e-9.
     if (value == 0.0 && endp == unitp) value = 1;
@@ -72,31 +72,6 @@ static std::string doubleToTimescale(double value) {
     sprintf(valuestr, "%3.0f%s", value, suffixp);
     return valuestr;  // Gets converted to string, so no ref to stack
 }
-
-//=============================================================================
-// Internal callback routines for each module being traced.
-
-// Each module that wishes to be traced registers a set of callbacks stored in
-// this class.  When the trace file is being constructed, this class provides
-// the callback routines to be executed.
-class VerilatedTraceCallInfo {
-public:  // This is in .cpp file so is not widely visible
-    typedef VerilatedTrace<VL_DERIVED_T>::callback_t callback_t;
-
-    callback_t m_initcb;  ///< Initialization Callback function
-    callback_t m_fullcb;  ///< Full Dumping Callback function
-    callback_t m_changecb;  ///< Incremental Dumping Callback function
-    void* m_userthis;  ///< User data pointer for callback
-    vluint32_t m_code;  ///< Starting code number (set later by traceInit)
-    // CONSTRUCTORS
-    VerilatedTraceCallInfo(callback_t icb, callback_t fcb, callback_t changecb, void* ut)
-        : m_initcb(icb)
-        , m_fullcb(fcb)
-        , m_changecb(changecb)
-        , m_userthis(ut)
-        , m_code(1) {}
-    ~VerilatedTraceCallInfo() {}
-};
 
 #ifdef VL_TRACE_THREADED
 //=========================================================================
@@ -196,11 +171,6 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
                 chgWDataImpl(oldp, readp, top);
                 readp += VL_WORDS_I(top);
                 continue;
-            case VerilatedTraceCommand::CHG_FLOAT:
-                VL_TRACE_THREAD_DEBUG("Command CHG_FLOAT " << top);
-                chgFloatImpl(oldp, *reinterpret_cast<const float*>(readp));
-                readp += 1;
-                continue;
             case VerilatedTraceCommand::CHG_DOUBLE:
                 VL_TRACE_THREAD_DEBUG("Command CHG_DOUBLE " << top);
                 chgDoubleImpl(oldp, *reinterpret_cast<const double*>(readp));
@@ -224,13 +194,14 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
                 shutdown = true;
                 break;
 
-                //===
-                // Unknown command
-            default:
+            //===
+            // Unknown command
+            default: {  // LCOV_EXCL_START
                 VL_TRACE_THREAD_DEBUG("Command UNKNOWN");
                 VL_PRINTF_MT("Trace command: 0x%08x\n", cmd);
                 VL_FATAL_MT(__FILE__, __LINE__, "", "Unknown trace command");
                 break;
+            }  // LCOV_EXCL_STOP
             }
 
             // The above switch will execute 'continue' when necessary,
@@ -288,21 +259,36 @@ template <> void VerilatedTrace<VL_DERIVED_T>::flush() {
 }
 
 //=============================================================================
+// Callbacks to run on global events
+
+template <> void VerilatedTrace<VL_DERIVED_T>::onFlush(void* selfp) {
+    // Note this calls 'flush' on the derived class
+    reinterpret_cast<VL_DERIVED_T*>(selfp)->flush();
+}
+
+template <> void VerilatedTrace<VL_DERIVED_T>::onExit(void* selfp) {
+    // Note this calls 'close' on the derived class
+    reinterpret_cast<VL_DERIVED_T*>(selfp)->close();
+}
+
+//=============================================================================
 // VerilatedTrace
 
 template <>
 VerilatedTrace<VL_DERIVED_T>::VerilatedTrace()
-    : m_sigs_oldvalp(NULL)
-    , m_timeLastDump(0)
-    , m_fullDump(true)
-    , m_nextCode(0)
-    , m_numSignals(0)
-    , m_maxBits(0)
-    , m_scopeEscape('.')
-    , m_timeRes(1e-9)
-    , m_timeUnit(1e-9)
+    : m_sigs_oldvalp{nullptr}
+    , m_timeLastDump{0}
+    , m_fullDump{true}
+    , m_nextCode{0}
+    , m_numSignals{0}
+    , m_maxBits{0}
+    , m_scopeEscape{'.'}
+    , m_timeRes{1e-9}
+    , m_timeUnit {
+    1e-9
+}
 #ifdef VL_TRACE_THREADED
-    , m_numTraceBuffers(0)
+, m_numTraceBuffers { 0 }
 #endif
 {
     set_time_unit(Verilated::timeunitString());
@@ -310,11 +296,9 @@ VerilatedTrace<VL_DERIVED_T>::VerilatedTrace()
 }
 
 template <> VerilatedTrace<VL_DERIVED_T>::~VerilatedTrace() {
-    if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = NULL);
-    while (!m_callbacks.empty()) {
-        delete m_callbacks.back();
-        m_callbacks.pop_back();
-    }
+    if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = nullptr);
+    Verilated::removeFlushCb(VerilatedTrace<VL_DERIVED_T>::onFlush, this);
+    Verilated::removeExitCb(VerilatedTrace<VL_DERIVED_T>::onExit, this);
 #ifdef VL_TRACE_THREADED
     close();
 #endif
@@ -334,11 +318,12 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
     m_numSignals = 0;
     m_maxBits = 0;
 
-    // Call all initialize callbacks, which will call decl* for each signal.
-    for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
-        VerilatedTraceCallInfo* cip = m_callbacks[ent];
-        cip->m_code = nextCode();
-        (cip->m_initcb)(self(), cip->m_userthis, cip->m_code);
+    // Call all initialize callbacks, which will:
+    // - Call decl* for each signal
+    // - Store the base code
+    for (vluint32_t i = 0; i < m_initCbs.size(); ++i) {
+        const CallbackRecord& cbr = m_initCbs[i];
+        cbr.m_initCb(cbr.m_userp, self(), nextCode());
     }
 
     if (expectedCodes && nextCode() != expectedCodes) {
@@ -349,6 +334,10 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
     // Now that we know the number of codes, allocate space for the buffer
     // holding previous signal values.
     if (!m_sigs_oldvalp) m_sigs_oldvalp = new vluint32_t[nextCode()];
+
+    // Set callback so flush/abort will flush this file
+    Verilated::addFlushCb(VerilatedTrace<VL_DERIVED_T>::onFlush, this);
+    Verilated::addExitCb(VerilatedTrace<VL_DERIVED_T>::onExit, this);
 
 #ifdef VL_TRACE_THREADED
     // Compute trace buffer size. we need to be able to store a new value for
@@ -409,12 +398,12 @@ template <> void VerilatedTrace<VL_DERIVED_T>::set_time_resolution(const std::st
 
 template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
     m_assertOne.check();
-    if (VL_UNLIKELY(m_timeLastDump && timeui <= m_timeLastDump)) {
+    if (VL_UNCOVERABLE(m_timeLastDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
         VL_PRINTF_MT("%%Warning: previous dump at t=%" VL_PRI64 "u, requesting t=%" VL_PRI64
                      "u, dump call ignored\n",
                      m_timeLastDump, timeui);
         return;
-    }
+    }  // LCOV_EXCL_STOP
     m_timeLastDump = timeui;
 
     Verilated::quiesce();
@@ -452,15 +441,20 @@ template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
     // Run the callbacks
     if (VL_UNLIKELY(m_fullDump)) {
         m_fullDump = false;  // No more need for next dump to be full
-        for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
-            VerilatedTraceCallInfo* cip = m_callbacks[ent];
-            (cip->m_fullcb)(self(), cip->m_userthis, cip->m_code);
+        for (vluint32_t i = 0; i < m_fullCbs.size(); ++i) {
+            const CallbackRecord& cbr = m_fullCbs[i];
+            cbr.m_dumpCb(cbr.m_userp, self());
         }
     } else {
-        for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
-            VerilatedTraceCallInfo* cip = m_callbacks[ent];
-            (cip->m_changecb)(self(), cip->m_userthis, cip->m_code);
+        for (vluint32_t i = 0; i < m_chgCbs.size(); ++i) {
+            const CallbackRecord& cbr = m_chgCbs[i];
+            cbr.m_dumpCb(cbr.m_userp, self());
         }
+    }
+
+    for (vluint32_t i = 0; i < m_cleanupCbs.size(); ++i) {
+        const CallbackRecord& cbr = m_cleanupCbs[i];
+        cbr.m_dumpCb(cbr.m_userp, self());
     }
 
 #ifdef VL_TRACE_THREADED
@@ -481,17 +475,32 @@ template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
 // Non-hot path internal interface to Verilator generated code
 
 template <>
-void VerilatedTrace<VL_DERIVED_T>::addCallback(callback_t initcb, callback_t fullcb,
-                                               callback_t changecb,
-                                               void* userthis) VL_MT_UNSAFE_ONE {
+void VerilatedTrace<VL_DERIVED_T>::addCallbackRecord(std::vector<CallbackRecord>& cbVec,
+                                                     CallbackRecord& cbRec) {
     m_assertOne.check();
-    if (VL_UNLIKELY(timeLastDump() != 0)) {
+    if (VL_UNCOVERABLE(timeLastDump() != 0)) {  // LCOV_EXCL_START
         std::string msg = (std::string("Internal: ") + __FILE__ + "::" + __FUNCTION__
                            + " called with already open file");
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
-    }
-    VerilatedTraceCallInfo* cip = new VerilatedTraceCallInfo(initcb, fullcb, changecb, userthis);
-    m_callbacks.push_back(cip);
+    }  // LCOV_EXCL_STOP
+    cbVec.push_back(cbRec);
+}
+
+template <> void VerilatedTrace<VL_DERIVED_T>::addInitCb(initCb_t cb, void* userp) {
+    CallbackRecord cbr(cb, userp);
+    addCallbackRecord(m_initCbs, cbr);
+}
+template <> void VerilatedTrace<VL_DERIVED_T>::addFullCb(dumpCb_t cb, void* userp) {
+    CallbackRecord cbr(cb, userp);
+    addCallbackRecord(m_fullCbs, cbr);
+}
+template <> void VerilatedTrace<VL_DERIVED_T>::addChgCb(dumpCb_t cb, void* userp) {
+    CallbackRecord cbr(cb, userp);
+    addCallbackRecord(m_chgCbs, cbr);
+}
+template <> void VerilatedTrace<VL_DERIVED_T>::addCleanupCb(dumpCb_t cb, void* userp) {
+    CallbackRecord cbr(cb, userp);
+    addCallbackRecord(m_cleanupCbs, cbr);
 }
 
 //=========================================================================
@@ -535,12 +544,6 @@ template <>
 void VerilatedTrace<VL_DERIVED_T>::fullWData(vluint32_t* oldp, const WData* newvalp, int bits) {
     for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newvalp[i];
     self()->emitWData(oldp - m_sigs_oldvalp, newvalp, bits);
-}
-
-template <> void VerilatedTrace<VL_DERIVED_T>::fullFloat(vluint32_t* oldp, float newval) {
-    // cppcheck-suppress invalidPointerCast
-    *reinterpret_cast<float*>(oldp) = newval;
-    self()->emitFloat(oldp - m_sigs_oldvalp, newval);
 }
 
 template <> void VerilatedTrace<VL_DERIVED_T>::fullDouble(vluint32_t* oldp, double newval) {

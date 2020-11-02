@@ -5,7 +5,7 @@
 %Error: t/t_var_bad_sv.v:9:14: Unexpected 'do': 'do' is a SystemVerilog keyword misused as an identifier.
     9 |    mod mod (.do(bar));
       |              ^~
-%Error: t/t_var_bad_sv.v:9:17: syntax error, unexpected '(', expecting ')'
+%Error: t/t_var_bad_sv.v:9:16: syntax error, unexpected '(', expecting ')'
     9 |    mod mod (.do(bar));
-      |                 ^~~
+      |                ^
 %Error: Exiting due to

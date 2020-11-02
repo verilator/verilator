@@ -21,6 +21,7 @@
 #include "V3Os.h"
 #include "V3EmitCMake.h"
 #include "V3EmitCBase.h"
+#include "V3HierBlock.h"
 
 #include <memory>
 
@@ -39,11 +40,11 @@ class CMakeEmitter {
         string s;
         if (strs.begin() != strs.end()) {
             s.append("\"");
-            s.append(*strs.begin());
+            s.append(VString::quoteAny(*strs.begin(), '"', '\\'));
             s.append("\"");
             for (typename List::const_iterator it = ++strs.begin(); it != strs.end(); ++it) {
                 s.append(" \"");
-                s.append(*it);
+                s.append(VString::quoteAny(*it, '"', '\\'));
                 s.append("\"");
             }
         }
@@ -77,7 +78,7 @@ class CMakeEmitter {
     }
 
     static void emitOverallCMake() {
-        const vl_unique_ptr<std::ofstream> of(
+        const std::unique_ptr<std::ofstream> of(
             V3File::new_ofstream(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".cmake"));
         string name = v3Global.opt.prefix();
 
@@ -124,7 +125,11 @@ class CMakeEmitter {
                           : "0");
 
         *of << "\n### Sources...\n";
-        std::vector<string> classes_fast, classes_slow, support_fast, support_slow, global;
+        std::vector<string> classes_fast;
+        std::vector<string> classes_slow;
+        std::vector<string> support_fast;
+        std::vector<string> support_slow;
+        std::vector<string> global;
         for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
              nodep = VN_CAST(nodep->nextp(), NodeFile)) {
             AstCFile* cfilep = VN_CAST(nodep, CFile);
@@ -163,8 +168,9 @@ class CMakeEmitter {
                              + "_c.cpp");
             if (v3Global.opt.systemC()) {
                 if (v3Global.opt.traceFormat() != TraceFormat::VCD) {
-                    v3error("Unsupported: This trace format is not supported in SystemC, "
-                            "use VCD format.");
+                    v3warn(E_UNSUPPORTED,
+                           "Unsupported: This trace format is not supported in SystemC, "
+                           "use VCD format.");
                 }
                 global.push_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceLang()
                                  + ".cpp");
@@ -194,6 +200,58 @@ class CMakeEmitter {
 
         *of << "# User .cpp files (from .cpp's on Verilator command line)\n";
         cmake_set_raw(*of, name + "_USER_CLASSES", deslash(cmake_list(v3Global.opt.cppFiles())));
+        if (const V3HierBlockPlan* planp = v3Global.hierPlanp()) {
+            *of << "# Verilate hierarchical blocks\n";
+            // Sorted hierarchical blocks in order of leaf-first.
+            const V3HierBlockPlan::HierVector& hierBlocks = planp->hierBlocksSorted();
+            *of << "get_target_property(TOP_TARGET_NAME \"${TARGET}\" NAME)\n";
+            for (V3HierBlockPlan::HierVector::const_iterator it = hierBlocks.begin();
+                 it != hierBlocks.end(); ++it) {
+                const V3HierBlock* hblockp = *it;
+                const V3HierBlock::HierBlockSet& children = hblockp->children();
+                const string prefix = hblockp->hierPrefix();
+                *of << "add_library(" << prefix << " STATIC)\n";
+                *of << "target_link_libraries(${TOP_TARGET_NAME}  PRIVATE " << prefix << ")\n";
+                if (!children.empty()) {
+                    *of << "target_link_libraries(" << prefix << " INTERFACE";
+                    for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
+                         child != children.end(); ++child) {
+                        *of << " " << (*child)->hierPrefix();
+                    }
+                    *of << ")\n";
+                }
+                *of << "verilate(" << prefix << " PREFIX " << prefix << " TOP_MODULE "
+                    << hblockp->modp()->name() << " DIRECTORY "
+                    << deslash(v3Global.opt.makeDir() + "/" + prefix) << " SOURCES ";
+                for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
+                     child != children.end(); ++child) {
+                    *of << " "
+                        << deslash(v3Global.opt.makeDir() + "/" + (*child)->hierWrapper(true));
+                }
+                *of << " ";
+                const string vFile = hblockp->vFileIfNecessary();
+                if (!vFile.empty()) *of << vFile << " ";
+                const V3StringList& vFiles = v3Global.opt.vFiles();
+                for (const string& i : vFiles) *of << V3Os::filenameRealPath(i) << " ";
+                *of << " VERILATOR_ARGS ";
+                *of << "-f " << deslash(hblockp->commandArgsFileName(true))
+                    << " -CFLAGS -fPIC"  // hierarchical block will be static, but may be linked
+                                         // with .so
+                    << ")\n";
+            }
+            *of << "\n# Verilate the top module that refers protect-lib wrappers of above\n";
+            *of << "verilate(${TOP_TARGET_NAME} PREFIX " << v3Global.opt.prefix() << " TOP_MODULE "
+                << v3Global.rootp()->topModulep()->name() << " DIRECTORY "
+                << deslash(v3Global.opt.makeDir()) << " SOURCES ";
+            for (V3HierBlockPlan::const_iterator it = planp->begin(); it != planp->end(); ++it) {
+                *of << " "
+                    << deslash(v3Global.opt.makeDir() + "/" + it->second->hierWrapper(true));
+            }
+            *of << " " << deslash(cmake_list(v3Global.opt.vFiles()));
+            *of << " VERILATOR_ARGS ";
+            *of << "-f " << deslash(planp->topCommandArgsFileName(true));
+            *of << ")\n";
+        }
     }
 
 public:

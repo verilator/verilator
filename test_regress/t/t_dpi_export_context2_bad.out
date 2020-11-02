@@ -1,0 +1,4 @@
+%Warning: DPI C Function called by Verilog DPI import with missing 'context' keyword.
+%Warning: DPI C Function called by Verilog DPI import with missing 'context' keyword.
+%Error: unknown:0: Testbench C called 'dpix_task' but scope wasn't set, perhaps due to dpi import call without 'context', or missing svSetScope. See IEEE 1800-2017 35.5.3.
+Aborting...

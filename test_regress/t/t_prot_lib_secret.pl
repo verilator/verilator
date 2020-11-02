@@ -21,7 +21,7 @@ compile (
     make_top_shell => 0,
     );
 
-run(cmd=>["make",
+run(cmd=>[$ENV{MAKE},
           "-C",
           "$Self->{obj_dir}",
           "-f",

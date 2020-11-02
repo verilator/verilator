@@ -10,22 +10,6 @@ use strict;
 use vars qw($Debug);
 
 #======================================================================
-
-# Old version 1 dump nodes with no dtypep's
-our %Ver1_Non_Dtyped = map {$_ => 1} qw(
-  ACTIVE ALWAYS ALWAYSPOST ALWAYSPUBLIC ATTROF BEGIN BREAK CASE CASEITEM
-  CCALL CELL CELLINLINE CFILE CFUNC CHANGEDET CLOCKING COMMENT CONTINUE
-  COVERDECL COVERINC COVERTOGGLE CRETURN CSTMT DEFPARAM DISABLE DISPLAY DOT
-  DPIEXPORT FCLOSE FFLUSH FINAL FINISH FOPEN GENCASE GENERATE GENFOR GENIF
-  IF IMPLICIT INITARRAY INITIAL JUMPGO JUMPLABEL MODULE NETLIST
-  NOTFOUNDMODULE PACKAGE PACKAGEIMPORT PARSEREF PIN PORT PRAGMA PRIMITIVE
-  PSLASSERT PSLCOVER PSLDEFCLOCK PULL RANGE READMEM REPEAT RETURN SCCTOR
-  SCDTOR SCHDR SCIMP SCIMPHDR SCINT SCOPE SELBIT SELEXTRACT SELMINUS
-  SELPLUS SENGATE SENITEM SENTREE SFORMAT SFORMATF STOP SYSIGNORE SYSTEMT
-  TASK TASKREF TEXT TOPSCOPE TYPEDEFFWD TYPETABLE UCSTMT UDPTABLE
-  UDPTABLELINE UNTILSTABLE VASSERT WHILE );
-
-#======================================================================
 # main
 
 $Debug = 0;
@@ -133,8 +117,6 @@ sub filter {
         $line =~ s/{[a-z]*\d+}/{}/g if !$Opt_Lineno;
         if ($verCvt) {
             next if $line =~ /^     NETLIST/;
-            $line =~ s!\@dt=0x\(G?/?([^)]+)\)!$1!g;  # NEW: @dt -> OLD: non @dt format
-            #                                        # Below Ver1_Non_Dtyped may replace above further
             if ($line =~ /: ([A-Z]+) /) {
                 my $type = $1;
                 next if $type =~ 'DTYPE';
@@ -147,14 +129,7 @@ sub filter {
                     }
                     next;
                 }
-                if ($Ver1_Non_Dtyped{$type}) {
-                    $line =~ s! w[0-9]+!!g;
-                }
             }
-            $line =~ s!\@dt=0$!NoW!g;   # NEW: dt=null -> common format
-            $line =~ s!\@dt=0 !NoW !g;  # NEW: dt=null -> common format
-            $line =~ s! s?w0$! NoW!g;   # OLD: no width -> common format
-            $line =~ s! s?w0 ! NoW !g;  # OLD: no width -> common format
         }
         print $f2 $line;
     }

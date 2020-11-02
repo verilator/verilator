@@ -61,7 +61,7 @@
 
 // Version check
 #if defined(SYSTEMC_VERSION) && (SYSTEMC_VERSION < 20111121)
-# warning "Verilator soon requires SystemC 2.3.*; see manual for deprecated other versions."
+# warning "Verilator requires SystemC 2.3.* or newer."
 #endif
 // clang-format on
 
@@ -84,10 +84,6 @@ typedef EData        WData;     ///< Verilated pack data, >64 bits, as an array
 typedef const WData* WDataInP;  ///< Array input to a function
 typedef WData* WDataOutP;  ///< Array output from a function
 
-typedef void (*VerilatedVoidCb)(void);
-
-class SpTraceVcd;
-class SpTraceVcdCFile;
 class VerilatedEvalMsgQueue;
 class VerilatedScopeNameMap;
 class VerilatedVar;
@@ -98,7 +94,7 @@ class VerilatedVcdSc;
 class VerilatedFst;
 class VerilatedFstC;
 
-enum VerilatedVarType {
+enum VerilatedVarType : vluint8_t {
     VLVT_UNKNOWN = 0,
     VLVT_PTR,  // Pointer to something
     VLVT_UINT8,  // AKA CData
@@ -167,7 +163,7 @@ private:
 
 public:
     explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr)
-        : m_mutexr(mutexr) {
+        : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
         m_mutexr.lock();
     }
     ~VerilatedLockGuard() VL_RELEASE() { m_mutexr.unlock(); }
@@ -207,7 +203,7 @@ public:
     /// The constructor establishes the thread id for all later calls.
     /// If necessary, a different class could be made that inits it otherwise.
     VerilatedAssertOneThread()
-        : m_threadid(VL_THREAD_ID()) {}
+        : m_threadid{VL_THREAD_ID()} {}
     ~VerilatedAssertOneThread() { check(); }
     // METHODS
     /// Check that the current thread ID is the same as the construction thread ID
@@ -317,30 +313,30 @@ public:  // But for internal use only
 
 class VerilatedScope {
 public:
-    typedef enum {
+    typedef enum : vluint8_t {
         SCOPE_MODULE,
         SCOPE_OTHER
     } Type;  // Type of a scope, currently module is only interesting
 private:
     // Fastpath:
-    VerilatedSyms* m_symsp;  ///< Symbol table
-    void** m_callbacksp;  ///< Callback table pointer (Fastpath)
-    int m_funcnumMax;  ///< Maxium function number stored (Fastpath)
+    VerilatedSyms* m_symsp = nullptr;  ///< Symbol table
+    void** m_callbacksp = nullptr;  ///< Callback table pointer (Fastpath)
+    int m_funcnumMax = 0;  ///< Maxium function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
-    VerilatedVarNameMap* m_varsp;  ///< Variable map
-    const char* m_namep;  ///< Scope name (Slowpath)
-    const char* m_identifierp;  ///< Identifier of scope (with escapes removed)
-    vlsint8_t m_timeunit;  ///< Timeunit in negative power-of-10
-    Type m_type;  ///< Type of the scope
+    VerilatedVarNameMap* m_varsp = nullptr;  ///< Variable map
+    const char* m_namep = nullptr;  ///< Scope name (Slowpath)
+    const char* m_identifierp = nullptr;  ///< Identifier of scope (with escapes removed)
+    vlsint8_t m_timeunit = 0;  ///< Timeunit in negative power-of-10
+    Type m_type = SCOPE_OTHER;  ///< Type of the scope
 
 public:  // But internals only - called from VerilatedModule's
     VerilatedScope();
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                   const char* identifier, vlsint8_t timeunit, const Type type) VL_MT_UNSAFE;
+                   const char* identifier, vlsint8_t timeunit, const Type& type) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
-    void varInsert(int finalize, const char* namep, void* datap, VerilatedVarType vltype,
-                   int vlflags, int dims, ...) VL_MT_UNSAFE;
+    void varInsert(int finalize, const char* namep, void* datap, bool isParam,
+                   VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const { return m_namep; }
     const char* identifier() const { return m_identifierp; }
@@ -365,7 +361,7 @@ public:  // But internals only - called from VerilatedModule's
 
 class VerilatedHierarchy {
 public:
-    void add(VerilatedScope* fromp, VerilatedScope* top);
+    static void add(VerilatedScope* fromp, VerilatedScope* top);
 };
 
 //===========================================================================
@@ -375,8 +371,6 @@ class Verilated {
     // MEMBERS
     // Slow path variables
     static VerilatedMutex m_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
-
-    static VerilatedVoidCb s_flushCb;  ///< Flush callback function
 
     static struct Serialized {  // All these members serialized/deserialized
         // Fast path
@@ -399,8 +393,8 @@ class Verilated {
     static struct NonSerialized {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
-        vluint64_t s_profThreadsStart;  ///< +prof+threads starting time
-        vluint32_t s_profThreadsWindow;  ///< +prof+threads window size
+        vluint64_t s_profThreadsStart = 1;  ///< +prof+threads starting time
+        vluint32_t s_profThreadsWindow = 2;  ///< +prof+threads window size
         // Slow path
         const char* s_profThreadsFilenamep;  ///< +prof+threads filename
         NonSerialized();
@@ -411,23 +405,22 @@ class Verilated {
     // assumption is that the restore is allowed to pass different arguments
     static struct CommandArgValues {
         VerilatedMutex m_argMutex;  ///< Mutex for s_args members, when VL_THREADED
-        int argc;
-        const char** argv;
-        CommandArgValues()
-            : argc(0)
-            , argv(NULL) {}
+        int argc = 0;
+        const char** argv = nullptr;
+        CommandArgValues() {}
         ~CommandArgValues() {}
     } s_args;
 
     // Not covered by mutex, as per-thread
     static VL_THREAD_LOCAL struct ThreadLocal {
 #ifdef VL_THREADED
-        vluint32_t t_mtaskId;  ///< Current mtask# executing on this thread
-        vluint32_t t_endOfEvalReqd;  ///< Messages may be pending, thread needs endOf-eval calls
+        vluint32_t t_mtaskId = 0;  ///< Current mtask# executing on this thread
+        vluint32_t t_endOfEvalReqd
+            = 0;  ///< Messages may be pending, thread needs endOf-eval calls
 #endif
-        const VerilatedScope* t_dpiScopep;  ///< DPI context scope
-        const char* t_dpiFilename;  ///< DPI context filename
-        int t_dpiLineno;  ///< DPI context line number
+        const VerilatedScope* t_dpiScopep = nullptr;  ///< DPI context scope
+        const char* t_dpiFilename = nullptr;  ///< DPI context filename
+        int t_dpiLineno = 0;  ///< DPI context line number
 
         ThreadLocal();
         ~ThreadLocal();
@@ -501,9 +494,16 @@ public:
     static void profThreadsFilenamep(const char* flagp) VL_MT_SAFE;
     static const char* profThreadsFilenamep() VL_MT_SAFE { return s_ns.s_profThreadsFilenamep; }
 
-    /// Flush callback for VCD waves
-    static void flushCb(VerilatedVoidCb cb) VL_MT_SAFE;
-    static void flushCall() VL_MT_SAFE;
+    typedef void (*VoidPCb)(void*);  // Callback type for below
+    /// Callbacks to run on global flush
+    static void addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void runFlushCallbacks() VL_MT_SAFE;
+    static void flushCall() VL_MT_SAFE { runFlushCallbacks(); }  // Deprecated
+    /// Callbacks to run prior to termination
+    static void addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    static void runExitCallbacks() VL_MT_SAFE;
 
     /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs,
     /// and for parsing +verilator+ run-time arguments.
@@ -561,8 +561,8 @@ public:
         t_s.t_dpiFilename = filenamep;
         t_s.t_dpiLineno = lineno;
     }
-    static void dpiClearContext() VL_MT_SAFE { t_s.t_dpiScopep = NULL; }
-    static bool dpiInContext() VL_MT_SAFE { return t_s.t_dpiScopep != NULL; }
+    static void dpiClearContext() VL_MT_SAFE { t_s.t_dpiScopep = nullptr; }
+    static bool dpiInContext() VL_MT_SAFE { return t_s.t_dpiScopep != nullptr; }
     static const char* dpiFilenamep() VL_MT_SAFE { return t_s.t_dpiFilename; }
     static int dpiLineno() VL_MT_SAFE { return t_s.t_dpiLineno; }
     static int exportFuncNum(const char* namep) VL_MT_SAFE;
@@ -644,9 +644,19 @@ extern void VL_PRINTF_MT(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 /// Print a debug message from internals with standard prefix, with printf style format
 extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 
-extern IData VL_RANDOM_I(int obits);  ///< Randomize a signal
-extern QData VL_RANDOM_Q(int obits);  ///< Randomize a signal
+extern vluint64_t vl_rand64() VL_MT_SAFE;
+inline IData VL_RANDOM_I(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_I(obits); }
+inline QData VL_RANDOM_Q(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_Q(obits); }
 extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);  ///< Randomize a signal
+inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
+    vluint64_t rnd = vl_rand64();
+    if (VL_LIKELY(hi > lo)) {
+        // Modulus isn't very fast but it's common that hi-low is power-of-two
+        return (rnd % (hi - lo)) + lo;
+    } else {
+        return (rnd % (lo - hi)) + hi;
+    }
+}
 
 /// Init time only, so slow is fine
 extern IData VL_RAND_RESET_I(int obits);  ///< Random reset a signal
@@ -707,7 +717,7 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 
 /// Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
 #define VL_BITISSET_I(data, bit) ((data) & (VL_UL(1) << VL_BITBIT_I(bit)))
-#define VL_BITISSET_Q(data, bit) ((data) & (VL_ULL(1) << VL_BITBIT_Q(bit)))
+#define VL_BITISSET_Q(data, bit) ((data) & (1ULL << VL_BITBIT_Q(bit)))
 #define VL_BITISSET_E(data, bit) ((data) & (VL_EUL(1) << VL_BITBIT_E(bit)))
 #define VL_BITISSET_W(data, bit) ((data)[VL_BITWORD_E(bit)] & (VL_EUL(1) << VL_BITBIT_E(bit)))
 #define VL_BITISSETLIMIT_W(data, width, bit) (((bit) < (width)) && VL_BITISSET_W(data, bit))
@@ -718,19 +728,19 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 /// Create two 32-bit words from quadword
 /// WData is always at least 2 words; does not clean upper bits
 #define VL_SET_WQ(owp, data) \
-    { \
+    do { \
         (owp)[0] = static_cast<IData>(data); \
         (owp)[1] = static_cast<IData>((data) >> VL_EDATASIZE); \
-    }
+    } while (false)
 #define VL_SET_WI(owp, data) \
-    { \
+    do { \
         (owp)[0] = static_cast<IData>(data); \
         (owp)[1] = 0; \
-    }
+    } while (false)
 #define VL_SET_QW(lwp) \
     ((static_cast<QData>((lwp)[0])) \
      | (static_cast<QData>((lwp)[1]) << (static_cast<QData>(VL_EDATASIZE))))
-#define _VL_SET_QII(ld, rd) ((static_cast<QData>(ld) << VL_ULL(32)) | static_cast<QData>(rd))
+#define _VL_SET_QII(ld, rd) ((static_cast<QData>(ld) << 32ULL) | static_cast<QData>(rd))
 
 /// Return FILE* from IData
 extern FILE* VL_CVT_I_FP(IData lhs) VL_MT_SAFE;
@@ -764,9 +774,27 @@ static inline QData VL_CVT_Q_D(double lhs) VL_PURE {
 }
 // clang-format on
 
-/// Return double from QData (numeric)
-static inline double VL_ITOR_D_I(IData lhs) VL_PURE {
-    return static_cast<double>(static_cast<vlsint32_t>(lhs));
+/// Return double from lhs (numeric) unsigned
+double VL_ITOR_D_W(int lbits, WDataInP lwp) VL_PURE;
+static inline double VL_ITOR_D_I(int, IData lhs) VL_PURE {
+    return static_cast<double>(static_cast<vluint32_t>(lhs));
+}
+static inline double VL_ITOR_D_Q(int, QData lhs) VL_PURE {
+    return static_cast<double>(static_cast<vluint64_t>(lhs));
+}
+/// Return double from lhs (numeric) signed
+double VL_ISTOR_D_W(int lbits, WDataInP lwp) VL_PURE;
+static inline double VL_ISTOR_D_I(int lbits, IData lhs) VL_PURE {
+    if (lbits == 32) return static_cast<double>(static_cast<vlsint32_t>(lhs));
+    WData lwp[VL_WQ_WORDS_E];
+    VL_SET_WI(lwp, lhs);
+    return VL_ISTOR_D_W(lbits, lwp);
+}
+static inline double VL_ISTOR_D_Q(int lbits, QData lhs) VL_PURE {
+    if (lbits == 64) return static_cast<double>(static_cast<vlsint64_t>(lhs));
+    WData lwp[VL_WQ_WORDS_E];
+    VL_SET_WQ(lwp, lhs);
+    return VL_ISTOR_D_W(lbits, lwp);
 }
 /// Return QData from double (numeric)
 static inline IData VL_RTOI_I_D(double lhs) VL_PURE {
@@ -776,7 +804,7 @@ static inline IData VL_RTOI_I_D(double lhs) VL_PURE {
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
 // (Requires clean input)
 #define VL_SIGN_I(nbits, lhs) ((lhs) >> VL_BITBIT_I((nbits)-VL_UL(1)))
-#define VL_SIGN_Q(nbits, lhs) ((lhs) >> VL_BITBIT_Q((nbits)-VL_ULL(1)))
+#define VL_SIGN_Q(nbits, lhs) ((lhs) >> VL_BITBIT_Q((nbits)-1ULL))
 #define VL_SIGN_E(nbits, lhs) ((lhs) >> VL_BITBIT_E((nbits)-VL_EUL(1)))
 #define VL_SIGN_W(nbits, rwp) \
     ((rwp)[VL_BITWORD_E((nbits)-VL_EUL(1))] >> VL_BITBIT_E((nbits)-VL_EUL(1)))
@@ -788,7 +816,7 @@ static inline IData VL_EXTENDSIGN_I(int lbits, IData lhs) VL_PURE {
     return (-((lhs) & (VL_UL(1) << (lbits - 1))));
 }
 static inline QData VL_EXTENDSIGN_Q(int lbits, QData lhs) VL_PURE {
-    return (-((lhs) & (VL_ULL(1) << (lbits - 1))));
+    return (-((lhs) & (1ULL << (lbits - 1))));
 }
 
 // Debugging prints
@@ -819,13 +847,8 @@ extern int VL_TIME_STR_CONVERT(const char* strp) VL_PURE;
 
 /// Return current simulation time
 #if defined(SYSTEMC_VERSION)
-# if SYSTEMC_VERSION > 20011000
 // Already defined: extern sc_time sc_time_stamp();
 inline vluint64_t vl_time_stamp64() { return sc_time_stamp().value(); }
-# else  // Before SystemC changed to integral time representation
-// Already defined: extern double sc_time_stamp();
-inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_stamp()); }
-# endif
 #else  // Non-SystemC
 # ifdef VL_TIME_STAMP64
 extern vluint64_t vl_time_stamp64();
@@ -843,7 +866,7 @@ inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_sta
 // Optimized assuming scale is always constant.
 // Can't use multiply in Q flavor, as might lose precision
 #define VL_TIME_UNITED_Q(scale) (VL_TIME_Q() / static_cast<QData>(scale))
-#define VL_TIME_UNITED_D(scale) (VL_TIME_D() * (1.0 / (scale)))
+#define VL_TIME_UNITED_D(scale) (VL_TIME_D() / static_cast<double>(scale))
 /// Time imported from units to time precision
 double vl_time_multiplier(int scale);
 
@@ -926,8 +949,7 @@ static inline void VL_ASSIGNBIT_II(int, int bit, IData& lhsr, IData rhs) VL_PURE
     lhsr = ((lhsr & ~(VL_UL(1) << VL_BITBIT_I(bit))) | (rhs << VL_BITBIT_I(bit)));
 }
 static inline void VL_ASSIGNBIT_QI(int, int bit, QData& lhsr, QData rhs) VL_PURE {
-    lhsr = ((lhsr & ~(VL_ULL(1) << VL_BITBIT_Q(bit)))
-            | (static_cast<QData>(rhs) << VL_BITBIT_Q(bit)));
+    lhsr = ((lhsr & ~(1ULL << VL_BITBIT_Q(bit))) | (static_cast<QData>(rhs) << VL_BITBIT_Q(bit)));
 }
 static inline void VL_ASSIGNBIT_WI(int, int bit, WDataOutP owp, IData rhs) VL_MT_SAFE {
     EData orig = owp[VL_BITWORD_E(bit)];
@@ -945,7 +967,7 @@ static inline void VL_ASSIGNBIT_IO(int, int bit, IData& lhsr, IData) VL_PURE {
     lhsr = (lhsr | (VL_UL(1) << VL_BITBIT_I(bit)));
 }
 static inline void VL_ASSIGNBIT_QO(int, int bit, QData& lhsr, IData) VL_PURE {
-    lhsr = (lhsr | (VL_ULL(1) << VL_BITBIT_Q(bit)));
+    lhsr = (lhsr | (1ULL << VL_BITBIT_Q(bit)));
 }
 static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) VL_MT_SAFE {
     EData orig = owp[VL_BITWORD_E(bit)];
@@ -1287,7 +1309,7 @@ static inline IData VL_CLOG2_Q(QData lhs) VL_PURE {
     if (VL_UNLIKELY(!lhs)) return 0;
     lhs--;
     int shifts = 0;
-    for (; lhs != 0; ++shifts) lhs = lhs >> VL_ULL(1);
+    for (; lhs != 0; ++shifts) lhs = lhs >> 1ULL;
     return shifts;
 }
 static inline IData VL_CLOG2_W(int words, WDataInP lwp) VL_MT_SAFE {
@@ -1454,6 +1476,7 @@ static inline int _VL_CMPS_W(int lbits, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
 //=========================================================================
 // Math
 
+// Output NOT clean
 static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp, WDataInP lwp) VL_MT_SAFE {
     EData carry = 1;
     for (int i = 0; i < words; ++i) {
@@ -1485,8 +1508,8 @@ static inline WDataOutP VL_ADD_W(int words, WDataOutP owp, WDataInP lwp, WDataIn
     QData carry = 0;
     for (int i = 0; i < words; ++i) {
         carry = carry + static_cast<QData>(lwp[i]) + static_cast<QData>(rwp[i]);
-        owp[i] = (carry & VL_ULL(0xffffffff));
-        carry = (carry >> VL_ULL(32)) & VL_ULL(0xffffffff);
+        owp[i] = (carry & 0xffffffffULL);
+        carry = (carry >> 32ULL) & 0xffffffffULL;
     }
     // Last output word is dirty
     return owp;
@@ -1498,8 +1521,8 @@ static inline WDataOutP VL_SUB_W(int words, WDataOutP owp, WDataInP lwp, WDataIn
         carry = (carry + static_cast<QData>(lwp[i])
                  + static_cast<QData>(static_cast<IData>(~rwp[i])));
         if (i == 0) ++carry;  // Negation of rwp
-        owp[i] = (carry & VL_ULL(0xffffffff));
-        carry = (carry >> VL_ULL(32)) & VL_ULL(0xffffffff);
+        owp[i] = (carry & 0xffffffffULL);
+        carry = (carry >> 32ULL) & 0xffffffffULL;
     }
     // Last output word is dirty
     return owp;
@@ -1512,8 +1535,8 @@ static inline WDataOutP VL_MUL_W(int words, WDataOutP owp, WDataInP lwp, WDataIn
             QData mul = static_cast<QData>(lwp[lword]) * static_cast<QData>(rwp[rword]);
             for (int qword = lword + rword; qword < words; ++qword) {
                 mul += static_cast<QData>(owp[qword]);
-                owp[qword] = (mul & VL_ULL(0xffffffff));
-                mul = (mul >> VL_ULL(32)) & VL_ULL(0xffffffff);
+                owp[qword] = (mul & 0xffffffffULL);
+                mul = (mul >> 32ULL) & 0xffffffffULL;
             }
         }
     }
@@ -1561,8 +1584,8 @@ static inline WDataOutP VL_MULS_WWW(int, int lbits, int, WDataOutP owp, WDataInP
         for (int i = 0; i < words; ++i) {
             carry = carry + static_cast<QData>(static_cast<IData>(~owp[i]));
             if (i == 0) ++carry;  // Negation of temp2
-            owp[i] = (carry & VL_ULL(0xffffffff));
-            carry = (carry >> VL_ULL(32)) & VL_ULL(0xffffffff);
+            owp[i] = (carry & 0xffffffffULL);
+            carry = (carry >> 32ULL) & 0xffffffffULL;
         }
         // Not needed: owp[words-1] |= 1<<VL_BITBIT_E(lbits-1);  // Set sign bit
     }
@@ -1572,24 +1595,30 @@ static inline WDataOutP VL_MULS_WWW(int, int lbits, int, WDataOutP owp, WDataInP
 
 static inline IData VL_DIVS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs == 0)) return 0;
+    // -MAX / -1 cannot be represented in twos complement, and will cause SIGFPE
+    if (VL_UNLIKELY(lhs == 0x80000000 && rhs == 0xffffffff)) return 0;
     vlsint32_t lhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, lhs);
     vlsint32_t rhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, rhs);
     return lhs_signed / rhs_signed;
 }
 static inline QData VL_DIVS_QQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs == 0)) return 0;
+    // -MAX / -1 cannot be represented in twos complement, and will cause SIGFPE
+    if (VL_UNLIKELY(lhs == 0x8000000000000000ULL && rhs == 0xffffffffffffffffULL)) return 0;
     vlsint64_t lhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, lhs);
     vlsint64_t rhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, rhs);
     return lhs_signed / rhs_signed;
 }
 static inline IData VL_MODDIVS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs == 0)) return 0;
+    if (VL_UNLIKELY(lhs == 0x80000000 && rhs == 0xffffffff)) return 0;
     vlsint32_t lhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, lhs);
     vlsint32_t rhs_signed = VL_EXTENDS_II(VL_IDATASIZE, lbits, rhs);
     return lhs_signed % rhs_signed;
 }
 static inline QData VL_MODDIVS_QQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs == 0)) return 0;
+    if (VL_UNLIKELY(lhs == 0x8000000000000000ULL && rhs == 0xffffffffffffffffULL)) return 0;
     vlsint64_t lhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, lhs);
     vlsint64_t rhs_signed = VL_EXTENDS_QQ(VL_QUADSIZE, lbits, rhs);
     return lhs_signed % rhs_signed;
@@ -1653,7 +1682,7 @@ static inline IData VL_POW_III(int, int, int rbits, IData lhs, IData rhs) VL_PUR
     IData out = 1;
     for (int i = 0; i < rbits; ++i) {
         if (i > 0) power = power * power;
-        if (rhs & (VL_ULL(1) << i)) out *= power;
+        if (rhs & (1ULL << i)) out *= power;
     }
     return out;
 }
@@ -1661,10 +1690,10 @@ static inline QData VL_POW_QQQ(int, int, int rbits, QData lhs, QData rhs) VL_PUR
     if (VL_UNLIKELY(rhs == 0)) return 1;
     if (VL_UNLIKELY(lhs == 0)) return 0;
     QData power = lhs;
-    QData out = VL_ULL(1);
+    QData out = 1ULL;
     for (int i = 0; i < rbits; ++i) {
         if (i > 0) power = power * power;
-        if (rhs & (VL_ULL(1) << i)) out *= power;
+        if (rhs & (1ULL << i)) out *= power;
     }
     return out;
 }
@@ -1910,7 +1939,8 @@ static inline IData VL_STREAML_FAST_III(int, int lbits, int, IData ld, IData rd_
     case 1: ret = ((ret >> 2) & VL_UL(0x33333333)) | ((ret & VL_UL(0x33333333)) << 2);  // FALLTHRU
     case 2: ret = ((ret >> 4) & VL_UL(0x0f0f0f0f)) | ((ret & VL_UL(0x0f0f0f0f)) << 4);  // FALLTHRU
     case 3: ret = ((ret >> 8) & VL_UL(0x00ff00ff)) | ((ret & VL_UL(0x00ff00ff)) << 8);  // FALLTHRU
-    case 4: ret = ((ret >> 16) | (ret << 16));
+    case 4: ret = ((ret >> 16) | (ret << 16));  // FALLTHRU
+    default:;
     }
     return ret >> (VL_IDATASIZE - lbits);
 }
@@ -1922,25 +1952,26 @@ static inline QData VL_STREAML_FAST_QQI(int, int lbits, int, QData ld, IData rd_
         vluint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2);
         vluint32_t lbitsRem = lbits - lbitsFloor;
         QData msbMask = VL_MASK_Q(lbitsRem) << lbitsFloor;
-        ret = (ret & ~msbMask) | ((ret & msbMask) << ((VL_ULL(1) << rd_log2) - lbitsRem));
+        ret = (ret & ~msbMask) | ((ret & msbMask) << ((1ULL << rd_log2) - lbitsRem));
     }
     switch (rd_log2) {
     case 0:
-        ret = (((ret >> 1) & VL_ULL(0x5555555555555555))
-               | ((ret & VL_ULL(0x5555555555555555)) << 1));  // FALLTHRU
+        ret = (((ret >> 1) & 0x5555555555555555ULL)
+               | ((ret & 0x5555555555555555ULL) << 1));  // FALLTHRU
     case 1:
-        ret = (((ret >> 2) & VL_ULL(0x3333333333333333))
-               | ((ret & VL_ULL(0x3333333333333333)) << 2));  // FALLTHRU
+        ret = (((ret >> 2) & 0x3333333333333333ULL)
+               | ((ret & 0x3333333333333333ULL) << 2));  // FALLTHRU
     case 2:
-        ret = (((ret >> 4) & VL_ULL(0x0f0f0f0f0f0f0f0f))
-               | ((ret & VL_ULL(0x0f0f0f0f0f0f0f0f)) << 4));  // FALLTHRU
+        ret = (((ret >> 4) & 0x0f0f0f0f0f0f0f0fULL)
+               | ((ret & 0x0f0f0f0f0f0f0f0fULL) << 4));  // FALLTHRU
     case 3:
-        ret = (((ret >> 8) & VL_ULL(0x00ff00ff00ff00ff))
-               | ((ret & VL_ULL(0x00ff00ff00ff00ff)) << 8));  // FALLTHRU
+        ret = (((ret >> 8) & 0x00ff00ff00ff00ffULL)
+               | ((ret & 0x00ff00ff00ff00ffULL) << 8));  // FALLTHRU
     case 4:
-        ret = (((ret >> 16) & VL_ULL(0x0000ffff0000ffff))
-               | ((ret & VL_ULL(0x0000ffff0000ffff)) << 16));  // FALLTHRU
-    case 5: ret = ((ret >> 32) | (ret << 32));
+        ret = (((ret >> 16) & 0x0000ffff0000ffffULL)
+               | ((ret & 0x0000ffff0000ffffULL) << 16));  // FALLTHRU
+    case 5: ret = ((ret >> 32) | (ret << 32));  // FALLTHRU
+    default:;
     }
     return ret >> (VL_QUADSIZE - lbits);
 }
@@ -2384,14 +2415,14 @@ static inline WDataOutP VL_SEL_WWII(int obits, int lbits, int, int, WDataOutP ow
 
 /// Return QData from double (numeric)
 // EMIT_RULE: VL_RTOIROUND_Q_D:  oclean=dirty; lclean==clean/real
-static inline QData VL_RTOIROUND_Q_D(int bits, double lhs) VL_PURE {
+static inline QData VL_RTOIROUND_Q_D(int, double lhs) VL_PURE {
     // IEEE format: [63]=sign [62:52]=exp+1023 [51:0]=mantissa
     // This does not need to support subnormals as they are sub-integral
     lhs = VL_ROUND(lhs);
     if (lhs == 0.0) return 0;
     QData q = VL_CVT_Q_D(lhs);
-    int lsb = static_cast<int>((q >> VL_ULL(52)) & VL_MASK_Q(11)) - 1023 - 52;
-    vluint64_t mantissa = (q & VL_MASK_Q(52)) | (VL_ULL(1) << 52);
+    int lsb = static_cast<int>((q >> 52ULL) & VL_MASK_Q(11)) - 1023 - 52;
+    vluint64_t mantissa = (q & VL_MASK_Q(52)) | (1ULL << 52);
     vluint64_t out = 0;
     if (lsb < 0) {
         out = mantissa >> -lsb;
@@ -2411,8 +2442,8 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
     VL_ZERO_W(obits, owp);
     if (lhs == 0.0) return owp;
     QData q = VL_CVT_Q_D(lhs);
-    int lsb = static_cast<int>((q >> VL_ULL(52)) & VL_MASK_Q(11)) - 1023 - 52;
-    vluint64_t mantissa = (q & VL_MASK_Q(52)) | (VL_ULL(1) << 52);
+    int lsb = static_cast<int>((q >> 52ULL) & VL_MASK_Q(11)) - 1023 - 52;
+    vluint64_t mantissa = (q & VL_MASK_Q(52)) | (1ULL << 52);
     if (lsb < 0) {
         VL_SET_WQ(owp, mantissa >> -lsb);
     } else if (lsb < obits) {
@@ -2531,25 +2562,25 @@ static inline WDataOutP VL_CONSTHI_W_1X(int obits, int lsb, WDataOutP obase,
                                         EData d0) VL_MT_SAFE {
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;
-    _END(obits,1);
+    _END(obits, VL_WORDS_I(lsb) + 1);
 }
 static inline WDataOutP VL_CONSTHI_W_2X(int obits, int lsb, WDataOutP obase,
                                         EData d1, EData d0) VL_MT_SAFE {
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;
-    _END(obits,2);
+    _END(obits, VL_WORDS_I(lsb) + 2);
 }
 static inline WDataOutP VL_CONSTHI_W_3X(int obits, int lsb, WDataOutP obase,
                                         EData d2, EData d1, EData d0) VL_MT_SAFE {
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;
-    _END(obits,3);
+    _END(obits, VL_WORDS_I(lsb) + 3);
 }
 static inline WDataOutP VL_CONSTHI_W_4X(int obits, int lsb, WDataOutP obase,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    _END(obits,4);
+    _END(obits, VL_WORDS_I(lsb) + 4);
 }
 static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP obase,
                                         EData d4,
@@ -2557,7 +2588,7 @@ static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP obase,
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;
-    _END(obits,5);
+    _END(obits, VL_WORDS_I(lsb) + 5);
 }
 static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP obase,
                                         EData d5, EData d4,
@@ -2565,7 +2596,7 @@ static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP obase,
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;
-    _END(obits,6);
+    _END(obits, VL_WORDS_I(lsb) + 6);
 }
 static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP obase,
                                         EData d6, EData d5, EData d4,
@@ -2573,7 +2604,7 @@ static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP obase,
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;  o[6] = d6;
-    _END(obits,7);
+    _END(obits, VL_WORDS_I(lsb) + 7);
 }
 static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP obase,
                                         EData d7, EData d6, EData d5, EData d4,
@@ -2581,7 +2612,7 @@ static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP obase,
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;  o[6] = d6;  o[7] = d7;
-    _END(obits,8);
+    _END(obits, VL_WORDS_I(lsb) + 8);
 }
 
 #undef _END

@@ -122,7 +122,7 @@
 # if defined(_MSC_VER) && _MSC_VER >= 1900
 #  define VL_THREAD_LOCAL thread_local
 # elif defined(__GNUC__)
-#  if (__cplusplus < 201103L) && !defined(VL_THREADED_NO_C11_WARNING)
+#  if (__cplusplus < 201103L)
 #   error "VL_THREADED/--threads support requires C++-11 or newer only; use newer compiler"
 #  endif
 # else
@@ -144,30 +144,23 @@
 #define VL_MT_UNSAFE_ONE  ///< Comment tag that function is not threadsafe when VL_THREADED,
                           ///< protected to make sure single-caller
 
-#ifdef _MSC_VER
-# define VL_ULL(c) (c##ULL)  ///< Add appropriate suffix to 64-bit constant
-// Was "(c##ui64)". C++11 has standardized on ULL, and MSVC now supports this.
-// We propose to no longer require using this macro no sooner than June 2020.
-// File an issue ASAP if this breaks anything.
-#else
-# define VL_ULL(c) (c##ULL)  ///< Add appropriate suffix to 64-bit constant
-#endif
+#define VL_ULL(c) (c##ULL)  ///< Add appropriate suffix to 64-bit constant (deprecated)
 
 // This is not necessarily the same as #UL, depending on what the IData typedef is.
 #define VL_UL(c) (static_cast<IData>(c##UL))  ///< Add appropriate suffix to 32-bit constant
 
-#if defined(VL_CPPCHECK) || defined(__clang_analyzer__)
+#if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
 # define VL_DANGLING(var)
 #else
-///< After e.g. delete, set variable to NULL to indicate must not use later
+/// After e.g. delete, set variable to nullptr to indicate must not use later
 # define VL_DANGLING(var) \
     do { \
-        (var) = NULL; \
+        *const_cast<const void**>(reinterpret_cast<const void* const*>(&var)) = nullptr; \
     } while (false)
 #endif
 
-///< Perform an e.g. delete, then set variable to NULL to indicate must not use later.
-///< Unlike VL_DO_CLEAR the setting of the variable is only for debug reasons.
+/// Perform an e.g. delete, then set variable to nullptr to indicate must not use later.
+/// Unlike VL_DO_CLEAR the setting of the variable is only for debug reasons.
 #define VL_DO_DANGLING(stmt, var) \
     do { \
         do { \
@@ -176,7 +169,7 @@
         VL_DANGLING(var); \
     } while (false)
 
-///< Perform an e.g. delete, then set variable to NULL as a requirement
+/// Perform an e.g. delete, then set variable to nullptr as a requirement
 #define VL_DO_CLEAR(stmt, stmt2) \
     do { \
         do { \
@@ -191,30 +184,18 @@
 // C++-2011
 
 #if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK)
+// These are deprecated historical defines. We leave them in case users referenced them.
 # define VL_EQ_DELETE = delete
 # define vl_unique_ptr std::unique_ptr
-// By default we use std:: types in C++11.
-// Define VL_USE_UNORDERED_TYPES to test these pre-C++11 classes
-# ifdef VL_USE_UNORDERED_TYPES
-#  define VL_INCLUDE_UNORDERED_MAP "verilated_unordered_set_map.h"
-#  define VL_INCLUDE_UNORDERED_SET "verilated_unordered_set_map.h"
-# else
-#  define vl_unordered_map std::unordered_map
-#  define vl_unordered_set std::unordered_set
-#  define VL_INCLUDE_UNORDERED_MAP <unordered_map>
-#  define VL_INCLUDE_UNORDERED_SET <unordered_set>
-# endif
+# define vl_unordered_map std::unordered_map
+# define vl_unordered_set std::unordered_set
+# define VL_INCLUDE_UNORDERED_MAP <unordered_map>
+# define VL_INCLUDE_UNORDERED_SET <unordered_set>
 # define VL_FINAL final
 # define VL_MUTABLE mutable
 # define VL_OVERRIDE override
 #else
-# define VL_EQ_DELETE
-# define vl_unique_ptr std::auto_ptr
-# define VL_INCLUDE_UNORDERED_MAP "verilated_unordered_set_map.h"
-# define VL_INCLUDE_UNORDERED_SET "verilated_unordered_set_map.h"
-# define VL_FINAL
-# define VL_MUTABLE
-# define VL_OVERRIDE
+# error "Verilator requires a C++11 or newer compiler"
 #endif
 
 //=========================================================================
@@ -222,6 +203,20 @@
 
 #ifndef VL_INLINE_OPT
 # define VL_INLINE_OPT  ///< "inline" if compiling all objects in single compiler run
+#endif
+
+//=========================================================================
+// Internal coverage
+
+#ifdef VL_GCOV
+extern "C" {
+void __gcov_flush();  // gcc sources gcc/gcov-io.h has the prototype
+}
+/// Flush internal code coverage data before e.g. abort()
+# define VL_GCOV_FLUSH() \
+    __gcov_flush()
+#else
+# define VL_GCOV_FLUSH()
 #endif
 
 //=========================================================================
@@ -381,8 +376,8 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 
 // Used to declare a class as uncopyable; put after a private:
 #define VL_UNCOPYABLE(Type) \
-    Type(const Type& other) VL_EQ_DELETE; \
-    Type& operator=(const Type&) VL_EQ_DELETE
+    Type(const Type& other) = delete; \
+    Type& operator=(const Type&) = delete
 
 //=========================================================================
 // Verilated function size macros
@@ -401,7 +396,7 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #define VL_MASK_I(nbits) (((nbits) & VL_SIZEBITS_I) ? ((1U << ((nbits) & VL_SIZEBITS_I)) - 1) : ~0)
 /// Mask for quads with 1's where relevant bits are (0=all bits)
 #define VL_MASK_Q(nbits) \
-    (((nbits) & VL_SIZEBITS_Q) ? ((VL_ULL(1) << ((nbits) & VL_SIZEBITS_Q)) - VL_ULL(1)) : VL_ULL(~0))
+    (((nbits) & VL_SIZEBITS_Q) ? ((1ULL << ((nbits) & VL_SIZEBITS_Q)) - 1ULL) : ~0ULL)
 /// Mask for EData with 1's where relevant bits are (0=all bits)
 #define VL_MASK_E(nbits) VL_MASK_I(nbits)
 #define VL_EUL(n) VL_UL(n)  ///< Make constant number EData sized
@@ -428,7 +423,7 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 // Performance counters
 
 /// The vluint64_t argument is loaded with a high-performance counter for profiling
-/// or 0x0 if not implemeted on this platform
+/// or 0x0 if not implemented on this platform
 #if defined(__i386__) || defined(__x86_64__)
 #define VL_RDTSC(val) \
     { \
@@ -492,6 +487,14 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 
 #define VL_STRINGIFY(x) VL_STRINGIFY2(x)
 #define VL_STRINGIFY2(x) #x
+
+//=========================================================================
+// Conversions
+
+namespace vlstd {
+// C++17's std::as_const
+template <class T> T const& as_const(T& v) { return v; }
+};  // namespace vlstd
 
 //=========================================================================
 

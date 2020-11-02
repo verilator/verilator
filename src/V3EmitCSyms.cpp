@@ -23,10 +23,7 @@
 #include "V3LanguageWords.h"
 
 #include <algorithm>
-#include <cmath>
-#include <cstdarg>
 #include <map>
-#include <set>
 #include <vector>
 
 //######################################################################
@@ -46,19 +43,19 @@ class EmitCSyms : EmitCBaseVisitor {
         string m_type;
         ScopeData(const string& symName, const string& prettyName, int timeunit,
                   const string& type)
-            : m_symName(symName)
-            , m_prettyName(prettyName)
-            , m_timeunit(timeunit)
-            , m_type(type) {}
+            : m_symName{symName}
+            , m_prettyName{prettyName}
+            , m_timeunit{timeunit}
+            , m_type{type} {}
     };
     struct ScopeFuncData {
         AstScopeName* m_scopep;
-        AstCFunc* m_funcp;
+        AstCFunc* m_cfuncp;
         AstNodeModule* m_modp;
         ScopeFuncData(AstScopeName* scopep, AstCFunc* funcp, AstNodeModule* modp)
-            : m_scopep(scopep)
-            , m_funcp(funcp)
-            , m_modp(modp) {}
+            : m_scopep{scopep}
+            , m_cfuncp{funcp}
+            , m_modp{modp} {}
     };
     struct ScopeVarData {
         string m_scopeName;
@@ -68,19 +65,19 @@ class EmitCSyms : EmitCBaseVisitor {
         AstScope* m_scopep;
         ScopeVarData(const string& scopeName, const string& varBasePretty, AstVar* varp,
                      AstNodeModule* modp, AstScope* scopep)
-            : m_scopeName(scopeName)
-            , m_varBasePretty(varBasePretty)
-            , m_varp(varp)
-            , m_modp(modp)
-            , m_scopep(scopep) {}
+            : m_scopeName{scopeName}
+            , m_varBasePretty{varBasePretty}
+            , m_varp{varp}
+            , m_modp{modp}
+            , m_scopep{scopep} {}
     };
-    typedef std::map<string, ScopeFuncData> ScopeFuncs;
-    typedef std::map<string, ScopeVarData> ScopeVars;
-    typedef std::map<string, ScopeData> ScopeNames;
+    typedef std::map<const string, ScopeFuncData> ScopeFuncs;
+    typedef std::map<const string, ScopeVarData> ScopeVars;
+    typedef std::map<const string, ScopeData> ScopeNames;
     typedef std::pair<AstScope*, AstNodeModule*> ScopeModPair;
     typedef std::pair<AstNodeModule*, AstVar*> ModVarPair;
     typedef std::vector<string> ScopeNameList;
-    typedef std::map<string, ScopeNameList> ScopeNameHierarchy;
+    typedef std::map<const string, ScopeNameList> ScopeNameHierarchy;
     struct CmpName {
         inline bool operator()(const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
             return lhsp.first->name() < rhsp.first->name();
@@ -97,8 +94,8 @@ class EmitCSyms : EmitCBaseVisitor {
     };
 
     // STATE
-    AstCFunc* m_funcp;  // Current function
-    AstNodeModule* m_modp;  // Current module
+    AstCFunc* m_cfuncp = nullptr;  // Current function
+    AstNodeModule* m_modp = nullptr;  // Current module
     std::vector<ScopeModPair> m_scopes;  // Every scope by module
     std::vector<AstCFunc*> m_dpis;  // DPI functions
     std::vector<ModVarPair> m_modVars;  // Each public {mod,var}
@@ -107,12 +104,11 @@ class EmitCSyms : EmitCBaseVisitor {
     ScopeVars m_scopeVars;  // Each {scope,public-var}
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
     ScopeNameHierarchy m_vpiScopeHierarchy;  // The actual hierarchy of scopes
-    V3LanguageWords m_words;  // Reserved word detector
-    int m_coverBins;  // Coverage bin number
+    int m_coverBins = 0;  // Coverage bin number
     bool m_dpiHdrOnly;  // Only emit the DPI header
-    int m_numStmts;  // Number of statements output
-    int m_funcNum;  // CFunc split function number
-    V3OutCFile* m_ofpBase;  // Base (not split) C file
+    int m_numStmts = 0;  // Number of statements output
+    int m_funcNum = 0;  // CFunc split function number
+    V3OutCFile* m_ofpBase = nullptr;  // Base (not split) C file
     std::map<int, bool> m_usesVfinal;  // Split method uses __Vfinal
 
     // METHODS
@@ -124,13 +120,13 @@ class EmitCSyms : EmitCBaseVisitor {
     void emitDpiHdr();
     void emitDpiImp();
 
-    void nameCheck(AstNode* nodep) {
+    static void nameCheck(AstNode* nodep) {
         // Prevent GCC compile time error; name check all things that reach C++ code
         if (nodep->name() != ""
             && !(VN_IS(nodep, CFunc)
                  && (VN_CAST(nodep, CFunc)->isConstructor()
                      || VN_CAST(nodep, CFunc)->isDestructor()))) {
-            string rsvd = m_words.isKeyword(nodep->name());
+            string rsvd = V3LanguageWords::isKeyword(nodep->name());
             if (rsvd != "") {
                 // Generally V3Name should find all of these and throw SYMRSVDWORD.
                 // We'll still check here because the compiler errors
@@ -143,7 +139,7 @@ class EmitCSyms : EmitCBaseVisitor {
         }
     }
 
-    string scopeSymString(const string& scpname) {
+    static string scopeSymString(const string& scpname) {
         string out = scpname;
         string::size_type pos;
         while ((pos = out.find("__PVT__")) != string::npos) out.replace(pos, 7, "");
@@ -154,7 +150,7 @@ class EmitCSyms : EmitCBaseVisitor {
         return out;
     }
 
-    string scopeDecodeIdentifier(const string& scpname) {
+    static string scopeDecodeIdentifier(const string& scpname) {
         string out = scpname;
         // Remove hierarchy
         string::size_type pos = out.rfind('.');
@@ -172,7 +168,7 @@ class EmitCSyms : EmitCBaseVisitor {
 
     void varHierarchyScopes(string scp) {
         while (!scp.empty()) {
-            ScopeNames::const_iterator scpit = m_vpiScopeCandidates.find(scp);
+            const auto scpit = m_vpiScopeCandidates.find(scp);
             if ((scpit != m_vpiScopeCandidates.end())
                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
                 m_scopeNames.insert(make_pair(scpit->second.m_symName, scpit->second));
@@ -256,7 +252,7 @@ class EmitCSyms : EmitCBaseVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         // Collect list of scopes
         iterateChildren(nodep);
         varsExpand();
@@ -278,16 +274,15 @@ class EmitCSyms : EmitCBaseVisitor {
             if (!m_dpiHdrOnly) emitDpiImp();
         }
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         nameCheck(nodep);
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         {
             m_modp = nodep;
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
-    virtual void visit(AstCellInline* nodep) VL_OVERRIDE {
+    virtual void visit(AstCellInline* nodep) override {
         if (v3Global.opt.vpi()) {
             string type = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
             string name = nodep->scopep()->name() + "__DOT__" + nodep->name();
@@ -297,7 +292,7 @@ class EmitCSyms : EmitCBaseVisitor {
                 make_pair(name, ScopeData(scopeSymString(name), name_dedot, timeunit, type)));
         }
     }
-    virtual void visit(AstScope* nodep) VL_OVERRIDE {
+    virtual void visit(AstScope* nodep) override {
         if (VN_IS(m_modp, Class)) return;  // The ClassPackage is what is visible
         nameCheck(nodep);
 
@@ -311,7 +306,7 @@ class EmitCSyms : EmitCBaseVisitor {
                                                    timeunit, "SCOPE_MODULE")));
         }
     }
-    virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
+    virtual void visit(AstScopeName* nodep) override {
         string name = nodep->scopeSymName();
         // UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()
         // <<" ss"<<name<<endl);
@@ -321,9 +316,9 @@ class EmitCSyms : EmitCBaseVisitor {
                 name, ScopeData(name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER")));
         }
         if (nodep->dpiExport()) {
-            UASSERT_OBJ(m_funcp, nodep, "ScopeName not under DPI function");
+            UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");
             m_scopeFuncs.insert(
-                make_pair(name + " " + m_funcp->name(), ScopeFuncData(nodep, m_funcp, m_modp)));
+                make_pair(name + " " + m_cfuncp->name(), ScopeFuncData(nodep, m_cfuncp, m_modp)));
         } else {
             if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
                 m_scopeNames.insert(
@@ -333,43 +328,34 @@ class EmitCSyms : EmitCBaseVisitor {
             }
         }
     }
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildren(nodep);
-        if (nodep->isSigUserRdPublic()
-            // The VPI functions require a pointer to allow modification,
-            // but parameters are constants
-            && !nodep->isParam()) {
-            m_modVars.push_back(make_pair(m_modp, nodep));
-        }
+        if (nodep->isSigUserRdPublic()) { m_modVars.push_back(make_pair(m_modp, nodep)); }
     }
-    virtual void visit(AstCoverDecl* nodep) VL_OVERRIDE {
+    virtual void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
         if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
             nodep->binNum(m_coverBins++);
         }
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         nameCheck(nodep);
         if (nodep->dpiImport() || nodep->dpiExportWrapper()) m_dpis.push_back(nodep);
-        m_funcp = nodep;
-        iterateChildren(nodep);
-        m_funcp = NULL;
+        VL_RESTORER(m_cfuncp);
+        {
+            m_cfuncp = nodep;
+            iterateChildren(nodep);
+        }
     }
 
     //---------------------------------------
-    virtual void visit(AstConst*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstConst*) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     explicit EmitCSyms(AstNetlist* nodep, bool dpiHdrOnly)
-        : m_dpiHdrOnly(dpiHdrOnly) {
-        m_funcp = NULL;
-        m_modp = NULL;
-        m_coverBins = 0;
-        m_numStmts = 0;
-        m_funcNum = 0;
-        m_ofpBase = NULL;
+        : m_dpiHdrOnly{dpiHdrOnly} {
         iterate(nodep);
     }
 };
@@ -411,17 +397,15 @@ void EmitCSyms::emitSymHdr() {
 
     if (v3Global.dpi()) {
         puts("\n// DPI TYPES for DPI Export callbacks (Internal use)\n");
-        std::map<string, int> types;  // Remove duplicates and sort
+        std::map<const string, int> types;  // Remove duplicates and sort
         for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
-            AstCFunc* funcp = it->second.m_funcp;
+            AstCFunc* funcp = it->second.m_cfuncp;
             if (funcp->dpiExport()) {
                 string cbtype = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
                 types["typedef void (*" + cbtype + ") (" + cFuncArgs(funcp) + ");\n"] = 1;
             }
         }
-        for (std::map<string, int>::iterator it = types.begin(); it != types.end(); ++it) {
-            puts(it->first);
-        }
+        for (const auto& i : types) puts(i.first);
     }
 
     puts("\n// SYMS CLASS\n");
@@ -442,13 +426,15 @@ void EmitCSyms::emitSymHdr() {
     }
     if (v3Global.opt.trace()) {
         puts("bool __Vm_activity;  ///< Used by trace routines to determine change occurred\n");
+        puts("uint32_t __Vm_baseCode;  "
+             "///< Used by trace routines when tracing multiple models\n");
     }
     puts("bool __Vm_didInit;\n");
 
     puts("\n// SUBCELL STATE\n");
-    for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-        AstScope* scopep = it->first;
-        AstNodeModule* modp = it->second;
+    for (const auto& i : m_scopes) {
+        AstScope* scopep = i.first;
+        AstNodeModule* modp = i.second;
         if (VN_IS(modp, Class)) continue;
         if (modp->isTop()) {
             ofp()->printf("%-30s ", (prefixNameProtect(modp) + "*").c_str());
@@ -483,9 +469,9 @@ void EmitCSyms::emitSymHdr() {
     puts(symClassName() + "(" + topClassName() + "* topp, const char* namep);\n");
     puts(string("~") + symClassName() + "() {}\n");
 
-    for (std::map<int, bool>::iterator it = m_usesVfinal.begin(); it != m_usesVfinal.end(); ++it) {
-        puts("void " + symClassName() + "_" + cvtToStr(it->first) + "(");
-        if (it->second) {
+    for (const auto& i : m_usesVfinal) {
+        puts("void " + symClassName() + "_" + cvtToStr(i.first) + "(");
+        if (i.second) {
             puts("int __Vfinal");
         } else {
             puts(topClassName() + "* topp");
@@ -495,10 +481,6 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// METHODS\n");
     puts("inline const char* name() { return __Vm_namep; }\n");
-    if (v3Global.opt.trace()) {
-        puts("inline bool getClearActivity() { bool r=__Vm_activity; "
-             "__Vm_activity=false; return r; }\n");
-    }
     if (v3Global.opt.savable()) {
         puts("void " + protect("__Vserialize") + "(VerilatedSerialize& os);\n");
         puts("void " + protect("__Vdeserialize") + "(VerilatedDeserialize& os);\n");
@@ -507,14 +489,14 @@ void EmitCSyms::emitSymHdr() {
     puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
 
     ofp()->putsEndGuard();
-    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
 
 void EmitCSyms::closeSplit() {
     if (!m_ofp || m_ofp == m_ofpBase) return;
 
     puts("}\n");
-    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
 
 void EmitCSyms::checkSplit(bool usesVfinal) {
@@ -522,6 +504,9 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
         && (!v3Global.opt.outputSplitCFuncs() || m_numStmts < v3Global.opt.outputSplitCFuncs())) {
         return;
     }
+
+    // Splitting file, so using parallel build.
+    v3Global.useParallelBuild(true);
 
     m_numStmts = 0;
     string filename
@@ -625,15 +610,18 @@ void EmitCSyms::emitSymImp() {
     puts("    : __Vm_namep(namep)\n");  // No leak, as gets destroyed when the top is destroyed
     if (v3Global.needTraceDumper()) {
         puts("    , __Vm_dumping(false)\n");
-        puts("    , __Vm_dumperp(NULL)\n");
+        puts("    , __Vm_dumperp(nullptr)\n");
     }
-    if (v3Global.opt.trace()) puts("    , __Vm_activity(false)\n");
+    if (v3Global.opt.trace()) {
+        puts("    , __Vm_activity(false)\n");
+        puts("    , __Vm_baseCode(0)\n");
+    }
     puts("    , __Vm_didInit(false)\n");
     puts("    // Setup submodule names\n");
     char comma = ',';
-    for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-        AstScope* scopep = it->first;
-        AstNodeModule* modp = it->second;
+    for (const auto& i : m_scopes) {
+        AstScope* scopep = i.first;
+        AstNodeModule* modp = i.second;
         if (modp->isTop()) {
         } else {
             puts(string("    ") + comma + " " + protect(scopep->nameDotless()));
@@ -650,9 +638,9 @@ void EmitCSyms::emitSymImp() {
     puts("// Pointer to top level\n");
     puts("TOPp = topp;\n");
     puts("// Setup each module's pointers to their submodules\n");
-    for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-        AstScope* scopep = it->first;
-        AstNodeModule* modp = it->second;
+    for (const auto& i : m_scopes) {
+        AstScope* scopep = i.first;
+        AstNodeModule* modp = i.second;
         if (!modp->isTop()) {
             checkSplit(false);
             string arrow = scopep->name();
@@ -668,9 +656,9 @@ void EmitCSyms::emitSymImp() {
 
     puts("// Setup each module's pointer back to symbol table (for public functions)\n");
     puts("TOPp->" + protect("__Vconfigure") + "(this, true);\n");
-    for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-        AstScope* scopep = it->first;
-        AstNodeModule* modp = it->second;
+    for (const auto& i : m_scopes) {
+        AstScope* scopep = i.first;
+        AstNodeModule* modp = i.second;
         if (!modp->isTop()) {
             checkSplit(false);
             // first is used by AstCoverDecl's call to __vlCoverInsert
@@ -715,8 +703,8 @@ void EmitCSyms::emitSymImp() {
                  ++lit) {
                 string fromname = scopeSymString(it->first);
                 string toname = scopeSymString(*lit);
-                ScopeNames::const_iterator from = m_scopeNames.find(fromname);
-                ScopeNames::const_iterator to = m_scopeNames.find(toname);
+                const auto from = vlstd::as_const(m_scopeNames).find(fromname);
+                const auto to = vlstd::as_const(m_scopeNames).find(toname);
                 UASSERT(from != m_scopeNames.end(), fromname + " not in m_scopeNames");
                 UASSERT(to != m_scopeNames.end(), toname + " not in m_scopeNames");
                 puts("__Vhier.add(");
@@ -735,7 +723,7 @@ void EmitCSyms::emitSymImp() {
         m_ofpBase->puts("for (int __Vfinal=0; __Vfinal<2; __Vfinal++) {\n");
         for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
             AstScopeName* scopep = it->second.m_scopep;
-            AstCFunc* funcp = it->second.m_funcp;
+            AstCFunc* funcp = it->second.m_cfuncp;
             AstNodeModule* modp = it->second.m_modp;
             if (funcp->dpiExport()) {
                 checkSplit(true);
@@ -794,16 +782,38 @@ void EmitCSyms::emitSymImp() {
             }
             puts(protect("__Vscope_" + it->second.m_scopeName) + ".varInsert(__Vfinal,");
             putsQuoted(protect(it->second.m_varBasePretty));
-            puts(", &(");
+
+            std::string varName;
             if (modp->isTop()) {
-                puts(protectIf(scopep->nameDotless() + "p", scopep->protect()));
-                puts("->");
+                varName += (protectIf(scopep->nameDotless() + "p", scopep->protect()) + "->");
             } else {
-                puts(protectIf(scopep->nameDotless(), scopep->protect()));
-                puts(".");
+                varName += (protectIf(scopep->nameDotless(), scopep->protect()) + ".");
             }
-            puts(varp->nameProtect());
-            puts("), ");
+
+            if (varp->isParam()) {
+                varName += protect("var_" + varp->name());
+            } else {
+                varName += protect(varp->name());
+            }
+
+            if (varp->isParam()) {
+                if (varp->vlEnumType() == "VLVT_STRING") {
+                    puts(", const_cast<void*>(static_cast<const void*>(");
+                    puts(varName);
+                    puts(".c_str())), ");
+                } else {
+                    puts(", const_cast<void*>(static_cast<const void*>(&(");
+                    puts(varName);
+                    puts("))), ");
+                }
+            } else {
+                puts(", &(");
+                puts(varName);
+                puts("), ");
+            }
+
+            puts(varp->isParam() ? "true" : "false");
+            puts(", ");
             puts(varp->vlEnumType());  // VLVT_UINT32 etc
             puts(",");
             puts(varp->vlEnumDir());  // VLVD_IN etc
@@ -818,7 +828,7 @@ void EmitCSyms::emitSymImp() {
 
     m_ofpBase->puts("}\n");
     closeSplit();
-    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
 
 //######################################################################
@@ -848,8 +858,7 @@ void EmitCSyms::emitDpiHdr() {
 
     int firstExp = 0;
     int firstImp = 0;
-    for (std::vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
-        AstCFunc* nodep = *it;
+    for (AstCFunc* nodep : m_dpis) {
         if (nodep->dpiExportWrapper()) {
             if (!firstExp++) puts("\n// DPI EXPORTS\n");
             puts("// DPI export" + ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
@@ -898,8 +907,7 @@ void EmitCSyms::emitDpiImp() {
     puts("#include \"" + topClassName() + ".h\"\n");
     puts("\n");
 
-    for (std::vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
-        AstCFunc* nodep = *it;
+    for (AstCFunc* nodep : m_dpis) {
         if (nodep->dpiExportWrapper()) {
             puts("#ifndef _VL_DPIDECL_" + nodep->name() + "\n");
             puts("#define _VL_DPIDECL_" + nodep->name() + "\n");

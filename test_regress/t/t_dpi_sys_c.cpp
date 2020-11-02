@@ -14,6 +14,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # include "Vt_dpi_sys__Dpi.h"
 #elif defined(VCS)
@@ -23,13 +24,13 @@
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 #ifdef NEED_EXTERNS
 extern "C" {
 
-    extern void dpii_sys_task(int i);
-    extern int dpii_sys_func(int i);
-
+extern void dpii_sys_task(int i);
+extern int dpii_sys_func(int i);
 }
 #endif
 

@@ -19,6 +19,7 @@ run(cmd => ["../bin/verilator_coverage",
     ],
     logfile => "$Self->{obj_dir}/vlcov.log",
     tee => 0,
+    verilator_run => 1,
     );
 
 files_identical("$Self->{obj_dir}/vlcov.log", $Self->{golden_filename});

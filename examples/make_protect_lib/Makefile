@@ -5,11 +5,9 @@
 # This calls the object directory makefiles.  That allows the objects to
 # be placed in the "current directory" which simplifies the Makefile.
 #
-# Copyright 2019 by Wilson Snyder. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
-# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+# This file ONLY is placed under the Creative Commons Public Domain, for
+# any use, without warranty, 2020 by Wilson Snyder.
+# SPDX-License-Identifier: CC0-1.0
 #
 ######################################################################
 # Check for sanity to avoid later confusion
@@ -70,7 +68,7 @@ run:
 	@echo " library (libverilated_secret.a) generated from the previous"
 	@echo " step"
 	@echo "---------------------------------------------------------------"
-	$(VERILATOR) $(TOP_VERILATOR_FLAGS) --exe -LDFLAGS '-L../obj_dir_secret -lverilated_secret -static' top.v obj_dir_secret/verilated_secret.sv sim_main.cpp
+	$(VERILATOR) $(TOP_VERILATOR_FLAGS) --exe -LDFLAGS '../obj_dir_secret/libverilated_secret.a' top.v obj_dir_secret/verilated_secret.sv sim_main.cpp
 
 	@echo
 	@echo "-- COMPILE entire design --------------------------------------"

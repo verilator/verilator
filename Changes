@@ -2,8 +2,161 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
+* Verilator 4.103 devel
 
-* Verilator 4.035 devel
+****  Support queue and associative array 'with' statements. (#2616)
+
+****  Support queue slicing (#2326).
+
+****  Support associative array pattern assignments and defaults.
+
+****  Fix WIDTH warnings on comparisons with nullptr (#2602). [Rupert Swarbrick]
+
+
+* Verilator 4.102 2020-10-15
+
+****  Support const object new() assignments.
+
+****  Support # as a comment in -f files (#2497). [phantom-killua]
+
+****  Support 'this' (#2585). [Rafal Kapuscik]
+
+****  Support defines for FST tracing (#2592). [Markus Krause]
+
+****  Support |=> inside properties (#1292). [Peter Monsson]
+
+****  Fix timescale with --hierarchical (#2554). [Yutetsu TAKATSUKASA]
+
+****  Fix cmake build with --hierarchical (#2560). [Yutetsu TAKATSUKASA]
+
+****  Fix -G dropping public indication (#2561). [Andrew Goessling]
+
+****  Fix $urandom_range passed variable (#2563). [nanduraj1]
+
+****  Fix method calls to package class functions (#2565). [Peter Monsson]
+
+****  Fix class wide member display (#2567). [Nandu Raj P]
+
+****  Fix hierarchical references inside function (#2267) (#2572). [James Pallister]
+
+****  Fix flushCall for backward compatibility (#2580). [chenguokai]
+
+****  Fix preprocessor stringify of undefined macro. [Martin Whitaker]
+
+
+* Verilator 4.100 2020-09-07
+
+**    C++11 or newer compilers are now required.
+
+**    SystemC 2.3.0 or newer (SYSTEMC_VERSION >= 20111121) is now required.
+
+**    Support hierarchical Verilation (#2206). [Yutetsu TAKATSUKASA]
+
+****  Support (with limitations) class extern, class extends, virtual class.
+
+****  Support $urandom, $urandom_range without stability.
+
+****  Fix false DECLFILENAME on black-boxed modules (#2430). [Philipp Wagner]
+
+****  Fix naming of "id : begin" blocks.
+
+****  Fix class constructor error on assignments to const.
+
+****  Fix splitting eval functions with --output-split-cfuncs (#2368). [Geza Lore]
+
+****  Fix queues as class members (#2525). [nanduraj1]
+
+****  Add support for assume property. [Peter Monsson]
+
+****  Add support for |=> inside properties (#1292). [Peter Monsson]
+
+
+* Verilator 4.040 2020-08-15
+
+**    Version 4.040 is planned to be the final version that will
+      support pre-C++11 compilers. Please move to C++11 or newer compilers.
+
+***   Fix arrayed interfaces, broke in 4.038 (#2468). [Josh Redford]
+
+****  Support $stable, $rose and $fell.  (#2148) (#2501) [Peter Monsson]
+
+****  Support simple function localparams (#2461). [James Hanlon]
+
+****  Miscellaneous parsing error changes towards UVM support.
+
+****  Fix arrayed interfaces (#2469).  [Josh Redford]
+
+****  Fix protect lib VCS warning. (#2479) [Julien Margetts]
+
+****  Fix combining different-width parameters (#2484). [abirkmanis]
+
+****  Fix protect-lib without sequential logic (#2492). [Yutetsu TAKATSUKASA]
+
+****  Fix V3Unknown from running with flat XML output (#2494). [James Hanlon]
+
+****  Fix non-32 bit conversion to float (#2495). [dsvf]
+
+****  Fix casting non-self-determined subexpressions (#2493). [phantom-killua]
+
+****  Fix SystemC net names (#2500). [Edgar E. Iglesias]
+
+****  Fix build with Bison 3.7 and newer (#2505). [Rupert Swarbrick]
+
+****  Fix slice of unpacked array (#2506) (#2507). [Yutetsu TAKATSUKASA]
+
+
+* Verilator 4.038 2020-07-11
+
+**    Versions 4.038 and 4.040 are planned to be the final versions that will
+      support pre-C++11 compilers. Please move to C++11 or newer compilers.
+
+***   Support VPI access to parameters and localparam. [Ludwig Rogiers]
+
+***   Support parsing (not elaboration, yet) of UVM.
+
+****  Add new UNSUPPORTED error code to replace most previous Unsupported: messages.
+
+****  With --bbox-unsup continue parsing on many (not all) UVM constructs.
+
+****  Support for-loop increments with commas.
+
+****  Support $swrite with arbitrary arguments.
+
+****  Support $writememb (#2450). [Fan Shupei]
+
+****  Fix OS X, Free BSD, and -m32 portability issues. [Geza Lore]
+
+****  Fix to flush FST trace on termination due to $stop or assertion failure.
+
+****  Fix part select error when multipling by power-of-two (#2413). [Conor McCullough]
+
+****  Fix division exception (#2460) [Kuoping Hsu]
+
+
+* Verilator 4.036 2020-06-06
+
+**    OPT_FAST is now -Os by default. See the BENCHMARKING & OPTIMIZATION part
+      of the manual if you experience issues with compilation speed.
+
+***   Configure now enables SystemC if it is installed as a system headers,
+      e.g. with 'apt-get install systemc-dev'.
+
+***   Add --waiver-output flag that writes a verilator config file (.vlt) with
+      waivers to the warnings emitted during a Verilator run.
+
+***   Support verilator_coverage --write-info for lcov HTML reports.
+      Line Coverage now tracks all statement lines, not just branch lines.
+
+***   --output-split is now on by default. VM_PARALLEL_BUILDS is set by
+      default iff the --output-split caused an actual file split to occur.
+      --output-split-cfuncs and --output-split-ctrace now default to the
+      value of --output-split. These changes should improve build times of
+      medium and large designs with default options. User makefiles may
+      require changes.
+
+***   The run-time library is now compiled with -Os by default. (#2369, #2373)
+
+****  Support multi channel descriptor I/O (#2190) [Stephen Henry]
 
 ****  Support $countbits. (#2287) [Yossi Nivin]
 
@@ -11,11 +164,15 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support unpacked array .sum and .product.
 
+****  Support prefix/postfix increment/decrement. (#2223) [Maciej Sobkowski]
+
 ****  Fix FST tracing of little bit endian signals. [Geza Lore]
 
 ****  Fix +: and -: on unpacked arrays. (#2304) [engr248]
 
 ****  Fix $isunknown with constant Z's.
+
+****  Fix queues and dynamic array wide ops. (#2352) [Vassilis Papaefstathiou]
 
 
 * Verilator 4.034 2020-05-03
@@ -654,6 +811,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix constant propagation across DPI imports of inout strings. [Victor Besyakov]
 
 ****  Fix resolving inline nested interface names. (#1250) [Arjen Roodselaar]
+
+****  Fix GCC false warning on array bounds. (#2386)
 
 
 * Verilator 3.916 2017-11-25

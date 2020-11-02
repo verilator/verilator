@@ -30,7 +30,6 @@
 #include "V3Stats.h"
 #include "V3Ast.h"
 
-#include <cstdarg>
 #include <vector>
 
 //######################################################################
@@ -73,7 +72,7 @@ private:
     // See above
 
     // METHODS
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         // cppcheck-suppress unreadVariable  // cppcheck 1.90 bug
         VarFlags flags(nodep->varp());
         if (flags.m_done) {
@@ -81,12 +80,12 @@ private:
             nodep->hierThis(true);
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit LocalizeDehierVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~LocalizeDehierVisitor() {}
+    virtual ~LocalizeDehierVisitor() override {}
 };
 
 //######################################################################
@@ -102,7 +101,7 @@ private:
 
     // STATE
     VDouble0 m_statLocVars;  // Statistic tracking
-    AstCFunc* m_cfuncp;  // Current active function
+    AstCFunc* m_cfuncp = nullptr;  // Current active function
     std::vector<AstVar*> m_varps;  // List of variables to consider for deletion
 
     // METHODS
@@ -119,8 +118,7 @@ private:
         flags.setNodeFlags(nodep);
     }
     void moveVars() {
-        for (std::vector<AstVar*>::iterator it = m_varps.begin(); it != m_varps.end(); ++it) {
-            AstVar* nodep = *it;
+        for (AstVar* nodep : m_varps) {
             if (nodep->valuep()) clearOptimizable(nodep, "HasInitValue");
             if (!VarFlags(nodep).m_stdFuncAsn) clearStdOptimizable(nodep, "NoStdAssign");
             VarFlags flags(nodep);
@@ -146,19 +144,21 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         iterateChildren(nodep);
         moveVars();
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
+    virtual void visit(AstCFunc* nodep) override {
         UINFO(4, "  CFUNC " << nodep << endl);
-        m_cfuncp = nodep;
-        searchFuncStmts(nodep->argsp());
-        searchFuncStmts(nodep->initsp());
-        searchFuncStmts(nodep->stmtsp());
-        searchFuncStmts(nodep->finalsp());
-        iterateChildren(nodep);
-        m_cfuncp = NULL;
+        VL_RESTORER(m_cfuncp);
+        {
+            m_cfuncp = nodep;
+            searchFuncStmts(nodep->argsp());
+            searchFuncStmts(nodep->initsp());
+            searchFuncStmts(nodep->stmtsp());
+            searchFuncStmts(nodep->finalsp());
+            iterateChildren(nodep);
+        }
     }
     void searchFuncStmts(AstNode* nodep) {
         // Search for basic assignments to allow moving non-blocktemps
@@ -168,7 +168,7 @@ private:
         for (; nodep; nodep = nodep->nextp()) {
             if (VN_IS(nodep, NodeAssign)) {
                 if (AstVarRef* varrefp = VN_CAST(VN_CAST(nodep, NodeAssign)->lhsp(), VarRef)) {
-                    UASSERT_OBJ(varrefp->lvalue(), varrefp, "LHS assignment not lvalue");
+                    UASSERT_OBJ(varrefp->access().isWrite(), varrefp, "LHS assignment not lvalue");
                     if (!varrefp->varp()->user4p()) {
                         UINFO(4, "      FuncAsn " << varrefp << endl);
                         varrefp->varp()->user4p(varrefp);
@@ -181,7 +181,7 @@ private:
         }
     }
 
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         if (!nodep->isSigPublic() && !nodep->isPrimaryIO()
             && !m_cfuncp) {  // Not already inside a function
             UINFO(4, "    BLKVAR " << nodep << endl);
@@ -189,10 +189,11 @@ private:
         }
         // No iterate; Don't want varrefs under it
     }
-    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstVarRef* nodep) override {
         if (!VarFlags(nodep->varp()).m_notOpt) {
             if (!m_cfuncp) {  // Not in function, can't optimize
-                clearOptimizable(nodep->varp(), "BVnofunc");
+                // Perhaps impossible, but better safe
+                clearOptimizable(nodep->varp(), "BVnofunc");  // LCOV_EXCL_LINE
             } else {
                 // If we're scoping down to it, it isn't really in the same block
                 if (!nodep->hierThis()) clearOptimizable(nodep->varp(), "HierRef");
@@ -211,21 +212,18 @@ private:
                 AstVarRef* firstasn = static_cast<AstVarRef*>(nodep->varp()->user4p());
                 if (firstasn && nodep != firstasn) {
                     clearStdOptimizable(nodep->varp(), "notFirstAsn");
-                    nodep->varp()->user4p(NULL);
+                    nodep->varp()->user4p(nullptr);
                 }
             }
         }
         // No iterate; Don't want varrefs under it
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit LocalizeVisitor(AstNetlist* nodep) {
-        m_cfuncp = NULL;
-        iterate(nodep);
-    }
-    virtual ~LocalizeVisitor() {
+    explicit LocalizeVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~LocalizeVisitor() override {
         V3Stats::addStat("Optimizations, Vars localized", m_statLocVars);
     }
 };

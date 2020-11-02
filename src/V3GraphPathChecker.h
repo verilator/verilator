@@ -52,7 +52,7 @@ public:
 
 private:
     bool pathExistsInternal(const V3GraphVertex* ap, const V3GraphVertex* bp,
-                            unsigned* costp = NULL);
+                            unsigned* costp = nullptr);
     void initHalfCriticalPaths(GraphWay way, bool checkOnly);
     void incGeneration() { ++m_generation; }
 

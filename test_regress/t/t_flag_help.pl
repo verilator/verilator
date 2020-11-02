@@ -23,6 +23,7 @@ foreach my $prog (
                 "--help"],
         logfile => "$Self->{obj_dir}/t_help.log",
         tee => 0,
+        verilator_run => 1,
         );
     file_grep("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
 }

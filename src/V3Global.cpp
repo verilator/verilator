@@ -20,6 +20,7 @@
 #include "V3Global.h"
 #include "V3Ast.h"
 #include "V3File.h"
+#include "V3HierBlock.h"
 #include "V3LinkCells.h"
 #include "V3Parse.h"
 #include "V3ParseSym.h"
@@ -34,11 +35,17 @@ AstNetlist* V3Global::makeNetlist() {
     return newp;
 }
 
-void V3Global::checkTree() { rootp()->checkTree(); }
-
 void V3Global::clear() {
-    if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = NULL);
+#ifdef VL_LEAK_CHECK
+    if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = nullptr);
+#endif
 }
+
+void V3Global::shutdown() {
+    VL_DO_CLEAR(delete m_hierPlanp, m_hierPlanp = nullptr);  // delete nullptr is safe
+}
+
+void V3Global::checkTree() const { rootp()->checkTree(); }
 
 void V3Global::readFiles() {
     // NODE STATE
@@ -51,8 +58,7 @@ void V3Global::readFiles() {
     V3Parse parser(v3Global.rootp(), &filter, &parseSyms);
     // Read top module
     const V3StringList& vFiles = v3Global.opt.vFiles();
-    for (V3StringList::const_iterator it = vFiles.begin(); it != vFiles.end(); ++it) {
-        string filename = *it;
+    for (const string& filename : vFiles) {
         parser.parseFile(new FileLine(FileLine::commandLineFilename()), filename, false,
                          "Cannot find file containing module: ");
     }
@@ -61,8 +67,7 @@ void V3Global::readFiles() {
     // To be compatible with other simulators,
     // this needs to be done after the top file is read
     const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
-    for (V3StringSet::const_iterator it = libraryFiles.begin(); it != libraryFiles.end(); ++it) {
-        string filename = *it;
+    for (const string& filename : libraryFiles) {
         parser.parseFile(new FileLine(FileLine::commandLineFilename()), filename, true,
                          "Cannot find file containing library module: ");
     }
@@ -79,4 +84,21 @@ void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool 
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename(stagename + ".tree", newNumber), false,
                                    doDump);
     if (v3Global.opt.stats()) V3Stats::statsStage(stagename);
+}
+
+const std::string& V3Global::ptrToId(const void* p) {
+    auto it = m_ptrToId.find(p);
+    if (it == m_ptrToId.end()) {
+        std::ostringstream os;
+        if (p) {
+            os << "(";
+            unsigned id = m_ptrToId.size();
+            do { os << static_cast<char>('A' + id % 26); } while (id /= 26);
+            os << ")";
+        } else {
+            os << "0";
+        }
+        it = m_ptrToId.insert(std::make_pair(p, os.str())).first;
+    }
+    return it->second;
 }

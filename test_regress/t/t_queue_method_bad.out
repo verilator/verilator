@@ -1,0 +1,41 @@
+%Error: t/t_queue_method_bad.v:15:21: 'with' not legal on this method
+                                    : ... In instance t
+   15 |       qv = q.unique with (1);   
+      |                     ^~~~
+%Error: t/t_queue_method_bad.v:16:9: The 1 arguments passed to .reverse method does not match its requiring 0 arguments
+                                   : ... In instance t
+   16 |       q.reverse(1);   
+      |         ^~~~~~~
+%Error: t/t_queue_method_bad.v:17:9: The 1 arguments passed to .shuffle method does not match its requiring 0 arguments
+                                   : ... In instance t
+   17 |       q.shuffle(1);   
+      |         ^~~~~~~
+%Error: t/t_queue_method_bad.v:18:14: 'with' statement is required for .find method
+                                    : ... In instance t
+   18 |       qv = q.find;   
+      |              ^~~~
+%Error: t/t_queue_method_bad.v:19:14: 'with' statement is required for .find_first method
+                                    : ... In instance t
+   19 |       qv = q.find_first;   
+      |              ^~~~~~~~~~
+%Error: t/t_queue_method_bad.v:20:14: 'with' statement is required for .find_last method
+                                    : ... In instance t
+   20 |       qv = q.find_last;   
+      |              ^~~~~~~~~
+%Error: t/t_queue_method_bad.v:21:14: 'with' statement is required for .find_index method
+                                    : ... In instance t
+   21 |       qi = q.find_index;   
+      |              ^~~~~~~~~~
+%Error: t/t_queue_method_bad.v:22:14: 'with' statement is required for .find_first_index method
+                                    : ... In instance t
+   22 |       qi = q.find_first_index;   
+      |              ^~~~~~~~~~~~~~~~
+%Error: t/t_queue_method_bad.v:23:14: 'with' statement is required for .find_last_index method
+                                    : ... In instance t
+   23 |       qi = q.find_last_index;   
+      |              ^~~~~~~~~~~~~~~
+%Error: t/t_queue_method_bad.v:25:19: 'with' not legal on this method
+                                    : ... In instance t
+   25 |       qi = q.size with (1);   
+      |                   ^~~~
+%Error: Exiting due to

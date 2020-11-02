@@ -156,6 +156,8 @@ verilator_coverage - Verilator coverage analyzer
 
     verilator_coverage  -write merged.dat -read <datafiles>...
 
+    verilator_coverage  -write-info merged.info -read <datafiles>...
+
 Verilator_coverage processes Verilator coverage reports.
 
 With --anotate, it reads the specified data file and generates annotated
@@ -224,8 +226,20 @@ Displays program version and exits.
 =item --write I<filename>
 
 Specifies the aggregate coverage results, summed across all the files,
-should be written to the given filename.  This is useful in scripts to
-combine many sequential runs into one master coverage file.
+should be written to the given filename in verilator_coverage data format.
+This is useful in scripts to combine many sequential runs into one master
+coverage file.
+
+=item --write-info I<filename.info>
+
+Specifies the aggregate coverage results, summed across all the files,
+should be written to the given filename in C<lcov> .info format.
+This may be used to use C<lcov> to aggregate or generate reports.
+
+The info format loses data compared to the Verilator coverage data format;
+the info will all forms of coverage converted to line style coverage, and
+if there are multiple coverage points on a single line, the minimum
+coverage across those points will be used to report coverage of the line.
 
 =back
 
@@ -277,7 +291,7 @@ Wilson Snyder <wsnyder@wsnyder.org>
 
 =head1 SEE ALSO
 
-C<verilator>
+C<verilator>, C<lcov>
 
 L<verilator_coverage --help> which is the source for this document.
 

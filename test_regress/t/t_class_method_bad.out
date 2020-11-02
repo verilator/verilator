@@ -1,4 +1,6 @@
-%Error: t/t_class_method_bad.v:11:20: Unsupported: class extends
-   11 | class Cls2 extends Base1;
-      |                    ^~~~~
+%Error: t/t_class_method_bad.v:18:9: Class method 'meth3' not found in class 'Cls2'
+                                   : ... In instance t
+                                   : ... Suggested alternative: 'meth2'
+   18 |       c.meth3();   
+      |         ^~~~~
 %Error: Exiting due to

@@ -940,6 +940,12 @@ endmodule
 
 `line 635 "t/t_preproc.v" 0
 //====================================================================== 
+// Verilog-Perl bug1668 
+ 
+"`NOT_DEFINED_STR"
+
+`line 640 "t/t_preproc.v" 0
+//====================================================================== 
 // IEEE mandated predefines 
   // undefineall should have no effect on these 
 predef 0 0
@@ -961,4 +967,4 @@ predef 2 2
 // After `undefineall above, for testing --dump-defines 
  
 
-`line 657 "t/t_preproc.v" 2
+`line 662 "t/t_preproc.v" 2

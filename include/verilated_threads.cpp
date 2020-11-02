@@ -21,14 +21,14 @@
 
 std::atomic<vluint64_t> VlMTaskVertex::s_yields;
 
-VL_THREAD_LOCAL VlThreadPool::ProfileTrace* VlThreadPool::t_profilep = NULL;
+VL_THREAD_LOCAL VlThreadPool::ProfileTrace* VlThreadPool::t_profilep = nullptr;
 
 //=============================================================================
 // VlMTaskVertex
 
 VlMTaskVertex::VlMTaskVertex(vluint32_t upstreamDepCount)
-    : m_upstreamDepsDone(0)
-    , m_upstreamDepCount(upstreamDepCount) {
+    : m_upstreamDepsDone{0}
+    , m_upstreamDepCount{upstreamDepCount} {
     assert(atomic_is_lock_free(&m_upstreamDepsDone));
 }
 
@@ -36,13 +36,11 @@ VlMTaskVertex::VlMTaskVertex(vluint32_t upstreamDepCount)
 // VlWorkerThread
 
 VlWorkerThread::VlWorkerThread(VlThreadPool* poolp, bool profiling)
-    : m_waiting(false)
-    , m_ready_size(0)
-    , m_poolp(poolp)
-    , m_profiling(profiling)
-    , m_exiting(false)
-    // Must init this last -- after setting up fields that it might read:
-    , m_cthread(startWorker, this) {}
+    : m_waiting{false}
+    , m_poolp{poolp}
+    , m_profiling{profiling}  // Must init this last -- after setting up fields that it might read:
+    , m_exiting{false}
+    , m_cthread{startWorker, this} {}
 
 VlWorkerThread::~VlWorkerThread() {
     m_exiting.store(true, std::memory_order_release);
@@ -55,7 +53,7 @@ void VlWorkerThread::workerLoop() {
     if (VL_UNLIKELY(m_profiling)) m_poolp->setupProfilingClientThread();
 
     ExecRec work;
-    work.m_fnp = NULL;
+    work.m_fnp = nullptr;
 
     while (true) {
         if (VL_LIKELY(!work.m_fnp)) dequeWork(&work);
@@ -65,7 +63,7 @@ void VlWorkerThread::workerLoop() {
 
         if (VL_LIKELY(work.m_fnp)) {
             work.m_fnp(work.m_evenCycle, work.m_sym);
-            work.m_fnp = NULL;
+            work.m_fnp = nullptr;
         }
     }
 
@@ -78,7 +76,7 @@ void VlWorkerThread::startWorker(VlWorkerThread* workerp) { workerp->workerLoop(
 // VlThreadPool
 
 VlThreadPool::VlThreadPool(int nThreads, bool profiling)
-    : m_profiling(profiling) {
+    : m_profiling{profiling} {
     // --threads N passes nThreads=N-1, as the "main" threads counts as 1
     unsigned cpus = std::thread::hardware_concurrency();
     if (cpus < nThreads + 1) {
@@ -110,7 +108,7 @@ VlThreadPool::~VlThreadPool() {
 void VlThreadPool::tearDownProfilingClientThread() {
     assert(t_profilep);
     delete t_profilep;
-    t_profilep = NULL;
+    t_profilep = nullptr;
 }
 
 void VlThreadPool::setupProfilingClientThread() {
@@ -120,28 +118,28 @@ void VlThreadPool::setupProfilingClientThread() {
     // try not to malloc while collecting profiling.
     t_profilep->reserve(4096);
     {
-        VerilatedLockGuard lk(m_mutex);
+        const VerilatedLockGuard lk(m_mutex);
         m_allProfiles.insert(t_profilep);
     }
 }
 
 void VlThreadPool::profileAppendAll(const VlProfileRec& rec) {
-    VerilatedLockGuard lk(m_mutex);
-    for (ProfileSet::iterator it = m_allProfiles.begin(); it != m_allProfiles.end(); ++it) {
+    const VerilatedLockGuard lk(m_mutex);
+    for (const auto& profilep : m_allProfiles) {
         // Every thread's profile trace gets a copy of rec.
-        (*it)->emplace_back(rec);
+        profilep->emplace_back(rec);
     }
 }
 
 void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
-    VerilatedLockGuard lk(m_mutex);
+    const VerilatedLockGuard lk(m_mutex);
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+threads writing to '%s'\n", filenamep););
 
     FILE* fp = fopen(filenamep, "w");
     if (VL_UNLIKELY(!fp)) {
         VL_FATAL_MT(filenamep, 0, "", "+prof+threads+file file not writable");
         // cppcheck-suppress resourceLeak   // bug, doesn't realize fp is nullptr
-        return;
+        return;  // LCOV_EXCL_LINE
     }
 
     // TODO Perhaps merge with verilated_coverage output format, so can
@@ -154,13 +152,12 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
     fprintf(fp, "VLPROF stat yields %" VL_PRI64 "u\n", VlMTaskVertex::yields());
 
     vluint32_t thread_id = 0;
-    for (ProfileSet::const_iterator pit = m_allProfiles.begin(); pit != m_allProfiles.end();
-         ++pit) {
+    for (const auto& pi : m_allProfiles) {
         ++thread_id;
 
         bool printing = false;  // False while in warmup phase
-        for (ProfileTrace::const_iterator eit = (*pit)->begin(); eit != (*pit)->end(); ++eit) {
-            switch (eit->m_type) {
+        for (const auto& ei : *pi) {
+            switch (ei.m_type) {
             case VlProfileRec::TYPE_BARRIER:  //
                 printing = true;
                 break;
@@ -170,9 +167,8 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
                         "VLPROF mtask %d"
                         " start %" VL_PRI64 "u end %" VL_PRI64 "u elapsed %" VL_PRI64 "u"
                         " predict_time %u cpu %u on thread %u\n",
-                        eit->m_mtaskId, eit->m_startTime, eit->m_endTime,
-                        (eit->m_endTime - eit->m_startTime), eit->m_predictTime, eit->m_cpu,
-                        thread_id);
+                        ei.m_mtaskId, ei.m_startTime, ei.m_endTime,
+                        (ei.m_endTime - ei.m_startTime), ei.m_predictTime, ei.m_cpu, thread_id);
                 break;
             default: assert(false); break;  // LCOV_EXCL_LINE
             }

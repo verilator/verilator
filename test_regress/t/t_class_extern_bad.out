@@ -1,0 +1,16 @@
+%Error: t/t_class_extern_bad.v:9:16: Duplicate declaration of task: 'nodef'
+    9 |    extern task nodef();   
+      |                ^~~~~
+        t/t_class_extern_bad.v:8:16: ... Location of original declaration
+    8 |    extern task nodef();
+      |                ^~~~~
+%Error: t/t_class_extern_bad.v:8:16: definition not found for extern 'nodef'
+    8 |    extern task nodef();
+      |                ^~~~~
+%Error: t/t_class_extern_bad.v:9:16: definition not found for extern 'nodef'
+    9 |    extern task nodef();   
+      |                ^~~~~
+%Error: t/t_class_extern_bad.v:12:6: extern not found that declares 'noproto'
+   12 | task Base1::noproto();   
+      |      ^~~~~
+%Error: Exiting due to

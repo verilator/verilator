@@ -11,6 +11,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # include "Vt_dpi_vams__Dpi.h"
 #elif defined(VCS)
@@ -20,23 +21,22 @@
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 #ifdef NEED_EXTERNS
 extern "C" {
-    extern void dpii_call(double in, double* outp);
+extern void dpii_call(double in, double* outp);
 }
 #endif
 
-void dpii_call(double in, double* outp) {
-    *outp = in + 0.1;
-}
+void dpii_call(double in, double* outp) { *outp = in + 0.1; }
 //======================================================================
 
 unsigned int main_time = 0;
 
 double sc_time_stamp() { return main_time; }
 
-VM_PREFIX* topp = NULL;
+VM_PREFIX* topp = nullptr;
 
 int main(int argc, char* argv[]) {
     topp = new VM_PREFIX;

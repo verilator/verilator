@@ -27,7 +27,6 @@
 #include "V3Config.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <map>
 #include <set>
 #include <vector>
@@ -45,20 +44,20 @@ private:
     AstUser2InUse m_inuser2;
 
     // TYPES
-    typedef std::map<std::pair<void*, string>, AstTypedef*> ImplTypedefMap;
+    typedef std::map<const std::pair<void*, string>, AstTypedef*> ImplTypedefMap;
     typedef std::set<FileLine*> FileLineSet;
 
     // STATE
-    AstVar* m_varp;  // Variable we're under
+    AstVar* m_varp = nullptr;  // Variable we're under
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     FileLineSet m_filelines;  // Filelines that have been seen
-    bool m_inAlways;  // Inside an always
-    bool m_inGenerate;  // Inside a generate
-    bool m_needStart;  // Need start marker on lower AstParse
-    AstNodeModule* m_valueModp;  // If set, move AstVar->valuep() initial values to this module
-    AstNodeModule* m_modp;  // Current module
-    AstNodeFTask* m_ftaskp;  // Current task
-    AstNodeDType* m_dtypep;  // Current data type
+    bool m_inAlways = false;  // Inside an always
+    AstNodeModule* m_valueModp
+        = nullptr;  // If set, move AstVar->valuep() initial values to this module
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstNodeFTask* m_ftaskp = nullptr;  // Current task
+    AstNodeDType* m_dtypep = nullptr;  // Current data type
+    VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -105,40 +104,47 @@ private:
     }
 
     // VISITs
-    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
-        V3Config::applyFTask(m_modp, nodep);
-
+    virtual void visit(AstNodeFTask* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
+            V3Config::applyFTask(m_modp, nodep);
             cleanFileline(nodep);
-            m_ftaskp = nodep;
-            iterateChildren(nodep);
-            m_ftaskp = NULL;
+            VL_RESTORER(m_ftaskp);
+            VL_RESTORER(m_lifetime);
+            {
+                m_ftaskp = nodep;
+                m_lifetime = nodep->lifetime();
+                if (m_lifetime.isNone()) {
+                    // Automatic always until we support static
+                    m_lifetime = VLifetime::AUTOMATIC;
+                }
+                iterateChildren(nodep);
+            }
         }
     }
-    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeFTaskRef* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
             UINFO(5, "   " << nodep << endl);
             AstNodeModule* upperValueModp = m_valueModp;
-            m_valueModp = NULL;
+            m_valueModp = nullptr;
             iterateChildren(nodep);
             m_valueModp = upperValueModp;
         }
     }
-    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE { visitIterateNodeDType(nodep); }
-    virtual void visit(AstEnumDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
+    virtual void visit(AstEnumDType* nodep) override {
         if (nodep->name() == "") {
             nodep->name(nameFromTypedef(nodep));  // Might still remain ""
         }
         visitIterateNodeDType(nodep);
     }
-    virtual void visit(AstNodeUOrStructDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeUOrStructDType* nodep) override {
         if (nodep->name() == "") {
             nodep->name(nameFromTypedef(nodep));  // Might still remain ""
         }
         visitIterateNodeDType(nodep);
     }
-    virtual void visit(AstEnumItem* nodep) VL_OVERRIDE {
+    virtual void visit(AstEnumItem* nodep) override {
         // Expand ranges
         cleanFileline(nodep);
         iterateChildren(nodep);
@@ -151,15 +157,16 @@ private:
             int lsb = nodep->rangep()->lsbConst();
             int increment = (msb > lsb) ? -1 : 1;
             int offset_from_init = 0;
-            AstNode* addp = NULL;
+            AstNode* addp = nullptr;
             for (int i = msb; i != (lsb + increment); i += increment, offset_from_init++) {
                 string name = nodep->name() + cvtToStr(i);
-                AstNode* valuep = NULL;
-                if (nodep->valuep())
+                AstNode* valuep = nullptr;
+                if (nodep->valuep()) {
                     valuep = new AstAdd(
                         nodep->fileline(), nodep->valuep()->cloneTree(true),
                         new AstConst(nodep->fileline(), AstConst::Unsized32(), offset_from_init));
-                AstNode* newp = new AstEnumItem(nodep->fileline(), name, NULL, valuep);
+                }
+                AstNode* newp = new AstEnumItem(nodep->fileline(), name, nullptr, valuep);
                 if (addp) {
                     addp = addp->addNextNull(newp);
                 } else {
@@ -171,8 +178,19 @@ private:
         }
     }
 
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {
+    virtual void visit(AstVar* nodep) override {
         cleanFileline(nodep);
+        if (nodep->lifetime().isNone()) {
+            if (nodep->isFuncLocal() && nodep->isIO()) {
+                nodep->lifetime(VLifetime::AUTOMATIC);
+            } else {
+                nodep->lifetime(m_lifetime);
+            }
+        }
+        if (nodep->isParam() && !nodep->valuep()
+            && nodep->fileline()->language() < V3LangCode::L1800_2009) {
+            nodep->v3error("Parameter requires default value, or use IEEE 1800-2009 or later.");
+        }
         if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
             AstNodeDType* dtypep = VN_CAST(nodep->valuep(), NodeDType);
@@ -195,8 +213,8 @@ private:
 
         if (v3Global.opt.publicFlatRW()) {
             switch (nodep->varType()) {
-            case AstVarType::VAR:
-            case AstVarType::PORT:
+            case AstVarType::VAR:  // FALLTHRU
+            case AstVarType::PORT:  // FALLTHRU
             case AstVarType::WIRE: nodep->sigUserRWPublic(true); break;
             default: break;
             }
@@ -212,7 +230,7 @@ private:
         m_varp = nodep;
 
         iterateChildren(nodep);
-        m_varp = NULL;
+        m_varp = nullptr;
         // temporaries under an always aren't expected to be blocking
         if (m_inAlways) nodep->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);
         if (nodep->valuep()) {
@@ -220,27 +238,24 @@ private:
             FileLine* fl = nodep->valuep()->fileline();
             if (nodep->isParam() || (m_ftaskp && nodep->isNonOutput())) {
                 // 1. Parameters and function inputs: It's a default to use if not overridden
-            } else if (VN_IS(m_modp, Class)) {
-                // 2. Class member init become initials (as might call functions)
-                // later move into class constructor
-                nodep->addNextHere(
-                    new AstInitial(fl, new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
-                                                     nodep->valuep()->unlinkFrBack())));
-            } else if (!m_ftaskp && nodep->isNonOutput()) {
-                nodep->v3error(
-                    "Unsupported: Default value on module input: " << nodep->prettyNameQ());
+            } else if (!m_ftaskp && !VN_IS(m_modp, Class) && nodep->isNonOutput()) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Default value on module input: "
+                                                 << nodep->prettyNameQ());
                 nodep->valuep()->unlinkFrBack()->deleteTree();
-            }  // 3. Under modules, it's an initial value to be loaded at time 0 via an AstInitial
+            }  // 2. Under modules/class, it's an initial value to be loaded at time 0 via an
+               // AstInitial
             else if (m_valueModp) {
                 // Making an AstAssign (vs AstAssignW) to a wire is an error, suppress it
                 FileLine* newfl = new FileLine(fl);
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
-                nodep->addNextHere(new AstInitial(
-                    newfl, new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), true),
-                                         nodep->valuep()->unlinkFrBack())));
+                auto* assp
+                    = new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), VAccess::WRITE),
+                                    nodep->valuep()->unlinkFrBack());
+                nodep->addNextHere(new AstInitial(newfl, assp));
             }  // 4. Under blocks, it's an initial value to be under an assign
             else {
-                nodep->addNextHere(new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
+                nodep->addNextHere(new AstAssign(fl,
+                                                 new AstVarRef(fl, nodep->name(), VAccess::WRITE),
                                                  nodep->valuep()->unlinkFrBack()));
             }
         }
@@ -250,23 +265,18 @@ private:
             // What breaks later is we don't have a Scope/Cell representing
             // the interface to attach to
             if (m_modp->level() <= 2) {
-                nodep->v3error("Unsupported: Interfaced port on top level module");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Interfaced port on top level module");
             }
         }
     }
 
-    virtual void visit(AstAttrOf* nodep) VL_OVERRIDE {
+    virtual void visit(AstAttrOf* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
         if (nodep->attrType() == AstAttrType::DT_PUBLIC) {
             AstTypedef* typep = VN_CAST(nodep->backp(), Typedef);
             UASSERT_OBJ(typep, nodep, "Attribute not attached to typedef");
             typep->attrPublic(true);
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == AstAttrType::VAR_CLOCK) {
-            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            nodep->v3warn(DEPRECATED, "sc_clock is deprecated and will be removed");
-            m_varp->attrScClocked(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == AstAttrType::VAR_CLOCK_ENABLE) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
@@ -324,7 +334,7 @@ private:
         }
     }
 
-    virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {
+    virtual void visit(AstAlwaysPublic* nodep) override {
         // AlwaysPublic was attached under a var, but it's a statement that should be
         // at the same level as the var
         cleanFileline(nodep);
@@ -335,18 +345,19 @@ private:
             // lvalue is true, because we know we have a verilator public_flat_rw
             // but someday we may be more general
             bool lvalue = m_varp->isSigUserRWPublic();
-            nodep->addStmtp(new AstVarRef(nodep->fileline(), m_varp, lvalue));
+            nodep->addStmtp(
+                new AstVarRef(nodep->fileline(), m_varp, lvalue ? VAccess::WRITE : VAccess::READ));
         }
     }
 
-    virtual void visit(AstDefImplicitDType* nodep) VL_OVERRIDE {
+    virtual void visit(AstDefImplicitDType* nodep) override {
         cleanFileline(nodep);
         UINFO(8, "   DEFIMPLICIT " << nodep << endl);
         // Must remember what names we've already created, and combine duplicates
         // so that for "var enum {...} a,b" a & b will share a common typedef
         // Unique name space under each containerp() so that an addition of
         // a new type won't change every verilated module.
-        AstTypedef* defp = NULL;
+        AstTypedef* defp = nullptr;
         ImplTypedefMap::iterator it
             = m_implTypedef.find(make_pair(nodep->containerp(), nodep->name()));
         if (it != m_implTypedef.end()) {
@@ -369,7 +380,7 @@ private:
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
             } else {
-                defp = new AstTypedef(nodep->fileline(), nodep->name(), NULL, VFlagChildDType(),
+                defp = new AstTypedef(nodep->fileline(), nodep->name(), nullptr, VFlagChildDType(),
                                       dtypep);
                 m_implTypedef.insert(
                     make_pair(make_pair(nodep->containerp(), defp->name()), defp));
@@ -380,15 +391,54 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    virtual void visit(AstForeach* nodep) VL_OVERRIDE {
+    virtual void visit(AstForeach* nodep) override {
         // FOREACH(array,loopvars,body)
         // -> BEGIN(declare vars, loopa=lowest; WHILE(loopa<=highest, ... body))
         // nodep->dumpTree(cout, "-foreach-old:");
-        AstNode* newp = nodep->bodysp()->unlinkFrBackWithNext();
-        AstNode* arrayp = nodep->arrayp();
-        int dimension = 1;
+        UINFO(9, "FOREACH " << nodep << endl);
+        // nodep->dumpTree(cout, "-foreach-in:");
+        AstNode* newp = nodep->bodysp();
+        if (newp) newp->unlinkFrBackWithNext();
+        // Separate iteration vars from base from variable
+        // Input:
+        //      v--- arrayp
+        //   1. DOT(DOT(first, second), ASTSELLOOPVARS(third, var0..var1))
+        // Separated:
+        //   bracketp = ASTSELLOOPVARS(...)
+        //   arrayp = DOT(DOT(first, second), third)
+        //   firstVarp = var0..var1
+        // Other examples
+        //   2. ASTSELBIT(first, var0))
+        //   3. ASTSELLOOPVARS(first, var0..var1))
+        //   4. DOT(DOT(first, second), ASTSELBIT(third, var0))
+        AstNode* bracketp = nodep->arrayp();
+        AstNode* firstVarsp = nullptr;
+        while (AstDot* dotp = VN_CAST(bracketp, Dot)) { bracketp = dotp->rhsp(); }
+        if (AstSelBit* selp = VN_CAST(bracketp, SelBit)) {
+            firstVarsp = selp->rhsp()->unlinkFrBackWithNext();
+            selp->replaceWith(selp->fromp()->unlinkFrBack());
+            VL_DO_DANGLING(selp->deleteTree(), selp);
+        } else if (AstSelLoopVars* selp = VN_CAST(bracketp, SelLoopVars)) {
+            firstVarsp = selp->elementsp()->unlinkFrBackWithNext();
+            selp->replaceWith(selp->fromp()->unlinkFrBack());
+            VL_DO_DANGLING(selp->deleteTree(), selp);
+        } else {
+            nodep->v3error(
+                "Syntax error; foreach missing bracketed index variable (IEEE 1800-2017 12.7.3)");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        AstNode* arrayp = nodep->arrayp();  // Maybe different node since bracketp looked
+        if (!VN_IS(arrayp, ParseRef) && !VN_IS(arrayp, Dot)) {
+            // Code below needs to use other then attributes to figure out the bounds
+            // Also need to deal with queues, etc
+            arrayp->v3warn(E_UNSUPPORTED, "Unsupported: foreach on non-simple variable reference");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        // Split into for loop
         // Must do innermost (last) variable first
-        AstNode* firstVarsp = nodep->varsp()->unlinkFrBackWithNext();
+        int dimension = 1;
         AstNode* lastVarsp = firstVarsp;
         while (lastVarsp->nextp()) {
             lastVarsp = lastVarsp->nextp();
@@ -400,18 +450,16 @@ private:
             AstNode* varp
                 = new AstVar(fl, AstVarType::BLOCKTEMP, varsp->name(), nodep->findSigned32DType());
             // These will be the left and right dimensions and size of the array:
-            AstNode* leftp = new AstAttrOf(fl, AstAttrType::DIM_LEFT,
-                                           new AstVarRef(fl, arrayp->name(), false),
+            AstNode* leftp = new AstAttrOf(fl, AstAttrType::DIM_LEFT, arrayp->cloneTree(false),
                                            new AstConst(fl, dimension));
-            AstNode* rightp = new AstAttrOf(fl, AstAttrType::DIM_RIGHT,
-                                            new AstVarRef(fl, arrayp->name(), false),
+            AstNode* rightp = new AstAttrOf(fl, AstAttrType::DIM_RIGHT, arrayp->cloneTree(false),
                                             new AstConst(fl, dimension));
-            AstNode* sizep = new AstAttrOf(fl, AstAttrType::DIM_SIZE,
-                                           new AstVarRef(fl, arrayp->name(), false),
+            AstNode* sizep = new AstAttrOf(fl, AstAttrType::DIM_SIZE, arrayp->cloneTree(false),
                                            new AstConst(fl, dimension));
             AstNode* stmtsp = varp;
             // Assign left-dimension into the loop var:
-            stmtsp->addNext(new AstAssign(fl, new AstVarRef(fl, varp->name(), true), leftp));
+            stmtsp->addNext(
+                new AstAssign(fl, new AstVarRef(fl, varp->name(), VAccess::WRITE), leftp));
             // This will turn into a constant bool for static arrays
             AstNode* notemptyp = new AstGt(fl, sizep, new AstConst(fl, 0));
             // This will turn into a bool constant, indicating whether
@@ -420,14 +468,15 @@ private:
             AstNode* comparep = new AstCond(
                 fl, countupp->cloneTree(true),
                 // Left increments up to right
-                new AstLte(fl, new AstVarRef(fl, varp->name(), false), rightp->cloneTree(true)),
+                new AstLte(fl, new AstVarRef(fl, varp->name(), VAccess::READ),
+                           rightp->cloneTree(true)),
                 // Left decrements down to right
-                new AstGte(fl, new AstVarRef(fl, varp->name(), false), rightp));
+                new AstGte(fl, new AstVarRef(fl, varp->name(), VAccess::READ), rightp));
             // This will reduce to comparep for static arrays
             AstNode* condp = new AstAnd(fl, notemptyp, comparep);
             AstNode* incp = new AstAssign(
-                fl, new AstVarRef(fl, varp->name(), true),
-                new AstAdd(fl, new AstVarRef(fl, varp->name(), false),
+                fl, new AstVarRef(fl, varp->name(), VAccess::WRITE),
+                new AstAdd(fl, new AstVarRef(fl, varp->name(), VAccess::READ),
                            new AstCond(fl, countupp, new AstConst(fl, 1), new AstConst(fl, -1))));
             stmtsp->addNext(new AstWhile(fl, condp, newp, incp));
             newp = new AstBegin(nodep->fileline(), "", stmtsp, false, true);
@@ -439,19 +488,23 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         V3Config::applyModule(nodep);
 
-        AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_lifetime);
         {
             // Module: Create sim table for entire module and iterate
             cleanFileline(nodep);
             //
             m_modp = nodep;
             m_valueModp = nodep;
+            m_lifetime = nodep->lifetime();
+            if (m_lifetime.isNone()) {
+                m_lifetime = VN_IS(nodep, Class) ? VLifetime::AUTOMATIC : VLifetime::STATIC;
+            }
             iterateChildren(nodep);
         }
-        m_modp = origModp;
         m_valueModp = nodep;
     }
     void visitIterateNoValueMod(AstNode* nodep) {
@@ -459,20 +512,20 @@ private:
         cleanFileline(nodep);
         //
         AstNodeModule* upperValueModp = m_valueModp;
-        m_valueModp = NULL;
+        m_valueModp = nullptr;
         iterateChildren(nodep);
         m_valueModp = upperValueModp;
     }
-    virtual void visit(AstNodeProcedure* nodep) VL_OVERRIDE { visitIterateNoValueMod(nodep); }
-    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeProcedure* nodep) override { visitIterateNoValueMod(nodep); }
+    virtual void visit(AstAlways* nodep) override {
         m_inAlways = true;
         visitIterateNoValueMod(nodep);
         m_inAlways = false;
     }
-    virtual void visit(AstCover* nodep) VL_OVERRIDE { visitIterateNoValueMod(nodep); }
-    virtual void visit(AstRestrict* nodep) VL_OVERRIDE { visitIterateNoValueMod(nodep); }
+    virtual void visit(AstCover* nodep) override { visitIterateNoValueMod(nodep); }
+    virtual void visit(AstRestrict* nodep) override { visitIterateNoValueMod(nodep); }
 
-    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
+    virtual void visit(AstBegin* nodep) override {
         V3Config::applyCoverageBlock(m_modp, nodep);
         cleanFileline(nodep);
         AstNode* backp = nodep->backp();
@@ -490,35 +543,61 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstCase* nodep) VL_OVERRIDE {
+    virtual void visit(AstCase* nodep) override {
         V3Config::applyCase(nodep);
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstPrintTimeScale* nodep) VL_OVERRIDE {
+    virtual void visit(AstPrintTimeScale* nodep) override {
         // Inlining may change hierarchy, so just save timescale where needed
+        cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->name(m_modp->name());
         nodep->timeunit(m_modp->timeunit());
     }
-    virtual void visit(AstSFormatF* nodep) VL_OVERRIDE {
+    virtual void visit(AstSFormatF* nodep) override {
+        cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
-    virtual void visit(AstTime* nodep) VL_OVERRIDE {
+    virtual void visit(AstTime* nodep) override {
+        cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
-    virtual void visit(AstTimeD* nodep) VL_OVERRIDE {
+    virtual void visit(AstTimeD* nodep) override {
+        cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
-    virtual void visit(AstTimeImport* nodep) VL_OVERRIDE {
+    virtual void visit(AstTimeImport* nodep) override {
+        cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
+    }
+    virtual void visit(AstTimingControl* nodep) override {
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+        AstAlways* alwaysp = VN_CAST(nodep->backp(), Always);
+        if (alwaysp && alwaysp->keyword() == VAlwaysKwd::ALWAYS_COMB) {
+            alwaysp->v3error("Timing control statements not legal under always_comb "
+                             "(IEEE 1800-2017 9.2.2.2.2)\n"
+                             << nodep->warnMore() << "... Suggest use a normal 'always'");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (alwaysp && !alwaysp->sensesp()) {
+            // Verilator is still ony supporting SenTrees under an always,
+            // so allow the parser to handle everything and shim to
+            // historical AST here
+            if (AstSenTree* sensesp = nodep->sensesp()) {
+                sensesp->unlinkFrBackWithNext();
+                alwaysp->sensesp(sensesp);
+            }
+            if (nodep->stmtsp()) alwaysp->addStmtp(nodep->stmtsp()->unlinkFrBackWithNext());
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        }
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         // Default: Just iterate
         cleanFileline(nodep);
         iterateChildren(nodep);
@@ -526,18 +605,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LinkParseVisitor(AstNetlist* rootp) {
-        m_varp = NULL;
-        m_modp = NULL;
-        m_ftaskp = NULL;
-        m_dtypep = NULL;
-        m_inAlways = false;
-        m_inGenerate = false;
-        m_needStart = false;
-        m_valueModp = NULL;
-        iterate(rootp);
-    }
-    virtual ~LinkParseVisitor() {}
+    explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
+    virtual ~LinkParseVisitor() override {}
 };
 
 //######################################################################

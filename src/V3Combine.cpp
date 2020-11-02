@@ -40,13 +40,14 @@
 #include "V3Ast.h"
 
 #include <algorithm>
-#include <cstdarg>
 #include <map>
 #include <vector>
 
 //######################################################################
 
-#define COMBINE_MIN_STATEMENTS 50  // Min # of statements to be worth making a function
+#ifdef VL_COMBINE_STATEMENTS
+constexpr int COMBINE_MIN_STATEMENTS = 50;  // Min # of statements to be worth making a function
+#endif
 
 //######################################################################
 
@@ -55,17 +56,8 @@ protected:
     // STATE
 
     // METHODS
-    virtual ~CombBaseVisitor() {}
+    virtual ~CombBaseVisitor() override {}
     VL_DEBUG_FUNC;  // Declare debug()
-
-    //***** optimization levels
-    static bool emptyFunctionDeletion() { return true; }
-    static bool duplicateFunctionCombine() { return true; }
-    // Note this is disabled, it still needed work
-    // Also repair it for DPI functions; when make __common need to ensure proper
-    // flags get inherited from the old to new AstCFunc, and that AstText doesn't
-    // get split between functions causing the text to have a dangling reference.
-    bool statementCombine() { return false; }  // duplicateFunctionCombine();
 };
 
 //######################################################################
@@ -118,8 +110,8 @@ public:
     void deleteCall(AstCCall* nodep) {
         std::pair<CallMmap::iterator, CallMmap::iterator> eqrange
             = m_callMmap.equal_range(nodep->funcp());
-        for (CallMmap::iterator nextit = eqrange.first; nextit != eqrange.second;) {
-            CallMmap::iterator eqit = nextit++;
+        for (auto nextit = eqrange.first; nextit != eqrange.second;) {
+            const auto eqit = nextit++;
             AstCCall* callp = eqit->second;
             if (callp == nodep) {
                 m_callMmap.erase(eqit);
@@ -131,16 +123,16 @@ public:
 
 private:
     // VISITORS
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE { addCall(nodep); }
+    virtual void visit(AstCCall* nodep) override { addCall(nodep); }
     // Speed things up
-    virtual void visit(AstNodeAssign*) VL_OVERRIDE {}
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeAssign*) override {}
+    virtual void visit(AstNodeMath*) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     CombCallVisitor() {}
-    virtual ~CombCallVisitor() {}
+    virtual ~CombCallVisitor() override {}
     void main(AstNetlist* nodep) { iterate(nodep); }
 };
 
@@ -153,7 +145,7 @@ private:
     // OUTPUT:
     //  AstNode::user3()        -> bool. True to indicate duplicated
     // VISITORS
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode* nodep) override {
         nodep->user3(true);
         iterateChildren(nodep);
     }
@@ -161,7 +153,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit CombMarkVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~CombMarkVisitor() {}
+    virtual ~CombMarkVisitor() override {}
 };
 
 //######################################################################
@@ -181,16 +173,17 @@ private:
     // AstUser4InUse     part of V3Hashed
 
     // STATE
-    typedef enum { STATE_IDLE, STATE_HASH, STATE_DUP } CombineState;
+    typedef enum : uint8_t { STATE_IDLE, STATE_HASH, STATE_DUP } CombineState;
     VDouble0 m_statCombs;  // Statistic tracking
-    CombineState m_state;  // Major state
-    AstNodeModule* m_modp;  // Current module
-    AstCFunc* m_funcp;  // Current function
-    V3Hash m_lowerHash;  // Hash of the statement we're building
+    CombineState m_state = STATE_IDLE;  // Major state
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstCFunc* m_cfuncp = nullptr;  // Current function
     CombCallVisitor m_call;  // Tracking of function call users
-    int m_modNFuncs;  // Number of functions made
-    AstNode* m_walkLast1p;  // Final node that is the same in duplicate list
-    AstNode* m_walkLast2p;  // Final node that is the same in duplicate list
+    int m_modNFuncs = 0;  // Number of functions made
+#ifdef VL_COMBINE_STATEMENTS
+    AstNode* m_walkLast1p = nullptr;  // Final node that is the same in duplicate list
+#endif
+    AstNode* m_walkLast2p = nullptr;  // Final node that is the same in duplicate list
     V3Hashed m_hashed;  // Hash for every node in module
 
     // METHODS
@@ -199,15 +192,16 @@ private:
         m_hashed.hashAndInsert(nodep);
         // UINFO(9, "  stmthash " << hex << nodep->user4() << "  " << nodep << endl);
     }
+#ifdef VL_COMBINE_STATEMENTS
     void hashFunctions(AstCFunc* nodep) {
         // Compute hash of all statement trees in the function
-        CombineState oldState = m_state;
+        VL_RESTORER(m_state);
         {
             m_state = STATE_HASH;
             iterate(nodep);
         }
-        m_state = oldState;
     }
+#endif
     void walkEmptyFuncs() {
         for (V3Hashed::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
             AstNode* node1p = it->second;
@@ -217,7 +211,7 @@ private:
                                            << oldfuncp << endl);
                 // Mark user3p on entire old tree, so we don't process it more
                 CombMarkVisitor visitor(oldfuncp);
-                m_call.replaceFunc(oldfuncp, NULL);
+                m_call.replaceFunc(oldfuncp, nullptr);
                 oldfuncp->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(oldfuncp), oldfuncp);
             }
@@ -255,11 +249,13 @@ private:
         oldfuncp->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(oldfuncp), oldfuncp);
     }
+
+#ifdef VL_COMBINE_STATEMENTS
     void replaceOnlyCallFunc(AstCCall* nodep) {
         if (AstCFunc* oldfuncp = VN_CAST(nodep->backp(), CFunc)) {
             // oldfuncp->dumpTree(cout, "MAYDEL: ");
-            if (nodep->nextp() == NULL && oldfuncp->initsp() == NULL && oldfuncp->stmtsp() == nodep
-                && oldfuncp->finalsp() == NULL) {
+            if (nodep->nextp() == nullptr && oldfuncp->initsp() == nullptr
+                && oldfuncp->stmtsp() == nodep && oldfuncp->finalsp() == nullptr) {
                 UINFO(9, "     Function only has call " << oldfuncp << endl);
                 m_call.deleteCall(nodep);
                 CombMarkVisitor visitor(oldfuncp);
@@ -273,9 +269,9 @@ private:
         // UINFO(4,"    STMT " << hashval << " " << node1p << endl);
         //
         int bestDepth = 0;  // Best substitution found in the search
-        AstNode* bestNode2p = NULL;
-        AstNode* bestLast1p = NULL;
-        AstNode* bestLast2p = NULL;
+        AstNode* bestNode2p = nullptr;
+        AstNode* bestLast1p = nullptr;
+        AstNode* bestLast2p = nullptr;
         //
         std::pair<V3Hashed::iterator, V3Hashed::iterator> eqrange
             = m_hashed.mmap().equal_range(hashval);
@@ -286,8 +282,8 @@ private:
             // We need to mark iteration to prevent matching code inside
             // code (abab matching in ababab)
             AstNode::user1ClearTree();  // user1p() used on entire tree
-            m_walkLast1p = NULL;
-            m_walkLast2p = NULL;
+            m_walkLast1p = nullptr;
+            m_walkLast2p = nullptr;
             int depth = walkDupCodeNext(node1p, node2p, 1);
             if (depth > COMBINE_MIN_STATEMENTS && depth > bestDepth) {
                 bestDepth = depth;
@@ -334,12 +330,12 @@ private:
                      AstNode* last2p) {  // Final node in linked list, maybe null if all statements
                                          // to be grabbed
         // Make new function
-        string oldname = m_funcp->name();
+        string oldname = m_cfuncp->name();
         string::size_type pos;
         if ((pos = oldname.find("_common")) != string::npos) oldname.erase(pos);
         if ((pos = oldname.find("__")) != string::npos) oldname.erase(pos);
         AstCFunc* newfuncp = new AstCFunc(node1p->fileline(),
-                                          oldname + "_common" + cvtToStr(++m_modNFuncs), NULL);
+                                          oldname + "_common" + cvtToStr(++m_modNFuncs), nullptr);
         m_modp->addStmtp(newfuncp);
         // Create calls
         AstCCall* call1p = new AstCCall(node1p->fileline(), newfuncp);
@@ -347,7 +343,7 @@ private:
         // Grab statement bodies
         AstNRelinker relink1Handle;
         AstNRelinker relink2Handle;
-        for (AstNode *nextp, *walkp = node1p; 1; walkp = nextp) {
+        for (AstNode *nextp, *walkp = node1p; true; walkp = nextp) {
             nextp = walkp->nextp();
             if (walkp == node1p) {
                 walkp->unlinkFrBack(&relink1Handle);
@@ -357,7 +353,7 @@ private:
             }
             if (walkp == last1p) break;
         }
-        for (AstNode *nextp, *walkp = node2p; 1; walkp = nextp) {
+        for (AstNode *nextp, *walkp = node2p; true; walkp = nextp) {
             nextp = walkp->nextp();
             if (walkp == node2p) {
                 walkp->unlinkFrBack(&relink2Handle);
@@ -385,9 +381,10 @@ private:
         VL_DO_DANGLING(replaceOnlyCallFunc(call1p), call1p);
         VL_DO_DANGLING(replaceOnlyCallFunc(call2p), call2p);
     }
+#endif
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
+    virtual void visit(AstNetlist* nodep) override {
         // Track all callers of each function
         m_call.main(nodep);
         //
@@ -396,11 +393,11 @@ private:
         // Required so that a module instantiating another can benefit from collapsing.
         iterateChildrenBackwards(nodep);
     }
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         m_modp = nodep;
         m_modNFuncs = 0;
-        m_walkLast2p = NULL;
+        m_walkLast2p = nullptr;
         m_hashed.clear();
         // Compute hash of all statement trees in the function
         m_state = STATE_HASH;
@@ -408,59 +405,63 @@ private:
         m_state = STATE_IDLE;
         if (debug() >= 9) m_hashed.dumpFilePrefixed("combine");
         // Walk the hashes removing empty functions
-        if (emptyFunctionDeletion()) walkEmptyFuncs();
+        walkEmptyFuncs();
         // Walk the hashes looking for duplicate functions
-        if (duplicateFunctionCombine()) walkDupFuncs();
+        walkDupFuncs();
         // Walk the statements looking for large replicated code sections
-        if (statementCombine()) {
+        // Note this is disabled, it still needed work
+        // Also repair it for DPI functions; when make __common need to ensure proper
+        // flags get inherited from the old to new AstCFunc, and that AstText doesn't
+        // get split between functions causing the text to have a dangling reference.
+#ifdef VL_COMBINE_STATEMENTS
+        {
             m_state = STATE_DUP;
             iterateChildren(nodep);
             m_state = STATE_IDLE;
         }
-        m_modp = NULL;
+#endif
+        m_modp = nullptr;
     }
-    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
-        m_funcp = nodep;
+    virtual void visit(AstCFunc* nodep) override {
+        VL_RESTORER(m_cfuncp);
+        m_cfuncp = nodep;
         if (!nodep->dontCombine()) {
             if (m_state == STATE_HASH) {
                 hashStatement(nodep);  // Hash the entire function - it might be identical
-            } else if (m_state == STATE_DUP) {
+            }
+#ifdef VL_COMBINE_STATEMENTS
+            else if (m_state == STATE_DUP) {
                 iterateChildren(nodep);
             }
+#endif
         }
-        m_funcp = NULL;
     }
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
             return;
         }
-        if (m_state == STATE_HASH && m_funcp) {
+        if (m_state == STATE_HASH && m_cfuncp) {
             hashStatement(nodep);
-        } else if (m_state == STATE_DUP && m_funcp) {
+        }
+#ifdef VL_COMBINE_STATEMENTS
+        else if (m_state == STATE_DUP && m_cfuncp) {
             walkDupCodeStart(nodep);
         }
+#endif
     }
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar*) VL_OVERRIDE {}
-    virtual void visit(AstTraceDecl*) VL_OVERRIDE {}
-    virtual void visit(AstTraceInc*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstVar*) override {}
+    virtual void visit(AstTraceDecl*) override {}
+    virtual void visit(AstTraceInc*) override {}
+    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit CombineVisitor(AstNetlist* nodep) {
-        m_state = STATE_IDLE;
-        m_modp = NULL;
-        m_funcp = NULL;
-        m_modNFuncs = 0;
-        m_walkLast1p = NULL;
-        m_walkLast2p = NULL;
-        iterate(nodep);
-    }
-    virtual ~CombineVisitor() {  //
+    explicit CombineVisitor(AstNetlist* nodep) { iterate(nodep); }
+    virtual ~CombineVisitor() override {  //
         V3Stats::addStat("Optimizations, Combined CFuncs", m_statCombs);
     }
 };

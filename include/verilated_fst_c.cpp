@@ -36,17 +36,12 @@
 #include "gtkwave/lz4.c"
 
 #include <algorithm>
-#include <cerrno>
-#include <ctime>
-#include <fcntl.h>
 #include <iterator>
 #include <sstream>
-#include <sys/stat.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>
 #else
-# include <stdint.h>
 # include <unistd.h>
 #endif
 
@@ -63,14 +58,12 @@
 // VerilatedFst
 
 VerilatedFst::VerilatedFst(void* fst)
-    : m_fst(fst)
-    , m_symbolp(NULL)
-    , m_strbuf(NULL) {}
+    : m_fst{fst} {}
 
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);
-    if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = NULL);
-    if (m_strbuf) VL_DO_CLEAR(delete[] m_strbuf, m_strbuf = NULL);
+    if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = nullptr);
+    if (m_strbuf) VL_DO_CLEAR(delete[] m_strbuf, m_strbuf = nullptr);
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
@@ -87,7 +80,7 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     VerilatedTrace<VerilatedFst>::traceInit();
 
     // Clear the scope stack
-    std::list<std::string>::iterator it = m_curScope.begin();
+    auto it = m_curScope.begin();
     while (it != m_curScope.end()) {
         fstWriterSetUpscope(m_fst);
         it = m_curScope.erase(it);
@@ -96,10 +89,7 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     // convert m_code2symbol into an array for fast lookup
     if (!m_symbolp) {
         m_symbolp = new fstHandle[nextCode()];
-        for (Code2SymbolType::iterator it = m_code2symbol.begin(); it != m_code2symbol.end();
-             ++it) {
-            m_symbolp[it->first] = it->second;
-        }
+        for (const auto& i : m_code2symbol) m_symbolp[i.first] = i.second;
     }
     m_code2symbol.clear();
 
@@ -111,7 +101,7 @@ void VerilatedFst::close() {
     m_assertOne.check();
     VerilatedTrace<VerilatedFst>::close();
     fstWriterClose(m_fst);
-    m_fst = NULL;
+    m_fst = nullptr;
 }
 
 void VerilatedFst::flush() {
@@ -138,18 +128,17 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
     VerilatedTrace<VerilatedFst>::declCode(code, bits, false);
 
-    std::pair<Code2SymbolType::iterator, bool> p
-        = m_code2symbol.insert(std::make_pair(code, static_cast<fstHandle>(NULL)));
     std::istringstream nameiss(name);
-    std::istream_iterator<std::string> beg(nameiss), end;
+    std::istream_iterator<std::string> beg(nameiss);
+    std::istream_iterator<std::string> end;
     std::list<std::string> tokens(beg, end);  // Split name
     std::string symbol_name(tokens.back());
     tokens.pop_back();  // Remove symbol name from hierarchy
     tokens.insert(tokens.begin(), moduleName());  // Add current module to the hierarchy
 
     // Find point where current and new scope diverge
-    std::list<std::string>::iterator cur_it = m_curScope.begin();
-    std::list<std::string>::iterator new_it = tokens.begin();
+    auto cur_it = m_curScope.begin();
+    auto new_it = tokens.begin();
     while (cur_it != m_curScope.end() && new_it != tokens.end()) {
         if (*cur_it != *new_it) break;
         ++cur_it;
@@ -164,7 +153,7 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
     // Follow the hierarchy of the new variable from the common scope point
     while (new_it != tokens.end()) {
-        fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), NULL);
+        fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), nullptr);
         m_curScope.push_back(*new_it);
         new_it = tokens.erase(new_it);
     }
@@ -178,11 +167,13 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
         fstEnumHandle enumNum = m_local2fstdtype[dtypenum];
         fstWriterEmitEnumTableRef(m_fst, enumNum);
     }
-    if (p.second) {  // New
-        p.first->second = fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), 0);
-        assert(p.first->second);
+
+    const auto it = vlstd::as_const(m_code2symbol).find(code);
+    if (it == m_code2symbol.end()) {  // New
+        m_code2symbol[code]
+            = fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), 0);
     } else {  // Alias
-        fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), p.first->second);
+        fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), it->second);
     }
 }
 
@@ -201,10 +192,6 @@ void VerilatedFst::declQuad(vluint32_t code, const char* name, int dtypenum, fst
 void VerilatedFst::declArray(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                              fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
-}
-void VerilatedFst::declFloat(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                             fstVarType vartype, bool array, int arraynum) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 31, 0);
 }
 void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                               fstVarType vartype, bool array, int arraynum) {
@@ -262,11 +249,6 @@ void VerilatedFst::emitWData(vluint32_t code, const WData* newvalp, int bits) {
         wp += VL_EDATASIZE;
     }
     fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbuf);
-}
-
-VL_ATTR_ALWINLINE
-void VerilatedFst::emitFloat(vluint32_t code, float newval) {
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
 }
 
 VL_ATTR_ALWINLINE

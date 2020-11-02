@@ -25,7 +25,7 @@
 
 //============================================================================
 
-enum VLinkDotStep { LDS_PRIMARY, LDS_PARAMED, LDS_ARRAYED, LDS_SCOPED };
+enum VLinkDotStep : uint8_t { LDS_PRIMARY, LDS_PARAMED, LDS_ARRAYED, LDS_SCOPED };
 
 class V3LinkDot {
 private:

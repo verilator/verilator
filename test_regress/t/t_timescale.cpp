@@ -11,14 +11,13 @@ unsigned long long main_time = 0;
 double sc_time_stamp() { return (double)main_time; }
 
 #include <iostream>
-using namespace std;
 
 #define FILENM "t_timescale.cpp"
 
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
-        cout << dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
-             << "   EXP = " << (exp) << endl; \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
+                  << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 

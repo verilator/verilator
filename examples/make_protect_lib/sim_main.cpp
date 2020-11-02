@@ -20,7 +20,7 @@ vluint64_t main_time = 0;
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    if (0 && argc && argv && env) {}
+    if (false && argc && argv && env) {}
 
     Verilated::debug(0);
     Verilated::randReset(2);
@@ -31,7 +31,7 @@ int main(int argc, char** argv, char** env) {
 
 #if VM_TRACE
     // When tracing, the contents of the secret module will not be seen
-    VerilatedVcdC* tfp = NULL;
+    VerilatedVcdC* tfp = nullptr;
     const char* flag = Verilated::commandArgsPlusMatch("trace");
     if (flag && 0 == strcmp(flag, "+trace")) {
         Verilated::traceEverOn(true);
@@ -62,13 +62,13 @@ int main(int argc, char** argv, char** env) {
 #if VM_TRACE
     if (tfp) {
         tfp->close();
-        tfp = NULL;
+        tfp = nullptr;
     }
 #endif
 
     // Destroy model
     delete top;
-    top = NULL;
+    top = nullptr;
 
     // Fin
     exit(0);

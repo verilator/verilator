@@ -1,0 +1,4 @@
+%Error: t/t_foreach_bad.v:14:7: Syntax error; foreach missing bracketed index variable (IEEE 1800-2017 12.7.3)
+   14 |       foreach (array);   
+      |       ^~~~~~~
+%Error: Exiting due to

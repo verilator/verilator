@@ -34,6 +34,7 @@ foreach my $file (sort keys %files) {
         my $eol_ws_exempt = ($file =~ /(\.txt|\.html)$/
                              || $file =~ m!^README$!
                              || $file =~ m!/gtkwave/!);
+        next if $eol_ws_exempt;
         if ($ENV{HARNESS_UPDATE_GOLDEN}) {
             my $changes = undef;
             $changes = 1 if ($contents =~ s/[ \t]+\n/\n/g);
@@ -80,8 +81,8 @@ ok(1);
 
 sub get_manifest_files {
     my $root = shift;
-    `cd $root && make dist-file-list`;
-    my $manifest_files = `cd $root && make dist-file-list`;
+    `cd $root && $ENV{MAKE} dist-file-list`;
+    my $manifest_files = `cd $root && $ENV{MAKE} dist-file-list`;
     $manifest_files =~ s!.*begin-dist-file-list:!!sg;
     $manifest_files =~ s!end-dist-file-list:.*$!!sg;
     print "MF $manifest_files\n" if $Self->{verbose};

@@ -112,7 +112,7 @@ public:
     // there's not much more gain in having a version for each number of args.
 #define K(n) const char* key##n
 #define A(n) const char *key##n, const char *valp##n  // Argument list
-#define D(n) const char *key##n = NULL, const char *valp##n = NULL  // Argument list
+#define D(n) const char *key##n = nullptr, const char *valp##n = nullptr  // Argument list
     static void _insertp(D(0), D(1), D(2), D(3), D(4), D(5), D(6), D(7), D(8), D(9));
     static void _insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9), A(10), D(11),
                          D(12), D(13), D(14), D(15), D(16), D(17), D(18), D(19));
@@ -121,7 +121,7 @@ public:
                          D(22), D(23), D(24), D(25), D(26), D(27), D(28), D(29));
     // Backward compatibility for Verilator
     static void _insertp(A(0), A(1), K(2), int val2, K(3), int val3, K(4), const std::string& val4,
-                         A(5), A(6));
+                         A(5), A(6), A(7));
 
 #undef K
 #undef A

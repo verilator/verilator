@@ -83,8 +83,8 @@ ok(1);
 
 sub get_manifest_files {
     my $root = shift;
-    `cd $root && make dist-file-list`;
-    my $manifest_files = `cd $root && make dist-file-list`;
+    `cd $root && $ENV{MAKE} dist-file-list`;
+    my $manifest_files = `cd $root && $ENV{MAKE} dist-file-list`;
     $manifest_files =~ s!.*begin-dist-file-list:!!sg;
     $manifest_files =~ s!end-dist-file-list:.*$!!sg;
     print "MF $manifest_files\n" if $Self->{verbose};

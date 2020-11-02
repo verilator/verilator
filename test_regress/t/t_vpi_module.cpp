@@ -30,7 +30,6 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-using namespace std;
 
 #include "TestSimulator.h"
 #include "TestVpi.h"
@@ -118,8 +117,7 @@ static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*
 void vpi_compat_bootstrap(void) {
     p_vpi_systf_data systf_data_p;
     systf_data_p = &(vpi_systf_data[0]);
-    while (systf_data_p->type != 0)
-        vpi_register_systf(systf_data_p++);
+    while (systf_data_p->type != 0) vpi_register_systf(systf_data_p++);
 }
 
 // icarus entry

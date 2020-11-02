@@ -29,6 +29,9 @@ module sub;
    assign mixed[2] = 0;
    assign mixed[0] = 0;
 
+   wire [2:0] cmdln_off;  // Suppressed by command line
+   assign cmdln_off = 0;
+
    localparam THREE = 3;
 
    initial begin

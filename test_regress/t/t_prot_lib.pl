@@ -35,11 +35,13 @@ while (1) {
                 $secret_dir,
                 "--protect-lib",
                 $secret_prefix,
-                "t/t_prot_lib_secret.v"]);
+                "t/t_prot_lib_secret.v"],
+        verilator_run => 1,
+        );
     last if $Self->{errors};
 
     run(logfile => "$secret_dir/secret_gcc.log",
-        cmd=>["make",
+        cmd=>[$ENV{MAKE},
               "-C",
               $secret_dir,
               "-f",
@@ -49,7 +51,7 @@ while (1) {
     compile(
         verilator_flags2 => ["$secret_dir/secret.sv",
                              "-LDFLAGS",
-                             "'-L$secret_prefix -lsecret -static'"],
+                             "$secret_prefix/libsecret.a"],
         xsim_flags2 => ["$secret_dir/secret.sv"],
         );
 
