@@ -44,6 +44,17 @@ inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\
 extern std::string VL_TO_STRING_W(int words, WDataInP obj);
 
 //===================================================================
+// Shuffle RNG
+
+class VlURNG {
+public:
+    typedef size_t result_type;
+    static size_t min() { return 0; }
+    static size_t max() { return 1ULL << 31; }
+    size_t operator()() { return VL_MASK_I(31) & VL_RANDOM_I(32); }
+};
+
+//===================================================================
 // Readmem/Writemem operation classes
 
 class VlReadMem {
@@ -246,10 +257,7 @@ public:
                   [=](const T_Value& a, const T_Value& b) { return with_func(a) < with_func(b); });
     }
     void reverse() { std::reverse(m_deque.begin(), m_deque.end()); }
-    void shuffle() {
-        std::shuffle(m_deque.begin(), m_deque.end(),
-                     [=](int) { return VL_RANDOM_I(32) % m_deque.size(); });
-    }
+    void shuffle() { std::shuffle(m_deque.begin(), m_deque.end(), VlURNG()); }
     VlQueue unique() const {
         VlQueue out;
         std::set<T_Value> saw;

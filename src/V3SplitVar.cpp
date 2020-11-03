@@ -1245,7 +1245,7 @@ public:
         return reason;
     }
     VL_DEBUG_FUNC;  // Declare debug()
-    };
+};
 
 const char* SplitVarImpl::cannotSplitPackedVarReason(const AstVar* varp) {
     return SplitPackedVarVisitor::cannotSplitReason(varp, true);
