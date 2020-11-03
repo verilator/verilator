@@ -1913,7 +1913,7 @@ void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
             // Issue 2622.
             const bool beStatic = name.size() >= suffix.size()
                                   && name.substr(name.size() - suffix.size()) == suffix;
-            if (beStatic) { puts("static VL_THREAD_LOCAL "); }
+            if (beStatic) puts("static VL_THREAD_LOCAL ");
         }
         puts(nodep->vlArgType(true, false, false, prefixIfImp));
         puts(";\n");
