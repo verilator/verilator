@@ -40,6 +40,7 @@ public:
     static string assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
                                       const string& toSuffix, const string& frPrefix = "");
     static bool dpiToInternalFrStmt(AstVar* portp, const string& frName, string& frstmt);
+    static const char* dpiTemporaryVarSuffix();
 };
 
 #endif  // Guard
