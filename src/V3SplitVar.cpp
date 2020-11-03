@@ -1211,10 +1211,9 @@ public:
         , m_numSplit{0} {
         // If you want ignore refs and walk the tne entire AST,
         // just call iterateChildren(m_modp) and split() for each module
-        for (SplitVarRefsMap::iterator it = refs.begin(), it_end = refs.end(); it != it_end;
-             ++it) {
-            m_modp = it->first;
-            it->second.visit(this);
+        for (auto& i : refs) {
+            m_modp = i.first;
+            i.second.visit(this);
             split();
             m_modp = nullptr;
         }
@@ -1246,7 +1245,7 @@ public:
         return reason;
     }
     VL_DEBUG_FUNC;  // Declare debug()
-};
+    };
 
 const char* SplitVarImpl::cannotSplitPackedVarReason(const AstVar* varp) {
     return SplitPackedVarVisitor::cannotSplitReason(varp, true);

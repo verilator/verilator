@@ -247,8 +247,8 @@ public:
     }
     void reverse() { std::reverse(m_deque.begin(), m_deque.end()); }
     void shuffle() {
-        std::random_shuffle(m_deque.begin(), m_deque.end(),
-                            [=](int) { return VL_RANDOM_I(32) % m_deque.size(); });
+        std::shuffle(m_deque.begin(), m_deque.end(),
+                     [=](int) { return VL_RANDOM_I(32) % m_deque.size(); });
     }
     VlQueue unique() const {
         VlQueue out;
