@@ -49,8 +49,8 @@ extern std::string VL_TO_STRING_W(int words, WDataInP obj);
 class VlURNG {
 public:
     typedef size_t result_type;
-    static size_t min() { return 0; }
-    static size_t max() { return 1ULL << 31; }
+    static constexpr size_t min() { return 0; }
+    static constexpr size_t max() { return 1ULL << 31; }
     size_t operator()() { return VL_MASK_I(31) & VL_RANDOM_I(32); }
 };
 
