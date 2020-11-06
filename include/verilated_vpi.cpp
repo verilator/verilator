@@ -477,7 +477,8 @@ public:
     static bool callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE {
         VpioCbList& cbObjList = s_s.m_cbObjLists[reason];
         bool called = false;
-        for (auto it = cbObjList.begin(); it != cbObjList.end();) {
+        const auto end = cbObjList.end();  // prevent looping over newly added elements
+        for (auto it = cbObjList.begin(); it != end;) {
             if (VL_UNLIKELY(!*it)) {  // Deleted earlier, cleanup
                 it = cbObjList.erase(it);
                 continue;
@@ -495,7 +496,8 @@ public:
         bool called = false;
         typedef std::set<VerilatedVpioVar*> VpioVarSet;
         VpioVarSet update;  // set of objects to update after callbacks
-        for (auto it = cbObjList.begin(); it != cbObjList.end();) {
+        const auto end = cbObjList.end();  // prevent looping over newly added elements
+        for (auto it = cbObjList.begin(); it != end;) {
             if (VL_UNLIKELY(!*it)) {  // Deleted earlier, cleanup
                 it = cbObjList.erase(it);
                 continue;
