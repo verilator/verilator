@@ -1001,7 +1001,12 @@ class LinkDotFindVisitor : public AstNVisitor {
             }
             // Create symbol table for the task's vars
             string name = string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
-            m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_packagep);
+            auto pkgp = m_packagep;
+            // Set the class as package for static class methods
+            if (nodep->lifetime().isStatic() && VN_IS(m_curSymp->nodep(), Class)) {
+                pkgp = VN_CAST(m_curSymp->nodep(), Class);
+            }
+            m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, pkgp);
             m_curSymp->fallbackp(oldCurSymp);
             // Convert the func's range to the output variable
             // This should probably be done in the Parser instead, as then we could

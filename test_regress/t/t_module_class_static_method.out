@@ -1,5 +1,0 @@
-%Error: t/t_module_class_static_method.v:18:12: Can't find definition of task/function: 'static_task'
-                                              : ... In instance t
-   18 |       Cls::static_task();
-      |            ^~~~~~~~~~~
-%Error: Exiting due to

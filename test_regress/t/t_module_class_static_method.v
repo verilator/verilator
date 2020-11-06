@@ -9,13 +9,15 @@ module t (/*AUTOARG*/);
 
    class Cls;
 
-      static task static_task();
-      endtask
+      static function int static_task();
+         return 42;
+      endfunction
 
    endclass : Cls
 
    initial begin
-      Cls::static_task();
+      if (Cls::static_task() != 42) $stop;
+      $write("*-* All Finished *-*\n");
       $finish;
    end
 
