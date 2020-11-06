@@ -2428,9 +2428,8 @@ private:
             if (cpackagerefp->paramsp()) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
             }
-            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->classOrPackagep(),
-                        m_ds.m_dotp->lhsp(), "Bad package link");
-            nodep->packagep(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->classOrPackagep());
+            UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
+            nodep->packagep(cpackagerefp->classOrPackagep());
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = nullptr;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
