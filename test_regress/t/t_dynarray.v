@@ -126,6 +126,13 @@ module t (/*AUTOARG*/
          `checkh(b[2], 0);
          `checkh(b[3], 0);
 
+         a = new[4] ('{8'd1,8'd2,8'd3,8'd4});
+         `checkh(a.size, 4);
+         `checkh(a[0], 1);
+         `checkh(a[1], 2);
+         `checkh(a[2], 3);
+         `checkh(a[3], 4);
+
          // test wide dynamic array
          p256 = new [11];
          `checkh(p256.size, 11);

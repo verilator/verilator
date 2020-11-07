@@ -3119,8 +3119,7 @@ private:
             iterateCheckSigned32(nodep, "new() size", nodep->sizep(), BOTH);
         }
         if (nodep->rhsp()) {
-            iterateCheckTyped(nodep, "Dynamic array new RHS", nodep->rhsp(), adtypep->subDTypep(),
-                              BOTH);
+            iterateCheckTyped(nodep, "Dynamic array new RHS", nodep->rhsp(), adtypep, BOTH);
         }
     }
 
@@ -5037,7 +5036,7 @@ private:
     void iterateCheckTyped(AstNode* nodep, const char* side, AstNode* underp,
                            AstNodeDType* expDTypep, Stage stage) {
         if (stage & PRELIM) {
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, PRELIM).p());
+            underp = userIterateSubtreeReturnEdits(underp, WidthVP(expDTypep, PRELIM).p());
         }
         if (stage & FINAL) {
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
