@@ -1605,6 +1605,17 @@ private:
     }
     virtual void visit(AstTypedef* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        if (auto* refp = checkRefToTypedefRecurse(nodep, nodep)) {
+            nodep->v3error("Typedef has self-reference: " << nodep->prettyNameQ() << endl
+                                                          << nodep->warnContextPrimary() << endl
+                                                          << refp->warnOther()
+                                                          << "... Location of reference" << endl
+                                                          << refp->warnContextSecondary());
+            // May cause internel error but avoids infinite loop on dump
+            refp->typedefp(nullptr);
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         userIterateChildren(nodep, nullptr);
     }
@@ -5807,6 +5818,20 @@ private:
             return nodep->op2p();
         }
         return nodep;  // By default return this
+    }
+    AstRefDType* checkRefToTypedefRecurse(AstNode* nodep, AstTypedef* typedefp) {
+        // Recurse all children looking for self reference
+        // This avoids iterateEditMoveDTypep going into a hard to resolve loop
+        // Only call once for any given typedef, or will become O(n^2)
+        if (VL_LIKELY(!nodep)) return nullptr;
+        if (auto* refp = VN_CAST(nodep, RefDType)) {
+            if (refp->typedefp() == typedefp) return refp;
+        }
+        if (auto* refp = checkRefToTypedefRecurse(nodep->op1p(), typedefp)) return refp;
+        if (auto* refp = checkRefToTypedefRecurse(nodep->op2p(), typedefp)) return refp;
+        if (auto* refp = checkRefToTypedefRecurse(nodep->op3p(), typedefp)) return refp;
+        if (auto* refp = checkRefToTypedefRecurse(nodep->op4p(), typedefp)) return refp;
+        return nullptr;
     }
 
     //----------------------------------------------------------------------

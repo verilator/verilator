@@ -1,0 +1,8 @@
+%Error: t/t_enum_bad_circdecl.v:11:6: Typedef has self-reference: 'bad_redecl'
+                                    : ... In instance t
+   11 |    } bad_redecl;
+      |      ^~~~~~~~~~
+        t/t_enum_bad_circdecl.v:9:17: ... Location of reference
+    9 |    typedef enum bad_redecl [2:0] {
+      |                 ^~~~~~~~~~
+%Error: Exiting due to
