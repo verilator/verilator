@@ -181,7 +181,7 @@ private:
     virtual void visit(AstVar* nodep) override {
         cleanFileline(nodep);
         if (nodep->lifetime().isNone()) {
-            if (nodep->isFuncLocal() && nodep->isIO()) {
+            if (m_ftaskp) {
                 nodep->lifetime(VLifetime::AUTOMATIC);
             } else {
                 nodep->lifetime(m_lifetime);

@@ -1004,7 +1004,12 @@ class LinkDotFindVisitor : public AstNVisitor {
             }
             // Create symbol table for the task's vars
             string name = string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
-            m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_packagep);
+            auto pkgp = m_packagep;
+            // Set the class as package for static class methods
+            if (nodep->lifetime().isStatic() && VN_IS(m_curSymp->nodep(), Class)) {
+                pkgp = VN_CAST(m_curSymp->nodep(), Class);
+            }
+            m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, pkgp);
             m_curSymp->fallbackp(oldCurSymp);
             // Convert the func's range to the output variable
             // This should probably be done in the Parser instead, as then we could
@@ -2114,12 +2119,7 @@ private:
                             "Bad package link");
                 AstClassOrPackageRef* cpackagerefp
                     = VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
-                packagep = cpackagerefp->packagep();
-                if (!packagep && cpackagerefp->classOrPackagep()) {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: Class '::' references: "
-                                      << AstNode::prettyNameQ(cpackagerefp->name()));
-                }
+                packagep = cpackagerefp->classOrPackagep();
                 UASSERT_OBJ(packagep, m_ds.m_dotp->lhsp(), "Bad package link");
                 m_ds.m_dotSymp = m_statep->getNodeSym(packagep);
                 m_ds.m_dotPos = DP_SCOPE;
@@ -2485,9 +2485,8 @@ private:
             if (cpackagerefp->paramsp()) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
             }
-            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->packagep(),
-                        m_ds.m_dotp->lhsp(), "Bad package link");
-            nodep->packagep(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->packagep());
+            UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
+            nodep->packagep(cpackagerefp->classOrPackagep());
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = nullptr;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
@@ -2694,9 +2693,6 @@ private:
     virtual void visit(AstNodeFTask* nodep) override {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
-        if (nodep->classMethod() && nodep->lifetime().isStatic()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' class method");
-        }
         if (nodep->isExternDef()) {
             if (!m_curSymp->findIdFallback("extern " + nodep->name())) {
                 nodep->v3error("extern not found that declares " + nodep->prettyNameQ());
@@ -2802,7 +2798,7 @@ private:
                 if (cpackagerefp->packagep()) {
                     nodep->packagep(cpackagerefp->packagep());
                 } else {
-                    cpackagep->v3warn(E_UNSUPPORTED, "Unsupported: Class '::' reference");
+                    nodep->packagep(cpackagerefp->classOrPackagep());
                     // if (cpackagerefp->paramsp()) {
                     //    nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
                     // }

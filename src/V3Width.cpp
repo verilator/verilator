@@ -2845,9 +2845,24 @@ private:
         for (AstClass* classp = first_classp; classp;) {
             if (AstNodeFTask* ftaskp = VN_CAST(classp->findMember(nodep->name()), NodeFTask)) {
                 userIterate(ftaskp, nullptr);
-                nodep->taskp(ftaskp);
-                nodep->dtypeFrom(ftaskp);
-                if (VN_IS(ftaskp, Task)) nodep->makeStatement();
+                if (ftaskp->lifetime().isStatic()) {
+                    AstNode* argsp = nullptr;
+                    if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
+                    AstNodeFTaskRef* newp = nullptr;
+                    if (VN_IS(ftaskp, Task)) {
+                        newp = new AstTaskRef(nodep->fileline(), ftaskp->name(), argsp);
+                    } else {
+                        newp = new AstFuncRef(nodep->fileline(), ftaskp->name(), argsp);
+                    }
+                    newp->taskp(ftaskp);
+                    newp->packagep(classp);
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                } else {
+                    nodep->taskp(ftaskp);
+                    nodep->dtypeFrom(ftaskp);
+                    if (VN_IS(ftaskp, Task)) nodep->makeStatement();
+                }
                 return;
             }
             classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr;
