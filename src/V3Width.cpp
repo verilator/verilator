@@ -3294,7 +3294,7 @@ private:
                                              nodep->dtypep()->numeric());
                 }
             }
-            if (newpatp) { VL_DO_DANGLING(pushDeletep(newpatp), newpatp); }
+            if (newpatp) VL_DO_DANGLING(pushDeletep(newpatp), newpatp);
         }
         if (newp) {
             nodep->replaceWith(newp);
@@ -3347,7 +3347,7 @@ private:
                     }
                 }
             }
-            if (newpatp) { VL_DO_DANGLING(pushDeletep(newpatp), newpatp); }
+            if (newpatp) VL_DO_DANGLING(pushDeletep(newpatp), newpatp);
         }
         if (!patmap.empty()) nodep->v3error("Assignment pattern with too many elements");
         if (newp) {
@@ -3444,7 +3444,7 @@ private:
                     }
                 }
             }
-            if (newpatp) { VL_DO_DANGLING(pushDeletep(newpatp), newpatp); }
+            if (newpatp) VL_DO_DANGLING(pushDeletep(newpatp), newpatp);
         }
         if (!patmap.empty()) nodep->v3error("Assignment pattern with too many elements");
         if (newp) {

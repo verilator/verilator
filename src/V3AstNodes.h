@@ -8386,6 +8386,7 @@ public:
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     virtual int instrCount() const override { return widthInstrs() * 2; }
+    virtual void dump(std::ostream& str = std::cout) const override;
     // op1 = expression to assign or another AstPattern (list if replicated)
     AstNode* lhssp() const { return op1p(); }
     AstNode* keyp() const { return op2p(); }  // op2 = assignment key (Const, id Text)

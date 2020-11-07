@@ -1373,6 +1373,10 @@ void AstPackageImport::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " -> " << packagep();
 }
+void AstPatMember::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isDefault()) str << " [DEFAULT]";
+}
 void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
 void AstSel::dump(std::ostream& str) const {
     this->AstNodeTriop::dump(str);
