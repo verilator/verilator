@@ -283,11 +283,8 @@ private:
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
 
         LifeLocation loc(m_execMTaskp, ++m_sequence);
-        if (nodep->access().isWrite()) {
-            m_writes[vscp].insert(loc);
-        } else {
-            m_reads[vscp].insert(loc);
-        }
+        if (nodep->access().isWriteOrRW()) m_writes[vscp].insert(loc);
+        if (nodep->access().isReadOrRW()) m_reads[vscp].insert(loc);
     }
     virtual void visit(AstAssignPre* nodep) override {
         // Do not record varrefs within assign pre.

@@ -220,7 +220,9 @@ private:
         if (nodep->varScopep()->varp()->isSc()) {
             clearSimple("SystemC sig");  // Don't want to eliminate the VL_ASSIGN_SI's
         }
-        if (nodep->access().isWrite()) {
+        if (nodep->access().isRW()) {
+            clearSimple("R/W");
+        } else if (nodep->access().isWriteOrRW()) {
             if (m_lhsVarRef) clearSimple(">1 lhs varRefs");
             m_lhsVarRef = nodep;
         } else {
@@ -457,9 +459,10 @@ private:
             }
             // We use weight of one; if we ref the var more than once, when we simplify,
             // the weight will increase
-            if (nodep->access().isWrite()) {
+            if (nodep->access().isWriteOrRW()) {
                 new V3GraphEdge(&m_graph, m_logicVertexp, vvertexp, 1);
-            } else {
+            }
+            if (nodep->access().isReadOrRW()) {
                 new V3GraphEdge(&m_graph, vvertexp, m_logicVertexp, 1);
             }
         }

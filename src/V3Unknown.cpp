@@ -313,7 +313,7 @@ private:
             AstNode* basefromp = AstArraySel::baseFromp(nodep);
             bool lvalue = false;
             if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
-                lvalue = varrefp->access().isWrite();
+                lvalue = varrefp->access().isWriteOrRW();
             }
             // Find range of dtype we are selecting from
             // Similar code in V3Const::warnSelect
@@ -361,7 +361,7 @@ private:
             AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
             bool lvalue = false;
             if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
-                lvalue = varrefp->access().isWrite();
+                lvalue = varrefp->access().isWriteOrRW();
             } else if (VN_IS(basefromp, Const)) {
                 // If it's a PARAMETER[bit], then basefromp may be a constant instead of a varrefp
             } else {

@@ -898,10 +898,8 @@ public:
         : m_basicp{varp->dtypep()->basicp()} {}
     void append(const PackedVarRefEntry& e, const VAccess& access) {
         UASSERT(!m_dedupDone, "cannot add after dedup()");
-        if (access.isWrite())
-            m_lhs.push_back(e);
-        else
-            m_rhs.push_back(e);
+        if (access.isWriteOrRW()) m_lhs.push_back(e);
+        if (access.isReadOrRW()) m_rhs.push_back(e);
     }
     void dedup() {
         UASSERT(!m_dedupDone, "dedup() called twice");

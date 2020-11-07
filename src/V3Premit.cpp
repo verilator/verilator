@@ -58,7 +58,7 @@ private:
     }
     virtual void visit(AstVarRef* nodep) override {
         // it's LHS var is used so need a deep temporary
-        if (nodep->access().isWrite()) {
+        if (nodep->access().isWriteOrRW()) {
             nodep->varp()->user4(true);
         } else {
             if (nodep->varp()->user4()) {

@@ -1870,13 +1870,13 @@ private:
         //  nodep->varp()->dumpTree(cout, " forvar "); }
         // Note genvar's are also entered as integers
         nodep->dtypeFrom(nodep->varp());
-        if (VN_IS(nodep->backp(), NodeAssign) && nodep->access().isWrite()) {  // On LHS
+        if (VN_IS(nodep->backp(), NodeAssign) && nodep->access().isWriteOrRW()) {  // On LHS
             UASSERT_OBJ(nodep->dtypep(), nodep, "LHS var should be dtype completed");
         }
         // if (debug() >= 9) nodep->dumpTree(cout, "  VRout ");
-        if (nodep->access().isWrite() && nodep->varp()->direction() == VDirection::CONSTREF) {
+        if (nodep->access().isWriteOrRW() && nodep->varp()->direction() == VDirection::CONSTREF) {
             nodep->v3error("Assigning to const ref variable: " << nodep->prettyNameQ());
-        } else if (nodep->access().isWrite() && nodep->varp()->isConst() && !m_paramsOnly
+        } else if (nodep->access().isWriteOrRW() && nodep->varp()->isConst() && !m_paramsOnly
                    && (!m_ftaskp || !m_ftaskp->isConstructor()) && !VN_IS(m_procedurep, Initial)) {
             // Too loose, but need to allow our generated first assignment
             // Move this to a property of the AstInitial block
@@ -2754,7 +2754,8 @@ private:
             }
         } else if (nodep->name() == "pop_front" || nodep->name() == "pop_back") {
             methodOkArguments(nodep, 0, 0);
-            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
+            // Returns element, so method both consumes (reads) and modifies the queue
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READWRITE);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), nullptr);
             newp->dtypeFrom(adtypep->subDTypep());

@@ -125,14 +125,22 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 class VAccess {
 public:
-    enum en : uint8_t { READ, WRITE };
+    enum en : uint8_t {
+        READ,  // Read/Consumed, variable not changed
+        WRITE,  // Written/Updated, variable might be updated, but not consumed
+        //      // so variable might be removable if not consumed elsewhere
+        READWRITE,  // Read/Consumed and written/updated, variable both set and
+        //          // also consumed, cannot remove usage of variable.
+        //          // For non-simple data types only e.g. no tristates/delayed vars.
+        NOCHANGE  // No change to previous state, used only in V3LinkLValue
+    };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"RD", "WR"};
+        static const char* const names[] = {"RD", "WR", "RW", "--"};
         return names[m_e];
     }
     const char* arrow() const {
-        static const char* const names[] = {"[RV] <-", "[LV] =>"};
+        static const char* const names[] = {"[RV] <-", "[LV] =>", "[LV] <=>", "--"};
         return names[m_e];
     }
     inline VAccess()
@@ -143,10 +151,13 @@ public:
     explicit inline VAccess(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
-    VAccess invert() const { return (m_e == WRITE) ? VAccess(READ) : VAccess(WRITE); }
-    bool isReadOnly() const { return m_e == READ; }  // False if/when support READWRITE
-    bool isWrite() const { return m_e == WRITE; }  // Need audit if/when support READWRITE
-    bool isWriteOnly() const { return m_e == WRITE; }  // False if/when support READWRITE
+    VAccess invert() const {
+        return (m_e == READWRITE) ? VAccess(m_e) : (m_e == WRITE ? VAccess(READ) : VAccess(WRITE));
+    }
+    bool isReadOnly() const { return m_e == READ; }  // False with READWRITE
+    bool isReadOrRW() const { return m_e == READ || m_e == READWRITE; }
+    bool isWriteOrRW() const { return m_e == WRITE || m_e == READWRITE; }
+    bool isRW() const { return m_e == READWRITE; }  // False with READWRITE
 };
 inline bool operator==(const VAccess& lhs, const VAccess& rhs) { return lhs.m_e == rhs.m_e; }
 inline bool operator==(const VAccess& lhs, VAccess::en rhs) { return lhs.m_e == rhs; }

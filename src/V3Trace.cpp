@@ -859,7 +859,7 @@ private:
                 || nodep->varp()->isSigPublic()) {  // Or ones user can change
                 new V3GraphEdge(&m_graph, m_alwaysVtxp, traceVtxp, 1);
             }
-        } else if (m_cfuncp && m_finding && nodep->access().isWrite()) {
+        } else if (m_cfuncp && m_finding && nodep->access().isWriteOrRW()) {
             UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
             V3GraphVertex* const funcVtxp = getCFuncVertexp(m_cfuncp);
             V3GraphVertex* const varVtxp = nodep->varScopep()->user1u().toGraphVertex();

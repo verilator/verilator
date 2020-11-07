@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix WIDTH warnings on comparisons with nullptr (#2602). [Rupert Swarbrick]
 
+****  Fix queue poping wrong value when otherwise unused (#2512). [nanduraj1]
+
 
 * Verilator 4.102 2020-10-15
 

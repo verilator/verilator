@@ -168,7 +168,7 @@ private:
             for (V3GraphEdge* edgep = vtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                 TristateVertex* vvertexp = dynamic_cast<TristateVertex*>(edgep->fromp());
                 if (const AstVarRef* refp = VN_CAST(vvertexp->nodep(), VarRef)) {
-                    if (refp->access().isWrite()
+                    if (refp->access().isWriteOrRW()
                         // Doesn't hurt to not check if already set, but by doing so when we
                         // print out the debug messages, we'll see this node at level 0 instead.
                         && !vvertexp->isTristate()) {
@@ -276,10 +276,11 @@ class TristatePinVisitor : public TristateBaseVisitor {
     bool m_lvalue;  // Flip to be an LVALUE
     // VISITORS
     virtual void visit(AstVarRef* nodep) override {
-        if (m_lvalue && !nodep->access().isWrite()) {
+        UASSERT_OBJ(!nodep->access().isRW(), nodep, "Tristate unexpected on R/W access flip");
+        if (m_lvalue && !nodep->access().isWriteOrRW()) {
             UINFO(9, "  Flip-to-LValue " << nodep << endl);
             nodep->access(VAccess::WRITE);
-        } else if (!m_lvalue && nodep->access().isWrite()) {
+        } else if (!m_lvalue && !nodep->access().isReadOnly()) {
             UINFO(9, "  Flip-to-RValue " << nodep << endl);
             nodep->access(VAccess::READ);
             // Mark the ex-output as tristated
@@ -1222,19 +1223,17 @@ class TristateVisitor : public TristateBaseVisitor {
     virtual void visit(AstVarRef* nodep) override {
         UINFO(9, dbgState() << nodep << endl);
         if (m_graphing) {
-            if (nodep->access().isWrite()) {
-                associateLogic(nodep, nodep->varp());
-            } else {
-                associateLogic(nodep->varp(), nodep);
-            }
+            if (nodep->access().isWriteOrRW()) associateLogic(nodep, nodep->varp());
+            if (nodep->access().isReadOrRW()) associateLogic(nodep->varp(), nodep);
         } else {
             if (nodep->user2() & U2_NONGRAPH) return;  // Processed
             nodep->user2(U2_NONGRAPH);
             // Detect all var lhs drivers and adds them to the
             // VarMap so that after the walk through the module we can expand
             // any tristate logic on the driver.
-            if (nodep->access().isWrite() && m_tgraph.isTristate(nodep->varp())) {
+            if (nodep->access().isWriteOrRW() && m_tgraph.isTristate(nodep->varp())) {
                 UINFO(9, "     Ref-to-lvalue " << nodep << endl);
+                UASSERT_OBJ(!nodep->access().isRW(), nodep, "Tristate unexpected on R/W access");
                 m_tgraph.didProcess(nodep);
                 mapInsertLhsVarRef(nodep);
             } else if (nodep->access().isReadOnly()
