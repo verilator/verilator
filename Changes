@@ -4,13 +4,23 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.103 devel
 
-****  Support queue and associative array 'with' statements. (#2616)
+***   Support queue and associative array 'with' statements. (#2616)
 
-****  Support queue slicing (#2326).
+***   Support queue slicing (#2326).
 
-****  Support associative array pattern assignments and defaults.
+***   Support associative array pattern assignments and defaults.
+
+***   Support static methods and typedefs in classes (#2615). [Krzysztof Bieganski]
+
+****  Fix iteration over mutating list bug in VPI (#2588). [Kaleb Barrett]
+
+****  Fix return from callValueCbs (#2589) (#2605). [Marlon James]
 
 ****  Fix WIDTH warnings on comparisons with nullptr (#2602). [Rupert Swarbrick]
+
+****  Fix fault when $fgets, $sscanf, etc used with string (#2604). [Yutetsu TAKATSUKASA]
+
+****  Fix WIFEXITED missing from MinGW/MSYS2 (#2609). [Jean Berniolles]
 
 ****  Fix queue poping wrong value when otherwise unused (#2512). [nanduraj1]
 
