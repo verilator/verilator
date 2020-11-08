@@ -1709,39 +1709,7 @@ private:
                 width = 1;
             }
             userIterateAndNext(nodep->lhsp(), WidthVP(SELF, PRELIM).p());
-            AstBasicDType* underDtp = VN_CAST(nodep->lhsp()->dtypep(), BasicDType);
-            if (!underDtp) underDtp = nodep->lhsp()->dtypep()->basicp();
-            if (!underDtp) {
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: Size-changing cast on non-basic data type");
-                underDtp = VN_CAST(nodep->findLogicBoolDType(), BasicDType);
-            }
-            // A cast propagates its size to the lower expression and is included in the maximum
-            // width, so 23'(1'b1 + 1'b1) uses 23-bit math, but 1'(2'h2 * 2'h1) uses two-bit math.
-            // However the output width is exactly that requested.
-            // So two steps, first do the calculation's width (max of the two widths)
-            {
-                int calcWidth = std::max(width, underDtp->width());
-                AstNodeDType* calcDtp
-                    = (underDtp->isFourstate()
-                           ? nodep->findLogicDType(calcWidth, calcWidth, underDtp->numeric())
-                           : nodep->findBitDType(calcWidth, calcWidth, underDtp->numeric()));
-                nodep->dtypep(calcDtp);
-                // We ignore warnings as that is sort of the point of a cast
-                iterateCheck(nodep, "Cast expr", nodep->lhsp(), CONTEXT, FINAL, calcDtp,
-                             EXTEND_EXP, false);
-            }
-            // if (debug()) nodep->dumpTree(cout, "  CastSizeClc: ");
-            // Next step, make the proper output width
-            {
-                AstNodeDType* outDtp
-                    = (underDtp->isFourstate()
-                           ? nodep->findLogicDType(width, width, underDtp->numeric())
-                           : nodep->findBitDType(width, width, underDtp->numeric()));
-                nodep->dtypep(outDtp);
-                // We ignore warnings as that is sort of the point of a cast
-                widthCheckSized(nodep, "Cast expr", nodep->lhsp(), outDtp, EXTEND_EXP, false);
-            }
+            castSized(nodep, nodep->lhsp(), width);  // lhsp may change
         }
         if (m_vup->final()) {
             // CastSize not needed once sizes determined
@@ -1750,6 +1718,42 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         // if (debug()) nodep->dumpTree(cout, "  CastSizeOut: ");
+    }
+    void castSized(AstNode* nodep, AstNode* underp, int width) {
+        AstBasicDType* underDtp = VN_CAST(underp->dtypep(), BasicDType);
+        if (!underDtp) underDtp = underp->dtypep()->basicp();
+        if (!underDtp) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Size-changing cast on non-basic data type");
+            underDtp = VN_CAST(nodep->findLogicBoolDType(), BasicDType);
+        }
+        UASSERT_OBJ(underp == nodep->op1p(), nodep, "Assuming op1 is cast value");
+        // A cast propagates its size to the lower expression and is included in the maximum
+        // width, so 23'(1'b1 + 1'b1) uses 23-bit math, but 1'(2'h2 * 2'h1) uses two-bit math.
+        // However the output width is exactly that requested.
+        // So two steps, first do the calculation's width (max of the two widths)
+        {
+            int calcWidth = std::max(width, underDtp->width());
+            AstNodeDType* calcDtp
+                = (underDtp->isFourstate()
+                       ? nodep->findLogicDType(calcWidth, calcWidth, underDtp->numeric())
+                       : nodep->findBitDType(calcWidth, calcWidth, underDtp->numeric()));
+            nodep->dtypep(calcDtp);
+            // We ignore warnings as that is sort of the point of a cast
+            iterateCheck(nodep, "Cast expr", underp, CONTEXT, FINAL, calcDtp, EXTEND_EXP, false);
+            VL_DANGLING(underp);
+            underp = nodep->op1p();  // Above asserts that op1 was underp pre-relink
+        }
+        // if (debug()) nodep->dumpTree(cout, "  CastSizeClc: ");
+        // Next step, make the proper output width
+        {
+            AstNodeDType* outDtp = (underDtp->isFourstate()
+                                        ? nodep->findLogicDType(width, width, underDtp->numeric())
+                                        : nodep->findBitDType(width, width, underDtp->numeric()));
+            nodep->dtypep(outDtp);
+            // We ignore warnings as that is sort of the point of a cast
+            widthCheckSized(nodep, "Cast expr", underp, outDtp, EXTEND_EXP, false);
+            VL_DANGLING(underp);
+        }
     }
     virtual void visit(AstVar* nodep) override {
         // if (debug()) nodep->dumpTree(cout, "  InitPre: ");
