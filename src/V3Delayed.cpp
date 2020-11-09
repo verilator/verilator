@@ -95,10 +95,10 @@ private:
     bool m_inDly = false;  // True in delayed assignments
     bool m_inLoop = false;  // True in for loops
     bool m_inInitial = false;  // True in initial blocks
-    typedef std::map<std::pair<AstNodeModule*, string>, AstVar*> VarMap;
+    typedef std::map<const std::pair<AstNodeModule*, string>, AstVar*> VarMap;
     VarMap m_modVarMap;  // Table of new var names created under module
     VDouble0 m_statSharedSet;  // Statistic tracking
-    typedef std::map<AstVarScope*, int> ScopeVecMap;
+    typedef std::map<const AstVarScope*, int> ScopeVecMap;
     ScopeVecMap m_scopeVecMap;  // Next var number for each scope
 
     // METHODS
@@ -358,9 +358,11 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstCFunc* nodep) override {
-        m_cfuncp = nodep;
-        iterateChildren(nodep);
-        m_cfuncp = nullptr;
+        VL_RESTORER(m_cfuncp);
+        {
+            m_cfuncp = nodep;
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstActive* nodep) override {
         m_activep = nodep;
@@ -408,10 +410,11 @@ private:
 
     virtual void visit(AstVarRef* nodep) override {
         if (!nodep->user2Inc()) {  // Not done yet
-            if (m_inDly && nodep->access().isWrite()) {
+            if (m_inDly && nodep->access().isWriteOrRW()) {
                 UINFO(4, "AssignDlyVar: " << nodep << endl);
                 markVarUsage(nodep->varScopep(), VU_DLY);
                 UASSERT_OBJ(m_activep, nodep, "<= not under sensitivity block");
+                UASSERT_OBJ(!nodep->access().isRW(), nodep, "<= on read+write method");
                 if (!m_activep->hasClocked()) {
                     nodep->v3error("Internal: Blocking <= assignment in non-clocked block, should "
                                    "have converted in V3Active");
@@ -456,7 +459,7 @@ private:
                 newrefp->user2(true);  // No reason to do it again
                 nodep->replaceWith(newrefp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            } else if (!m_inDly && nodep->access().isWrite()) {
+            } else if (!m_inDly && nodep->access().isWriteOrRW()) {
                 // UINFO(9, "NBA " << nodep << endl);
                 if (!m_inInitial) {
                     UINFO(4, "AssignNDlyVar: " << nodep << endl);

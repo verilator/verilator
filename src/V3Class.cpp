@@ -35,6 +35,8 @@ private:
     AstUser1InUse m_inuser1;
     string m_prefix;  // String prefix to add to name based on hier
     AstScope* m_classScopep = nullptr;  // Package moving scopes into
+    AstScope* m_packageScopep = nullptr;  // Class package scope
+    AstNodeFTask* m_ftaskp = nullptr;  // Current task
     typedef std::vector<std::pair<AstNode*, AstScope*>> MoveVector;
     MoveVector m_moves;
 
@@ -76,12 +78,14 @@ private:
         packagep->addStmtp(scopep);
         // Iterate
         VL_RESTORER(m_prefix);
+        VL_RESTORER(m_classScopep);
+        VL_RESTORER(m_packageScopep);
         {
             m_classScopep = classScopep;
+            m_packageScopep = scopep;
             m_prefix = nodep->name() + "__02e";  // .
             iterateChildren(nodep);
         }
-        m_classScopep = nullptr;
     }
     virtual void visit(AstPackage* nodep) override {
         VL_RESTORER(m_prefix);
@@ -94,11 +98,28 @@ private:
     virtual void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         // Don't move now, or wouldn't keep interating the class
-        // TODO move class statics only
-        // if (m_classScopep) {
-        //    m_moves.push_back(make_pair(nodep, m_classScopep));
-        //}
+        // TODO move class statics too
+        if (m_ftaskp && m_ftaskp->lifetime().isStatic()) {
+            m_moves.push_back(make_pair(nodep, m_packageScopep));
+        }
     }
+
+    virtual void visit(AstVarScope* nodep) override {
+        iterateChildren(nodep);
+        nodep->varp()->user1p(nodep);
+    }
+
+    virtual void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
+        {
+            m_ftaskp = nodep;
+            iterateChildren(nodep);
+            if (nodep->lifetime().isStatic()) {
+                m_moves.push_back(make_pair(nodep, m_packageScopep));
+            }
+        }
+    }
+
     virtual void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Don't move now, or wouldn't keep interating the class
@@ -116,8 +137,13 @@ public:
     // CONSTRUCTORS
     explicit ClassVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~ClassVisitor() override {
-        for (MoveVector::iterator it = m_moves.begin(); it != m_moves.end(); ++it) {
-            it->second->addVarp(it->first->unlinkFrBack());
+        for (auto moved : m_moves) {
+            if (VN_IS(moved.first, NodeFTask)) {
+                moved.second->addActivep(moved.first->unlinkFrBack());
+            } else if (VN_IS(moved.first, Var)) {
+                AstVarScope* scopep = VN_CAST(moved.first->user1p(), VarScope);
+                moved.second->addVarp(scopep->unlinkFrBack());
+            }
         }
     }
 };

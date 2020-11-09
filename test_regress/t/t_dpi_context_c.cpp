@@ -14,6 +14,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # ifdef T_DPI_CONTEXT_NOOPT
 #  include "Vt_dpi_context_noopt__Dpi.h"
@@ -31,14 +32,15 @@
 #ifdef VERILATOR
 # include "verilated.h"
 #endif
+// clang-format on
 
 #ifdef NEED_EXTERNS
 extern "C" {
 
-    extern int dpic_line();
-    extern int dpic_save(int value);
-    extern int dpic_restore();
-    extern unsigned dpic_getcontext();
+extern int dpic_line();
+extern int dpic_save(int value);
+extern int dpic_restore();
+extern unsigned dpic_getcontext();
 }
 #endif
 
@@ -74,6 +76,7 @@ int dpic_line() {
         printf("%%Warning: svGetCallerInfo failed\n");
         return 0;
     }
+    if (svGetCallerInfo(nullptr, nullptr)) {}  // Check doesn't segflt
     return lineno;
 }
 
@@ -93,7 +96,8 @@ int dpic_save(int value) {
         int i;
     } vp;
 
-    vp.i = value; if (vp.i) { }
+    vp.i = value;
+    if (vp.i) {}
     if (svPutUserData(scope, &Dpic_Unique, vp.ptr)) {
         printf("%%Warning: svPutUserData failed\n");
         return 0;
@@ -124,7 +128,7 @@ int dpic_restore() {
 
 unsigned dpic_getcontext() {
     svScope scope = svGetScope();
-    printf("%%Info: svGetScope returned scope (%p) with name %s\n",
+    printf("%%Info: svGetScope returned scope (%p) with name %s\n",  //
            scope, svGetNameFromScope(scope));
     return (unsigned)(uintptr_t)scope;
 }

@@ -220,7 +220,9 @@ private:
         if (nodep->varScopep()->varp()->isSc()) {
             clearSimple("SystemC sig");  // Don't want to eliminate the VL_ASSIGN_SI's
         }
-        if (nodep->access().isWrite()) {
+        if (nodep->access().isRW()) {
+            clearSimple("R/W");
+        } else if (nodep->access().isWriteOrRW()) {
             if (m_lhsVarRef) clearSimple(">1 lhs varRefs");
             m_lhsVarRef = nodep;
         } else {
@@ -448,7 +450,7 @@ private:
                 vvertexp->setIsClock();
                 // For SYNCASYNCNET
                 varscp->user2(true);
-            } else if (m_activep && m_activep->hasClocked() && !nodep->access().isWrite()) {
+            } else if (m_activep && m_activep->hasClocked() && nodep->access().isReadOnly()) {
                 if (varscp->user2()) {
                     if (!vvertexp->rstAsyncNodep()) vvertexp->rstAsyncNodep(nodep);
                 } else {
@@ -457,9 +459,10 @@ private:
             }
             // We use weight of one; if we ref the var more than once, when we simplify,
             // the weight will increase
-            if (nodep->access().isWrite()) {
+            if (nodep->access().isWriteOrRW()) {
                 new V3GraphEdge(&m_graph, m_logicVertexp, vvertexp, 1);
-            } else {
+            }
+            if (nodep->access().isReadOrRW()) {
                 new V3GraphEdge(&m_graph, vvertexp, m_logicVertexp, 1);
             }
         }
@@ -842,7 +845,7 @@ private:
             // It's possible we substitute into something that will be reduced more later,
             // however, as we never delete the top Always/initial statement, all should be well.
             m_didReplace = true;
-            UASSERT_OBJ(!nodep->access().isWrite(), nodep,
+            UASSERT_OBJ(nodep->access().isReadOnly(), nodep,
                         "Can't replace lvalue assignments with const var");
             AstNode* substp = m_replaceTreep->cloneTree(false);
             UASSERT_OBJ(

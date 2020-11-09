@@ -80,7 +80,7 @@ private:
     virtual void visit(AstVarRef* nodep) override {
         if (!m_mergeable) return;
         // Clear if it's an LValue referencing a marked variable
-        if (nodep->access().isWrite() && nodep->varp()->user1()) {
+        if (nodep->access().isWriteOrRW() && nodep->varp()->user1()) {
             clearMergeable(nodep, "might modify condition");
         }
     }

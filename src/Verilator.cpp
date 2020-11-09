@@ -549,9 +549,9 @@ static void verilate(const string& argString) {
     }
     // Undocumented debugging - cannot be a switch as then command line
     // would mismatch forcing non-identicalness when we set it
-    if (!V3Os::getenvStr("VERILATOR_DEBUG_SKIP_IDENTICAL", "").empty()) {
+    if (!V3Os::getenvStr("VERILATOR_DEBUG_SKIP_IDENTICAL", "").empty()) {  // LCOV_EXCL_START
         v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
-    }
+    }  // LCOV_EXCL_STOP
 
     //--FRONTEND------------------
 
@@ -657,7 +657,7 @@ static void execBuildJob() {
     const string cmdStr = buildMakeCmd(v3Global.opt.prefix() + ".mk", "");
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
-        v3error(cmdStr << " exitted with " << exit_code << std::endl);
+        v3error(cmdStr << " exited with " << exit_code << std::endl);
         exit(exit_code);
     }
 }
@@ -669,7 +669,7 @@ static void execHierVerilation() {
     const string cmdStr = buildMakeCmd(makefile, target);
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
-        v3error(cmdStr << " exitted with " << exit_code << std::endl);
+        v3error(cmdStr << " exited with " << exit_code << std::endl);
         exit(exit_code);
     }
 }

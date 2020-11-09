@@ -120,11 +120,13 @@ int main(int argc, char** argv, char** env) {
 
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 
+// clang-format off
 #ifdef VERILATOR
 # ifdef TEST_VERBOSE
     Verilated::scopesDump();
 # endif
 #endif
+    // clang-format on
 
     topp->eval();
     topp->clk = 0;

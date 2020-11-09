@@ -141,7 +141,7 @@ class InstDeModVarVisitor : public AstNVisitor {
     // Expand all module variables, and save names for later reference
 private:
     // STATE
-    typedef std::map<string, AstVar*> VarNameMap;
+    typedef std::map<const string, AstVar*> VarNameMap;
     VarNameMap m_modVarNameMap;  // Per module, name of cloned variables
 
     VL_DEBUG_FUNC;  // Declare debug()
@@ -278,8 +278,7 @@ private:
                         = VN_CAST(arrdtype->subDTypep(), IfaceRefDType);
                     origIfaceRefp->cellp(nullptr);
                     AstVar* varNewp = ifaceVarp->cloneTree(false);
-                    AstIfaceRefDType* ifaceRefp
-                        = VN_CAST(arrdtype->subDTypep(), IfaceRefDType)->cloneTree(false);
+                    AstIfaceRefDType* ifaceRefp = origIfaceRefp->cloneTree(false);
                     arrdtype->addNextHere(ifaceRefp);
                     ifaceRefp->cellp(newp);
                     ifaceRefp->cellName(newp->name());
@@ -378,7 +377,10 @@ private:
                     return;
                 }
                 string index = AstNode::encodeNumber(constp->toSInt());
+                if (VN_IS(arrselp->lhsp(), SliceSel))
+                    arrselp->lhsp()->v3error("Unsupported: interface slices");
                 AstVarRef* varrefp = VN_CAST(arrselp->lhsp(), VarRef);
+                UASSERT_OBJ(varrefp, arrselp, "No interface varref under array");
                 AstVarXRef* newp = new AstVarXRef(nodep->fileline(),
                                                   varrefp->name() + "__BRA__" + index + "__KET__",
                                                   "", VAccess::WRITE);

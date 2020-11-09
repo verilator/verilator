@@ -38,7 +38,7 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstCFunc* m_funcp = nullptr;  // Current function
+    AstCFunc* m_cfuncp = nullptr;  // Current function
     int m_depth = 0;  // How deep in an expression
     int m_deepNum = 0;  // How many functions made
 
@@ -49,11 +49,11 @@ private:
         AstNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         // Create function
-        string name = m_funcp->name() + "__deep" + cvtToStr(++m_deepNum);
+        string name = m_cfuncp->name() + "__deep" + cvtToStr(++m_deepNum);
         AstCFunc* funcp = new AstCFunc(nodep->fileline(), name, nullptr);
         funcp->argTypes(EmitCBaseVisitor::symClassVar());
         funcp->symProlog(true);
-        funcp->slow(m_funcp->slow());
+        funcp->slow(m_cfuncp->slow());
         funcp->addStmtsp(nodep);
         m_modp->addStmtp(funcp);
         // Call it at the point where the body was removed from
@@ -78,10 +78,10 @@ private:
     virtual void visit(AstCFunc* nodep) override {
         // We recurse into this.
         VL_RESTORER(m_depth);
-        VL_RESTORER(m_funcp);
+        VL_RESTORER(m_cfuncp);
         {
             m_depth = 0;
-            m_funcp = nodep;
+            m_cfuncp = nodep;
             iterateChildren(nodep);
         }
     }

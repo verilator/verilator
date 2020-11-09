@@ -275,7 +275,7 @@ private:
         processAndIterate(nodep);
         UASSERT_OBJ(!(v3Global.assertDTypesResolved() && nodep->brokeLhsMustBeLvalue()
                       && VN_IS(nodep->lhsp(), NodeVarRef)
-                      && !VN_CAST(nodep->lhsp(), NodeVarRef)->access().isWrite()),
+                      && !VN_CAST(nodep->lhsp(), NodeVarRef)->access().isWriteOrRW()),
                     nodep, "Assignment LHS is not an lvalue");
     }
     virtual void visit(AstNode* nodep) override {

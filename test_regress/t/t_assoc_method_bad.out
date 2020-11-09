@@ -1,0 +1,53 @@
+%Error: t/t_assoc_method_bad.v:14:13: The 1 arguments passed to .num method does not match its requiring 0 arguments
+                                    : ... In instance t
+   14 |       v = a.num("badarg");
+      |             ^~~
+%Error: t/t_assoc_method_bad.v:15:13: The 1 arguments passed to .size method does not match its requiring 0 arguments
+                                    : ... In instance t
+   15 |       v = a.size("badarg");
+      |             ^~~~
+%Error: t/t_assoc_method_bad.v:16:13: The 0 arguments passed to .exists method does not match its requiring 1 arguments
+                                    : ... In instance t
+   16 |       v = a.exists();   
+      |             ^~~~~~
+%Error: t/t_assoc_method_bad.v:17:13: The 2 arguments passed to .exists method does not match its requiring 1 arguments
+                                    : ... In instance t
+   17 |       v = a.exists(k, "bad2");
+      |             ^~~~~~
+%Error: t/t_assoc_method_bad.v:18:13: The 0 arguments passed to .first method does not match its requiring 1 arguments
+                                    : ... In instance t
+   18 |       v = a.first();   
+      |             ^~~~~
+%Error: t/t_assoc_method_bad.v:19:13: The 2 arguments passed to .next method does not match its requiring 1 arguments
+                                    : ... In instance t
+   19 |       v = a.next(k, "bad2");   
+      |             ^~~~
+%Error: t/t_assoc_method_bad.v:20:13: The 0 arguments passed to .last method does not match its requiring 1 arguments
+                                    : ... In instance t
+   20 |       v = a.last();   
+      |             ^~~~
+%Error: t/t_assoc_method_bad.v:21:13: The 2 arguments passed to .prev method does not match its requiring 1 arguments
+                                    : ... In instance t
+   21 |       v = a.prev(k, "bad2");   
+      |             ^~~~
+%Error: t/t_assoc_method_bad.v:22:9: The 2 arguments passed to .delete method does not match its requiring 0 to 1 arguments
+                                   : ... In instance t
+   22 |       a.delete(k, "bad2");
+      |         ^~~~~~
+%Error: t/t_assoc_method_bad.v:24:9: Array method 'sort' not legal on associative arrays
+                                   : ... In instance t
+   24 |       a.sort;   
+      |         ^~~~
+%Error: t/t_assoc_method_bad.v:25:9: Array method 'rsort' not legal on associative arrays
+                                   : ... In instance t
+   25 |       a.rsort;   
+      |         ^~~~~
+%Error: t/t_assoc_method_bad.v:26:9: Array method 'reverse' not legal on associative arrays
+                                   : ... In instance t
+   26 |       a.reverse;   
+      |         ^~~~~~~
+%Error: t/t_assoc_method_bad.v:27:9: Array method 'shuffle' not legal on associative arrays
+                                   : ... In instance t
+   27 |       a.shuffle;   
+      |         ^~~~~~~
+%Error: Exiting due to

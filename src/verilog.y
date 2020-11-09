@@ -110,6 +110,20 @@ public:
             return new AstGatePin(rangep->fileline(), exprp, rangep->cloneTree(true));
         }
     }
+    AstNode* createTypedef(FileLine* fl, const string& name, AstNode* attrsp, AstNodeDType* basep,
+                           AstNodeRange* rangep) {
+        AstNode* nodep = new AstTypedef(fl, name, attrsp, VFlagChildDType(),
+                                        GRAMMARP->createArray(basep, rangep, false));
+        SYMP->reinsert(nodep);
+        PARSEP->tagNodep(nodep);
+        return nodep;
+    }
+    AstNode* createTypedefFwd(FileLine* fl, const string& name) {
+        AstNode* nodep = new AstTypedefFwd(fl, name);
+        SYMP->reinsert(nodep);
+        PARSEP->tagNodep(nodep);
+        return nodep;
+    }
     void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) {
         endLabel(fl, nodep->prettyName(), endnamep);
     }
@@ -2151,21 +2165,45 @@ implicit_typeE<dtypep>:		// IEEE: part of *data_type_or_implicit
 //UNSUP	;
 
 type_declaration<nodep>:	// ==IEEE: type_declaration
-	//			// Use idAny, as we can redeclare a typedef on an existing typedef
-		yTYPEDEF data_type idAny variable_dimensionListE dtypeAttrListE ';'
-	/**/	{ $$ = new AstTypedef($<fl>3, *$3, $5, VFlagChildDType(), GRAMMARP->createArray($2,$4,false));
-		  SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'	{ $$ = nullptr; BBUNSUP($1, "Unsupported: SystemVerilog 2005 typedef in this context"); }
+				// Data_type expanded
+		yTYPEDEF data_typeNoRef
+	/*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+			{ AstNodeDType* dtp = $2;
+			  $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, dtp, $4); }
+	|	yTYPEDEF packageClassScope idType packed_dimensionListE
+	/*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+			{ AstRefDType* refp = new AstRefDType($<fl>3, *$3, $2, nullptr);
+			  AstNodeDType* dtp = GRAMMARP->createArray(refp, $4, true);
+			  $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
+	|	yTYPEDEF packageClassScope idType parameter_value_assignmentClass packed_dimensionListE
+	/*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+			{ AstRefDType* refp = new AstRefDType($<fl>3, *$3, $2, $4);
+			  AstNodeDType* dtp = GRAMMARP->createArray(refp, $5, true);
+			  $$ = GRAMMARP->createTypedef($<fl>6, *$6, $8, dtp, $7); }
+	|	yTYPEDEF idType packed_dimensionListE
+	/*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2, nullptr, nullptr);
+			  AstNodeDType* dtp = GRAMMARP->createArray(refp, $3, true);
+			  $$ = GRAMMARP->createTypedef($<fl>4, *$4, $6, dtp, $5); }
+	|	yTYPEDEF idType parameter_value_assignmentClass packed_dimensionListE
+	/*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+			{ AstRefDType* refp = new AstRefDType($<fl>2, *$2, nullptr, $3);
+			  AstNodeDType* dtp = GRAMMARP->createArray(refp, $4, true);
+			  $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
+	//			//
+	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'
+			{ $$ = nullptr; BBUNSUP($1, "Unsupported: SystemVerilog 2005 typedef in this context"); }
+	//			// Allow redeclaring same typedef again
+	//			// Alternative is use of idAny below, but this will cause conflicts with ablve
+	|	yTYPEDEF idType ';'			{ $$ = GRAMMARP->createTypedefFwd($<fl>2, *$2); }
 	//			// Combines into above "data_type id" rule
 	//			// Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
-	//UNSUP			// Below should be idAny to allow duplicate forward defs; need to expand
-	//			// data_type to exclude IDs, or add id__SEMI rule
-	|	yTYPEDEF id ';'				{ $$ = nullptr; $$ = new AstTypedefFwd($<fl>2, *$2); SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	|	yTYPEDEF yENUM idAny ';'		{ $$ = nullptr; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	|	yTYPEDEF ySTRUCT idAny ';'		{ $$ = nullptr; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	|	yTYPEDEF yUNION idAny ';'		{ $$ = nullptr; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	|	yTYPEDEF yCLASS idAny ';'		{ $$ = nullptr; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	|	yTYPEDEF yINTERFACE yCLASS idAny ';'	{ $$ = nullptr; $$ = new AstTypedefFwd($<fl>4, *$4); SYMP->reinsert($$); PARSEP->tagNodep($$); }
+	|	yTYPEDEF id ';'				{ $$ = GRAMMARP->createTypedefFwd($<fl>2, *$2); }
+	|	yTYPEDEF yENUM idAny ';'		{ $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
+	|	yTYPEDEF ySTRUCT idAny ';'		{ $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
+	|	yTYPEDEF yUNION idAny ';'		{ $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
+	|	yTYPEDEF yCLASS idAny ';'		{ $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
+	|	yTYPEDEF yINTERFACE yCLASS idAny ';'	{ $$ = GRAMMARP->createTypedefFwd($<fl>4, *$4); }
 	;
 
 dtypeAttrListE<nodep>:
@@ -3365,8 +3403,7 @@ assignment_pattern<patternp>:	// ==IEEE: assignment_pattern
 	//			// also IEEE "''{' array_pattern_key ':' ...
 	|	yP_TICKBRA patternMemberList '}'	{ $$ = new AstPattern($1,$2); }
 	//			// IEEE: Not in grammar, but in VMM
-	|	yP_TICKBRA '}'
-			{ $$ = new AstPattern($1, nullptr); $1->v3warn(E_UNSUPPORTED, "Unsupported: Empty '{}"); }
+	|	yP_TICKBRA '}'				{ $$ = new AstPattern($1, nullptr); }
 	;
 
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal
@@ -3459,9 +3496,9 @@ task_subroutine_callNoMethod<nodep>:	// function_subroutine_callNoMethod (as tas
 	//			// IEEE: tf_call
 		taskRef					{ $$ = $1; }
 	//			// funcref below not task ref to avoid conflict, must later handle either
-	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWith($2, true, $1, $4); }
+	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWithParse($2, true, $1, $4); }
 	//			// can call as method and yWITH without parenthesis
-	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWith($2, true, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
+	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWithParse($2, true, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
 	|	system_t_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
 	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3474,9 +3511,9 @@ task_subroutine_callNoMethod<nodep>:	// function_subroutine_callNoMethod (as tas
 function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as function)
 	//			// IEEE: tf_call
 		funcRef					{ $$ = $1; }
-	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWith($2, false, $1, $4); }
+	|	funcRef yWITH__PAREN '(' expr ')'	{ $$ = new AstWithParse($2, false, $1, $4); }
 	//			// can call as method and yWITH without parenthesis
-	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWith($2, false, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
+	|	id yWITH__PAREN '(' expr ')'		{ $$ = new AstWithParse($2, false, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
 	|	system_f_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
 	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3484,7 +3521,7 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 	//			// We implement randomize as a normal funcRef, since randomize isn't a keyword
 	//			// Note yNULL is already part of expressions, so they come for free
 	|	funcRef yWITH__CUR constraint_block	{ $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with' constraint"); }
-	|	funcRef yWITH__CUR '{' '}'		{ $$ = new AstWith($2, false, $1, nullptr); }
+	|	funcRef yWITH__CUR '{' '}'		{ $$ = new AstWithParse($2, false, $1, nullptr); }
 	;
 
 system_t_call<nodep>:		// IEEE: system_tf_call (as task)
@@ -3587,6 +3624,9 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstWriteMem($1, true,  $3, $5, $7, nullptr); }
 	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstWriteMem($1, true,  $3, $5, $7, $9); }
 	//
+	|	yD_CAST '(' expr ',' expr ')'
+			{ $$ = new AstAssert($1, new AstCastDynamic($1, $3, $5), nullptr, nullptr, true); }
+	//
 	// Any system function as a task
 	|	system_f_call_or_t			{ $$ = new AstSysFuncAsTask($<fl>1, $1); }
 	;
@@ -3595,6 +3635,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 		yaD_PLI systemDpiArgsE			{ $$ = new AstFuncRef($<fl>1, *$1, $2); VN_CAST($$, FuncRef)->pli(true); }
 	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? nullptr : new AstUCFunc($1,$3)); }
+	|	yD_CAST '(' expr ',' expr ')'		{ $$ = new AstCastDynamic($1, $3, $5); }
 	|	yD_SYSTEM  '(' expr ')'			{ $$ = new AstSystemF($1,$3); }
 	//
 	|	system_f_call_or_t			{ $$ = $1; }
@@ -3617,7 +3658,6 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_BITS '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
 	|	yD_BITSTOREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); }
 	|	yD_BITSTOSHORTREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); UNSUPREAL($1); }
-	|	yD_CAST '(' expr ',' expr ')'		{ $$ = new AstCastDynamic($1, $3, $5); }
 	|	yD_CEIL '(' expr ')'			{ $$ = new AstCeilD($1,$3); }
 	|	yD_CHANGED '(' expr ')'			{ $$ = new AstLogNot($1, new AstStable($1, $3)); }
 	|	yD_CHANGED '(' expr ',' expr ')'	{ $$ = $3; BBUNSUP($1, "Unsupported: $changed and clock arguments"); }
@@ -3988,9 +4028,9 @@ array_methodNoRoot<ftaskrefp>:
 array_methodWith<nodep>:
 		array_methodNoRoot			{ $$ = $1; }
 	|	array_methodNoRoot parenE yWITH__PAREN '(' expr ')'
-			{ $$ = new AstWith($3, false, $1, $5); }
+			{ $$ = new AstWithParse($3, false, $1, $5); }
 	|	array_methodNoRoot '(' expr ')' yWITH__PAREN '(' expr ')'
-			{ $$ = new AstWith($5, false, $1, $7); $1->addPinsp($3); }
+			{ $$ = new AstWithParse($5, false, $1, $7); $1->addPinsp(new AstArg($<fl>3, "", $3)); }
 	;
 
 dpi_import_export<nodep>:	// ==IEEE: dpi_import_export
@@ -4191,7 +4231,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// Indistinguishable from function_subroutine_call:method_call
 	//
 	|	'$'					{ $$ = new AstUnbounded($<fl>1); }
-	|	yNULL					{ $$ = new AstConst($1, AstConst::LogicFalse()); }
+	|	yNULL					{ $$ = new AstConst($1, AstConst::StringToParse(), "'0"); }
 	//			// IEEE: yTHIS
 	//			// See exprScope
 	//
@@ -6192,9 +6232,9 @@ dist_list<nodep>:  // ==IEEE: dist_list
 	;
 
 dist_item<nodep>:  // ==IEEE: dist_item + dist_weight
-		value_range				{ $$ = $1; }
-	|	value_range yP_COLONEQ  expr		{ $$ = $1; BBUNSUP($1, "Unsupported: dist :="); }
-	|	value_range yP_COLONDIV expr		{ $$ = $1; BBUNSUP($1, "Unsupported: dist :/"); }
+		value_range				{ $$ = $1; /* Same as := 1 */ }
+	|	value_range yP_COLONEQ  expr		{ $$ = $1; nullptr; /*UNSUP-no-UVM*/ }
+	|	value_range yP_COLONDIV expr		{ $$ = $1; nullptr; /*UNSUP-no-UVM*/ }
 	;
 
 //UNSUPextern_constraint_declaration:  // ==IEEE: extern_constraint_declaration

@@ -1,0 +1,4 @@
+Model width =          10
+Restoring model from 'obj_vlt/t_savable_open_bad/saved.vltsv'
+%Error: obj_vlt/t_savable_open_bad/saved.vltsv:0: Can't deserialize; file has wrong header signature, or file not found: obj_vlt/t_savable_open_bad/saved.vltsv
+Aborting...

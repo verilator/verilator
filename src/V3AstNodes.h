@@ -300,7 +300,7 @@ public:
 
 class AstClass : public AstNodeModule {
     // TYPES
-    typedef std::map<string, AstNode*> MemberNameMap;
+    typedef std::map<const string, AstNode*> MemberNameMap;
     // MEMBERS
     MemberNameMap m_members;  // Members or method children
     AstClassPackage* m_packagep = nullptr;  // Class package this is under
@@ -1099,6 +1099,12 @@ public:
         childDTypep(dtp);  // Only for parser
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
+    }
+    AstQueueDType(FileLine* fl, AstNodeDType* dtp, AstNode* boundp)
+        : ASTGEN_SUPER(fl) {
+        setNOp2p(boundp);
+        refDTypep(dtp);
+        dtypep(dtp);
     }
     ASTNODE_NODE_FUNCS(QueueDType)
     virtual const char* broken() const override {
@@ -2182,11 +2188,6 @@ public:
     void addConsumingMTaskId(int id) { m_mtaskIds.insert(id); }
     const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
     string mtasksString() const;
-
-private:
-    class VlArgTypeRecursed;
-    VlArgTypeRecursed vlArgTypeRecurse(bool forFunc, const AstNodeDType* dtypep,
-                                       bool compound) const;
 };
 
 class AstDefParam : public AstNode {
@@ -2365,7 +2366,7 @@ public:
         }
     }
     virtual int instrCount() const override {
-        return widthInstrs() * (access().isWrite() ? 1 : instrCountLd());
+        return widthInstrs() * (access().isReadOrRW() ? instrCountLd() : 1);
     }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -2970,7 +2971,7 @@ public:
     virtual V3Hash sameHash() const override { return V3Hash(m_classOrPackagep); }
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual string name() const override { return m_name; }  // * = Var name
-    AstNode* classOrPackagep() const { return m_classOrPackagep; }
+    AstNodeModule* classOrPackagep() const { return VN_CAST(m_classOrPackagep, NodeModule); }
     AstPackage* packagep() const { return VN_CAST(classOrPackagep(), Package); }
     void classOrPackagep(AstNode* nodep) { m_classOrPackagep = nodep; }
     AstPin* paramsp() const { return VN_CAST(op4p(), Pin); }
@@ -3076,19 +3077,72 @@ public:
     void cname(const string& cname) { m_cname = cname; }
 };
 
-class AstWith : public AstNodeStmt {
+class AstWithParse : public AstNodeStmt {
+    // In early parse, FUNC(index) WITH equation-using-index
+    // Replaced with AstWith
+    // Parents: math|stmt
+    // Children: funcref, math
 public:
-    AstWith(FileLine* fl, bool stmt, AstNode* funcrefp, AstNode* argsp)
+    AstWithParse(FileLine* fl, bool stmt, AstNode* funcrefp, AstNode* exprp)
         : ASTGEN_SUPER(fl) {
         statement(stmt);
         setOp1p(funcrefp);
-        addNOp2p(argsp);
+        addNOp2p(exprp);
     }
-    ASTNODE_NODE_FUNCS(With)
+    ASTNODE_NODE_FUNCS(WithParse)
     virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode* samep) const override { return true; }
     //
     AstNode* funcrefp() const { return op1p(); }
+    AstNode* exprp() const { return op2p(); }
+};
+
+class AstLambdaArgRef : public AstNodeMath {
+    // Lambda argument usage
+    // These are not AstVarRefs because we need to be able to delete/clone lambdas during
+    // optimizations and AstVar's are painful to remove.
+private:
+    string m_name;  // Name of variable
+
+public:
+    AstLambdaArgRef(FileLine* fl, const string& name)
+        : ASTGEN_SUPER(fl)
+        , m_name{name} {}
+    ASTNODE_NODE_FUNCS(LambdaArgRef)
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+    virtual string emitVerilog() override { return name(); }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    virtual bool hasDType() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    virtual string name() const override { return m_name; }  // * = Var name
+    virtual void name(const string& name) override { m_name = name; }
+};
+
+class AstWith : public AstNodeStmt {
+    // Used as argument to method, then to AstCMethodHard
+    // dtypep() contains the with lambda's return dtype
+    // Parents: funcref (similar to AstArg)
+    // Children: VAR that declares the index variable
+    // Children: math (equation establishing the with)
+public:
+    AstWith(FileLine* fl, AstLambdaArgRef* argrefp, AstNode* exprp)
+        : ASTGEN_SUPER(fl) {
+        addOp1p(argrefp);
+        addNOp2p(exprp);
+    }
+    ASTNODE_NODE_FUNCS(With)
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+    virtual bool hasDType() const override { return true; }
+    virtual const char* broken() const override {
+        BROKEN_RTN(!argrefp());  // varp needed to know lambda's arg dtype
+        return nullptr;
+    }
+    //
+    AstLambdaArgRef* argrefp() const { return VN_CAST(op1p(), LambdaArgRef); }
+    AstNode* exprp() const { return op2p(); }
 };
 
 //######################################################################
@@ -4604,6 +4658,93 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
+class AstConsAssoc : public AstNodeMath {
+    // Construct an assoc array and return object, '{}
+    // Parents: math
+    // Children: expression (elements or other queues)
+public:
+    AstConsAssoc(FileLine* fl, AstNode* defaultp)
+        : ASTGEN_SUPER(fl) {
+        setNOp1p(defaultp);
+    }
+    ASTNODE_NODE_FUNCS(ConsAssoc)
+    virtual string emitVerilog() override { return "'{}"; }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    AstNode* defaultp() const { return op1p(); }
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+class AstSetAssoc : public AstNodeMath {
+    // Set an assoc array element and return object, '{}
+    // Parents: math
+    // Children: expression (elements or other queues)
+public:
+    AstSetAssoc(FileLine* fl, AstNode* lhsp, AstNode* keyp, AstNode* valuep)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(lhsp);
+        setNOp2p(keyp);
+        setOp3p(valuep);
+    }
+    ASTNODE_NODE_FUNCS(SetAssoc)
+    virtual string emitVerilog() override { return "'{}"; }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    AstNode* lhsp() const { return op1p(); }
+    AstNode* keyp() const { return op2p(); }
+    AstNode* valuep() const { return op3p(); }
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+
+class AstConsDynArray : public AstNodeMath {
+    // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
+    // Parents: math
+    // Children: expression (elements or other queues)
+public:
+    AstConsDynArray(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
+        : ASTGEN_SUPER(fl) {
+        setNOp1p(lhsp);
+        setNOp2p(rhsp);
+    }
+    ASTNODE_NODE_FUNCS(ConsDynArray)
+    virtual string emitVerilog() override { return "'{%l, %r}"; }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    AstNode* lhsp() const { return op1p(); }  // op1 = expression
+    AstNode* rhsp() const { return op2p(); }  // op2 = expression
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+
+class AstConsQueue : public AstNodeMath {
+    // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
+    // Parents: math
+    // Children: expression (elements or other queues)
+public:
+    AstConsQueue(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
+        : ASTGEN_SUPER(fl) {
+        setNOp1p(lhsp);
+        setNOp2p(rhsp);
+    }
+    ASTNODE_NODE_FUNCS(ConsQueue)
+    virtual string emitVerilog() override { return "'{%l, %r}"; }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return true; }
+    virtual int instrCount() const override { return widthInstrs(); }
+    AstNode* lhsp() const { return op1p(); }  // op1 = expression
+    AstNode* rhsp() const { return op2p(); }  // op2 = expression
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
+};
+
 class AstBegin : public AstNodeBlock {
     // A Begin/end named block, only exists shortly after parsing until linking
     // Parents: statement
@@ -5812,12 +5953,17 @@ public:
     virtual bool cleanLhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
     AstNode* lhsp() const { return op1p(); }
+    void lhsp(AstNode* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* childDTypep() const { return VN_CAST(op2p(), NodeDType); }
     virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
 };
 
 class AstCastDynamic : public AstNodeBiop {
+    // Verilog $cast used as a function
+    // Task usage of $cast is converted during parse to assert($cast(...))
+    // Parents: MATH
+    // Children: MATH
 public:
     AstCastDynamic(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {}
@@ -7895,7 +8041,10 @@ public:
         V3ERROR_NA;
     }
     virtual string emitVerilog() override { return "%f$fgets(%l,%r)"; }
-    virtual string emitC() override { return "VL_FGETS_%nqX%rq(%lw, %P, &(%li), %ri)"; }
+    virtual string emitC() override {
+        return strgp()->dtypep()->basicp()->isString() ? "VL_FGETS_NI(%li, %ri)"
+                                                       : "VL_FGETS_%nqX%rq(%lw, %P, &(%li), %ri)";
+    }
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool cleanRhs() const override { return true; }
@@ -8238,6 +8387,7 @@ public:
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     virtual int instrCount() const override { return widthInstrs() * 2; }
+    virtual void dump(std::ostream& str = std::cout) const override;
     // op1 = expression to assign or another AstPattern (list if replicated)
     AstNode* lhssp() const { return op1p(); }
     AstNode* keyp() const { return op2p(); }  // op2 = assignment key (Const, id Text)
@@ -8913,6 +9063,7 @@ class AstTypeTable : public AstNode {
     // Container for hash of standard data types
     // Children:  NODEDTYPEs
     AstVoidDType* m_voidp = nullptr;
+    AstQueueDType* m_queueIndexp = nullptr;
     AstBasicDType* m_basicps[AstBasicDTypeKwd::_ENUM_MAX];
     //
     typedef std::map<VBasicTypeKey, AstBasicDType*> DetailedMap;
@@ -8927,6 +9078,7 @@ public:
     AstNodeDType* typesp() const { return VN_CAST(op1p(), NodeDType); }  // op1 = List of dtypes
     void addTypesp(AstNodeDType* nodep) { addOp1p(nodep); }
     AstVoidDType* findVoidDType(FileLine* fl);
+    AstQueueDType* findQueueIndexDType(FileLine* fl);
     AstBasicDType* findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd);
     AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, int width, int widthMin,
                                      VSigning numeric);

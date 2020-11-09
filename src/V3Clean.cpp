@@ -285,6 +285,11 @@ private:
         ensureCleanAndNext(nodep->pinsp());
         setClean(nodep, true);
     }
+    virtual void visit(AstWith* nodep) override {
+        iterateChildren(nodep);
+        ensureCleanAndNext(nodep->exprp());
+        setClean(nodep, true);
+    }
     virtual void visit(AstIntfRef* nodep) override {
         iterateChildren(nodep);
         setClean(nodep, true);  // generates a string, so not relevant

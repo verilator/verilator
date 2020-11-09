@@ -6,10 +6,16 @@
 
 module t (/*AUTOARG*/
    // Inputs
-   clk
+   clk, model
    );
    /*verilator no_inline_module*/   // So we'll get hiearachy we can test
    input clk;
+
+   // Parameter so we can test for different model error
+   parameter MODEL_WIDTH = 10;
+   input [MODEL_WIDTH-1:0] model;
+
+   initial $write("Model width = %d\n", MODEL_WIDTH);
 
    sub sub (/*AUTOINST*/
 	    // Inputs

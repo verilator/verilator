@@ -477,7 +477,8 @@ public:
     static bool callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE {
         VpioCbList& cbObjList = s_s.m_cbObjLists[reason];
         bool called = false;
-        for (auto it = cbObjList.begin(); it != cbObjList.end();) {
+        const auto end = cbObjList.end();  // prevent looping over newly added elements
+        for (auto it = cbObjList.begin(); it != end;) {
             if (VL_UNLIKELY(!*it)) {  // Deleted earlier, cleanup
                 it = cbObjList.erase(it);
                 continue;
@@ -489,12 +490,14 @@ public:
         }
         return called;
     }
-    static void callValueCbs() VL_MT_UNSAFE_ONE {
+    static bool callValueCbs() VL_MT_UNSAFE_ONE {
         assertOneCheck();
         VpioCbList& cbObjList = s_s.m_cbObjLists[cbValueChange];
+        bool called = false;
         typedef std::set<VerilatedVpioVar*> VpioVarSet;
         VpioVarSet update;  // set of objects to update after callbacks
-        for (auto it = cbObjList.begin(); it != cbObjList.end();) {
+        const auto end = cbObjList.end();  // prevent looping over newly added elements
+        for (auto it = cbObjList.begin(); it != end;) {
             if (VL_UNLIKELY(!*it)) {  // Deleted earlier, cleanup
                 it = cbObjList.erase(it);
                 continue;
@@ -512,10 +515,12 @@ public:
                     update.insert(varop);
                     vpi_get_value(vop->cb_datap()->obj, vop->cb_datap()->value);
                     (vop->cb_rtnp())(vop->cb_datap());
+                    called = true;
                 }
             }
         }
         for (const auto& ip : update) { memcpy(ip->prevDatap(), ip->varDatap(), ip->entSize()); }
+        return called;
     }
 
     static VerilatedVpiError* error_info() VL_MT_UNSAFE_ONE;  // getter for vpi error info
@@ -599,7 +604,7 @@ VL_THREAD_LOCAL vluint8_t* VerilatedVpio::t_freeHead = nullptr;
 
 void VerilatedVpi::callTimedCbs() VL_MT_UNSAFE_ONE { VerilatedVpiImp::callTimedCbs(); }
 
-void VerilatedVpi::callValueCbs() VL_MT_UNSAFE_ONE { VerilatedVpiImp::callValueCbs(); }
+bool VerilatedVpi::callValueCbs() VL_MT_UNSAFE_ONE { return VerilatedVpiImp::callValueCbs(); }
 
 bool VerilatedVpi::callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE {
     return VerilatedVpiImp::callCbs(reason);

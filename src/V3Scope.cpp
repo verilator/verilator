@@ -377,6 +377,7 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstModportFTaskRef* nodep) override {
+        // The modport persists only for xml dump
         // The crossrefs are dealt with in V3LinkDot
         nodep->ftaskp(nullptr);
         iterateChildren(nodep);

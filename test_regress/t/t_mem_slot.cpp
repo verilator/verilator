@@ -46,13 +46,14 @@ int main(int argc, char* argv[]) {
 
     Verilated::debug(0);
 
-    /* clear all bits in the array */
+    // clear all bits in the array
     for (slot = 0; slot < 3; slot++)
-        for (bit = 0; bit < 2; bit++)
+        for (bit = 0; bit < 2; bit++)  //
             StepSim(sim, slot, bit, 0, 0);
 
     printf("\nTesting\n");
-    for (i = 0; i < 100; i++)
+    for (i = 0; i < 100; i++)  //
         StepSim(sim, random() % 3, random() % 2, random() % 2, random() % 3);
+
     printf("*-* All Finished *-*\n");
 }

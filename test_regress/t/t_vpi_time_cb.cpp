@@ -167,7 +167,9 @@ static int _end_of_sim_cb(p_cb_data cb_data) {
 extern "C"
 #endif
 
+    // clang-format off
 void vpi_compat_bootstrap(void) {
+    // clang-format on
     t_cb_data cb_data;
     bzero(&cb_data, sizeof(cb_data));
 
@@ -197,11 +199,13 @@ int main(int argc, char** argv, char** env) {
 
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 
+// clang-format off
 #ifdef VERILATOR
 # ifdef TEST_VERBOSE
     Verilated::scopesDump();
 # endif
 #endif
+    // clang-format on
 
 #if VM_TRACE
     Verilated::traceEverOn(true);
@@ -234,7 +238,7 @@ int main(int argc, char** argv, char** env) {
         topp->eval();
         VerilatedVpi::callValueCbs();
         VerilatedVpi::callTimedCbs();
-        CHECK_RESULT(VerilatedVpi::cbNextDeadline(), main_time+1);
+        CHECK_RESULT(VerilatedVpi::cbNextDeadline(), main_time + 1);
         topp->clk = !topp->clk;
         // mon_do();
 #if VM_TRACE

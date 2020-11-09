@@ -898,10 +898,8 @@ public:
         : m_basicp{varp->dtypep()->basicp()} {}
     void append(const PackedVarRefEntry& e, const VAccess& access) {
         UASSERT(!m_dedupDone, "cannot add after dedup()");
-        if (access.isWrite())
-            m_lhs.push_back(e);
-        else
-            m_rhs.push_back(e);
+        if (access.isWriteOrRW()) m_lhs.push_back(e);
+        if (access.isReadOrRW()) m_rhs.push_back(e);
     }
     void dedup() {
         UASSERT(!m_dedupDone, "dedup() called twice");
@@ -1211,10 +1209,9 @@ public:
         , m_numSplit{0} {
         // If you want ignore refs and walk the tne entire AST,
         // just call iterateChildren(m_modp) and split() for each module
-        for (SplitVarRefsMap::iterator it = refs.begin(), it_end = refs.end(); it != it_end;
-             ++it) {
-            m_modp = it->first;
-            it->second.visit(this);
+        for (auto& i : refs) {
+            m_modp = i.first;
+            i.second.visit(this);
             split();
             m_modp = nullptr;
         }

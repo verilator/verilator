@@ -27,7 +27,7 @@
 class V3LanguageWords {
     // List of common reserved keywords
 private:
-    typedef std::map<string, string> KeywordMap;
+    typedef std::map<const string, string> KeywordMap;
     struct Singleton {
         KeywordMap s_kwdMap;  // List of keywords, and what language applies
         Singleton() { init(); }
@@ -48,7 +48,7 @@ public:
 
 private:
     static Singleton& s() {
-        static Singleton s_s;
+        static Singleton s_s;  // LCOV_EXCL_BR_LINE
         return s_s;
     }
 };

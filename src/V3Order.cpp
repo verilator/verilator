@@ -36,6 +36,9 @@
 //                      assignments to avoid saving state, thus we prefer
 //                              a <= b ...      As the opposite order would
 //                              b <= c ...      require the old value of b.
+//                  Add edge consumed_var_POST->logic_vertex
+//                      This prevents a consumer of the "early" value to be
+//                      scheduled after we've changed to the next-cycle value
 //          For Logic
 //              Add vertex for this logic
 //                  Add edge logic_sensitive_vertex->logic_vertex
@@ -49,6 +52,7 @@
 //                  Add edge logic_sensitive_vertex->logic_vertex
 //                  Add edge logic_consumed_var->logic_vertex (same as if comb)
 //                  Add edge logic_vertex->logic_generated_var (same as if comb)
+//                  Add edge consumed_var_POST->logic_vertex (same as if comb)
 //
 //      For comb logic
 //          For comb logic
@@ -1026,7 +1030,7 @@ private:
             UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
             if (m_inSenTree) {
                 // Add CLOCK dependency... This is a root of the tree we'll trace
-                UASSERT_OBJ(!nodep->access().isWrite(), nodep,
+                UASSERT_OBJ(!nodep->access().isWriteOrRW(), nodep,
                             "How can a sensitivity be setting a var?");
                 OrderVarVertex* varVxp = newVarUserVertex(varscp, WV_STD);
                 varVxp->isClock(true);
@@ -1037,9 +1041,8 @@ private:
                 // We don't want to add extra edges if the logic block has many usages of same var
                 bool gen = false;
                 bool con = false;
-                if (nodep->access().isWrite()) {
-                    gen = !(varscp->user4() & VU_GEN);
-                } else {
+                if (nodep->access().isWriteOrRW()) gen = !(varscp->user4() & VU_GEN);
+                if (nodep->access().isReadOrRW()) {
                     con = !(varscp->user4() & VU_CON);
                     if ((varscp->user4() & VU_GEN) && !m_inClocked) {
                         // Dangerous assumption:

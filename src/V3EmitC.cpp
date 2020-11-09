@@ -23,6 +23,7 @@
 #include "V3EmitCBase.h"
 #include "V3Number.h"
 #include "V3PartitionGraph.h"
+#include "V3Task.h"
 #include "V3TSP.h"
 
 #include <algorithm>
@@ -156,6 +157,7 @@ public:
     }
 
     void emitParams(AstNodeModule* modp, bool init, bool* firstp, string& sectionr) {
+        bool anyi = false;
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* varp = VN_CAST(nodep, Var)) {
                 if (varp->isParam() && (varp->isUsedParam() || varp->isSigPublic())) {
@@ -172,12 +174,15 @@ public:
                         }
                     } else if (varp->isString()) {
                         if (init) {
-                            emitCtorSep(firstp);
-                            puts(protect("var_" + varp->name()) + " (");
+                            puts("const std::string ");
+                            puts(prefixNameProtect(modp) + "::" + protect("var_" + varp->name())
+                                 + "(");
                             iterateAndNextNull(varp->valuep());
-                            puts(")");
+                            puts(");\n");
+                            anyi = true;
                         } else {
-                            puts("const std::string " + protect("var_" + varp->name()) + ";\n");
+                            puts("static const std::string " + protect("var_" + varp->name())
+                                 + ";\n");
                         }
                     } else if (!VN_IS(varp->valuep(), Const)) {  // Unsupported for output
                         // putsDecoration("// enum ..... "+varp->nameProtect()
@@ -187,10 +192,12 @@ public:
                                       ->isOpaque()) {  // Can't put out e.g. doubles
                     } else {
                         if (init) {
-                            emitCtorSep(firstp);
-                            puts(protect("var_" + varp->name()) + " (");
+                            puts(varp->isQuad() ? "const QData " : "const IData ");
+                            puts(prefixNameProtect(modp) + "::" + protect("var_" + varp->name())
+                                 + "(");
                             iterateAndNextNull(varp->valuep());
-                            puts(")");
+                            puts(");\n");
+                            anyi = true;
                         } else {
                             // enum
                             puts(varp->isQuad() ? "enum _QData" : "enum _IData");
@@ -198,13 +205,14 @@ public:
                             iterateAndNextNull(varp->valuep());
                             puts("};\n");
                             // var
-                            puts(varp->isQuad() ? "const QData " : "const IData ");
+                            puts(varp->isQuad() ? "static const QData " : "static const IData ");
                             puts(protect("var_" + varp->name()) + ";\n");
                         }
                     }
                 }
             }
         }
+        if (anyi) puts("\n");
     }
 
     struct CmpName {
@@ -417,6 +425,18 @@ public:
         if (nodep->isStatement()) puts(";\n");
         UASSERT_OBJ(!nodep->isStatement() || VN_IS(nodep->dtypep(), VoidDType), nodep,
                     "Statement of non-void data type");
+    }
+    virtual void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
+    virtual void visit(AstWith* nodep) override {
+        // With uses a C++11 lambda
+        putbs("[=](");
+        if (auto* argrefp = nodep->argrefp()) {
+            putbs(argrefp->dtypep()->cType(nodep->argrefp()->nameProtect(), false, false));
+        }
+        // Probably fragile, V3Task may need to convert to a AstCReturn
+        puts(") { return ");
+        iterateAndNextNull(nodep->exprp());
+        puts("; }\n");
     }
     virtual void visit(AstIntfRef* nodep) override {
         putsQuoted(VIdProtect::protectWordsIf(AstNode::vcdName(nodep->name()), nodep->protect()));
@@ -1568,6 +1588,55 @@ class EmitCImp : EmitCStmts {
         }
     }
 
+    virtual void visit(AstConsAssoc* nodep) override {
+        putbs(nodep->dtypep()->cType("", false, false));
+        puts("()");
+        if (nodep->defaultp()) {
+            putbs(".setDefault(");
+            iterateAndNextNull(nodep->defaultp());
+            puts(")");
+        }
+    }
+    virtual void visit(AstSetAssoc* nodep) override {
+        iterateAndNextNull(nodep->lhsp());
+        putbs(".set(");
+        iterateAndNextNull(nodep->keyp());
+        puts(", ");
+        putbs("");
+        iterateAndNextNull(nodep->valuep());
+        puts(")");
+    }
+    virtual void visit(AstConsDynArray* nodep) override {
+        putbs(nodep->dtypep()->cType("", false, false));
+        if (!nodep->lhsp()) {
+            puts("()");
+        } else {
+            puts("::cons(");
+            iterateAndNextNull(nodep->lhsp());
+            if (nodep->rhsp()) {
+                puts(", ");
+                putbs("");
+            }
+            iterateAndNextNull(nodep->rhsp());
+            puts(")");
+        }
+    }
+    virtual void visit(AstConsQueue* nodep) override {
+        putbs(nodep->dtypep()->cType("", false, false));
+        if (!nodep->lhsp()) {
+            puts("()");
+        } else {
+            puts("::cons(");
+            iterateAndNextNull(nodep->lhsp());
+            if (nodep->rhsp()) {
+                puts(", ");
+                putbs("");
+            }
+            iterateAndNextNull(nodep->rhsp());
+            puts(")");
+        }
+    }
+
     virtual void visit(AstChangeDet* nodep) override {  //
         m_blkChangeDetVec.push_back(nodep);
     }
@@ -1656,13 +1725,11 @@ class EmitCImp : EmitCStmts {
         } else if (AstInitArray* initarp = VN_CAST(varp->valuep(), InitArray)) {
             if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
                 if (initarp->defaultp()) {
-                    // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
-                    puts("{ int __Vi=0;");
-                    puts(" for (; __Vi<" + cvtToStr(adtypep->elementsConst()));
+                    puts("for (int __Vi=0; __Vi<" + cvtToStr(adtypep->elementsConst()));
                     puts("; ++__Vi) {\n");
                     emitSetVarConstant(varp->nameProtect() + "[__Vi]",
                                        VN_CAST(initarp->defaultp(), Const));
-                    puts("}}\n");
+                    puts("}\n");
                 }
                 const AstInitArray::KeyItemMap& mapr = initarp->map();
                 for (AstInitArray::KeyItemMap::const_iterator it = mapr.begin(); it != mapr.end();
@@ -1704,12 +1771,11 @@ class EmitCImp : EmitCStmts {
             UASSERT_OBJ(adtypep->msb() >= adtypep->lsb(), varp,
                         "Should have swapped msb & lsb earlier.");
             string ivar = string("__Vi") + cvtToStr(depth);
-            // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
-            string pre = ("{ int " + ivar + "=" + cvtToStr(0) + ";" + " for (; " + ivar + "<"
+            string pre = ("for (int " + ivar + "=" + cvtToStr(0) + "; " + ivar + "<"
                           + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
             string below = emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
                                                suffix + "[" + ivar + "]");
-            string post = "}}\n";
+            string post = "}\n";
             return below.empty() ? "" : pre + below + post;
         } else if (basicp && basicp->keyword() == AstBasicDTypeKwd::STRING) {
             // String's constructor deals with it
@@ -1839,6 +1905,16 @@ void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
         puts(");\n");
     } else {
         // strings and other fundamental c types
+        if (nodep->isFuncLocal() && nodep->isString()) {
+            const string name = nodep->name();
+            const string suffix = V3Task::dpiTemporaryVarSuffix();
+            // string temporary variable for DPI-C needs to be static because c_str() will be
+            // passed to C code and the lifetime of the variable must be long enough. See also
+            // Issue 2622.
+            const bool beStatic = name.size() >= suffix.size()
+                                  && name.substr(name.size() - suffix.size()) == suffix;
+            if (beStatic) puts("static VL_THREAD_LOCAL ");
+        }
         puts(nodep->vlArgType(true, false, false, prefixIfImp));
         puts(";\n");
     }
@@ -2161,7 +2237,12 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const
     }
     emitDispState.pushFormat(pfmt);
     if (!ignore) {
-        emitDispState.pushArg(' ', nullptr, cvtToStr(argp->widthMin()));
+        if (argp->dtypep()->basicp()->keyword() == AstBasicDTypeKwd::STRING) {
+            // string in SystemVerilog is std::string in C++ which is not POD
+            emitDispState.pushArg(' ', nullptr, "-1");
+        } else {
+            emitDispState.pushArg(' ', nullptr, cvtToStr(argp->widthMin()));
+        }
         emitDispState.pushArg(fmtLetter, argp, "");
     } else {
         emitDispState.pushArg(fmtLetter, nullptr, "");
@@ -2319,6 +2400,9 @@ void EmitCImp::emitMTaskVertexCtors(bool* firstp) {
 void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     puts("\n");
     bool first = true;
+    string section("");
+    emitParams(modp, true, &first, section /*ref*/);
+
     if (VN_IS(modp, Class)) {
         modp->v3fatalSrc("constructors should be AstCFuncs instead");
     } else if (optSystemC() && modp->isTop()) {
@@ -2329,8 +2413,7 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     }
     emitVarCtors(&first);
     if (modp->isTop() && v3Global.opt.mtasks()) emitMTaskVertexCtors(&first);
-    string section("");
-    emitParams(modp, true, &first, section /*ref*/);
+
     puts(" {\n");
     emitCellCtors(modp);
     emitSensitives();
@@ -2499,10 +2582,8 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                             UASSERT_OBJ(arrayp->msb() >= arrayp->lsb(), varp,
                                         "Should have swapped msb & lsb earlier.");
                             string ivar = string("__Vi") + cvtToStr(vecnum);
-                            // MSVC++ pre V7 doesn't support 'for (int ...)',
-                            // so declare in sep block
-                            puts("{ int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0) + ";");
-                            puts(" for (; " + ivar + "<" + cvtToStr(arrayp->elementsConst()));
+                            puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0));
+                            puts("; " + ivar + "<" + cvtToStr(arrayp->elementsConst()));
                             puts("; ++" + ivar + ") {\n");
                             elementp = arrayp->subDTypep()->skipRefp();
                         }
@@ -2513,14 +2594,14 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                             && !(basicp && basicp->keyword() == AstBasicDTypeKwd::STRING)) {
                             int vecnum = vects++;
                             string ivar = string("__Vi") + cvtToStr(vecnum);
-                            puts("{ int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0) + ";");
-                            puts(" for (; " + ivar + "<" + cvtToStr(elementp->widthWords()));
+                            puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0));
+                            puts("; " + ivar + "<" + cvtToStr(elementp->widthWords()));
                             puts("; ++" + ivar + ") {\n");
                         }
                         puts("os" + op + varp->nameProtect());
                         for (int v = 0; v < vects; ++v) puts("[__Vi" + cvtToStr(v) + "]");
                         puts(";\n");
-                        for (int v = 0; v < vects; ++v) puts("}}\n");
+                        for (int v = 0; v < vects; ++v) puts("}\n");
                     }
                 }
             }
@@ -2588,16 +2669,14 @@ void EmitCImp::emitSensitives() {
                         UASSERT_OBJ(arrayp->msb() >= arrayp->lsb(), varp,
                                     "Should have swapped msb & lsb earlier.");
                         string ivar = string("__Vi") + cvtToStr(vecnum);
-                        // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
-                        puts("{ int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(arrayp->lsb())
-                             + ";");
-                        puts(" for (; " + ivar + "<=" + cvtToStr(arrayp->msb()));
+                        puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(arrayp->lsb()));
+                        puts("; " + ivar + "<=" + cvtToStr(arrayp->msb()));
                         puts("; ++" + ivar + ") {\n");
                     }
                     puts("sensitive << " + varp->nameProtect());
                     for (int v = 0; v < vects; ++v) puts("[__Vi" + cvtToStr(v) + "]");
                     puts(";\n");
-                    for (int v = 0; v < vects; ++v) puts("}}\n");
+                    for (int v = 0; v < vects; ++v) puts("}\n");
                 }
             }
         }
@@ -2833,7 +2912,7 @@ void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
     }
 
     // MacroTask mode.  Sort by MTask-affinity group first, size second.
-    typedef std::map<MTaskIdSet, VarSortMap> MTaskVarSortMap;
+    typedef std::map<const MTaskIdSet, VarSortMap> MTaskVarSortMap;
     MTaskVarSortMap m2v;
     for (VarSortMap::const_iterator it = vmap.begin(); it != vmap.end(); ++it) {
         int size_class = it->first;
@@ -3331,7 +3410,7 @@ class EmitCTrace : EmitCStmts {
     AstUser1InUse m_inuser1;
 
     // MEMBERS
-    AstCFunc* m_funcp = nullptr;  // Function we're in now
+    AstCFunc* m_cfuncp = nullptr;  // Function we're in now
     bool m_slow;  // Making slow file
     int m_enumNum = 0;  // Enumeration number (whole netlist)
     int m_baseCode = -1;  // Code of first AstTraceInc in this function
@@ -3663,8 +3742,9 @@ class EmitCTrace : EmitCStmts {
     virtual void visit(AstNodeModule* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstCFunc* nodep) override {
         if (nodep->slow() != m_slow) return;
+        VL_RESTORER(m_cfuncp);
         if (nodep->funcType().isTrace()) {  // TRACE_*
-            m_funcp = nodep;
+            m_cfuncp = nodep;
 
             if (splitNeeded()) {
                 // Splitting file, so using parallel build.
@@ -3734,7 +3814,6 @@ class EmitCTrace : EmitCStmts {
             }
             puts("}\n");
         }
-        m_funcp = nullptr;
     }
     virtual void visit(AstTraceDecl* nodep) override {
         int enumNum = emitTraceDeclDType(nodep->dtypep());

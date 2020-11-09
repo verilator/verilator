@@ -16,6 +16,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # include "Vt_dpi_openfirst__Dpi.h"
 #elif defined(VCS)
@@ -25,14 +26,15 @@
 #else
 # error "Unknown simulator for DPI test"
 #endif
+// clang-format on
 
 #ifdef NEED_EXTERNS
 extern "C" {
-    // If get ncsim: *F,NOFDPI: Function {foo} not found in default libdpi.
-    // Then probably forgot to list a function here.
+// If get ncsim: *F,NOFDPI: Function {foo} not found in default libdpi.
+// Then probably forgot to list a function here.
 
-    extern int dpii_failure();
-    extern void dpii_open_i(const svOpenArrayHandle i, const svOpenArrayHandle o);
+extern int dpii_failure();
+extern void dpii_open_i(const svOpenArrayHandle i, const svOpenArrayHandle o);
 }
 #endif
 

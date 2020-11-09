@@ -17,11 +17,9 @@
 //======================================================================
 
 extern "C" {
-    extern void dpii_test();
+extern void dpii_test();
 }
 
 //======================================================================
 
-void dpii_test() {
-    vpi_control(vpiStop);
-}
+void dpii_test() { vpi_control(vpiStop); }

@@ -23,6 +23,7 @@
 void poke_value(int i) {
     printf("poke_value(%d)\n", i);
 
+// clang-format off
 #ifdef VERILATOR
     static int didDump = 0;
     if (didDump++ == 0) {
@@ -31,6 +32,7 @@ void poke_value(int i) {
 # endif
     }
 #endif
+    // clang-format on
 
     svScope scope = svGetScopeFromName("top.t.a");
     if (scope == NULL) {

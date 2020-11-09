@@ -125,10 +125,22 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 class VAccess {
 public:
-    enum en : uint8_t { READ, WRITE };
+    enum en : uint8_t {
+        READ,  // Read/Consumed, variable not changed
+        WRITE,  // Written/Updated, variable might be updated, but not consumed
+        //      // so variable might be removable if not consumed elsewhere
+        READWRITE,  // Read/Consumed and written/updated, variable both set and
+        //          // also consumed, cannot remove usage of variable.
+        //          // For non-simple data types only e.g. no tristates/delayed vars.
+        NOCHANGE  // No change to previous state, used only in V3LinkLValue
+    };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"RD", "WR"};
+        static const char* const names[] = {"RD", "WR", "RW", "--"};
+        return names[m_e];
+    }
+    const char* arrow() const {
+        static const char* const names[] = {"[RV] <-", "[LV] =>", "[LV] <=>", "--"};
         return names[m_e];
     }
     inline VAccess()
@@ -139,9 +151,13 @@ public:
     explicit inline VAccess(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
-    VAccess invert() const { return (m_e == WRITE) ? VAccess(READ) : VAccess(WRITE); }
-    bool isRead() const { return m_e == READ; }
-    bool isWrite() const { return m_e == WRITE; }
+    VAccess invert() const {
+        return (m_e == READWRITE) ? VAccess(m_e) : (m_e == WRITE ? VAccess(READ) : VAccess(WRITE));
+    }
+    bool isReadOnly() const { return m_e == READ; }  // False with READWRITE
+    bool isReadOrRW() const { return m_e == READ || m_e == READWRITE; }
+    bool isWriteOrRW() const { return m_e == WRITE || m_e == READWRITE; }
+    bool isRW() const { return m_e == READWRITE; }  // False with READWRITE
 };
 inline bool operator==(const VAccess& lhs, const VAccess& rhs) { return lhs.m_e == rhs.m_e; }
 inline bool operator==(const VAccess& lhs, VAccess::en rhs) { return lhs.m_e == rhs; }
@@ -1254,7 +1270,10 @@ public:
     /// along with all children and next(s). This is often better to use
     /// than an immediate deleteTree, as any pointers into this node will
     /// persist for the lifetime of the visitor
-    void pushDeletep(AstNode* nodep) { m_deleteps.push_back(nodep); }
+    void pushDeletep(AstNode* nodep) {
+        UASSERT_STATIC(nodep, "Cannot delete nullptr node");
+        m_deleteps.push_back(nodep);
+    }
     /// Call deleteTree on all previously pushDeletep()'ed nodes
     void doDeletes();
 
@@ -1731,6 +1750,7 @@ public:
     AstNodeDType* findUInt32DType() { return findBasicDType(AstBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() { return findBasicDType(AstBasicDTypeKwd::UINT64); }
     AstNodeDType* findVoidDType() const;
+    AstNodeDType* findQueueIndexDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
@@ -2439,13 +2459,18 @@ public:
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
     }
+    string cType(const string& name, bool forFunc, bool isRef) const;
+
+private:
+    class CTypeRecursed;
+    CTypeRecursed cTypeRecurse(bool forFunc, bool compound) const;
 };
 
 class AstNodeUOrStructDType : public AstNodeDType {
     // A struct or union; common handling
 private:
     // TYPES
-    typedef std::map<string, AstMemberDType*> MemberNameMap;
+    typedef std::map<const string, AstMemberDType*> MemberNameMap;
     // MEMBERS
     string m_name;  // Name from upper typedef, if any
     bool m_packed;

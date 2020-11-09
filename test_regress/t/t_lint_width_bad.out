@@ -3,9 +3,9 @@
    17 |    localparam [3:0]     XS = 'hx;   
       |                         ^~
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
-%Warning-WIDTH: t/t_lint_width_bad.v:45:19: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
+%Warning-WIDTH: t/t_lint_width_bad.v:47:19: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
                                           : ... In instance t.p4
-   45 |    wire [4:0] out = in;
+   47 |    wire [4:0] out = in;
       |                   ^
 %Warning-WIDTH: t/t_lint_width_bad.v:21:25: Operator SHIFTL expects 5 bits on the LHS, but LHS's CONST '1'h1' generates 1 bits.
                                           : ... In instance t
@@ -39,4 +39,8 @@
                                           : ... In instance t
    38 |    initial for (a = 0; a >= THREE; ++a) $display(a);
       |                          ^~
+%Warning-WIDTH: t/t_lint_width_bad.v:40:12: Logical operator IF expects 1 bit on the If, but If's VARREF 'THREE' generates 41 bits.
+                                          : ... In instance t
+   40 |    initial if (THREE) $stop;
+      |            ^~
 %Error: Exiting due to

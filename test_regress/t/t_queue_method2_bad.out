@@ -1,0 +1,7 @@
+%Error: t/t_queue_method2_bad.v:16:21: 'with' function expects only up to one argument
+   16 |       qi = q.find(a,b) with (0);   
+      |                     ^
+%Error: t/t_queue_method2_bad.v:17:19: 'with' function expects simple variable name
+   17 |       qi = q.find(1) with (0);   
+      |                   ^
+%Error: Exiting due to

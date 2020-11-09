@@ -1,4 +1,0 @@
-%Error-UNSUPPORTED: t/t_class_vparam_unsup.v:13:40: Unsupported: parameterized packages
-   13 |    pure virtual function void funcname(paramed_class_t #(CTYPE_t) v);
-      |                                        ^~~~~~~~~~~~~~~
-%Error: Exiting due to
