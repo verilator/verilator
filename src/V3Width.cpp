@@ -1661,41 +1661,47 @@ private:
         // Note we don't sign lhsp() that would make the algorithm O(n^2) if lots of casting.
         AstBasicDType* basicp = nodep->dtypep()->basicp();
         UASSERT_OBJ(basicp, nodep, "Unimplemented: Casting non-simple data type");
-        // When implement more complicated types need to convert childDTypep to
-        // dtypep() not as a child
-        if (!basicp->isDouble() && !nodep->lhsp()->isDouble()) {
-            // Note widthCheckSized might modify nodep->lhsp()
-            AstNodeDType* subDTypep = nodep->findLogicDType(nodep->width(), nodep->width(),
-                                                            nodep->lhsp()->dtypep()->numeric());
-            iterateCheck(nodep, "value", nodep->lhsp(), CONTEXT, FINAL, subDTypep, EXTEND_EXP,
-                         false);
-        } else {
-            iterateCheck(nodep, "value", nodep->lhsp(), SELF, FINAL, nodep->lhsp()->dtypep(),
-                         EXTEND_EXP, false);
-        }
-        AstNode* newp = nodep->lhsp()->unlinkFrBack();
-        if (basicp->isDouble() && !newp->isDouble()) {
-            if (newp->isSigned()) {
-                newp = new AstISToRD(nodep->fileline(), newp);
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->lhsp(), WidthVP(SELF, PRELIM).p());
+            // When implement more complicated types need to convert childDTypep to
+            // dtypep() not as a child
+            if (!basicp->isDouble() && !nodep->lhsp()->isDouble()) {
+                // Note castSized might modify nodep->lhsp()
+                int width = nodep->dtypep()->width();
+                castSized(nodep, nodep->lhsp(), width);
             } else {
-                newp = new AstIToRD(nodep->fileline(), newp);
+                iterateCheck(nodep, "value", nodep->lhsp(), SELF, FINAL, nodep->lhsp()->dtypep(),
+                             EXTEND_EXP, false);
             }
-        } else if (!basicp->isDouble() && newp->isDouble()) {
-            if (basicp->isSigned()) {
-                newp = new AstRToIRoundS(nodep->fileline(), newp);
+            AstNode* newp = nodep->lhsp()->unlinkFrBack();
+            if (basicp->isDouble() && !newp->isDouble()) {
+                if (newp->isSigned()) {
+                    newp = new AstISToRD(nodep->fileline(), newp);
+                } else {
+                    newp = new AstIToRD(nodep->fileline(), newp);
+                }
+            } else if (!basicp->isDouble() && newp->isDouble()) {
+                if (basicp->isSigned()) {
+                    newp = new AstRToIRoundS(nodep->fileline(), newp);
+                } else {
+                    newp = new AstUnsigned(nodep->fileline(),
+                                           new AstRToIS(nodep->fileline(), newp));
+                }
+            } else if (basicp->isSigned() && !newp->isSigned()) {
+                newp = new AstSigned(nodep->fileline(), newp);
+            } else if (!basicp->isSigned() && newp->isSigned()) {
+                newp = new AstUnsigned(nodep->fileline(), newp);
             } else {
-                newp = new AstUnsigned(nodep->fileline(), new AstRToIS(nodep->fileline(), newp));
+                // newp = newp;  // Can just remove cast
             }
-        } else if (basicp->isSigned() && !newp->isSigned()) {
-            newp = new AstSigned(nodep->fileline(), newp);
-        } else if (!basicp->isSigned() && newp->isSigned()) {
-            newp = new AstUnsigned(nodep->fileline(), newp);
-        } else {
-            // newp = newp;  // Can just remove cast
+            nodep->lhsp(newp);
+            // if (debug()) nodep->dumpTree(cout, "  CastOut: ");
         }
-        nodep->replaceWith(newp);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        // if (debug()) newp->dumpTree(cout, "  CastOut: ");
+        if (m_vup->final()) {
+            AstNode* underp = nodep->lhsp()->unlinkFrBack();
+            nodep->replaceWith(underp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
     }
     virtual void visit(AstCastSize* nodep) override {
         // IEEE: Signedness of result is same as self-determined signedness

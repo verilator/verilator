@@ -5953,6 +5953,7 @@ public:
     virtual bool cleanLhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
     AstNode* lhsp() const { return op1p(); }
+    void lhsp(AstNode* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* childDTypep() const { return VN_CAST(op2p(), NodeDType); }
     virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }

@@ -16,6 +16,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix iteration over mutating list bug in VPI (#2588). [Kaleb Barrett]
 
+****  Fix cast width propagation (#2597). [flex-liu]
+
 ****  Fix return from callValueCbs (#2589) (#2605). [Marlon James]
 
 ****  Fix WIDTH warnings on comparisons with nullptr (#2602). [Rupert Swarbrick]
