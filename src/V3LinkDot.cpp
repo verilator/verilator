@@ -1866,14 +1866,16 @@ private:
         }
     }
     AstVar* makeIfaceModportVar(FileLine* fl, AstCell* cellp, AstIface* ifacep,
-                                AstModport* modportp) {
+                                AstModport* modportp, AstRange* rangep) {
         // Create iface variable, using duplicate var when under same module scope
         string varName
             = cellp->name() + "__Vmp__" + modportp->name() + "__Viftop" + cvtToStr(++m_modportNum);
         AstIfaceRefDType* idtypep = new AstIfaceRefDType(fl, modportp->fileline(), cellp->name(),
                                                          ifacep->name(), modportp->name());
         idtypep->cellp(cellp);
-        AstVar* varp = new AstVar(fl, AstVarType::IFACEREF, varName, VFlagChildDType(), idtypep);
+        AstNodeDType* vdtypep = idtypep;
+        if (rangep) vdtypep = new AstUnpackArrayDType(fl, VFlagChildDType(), vdtypep, rangep);
+        AstVar* varp = new AstVar(fl, AstVarType::IFACEREF, varName, VFlagChildDType(), vdtypep);
         varp->isIfaceParent(true);
         m_modp->addStmtp(varp);
         return varp;
@@ -2277,8 +2279,25 @@ private:
                     m_ds.m_dotSymp = m_statep->getNodeSym(modportp);
                     m_ds.m_dotPos = DP_SCOPE;
                     ok = true;
-                    AstVar* varp = makeIfaceModportVar(nodep->fileline(), cellp, ifacep, modportp);
-                    AstVarRef* refp = new AstVarRef(varp->fileline(), varp, VAccess::READ);
+                    auto* cellarrayrefp = VN_CAST(m_ds.m_unlinkedScopep, CellArrayRef);
+                    AstRange* rangep = nullptr;
+                    if (cellarrayrefp)
+                        rangep = new AstRange(nodep->fileline(),
+                                              cellarrayrefp->selp()->cloneTree(true),
+                                              cellarrayrefp->selp()->cloneTree(true));
+                    AstVar* varp
+                        = makeIfaceModportVar(nodep->fileline(), cellp, ifacep, modportp, rangep);
+                    AstNode* refp = new AstVarRef(varp->fileline(), varp, VAccess::READ);
+                    if (cellarrayrefp) {
+                        // iface[vec].modport became CellArrayRef(iface, lsb)
+                        // Convert back to SelBit(iface, lsb)
+                        UINFO(9, " Array modport to SelBit " << cellarrayrefp << endl);
+                        refp = new AstSelBit(cellarrayrefp->fileline(), refp,
+                                             cellarrayrefp->selp()->unlinkFrBack());
+                        refp->user3(true);  // Don't process again
+                        VL_DO_DANGLING(cellarrayrefp->unlinkFrBack(), cellarrayrefp);
+                        m_ds.m_unlinkedScopep = nullptr;
+                    }
                     nodep->replaceWith(refp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
