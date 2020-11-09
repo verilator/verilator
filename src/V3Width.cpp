@@ -2134,6 +2134,9 @@ private:
                 // Similar logic in V3Case
                 inewp = irangep->newAndFromInside(nodep->exprp(), irangep->lhsp()->unlinkFrBack(),
                                                   irangep->rhsp()->unlinkFrBack());
+            } else if (auto* irangep = VN_CAST(itemp->dtypep(), UnpackArrayDType)) {
+                irangep->v3error("Unsupported: inside on unpacked array");
+                continue;
             } else {
                 inewp = new AstEqWild(itemp->fileline(), nodep->exprp()->cloneTree(true),
                                       itemp->unlinkFrBack());
