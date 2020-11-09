@@ -46,6 +46,8 @@
 //          #8: Insert modport's symbols under IfaceRefDType (after #7)
 //      ResolveVisitor:
 //          #9: Resolve general variables, which may point into the interface or modport (after #8)
+//      LinkResolve:
+//          #10: Unlink modports, not needed later except for XML/Lint
 //*************************************************************************
 // TOP
 //      {name-of-top-modulename}
@@ -1865,20 +1867,12 @@ private:
             m_ds.m_dotErr = true;
         }
     }
-    AstVar* makeIfaceModportVar(FileLine* fl, AstCell* cellp, AstIface* ifacep,
-                                AstModport* modportp, AstRange* rangep) {
-        // Create iface variable, using duplicate var when under same module scope
-        string varName
-            = cellp->name() + "__Vmp__" + modportp->name() + "__Viftop" + cvtToStr(++m_modportNum);
-        AstIfaceRefDType* idtypep = new AstIfaceRefDType(fl, modportp->fileline(), cellp->name(),
-                                                         ifacep->name(), modportp->name());
-        idtypep->cellp(cellp);
-        AstNodeDType* vdtypep = idtypep;
-        if (rangep) vdtypep = new AstUnpackArrayDType(fl, VFlagChildDType(), vdtypep, rangep);
-        AstVar* varp = new AstVar(fl, AstVarType::IFACEREF, varName, VFlagChildDType(), vdtypep);
-        varp->isIfaceParent(true);
-        m_modp->addStmtp(varp);
-        return varp;
+    AstVar* findIfaceTopVarp(AstNode* nodep, VSymEnt* parentEntp, const string& name) {
+        string findName = name + "__Viftop";
+        VSymEnt* ifaceSymp = parentEntp->findIdFallback(findName);
+        AstVar* ifaceTopVarp = ifaceSymp ? VN_CAST(ifaceSymp->nodep(), Var) : nullptr;
+        UASSERT_OBJ(ifaceTopVarp, nodep, "Can't find interface var ref: " << findName);
+        return ifaceTopVarp;
     }
     void markAndCheckPinDup(AstNode* nodep, AstNode* refp, const char* whatp) {
         if (refp->user5p() && refp->user5p() != nodep) {
@@ -2173,12 +2167,7 @@ private:
                         VSymEnt* parentEntp
                             = cellEntp->parentp();  // Container of the var; probably a module or
                                                     // generate begin
-                        string findName = nodep->name() + "__Viftop";
-                        VSymEnt* ifaceSymp = parentEntp->findIdFallback(findName);
-                        AstVar* ifaceRefVarp
-                            = ifaceSymp ? VN_CAST(ifaceSymp->nodep(), Var) : nullptr;
-                        UASSERT_OBJ(ifaceRefVarp, nodep,
-                                    "Can't find interface var ref: " << findName);
+                        AstVar* ifaceRefVarp = findIfaceTopVarp(nodep, parentEntp, nodep->name());
                         //
                         ok = true;
                         m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
@@ -2273,32 +2262,32 @@ private:
                 } else {
                     AstCell* cellp = VN_CAST(m_ds.m_dotSymp->nodep(), Cell);
                     UASSERT_OBJ(cellp, nodep, "Modport not referenced from a cell");
-                    AstIface* ifacep = VN_CAST(cellp->modp(), Iface);
-                    // string cellName = m_ds.m_dotText;  // Use cellp->name
-                    m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
-                    m_ds.m_dotSymp = m_statep->getNodeSym(modportp);
-                    m_ds.m_dotPos = DP_SCOPE;
+                    VSymEnt* cellEntp = m_statep->getNodeSym(cellp);
+                    UASSERT_OBJ(cellEntp, nodep, "No interface sym entry");
+                    VSymEnt* parentEntp = cellEntp->parentp();  // Container of the var; probably a
+                                                                // module or generate begin
+                    // We drop __BRA__??__KET__ as cells don't have that naming yet
+                    AstVar* ifaceRefVarp = findIfaceTopVarp(nodep, parentEntp, cellp->name());
+                    //
                     ok = true;
+                    m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
+                    m_ds.m_dotSymp = foundp;
+                    m_ds.m_dotPos = DP_SCOPE;
+                    UINFO(9, " cell -> iface varref " << foundp->nodep() << endl);
+                    AstNode* newp
+                        = new AstVarRef(ifaceRefVarp->fileline(), ifaceRefVarp, VAccess::READ);
                     auto* cellarrayrefp = VN_CAST(m_ds.m_unlinkedScopep, CellArrayRef);
-                    AstRange* rangep = nullptr;
-                    if (cellarrayrefp)
-                        rangep = new AstRange(nodep->fileline(),
-                                              cellarrayrefp->selp()->cloneTree(true),
-                                              cellarrayrefp->selp()->cloneTree(true));
-                    AstVar* varp
-                        = makeIfaceModportVar(nodep->fileline(), cellp, ifacep, modportp, rangep);
-                    AstNode* refp = new AstVarRef(varp->fileline(), varp, VAccess::READ);
                     if (cellarrayrefp) {
                         // iface[vec].modport became CellArrayRef(iface, lsb)
                         // Convert back to SelBit(iface, lsb)
                         UINFO(9, " Array modport to SelBit " << cellarrayrefp << endl);
-                        refp = new AstSelBit(cellarrayrefp->fileline(), refp,
+                        newp = new AstSelBit(cellarrayrefp->fileline(), newp,
                                              cellarrayrefp->selp()->unlinkFrBack());
-                        refp->user3(true);  // Don't process again
+                        newp->user3(true);  // Don't process again
                         VL_DO_DANGLING(cellarrayrefp->unlinkFrBack(), cellarrayrefp);
                         m_ds.m_unlinkedScopep = nullptr;
                     }
-                    nodep->replaceWith(refp);
+                    nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
             } else if (AstEnumItem* valuep = VN_CAST(foundp->nodep(), EnumItem)) {

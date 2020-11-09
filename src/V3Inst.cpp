@@ -377,7 +377,10 @@ private:
                     return;
                 }
                 string index = AstNode::encodeNumber(constp->toSInt());
+                if (VN_IS(arrselp->lhsp(), SliceSel))
+                    arrselp->lhsp()->v3error("Unsupported: interface slices");
                 AstVarRef* varrefp = VN_CAST(arrselp->lhsp(), VarRef);
+                UASSERT_OBJ(varrefp, arrselp, "No interface varref under array");
                 AstVarXRef* newp = new AstVarXRef(nodep->fileline(),
                                                   varrefp->name() + "__BRA__" + index + "__KET__",
                                                   "", VAccess::WRITE);

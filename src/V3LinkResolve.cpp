@@ -502,6 +502,16 @@ private:
         iterateChildren(nodep);
     }
 
+    virtual void visit(AstIfaceRefDType* nodep) override {
+        // LinkDot checked modports, now remove references to them
+        // Keeping them later caused problems with InstDeArray,
+        // as it needed to make new modport arrays and such
+        nodep->modportp(nullptr);
+        iterateChildren(nodep);
+    }
+    // virtual void visit(AstModport* nodep) override { ... }
+    // We keep Modport's themselves around for XML dump purposes
+
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

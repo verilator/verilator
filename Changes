@@ -28,6 +28,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix queue poping wrong value when otherwise unused (#2512). [nanduraj1]
 
+****  Fix arrays of modport interfaces (#2614). [Thierry Tambe]
+
 
 * Verilator 4.102 2020-10-15
 
