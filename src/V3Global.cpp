@@ -18,6 +18,7 @@
 #include "verilatedos.h"
 
 #include "V3Global.h"
+#include "V3Builtin.h"
 #include "V3Ast.h"
 #include "V3File.h"
 #include "V3HierBlock.h"
@@ -55,9 +56,12 @@ void V3Global::readFiles() {
     VInFilter filter(v3Global.opt.pipeFilter());
     V3ParseSym parseSyms(v3Global.rootp());  // Symbol table must be common across all parsing
 
-    m_builtin.makeProcessClass(v3Global.rootp(), parseSyms);
-
     V3Parse parser(v3Global.rootp(), &filter, &parseSyms);
+
+    // Define std package
+    V3Builtin::parseStdPackage(parser);
+    V3Builtin::defineExterns(v3Global.rootp(), parseSyms);
+
     // Read top module
     const V3StringList& vFiles = v3Global.opt.vFiles();
     for (const string& filename : vFiles) {

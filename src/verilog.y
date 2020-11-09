@@ -4781,26 +4781,12 @@ idAny<strp>:			// Any kind of identifier
 
 idType<strp>:			// IEEE: class_identifier or other type identifier
 	//			// Used where reference is needed
-	yaID__aTYPE		{
-						if (*$1 == "process" && !$<scp>$) {
-							*$1 = "process__builtin_cls";
-							$<scp>$ = v3Global.builtin().processClassp();
-						}
-						$$ = $1;
-						$<fl>$=$<fl>1;
-					}
+		yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
 idCC<strp>:			// IEEE: class/package then ::
 				// lexer matches this:  yaID_LEX [ '#' '(' ... ')' ] yP_COLONCOLON
-	yaID__CC		{
-						if (*$1 == "process" && !$<scp>$) {
-							*$1 = "process__builtin_pkg";
-							$<scp>$ = v3Global.builtin().processPackagep();
-						}
-						$$ = $1;
-						$<fl>$=$<fl>1;
-					}
+		yaID__CC				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
 idRandomize<strp>:		// Keyword as an identifier

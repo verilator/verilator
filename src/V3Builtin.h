@@ -17,27 +17,15 @@
 #ifndef _V3BUILTIN_H_
 #define _V3BUILTIN_H_ 1
 
-#include "config_build.h"
-#include "verilatedos.h"
-
-class AstClass;
-class AstPackage;
 class AstNetlist;
+class V3Parse;
 class V3ParseSym;
 
-class V3Builtin {
-    AstClass* m_processClassp;
-    AstPackage* m_processPackagep;
+namespace V3Builtin {
 
-public:
-    V3Builtin()
-        : m_processClassp{nullptr}
-        , m_processPackagep{nullptr} {}
+extern void parseStdPackage(V3Parse& parser);
+extern void defineExterns(AstNetlist* rootp, V3ParseSym& parseSyms);
 
-    void makeProcessClass(AstNetlist* rootp, V3ParseSym& parseSyms);
-
-    AstClass* processClassp() { return m_processClassp; }
-    AstPackage* processPackagep() { return m_processPackagep; }
-};
+}  // namespace V3Builtin
 
 #endif  // Guard

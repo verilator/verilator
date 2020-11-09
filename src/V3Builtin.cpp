@@ -15,73 +15,76 @@
 //*************************************************************************
 
 #include "V3Ast.h"
+#include "V3Builtin.h"
 #include "V3FileLine.h"
+#include "V3Parse.h"
 #include "V3ParseSym.h"
 
-void V3Builtin::makeProcessClass(AstNetlist* rootp, V3ParseSym& parseSyms) {
-    m_processClassp = new AstClass(rootp->fileline(), "process__builtin_cls");
-
-    // Member tasks
-    auto* killTaskp = new AstTask(rootp->fileline(), "kill", nullptr);
-    auto* awaitTaskp = new AstTask(rootp->fileline(), "await", nullptr);
-    auto* suspendTaskp = new AstTask(rootp->fileline(), "suspend", nullptr);
-    auto* resumeTaskp = new AstTask(rootp->fileline(), "resume", nullptr);
-    auto* srandomTaskp = new AstTask(rootp->fileline(), "srandom", nullptr);
-    auto* getRandstateTaskp = new AstTask(rootp->fileline(), "get_randstate", nullptr);
-    auto* setRandstateTaskp = new AstTask(rootp->fileline(), "set_randstate", nullptr);
-    m_processClassp->addMembersp(killTaskp);
-    m_processClassp->addMembersp(awaitTaskp);
-    m_processClassp->addMembersp(suspendTaskp);
-    m_processClassp->addMembersp(resumeTaskp);
-    m_processClassp->addMembersp(srandomTaskp);
-    m_processClassp->addMembersp(getRandstateTaskp);
-    m_processClassp->addMembersp(setRandstateTaskp);
-
-    // Unit package for the class
-    auto* unitPackagep = rootp->dollarUnitPkgAddp();
-    parseSyms.reinsert(unitPackagep, parseSyms.symRootp());
-    unitPackagep->addStmtp(m_processClassp);
-
-    // Create a 'process' package to emulate static functions
-    m_processPackagep = new AstPackage(rootp->fileline(), "process__builtin_pkg");
-    m_processPackagep->inLibrary(true);
-    rootp->addModulep(m_processPackagep);
-    parseSyms.pushNew(m_processPackagep);
-
-    // Function 'process::self'
-    auto* selfFuncp = new AstFunc(rootp->fileline(), "self", nullptr,
-                                  new AstClassRefDType(rootp->fileline(), m_processClassp));
-    m_processPackagep->addStmtp(selfFuncp);
-    parseSyms.pushNew(selfFuncp);
-    parseSyms.popScope(selfFuncp);
-
-    // Enum 'process::state'
-    auto* finishedEnumItemp = new AstEnumItem(rootp->fileline(), "FINISHED", nullptr, nullptr);
-    auto* runningEnumItemp = new AstEnumItem(rootp->fileline(), "RUNNING", nullptr, nullptr);
-    auto* waitingEnumItemp = new AstEnumItem(rootp->fileline(), "WAITING", nullptr, nullptr);
-    auto* suspendedEnumItemp = new AstEnumItem(rootp->fileline(), "SUSPENDED", nullptr, nullptr);
-    auto* killedEnumItemp = new AstEnumItem(rootp->fileline(), "KILLED", nullptr, nullptr);
-    finishedEnumItemp->addNext(runningEnumItemp);
-    runningEnumItemp->addNext(waitingEnumItemp);
-    waitingEnumItemp->addNext(suspendedEnumItemp);
-    suspendedEnumItemp->addNext(killedEnumItemp);
-    auto* stateEnump = new AstEnumDType(
-        rootp->fileline(), VFlagChildDType(),
-        new AstBasicDType(rootp->fileline(), AstBasicDTypeKwd::INT), finishedEnumItemp);
-    auto* stateTypedefp
-        = new AstTypedef(rootp->fileline(), "state", nullptr, VFlagChildDType(), stateEnump);
-    m_processPackagep->addStmtp(stateTypedefp);
-    parseSyms.pushNew(stateTypedefp);
-    parseSyms.popScope(stateTypedefp);
-
-    parseSyms.popScope(m_processPackagep);
-
-    // Member function 'status'
-    auto* statusFuncp = new AstFunc(
-        rootp->fileline(), "status", nullptr,
-        new AstRefDType(rootp->fileline(), "state",
-                        new AstClassOrPackageRef(rootp->fileline(), "process__builtin_pkg",
-                                                 m_processPackagep, nullptr),
-                        nullptr));
-    m_processClassp->addMembersp(statusFuncp);
+namespace V3Builtin {
+void parseStdPackage(V3Parse& parser) {
+    string filename = v3Global.opt.hierTopDataDir() + "/builtin.v";
+    std::ofstream* ofp = nullptr;
+    ofp = V3File::new_ofstream(filename);
+    if (!ofp->fail()) {
+        *ofp << R"(
+        package std;
+            class process;
+                integer x;
+                function new();
+                    x = 42;
+                endfunction;
+                typedef enum { FINISHED, RUNNING, WAITING, SUSPENDED, KILLED } state;
+                extern static function process self();
+                extern function state status();
+                extern function void kill();
+                extern task await();
+                extern function void suspend();
+                extern function void resume();
+            endclass
+        endpackage
+        )" << std::endl;
+    }
+    if (ofp) {
+        ofp->close();
+        delete ofp;
+    }
+    parser.parseFile(new FileLine(FileLine::commandLineFilename()), filename, false,
+                     "Cannot find file with built-in definitions: ");
 }
+
+void defineExterns(AstNetlist* rootp, V3ParseSym& parseSyms) {
+    auto* pkgp = rootp->modulesp();
+    while (pkgp->name() != "std") { pkgp = VN_CAST(pkgp->nextp(), NodeModule); }
+    parseSyms.pushNew(pkgp);
+    auto* classp = parseSyms.symCurrentp()->findIdFallback("process")->nodep();
+    auto* memberp = VN_CAST(classp, Class)->membersp();
+    while (memberp) {
+        AstNodeFTask* ftaskp = nullptr;
+        if (VN_IS(memberp, Task)) {
+            ftaskp = new AstTask(rootp->fileline(), memberp->name(), nullptr);
+        } else if (memberp->name() == "status") {
+            ftaskp = new AstFunc(
+                rootp->fileline(), memberp->name(), nullptr,
+                new AstRefDType(
+                    memberp->fileline(), "state",
+                    new AstClassOrPackageRef(memberp->fileline(), classp->name(), classp, nullptr),
+                    nullptr));
+        } else if (memberp->name() == "self") {
+            ftaskp = new AstFunc(
+                rootp->fileline(), memberp->name(), nullptr,
+                new AstRefDType(memberp->fileline(), classp->name(), nullptr, nullptr));
+            ftaskp->lifetime(VLifetime::STATIC);
+            ftaskp->addStmtsp(
+                new AstReturn(classp->fileline(), new AstNew(memberp->fileline(), nullptr)));
+        }
+        if (ftaskp) {
+            ftaskp->packagep(
+                new AstClassOrPackageRef(memberp->fileline(), classp->name(), classp, nullptr));
+            pkgp->addActivep(ftaskp);
+        }
+        memberp = memberp->nextp();
+    }
+    parseSyms.popScope(pkgp);
+}
+
+}  // namespace V3Builtin
