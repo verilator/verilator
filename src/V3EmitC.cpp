@@ -3229,13 +3229,13 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     puts("\n// INTERNAL METHODS\n");
     if (modp->isTop()) {
-        ofp()->putsPrivate(true);  // private:
+        ofp()->putsPrivate(false);  // public: as accessed by another VL_MODULE
         puts("static void " + protect("_eval_initial_loop") + "(" + EmitCBaseVisitor::symClassVar()
              + ");\n");
         if (v3Global.needTraceDumper()) {
-            if (!optSystemC()) puts("void _traceDump();");
-            puts("void _traceDumpOpen();");
-            puts("void _traceDumpClose();");
+            if (!optSystemC()) puts("void _traceDump();\n");
+            puts("void _traceDumpOpen();\n");
+            puts("void _traceDumpClose();\n");
         }
     }
 
