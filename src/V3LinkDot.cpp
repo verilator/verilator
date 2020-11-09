@@ -1834,7 +1834,7 @@ private:
             m_statep->insertSym(moduleSymp, newp->name(), newp, nullptr /*packagep*/);
         }
     }
-    AstVar* foundToVarp(const VSymEnt* symp, AstNode* nodep, bool lvalue) {
+    AstVar* foundToVarp(const VSymEnt* symp, AstNode* nodep, VAccess access) {
         // Return a variable if possible, auto converting a modport to variable
         if (!symp) {
             return nullptr;
@@ -1843,7 +1843,7 @@ private:
         } else if (VN_IS(symp->nodep(), ModportVarRef)) {
             AstModportVarRef* snodep = VN_CAST(symp->nodep(), ModportVarRef);
             AstVar* varp = snodep->varp();
-            if (lvalue && snodep->direction().isReadOnly()) {
+            if (access.isWriteOrRW() && snodep->direction().isReadOnly()) {
                 nodep->v3error("Attempt to drive input-only modport: " << nodep->prettyNameQ());
             }  // else other simulators don't warn about reading, and IEEE doesn't say illegal
             return varp;
@@ -2194,7 +2194,7 @@ private:
                                                           << cellp->modp()->prettyNameQ());
                     }
                 }
-            } else if (AstVar* varp = foundToVarp(foundp, nodep, false)) {
+            } else if (AstVar* varp = foundToVarp(foundp, nodep, VAccess::READ)) {
                 AstIfaceRefDType* ifacerefp = LinkDotState::ifaceRefFromArray(varp->subDTypep());
                 if (ifacerefp) {
                     UASSERT_OBJ(ifacerefp->ifaceViaCellp(), ifacerefp, "Unlinked interface");
