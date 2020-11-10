@@ -29,10 +29,6 @@ void parseStdPackage(V3Parse& parser) {
         *ofp << R"(
         package std;
             class process;
-                integer x;
-                function new();
-                    x = 42;
-                endfunction;
                 typedef enum { FINISHED, RUNNING, WAITING, SUSPENDED, KILLED } state;
                 extern static function process self();
                 extern function state status();
