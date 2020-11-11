@@ -4075,9 +4075,10 @@ is ignored, only a single trace file may be active at once.
 $dumpall/$dumpportsall, $dumpon/$dumpportson, $dumpoff/$dumpportsoff, and
 $dumplimit/$dumpportlimit are currently ignored.
 
-=item $finish, $stop
+=item $exit, $finish, $stop
 
-The rarely used optional parameter to $finish and $stop is ignored.
+The rarely used optional parameter to $finish and $stop is ignored. $exit
+is aliased to $finish.
 
 =item $fopen, $fclose, $fdisplay, $ferror, $feof, $fflush, $fgetc, $fgets,
 $fscanf, $fwrite, $fscanf, $sscanf
