@@ -603,7 +603,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                                                    << " ob" << vvertexp->outBeginp() << " on"
                                                    << (vvertexp->outBeginp()
                                                            ? vvertexp->outBeginp()->outNextp()
-                                                           : 0)
+                                                           : nullptr)
                                                    << " " << vvertexp->name() << endl);
                             for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep;
                                  edgep = edgep->outNextp()) {
@@ -940,7 +940,7 @@ private:
 
 public:
     GateDedupeHash() {}
-    ~GateDedupeHash() {
+    virtual ~GateDedupeHash() override {
         if (v3Global.opt.debugCheck()) check();
     }
 
@@ -966,7 +966,7 @@ public:
     }
 
     // Callback from V3Hashed::findDuplicate
-    bool isSame(AstNode* node1p, AstNode* node2p) {
+    virtual bool isSame(AstNode* node1p, AstNode* node2p) override {
         // Assignment may have been hashReplaced, if so consider non-match (effectively removed)
         if (isReplaced(node1p) || isReplaced(node2p)) {
             // UINFO(9, "isSame hit on replaced "<<(void*)node1p<<" "<<(void*)node2p<<endl);
@@ -1087,7 +1087,7 @@ private:
 public:
     // CONSTRUCTORS
     GateDedupeVarVisitor() {}
-    ~GateDedupeVarVisitor() {}
+    virtual ~GateDedupeVarVisitor() override {}
     // PUBLIC METHODS
     AstNodeVarRef* findDupe(AstNode* nodep, AstVarScope* consumerVarScopep, AstActive* activep) {
         m_assignp = nullptr;
@@ -1349,7 +1349,7 @@ private:
         }
         return VNUser(0);
     }
-    virtual VNUser visit(GateLogicVertex*, VNUser vu) override {  //
+    virtual VNUser visit(GateLogicVertex*, VNUser) override {  //
         return VNUser(0);
     }
 

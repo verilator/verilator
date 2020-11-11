@@ -498,7 +498,7 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
 // 0: Keep the option including its argument
 // 1: Delete the option which has no argument
 // 2: Delete the option and its argument
-int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) const {
+int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
     if (opt == "Mdir" || opt == "clk" || opt == "f" || opt == "j" || opt == "l2-name"
         || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib" || opt == "protect-key"
         || opt == "threads" || opt == "top-module" || opt == "v") {

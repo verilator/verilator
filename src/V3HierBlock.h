@@ -122,7 +122,7 @@ public:
 
     // Write command line arguments to .f files for child Verilation run
     void writeCommandArgsFiles(bool forCMake) const;
-    string topCommandArgsFileName(bool forCMake) const;
+    static string topCommandArgsFileName(bool forCMake);
 
     static void createPlan(AstNetlist* nodep);
 };

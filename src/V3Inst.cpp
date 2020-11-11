@@ -178,7 +178,6 @@ public:
         }
     }
 
-public:
     // CONSTRUCTORS
     explicit InstDeModVarVisitor() {}
     void main(AstNodeModule* nodep) {

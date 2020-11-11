@@ -417,7 +417,7 @@ private:
         // Track what scope it was originally under so V3LinkDot can resolve it
         string newdots = VString::dot(m_cellp->name(), ".", nodep->inlinedDots());
         nodep->inlinedDots(newdots);
-        for (string tryname = nodep->dotted(); 1;) {
+        for (string tryname = nodep->dotted(); true;) {
             if (m_renamedInterfaces.count(tryname)) {
                 nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
                 break;

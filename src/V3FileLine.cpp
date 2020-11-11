@@ -90,8 +90,8 @@ int VFileContent::debug() {
 
 void VFileContent::pushText(const string& text) {
     if (m_lines.size() == 0) {
-        m_lines.push_back("");  // no such thing as line [0]
-        m_lines.push_back("");  // start with no leftover
+        m_lines.emplace_back("");  // no such thing as line [0]
+        m_lines.emplace_back("");  // start with no leftover
     }
 
     // Any leftover text is stored on largest line (might be "")
@@ -112,7 +112,7 @@ void VFileContent::pushText(const string& text) {
         }
     }
     // Keep leftover for next time
-    m_lines.push_back(string(leftover, line_start));  // Might be ""
+    m_lines.emplace_back(string(leftover, line_start));  // Might be ""
 }
 
 string VFileContent::getLine(int lineno) const {

@@ -2673,7 +2673,7 @@ private:
             if (!nodep->firstAbovep()) { newp->makeStatement(); }
         } else if (nodep->name() == "reverse" || nodep->name() == "shuffle"
                    || nodep->name() == "sort" || nodep->name() == "rsort") {
-            AstWith* withp = NULL;
+            AstWith* withp = nullptr;
             if (nodep->name() == "sort" || nodep->name() == "rsort") {
                 withp = methodWithArgument(nodep, false, true, nullptr, adtypep->subDTypep());
             }
@@ -2804,7 +2804,7 @@ private:
             if (!nodep->firstAbovep()) { newp->makeStatement(); }
         } else if (nodep->name() == "reverse" || nodep->name() == "shuffle"
                    || nodep->name() == "sort" || nodep->name() == "rsort") {
-            AstWith* withp = NULL;
+            AstWith* withp = nullptr;
             if (nodep->name() == "sort" || nodep->name() == "rsort") {
                 withp = methodWithArgument(nodep, false, true, nullptr, adtypep->subDTypep());
             }
@@ -2958,7 +2958,7 @@ private:
             nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
         }
     }
-    void methodCallEvent(AstMethodCall* nodep, AstBasicDType* adtypep) {
+    void methodCallEvent(AstMethodCall* nodep, AstBasicDType*) {
         // Method call on event
         if (nodep->name() == "triggered") {
             // We represent events as numbers, so can just return number
@@ -2970,7 +2970,7 @@ private:
             nodep->v3error("Unknown built-in event method " << nodep->prettyNameQ());
         }
     }
-    void methodCallString(AstMethodCall* nodep, AstBasicDType* adtypep) {
+    void methodCallString(AstMethodCall* nodep, AstBasicDType*) {
         // Method call on string
         if (nodep->name() == "len") {
             // Constant value
@@ -3399,7 +3399,7 @@ private:
         // if (debug() >= 9) newp->dumpTree("-apat-out: ");
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }
-    void patternDynArray(AstPattern* nodep, AstDynArrayDType* arrayp, AstPatMember* defaultp) {
+    void patternDynArray(AstPattern* nodep, AstDynArrayDType* arrayp, AstPatMember*) {
         AstNode* newp = new AstConsDynArray(nodep->fileline());
         newp->dtypeFrom(arrayp);
         for (AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember); patp;
@@ -3414,7 +3414,7 @@ private:
         // if (debug() >= 9) newp->dumpTree("-apat-out: ");
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }
-    void patternQueue(AstPattern* nodep, AstQueueDType* arrayp, AstPatMember* defaultp) {
+    void patternQueue(AstPattern* nodep, AstQueueDType* arrayp, AstPatMember*) {
         AstNode* newp = new AstConsQueue(nodep->fileline());
         newp->dtypeFrom(arrayp);
         for (AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember); patp;
@@ -5007,7 +5007,7 @@ private:
         return false;  // No change
     }
 
-    bool similarDTypeRecurse(AstNodeDType* node1p, AstNodeDType* node2p) {
+    static bool similarDTypeRecurse(AstNodeDType* node1p, AstNodeDType* node2p) {
         return node1p->skipRefp()->similarDType(node2p->skipRefp());
     }
     void iterateCheckFileDesc(AstNode* nodep, AstNode* underp, Stage stage) {

@@ -217,7 +217,6 @@ public:
         return vertexp;
     }
 
-public:
     // CONSTRUCTORS
     OrderUser() {
         for (int i = 0; i < WV_MAX; i++) m_vertexp[i] = nullptr;
@@ -565,14 +564,15 @@ public:
         : m_pomGraphp{pomGraphp}
         , m_pomWaitingp{pomWaitingp} {}
     // METHODS
-    OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
-                                 const AstScope* scopep, const AstSenTree* domainp) {
+    virtual OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
+                                         const AstScope* scopep,
+                                         const AstSenTree* domainp) override {
         OrderMoveVertex* resultp = new OrderMoveVertex(m_pomGraphp, lvertexp);
         resultp->domScopep(OrderMoveDomScope::findCreate(domainp, scopep));
         resultp->m_pomWaitingE.pushBack(*m_pomWaitingp, resultp);
         return resultp;
     }
-    void freeVertexp(OrderMoveVertex* freeMep) {
+    virtual void freeVertexp(OrderMoveVertex* freeMep) override {
         freeMep->m_pomWaitingE.unlink(*m_pomWaitingp, freeMep);
         freeMep->unlinkDelete(m_pomGraphp);
     }
@@ -587,14 +587,18 @@ class OrderMTaskMoveVertexMaker : public ProcessMoveBuildGraph<MTaskMoveVertex>:
 public:
     explicit OrderMTaskMoveVertexMaker(V3Graph* pomGraphp)
         : m_pomGraphp{pomGraphp} {}
-    MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex* varVertexp,
-                                 const AstScope* scopep, const AstSenTree* domainp) {
+    virtual MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp,
+                                         const OrderEitherVertex* varVertexp,
+                                         const AstScope* scopep,
+                                         const AstSenTree* domainp) override {
         // Exclude initial/settle logic from the mtasks graph.
         // We'll output time-zero logic separately.
         if (domainp->hasInitial() || domainp->hasSettle()) return nullptr;
         return new MTaskMoveVertex(m_pomGraphp, lvertexp, varVertexp, scopep, domainp);
     }
-    void freeVertexp(MTaskMoveVertex* freeMep) { freeMep->unlinkDelete(m_pomGraphp); }
+    virtual void freeVertexp(MTaskMoveVertex* freeMep) override {
+        freeMep->unlinkDelete(m_pomGraphp);
+    }
 
 private:
     VL_UNCOPYABLE(OrderMTaskMoveVertexMaker);

@@ -568,23 +568,23 @@ public:
 };
 
 string AstNodeDType::cType(const string& name, bool forFunc, bool isRef) const {
-    CTypeRecursed info = cTypeRecurse(forFunc, false);
+    CTypeRecursed info = cTypeRecurse(false);
     return info.render(name, isRef);
 }
 
-AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool forFunc, bool compound) const {
+AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
     CTypeRecursed info;
 
     const AstNodeDType* dtypep = this->skipRefp();
     if (const auto* adtypep = VN_CAST_CONST(dtypep, AssocArrayDType)) {
-        const CTypeRecursed key = adtypep->keyDTypep()->cTypeRecurse(false, true);
-        const CTypeRecursed val = adtypep->subDTypep()->cTypeRecurse(false, true);
+        const CTypeRecursed key = adtypep->keyDTypep()->cTypeRecurse(true);
+        const CTypeRecursed val = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlAssocArray<" + key.m_type + ", " + val.m_type + ">";
     } else if (const auto* adtypep = VN_CAST_CONST(dtypep, DynArrayDType)) {
-        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(false, true);
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlQueue<" + sub.m_type + ">";
     } else if (const auto* adtypep = VN_CAST_CONST(dtypep, QueueDType)) {
-        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(false, true);
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlQueue<" + sub.m_type;
         // + 1 below as VlQueue uses 0 to mean unlimited, 1 to mean size() max is 1
         if (adtypep->boundp()) info.m_type += ", " + cvtToStr(adtypep->boundConst() + 1);
@@ -595,7 +595,7 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool forFunc, bool compou
         if (compound) {
             v3fatalSrc("Dynamic arrays or queues with unpacked elements are not yet supported");
         }
-        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(false, compound);
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound);
         info.m_type = sub.m_type;
         info.m_dims = "[" + cvtToStr(adtypep->declRange().elements()) + "]" + sub.m_dims;
     } else if (const AstBasicDType* bdtypep = dtypep->basicp()) {

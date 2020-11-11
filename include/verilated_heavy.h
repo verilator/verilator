@@ -854,18 +854,16 @@ extern std::string VL_SUBSTR_N(const std::string& lhs, IData rhs, IData ths) VL_
 inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool ignoreCase) VL_PURE {
     // SystemVerilog does not allow a string variable to contain '\0'.
     // So C functions such as strcmp() can correctly compare strings.
-    int result;
     if (ignoreCase) {
-        result = VL_STRCASECMP(lhs.c_str(), rhs.c_str());
+        return VL_STRCASECMP(lhs.c_str(), rhs.c_str());
     } else {
-        result = std::strcmp(lhs.c_str(), rhs.c_str());
+        return std::strcmp(lhs.c_str(), rhs.c_str());
     }
-    return result;
 }
 
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
 
-extern IData VL_FGETS_NI(std::string& destp, IData fpi);
+extern IData VL_FGETS_NI(std::string& dest, IData fpi);
 
 //======================================================================
 // Dumping

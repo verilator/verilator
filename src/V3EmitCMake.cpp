@@ -150,37 +150,37 @@ class CMakeEmitter {
             }
         }
 
-        global.push_back("${VERILATOR_ROOT}/include/verilated.cpp");
+        global.emplace_back("${VERILATOR_ROOT}/include/verilated.cpp");
         if (v3Global.dpi()) {  //
-            global.push_back("${VERILATOR_ROOT}/include/verilated_dpi.cpp");
+            global.emplace_back("${VERILATOR_ROOT}/include/verilated_dpi.cpp");
         }
         if (v3Global.opt.vpi()) {
-            global.push_back("${VERILATOR_ROOT}/include/verilated_vpi.cpp");
+            global.emplace_back("${VERILATOR_ROOT}/include/verilated_vpi.cpp");
         }
         if (v3Global.opt.savable()) {
-            global.push_back("${VERILATOR_ROOT}/include/verilated_save.cpp");
+            global.emplace_back("${VERILATOR_ROOT}/include/verilated_save.cpp");
         }
         if (v3Global.opt.coverage()) {
-            global.push_back("${VERILATOR_ROOT}/include/verilated_cov.cpp");
+            global.emplace_back("${VERILATOR_ROOT}/include/verilated_cov.cpp");
         }
         if (v3Global.opt.trace()) {
-            global.push_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceBase()
-                             + "_c.cpp");
+            global.emplace_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceBase()
+                                + "_c.cpp");
             if (v3Global.opt.systemC()) {
                 if (v3Global.opt.traceFormat() != TraceFormat::VCD) {
                     v3warn(E_UNSUPPORTED,
                            "Unsupported: This trace format is not supported in SystemC, "
                            "use VCD format.");
                 }
-                global.push_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceLang()
-                                 + ".cpp");
+                global.emplace_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceLang()
+                                    + ".cpp");
             }
         }
         if (v3Global.opt.mtasks()) {
-            global.push_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
+            global.emplace_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
         }
         if (!v3Global.opt.protectLib().empty()) {
-            global.push_back(v3Global.opt.makeDir() + "/" + v3Global.opt.protectLib() + ".cpp");
+            global.emplace_back(v3Global.opt.makeDir() + "/" + v3Global.opt.protectLib() + ".cpp");
         }
 
         *of << "# Global classes, need linked once per executable\n";

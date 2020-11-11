@@ -587,12 +587,12 @@ protected:
         }
         return true;
     }
-    size_t listSize(StrList& sl) {
+    static size_t listSize(StrList& sl) {
         size_t out = 0;
         for (const string& i : sl) out += i.length();
         return out;
     }
-    string listString(StrList& sl) {
+    static string listString(StrList& sl) {
         string out;
         for (const string& i : sl) out += i;
         return out;

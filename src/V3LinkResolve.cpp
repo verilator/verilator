@@ -172,27 +172,27 @@ private:
                 addwherep->addNext(assignp);
             }
         } else {  // Old V1995 sensitivity list; we'll probably mostly ignore
-            bool did = 1;
+            bool did = true;
             while (did) {
-                did = 0;
+                did = false;
                 if (AstNodeSel* selp = VN_CAST(nodep->sensp(), NodeSel)) {
                     AstNode* fromp = selp->fromp()->unlinkFrBack();
                     selp->replaceWith(fromp);
                     VL_DO_DANGLING(selp->deleteTree(), selp);
-                    did = 1;
+                    did = true;
                 }
                 // NodeSel doesn't include AstSel....
                 if (AstSel* selp = VN_CAST(nodep->sensp(), Sel)) {
                     AstNode* fromp = selp->fromp()->unlinkFrBack();
                     selp->replaceWith(fromp);
                     VL_DO_DANGLING(selp->deleteTree(), selp);
-                    did = 1;
+                    did = true;
                 }
                 if (AstNodePreSel* selp = VN_CAST(nodep->sensp(), NodePreSel)) {
                     AstNode* fromp = selp->lhsp()->unlinkFrBack();
                     selp->replaceWith(fromp);
                     VL_DO_DANGLING(selp->deleteTree(), selp);
-                    did = 1;
+                    did = true;
                 }
             }
         }
@@ -359,7 +359,7 @@ private:
                         if (!inpercent && c == '%') {
                             inpercent = true;
                         } else if (inpercent) {
-                            inpercent = 0;
+                            inpercent = false;
                             switch (c) {
                             case '0':  // FALLTHRU
                             case '1':  // FALLTHRU
@@ -392,7 +392,7 @@ private:
         return newFormat;
     }
 
-    void expectDescriptor(AstNode* nodep, AstNodeVarRef* filep) {
+    static void expectDescriptor(AstNode* nodep, AstNodeVarRef* filep) {
         if (!filep) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: $fopen/$fclose/$f* descriptor must be a simple variable");

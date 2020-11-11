@@ -281,7 +281,6 @@ public:
         of.putsHeader();
     }
 
-public:
     explicit EmitMk() {
         emitClassMake();
         emitOverallMake();

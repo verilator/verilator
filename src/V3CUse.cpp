@@ -148,7 +148,7 @@ class CUseVisitor : public AstNVisitor {
         funcp->isStatic(false);
         funcp->protect(false);
         AstNode* exprp = new AstCMath(nodep->fileline(),
-                                      "std::string(\"'{\") + to_string_middle() + \"}\"", 0);
+                                      R"(std::string("'{") + to_string_middle() + "}")", 0);
         exprp->dtypeSetString();
         funcp->addStmtsp(new AstCReturn(nodep->fileline(), exprp));
         nodep->addStmtp(funcp);

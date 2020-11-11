@@ -2463,7 +2463,7 @@ public:
 
 private:
     class CTypeRecursed;
-    CTypeRecursed cTypeRecurse(bool forFunc, bool compound) const;
+    CTypeRecursed cTypeRecurse(bool compound) const;
 };
 
 class AstNodeUOrStructDType : public AstNodeDType {

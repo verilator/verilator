@@ -1245,7 +1245,6 @@ public:
         nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
     }
 
-public:
     EmitCStmts() {
         m_suppressSemi = false;
         m_wideTempRefp = nullptr;
@@ -2353,7 +2352,7 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep, const str
 //######################################################################
 // Internal EmitC
 
-void EmitCImp::emitCoverageDecl(AstNodeModule* modp) {
+void EmitCImp::emitCoverageDecl(AstNodeModule*) {
     if (v3Global.opt.coverage()) {
         ofp()->putsPrivate(true);
         putsDecoration("// Coverage\n");
@@ -2400,7 +2399,7 @@ void EmitCImp::emitMTaskVertexCtors(bool* firstp) {
 void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     puts("\n");
     bool first = true;
-    string section("");
+    string section;
     emitParams(modp, true, &first, section /*ref*/);
 
     if (VN_IS(modp, Class)) {
@@ -2480,7 +2479,7 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
     splitSizeInc(10);
 }
 
-void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
+void EmitCImp::emitCoverageImp(AstNodeModule*) {
     if (v3Global.opt.coverage()) {
         puts("\n// Coverage\n");
         // Rather than putting out VL_COVER_INSERT calls directly, we do it via this function
@@ -3033,7 +3032,7 @@ void EmitCImp::emitMTaskState() {
     puts("bool __Vm_even_cycle;\n");
 }
 
-void EmitCImp::emitIntTop(AstNodeModule* modp) {
+void EmitCImp::emitIntTop(AstNodeModule*) {
     // Always have this first; gcc has short circuiting if #ifdef is first in a file
     ofp()->putsGuard();
     puts("\n");

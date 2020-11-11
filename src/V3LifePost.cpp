@@ -99,13 +99,11 @@ public:
 // and a sequence number within the mtask:
 
 struct LifeLocation {
-    const ExecMTask* mtaskp;
-    uint32_t sequence;
+    const ExecMTask* mtaskp = nullptr;
+    uint32_t sequence = 0;
 
 public:
-    LifeLocation()
-        : mtaskp{nullptr}
-        , sequence{0} {}
+    LifeLocation() {}
     LifeLocation(const ExecMTask* mtaskp_, uint32_t sequence_)
         : mtaskp{mtaskp_}
         , sequence{sequence_} {}
@@ -120,9 +118,8 @@ public:
 
 struct LifePostLocation {
     LifeLocation loc;
-    AstAssignPost* nodep;
-    LifePostLocation()
-        : nodep{nullptr} {}
+    AstAssignPost* nodep = nullptr;
+    LifePostLocation() {}
     LifePostLocation(LifeLocation loc_, AstAssignPost* nodep_)
         : loc{loc_}
         , nodep{nodep_} {}

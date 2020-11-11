@@ -296,7 +296,7 @@ class EmitCSyms : EmitCBaseVisitor {
         if (VN_IS(m_modp, Class)) return;  // The ClassPackage is what is visible
         nameCheck(nodep);
 
-        m_scopes.push_back(make_pair(nodep, m_modp));
+        m_scopes.emplace_back(make_pair(nodep, m_modp));
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
             string name_dedot = AstNode::dedotName(nodep->shortName());
@@ -331,7 +331,7 @@ class EmitCSyms : EmitCBaseVisitor {
     virtual void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildren(nodep);
-        if (nodep->isSigUserRdPublic()) { m_modVars.push_back(make_pair(m_modp, nodep)); }
+        if (nodep->isSigUserRdPublic()) { m_modVars.emplace_back(make_pair(m_modp, nodep)); }
     }
     virtual void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use

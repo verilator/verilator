@@ -436,6 +436,6 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     *of << v3Global.opt.allArgsStringForHierBlock(true) << "\n";
 }
 
-string V3HierBlockPlan::topCommandArgsFileName(bool forCMake) const {
+string V3HierBlockPlan::topCommandArgsFileName(bool forCMake) {
     return V3HierCommandArgsFileName(v3Global.opt.prefix(), forCMake);
 }

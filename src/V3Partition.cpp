@@ -284,7 +284,7 @@ private:
         if (it != m_cp.end()) return it->second;
         return 0;
     }
-    uint32_t cost(const V3GraphVertex*) const { return 1; }
+    static uint32_t cost(const V3GraphVertex*) { return 1; }
     void partInitCriticalPaths(bool checkOnly) {
         // Set up the FORWARD cp's only.  This test only looks in one
         // direction, it assumes REVERSE is symmetrical and would be
@@ -726,10 +726,10 @@ class SiblingMC : public MergeCandidate {
 private:
     LogicMTask* m_ap;
     LogicMTask* m_bp;
-    // CONSTRUCTORS
-    SiblingMC() = delete;
 
 public:
+    // CONSTRUCTORS
+    SiblingMC() = delete;
     SiblingMC(LogicMTask* ap, LogicMTask* bp) {
         // Assign 'ap' and 'bp' in a canonical order, so we can more easily
         // compare pairs of SiblingMCs
@@ -745,7 +745,7 @@ public:
     // METHODS
     LogicMTask* ap() const { return m_ap; }
     LogicMTask* bp() const { return m_bp; }
-    bool mergeWouldCreateCycle() const {
+    bool mergeWouldCreateCycle() const override {
         return (LogicMTask::pathExistsFrom(m_ap, m_bp, nullptr)
                 || LogicMTask::pathExistsFrom(m_bp, m_ap, nullptr));
     }

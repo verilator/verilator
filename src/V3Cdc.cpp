@@ -311,13 +311,12 @@ private:
         }
     }
 
-    string spaces(int level) {
+    static string spaces(int level) {
         string out;
         while (level--) out += " ";
         return out;
     }  // LCOV_EXCL_LINE
-
-    string pad(unsigned column, const string& in) {
+    static string pad(unsigned column, const string& in) {
         string out = in;
         while (out.length() < column) out += ' ';
         return out;

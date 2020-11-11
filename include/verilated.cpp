@@ -556,7 +556,7 @@ WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, W
                 return owp;
             }
         }
-        return 0;
+        return owp;
     }
     return VL_POW_WWW(obits, rbits, rbits, owp, lwp, rwp);
 }
@@ -1301,8 +1301,8 @@ IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
 }
 
 // declared in verilated_heavy.h
-IData VL_FGETS_NI(std::string& str, IData fpi) VL_MT_SAFE {
-    return getLine(str, fpi, std::numeric_limits<size_t>::max());
+IData VL_FGETS_NI(std::string& dest, IData fpi) VL_MT_SAFE {
+    return getLine(dest, fpi, std::numeric_limits<size_t>::max());
 }
 
 IData VL_FERROR_IN(IData, std::string& outputr) VL_MT_SAFE {

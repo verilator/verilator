@@ -767,7 +767,7 @@ public:
         : m_refs{} {
         iterate(nodep);
     }
-    ~SplitUnpackedVarVisitor() {
+    ~SplitUnpackedVarVisitor() override {
         UASSERT(m_refs.empty(), "Don't forget to call split()");
         V3Stats::addStat("SplitVar, Split unpacked arrays", m_numSplit);
     }
@@ -916,8 +916,8 @@ public:
         std::vector<std::pair<int, bool>> points;  // <bit location, is end>
         points.reserve(m_lhs.size() * 2 + 2);  // 2 points will be added per one PackedVarRefEntry
         for (const_iterator it = m_lhs.begin(), itend = m_lhs.end(); it != itend; ++it) {
-            points.push_back(std::make_pair(it->lsb(), false));  // Start of a region
-            points.push_back(std::make_pair(it->msb() + 1, true));  // End of a region
+            points.emplace_back(std::make_pair(it->lsb(), false));  // Start of a region
+            points.emplace_back(std::make_pair(it->msb() + 1, true));  // End of a region
         }
         if (skipUnused && !m_rhs.empty()) {  // Range to be read must be kept, so add points here
             int lsb = m_basicp->msb() + 1;
@@ -927,12 +927,12 @@ public:
                 msb = std::max(msb, m_rhs[i].msb());
             }
             UASSERT_OBJ(lsb <= msb, m_basicp, "lsb:" << lsb << " msb:" << msb << " are wrong");
-            points.push_back(std::make_pair(lsb, false));
-            points.push_back(std::make_pair(msb + 1, true));
+            points.emplace_back(std::make_pair(lsb, false));
+            points.emplace_back(std::make_pair(msb + 1, true));
         }
         if (!skipUnused) {  // All bits are necessary
-            points.push_back(std::make_pair(m_basicp->lsb(), false));
-            points.push_back(std::make_pair(m_basicp->msb() + 1, true));
+            points.emplace_back(std::make_pair(m_basicp->lsb(), false));
+            points.emplace_back(std::make_pair(m_basicp->msb() + 1, true));
         }
         std::sort(points.begin(), points.end(), SortByFirst());
 
@@ -947,7 +947,7 @@ public:
             }
             UASSERT(refcount >= 0, "refcounut must not be negative");
             if (bitwidth == 0 || refcount == 0) continue;  // Vacant region
-            plan.push_back(SplitNewVar(points[i].first, bitwidth));
+            plan.emplace_back(SplitNewVar(points[i].first, bitwidth));
         }
 
         return plan;
@@ -1216,7 +1216,7 @@ public:
             m_modp = nullptr;
         }
     }
-    ~SplitPackedVarVisitor() {
+    ~SplitPackedVarVisitor() override {
         UASSERT(m_refs.empty(), "Forgot to call split()");
         V3Stats::addStat("SplitVar, Split packed variables", m_numSplit);
     }

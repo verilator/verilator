@@ -1941,7 +1941,8 @@ private:
                 ifp->rhsp(new AstCond(truep->fileline(), condp, truep, falsep));
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            } else if (0  // Disabled, as vpm assertions are faster without due to short-circuiting
+            } else if (false  // Disabled, as vpm assertions are faster
+                              // without due to short-circuiting
                        && operandIfIf(nodep)) {
                 UINFO(9, "IF({a}) IF({b}) => IF({a} && {b})" << endl);
                 AstNodeIf* lowerIfp = VN_CAST(nodep->ifsp(), NodeIf);
