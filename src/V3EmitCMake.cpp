@@ -71,8 +71,8 @@ class CMakeEmitter {
     // Swap all backslashes for forward slashes, because of Windows
     static string deslash(const string& s) {
         std::string res = s;
-        for (string::iterator it = res.begin(); it != res.end(); ++it) {
-            if (*it == '\\') *it = '/';
+        for (char& c : res) {
+            if (c == '\\') c = '/';
         }
         return res;
     }
@@ -243,9 +243,9 @@ class CMakeEmitter {
             *of << "verilate(${TOP_TARGET_NAME} PREFIX " << v3Global.opt.prefix() << " TOP_MODULE "
                 << v3Global.rootp()->topModulep()->name() << " DIRECTORY "
                 << deslash(v3Global.opt.makeDir()) << " SOURCES ";
-            for (V3HierBlockPlan::const_iterator it = planp->begin(); it != planp->end(); ++it) {
+            for (const auto& itr : *planp) {
                 *of << " "
-                    << deslash(v3Global.opt.makeDir() + "/" + it->second->hierWrapper(true));
+                    << deslash(v3Global.opt.makeDir() + "/" + itr.second->hierWrapper(true));
             }
             *of << " " << deslash(cmake_list(v3Global.opt.vFiles()));
             *of << " VERILATOR_ARGS ";

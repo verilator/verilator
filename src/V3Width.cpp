@@ -4246,9 +4246,9 @@ private:
         do {
         reloop:
             V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
-            for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
-                AstVar* portp = it->first;
-                AstArg* argp = it->second;
+            for (const auto& tconnect : tconnects) {
+                AstVar* portp = tconnect.first;
+                AstArg* argp = tconnect.second;
                 AstNode* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
                 // Prelim may cause the node to get replaced; we've lost our
@@ -4301,9 +4301,9 @@ private:
         // Stage 2
         {
             V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
-            for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
-                AstVar* portp = it->first;
-                AstArg* argp = it->second;
+            for (const auto& tconnect : tconnects) {
+                AstVar* portp = tconnect.first;
+                AstArg* argp = tconnect.second;
                 AstNode* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
                 // Change data types based on above accept completion
@@ -4313,9 +4313,9 @@ private:
         // Stage 3
         {
             V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
-            for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
-                AstVar* portp = it->first;
-                AstArg* argp = it->second;
+            for (const auto& tconnect : tconnects) {
+                AstVar* portp = tconnect.first;
+                AstArg* argp = tconnect.second;
                 AstNode* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
                 // Do PRELIM again, because above accept may have exited early
@@ -4328,9 +4328,9 @@ private:
         // Stage 4
         {
             V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
-            for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
-                AstVar* portp = it->first;
-                AstArg* argp = it->second;
+            for (const auto& tconnect : tconnects) {
+                AstVar* portp = tconnect.first;
+                AstArg* argp = tconnect.second;
                 AstNode* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
                 if (portp->direction() == VDirection::REF
@@ -5777,9 +5777,9 @@ private:
         nodep->name(nodep->taskp()->name());
         // Replace open array arguments with the callee's task
         V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
-        for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
-            AstVar* portp = it->first;
-            AstArg* argp = it->second;
+        for (const auto& tconnect : tconnects) {
+            AstVar* portp = tconnect.first;
+            AstArg* argp = tconnect.second;
             AstNode* pinp = argp->exprp();
             if (!pinp) continue;  // Argument error we'll find later
             if (hasOpenArrayIterateDType(portp->dtypep())) portp->dtypep(pinp->dtypep());

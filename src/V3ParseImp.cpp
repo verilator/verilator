@@ -49,13 +49,9 @@ int V3ParseSym::s_anonNum = 0;
 // Parser constructor
 
 V3ParseImp::~V3ParseImp() {
-    for (std::deque<string*>::iterator it = m_stringps.begin(); it != m_stringps.end(); ++it) {
-        VL_DO_DANGLING(delete *it, *it);
-    }
+    for (auto& itr : m_stringps) VL_DO_DANGLING(delete itr, itr);
     m_stringps.clear();
-    for (std::deque<V3Number*>::iterator it = m_numberps.begin(); it != m_numberps.end(); ++it) {
-        VL_DO_DANGLING(delete *it, *it);
-    }
+    for (auto& itr : m_numberps) VL_DO_DANGLING(delete itr, itr);
     m_numberps.clear();
     lexDestroy();
     parserClear();
@@ -252,11 +248,10 @@ void V3ParseImp::preprocDumps(std::ostream& os) {
         V3PreShell::dumpDefines(os);
     } else {
         bool noblanks = v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine();
-        for (std::deque<string>::iterator it = m_ppBuffers.begin(); it != m_ppBuffers.end();
-             ++it) {
+        for (auto& buf : m_ppBuffers) {
             if (noblanks) {
                 bool blank = true;
-                for (string::iterator its = it->begin(); its != it->end(); ++its) {
+                for (string::iterator its = buf.begin(); its != buf.end(); ++its) {
                     if (!isspace(*its) && *its != '\n') {
                         blank = false;
                         break;
@@ -264,7 +259,7 @@ void V3ParseImp::preprocDumps(std::ostream& os) {
                 }
                 if (blank) continue;
             }
-            os << *it;
+            os << buf;
         }
     }
 }

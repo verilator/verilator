@@ -107,9 +107,8 @@ static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of
 
 V3HierBlock::StrGParams V3HierBlock::stringifyParams(const GParams& gparams, bool forGOption) {
     StrGParams strParams;
-    for (V3HierBlock::GParams::const_iterator gparamIt = gparams.begin();
-         gparamIt != gparams.end(); ++gparamIt) {
-        if (const AstConst* constp = VN_CAST((*gparamIt)->valuep(), Const)) {
+    for (const auto& gparam : gparams) {
+        if (const AstConst* constp = VN_CAST(gparam->valuep(), Const)) {
             string s;
             // Only constant parameter needs to be set to -G because already checked in
             // V3Param.cpp. See also ParamVisitor::checkSupportedParam() in the file.
@@ -131,7 +130,7 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const GParams& gparams, boo
                 s = constp->num().ascii(true, true);
                 s = VString::quoteAny(s, '\'', '\\');
             }
-            strParams.push_back(std::make_pair((*gparamIt)->name(), s));
+            strParams.push_back(std::make_pair(gparam->name(), s));
         }
     }
     return strParams;
@@ -139,9 +138,8 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const GParams& gparams, boo
 
 V3HierBlock::~V3HierBlock() {
     UASSERT(m_children.empty(), "at least one module must be a leaf");
-    for (HierBlockSet::const_iterator child = m_children.begin(); child != m_children.end();
-         ++child) {
-        const bool deleted = (*child)->m_children.erase(this);
+    for (const auto& hierblockp : m_children) {
+        const bool deleted = hierblockp->m_children.erase(this);
         UASSERT_OBJ(deleted, m_modp, " is not registered");
     }
 }
@@ -214,9 +212,8 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     *of << "--cc\n";
 
     if (!forCMake) {
-        for (V3HierBlock::HierBlockSet::const_iterator child = m_children.begin();
-             child != m_children.end(); ++child) {
-            *of << v3Global.opt.makeDir() << "/" << (*child)->hierWrapper(true) << "\n";
+        for (const auto& hierblockp : m_children) {
+            *of << v3Global.opt.makeDir() << "/" << hierblockp->hierWrapper(true) << "\n";
         }
         *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     }
@@ -224,10 +221,7 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     const V3StringList& commandOpts = commandArgs(false);
     for (const string& opt : commandOpts) *of << opt << "\n";
     *of << hierBlockArgs().front() << "\n";
-    for (HierBlockSet::const_iterator child = m_children.begin(); child != m_children.end();
-         ++child) {
-        *of << (*child)->hierBlockArgs().front() << "\n";
-    }
+    for (const auto& hierblockp : m_children) *of << hierblockp->hierBlockArgs().front() << "\n";
     // Hierarchical blocks should not use multi-threading,
     // but needs to be thread safe when top is multi-threaded.
     if (v3Global.opt.threads() > 0) { *of << "--threads 1\n"; }

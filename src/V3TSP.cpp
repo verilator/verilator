@@ -411,9 +411,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
     // Build the initial graph from the starting state set.
     typedef TspGraphTmpl<const TspStateBase*> Graph;
     Graph graph;
-    for (V3TSP::StateVec::const_iterator it = states.begin(); it != states.end(); ++it) {
-        graph.addVertex(*it);
-    }
+    for (const auto& state : states) graph.addVertex(state);
     for (V3TSP::StateVec::const_iterator it = states.begin(); it != states.end(); ++it) {
         for (V3TSP::StateVec::const_iterator jt = it; jt != states.end(); ++jt) {
             if (it == jt) continue;

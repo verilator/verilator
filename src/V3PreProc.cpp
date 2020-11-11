@@ -1549,8 +1549,8 @@ int V3PreProcImp::getFinalToken(string& buf) {
             }
         }
         // Track newlines in prep for next token
-        for (string::iterator cp = buf.begin(); cp != buf.end(); ++cp) {
-            if (*cp == '\n') {
+        for (char& c : buf) {
+            if (c == '\n') {
                 m_finAtBol = true;
                 m_finFilelinep->linenoInc();
             } else {

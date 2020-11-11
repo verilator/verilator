@@ -65,10 +65,9 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     void cleanupVarRefs() {
-        for (VarRefScopeSet::iterator it = m_varRefScopes.begin(); it != m_varRefScopes.end();
-             ++it) {
-            AstVarRef* nodep = it->first;
-            AstScope* scopep = it->second;
+        for (const auto& itr : m_varRefScopes) {
+            AstVarRef* nodep = itr.first;
+            AstScope* scopep = itr.second;
             if (nodep->packagep() && !nodep->varp()->isClassMember()) {
                 const auto it2 = m_packageScopes.find(nodep->packagep());
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");

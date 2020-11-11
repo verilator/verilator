@@ -1294,8 +1294,8 @@ public:
     // Returns the number of elements in set_a that don't appear in set_b
     static int diffs(const MTaskIdSet& set_a, const MTaskIdSet& set_b) {
         int diffs = 0;
-        for (MTaskIdSet::iterator it = set_a.begin(); it != set_a.end(); ++it) {
-            if (set_b.find(*it) == set_b.end()) ++diffs;
+        for (int i : set_a) {
+            if (set_b.find(i) == set_b.end()) ++diffs;
         }
         return diffs;
     }
@@ -1731,10 +1731,9 @@ class EmitCImp : EmitCStmts {
                     puts("}\n");
                 }
                 const AstInitArray::KeyItemMap& mapr = initarp->map();
-                for (AstInitArray::KeyItemMap::const_iterator it = mapr.begin(); it != mapr.end();
-                     ++it) {
-                    AstNode* valuep = it->second->valuep();
-                    emitSetVarConstant(varp->nameProtect() + "[" + cvtToStr(it->first) + "]",
+                for (const auto& itr : mapr) {
+                    AstNode* valuep = itr.second->valuep();
+                    emitSetVarConstant(varp->nameProtect() + "[" + cvtToStr(itr.first) + "]",
                                        VN_CAST(valuep, Const));
                 }
             } else {
@@ -2902,8 +2901,8 @@ void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
     if (!v3Global.opt.mtasks()) {
         // Plain old serial mode. Sort by size, from small to large,
         // to optimize for both packing and small offsets in code.
-        for (VarSortMap::const_iterator it = vmap.begin(); it != vmap.end(); ++it) {
-            for (VarVec::const_iterator jt = it->second.begin(); jt != it->second.end(); ++jt) {
+        for (const auto& itr : vmap) {
+            for (VarVec::const_iterator jt = itr.second.begin(); jt != itr.second.end(); ++jt) {
                 sortedp->push_back(*jt);
             }
         }

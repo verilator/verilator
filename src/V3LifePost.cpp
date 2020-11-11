@@ -186,8 +186,8 @@ private:
         return true;
     }
     void squashAssignposts() {
-        for (PostLocMap::iterator it = m_assignposts.begin(); it != m_assignposts.end(); ++it) {
-            LifePostLocation* app = &it->second;
+        for (auto& itr : m_assignposts) {
+            LifePostLocation* app = &itr.second;
             AstVarRef* lhsp = VN_CAST(app->nodep->lhsp(), VarRef);  // original var
             AstVarRef* rhsp = VN_CAST(app->nodep->rhsp(), VarRef);  // dly var
             AstVarScope* dlyVarp = rhsp->varScopep();

@@ -398,8 +398,8 @@ void EmitCSyms::emitSymHdr() {
     if (v3Global.dpi()) {
         puts("\n// DPI TYPES for DPI Export callbacks (Internal use)\n");
         std::map<const string, int> types;  // Remove duplicates and sort
-        for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
-            AstCFunc* funcp = it->second.m_cfuncp;
+        for (const auto& itr : m_scopeFuncs) {
+            AstCFunc* funcp = itr.second.m_cfuncp;
             if (funcp->dpiExport()) {
                 string cbtype = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
                 types["typedef void (*" + cbtype + ") (" + cFuncArgs(funcp) + ");\n"] = 1;
@@ -455,8 +455,8 @@ void EmitCSyms::emitSymHdr() {
 
     if (!m_scopeNames.empty()) {  // Scope names
         puts("\n// SCOPE NAMES\n");
-        for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
-            puts("VerilatedScope " + protect("__Vscope_" + it->second.m_symName) + ";\n");
+        for (const auto& itr : m_scopeNames) {
+            puts("VerilatedScope " + protect("__Vscope_" + itr.second.m_symName) + ";\n");
         }
     }
 

@@ -480,8 +480,7 @@ class TristateVisitor : public TristateBaseVisitor {
         // or inouts without high-Z logic and put a 1'bz driver on them and add
         // them to the lhs map so they get expanded correctly.
         TristateGraph::VarVec vars = m_tgraph.tristateVars();
-        for (TristateGraph::VarVec::iterator ii = vars.begin(); ii != vars.end(); ++ii) {
-            AstVar* varp = (*ii);
+        for (auto varp : vars) {
             if (m_tgraph.isTristate(varp)) {
                 const auto it = m_lhsmap.find(varp);
                 if (it == m_lhsmap.end()) {
@@ -557,8 +556,7 @@ class TristateVisitor : public TristateBaseVisitor {
             AstNode* undrivenp = nullptr;
 
             // loop through the lhs drivers to build the driver resolution logic
-            for (RefVec::iterator ii = refsp->begin(); ii != refsp->end(); ++ii) {
-                AstVarRef* refp = (*ii);
+            for (auto refp : *refsp) {
                 int w = lhsp->width();
 
                 // create the new lhs driver for this var

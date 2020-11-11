@@ -153,9 +153,7 @@ public:
         OrderMoveVertex* vertexp);  // Mark one vertex as finished, remove from ready list if done
     // STATIC MEMBERS (for lookup)
     static void clear() {
-        for (DomScopeMap::iterator it = s_dsMap.begin(); it != s_dsMap.end(); ++it) {
-            delete it->second;
-        }
+        for (const auto& itr : s_dsMap) delete itr.second;
         s_dsMap.clear();
     }
     V3List<OrderMoveVertex*>& readyVertices() { return m_readyVertices; }
@@ -219,7 +217,7 @@ public:
 
     // CONSTRUCTORS
     OrderUser() {
-        for (int i = 0; i < WV_MAX; i++) m_vertexp[i] = nullptr;
+        for (auto& vertexp : m_vertexp) vertexp = nullptr;
     }
     ~OrderUser() {}
 };

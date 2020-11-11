@@ -172,9 +172,8 @@ public:
         }
     }
     void dump() {
-        for (VarNameMap::iterator it = m_modVarNameMap.begin(); it != m_modVarNameMap.end();
-             ++it) {
-            cout << "-namemap: " << it->first << " -> " << it->second << endl;
+        for (const auto& itr : m_modVarNameMap) {
+            cout << "-namemap: " << itr.first << " -> " << itr.second << endl;
         }
     }
 

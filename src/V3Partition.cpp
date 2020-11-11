@@ -308,7 +308,7 @@ private:
         // Generate a pseudo-random graph
         vluint64_t rngState[2] = {0x12345678ULL, 0x9abcdef0ULL};
         // Create 50 vertices
-        for (unsigned i = 0; i < 50; ++i) m_vx[i] = new V3GraphVertex(&m_graph);
+        for (auto& i : m_vx) i = new V3GraphVertex(&m_graph);
         // Create 250 edges at random. Edges must go from
         // lower-to-higher index vertices, so we get a DAG.
         for (unsigned i = 0; i < 250; ++i) {
@@ -328,10 +328,8 @@ private:
 
         // Seed the propagator with every input node;
         // This should result in the complete graph getting all CP's assigned.
-        for (unsigned i = 0; i < 50; ++i) {
-            if (!m_vx[i]->inBeginp()) {
-                prop.cpHasIncreased(m_vx[i], 1 /* inclusive CP starts at 1 */);
-            }
+        for (const auto& i : m_vx) {
+            if (!i->inBeginp()) prop.cpHasIncreased(i, 1 /* inclusive CP starts at 1 */);
         }
 
         // Run the propagator.
@@ -451,7 +449,7 @@ public:
     // CONSTRUCTORS
     LogicMTask(V3Graph* graphp, MTaskMoveVertex* mtmvVxp)
         : AbstractLogicMTask{graphp} {
-        for (int i = 0; i < GraphWay::NUM_WAYS; ++i) m_critPathCost[i] = 0;
+        for (unsigned int& i : m_critPathCost) i = 0;
         if (mtmvVxp) {  // Else null for test
             m_vertices.push_back(mtmvVxp);
             if (OrderLogicVertex* olvp = mtmvVxp->logicp()) {

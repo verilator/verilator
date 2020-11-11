@@ -846,9 +846,7 @@ bool AstSenTree::hasCombo() const {
 void AstTypeTable::clearCache() {
     // When we mass-change widthMin in V3WidthCommit, we need to correct the table.
     // Just clear out the maps; the search functions will be used to rebuild the map
-    for (int i = 0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
-        m_basicps[i] = nullptr;
-    }
+    for (auto& itr : m_basicps) itr = nullptr;
     m_detailedMap.clear();
     // Clear generic()'s so dead detection will work
     for (AstNode* nodep = typesp(); nodep; nodep = nodep->nextp()) {
@@ -1176,12 +1174,12 @@ void AstInitArray::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     int n = 0;
     const AstInitArray::KeyItemMap& mapr = map();
-    for (AstInitArray::KeyItemMap::const_iterator it = mapr.begin(); it != mapr.end(); ++it) {
+    for (const auto& itr : mapr) {
         if (n++ > 5) {
             str << " ...";
             break;
         }
-        str << " [" << it->first << "]=" << (void*)it->second;
+        str << " [" << itr.first << "]=" << (void*)itr.second;
     }
 }
 void AstJumpGo::dump(std::ostream& str) const {
@@ -1406,8 +1404,8 @@ void AstTypeTable::dump(std::ostream& str) const {
     }
     {
         const DetailedMap& mapr = m_detailedMap;
-        for (DetailedMap::const_iterator it = mapr.begin(); it != mapr.end(); ++it) {
-            AstBasicDType* dtypep = it->second;
+        for (const auto& itr : mapr) {
+            AstBasicDType* dtypep = itr.second;
             str << endl;  // Newline from caller, so newline first
             str << "\t\tdetailed  ->  ";
             dtypep->dump(str);

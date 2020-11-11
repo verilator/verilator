@@ -317,9 +317,8 @@ private:
             }
 
             // Foreach input state (NFA inputs of this DFA state)
-            for (std::set<int>::const_iterator inIt = inputs.begin(); inIt != inputs.end();
-                 ++inIt) {
-                DfaInput input = *inIt;
+            for (int inIt : inputs) {
+                DfaInput input = inIt;
                 UINFO(9, "    ===" << ++i << "=======================\n");
                 UINFO(9, "    On input " << cvtToHex(input.toNodep()) << endl);
 

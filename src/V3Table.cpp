@@ -200,10 +200,7 @@ private:
 
         // Collapse duplicate tables
         chgVscp = findDuplicateTable(chgVscp);
-        for (std::deque<AstVarScope*>::iterator it = m_tableVarps.begin();
-             it != m_tableVarps.end(); ++it) {
-            *it = findDuplicateTable(*it);
-        }
+        for (auto& vscp : m_tableVarps) vscp = findDuplicateTable(vscp);
 
         createOutputAssigns(nodep, stmtsp, indexVscp, chgVscp);
 

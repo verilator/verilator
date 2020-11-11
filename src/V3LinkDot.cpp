@@ -1726,9 +1726,9 @@ public:
 };
 
 void LinkDotState::computeIfaceModSyms() {
-    for (IfaceModSyms::iterator it = m_ifaceModSyms.begin(); it != m_ifaceModSyms.end(); ++it) {
-        AstIface* nodep = it->first;
-        VSymEnt* symp = it->second;
+    for (const auto& itr : m_ifaceModSyms) {
+        AstIface* nodep = itr.first;
+        VSymEnt* symp = itr.second;
         LinkDotIfaceVisitor(nodep, symp, this);
     }
     m_ifaceModSyms.clear();

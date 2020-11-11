@@ -402,9 +402,9 @@ private:
         // Create input variables
         AstNode::user2ClearTree();
         V3TaskConnects tconnects = V3Task::taskConnects(refp, beginp);
-        for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
-            AstVar* portp = it->first;
-            AstArg* argp = it->second;
+        for (const auto& itr : tconnects) {
+            AstVar* portp = itr.first;
+            AstArg* argp = itr.second;
             AstNode* pinp = argp->exprp();
             portp->unlinkFrBack();
             pushDeletep(portp);  // Remove it from the clone (not original)
@@ -536,9 +536,9 @@ private:
 
         // Convert complicated outputs to temp signals
         V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
-        for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
-            AstVar* portp = it->first;
-            AstNode* pinp = it->second->exprp();
+        for (const auto& itr : tconnects) {
+            AstVar* portp = itr.first;
+            AstNode* pinp = itr.second->exprp();
             if (!pinp) {
                 // Too few arguments in function call
             } else {

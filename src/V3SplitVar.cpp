@@ -361,9 +361,7 @@ public:
         v.iterate(nodep);
     }
     void visit(AstNVisitor* visitor) {
-        for (VarSet::iterator it = m_vars.begin(), it_end = m_vars.end(); it != it_end; ++it) {
-            visitor->iterate(*it);
-        }
+        for (const auto& varp : m_vars) visitor->iterate(varp);
         for (SelSet::iterator it = m_sels.begin(), it_end = m_sels.end(); it != it_end; ++it) {
             // If m_refs includes VarRef from ArraySel, remove it
             // because the VarRef would not be visited in SplitPackedVarVisitor::visit(AstSel*).

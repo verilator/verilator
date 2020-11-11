@@ -367,14 +367,13 @@ private:
     void deadCheckClasses() {
         for (bool retry = true; retry;) {
             retry = false;
-            for (std::vector<AstClass*>::iterator it = m_classesp.begin(); it != m_classesp.end();
-                 ++it) {
-                if (AstClass* nodep = *it) {  // nullptr if deleted earlier
+            for (auto& itr : m_classesp) {
+                if (AstClass* nodep = itr) {  // nullptr if deleted earlier
                     if (nodep->user1() == 0) {
                         if (nodep->extendsp()) nodep->extendsp()->user1Inc(-1);
                         if (nodep->packagep()) nodep->packagep()->user1Inc(-1);
                         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-                        *it = nullptr;
+                        itr = nullptr;
                         retry = true;
                     }
                 }

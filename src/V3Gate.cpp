@@ -1002,8 +1002,8 @@ public:
 
     void check() {
         m_hashed.check();
-        for (V3Hashed::HashMmap::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
-            AstNode* nodep = it->second;
+        for (const auto& itr : m_hashed) {
+            AstNode* nodep = itr.second;
             AstNode* activep = nodep->user3p();
             AstNode* condVarp = nodep->user5p();
             if (!isReplaced(nodep)) {
