@@ -456,7 +456,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
         t.type = vpiSimTime;
         t.high = 0;
         t.low = 0;
-        for (int i = 2; i <= 128; i++) {
+        for (int i = 2; i <= 6; i++) {
             static s_vpi_value v;
             int words = (i + 31) >> 5;
             TEST_MSG("========== %d ==========\n", i);
@@ -532,7 +532,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
         };
     } else {
         // setup and install
-        for (int i = 1; i <= 128; i++) {
+        for (int i = 1; i <= 6; i++) {
             char buf[32];
             snprintf(buf, sizeof(buf), TestSimulator::rooted("arr[%d].arr"), i);
             CHECK_RESULT_NZ(data[i].scope = vpi_handle_by_name((PLI_BYTE8*)buf, NULL));
