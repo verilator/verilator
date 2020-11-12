@@ -16,16 +16,16 @@
 
 #include "V3Ast.h"
 #include "V3Builtin.h"
-#include "V3FileLine.h"
 #include "V3Parse.h"
 #include "V3ParseSym.h"
 
-namespace V3Builtin {
-void parseStdPackage(V3Parse& parser) {
-    string filename = v3Global.opt.hierTopDataDir() + "/builtin.v";
-    std::ofstream* ofp = nullptr;
-    ofp = V3File::new_ofstream(filename);
-    if (!ofp->fail()) {
+void V3Builtin::parseStdPackage(V3Parse& parser) {
+    string path = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__builtin.v";
+    auto ofp = std::unique_ptr<std::ofstream>(V3File::new_ofstream(path));
+    if (!ofp || ofp->fail()) {
+        FileLine fl(FileLine::commandLineFilename());
+        fl.v3error("Could not open file '" + path + "' for writing");
+    } else {
         *ofp << R"(
         package std;
             class process;
@@ -39,22 +39,21 @@ void parseStdPackage(V3Parse& parser) {
             endclass
         endpackage
         )" << std::endl;
-    }
-    if (ofp) {
         ofp->close();
-        delete ofp;
     }
-    parser.parseFile(new FileLine(FileLine::commandLineFilename()), filename, false,
-                     "Cannot find file with built-in definitions: ");
+    parser.parseFile(new FileLine(FileLine::commandLineFilename()), path, false,
+                     "Cannot find file containing built-in definitions: ");
 }
 
-void defineExterns(AstNetlist* rootp, V3ParseSym& parseSyms) {
+void V3Builtin::defineExterns(AstNetlist* rootp, V3ParseSym& parseSyms) {
     auto* pkgp = rootp->modulesp();
     while (pkgp->name() != "std") { pkgp = VN_CAST(pkgp->nextp(), NodeModule); }
+    UASSERT_OBJ(pkgp, rootp, "std:: package not found");
     parseSyms.pushNew(pkgp);
-    auto* classp = parseSyms.symCurrentp()->findIdFallback("process")->nodep();
-    auto* memberp = VN_CAST(classp, Class)->membersp();
-    while (memberp) {
+    auto* classp = VN_CAST(parseSyms.symCurrentp()->findIdFallback("process")->nodep(), Class);
+    UASSERT_OBJ(pkgp, rootp, "std::process class not found");
+    classp->isStdProcess(true);
+    for (auto* memberp = classp->membersp(); memberp; memberp = memberp->nextp()) {
         AstNodeFTask* ftaskp = nullptr;
         if (VN_IS(memberp, Task)) {
             ftaskp = new AstTask(rootp->fileline(), memberp->name(), nullptr);
@@ -78,9 +77,6 @@ void defineExterns(AstNetlist* rootp, V3ParseSym& parseSyms) {
                 new AstClassOrPackageRef(memberp->fileline(), classp->name(), classp, nullptr));
             pkgp->addActivep(ftaskp);
         }
-        memberp = memberp->nextp();
     }
     parseSyms.popScope(pkgp);
 }
-
-}  // namespace V3Builtin

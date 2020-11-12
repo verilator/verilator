@@ -21,11 +21,10 @@ class AstNetlist;
 class V3Parse;
 class V3ParseSym;
 
-namespace V3Builtin {
-
-extern void parseStdPackage(V3Parse& parser);
-extern void defineExterns(AstNetlist* rootp, V3ParseSym& parseSyms);
-
-}  // namespace V3Builtin
+class V3Builtin {
+public:
+    static void parseStdPackage(V3Parse& parser);
+    static void defineExterns(AstNetlist* rootp, V3ParseSym& parseSyms);
+};
 
 #endif  // Guard

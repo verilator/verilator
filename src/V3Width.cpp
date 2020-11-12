@@ -1790,8 +1790,7 @@ private:
             }
         } else if (nodep->isIO()
                    && !((VN_IS(nodep->dtypeSkipRefp(), ClassRefDType)
-                         && VN_CAST(nodep->dtypeSkipRefp(), ClassRefDType)->classp()->name()
-                                == "process")
+                         && VN_CAST(nodep->dtypeSkipRefp(), ClassRefDType)->classp()->isStdProcess())
                         || VN_IS(nodep->dtypeSkipRefp(), BasicDType)
                         || VN_IS(nodep->dtypeSkipRefp(), NodeArrayDType)
                         || VN_IS(nodep->dtypeSkipRefp(), NodeUOrStructDType))) {
