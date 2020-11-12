@@ -1090,6 +1090,7 @@ void AstCell::dump(std::ostream& str) const {
 void AstCellInline::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " -> " << origModName();
+    str << " [scopep=" << reinterpret_cast<const void*>(scopep()) << "]";
 }
 const char* AstClassPackage::broken() const {
     BROKEN_BASE_RTN(AstNodeModule::broken());
@@ -1179,7 +1180,7 @@ void AstInitArray::dump(std::ostream& str) const {
             str << " ...";
             break;
         }
-        str << " [" << itr.first << "]=" << (void*)itr.second;
+        str << " [" << itr.first << "]=" << reinterpret_cast<const void*>(itr.second);
     }
 }
 void AstJumpGo::dump(std::ostream& str) const {
@@ -1415,7 +1416,7 @@ void AstTypeTable::dump(std::ostream& str) const {
 }
 void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
-    str << "[assoc-" << (void*)keyDTypep() << "]";
+    str << "[assoc-" << reinterpret_cast<const void*>(keyDTypep()) << "]";
 }
 string AstAssocArrayDType::prettyDTypeName() const {
     return subDTypep()->prettyDTypeName() + "[" + keyDTypep()->prettyDTypeName() + "]";
@@ -1502,6 +1503,12 @@ void AstVar::dump(std::ostream& str) const {
     if (!attrClocker().unknown()) str << " [" << attrClocker().ascii() << "] ";
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
+}
+void AstScope::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " [abovep=" << reinterpret_cast<const void*>(aboveScopep()) << "]";
+    str << " [cellp=" << reinterpret_cast<const void*>(aboveCellp()) << "]";
+    str << " [modp=" << reinterpret_cast<const void*>(modp()) << "]";
 }
 void AstSenTree::dump(std::ostream& str) const {
     this->AstNode::dump(str);

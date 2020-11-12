@@ -1821,7 +1821,8 @@ public:
     void dumpTreeGdb();  // For GDB only
     void dumpTreeAndNext(std::ostream& os = std::cout, const string& indent = "    ",
                          int maxDepth = 0) const;
-    void dumpTreeFile(const string& filename, bool append = false, bool doDump = true);
+    void dumpTreeFile(const string& filename, bool append = false, bool doDump = true,
+                      bool doCheck = true);
     static void dumpTreeFileGdb(const char* filenamep = nullptr);
 
     // METHODS - queries

@@ -1113,7 +1113,7 @@ void AstNode::dumpTreeAndNext(std::ostream& os, const string& indent, int maxDep
     }
 }
 
-void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
+void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, bool doCheck) {
     // Not const function as calls checkTree
     if (doDump) {
         {  // Write log & close
@@ -1131,7 +1131,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
             }
         }
     }
-    if (v3Global.opt.debugCheck() || v3Global.opt.dumpTree()) {
+    if (doCheck && (v3Global.opt.debugCheck() || v3Global.opt.dumpTree())) {
         // Error check
         checkTree();
         // Broken isn't part of check tree because it can munge iterp's

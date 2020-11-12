@@ -2248,6 +2248,7 @@ public:
     virtual bool maybePointedTo() const override { return true; }
     virtual string name() const override { return m_name; }  // * = Scope name
     virtual void name(const string& name) override { m_name = name; }
+    virtual void dump(std::ostream& str) const override;
     string nameDotless() const;
     string nameVlSym() const { return ((string("vlSymsp->")) + nameDotless()); }
     AstNodeModule* modp() const { return m_modp; }
