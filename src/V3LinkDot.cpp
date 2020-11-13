@@ -2807,9 +2807,12 @@ private:
                     nodep->packagep(cpackagerefp->packagep());
                 } else {
                     nodep->packagep(cpackagerefp->classOrPackagep());
-                    // if (cpackagerefp->paramsp()) {
-                    //    nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
-                    // }
+                    if (!VN_IS(nodep->packagep(), Class) && !VN_IS(nodep->packagep(), Package)) {
+                        cpackagerefp->v3error(
+                            "'::' expected to reference a class/package but referenced "
+                            << nodep->packagep()->prettyTypeName() << endl
+                            << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
+                    }
                 }
             } else {
                 cpackagep->v3warn(E_UNSUPPORTED,
