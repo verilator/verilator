@@ -14,6 +14,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Report error on typedef referencing self (#2539). [Cody Piersall]
 
+****  With --debug, turn off address space layout randomization.
+
 ****  Fix iteration over mutating list bug in VPI (#2588). [Kaleb Barrett]
 
 ****  Fix cast width propagation (#2597). [flex-liu]
@@ -29,6 +31,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix queue poping wrong value when otherwise unused (#2512). [nanduraj1]
 
 ****  Fix arrays of modport interfaces (#2614). [Thierry Tambe]
+
+****  Fix split_var internal error (#2640) (#2641). [Yutetsu TAKATSUKASA]
 
 
 * Verilator 4.102 2020-10-15
