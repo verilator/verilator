@@ -116,7 +116,8 @@ private:
         // Now for each child cell, iterate the module this cell points to
         for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp = cellnextp->nextp()) {
             if (AstCell* cellp = VN_CAST(cellnextp, Cell)) {
-                VL_RESTORER(m_scopep);
+                VL_RESTORER(m_scopep);  // Protects m_scopep set in called module
+                // which is "above" in this code, but later in code execution order
                 VL_RESTORER(m_aboveCellp);
                 VL_RESTORER(m_aboveScopep);
                 {
@@ -329,9 +330,11 @@ private:
     // VISITORS
     virtual void visit(AstScope* nodep) override {
         // Want to ignore blocks under it
-        m_scopep = nodep;
-        iterateChildren(nodep);
-        m_scopep = nullptr;
+        VL_RESTORER(m_scopep);
+        {
+            m_scopep = nodep;
+            iterateChildren(nodep);
+        }
     }
 
     virtual void movedDeleteOrIterate(AstNode* nodep) {

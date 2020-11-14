@@ -193,8 +193,8 @@ class InstDeVisitor : public AstNVisitor {
     // Find all cells with arrays, and convert to non-arrayed
 private:
     // STATE
-    AstRange* m_cellRangep
-        = nullptr;  // Range for arrayed instantiations, nullptr for normal instantiations
+    // Range for arrayed instantiations, nullptr for normal instantiations
+    AstRange* m_cellRangep = nullptr;
     int m_instSelNum = 0;  // Current instantiation count 0..N-1
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
 
