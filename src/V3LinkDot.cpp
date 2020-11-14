@@ -2947,6 +2947,7 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
         // Well after the initial link when we're ready to operate on the flat design,
         // process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
         LinkDotScopeVisitor visitors(rootp, &state);
+        v3Global.assertScoped(true);
         if (LinkDotState::debug() >= 5 || v3Global.opt.dumpTree() >= 9) {
             v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-scoped.tree"));
         }
