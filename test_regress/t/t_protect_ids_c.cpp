@@ -15,6 +15,7 @@
 
 //======================================================================
 
+// clang-format off
 #if defined(VERILATOR)
 # ifdef T_PROTECT_IDS_KEY
 #  include "Vt_protect_ids_key__Dpi.h"
@@ -32,6 +33,7 @@
 #ifdef NEED_EXTERNS
 # error "Not supported"
 #endif
+// clang-format on
 
 //======================================================================
 

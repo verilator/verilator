@@ -556,7 +556,7 @@ WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, W
                 return owp;
             }
         }
-        return 0;
+        return owp;
     }
     return VL_POW_WWW(obits, rbits, rbits, owp, lwp, rwp);
 }
@@ -1079,7 +1079,17 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 WData qowp[VL_WQ_WORDS_E];
                 VL_SET_WQ(qowp, 0ULL);
                 WDataOutP owp = qowp;
-                if (obits > VL_QUADSIZE) owp = va_arg(ap, WDataOutP);
+                if (obits == -1) {  // string
+                    owp = nullptr;
+                    if (VL_UNCOVERABLE(fmt != 's')) {
+                        VL_FATAL_MT(
+                            __FILE__, __LINE__, "",
+                            "Internal: format other than %s is passed to string");  // LCOV_EXCL_LINE
+                    }
+                } else if (obits > VL_QUADSIZE) {
+                    owp = va_arg(ap, WDataOutP);
+                }
+
                 for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
                 switch (fmt) {
                 case 'c': {
@@ -1093,11 +1103,13 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, tmp, nullptr);
                     if (!tmp[0]) goto done;
-                    int lpos = (static_cast<int>(strlen(tmp))) - 1;
-                    int lsb = 0;
-                    for (int i = 0; i < obits && lpos >= 0; --lpos) {
-                        _vl_vsss_setbit(owp, obits, lsb, 8, tmp[lpos]);
-                        lsb += 8;
+                    if (owp) {
+                        int lpos = (static_cast<int>(strlen(tmp))) - 1;
+                        int lsb = 0;
+                        for (int i = 0; i < obits && lpos >= 0; --lpos) {
+                            _vl_vsss_setbit(owp, obits, lsb, 8, tmp[lpos]);
+                            lsb += 8;
+                        }
                     }
                     break;
                 }
@@ -1194,6 +1206,9 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 if (!inIgnore) ++got;
                 // Reload data if non-wide (if wide, we put it in the right place directly)
                 if (obits == 0) {  // Due to inIgnore
+                } else if (obits == -1) {  // string
+                    std::string* p = va_arg(ap, std::string*);
+                    *p = tmp;
                 } else if (obits <= VL_BYTESIZE) {
                     CData* p = va_arg(ap, CData*);
                     *p = owp[0];
@@ -1252,34 +1267,42 @@ void _VL_STRING_TO_VINT(int obits, void* destp, size_t srclen, const char* srcp)
     for (; i < bytes; ++i) { *op++ = 0; }
 }
 
-IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
+static IData getLine(std::string& str, IData fpi, size_t maxLen) VL_MT_SAFE {
+    str.clear();
+
     // While threadsafe, each thread can only access different file handles
     FILE* fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return 0;
 
-    // The string needs to be padded with 0's in unused spaces in front of
-    // any read data.  This means we can't know in what location the first
-    // character will finally live, so we need to copy.  Yuk.
-    IData bytes = VL_BYTES_I(obits);
-    char buffer[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
+    // We don't use fgets, as we must read \0s.
+    while (str.size() < maxLen) {
+        const int c = getc(fp);  // getc() is threadsafe
+        if (c == EOF) break;
+        str.push_back(c);
+        if (c == '\n') break;
+    }
+    return str.size();
+}
+
+IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
+    std::string str;
+    const IData bytes = VL_BYTES_I(obits);
+    IData got = getLine(str, fpi, bytes);
+
+    if (VL_UNLIKELY(str.empty())) return 0;
+
     // V3Emit has static check that bytes < VL_TO_STRING_MAX_WORDS, but be safe
-    if (VL_UNCOVERABLE(bytes > VL_TO_STRING_MAX_WORDS * VL_EDATASIZE)) {
+    if (VL_UNCOVERABLE(bytes < str.size())) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: fgets buffer overrun");  // LCOV_EXCL_LINE
     }
 
-    // We don't use fgets, as we must read \0s.
-    IData got = 0;
-    char* cp = buffer;
-    while (got < bytes) {
-        int c = getc(fp);  // getc() is threadsafe
-        if (c == EOF) break;
-        *cp++ = c;
-        got++;
-        if (c == '\n') break;
-    }
-
-    _VL_STRING_TO_VINT(obits, destp, got, buffer);
+    _VL_STRING_TO_VINT(obits, destp, got, str.data());
     return got;
+}
+
+// declared in verilated_heavy.h
+IData VL_FGETS_NI(std::string& dest, IData fpi) VL_MT_SAFE {
+    return getLine(dest, fpi, std::numeric_limits<size_t>::max());
 }
 
 IData VL_FERROR_IN(IData, std::string& outputr) VL_MT_SAFE {

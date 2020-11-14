@@ -111,7 +111,6 @@ private:
         m_activep = nullptr;
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) override { iterateChildren(nodep); }
 
     //-----
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -186,7 +185,7 @@ private:
             UINFO(8, "  VarAct " << nodep << endl);
             vscp->user1(true);
         }
-        if (m_assignp && nodep->access().isWrite() && vscp->user1()) {
+        if (m_assignp && nodep->access().isWriteOrRW() && vscp->user1()) {
             // Variable was previously used as a clock, and is now being set
             // Thus a unordered generated clock...
             UINFO(8, "  VarSetAct " << nodep << endl);

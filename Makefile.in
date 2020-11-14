@@ -442,11 +442,11 @@ cppcheck: $(CPPCHECK_DEP)
 	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 -DVL_THREADED=1 $(CPPCHECK_INC) $<
 
 CLANGTIDY = clang-tidy
-CLANGTIDY_FLAGS = -config=''
+CLANGTIDY_FLAGS = -config='' -checks='-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables'
 CLANGTIDY_DEP = $(subst .h,.h.tidy,$(CPPCHECK_H)) \
 	$(subst .cpp,.cpp.tidy,$(CPPCHECK_CPP))
 
-clangtidy: $(CLANGTIDY_DEP)
+clang-tidy: $(CLANGTIDY_DEP)
 %.cpp.tidy: %.cpp
 	$(CLANGTIDY) $(CLANGTIDY_FLAGS) $< -- -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) | 2>&1 tee $@
 %.h.tidy: %.h
@@ -462,11 +462,12 @@ analyzer-include:
 
 CLANGFORMAT = clang-format
 CLANGFORMAT_FLAGS = -i
+CLANGFORMAT_FILES = $(CPPCHECK_CPP) $(CPPCHECK_H) $(CPPCHECK_YL) test_regress/t/*.c*
 
 clang-format:
 	@$(CLANGFORMAT) --version | egrep 10.0 > /dev/null \
 		|| echo "*** You are not using clang-format 10.0, indents may differ from master's ***"
-	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CPPCHECK_CPP) $(CPPCHECK_H) $(CPPCHECK_YL)
+	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
 ftp: info
 

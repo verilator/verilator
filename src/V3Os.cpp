@@ -49,6 +49,14 @@
 # include <direct.h>  // mkdir
 # include <psapi.h>   // GetProcessMemoryInfo
 # include <thread>
+// These macros taken from gdbsupport/gdb_wait.h in binutils-gdb
+# ifndef WIFEXITED
+#  ifdef __MINGW32__
+#   define WIFEXITED(w)	(((w) & 0xC0000000) == 0)
+#  else
+#   define WIFEXITED(w)	(((w) & 0377) == 0)
+#  endif
+# endif
 #else
 # include <sys/time.h>
 # include <sys/wait.h> // Needed on FreeBSD for WIFEXITED

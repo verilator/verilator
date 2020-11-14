@@ -36,6 +36,9 @@
 //                      assignments to avoid saving state, thus we prefer
 //                              a <= b ...      As the opposite order would
 //                              b <= c ...      require the old value of b.
+//                  Add edge consumed_var_POST->logic_vertex
+//                      This prevents a consumer of the "early" value to be
+//                      scheduled after we've changed to the next-cycle value
 //          For Logic
 //              Add vertex for this logic
 //                  Add edge logic_sensitive_vertex->logic_vertex
@@ -49,6 +52,7 @@
 //                  Add edge logic_sensitive_vertex->logic_vertex
 //                  Add edge logic_consumed_var->logic_vertex (same as if comb)
 //                  Add edge logic_vertex->logic_generated_var (same as if comb)
+//                  Add edge consumed_var_POST->logic_vertex (same as if comb)
 //
 //      For comb logic
 //          For comb logic
@@ -149,9 +153,7 @@ public:
         OrderMoveVertex* vertexp);  // Mark one vertex as finished, remove from ready list if done
     // STATIC MEMBERS (for lookup)
     static void clear() {
-        for (DomScopeMap::iterator it = s_dsMap.begin(); it != s_dsMap.end(); ++it) {
-            delete it->second;
-        }
+        for (const auto& itr : s_dsMap) delete itr.second;
         s_dsMap.clear();
     }
     V3List<OrderMoveVertex*>& readyVertices() { return m_readyVertices; }
@@ -213,10 +215,9 @@ public:
         return vertexp;
     }
 
-public:
     // CONSTRUCTORS
     OrderUser() {
-        for (int i = 0; i < WV_MAX; i++) m_vertexp[i] = nullptr;
+        for (auto& vertexp : m_vertexp) vertexp = nullptr;
     }
     ~OrderUser() {}
 };
@@ -561,14 +562,15 @@ public:
         : m_pomGraphp{pomGraphp}
         , m_pomWaitingp{pomWaitingp} {}
     // METHODS
-    OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
-                                 const AstScope* scopep, const AstSenTree* domainp) {
+    virtual OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
+                                         const AstScope* scopep,
+                                         const AstSenTree* domainp) override {
         OrderMoveVertex* resultp = new OrderMoveVertex(m_pomGraphp, lvertexp);
         resultp->domScopep(OrderMoveDomScope::findCreate(domainp, scopep));
         resultp->m_pomWaitingE.pushBack(*m_pomWaitingp, resultp);
         return resultp;
     }
-    void freeVertexp(OrderMoveVertex* freeMep) {
+    virtual void freeVertexp(OrderMoveVertex* freeMep) override {
         freeMep->m_pomWaitingE.unlink(*m_pomWaitingp, freeMep);
         freeMep->unlinkDelete(m_pomGraphp);
     }
@@ -583,14 +585,18 @@ class OrderMTaskMoveVertexMaker : public ProcessMoveBuildGraph<MTaskMoveVertex>:
 public:
     explicit OrderMTaskMoveVertexMaker(V3Graph* pomGraphp)
         : m_pomGraphp{pomGraphp} {}
-    MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex* varVertexp,
-                                 const AstScope* scopep, const AstSenTree* domainp) {
+    virtual MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp,
+                                         const OrderEitherVertex* varVertexp,
+                                         const AstScope* scopep,
+                                         const AstSenTree* domainp) override {
         // Exclude initial/settle logic from the mtasks graph.
         // We'll output time-zero logic separately.
         if (domainp->hasInitial() || domainp->hasSettle()) return nullptr;
         return new MTaskMoveVertex(m_pomGraphp, lvertexp, varVertexp, scopep, domainp);
     }
-    void freeVertexp(MTaskMoveVertex* freeMep) { freeMep->unlinkDelete(m_pomGraphp); }
+    virtual void freeVertexp(MTaskMoveVertex* freeMep) override {
+        freeMep->unlinkDelete(m_pomGraphp);
+    }
 
 private:
     VL_UNCOPYABLE(OrderMTaskMoveVertexMaker);
@@ -1026,7 +1032,7 @@ private:
             UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
             if (m_inSenTree) {
                 // Add CLOCK dependency... This is a root of the tree we'll trace
-                UASSERT_OBJ(!nodep->access().isWrite(), nodep,
+                UASSERT_OBJ(!nodep->access().isWriteOrRW(), nodep,
                             "How can a sensitivity be setting a var?");
                 OrderVarVertex* varVxp = newVarUserVertex(varscp, WV_STD);
                 varVxp->isClock(true);
@@ -1037,9 +1043,8 @@ private:
                 // We don't want to add extra edges if the logic block has many usages of same var
                 bool gen = false;
                 bool con = false;
-                if (nodep->access().isWrite()) {
-                    gen = !(varscp->user4() & VU_GEN);
-                } else {
+                if (nodep->access().isWriteOrRW()) gen = !(varscp->user4() & VU_GEN);
+                if (nodep->access().isReadOrRW()) {
                     con = !(varscp->user4() & VU_CON);
                     if ((varscp->user4() & VU_GEN) && !m_inClocked) {
                         // Dangerous assumption:

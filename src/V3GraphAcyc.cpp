@@ -143,9 +143,7 @@ private:
         }
         OrigEdgeList* oEListp = static_cast<OrigEdgeList*>(toEdgep->userp());
         if (OrigEdgeList* addListp = static_cast<OrigEdgeList*>(addEdgep->userp())) {
-            for (OrigEdgeList::iterator it = addListp->begin(); it != addListp->end(); ++it) {
-                oEListp->push_back(*it);
-            }
+            for (const auto& itr : *addListp) oEListp->push_back(itr);
             addListp->clear();  // Done with it
         } else {
             oEListp->push_back(addEdgep);
@@ -160,8 +158,7 @@ private:
             v3fatalSrc("No original edge associated with cutting edge " << breakEdgep << endl);
         }
         // The breakGraph edge may represent multiple real edges; cut them all
-        for (OrigEdgeList::iterator it = oEListp->begin(); it != oEListp->end(); ++it) {
-            V3GraphEdge* origEdgep = *it;
+        for (const auto& origEdgep : *oEListp) {
             origEdgep->cut();
             UINFO(8,
                   "  " << why << "   " << origEdgep->fromp() << " ->" << origEdgep->top() << endl);

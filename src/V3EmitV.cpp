@@ -490,14 +490,14 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         puts(")");
     }
     virtual void visit(AstInitArray* nodep) override {
-        putfs(nodep, "`{");
+        putfs(nodep, "'{");
         int comma = 0;
         const AstInitArray::KeyItemMap& mapr = nodep->map();
-        for (AstInitArray::KeyItemMap::const_iterator it = mapr.begin(); it != mapr.end(); ++it) {
+        for (const auto& itr : mapr) {
             if (comma++) putbs(", ");
-            puts(cvtToStr(it->first));
+            puts(cvtToStr(itr.first));
             puts(":");
-            AstNode* valuep = it->second->valuep();
+            AstNode* valuep = itr.second->valuep();
             iterate(valuep);
         }
         puts("}");

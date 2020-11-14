@@ -61,7 +61,7 @@ public:
 };
 
 typedef std::deque<AstConst*> ConstDeque;
-typedef std::map<AstNodeDType*, ConstDeque> ConstPile;
+typedef std::map<const AstNodeDType*, ConstDeque> ConstPile;
 
 class SimulateVisitor : public AstNVisitor {
     // Simulate a node tree, returning value of variables
@@ -401,7 +401,7 @@ private:
             && !VN_IS(nodep->varp()->dtypeSkipRefp(), UnpackArrayDType)
             && !VN_IS(nodep->varp()->dtypeSkipRefp(), StructDType))
             clearOptimizable(nodep, "Array references/not basic");
-        if (nodep->access().isWrite()) {
+        if (nodep->access().isWriteOrRW()) {
             if (m_inDlyAssign) {
                 if (!(vscp->user1() & VU_LVDLY)) {
                     vscp->user1(vscp->user1() | VU_LVDLY);
@@ -416,7 +416,8 @@ private:
                     if (m_checkOnly) varRefCb(nodep);
                 }
             }
-        } else {
+        }
+        if (nodep->access().isReadOrRW()) {
             if (!(vscp->user1() & VU_RV)) {
                 if (!m_params && (vscp->user1() & VU_LV)) {
                     clearOptimizable(nodep, "Var write & read");
@@ -433,7 +434,7 @@ private:
             }
         }
         if (!m_checkOnly && optimizable()) {  // simulating
-            UASSERT_OBJ(!nodep->access().isWrite(), nodep,
+            UASSERT_OBJ(nodep->access().isReadOnly(), nodep,
                         "LHS varref should be handled in AstAssign visitor.");
             {
                 // Return simulation value - copy by reference instead of value for speed

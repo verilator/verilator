@@ -394,6 +394,7 @@ void AstNode::setOp4p(AstNode* newp) {
 
 void AstNode::addOp1p(AstNode* newp) {
     UASSERT(newp, "Null item passed to addOp1p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     if (!m_op1p) {
         op1p(newp);
     } else {
@@ -403,6 +404,7 @@ void AstNode::addOp1p(AstNode* newp) {
 
 void AstNode::addOp2p(AstNode* newp) {
     UASSERT(newp, "Null item passed to addOp2p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     if (!m_op2p) {
         op2p(newp);
     } else {
@@ -412,6 +414,7 @@ void AstNode::addOp2p(AstNode* newp) {
 
 void AstNode::addOp3p(AstNode* newp) {
     UASSERT(newp, "Null item passed to addOp3p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     if (!m_op3p) {
         op3p(newp);
     } else {
@@ -421,6 +424,7 @@ void AstNode::addOp3p(AstNode* newp) {
 
 void AstNode::addOp4p(AstNode* newp) {
     UASSERT(newp, "Null item passed to addOp4p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     if (!m_op4p) {
         op4p(newp);
     } else {
@@ -1113,7 +1117,7 @@ void AstNode::dumpTreeAndNext(std::ostream& os, const string& indent, int maxDep
     }
 }
 
-void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
+void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, bool doCheck) {
     // Not const function as calls checkTree
     if (doDump) {
         {  // Write log & close
@@ -1131,7 +1135,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
             }
         }
     }
-    if (v3Global.opt.debugCheck() || v3Global.opt.dumpTree()) {
+    if (doCheck && (v3Global.opt.debugCheck() || v3Global.opt.dumpTree())) {
         // Error check
         checkTree();
         // Broken isn't part of check tree because it can munge iterp's
@@ -1260,6 +1264,9 @@ AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {
 }
 AstNodeDType* AstNode::findVoidDType() const {
     return v3Global.rootp()->typeTablep()->findVoidDType(fileline());
+}
+AstNodeDType* AstNode::findQueueIndexDType() const {
+    return v3Global.rootp()->typeTablep()->findQueueIndexDType(fileline());
 }
 
 //######################################################################

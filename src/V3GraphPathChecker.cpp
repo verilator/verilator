@@ -42,7 +42,7 @@ struct GraphPCNode {
 
     // CONSTRUCTORS
     GraphPCNode() {
-        for (int w = 0; w < GraphWay::NUM_WAYS; w++) m_cp[w] = 0;
+        for (unsigned int& w : m_cp) w = 0;
     }
     ~GraphPCNode() {}
 };

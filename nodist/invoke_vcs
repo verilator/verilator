@@ -9,7 +9,7 @@ use strict;
 # main
 
 eval `modulecmd perl add synopsys-sim/latest`;
-exec('vcs',@ARGV);
+exec('vcs', @ARGV);
 
 #######################################################################
 __END__
@@ -22,7 +22,7 @@ invoke_vcs - Invoke tool under "modules" command
 
 =head1 SYNOPSIS
 
-  invoke_vcs  {ncv arguments}
+  invoke_vcs {arguments}
 
 =head1 DESCRIPTION
 

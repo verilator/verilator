@@ -201,7 +201,7 @@ typedef std::set<string> V3StringSet;
 class V3HierarchicalBlockOption {
 public:
     // key:parameter name, value:value (as string)
-    typedef std::map<string, string> ParamStrMap;
+    typedef std::map<const string, string> ParamStrMap;
 
 private:
     string m_origName;  // module name
@@ -218,7 +218,7 @@ public:
     const ParamStrMap params() const { return m_parameters; }
 };
 
-typedef std::map<string, V3HierarchicalBlockOption> V3HierBlockOptSet;
+typedef std::map<const string, V3HierarchicalBlockOption> V3HierBlockOptSet;
 
 //######################################################################
 // V3Options - Command line options
@@ -227,7 +227,7 @@ class V3Options {
 public:
 private:
     // TYPES
-    typedef std::map<string, int> DebugSrcMap;
+    typedef std::map<const string, int> DebugSrcMap;
 
     // MEMBERS (general options)
     V3OptionsImp* m_impp;  // Slow hidden options
@@ -245,8 +245,8 @@ private:
     V3StringList m_forceIncs;   // argument: -FI
     DebugSrcMap m_debugSrcs;    // argument: --debugi-<srcfile>=<level>
     DebugSrcMap m_dumpTrees;    // argument: --dump-treei-<srcfile>=<level>
-    std::map<string,string> m_parameters;  // Parameters
-    std::map<string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
+    std::map<const string, string> m_parameters;  // Parameters
+    std::map<const string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
 
     bool m_preprocOnly = false;     // main switch: -E
     bool m_makePhony = false;       // main switch: -MP
@@ -410,13 +410,13 @@ private:
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
-    bool onoff(const char* sw, const char* arg, bool& flag);
-    bool onoffb(const char* sw, const char* arg, VOptionBool& flagr);
-    bool suffixed(const string& sw, const char* arg);
-    string parseFileArg(const string& optdir, const string& relfilename);
+    static bool onoff(const char* sw, const char* arg, bool& flag);
+    static bool onoffb(const char* sw, const char* arg, VOptionBool& flagr);
+    static bool suffixed(const string& sw, const char* arg);
+    static string parseFileArg(const string& optdir, const string& relfilename);
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
-    int stripOptionsForChildRun(const string& opt, bool forTop) const;
+    static int stripOptionsForChildRun(const string& opt, bool forTop);
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(V3Options);

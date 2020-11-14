@@ -411,9 +411,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
     // Build the initial graph from the starting state set.
     typedef TspGraphTmpl<const TspStateBase*> Graph;
     Graph graph;
-    for (V3TSP::StateVec::const_iterator it = states.begin(); it != states.end(); ++it) {
-        graph.addVertex(*it);
-    }
+    for (const auto& state : states) graph.addVertex(state);
     for (V3TSP::StateVec::const_iterator it = states.begin(); it != states.end(); ++it) {
         for (V3TSP::StateVec::const_iterator jt = it; jt != states.end(); ++jt) {
             if (it == jt) continue;
@@ -645,11 +643,11 @@ void V3TSP::selfTestString() {
     minGraph.findEulerTour(&result);
 
     std::vector<string> expect;
-    expect.push_back("0");
-    expect.push_back("2");
-    expect.push_back("1");
-    expect.push_back("2");
-    expect.push_back("3");
+    expect.emplace_back("0");
+    expect.emplace_back("2");
+    expect.emplace_back("1");
+    expect.emplace_back("2");
+    expect.emplace_back("3");
 
     if (VL_UNCOVERABLE(expect != result)) {
         for (const string& i : result) cout << i << " ";

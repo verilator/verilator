@@ -75,8 +75,9 @@ public:
     void check();  // Check assertions on structure
     // Hash the node, and insert into map. Return iterator to inserted
     iterator hashAndInsert(AstNode* nodep);
-    void hash(AstNode* nodep);  // Only hash the node
-    bool sameNodes(AstNode* node1p, AstNode* node2p);  // After hashing, and tell if identical
+    static void hash(AstNode* nodep);  // Only hash the node
+    // After hashing, and tell if identical
+    static bool sameNodes(AstNode* node1p, AstNode* node2p);
     void erase(iterator it);  // Remove node from structures
     // Return duplicate in hash, if any, with optional user check for sameness
     iterator findDuplicate(AstNode* nodep, V3HashedUserSame* checkp = nullptr);

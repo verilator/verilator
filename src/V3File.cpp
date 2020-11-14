@@ -172,9 +172,8 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
 
 inline std::vector<string> V3FileDependImp::getAllDeps() const {
     std::vector<string> r;
-    for (std::set<DependFile>::const_iterator iter = m_filenameList.begin();
-         iter != m_filenameList.end(); ++iter) {
-        if (!iter->target() && iter->exists()) { r.push_back(iter->filename()); }
+    for (const auto& itr : m_filenameList) {
+        if (!itr.target() && itr.exists()) r.push_back(itr.filename());
     }
     return r;
 }
@@ -331,7 +330,7 @@ void V3File::createMakeDir() {
 // VInFilterImp
 
 class VInFilterImp {
-    typedef std::map<string, string> FileContentsMap;
+    typedef std::map<const string, string> FileContentsMap;
     typedef VInFilter::StrList StrList;
 
     FileContentsMap m_contentsMap;  // Cache of file contents
@@ -587,12 +586,12 @@ protected:
         }
         return true;
     }
-    size_t listSize(StrList& sl) {
+    static size_t listSize(StrList& sl) {
         size_t out = 0;
         for (const string& i : sl) out += i.length();
         return out;
     }
-    string listString(StrList& sl) {
+    static string listString(StrList& sl) {
         string out;
         for (const string& i : sl) out += i;
         return out;
@@ -942,8 +941,8 @@ void V3OutCFile::putsGuard() {
     UASSERT(!m_guard, "Already called putsGuard in emit file");
     m_guard = true;
     string var = VString::upcase(string("_") + V3Os::filenameNonDir(filename()) + "_");
-    for (string::iterator pos = var.begin(); pos != var.end(); ++pos) {
-        if (!isalnum(*pos)) *pos = '_';
+    for (char& c : var) {
+        if (!isalnum(c)) c = '_';
     }
     puts("\n#ifndef " + var + "\n");
     puts("#define " + var + "  // guard\n");
@@ -954,7 +953,7 @@ void V3OutCFile::putsGuard() {
 
 class VIdProtectImp {
     // MEMBERS
-    typedef std::map<string, string> IdMap;
+    typedef std::map<const string, string> IdMap;
     IdMap m_nameMap;  // Map of old name into new name
     typedef std::unordered_set<std::string> IdSet;
     IdSet m_newIdSet;  // Which new names exist
@@ -1046,8 +1045,8 @@ public:
                 "IPTION: Verilator output: XML representation of netlist -->\n");
         of.puts("<verilator_id_map>\n");
         {
-            for (IdMap::const_iterator it = m_nameMap.begin(); it != m_nameMap.end(); ++it) {
-                of.puts("<map from=\"" + it->second + "\" to=\"" + it->first + "\"/>\n");
+            for (const auto& itr : m_nameMap) {
+                of.puts("<map from=\"" + itr.second + "\" to=\"" + itr.first + "\"/>\n");
             }
         }
         of.puts("</verilator_id_map>\n");

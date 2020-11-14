@@ -56,6 +56,8 @@ module t(/*AUTOARG*/
       result_70_3 = $countbits(in70, ctrl0, ctrl1, ctrl2);
    end
 
+   logic [31:0] val = 32'h70008421;
+
    integer cyc=0;
    // Test loop
    always @ (posedge clk) begin
@@ -70,6 +72,14 @@ module t(/*AUTOARG*/
          if ($countbits(20'b1100x01z101, 2, 2'bx1) != 18) $stop;
          if ($countbits(32'b1100x01z101, 'x, 'z) != 2) $stop;
          if ($countbits(32'b1100x01z101, 'x, 'z, '1) != 7) $stop;
+
+`ifndef VERILATOR   // Unsup
+         if ($countbits(val, '1) != 7) $stop;
+         if ($countones(val) != 7) $stop;
+         if ($countbits(val, '0) != 25) $stop;
+         if ($countbits(val, '0, '1) != 32) $stop;
+         if ($countbits(val, 'x, 'z) != 0) $stop;
+`endif
       end
       else if (cyc == 1) begin
          in16 <= 16'h0AF0;

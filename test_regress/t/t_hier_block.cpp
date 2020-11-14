@@ -9,9 +9,6 @@
 //
 //*************************************************************************
 
-
 extern "C" int dpi_export_func(int);
 
-extern "C" int dpi_import_func(int v) {
-    return dpi_export_func(v) - 1;
-}
+extern "C" int dpi_import_func(int v) { return dpi_export_func(v) - 1; }

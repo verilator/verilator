@@ -1,0 +1,9 @@
+%Error: t/t_interface_ar3.v:16:36: Unsupported: interface slices
+                                 : ... In instance t
+   16 |    sub sub01 [2] (.clk, .infc(iinst[0:1]));
+      |                                    ^
+%Error: Internal Error: t/t_interface_ar3.v:16:36: ../V3Inst.cpp:#: No interface varref under array
+                                                 : ... In instance t
+   16 |    sub sub01 [2] (.clk, .infc(iinst[0:1]));
+      |                                    ^
+                        ... See the manual and https://verilator.org for more assistance.

@@ -166,7 +166,8 @@ module barshift_1d_unpacked_struct1 #(parameter DEPTH = 2, localparam WIDTH = 2*
       end
    endgenerate
    assign tmp[0+OFFSET] = {pad, in};
-   assign out = tmp[DEPTH+OFFSET][WIDTH-1:0];
+   logic _dummy;
+   always_comb {_dummy, out[WIDTH-1:1], out[0]} = tmp[DEPTH+OFFSET][WIDTH:0];
 endmodule
 
 

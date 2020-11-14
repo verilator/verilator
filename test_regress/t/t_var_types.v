@@ -216,6 +216,11 @@ module t (/*AUTOARG*/);
       d_time = $time;
       if ($time !== d_time) $stop;
 
+      // Null checks
+      d_chandle = null;
+      if (d_chandle != null) $stop;
+      if (d_chandle) $stop;
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

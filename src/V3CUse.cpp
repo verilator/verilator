@@ -41,7 +41,7 @@ private:
     // MEMBERS
     AstNodeModule* m_modInsertp;  // Current module to insert AstCUse under
     typedef std::pair<VUseType, string> UseString;
-    std::map<UseString, AstCUse*> m_didUse;  // What we already used
+    std::map<const UseString, AstCUse*> m_didUse;  // What we already used
 
     // NODE STATE
     // Entire netlist:
@@ -148,7 +148,7 @@ class CUseVisitor : public AstNVisitor {
         funcp->isStatic(false);
         funcp->protect(false);
         AstNode* exprp = new AstCMath(nodep->fileline(),
-                                      "std::string(\"`{\") + to_string_middle() + \"}\"", 0);
+                                      R"(std::string("'{") + to_string_middle() + "}")", 0);
         exprp->dtypeSetString();
         funcp->addStmtsp(new AstCReturn(nodep->fileline(), exprp));
         nodep->addStmtp(funcp);
@@ -162,23 +162,25 @@ class CUseVisitor : public AstNVisitor {
         funcp->addStmtsp(new AstCStmt(nodep->fileline(), "std::string out;\n"));
         std::string comma;
         for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
-            if (VN_IS(itemp, Var)) {
-                string stmt = "out += \"";
-                stmt += comma;
-                comma = ", ";
-                stmt += itemp->origNameProtect();
-                stmt += ":\" + ";
-                if (itemp->isWide()) {
-                    stmt += "VL_TO_STRING_W(";
-                    stmt += cvtToStr(itemp->widthWords());
-                    stmt += ", ";
-                } else {
-                    stmt += "VL_TO_STRING(";
+            if (auto* varp = VN_CAST(itemp, Var)) {
+                if (!varp->isParam()) {
+                    string stmt = "out += \"";
+                    stmt += comma;
+                    comma = ", ";
+                    stmt += itemp->origNameProtect();
+                    stmt += ":\" + ";
+                    if (itemp->isWide()) {
+                        stmt += "VL_TO_STRING_W(";
+                        stmt += cvtToStr(itemp->widthWords());
+                        stmt += ", ";
+                    } else {
+                        stmt += "VL_TO_STRING(";
+                    }
+                    stmt += itemp->nameProtect();
+                    stmt += ");\n";
+                    nodep->user1(true);  // So what we extend dumps this
+                    funcp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
                 }
-                stmt += itemp->nameProtect();
-                stmt += ");\n";
-                nodep->user1(true);  // So what we extend dumps this
-                funcp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
             }
         }
         if (nodep->extendsp() && nodep->extendsp()->classp()->user1()) {

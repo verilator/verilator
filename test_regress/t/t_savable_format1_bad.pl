@@ -23,6 +23,7 @@ execute(
     );
 
 -r "$Self->{obj_dir}/saved.vltsv" or error("Saved.vltsv not created\n");
+sleep(1);  # Avoid make getting confused by very fast build
 
 compile(
     v_flags2 => ["--savable -GMODEL_WIDTH=40"],

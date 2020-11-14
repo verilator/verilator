@@ -2,10 +2,6 @@
                                           : ... In instance t
    20 |       static int st = 2; st++; return st;
       |                  ^~
-%Error-UNSUPPORTED: t/t_var_static.v:27:11: Unsupported: 'static' function/task variables
-                                          : ... In instance t
-   27 |       int st = 2; st++; return st;
-      |           ^~
 %Error-UNSUPPORTED: t/t_var_static.v:30:18: Unsupported: 'static' function/task variables
                                           : ... In instance t
    30 |       static int st = 2; st++; return st;

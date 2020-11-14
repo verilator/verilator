@@ -177,7 +177,7 @@ private:
     VDouble0 m_statCombs;  // Statistic tracking
     CombineState m_state = STATE_IDLE;  // Major state
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstCFunc* m_funcp = nullptr;  // Current function
+    AstCFunc* m_cfuncp = nullptr;  // Current function
     CombCallVisitor m_call;  // Tracking of function call users
     int m_modNFuncs = 0;  // Number of functions made
 #ifdef VL_COMBINE_STATEMENTS
@@ -203,8 +203,8 @@ private:
     }
 #endif
     void walkEmptyFuncs() {
-        for (V3Hashed::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
-            AstNode* node1p = it->second;
+        for (const auto& itr : m_hashed) {
+            AstNode* node1p = itr.second;
             AstCFunc* oldfuncp = VN_CAST(node1p, CFunc);
             if (oldfuncp && oldfuncp->emptyBody() && !oldfuncp->dontCombine()) {
                 UINFO(5, "     EmptyFunc " << std::hex << V3Hash(oldfuncp->user4p()) << " "
@@ -330,7 +330,7 @@ private:
                      AstNode* last2p) {  // Final node in linked list, maybe null if all statements
                                          // to be grabbed
         // Make new function
-        string oldname = m_funcp->name();
+        string oldname = m_cfuncp->name();
         string::size_type pos;
         if ((pos = oldname.find("_common")) != string::npos) oldname.erase(pos);
         if ((pos = oldname.find("__")) != string::npos) oldname.erase(pos);
@@ -423,7 +423,8 @@ private:
         m_modp = nullptr;
     }
     virtual void visit(AstCFunc* nodep) override {
-        m_funcp = nodep;
+        VL_RESTORER(m_cfuncp);
+        m_cfuncp = nodep;
         if (!nodep->dontCombine()) {
             if (m_state == STATE_HASH) {
                 hashStatement(nodep);  // Hash the entire function - it might be identical
@@ -434,18 +435,17 @@ private:
             }
 #endif
         }
-        m_funcp = nullptr;
     }
     virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
             return;
         }
-        if (m_state == STATE_HASH && m_funcp) {
+        if (m_state == STATE_HASH && m_cfuncp) {
             hashStatement(nodep);
         }
 #ifdef VL_COMBINE_STATEMENTS
-        else if (m_state == STATE_DUP && m_funcp) {
+        else if (m_state == STATE_DUP && m_cfuncp) {
             walkDupCodeStart(nodep);
         }
 #endif

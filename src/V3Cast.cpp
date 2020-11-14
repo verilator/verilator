@@ -73,7 +73,7 @@ private:
         ensureLower32Cast(castp);
         nodep->user1(1);  // Now must be of known size
     }
-    int castSize(AstNode* nodep) {
+    static int castSize(AstNode* nodep) {
         if (nodep->isQuad()) {
             return VL_QUADSIZE;
         } else if (nodep->width() <= 8) {
@@ -154,7 +154,7 @@ private:
         }
     }
     virtual void visit(AstVarRef* nodep) override {
-        if (nodep->access().isRead() && !VN_IS(nodep->backp(), CCast)
+        if (nodep->access().isReadOnly() && !VN_IS(nodep->backp(), CCast)
             && VN_IS(nodep->backp(), NodeMath) && !VN_IS(nodep->backp(), ArraySel)
             && nodep->backp()->width() && castSize(nodep) != castSize(nodep->varp())) {
             // Cast vars to IData first, else below has upper bits wrongly set

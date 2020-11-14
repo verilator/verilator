@@ -73,8 +73,8 @@ private:
 
     // METHODS
     DfaGraph* graphp() { return static_cast<DfaGraph*>(m_graphp); }
-    bool nfaState(V3GraphVertex* vertexp) { return vertexp->color() == 0; }
-    // bool dfaState(V3GraphVertex* vertexp) { return vertexp->color()==1; }
+    static bool nfaState(V3GraphVertex* vertexp) { return vertexp->color() == 0; }
+    // static bool dfaState(V3GraphVertex* vertexp) { return vertexp->color()==1; }
 
     void nextStep() { m_step++; }
 
@@ -317,9 +317,8 @@ private:
             }
 
             // Foreach input state (NFA inputs of this DFA state)
-            for (std::set<int>::const_iterator inIt = inputs.begin(); inIt != inputs.end();
-                 ++inIt) {
-                DfaInput input = *inIt;
+            for (int inIt : inputs) {
+                DfaInput input = inIt;
                 UINFO(9, "    ===" << ++i << "=======================\n");
                 UINFO(9, "    On input " << cvtToHex(input.toNodep()) << endl);
 

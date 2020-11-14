@@ -198,14 +198,18 @@ sub report {
     }
 
     print "\nStatistics:\n";
-    print "  min log(p2e) = $min_p2e  from mtask $min_mtask (predict $Mtasks{$min_mtask}{predict}, elapsed $Mtasks{$min_mtask}{elapsed})\n";
-    print "  max log(p2e) = $max_p2e  from mtask $max_mtask (predict $Mtasks{$max_mtask}{predict}, elapsed $Mtasks{$max_mtask}{elapsed})\n";
+    printf "  min log(p2e) = %0.3f", $min_p2e;
+    print "  from mtask $min_mtask (predict $Mtasks{$min_mtask}{predict},";
+    print " elapsed $Mtasks{$min_mtask}{elapsed})\n";
+    printf "  max log(p2e) = %0.3f", $max_p2e;
+    print "  from mtask $max_mtask (predict $Mtasks{$max_mtask}{predict},";
+    print " elapsed $Mtasks{$max_mtask}{elapsed})\n";
 
     my $stddev = stddev(\@p2e_ratios);
     my $mean = mean(\@p2e_ratios);
-    print "  mean = " . ($mean) . "\n";
-    print "  stddev = " . ($stddev) . "\n";
-    print "  e ^ stddev = " . exp($stddev). "\n";
+    printf "  mean = %0.3f\n", $mean;
+    printf "  stddev = %0.3f\n", $stddev;
+    printf "  e ^ stddev = %0.3f\n", exp($stddev);
     print "\n";
 
     if ($nthreads > $ncpus) {

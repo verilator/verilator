@@ -314,7 +314,7 @@ private:
         // It was an expression, then got constified.  In reality, the WordSel
         // must be wrapped in a Cond, that will be false.
         return (VN_IS(nodep->rhsp(), Const) && VN_IS(nodep->fromp(), NodeVarRef)
-                && !VN_CAST_CONST(nodep->fromp(), NodeVarRef)->access().isWrite()
+                && VN_CAST_CONST(nodep->fromp(), NodeVarRef)->access().isReadOnly()
                 && (static_cast<int>(VN_CAST_CONST(nodep->rhsp(), Const)->toUInt())
                     >= VN_CAST(nodep->fromp(), NodeVarRef)->varp()->widthWords()));
     }
@@ -1297,17 +1297,21 @@ private:
     virtual void visit(AstCFunc* nodep) override {
         // No ASSIGNW removals under funcs, we've long eliminated INITIALs
         // (We should perhaps rename the assignw's to just assigns)
-        m_wremove = false;
-        iterateChildren(nodep);
-        m_wremove = true;
+        VL_RESTORER(m_wremove);
+        {
+            m_wremove = false;
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstScope* nodep) override {
         // No ASSIGNW removals under scope, we've long eliminated INITIALs
-        m_scopep = nodep;
-        m_wremove = false;
-        iterateChildren(nodep);
-        m_wremove = true;
-        m_scopep = nullptr;
+        VL_RESTORER(m_wremove);
+        VL_RESTORER(m_scopep);
+        {
+            m_wremove = false;
+            m_scopep = nodep;
+            iterateChildren(nodep);
+        }
     }
 
     void swapSides(AstNodeBiCom* nodep) {
@@ -1605,7 +1609,7 @@ private:
             // if (debug()) valuep->dumpTree(cout, "  visitvaref: ");
             iterateAndNextNull(nodep->varp()->valuep());  // May change nodep->varp()->valuep()
             AstNode* valuep = nodep->varp()->valuep();
-            if (!nodep->access().isWrite()
+            if (nodep->access().isReadOnly()
                 && ((!m_params  // Can reduce constant wires into equations
                      && m_doNConst
                      && v3Global.opt.oConst()
@@ -1937,7 +1941,8 @@ private:
                 ifp->rhsp(new AstCond(truep->fileline(), condp, truep, falsep));
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            } else if (0  // Disabled, as vpm assertions are faster without due to short-circuiting
+            } else if (false  // Disabled, as vpm assertions are faster
+                              // without due to short-circuiting
                        && operandIfIf(nodep)) {
                 UINFO(9, "IF({a}) IF({b}) => IF({a} && {b})" << endl);
                 AstNodeIf* lowerIfp = VN_CAST(nodep->ifsp(), NodeIf);

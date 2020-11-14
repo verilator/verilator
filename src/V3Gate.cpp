@@ -220,7 +220,9 @@ private:
         if (nodep->varScopep()->varp()->isSc()) {
             clearSimple("SystemC sig");  // Don't want to eliminate the VL_ASSIGN_SI's
         }
-        if (nodep->access().isWrite()) {
+        if (nodep->access().isRW()) {
+            clearSimple("R/W");
+        } else if (nodep->access().isWriteOrRW()) {
             if (m_lhsVarRef) clearSimple(">1 lhs varRefs");
             m_lhsVarRef = nodep;
         } else {
@@ -448,7 +450,7 @@ private:
                 vvertexp->setIsClock();
                 // For SYNCASYNCNET
                 varscp->user2(true);
-            } else if (m_activep && m_activep->hasClocked() && !nodep->access().isWrite()) {
+            } else if (m_activep && m_activep->hasClocked() && nodep->access().isReadOnly()) {
                 if (varscp->user2()) {
                     if (!vvertexp->rstAsyncNodep()) vvertexp->rstAsyncNodep(nodep);
                 } else {
@@ -457,9 +459,10 @@ private:
             }
             // We use weight of one; if we ref the var more than once, when we simplify,
             // the weight will increase
-            if (nodep->access().isWrite()) {
+            if (nodep->access().isWriteOrRW()) {
                 new V3GraphEdge(&m_graph, m_logicVertexp, vvertexp, 1);
-            } else {
+            }
+            if (nodep->access().isReadOrRW()) {
                 new V3GraphEdge(&m_graph, vvertexp, m_logicVertexp, 1);
             }
         }
@@ -600,7 +603,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                                                    << " ob" << vvertexp->outBeginp() << " on"
                                                    << (vvertexp->outBeginp()
                                                            ? vvertexp->outBeginp()->outNextp()
-                                                           : 0)
+                                                           : nullptr)
                                                    << " " << vvertexp->name() << endl);
                             for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep;
                                  edgep = edgep->outNextp()) {
@@ -842,7 +845,7 @@ private:
             // It's possible we substitute into something that will be reduced more later,
             // however, as we never delete the top Always/initial statement, all should be well.
             m_didReplace = true;
-            UASSERT_OBJ(!nodep->access().isWrite(), nodep,
+            UASSERT_OBJ(nodep->access().isReadOnly(), nodep,
                         "Can't replace lvalue assignments with const var");
             AstNode* substp = m_replaceTreep->cloneTree(false);
             UASSERT_OBJ(
@@ -937,7 +940,7 @@ private:
 
 public:
     GateDedupeHash() {}
-    ~GateDedupeHash() {
+    virtual ~GateDedupeHash() override {
         if (v3Global.opt.debugCheck()) check();
     }
 
@@ -963,7 +966,7 @@ public:
     }
 
     // Callback from V3Hashed::findDuplicate
-    bool isSame(AstNode* node1p, AstNode* node2p) {
+    virtual bool isSame(AstNode* node1p, AstNode* node2p) override {
         // Assignment may have been hashReplaced, if so consider non-match (effectively removed)
         if (isReplaced(node1p) || isReplaced(node2p)) {
             // UINFO(9, "isSame hit on replaced "<<(void*)node1p<<" "<<(void*)node2p<<endl);
@@ -999,8 +1002,8 @@ public:
 
     void check() {
         m_hashed.check();
-        for (V3Hashed::HashMmap::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
-            AstNode* nodep = it->second;
+        for (const auto& itr : m_hashed) {
+            AstNode* nodep = itr.second;
             AstNode* activep = nodep->user3p();
             AstNode* condVarp = nodep->user5p();
             if (!isReplaced(nodep)) {
@@ -1084,7 +1087,7 @@ private:
 public:
     // CONSTRUCTORS
     GateDedupeVarVisitor() {}
-    ~GateDedupeVarVisitor() {}
+    virtual ~GateDedupeVarVisitor() override {}
     // PUBLIC METHODS
     AstNodeVarRef* findDupe(AstNode* nodep, AstVarScope* consumerVarScopep, AstActive* activep) {
         m_assignp = nullptr;
@@ -1346,7 +1349,7 @@ private:
         }
         return VNUser(0);
     }
-    virtual VNUser visit(GateLogicVertex*, VNUser vu) override {  //
+    virtual VNUser visit(GateLogicVertex*, VNUser) override {  //
         return VNUser(0);
     }
 

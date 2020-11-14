@@ -9,7 +9,7 @@ use strict;
 # main
 
 eval `modulecmd perl add cds-ius`;
-exec('iccr',@ARGV);
+exec('iccr', @ARGV);
 
 #######################################################################
 __END__
@@ -22,7 +22,7 @@ invoke_iccr - Invoke tool under "modules" command
 
 =head1 SYNOPSIS
 
-  invoke_iccr  {ncv arguments}
+  invoke_iccr {arguments}
 
 =head1 DESCRIPTION
 

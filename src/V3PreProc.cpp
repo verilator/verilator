@@ -108,7 +108,7 @@ public:
 class V3PreProcImp : public V3PreProc {
 public:
     // TYPES
-    typedef std::map<string, VDefine> DefinesMap;
+    typedef std::map<const string, VDefine> DefinesMap;
     typedef VInFilter::StrList StrList;
 
     // debug() -> see V3PreShellImp::debug; use --debugi-V3PreShell
@@ -202,7 +202,7 @@ private:
 
     string commentCleanup(const string& text);
     bool commentTokenMatch(string& cmdr, const char* strg);
-    string trimWhitespace(const string& strg, bool trailing);
+    static string trimWhitespace(const string& strg, bool trailing);
     void unputString(const string& strg);
     void unputDefrefString(const string& strg);
 
@@ -238,24 +238,24 @@ private:
 
 public:
     // METHODS, called from upper level shell
-    void openFile(FileLine* fl, VInFilter* filterp, const string& filename);
-    bool isEof() const { return m_lexp->curStreamp()->m_eof; }
+    void openFile(FileLine* fl, VInFilter* filterp, const string& filename) override;
+    bool isEof() const override { return m_lexp->curStreamp()->m_eof; }
     void forceEof() { m_lexp->curStreamp()->m_eof = true; }
-    string getline();
-    void insertUnreadback(const string& text) { m_lineCmt += text; }
+    string getline() override;
+    void insertUnreadback(const string& text) override { m_lineCmt += text; }
     void insertUnreadbackAtBol(const string& text);
     void addLineComment(int enterExit);
-    void dumpDefines(std::ostream& os);
-    void candidateDefines(VSpellCheck* spellerp);
+    void dumpDefines(std::ostream& os) override;
+    void candidateDefines(VSpellCheck* spellerp) override;
 
     // METHODS, callbacks
-    virtual void comment(const string& text);  // Comment detected (if keepComments==2)
-    virtual void include(const string& filename);  // Request a include file be processed
-    virtual void undef(const string& name);
+    virtual void comment(const string& text) override;  // Comment detected (if keepComments==2)
+    virtual void include(const string& filename) override;  // Request a include file be processed
+    virtual void undef(const string& name) override;
     virtual void undefineall();
     virtual void define(FileLine* fl, const string& name, const string& value,
-                        const string& params, bool cmdline);
-    virtual string removeDefines(const string& text);  // Remove defines in a text string
+                        const string& params, bool cmdline) override;
+    virtual string removeDefines(const string& text) override;  // Remove defines in a text string
 
     // CONSTRUCTORS
     V3PreProcImp() {
@@ -274,7 +274,7 @@ public:
         m_lexp->m_pedantic = pedantic();
         m_lexp->debug(debug() >= 5 ? debug() : 0);  // See also V3PreProc::debug() method
     }
-    ~V3PreProcImp() {
+    ~V3PreProcImp() override {
         if (m_lexp) VL_DO_CLEAR(delete m_lexp, m_lexp = nullptr);
     }
 };
@@ -585,7 +585,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
     string value = defValue(refp->name());
     UINFO(4, "defineValue    '" << V3PreLex::cleanDbgStrg(value) << "'" << endl);
 
-    std::map<string, string> argValueByName;
+    std::map<const string, string> argValueByName;
     {  // Parse argument list into map
         unsigned numArgs = 0;
         string argName;
@@ -764,7 +764,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
 //**********************************************************************
 // Parser routines
 
-void V3PreProcImp::openFile(FileLine* fl, VInFilter* filterp, const string& filename) {
+void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filename) {
     // Open a new file, possibly overriding the current one which is active.
     if (m_incError) return;
     V3File::addSrcDepend(filename);
@@ -1549,8 +1549,8 @@ int V3PreProcImp::getFinalToken(string& buf) {
             }
         }
         // Track newlines in prep for next token
-        for (string::iterator cp = buf.begin(); cp != buf.end(); ++cp) {
-            if (*cp == '\n') {
+        for (char& c : buf) {
+            if (c == '\n') {
                 m_finAtBol = true;
                 m_finFilelinep->linenoInc();
             } else {

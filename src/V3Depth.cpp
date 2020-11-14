@@ -40,7 +40,7 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstCFunc* m_funcp = nullptr;  // Current block
+    AstCFunc* m_cfuncp = nullptr;  // Current block
     AstNode* m_stmtp = nullptr;  // Current statement
     int m_depth = 0;  // How deep in an expression
     int m_maxdepth = 0;  // Maximum depth in an expression
@@ -61,8 +61,8 @@ private:
                                   // bitmask instead of widths....)
                                   // See t_func_crc for an example test that requires this
                                   VFlagLogicPacked(), nodep->width());
-        UASSERT_OBJ(m_funcp, nodep, "Deep expression not under a function");
-        m_funcp->addInitsp(varp);
+        UASSERT_OBJ(m_cfuncp, nodep, "Deep expression not under a function");
+        m_cfuncp->addInitsp(varp);
         // Replace node tree with reference to var
         AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
         nodep->replaceWith(newp);
@@ -81,23 +81,27 @@ private:
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
-            m_funcp = nullptr;
+            m_cfuncp = nullptr;
             iterateChildren(nodep);
         }
     }
     virtual void visit(AstCFunc* nodep) override {
-        m_funcp = nodep;
-        m_depth = 0;
-        m_maxdepth = 0;
-        iterateChildren(nodep);
-        m_funcp = nullptr;
+        VL_RESTORER(m_cfuncp);
+        {
+            m_cfuncp = nodep;
+            m_depth = 0;
+            m_maxdepth = 0;
+            iterateChildren(nodep);
+        }
     }
     void visitStmt(AstNodeStmt* nodep) {
-        m_depth = 0;
-        m_maxdepth = 0;
-        m_stmtp = nodep;
-        iterateChildren(nodep);
-        m_stmtp = nullptr;
+        VL_RESTORER(m_stmtp);
+        {
+            m_stmtp = nodep;
+            m_depth = 0;
+            m_maxdepth = 0;
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
@@ -128,10 +132,10 @@ private:
     // Marking of non-static functions (because they might need "this")
     // (Here instead of new visitor after V3Descope just to avoid another visitor)
     void needNonStaticFunc(AstNode* nodep) {
-        UASSERT_OBJ(m_funcp, nodep, "Non-static accessor not under a function");
-        if (m_funcp->isStatic().trueUnknown()) {
+        UASSERT_OBJ(m_cfuncp, nodep, "Non-static accessor not under a function");
+        if (m_cfuncp->isStatic().trueUnknown()) {
             UINFO(5, "Mark non-public due to " << nodep << endl);
-            m_funcp->isStatic(false);
+            m_cfuncp->isStatic(false);
         }
     }
     virtual void visit(AstUCFunc* nodep) override {

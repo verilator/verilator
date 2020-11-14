@@ -291,10 +291,10 @@ private:
         if (!m_pliVertexp) {
             m_pliVertexp = new SplitPliVertex(&m_graph, nodep);  // m_graph.clear() will delete it
         }
-        for (VStack::iterator it = m_stmtStackps.begin(); it != m_stmtStackps.end(); ++it) {
+        for (const auto& vtxp : m_stmtStackps) {
             // Both ways...
-            new SplitScorebdEdge(&m_graph, *it, m_pliVertexp);
-            new SplitScorebdEdge(&m_graph, m_pliVertexp, *it);
+            new SplitScorebdEdge(&m_graph, vtxp, m_pliVertexp);
+            new SplitScorebdEdge(&m_graph, m_pliVertexp, vtxp);
         }
     }
     void scoreboardPushStmt(AstNode* nodep) {
@@ -383,7 +383,7 @@ protected:
                 SplitVarStdVertex* vstdp = reinterpret_cast<SplitVarStdVertex*>(vscp->user1p());
 
                 // SPEEDUP: We add duplicate edges, that should be fixed
-                if (m_inDly && nodep->access().isWrite()) {
+                if (m_inDly && nodep->access().isWriteOrRW()) {
                     UINFO(4, "     VARREFDLY: " << nodep << endl);
                     // Delayed variable is different from non-delayed variable
                     if (!vscp->user2p()) {
@@ -398,7 +398,7 @@ protected:
                         new SplitLVEdge(&m_graph, vpostp, vxp);
                     }
                 } else {  // Nondelayed assignment
-                    if (nodep->access().isWrite()) {
+                    if (nodep->access().isWriteOrRW()) {
                         // Non-delay; need to maintain existing ordering
                         // with all consumers of the signal
                         UINFO(4, "     VARREFLV: " << nodep << endl);
@@ -709,7 +709,7 @@ public:
     void go() {
         // Create a new always for each color
         const ColorSet& colors = m_ifColorp->colors();
-        for (ColorSet::const_iterator color = colors.begin(); color != colors.end(); ++color) {
+        for (unsigned int color : colors) {
             // We don't need to clone m_origAlwaysp->sensesp() here;
             // V3Activate already moved it to a parent node.
             AstAlways* alwaysp
@@ -718,7 +718,7 @@ public:
             // We'll strip these out after the blocks are fully cloned.
             AstSplitPlaceholder* placeholderp = makePlaceholderp();
             alwaysp->addStmtp(placeholderp);
-            m_addAfter[*color] = placeholderp;
+            m_addAfter[color] = placeholderp;
             m_newBlocksp->push_back(alwaysp);
         }
         // Scan the body of the always. We'll handle if/else
@@ -761,7 +761,7 @@ protected:
         typedef std::unordered_map<uint32_t, AstNodeIf*> CloneMap;
         CloneMap clones;
 
-        for (ColorSet::const_iterator color = colors.begin(); color != colors.end(); ++color) {
+        for (unsigned int color : colors) {
             // Clone this if into its set of split blocks
             AstSplitPlaceholder* if_placeholderp = makePlaceholderp();
             AstSplitPlaceholder* else_placeholderp = makePlaceholderp();
@@ -775,9 +775,9 @@ protected:
                 clonep->unique0Pragma(origp->unique0Pragma());
                 clonep->priorityPragma(origp->priorityPragma());
             }
-            clones[*color] = clonep;
-            m_addAfter[*color]->addNextHere(clonep);
-            m_addAfter[*color] = if_placeholderp;
+            clones[color] = clonep;
+            m_addAfter[color]->addNextHere(clonep);
+            m_addAfter[color] = if_placeholderp;
         }
 
         iterateAndNextNull(nodep->ifsp());
