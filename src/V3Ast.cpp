@@ -394,6 +394,7 @@ void AstNode::setOp4p(AstNode* newp) {
 
 void AstNode::addOp1p(AstNode* newp) {
     UASSERT(newp, "Null item passed to addOp1p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     if (!m_op1p) {
         op1p(newp);
     } else {
@@ -403,6 +404,7 @@ void AstNode::addOp1p(AstNode* newp) {
 
 void AstNode::addOp2p(AstNode* newp) {
     UASSERT(newp, "Null item passed to addOp2p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     if (!m_op2p) {
         op2p(newp);
     } else {
@@ -412,6 +414,7 @@ void AstNode::addOp2p(AstNode* newp) {
 
 void AstNode::addOp3p(AstNode* newp) {
     UASSERT(newp, "Null item passed to addOp3p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     if (!m_op3p) {
         op3p(newp);
     } else {
@@ -421,6 +424,7 @@ void AstNode::addOp3p(AstNode* newp) {
 
 void AstNode::addOp4p(AstNode* newp) {
     UASSERT(newp, "Null item passed to addOp4p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
     if (!m_op4p) {
         op4p(newp);
     } else {
