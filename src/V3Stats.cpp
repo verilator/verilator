@@ -234,10 +234,10 @@ public:
             if (count != 0.0) {
                 if (v3Global.opt.statsVars()) {
                     NameMap& nameMapr = m_statVarWidthNames.at(i);
-                    for (NameMap::iterator it = nameMapr.begin(); it != nameMapr.end(); ++it) {
+                    for (const auto& itr : nameMapr) {
                         std::ostringstream os;
-                        os << "Vars, width " << std::setw(5) << std::dec << i << " " << it->first;
-                        V3Stats::addStat(m_stage, os.str(), it->second);
+                        os << "Vars, width " << std::setw(5) << std::dec << i << " " << itr.first;
+                        V3Stats::addStat(m_stage, os.str(), itr.second);
                     }
                 } else {
                     std::ostringstream os;

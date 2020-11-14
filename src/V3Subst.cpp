@@ -329,14 +329,14 @@ private:
     }
     virtual void visit(AstVarRef* nodep) override {
         // Any variable
-        if (nodep->access().isWrite()) {
+        if (nodep->access().isWriteOrRW()) {
             m_assignStep++;
             nodep->varp()->user2(m_assignStep);
             UINFO(9, " ASSIGNstep u2=" << nodep->varp()->user2() << " " << nodep << endl);
         }
         if (isSubstVar(nodep->varp())) {
             SubstVarEntry* entryp = getEntryp(nodep);
-            if (nodep->access().isWrite()) {
+            if (nodep->access().isWriteOrRW()) {
                 UINFO(8, " ASSIGNcpx " << nodep << endl);
                 entryp->assignComplex();
             } else if (AstNode* substp = entryp->substWhole(nodep)) {

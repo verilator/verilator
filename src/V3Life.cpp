@@ -49,7 +49,6 @@ public:
     VDouble0 m_statAssnCon;  // Statistic tracking
     std::vector<AstNode*> m_unlinkps;
 
-public:
     // CONSTRUCTORS
     LifeState() {}
     ~LifeState() {
@@ -68,35 +67,29 @@ public:
 // Structure for each variable encountered
 
 class LifeVarEntry {
-    AstNodeAssign* m_assignp;  // Last assignment to this varscope, nullptr if no longer relevant
-    AstConst* m_constp;  // Known constant value
+    // Last assignment to this varscope, nullptr if no longer relevant
+    AstNodeAssign* m_assignp = nullptr;
+    AstConst* m_constp = nullptr;  // Known constant value
     // First access was a set (and thus block above may have a set that can be deleted
     bool m_setBeforeUse;
     // Was ever assigned (and thus above block may not preserve constant propagation)
-    bool m_everSet;
-
-    inline void init(bool setBeforeUse) {
-        m_assignp = nullptr;
-        m_constp = nullptr;
-        m_setBeforeUse = setBeforeUse;
-        m_everSet = false;
-    }
+    bool m_everSet = false;
 
 public:
     class SIMPLEASSIGN {};
     class COMPLEXASSIGN {};
     class CONSUMED {};
 
-    LifeVarEntry(SIMPLEASSIGN, AstNodeAssign* assp) {
-        init(true);
+    LifeVarEntry(SIMPLEASSIGN, AstNodeAssign* assp)
+        : m_setBeforeUse{true} {
         simpleAssign(assp);
     }
-    explicit LifeVarEntry(COMPLEXASSIGN) {
-        init(false);
+    explicit LifeVarEntry(COMPLEXASSIGN)
+        : m_setBeforeUse{false} {
         complexAssign();
     }
-    explicit LifeVarEntry(CONSUMED) {
-        init(false);
+    explicit LifeVarEntry(CONSUMED)
+        : m_setBeforeUse{false} {
         consumed();
     }
     ~LifeVarEntry() {}
@@ -300,7 +293,7 @@ private:
         //
         AstVarScope* vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
-        if (nodep->access().isWrite()) {
+        if (nodep->access().isWriteOrRW()) {
             m_sideEffect = true;  // $sscanf etc may have RHS vars that are lvalues
             m_lifep->complexAssign(vscp);
         } else {

@@ -410,10 +410,11 @@ private:
 
     virtual void visit(AstVarRef* nodep) override {
         if (!nodep->user2Inc()) {  // Not done yet
-            if (m_inDly && nodep->access().isWrite()) {
+            if (m_inDly && nodep->access().isWriteOrRW()) {
                 UINFO(4, "AssignDlyVar: " << nodep << endl);
                 markVarUsage(nodep->varScopep(), VU_DLY);
                 UASSERT_OBJ(m_activep, nodep, "<= not under sensitivity block");
+                UASSERT_OBJ(!nodep->access().isRW(), nodep, "<= on read+write method");
                 if (!m_activep->hasClocked()) {
                     nodep->v3error("Internal: Blocking <= assignment in non-clocked block, should "
                                    "have converted in V3Active");
@@ -458,7 +459,7 @@ private:
                 newrefp->user2(true);  // No reason to do it again
                 nodep->replaceWith(newrefp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            } else if (!m_inDly && nodep->access().isWrite()) {
+            } else if (!m_inDly && nodep->access().isWriteOrRW()) {
                 // UINFO(9, "NBA " << nodep << endl);
                 if (!m_inInitial) {
                     UINFO(4, "AssignNDlyVar: " << nodep << endl);

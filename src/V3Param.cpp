@@ -119,10 +119,11 @@ class ParameterizedHierBlocks {
 
 public:
     ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep) {
-        for (V3HierBlockOptSet::const_iterator it = hierOpts.begin(); it != hierOpts.end(); ++it) {
-            m_hierBlockOptsByOrigName.insert(std::make_pair(it->second.origName(), &it->second));
-            const V3HierarchicalBlockOption::ParamStrMap& params = it->second.params();
-            ParamConstMap& consts = m_params[&it->second];
+        for (const auto& hierOpt : hierOpts) {
+            m_hierBlockOptsByOrigName.insert(
+                std::make_pair(hierOpt.second.origName(), &hierOpt.second));
+            const V3HierarchicalBlockOption::ParamStrMap& params = hierOpt.second.params();
+            ParamConstMap& consts = m_params[&hierOpt.second];
             for (V3HierarchicalBlockOption::ParamStrMap::const_iterator pIt = params.begin();
                  pIt != params.end(); ++pIt) {
                 AstConst* constp = AstConst::parseParamLiteral(
@@ -141,10 +142,7 @@ public:
     }
     ~ParameterizedHierBlocks() {
         for (ParamsMap::const_iterator it = m_params.begin(); it != m_params.end(); ++it) {
-            for (ParamConstMap::const_iterator pIt = it->second.begin(); pIt != it->second.end();
-                 ++pIt) {
-                delete pIt->second;
-            }
+            for (const auto& pItr : it->second) { delete pItr.second; }
         }
     }
     AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,

@@ -188,15 +188,15 @@ private:
         const LinenoSet& lines = m_handleLines[state.m_handle];
         int first = 0;
         int last = 0;
-        for (LinenoSet::iterator it = lines.begin(); it != lines.end(); ++it) {
+        for (int linen : lines) {
             if (!first) {
-                first = last = *it;
-            } else if (*it == last + 1) {
+                first = last = linen;
+            } else if (linen == last + 1) {
                 ++last;
             } else {
                 if (!out.empty()) out += ",";
                 out += linesFirstLast(first, last);
-                first = last = *it;
+                first = last = linen;
             }
         }
         if (first) {

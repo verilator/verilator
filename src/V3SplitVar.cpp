@@ -361,9 +361,7 @@ public:
         v.iterate(nodep);
     }
     void visit(AstNVisitor* visitor) {
-        for (VarSet::iterator it = m_vars.begin(), it_end = m_vars.end(); it != it_end; ++it) {
-            visitor->iterate(*it);
-        }
+        for (const auto& varp : m_vars) visitor->iterate(varp);
         for (SelSet::iterator it = m_sels.begin(), it_end = m_sels.end(); it != it_end; ++it) {
             // If m_refs includes VarRef from ArraySel, remove it
             // because the VarRef would not be visited in SplitPackedVarVisitor::visit(AstSel*).
@@ -462,13 +460,17 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
         if (nodep->sensesp()) {  // When visiting sensitivity list, always is the context
             setContextAndIterate(nodep, nodep->sensesp());
         }
-        if (AstNode* bodysp = nodep->bodysp()) iterate(bodysp);
+        for (AstNode* bodysp = nodep->bodysp(); bodysp; bodysp = bodysp->nextp()) {
+            iterate(bodysp);
+        }
     };
     virtual void visit(AstAlwaysPublic* nodep) override {
         if (nodep->sensesp()) {  // When visiting sensitivity list, always is the context
             setContextAndIterate(nodep, nodep->sensesp());
         }
-        if (AstNode* bodysp = nodep->bodysp()) iterate(bodysp);
+        for (AstNode* bodysp = nodep->bodysp(); bodysp; bodysp = bodysp->nextp()) {
+            iterate(bodysp);
+        }
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         VL_RESTORER(m_contextp);
@@ -767,7 +769,7 @@ public:
         : m_refs{} {
         iterate(nodep);
     }
-    ~SplitUnpackedVarVisitor() {
+    ~SplitUnpackedVarVisitor() override {
         UASSERT(m_refs.empty(), "Don't forget to call split()");
         V3Stats::addStat("SplitVar, Split unpacked arrays", m_numSplit);
     }
@@ -898,10 +900,8 @@ public:
         : m_basicp{varp->dtypep()->basicp()} {}
     void append(const PackedVarRefEntry& e, const VAccess& access) {
         UASSERT(!m_dedupDone, "cannot add after dedup()");
-        if (access.isWrite())
-            m_lhs.push_back(e);
-        else
-            m_rhs.push_back(e);
+        if (access.isWriteOrRW()) m_lhs.push_back(e);
+        if (access.isReadOrRW()) m_rhs.push_back(e);
     }
     void dedup() {
         UASSERT(!m_dedupDone, "dedup() called twice");
@@ -918,8 +918,8 @@ public:
         std::vector<std::pair<int, bool>> points;  // <bit location, is end>
         points.reserve(m_lhs.size() * 2 + 2);  // 2 points will be added per one PackedVarRefEntry
         for (const_iterator it = m_lhs.begin(), itend = m_lhs.end(); it != itend; ++it) {
-            points.push_back(std::make_pair(it->lsb(), false));  // Start of a region
-            points.push_back(std::make_pair(it->msb() + 1, true));  // End of a region
+            points.emplace_back(std::make_pair(it->lsb(), false));  // Start of a region
+            points.emplace_back(std::make_pair(it->msb() + 1, true));  // End of a region
         }
         if (skipUnused && !m_rhs.empty()) {  // Range to be read must be kept, so add points here
             int lsb = m_basicp->msb() + 1;
@@ -929,12 +929,12 @@ public:
                 msb = std::max(msb, m_rhs[i].msb());
             }
             UASSERT_OBJ(lsb <= msb, m_basicp, "lsb:" << lsb << " msb:" << msb << " are wrong");
-            points.push_back(std::make_pair(lsb, false));
-            points.push_back(std::make_pair(msb + 1, true));
+            points.emplace_back(std::make_pair(lsb, false));
+            points.emplace_back(std::make_pair(msb + 1, true));
         }
         if (!skipUnused) {  // All bits are necessary
-            points.push_back(std::make_pair(m_basicp->lsb(), false));
-            points.push_back(std::make_pair(m_basicp->msb() + 1, true));
+            points.emplace_back(std::make_pair(m_basicp->lsb(), false));
+            points.emplace_back(std::make_pair(m_basicp->msb() + 1, true));
         }
         std::sort(points.begin(), points.end(), SortByFirst());
 
@@ -949,7 +949,7 @@ public:
             }
             UASSERT(refcount >= 0, "refcounut must not be negative");
             if (bitwidth == 0 || refcount == 0) continue;  // Vacant region
-            plan.push_back(SplitNewVar(points[i].first, bitwidth));
+            plan.emplace_back(SplitNewVar(points[i].first, bitwidth));
         }
 
         return plan;
@@ -1211,15 +1211,14 @@ public:
         , m_numSplit{0} {
         // If you want ignore refs and walk the tne entire AST,
         // just call iterateChildren(m_modp) and split() for each module
-        for (SplitVarRefsMap::iterator it = refs.begin(), it_end = refs.end(); it != it_end;
-             ++it) {
-            m_modp = it->first;
-            it->second.visit(this);
+        for (auto& i : refs) {
+            m_modp = i.first;
+            i.second.visit(this);
             split();
             m_modp = nullptr;
         }
     }
-    ~SplitPackedVarVisitor() {
+    ~SplitPackedVarVisitor() override {
         UASSERT(m_refs.empty(), "Forgot to call split()");
         V3Stats::addStat("SplitVar, Split packed variables", m_numSplit);
     }

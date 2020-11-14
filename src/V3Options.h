@@ -411,13 +411,13 @@ private:
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
-    bool onoff(const char* sw, const char* arg, bool& flag);
-    bool onoffb(const char* sw, const char* arg, VOptionBool& flagr);
-    bool suffixed(const string& sw, const char* arg);
-    string parseFileArg(const string& optdir, const string& relfilename);
+    static bool onoff(const char* sw, const char* arg, bool& flag);
+    static bool onoffb(const char* sw, const char* arg, VOptionBool& flagr);
+    static bool suffixed(const string& sw, const char* arg);
+    static string parseFileArg(const string& optdir, const string& relfilename);
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
-    int stripOptionsForChildRun(const string& opt, bool forTop) const;
+    static int stripOptionsForChildRun(const string& opt, bool forTop);
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(V3Options);

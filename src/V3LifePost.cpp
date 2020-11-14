@@ -99,13 +99,11 @@ public:
 // and a sequence number within the mtask:
 
 struct LifeLocation {
-    const ExecMTask* mtaskp;
-    uint32_t sequence;
+    const ExecMTask* mtaskp = nullptr;
+    uint32_t sequence = 0;
 
 public:
-    LifeLocation()
-        : mtaskp{nullptr}
-        , sequence{0} {}
+    LifeLocation() {}
     LifeLocation(const ExecMTask* mtaskp_, uint32_t sequence_)
         : mtaskp{mtaskp_}
         , sequence{sequence_} {}
@@ -120,9 +118,8 @@ public:
 
 struct LifePostLocation {
     LifeLocation loc;
-    AstAssignPost* nodep;
-    LifePostLocation()
-        : nodep{nullptr} {}
+    AstAssignPost* nodep = nullptr;
+    LifePostLocation() {}
     LifePostLocation(LifeLocation loc_, AstAssignPost* nodep_)
         : loc{loc_}
         , nodep{nodep_} {}
@@ -189,8 +186,8 @@ private:
         return true;
     }
     void squashAssignposts() {
-        for (PostLocMap::iterator it = m_assignposts.begin(); it != m_assignposts.end(); ++it) {
-            LifePostLocation* app = &it->second;
+        for (auto& itr : m_assignposts) {
+            LifePostLocation* app = &itr.second;
             AstVarRef* lhsp = VN_CAST(app->nodep->lhsp(), VarRef);  // original var
             AstVarRef* rhsp = VN_CAST(app->nodep->rhsp(), VarRef);  // dly var
             AstVarScope* dlyVarp = rhsp->varScopep();
@@ -283,11 +280,8 @@ private:
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
 
         LifeLocation loc(m_execMTaskp, ++m_sequence);
-        if (nodep->access().isWrite()) {
-            m_writes[vscp].insert(loc);
-        } else {
-            m_reads[vscp].insert(loc);
-        }
+        if (nodep->access().isWriteOrRW()) m_writes[vscp].insert(loc);
+        if (nodep->access().isReadOrRW()) m_reads[vscp].insert(loc);
     }
     virtual void visit(AstAssignPre* nodep) override {
         // Do not record varrefs within assign pre.

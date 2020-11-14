@@ -724,6 +724,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_DUMPPORTS    "$dumpports"
 %token<fl>              yD_DUMPVARS     "$dumpvars"
 %token<fl>              yD_ERROR        "$error"
+%token<fl>              yD_EXIT         "$exit"
 %token<fl>              yD_EXP          "$exp"
 %token<fl>              yD_FATAL        "$fatal"
 %token<fl>              yD_FCLOSE       "$fclose"
@@ -3552,6 +3553,8 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? nullptr : new AstUCStmt($1,$3)); }
 	|	yD_SYSTEM '(' expr ')'			{ $$ = new AstSystemT($1, $3); }
+	//
+	|	yD_EXIT parenE				{ $$ = new AstFinish($1); }
 	//
 	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
 	|	yD_FFLUSH parenE			{ $$ = new AstFFlush($1, nullptr); }

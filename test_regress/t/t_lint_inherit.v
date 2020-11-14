@@ -45,8 +45,10 @@ module m2
    input d,
    // Due to bug the below disable used to be ignored.
    // verilator lint_off UNOPT
+   // verilator lint_off UNOPTFLAT
    output reg [1:0] q
    // verilator lint_on UNOPT
+   // verilator lint_on UNOPTFLAT
    );
 
    always @* begin

@@ -44,6 +44,17 @@ inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\
 extern std::string VL_TO_STRING_W(int words, WDataInP obj);
 
 //===================================================================
+// Shuffle RNG
+
+class VlURNG {
+public:
+    typedef size_t result_type;
+    static constexpr size_t min() { return 0; }
+    static constexpr size_t max() { return 1ULL << 31; }
+    size_t operator()() { return VL_MASK_I(31) & VL_RANDOM_I(32); }
+};
+
+//===================================================================
 // Readmem/Writemem operation classes
 
 class VlReadMem {
@@ -246,10 +257,7 @@ public:
                   [=](const T_Value& a, const T_Value& b) { return with_func(a) < with_func(b); });
     }
     void reverse() { std::reverse(m_deque.begin(), m_deque.end()); }
-    void shuffle() {
-        std::random_shuffle(m_deque.begin(), m_deque.end(),
-                            [=](int) { return VL_RANDOM_I(32) % m_deque.size(); });
-    }
+    void shuffle() { std::shuffle(m_deque.begin(), m_deque.end(), VlURNG()); }
     VlQueue unique() const {
         VlQueue out;
         std::set<T_Value> saw;
@@ -846,18 +854,16 @@ extern std::string VL_SUBSTR_N(const std::string& lhs, IData rhs, IData ths) VL_
 inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool ignoreCase) VL_PURE {
     // SystemVerilog does not allow a string variable to contain '\0'.
     // So C functions such as strcmp() can correctly compare strings.
-    int result;
     if (ignoreCase) {
-        result = VL_STRCASECMP(lhs.c_str(), rhs.c_str());
+        return VL_STRCASECMP(lhs.c_str(), rhs.c_str());
     } else {
-        result = std::strcmp(lhs.c_str(), rhs.c_str());
+        return std::strcmp(lhs.c_str(), rhs.c_str());
     }
-    return result;
 }
 
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
 
-extern IData VL_FGETS_NI(std::string& destp, IData fpi);
+extern IData VL_FGETS_NI(std::string& dest, IData fpi);
 
 //======================================================================
 // Dumping

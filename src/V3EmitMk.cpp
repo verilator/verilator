@@ -283,7 +283,6 @@ public:
         of.putsHeader();
     }
 
-public:
     explicit EmitMk() {
         emitClassMake();
         emitOverallMake();
@@ -365,10 +364,7 @@ class EmitMkHierVerilation {
             of.puts(v3Global.opt.prefix()
                     + ".mk: $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
             of.puts(V3Os::filenameNonDir(argsFile) + " ");
-            for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end();
-                 ++it) {
-                of.puts(it->second->hierWrapper(true) + " ");
-            }
+            for (const auto& itr : *m_planp) of.puts(itr.second->hierWrapper(true) + " ");
             of.puts("\n");
             emitLaunchVerilator(of, argsFile);
         }

@@ -191,6 +191,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$dumpportsoff"       { FL; return yD_DUMPOFF; }
   "$dumpportson"        { FL; return yD_DUMPON; }
   "$dumpvars"           { FL; return yD_DUMPVARS; }
+  "$exit"               { FL; return yD_EXIT; }
   "$exp"                { FL; return yD_EXP; }
   "$fclose"             { FL; return yD_FCLOSE; }
   "$fdisplay"           { FL; return yD_FDISPLAY; }

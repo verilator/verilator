@@ -2,15 +2,41 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
-* Verilator 4.103 devel
 
-****  Support queue and associative array 'with' statements. (#2616)
+* Verilator 4.105 devel
 
-****  Support queue slicing (#2326).
 
-****  Support associative array pattern assignments and defaults.
+* Verilator 4.104 2020-11-14
+
+***   Support queue and associative array 'with' statements. (#2616)
+
+***   Support queue slicing (#2326).
+
+***   Support associative array pattern assignments and defaults.
+
+***   Support static methods and typedefs in classes (#2615). [Krzysztof Bieganski]
+
+****  Report error on typedef referencing self (#2539). [Cody Piersall]
+
+****  With --debug, turn off address space layout randomization.
+
+****  Fix iteration over mutating list bug in VPI (#2588). [Kaleb Barrett]
+
+****  Fix cast width propagation (#2597). [flex-liu]
+
+****  Fix return from callValueCbs (#2589) (#2605). [Marlon James]
 
 ****  Fix WIDTH warnings on comparisons with nullptr (#2602). [Rupert Swarbrick]
+
+****  Fix fault when $fgets, $sscanf, etc used with string (#2604). [Yutetsu TAKATSUKASA]
+
+****  Fix WIFEXITED missing from MinGW/MSYS2 (#2609). [Jean Berniolles]
+
+****  Fix queue poping wrong value when otherwise unused (#2512). [nanduraj1]
+
+****  Fix arrays of modport interfaces (#2614). [Thierry Tambe]
+
+****  Fix split_var internal error (#2640) (#2641). [Yutetsu TAKATSUKASA]
 
 
 * Verilator 4.102 2020-10-15

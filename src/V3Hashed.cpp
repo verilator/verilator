@@ -139,8 +139,8 @@ void V3Hashed::erase(iterator it) {
 }
 
 void V3Hashed::check() {
-    for (HashMmap::iterator it = begin(); it != end(); ++it) {
-        AstNode* nodep = it->second;
+    for (const auto& itr : *this) {
+        AstNode* nodep = itr.second;
         UASSERT_OBJ(nodep->user4p(), nodep, "V3Hashed check failed, non-hashed node");
     }
 }
@@ -179,15 +179,15 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
     }
 
     *logp << "\n*** Dump:\n" << endl;
-    for (HashMmap::iterator it = begin(); it != end(); ++it) {
-        if (lasthash != it->first) {
-            lasthash = it->first;
-            *logp << "    " << it->first << endl;
+    for (const auto& itr : *this) {
+        if (lasthash != itr.first) {
+            lasthash = itr.first;
+            *logp << "    " << itr.first << endl;
         }
-        *logp << "\t" << it->second << endl;
+        *logp << "\t" << itr.second << endl;
         // Dumping the entire tree may make nearly N^2 sized dumps,
         // because the nodes under this one may also be in the hash table!
-        if (tree) it->second->dumpTree(*logp, "    ");
+        if (tree) itr.second->dumpTree(*logp, "    ");
     }
 }
 

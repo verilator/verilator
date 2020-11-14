@@ -154,10 +154,11 @@ public:
         // Called by TableSimulateVisitor on each unique varref encountered
         UINFO(9, "   SimVARREF " << nodep << endl);
         AstVarScope* vscp = nodep->varScopep();
-        if (nodep->access().isWrite()) {
+        if (nodep->access().isWriteOrRW()) {
             m_outWidth += nodep->varp()->dtypeSkipRefp()->widthTotalBytes();
             m_outVarps.push_back(vscp);
-        } else {
+        }
+        if (nodep->access().isReadOrRW()) {
             // We'll make the table with a separate natural alignment for each
             // output var, so always have char, 16 or 32 bit widths, so use widthTotalBytes
             m_inWidth += nodep->varp()->width();  // Space for var
@@ -199,10 +200,7 @@ private:
 
         // Collapse duplicate tables
         chgVscp = findDuplicateTable(chgVscp);
-        for (std::deque<AstVarScope*>::iterator it = m_tableVarps.begin();
-             it != m_tableVarps.end(); ++it) {
-            *it = findDuplicateTable(*it);
-        }
+        for (auto& vscp : m_tableVarps) vscp = findDuplicateTable(vscp);
 
         createOutputAssigns(nodep, stmtsp, indexVscp, chgVscp);
 

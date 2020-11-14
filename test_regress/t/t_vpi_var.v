@@ -91,7 +91,7 @@ extern "C" int mon_check();
 
    genvar i;
    generate
-   for (i=1; i<=128; i=i+1) begin : arr
+   for (i=1; i<=6; i=i+1) begin : arr
      arr #(.LENGTH(i)) arr();
    end endgenerate
 

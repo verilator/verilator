@@ -172,13 +172,11 @@ public:
         }
     }
     void dump() {
-        for (VarNameMap::iterator it = m_modVarNameMap.begin(); it != m_modVarNameMap.end();
-             ++it) {
-            cout << "-namemap: " << it->first << " -> " << it->second << endl;
+        for (const auto& itr : m_modVarNameMap) {
+            cout << "-namemap: " << itr.first << " -> " << itr.second << endl;
         }
     }
 
-public:
     // CONSTRUCTORS
     explicit InstDeModVarVisitor() {}
     void main(AstNodeModule* nodep) {
@@ -195,8 +193,8 @@ class InstDeVisitor : public AstNVisitor {
     // Find all cells with arrays, and convert to non-arrayed
 private:
     // STATE
-    AstRange* m_cellRangep
-        = nullptr;  // Range for arrayed instantiations, nullptr for normal instantiations
+    // Range for arrayed instantiations, nullptr for normal instantiations
+    AstRange* m_cellRangep = nullptr;
     int m_instSelNum = 0;  // Current instantiation count 0..N-1
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
 
@@ -377,7 +375,10 @@ private:
                     return;
                 }
                 string index = AstNode::encodeNumber(constp->toSInt());
+                if (VN_IS(arrselp->lhsp(), SliceSel))
+                    arrselp->lhsp()->v3error("Unsupported: interface slices");
                 AstVarRef* varrefp = VN_CAST(arrselp->lhsp(), VarRef);
+                UASSERT_OBJ(varrefp, arrselp, "No interface varref under array");
                 AstVarXRef* newp = new AstVarXRef(nodep->fileline(),
                                                   varrefp->name() + "__BRA__" + index + "__KET__",
                                                   "", VAccess::WRITE);

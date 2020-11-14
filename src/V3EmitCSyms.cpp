@@ -296,7 +296,7 @@ class EmitCSyms : EmitCBaseVisitor {
         if (VN_IS(m_modp, Class)) return;  // The ClassPackage is what is visible
         nameCheck(nodep);
 
-        m_scopes.push_back(make_pair(nodep, m_modp));
+        m_scopes.emplace_back(make_pair(nodep, m_modp));
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
             string name_dedot = AstNode::dedotName(nodep->shortName());
@@ -331,7 +331,7 @@ class EmitCSyms : EmitCBaseVisitor {
     virtual void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildren(nodep);
-        if (nodep->isSigUserRdPublic()) { m_modVars.push_back(make_pair(m_modp, nodep)); }
+        if (nodep->isSigUserRdPublic()) { m_modVars.emplace_back(make_pair(m_modp, nodep)); }
     }
     virtual void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
@@ -398,8 +398,8 @@ void EmitCSyms::emitSymHdr() {
     if (v3Global.dpi()) {
         puts("\n// DPI TYPES for DPI Export callbacks (Internal use)\n");
         std::map<const string, int> types;  // Remove duplicates and sort
-        for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
-            AstCFunc* funcp = it->second.m_cfuncp;
+        for (const auto& itr : m_scopeFuncs) {
+            AstCFunc* funcp = itr.second.m_cfuncp;
             if (funcp->dpiExport()) {
                 string cbtype = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
                 types["typedef void (*" + cbtype + ") (" + cFuncArgs(funcp) + ");\n"] = 1;
@@ -455,8 +455,8 @@ void EmitCSyms::emitSymHdr() {
 
     if (!m_scopeNames.empty()) {  // Scope names
         puts("\n// SCOPE NAMES\n");
-        for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
-            puts("VerilatedScope " + protect("__Vscope_" + it->second.m_symName) + ";\n");
+        for (const auto& itr : m_scopeNames) {
+            puts("VerilatedScope " + protect("__Vscope_" + itr.second.m_symName) + ";\n");
         }
     }
 

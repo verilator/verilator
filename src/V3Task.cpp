@@ -402,9 +402,9 @@ private:
         // Create input variables
         AstNode::user2ClearTree();
         V3TaskConnects tconnects = V3Task::taskConnects(refp, beginp);
-        for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
-            AstVar* portp = it->first;
-            AstArg* argp = it->second;
+        for (const auto& itr : tconnects) {
+            AstVar* portp = itr.first;
+            AstArg* argp = itr.second;
             AstNode* pinp = argp->exprp();
             portp->unlinkFrBack();
             pushDeletep(portp);  // Remove it from the clone (not original)
@@ -536,9 +536,9 @@ private:
 
         // Convert complicated outputs to temp signals
         V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
-        for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
-            AstVar* portp = it->first;
-            AstNode* pinp = it->second->exprp();
+        for (const auto& itr : tconnects) {
+            AstVar* portp = itr.first;
+            AstNode* pinp = itr.second->exprp();
             if (!pinp) {
                 // Too few arguments in function call
             } else {
@@ -683,6 +683,7 @@ private:
     }
 
     void makeDpiExportWrapper(AstNodeFTask* nodep, AstVar* rtnvarp) {
+        const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
         AstCFunc* dpip = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep,
                                       (rtnvarp ? rtnvarp->dpiArgType(true, true) : ""));
         dpip->dontCombine(true);
@@ -737,7 +738,7 @@ private:
                         argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true));
                         args = "";
                     }
-                    AstVarScope* outvscp = createFuncVar(dpip, portp->name() + "__Vcvt", portp);
+                    AstVarScope* outvscp = createFuncVar(dpip, portp->name() + tmpSuffixp, portp);
                     // No information exposure; is already visible in import/export func template
                     outvscp->varp()->protect(false);
                     portp->protect(false);
@@ -764,7 +765,7 @@ private:
                 argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true));
                 args = "";
             }
-            AstVarScope* outvscp = createFuncVar(dpip, portp->name() + "__Vcvt", portp);
+            AstVarScope* outvscp = createFuncVar(dpip, portp->name() + tmpSuffixp, portp);
             // No information exposure; is already visible in import/export func template
             outvscp->varp()->protect(false);
             AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp,
@@ -789,14 +790,14 @@ private:
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO() && portp->isWritable() && !portp->isFuncReturn()) {
-                    dpip->addStmtsp(createAssignInternalToDpi(portp, true, "__Vcvt", ""));
+                    dpip->addStmtsp(createAssignInternalToDpi(portp, true, tmpSuffixp, ""));
                 }
             }
         }
 
         if (rtnvarp) {
             dpip->addStmtsp(createDpiTemp(rtnvarp, ""));
-            dpip->addStmtsp(createAssignInternalToDpi(rtnvarp, false, "__Vcvt", ""));
+            dpip->addStmtsp(createAssignInternalToDpi(rtnvarp, false, tmpSuffixp, ""));
             string stmt = "return " + rtnvarp->name();
             stmt += rtnvarp->basicp()->isDpiPrimitive() ? ";\n" : "[0];\n";
             dpip->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
@@ -873,6 +874,7 @@ private:
     }
 
     void bodyDpiImportFunc(AstNodeFTask* nodep, AstVarScope* rtnvscp, AstCFunc* cfuncp) {
+        const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
         // Convert input/inout arguments to DPI types
         string args;
         for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -914,12 +916,12 @@ private:
                             args += "&";
                         }
 
-                        args += portp->name() + "__Vcvt";
+                        args += portp->name() + tmpSuffixp;
 
-                        cfuncp->addStmtsp(createDpiTemp(portp, "__Vcvt"));
+                        cfuncp->addStmtsp(createDpiTemp(portp, tmpSuffixp));
                         if (portp->isNonOutput()) {
                             cfuncp->addStmtsp(
-                                createAssignInternalToDpi(portp, false, "", "__Vcvt"));
+                                createAssignInternalToDpi(portp, false, "", tmpSuffixp));
                         }
                     }
                 }
@@ -935,8 +937,8 @@ private:
         {  // Call the user function
             string stmt;
             if (rtnvscp) {  // isFunction will no longer work as we unlinked the return var
-                cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), "__Vcvt"));
-                stmt = rtnvscp->varp()->name() + "__Vcvt";
+                cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
+                stmt = rtnvscp->varp()->name() + tmpSuffixp;
                 stmt += rtnvscp->varp()->basicp()->isDpiPrimitive() ? " = " : "[0] = ";
             }
             stmt += nodep->cname() + "(" + args + ");\n";
@@ -952,7 +954,7 @@ private:
                     AstVarScope* portvscp = VN_CAST(
                         portp->user2p(), VarScope);  // Remembered when we created it earlier
                     cfuncp->addStmtsp(
-                        createAssignDpiToInternal(portvscp, portp->name() + "__Vcvt"));
+                        createAssignDpiToInternal(portvscp, portp->name() + tmpSuffixp));
                 }
             }
         }
@@ -1575,6 +1577,11 @@ bool V3Task::dpiToInternalFrStmt(AstVar* portp, const string& frName, string& fr
         }
     }
     return false;
+}
+
+const char* V3Task::dpiTemporaryVarSuffix() {
+    static const char suffix[] = "__Vcvt";
+    return suffix;
 }
 
 void V3Task::taskAll(AstNetlist* nodep) {

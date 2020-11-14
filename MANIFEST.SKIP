@@ -66,4 +66,5 @@ ci/
 /csrc/
 obj_dir.*
 TAGS
+gmon.out
 .*~

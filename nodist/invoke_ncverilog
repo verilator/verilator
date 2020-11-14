@@ -9,7 +9,7 @@ use strict;
 # main
 
 eval `modulecmd perl add cds-ius/latest`;
-exec('ncverilog',@ARGV);
+exec('ncverilog', @ARGV);
 
 #######################################################################
 __END__
@@ -22,7 +22,7 @@ invoke_ncverilog - Invoke tool under "modules" command
 
 =head1 SYNOPSIS
 
-  invoke_ncverilog  {ncv arguments}
+  invoke_ncverilog {arguments}
 
 =head1 DESCRIPTION
 

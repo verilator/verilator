@@ -19,6 +19,7 @@
 
 // clang-format off
 
+#ifndef VL_CPPCHECK
 #ifndef VL_DERIVED_T
 # error "This file should be included in trace format implementations"
 #endif
@@ -641,3 +642,5 @@ inline static void cvtQDataToStr(char* dstp, QData value) {
 }
 
 #define cvtEDataToStr cvtIDataToStr
+
+#endif  // VL_CPPCHECK

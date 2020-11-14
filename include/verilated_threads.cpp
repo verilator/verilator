@@ -98,10 +98,8 @@ VlThreadPool::VlThreadPool(int nThreads, bool profiling)
 }
 
 VlThreadPool::~VlThreadPool() {
-    for (int i = 0; i < m_workers.size(); ++i) {
-        // Each ~WorkerThread will wait for its thread to exit.
-        delete m_workers[i];
-    }
+    // Each ~WorkerThread will wait for its thread to exit.
+    for (auto& i : m_workers) delete i;
     if (VL_UNLIKELY(m_profiling)) tearDownProfilingClientThread();
 }
 

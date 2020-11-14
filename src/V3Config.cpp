@@ -282,15 +282,9 @@ public:
     }
     void update(const V3ConfigFile& file) {
         // Copy in all Attributes
-        for (LineAttrMap::const_iterator it = file.m_lineAttrs.begin();
-             it != file.m_lineAttrs.end(); ++it) {
-            m_lineAttrs[it->first] |= it->second;
-        }
+        for (const auto& itr : file.m_lineAttrs) { m_lineAttrs[itr.first] |= itr.second; }
         // Copy in all ignores
-        for (IgnLines::const_iterator it = file.m_ignLines.begin(); it != file.m_ignLines.end();
-             ++it) {
-            m_ignLines.insert(*it);
-        }
+        for (const auto& ignLine : file.m_ignLines) m_ignLines.insert(ignLine);
         // Update the iterator after the list has changed
         m_lastIgnore.it = m_ignLines.begin();
         m_waivers.reserve(m_waivers.size() + file.m_waivers.size());
@@ -338,9 +332,9 @@ public:
         }
     }
     bool waive(V3ErrorCode code, const string& match) {
-        for (Waivers::const_iterator it = m_waivers.begin(); it != m_waivers.end(); ++it) {
-            if (((it->first == code) || (it->first == V3ErrorCode::I_LINT))
-                && VString::wildmatch(match, it->second)) {
+        for (const auto& itr : m_waivers) {
+            if (((itr.first == code) || (itr.first == V3ErrorCode::I_LINT))
+                && VString::wildmatch(match, itr.second)) {
                 return true;
             }
         }

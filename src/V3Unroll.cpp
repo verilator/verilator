@@ -445,13 +445,13 @@ private:
 
     virtual void visit(AstVarRef* nodep) override {
         if (m_varModeCheck && nodep->varp() == m_forVarp && nodep->varScopep() == m_forVscp
-            && nodep->access().isWrite()) {
+            && nodep->access().isWriteOrRW()) {
             UINFO(8, "   Itervar assigned to: " << nodep << endl);
             m_varAssignHit = true;
         }
 
         if (m_varModeReplace && nodep->varp() == m_forVarp && nodep->varScopep() == m_forVscp
-            && !nodep->access().isWrite()) {
+            && nodep->access().isReadOnly()) {
             AstNode* newconstp = m_varValuep->cloneTree(false);
             nodep->replaceWith(newconstp);
             pushDeletep(nodep);

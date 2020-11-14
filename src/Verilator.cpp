@@ -664,7 +664,7 @@ static void execBuildJob() {
     const string cmdStr = buildMakeCmd(v3Global.opt.prefix() + ".mk", "");
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
-        v3error(cmdStr << " exitted with " << exit_code << std::endl);
+        v3error(cmdStr << " exited with " << exit_code << std::endl);
         exit(exit_code);
     }
 }
@@ -676,7 +676,7 @@ static void execHierVerilation() {
     const string cmdStr = buildMakeCmd(makefile, target);
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
-        v3error(cmdStr << " exitted with " << exit_code << std::endl);
+        v3error(cmdStr << " exited with " << exit_code << std::endl);
         exit(exit_code);
     }
 }

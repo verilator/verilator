@@ -2248,6 +2248,7 @@ public:
     virtual bool maybePointedTo() const override { return true; }
     virtual string name() const override { return m_name; }  // * = Scope name
     virtual void name(const string& name) override { m_name = name; }
+    virtual void dump(std::ostream& str) const override;
     string nameDotless() const;
     string nameVlSym() const { return ((string("vlSymsp->")) + nameDotless()); }
     AstNodeModule* modp() const { return m_modp; }
@@ -2366,7 +2367,7 @@ public:
         }
     }
     virtual int instrCount() const override {
-        return widthInstrs() * (access().isWriteOnly() ? 1 : instrCountLd());
+        return widthInstrs() * (access().isReadOrRW() ? instrCountLd() : 1);
     }
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -3113,7 +3114,7 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
     virtual string emitVerilog() override { return name(); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
-    virtual bool cleanOut() const { return true; }
+    virtual bool cleanOut() const override { return true; }
     virtual bool hasDType() const override { return true; }
     virtual int instrCount() const override { return widthInstrs(); }
     virtual string name() const override { return m_name; }  // * = Var name
@@ -5971,6 +5972,7 @@ public:
     virtual bool cleanLhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
     AstNode* lhsp() const { return op1p(); }
+    void lhsp(AstNode* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* childDTypep() const { return VN_CAST(op2p(), NodeDType); }
     virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
@@ -8404,6 +8406,7 @@ public:
     virtual string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     virtual int instrCount() const override { return widthInstrs() * 2; }
+    virtual void dump(std::ostream& str = std::cout) const override;
     // op1 = expression to assign or another AstPattern (list if replicated)
     AstNode* lhssp() const { return op1p(); }
     AstNode* keyp() const { return op2p(); }  // op2 = assignment key (Const, id Text)

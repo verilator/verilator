@@ -89,9 +89,9 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
     AstNodeModule* modTimedp = nullptr;
     VTimescale unit(VTimescale::NONE);
     // Use highest level module as default unit - already sorted in proper order
-    for (ModVec::const_iterator it = mods.begin(); it != mods.end(); ++it) {
-        if (!modTimedp && !(*it)->timeunit().isNone()) {
-            modTimedp = *it;
+    for (const auto& modp : mods) {
+        if (!modTimedp && !modp->timeunit().isNone()) {
+            modTimedp = modp;
             unit = modTimedp->timeunit();
             break;
         }

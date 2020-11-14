@@ -203,8 +203,8 @@ private:
     }
 #endif
     void walkEmptyFuncs() {
-        for (V3Hashed::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
-            AstNode* node1p = it->second;
+        for (const auto& itr : m_hashed) {
+            AstNode* node1p = itr.second;
             AstCFunc* oldfuncp = VN_CAST(node1p, CFunc);
             if (oldfuncp && oldfuncp->emptyBody() && !oldfuncp->dontCombine()) {
                 UINFO(5, "     EmptyFunc " << std::hex << V3Hash(oldfuncp->user4p()) << " "

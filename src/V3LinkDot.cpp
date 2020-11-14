@@ -46,6 +46,8 @@
 //          #8: Insert modport's symbols under IfaceRefDType (after #7)
 //      ResolveVisitor:
 //          #9: Resolve general variables, which may point into the interface or modport (after #8)
+//      LinkResolve:
+//          #10: Unlink modports, not needed later except for XML/Lint
 //*************************************************************************
 // TOP
 //      {name-of-top-modulename}
@@ -446,6 +448,8 @@ public:
             if (!ifacerefp->ifaceViaCellp()) {
                 if (!ifacerefp->cellp()) {  // Probably a NotFoundModule, or a normal module if
                                             // made mistake
+                    UINFO(1, "Associated cell " << AstNode::prettyNameQ(ifacerefp->cellName())
+                                                << endl);
                     ifacerefp->v3error("Cannot find file containing interface: "
                                        << AstNode::prettyNameQ(ifacerefp->ifaceName()));
                     continue;
@@ -1002,7 +1006,12 @@ class LinkDotFindVisitor : public AstNVisitor {
             }
             // Create symbol table for the task's vars
             string name = string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
-            m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_packagep);
+            auto pkgp = m_packagep;
+            // Set the class as package for static class methods
+            if (nodep->lifetime().isStatic() && VN_IS(m_curSymp->nodep(), Class)) {
+                pkgp = VN_CAST(m_curSymp->nodep(), Class);
+            }
+            m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, pkgp);
             m_curSymp->fallbackp(oldCurSymp);
             // Convert the func's range to the output variable
             // This should probably be done in the Parser instead, as then we could
@@ -1717,9 +1726,9 @@ public:
 };
 
 void LinkDotState::computeIfaceModSyms() {
-    for (IfaceModSyms::iterator it = m_ifaceModSyms.begin(); it != m_ifaceModSyms.end(); ++it) {
-        AstIface* nodep = it->first;
-        VSymEnt* symp = it->second;
+    for (const auto& itr : m_ifaceModSyms) {
+        AstIface* nodep = itr.first;
+        VSymEnt* symp = itr.second;
         LinkDotIfaceVisitor(nodep, symp, this);
     }
     m_ifaceModSyms.clear();
@@ -1827,7 +1836,7 @@ private:
             m_statep->insertSym(moduleSymp, newp->name(), newp, nullptr /*packagep*/);
         }
     }
-    AstVar* foundToVarp(const VSymEnt* symp, AstNode* nodep, bool lvalue) {
+    AstVar* foundToVarp(const VSymEnt* symp, AstNode* nodep, VAccess access) {
         // Return a variable if possible, auto converting a modport to variable
         if (!symp) {
             return nullptr;
@@ -1836,7 +1845,7 @@ private:
         } else if (VN_IS(symp->nodep(), ModportVarRef)) {
             AstModportVarRef* snodep = VN_CAST(symp->nodep(), ModportVarRef);
             AstVar* varp = snodep->varp();
-            if (lvalue && snodep->direction().isReadOnly()) {
+            if (access.isWriteOrRW() && snodep->direction().isReadOnly()) {
                 nodep->v3error("Attempt to drive input-only modport: " << nodep->prettyNameQ());
             }  // else other simulators don't warn about reading, and IEEE doesn't say illegal
             return varp;
@@ -1858,18 +1867,12 @@ private:
             m_ds.m_dotErr = true;
         }
     }
-    AstVar* makeIfaceModportVar(FileLine* fl, AstCell* cellp, AstIface* ifacep,
-                                AstModport* modportp) {
-        // Create iface variable, using duplicate var when under same module scope
-        string varName = ifacep->name() + "__Vmp__" + modportp->name() + "__Viftop"
-                         + cvtToStr(++m_modportNum);
-        AstIfaceRefDType* idtypep = new AstIfaceRefDType(fl, modportp->fileline(), cellp->name(),
-                                                         ifacep->name(), modportp->name());
-        idtypep->cellp(cellp);
-        AstVar* varp = new AstVar(fl, AstVarType::IFACEREF, varName, VFlagChildDType(), idtypep);
-        varp->isIfaceParent(true);
-        m_modp->addStmtp(varp);
-        return varp;
+    AstVar* findIfaceTopVarp(AstNode* nodep, VSymEnt* parentEntp, const string& name) {
+        string findName = name + "__Viftop";
+        VSymEnt* ifaceSymp = parentEntp->findIdFallback(findName);
+        AstVar* ifaceTopVarp = ifaceSymp ? VN_CAST(ifaceSymp->nodep(), Var) : nullptr;
+        UASSERT_OBJ(ifaceTopVarp, nodep, "Can't find interface var ref: " << findName);
+        return ifaceTopVarp;
     }
     void markAndCheckPinDup(AstNode* nodep, AstNode* refp, const char* whatp) {
         if (refp->user5p() && refp->user5p() != nodep) {
@@ -2025,7 +2028,7 @@ private:
             } else {
                 m_ds.m_dotPos = DP_SCOPE;
                 iterateAndNextNull(nodep->lhsp());
-                // if (debug()>=9) nodep->dumpTree("-dot-lho: ");
+                // if (debug() >= 9) nodep->dumpTree("-dot-lho: ");
             }
             if (m_ds.m_unresolved
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
@@ -2112,12 +2115,7 @@ private:
                             "Bad package link");
                 AstClassOrPackageRef* cpackagerefp
                     = VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
-                packagep = cpackagerefp->packagep();
-                if (!packagep && cpackagerefp->classOrPackagep()) {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: Class '::' references: "
-                                      << AstNode::prettyNameQ(cpackagerefp->name()));
-                }
+                packagep = cpackagerefp->classOrPackagep();
                 UASSERT_OBJ(packagep, m_ds.m_dotp->lhsp(), "Bad package link");
                 m_ds.m_dotSymp = m_statep->getNodeSym(packagep);
                 m_ds.m_dotPos = DP_SCOPE;
@@ -2169,12 +2167,7 @@ private:
                         VSymEnt* parentEntp
                             = cellEntp->parentp();  // Container of the var; probably a module or
                                                     // generate begin
-                        string findName = nodep->name() + "__Viftop";
-                        VSymEnt* ifaceSymp = parentEntp->findIdFallback(findName);
-                        AstVar* ifaceRefVarp
-                            = ifaceSymp ? VN_CAST(ifaceSymp->nodep(), Var) : nullptr;
-                        UASSERT_OBJ(ifaceRefVarp, nodep,
-                                    "Can't find interface var ref: " << findName);
+                        AstVar* ifaceRefVarp = findIfaceTopVarp(nodep, parentEntp, nodep->name());
                         //
                         ok = true;
                         m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
@@ -2190,7 +2183,7 @@ private:
                                                           << cellp->modp()->prettyNameQ());
                     }
                 }
-            } else if (AstVar* varp = foundToVarp(foundp, nodep, false)) {
+            } else if (AstVar* varp = foundToVarp(foundp, nodep, VAccess::READ)) {
                 AstIfaceRefDType* ifacerefp = LinkDotState::ifaceRefFromArray(varp->subDTypep());
                 if (ifacerefp) {
                     UASSERT_OBJ(ifacerefp->ifaceViaCellp(), ifacerefp, "Unlinked interface");
@@ -2254,6 +2247,7 @@ private:
                 // A scope reference into an interface's modport (not
                 // necessarily at a pin connection)
                 UINFO(9, "cell-ref-to-modport " << m_ds.m_dotText << "  " << nodep << endl);
+                UINFO(9, "unlinked " << m_ds.m_unlinkedScopep << endl);
                 UINFO(9, "dotSymp " << m_ds.m_dotSymp << " " << m_ds.m_dotSymp->nodep() << endl);
                 // Iface was the previously dotted component
                 if (!m_ds.m_dotSymp || !VN_IS(m_ds.m_dotSymp->nodep(), Cell)
@@ -2268,15 +2262,32 @@ private:
                 } else {
                     AstCell* cellp = VN_CAST(m_ds.m_dotSymp->nodep(), Cell);
                     UASSERT_OBJ(cellp, nodep, "Modport not referenced from a cell");
-                    AstIface* ifacep = VN_CAST(cellp->modp(), Iface);
-                    // string cellName = m_ds.m_dotText;  // Use cellp->name
-                    m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
-                    m_ds.m_dotSymp = m_statep->getNodeSym(modportp);
-                    m_ds.m_dotPos = DP_SCOPE;
+                    VSymEnt* cellEntp = m_statep->getNodeSym(cellp);
+                    UASSERT_OBJ(cellEntp, nodep, "No interface sym entry");
+                    VSymEnt* parentEntp = cellEntp->parentp();  // Container of the var; probably a
+                                                                // module or generate begin
+                    // We drop __BRA__??__KET__ as cells don't have that naming yet
+                    AstVar* ifaceRefVarp = findIfaceTopVarp(nodep, parentEntp, cellp->name());
+                    //
                     ok = true;
-                    AstVar* varp = makeIfaceModportVar(nodep->fileline(), cellp, ifacep, modportp);
-                    AstVarRef* refp = new AstVarRef(varp->fileline(), varp, VAccess::READ);
-                    nodep->replaceWith(refp);
+                    m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
+                    m_ds.m_dotSymp = foundp;
+                    m_ds.m_dotPos = DP_SCOPE;
+                    UINFO(9, " cell -> iface varref " << foundp->nodep() << endl);
+                    AstNode* newp
+                        = new AstVarRef(ifaceRefVarp->fileline(), ifaceRefVarp, VAccess::READ);
+                    auto* cellarrayrefp = VN_CAST(m_ds.m_unlinkedScopep, CellArrayRef);
+                    if (cellarrayrefp) {
+                        // iface[vec].modport became CellArrayRef(iface, lsb)
+                        // Convert back to SelBit(iface, lsb)
+                        UINFO(9, " Array modport to SelBit " << cellarrayrefp << endl);
+                        newp = new AstSelBit(cellarrayrefp->fileline(), newp,
+                                             cellarrayrefp->selp()->unlinkFrBack());
+                        newp->user3(true);  // Don't process again
+                        VL_DO_DANGLING(cellarrayrefp->unlinkFrBack(), cellarrayrefp);
+                        m_ds.m_unlinkedScopep = nullptr;
+                    }
+                    nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
             } else if (AstEnumItem* valuep = VN_CAST(foundp->nodep(), EnumItem)) {
@@ -2482,9 +2493,8 @@ private:
             if (cpackagerefp->paramsp()) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
             }
-            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->packagep(),
-                        m_ds.m_dotp->lhsp(), "Bad package link");
-            nodep->packagep(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->packagep());
+            UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
+            nodep->packagep(cpackagerefp->classOrPackagep());
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = nullptr;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
@@ -2691,9 +2701,6 @@ private:
     virtual void visit(AstNodeFTask* nodep) override {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
-        if (nodep->classMethod() && nodep->lifetime().isStatic()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' class method");
-        }
         if (nodep->isExternDef()) {
             if (!m_curSymp->findIdFallback("extern " + nodep->name())) {
                 nodep->v3error("extern not found that declares " + nodep->prettyNameQ());
@@ -2799,10 +2806,13 @@ private:
                 if (cpackagerefp->packagep()) {
                     nodep->packagep(cpackagerefp->packagep());
                 } else {
-                    cpackagep->v3warn(E_UNSUPPORTED, "Unsupported: Class '::' reference");
-                    // if (cpackagerefp->paramsp()) {
-                    //    nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
-                    // }
+                    nodep->packagep(cpackagerefp->classOrPackagep());
+                    if (!VN_IS(nodep->packagep(), Class) && !VN_IS(nodep->packagep(), Package)) {
+                        cpackagerefp->v3error(
+                            "'::' expected to reference a class/package but referenced "
+                            << nodep->packagep()->prettyTypeName() << endl
+                            << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
+                    }
                 }
             } else {
                 cpackagep->v3warn(E_UNSUPPORTED,

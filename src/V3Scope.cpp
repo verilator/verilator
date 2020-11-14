@@ -65,10 +65,9 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     void cleanupVarRefs() {
-        for (VarRefScopeSet::iterator it = m_varRefScopes.begin(); it != m_varRefScopes.end();
-             ++it) {
-            AstVarRef* nodep = it->first;
-            AstScope* scopep = it->second;
+        for (const auto& itr : m_varRefScopes) {
+            AstVarRef* nodep = itr.first;
+            AstScope* scopep = itr.second;
             if (nodep->packagep() && !nodep->varp()->isClassMember()) {
                 const auto it2 = m_packageScopes.find(nodep->packagep());
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
@@ -117,7 +116,8 @@ private:
         // Now for each child cell, iterate the module this cell points to
         for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp = cellnextp->nextp()) {
             if (AstCell* cellp = VN_CAST(cellnextp, Cell)) {
-                VL_RESTORER(m_scopep);
+                VL_RESTORER(m_scopep);  // Protects m_scopep set in called module
+                // which is "above" in this code, but later in code execution order
                 VL_RESTORER(m_aboveCellp);
                 VL_RESTORER(m_aboveScopep);
                 {
@@ -330,9 +330,11 @@ private:
     // VISITORS
     virtual void visit(AstScope* nodep) override {
         // Want to ignore blocks under it
-        m_scopep = nodep;
-        iterateChildren(nodep);
-        m_scopep = nullptr;
+        VL_RESTORER(m_scopep);
+        {
+            m_scopep = nodep;
+            iterateChildren(nodep);
+        }
     }
 
     virtual void movedDeleteOrIterate(AstNode* nodep) {
@@ -377,6 +379,7 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstModportFTaskRef* nodep) override {
+        // The modport persists only for xml dump
         // The crossrefs are dealt with in V3LinkDot
         nodep->ftaskp(nullptr);
         iterateChildren(nodep);
