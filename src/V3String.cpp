@@ -487,10 +487,10 @@ void VSpellCheck::selfTestSuggestOne(bool matches, const string& c, const string
     speller.pushCandidate(c);
     string got = speller.bestCandidateInfo(goal, gdist /*ref*/);
     if (matches) {
-        UASSERT_SELFTEST(string, got, c);
+        UASSERT_SELFTEST(const string&, got, c);
         UASSERT_SELFTEST(EditDistance, gdist, dist);
     } else {
-        UASSERT_SELFTEST(string, got, "");
+        UASSERT_SELFTEST(const string&, got, "");
     }
 }
 
