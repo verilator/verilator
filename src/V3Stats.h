@@ -28,12 +28,11 @@ class AstNetlist;
 
 class VDouble0 {
     // Double counter, initializes to zero for easy use
-    double m_d;  ///< Count of occurrences/ value
+    double m_d = 0.0;  ///< Count of occurrences/ value
 public:
     // METHODS
-    VDouble0()
-        : m_d{0.0} {}
-    ~VDouble0() {}
+    VDouble0() = default;
+    ~VDouble0() = default;
 
     // Implicit conversion operators:
     explicit VDouble0(const vluint64_t v)
@@ -73,7 +72,7 @@ class V3Statistic {
     string m_stage;  ///< Runtime stage
     bool m_sumit;  ///< Do summation of similar stats
     bool m_perf;  ///< Performance section
-    bool m_printit;  ///< Print the results
+    bool m_printit = true;  ///< Print the results
 public:
     // METHODS
     string stage() const { return m_stage; }
@@ -94,8 +93,7 @@ public:
         , m_count{count}
         , m_stage{stage}
         , m_sumit{sumit}
-        , m_perf{perf}
-        , m_printit{true} {}
+        , m_perf{perf} {}
     virtual ~V3Statistic() {}
 };
 

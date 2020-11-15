@@ -93,16 +93,16 @@ class FileLine {
 
     // MEMBERS
     // Columns here means number of chars from beginning (i.e. tabs count as one)
-    int m_firstLineno;  // `line corrected token's first line number
-    int m_firstColumn;  // `line corrected token's first column number
-    int m_lastLineno;  // `line corrected token's last line number
-    int m_lastColumn;  // `line corrected token's last column number
+    int m_firstLineno = 0;  // `line corrected token's first line number
+    int m_firstColumn = 0;  // `line corrected token's first column number
+    int m_lastLineno = 0;  // `line corrected token's last line number
+    int m_lastColumn = 0;  // `line corrected token's last column number
     int m_filenameno;  // `line corrected filename number
-    int m_contentLineno;  // Line number within source stream
-    VFileContent* m_contentp;  // Source text contents line is within
-    FileLine* m_parent;  // Parent line that included this line
+    int m_contentLineno = 0;  // Line number within source stream
+    VFileContent* m_contentp = nullptr;  // Source text contents line is within
+    FileLine* m_parent = nullptr;  // Parent line that included this line
     std::bitset<V3ErrorCode::_ENUM_MAX> m_warnOn;
-    bool m_waive;  // Waive warning
+    bool m_waive = false;  // Waive warning
 
 protected:
     // User routines should never need to change line numbers
@@ -126,16 +126,8 @@ private:
 
 public:
     explicit FileLine(const string& filename)
-        : m_firstLineno{0}
-        , m_firstColumn{0}
-        , m_lastLineno{0}
-        , m_lastColumn{0}
-        , m_filenameno{singleton().nameToNumber(filename)}
-        , m_contentLineno{0}
-        , m_contentp{nullptr}
-        , m_parent{nullptr}
-        , m_warnOn{defaultFileLine().m_warnOn}
-        , m_waive{false} {}
+        : m_filenameno{singleton().nameToNumber(filename)}
+        , m_warnOn{defaultFileLine().m_warnOn} {}
     explicit FileLine(FileLine* fromp)
         : m_firstLineno{fromp->m_firstLineno}
         , m_firstColumn{fromp->m_firstColumn}

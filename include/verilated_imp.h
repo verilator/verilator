@@ -268,8 +268,8 @@ protected:
     // MEMBERS
     union VerilatedImpU {  ///< Enclose in an union to call ctor/dtor manually
         VerilatedImpData v;
-        VerilatedImpU() {}
-        ~VerilatedImpU() {}
+        VerilatedImpU() {}  // Can't be = default;
+        ~VerilatedImpU() {}  // Can't be = default;
     };
     static VerilatedImpU s_s;  ///< Static Singleton; One and only static this
 

@@ -5348,7 +5348,7 @@ public:
 class AstRand : public AstNodeTermop {
     // Return a random number, based upon width()
 private:
-    bool m_reset;  // Random reset, versus always random
+    bool m_reset = false;  // Random reset, versus always random
 public:
     AstRand(FileLine* fl, AstNodeDType* dtp, bool reset)
         : ASTGEN_SUPER(fl)
@@ -5356,8 +5356,7 @@ public:
         dtypep(dtp);
     }
     explicit AstRand(FileLine* fl)
-        : ASTGEN_SUPER(fl)
-        , m_reset{false} {}
+        : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(Rand)
     virtual string emitVerilog() override { return "%f$random"; }
     virtual string emitC() override {

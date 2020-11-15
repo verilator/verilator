@@ -37,15 +37,13 @@
 
 // See also V3Ast::VNumRange
 class VerilatedRange {
-    int m_left;
-    int m_right;
+    int m_left = 0;
+    int m_right = 0;
 
 protected:
     friend class VerilatedVarProps;
     friend class VerilatedScope;
-    VerilatedRange()
-        : m_left{0}
-        , m_right{0} {}
+    VerilatedRange() {}
     VerilatedRange(int left, int right)
         : m_left{left}
         , m_right{right} {}

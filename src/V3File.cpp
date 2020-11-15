@@ -67,13 +67,12 @@ class V3FileDependImp {
     class DependFile {
         // A single file
         bool m_target;  // True if write, else read
-        bool m_exists;
+        bool m_exists = true;
         string m_filename;  // Filename
         struct stat m_stat;  // Stat information
     public:
         DependFile(const string& filename, bool target)
             : m_target{target}
-            , m_exists{true}
             , m_filename{filename} {
             m_stat.st_ctime = 0;
             m_stat.st_mtime = 0;

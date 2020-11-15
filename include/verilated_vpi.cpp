@@ -211,7 +211,7 @@ public:
 class VerilatedVpioVar : public VerilatedVpio {
     const VerilatedVar* m_varp;
     const VerilatedScope* m_scopep;
-    vluint8_t* m_prevDatap;  // Previous value of data, for cbValueChange
+    vluint8_t* m_prevDatap = nullptr;  // Previous value of data, for cbValueChange
     union {
         vluint8_t u8[4];
         vluint32_t u32;
@@ -219,7 +219,7 @@ class VerilatedVpioVar : public VerilatedVpio {
     vluint32_t m_entSize;  // memoized variable size
 protected:
     void* m_varDatap;  // varp()->datap() adjusted for array entries
-    vlsint32_t m_index;
+    vlsint32_t m_index = 0;
     const VerilatedRange& get_range() const {
         // Determine number of dimensions and return outermost
         return (m_varp->dims() > 1) ? m_varp->unpacked() : m_varp->packed();
@@ -228,9 +228,7 @@ protected:
 public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
         : m_varp{varp}
-        , m_scopep{scopep}
-        , m_index{0} {
-        m_prevDatap = nullptr;
+        , m_scopep{scopep} {
         m_mask.u32 = VL_MASK_I(varp->packed().elements());
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();

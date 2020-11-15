@@ -51,8 +51,7 @@ struct GraphPCNode {
 // GraphPathChecker implementation
 
 GraphPathChecker::GraphPathChecker(const V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-    : GraphAlg<const V3Graph>{graphp, edgeFuncp}
-    , m_generation{0} {
+    : GraphAlg<const V3Graph>{graphp, edgeFuncp} {
     for (V3GraphVertex* vxp = graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
         // Setup tracking structure for each node.  If delete a vertex
         // there would be a leak, but ok as accept only const V3Graph*'s.

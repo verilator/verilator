@@ -124,7 +124,7 @@ public:
 class OrderEitherVertex : public V3GraphVertex {
     AstScope* m_scopep;  // Scope the vertex is in
     AstSenTree* m_domainp;  // Clock domain (nullptr = to be computed as we iterate)
-    bool m_isFromInput;  // From input, or derived therefrom (conservatively false)
+    bool m_isFromInput = false;  // From input, or derived therefrom (conservatively false)
 protected:
     OrderEitherVertex(V3Graph* graphp, const OrderEitherVertex& old)
         : V3GraphVertex{graphp, old}
@@ -136,8 +136,7 @@ public:
     OrderEitherVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp)
         : V3GraphVertex{graphp}
         , m_scopep{scopep}
-        , m_domainp{domainp}
-        , m_isFromInput{false} {}
+        , m_domainp{domainp} {}
     virtual ~OrderEitherVertex() override {}
     virtual OrderEitherVertex* clone(V3Graph* graphp) const override = 0;
     // Methods
@@ -200,8 +199,8 @@ public:
 
 class OrderVarVertex : public OrderEitherVertex {
     AstVarScope* m_varScp;
-    bool m_isClock;  // Used as clock
-    bool m_isDelayed;  // Set in a delayed assignment
+    bool m_isClock = false;  // Used as clock
+    bool m_isDelayed = false;  // Set in a delayed assignment
 protected:
     OrderVarVertex(V3Graph* graphp, const OrderVarVertex& old)
         : OrderEitherVertex{graphp, old}
@@ -212,9 +211,7 @@ protected:
 public:
     OrderVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
         : OrderEitherVertex{graphp, scopep, nullptr}
-        , m_varScp{varScp}
-        , m_isClock{false}
-        , m_isDelayed{false} {}
+        , m_varScp{varScp} {}
     virtual ~OrderVarVertex() override {}
     virtual OrderVarVertex* clone(V3Graph* graphp) const override = 0;
     virtual OrderVEdgeType type() const override = 0;

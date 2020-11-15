@@ -977,8 +977,8 @@ inline std::ostream& operator<<(std::ostream& os, const VParseRefExp& rhs) {
 
 class VNumRange {
 public:
-    int m_hi;  // HI part, HI always >= LO
-    int m_lo;  // LO
+    int m_hi = 0;  // HI part, HI always >= LO
+    int m_lo = 0;  // LO
     union {
         int mu_flags;
         struct {
@@ -1001,19 +1001,13 @@ public:
     //
     class LeftRight {};
     VNumRange()
-        : m_hi{0}
-        , m_lo{0}
-        , mu_flags{0} {}
+        : mu_flags{0} {}
     VNumRange(int hi, int lo, bool littleEndian)
-        : m_hi{0}
-        , m_lo{0}
-        , mu_flags{0} {
+        : mu_flags{0} {
         init(hi, lo, littleEndian);
     }
     VNumRange(LeftRight, int left, int right)
-        : m_hi{0}
-        , m_lo{0}
-        , mu_flags{0} {
+        : mu_flags{0} {
         init((right > left) ? right : left, (right > left) ? left : right, (right > left));
     }
     ~VNumRange() {}
