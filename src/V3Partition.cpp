@@ -306,7 +306,7 @@ private:
     }
     void go() {
         // Generate a pseudo-random graph
-        vluint64_t rngState[2] = {0x12345678ULL, 0x9abcdef0ULL};
+        std::array<vluint64_t, 2> rngState = {0x12345678ULL, 0x9abcdef0ULL};
         // Create 50 vertices
         for (auto& i : m_vx) i = new V3GraphVertex(&m_graph);
         // Create 250 edges at random. Edges must go from
@@ -425,7 +425,7 @@ private:
     // Cost of critical paths going FORWARD from graph-start to the start
     // of this vertex, and also going REVERSE from the end of the graph to
     // the end of the vertex. Same units as m_cost.
-    uint32_t m_critPathCost[GraphWay::NUM_WAYS];
+    std::array<uint32_t, GraphWay::NUM_WAYS> m_critPathCost;
 
     uint32_t m_serialId;  // Unique MTask ID number
 
@@ -443,7 +443,7 @@ private:
     // relatives in longest-to-shortest CP order.  We rely on this ordering
     // in more than one place.
     typedef SortByValueMap<LogicMTask*, uint32_t, CmpLogicMTask> EdgeSet;
-    EdgeSet m_edges[GraphWay::NUM_WAYS];
+    std::array<EdgeSet, GraphWay::NUM_WAYS> m_edges;
 
 public:
     // CONSTRUCTORS
@@ -2252,8 +2252,8 @@ void V3Partition::debugMTaskGraphStats(const V3Graph* graphp, const string& stag
     UINFO(4, " Stats for " << stage << endl);
     uint32_t mtaskCount = 0;
     uint32_t totalCost = 0;
-    uint32_t mtaskCostHist[32];
-    memset(mtaskCostHist, 0, sizeof(mtaskCostHist));
+    std::array<uint32_t, 32> mtaskCostHist;
+    mtaskCostHist.fill(0);
 
     for (const V3GraphVertex* mtaskp = graphp->verticesBeginp(); mtaskp;
          mtaskp = mtaskp->verticesNextp()) {

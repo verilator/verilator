@@ -237,7 +237,7 @@ private:
     AstUser2InUse m_inuser2;
 
     // STATE
-    std::vector<UndrivenVarEntry*> m_entryps[3];  // Nodes to delete when we are finished
+    std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps;  // Nodes to delete when finished
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inProcAssign = false;  // In procedural assignment

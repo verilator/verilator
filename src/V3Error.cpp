@@ -36,9 +36,9 @@ std::ostringstream V3Error::s_errorStr;  // Error string being formed
 V3ErrorCode V3Error::s_errorCode = V3ErrorCode::EC_FATAL;
 bool V3Error::s_errorContexted = false;
 bool V3Error::s_errorSuppressed = false;
-bool V3Error::s_describedEachWarn[V3ErrorCode::_ENUM_MAX];
+std::array<bool, V3ErrorCode::_ENUM_MAX> V3Error::s_describedEachWarn;
+std::array<bool, V3ErrorCode::_ENUM_MAX> V3Error::s_pretendError;
 bool V3Error::s_describedWarnings = false;
-bool V3Error::s_pretendError[V3ErrorCode::_ENUM_MAX];
 V3Error::MessagesSet V3Error::s_messages;
 V3Error::ErrorExitCb V3Error::s_errorExitCb = nullptr;
 

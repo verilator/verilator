@@ -306,7 +306,7 @@ uint64_t VHashSha256::digestUInt64() {
 }
 
 string VHashSha256::digestHex() {
-    static const char digits[16 + 1] = "0123456789abcdef";
+    static const char* digits = "0123456789abcdef";
     const string& binhash = digestBinary();
     string out;
     out.reserve(70);
@@ -322,8 +322,7 @@ string VHashSha256::digestSymbol() {
     // has + and / for last two digits, but need C symbol, and we also
     // avoid conflicts with use of _, so use "AB" at the end.
     // Thus this function is non-reversible.
-    static const char digits[64 + 1]
-        = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789AB";
+    static const char* digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789AB";
     const string& binhash = digestBinary();
     string out;
     out.reserve(28);
@@ -408,9 +407,9 @@ VSpellCheck::EditDistance VSpellCheck::editDistance(const string& s, const strin
     if (sLen >= LENGTH_LIMIT) return sLen;
     if (tLen >= LENGTH_LIMIT) return tLen;
 
-    static EditDistance s_v_two_ago[LENGTH_LIMIT + 1];
-    static EditDistance s_v_one_ago[LENGTH_LIMIT + 1];
-    static EditDistance s_v_next[LENGTH_LIMIT + 1];
+    static std::array<EditDistance, LENGTH_LIMIT + 1> s_v_two_ago;
+    static std::array<EditDistance, LENGTH_LIMIT + 1> s_v_one_ago;
+    static std::array<EditDistance, LENGTH_LIMIT + 1> s_v_next;
 
     for (size_t i = 0; i < sLen + 1; i++) s_v_one_ago[i] = i;
 

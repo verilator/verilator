@@ -224,9 +224,10 @@ class V3Error {
 
 private:
     static bool s_describedWarnings;  // Told user how to disable warns
-    static bool
-        s_describedEachWarn[V3ErrorCode::_ENUM_MAX];  // Told user specifics about this warning
-    static bool s_pretendError[V3ErrorCode::_ENUM_MAX];  // Pretend this warning is an error
+    static std::array<bool, V3ErrorCode::_ENUM_MAX>
+        s_describedEachWarn;  // Told user specifics about this warning
+    static std::array<bool, V3ErrorCode::_ENUM_MAX>
+        s_pretendError;  // Pretend this warning is an error
     static int s_debugDefault;  // Option: --debugi Default debugging level
     static int s_errorLimit;  // Option: --error-limit Number of errors before exit
     static bool s_warnFatal;  // Option: --warnFatal Warnings are fatal

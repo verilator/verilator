@@ -153,7 +153,7 @@ private:
     VSymEnt* m_dunitEntp;  // $unit entry
     NameScopeSymMap m_nameScopeSymMap;  // Map of scope referenced by non-pretty textual name
     ImplicitNameSet m_implicitNameSet;  // For [module][signalname] if we can implicitly create it
-    ScopeAliasMap m_scopeAliasMap[SAMN__MAX];  // Map of <lhs,rhs> aliases
+    std::array<ScopeAliasMap, SAMN__MAX> m_scopeAliasMap;  // Map of <lhs,rhs> aliases
     IfaceVarSyms m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
     IfaceModSyms m_ifaceModSyms;  // List of AstIface+Symbols to be processed
     bool m_forPrimary;  // First link

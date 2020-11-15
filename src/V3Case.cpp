@@ -133,7 +133,7 @@ private:
     int m_caseItems = 0;  // Number of caseItem unique values
     bool m_caseNoOverlapsAllCovered = false;  // Proven to be synopsys parallel_case compliant
     // For each possible value, the case branch we need
-    AstNode* m_valueItem[1 << CASE_OVERLAP_WIDTH];
+    std::array<AstNode*, 1 << CASE_OVERLAP_WIDTH> m_valueItem;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

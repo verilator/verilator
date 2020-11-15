@@ -190,7 +190,7 @@ class OrderUser {
     // Stored in AstVarScope::user1p, a list of all the various vertices
     // that can exist for one given variable
 private:
-    OrderVarVertex* m_vertexp[WV_MAX];  // Vertex of each type (if non nullptr)
+    std::array<OrderVarVertex*, WV_MAX> m_vertexp;  // Vertex of each type (if non nullptr)
 public:
     // METHODS
     OrderVarVertex* newVarUserVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varscp,
@@ -686,7 +686,7 @@ protected:
 
 private:
     // STATS
-    VDouble0 m_statCut[OrderVEdgeType::_ENUM_END];  // Count of each edge type cut
+    std::array<VDouble0, OrderVEdgeType::_ENUM_END> m_statCut;  // Count of each edge type cut
 
     // TYPES
     enum VarUsage : uint8_t { VU_NONE = 0, VU_CON = 1, VU_GEN = 2 };
