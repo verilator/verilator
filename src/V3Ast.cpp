@@ -127,8 +127,9 @@ string AstNode::encodeName(const string& namein) {
     }
     // Shorten names
     // TODO long term use VName in place of "string name"
-    VName vname(out);
-    out = vname.hashedName();
+    // Then we also won't need to save the table of hased values
+    VName vname{out};
+    return vname.hashedName();
     return out;
 }
 
@@ -161,7 +162,8 @@ string AstNode::dedotName(const string& namein) {
 string AstNode::vcdName(const string& namein) {
     // VCD tracing expects space to separate hierarchy
     // Dots are reserved for dots the user put in the name
-    string pretty = namein;
+    // We earlier hashed all symbols, dehash them so user sees real name
+    string pretty{VName::dehash(namein)};
     string::size_type pos;
     while ((pos = pretty.find("__DOT__")) != string::npos) pretty.replace(pos, 7, " ");
     while ((pos = pretty.find('.')) != string::npos) pretty.replace(pos, 1, " ");

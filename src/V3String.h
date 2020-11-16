@@ -22,6 +22,7 @@
 
 // No V3 headers here - this is a base class for Vlc etc
 
+#include <map>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -159,9 +160,11 @@ private:
 class VName {
     string m_name;
     string m_hashed;
+    static std::map<string, string> s_dehashMap;  // hashed -> original decoder
 
     static size_t s_maxLength;  // Length at which to start hashing
     static size_t s_minLength;  // Length to preserve if over maxLength
+
 public:
     // CONSTRUCTORS
     explicit VName(const string& name)
@@ -178,6 +181,7 @@ public:
     // Length at which to start hashing, 0=disable
     static void maxLength(size_t flag) { s_maxLength = flag; }
     static size_t maxLength() { return s_maxLength; }
+    static string dehash(const string& in);
 };
 
 //######################################################################

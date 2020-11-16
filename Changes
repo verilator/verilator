@@ -5,10 +5,12 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.105 devel
 
+****  Fix trace signal names getting hashed (#2643).  [Barbara Gigerl]
+
 
 * Verilator 4.104 2020-11-14
 
-***   Support queue and associative array 'with' statements. (#2616)
+***   Support queue and associative array 'with' statements (#2616).
 
 ***   Support queue slicing (#2326).
 
