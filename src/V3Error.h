@@ -23,6 +23,7 @@
 // Limited V3 headers here - this is a base class for Vlc etc
 #include "V3String.h"
 
+#include <array>
 #include <bitset>
 #include <cassert>
 #include <deque>
