@@ -1395,7 +1395,7 @@ public:
     do { \
         if (nodep) { \
             VL_PREFETCH_RD(&((nodep)->m_nextp)); \
-            VL_PREFETCH_RD(&((nodep)->m_iterpp)); \
+            VL_PREFETCH_RD(&((nodep)->m_type)); \
         } \
     } while (false)
 
@@ -1408,22 +1408,21 @@ class AstNode {
     AstNode* m_op3p;  // Generic pointer 3
     AstNode* m_op4p;  // Generic pointer 4
     AstNode** m_iterpp;  // Pointer to node iterating on, change it if we replace this node.
+    const AstType m_type;  // Node sub-type identifier
     // ^ ASTNODE_PREFETCH depends on above ordering of members
 
+    // padding - 2 extra bytes here after m_type
+    int m_cloneCnt;  // Mark of when userp was set
+
+    AstNodeDType* m_dtypep;  // Data type of output or assignment (etc)
     AstNode* m_headtailp;  // When at begin/end of list, the opposite end of the list
-
-    const AstType m_type;  // Node sub-type identifier
-
     FileLine* m_fileline;  // Where it was declared
     vluint64_t m_editCount;  // When it was last edited
     static vluint64_t s_editCntGbl;  // Global edit counter
     // Global edit counter, last value for printing * near node #s
     static vluint64_t s_editCntLast;
 
-    AstNodeDType* m_dtypep;  // Data type of output or assignment (etc)
-
     AstNode* m_clonep;  // Pointer to clone of/ source of this module (for *LAST* cloneTree() ONLY)
-    int m_cloneCnt;  // Mark of when userp was set
     static int s_cloneCntGbl;  // Count of which userp is set
 
     // Attributes
