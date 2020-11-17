@@ -40,8 +40,8 @@ protected:
     }
 
 public:
-    V3GraphTest() {}
-    virtual ~V3GraphTest() {}
+    V3GraphTest() = default;
+    virtual ~V3GraphTest() = default;
     VL_DEBUG_FUNC;  // Declare debug()
     void run() { runTest(); }
 };
@@ -57,7 +57,7 @@ public:
     V3GraphTestVertex(V3Graph* graphp, const string& name)
         : V3GraphVertex{graphp}
         , m_name{name} {}
-    virtual ~V3GraphTestVertex() override {}
+    virtual ~V3GraphTestVertex() override = default;
     // ACCESSORS
     virtual string name() const override { return m_name; }
 };
@@ -66,7 +66,7 @@ class V3GraphTestVarVertex : public V3GraphTestVertex {
 public:
     V3GraphTestVarVertex(V3Graph* graphp, const string& name)
         : V3GraphTestVertex{graphp, name} {}
-    virtual ~V3GraphTestVarVertex() override {}
+    virtual ~V3GraphTestVarVertex() override = default;
     // ACCESSORS
     virtual string dotColor() const override { return "blue"; }
 };
@@ -267,7 +267,7 @@ public:
     DfaTestVertex(DfaGraph* graphp, const string& name)
         : DfaVertex{graphp}
         , m_name{name} {}
-    virtual ~DfaTestVertex() override {}
+    virtual ~DfaTestVertex() override = default;
     // ACCESSORS
     virtual string name() const override { return m_name; }
 };

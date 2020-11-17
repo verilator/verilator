@@ -305,7 +305,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit CleanVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~CleanVisitor() override {}
+    virtual ~CleanVisitor() override = default;
 };
 
 //######################################################################

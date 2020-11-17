@@ -1010,7 +1010,7 @@ public:
         : mu_flags{0} {
         init((right > left) ? right : left, (right > left) ? left : right, (right > left));
     }
-    ~VNumRange() {}
+    ~VNumRange() = default;
     // MEMBERS
     void init(int hi, int lo, bool littleEndian) {
         m_hi = hi;
@@ -1112,7 +1112,7 @@ public:
         , m_numeric{numeric}
         , m_keyword{kwd}
         , m_nrange{nrange} {}
-    ~VBasicTypeKey() {}
+    ~VBasicTypeKey() = default;
 };
 
 //######################################################################
@@ -1138,7 +1138,7 @@ public:
         m_u.ui = i;
     }
     explicit VNUser(void* p) { m_u.up = p; }
-    ~VNUser() {}
+    ~VNUser() = default;
     // Casters
     WidthVP* c() const { return reinterpret_cast<WidthVP*>(m_u.up); }
     VSymEnt* toSymEnt() const { return reinterpret_cast<VSymEnt*>(m_u.up); }
@@ -1315,7 +1315,7 @@ protected:
     AstNode** m_iterpp = nullptr;
 
 public:
-    AstNRelinker() {}
+    AstNRelinker() = default;
     void relink(AstNode* newp);
     AstNode* oldp() const { return m_oldp; }
     void dump(std::ostream& str = std::cout) const;
@@ -1538,7 +1538,7 @@ public:
     bool brokeExistsBelow() const;
 
     // CONSTRUCTORS
-    virtual ~AstNode() {}
+    virtual ~AstNode() = default;
 #ifdef VL_LEAK_CHECKS
     static void* operator new(size_t size);
     static void operator delete(void* obj, size_t size);
@@ -1905,7 +1905,7 @@ inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 //=== AstNode* : Derived generic node types
 
 #define ASTNODE_BASE_FUNCS(name) \
-    virtual ~Ast##name() {} \
+    virtual ~Ast##name() override = default; \
     static Ast##name* cloneTreeNull(Ast##name* nodep, bool cloneNextLink) { \
         return nodep ? nodep->cloneTree(cloneNextLink) : nullptr; \
     } \

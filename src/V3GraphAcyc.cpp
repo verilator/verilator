@@ -42,7 +42,7 @@ public:
     GraphAcycVertex(V3Graph* graphp, V3GraphVertex* origVertexp)
         : V3GraphVertex{graphp}
         , m_origVertexp{origVertexp} {}
-    virtual ~GraphAcycVertex() override {}
+    virtual ~GraphAcycVertex() override = default;
     V3GraphVertex* origVertexp() const { return m_origVertexp; }
     void setDelete() { m_deleted = true; }
     bool isDelete() const { return m_deleted; }
@@ -67,7 +67,7 @@ public:
     GraphAcycEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
                   bool cutable = false)
         : V3GraphEdge{graphp, fromp, top, weight, cutable} {}
-    virtual ~GraphAcycEdge() override {}
+    virtual ~GraphAcycEdge() override = default;
     // yellow=we might still cut it, else oldEdge: yellowGreen=made uncutable, red=uncutable
     virtual string dotColor() const override {
         return (cutable() ? "yellow" : origEdgep()->dotColor());

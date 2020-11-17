@@ -99,8 +99,8 @@ public:
             m_libExtVs.push_back(libext);
         }
     }
-    V3OptionsImp() {}
-    ~V3OptionsImp() {}
+    V3OptionsImp() = default;
+    ~V3OptionsImp() = default;
 };
 
 //######################################################################

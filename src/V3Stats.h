@@ -94,7 +94,7 @@ public:
         , m_stage{stage}
         , m_sumit{sumit}
         , m_perf{perf} {}
-    virtual ~V3Statistic() {}
+    virtual ~V3Statistic() = default;
 };
 
 //============================================================================

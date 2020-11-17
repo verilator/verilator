@@ -219,7 +219,7 @@ public:
     OrderUser() {
         for (auto& vertexp : m_vertexp) vertexp = nullptr;
     }
-    ~OrderUser() {}
+    ~OrderUser() = default;
 };
 
 //######################################################################
@@ -366,7 +366,7 @@ public:
             iterate(nodep);
         } while (m_newClkMarked);
     }
-    virtual ~OrderClkMarkVisitor() override {}
+    virtual ~OrderClkMarkVisitor() override = default;
 };
 
 //######################################################################
@@ -397,7 +397,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit OrderClkAssVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~OrderClkAssVisitor() override {}
+    virtual ~OrderClkAssVisitor() override = default;
     // METHODS
     bool isClkAss() const { return m_clkAss; }
 };
@@ -457,7 +457,7 @@ public:
         : m_graphp{logicGraphp}
         , m_outGraphp{outGraphp}
         , m_vxMakerp{vxMakerp} {}
-    virtual ~ProcessMoveBuildGraph() {}
+    virtual ~ProcessMoveBuildGraph() = default;
 
     // METHODS
     void build() {
@@ -621,8 +621,8 @@ public:
 
 class MTaskVxIdLessThan {
 public:
-    MTaskVxIdLessThan() {}
-    virtual ~MTaskVxIdLessThan() {}
+    MTaskVxIdLessThan() = default;
+    virtual ~MTaskVxIdLessThan() = default;
 
     // Sort vertex's, which must be AbstractMTask's, into a deterministic
     // order by comparing their serial IDs.
@@ -755,7 +755,7 @@ private:
         AstMTaskBody* m_mtaskBodyp = nullptr;
         Logics m_logics;
         ExecMTask* m_execMTaskp = nullptr;
-        MTaskState() {}
+        MTaskState() = default;
     };
     void processMTasks();
     typedef enum : uint8_t { LOGIC_INITIAL, LOGIC_SETTLE } InitialLogicE;

@@ -190,8 +190,8 @@ public:
     }
 
     // CONSTRUCTORS
-    BrokenTable() {}
-    virtual ~BrokenTable() override {}
+    BrokenTable() = default;
+    virtual ~BrokenTable() override = default;
 };
 
 BrokenTable::NodeMap BrokenTable::s_nodes;
@@ -231,7 +231,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit BrokenMarkVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~BrokenMarkVisitor() override {}
+    virtual ~BrokenMarkVisitor() override = default;
 };
 
 //######################################################################
@@ -304,7 +304,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit BrokenCheckVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~BrokenCheckVisitor() override {}
+    virtual ~BrokenCheckVisitor() override = default;
 };
 
 //######################################################################

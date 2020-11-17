@@ -50,7 +50,7 @@ public:
     std::vector<AstNode*> m_unlinkps;
 
     // CONSTRUCTORS
-    LifeState() {}
+    LifeState() = default;
     ~LifeState() {
         V3Stats::addStatSum("Optimizations, Lifetime assign deletions", m_statAssnDel);
         V3Stats::addStatSum("Optimizations, Lifetime constant prop", m_statAssnCon);
@@ -92,7 +92,7 @@ public:
         : m_setBeforeUse{false} {
         consumed();
     }
-    ~LifeVarEntry() {}
+    ~LifeVarEntry() = default;
     inline void simpleAssign(AstNodeAssign* assp) {  // New simple A=.... assignment
         m_assignp = assp;
         m_constp = nullptr;
@@ -135,7 +135,7 @@ public:
         m_aboveLifep = aboveLifep;  // Null if top
         m_statep = statep;
     }
-    ~LifeBlock() {}
+    ~LifeBlock() = default;
     // METHODS
     void checkRemoveAssign(const LifeMap::iterator& it) {
         AstVar* varp = it->first->varp();
@@ -479,7 +479,7 @@ public:
         : m_statep{statep} {
         iterate(nodep);
     }
-    virtual ~LifeTopVisitor() override {}
+    virtual ~LifeTopVisitor() override = default;
 };
 
 //######################################################################

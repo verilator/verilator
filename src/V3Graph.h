@@ -218,7 +218,7 @@ public:
     virtual V3GraphVertex* clone(V3Graph* graphp) const {
         return new V3GraphVertex(graphp, *this);
     }
-    virtual ~V3GraphVertex() {}
+    virtual ~V3GraphVertex() = default;
     void unlinkEdges(V3Graph* graphp);
     void unlinkDelete(V3Graph* graphp);
 
@@ -317,7 +317,7 @@ public:
     virtual V3GraphEdge* clone(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top) const {
         return new V3GraphEdge(graphp, fromp, top, *this);
     }
-    virtual ~V3GraphEdge() {}
+    virtual ~V3GraphEdge() = default;
     // METHODS
     virtual string name() const { return m_fromp->name() + "->" + m_top->name(); }
     virtual string dotLabel() const { return ""; }

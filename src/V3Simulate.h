@@ -57,7 +57,7 @@ public:
     SimStackNode(AstFuncRef* funcp, V3TaskConnects* tconnects)
         : m_funcp{funcp}
         , m_tconnects{tconnects} {}
-    ~SimStackNode() {}
+    ~SimStackNode() = default;
 };
 
 typedef std::deque<AstConst*> ConstDeque;

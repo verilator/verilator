@@ -39,7 +39,7 @@ public:
     VlcSourceCount(int lineno, int column)
         : m_lineno{lineno}
         , m_column{column} {}
-    ~VlcSourceCount() {}
+    ~VlcSourceCount() = default;
 
     // ACCESSORS
     int lineno() const { return m_lineno; }
@@ -73,7 +73,7 @@ public:
     // CONSTRUCTORS
     explicit VlcSource(const string& name)
         : m_name{name} {}
-    ~VlcSource() {}
+    ~VlcSource() = default;
 
     // ACCESSORS
     const string& name() const { return m_name; }
@@ -114,8 +114,8 @@ public:
     NameMap::iterator end() { return m_sources.end(); }
 
     // CONSTRUCTORS
-    VlcSources() {}
-    ~VlcSources() {}
+    VlcSources() = default;
+    ~VlcSources() = default;
 
     // METHODS
     VlcSource& findNewSource(const string& name) {

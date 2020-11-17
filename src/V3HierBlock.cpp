@@ -304,8 +304,6 @@ public:
 
 //######################################################################
 
-V3HierBlockPlan::V3HierBlockPlan() {}
-
 bool V3HierBlockPlan::isHierBlock(const AstNodeModule* modp) const {
     return m_blocks.find(modp) != m_blocks.end();
 }

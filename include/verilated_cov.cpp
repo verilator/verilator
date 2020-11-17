@@ -52,7 +52,7 @@ public:  // But only local to this file
             m_vals[i] = 0;
         }
     }
-    virtual ~VerilatedCovImpItem() {}
+    virtual ~VerilatedCovImpItem() = default;
     virtual vluint64_t count() const = 0;
     virtual void zero() const = 0;
 };
@@ -78,7 +78,7 @@ public:
         : m_countp{countp} {
         *m_countp = 0;
     }
-    virtual ~VerilatedCoverItemSpec() override {}
+    virtual ~VerilatedCoverItemSpec() override = default;
 };
 
 //=============================================================================
@@ -105,7 +105,7 @@ private:
     int m_insertLineno VL_GUARDED_BY(m_mutex) = 0;  ///< Line number about to insert
 
     // CONSTRUCTORS
-    VerilatedCovImp() {}
+    VerilatedCovImp() = default;
     VL_UNCOPYABLE(VerilatedCovImp);
 
 public:

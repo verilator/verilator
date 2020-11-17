@@ -103,7 +103,7 @@ protected:
 
 public:
     static V3PreProc* createPreProc(FileLine* fl);
-    virtual ~V3PreProc() {}  // LCOV_EXCL_LINE  // Persistent
+    virtual ~V3PreProc() = default;  // LCOV_EXCL_LINE  // Persistent
 };
 
 #endif  // Guard

@@ -121,7 +121,7 @@ public:
         : m_topModp{topModp} {
         iterate(nodep);
     }
-    virtual ~GenClkRenameVisitor() override {}
+    virtual ~GenClkRenameVisitor() override = default;
 };
 
 //######################################################################
@@ -214,7 +214,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit GenClkReadVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~GenClkReadVisitor() override {}
+    virtual ~GenClkReadVisitor() override = default;
 };
 
 //######################################################################

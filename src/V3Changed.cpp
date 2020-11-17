@@ -48,8 +48,8 @@ public:
     int m_numStmts = 0;  // Number of statements added to m_chgFuncp
     int m_funcNum = 0;  // Number of change functions emitted
 
-    ChangedState() {}
-    ~ChangedState() {}
+    ChangedState() = default;
+    ~ChangedState() = default;
 
     void maybeCreateChgFuncp() {
         // Don't create an extra function call if splitting is disabled
@@ -208,7 +208,7 @@ public:
         m_newLvEqnp->deleteTree();
         m_newRvEqnp->deleteTree();
     }
-    virtual ~ChangedInsertVisitor() override {}
+    virtual ~ChangedInsertVisitor() override = default;
     VL_UNCOPYABLE(ChangedInsertVisitor);
 };
 
@@ -280,7 +280,7 @@ public:
         : m_statep{statep} {
         iterate(nodep);
     }
-    virtual ~ChangedVisitor() override {}
+    virtual ~ChangedVisitor() override = default;
 };
 
 //######################################################################

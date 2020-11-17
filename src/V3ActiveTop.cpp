@@ -128,7 +128,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ActiveTopVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ActiveTopVisitor() override {}
+    virtual ~ActiveTopVisitor() override = default;
 };
 
 //######################################################################

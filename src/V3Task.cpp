@@ -45,7 +45,7 @@ class TaskBaseVertex : public V3GraphVertex {
 public:
     explicit TaskBaseVertex(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
-    virtual ~TaskBaseVertex() override {}
+    virtual ~TaskBaseVertex() override = default;
     bool pure() const { return m_impurep == nullptr; }
     AstNode* impureNode() const { return m_impurep; }
     void impure(AstNode* nodep) { m_impurep = nodep; }
@@ -62,7 +62,7 @@ public:
     TaskFTaskVertex(V3Graph* graphp, AstNodeFTask* nodep)
         : TaskBaseVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~TaskFTaskVertex() override {}
+    virtual ~TaskFTaskVertex() override = default;
     AstNodeFTask* nodep() const { return m_nodep; }
     virtual string name() const override { return nodep()->name(); }
     virtual string dotColor() const override { return pure() ? "black" : "red"; }
@@ -76,7 +76,7 @@ class TaskCodeVertex : public TaskBaseVertex {
 public:
     explicit TaskCodeVertex(V3Graph* graphp)
         : TaskBaseVertex{graphp} {}
-    virtual ~TaskCodeVertex() override {}
+    virtual ~TaskCodeVertex() override = default;
     virtual string name() const override { return "*CODE*"; }
     virtual string dotColor() const override { return "green"; }
 };
@@ -85,7 +85,7 @@ class TaskEdge : public V3GraphEdge {
 public:
     TaskEdge(V3Graph* graphp, TaskBaseVertex* fromp, TaskBaseVertex* top)
         : V3GraphEdge{graphp, fromp, top, 1, false} {}
-    virtual ~TaskEdge() override {}
+    virtual ~TaskEdge() override = default;
     virtual string dotLabel() const override { return "w" + cvtToStr(weight()); }
 };
 
@@ -281,7 +281,7 @@ public:
         m_callGraph.removeRedundantEdgesSum(&TaskEdge::followAlwaysTrue);
         m_callGraph.dumpDotFilePrefixed("task_call");
     }
-    virtual ~TaskStateVisitor() override {}
+    virtual ~TaskStateVisitor() override = default;
     VL_UNCOPYABLE(TaskStateVisitor);
 };
 
@@ -317,7 +317,7 @@ public:
     explicit TaskRelinkVisitor(AstBegin* nodep) {  // Passed temporary tree
         iterate(nodep);
     }
-    virtual ~TaskRelinkVisitor() override {}
+    virtual ~TaskRelinkVisitor() override = default;
 };
 
 //######################################################################
@@ -1378,7 +1378,7 @@ public:
         : m_statep{statep} {
         iterate(nodep);
     }
-    virtual ~TaskVisitor() override {}
+    virtual ~TaskVisitor() override = default;
 };
 
 //######################################################################

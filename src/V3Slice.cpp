@@ -225,7 +225,7 @@ class SliceVisitor : public AstNVisitor {
 public:
     // CONSTRUCTORS
     explicit SliceVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~SliceVisitor() override {}
+    virtual ~SliceVisitor() override = default;
 };
 
 //######################################################################

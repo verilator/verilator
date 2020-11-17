@@ -82,7 +82,7 @@ public:
     // that must notify this MTaskVertex before it will become ready
     // to run.
     explicit VlMTaskVertex(vluint32_t upstreamDepCount);
-    ~VlMTaskVertex() {}
+    ~VlMTaskVertex() = default;
 
     static vluint64_t yields() { return s_yields; }
     static void yieldThread() {
@@ -136,7 +136,7 @@ protected:
     unsigned m_cpu;  // Execution CPU number (at start anyways)
 public:
     class Barrier {};
-    VlProfileRec() {}
+    VlProfileRec() = default;
     explicit VlProfileRec(Barrier) { m_cpu = getcpu(); }
     void startRecord(vluint64_t time, uint32_t mtask, uint32_t predict) {
         m_type = VlProfileRec::TYPE_MTASK_RUN;

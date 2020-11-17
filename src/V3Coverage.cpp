@@ -52,7 +52,7 @@ private:
             : m_comment{comment}
             , m_varRefp{vp}
             , m_chgRefp{cp} {}
-        ~ToggleEnt() {}
+        ~ToggleEnt() = default;
         void cleanup() {
             VL_DO_CLEAR(m_varRefp->deleteTree(), m_varRefp = nullptr);
             VL_DO_CLEAR(m_chgRefp->deleteTree(), m_chgRefp = nullptr);
@@ -64,7 +64,7 @@ private:
         bool m_inModOff = false;  // In module with no coverage
         int m_handle = 0;  // Opaque handle for index into line tracking
         const AstNode* m_nodep = nullptr;  // Node establishing this state
-        CheckState() {}
+        CheckState() = default;
         bool lineCoverageOn(const AstNode* nodep) const {
             return m_on && !m_inModOff && nodep->fileline()->coverageOn()
                    && v3Global.opt.coverageLine();
@@ -534,7 +534,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit CoverageVisitor(AstNetlist* rootp) { iterateChildren(rootp); }
-    virtual ~CoverageVisitor() override {}
+    virtual ~CoverageVisitor() override = default;
 };
 
 //######################################################################

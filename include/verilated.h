@@ -133,8 +133,8 @@ class VL_CAPABILITY("mutex") VerilatedMutex {
 private:
     std::mutex m_mutex;  // Mutex
 public:
-    VerilatedMutex() {}
-    ~VerilatedMutex() {}
+    VerilatedMutex() = default;
+    ~VerilatedMutex() = default;
     const VerilatedMutex& operator!() const { return *this; }  // For -fthread_safety
     /// Acquire/lock mutex
     void lock() VL_ACQUIRE() {
@@ -186,7 +186,7 @@ class VerilatedLockGuard {
 
 public:
     explicit VerilatedLockGuard(VerilatedMutex&) {}
-    ~VerilatedLockGuard() {}
+    ~VerilatedLockGuard() = default;
     void lock() {}
     void unlock() {}
 };
@@ -330,7 +330,7 @@ private:
     Type m_type = SCOPE_OTHER;  ///< Type of the scope
 
 public:  // But internals only - called from VerilatedModule's
-    VerilatedScope();
+    VerilatedScope() = default;
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
                    const char* identifier, vlsint8_t timeunit, const Type& type) VL_MT_UNSAFE;
@@ -387,7 +387,7 @@ class Verilated {
         int s_randReset;  ///< Random reset: 0=all 0s, 1=all 1s, 2=random
         int s_randSeed;  ///< Random seed: 0=random
         Serialized();
-        ~Serialized() {}
+        ~Serialized() = default;
     } s_s;
 
     static struct NonSerialized {  // Non-serialized information
@@ -407,8 +407,8 @@ class Verilated {
         VerilatedMutex m_argMutex;  ///< Mutex for s_args members, when VL_THREADED
         int argc = 0;
         const char** argv = nullptr;
-        CommandArgValues() {}
-        ~CommandArgValues() {}
+        CommandArgValues() = default;
+        ~CommandArgValues() = default;
     } s_args;
 
     // Not covered by mutex, as per-thread
@@ -422,8 +422,8 @@ class Verilated {
         const char* t_dpiFilename = nullptr;  ///< DPI context filename
         int t_dpiLineno = 0;  ///< DPI context line number
 
-        ThreadLocal();
-        ~ThreadLocal();
+        ThreadLocal() = default;
+        ~ThreadLocal() = default;
     } t_s;
 
 private:

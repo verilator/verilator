@@ -57,7 +57,7 @@ public:
         m_bitFlags.resize(varp->width() * FLAGS_PER_BIT);
         for (int i = 0; i < varp->width() * FLAGS_PER_BIT; i++) m_bitFlags[i] = false;
     }
-    ~UndrivenVarEntry() {}
+    ~UndrivenVarEntry() = default;
 
 private:
     // METHODS

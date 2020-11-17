@@ -136,7 +136,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit NameVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~NameVisitor() override {}
+    virtual ~NameVisitor() override = default;
 };
 
 //######################################################################

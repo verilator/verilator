@@ -253,8 +253,8 @@ private:
     CpMap m_seen;  // Set of vertices we've seen
 
     // CONSTRUCTORS
-    PartPropagateCpSelfTest() {}
-    ~PartPropagateCpSelfTest() {}
+    PartPropagateCpSelfTest() = default;
+    ~PartPropagateCpSelfTest() = default;
 
     // METHODS
 protected:
@@ -368,8 +368,8 @@ public:
     //    in the future, using another Accessor adaptor.
     class CpCostAccessor {
     public:
-        CpCostAccessor() {}
-        ~CpCostAccessor() {}
+        CpCostAccessor() = default;
+        ~CpCostAccessor() = default;
         // Return cost of this node
         uint32_t cost(const V3GraphVertex* vxp) const {
             const LogicMTask* mtaskp = dynamic_cast<const LogicMTask*>(vxp);
@@ -692,8 +692,8 @@ private:
 // which is a unique and stable serial number.
 class MTaskIdLessThan {
 public:
-    MTaskIdLessThan() {}
-    virtual ~MTaskIdLessThan() {}
+    MTaskIdLessThan() = default;
+    virtual ~MTaskIdLessThan() = default;
     virtual bool operator()(const AbstractMTask* lhsp, const AbstractMTask* rhsp) const {
         return lhsp->id() < rhsp->id();
     }
@@ -739,7 +739,7 @@ public:
             m_bp = ap;
         }
     }
-    virtual ~SiblingMC() {}
+    virtual ~SiblingMC() = default;
     // METHODS
     LogicMTask* ap() const { return m_ap; }
     LogicMTask* bp() const { return m_bp; }
@@ -1663,7 +1663,7 @@ public:
     // CONSTRUCTORS
     explicit DpiImportCallVisitor(AstNode* nodep) { iterate(nodep); }
     bool hasDpiHazard() const { return m_hasDpiHazard; }
-    virtual ~DpiImportCallVisitor() override {}
+    virtual ~DpiImportCallVisitor() override = default;
 
 private:
     VL_UNCOPYABLE(DpiImportCallVisitor);
@@ -2052,7 +2052,7 @@ public:
         , m_sandbagNumerator{sandbagNumerator}
         , m_sandbagDenom{sandbagDenom}
         , m_ready{m_mtaskCmp} {}
-    ~PartPackMTasks() {}
+    ~PartPackMTasks() = default;
 
     // METHODS
     uint32_t completionTime(const ExecMTask* mtaskp, uint32_t thread) {

@@ -81,7 +81,7 @@ public:
         m_whole.clear();
         for (int i = 0; i < varp->widthWords(); i++) m_words[i].clear();
     }
-    ~SubstVarEntry() {}
+    ~SubstVarEntry() = default;
 
 private:
     // METHODS
@@ -213,7 +213,7 @@ public:
         UINFO(9, "        SubstUseVisitor " << origStep << " " << nodep << endl);
         iterate(nodep);
     }
-    virtual ~SubstUseVisitor() override {}
+    virtual ~SubstUseVisitor() override = default;
     // METHODS
     bool ok() const { return m_ok; }
 };

@@ -368,7 +368,7 @@ public:
         m_step = 0;
         main();
     }
-    ~GraphNfaToDfa() {}
+    ~GraphNfaToDfa() = default;
 };
 
 void DfaGraph::nfaToDfa() { GraphNfaToDfa(this, &V3GraphEdge::followAlwaysTrue); }
@@ -502,7 +502,7 @@ public:
         optimize_no_outbound();
         if (debug() >= 6) m_graphp->dumpDotFilePrefixed("opt_noout");
     }
-    ~DfaGraphReduce() {}
+    ~DfaGraphReduce() = default;
 };
 
 void DfaGraph::dfaReduce() { DfaGraphReduce(this, &V3GraphEdge::followAlwaysTrue); }
@@ -598,7 +598,7 @@ public:
         VL_DO_CLEAR(m_tempNewerReject->unlinkDelete(graphp()), m_tempNewerReject = nullptr);
         if (debug() >= 6) m_graphp->dumpDotFilePrefixed("comp_out");
     }
-    ~DfaGraphComplement() {}
+    ~DfaGraphComplement() = default;
     VL_UNCOPYABLE(DfaGraphComplement);
 };
 

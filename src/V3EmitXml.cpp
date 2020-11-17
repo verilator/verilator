@@ -250,7 +250,7 @@ public:
         : m_ofp{ofp} {
         iterate(nodep);
     }
-    virtual ~EmitXmlFileVisitor() override {}
+    virtual ~EmitXmlFileVisitor() override = default;
 };
 
 //######################################################################
@@ -298,7 +298,7 @@ public:
         }
         m_os << "</module_files>\n";
     }
-    virtual ~ModuleFilesXmlVisitor() override {}
+    virtual ~ModuleFilesXmlVisitor() override = default;
 };
 
 //######################################################################
@@ -363,7 +363,7 @@ public:
         // Operate on whole netlist
         nodep->accept(*this);
     }
-    virtual ~HierCellsXmlVisitor() override {}
+    virtual ~HierCellsXmlVisitor() override = default;
 };
 
 //######################################################################

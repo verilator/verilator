@@ -132,7 +132,7 @@ public:
             }
         }
     }
-    ~GraphStream() {}
+    ~GraphStream() = default;
 
     // METHODS
 

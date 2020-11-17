@@ -75,7 +75,7 @@ public:
         UINFO(4, "  PremitAssignVisitor on " << nodep << endl);
         iterate(nodep);
     }
-    virtual ~PremitAssignVisitor() override {}
+    virtual ~PremitAssignVisitor() override = default;
     bool noOpt() const { return m_noopt; }
 };
 
@@ -397,7 +397,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit PremitVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~PremitVisitor() override {}
+    virtual ~PremitVisitor() override = default;
 };
 
 //----------------------------------------------------------------------

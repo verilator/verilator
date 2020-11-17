@@ -46,7 +46,7 @@ public:
         : m_name{name}
         , m_computrons{comp}
         , m_testrun{testrun} {}
-    ~VlcTest() {}
+    ~VlcTest() = default;
 
     // ACCESSORS
     const string& name() const { return m_name; }
@@ -100,7 +100,7 @@ public:
     ByName::iterator end() { return m_tests.end(); }
 
     // CONSTRUCTORS
-    VlcTests() {}
+    VlcTests() = default;
     ~VlcTests() {
         for (auto it = begin(); it != end(); ++it) { VL_DO_CLEAR(delete *it, *it = nullptr); }
     }

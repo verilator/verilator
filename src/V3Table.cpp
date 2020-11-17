@@ -59,7 +59,7 @@ public:
     // CONSTRUCTORS
     explicit TableSimulateVisitor(TableVisitor* cbthis)
         : m_cbthis{cbthis} {}
-    virtual ~TableSimulateVisitor() override {}
+    virtual ~TableSimulateVisitor() override = default;
 };
 
 //######################################################################

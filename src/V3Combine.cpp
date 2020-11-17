@@ -56,7 +56,7 @@ protected:
     // STATE
 
     // METHODS
-    virtual ~CombBaseVisitor() override {}
+    virtual ~CombBaseVisitor() override = default;
     VL_DEBUG_FUNC;  // Declare debug()
 };
 
@@ -131,8 +131,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    CombCallVisitor() {}
-    virtual ~CombCallVisitor() override {}
+    CombCallVisitor() = default;
+    virtual ~CombCallVisitor() override = default;
     void main(AstNetlist* nodep) { iterate(nodep); }
 };
 
@@ -153,7 +153,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit CombMarkVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~CombMarkVisitor() override {}
+    virtual ~CombMarkVisitor() override = default;
 };
 
 //######################################################################

@@ -111,7 +111,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit CaseLintVisitor(AstNodeCase* nodep) { iterate(nodep); }
-    virtual ~CaseLintVisitor() override {}
+    virtual ~CaseLintVisitor() override = default;
 };
 
 //######################################################################

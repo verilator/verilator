@@ -108,10 +108,13 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlQueue() {
-        // m_defaultValue isn't defaulted. Caller's constructor must do it.
-    }
-    ~VlQueue() {}
+    // m_defaultValue isn't defaulted. Caller's constructor must do it.
+    VlQueue() = default;
+    ~VlQueue() = default;
+    VlQueue(const VlQueue&) = default;
+    VlQueue(VlQueue&&) = default;
+    VlQueue& operator=(const VlQueue&) = default;
+    VlQueue& operator=(VlQueue&&) = default;
 
     // Standard copy constructor works. Verilog: assoca = assocb
     // Also must allow conversion from a different T_MaxSize queue
@@ -426,8 +429,13 @@ template <std::size_t T_Words> class VlWide {
 
 public:
     // cppcheck-suppress uninitVar
-    VlWide() {}
-    ~VlWide() {}
+    VlWide() = default;
+    ~VlWide() = default;
+    VlWide(const VlWide&) = default;
+    VlWide(VlWide&&) = default;
+    VlWide& operator=(const VlWide&) = default;
+    VlWide& operator=(VlWide&&) = default;
+    // METHODS
     const WData& at(size_t index) const { return m_storage[index]; }
     WData& at(size_t index) { return m_storage[index]; }
     WData* data() { return &m_storage[0]; }
@@ -467,11 +475,13 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlAssocArray() {
-        // m_defaultValue isn't defaulted. Caller's constructor must do it.
-    }
-    ~VlAssocArray() {}
-    // Standard copy constructor works. Verilog: assoca = assocb
+    // m_defaultValue isn't defaulted. Caller's constructor must do it.
+    VlAssocArray() = default;
+    ~VlAssocArray() = default;
+    VlAssocArray(const VlAssocArray&) = default;
+    VlAssocArray(VlAssocArray&&) = default;
+    VlAssocArray& operator=(const VlAssocArray&) = default;
+    VlAssocArray& operator=(VlAssocArray&&) = default;
 
     // METHODS
     T_Value& atDefault() { return m_defaultValue; }

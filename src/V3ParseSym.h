@@ -50,7 +50,7 @@ public:
         pushScope(findNewTable(rootp));
         m_symCurrentp = symCurrentp();
     }
-    ~V3ParseSym() {}
+    ~V3ParseSym() = default;
 
 private:
     // METHODS

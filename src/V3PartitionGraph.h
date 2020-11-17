@@ -32,7 +32,7 @@ class AbstractMTask : public V3GraphVertex {
 public:
     AbstractMTask(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
-    virtual ~AbstractMTask() override {}
+    virtual ~AbstractMTask() override = default;
     virtual uint32_t id() const = 0;
     virtual uint32_t cost() const = 0;
 };
@@ -44,7 +44,7 @@ public:
     // CONSTRUCTORS
     AbstractLogicMTask(V3Graph* graphp)
         : AbstractMTask{graphp} {}
-    virtual ~AbstractLogicMTask() override {}
+    virtual ~AbstractLogicMTask() override = default;
     // METHODS
     // Set of logic vertices in this mtask. Order is not significant.
     virtual const VxList* vertexListp() const = 0;

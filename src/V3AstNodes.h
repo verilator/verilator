@@ -36,7 +36,7 @@
     Ast##name* clonep() const { return static_cast<Ast##name*>(AstNode::clonep()); }
 
 #define ASTNODE_NODE_FUNCS(name) \
-    virtual ~Ast##name() override {} \
+    virtual ~Ast##name() override = default; \
     ASTNODE_NODE_FUNCS_NO_DTOR(name)
 
 //######################################################################

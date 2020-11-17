@@ -254,7 +254,7 @@ public:
     explicit InlineCollectVisitor(AstNodeModule* nodep) {  // passed OLD module, not new one
         iterate(nodep);
     }
-    virtual ~InlineCollectVisitor() override {}
+    virtual ~InlineCollectVisitor() override = default;
 };
 
 //######################################################################
@@ -474,7 +474,7 @@ public:
         , m_cellp{cellp} {
         iterate(cloneModp);
     }
-    virtual ~InlineRelinkVisitor() override {}
+    virtual ~InlineRelinkVisitor() override = default;
 };
 
 //######################################################################
@@ -702,7 +702,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit InlineIntfRefVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~InlineIntfRefVisitor() override {}
+    virtual ~InlineIntfRefVisitor() override = default;
 };
 
 //######################################################################

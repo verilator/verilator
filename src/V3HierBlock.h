@@ -99,7 +99,7 @@ class V3HierBlockPlan {
     typedef std::map<const AstNodeModule*, V3HierBlock*> HierMap;
     HierMap m_blocks;
 
-    V3HierBlockPlan();
+    V3HierBlockPlan() = default;
     VL_UNCOPYABLE(V3HierBlockPlan);
 
 public:

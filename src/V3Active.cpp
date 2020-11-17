@@ -130,8 +130,8 @@ public:
     }
 
     // CONSTRUCTORS
-    ActiveNamer() {}
-    virtual ~ActiveNamer() override {}
+    ActiveNamer() = default;
+    virtual ~ActiveNamer() override = default;
     void main(AstScope* nodep) { iterate(nodep); }
 };
 
@@ -205,7 +205,7 @@ public:
         , m_alwaysp{nodep} {
         iterate(nodep);
     }
-    virtual ~ActiveDlyVisitor() override {}
+    virtual ~ActiveDlyVisitor() override = default;
 };
 
 //######################################################################
@@ -406,7 +406,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ActiveVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ActiveVisitor() override {}
+    virtual ~ActiveVisitor() override = default;
 };
 
 //######################################################################

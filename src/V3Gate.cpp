@@ -57,7 +57,7 @@ public:
     V3Graph* m_graphp;  // Graph this class is visiting
     explicit GateGraphBaseVisitor(V3Graph* graphp)
         : m_graphp{graphp} {}
-    virtual ~GateGraphBaseVisitor() {}
+    virtual ~GateGraphBaseVisitor() = default;
     virtual VNUser visit(GateLogicVertex* vertexp, VNUser vu = VNUser(0)) = 0;
     virtual VNUser visit(GateVarVertex* vertexp, VNUser vu = VNUser(0)) = 0;
     VL_DEBUG_FUNC;  // Declare debug()
@@ -75,7 +75,7 @@ public:
     GateEitherVertex(V3Graph* graphp, AstScope* scopep)
         : V3GraphVertex{graphp}
         , m_scopep{scopep} {}
-    virtual ~GateEitherVertex() override {}
+    virtual ~GateEitherVertex() override = default;
     // ACCESSORS
     virtual string dotStyle() const override { return m_consumed ? "" : "dotted"; }
     AstScope* scopep() const { return m_scopep; }
@@ -133,7 +133,7 @@ public:
     GateVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
         : GateEitherVertex{graphp, scopep}
         , m_varScp{varScp} {}
-    virtual ~GateVarVertex() override {}
+    virtual ~GateVarVertex() override = default;
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
     virtual string name() const override { return (cvtToHex(m_varScp) + " " + varScp()->name()); }
@@ -174,7 +174,7 @@ public:
         , m_nodep{nodep}
         , m_activep{activep}
         , m_slow{slow} {}
-    virtual ~GateLogicVertex() override {}
+    virtual ~GateLogicVertex() override = default;
     // ACCESSORS
     virtual string name() const override {
         return (cvtToHex(m_nodep) + "@" + scopep()->prettyName());
@@ -291,7 +291,7 @@ public:
         }
         if (debug() >= 9 && !m_isSimple) nodep->dumpTree(cout, "    gate!Ok: ");
     }
-    virtual ~GateOkVisitor() override {}
+    virtual ~GateOkVisitor() override = default;
     // PUBLIC METHODS
     bool isSimple() const { return m_isSimple; }
     AstNode* substTree() const { return m_substTreep; }
@@ -870,7 +870,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    virtual ~GateElimVisitor() override {}
+    virtual ~GateElimVisitor() override = default;
     GateElimVisitor(AstNode* nodep, AstVarScope* varscp, AstNode* replaceTreep,
                     GateDedupeVarVisitor* varVisp) {
         UINFO(9, "     elimvisitor " << nodep << endl);
@@ -939,7 +939,7 @@ private:
     }
 
 public:
-    GateDedupeHash() {}
+    GateDedupeHash() = default;
     virtual ~GateDedupeHash() override {
         if (v3Global.opt.debugCheck()) check();
     }
@@ -1086,8 +1086,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    GateDedupeVarVisitor() {}
-    virtual ~GateDedupeVarVisitor() override {}
+    GateDedupeVarVisitor() = default;
+    virtual ~GateDedupeVarVisitor() override = default;
     // PUBLIC METHODS
     AstNodeVarRef* findDupe(AstNode* nodep, AstVarScope* consumerVarScopep, AstActive* activep) {
         m_assignp = nullptr;
@@ -1409,8 +1409,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    GateConcatVisitor() {}
-    virtual ~GateConcatVisitor() override {}
+    GateConcatVisitor() = default;
+    virtual ~GateConcatVisitor() override = default;
     // PUBLIC METHODS
     bool concatOffset(AstConcat* concatp, AstVarScope* vscp, int& offsetr) {
         m_vscp = vscp;
@@ -1436,7 +1436,7 @@ public:
     GateClkDecompState(int offset, AstVarScope* vsp)
         : m_offset{offset}
         , m_last_vsp{vsp} {}
-    virtual ~GateClkDecompState() {}
+    virtual ~GateClkDecompState() = default;
 };
 
 class GateClkDecompGraphVisitor : public GateGraphBaseVisitor {
@@ -1591,7 +1591,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit GateDeassignVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~GateDeassignVisitor() override {}
+    virtual ~GateDeassignVisitor() override = default;
 };
 
 //######################################################################

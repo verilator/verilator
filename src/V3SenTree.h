@@ -53,7 +53,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    SenTreeSet() {}
+    SenTreeSet() = default;
 
     // METHODS
     void add(AstSenTree* nodep) { m_trees.insert(nodep); }
@@ -81,7 +81,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    SenTreeFinder() {}
+    SenTreeFinder() = default;
 
     // METHODS
     AstSenTree* getSenTree(AstSenTree* senTreep) {

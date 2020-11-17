@@ -45,8 +45,8 @@ private:
     bool m_anyFuncInBegin = false;
 
 public:
-    BeginState() {}
-    ~BeginState() {}
+    BeginState() = default;
+    ~BeginState() = default;
     void userMarkChanged(AstNode* nodep) {
         nodep->user1(true);
         m_anyFuncInBegin = true;
@@ -242,7 +242,7 @@ public:
         : m_statep{statep} {
         iterate(nodep);
     }
-    virtual ~BeginVisitor() override {}
+    virtual ~BeginVisitor() override = default;
 };
 
 //######################################################################
@@ -283,7 +283,7 @@ private:
 public:
     // CONSTRUCTORS
     BeginRelinkVisitor(AstNetlist* nodep, BeginState*) { iterate(nodep); }
-    virtual ~BeginRelinkVisitor() override {}
+    virtual ~BeginRelinkVisitor() override = default;
 };
 
 //######################################################################

@@ -39,8 +39,8 @@ private:
     int m_fd = 0;  ///< File descriptor we're writing to
 public:
     // METHODS
-    VerilatedVcdFile() {}
-    virtual ~VerilatedVcdFile() {}
+    VerilatedVcdFile() = default;
+    virtual ~VerilatedVcdFile() = default;
     virtual bool open(const std::string& name) VL_MT_UNSAFE;
     virtual void close() VL_MT_UNSAFE;
     virtual ssize_t write(const char* bufp, ssize_t len) VL_MT_UNSAFE;

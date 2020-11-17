@@ -256,7 +256,7 @@ class CMakeEmitter {
 
 public:
     explicit CMakeEmitter() { emitOverallCMake(); }
-    virtual ~CMakeEmitter() {}
+    virtual ~CMakeEmitter() = default;
 };
 
 void V3EmitCMake::emit() {

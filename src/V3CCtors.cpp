@@ -87,7 +87,7 @@ public:
         m_funcp = m_tlFuncp;
         m_modp->addStmtp(m_tlFuncp);
     }
-    ~V3CCtorsVisitor() {}
+    ~V3CCtorsVisitor() = default;
 
 private:
     VL_UNCOPYABLE(V3CCtorsVisitor);

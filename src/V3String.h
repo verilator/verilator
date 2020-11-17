@@ -131,7 +131,7 @@ public:
         : VHashSha256{} {
         insert(data);
     }
-    ~VHashSha256() {}
+    ~VHashSha256() = default;
 
     // METHODS
     string digestBinary();  // Return digest as 32 character binary
@@ -169,7 +169,7 @@ public:
     // CONSTRUCTORS
     explicit VName(const string& name)
         : m_name{name} {}
-    ~VName() {}
+    ~VName() = default;
     // METHODS
     void name(const string& name) {
         m_name = name;
@@ -198,8 +198,8 @@ class VSpellCheck {
     Candidates m_candidates;  // Strings we try to match
 public:
     // CONSTRUCTORS
-    explicit VSpellCheck() {}
-    ~VSpellCheck() {}
+    VSpellCheck() = default;
+    ~VSpellCheck() = default;
     // METHODS
     // Push a symbol table value to be considered as a candidate
     // The first item pushed has highest priority, all else being equal

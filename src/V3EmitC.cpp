@@ -1258,7 +1258,7 @@ public:
         m_trackText = trackText;
         iterate(nodep);
     }
-    virtual ~EmitCStmts() override {}
+    virtual ~EmitCStmts() override = default;
 };
 
 //######################################################################
@@ -1276,7 +1276,7 @@ public:
         : m_mtaskIds(mtaskIds) {  // Cannot be {} or GCC 4.8 false warning
         m_serial = ++m_serialNext;  // Cannot be ()/{} or GCC 4.8 false warning
     }
-    virtual ~EmitVarTspSorter() {}
+    virtual ~EmitVarTspSorter() = default;
     // METHODS
     virtual bool operator<(const TspStateBase& other) const override {
         return operator<(dynamic_cast<const EmitVarTspSorter&>(other));
@@ -1840,8 +1840,8 @@ class EmitCImp : EmitCStmts {
     void maybeSplit(AstNodeModule* modp);
 
 public:
-    EmitCImp() {}
-    virtual ~EmitCImp() override {}
+    EmitCImp() = default;
+    virtual ~EmitCImp() override = default;
     void mainImp(AstNodeModule* modp, bool slow);
     void mainInt(AstNodeModule* modp);
     void mainDoFunc(AstCFunc* nodep) { iterate(nodep); }
@@ -3840,7 +3840,7 @@ class EmitCTrace : EmitCStmts {
 public:
     explicit EmitCTrace(bool slow)
         : m_slow{slow} {}
-    virtual ~EmitCTrace() override {}
+    virtual ~EmitCTrace() override = default;
     void main() {
         // Put out the file
         newOutCFile(0);

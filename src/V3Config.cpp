@@ -38,8 +38,8 @@ template <typename T> class V3ConfigWildcardResolver {
     Map m_mapWildcard;  // Wildcard strings to entities
     Map m_mapResolved;  // Resolved strings to converged entities
 public:
-    V3ConfigWildcardResolver() {}
-    ~V3ConfigWildcardResolver() {}
+    V3ConfigWildcardResolver() = default;
+    ~V3ConfigWildcardResolver() = default;
 
     /// Update into maps from other
     void update(const V3ConfigWildcardResolver& other) {
@@ -123,7 +123,7 @@ class V3ConfigFTask {
     bool m_public = false;  // Public function/task
 
 public:
-    V3ConfigFTask() {}
+    V3ConfigFTask() = default;
     void update(const V3ConfigFTask& f) {
         // Don't overwrite true with false
         if (f.m_isolate) m_isolate = true;
@@ -165,7 +165,7 @@ class V3ConfigModule {
     bool m_inlineValue = false;  // The inline value (on/off)
 
 public:
-    V3ConfigModule() {}
+    V3ConfigModule() = default;
 
     void update(const V3ConfigModule& m) {
         m_tasks.update(m.m_tasks);
@@ -233,7 +233,7 @@ public:
         : m_lineno{lineno}
         , m_code{code}
         , m_on{on} {}
-    ~V3ConfigIgnoresLine() {}
+    ~V3ConfigIgnoresLine() = default;
     inline bool operator<(const V3ConfigIgnoresLine& rh) const {
         if (m_lineno < rh.m_lineno) return true;
         if (m_lineno > rh.m_lineno) return false;
@@ -352,8 +352,8 @@ class V3ConfigResolver {
     V3ConfigFileResolver m_files;  // Access to file names (with wildcards)
 
     static V3ConfigResolver s_singleton;  // Singleton (not via local static, as that's slow)
-    V3ConfigResolver() {}
-    ~V3ConfigResolver() {}
+    V3ConfigResolver() = default;
+    ~V3ConfigResolver() = default;
 
 public:
     inline static V3ConfigResolver& s() { return s_singleton; }

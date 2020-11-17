@@ -87,7 +87,7 @@ public:
     TristateVertex(V3Graph* graphp, AstNode* nodep)
         : V3GraphVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~TristateVertex() override {}
+    virtual ~TristateVertex() override = default;
     // ACCESSORS
     AstNode* nodep() const { return m_nodep; }
     AstVar* varp() const { return VN_CAST(nodep(), Var); }
@@ -307,7 +307,7 @@ public:
         , m_lvalue{lvalue} {
         iterate(nodep);
     }
-    virtual ~TristatePinVisitor() override {}
+    virtual ~TristatePinVisitor() override = default;
 };
 
 //######################################################################

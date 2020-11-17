@@ -606,7 +606,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
-    virtual ~LinkParseVisitor() override {}
+    virtual ~LinkParseVisitor() override = default;
 };
 
 //######################################################################

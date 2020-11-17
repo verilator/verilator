@@ -197,7 +197,7 @@ public:
         // Process
         iterate(nodep);
     }
-    virtual ~AssertPreVisitor() override {}
+    virtual ~AssertPreVisitor() override = default;
 };
 
 //######################################################################

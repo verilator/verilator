@@ -41,7 +41,7 @@ public:
     // CONSTRUCTORS
     explicit V3Partition(V3Graph* fineDepsGraphp)
         : m_fineDepsGraphp{fineDepsGraphp} {}
-    ~V3Partition() {}
+    ~V3Partition() = default;
 
     // METHODS
 
@@ -83,7 +83,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    PartPtrIdMap() {}
+    PartPtrIdMap() = default;
     // METHODS
     vluint64_t findId(const void* ptrp) const {
         const auto it = m_id.find(ptrp);

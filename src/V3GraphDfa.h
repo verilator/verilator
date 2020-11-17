@@ -61,8 +61,8 @@ class DfaEdge;
 class DfaGraph : public V3Graph {
 public:
     // CONSTRUCTORS
-    DfaGraph() {}
-    virtual ~DfaGraph() override {}
+    DfaGraph() = default;
+    virtual ~DfaGraph() override = default;
     // METHODS
     /// Find start node
     DfaVertex* findStart();
@@ -93,7 +93,7 @@ public:
     virtual DfaVertex* clone(DfaGraph* graphp) {
         return new DfaVertex(graphp, start(), accepting());
     }
-    virtual ~DfaVertex() override {}
+    virtual ~DfaVertex() override = default;
     // ACCESSORS
     virtual string dotShape() const override { return (accepting() ? "doublecircle" : ""); }
     virtual string dotColor() const override {
@@ -128,7 +128,7 @@ public:
         : V3GraphEdge{graphp, fromp, top, copyfrom->weight()}
         , m_input{copyfrom->input()}
         , m_complement{copyfrom->complement()} {}
-    virtual ~DfaEdge() override {}
+    virtual ~DfaEdge() override = default;
     // METHODS
     virtual string dotColor() const override {
         return (na() ? "yellow" : epsilon() ? "green" : "black");

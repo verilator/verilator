@@ -130,7 +130,7 @@ private:
 
 public:
     V3OutFormatter(const string& filename, Language lang);
-    virtual ~V3OutFormatter() {}
+    virtual ~V3OutFormatter() = default;
     // ACCESSORS
     string filename() const { return m_filename; }
     int column() const { return m_column; }
@@ -198,7 +198,7 @@ public:
         : V3OutFile{filename, V3OutFormatter::LA_C} {
         resetPrivate();
     }
-    virtual ~V3OutCFile() override {}
+    virtual ~V3OutCFile() override = default;
     virtual void putsHeader() { puts("// Verilated -*- C++ -*-\n"); }
     virtual void putsIntTopInclude() { putsForceIncs(); }
     virtual void putsGuard();
@@ -222,7 +222,7 @@ class V3OutScFile : public V3OutCFile {
 public:
     explicit V3OutScFile(const string& filename)
         : V3OutCFile{filename} {}
-    virtual ~V3OutScFile() override {}
+    virtual ~V3OutScFile() override = default;
     virtual void putsHeader() override { puts("// Verilated -*- SystemC -*-\n"); }
     virtual void putsIntTopInclude() override {
         putsForceIncs();
@@ -235,7 +235,7 @@ class V3OutVFile : public V3OutFile {
 public:
     explicit V3OutVFile(const string& filename)
         : V3OutFile{filename, V3OutFormatter::LA_VERILOG} {}
-    virtual ~V3OutVFile() override {}
+    virtual ~V3OutVFile() override = default;
     virtual void putsHeader() { puts("// Verilated -*- Verilog -*-\n"); }
 };
 
@@ -245,7 +245,7 @@ public:
         : V3OutFile{filename, V3OutFormatter::LA_XML} {
         blockIndent(2);
     }
-    virtual ~V3OutXmlFile() override {}
+    virtual ~V3OutXmlFile() override = default;
     virtual void putsHeader() { puts("<?xml version=\"1.0\" ?>\n"); }
 };
 
@@ -253,7 +253,7 @@ class V3OutMkFile : public V3OutFile {
 public:
     explicit V3OutMkFile(const string& filename)
         : V3OutFile{filename, V3OutFormatter::LA_MK} {}
-    virtual ~V3OutMkFile() override {}
+    virtual ~V3OutMkFile() override = default;
     virtual void putsHeader() { puts("# Verilated -*- Makefile -*-\n"); }
     // No automatic indentation yet.
     void puts(const char* strg) { putsNoTracking(strg); }

@@ -186,7 +186,7 @@ public:
         stars();
         stages();
     }
-    ~StatsReport() {}
+    ~StatsReport() = default;
 };
 
 StatsReport::StatColl StatsReport::s_allStats;

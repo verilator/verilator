@@ -83,7 +83,7 @@ public:
     VDefineRef(const string& name, const string& params)
         : m_name{name}
         , m_params{params} {}
-    ~VDefineRef() {}
+    ~VDefineRef() = default;
 };
 
 //*************************************************************************
@@ -99,7 +99,7 @@ public:
     VPreIfEntry(bool on, bool everOn)
         : m_on{on}
         , m_everOn{everOn || on} {}  // Note everOn includes new state
-    ~VPreIfEntry() {}
+    ~VPreIfEntry() = default;
 };
 
 //*************************************************************************

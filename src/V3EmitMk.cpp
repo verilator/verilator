@@ -285,7 +285,7 @@ public:
         emitClassMake();
         emitOverallMake();
     }
-    virtual ~EmitMk() {}
+    virtual ~EmitMk() = default;
 };
 
 //######################################################################

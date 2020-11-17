@@ -85,7 +85,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LocalizeDehierVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~LocalizeDehierVisitor() override {}
+    virtual ~LocalizeDehierVisitor() override = default;
 };
 
 //######################################################################

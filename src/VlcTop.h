@@ -45,8 +45,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlcTop() {}
-    ~VlcTop() {}
+    VlcTop() = default;
+    ~VlcTop() = default;
 
     // ACCESSORS
     VlcTests& tests() { return m_tests; }

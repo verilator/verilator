@@ -51,8 +51,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlcOptions() {}
-    ~VlcOptions() {}
+    VlcOptions() = default;
+    ~VlcOptions() = default;
 
     // METHODS
     void parseOptsList(int argc, char** argv);

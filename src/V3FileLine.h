@@ -45,8 +45,8 @@ class FileLineSingleton {
     std::deque<string> m_names;  // filename text for each filenameno
     std::deque<V3LangCode> m_languages;  // language for each filenameno
     // CONSTRUCTORS
-    FileLineSingleton() {}
-    ~FileLineSingleton() {}
+    FileLineSingleton() = default;
+    ~FileLineSingleton() = default;
 
 protected:
     friend class FileLine;
@@ -73,7 +73,7 @@ public:
         static int s_id = 0;
         m_id = ++s_id;
     }
-    ~VFileContent() {}
+    ~VFileContent() = default;
     // METHODS
     void pushText(const string& text);  // Add arbitrary text (need not be line-by-line)
     string getLine(int lineno) const;
@@ -143,7 +143,7 @@ public:
     explicit FileLine(EmptySecret);
     FileLine* copyOrSameFileLine();
     static void deleteAllRemaining();
-    ~FileLine() {}
+    ~FileLine() = default;
 #ifdef VL_LEAK_CHECKS
     static void* operator new(size_t size);
     static void operator delete(void* obj, size_t size);

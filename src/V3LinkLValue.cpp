@@ -290,7 +290,7 @@ public:
         : m_setRefLvalue{start} {
         iterate(nodep);
     }
-    virtual ~LinkLValueVisitor() override {}
+    virtual ~LinkLValueVisitor() override = default;
 };
 
 //######################################################################

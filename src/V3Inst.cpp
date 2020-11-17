@@ -132,7 +132,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit InstVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~InstVisitor() override {}
+    virtual ~InstVisitor() override = default;
 };
 
 //######################################################################
@@ -178,13 +178,13 @@ public:
     }
 
     // CONSTRUCTORS
-    explicit InstDeModVarVisitor() {}
+    InstDeModVarVisitor() = default;
+    virtual ~InstDeModVarVisitor() override = default;
     void main(AstNodeModule* nodep) {
         UINFO(8, "  dmMODULE    " << nodep << endl);
         m_modVarNameMap.clear();
         iterate(nodep);
     }
-    virtual ~InstDeModVarVisitor() override {}
 };
 
 //######################################################################
@@ -466,7 +466,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit InstDeVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~InstDeVisitor() override {}
+    virtual ~InstDeVisitor() override = default;
 };
 
 //######################################################################
@@ -475,7 +475,7 @@ public:
 class InstStatic {
 private:
     VL_DEBUG_FUNC;  // Declare debug()
-    InstStatic() {}  // Static class
+    InstStatic() = default;  // Static class
 
     static AstNode* extendOrSel(FileLine* fl, AstNode* rhsp, AstNode* cmpWidthp) {
         if (cmpWidthp->width() > rhsp->width()) {

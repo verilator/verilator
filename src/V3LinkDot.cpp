@@ -1314,7 +1314,7 @@ public:
 
         iterate(rootp);
     }
-    virtual ~LinkDotFindVisitor() override {}
+    virtual ~LinkDotFindVisitor() override = default;
 };
 
 //======================================================================
@@ -1479,7 +1479,7 @@ public:
         UINFO(4, __FUNCTION__ << ": " << endl);
         iterate(rootp);
     }
-    virtual ~LinkDotParamVisitor() override {}
+    virtual ~LinkDotParamVisitor() override = default;
 };
 
 //======================================================================
@@ -1637,7 +1637,7 @@ public:
         UINFO(4, __FUNCTION__ << ": " << endl);
         iterate(rootp);
     }
-    virtual ~LinkDotScopeVisitor() override {}
+    virtual ~LinkDotScopeVisitor() override = default;
 };
 
 //======================================================================
@@ -1722,7 +1722,7 @@ public:
         m_statep = statep;
         iterate(nodep);
     }
-    virtual ~LinkDotIfaceVisitor() override {}
+    virtual ~LinkDotIfaceVisitor() override = default;
 };
 
 void LinkDotState::computeIfaceModSyms() {
@@ -1777,7 +1777,7 @@ private:
         bool m_dotErr;  // Error found in dotted resolution, ignore upwards
         string m_dotText;  // String of dotted names found in below parseref
         DotStates() { init(nullptr); }
-        ~DotStates() {}
+        ~DotStates() = default;
         void init(VSymEnt* curSymp) {
             m_dotPos = DP_NONE;
             m_dotSymp = curSymp;
@@ -2919,7 +2919,7 @@ public:
         UINFO(4, __FUNCTION__ << ": " << endl);
         iterate(rootp);
     }
-    virtual ~LinkDotResolveVisitor() override {}
+    virtual ~LinkDotResolveVisitor() override = default;
 };
 
 //######################################################################

@@ -296,7 +296,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit DescopeVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~DescopeVisitor() override {}
+    virtual ~DescopeVisitor() override = default;
 };
 
 //######################################################################

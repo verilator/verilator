@@ -160,7 +160,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    VerilatedSave() {}
+    VerilatedSave() = default;
     virtual ~VerilatedSave() override { close(); }
     // METHODS
     /// Open the file; call isOpen() to see if errors
@@ -180,7 +180,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    VerilatedRestore() {}
+    VerilatedRestore() = default;
     virtual ~VerilatedRestore() override { close(); }
 
     // METHODS

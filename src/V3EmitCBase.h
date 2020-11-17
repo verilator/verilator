@@ -106,8 +106,8 @@ public:
     }
 
     // CONSTRUCTORS
-    EmitCBaseVisitor() {}
-    virtual ~EmitCBaseVisitor() override {}
+    EmitCBaseVisitor() = default;
+    virtual ~EmitCBaseVisitor() override = default;
 };
 
 //######################################################################
@@ -126,7 +126,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit EmitCBaseCounterVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~EmitCBaseCounterVisitor() override {}
+    virtual ~EmitCBaseCounterVisitor() override = default;
     int count() const { return m_count; }
 };
 

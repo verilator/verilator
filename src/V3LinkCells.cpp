@@ -43,8 +43,8 @@
 
 class LinkCellsGraph : public V3Graph {
 public:
-    LinkCellsGraph() {}
-    virtual ~LinkCellsGraph() override {}
+    LinkCellsGraph() = default;
+    virtual ~LinkCellsGraph() override = default;
     virtual void loopsMessageCb(V3GraphVertex* vertexp) override;
 };
 
@@ -55,7 +55,7 @@ public:
     LinkCellsVertex(V3Graph* graphp, AstNodeModule* modp)
         : V3GraphVertex{graphp}
         , m_modp{modp} {}
-    virtual ~LinkCellsVertex() override {}
+    virtual ~LinkCellsVertex() override = default;
     AstNodeModule* modp() const { return m_modp; }
     virtual string name() const override { return modp()->name(); }
     virtual FileLine* fileline() const override { return modp()->fileline(); }
@@ -69,7 +69,7 @@ class LibraryVertex : public V3GraphVertex {
 public:
     explicit LibraryVertex(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
-    virtual ~LibraryVertex() override {}
+    virtual ~LibraryVertex() override = default;
     virtual string name() const override { return "*LIBRARY*"; }
 };
 
@@ -517,7 +517,7 @@ public:
         }
         iterate(nodep);
     }
-    virtual ~LinkCellsVisitor() override {}
+    virtual ~LinkCellsVisitor() override = default;
 };
 
 //######################################################################

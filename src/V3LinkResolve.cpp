@@ -517,7 +517,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LinkResolveVisitor(AstNetlist* rootp) { iterate(rootp); }
-    virtual ~LinkResolveVisitor() override {}
+    virtual ~LinkResolveVisitor() override = default;
 };
 
 //######################################################################
@@ -556,7 +556,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LinkBotupVisitor(AstNetlist* rootp) { iterate(rootp); }
-    virtual ~LinkBotupVisitor() override {}
+    virtual ~LinkBotupVisitor() override = default;
 };
 
 //######################################################################

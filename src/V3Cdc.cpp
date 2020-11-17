@@ -66,7 +66,7 @@ public:
         , m_srcDomainSet{false}
         , m_dstDomainSet{false}
         , m_asyncPath{false} {}
-    virtual ~CdcEitherVertex() override {}
+    virtual ~CdcEitherVertex() override = default;
     // ACCESSORS
     virtual FileLine* fileline() const override { return nodep()->fileline(); }
     AstScope* scopep() const { return m_scopep; }
@@ -92,7 +92,7 @@ public:
     CdcVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
         : CdcEitherVertex{graphp, scopep, varScp}
         , m_varScp{varScp} {}
-    virtual ~CdcVarVertex() override {}
+    virtual ~CdcVarVertex() override = default;
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
     virtual string name() const override { return (cvtToHex(m_varScp) + " " + varScp()->name()); }
@@ -117,7 +117,7 @@ public:
         srcDomainp(sensenodep);
         dstDomainp(sensenodep);
     }
-    virtual ~CdcLogicVertex() override {}
+    virtual ~CdcLogicVertex() override = default;
     // ACCESSORS
     virtual string name() const override {
         return (cvtToHex(nodep()) + "@" + scopep()->prettyName());
@@ -170,7 +170,7 @@ public:
         , m_prefix{prefix} {
         iterate(nodep);
     }
-    virtual ~CdcDumpVisitor() override {}
+    virtual ~CdcDumpVisitor() override = default;
 };
 
 //######################################################################
@@ -194,7 +194,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit CdcWidthVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~CdcWidthVisitor() override {}
+    virtual ~CdcWidthVisitor() override = default;
     // ACCESSORS
     int maxWidth() const {
         size_t width = 1;

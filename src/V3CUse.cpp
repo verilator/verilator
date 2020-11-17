@@ -68,7 +68,7 @@ public:
     // CONSTRUCTORS
     explicit CUseState(AstNodeModule* nodep)
         : m_modInsertp{nodep} {}
-    virtual ~CUseState() {}
+    virtual ~CUseState() = default;
     VL_UNCOPYABLE(CUseState);
 };
 
@@ -109,7 +109,7 @@ public:
         : m_stater(stater) {  // Need () or GCC 4.8 false warning
         iterate(nodep);
     }
-    virtual ~CUseDTypeVisitor() override {}
+    virtual ~CUseDTypeVisitor() override = default;
     VL_UNCOPYABLE(CUseDTypeVisitor);
 };
 
@@ -219,7 +219,7 @@ public:
         : m_state{nodep} {
         iterate(nodep);
     }
-    virtual ~CUseVisitor() override {}
+    virtual ~CUseVisitor() override = default;
     VL_UNCOPYABLE(CUseVisitor);
 };
 

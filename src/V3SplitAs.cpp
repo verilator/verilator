@@ -58,7 +58,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit SplitAsFindVisitor(AstAlways* nodep) { iterate(nodep); }
-    virtual ~SplitAsFindVisitor() override {}
+    virtual ~SplitAsFindVisitor() override = default;
     // METHODS
     AstVarScope* splitVscp() const { return m_splitVscp; }
 };
@@ -118,7 +118,7 @@ public:
         , m_modeMatch{modeMatch} {
         iterate(nodep);
     }
-    virtual ~SplitAsCleanVisitor() override {}
+    virtual ~SplitAsCleanVisitor() override = default;
 };
 
 //######################################################################

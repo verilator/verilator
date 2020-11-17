@@ -179,7 +179,7 @@ class WidthClearVisitor {
 public:
     // CONSTRUCTORS
     explicit WidthClearVisitor(AstNetlist* nodep) { clearWidthRecurse(nodep); }
-    virtual ~WidthClearVisitor() {}
+    virtual ~WidthClearVisitor() = default;
 };
 
 //######################################################################
@@ -5909,7 +5909,7 @@ public:
     AstNode* mainAcceptEdit(AstNode* nodep) {
         return userIterateSubtreeReturnEdits(nodep, WidthVP(SELF, BOTH).p());
     }
-    virtual ~WidthVisitor() override {}
+    virtual ~WidthVisitor() override = default;
 };
 
 //######################################################################

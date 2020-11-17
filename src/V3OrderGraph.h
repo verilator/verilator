@@ -112,8 +112,8 @@ inline bool operator==(OrderVEdgeType::en lhs, const OrderVEdgeType& rhs) {
 
 class OrderGraph : public V3Graph {
 public:
-    OrderGraph() {}
-    virtual ~OrderGraph() override {}
+    OrderGraph() = default;
+    virtual ~OrderGraph() override = default;
     // Methods
     virtual void loopsVertexCb(V3GraphVertex* vertexp) override;
 };
@@ -137,7 +137,7 @@ public:
         : V3GraphVertex{graphp}
         , m_scopep{scopep}
         , m_domainp{domainp} {}
-    virtual ~OrderEitherVertex() override {}
+    virtual ~OrderEitherVertex() override = default;
     virtual OrderEitherVertex* clone(V3Graph* graphp) const override = 0;
     // Methods
     virtual OrderVEdgeType type() const = 0;
@@ -160,7 +160,7 @@ public:
         : OrderEitherVertex{graphp, nullptr, domainp} {
         isFromInput(true);  // By definition
     }
-    virtual ~OrderInputsVertex() override {}
+    virtual ~OrderInputsVertex() override = default;
     virtual OrderInputsVertex* clone(V3Graph* graphp) const override {
         return new OrderInputsVertex(graphp, *this);
     }
@@ -183,7 +183,7 @@ public:
     OrderLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp, AstNode* nodep)
         : OrderEitherVertex{graphp, scopep, domainp}
         , m_nodep{nodep} {}
-    virtual ~OrderLogicVertex() override {}
+    virtual ~OrderLogicVertex() override = default;
     virtual OrderLogicVertex* clone(V3Graph* graphp) const override {
         return new OrderLogicVertex(graphp, *this);
     }
@@ -212,7 +212,7 @@ public:
     OrderVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
         : OrderEitherVertex{graphp, scopep, nullptr}
         , m_varScp{varScp} {}
-    virtual ~OrderVarVertex() override {}
+    virtual ~OrderVarVertex() override = default;
     virtual OrderVarVertex* clone(V3Graph* graphp) const override = 0;
     virtual OrderVEdgeType type() const override = 0;
     virtual FileLine* fileline() const override { return varScp()->fileline(); }
@@ -231,7 +231,7 @@ class OrderVarStdVertex : public OrderVarVertex {
 public:
     OrderVarStdVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
         : OrderVarVertex{graphp, scopep, varScp} {}
-    virtual ~OrderVarStdVertex() override {}
+    virtual ~OrderVarStdVertex() override = default;
     virtual OrderVarStdVertex* clone(V3Graph* graphp) const override {
         return new OrderVarStdVertex(graphp, *this);
     }
@@ -249,7 +249,7 @@ class OrderVarPreVertex : public OrderVarVertex {
 public:
     OrderVarPreVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
         : OrderVarVertex{graphp, scopep, varScp} {}
-    virtual ~OrderVarPreVertex() override {}
+    virtual ~OrderVarPreVertex() override = default;
     virtual OrderVarPreVertex* clone(V3Graph* graphp) const override {
         return new OrderVarPreVertex(graphp, *this);
     }
@@ -271,7 +271,7 @@ public:
         return new OrderVarPostVertex(graphp, *this);
     }
     virtual OrderVEdgeType type() const override { return OrderVEdgeType::VERTEX_VARPOST; }
-    virtual ~OrderVarPostVertex() override {}
+    virtual ~OrderVarPostVertex() override = default;
     virtual string name() const override {
         return (cvtToHex(varScp()) + " POST\\n " + varScp()->name());
     }
@@ -285,7 +285,7 @@ class OrderVarPordVertex : public OrderVarVertex {
 public:
     OrderVarPordVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
         : OrderVarVertex{graphp, scopep, varScp} {}
-    virtual ~OrderVarPordVertex() override {}
+    virtual ~OrderVarPordVertex() override = default;
     virtual OrderVarPordVertex* clone(V3Graph* graphp) const override {
         return new OrderVarPordVertex(graphp, *this);
     }
@@ -303,7 +303,7 @@ class OrderVarSettleVertex : public OrderVarVertex {
 public:
     OrderVarSettleVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
         : OrderVarVertex{graphp, scopep, varScp} {}
-    virtual ~OrderVarSettleVertex() override {}
+    virtual ~OrderVarSettleVertex() override = default;
     virtual OrderVarSettleVertex* clone(V3Graph* graphp) const override {
         return new OrderVarSettleVertex(graphp, *this);
     }
@@ -339,7 +339,7 @@ public:
         , m_logicp{logicp}
         , m_state{POM_WAIT}
         , m_domScopep{nullptr} {}
-    virtual ~OrderMoveVertex() override {}
+    virtual ~OrderMoveVertex() override = default;
     virtual OrderMoveVertex* clone(V3Graph* graphp) const override {
         v3fatalSrc("Unsupported");
         return nullptr;
@@ -409,7 +409,7 @@ public:
         , m_domainp{domainp} {
         UASSERT(!(logicp && varp), "MTaskMoveVertex: logicp and varp may not both be set!\n");
     }
-    virtual ~MTaskMoveVertex() override {}
+    virtual ~MTaskMoveVertex() override = default;
     virtual MTaskMoveVertex* clone(V3Graph* graphp) const override {
         v3fatalSrc("Unsupported");
         return nullptr;
@@ -454,7 +454,7 @@ public:
     OrderEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
               bool cutable = false)
         : V3GraphEdge{graphp, fromp, top, weight, cutable} {}
-    virtual ~OrderEdge() override {}
+    virtual ~OrderEdge() override = default;
     virtual OrderVEdgeType type() const { return OrderVEdgeType::EDGE_STD; }
     virtual OrderEdge* clone(V3Graph* graphp, V3GraphVertex* fromp,
                              V3GraphVertex* top) const override {
@@ -482,7 +482,7 @@ public:
     OrderComboCutEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : OrderEdge{graphp, fromp, top, WEIGHT_COMBO, CUTABLE} {}
     virtual OrderVEdgeType type() const override { return OrderVEdgeType::EDGE_COMBOCUT; }
-    virtual ~OrderComboCutEdge() override {}
+    virtual ~OrderComboCutEdge() override = default;
     virtual OrderComboCutEdge* clone(V3Graph* graphp, V3GraphVertex* fromp,
                                      V3GraphVertex* top) const override {
         return new OrderComboCutEdge(graphp, fromp, top, *this);
@@ -503,7 +503,7 @@ public:
     OrderPostCutEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : OrderEdge{graphp, fromp, top, WEIGHT_COMBO, CUTABLE} {}
     virtual OrderVEdgeType type() const override { return OrderVEdgeType::EDGE_POSTCUT; }
-    virtual ~OrderPostCutEdge() override {}
+    virtual ~OrderPostCutEdge() override = default;
     virtual OrderPostCutEdge* clone(V3Graph* graphp, V3GraphVertex* fromp,
                                     V3GraphVertex* top) const override {
         return new OrderPostCutEdge(graphp, fromp, top, *this);
@@ -528,7 +528,7 @@ public:
                                    V3GraphVertex* top) const override {
         return new OrderPreCutEdge(graphp, fromp, top, *this);
     }
-    virtual ~OrderPreCutEdge() override {}
+    virtual ~OrderPreCutEdge() override = default;
     virtual string dotColor() const override { return "khaki"; }
     virtual bool followComboConnected() const override { return false; }
 };

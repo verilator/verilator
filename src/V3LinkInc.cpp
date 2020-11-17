@@ -238,7 +238,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LinkIncVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~LinkIncVisitor() override {}
+    virtual ~LinkIncVisitor() override = default;
 };
 
 //######################################################################

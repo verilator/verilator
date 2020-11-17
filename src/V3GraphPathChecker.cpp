@@ -44,7 +44,7 @@ struct GraphPCNode {
     GraphPCNode() {
         for (unsigned int& w : m_cp) w = 0;
     }
-    ~GraphPCNode() {}
+    ~GraphPCNode() = default;
 };
 
 //######################################################################

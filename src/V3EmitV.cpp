@@ -667,7 +667,7 @@ public:
     explicit EmitVBaseVisitor(bool suppressUnknown, AstSenTree* domainp)
         : m_suppressUnknown{suppressUnknown}
         , m_sensesp{domainp} {}
-    virtual ~EmitVBaseVisitor() override {}
+    virtual ~EmitVBaseVisitor() override = default;
 };
 
 //######################################################################
@@ -693,7 +693,7 @@ public:
         m_suppressVarSemi = suppressVarSemi;
         iterate(nodep);
     }
-    virtual ~EmitVFileVisitor() override {}
+    virtual ~EmitVFileVisitor() override = default;
 };
 
 //######################################################################
@@ -715,7 +715,7 @@ public:
         , m_os(os) {  // Need () or GCC 4.8 false warning
         iterate(nodep);
     }
-    virtual ~EmitVStreamVisitor() override {}
+    virtual ~EmitVStreamVisitor() override = default;
 };
 
 //######################################################################
@@ -792,7 +792,7 @@ public:
         if (user3mark) { AstUser3InUse::check(); }
         iterate(nodep);
     }
-    virtual ~EmitVPrefixedVisitor() override {}
+    virtual ~EmitVPrefixedVisitor() override = default;
 };
 
 //######################################################################

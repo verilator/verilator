@@ -193,7 +193,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit CastVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~CastVisitor() override {}
+    virtual ~CastVisitor() override = default;
 };
 
 //######################################################################

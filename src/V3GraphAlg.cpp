@@ -123,7 +123,7 @@ public:
         , m_sumWeights{sumWeights} {
         main();
     }
-    ~GraphRemoveRedundant() {}
+    ~GraphRemoveRedundant() = default;
 };
 
 void V3Graph::removeRedundantEdges(V3EdgeFuncP edgeFuncp) {
@@ -200,7 +200,7 @@ public:
         : GraphAlg<>(graphp, edgeFuncp) {
         main();
     }
-    ~GraphAlgWeakly() {}
+    ~GraphAlgWeakly() = default;
 };
 
 void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgWeakly(this, edgeFuncp); }
@@ -288,7 +288,7 @@ public:
         m_currentDfs = 0;
         main();
     }
-    ~GraphAlgStrongly() {}
+    ~GraphAlgStrongly() = default;
 };
 
 void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgStrongly(this, edgeFuncp); }
@@ -339,7 +339,7 @@ public:
         : GraphAlg<>{graphp, edgeFuncp} {
         main();
     }
-    ~GraphAlgRank() {}
+    ~GraphAlgRank() = default;
 };
 
 void V3Graph::rank() { GraphAlgRank(this, &V3GraphEdge::followAlwaysTrue); }
@@ -393,7 +393,7 @@ public:
         m_done = false;
         main(vertexp);
     }
-    ~GraphAlgRLoops() {}
+    ~GraphAlgRLoops() = default;
 };
 
 void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
@@ -441,7 +441,7 @@ public:
         m_graphp->userClearEdges();
         (void)vertexIterateAll(vertexp);
     }
-    ~GraphAlgSubtrees() {}
+    ~GraphAlgSubtrees() = default;
 };
 
 //! Report the entire connected graph with a loop or loops

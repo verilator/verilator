@@ -313,7 +313,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ScopeVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ScopeVisitor() override {}
+    virtual ~ScopeVisitor() override = default;
 };
 
 //######################################################################
@@ -391,7 +391,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ScopeCleanupVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ScopeCleanupVisitor() override {}
+    virtual ~ScopeCleanupVisitor() override = default;
 };
 
 //######################################################################

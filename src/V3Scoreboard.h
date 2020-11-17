@@ -54,7 +54,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    SortByValueMap() {}
+    SortByValueMap() = default;
 
     class const_iterator {
         // TYPES
@@ -375,7 +375,7 @@ public:
     explicit V3Scoreboard(UserScoreFnp scoreFnp, bool slowAsserts)
         : m_scoreFnp{scoreFnp}
         , m_slowAsserts{slowAsserts} {}
-    ~V3Scoreboard() {}
+    ~V3Scoreboard() = default;
 
     // METHODS
 

@@ -879,7 +879,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ExpandVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ExpandVisitor() override {}
+    virtual ~ExpandVisitor() override = default;
 };
 
 //----------------------------------------------------------------------

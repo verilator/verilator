@@ -42,7 +42,7 @@ public:
     VlcPoint(const string& name, vluint64_t pointNum)
         : m_name{name}
         , m_pointNum{pointNum} {}
-    ~VlcPoint() {}
+    ~VlcPoint() = default;
     // ACCESSORS
     const string& name() const { return m_name; }
     vluint64_t pointNum() const { return m_pointNum; }
@@ -106,8 +106,8 @@ public:
     ByName::iterator end() { return m_nameMap.end(); }
 
     // CONSTRUCTORS
-    VlcPoints() {}
-    ~VlcPoints() {}
+    VlcPoints() = default;
+    ~VlcPoints() = default;
 
     // METHODS
     void dump() {

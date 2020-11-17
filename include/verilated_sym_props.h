@@ -43,7 +43,7 @@ class VerilatedRange {
 protected:
     friend class VerilatedVarProps;
     friend class VerilatedScope;
-    VerilatedRange() {}
+    VerilatedRange() = default;
     VerilatedRange(int left, int right)
         : m_left{left}
         , m_right{right} {}
@@ -53,7 +53,7 @@ protected:
     }
 
 public:
-    ~VerilatedRange() {}
+    ~VerilatedRange() = default;
     int left() const { return m_left; }
     int right() const { return m_right; }
     int low() const { return (m_left < m_right) ? m_left : m_right; }
@@ -136,7 +136,7 @@ public:
     }
 
 public:
-    ~VerilatedVarProps() {}
+    ~VerilatedVarProps() = default;
     // METHODS
     bool magicOk() const { return m_magic == MAGIC; }
     VerilatedVarType vltype() const { return m_vltype; }
@@ -199,7 +199,7 @@ public:
     VerilatedDpiOpenVar(const VerilatedVarProps* propsp, const void* datap)
         : m_propsp{propsp}
         , m_datap{const_cast<void*>(datap)} {}
-    ~VerilatedDpiOpenVar() {}
+    ~VerilatedDpiOpenVar() = default;
     // METHODS
     void* datap() const { return m_datap; }
     // METHODS - from VerilatedVarProps
@@ -241,7 +241,7 @@ protected:
         , m_isParam{isParam} {}
 
 public:
-    ~VerilatedVar() {}
+    ~VerilatedVar() = default;
     // ACCESSORS
     void* datap() const { return m_datap; }
     const VerilatedRange& range() const { return packed(); }  // Deprecated

@@ -77,7 +77,7 @@ class V3FileDependImp {
             m_stat.st_ctime = 0;
             m_stat.st_mtime = 0;
         }
-        ~DependFile() {}
+        ~DependFile() = default;
         const string& filename() const { return m_filename; }
         bool target() const { return m_target; }
         bool exists() const { return m_exists; }
@@ -971,7 +971,7 @@ public:
         passthru("vlTOPp");
         passthru("vlSymsp");
     }
-    ~VIdProtectImp() {}
+    ~VIdProtectImp() = default;
     // METHODS
     string passthru(const string& old) {
         if (!v3Global.opt.protectIds()) return old;

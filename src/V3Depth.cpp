@@ -155,7 +155,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit DepthVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~DepthVisitor() override {}
+    virtual ~DepthVisitor() override = default;
 };
 
 //######################################################################

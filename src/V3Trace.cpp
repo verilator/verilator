@@ -71,7 +71,7 @@ public:
         m_activityCode = code;
         m_slow = false;
     }
-    virtual ~TraceActivityVertex() override {}
+    virtual ~TraceActivityVertex() override = default;
     // ACCESSORS
     AstNode* insertp() const {
         if (!m_insertp) v3fatalSrc("Null insertp; probably called on a special always/slow.");
@@ -102,7 +102,7 @@ public:
     TraceCFuncVertex(V3Graph* graphp, AstCFunc* nodep)
         : V3GraphVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~TraceCFuncVertex() override {}
+    virtual ~TraceCFuncVertex() override = default;
     // ACCESSORS
     AstCFunc* nodep() const { return m_nodep; }
     virtual string name() const override { return nodep()->name(); }
@@ -119,7 +119,7 @@ public:
     TraceTraceVertex(V3Graph* graphp, AstTraceDecl* nodep)
         : V3GraphVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~TraceTraceVertex() override {}
+    virtual ~TraceTraceVertex() override = default;
     // ACCESSORS
     AstTraceDecl* nodep() const { return m_nodep; }
     virtual string name() const override { return nodep()->name(); }
@@ -139,7 +139,7 @@ public:
     TraceVarVertex(V3Graph* graphp, AstVarScope* nodep)
         : V3GraphVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~TraceVarVertex() override {}
+    virtual ~TraceVarVertex() override = default;
     // ACCESSORS
     AstVarScope* nodep() const { return m_nodep; }
     virtual string name() const override { return nodep()->name(); }

@@ -36,7 +36,7 @@ protected:
     GraphAlg(T_Graph* graphp, V3EdgeFuncP edgeFuncp)
         : m_graphp{graphp}
         , m_edgeFuncp{edgeFuncp} {}
-    ~GraphAlg() {}
+    ~GraphAlg() = default;
     // METHODS
     inline bool followEdge(V3GraphEdge* edgep) {
         return (edgep->weight() && (m_edgeFuncp)(edgep));

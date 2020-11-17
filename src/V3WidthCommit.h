@@ -55,8 +55,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    WidthRemoveVisitor() {}
-    virtual ~WidthRemoveVisitor() override {}
+    WidthRemoveVisitor() = default;
+    virtual ~WidthRemoveVisitor() override = default;
     AstNode* mainAcceptEdit(AstNode* nodep) { return iterateSubtreeReturnEdits(nodep); }
 };
 
@@ -171,7 +171,7 @@ public:
         // Don't want to repairCache, as all needed nodes have been added back in
         // a repair would prevent dead nodes from being detected
     }
-    virtual ~WidthCommitVisitor() override {}
+    virtual ~WidthCommitVisitor() override = default;
 };
 
 //######################################################################

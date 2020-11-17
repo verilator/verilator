@@ -282,7 +282,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LinkJumpVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~LinkJumpVisitor() override {}
+    virtual ~LinkJumpVisitor() override = default;
 };
 
 //######################################################################

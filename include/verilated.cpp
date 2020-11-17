@@ -2202,9 +2202,6 @@ void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix,
 //===========================================================================
 // Verilated:: Methods
 
-Verilated::ThreadLocal::ThreadLocal() {}
-Verilated::ThreadLocal::~ThreadLocal() {}
-
 void Verilated::debug(int level) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);
     s_s.s_debug = level;
@@ -2647,8 +2644,6 @@ void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const 
 
 //======================================================================
 // VerilatedScope:: Methods
-
-VerilatedScope::VerilatedScope() {}
 
 VerilatedScope::~VerilatedScope() {
     // Memory cleanup - not called during normal operation

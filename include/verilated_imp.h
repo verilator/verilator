@@ -64,7 +64,11 @@ public:
     VerilatedMsg(const std::function<void()>& cb)
         : m_mtaskId{Verilated::mtaskId()}
         , m_cb{cb} {}
-    ~VerilatedMsg() {}
+    ~VerilatedMsg() = default;
+    VerilatedMsg(const VerilatedMsg&) = default;
+    VerilatedMsg(VerilatedMsg&&) = default;
+    VerilatedMsg& operator=(const VerilatedMsg&) = default;
+    VerilatedMsg& operator=(VerilatedMsg&&) = default;
     // METHODS
     vluint32_t mtaskId() const { return m_mtaskId; }
     /// Execute the lambda function
@@ -87,7 +91,7 @@ public:
         : m_depth{0} {
         assert(atomic_is_lock_free(&m_depth));
     }
-    ~VerilatedEvalMsgQueue() {}
+    ~VerilatedEvalMsgQueue() = default;
 
 private:
     VL_UNCOPYABLE(VerilatedEvalMsgQueue);
@@ -207,8 +211,8 @@ protected:
         int m_timeFormatPrecision = 0;  // $timeformat number of decimal places
         int m_timeFormatWidth = 20;  // $timeformat character width
         enum { UNITS_NONE = 99 };  // Default based on precision
-        Serialized() {}
-        ~Serialized() {}
+        Serialized() = default;
+        ~Serialized() = default;
     } m_ser;
 
     VerilatedMutex m_sergMutex;  ///< Protect m_ser
@@ -275,8 +279,8 @@ protected:
 
 public:  // But only for verilated*.cpp
     // CONSTRUCTORS
-    VerilatedImp() {}
-    ~VerilatedImp() {}
+    VerilatedImp() = default;
+    ~VerilatedImp() = default;
     static void setup();
     static void teardown();
 

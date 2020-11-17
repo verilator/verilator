@@ -86,7 +86,7 @@ private:
     }
 
 public:
-    CheckMergeableVisitor() {}
+    CheckMergeableVisitor() = default;
 
     // Return false if this node should not be merged at all because:
     // - It contains an impure expression

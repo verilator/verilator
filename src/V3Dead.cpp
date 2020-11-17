@@ -63,7 +63,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit DeadModVisitor(AstNodeModule* nodep) { iterate(nodep); }
-    virtual ~DeadModVisitor() override {}
+    virtual ~DeadModVisitor() override = default;
 };
 
 //######################################################################
@@ -461,7 +461,7 @@ public:
         // We may have removed some datatypes, cleanup
         nodep->typeTablep()->repairCache();
     }
-    virtual ~DeadVisitor() override {}
+    virtual ~DeadVisitor() override = default;
 };
 
 //######################################################################
