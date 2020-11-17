@@ -38,12 +38,13 @@ int main(int argc, char* argv[]) {
     topp->eval();
     check(topp->y, 0x3c00000000ULL);
 
-    topp->final();
     if (!fail) {
         VL_PRINTF("*-* All Finished *-*\n");
         topp->final();
     } else {
         vl_fatal(__FILE__, __LINE__, "top", "Unexpected results\n");
     }
+
+    VL_DO_DANGLING(delete topp, topp);
     return 0;
 }

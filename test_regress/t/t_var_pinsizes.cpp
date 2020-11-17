@@ -15,6 +15,7 @@ int main() {
 
     VL_PRINTF("*-* All Finished *-*\n");
     tb->final();
+    VL_DO_DANGLING(delete tb, tb);
     return 0;
 }
 
@@ -23,5 +24,6 @@ int sc_main(int argc, char* argv[]) {
 
     VL_PRINTF("*-* All Finished *-*\n");
     tb->final();
+    VL_DO_DANGLING(delete tb, tb);
     return 0;
 }

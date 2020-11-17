@@ -50,4 +50,7 @@ int main(int argc, char* argv[]) {
     }
     topp->check = 1;
     clockit(0, 0);
+
+    topp->final();
+    VL_DO_DANGLING(delete topp, topp);
 }
