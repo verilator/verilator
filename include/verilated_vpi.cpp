@@ -475,16 +475,21 @@ public:
     static bool callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE {
         VpioCbList& cbObjList = s_s.m_cbObjLists[reason];
         bool called = false;
-        const auto end = cbObjList.end();  // prevent looping over newly added elements
-        for (auto it = cbObjList.begin(); it != end;) {
+        if (cbObjList.empty()) return called;
+        const auto last = std::prev(cbObjList.end());  // prevent looping over newly added elements
+        for (auto it = cbObjList.begin(); true;) {
+            // cbReasonRemove sets to nullptr, so we know on removal the old end() will still exist
+            bool was_last = it == last;
             if (VL_UNLIKELY(!*it)) {  // Deleted earlier, cleanup
                 it = cbObjList.erase(it);
+                if (was_last) break;
                 continue;
             }
             VerilatedVpioCb* vop = *it++;
             VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: reason_callback %d %p\n", reason, vop););
             (vop->cb_rtnp())(vop->cb_datap());
             called = true;
+            if (was_last) break;
         }
         return called;
     }
@@ -494,10 +499,14 @@ public:
         bool called = false;
         typedef std::set<VerilatedVpioVar*> VpioVarSet;
         VpioVarSet update;  // set of objects to update after callbacks
-        const auto end = cbObjList.end();  // prevent looping over newly added elements
-        for (auto it = cbObjList.begin(); it != end;) {
+        if (cbObjList.empty()) return called;
+        const auto last = std::prev(cbObjList.end());  // prevent looping over newly added elements
+        for (auto it = cbObjList.begin(); true;) {
+            // cbReasonRemove sets to nullptr, so we know on removal the old end() will still exist
+            bool was_last = it == last;
             if (VL_UNLIKELY(!*it)) {  // Deleted earlier, cleanup
                 it = cbObjList.erase(it);
+                if (was_last) break;
                 continue;
             }
             VerilatedVpioCb* vop = *it++;
@@ -516,6 +525,7 @@ public:
                     called = true;
                 }
             }
+            if (was_last) break;
         }
         for (const auto& ip : update) { memcpy(ip->prevDatap(), ip->varDatap(), ip->entSize()); }
         return called;
