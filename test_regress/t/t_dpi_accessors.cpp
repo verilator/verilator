@@ -673,6 +673,7 @@ int main() {
 
     // Tidy up
     dut->final();
+    VL_DO_DANGLING(delete dut, dut);
     cout << "*-* All Finished *-*" << endl;
 }
 

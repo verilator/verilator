@@ -27,6 +27,7 @@ int main(int argc, char* argv[]) {
     Verilated::debug(0);
 
     topp->eval();
+    VL_DO_DANGLING(delete topp, topp);
     return 1;
 }
 int dpii_task() {

@@ -161,6 +161,8 @@ int main(int argc, char** argv, char** env) {
 
     tfp->close();
     top->final();
+    VL_DO_DANGLING(delete top, top);
+
     VL_PRINTF("*-* All Finished *-*\n");
 
     return 0;

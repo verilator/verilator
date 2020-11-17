@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
     if (!gotit) { vl_fatal(__FILE__, __LINE__, "dut", "Never got call to myfunction"); }
 
     topp->final();
+    VL_DO_DANGLING(delete topp, topp);
 
     return 0;
 }

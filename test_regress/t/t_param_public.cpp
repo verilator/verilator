@@ -26,4 +26,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 10; i++) {  //
         topp->eval();
     }
+
+    topp->final();
+    VL_DO_DANGLING(delete topp, topp);
 }

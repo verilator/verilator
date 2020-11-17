@@ -78,6 +78,9 @@ int main()
         for (int j = 0; j < 5; j++) check("o345", READ(o345[i][j]), i * 8 + j);
     }
 
+    tb->final();
+    VL_DO_DANGLING(delete tb, tb);
+
     if (pass) {
         VL_PRINTF("*-* All Finished *-*\n");
     } else {
