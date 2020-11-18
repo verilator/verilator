@@ -455,7 +455,7 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     return arg;
 }
 
-class dpiTypeDispatcher {
+class dpiTypesToStringConverter {
 public:
     virtual string openArray(const AstVar*) const { return "const svOpenArrayHandle"; }
     virtual string bitLogicVector(const AstVar* varp, bool isBit) const {
@@ -469,7 +469,7 @@ public:
         type += varp->basicp()->keyword().dpiType();
         return type;
     }
-    string dispatch(const AstVar* varp) const {
+    string convert(const AstVar* varp) const {
         if (varp->isDpiOpenArray()) {
             return openArray(varp);
         } else if (!varp->basicp()) {
@@ -482,29 +482,34 @@ public:
     }
 };
 
-string dpiArgTypeToStr(const AstVar* varp) {
-    class dispatcher : public dpiTypeDispatcher {
-        virtual string bitLogicVector(const AstVar* varp, bool isBit) const override {
-            return string(varp->isReadOnly() ? "const " : "")
-                   + dpiTypeDispatcher::bitLogicVector(varp, isBit) + '*';
-        }
-        virtual string primitive(const AstVar* varp) const override {
-            string type = dpiTypeDispatcher::primitive(varp);
-            if (varp->isWritable() || VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                if (!varp->isWritable() && varp->basicp()->keyword() != AstBasicDTypeKwd::STRING)
-                    type = "const " + type;
-                type += "*";
+string AstVar::dpiArgType(bool named, bool forReturn) const {
+    if (forReturn) {
+        return dpiTypesToStringConverter{}.convert(this);
+    } else {
+        class converter : public dpiTypesToStringConverter {
+            virtual string bitLogicVector(const AstVar* varp, bool isBit) const override {
+                return string(varp->isReadOnly() ? "const " : "")
+                       + dpiTypesToStringConverter::bitLogicVector(varp, isBit) + '*';
             }
-            return type;
-        }
-    };
-    return dispatcher{}.dispatch(varp);
+            virtual string primitive(const AstVar* varp) const override {
+                string type = dpiTypesToStringConverter::primitive(varp);
+                if (varp->isWritable() || VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
+                    if (!varp->isWritable()
+                        && varp->basicp()->keyword() != AstBasicDTypeKwd::STRING)
+                        type = "const " + type;
+                    type += "*";
+                }
+                return type;
+            }
+        };
+        string arg = converter{}.convert(this);
+        if (named) arg += " " + name();
+        return arg;
+    }
 }
 
-string dpiReturnTypeToStr(const AstVar* varp) { return dpiTypeDispatcher{}.dispatch(varp); }
-
-string dpiTmpVarTypeToStr(const AstVar* varp, const string& name) {
-    class dispatcher : public dpiTypeDispatcher {
+string AstVar::dpiTmpVarType(const string& varName) const {
+    class converter : public dpiTypesToStringConverter {
         string m_name;
         string arraySuffix(const AstVar* varp, size_t n) const {
             if (AstUnpackArrayDType* unpackp
@@ -520,15 +525,16 @@ string dpiTmpVarTypeToStr(const AstVar* varp, const string& name) {
             }
         }
         virtual string openArray(const AstVar* varp) const override {
-            return dpiTypeDispatcher::openArray(varp) + ' ' + m_name + arraySuffix(varp, 0);
+            return dpiTypesToStringConverter::openArray(varp) + ' ' + m_name
+                   + arraySuffix(varp, 0);
         }
         virtual string bitLogicVector(const AstVar* varp, bool isBit) const override {
-            string type = dpiTypeDispatcher::bitLogicVector(varp, isBit);
+            string type = dpiTypesToStringConverter::bitLogicVector(varp, isBit);
             type += ' ' + m_name + arraySuffix(varp, varp->widthWords());
             return type;
         }
         virtual string primitive(const AstVar* varp) const override {
-            string type = dpiTypeDispatcher::primitive(varp);
+            string type = dpiTypesToStringConverter::primitive(varp);
             if (varp->isWritable() || VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 if (!varp->isWritable() && varp->basicp()->keyword() == AstBasicDTypeKwd::CHANDLE)
                     type = "const " + type;
@@ -538,20 +544,10 @@ string dpiTmpVarTypeToStr(const AstVar* varp, const string& name) {
         }
 
     public:
-        explicit dispatcher(const string& name)
+        explicit converter(const string& name)
             : m_name(name) {}
     };
-    return dispatcher{name}.dispatch(varp);
-}
-
-string AstVar::dpiArgType(bool named, bool forReturn) const {
-    string arg = forReturn ? dpiReturnTypeToStr(this) : dpiArgTypeToStr(this);
-    if (!forReturn && named) arg += " " + name();
-    return arg;
-}
-
-string AstVar::dpiTmpVarType(const string& varName) const {
-    return dpiTmpVarTypeToStr(this, varName);
+    return converter{varName}.convert(this);
 }
 
 string AstVar::scType() const {
