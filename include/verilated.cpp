@@ -294,7 +294,7 @@ vluint64_t vl_rand64() VL_MT_SAFE {
     if (VL_UNLIKELY(!t_seeded)) {
         t_seeded = true;
         {
-            const VerilatedLockGuard lock(s_mutex);
+            const VerilatedLockGuard lock(s_mutex);  // Otherwise vl_sys_rand32 is unsafe
             if (Verilated::randSeed() != 0) {
                 t_state[0] = ((static_cast<vluint64_t>(Verilated::randSeed()) << 32)
                               ^ (static_cast<vluint64_t>(Verilated::randSeed())));
