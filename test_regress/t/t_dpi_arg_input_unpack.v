@@ -570,7 +570,7 @@ module t;
 `endif
 
    //======================================================================
-   // Invoke all functions 3 times (they have side effects)
+   // Invoke all imported functions
    //======================================================================
 
    import "DPI-C" context function void check_exports();

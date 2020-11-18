@@ -89,7 +89,7 @@ void set_uint(svBitVecVal* v0, sv_longint_unsigned_t val, int bitwidth) {
     }
 }
 
-template <typename T> bool compare(T act, T exp) {
+template <typename T> bool compare(const T& act, const T& exp) {
     if (exp == act) {
         if (VERBOSE_MESSAGE) { std::cout << "OK Exp:" << exp << " actual:" << act << std::endl; }
         return true;

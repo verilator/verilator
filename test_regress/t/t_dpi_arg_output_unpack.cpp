@@ -153,7 +153,7 @@ void set_3d(svBitVecVal* v, int bitwidth) {
     set_uint(v + ((3 * 3 + 0) * 2 + 0) * unit, 51, bitwidth);
 }
 
-template <typename T> bool compare(T act, T exp) {
+template <typename T> bool compare(const T& act, const T& exp) {
     if (exp == act) {
         if (VERBOSE_MESSAGE) { std::cout << "OK Exp:" << exp << " actual:" << act << std::endl; }
         return true;

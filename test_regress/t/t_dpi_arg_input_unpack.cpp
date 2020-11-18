@@ -75,7 +75,7 @@ const bool VERBOSE_MESSAGE = false;
         abort(); \
     } while (0)
 
-template <typename T> bool compare(T act, T exp) {
+template <typename T> bool compare(const T& act, const T& exp) {
     if (exp == act) {
         if (VERBOSE_MESSAGE) { std::cout << "OK Exp:" << exp << " actual:" << act << std::endl; }
         return true;
@@ -677,11 +677,6 @@ void check_exports() {
     {
         std::vector<char> buf;
         buf.resize(4 * 3 * 2 * 16, '\0');
-        const char* string_array[4][3][2];
-        for (int i = 0; i < 4; ++i)
-            for (int j = 0; j < 3; ++j)
-                for (int k = 0; k < 2; ++k)
-                    string_array[i][j][k] = buf.data() + ((i * 3 + j) * 2 + k) * 16;
         buf[((3 * 3 + 2) * 2 + 1) * 16 + 0] = '4';
         buf[((3 * 3 + 2) * 2 + 1) * 16 + 1] = '2';
         buf[((2 * 3 + 1) * 2 + 0) * 16 + 0] = '4';
@@ -702,6 +697,11 @@ void check_exports() {
         buf[((2 * 3 + 0) * 2 + 0) * 16 + 1] = '0';
         buf[((3 * 3 + 0) * 2 + 0) * 16 + 0] = '5';
         buf[((3 * 3 + 0) * 2 + 0) * 16 + 1] = '1';
+        const char* string_array[4][3][2];
+        for (int i = 0; i < 4; ++i)
+            for (int j = 0; j < 3; ++j)
+                for (int k = 0; k < 2; ++k)
+                    string_array[i][j][k] = buf.data() + ((i * 3 + j) * 2 + k) * 16;
         e_string_0d(string_array[3][2][1]);
         e_string_1d(&string_array[2][1][0]);
         e_string_2d(&string_array[1][0][0]);
