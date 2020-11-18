@@ -4186,6 +4186,13 @@ private:
             nodep->didWidth(true);
             return;
         }
+        if (nodep->classMethod() && nodep->name() == "rand_mode") {
+            nodep->v3error("The 'rand_mode' method is built-in and cannot be overridden"
+                           " (IEEE 1800-2017 18.8)");
+        } else if (nodep->classMethod() && nodep->name() == "constraint_mode") {
+            nodep->v3error("The 'constraint_mode' method is built-in and cannot be overridden"
+                           " (IEEE 1800-2017 18.9)");
+        }
         // Function hasn't been widthed, so make it so.
         // Would use user1 etc, but V3Width called from too many places to spend a user
         nodep->doingWidth(true);

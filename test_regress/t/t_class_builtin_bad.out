@@ -1,0 +1,9 @@
+%Error: t/t_class_builtin_bad.v:8:17: The 'rand_mode' method is built-in and cannot be overridden (IEEE 1800-2017 18.8)
+                                    : ... In instance t
+    8 |    function int rand_mode(bit onoff);
+      |                 ^~~~~~~~~
+%Error: t/t_class_builtin_bad.v:11:17: The 'constraint_mode' method is built-in and cannot be overridden (IEEE 1800-2017 18.9)
+                                     : ... In instance t
+   11 |    function int constraint_mode(bit onoff);
+      |                 ^~~~~~~~~~~~~~~
+%Error: Exiting due to
