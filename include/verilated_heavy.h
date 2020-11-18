@@ -783,6 +783,7 @@ inline std::string VL_CVT_PACK_STR_NQ(QData lhs) VL_PURE {
     return VL_CVT_PACK_STR_NW(VL_WQ_WORDS_E, lw);
 }
 inline std::string VL_CVT_PACK_STR_NN(const std::string& lhs) VL_PURE { return lhs; }
+inline std::string& VL_CVT_PACK_STR_NN(std::string& lhs) VL_PURE { return lhs; }
 inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
     WData lw[VL_WQ_WORDS_E];
     VL_SET_WI(lw, lhs);
