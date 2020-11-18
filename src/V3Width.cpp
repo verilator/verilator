@@ -198,8 +198,7 @@ private:
     // STATE
     WidthVP* m_vup = nullptr;  // Current node state
     bool m_paramsOnly;  // Computing parameter value; limit operation
-    AstRange* m_cellRangep
-        = nullptr;  // Range for arrayed instantiations, nullptr for normal instantiations
+    AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
     AstLambdaArgRef* m_lambdaArgRefp = nullptr;  // Argument to above lambda
@@ -4052,8 +4051,8 @@ private:
             if (conDTypep == pinDTypep  // If match, we're golden
                 || similarDTypeRecurse(conDTypep, pinDTypep)) {
                 userIterateAndNext(nodep->exprp(), WidthVP(subDTypep, FINAL).p());
-            } else if (m_cellRangep) {
-                int numInsts = m_cellRangep->elementsConst();
+            } else if (m_cellp->rangep()) {
+                int numInsts = m_cellp->rangep()->elementsConst();
                 if (conwidth == pinwidth) {
                     // Arrayed instants: widths match so connect to each instance
                     subDTypep = conDTypep;  // = same expr dtype
@@ -4069,7 +4068,7 @@ private:
                                    << " requires " << pinwidth << " or " << pinwidth * numInsts
                                    << " bits, but connection's "
                                    << nodep->exprp()->prettyTypeName() << " generates " << conwidth
-                                   << " bits.");
+                                   << " bits. (IEEE 1800-2017 23.3.3)");
                     subDTypep = conDTypep;  // = same expr dtype
                 }
                 userIterateAndNext(nodep->exprp(), WidthVP(subDTypep, FINAL).p());
@@ -4138,6 +4137,8 @@ private:
         // if (debug()) nodep->dumpTree(cout, "-  PinOut: ");
     }
     virtual void visit(AstCell* nodep) override {
+        VL_RESTORER(m_cellp);
+        m_cellp = nodep;
         if (!m_paramsOnly) {
             if (VN_IS(nodep->modp(), NotFoundModule)) {
                 // We've resolved parameters and hit a module that we couldn't resolve.  It's
@@ -4147,14 +4148,10 @@ private:
                                                   << nodep->modName() << "'");
                 v3Global.opt.filePathLookedMsg(nodep->modNameFileline(), nodep->modName());
             }
-            if (nodep->rangep()) {
-                m_cellRangep = nodep->rangep();
-                userIterateAndNext(nodep->rangep(), WidthVP(SELF, BOTH).p());
-            }
+            if (nodep->rangep()) userIterateAndNext(nodep->rangep(), WidthVP(SELF, BOTH).p());
             userIterateAndNext(nodep->pinsp(), nullptr);
         }
         userIterateAndNext(nodep->paramsp(), nullptr);
-        m_cellRangep = nullptr;
     }
     virtual void visit(AstGatePin* nodep) override {
         if (m_vup->prelim()) {

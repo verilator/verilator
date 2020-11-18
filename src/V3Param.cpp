@@ -532,7 +532,7 @@ private:
         }
         return newmodp;
     }
-    void visitCell(AstCell* nodep, const string& hierName);
+    void visitCellDeparam(AstCell* nodep, const string& hierName);
     void visitModules() {
         // Loop on all modules left to process
         // Hitting a cell adds to the appropriate level of this level-sorted list,
@@ -558,7 +558,7 @@ private:
                             if (string* genHierNamep = (string*)cellp->user5p()) {
                                 fullName += *genHierNamep;
                             }
-                            visitCell(cellp, fullName);
+                            visitCellDeparam(cellp, fullName);
                         }
                     }
                 }
@@ -887,7 +887,7 @@ public:
 //----------------------------------------------------------------------
 // VISITs
 
-void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
+void ParamVisitor::visitCellDeparam(AstCell* nodep, const string& hierName) {
     // Cell: Check for parameters in the instantiation.
     iterateChildren(nodep);
     UASSERT_OBJ(nodep->modp(), nodep, "Not linked?");
