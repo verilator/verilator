@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3LinkLValue {
+class V3LinkLValue final {
 public:
     static void linkLValue(AstNetlist* nodep);
     static void linkLValueSet(AstNode* nodep);

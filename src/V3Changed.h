@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Changed {
+class V3Changed final {
 public:
     static void changedAll(AstNetlist* nodep);
 };

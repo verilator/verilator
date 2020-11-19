@@ -29,7 +29,7 @@
 //********************************************************************
 // VlcTest - a single testrun i.e. a file containing coverage data
 
-class VlcTest {
+class VlcTest final {
 private:
     // MEMBERS
     string m_name;  //< Name of the test
@@ -84,7 +84,7 @@ public:
 //********************************************************************
 // VlcTests - Container of all tests
 
-class VlcTests {
+class VlcTests final {
 public:
     // TYPES
     typedef std::vector<VlcTest*> ByName;

@@ -28,7 +28,7 @@
 //######################################################################
 // Emit statements
 
-class CMakeEmitter {
+class CMakeEmitter final {
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

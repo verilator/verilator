@@ -38,7 +38,7 @@
 
 //######################################################################
 
-class ChangedState {
+class ChangedState final {
 public:
     // STATE
     AstNodeModule* m_topModp = nullptr;  // Top module
@@ -94,7 +94,7 @@ public:
 //######################################################################
 // Utility visitor to find elements to be compared
 
-class ChangedInsertVisitor : public AstNVisitor {
+class ChangedInsertVisitor final : public AstNVisitor {
 private:
     // STATE
     ChangedState* m_statep;  // Shared state across visitors
@@ -214,7 +214,7 @@ public:
 //######################################################################
 // Changed state, as a visitor of each AstNode
 
-class ChangedVisitor : public AstNVisitor {
+class ChangedVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Entire netlist:

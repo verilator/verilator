@@ -50,7 +50,7 @@
 //######################################################################
 // V3 Internal state
 
-class V3OptionsImp {
+class V3OptionsImp final {
 public:
     // TYPES
     typedef std::map<const string, std::set<string>> DirMap;  // Directory listing

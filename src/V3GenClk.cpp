@@ -29,7 +29,7 @@
 //######################################################################
 // GenClk state, as a visitor of each AstNode
 
-class GenClkBaseVisitor : public AstNVisitor {
+class GenClkBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 protected:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -37,7 +37,7 @@ protected:
 //######################################################################
 // GenClk Read
 
-class GenClkRenameVisitor : public GenClkBaseVisitor {
+class GenClkRenameVisitor final : public GenClkBaseVisitor {
 private:
     // NODE STATE
     // Cleared on top scope
@@ -127,7 +127,7 @@ public:
 //######################################################################
 // GenClk Read
 
-class GenClkReadVisitor : public GenClkBaseVisitor {
+class GenClkReadVisitor final : public GenClkBaseVisitor {
 private:
     // NODE STATE
     // Cleared on top scope

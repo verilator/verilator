@@ -95,7 +95,7 @@
 //######################################################################
 // Support classes
 
-class SplitNodeVertex : public V3GraphVertex {
+class SplitNodeVertex VL_NOT_FINAL : public V3GraphVertex {
     AstNode* m_nodep;
 
 protected:
@@ -115,7 +115,7 @@ public:
     virtual AstNode* nodep() const { return m_nodep; }
 };
 
-class SplitPliVertex : public SplitNodeVertex {
+class SplitPliVertex final : public SplitNodeVertex {
 public:
     explicit SplitPliVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
@@ -124,7 +124,7 @@ public:
     virtual string dotColor() const override { return "green"; }
 };
 
-class SplitLogicVertex : public SplitNodeVertex {
+class SplitLogicVertex final : public SplitNodeVertex {
 public:
     SplitLogicVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
@@ -132,7 +132,7 @@ public:
     virtual string dotColor() const override { return "yellow"; }
 };
 
-class SplitVarStdVertex : public SplitNodeVertex {
+class SplitVarStdVertex final : public SplitNodeVertex {
 public:
     SplitVarStdVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
@@ -140,7 +140,7 @@ public:
     virtual string dotColor() const override { return "skyblue"; }
 };
 
-class SplitVarPostVertex : public SplitNodeVertex {
+class SplitVarPostVertex final : public SplitNodeVertex {
 public:
     SplitVarPostVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
@@ -152,7 +152,7 @@ public:
 //######################################################################
 // Edge types
 
-class SplitEdge : public V3GraphEdge {
+class SplitEdge VL_NOT_FINAL : public V3GraphEdge {
     uint32_t m_ignoreInStep = 0;  // Step number that if set to, causes this edge to be ignored
     static uint32_t s_stepNum;  // Global step number
 protected:
@@ -185,7 +185,7 @@ public:
 };
 uint32_t SplitEdge::s_stepNum = 0;
 
-class SplitPostEdge : public SplitEdge {
+class SplitPostEdge final : public SplitEdge {
 public:
     SplitPostEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL} {}
@@ -194,7 +194,7 @@ public:
     virtual string dotColor() const override { return "khaki"; }
 };
 
-class SplitLVEdge : public SplitEdge {
+class SplitLVEdge final : public SplitEdge {
 public:
     SplitLVEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL} {}
@@ -203,7 +203,7 @@ public:
     virtual string dotColor() const override { return "yellowGreen"; }
 };
 
-class SplitRVEdge : public SplitEdge {
+class SplitRVEdge final : public SplitEdge {
 public:
     SplitRVEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL} {}
@@ -235,7 +235,7 @@ public:
 //######################################################################
 // Split class functions
 
-class SplitReorderBaseVisitor : public AstNVisitor {
+class SplitReorderBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 private:
     // NODE STATE
     // AstVarScope::user1p      -> Var SplitNodeVertex* for usage var, 0=not set yet
@@ -439,7 +439,7 @@ private:
     VL_UNCOPYABLE(SplitReorderBaseVisitor);
 };
 
-class ReorderVisitor : public SplitReorderBaseVisitor {
+class ReorderVisitor final : public SplitReorderBaseVisitor {
     // CONSTRUCTORS
 public:
     explicit ReorderVisitor(AstNetlist* nodep) { iterate(nodep); }
@@ -622,7 +622,7 @@ private:
 typedef std::unordered_set<uint32_t> ColorSet;
 typedef std::vector<AstAlways*> AlwaysVec;
 
-class IfColorVisitor : public AstNVisitor {
+class IfColorVisitor final : public AstNVisitor {
     // MEMBERS
     ColorSet m_colors;  // All colors in the original always block
 
@@ -680,7 +680,7 @@ private:
     VL_UNCOPYABLE(IfColorVisitor);
 };
 
-class EmitSplitVisitor : public AstNVisitor {
+class EmitSplitVisitor final : public AstNVisitor {
     // MEMBERS
     AstAlways* m_origAlwaysp;  // Block that *this will split
     const IfColorVisitor* m_ifColorp;  // Digest of results of prior coloring
@@ -793,7 +793,7 @@ private:
     VL_UNCOPYABLE(EmitSplitVisitor);
 };
 
-class RemovePlaceholdersVisitor : public AstNVisitor {
+class RemovePlaceholdersVisitor final : public AstNVisitor {
     typedef std::unordered_set<AstNode*> NodeSet;
     NodeSet m_removeSet;  // placeholders to be removed
 public:
@@ -812,7 +812,7 @@ private:
     VL_UNCOPYABLE(RemovePlaceholdersVisitor);
 };
 
-class SplitVisitor : public SplitReorderBaseVisitor {
+class SplitVisitor final : public SplitReorderBaseVisitor {
 private:
     // Keys are original always blocks pending delete,
     // values are newly split always blocks pending insertion

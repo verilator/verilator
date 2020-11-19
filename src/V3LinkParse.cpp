@@ -34,7 +34,7 @@
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkParseVisitor : public AstNVisitor {
+class LinkParseVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on netlist

@@ -46,7 +46,7 @@
 
 //######################################################################
 
-class DeadModVisitor : public AstNVisitor {
+class DeadModVisitor final : public AstNVisitor {
     // In a module that is dead, cleanup the in-use counts of the modules
 private:
     // NODE STATE
@@ -69,7 +69,7 @@ public:
 //######################################################################
 // Dead state, as a visitor of each AstNode
 
-class DeadVisitor : public AstNVisitor {
+class DeadVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Entire Netlist:

@@ -38,7 +38,7 @@ class VSymEnt;
 
 typedef std::set<const VSymEnt*> VSymConstMap;
 
-class VSymEnt {
+class VSymEnt final {
     // Symbol table that can have a "superior" table for resolving upper references
     // MEMBERS
     typedef std::multimap<string, VSymEnt*> IdNameMap;
@@ -277,7 +277,7 @@ public:
 //######################################################################
 // Symbol tables
 
-class VSymGraph {
+class VSymGraph final {
     // Collection of symbol tables
     // TYPES
     typedef std::vector<VSymEnt*> SymStack;

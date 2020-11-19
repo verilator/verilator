@@ -40,7 +40,7 @@
 //######################################################################
 // LifePost class functions
 
-class LifePostElimVisitor : public AstNVisitor {
+class LifePostElimVisitor final : public AstNVisitor {
 private:
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
 
@@ -128,7 +128,7 @@ struct LifePostLocation {
 //######################################################################
 // LifePost delay elimination
 
-class LifePostDlyVisitor : public AstNVisitor {
+class LifePostDlyVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on entire tree

@@ -37,7 +37,7 @@
 //######################################################################
 // Expand state, as a visitor of each AstNode
 
-class ExpandVisitor : public AstNVisitor {
+class ExpandVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstNode::user1()        -> bool.  Processed

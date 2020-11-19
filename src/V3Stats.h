@@ -26,7 +26,7 @@ class AstNetlist;
 
 //============================================================================
 
-class VDouble0 {
+class VDouble0 final {
     // Double counter, initializes to zero for easy use
     double m_d = 0.0;  ///< Count of occurrences/ value
 public:
@@ -65,7 +65,7 @@ public:
 
 //============================================================================
 
-class V3Statistic {
+class V3Statistic final {
     // A statistical entry we want published into the database
     string m_name;  ///< Nameiption of this statistic
     double m_count;  ///< Count of occurrences/ value
@@ -99,7 +99,7 @@ public:
 
 //============================================================================
 
-class V3Stats {
+class V3Stats final {
 public:
     static void addStat(const V3Statistic&);
     static void addStat(const string& stage, const string& name, double count) {

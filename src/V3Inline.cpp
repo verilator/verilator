@@ -44,7 +44,7 @@ static const int INLINE_MODS_SMALLER = 100;  // If a mod is < this # nodes, can 
 //######################################################################
 // Inline state, as a visitor of each AstNode
 
-class InlineMarkVisitor : public AstNVisitor {
+class InlineMarkVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Output
@@ -233,7 +233,7 @@ public:
 // Using clonep(), find cell cross references.
 // clone() must not be called inside this visitor
 
-class InlineCollectVisitor : public AstNVisitor {
+class InlineCollectVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  Output:
@@ -260,7 +260,7 @@ public:
 //######################################################################
 // After cell is cloned, relink the new module's contents
 
-class InlineRelinkVisitor : public AstNVisitor {
+class InlineRelinkVisitor final : public AstNVisitor {
 private:
     typedef std::unordered_set<string> StringSet;
 
@@ -480,7 +480,7 @@ public:
 //######################################################################
 // Inline state, as a visitor of each AstNode
 
-class InlineVisitor : public AstNVisitor {
+class InlineVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared entire netlist
@@ -621,7 +621,7 @@ public:
 //######################################################################
 // Track interface references under the Cell they reference
 
-class InlineIntfRefVisitor : public AstNVisitor {
+class InlineIntfRefVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //   AstVar::user1p()   // AstCell which this Var points to

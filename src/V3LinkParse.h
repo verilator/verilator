@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3LinkParse {
+class V3LinkParse final {
 public:
     static void linkParse(AstNetlist* rootp);
 };

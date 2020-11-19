@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Dead {
+class V3Dead final {
 public:
     // Modules, no vars/dtypes
     static void deadifyModules(AstNetlist* nodep);

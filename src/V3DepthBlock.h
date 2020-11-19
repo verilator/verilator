@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3DepthBlock {
+class V3DepthBlock final {
 public:
     static void depthBlockAll(AstNetlist* nodep);
 };

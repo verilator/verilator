@@ -22,7 +22,7 @@
 
 //============================================================================
 
-class V3EmitCMain {
+class V3EmitCMain final {
 public:
     static void emit();
 };

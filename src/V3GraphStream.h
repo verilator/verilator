@@ -40,7 +40,7 @@
 template <class T_Compare> class GraphStream {
 private:
     // TYPES
-    class VxHolder {
+    class VxHolder final {
     public:
         // MEMBERS
         const V3GraphVertex* m_vxp;  // [mtask] Vertex
@@ -62,7 +62,7 @@ private:
         }
     };
 
-    class VxHolderCmp {
+    class VxHolderCmp final {
     public:
         // MEMBERS
         T_Compare m_lessThan;  // Sorting functor

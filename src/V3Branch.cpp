@@ -35,7 +35,7 @@
 //######################################################################
 // Branch state, as a visitor of each AstNode
 
-class BranchVisitor : public AstNVisitor {
+class BranchVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Entire netlist:

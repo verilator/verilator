@@ -41,14 +41,14 @@
 //######################################################################
 // Graph subclasses
 
-class LinkCellsGraph : public V3Graph {
+class LinkCellsGraph final : public V3Graph {
 public:
     LinkCellsGraph() = default;
     virtual ~LinkCellsGraph() override = default;
     virtual void loopsMessageCb(V3GraphVertex* vertexp) override;
 };
 
-class LinkCellsVertex : public V3GraphVertex {
+class LinkCellsVertex final : public V3GraphVertex {
     AstNodeModule* m_modp;
 
 public:
@@ -65,7 +65,7 @@ public:
     }
 };
 
-class LibraryVertex : public V3GraphVertex {
+class LibraryVertex final : public V3GraphVertex {
 public:
     explicit LibraryVertex(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
@@ -91,7 +91,7 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkCellsVisitor : public AstNVisitor {
+class LinkCellsVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  Entire netlist:

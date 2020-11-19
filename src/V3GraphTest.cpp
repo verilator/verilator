@@ -25,7 +25,7 @@
 //######################################################################
 // Test class
 
-class V3GraphTest {
+class V3GraphTest VL_NOT_FINAL {
 protected:
     // MEMBERS
     DfaGraph m_graph;
@@ -50,7 +50,7 @@ public:
 //######################################################################
 // Vertices and nodes
 
-class V3GraphTestVertex : public V3GraphVertex {
+class V3GraphTestVertex VL_NOT_FINAL : public V3GraphVertex {
     string m_name;
 
 public:
@@ -62,7 +62,7 @@ public:
     virtual string name() const override { return m_name; }
 };
 
-class V3GraphTestVarVertex : public V3GraphTestVertex {
+class V3GraphTestVarVertex final : public V3GraphTestVertex {
 public:
     V3GraphTestVarVertex(V3Graph* graphp, const string& name)
         : V3GraphTestVertex{graphp, name} {}
@@ -75,7 +75,7 @@ public:
 //######################################################################
 // Test vertices and nodes
 
-class V3GraphTestStrong : public V3GraphTest {
+class V3GraphTestStrong final : public V3GraphTest {
 public:
     virtual string name() override { return "strong"; }
     virtual void runTest() override {
@@ -113,7 +113,7 @@ public:
     }
 };
 
-class V3GraphTestAcyc : public V3GraphTest {
+class V3GraphTestAcyc final : public V3GraphTest {
 public:
     virtual string name() override { return "acyc"; }
     virtual void runTest() override {
@@ -141,7 +141,7 @@ public:
     }
 };
 
-class V3GraphTestVars : public V3GraphTest {
+class V3GraphTestVars final : public V3GraphTest {
 public:
     virtual string name() override { return "vars"; }
     virtual void runTest() override {
@@ -260,7 +260,7 @@ public:
 
 //======================================================================
 
-class DfaTestVertex : public DfaVertex {
+class DfaTestVertex final : public DfaVertex {
     string m_name;
 
 public:
@@ -272,7 +272,7 @@ public:
     virtual string name() const override { return m_name; }
 };
 
-class V3GraphTestDfa : public V3GraphTest {
+class V3GraphTestDfa final : public V3GraphTest {
 
 public:
     virtual string name() override { return "dfa"; }
@@ -321,7 +321,7 @@ public:
 
 //======================================================================
 
-class V3GraphTestImport : public V3GraphTest {
+class V3GraphTestImport final : public V3GraphTest {
 
 #ifdef GRAPH_IMPORT
     void dotImport();

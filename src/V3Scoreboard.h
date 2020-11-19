@@ -41,7 +41,7 @@
 /// break ties in the sort when values collide.
 
 template <typename T_Key, typename T_Value, class T_KeyCompare = std::less<T_Key>>
-class SortByValueMap {
+class SortByValueMap final {
     // TYPES
 private:
     typedef std::unordered_map<T_Key, T_Value> Key2Val;
@@ -56,7 +56,7 @@ public:
     // CONSTRUCTORS
     SortByValueMap() = default;
 
-    class const_iterator {
+    class const_iterator VL_NOT_FINAL {
         // TYPES
     public:
         typedef const_iterator value_type;
@@ -193,7 +193,7 @@ public:
         }
     };
 
-    class iterator : public const_iterator {
+    class iterator final : public const_iterator {
     public:
         // TYPES
         typedef iterator value_type;
@@ -350,11 +350,11 @@ private:
 /// the full set size.
 
 template <typename T_Elem, typename T_Score, class T_ElemCompare = std::less<T_Elem>>
-class V3Scoreboard {
+class V3Scoreboard final {
 private:
     // TYPES
     typedef std::unordered_set<const T_Elem*> NeedRescoreSet;
-    class CmpElems {
+    class CmpElems final {
     public:
         bool operator()(const T_Elem* const& ap, const T_Elem* const& bp) const {
             T_ElemCompare cmp;

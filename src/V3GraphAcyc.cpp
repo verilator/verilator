@@ -29,7 +29,7 @@
 // Algorithms - acyclic
 //      Break the minimal number of backward edges to make the graph acyclic
 
-class GraphAcycVertex : public V3GraphVertex {
+class GraphAcycVertex final : public V3GraphVertex {
     // user() is used for various sub-algorithm pieces
     V3GraphVertex* m_origVertexp;  // Pointer to first vertex this represents
 protected:
@@ -53,7 +53,7 @@ public:
 
 //--------------------------------------------------------------------
 
-class GraphAcycEdge : public V3GraphEdge {
+class GraphAcycEdge final : public V3GraphEdge {
     // userp() is always used to point to the head original graph edge
 private:
     typedef std::list<V3GraphEdge*> OrigEdgeList;  // List of orig edges, see also GraphAcyc's decl
@@ -87,7 +87,7 @@ struct GraphAcycEdgeCmp {
 //--------------------------------------------------------------------
 
 // CLASSES
-class GraphAcyc {
+class GraphAcyc final {
 private:
     typedef std::list<V3GraphEdge*>
         OrigEdgeList;  // List of orig edges, see also GraphAcycEdge's decl

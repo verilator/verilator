@@ -25,7 +25,7 @@
 // This is a bitmap array - we store a single bit to indicate a test
 // has hit that point with sufficient coverage.
 
-class VlcBuckets {
+class VlcBuckets final {
 private:
     // MEMBERS
     vluint64_t* m_datap = nullptr;  ///< Pointer to first bucket (dynamically allocated)

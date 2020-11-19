@@ -22,7 +22,7 @@
 
 //============================================================================
 
-class V3EmitCMake {
+class V3EmitCMake final {
 public:
     static void emit();
 };

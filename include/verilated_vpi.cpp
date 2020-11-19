@@ -55,7 +55,7 @@ constexpr unsigned VL_VPI_LINE_SIZE = 8192;
 // Implementation
 
 // Base VPI handled object
-class VerilatedVpio {
+class VerilatedVpio VL_NOT_FINAL {
     // MEM MANGLEMENT
     static VL_THREAD_LOCAL vluint8_t* t_freeHead;
 
@@ -101,7 +101,7 @@ public:
 
 typedef PLI_INT32 (*VerilatedPliCb)(struct t_cb_data*);
 
-class VerilatedVpioCb : public VerilatedVpio {
+class VerilatedVpioCb final : public VerilatedVpio {
     t_cb_data m_cbData;
     s_vpi_value m_value;
     QData m_time;
@@ -125,7 +125,7 @@ public:
     QData time() const { return m_time; }
 };
 
-class VerilatedVpioConst : public VerilatedVpio {
+class VerilatedVpioConst final : public VerilatedVpio {
     vlsint32_t m_num;
 
 public:
@@ -139,7 +139,7 @@ public:
     vlsint32_t num() const { return m_num; }
 };
 
-class VerilatedVpioParam : public VerilatedVpio {
+class VerilatedVpioParam final : public VerilatedVpio {
     const VerilatedVar* m_varp;
     const VerilatedScope* m_scopep;
 
@@ -165,7 +165,7 @@ public:
     }
 };
 
-class VerilatedVpioRange : public VerilatedVpio {
+class VerilatedVpioRange final : public VerilatedVpio {
     const VerilatedRange* m_range;
     vlsint32_t m_iteration = 0;
 
@@ -191,7 +191,7 @@ public:
     }
 };
 
-class VerilatedVpioScope : public VerilatedVpio {
+class VerilatedVpioScope VL_NOT_FINAL : public VerilatedVpio {
 protected:
     const VerilatedScope* m_scopep;
 
@@ -208,7 +208,7 @@ public:
     virtual const char* fullname() const override { return m_scopep->name(); }
 };
 
-class VerilatedVpioVar : public VerilatedVpio {
+class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpio {
     const VerilatedVar* m_varp;
     const VerilatedScope* m_scopep;
     vluint8_t* m_prevDatap = nullptr;  // Previous value of data, for cbValueChange
@@ -266,7 +266,7 @@ public:
     }
 };
 
-class VerilatedVpioMemoryWord : public VerilatedVpioVar {
+class VerilatedVpioMemoryWord final : public VerilatedVpioVar {
 public:
     VerilatedVpioMemoryWord(const VerilatedVar* varp, const VerilatedScope* scopep,
                             vlsint32_t index, int offset)
@@ -290,7 +290,7 @@ public:
     }
 };
 
-class VerilatedVpioVarIter : public VerilatedVpio {
+class VerilatedVpioVarIter final : public VerilatedVpio {
     const VerilatedScope* m_scopep;
     VerilatedVarNameMap::const_iterator m_it;
     bool m_started = false;
@@ -321,7 +321,7 @@ public:
     }
 };
 
-class VerilatedVpioMemoryWordIter : public VerilatedVpio {
+class VerilatedVpioMemoryWordIter final : public VerilatedVpio {
     const vpiHandle m_handle;
     const VerilatedVar* m_varp;
     vlsint32_t m_iteration;
@@ -351,7 +351,7 @@ public:
     }
 };
 
-class VerilatedVpioModule : public VerilatedVpioScope {
+class VerilatedVpioModule final : public VerilatedVpioScope {
     const char* m_name;
     const char* m_fullname;
 
@@ -370,7 +370,7 @@ public:
     virtual const char* fullname() const override { return m_fullname; }
 };
 
-class VerilatedVpioModuleIter : public VerilatedVpio {
+class VerilatedVpioModuleIter final : public VerilatedVpio {
     const std::vector<const VerilatedScope*>* m_vec;
     std::vector<const VerilatedScope*>::const_iterator m_it;
 
@@ -405,7 +405,7 @@ struct VerilatedVpiTimedCbsCmp {
 
 class VerilatedVpiError;
 
-class VerilatedVpiImp {
+class VerilatedVpiImp final {
     enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime + 1 };  // Maxium callback reason
     typedef std::list<VerilatedVpioCb*> VpioCbList;
     typedef std::set<std::pair<QData, VerilatedVpioCb*>, VerilatedVpiTimedCbsCmp> VpioTimedCbs;
@@ -534,7 +534,7 @@ public:
     static VerilatedVpiError* error_info() VL_MT_UNSAFE_ONE;  // getter for vpi error info
 };
 
-class VerilatedVpiError {
+class VerilatedVpiError final {
     //// Container for vpi error info
 
     t_vpi_error_info m_errorInfo;

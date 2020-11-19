@@ -38,7 +38,7 @@
 //######################################################################
 // Structure for global state
 
-class LifeState {
+class LifeState final {
     // NODE STATE
     //   See below
     AstUser1InUse m_inuser1;
@@ -66,7 +66,7 @@ public:
 //######################################################################
 // Structure for each variable encountered
 
-class LifeVarEntry {
+class LifeVarEntry final {
     // Last assignment to this varscope, nullptr if no longer relevant
     AstNodeAssign* m_assignp = nullptr;
     AstConst* m_constp = nullptr;  // Known constant value
@@ -116,7 +116,7 @@ public:
 //######################################################################
 // Structure for all variables under a given meta-basic block
 
-class LifeBlock {
+class LifeBlock final {
     // NODE STATE
     // Cleared each AstIf:
     //   AstVarScope::user1()   -> int.       Used in combining to detect duplicates
@@ -268,7 +268,7 @@ public:
 //######################################################################
 // Life state, as a visitor of each AstNode
 
-class LifeVisitor : public AstNVisitor {
+class LifeVisitor final : public AstNVisitor {
 private:
     // STATE
     LifeState* m_statep;  // Current state
@@ -450,7 +450,7 @@ public:
 
 //######################################################################
 
-class LifeTopVisitor : public AstNVisitor {
+class LifeTopVisitor final : public AstNVisitor {
     // Visit all top nodes searching for functions that are entry points we want to start
     // finding code within.
 private:

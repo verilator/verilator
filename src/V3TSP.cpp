@@ -119,7 +119,7 @@ public:
         return vertices;
     }
 
-    class EdgeCmp {
+    class EdgeCmp final {
         // Provides a deterministic compare for outgoing V3GraphEdge's
         // to be used in Prim's algorithm below. Also used in the
         // perfectMatching() routine.
@@ -494,7 +494,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
 //######################################################################
 // Self Tests
 
-class TspTestState : public V3TSP::TspStateBase {
+class TspTestState final : public V3TSP::TspStateBase {
 public:
     TspTestState(unsigned xpos, unsigned ypos)
         : m_xpos{xpos}

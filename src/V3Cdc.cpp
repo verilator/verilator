@@ -41,7 +41,7 @@ constexpr int CDC_WEIGHT_ASYNC = 0x1000;  // Weight for edges that feed async lo
 
 //######################################################################
 
-class CdcBaseVisitor : public AstNVisitor {
+class CdcBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 public:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -49,7 +49,7 @@ public:
 //######################################################################
 // Graph support classes
 
-class CdcEitherVertex : public V3GraphVertex {
+class CdcEitherVertex VL_NOT_FINAL : public V3GraphVertex {
     AstScope* m_scopep;
     AstNode* m_nodep;
     AstSenTree* m_srcDomainp = nullptr;
@@ -83,7 +83,7 @@ public:
     void asyncPath(bool flag) { m_asyncPath = flag; }
 };
 
-class CdcVarVertex : public CdcEitherVertex {
+class CdcVarVertex final : public CdcEitherVertex {
     AstVarScope* m_varScp;
     int m_cntAsyncRst = 0;
     bool m_fromFlop = false;
@@ -105,7 +105,7 @@ public:
     void fromFlop(bool flag) { m_fromFlop = flag; }
 };
 
-class CdcLogicVertex : public CdcEitherVertex {
+class CdcLogicVertex final : public CdcEitherVertex {
     bool m_hazard : 1;
     bool m_isFlop : 1;
 
@@ -135,7 +135,7 @@ public:
 
 //######################################################################
 
-class CdcDumpVisitor : public CdcBaseVisitor {
+class CdcDumpVisitor final : public CdcBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:
@@ -175,7 +175,7 @@ public:
 
 //######################################################################
 
-class CdcWidthVisitor : public CdcBaseVisitor {
+class CdcWidthVisitor final : public CdcBaseVisitor {
 private:
     int m_maxLineno = 0;
     size_t m_maxFilenameLen = 0;
@@ -209,7 +209,7 @@ public:
 //######################################################################
 // Cdc class functions
 
-class CdcVisitor : public CdcBaseVisitor {
+class CdcVisitor final : public CdcBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:

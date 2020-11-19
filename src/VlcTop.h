@@ -28,7 +28,7 @@
 //######################################################################
 // VlcTop - Top level options container
 
-class VlcTop {
+class VlcTop final {
 public:
     // PUBLIC MEMBERS
     VlcOptions opt;  //< Runtime options

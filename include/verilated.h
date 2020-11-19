@@ -129,7 +129,7 @@ extern vluint32_t VL_THREAD_ID() VL_MT_SAFE;
 #define VL_LOCK_SPINS 50000  /// Number of times to spin for a mutex before relaxing
 
 /// Mutex, wrapped to allow -fthread_safety checks
-class VL_CAPABILITY("mutex") VerilatedMutex {
+class VL_CAPABILITY("mutex") VerilatedMutex final {
 private:
     std::mutex m_mutex;  // Mutex
 public:
@@ -155,7 +155,7 @@ public:
 };
 
 /// Lock guard for mutex (ala std::unique_lock), wrapped to allow -fthread_safety checks
-class VL_SCOPED_CAPABILITY VerilatedLockGuard {
+class VL_SCOPED_CAPABILITY VerilatedLockGuard final {
     VL_UNCOPYABLE(VerilatedLockGuard);
 
 private:
@@ -174,14 +174,14 @@ public:
 #else  // !VL_THREADED
 
 /// Empty non-threaded mutex to avoid #ifdefs in consuming code
-class VerilatedMutex {
+class VerilatedMutex final {
 public:
     void lock() {}
     void unlock() {}
 };
 
 /// Empty non-threaded lock guard to avoid #ifdefs in consuming code
-class VerilatedLockGuard {
+class VerilatedLockGuard final {
     VL_UNCOPYABLE(VerilatedLockGuard);
 
 public:
@@ -194,7 +194,7 @@ public:
 #endif  // VL_THREADED
 
 /// Remember the calling thread at construction time, and make sure later calls use same thread
-class VerilatedAssertOneThread {
+class VerilatedAssertOneThread final {
     // MEMBERS
 #if defined(VL_THREADED) && defined(VL_DEBUG)
     vluint32_t m_threadid;  /// Thread that is legal
@@ -230,7 +230,7 @@ public:
 
 class VerilatedScope;
 
-class VerilatedModule {
+class VerilatedModule VL_NOT_FINAL {
     VL_UNCOPYABLE(VerilatedModule);
 
 private:
@@ -269,7 +269,8 @@ public:
 #define VL_CELL(instname, type)  ///< Declare a cell, ala SP_CELL
 
 /// Declare a module, ala SC_MODULE
-#define VL_MODULE(modname) class modname : public VerilatedModule
+#define VL_MODULE(modname) class modname VL_NOT_FINAL : public VerilatedModule
+// Not class final in VL_MODULE, as users might be abstracting our models (--hierarchical)
 
 /// Constructor, ala SC_CTOR
 #define VL_CTOR(modname) modname(const char* __VCname = "")
@@ -298,7 +299,7 @@ public:
 //===========================================================================
 /// Verilator symbol table base class
 
-class VerilatedSyms {
+class VerilatedSyms VL_NOT_FINAL {
 public:  // But for internal use only
 #ifdef VL_THREADED
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
@@ -311,7 +312,7 @@ public:  // But for internal use only
 /// Verilator global class information class
 /// This class is initialized by main thread only. Reading post-init is thread safe.
 
-class VerilatedScope {
+class VerilatedScope final {
 public:
     typedef enum : vluint8_t {
         SCOPE_MODULE,
@@ -359,7 +360,7 @@ public:  // But internals only - called from VerilatedModule's
     Type type() const { return m_type; }
 };
 
-class VerilatedHierarchy {
+class VerilatedHierarchy final {
 public:
     static void add(VerilatedScope* fromp, VerilatedScope* top);
 };
@@ -367,7 +368,7 @@ public:
 //===========================================================================
 /// Verilator global static information class
 
-class Verilated {
+class Verilated final {
     // MEMBERS
     // Slow path variables
     static VerilatedMutex m_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED

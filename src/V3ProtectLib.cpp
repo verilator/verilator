@@ -28,7 +28,7 @@
 //######################################################################
 // ProtectLib top-level visitor
 
-class ProtectVisitor : public AstNVisitor {
+class ProtectVisitor final : public AstNVisitor {
 private:
     AstVFile* m_vfilep = nullptr;  // DPI-enabled Verilog wrapper
     AstCFile* m_cfilep = nullptr;  // C implementation of DPI functions

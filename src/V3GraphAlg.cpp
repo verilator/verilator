@@ -69,7 +69,7 @@ void V3Graph::deleteCutableOnlyEdges() {
 //######################################################################
 // Algorithms - weakly connected components
 
-class GraphRemoveRedundant : GraphAlg<> {
+class GraphRemoveRedundant final : GraphAlg<> {
     bool m_sumWeights;  ///< Sum, rather then maximize weights
 private:
     void main() {
@@ -137,7 +137,7 @@ void V3Graph::removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp) {
 //######################################################################
 // Algorithms - remove transitive
 
-class GraphAlgRemoveTransitiveEdges : GraphAlg<> {
+class GraphAlgRemoveTransitiveEdges final : GraphAlg<> {
 public:
     explicit GraphAlgRemoveTransitiveEdges(V3Graph* graphp)
         : GraphAlg<>(graphp, nullptr) {}
@@ -168,7 +168,7 @@ void V3Graph::removeTransitiveEdges() { GraphAlgRemoveTransitiveEdges(this).go()
 //######################################################################
 // Algorithms - weakly connected components
 
-class GraphAlgWeakly : GraphAlg<> {
+class GraphAlgWeakly final : GraphAlg<> {
 private:
     void main() {
         // Initialize state
@@ -209,7 +209,7 @@ void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgWeakly(this, edge
 //######################################################################
 // Algorithms - strongly connected components
 
-class GraphAlgStrongly : GraphAlg<> {
+class GraphAlgStrongly final : GraphAlg<> {
 private:
     uint32_t m_currentDfs;  // DFS count
     std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
@@ -297,7 +297,7 @@ void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgStrongly(this, 
 //######################################################################
 // Algorithms - ranking
 
-class GraphAlgRank : GraphAlg<> {
+class GraphAlgRank final : GraphAlg<> {
 private:
     void main() {
         // Rank each vertex, ignoring cutable edges
@@ -350,7 +350,7 @@ void V3Graph::rank(V3EdgeFuncP edgeFuncp) { GraphAlgRank(this, edgeFuncp); }
 //######################################################################
 // Algorithms - ranking
 
-class GraphAlgRLoops : GraphAlg<> {
+class GraphAlgRLoops final : GraphAlg<> {
 private:
     std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
     bool m_done;  // Exit algorithm
@@ -404,7 +404,7 @@ void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
 //######################################################################
 // Algorithms - subtrees
 
-class GraphAlgSubtrees : GraphAlg<> {
+class GraphAlgSubtrees final : GraphAlg<> {
 private:
     V3Graph* m_loopGraphp;
 

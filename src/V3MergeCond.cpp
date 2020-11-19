@@ -52,7 +52,7 @@
 
 //######################################################################
 
-class CheckMergeableVisitor : public AstNVisitor {
+class CheckMergeableVisitor final : public AstNVisitor {
 private:
     // STATE
     bool m_mergeable
@@ -98,7 +98,7 @@ public:
     }
 };
 
-class MarkVarsVisitor : public AstNVisitor {
+class MarkVarsVisitor final : public AstNVisitor {
 private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -115,7 +115,7 @@ public:
     void mark(AstNode* node) { iterate(node); }
 };
 
-class MergeCondVisitor : public AstNVisitor {
+class MergeCondVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // AstVar::user1 -> Flag set for variables referenced by m_mgCondp

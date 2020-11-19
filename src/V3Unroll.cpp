@@ -39,7 +39,7 @@
 //######################################################################
 // Unroll state, as a visitor of each AstNode
 
-class UnrollVisitor : public AstNVisitor {
+class UnrollVisitor final : public AstNVisitor {
 private:
     // STATE
     AstVar* m_forVarp;  // Iterator variable

@@ -58,7 +58,7 @@ class DfaEdge;
 ///                        |                 ^\----[epsilon]<-------/           |
 ///                        \->[epsilon]-----------------------------------------/
 
-class DfaGraph : public V3Graph {
+class DfaGraph final : public V3Graph {
 public:
     // CONSTRUCTORS
     DfaGraph() = default;
@@ -77,7 +77,7 @@ public:
 //=============================================================================
 // Vertex
 
-class DfaVertex : public V3GraphVertex {
+class DfaVertex VL_NOT_FINAL : public V3GraphVertex {
     // Each DFA state is captured in this vertex.
     // Start and accepting are members, rather than the more intuitive
     // subclasses, as subclassing them would make it harder to inherit from here.
@@ -113,7 +113,7 @@ typedef VNUser DfaInput;
 //============================================================================
 // Edge types
 
-class DfaEdge : public V3GraphEdge {
+class DfaEdge final : public V3GraphEdge {
     DfaInput m_input;
     bool m_complement;  // Invert value when doing compare
 public:

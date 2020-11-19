@@ -156,7 +156,7 @@ std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs);
 
 //######################################################################
 
-class V3ParseImp {
+class V3ParseImp final {
     // MEMBERS
     AstNetlist* m_rootp;  // Root of the design
     VInFilter* m_filterp;  // Reading filter

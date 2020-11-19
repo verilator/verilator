@@ -62,9 +62,9 @@ constexpr int INFILTER_CACHE_MAX = (64 * 1024);  // Maximum bytes to cache if sa
 //######################################################################
 // V3File Internal state
 
-class V3FileDependImp {
+class V3FileDependImp final {
     // TYPES
-    class DependFile {
+    class DependFile final {
         // A single file
         bool m_target;  // True if write, else read
         bool m_exists = true;
@@ -327,7 +327,7 @@ void V3File::createMakeDir() {
 //######################################################################
 // VInFilterImp
 
-class VInFilterImp {
+class VInFilterImp final {
     typedef std::map<const string, string> FileContentsMap;
     typedef VInFilter::StrList StrList;
 
@@ -949,7 +949,7 @@ void V3OutCFile::putsGuard() {
 //######################################################################
 // VIdProtect
 
-class VIdProtectImp {
+class VIdProtectImp final {
     // MEMBERS
     typedef std::map<const string, string> IdMap;
     IdMap m_nameMap;  // Map of old name into new name

@@ -37,7 +37,7 @@ class FileLine;
 
 //! This singleton class contains tables of data that are unchanging in each
 //! source file (each with its own unique filename number).
-class FileLineSingleton {
+class FileLineSingleton final {
     // TYPES
     typedef std::map<const string, int> FileNameNumMap;
     // MEMBERS
@@ -64,7 +64,7 @@ protected:
 };
 
 //! All source lines from a file/stream, to enable errors to show sources
-class VFileContent {
+class VFileContent final {
     // MEMBERS
     int m_id;  // Content ID number
     std::deque<string> m_lines;  // Source text lines
@@ -87,7 +87,7 @@ std::ostream& operator<<(std::ostream& os, VFileContent* contentp);
 //! This class is instantiated for every source code line (potentially
 //! millions). To save space, per-file information (e.g. filename, source
 //! language is held in tables in the FileLineSingleton class.
-class FileLine {
+class FileLine final {
     // CONSTANTS
     static constexpr unsigned SHOW_SOURCE_MAX_LENGTH = 400;  // Don't show source lines > this long
 

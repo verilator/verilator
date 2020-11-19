@@ -82,7 +82,7 @@ public:
 };
 
 // Only public_flat_rw has the sensitity tree
-class V3ConfigVarAttr {
+class V3ConfigVarAttr final {
 public:
     AstAttrType m_type;  // Type of attribute
     AstSenTree* m_sentreep;  // Sensitivity tree for public_flat_rw
@@ -92,7 +92,7 @@ public:
 };
 
 // Overload vector with the required update function and to apply all entries
-class V3ConfigVar : public std::vector<V3ConfigVarAttr> {
+class V3ConfigVar final : public std::vector<V3ConfigVarAttr> {
 public:
     // Update from other by copying all attributes
     void update(const V3ConfigVar& node) {
@@ -116,7 +116,7 @@ typedef V3ConfigWildcardResolver<V3ConfigVar> V3ConfigVarResolver;
 //######################################################################
 // Function or task: Have variables and properties
 
-class V3ConfigFTask {
+class V3ConfigFTask final {
     V3ConfigVarResolver m_vars;  // Variables in function/task
     bool m_isolate = false;  // Isolate function return
     bool m_noinline = false;  // Don't inline function/task
@@ -153,7 +153,7 @@ typedef V3ConfigWildcardResolver<V3ConfigFTask> V3ConfigFTaskResolver;
 //######################################################################
 // Modules have tasks, variables, named blocks and properties
 
-class V3ConfigModule {
+class V3ConfigModule final {
     typedef std::unordered_set<string> StringSet;
     typedef std::set<AstPragmaType> PragmaSet;
 
@@ -224,7 +224,7 @@ typedef V3ConfigWildcardResolver<V3ConfigModule> V3ConfigModuleResolver;
 //  - Line attributes: Attributes attached to lines
 
 // lint/coverage/tracing on/off
-class V3ConfigIgnoresLine {
+class V3ConfigIgnoresLine final {
 public:
     int m_lineno;  // Line number to make change at
     V3ErrorCode m_code;  // Error code
@@ -253,7 +253,7 @@ std::ostream& operator<<(std::ostream& os, const V3ConfigIgnoresLine& rhs) {
 typedef std::bitset<AstPragmaType::ENUM_SIZE> V3ConfigLineAttribute;
 
 // File entity
-class V3ConfigFile {
+class V3ConfigFile final {
     typedef std::map<int, V3ConfigLineAttribute> LineAttrMap;  // Map line->bitset of attributes
     typedef std::multiset<V3ConfigIgnoresLine> IgnLines;  // list of {line,code,on}
     typedef std::pair<V3ErrorCode, string> WaiverSetting;  // Waive code if string matches
@@ -347,7 +347,7 @@ typedef V3ConfigWildcardResolver<V3ConfigFile> V3ConfigFileResolver;
 //######################################################################
 // Resolve modules and files in the design
 
-class V3ConfigResolver {
+class V3ConfigResolver final {
     V3ConfigModuleResolver m_modules;  // Access to module names (with wildcards)
     V3ConfigFileResolver m_files;  // Access to file names (with wildcards)
 

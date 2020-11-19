@@ -26,7 +26,7 @@
 //######################################################################
 // Assert class functions
 
-class AssertVisitor : public AstNVisitor {
+class AssertVisitor final : public AstNVisitor {
 private:
     // NODE STATE/TYPES
     // Cleared on netlist

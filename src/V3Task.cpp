@@ -39,7 +39,7 @@
 //######################################################################
 // Graph subclasses
 
-class TaskBaseVertex : public V3GraphVertex {
+class TaskBaseVertex VL_NOT_FINAL : public V3GraphVertex {
     AstNode* m_impurep = nullptr;  // Node causing impure function w/ outside references
     bool m_noInline = false;  // Marked with pragma
 public:
@@ -53,7 +53,7 @@ public:
     void noInline(bool flag) { m_noInline = flag; }
 };
 
-class TaskFTaskVertex : public TaskBaseVertex {
+class TaskFTaskVertex final : public TaskBaseVertex {
     // Every task gets a vertex, and we link tasks together based on funcrefs.
     AstNodeFTask* m_nodep;
     AstCFunc* m_cFuncp = nullptr;
@@ -71,7 +71,7 @@ public:
     void cFuncp(AstCFunc* nodep) { m_cFuncp = nodep; }
 };
 
-class TaskCodeVertex : public TaskBaseVertex {
+class TaskCodeVertex final : public TaskBaseVertex {
     // Top vertex for all calls not under another task
 public:
     explicit TaskCodeVertex(V3Graph* graphp)
@@ -81,7 +81,7 @@ public:
     virtual string dotColor() const override { return "green"; }
 };
 
-class TaskEdge : public V3GraphEdge {
+class TaskEdge final : public V3GraphEdge {
 public:
     TaskEdge(V3Graph* graphp, TaskBaseVertex* fromp, TaskBaseVertex* top)
         : V3GraphEdge{graphp, fromp, top, 1, false} {}
@@ -91,7 +91,7 @@ public:
 
 //######################################################################
 
-class TaskStateVisitor : public AstNVisitor {
+class TaskStateVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  Output:
@@ -287,7 +287,7 @@ public:
 
 //######################################################################
 
-class TaskRelinkVisitor : public AstNVisitor {
+class TaskRelinkVisitor final : public AstNVisitor {
     // Replace varrefs with new var pointer
 private:
     // NODE STATE
@@ -323,7 +323,7 @@ public:
 //######################################################################
 // Task state, as a visitor of each AstNode
 
-class TaskVisitor : public AstNVisitor {
+class TaskVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Each module:

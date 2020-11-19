@@ -36,7 +36,7 @@
 
 //######################################################################
 
-class BrokenTable : public AstNVisitor {
+class BrokenTable final : public AstNVisitor {
     // Table of brokenExists node pointers
 private:
     // MEMBERS
@@ -211,7 +211,7 @@ bool AstNode::brokeExistsBelow() const {
 
 //######################################################################
 
-class BrokenMarkVisitor : public AstNVisitor {
+class BrokenMarkVisitor final : public AstNVisitor {
     // Mark every node in the tree
 private:
     // NODE STATE
@@ -237,7 +237,7 @@ public:
 //######################################################################
 // Broken state, as a visitor of each AstNode
 
-class BrokenCheckVisitor : public AstNVisitor {
+class BrokenCheckVisitor final : public AstNVisitor {
     bool m_inScope = false;  // Under AstScope
 
 private:

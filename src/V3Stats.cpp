@@ -30,7 +30,7 @@
 //######################################################################
 // Stats class functions
 
-class StatsVisitor : public AstNVisitor {
+class StatsVisitor final : public AstNVisitor {
 private:
     // NODE STATE/TYPES
 

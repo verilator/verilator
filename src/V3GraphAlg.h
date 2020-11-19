@@ -28,7 +28,7 @@
 // For internal use, most graph algorithms use this as a base class
 
 template <class T_Graph = V3Graph>  // Or sometimes const V3Graph
-class GraphAlg {
+class GraphAlg VL_NOT_FINAL {
 protected:
     T_Graph* m_graphp;  // Graph we're operating upon
     V3EdgeFuncP m_edgeFuncp;  // Function that says we follow this edge

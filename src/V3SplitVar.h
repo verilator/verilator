@@ -22,7 +22,7 @@
 class AstNetlist;
 class AstVar;
 
-class V3SplitVar {
+class V3SplitVar final {
 public:
     // Split variables marked with split_var metacomment.
     static void splitVariable(AstNetlist* nodep);

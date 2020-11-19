@@ -63,7 +63,7 @@
 //######################################################################
 // Delayed state, as a visitor of each AstNode
 
-class DelayedVisitor : public AstNVisitor {
+class DelayedVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared each module:

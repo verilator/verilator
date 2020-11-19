@@ -51,7 +51,7 @@
 //######################################################################
 // Graph vertexes
 
-class TraceActivityVertex : public V3GraphVertex {
+class TraceActivityVertex final : public V3GraphVertex {
     AstNode* const m_insertp;
     vlsint32_t m_activityCode;
     bool m_slow;  // If always slow, we can use the same code
@@ -95,7 +95,7 @@ public:
     }
 };
 
-class TraceCFuncVertex : public V3GraphVertex {
+class TraceCFuncVertex final : public V3GraphVertex {
     AstCFunc* m_nodep;
 
 public:
@@ -110,7 +110,7 @@ public:
     virtual FileLine* fileline() const override { return nodep()->fileline(); }
 };
 
-class TraceTraceVertex : public V3GraphVertex {
+class TraceTraceVertex final : public V3GraphVertex {
     AstTraceDecl* const m_nodep;  // TRACEINC this represents
     // nullptr, or other vertex with the real code() that duplicates this one
     TraceTraceVertex* m_duplicatep = nullptr;
@@ -132,7 +132,7 @@ public:
     }
 };
 
-class TraceVarVertex : public V3GraphVertex {
+class TraceVarVertex final : public V3GraphVertex {
     AstVarScope* m_nodep;
 
 public:
@@ -150,7 +150,7 @@ public:
 //######################################################################
 // Trace state, as a visitor of each AstNode
 
-class TraceVisitor : public EmitCBaseVisitor {
+class TraceVisitor final : public EmitCBaseVisitor {
 private:
     // NODE STATE
     // V3Hashed

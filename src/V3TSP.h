@@ -27,7 +27,7 @@ namespace V3TSP {
 // Perform a "Traveling Salesman Problem" optimizing sort
 // on any type you like -- so long as inherits from TspStateBase.
 
-class TspStateBase {
+class TspStateBase VL_NOT_FINAL {
 public:
     // This is the cost function that the TSP sort will minimize.
     // All costs in V3TSP are int, chosen to match the type of

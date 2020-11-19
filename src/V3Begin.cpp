@@ -36,7 +36,7 @@
 
 //######################################################################
 
-class BeginState {
+class BeginState final {
 private:
     // NODE STATE
     // Entire netlist:
@@ -56,7 +56,7 @@ public:
 
 //######################################################################
 
-class BeginVisitor : public AstNVisitor {
+class BeginVisitor final : public AstNVisitor {
 private:
     // STATE
     BeginState* m_statep;  // Current global state
@@ -247,7 +247,7 @@ public:
 
 //######################################################################
 
-class BeginRelinkVisitor : public AstNVisitor {
+class BeginRelinkVisitor final : public AstNVisitor {
     // Replace tasks with new pointer
 private:
     // NODE STATE

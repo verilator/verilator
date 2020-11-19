@@ -37,7 +37,7 @@
 //######################################################################
 // Class for every variable we may process
 
-class UndrivenVarEntry {
+class UndrivenVarEntry final {
     // MEMBERS
     AstVar* m_varp;  // Variable this tracks
     std::vector<bool> m_wholeFlags;  // Used/Driven on whole vector
@@ -226,7 +226,7 @@ public:
 //######################################################################
 // Undriven state, as a visitor of each AstNode
 
-class UndrivenVisitor : public AstNVisitor {
+class UndrivenVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Netlist:

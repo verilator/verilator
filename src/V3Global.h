@@ -61,7 +61,7 @@ public:
 
 //######################################################################
 
-class VWidthMinUsage {
+class VWidthMinUsage final {
 public:
     enum en : uint8_t { LINT_WIDTH, MATCHES_WIDTH, VERILOG_WIDTH };
     enum en m_e;
@@ -87,7 +87,7 @@ inline bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
 //######################################################################
 // V3Global - The top level class for the entire program
 
-class V3Global {
+class V3Global final {
     // Globals
     AstNetlist* m_rootp;  // Root of entire netlist
     V3HierBlockPlan* m_hierPlanp;  // Hierarchical verilation plan, nullptr unless hier_block

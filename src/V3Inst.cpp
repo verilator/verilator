@@ -34,7 +34,7 @@
 //######################################################################
 // Inst state, as a visitor of each AstNode
 
-class InstVisitor : public AstNVisitor {
+class InstVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared each Cell:
@@ -137,7 +137,7 @@ public:
 
 //######################################################################
 
-class InstDeModVarVisitor : public AstNVisitor {
+class InstDeModVarVisitor final : public AstNVisitor {
     // Expand all module variables, and save names for later reference
 private:
     // STATE
@@ -189,7 +189,7 @@ public:
 
 //######################################################################
 
-class InstDeVisitor : public AstNVisitor {
+class InstDeVisitor final : public AstNVisitor {
     // Find all cells with arrays, and convert to non-arrayed
 private:
     // STATE
@@ -472,7 +472,7 @@ public:
 //######################################################################
 // Inst static function
 
-class InstStatic {
+class InstStatic final {
 private:
     VL_DEBUG_FUNC;  // Declare debug()
     InstStatic() = default;  // Static class

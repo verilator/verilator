@@ -41,7 +41,7 @@
 
 //######################################################################
 
-class LinkJumpVisitor : public AstNVisitor {
+class LinkJumpVisitor final : public AstNVisitor {
 private:
     // TYPES
     typedef std::vector<AstNodeBlock*> BlockStack;

@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Begin {
+class V3Begin final {
 public:
     static void debeginAll(AstNetlist* nodep);
 };

@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Localize {
+class V3Localize final {
 public:
     static void localizeAll(AstNetlist* nodep);
 };

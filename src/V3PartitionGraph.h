@@ -28,7 +28,7 @@
 //*************************************************************************
 // MTasks and graph structures
 
-class AbstractMTask : public V3GraphVertex {
+class AbstractMTask VL_NOT_FINAL : public V3GraphVertex {
 public:
     AbstractMTask(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
@@ -37,7 +37,7 @@ public:
     virtual uint32_t cost() const = 0;
 };
 
-class AbstractLogicMTask : public AbstractMTask {
+class AbstractLogicMTask VL_NOT_FINAL : public AbstractMTask {
 public:
     // TYPES
     typedef std::list<MTaskMoveVertex*> VxList;
@@ -52,7 +52,7 @@ public:
     virtual uint32_t cost() const override = 0;
 };
 
-class ExecMTask : public AbstractMTask {
+class ExecMTask final : public AbstractMTask {
 private:
     AstMTaskBody* m_bodyp;  // Task body
     uint32_t m_id;  // Unique id of this mtask.

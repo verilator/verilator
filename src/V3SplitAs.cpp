@@ -33,7 +33,7 @@
 
 //######################################################################
 
-class SplitAsBaseVisitor : public AstNVisitor {
+class SplitAsBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 public:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -42,7 +42,7 @@ public:
 //######################################################################
 // Find all split variables in a block
 
-class SplitAsFindVisitor : public SplitAsBaseVisitor {
+class SplitAsFindVisitor final : public SplitAsBaseVisitor {
 private:
     // STATE
     AstVarScope* m_splitVscp = nullptr;  // Variable we want to split
@@ -66,7 +66,7 @@ public:
 //######################################################################
 // Remove nodes not containing proper references
 
-class SplitAsCleanVisitor : public SplitAsBaseVisitor {
+class SplitAsCleanVisitor final : public SplitAsBaseVisitor {
 private:
     // STATE
     AstVarScope* m_splitVscp;  // Variable we want to split
@@ -124,7 +124,7 @@ public:
 //######################################################################
 // SplitAs class functions
 
-class SplitAsVisitor : public SplitAsBaseVisitor {
+class SplitAsVisitor final : public SplitAsBaseVisitor {
 private:
     // NODE STATE
     //  AstAlways::user()       -> bool.  True if already processed

@@ -374,7 +374,10 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 //=========================================================================
 // Class definition helpers
 
-// Used to declare a class as uncopyable; put after a private:
+/// Used to indicate a base class, e.g. cannot label "class final"
+#define VL_NOT_FINAL
+
+/// Used to declare a class as uncopyable; put after a private:
 #define VL_UNCOPYABLE(Type) \
     Type(const Type& other) = delete; \
     Type& operator=(const Type&) = delete

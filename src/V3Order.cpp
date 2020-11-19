@@ -126,7 +126,7 @@ void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
 
 //######################################################################
 
-class OrderMoveDomScope {
+class OrderMoveDomScope final {
     // Information stored for each unique loop, domain & scope trifecta
 public:
     V3ListEnt<OrderMoveDomScope*> m_readyDomScopeE;  // List of next ready dom scope
@@ -186,7 +186,7 @@ inline std::ostream& operator<<(std::ostream& lhs, const OrderMoveDomScope& rhs)
 // Types of vertex we can create
 enum WhichVertex : uint8_t { WV_STD, WV_PRE, WV_PORD, WV_POST, WV_SETL, WV_MAX };
 
-class OrderUser {
+class OrderUser final {
     // Stored in AstVarScope::user1p, a list of all the various vertices
     // that can exist for one given variable
 private:
@@ -252,7 +252,7 @@ struct OrderVarFanoutCmp {
 // In addition it also check whether clock and data signals are mixed, and
 // produce a CLKDATA warning if so.
 //
-class OrderClkMarkVisitor : public AstNVisitor {
+class OrderClkMarkVisitor final : public AstNVisitor {
 private:
     bool m_hasClk = false;  // flag indicating whether there is clock signal on rhs
     bool m_inClocked = false;  // Currently inside a sequential block
@@ -372,7 +372,7 @@ public:
 //######################################################################
 // The class checks if the assignment generates a clock.
 
-class OrderClkAssVisitor : public AstNVisitor {
+class OrderClkAssVisitor final : public AstNVisitor {
 private:
     bool m_clkAss = false;  // There is signals marked as clocker in the assignment
     // METHODS
@@ -429,7 +429,7 @@ template <class T_MoveVertex> class ProcessMoveBuildGraph {
     typedef std::unordered_map<const OrderLogicVertex*, T_MoveVertex*> Logic2Move;
 
 public:
-    class MoveVertexMaker {
+    class MoveVertexMaker VL_NOT_FINAL {
     public:
         // Clients of ProcessMoveBuildGraph must supply MoveVertexMaker
         // which creates new T_MoveVertex's. Each new vertex wraps lvertexp
@@ -551,7 +551,7 @@ private:
 //######################################################################
 // OrderMoveVertexMaker and related
 
-class OrderMoveVertexMaker : public ProcessMoveBuildGraph<OrderMoveVertex>::MoveVertexMaker {
+class OrderMoveVertexMaker final : public ProcessMoveBuildGraph<OrderMoveVertex>::MoveVertexMaker {
     // MEMBERS
     V3Graph* m_pomGraphp;
     V3List<OrderMoveVertex*>* m_pomWaitingp;
@@ -579,7 +579,8 @@ private:
     VL_UNCOPYABLE(OrderMoveVertexMaker);
 };
 
-class OrderMTaskMoveVertexMaker : public ProcessMoveBuildGraph<MTaskMoveVertex>::MoveVertexMaker {
+class OrderMTaskMoveVertexMaker final
+    : public ProcessMoveBuildGraph<MTaskMoveVertex>::MoveVertexMaker {
     V3Graph* m_pomGraphp;
 
 public:
@@ -602,7 +603,7 @@ private:
     VL_UNCOPYABLE(OrderMTaskMoveVertexMaker);
 };
 
-class OrderVerticesByDomainThenScope {
+class OrderVerticesByDomainThenScope final {
     PartPtrIdMap m_ids;
 
 public:
@@ -619,7 +620,7 @@ public:
     }
 };
 
-class MTaskVxIdLessThan {
+class MTaskVxIdLessThan final {
 public:
     MTaskVxIdLessThan() = default;
     virtual ~MTaskVxIdLessThan() = default;
@@ -636,7 +637,7 @@ public:
 //######################################################################
 // Order class functions
 
-class OrderVisitor : public AstNVisitor {
+class OrderVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Forming graph:

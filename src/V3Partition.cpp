@@ -243,7 +243,7 @@ private:
     VL_UNCOPYABLE(PartPropagateCp);
 };
 
-class PartPropagateCpSelfTest {
+class PartPropagateCpSelfTest final {
 private:
     // MEMBERS
     V3Graph m_graph;  // A graph
@@ -350,7 +350,7 @@ public:
 //######################################################################
 // LogicMTask
 
-class LogicMTask : public AbstractLogicMTask {
+class LogicMTask final : public AbstractLogicMTask {
 public:
     // TYPES
     typedef std::list<MTaskMoveVertex*> VxList;
@@ -366,7 +366,7 @@ public:
     //  - PartPropagateCp can thus be declared before LogicMTask
     //  - PartPropagateCp could be reused with graphs of other node types
     //    in the future, using another Accessor adaptor.
-    class CpCostAccessor {
+    class CpCostAccessor final {
     public:
         CpCostAccessor() = default;
         ~CpCostAccessor() = default;
@@ -690,7 +690,7 @@ private:
 
 // Sort AbstractMTask objects into deterministic order by calling id()
 // which is a unique and stable serial number.
-class MTaskIdLessThan {
+class MTaskIdLessThan final {
 public:
     MTaskIdLessThan() = default;
     virtual ~MTaskIdLessThan() = default;
@@ -700,7 +700,7 @@ public:
 };
 
 // Information associated with scoreboarding an MTask
-class MergeCandidate {
+class MergeCandidate VL_NOT_FINAL {
 private:
     bool m_removedFromSb = false;  // Not on scoreboard, generally ignore
     vluint64_t m_id;  // Serial number for ordering
@@ -720,7 +720,7 @@ public:
 
 // A pair of associated LogicMTask's that are merge candidates for sibling
 // contraction
-class SiblingMC : public MergeCandidate {
+class SiblingMC final : public MergeCandidate {
 private:
     LogicMTask* m_ap;
     LogicMTask* m_bp;
@@ -755,7 +755,7 @@ public:
 };
 
 // GraphEdge for the MTask graph
-class MTaskEdge : public V3GraphEdge, public MergeCandidate {
+class MTaskEdge final : public V3GraphEdge, public MergeCandidate {
 public:
     // CONSTRUCTORS
     MTaskEdge(V3Graph* graphp, LogicMTask* fromp, LogicMTask* top, int weight)
@@ -801,7 +801,7 @@ private:
 //######################################################################
 // Vertex utility classes
 
-class OrderByPtrId {
+class OrderByPtrId final {
     PartPtrIdMap m_ids;
 
 public:
@@ -815,7 +815,7 @@ public:
 //######################################################################
 // PartParallelismEst - Estimate parallelism of graph
 
-class PartParallelismEst {
+class PartParallelismEst final {
     // MEMBERS
     const V3Graph* m_graphp;  // Mtask-containing graph
 
@@ -1028,7 +1028,7 @@ static void partMergeEdgesFrom(V3Graph* mtasksp, LogicMTask* recipientp, LogicMT
 // PartContraction
 
 // Perform edge or sibling contraction on the partition graph
-class PartContraction {
+class PartContraction final {
 private:
     // TYPES
 
@@ -1633,7 +1633,7 @@ const GraphWay* PartContraction::s_shortestWaywardCpInclusiveWay = nullptr;
 
 // Scan node, indicate whether it contains a call to a DPI imported
 // routine.
-class DpiImportCallVisitor : public AstNVisitor {
+class DpiImportCallVisitor final : public AstNVisitor {
 private:
     bool m_hasDpiHazard = false;  // Found a DPI import call.
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
@@ -1753,7 +1753,7 @@ private:
 //     clock signal. This leads to unordered reader/writer pairs in
 //     parallel mode.
 //
-class PartFixDataHazards {
+class PartFixDataHazards final {
 private:
     // TYPES
     typedef std::set<LogicMTask*, MTaskIdLessThan> LogicMTaskSet;
@@ -2015,7 +2015,7 @@ private:
 // depending on which thread is looking. Be a little bit pessimistic when
 // thread A checks the end time of an mtask running on thread B. This extra
 // "padding" avoids tight "layovers" at cross-thread dependencies.
-class PartPackMTasks {
+class PartPackMTasks final {
 private:
     // TYPES
     struct MTaskState {

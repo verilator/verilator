@@ -24,7 +24,7 @@
 
 //============================================================================
 
-class VHashedBase {
+class VHashedBase VL_NOT_FINAL {
 public:
     // CONSTRUCTORS
     VHashedBase() = default;
@@ -43,7 +43,7 @@ struct V3HashedUserSame {
     virtual ~V3HashedUserSame() = default;
 };
 
-class V3Hashed : public VHashedBase {
+class V3Hashed final : public VHashedBase {
     // NODE STATE
     //  AstNode::user4()        -> V3Hash.  Hash value of this node (hash of 0 is illegal)
     AstUser4InUse m_inuser4;

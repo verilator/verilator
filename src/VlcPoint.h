@@ -29,7 +29,7 @@
 //********************************************************************
 // VlcPoint - A coverage point (across all tests)
 
-class VlcPoint {
+class VlcPoint final {
 private:
     // MEMBERS
     string m_name;  //< Name of the point
@@ -90,7 +90,7 @@ public:
 //********************************************************************
 // VlcPoints - Container of all points
 
-class VlcPoints {
+class VlcPoints final {
 private:
     // MEMBERS
     typedef std::map<const string, vluint64_t> NameMap;  // Sorted by name (ordered)

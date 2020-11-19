@@ -28,7 +28,7 @@ class V3ParseSym;
 
 //============================================================================
 
-class V3LinkCells {
+class V3LinkCells final {
 public:
     static void link(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp);
 };

@@ -36,7 +36,7 @@
 //######################################################################
 // Structure for global state
 
-class PremitAssignVisitor : public AstNVisitor {
+class PremitAssignVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstVar::user4()         // bool; occurs on LHS of current assignment
@@ -82,7 +82,7 @@ public:
 //######################################################################
 // Premit state, as a visitor of each AstNode
 
-class PremitVisitor : public AstNVisitor {
+class PremitVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstNodeMath::user()     -> bool.  True if iterated already

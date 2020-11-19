@@ -28,7 +28,7 @@
 //============================================================================
 // V3Os: OS static class
 
-class V3Os {
+class V3Os final {
 public:
     // METHODS (environment)
     static string getenvStr(const string& envvar, const string& defaultValue);

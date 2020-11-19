@@ -48,7 +48,7 @@ static const int TABLE_MIN_NODE_COUNT = 32;  // If < 32 instructions, not worth 
 
 class TableVisitor;
 
-class TableSimulateVisitor : public SimulateVisitor {
+class TableSimulateVisitor final : public SimulateVisitor {
     // MEMBERS
     TableVisitor* m_cbthis;  ///< Class for callback
 
@@ -65,7 +65,7 @@ public:
 //######################################################################
 // Table class functions
 
-class TableVisitor : public AstNVisitor {
+class TableVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on each always/assignw

@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3LinkLevel {
+class V3LinkLevel final {
 private:
     typedef std::vector<AstNodeModule*> ModVec;
 

@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Param {
+class V3Param final {
 public:
     static void param(AstNetlist* rootp);
 };

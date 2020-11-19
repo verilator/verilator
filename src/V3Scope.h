@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Scope {
+class V3Scope final {
 public:
     static void scopeAll(AstNetlist* nodep);
 };

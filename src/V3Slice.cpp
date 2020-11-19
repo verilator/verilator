@@ -44,7 +44,7 @@
 
 //*************************************************************************
 
-class SliceVisitor : public AstNVisitor {
+class SliceVisitor final : public AstNVisitor {
     // NODE STATE
     // Cleared on netlist
     //  AstNodeAssign::user1()      -> bool.  True if find is complete

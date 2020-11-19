@@ -51,7 +51,7 @@ constexpr int COMBINE_MIN_STATEMENTS = 50;  // Min # of statements to be worth m
 
 //######################################################################
 
-class CombBaseVisitor : public AstNVisitor {
+class CombBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 protected:
     // STATE
 
@@ -63,7 +63,7 @@ protected:
 //######################################################################
 // Combine replacement function
 
-class CombCallVisitor : CombBaseVisitor {
+class CombCallVisitor final : CombBaseVisitor {
     // Find all CCALLS of each CFUNC, so that we can later rename them
 private:
     // NODE STATE
@@ -139,7 +139,7 @@ public:
 //######################################################################
 // Combine marking function
 
-class CombMarkVisitor : CombBaseVisitor {
+class CombMarkVisitor final : CombBaseVisitor {
     // Mark all nodes under specified one.
 private:
     // OUTPUT:
@@ -159,7 +159,7 @@ public:
 //######################################################################
 // Combine state, as a visitor of each AstNode
 
-class CombineVisitor : CombBaseVisitor {
+class CombineVisitor final : CombBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:

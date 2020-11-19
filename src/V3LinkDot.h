@@ -27,7 +27,7 @@
 
 enum VLinkDotStep : uint8_t { LDS_PRIMARY, LDS_PARAMED, LDS_ARRAYED, LDS_SCOPED };
 
-class V3LinkDot {
+class V3LinkDot final {
 private:
     static int debug();
     static void linkDotGuts(AstNetlist* rootp, VLinkDotStep step);

@@ -28,7 +28,7 @@
 // VerilatedSerialize - convert structures to a stream representation
 // This class is not thread safe, it must be called by a single thread
 
-class VerilatedSerialize {
+class VerilatedSerialize VL_NOT_FINAL {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
@@ -87,7 +87,7 @@ private:
 // VerilatedDeserial - load structures from a stream representation
 // This class is not thread safe, it must be called by a single thread
 
-class VerilatedDeserialize {
+class VerilatedDeserialize VL_NOT_FINAL {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
@@ -154,7 +154,7 @@ private:
 // VerilatedSave - serialize to a file
 // This class is not thread safe, it must be called by a single thread
 
-class VerilatedSave : public VerilatedSerialize {
+class VerilatedSave final : public VerilatedSerialize {
 private:
     int m_fd = -1;  ///< File descriptor we're writing to
 
@@ -174,7 +174,7 @@ public:
 // VerilatedRestore - deserialize from a file
 // This class is not thread safe, it must be called by a single thread
 
-class VerilatedRestore : public VerilatedDeserialize {
+class VerilatedRestore final : public VerilatedDeserialize {
 private:
     int m_fd = -1;  ///< File descriptor we're writing to
 

@@ -29,7 +29,7 @@
 
 //######################################################################
 
-class ClassVisitor : public AstNVisitor {
+class ClassVisitor final : public AstNVisitor {
 private:
     // MEMBERS
     AstUser1InUse m_inuser1;

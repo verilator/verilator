@@ -31,7 +31,7 @@
 // Collect SenTrees under the entire scope
 // And provide functions to find/add a new one
 
-class SenTreeSet {
+class SenTreeSet final {
     // Hash table of sensitive blocks.
 private:
     // TYPES
@@ -71,7 +71,7 @@ private:
     VL_UNCOPYABLE(SenTreeSet);
 };
 
-class SenTreeFinder {
+class SenTreeFinder final {
 private:
     // STATE
     AstTopScope* m_topScopep = nullptr;  // Top scope to add global SenTrees to

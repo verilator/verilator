@@ -46,7 +46,7 @@ class VerilatedScope;
 
 #ifdef VL_THREADED
 /// Message, enqueued on an mtask, and consumed on the main eval thread
-class VerilatedMsg {
+class VerilatedMsg final {
 public:
     // TYPES
     struct Cmp {
@@ -78,7 +78,7 @@ public:
 /// Each thread has a queue it pushes to
 /// This assumes no thread starts pushing the next tick until the previous has drained.
 /// If more aggressiveness is needed, a double-buffered scheme might work well.
-class VerilatedEvalMsgQueue {
+class VerilatedEvalMsgQueue final {
     typedef std::multiset<VerilatedMsg, VerilatedMsg::Cmp> VerilatedThreadQueue;
 
     std::atomic<vluint64_t> m_depth;  ///< Current depth of queue (see comments below)
@@ -130,7 +130,7 @@ public:
 };
 
 /// Each thread has a local queue to build up messages until the end of the eval() call
-class VerilatedThreadMsgQueue {
+class VerilatedThreadMsgQueue final {
     std::queue<VerilatedMsg> m_queue;
 
 public:
@@ -174,7 +174,7 @@ public:
 #endif  // VL_THREADED
 
 // FILE* list constructed from a file-descriptor
-class VerilatedFpList {
+class VerilatedFpList final {
     FILE* m_fp[31];
     std::size_t m_sz = 0;
 
@@ -193,7 +193,7 @@ public:
 //======================================================================
 // VerilatedImp
 
-class VerilatedImpData {
+class VerilatedImpData final {
     // Whole class is internal use only - Global information shared between verilated*.cpp files.
 protected:
     friend class Verilated;
@@ -264,7 +264,7 @@ protected:
     }
 };
 
-class VerilatedImp {
+class VerilatedImp final {
     // Whole class is internal use only - Global information shared between verilated*.cpp files.
 protected:
     friend class Verilated;

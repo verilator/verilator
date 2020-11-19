@@ -40,7 +40,7 @@
 //######################################################################
 // Clock state, as a visitor of each AstNode
 
-class ClockVisitor : public AstNVisitor {
+class ClockVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared each Module:

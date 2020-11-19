@@ -26,7 +26,7 @@
 //********************************************************************
 // VlcColumnCount - count at specific source file, line and column
 
-class VlcSourceCount {
+class VlcSourceCount final {
 private:
     // MEMBERS
     int m_lineno;  ///< Line number
@@ -57,7 +57,7 @@ public:
 //********************************************************************
 // VlcSource - source file to annotate
 
-class VlcSource {
+class VlcSource final {
 public:
     // TYPES
     typedef std::map<int, VlcSourceCount> ColumnMap;  // Map of {column}
@@ -98,7 +98,7 @@ public:
 //********************************************************************
 // VlcSources - Container of all source files
 
-class VlcSources {
+class VlcSources final {
 public:
     // TYPES
     typedef std::map<const string, VlcSource> NameMap;

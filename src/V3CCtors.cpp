@@ -34,7 +34,7 @@
 #include <algorithm>
 #include <map>
 
-class V3CCtorsVisitor {
+class V3CCtorsVisitor final {
 private:
     string m_basename;
     string m_argsp;

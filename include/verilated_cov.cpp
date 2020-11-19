@@ -29,7 +29,7 @@
 // VerilatedCovImpBase
 /// Implementation base class for constants
 
-struct VerilatedCovImpBase {
+struct VerilatedCovImpBase VL_NOT_FINAL {
     // TYPES
     enum { MAX_KEYS = 33 };  /// Maximum user arguments + filename+lineno
     enum { KEY_UNDEF = 0 };  /// Magic key # for unspecified values
@@ -39,7 +39,7 @@ struct VerilatedCovImpBase {
 // VerilatedCovImpItem
 /// Implementation class for a VerilatedCov item
 
-class VerilatedCovImpItem : VerilatedCovImpBase {
+class VerilatedCovImpItem VL_NOT_FINAL : VerilatedCovImpBase {
 public:  // But only local to this file
     // MEMBERS
     int m_keys[MAX_KEYS];  ///< Key
@@ -63,7 +63,7 @@ public:  // But only local to this file
 /// This isn't in the header file for auto-magic conversion because it
 /// inlines to too much code and makes compilation too slow.
 
-template <class T> class VerilatedCoverItemSpec : public VerilatedCovImpItem {
+template <class T> class VerilatedCoverItemSpec final : public VerilatedCovImpItem {
 private:
     // MEMBERS
     T* m_countp;  ///< Count value
@@ -87,7 +87,7 @@ public:
 /// All value and keys are indexed into a unique number.  Thus we can greatly reduce
 /// the storage requirements for otherwise identical keys.
 
-class VerilatedCovImp : VerilatedCovImpBase {
+class VerilatedCovImp final : VerilatedCovImpBase {
 private:
     // TYPES
     typedef std::map<const std::string, int> ValueIndexMap;

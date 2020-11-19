@@ -66,7 +66,7 @@ inline string ucfirst(const string& text) {
 //######################################################################
 // VString - String manipulation
 
-class VString {
+class VString final {
     static bool wildmatchi(const char* s, const char* p);
 
 public:
@@ -104,7 +104,7 @@ public:
 //######################################################################
 // VHashSha256 - Compute Sha256 hashes
 
-class VHashSha256 {
+class VHashSha256 final {
     // As blocks must be processed in 64 byte chunks, this does not at present
     // support calling input() on multiple non-64B chunks and getting the correct
     // hash. To do that first combine the string before calling here.
@@ -157,7 +157,7 @@ private:
 // VName - string which contains a possibly hashed string
 // TODO use this wherever there is currently a "string m_name"
 
-class VName {
+class VName final {
     string m_name;
     string m_hashed;
     static std::map<string, string> s_dehashMap;  // hashed -> original decoder
@@ -187,7 +187,7 @@ public:
 //######################################################################
 // VSpellCheck - Find near-match spelling suggestions given list of possibilities
 
-class VSpellCheck {
+class VSpellCheck final {
     // CONSTANTS
     static constexpr unsigned NUM_CANDIDATE_LIMIT = 10000;  // Avoid searching huge netlists
     static constexpr unsigned LENGTH_LIMIT = 100;  // Maximum string length to search

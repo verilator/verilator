@@ -41,7 +41,7 @@
 
 //######################################################################
 
-class UnknownVisitor : public AstNVisitor {
+class UnknownVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on Netlist

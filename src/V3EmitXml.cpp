@@ -28,7 +28,7 @@
 //######################################################################
 // Emit statements and math operators
 
-class EmitXmlFileVisitor : public AstNVisitor {
+class EmitXmlFileVisitor final : public AstNVisitor {
     // NODE STATE
     // Entire netlist:
     // AstNode::user1           -> uint64_t, number to connect crossrefs
@@ -256,7 +256,7 @@ public:
 //######################################################################
 // List of module files xml visitor
 
-class ModuleFilesXmlVisitor : public AstNVisitor {
+class ModuleFilesXmlVisitor final : public AstNVisitor {
 private:
     // MEMBERS
     std::ostream& m_os;
@@ -304,7 +304,7 @@ public:
 //######################################################################
 // Hierarchy of Cells visitor
 
-class HierCellsXmlVisitor : public AstNVisitor {
+class HierCellsXmlVisitor final : public AstNVisitor {
 private:
     // MEMBERS
     std::ostream& m_os;

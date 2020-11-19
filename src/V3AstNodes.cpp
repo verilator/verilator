@@ -553,7 +553,7 @@ string AstVar::mtasksString() const {
     return os.str();
 }
 
-class AstNodeDType::CTypeRecursed {
+class AstNodeDType::CTypeRecursed final {
 public:
     string m_type;  // The base type, e.g.: "Foo_t"s
     string m_dims;  // Array dimensions, e.g.: "[3][2][1]"

@@ -36,7 +36,7 @@
 /// Thread safety: Assume is constructed only with model, then any number of readers
 
 // See also V3Ast::VNumRange
-class VerilatedRange {
+class VerilatedRange final {
     int m_left = 0;
     int m_right = 0;
 
@@ -68,7 +68,7 @@ public:
 /// Verilator variable
 /// Thread safety: Assume is constructed only with model, then any number of readers
 
-class VerilatedVarProps {
+class VerilatedVarProps VL_NOT_FINAL {
     // TYPES
     enum { MAGIC = 0xddc4f829 };
     // MEMBERS
@@ -187,7 +187,7 @@ public:
 //===========================================================================
 /// Verilator DPI open array variable
 
-class VerilatedDpiOpenVar {
+class VerilatedDpiOpenVar final {
     // MEMBERS
     const VerilatedVarProps* m_propsp;  // Variable properties
     void* m_datap;  // Location of data (local to thread always, so safe)
@@ -225,7 +225,7 @@ public:
 /// Verilator variable
 /// Thread safety: Assume is constructed only with model, then any number of readers
 
-class VerilatedVar : public VerilatedVarProps {
+class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS
     void* m_datap;  // Location of data
     const char* m_namep;  // Name - slowpath

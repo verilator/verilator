@@ -33,7 +33,7 @@
 
 //======================================================================
 
-class VerilatedVpi {
+class VerilatedVpi final {
 public:
     /// Call timed callbacks
     /// Users should call this from their main loops

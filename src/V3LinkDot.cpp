@@ -78,25 +78,25 @@
 //######################################################################
 // Matcher classes (for suggestion matching)
 
-class LinkNodeMatcherClass : public VNodeMatcher {
+class LinkNodeMatcherClass final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, Class); }
 };
-class LinkNodeMatcherFTask : public VNodeMatcher {
+class LinkNodeMatcherFTask final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, NodeFTask); }
 };
-class LinkNodeMatcherModport : public VNodeMatcher {
+class LinkNodeMatcherModport final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, Modport); }
 };
-class LinkNodeMatcherVar : public VNodeMatcher {
+class LinkNodeMatcherVar final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override {
         return VN_IS(nodep, Var) || VN_IS(nodep, LambdaArgRef);
     }
 };
-class LinkNodeMatcherVarIO : public VNodeMatcher {
+class LinkNodeMatcherVarIO final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override {
         const AstVar* varp = VN_CAST_CONST(nodep, Var);
@@ -104,7 +104,7 @@ public:
         return varp->isIO();
     }
 };
-class LinkNodeMatcherVarParam : public VNodeMatcher {
+class LinkNodeMatcherVarParam final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override {
         const AstVar* varp = VN_CAST_CONST(nodep, Var);
@@ -116,7 +116,7 @@ public:
 //######################################################################
 // LinkDot state, as a visitor of each AstNode
 
-class LinkDotState {
+class LinkDotState final {
 private:
     // NODE STATE
     // Cleared on Netlist
@@ -705,7 +705,7 @@ LinkDotState* LinkDotState::s_errorThisp = nullptr;
 
 //======================================================================
 
-class LinkDotFindVisitor : public AstNVisitor {
+class LinkDotFindVisitor final : public AstNVisitor {
     // STATE
     LinkDotState* m_statep;  // State to pass between visitors, including symbol table
     AstNodeModule* m_packagep = nullptr;  // Current package
@@ -1319,7 +1319,7 @@ public:
 
 //======================================================================
 
-class LinkDotParamVisitor : public AstNVisitor {
+class LinkDotParamVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on global
@@ -1484,7 +1484,7 @@ public:
 
 //======================================================================
 
-class LinkDotScopeVisitor : public AstNVisitor {
+class LinkDotScopeVisitor final : public AstNVisitor {
 
     // STATE
     LinkDotState* m_statep;  // State to pass between visitors, including symbol table
@@ -1643,7 +1643,7 @@ public:
 //======================================================================
 
 // Iterate an interface to resolve modports
-class LinkDotIfaceVisitor : public AstNVisitor {
+class LinkDotIfaceVisitor final : public AstNVisitor {
     // STATE
     LinkDotState* m_statep;  // State to pass between visitors, including symbol table
     VSymEnt* m_curSymp;  // Symbol Entry for current table, where to lookup/insert
@@ -1736,7 +1736,7 @@ void LinkDotState::computeIfaceModSyms() {
 
 //======================================================================
 
-class LinkDotResolveVisitor : public AstNVisitor {
+class LinkDotResolveVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on global

@@ -29,7 +29,7 @@
 /// we'll count instructions from either the 'if' or the 'else' branch,
 /// whichever is larger. We know we won't run both.
 
-class InstrCountVisitor : public AstNVisitor {
+class InstrCountVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstNode::user4()        -> int.  Path cost + 1, 0 means don't dump
@@ -46,7 +46,7 @@ private:
 
     // TYPES
     // Little class to cleanly call startVisitBase/endVisitBase
-    class VisitBase {
+    class VisitBase final {
     private:
         // MEMBERS
         uint32_t m_savedCount;
@@ -258,7 +258,7 @@ private:
 };
 
 // Iterate the graph printing the critical path marked by previous visitation
-class InstrCountDumpVisitor : public AstNVisitor {
+class InstrCountDumpVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstNode::user4()        -> int.  Path cost, 0 means don't dump

@@ -36,7 +36,7 @@
 //######################################################################
 // Scope class functions
 
-class ScopeVisitor : public AstNVisitor {
+class ScopeVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // AstVar::user1p           -> AstVarScope replacement for this variable
@@ -319,7 +319,7 @@ public:
 //######################################################################
 // Scope cleanup -- remove unused activates
 
-class ScopeCleanupVisitor : public AstNVisitor {
+class ScopeCleanupVisitor final : public AstNVisitor {
 private:
     // STATE
     AstScope* m_scopep = nullptr;  // Current scope we are building

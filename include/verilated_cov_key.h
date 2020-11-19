@@ -102,7 +102,7 @@ VLCOVGEN_ITEM("name=>'weight',      short=>'w',  group=>0, default=>undef, descr
 /// Verilator coverage global class.
 /// This class is thread safe.
 
-class VerilatedCovKey {
+class VerilatedCovKey final {
 public:
     static std::string shortKey(const std::string& key) VL_PURE {
         // VLCOVGEN_SHORT_AUTO_EDIT_BEGIN

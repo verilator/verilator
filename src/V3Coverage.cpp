@@ -37,7 +37,7 @@
 //######################################################################
 // Coverage state, as a visitor of each AstNode
 
-class CoverageVisitor : public AstNVisitor {
+class CoverageVisitor final : public AstNVisitor {
 private:
     // TYPES
     typedef std::unordered_map<string, int> VarNameMap;

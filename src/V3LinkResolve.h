@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3LinkResolve {
+class V3LinkResolve final {
 public:
     static void linkResolve(AstNetlist* rootp);
 };

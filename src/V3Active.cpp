@@ -43,12 +43,12 @@
 //######################################################################
 // Collect existing active names
 
-class ActiveBaseVisitor : public AstNVisitor {
+class ActiveBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 protected:
     VL_DEBUG_FUNC;  // Declare debug()
 };
 
-class ActiveNamer : public ActiveBaseVisitor {
+class ActiveNamer final : public ActiveBaseVisitor {
 private:
     // STATE
     AstScope* m_scopep = nullptr;  // Current scope to add statement to
@@ -138,7 +138,7 @@ public:
 //######################################################################
 // Active AssignDly replacement functions
 
-class ActiveDlyVisitor : public ActiveBaseVisitor {
+class ActiveDlyVisitor final : public ActiveBaseVisitor {
 public:
     enum CheckType : uint8_t { CT_SEQ, CT_COMBO, CT_INITIAL, CT_LATCH };
 
@@ -211,7 +211,7 @@ public:
 //######################################################################
 // Active class functions
 
-class ActiveVisitor : public ActiveBaseVisitor {
+class ActiveVisitor final : public ActiveBaseVisitor {
 private:
     // NODE STATE
     //  Each call to V3Const::constify

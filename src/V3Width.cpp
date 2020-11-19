@@ -103,7 +103,7 @@ std::ostream& operator<<(std::ostream& str, const Determ& rhs) {
 //######################################################################
 // Width state, as a visitor of each AstNode
 
-class WidthVP {
+class WidthVP final {
     // Parameters to pass down hierarchy with visit functions.
     AstNodeDType* m_dtypep;  // Parent's data type to resolve to
     Stage m_stage;  // If true, report errors
@@ -164,7 +164,7 @@ std::ostream& operator<<(std::ostream& str, const WidthVP* vup) {
 
 //######################################################################
 
-class WidthClearVisitor {
+class WidthClearVisitor final {
     // Rather than a AstNVisitor, can just quickly touch every node
     void clearWidthRecurse(AstNode* nodep) {
         for (; nodep; nodep = nodep->nextp()) {
@@ -188,7 +188,7 @@ public:
 
 //######################################################################
 
-class WidthVisitor : public AstNVisitor {
+class WidthVisitor final : public AstNVisitor {
 private:
     // TYPES
     typedef std::map<std::pair<const AstNodeDType*, AstAttrType>, AstVar*> TableMap;

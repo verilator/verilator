@@ -32,7 +32,7 @@ typedef std::vector<V3TaskConnect> V3TaskConnects;  // [ [port, pin-connects-to]
 
 //============================================================================
 
-class V3Task {
+class V3Task final {
 public:
     static void taskAll(AstNetlist* nodep);
     /// Return vector of [port, pin-connects-to]  (SLOW)

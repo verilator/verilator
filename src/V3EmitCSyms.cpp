@@ -29,7 +29,7 @@
 //######################################################################
 // Symbol table emitting
 
-class EmitCSyms : EmitCBaseVisitor {
+class EmitCSyms final : EmitCBaseVisitor {
     // NODE STATE
     // Cleared on Netlist
     //  AstNodeModule::user1()  -> bool.  Set true __Vconfigure called

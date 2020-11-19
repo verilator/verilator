@@ -378,9 +378,9 @@ sub write_header {
         $line =~ s/^\s*#(define|undef)\s+ASTGEN_.*$//;
 
         # Track current node type and base class
-        if ($line =~ /^\s*class\s*Ast(\S+)\s*:\s*(public)?\s*(AstNode\S*)/) {
+        if ($line =~ /^\s*class\s*Ast(\S+)\s*(final|VL_NOT_FINAL)?\s*:\s*(public)?\s*(AstNode\S*)/) {
           $type = $1;
-          $base = $3;
+          $base = $4;
         }
 
         # Substitute macros

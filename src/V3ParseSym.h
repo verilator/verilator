@@ -30,7 +30,7 @@
 //######################################################################
 // Symbol table for parsing
 
-class V3ParseSym {
+class V3ParseSym final {
     // TYPES
     typedef std::vector<VSymEnt*> SymStack;
 

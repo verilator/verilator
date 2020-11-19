@@ -110,7 +110,7 @@ inline bool operator==(OrderVEdgeType::en lhs, const OrderVEdgeType& rhs) {
 //######################################################################
 // Graph types
 
-class OrderGraph : public V3Graph {
+class OrderGraph final : public V3Graph {
 public:
     OrderGraph() = default;
     virtual ~OrderGraph() override = default;
@@ -121,7 +121,7 @@ public:
 //######################################################################
 // Vertex types
 
-class OrderEitherVertex : public V3GraphVertex {
+class OrderEitherVertex VL_NOT_FINAL : public V3GraphVertex {
     AstScope* m_scopep;  // Scope the vertex is in
     AstSenTree* m_domainp;  // Clock domain (nullptr = to be computed as we iterate)
     bool m_isFromInput = false;  // From input, or derived therefrom (conservatively false)
@@ -151,7 +151,7 @@ public:
     bool isFromInput() const { return m_isFromInput; }
 };
 
-class OrderInputsVertex : public OrderEitherVertex {
+class OrderInputsVertex final : public OrderEitherVertex {
     OrderInputsVertex(V3Graph* graphp, const OrderInputsVertex& old)
         : OrderEitherVertex{graphp, old} {}
 
@@ -171,7 +171,7 @@ public:
     virtual bool domainMatters() override { return false; }
 };
 
-class OrderLogicVertex : public OrderEitherVertex {
+class OrderLogicVertex final : public OrderEitherVertex {
     AstNode* m_nodep;
 
 protected:
@@ -197,7 +197,7 @@ public:
     virtual string dotColor() const override { return "yellow"; }
 };
 
-class OrderVarVertex : public OrderEitherVertex {
+class OrderVarVertex VL_NOT_FINAL : public OrderEitherVertex {
     AstVarScope* m_varScp;
     bool m_isClock = false;  // Used as clock
     bool m_isDelayed = false;  // Set in a delayed assignment
@@ -224,7 +224,7 @@ public:
     bool isDelayed() const { return m_isDelayed; }
 };
 
-class OrderVarStdVertex : public OrderVarVertex {
+class OrderVarStdVertex final : public OrderVarVertex {
     OrderVarStdVertex(V3Graph* graphp, const OrderVarStdVertex& old)
         : OrderVarVertex{graphp, old} {}
 
@@ -242,7 +242,7 @@ public:
     virtual string dotColor() const override { return "skyblue"; }
     virtual bool domainMatters() override { return true; }
 };
-class OrderVarPreVertex : public OrderVarVertex {
+class OrderVarPreVertex final : public OrderVarVertex {
     OrderVarPreVertex(V3Graph* graphp, const OrderVarPreVertex& old)
         : OrderVarVertex{graphp, old} {}
 
@@ -260,7 +260,7 @@ public:
     virtual string dotColor() const override { return "lightblue"; }
     virtual bool domainMatters() override { return false; }
 };
-class OrderVarPostVertex : public OrderVarVertex {
+class OrderVarPostVertex final : public OrderVarVertex {
     OrderVarPostVertex(V3Graph* graphp, const OrderVarPostVertex& old)
         : OrderVarVertex{graphp, old} {}
 
@@ -278,7 +278,7 @@ public:
     virtual string dotColor() const override { return "CadetBlue"; }
     virtual bool domainMatters() override { return false; }
 };
-class OrderVarPordVertex : public OrderVarVertex {
+class OrderVarPordVertex final : public OrderVarVertex {
     OrderVarPordVertex(V3Graph* graphp, const OrderVarPordVertex& old)
         : OrderVarVertex{graphp, old} {}
 
@@ -296,7 +296,7 @@ public:
     virtual string dotColor() const override { return "NavyBlue"; }
     virtual bool domainMatters() override { return false; }
 };
-class OrderVarSettleVertex : public OrderVarVertex {
+class OrderVarSettleVertex final : public OrderVarVertex {
     OrderVarSettleVertex(V3Graph* graphp, const OrderVarSettleVertex& old)
         : OrderVarVertex{graphp, old} {}
 
@@ -318,7 +318,7 @@ public:
 //######################################################################
 //--- Following only under the move graph, not the main graph
 
-class OrderMoveVertex : public V3GraphVertex {
+class OrderMoveVertex final : public V3GraphVertex {
     typedef enum : uint8_t { POM_WAIT, POM_READY, POM_MOVED } OrderMState;
 
     OrderLogicVertex* m_logicp;
@@ -387,7 +387,7 @@ public:
 };
 
 // Similar to OrderMoveVertex, but modified for threaded code generation.
-class MTaskMoveVertex : public V3GraphVertex {
+class MTaskMoveVertex final : public V3GraphVertex {
     //  This could be more compact, since we know m_varp and m_logicp
     //  cannot both be set. Each MTaskMoveVertex represents a logic node
     //  or a var node, it can't be both.
@@ -445,7 +445,7 @@ public:
 //######################################################################
 // Edge types
 
-class OrderEdge : public V3GraphEdge {
+class OrderEdge VL_NOT_FINAL : public V3GraphEdge {
 protected:
     OrderEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, const OrderEdge& old)
         : V3GraphEdge{graphp, fromp, top, old} {}
@@ -470,7 +470,7 @@ public:
     }
 };
 
-class OrderComboCutEdge : public OrderEdge {
+class OrderComboCutEdge final : public OrderEdge {
     // Edge created from output of combo logic
     // Breakable if the output var is also a input,
     // in which case we'll need a change detect loop around this var.
@@ -491,7 +491,7 @@ public:
     virtual bool followComboConnected() const override { return true; }
 };
 
-class OrderPostCutEdge : public OrderEdge {
+class OrderPostCutEdge final : public OrderEdge {
     // Edge created from output of post assignment
     // Breakable if the output var feeds back to input combo logic or another clock pin
     // in which case we'll need a change detect loop around this var.
@@ -512,7 +512,7 @@ public:
     virtual bool followComboConnected() const override { return false; }
 };
 
-class OrderPreCutEdge : public OrderEdge {
+class OrderPreCutEdge final : public OrderEdge {
     // Edge created from var_PREVAR->consuming logic vertex
     // Always breakable, just results in performance loss
     // in which case we can't optimize away the pre/post delayed assignments

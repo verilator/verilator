@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3SplitAs {
+class V3SplitAs final {
 public:
     static void splitAsAll(AstNetlist* nodep);
 };

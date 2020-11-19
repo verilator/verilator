@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Split {
+class V3Split final {
 public:
     static void splitReorderAll(AstNetlist* nodep);
     static void splitAlwaysAll(AstNetlist* nodep);

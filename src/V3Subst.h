@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Subst {
+class V3Subst final {
 public:
     static void substituteAll(AstNetlist* nodep);
 };

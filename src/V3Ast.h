@@ -71,7 +71,7 @@ typedef std::set<int> MTaskIdSet;  // Set of mtaskIds for Var sorting
 
 //######################################################################
 
-class AstType {
+class AstType final {
 public:
 #include "V3Ast__gen_types.h"  // From ./astgen
     // Above include has:
@@ -94,7 +94,7 @@ inline std::ostream& operator<<(std::ostream& os, const AstType& rhs) { return o
 
 //######################################################################
 
-class VLifetime {
+class VLifetime final {
 public:
     enum en : uint8_t { NONE, AUTOMATIC, STATIC };
     enum en m_e;
@@ -123,7 +123,7 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 //######################################################################
 
-class VAccess {
+class VAccess final {
 public:
     enum en : uint8_t {
         READ,  // Read/Consumed, variable not changed
@@ -166,7 +166,7 @@ inline std::ostream& operator<<(std::ostream& os, const VAccess& rhs) { return o
 
 //######################################################################
 
-class VSigning {
+class VSigning final {
 public:
     enum en : uint8_t {
         UNSIGNED,
@@ -203,7 +203,7 @@ inline std::ostream& operator<<(std::ostream& os, const VSigning& rhs) {
 
 //######################################################################
 
-class AstPragmaType {
+class AstPragmaType final {
 public:
     enum en : uint8_t {
         ILLEGAL,
@@ -236,7 +236,7 @@ inline bool operator==(AstPragmaType::en lhs, const AstPragmaType& rhs) { return
 
 //######################################################################
 
-class AstCFuncType {
+class AstCFuncType final {
 public:
     enum en : uint8_t {
         FT_NORMAL,
@@ -269,7 +269,7 @@ inline bool operator==(AstCFuncType::en lhs, const AstCFuncType& rhs) { return l
 
 //######################################################################
 
-class VEdgeType {
+class VEdgeType final {
 public:
     // REMEMBER to edit the strings below too
     enum en : uint8_t {
@@ -355,7 +355,7 @@ inline bool operator==(VEdgeType::en lhs, const VEdgeType& rhs) { return lhs == 
 
 //######################################################################
 
-class AstAttrType {
+class AstAttrType final {
 public:
     // clang-format off
     enum en: uint8_t  {
@@ -436,7 +436,7 @@ inline bool operator==(AstAttrType::en lhs, const AstAttrType& rhs) { return lhs
 
 //######################################################################
 
-class AstBasicDTypeKwd {
+class AstBasicDTypeKwd final {
 public:
     enum en : uint8_t {
         UNKNOWN,
@@ -572,7 +572,7 @@ inline bool operator==(AstBasicDTypeKwd::en lhs, const AstBasicDTypeKwd& rhs) {
 
 //######################################################################
 
-class VDirection {
+class VDirection final {
 public:
     enum en : uint8_t { NONE, INPUT, OUTPUT, INOUT, REF, CONSTREF };
     enum en m_e;
@@ -617,7 +617,7 @@ inline std::ostream& operator<<(std::ostream& os, const VDirection& rhs) {
 //######################################################################
 
 /// Boolean or unknown
-class VBoolOrUnknown {
+class VBoolOrUnknown final {
 public:
     enum en : uint8_t { BU_FALSE = 0, BU_TRUE = 1, BU_UNKNOWN = 2, _ENUM_END };
     enum en m_e;
@@ -656,7 +656,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBoolOrUnknown& rhs) {
 //######################################################################
 
 /// Join type
-class VJoinType {
+class VJoinType final {
 public:
     enum en : uint8_t { JOIN = 0, JOIN_ANY = 1, JOIN_NONE = 2 };
     enum en m_e;
@@ -689,7 +689,7 @@ inline std::ostream& operator<<(std::ostream& os, const VJoinType& rhs) {
 
 //######################################################################
 
-class AstVarType {
+class AstVarType final {
 public:
     enum en : uint8_t {
         UNKNOWN,
@@ -757,7 +757,7 @@ inline std::ostream& operator<<(std::ostream& os, const AstVarType& rhs) {
 
 //######################################################################
 
-class VBranchPred {
+class VBranchPred final {
 public:
     enum en : uint8_t { BP_UNKNOWN = 0, BP_LIKELY, BP_UNLIKELY, _ENUM_END };
     enum en m_e;
@@ -798,7 +798,7 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
 
 //######################################################################
 
-class VVarAttrClocker {
+class VVarAttrClocker final {
 public:
     enum en : uint8_t { CLOCKER_UNKNOWN = 0, CLOCKER_YES, CLOCKER_NO, _ENUM_END };
     enum en m_e;
@@ -841,7 +841,7 @@ inline std::ostream& operator<<(std::ostream& os, const VVarAttrClocker& rhs) {
 
 //######################################################################
 
-class VAlwaysKwd {
+class VAlwaysKwd final {
 public:
     enum en : uint8_t { ALWAYS, ALWAYS_FF, ALWAYS_LATCH, ALWAYS_COMB };
     enum en m_e;
@@ -864,7 +864,7 @@ inline bool operator==(VAlwaysKwd::en lhs, const VAlwaysKwd& rhs) { return lhs =
 
 //######################################################################
 
-class VCaseType {
+class VCaseType final {
 public:
     enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE };
     enum en m_e;
@@ -883,7 +883,7 @@ inline bool operator==(VCaseType::en lhs, const VCaseType& rhs) { return lhs == 
 
 //######################################################################
 
-class AstDisplayType {
+class AstDisplayType final {
 public:
     enum en : uint8_t { DT_DISPLAY, DT_WRITE, DT_INFO, DT_ERROR, DT_WARNING, DT_FATAL };
     enum en m_e;
@@ -915,7 +915,7 @@ inline bool operator==(AstDisplayType::en lhs, const AstDisplayType& rhs) {
 
 //######################################################################
 
-class VDumpCtlType {
+class VDumpCtlType final {
 public:
     enum en : uint8_t { FILE, VARS, ALL, FLUSH, LIMIT, OFF, ON };
     enum en m_e;
@@ -941,7 +941,7 @@ inline bool operator==(VDumpCtlType::en lhs, const VDumpCtlType& rhs) { return l
 
 //######################################################################
 
-class VParseRefExp {
+class VParseRefExp final {
 public:
     enum en : uint8_t {
         PX_NONE,  // Used in V3LinkParse only
@@ -975,7 +975,7 @@ inline std::ostream& operator<<(std::ostream& os, const VParseRefExp& rhs) {
 // VNumRange - Structure containing numeric range information
 // See also AstRange, which is a symbolic version of this
 
-class VNumRange {
+class VNumRange final {
 public:
     int m_hi = 0;  // HI part, HI always >= LO
     int m_lo = 0;  // LO
@@ -1048,7 +1048,7 @@ inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
 
 //######################################################################
 
-class VUseType {
+class VUseType final {
 public:
     enum en : uint8_t {
         IMP_INCLUDE,  // Implementation (.cpp) needs an include
@@ -1081,7 +1081,7 @@ inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
 
 //######################################################################
 
-class VBasicTypeKey {
+class VBasicTypeKey final {
 public:
     int m_width;  // From AstNodeDType: Bit width of operation
     int m_widthMin;  // From AstNodeDType: If unsized, bitwidth of minimum implementation
@@ -1123,7 +1123,7 @@ class WidthVP;
 class V3GraphVertex;
 class VSymEnt;
 
-class VNUser {
+class VNUser final {
     union {
         void* up;
         int ui;
@@ -1159,7 +1159,7 @@ public:
 //  user2.  When the member goes out of scope it will be automagically
 //  freed up.
 
-class AstUserInUseBase {
+class AstUserInUseBase VL_NOT_FINAL {
 protected:
     static void allocate(int id, uint32_t& cntGblRef, bool& userBusyRef) {
         // Perhaps there's still a AstUserInUse in scope for this?
@@ -1190,7 +1190,7 @@ protected:
 // We let AstNode peek into here, because when under low optimization even
 // an accessor would be way too slow.
 // clang-format off
-class AstUser1InUse : AstUserInUseBase {
+class AstUser1InUse final : AstUserInUseBase {
 protected:
     friend class AstNode;
     static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
@@ -1201,7 +1201,7 @@ public:
     static void clear() { clearcnt(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
-class AstUser2InUse : AstUserInUseBase {
+class AstUser2InUse final : AstUserInUseBase {
 protected:
     friend class AstNode;
     static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
@@ -1212,7 +1212,7 @@ public:
     static void clear() { clearcnt(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
-class AstUser3InUse : AstUserInUseBase {
+class AstUser3InUse final : AstUserInUseBase {
 protected:
     friend class AstNode;
     static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
@@ -1223,7 +1223,7 @@ public:
     static void clear() { clearcnt(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
-class AstUser4InUse : AstUserInUseBase {
+class AstUser4InUse final : AstUserInUseBase {
 protected:
     friend class AstNode;
     static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
@@ -1234,7 +1234,7 @@ public:
     static void clear() { clearcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
-class AstUser5InUse : AstUserInUseBase {
+class AstUser5InUse final : AstUserInUseBase {
 protected:
     friend class AstNode;
     static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
@@ -1251,7 +1251,7 @@ public:
 // AstNVisitor -- Allows new functions to be called on each node
 // type without changing the base classes.  See "Modern C++ Design".
 
-class AstNVisitor {
+class AstNVisitor VL_NOT_FINAL {
 private:
     // MEMBERS
     std::vector<AstNode*> m_deleteps;  // Nodes to delete when doDeletes() called
@@ -1298,7 +1298,7 @@ public:
 // AstNRelinker -- Holds the state of a unlink so a new node can be
 // added at the same point.
 
-class AstNRelinker {
+class AstNRelinker final {
 protected:
     friend class AstNode;
     enum RelinkWhatEn : uint8_t {
@@ -1328,7 +1328,7 @@ inline std::ostream& operator<<(std::ostream& os, const AstNRelinker& rhs) {
 //######################################################################
 // V3Hash -- Node hashing for V3Combine
 
-class V3Hash {
+class V3Hash final {
     // A hash of a tree of nodes, consisting of 8 bits with the number of nodes in the hash
     // and 24 bit value hash of relevant information about the node.
     // A value of 0 is illegal
@@ -1381,7 +1381,7 @@ std::ostream& operator<<(std::ostream& os, const V3Hash& rhs);
 //######################################################################
 // Callback base class to determine if node matches some formula
 
-class VNodeMatcher {
+class VNodeMatcher VL_NOT_FINAL {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const { return true; }
 };
@@ -1399,7 +1399,7 @@ public:
         } \
     } while (false)
 
-class AstNode {
+class AstNode VL_NOT_FINAL {
     // v ASTNODE_PREFETCH depends on below ordering of members
     AstNode* m_nextp;  // Next peer in the parent's list
     AstNode* m_backp;  // Node that points to this one (via next/op1/op2/...)
@@ -1914,7 +1914,7 @@ inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
     } \
     Ast##name* clonep() const { return static_cast<Ast##name*>(AstNode::clonep()); }
 
-class AstNodeMath : public AstNode {
+class AstNodeMath VL_NOT_FINAL : public AstNode {
     // Math -- anything that's part of an expression tree
 public:
     AstNodeMath(AstType t, FileLine* fl)
@@ -1934,7 +1934,7 @@ public:
     bool isOpaque() { return VN_IS(this, CvtPackString); }
 };
 
-class AstNodeTermop : public AstNodeMath {
+class AstNodeTermop VL_NOT_FINAL : public AstNodeMath {
     // Terminal operator -- a operator with no "inputs"
 public:
     AstNodeTermop(AstType t, FileLine* fl)
@@ -1947,7 +1947,7 @@ public:
     virtual void dump(std::ostream& str) const override;
 };
 
-class AstNodeUniop : public AstNodeMath {
+class AstNodeUniop VL_NOT_FINAL : public AstNodeMath {
     // Unary math
 public:
     AstNodeUniop(AstType t, FileLine* fl, AstNode* lhsp)
@@ -1973,7 +1973,7 @@ public:
     virtual bool same(const AstNode*) const override { return true; }
 };
 
-class AstNodeBiop : public AstNodeMath {
+class AstNodeBiop VL_NOT_FINAL : public AstNodeMath {
     // Binary math
 public:
     AstNodeBiop(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs)
@@ -2005,7 +2005,7 @@ public:
     virtual bool same(const AstNode*) const override { return true; }
 };
 
-class AstNodeTriop : public AstNodeMath {
+class AstNodeTriop VL_NOT_FINAL : public AstNodeMath {
     // Trinary math
 public:
     AstNodeTriop(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths)
@@ -2038,7 +2038,7 @@ public:
     virtual bool same(const AstNode*) const override { return true; }
 };
 
-class AstNodeQuadop : public AstNodeMath {
+class AstNodeQuadop VL_NOT_FINAL : public AstNodeMath {
     // Quaternary math
 public:
     AstNodeQuadop(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths, AstNode* fhs)
@@ -2075,7 +2075,7 @@ public:
     virtual bool same(const AstNode*) const override { return true; }
 };
 
-class AstNodeBiCom : public AstNodeBiop {
+class AstNodeBiCom VL_NOT_FINAL : public AstNodeBiop {
     // Binary math with commutative properties
 public:
     AstNodeBiCom(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs)
@@ -2083,14 +2083,14 @@ public:
     ASTNODE_BASE_FUNCS(NodeBiCom)
 };
 
-class AstNodeBiComAsv : public AstNodeBiCom {
+class AstNodeBiComAsv VL_NOT_FINAL : public AstNodeBiCom {
     // Binary math with commutative & associative properties
 public:
     AstNodeBiComAsv(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs)
         : AstNodeBiCom{t, fl, lhs, rhs} {}
     ASTNODE_BASE_FUNCS(NodeBiComAsv)
 };
-class AstNodeCond : public AstNodeTriop {
+class AstNodeCond VL_NOT_FINAL : public AstNodeTriop {
 public:
     AstNodeCond(AstType t, FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
         : AstNodeTriop{t, fl, condp, expr1p, expr2p} {
@@ -2121,7 +2121,7 @@ public:
     virtual AstNode* cloneType(AstNode* condp, AstNode* expr1p, AstNode* expr2p) = 0;
 };
 
-class AstNodeBlock : public AstNode {
+class AstNodeBlock VL_NOT_FINAL : public AstNode {
     // A Begin/fork block
     // Parents: statement
     // Children: statements
@@ -2145,7 +2145,7 @@ public:
     bool unnamed() const { return m_unnamed; }
 };
 
-class AstNodePreSel : public AstNode {
+class AstNodePreSel VL_NOT_FINAL : public AstNode {
     // Something that becomes an AstSel
 public:
     AstNodePreSel(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths)
@@ -2169,7 +2169,7 @@ public:
     virtual bool same(const AstNode*) const override { return true; }
 };
 
-class AstNodeProcedure : public AstNode {
+class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
 public:
     AstNodeProcedure(AstType t, FileLine* fl, AstNode* bodysp)
@@ -2184,7 +2184,7 @@ public:
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
 };
 
-class AstNodeStmt : public AstNode {
+class AstNodeStmt VL_NOT_FINAL : public AstNode {
     // Statement -- anything that's directly under a function
     bool m_statement;  // Really a statement (e.g. not a function with return)
 public:
@@ -2202,7 +2202,7 @@ public:
     virtual void dump(std::ostream& str = std::cout) const override;
 };
 
-class AstNodeAssign : public AstNodeStmt {
+class AstNodeAssign VL_NOT_FINAL : public AstNodeStmt {
 public:
     AstNodeAssign(AstType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : AstNodeStmt{t, fl} {
@@ -2227,7 +2227,7 @@ public:
     virtual bool brokeLhsMustBeLvalue() const = 0;
 };
 
-class AstNodeFor : public AstNodeStmt {
+class AstNodeFor VL_NOT_FINAL : public AstNodeStmt {
 public:
     AstNodeFor(AstType t, FileLine* fl, AstNode* initsp, AstNode* condp, AstNode* incsp,
                AstNode* bodysp)
@@ -2248,7 +2248,7 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
 };
 
-class AstNodeIf : public AstNodeStmt {
+class AstNodeIf VL_NOT_FINAL : public AstNodeStmt {
 private:
     VBranchPred m_branchPred;  // Branch prediction as taken/untaken?
 public:
@@ -2274,7 +2274,7 @@ public:
     VBranchPred branchPred() const { return m_branchPred; }
 };
 
-class AstNodeCase : public AstNodeStmt {
+class AstNodeCase VL_NOT_FINAL : public AstNodeStmt {
 public:
     AstNodeCase(AstType t, FileLine* fl, AstNode* exprp, AstNode* casesp)
         : AstNodeStmt{t, fl} {
@@ -2292,7 +2292,7 @@ public:
     void addNotParallelp(AstNode* nodep) { setOp3p(nodep); }
 };
 
-class AstNodeVarRef : public AstNodeMath {
+class AstNodeVarRef VL_NOT_FINAL : public AstNodeMath {
     // An AstVarRef or AstVarXRef
 private:
     VAccess m_access;  // Left hand side assignment
@@ -2344,7 +2344,7 @@ public:
     void iterateChildren(AstNVisitor& v) {}
 };
 
-class AstNodeText : public AstNode {
+class AstNodeText VL_NOT_FINAL : public AstNode {
 private:
     string m_text;
 
@@ -2364,7 +2364,7 @@ public:
     const string& text() const { return m_text; }
 };
 
-class AstNodeDType : public AstNode {
+class AstNodeDType VL_NOT_FINAL : public AstNode {
     // Ideally width() would migrate to BasicDType as that's where it makes sense,
     // but it's currently so prevalent in the code we leave it here.
     // Note the below members are included in AstTypeTable::Key lookups
@@ -2460,7 +2460,7 @@ private:
     CTypeRecursed cTypeRecurse(bool compound) const;
 };
 
-class AstNodeUOrStructDType : public AstNodeDType {
+class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     // A struct or union; common handling
 private:
     // TYPES
@@ -2524,7 +2524,7 @@ public:
     VNumRange declRange() const { return VNumRange(msb(), lsb(), false); }
 };
 
-class AstNodeArrayDType : public AstNodeDType {
+class AstNodeArrayDType VL_NOT_FINAL : public AstNodeDType {
     // Array data type, ie "some_dtype var_name [2:0]"
     // Children: DTYPE (moved to refDTypep() in V3Width)
     // Children: RANGE (array bounds)
@@ -2587,7 +2587,7 @@ public:
     VNumRange declRange() const;
 };
 
-class AstNodeSel : public AstNodeBiop {
+class AstNodeSel VL_NOT_FINAL : public AstNodeBiop {
     // Single bit range extraction, perhaps with non-constant selection or array selection
 public:
     AstNodeSel(AstType t, FileLine* fl, AstNode* fromp, AstNode* bitp)
@@ -2603,7 +2603,7 @@ public:
     virtual bool hasDType() const override { return true; }
 };
 
-class AstNodeStream : public AstNodeBiop {
+class AstNodeStream VL_NOT_FINAL : public AstNodeBiop {
     // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()
 public:
     AstNodeStream(AstType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
@@ -2616,7 +2616,7 @@ public:
 //######################################################################
 // Tasks/functions common handling
 
-class AstNodeCCall : public AstNodeStmt {
+class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
     // A call of a C++ function, perhaps a AstCFunc or perhaps globally named
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
     AstCFunc* m_funcp;
@@ -2664,7 +2664,7 @@ public:
     void addArgsp(AstNode* nodep) { addOp2p(nodep); }
 };
 
-class AstNodeFTask : public AstNode {
+class AstNodeFTask VL_NOT_FINAL : public AstNode {
 private:
     string m_name;  // Name of task
     string m_cname;  // Name of task if DPI import
@@ -2769,7 +2769,7 @@ public:
     VLifetime lifetime() const { return m_lifetime; }
 };
 
-class AstNodeFTaskRef : public AstNodeStmt {
+class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeStmt {
     // A reference to a task (or function)
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
 private:
@@ -2823,7 +2823,7 @@ public:
     void scopeNamep(AstNode* nodep) { setNOp4p(nodep); }
 };
 
-class AstNodeModule : public AstNode {
+class AstNodeModule VL_NOT_FINAL : public AstNode {
     // A module, package, program or interface declaration;
     // something that can live directly under the TOP,
     // excluding $unit package stuff
@@ -2902,7 +2902,7 @@ public:
     VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
 };
 
-class AstNodeRange : public AstNode {
+class AstNodeRange VL_NOT_FINAL : public AstNode {
     // A range, sized or unsized
 public:
     AstNodeRange(AstType t, FileLine* fl)

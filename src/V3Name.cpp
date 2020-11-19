@@ -30,7 +30,7 @@
 //######################################################################
 // Name state, as a visitor of each AstNode
 
-class NameVisitor : public AstNVisitor {
+class NameVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on Netlist

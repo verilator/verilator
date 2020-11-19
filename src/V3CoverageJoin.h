@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3CoverageJoin {
+class V3CoverageJoin final {
 public:
     // CONSTRUCTORS
     static void coverageJoin(AstNetlist* rootp);

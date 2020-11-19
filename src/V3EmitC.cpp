@@ -39,7 +39,7 @@ constexpr int EMITC_NUM_CONSTW
 //######################################################################
 // Emit statements and math operators
 
-class EmitCStmts : public EmitCBaseVisitor {
+class EmitCStmts VL_NOT_FINAL : public EmitCBaseVisitor {
 private:
     typedef std::vector<const AstVar*> VarVec;
     typedef std::map<int, VarVec> VarSortMap;  // Map size class to VarVec
@@ -1264,7 +1264,7 @@ public:
 //######################################################################
 // Establish mtask variable sort order in mtasks mode
 
-class EmitVarTspSorter : public V3TSP::TspStateBase {
+class EmitVarTspSorter final : public V3TSP::TspStateBase {
 private:
     // MEMBERS
     const MTaskIdSet& m_mtaskIds;  // Mtask we're ordering
@@ -1306,7 +1306,7 @@ unsigned EmitVarTspSorter::m_serialNext = 0;
 //######################################################################
 // Internal EmitC implementation
 
-class EmitCImp : EmitCStmts {
+class EmitCImp final : EmitCStmts {
     // MEMBERS
     AstNodeModule* m_modp = nullptr;
     std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
@@ -3401,7 +3401,7 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
 //######################################################################
 // Tracing routines
 
-class EmitCTrace : EmitCStmts {
+class EmitCTrace final : EmitCStmts {
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user1()        -> int.  Enum number

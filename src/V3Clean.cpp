@@ -35,7 +35,7 @@
 //######################################################################
 // Clean state, as a visitor of each AstNode
 
-class CleanVisitor : public AstNVisitor {
+class CleanVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Entire netlist:

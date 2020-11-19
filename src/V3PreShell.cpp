@@ -29,7 +29,7 @@
 
 //######################################################################
 
-class V3PreShellImp {
+class V3PreShellImp final {
 protected:
     friend class V3PreShell;
 

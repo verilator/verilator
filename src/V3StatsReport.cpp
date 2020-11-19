@@ -30,7 +30,7 @@
 //######################################################################
 // Stats dumping
 
-class StatsReport {
+class StatsReport final {
     // TYPES
     typedef std::vector<V3Statistic> StatColl;
 

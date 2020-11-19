@@ -36,7 +36,7 @@
 //######################################################################
 // Utilities
 
-class ConstVarMarkVisitor : public AstNVisitor {
+class ConstVarMarkVisitor final : public AstNVisitor {
     // NODE STATE
     // AstVar::user4p           -> bool, Var marked, 0=not set yet
 private:
@@ -55,7 +55,7 @@ public:
     virtual ~ConstVarMarkVisitor() override = default;
 };
 
-class ConstVarFindVisitor : public AstNVisitor {
+class ConstVarFindVisitor final : public AstNVisitor {
     // NODE STATE
     // AstVar::user4p           -> bool, input from ConstVarMarkVisitor
     // MEMBERS
@@ -79,7 +79,7 @@ public:
 //######################################################################
 // Const state, as a visitor of each AstNode
 
-class ConstVisitor : public AstNVisitor {
+class ConstVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // ** only when m_warn/m_doExpensive is set.  If state is needed other times,

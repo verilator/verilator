@@ -35,7 +35,7 @@
 //######################################################################
 // Localize base class
 
-class LocalizeBaseVisitor : public AstNVisitor {
+class LocalizeBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 protected:
     // NODE STATE
     // Cleared on entire tree
@@ -66,7 +66,7 @@ protected:
 //######################################################################
 // Localize class functions
 
-class LocalizeDehierVisitor : public LocalizeBaseVisitor {
+class LocalizeDehierVisitor final : public LocalizeBaseVisitor {
 private:
     // NODE STATE/TYPES
     // See above
@@ -91,7 +91,7 @@ public:
 //######################################################################
 // Localize class functions
 
-class LocalizeVisitor : public LocalizeBaseVisitor {
+class LocalizeVisitor final : public LocalizeBaseVisitor {
 private:
     // NODE STATE/TYPES
     // See above

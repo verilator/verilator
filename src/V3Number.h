@@ -37,7 +37,7 @@ inline bool v3EpsilonEqual(double a, double b) {
 
 class AstNode;
 
-class V3Number {
+class V3Number final {
     // Large 4-state number handling
     int m_width;  // Width as specified/calculated.
     bool m_sized : 1;  // True if the user specified the width, else we track it.

@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Tristate {
+class V3Tristate final {
 public:
     static void tristateAll(AstNetlist* nodep);
 };

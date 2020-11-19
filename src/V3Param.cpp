@@ -65,7 +65,7 @@
 
 //######################################################################
 // Hierarchical block and parameter db (modules without parameter is also handled)
-class ParameterizedHierBlocks {
+class ParameterizedHierBlocks final {
     typedef std::multimap<string, const V3HierarchicalBlockOption*> HierBlockOptsByOrigName;
     typedef HierBlockOptsByOrigName::const_iterator HierMapIt;
     typedef std::map<const string, AstNodeModule*> HierBlockModMap;
@@ -197,7 +197,7 @@ public:
 //######################################################################
 // Param state, as a visitor of each AstNode
 
-class ParamVisitor : public AstNVisitor {
+class ParamVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //   AstNodeModule::user5() // bool   True if processed

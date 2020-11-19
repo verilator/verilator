@@ -47,7 +47,7 @@
 
 //######################################################################
 
-class LinkIncVisitor : public AstNVisitor {
+class LinkIncVisitor final : public AstNVisitor {
 private:
     // TYPES
     enum InsertMode : uint8_t {

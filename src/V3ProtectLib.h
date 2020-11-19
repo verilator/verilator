@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3ProtectLib {
+class V3ProtectLib final {
 public:
     static void protect();
 };

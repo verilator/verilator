@@ -32,7 +32,7 @@
 // Lex-derived class
 
 /// Override the base lexer class so we can add some access functions
-class V3Lexer : public V3LexerBase {
+class V3Lexer final : public V3LexerBase {
 public:
     // CONSTRUCTORS
     V3Lexer()

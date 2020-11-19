@@ -37,7 +37,7 @@
 //######################################################################
 // Hashed state, as a visitor of each AstNode
 
-class HashedVisitor : public AstNVisitor {
+class HashedVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Entire netlist:

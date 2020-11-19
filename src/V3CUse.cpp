@@ -36,7 +36,7 @@
 
 //######################################################################
 
-class CUseState {
+class CUseState final {
 private:
     // MEMBERS
     AstNodeModule* m_modInsertp;  // Current module to insert AstCUse under
@@ -75,7 +75,7 @@ public:
 // Visit within a module all nodes and data types they reference, finding
 // any classes so we can make sure they are defined when Verilated code
 // compiles
-class CUseDTypeVisitor : public AstNVisitor {
+class CUseDTypeVisitor final : public AstNVisitor {
     // MEMBERS
     CUseState& m_stater;  // State for inserter
     bool m_impOnly = false;  // In details needed only for implementation
@@ -113,7 +113,7 @@ public:
     VL_UNCOPYABLE(CUseDTypeVisitor);
 };
 
-class CUseVisitor : public AstNVisitor {
+class CUseVisitor final : public AstNVisitor {
     // MEMBERS
     CUseState m_state;  // Inserter state
 

@@ -19,7 +19,7 @@
 
 #include "V3Scoreboard.h"
 
-class ScoreboardTestElem {
+class ScoreboardTestElem final {
 public:
     // MEMBERS
     uint32_t m_score;

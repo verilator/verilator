@@ -33,7 +33,7 @@
 
 //######################################################################
 
-class V3ErrorCode {
+class V3ErrorCode final {
 public:
     // clang-format off
     enum en: uint8_t  {
@@ -217,7 +217,7 @@ inline std::ostream& operator<<(std::ostream& os, const V3ErrorCode& rhs) {
 
 //######################################################################
 
-class V3Error {
+class V3Error final {
     // Base class for any object that wants debugging and error reporting
 
     typedef std::set<string> MessagesSet;
