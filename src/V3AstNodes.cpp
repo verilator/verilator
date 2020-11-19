@@ -455,7 +455,7 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     return arg;
 }
 
-class dpiTypesToStringConverter {
+class dpiTypesToStringConverter VL_NOT_FINAL {
 public:
     virtual string openArray(const AstVar*) const { return "const svOpenArrayHandle"; }
     virtual string bitLogicVector(const AstVar* varp, bool isBit) const {
@@ -486,7 +486,7 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
     if (forReturn) {
         return dpiTypesToStringConverter{}.convert(this);
     } else {
-        class converter : public dpiTypesToStringConverter {
+        class converter final : public dpiTypesToStringConverter {
             virtual string bitLogicVector(const AstVar* varp, bool isBit) const override {
                 return string(varp->isReadOnly() ? "const " : "")
                        + dpiTypesToStringConverter::bitLogicVector(varp, isBit) + '*';
@@ -509,7 +509,7 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
 }
 
 string AstVar::dpiTmpVarType(const string& varName) const {
-    class converter : public dpiTypesToStringConverter {
+    class converter final : public dpiTypesToStringConverter {
         string m_name;
         string arraySuffix(const AstVar* varp, size_t n) const {
             if (AstUnpackArrayDType* unpackp
