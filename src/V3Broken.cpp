@@ -36,7 +36,7 @@
 
 //######################################################################
 
-class BrokenTable final : public AstNVisitor {
+class BrokenTable VL_NOT_FINAL : public AstNVisitor {
     // Table of brokenExists node pointers
 private:
     // MEMBERS
