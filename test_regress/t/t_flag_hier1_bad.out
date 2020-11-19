@@ -1,0 +1,3 @@
+%Error: --hierarchical must not be set with --hierarchical-child or --hierarchical-block
+%Error: --hierarchical-block must be set when --hierarchical-child is set
+%Error: Exiting due to

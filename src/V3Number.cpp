@@ -1775,16 +1775,6 @@ V3Number& V3Number::opShiftL(const V3Number& lhs, const V3Number& rhs) {
 //======================================================================
 // Ops - Arithmetic
 
-V3Number& V3Number::opAbsS(const V3Number& lhs) {
-    // op i, L(lhs) bit return
-    NUM_ASSERT_OP_ARGS1(lhs);
-    if (lhs.isFourState()) return setAllBitsX();
-    if (lhs.isNegative()) {
-        return opNegate(lhs);
-    } else {
-        return opAssign(lhs);
-    }
-}
 V3Number& V3Number::opNegate(const V3Number& lhs) {
     // op i, L(lhs) bit return
     NUM_ASSERT_OP_ARGS1(lhs);

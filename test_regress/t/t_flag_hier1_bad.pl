@@ -9,14 +9,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 scenarios(vlt => 1);
+top_filename("t/t_hier_block.v");
 
 lint(
-    # We also have dump-tree turned on, so hit a lot of AstNode*::dump() functions
-    # Likewise XML
-    v_flags => ["--lint-only --dump-treei 9 --dump-treei-V3EmitV 9 --debug-emitv"],
+    fails => 1,
+    verilator_flags2 => ['--hierarchical',
+                         '--hierarchical-child',
+                         'modName',
+                     ],
+    expect_filename => $Self->{golden_filename},
     );
 
-files_identical("$Self->{obj_dir}/$Self->{VM_PREFIX}__preorder.v", $Self->{golden_filename});
-
 ok(1);
+
 1;

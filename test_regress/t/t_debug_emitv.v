@@ -25,9 +25,13 @@ module t (/*AUTOARG*/
    typedef struct {
       logic signed [2:0] a;
    } us_t;
+   typedef union {
+      logic a;
+   } union_t;
 
    const ps_t ps[3];
    us_t us;
+   union_t unu;
 
    int            array[3];
    initial array = '{1,2,3};
@@ -140,6 +144,9 @@ module t (/*AUTOARG*/
       $display("%% [%t] [%t] to=%o td=%d", $time, $realtime, $time, $time);
       $sscanf("foo=5", "foo=%d", i);
       if (i != 5) $stop;
+
+      sum = $random;
+      sum = $urandom;
    end
 endmodule
 
@@ -151,4 +158,30 @@ module sub();
       if (v == 0) return 33;
       return {31'd0, v[2]} + 32'd1;
    endfunction
+   real r;
+   initial begin
+      r = 1.0;
+      r = $log10(r);
+      r = $ln(r);
+      r = $exp(r);
+      r = $sqrt(r);
+      r = $floor(r);
+      r = $ceil(r);
+      r = $sin(r);
+      r = $cos(r);
+      r = $tan(r);
+      r = $asin(r);
+      r = $acos(r);
+      r = $atan(r);
+      r = $sinh(r);
+      r = $cosh(r);
+      r = $tanh(r);
+      r = $asinh(r);
+      r = $acosh(r);
+      r = $atanh(r);
+   end
 endmodule
+
+package p;
+   logic pkgvar;
+endpackage
