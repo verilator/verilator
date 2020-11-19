@@ -234,7 +234,7 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
                 s_describedWarnings = true;
             }
             if (s_errorCode.dangerous()) {
-                std::cerr << warnMore() << "*** See the manual before disabling this," << endl;
+                std::cerr << warnMore() << "*** See the manual before disabling this,\n";
                 std::cerr << warnMore() << "else you may end up with different sim results."
                           << endl;
             }

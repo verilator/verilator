@@ -69,8 +69,8 @@ int main() {
     dut->eval();
 
 #ifdef TEST_VERBOSE
-    cout << "Initial DPI values" << endl;
-    cout << "==================" << endl;
+    cout << "Initial DPI values\n";
+    cout << "==================\n";
 #endif
 
     int a = (int)a_read();
@@ -106,8 +106,8 @@ int main() {
 
     // Check we can read a scalar register.
 #ifdef TEST_VERBOSE
-    cout << "Test of scalar register reading" << endl;
-    cout << "===============================" << endl;
+    cout << "Test of scalar register reading\n";
+    cout << "===============================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -132,8 +132,8 @@ int main() {
 
     // Check we can read a vector register.
 #ifdef TEST_VERBOSE
-    cout << "Test of vector register reading" << endl;
-    cout << "===============================" << endl;
+    cout << "Test of vector register reading\n";
+    cout << "===============================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -156,8 +156,8 @@ int main() {
     // Test we can read an array element
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of array element reading" << endl;
-    cout << "=============================" << endl;
+    cout << "Test of array element reading\n";
+    cout << "=============================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -180,8 +180,8 @@ int main() {
     // Check we can read a scalar wire
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of scalar wire reading" << endl;
-    cout << "===========================" << endl;
+    cout << "Test of scalar wire reading\n";
+    cout << "===========================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -209,8 +209,8 @@ int main() {
     // Check we can read a vector wire
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of vector wire reading" << endl;
-    cout << "===========================" << endl;
+    cout << "Test of vector wire reading\n";
+    cout << "===========================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -239,8 +239,8 @@ int main() {
     // Check we can write a scalar register
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of scalar register writing" << endl;
-    cout << "===============================" << endl;
+    cout << "Test of scalar register writing\n";
+    cout << "===============================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -268,8 +268,8 @@ int main() {
     // Check we can write a vector register
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of vector register writing" << endl;
-    cout << "===============================" << endl;
+    cout << "Test of vector register writing\n";
+    cout << "===============================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -297,8 +297,8 @@ int main() {
     // Test we can write an array element
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of array element writing" << endl;
-    cout << "=============================" << endl;
+    cout << "Test of array element writing\n";
+    cout << "=============================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -326,8 +326,8 @@ int main() {
     // Check we can read a vector register slice
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of vector register slice reading" << endl;
-    cout << "=====================================" << endl;
+    cout << "Test of vector register slice reading\n";
+    cout << "=====================================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -353,8 +353,8 @@ int main() {
     // Test we can read an array element slice
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of array element slice reading" << endl;
-    cout << "===================================" << endl;
+    cout << "Test of array element slice reading\n";
+    cout << "===================================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -382,8 +382,8 @@ int main() {
     // Check we can read a vector wire slice
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of vector wire slice reading" << endl;
-    cout << "=================================" << endl;
+    cout << "Test of vector wire slice reading\n";
+    cout << "=================================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -413,8 +413,8 @@ int main() {
     // Check we can write a vector register slice
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of vector register slice writing" << endl;
-    cout << "=====================================" << endl;
+    cout << "Test of vector register slice writing\n";
+    cout << "=====================================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -452,8 +452,8 @@ int main() {
     // Test we can write an array element slice
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of array element slice writing" << endl;
-    cout << "===================================" << endl;
+    cout << "Test of array element slice writing\n";
+    cout << "===================================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -497,8 +497,8 @@ int main() {
     // Check we can read complex registers
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of complex register reading" << endl;
-    cout << "================================" << endl;
+    cout << "Test of complex register reading\n";
+    cout << "================================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -577,8 +577,8 @@ int main() {
     // Test we can write a complex register
 #ifdef TEST_VERBOSE
     cout << endl;
-    cout << "Test of complex register writing" << endl;
-    cout << "================================" << endl;
+    cout << "Test of complex register writing\n";
+    cout << "================================\n";
 #endif
 
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
@@ -674,7 +674,7 @@ int main() {
     // Tidy up
     dut->final();
     VL_DO_DANGLING(delete dut, dut);
-    cout << "*-* All Finished *-*" << endl;
+    cout << "*-* All Finished *-*\n";
 }
 
 // Local Variables:

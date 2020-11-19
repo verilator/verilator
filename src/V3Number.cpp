@@ -227,7 +227,7 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
                     if (product.bitsValue(width(), 4)) {  // Overflowed
                         static int warned = 0;
                         v3error("Too many digits for "
-                                << width() << " bit number: " << sourcep << std::endl
+                                << width() << " bit number: " << sourcep << '\n'
                                 << ((!m_sized && !warned++) ? (
                                         V3Error::warnMore() + "... As that number was unsized"
                                         + " ('d...) it is limited to 32 bits (IEEE 1800-2017 "

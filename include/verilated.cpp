@@ -1045,7 +1045,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     const char* pos = formatp;
     for (; *pos && !_vl_vsss_eof(fp, floc); ++pos) {
         // VL_DBG_MSGF("_vlscan fmt='"<<pos[0]<<"' floc="<<floc<<" file='"<<_vl_vsss_peek(fp, floc,
-        // fromp, fstr)<<"'"<<endl);
+        // fromp, fstr)<<"'\n");
         if (!inPct && pos[0] == '%') {
             inPct = true;
             inIgnore = false;

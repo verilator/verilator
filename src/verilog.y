@@ -6266,7 +6266,7 @@ vltItem:
 			{ V3Config::addIgnore($1, false, *$3, $5->toUInt(), $7->toUInt()+1); }
 	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_MATCH yaSTRING
 			{	if (($1==V3ErrorCode::I_COVERAGE) || ($1==V3ErrorCode::I_TRACING)) {
-					$<fl>1->v3error("Argument -match only supported for lint_off"<<endl);
+					$<fl>1->v3error("Argument -match only supported for lint_off");
 				} else {
 					V3Config::addWaiver($1,*$3,*$5);
 				}}
@@ -6305,11 +6305,11 @@ vltOffFront<errcodeen>:
 	|	yVLT_LINT_OFF				{ $$ = V3ErrorCode::I_LINT; }
 	|	yVLT_LINT_OFF yVLT_D_MSG idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl); }
-			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."<<endl); }
+			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3); }
+			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."); }
 	|	yVLT_LINT_OFF yVLT_D_RULE idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
+			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
 	;
 
 vltOnFront<errcodeen>:
@@ -6318,11 +6318,11 @@ vltOnFront<errcodeen>:
 	|	yVLT_LINT_ON				{ $$ = V3ErrorCode::I_LINT; }
 	|	yVLT_LINT_ON yVLT_D_MSG idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  }
-			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."<<endl); }
+			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  }
+			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."); }
 	|	yVLT_LINT_ON yVLT_D_RULE idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
+			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
 	;
 
 vltDModuleE<strp>:

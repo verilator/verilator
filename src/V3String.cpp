@@ -345,13 +345,13 @@ void VHashSha256::selfTestOne(const string& data, const string& data2, const str
     VHashSha256 digest(data);
     if (data2 != "") digest.insert(data2);
     if (VL_UNCOVERABLE(digest.digestHex() != exp)) {
-        std::cerr << "%Error: When hashing '" << data + data2 << "'" << endl  // LCOV_EXCL_LINE
-                  << "        ... got=" << digest.digestHex() << endl  // LCOV_EXCL_LINE
+        std::cerr << "%Error: When hashing '" << data + data2 << "'\n"  // LCOV_EXCL_LINE
+                  << "        ... got=" << digest.digestHex() << '\n'  // LCOV_EXCL_LINE
                   << "        ... exp=" << exp << endl;  // LCOV_EXCL_LINE
     }
     if (VL_UNCOVERABLE(digest.digestSymbol() != exp64)) {
-        std::cerr << "%Error: When hashing '" << data + data2 << "'" << endl  // LCOV_EXCL_LINE
-                  << "        ... got=" << digest.digestSymbol() << endl  // LCOV_EXCL_LINE
+        std::cerr << "%Error: When hashing '" << data + data2 << "'\n"  // LCOV_EXCL_LINE
+                  << "        ... got=" << digest.digestSymbol() << '\n'  // LCOV_EXCL_LINE
                   << "        ... exp=" << exp64 << endl;  // LCOV_EXCL_LINE
     }
 }

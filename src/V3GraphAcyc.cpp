@@ -59,7 +59,7 @@ private:
     typedef std::list<V3GraphEdge*> OrigEdgeList;  // List of orig edges, see also GraphAcyc's decl
     V3GraphEdge* origEdgep() const {
         OrigEdgeList* oEListp = static_cast<OrigEdgeList*>(userp());
-        if (!oEListp) v3fatalSrc("No original edge associated with acyc edge " << this << endl);
+        if (!oEListp) v3fatalSrc("No original edge associated with acyc edge " << this);
         return (oEListp->front());
     }
 
@@ -155,7 +155,7 @@ private:
         breakEdgep->cut();
         OrigEdgeList* oEListp = static_cast<OrigEdgeList*>(breakEdgep->userp());
         if (!oEListp) {
-            v3fatalSrc("No original edge associated with cutting edge " << breakEdgep << endl);
+            v3fatalSrc("No original edge associated with cutting edge " << breakEdgep);
         }
         // The breakGraph edge may represent multiple real edges; cut them all
         for (const auto& origEdgep : *oEListp) {

@@ -159,12 +159,12 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
         if (!i.target()) *ofp << i.filename() << " ";
     }
 
-    *ofp << endl;
+    *ofp << '\n';
 
     if (v3Global.opt.makePhony()) {
-        *ofp << endl;
+        *ofp << '\n';
         for (const DependFile& i : m_filenameList) {
-            if (!i.target()) *ofp << i.filename() << ":" << endl;
+            if (!i.target()) *ofp << i.filename() << ":\n";
         }
     }
 }
@@ -183,9 +183,8 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
 
     string cmdline = stripQuotes(cmdlineIn);
     *ofp << "# DESCR"
-         << "IPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will."
-         << endl;
-    *ofp << "C \"" << cmdline << "\"" << endl;
+         << "IPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will.\n";
+    *ofp << "C \"" << cmdline << "\"\n";
 
     for (std::set<DependFile>::iterator iter = m_filenameList.begin();
          iter != m_filenameList.end(); ++iter) {
@@ -209,7 +208,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
         *ofp << " " << std::setw(11) << iter->mstime();
         *ofp << " " << std::setw(11) << iter->mnstime();
         *ofp << " \"" << iter->filename() << "\"";
-        *ofp << endl;
+        *ofp << '\n';
     }
 }
 

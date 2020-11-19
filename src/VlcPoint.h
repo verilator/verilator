@@ -77,13 +77,13 @@ public:
     }
     static void dumpHeader() {
         cout << "Points:\n";
-        cout << "  Num,    TestsCover,    Count,  Name" << endl;
+        cout << "  Num,    TestsCover,    Count,  Name\n";
     }
     void dump() const {
         cout << "  " << std::setw(8) << std::setfill('0') << pointNum();
         cout << ",  " << std::setw(7) << std::setfill(' ') << testsCovering();
         cout << ",  " << std::setw(7) << std::setfill(' ') << count();
-        cout << ",  \"" << name() << "\"" << endl;
+        cout << ",  \"" << name() << "\"\n";
     }
 };
 

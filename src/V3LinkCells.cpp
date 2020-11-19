@@ -78,7 +78,7 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
         vvertexp->modp()->v3warn(E_UNSUPPORTED,
                                  "Unsupported: Recursive multiple modules (module instantiates "
                                  "something leading back to itself): "
-                                     << vvertexp->modp()->prettyNameQ() << endl
+                                     << vvertexp->modp()->prettyNameQ() << '\n'
                                      << V3Error::warnMore()
                                      << "... note: self-recursion (module instantiating itself "
                                         "directly) is supported.");
@@ -482,10 +482,10 @@ private:
                       || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP)
                       || hierBlocks.find(nodep->name()) != hierBlocks.end())) {
                     nodep->v3warn(MODDUP, "Duplicate declaration of module: "
-                                              << nodep->prettyNameQ() << endl
-                                              << nodep->warnContextPrimary() << endl
+                                              << nodep->prettyNameQ() << '\n'
+                                              << nodep->warnContextPrimary() << '\n'
                                               << foundp->warnOther()
-                                              << "... Location of original declaration" << endl
+                                              << "... Location of original declaration\n"
                                               << foundp->warnContextSecondary());
                 }
                 nodep->unlinkFrBack();

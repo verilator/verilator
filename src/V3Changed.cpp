@@ -117,10 +117,9 @@ private:
                            "Unsupported: Can't detect more than "
                                << cvtToStr(DETECTARRAY_MAX_INDEXES)
                                << " array indexes (probably with UNOPTFLAT warning suppressed): "
-                               << m_vscp->prettyName() << endl
+                               << m_vscp->prettyName() << '\n'
                                << m_vscp->warnMore()
-                               << "... Could recompile with DETECTARRAY_MAX_INDEXES increased"
-                               << endl);
+                               << "... Could recompile with DETECTARRAY_MAX_INDEXES increased");
             return;
         }
         m_statep->maybeCreateChgFuncp();

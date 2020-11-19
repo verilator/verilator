@@ -150,7 +150,7 @@ private:
         } else {
             *m_ofp << "  ";
         }
-        *m_ofp << nodep->prettyTypeName() << " " << endl;
+        *m_ofp << nodep->prettyTypeName() << "\n";
         string lastPrefix = m_prefix;
         m_prefix = lastPrefix + "1:";
         iterateAndNextNull(nodep->op1p());
@@ -292,7 +292,7 @@ private:
             told_file = true;
             std::cerr << V3Error::msgPrefix() << "     See details in " << m_ofFilename << endl;
         }
-        *m_ofp << "%Warning-" << code.ascii() << ": " << nodep->fileline() << " " << msg << endl;
+        *m_ofp << "%Warning-" << code.ascii() << ": " << nodep->fileline() << " " << msg << '\n';
     }
 
     void setNodeHazard(AstNode* nodep) {
@@ -462,7 +462,7 @@ private:
         string front
             = pad(filelineWidth(), nodep->fileline()->ascii() + ":") + " " + prefix + " +- ";
         if (VN_IS(nodep, VarScope)) {
-            *m_ofp << front << "Variable: " << nodep->prettyName() << endl;
+            *m_ofp << front << "Variable: " << nodep->prettyName() << '\n';
         } else {
             V3EmitV::verilogPrefixedTree(nodep, *m_ofp, prefix + " +- ", filelineWidth(),
                                          vertexp->srcDomainp(), true);
@@ -509,7 +509,7 @@ private:
         string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__cdc_edges.txt";
         const std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
         if (ofp->fail()) v3fatal("Can't write " << filename);
-        *ofp << "Edge Report for " << v3Global.opt.prefix() << endl;
+        *ofp << "Edge Report for " << v3Global.opt.prefix() << '\n';
 
         std::deque<string> report;  // Sort output by name
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
@@ -536,7 +536,7 @@ private:
                         V3EmitV::verilogForTree(vvertexp->dstDomainp(), os);
                     }
                     os << std::setw(0);
-                    os << endl;
+                    os << '\n';
                     report.push_back(os.str());
                 }
             }
@@ -732,7 +732,7 @@ public:
         m_ofp = V3File::new_ofstream(filename);
         if (m_ofp->fail()) v3fatal("Can't write " << filename);
         m_ofFilename = filename;
-        *m_ofp << "CDC Report for " << v3Global.opt.prefix() << endl;
+        *m_ofp << "CDC Report for " << v3Global.opt.prefix() << '\n';
         *m_ofp
             << "Each dump below traces logic from inputs/source flops to destination flop(s).\n";
         *m_ofp << "First source logic is listed, then a variable that logic generates,\n";
@@ -745,7 +745,7 @@ public:
         if (false) {
             *m_ofp << "\nDBG-test-dumper\n";
             V3EmitV::verilogPrefixedTree(nodep, *m_ofp, "DBG ", 40, nullptr, true);
-            *m_ofp << endl;
+            *m_ofp << '\n';
         }
     }
     virtual ~CdcVisitor() override {

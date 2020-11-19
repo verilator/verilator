@@ -284,7 +284,7 @@ private:
         ++m_depth;
         if (unsigned costPlus1 = nodep->user4()) {
             *m_osp << "  " << indent() << "cost " << std::setw(6) << std::left << (costPlus1 - 1)
-                   << "  " << nodep << endl;
+                   << "  " << nodep << '\n';
             iterateChildren(nodep);
         }
         --m_depth;

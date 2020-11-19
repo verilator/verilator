@@ -399,7 +399,7 @@ public:
             os << i.first;
             if (!i.second.first.empty()) os << keyValueFormatter(VL_CIK_HIER, i.second.first);
             os << "' " << i.second.second;
-            os << std::endl;
+            os << '\n';
         }
     }
 };

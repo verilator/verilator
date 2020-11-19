@@ -113,7 +113,7 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top);
 // Functions for above graph classes
 
 void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
-    if (debug()) cout << "-Info-Loop: " << vertexp << " " << endl;
+    if (debug()) cout << "-Info-Loop: " << vertexp << "\n";
     if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
         std::cerr << vvertexp->nodep()->fileline()->warnOther()
                   << "     Example path: " << vvertexp->nodep()->typeName() << endl;
@@ -273,7 +273,7 @@ private:
                 if (m_inClocked) {
                     varrefp->v3warn(
                         CLKDATA, "Clock used as data (on rhs of assignment) in sequential block "
-                                     << varrefp->prettyNameQ() << endl);
+                                     << varrefp->prettyNameQ());
                 } else {
                     m_hasClk = true;
                     UINFO(5, "node is already marked as clocker " << varrefp << endl);
@@ -290,8 +290,8 @@ private:
         // do the marking
         if (m_hasClk) {
             if (nodep->lhsp()->width() > m_rightClkWidth) {
-                nodep->v3warn(CLKDATA, "Clock is assigned to part of data signal " << nodep->lhsp()
-                                                                                   << endl);
+                nodep->v3warn(CLKDATA,
+                              "Clock is assigned to part of data signal " << nodep->lhsp());
                 UINFO(4, "CLKDATA: lhs with width " << nodep->lhsp()->width() << endl);
                 UINFO(4, "     but rhs clock with width " << m_rightClkWidth << endl);
                 return;  // skip the marking
@@ -870,7 +870,7 @@ private:
         m_graph.userClearVertices();
         // May be very large vector, so only report the "most important"
         // elements. Up to 10 of the widest
-        std::cerr << V3Error::warnMore() << "... Widest candidate vars to split:" << endl;
+        std::cerr << V3Error::warnMore() << "... Widest candidate vars to split:\n";
         std::stable_sort(m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarWidthCmp());
         std::unordered_set<const AstVar*> canSplitList;
         int lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
@@ -885,10 +885,10 @@ private:
                 std::cerr << ", can split_var";
                 canSplitList.insert(varp);
             }
-            std::cerr << std::endl;
+            std::cerr << '\n';
         }
         // Up to 10 of the most fanned out
-        std::cerr << V3Error::warnMore() << "... Most fanned out candidate vars to split:" << endl;
+        std::cerr << V3Error::warnMore() << "... Most fanned out candidate vars to split:\n";
         std::stable_sort(m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarFanoutCmp());
         lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
         for (int i = 0; i < lim; i++) {
@@ -902,7 +902,7 @@ private:
                 std::cerr << ", can split_var";
                 canSplitList.insert(varp);
             }
-            std::cerr << endl;
+            std::cerr << '\n';
         }
         if (!canSplitList.empty()) {
             std::cerr << V3Error::warnMore()
@@ -1573,9 +1573,9 @@ void OrderVisitor::processEdgeReport() {
         }
     }
 
-    *logp << "Signals and their clock domains:" << endl;
+    *logp << "Signals and their clock domains:\n";
     stable_sort(report.begin(), report.end());
-    for (const string& i : report) *logp << i << endl;
+    for (const string& i : report) *logp << i << '\n';
 }
 
 void OrderVisitor::processMoveClear() {

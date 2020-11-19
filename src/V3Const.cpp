@@ -1262,7 +1262,7 @@ private:
             AstNode* errorp = simvis.whyNotNodep();
             if (!errorp) errorp = nodep;
             nodep->v3error("Expecting expression to be constant, but can't determine constant for "
-                           << nodep->prettyTypeName() << endl
+                           << nodep->prettyTypeName() << '\n'
                            << errorp->warnOther() << "... Location of non-constant "
                            << errorp->prettyTypeName() << ": " << simvis.whyNotMessage());
             VL_DO_DANGLING(replaceZero(nodep), nodep);
@@ -1930,8 +1930,9 @@ private:
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             } else if (ifSameAssign(nodep)) {
-                UINFO(4, "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})"
-                             << endl);
+                UINFO(
+                    4,
+                    "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})\n");
                 AstNodeAssign* ifp = VN_CAST(nodep->ifsp(), NodeAssign);
                 AstNodeAssign* elsep = VN_CAST(nodep->elsesp(), NodeAssign);
                 ifp->unlinkFrBack();

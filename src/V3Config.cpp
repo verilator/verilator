@@ -405,7 +405,7 @@ void V3Config::addInline(FileLine* fl, const string& module, const string& ftask
         V3ConfigResolver::s().modules().at(module).setInline(on);
     } else {
         if (!on) {
-            fl->v3error("no_inline not supported for tasks" << endl);
+            fl->v3error("no_inline not supported for tasks");
         } else {
             V3ConfigResolver::s().modules().at(module).ftasks().at(ftask).setNoInline(on);
         }
@@ -416,15 +416,14 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
                           const string& var, AstAttrType attr, AstSenTree* sensep) {
     // Semantics: sensep only if public_flat_rw
     if ((attr != AstAttrType::VAR_PUBLIC_FLAT_RW) && sensep) {
-        sensep->v3error("sensitivity not expected for attribute" << endl);
+        sensep->v3error("sensitivity not expected for attribute");
         return;
     }
     // Semantics: Most of the attributes operate on signals
     if (var.empty()) {
         if (attr == AstAttrType::VAR_ISOLATE_ASSIGNMENTS) {
             if (ftask.empty()) {
-                fl->v3error("isolate_assignments only applies to signals or functions/tasks"
-                            << endl);
+                fl->v3error("isolate_assignments only applies to signals or functions/tasks");
             } else {
                 V3ConfigResolver::s().modules().at(module).ftasks().at(ftask).setIsolate(true);
             }
@@ -437,7 +436,7 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
                 V3ConfigResolver::s().modules().at(module).ftasks().at(ftask).setPublic(true);
             }
         } else {
-            fl->v3error("missing -signal" << endl);
+            fl->v3error("missing -signal");
         }
     } else {
         V3ConfigModule& mod = V3ConfigResolver::s().modules().at(module);

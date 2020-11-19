@@ -1088,14 +1088,14 @@ void AstNode::dumpPtrs(std::ostream& os) const {
 
 void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) const {
     static int s_debugFileline = v3Global.opt.debugSrcLevel("fileline");  // --debugi-fileline 9
-    os << indent << " " << this << endl;
+    os << indent << " " << this << '\n';
     if (debug() > 8) {
         os << indent << "     ";
         dumpPtrs(os);
     }
     if (s_debugFileline >= 9) { os << fileline()->warnContextSecondary(); }
     if (maxDepth == 1) {
-        if (op1p() || op2p() || op3p() || op4p()) { os << indent << "1: ...(maxDepth)" << endl; }
+        if (op1p() || op2p() || op3p() || op4p()) os << indent << "1: ...(maxDepth)\n";
     } else {
         for (const AstNode* nodep = op1p(); nodep; nodep = nodep->nextp()) {
             nodep->dumpTree(os, indent + "1:", maxDepth - 1);
@@ -1127,9 +1127,9 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
             const std::unique_ptr<std::ofstream> logsp(V3File::new_ofstream(filename, append));
             if (logsp->fail()) v3fatal("Can't write " << filename);
             *logsp << "Verilator Tree Dump (format 0x3900) from <e" << std::dec << editCountLast();
-            *logsp << "> to <e" << std::dec << editCountGbl() << ">" << endl;
+            *logsp << "> to <e" << std::dec << editCountGbl() << ">\n";
             if (editCountGbl() == editCountLast() && !(v3Global.opt.dumpTree() >= 9)) {
-                *logsp << endl;
+                *logsp << '\n';
                 *logsp << "No changes since last dump!\n";
             } else {
                 dumpTree(*logsp);
@@ -1199,7 +1199,7 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
         std::ostringstream nsstr;
         nsstr << str.str();
         if (debug()) {
-            nsstr << endl;
+            nsstr << '\n';
             nsstr << "-node: ";
             const_cast<AstNode*>(this)->dump(nsstr);
             nsstr << endl;

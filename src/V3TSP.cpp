@@ -346,10 +346,10 @@ public:
         os << "At " << nameComment << ", dumping graph. Keys:\n";
         for (V3GraphVertex* vxp = verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             Vertex* tspvp = castVertexp(vxp);
-            os << " " << tspvp->key() << endl;
+            os << " " << tspvp->key() << '\n';
             for (V3GraphEdge* edgep = tspvp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 Vertex* neighborp = castVertexp(edgep->top());
-                os << "   has edge " << edgep->user() << " to " << neighborp->key() << endl;
+                os << "   has edge " << edgep->user() << " to " << neighborp->key() << '\n';
             }
         }
     }

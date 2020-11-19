@@ -1605,10 +1605,10 @@ private:
     virtual void visit(AstTypedef* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         if (auto* refp = checkRefToTypedefRecurse(nodep, nodep)) {
-            nodep->v3error("Typedef has self-reference: " << nodep->prettyNameQ() << endl
-                                                          << nodep->warnContextPrimary() << endl
+            nodep->v3error("Typedef has self-reference: " << nodep->prettyNameQ() << '\n'
+                                                          << nodep->warnContextPrimary() << '\n'
                                                           << refp->warnOther()
-                                                          << "... Location of reference" << endl
+                                                          << "... Location of reference\n"
                                                           << refp->warnContextSecondary());
             // May cause internel error but avoids infinite loop on dump
             refp->typedefp(nullptr);
@@ -1959,8 +1959,8 @@ private:
             if (inits.find(num) != inits.end()) {  // IEEE says illegal
                 AstNode* otherp = inits.find(num)->second;
                 itemp->v3error("Overlapping enumeration value: "
-                               << itemp->prettyNameQ() << endl
-                               << itemp->warnContextPrimary() << endl
+                               << itemp->prettyNameQ() << '\n'
+                               << itemp->warnContextPrimary() << '\n'
                                << otherp->warnOther() << "... Location of original declaration\n"
                                << otherp->warnContextSecondary());
             } else {
@@ -2249,7 +2249,7 @@ private:
                 }
                 UINFO(1, "found object " << foundp << endl);
                 nodep->v3fatalSrc("MemberSel of non-variable\n"
-                                  << nodep->warnContextPrimary() << endl
+                                  << nodep->warnContextPrimary() << '\n'
                                   << foundp->warnOther() << "... Location of found object\n"
                                   << foundp->warnContextSecondary());
             }
@@ -4079,7 +4079,7 @@ private:
                                    << " requires matching types;"
                                    << " ref requires " << pinDTypep->prettyDTypeNameQ()
                                    << " data type but connection is "
-                                   << conDTypep->prettyDTypeNameQ() << " data type." << endl);
+                                   << conDTypep->prettyDTypeNameQ() << " data type.");
                 } else if (nodep->modVarp()->isTristate()) {
                     if (pinwidth != conwidth) {
                         nodep->v3warn(E_UNSUPPORTED,
@@ -5411,9 +5411,7 @@ private:
         case AstType::atMulS: newp = new AstMul(fl, lhsp, rhsp); break;
         case AstType::atShiftR: newp = new AstShiftRS(fl, lhsp, rhsp); break;
         case AstType::atShiftRS: newp = new AstShiftR(fl, lhsp, rhsp); break;
-        default:
-            nodep->v3fatalSrc("Node needs sign change, but bad case: " << nodep << endl);
-            break;
+        default: nodep->v3fatalSrc("Node needs sign change, but bad case: " << nodep); break;
         }
         UINFO(6, "   ReplaceWithUOrSVersion: " << nodep << " w/ " << newp << endl);
         nodep->replaceWith(newp);
@@ -5451,7 +5449,7 @@ private:
         case AstType::atMul:
         case AstType::atMulS: newp = new AstMulD(fl, lhsp, rhsp); break;
         default:
-            nodep->v3fatalSrc("Node needs conversion to double, but bad case: " << nodep << endl);
+            nodep->v3fatalSrc("Node needs conversion to double, but bad case: " << nodep);
             break;
         }
         UINFO(6, "   ReplaceWithDVersion: " << nodep << " w/ " << newp << endl);
@@ -5483,7 +5481,7 @@ private:
         case AstType::atLte:
         case AstType::atLteS: newp = new AstLteN(fl, lhsp, rhsp); break;
         default:
-            nodep->v3fatalSrc("Node needs conversion to string, but bad case: " << nodep << endl);
+            nodep->v3fatalSrc("Node needs conversion to string, but bad case: " << nodep);
             break;
         }
         UINFO(6, "   ReplaceWithNVersion: " << nodep << " w/ " << newp << endl);
@@ -5502,7 +5500,7 @@ private:
         switch (nodep->type()) {
         case AstType::atNegate: newp = new AstNegateD(fl, lhsp); break;
         default:
-            nodep->v3fatalSrc("Node needs conversion to double, but bad case: " << nodep << endl);
+            nodep->v3fatalSrc("Node needs conversion to double, but bad case: " << nodep);
             break;
         }
         UINFO(6, "   ReplaceWithDVersion: " << nodep << " w/ " << newp << endl);

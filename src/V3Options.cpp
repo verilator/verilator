@@ -547,8 +547,7 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
     } else if (!shown_notfound_msg) {
         shown_notfound_msg = true;
         if (m_impp->m_incDirUsers.empty()) {
-            fl->v3error("This may be because there's no search path specified with -I<dir>."
-                        << endl);
+            fl->v3error("This may be because there's no search path specified with -I<dir>.");
         }
         std::cerr << V3Error::warnMore() << "... Looked in:" << endl;
         for (const string& dir : m_impp->m_incDirUsers) {

@@ -180,7 +180,7 @@ public:
                         // left side is what we will import into
                         os << "\t" << samn << "\t" << it->first << " ("
                            << it->first->nodep()->typeName() << ") <- " << it->second << " "
-                           << it->second->nodep() << endl;
+                           << it->second->nodep() << '\n';
                     }
                 }
             }
@@ -269,15 +269,15 @@ public:
             UINFO(4, "Var2 " << fnodep << endl);
             if (nodep->type() == fnodep->type()) {
                 nodep->v3error("Duplicate declaration of "
-                               << nodeTextType(fnodep) << ": " << nodep->prettyNameQ() << endl
-                               << nodep->warnContextPrimary() << endl
+                               << nodeTextType(fnodep) << ": " << nodep->prettyNameQ() << '\n'
+                               << nodep->warnContextPrimary() << '\n'
                                << fnodep->warnOther() << "... Location of original declaration\n"
                                << fnodep->warnContextSecondary());
             } else {
                 nodep->v3error("Unsupported in C: "
                                << ucfirst(nodeTextType(nodep)) << " has the same name as "
-                               << nodeTextType(fnodep) << ": " << nodep->prettyNameQ() << endl
-                               << nodep->warnContextPrimary() << endl
+                               << nodeTextType(fnodep) << ": " << nodep->prettyNameQ() << '\n'
+                               << nodep->warnContextPrimary() << '\n'
                                << fnodep->warnOther() << "... Location of original declaration\n"
                                << fnodep->warnContextSecondary());
             }
@@ -481,7 +481,7 @@ public:
                     ifacerefp->modportFileline()->v3error(
                         "Modport not found under interface "
                         << ifacerefp->prettyNameQ(ifacerefp->ifaceName()) << ": "
-                        << ifacerefp->prettyNameQ(ifacerefp->modportName()) << endl
+                        << ifacerefp->prettyNameQ(ifacerefp->modportName()) << '\n'
                         << (suggest.empty() ? "" : ifacerefp->warnMore() + suggest));
                 }
             }
@@ -1081,15 +1081,15 @@ class LinkDotFindVisitor : public AstNVisitor {
                             if (didAnsiWarn++) ansiWarn = false;
                         }
                         nodep->v3error("Duplicate declaration of signal: "
-                                       << nodep->prettyNameQ() << endl
+                                       << nodep->prettyNameQ() << '\n'
                                        << (ansiWarn ? nodep->warnMore()
                                                           + "... note: ANSI ports must have"
                                                             " type declared with the I/O (IEEE "
                                                             "1800-2017 23.2.2.2)\n"
                                                     : "")
-                                       << nodep->warnContextPrimary() << endl
+                                       << nodep->warnContextPrimary() << '\n'
                                        << findvarp->warnOther()
-                                       << "... Location of original declaration" << endl
+                                       << "... Location of original declaration\n"
                                        << findvarp->warnContextSecondary());
                         // Combining most likely reduce other errors
                         findvarp->combineType(nodep);
@@ -1119,8 +1119,8 @@ class LinkDotFindVisitor : public AstNVisitor {
                         && !foundp->nodep()->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)) {
                         nodep->v3warn(VARHIDDEN,
                                       "Declaration of signal hides declaration in upper scope: "
-                                          << nodep->prettyNameQ() << endl
-                                          << nodep->warnContextPrimary() << endl
+                                          << nodep->prettyNameQ() << '\n'
+                                          << nodep->warnContextPrimary() << '\n'
                                           << foundp->nodep()->warnOther()
                                           << "... Location of original declaration\n"
                                           << foundp->nodep()->warnContextSecondary());
@@ -1204,8 +1204,8 @@ class LinkDotFindVisitor : public AstNVisitor {
             if (foundp->parentp() == m_curSymp  // Only when on same level
                 && !foundp->imported()) {  // and not from package
                 nodep->v3error("Duplicate declaration of enum value: "
-                               << nodep->prettyName() << endl
-                               << nodep->warnContextPrimary() << endl
+                               << nodep->prettyName() << '\n'
+                               << nodep->warnContextPrimary() << '\n'
                                << foundp->nodep()->warnOther()
                                << "... Location of original declaration\n"
                                << foundp->nodep()->warnContextSecondary());
@@ -1215,8 +1215,8 @@ class LinkDotFindVisitor : public AstNVisitor {
                     && !foundp->nodep()->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)) {
                     nodep->v3warn(VARHIDDEN,
                                   "Declaration of enum value hides declaration in upper scope: "
-                                      << nodep->prettyName() << endl
-                                      << nodep->warnContextPrimary() << endl
+                                      << nodep->prettyName() << '\n'
+                                      << nodep->warnContextPrimary() << '\n'
                                       << foundp->nodep()->warnOther()
                                       << "... Location of original declaration\n"
                                       << nodep->warnContextSecondary());
@@ -1417,8 +1417,8 @@ private:
         } else {
             if (refp->user4()) {
                 nodep->v3error("Duplicate declaration of port: "
-                               << nodep->prettyNameQ() << endl
-                               << nodep->warnContextPrimary() << endl
+                               << nodep->prettyNameQ() << '\n'
+                               << nodep->warnContextPrimary() << '\n'
                                << refp->warnOther() << "... Location of original declaration\n"
                                << refp->warnContextSecondary());
             }
@@ -1811,7 +1811,7 @@ private:
                                                                   LinkNodeMatcherVar());
                     nodep->v3error("Signal definition not found, and implicit disabled with "
                                    "`default_nettype: "
-                                   << nodep->prettyNameQ() << endl
+                                   << nodep->prettyNameQ() << '\n'
                                    << (suggest.empty() ? "" : nodep->warnMore() + suggest));
 
                 }
@@ -1822,7 +1822,7 @@ private:
                                                                   LinkNodeMatcherVar());
                     nodep->v3warn(IMPLICIT,
                                   "Signal definition not found, creating implicitly: "
-                                      << nodep->prettyNameQ() << endl
+                                      << nodep->prettyNameQ() << '\n'
                                       << (suggest.empty() ? "" : nodep->warnMore() + suggest));
                 }
             }
@@ -1876,8 +1876,8 @@ private:
     }
     void markAndCheckPinDup(AstNode* nodep, AstNode* refp, const char* whatp) {
         if (refp->user5p() && refp->user5p() != nodep) {
-            nodep->v3error("Duplicate " << whatp << " connection: " << nodep->prettyNameQ() << endl
-                                        << nodep->warnContextPrimary() << endl
+            nodep->v3error("Duplicate " << whatp << " connection: " << nodep->prettyNameQ() << '\n'
+                                        << nodep->warnContextPrimary() << '\n'
                                         << refp->user5p()->warnOther()
                                         << "... Location of original " << whatp << " connection\n"
                                         << refp->user5p()->warnContextSecondary());
@@ -1973,7 +1973,7 @@ private:
                                       : m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
                                                                  LinkNodeMatcherVarIO()));
                 nodep->v3error(ucfirst(whatp)
-                               << " not found: " << nodep->prettyNameQ() << endl
+                               << " not found: " << nodep->prettyNameQ() << '\n'
                                << (suggest.empty() ? "" : nodep->warnMore() + suggest));
             } else if (AstVar* refp = VN_CAST(foundp->nodep(), Var)) {
                 if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
@@ -2327,7 +2327,7 @@ private:
                         string suggest = m_statep->suggestSymFallback(
                             m_ds.m_dotSymp, nodep->name(), VNodeMatcher());
                         nodep->v3error("Can't find definition of "
-                                       << expectWhat << ": " << nodep->prettyNameQ() << endl
+                                       << expectWhat << ": " << nodep->prettyNameQ() << '\n'
                                        << (suggest.empty() ? "" : nodep->warnMore() + suggest));
                     } else {
                         nodep->v3error("Can't find definition of "
@@ -2605,14 +2605,14 @@ private:
                             VL_DO_DANGLING(nodep->deleteTree(), nodep);
                             return;
                         } else {
-                            nodep->v3error("Unsupported or unknown PLI call: "
-                                           << nodep->prettyNameQ() << endl);
+                            nodep->v3error(
+                                "Unsupported or unknown PLI call: " << nodep->prettyNameQ());
                         }
                     } else {
                         string suggest = m_statep->suggestSymFallback(dotSymp, nodep->name(),
                                                                       LinkNodeMatcherFTask());
                         nodep->v3error("Can't find definition of task/function: "
-                                       << nodep->prettyNameQ() << endl
+                                       << nodep->prettyNameQ() << '\n'
                                        << (suggest.empty() ? "" : nodep->warnMore() + suggest));
                     }
                 } else {
@@ -2773,7 +2773,7 @@ private:
                                 m_curSymp, cpackagerefp->name(), LinkNodeMatcherClass{});
                             cpackagerefp->v3error(
                                 "Class to extend not found: "
-                                << cpackagerefp->prettyNameQ() << endl
+                                << cpackagerefp->prettyNameQ() << '\n'
                                 << (suggest.empty() ? "" : cpackagerefp->warnMore() + suggest));
                         }
                     }
@@ -2810,7 +2810,7 @@ private:
                     if (!VN_IS(nodep->packagep(), Class) && !VN_IS(nodep->packagep(), Package)) {
                         cpackagerefp->v3error(
                             "'::' expected to reference a class/package but referenced "
-                            << nodep->packagep()->prettyTypeName() << endl
+                            << nodep->packagep()->prettyTypeName() << '\n'
                             << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
                     }
                 }

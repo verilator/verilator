@@ -146,11 +146,11 @@ public:
         if (!vxp->pure()) {
             nodep->v3warn(
                 IMPURE, "Unsupported: External variable referenced by non-inlined function/task: "
-                            << nodep->prettyNameQ() << endl
-                            << nodep->warnContextPrimary() << endl
+                            << nodep->prettyNameQ() << '\n'
+                            << nodep->warnContextPrimary() << '\n'
                             << vxp->impureNode()->warnOther()
                             << "... Location of the external reference: "
-                            << vxp->impureNode()->prettyNameQ() << endl
+                            << vxp->impureNode()->prettyNameQ() << '\n'
                             << vxp->impureNode()->warnContextSecondary());
         }
         // And, we need to check all tasks this task calls
@@ -837,11 +837,11 @@ private:
         } else if (iter->second.second != dpiproto) {
             nodep->v3error(
                 "Duplicate declaration of DPI function with different formal arguments: "
-                << nodep->prettyNameQ() << endl
-                << nodep->warnContextPrimary() << endl
-                << nodep->warnMore() << "... New prototype:      " << dpiproto << endl
+                << nodep->prettyNameQ() << '\n'
+                << nodep->warnContextPrimary() << '\n'
+                << nodep->warnMore() << "... New prototype:      " << dpiproto << '\n'
                 << iter->second.first->warnOther()
-                << "... Original prototype: " << iter->second.second << endl
+                << "... Original prototype: " << iter->second.second << '\n'
                 << iter->second.first->warnContextSecondary());
             return true;
         } else {
@@ -862,7 +862,7 @@ private:
                         portp->v3warn(
                             E_UNSUPPORTED,
                             "Unsupported: DPI argument of type "
-                                << portp->basicp()->prettyTypeName() << endl
+                                << portp->basicp()->prettyTypeName() << '\n'
                                 << portp->warnMore()
                                 << "... For best portability, use bit, byte, int, or longint");
                         // We don't warn on logic either, although the 4-stateness is lost.

@@ -663,7 +663,7 @@ public:
 
         // Dump
         for (const LogicMTask* mtaskp : path) {
-            *osp << "begin mtask with cost " << mtaskp->cost() << endl;
+            *osp << "begin mtask with cost " << mtaskp->cost() << '\n';
             for (VxList::const_iterator lit = mtaskp->vertexListp()->begin();
                  lit != mtaskp->vertexListp()->end(); ++lit) {
                 const OrderLogicVertex* logicp = (*lit)->logicp();

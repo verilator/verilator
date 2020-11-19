@@ -172,19 +172,19 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
         if (it == end()) break;
         num_in_bucket++;
     }
-    *logp << "\n*** STATS:\n" << endl;
+    *logp << "\n*** STATS:\n\n";
     *logp << "    #InBucket   Occurrences\n";
     for (const auto& i : dist) {
-        *logp << "    " << std::setw(9) << i.first << "  " << std::setw(12) << i.second << endl;
+        *logp << "    " << std::setw(9) << i.first << "  " << std::setw(12) << i.second << '\n';
     }
 
-    *logp << "\n*** Dump:\n" << endl;
+    *logp << "\n*** Dump:\n\n";
     for (const auto& itr : *this) {
         if (lasthash != itr.first) {
             lasthash = itr.first;
-            *logp << "    " << itr.first << endl;
+            *logp << "    " << itr.first << '\n';
         }
-        *logp << "\t" << itr.second << endl;
+        *logp << "\t" << itr.second << '\n';
         // Dumping the entire tree may make nearly N^2 sized dumps,
         // because the nodes under this one may also be in the hash table!
         if (tree) itr.second->dumpTree(*logp, "    ");

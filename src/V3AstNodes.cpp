@@ -1397,7 +1397,7 @@ void AstTypeTable::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     for (int i = 0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
         if (AstBasicDType* subnodep = m_basicps[i]) {
-            str << endl;  // Newline from caller, so newline first
+            str << '\n';  // Newline from caller, so newline first
             str << "\t\t" << std::setw(8) << AstBasicDTypeKwd(i).ascii();
             str << "  -> ";
             subnodep->dump(str);
@@ -1407,7 +1407,7 @@ void AstTypeTable::dump(std::ostream& str) const {
         const DetailedMap& mapr = m_detailedMap;
         for (const auto& itr : mapr) {
             AstBasicDType* dtypep = itr.second;
-            str << endl;  // Newline from caller, so newline first
+            str << '\n';  // Newline from caller, so newline first
             str << "\t\tdetailed  ->  ";
             dtypep->dump(str);
         }

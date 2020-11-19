@@ -39,13 +39,12 @@ class StatsReport {
     static StatColl s_allStats;  ///< All statistics
 
     void header() {
-        os << "Verilator Statistics Report\n";
-        os << endl;
+        os << "Verilator Statistics Report\n\n";
 
-        os << "Information:" << endl;
-        os << "  " << V3Options::version() << endl;
-        os << "  Arguments: " << v3Global.opt.allArgsString() << endl;
-        os << endl;
+        os << "Information:\n";
+        os << "  " << V3Options::version() << '\n';
+        os << "  Arguments: " << v3Global.opt.allArgsString() << '\n';
+        os << '\n';
     }
 
     void sumit() {
@@ -85,28 +84,26 @@ class StatsReport {
         }
 
         // Print organized by stage
-        os << "Global Statistics:\n";
-        os << endl;
+        os << "Global Statistics:\n\n";
         for (const auto& itr : byName) {
             const V3Statistic* repp = itr.second;
             if (repp->perf()) continue;
             os << "  " << std::left << std::setw(maxWidth) << repp->name();
             repp->dump(os);
-            os << endl;
+            os << '\n';
         }
-        os << endl;
+        os << '\n';
 
         // Print organized by stage
-        os << "Performance Statistics:\n";
-        os << endl;
+        os << "Performance Statistics:\n\n";
         for (const auto& itr : byName) {
             const V3Statistic* repp = itr.second;
             if (!repp->perf()) continue;
             os << "  " << std::left << std::setw(maxWidth) << repp->name();
             repp->dump(os);
-            os << endl;
+            os << '\n';
         }
-        os << endl;
+        os << '\n';
     }
 
     void stages() {
@@ -136,7 +133,7 @@ class StatsReport {
         // Header
         os << "  Stat     " << std::left << std::setw(maxWidth - 5 - 2) << "";
         for (const string& i : stages) os << "  " << std::left << std::setw(9) << i;
-        os << endl;
+        os << '\n';
         os << "  -------- " << std::left << std::setw(maxWidth - 5 - 2) << "";
         for (auto it = stages.begin(); it != stages.end(); ++it) {
             os << "  " << std::left << std::setw(9) << "-------";
@@ -157,10 +154,10 @@ class StatsReport {
                     if ((pos = commaName.find(',')) != string::npos) commaName.erase(pos);
                     if (lastCommaName != commaName) {
                         lastCommaName = commaName;
-                        os << endl;
+                        os << '\n';
                     }
                 }
-                os << endl;
+                os << '\n';
                 col = 0;
                 os << "  " << std::left << std::setw(maxWidth) << repp->name();
             }
@@ -171,7 +168,7 @@ class StatsReport {
             repp->dump(os);
             col++;
         }
-        os << endl;
+        os << '\n';
     }
 
 public:

@@ -855,7 +855,7 @@ void V3PreProcImp::dumpDefines(std::ostream& os) {
         // No need to print "()" below as already part of params()
         if (!it->second.params().empty()) os << it->second.params();
         if (!it->second.value().empty()) os << " " << it->second.value();
-        os << endl;
+        os << '\n';
     }
 }
 
