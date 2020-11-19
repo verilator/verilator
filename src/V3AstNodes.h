@@ -721,6 +721,8 @@ public:
     }
     ASTNODE_NODE_FUNCS(UnpackArrayDType)
     virtual string prettyDTypeName() const override;
+    // Outer dimension comes first. The first element is this node.
+    std::vector<AstUnpackArrayDType*> unpackDimensions();
 };
 
 class AstUnsizedArrayDType final : public AstNodeDType {
@@ -2026,6 +2028,7 @@ public:
     // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
     string cPubArgType(bool named, bool forReturn) const;
     string dpiArgType(bool named, bool forReturn) const;  // Return DPI-C type for argument
+    string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "") const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc

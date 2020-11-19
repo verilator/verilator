@@ -127,7 +127,9 @@ private:
                 } else if (VN_IS(nodep->backp(), Sel)
                            && VN_CAST(nodep->backp(), Sel)->widthp() == nodep) {
                     // AstSel::width must remain a constant
-                } else if (nodep->firstAbovep() && VN_IS(nodep->firstAbovep(), ArraySel)) {
+                } else if ((nodep->firstAbovep() && VN_IS(nodep->firstAbovep(), ArraySel))
+                           || ((VN_IS(m_stmtp, CCall) || VN_IS(m_stmtp, CStmt))
+                               && VN_IS(nodep, ArraySel))) {
                     // ArraySel's are pointer refs, ignore
                 } else {
                     UINFO(4, "Cre Temp: " << nodep << endl);

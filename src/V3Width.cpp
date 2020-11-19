@@ -4238,6 +4238,46 @@ private:
         nodep->dtypeFrom(nodep->taskp());
         // if (debug()) nodep->dumpTree(cout, "  FuncOut: ");
     }
+    // Returns true if dtypep0 and dtypep1 have same dimensions
+    static bool areSameSize(AstUnpackArrayDType* dtypep0, AstUnpackArrayDType* dtypep1) {
+        const std::vector<AstUnpackArrayDType*> dims0 = dtypep0->unpackDimensions();
+        const std::vector<AstUnpackArrayDType*> dims1 = dtypep1->unpackDimensions();
+        if (dims0.size() != dims1.size()) return false;
+        for (size_t i = 0; i < dims0.size(); ++i) {
+            if (dims0[i]->elementsConst() != dims1[i]->elementsConst()) return false;
+        }
+        return true;
+    }
+    // Makes sure that port and pin have same size and same datatype
+    void checkUnpackedArrayArgs(AstVar* portp, AstNode* pinp) {
+        if (AstUnpackArrayDType* portDtypep
+            = VN_CAST(portp->dtypep()->skipRefp(), UnpackArrayDType)) {
+            if (AstUnpackArrayDType* pinDtypep
+                = VN_CAST(pinp->dtypep()->skipRefp(), UnpackArrayDType)) {
+                if (!areSameSize(portDtypep, pinDtypep)) {
+                    pinp->v3warn(E_UNSUPPORTED,
+                                 "Shape of the argument does not match the shape of the parameter "
+                                     << "(" << pinDtypep->prettyDTypeNameQ() << " v.s. "
+                                     << portDtypep->prettyDTypeNameQ() << ")");
+                }
+                if (portDtypep->basicp()->width() != pinDtypep->basicp()->width()
+                    || (portDtypep->basicp()->keyword() != pinDtypep->basicp()->keyword()
+                        && !(portDtypep->basicp()->keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT
+                             && pinDtypep->basicp()->keyword() == AstBasicDTypeKwd::LOGIC)
+                        && !(portDtypep->basicp()->keyword() == AstBasicDTypeKwd::LOGIC
+                             && pinDtypep->basicp()->keyword()
+                                    == AstBasicDTypeKwd::LOGIC_IMPLICIT))) {
+                    pinp->v3warn(E_UNSUPPORTED,
+                                 "Shape of the argument does not match the shape of the parameter "
+                                     << "(" << pinDtypep->basicp()->prettyDTypeNameQ() << " v.s. "
+                                     << portDtypep->basicp()->prettyDTypeNameQ() << ")");
+                }
+            } else {
+                pinp->v3warn(E_UNSUPPORTED, "Argument is not an unpacked array while parameter "
+                                                << portp->prettyNameQ() << " is");
+            }
+        }
+    }
     void processFTaskRefArgs(AstNodeFTaskRef* nodep) {
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
@@ -4288,6 +4328,7 @@ private:
                 else if (portp->basicp() && portp->basicp()->keyword() == AstBasicDTypeKwd::STRING
                          && !VN_IS(pinp, CvtPackString)
                          && !VN_IS(pinp, SFormatF)  // Already generates a string
+                         && !VN_IS(portp->dtypep(), UnpackArrayDType)  // Unpacked array must match
                          && !(VN_IS(pinp, VarRef)
                               && VN_CAST(pinp, VarRef)->varp()->basicp()->keyword()
                                      == AstBasicDTypeKwd::STRING)) {
@@ -4311,6 +4352,7 @@ private:
                 AstNode* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
                 // Change data types based on above accept completion
+                if (nodep->taskp()->dpiImport()) checkUnpackedArrayArgs(portp, pinp);
                 if (portp->isDouble()) VL_DO_DANGLING(spliceCvtD(pinp), pinp);
             }
         }
