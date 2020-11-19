@@ -245,7 +245,6 @@ private:
     typedef std::deque<AstCell*> CellList;
     CellList m_cellps;  // Cells left to process (in this module)
 
-    AstNodeFTask* m_ftaskp = nullptr;  // Function/task reference
     AstNodeModule* m_modp = nullptr;  // Current module being processed
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
     UnrollStateful m_unroller;  // Loop unroller
@@ -605,13 +604,6 @@ private:
         nodep->user5p(genHierNamep);
         m_cellps.push_back(nodep);
     }
-    virtual void visit(AstNodeFTask* nodep) override {
-        VL_RESTORER(m_ftaskp);
-        {
-            m_ftaskp = nodep;
-            iterateChildren(nodep);
-        }
-    }
 
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep) override {
@@ -633,7 +625,7 @@ private:
                         new AstAssign(nodep->fileline(),
                                       new AstVarRef(nodep->fileline(), nodep, VAccess::WRITE),
                                       nodep->valuep()->cloneTree(true))));
-                    if (m_ftaskp) {
+                    if (nodep->isFuncLocal()) {
                         // We put the initial in wrong place under a function.  We
                         // should move the parameter out of the function and to the
                         // module, with appropriate dotting, but this confuses LinkDot
@@ -648,6 +640,7 @@ private:
     }
     // Make sure varrefs cause vars to constify before things above
     virtual void visit(AstVarRef* nodep) override {
+        // Might jump across functions, so beware if ever add a m_funcp
         if (nodep->varp()) iterate(nodep->varp());
     }
     bool ifaceParamReplace(AstVarXRef* nodep, AstNode* candp) {
