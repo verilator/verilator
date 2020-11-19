@@ -606,41 +606,41 @@ private:
         m_cellps.push_back(nodep);
     }
     virtual void visit(AstNodeFTask* nodep) override {
-        m_ftaskp = nodep;
-        iterateChildren(nodep);
-        m_ftaskp = nullptr;
+        VL_RESTORER(m_ftaskp);
+        {
+            m_ftaskp = nodep;
+            iterateChildren(nodep);
+        }
     }
 
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep) override {
-        if (!nodep->user5SetOnce()) {  // Process once
-            iterateChildren(nodep);
-            if (nodep->isParam()) {
-                if (!nodep->valuep()) {
-                    nodep->v3error("Parameter without initial value is never given value"
-                                   << " (IEEE 1800-2017 6.20.1): " << nodep->prettyNameQ());
-                } else {
-                    V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
-                    if (!VN_IS(nodep->valuep(), Const)
-                        && !VN_IS(nodep->valuep(), Unbounded)) {  // Complex init, like an array
-                        // Make a new INITIAL to set the value.
-                        // This allows the normal array/struct handling code to properly
-                        // initialize the parameter.
-                        nodep->addNext(new AstInitial(
-                            nodep->fileline(),
-                            new AstAssign(nodep->fileline(),
-                                          new AstVarRef(nodep->fileline(), nodep, VAccess::WRITE),
-                                          nodep->valuep()->cloneTree(true))));
-                        if (m_ftaskp) {
-                            // We put the initial in wrong place under a function.  We
-                            // should move the parameter out of the function and to the
-                            // module, with appropriate dotting, but this confuses LinkDot
-                            // (as then name isn't found later), so punt - probably can
-                            // treat as static function variable when that is supported.
-                            nodep->v3warn(
-                                E_UNSUPPORTED,
-                                "Unsupported: Parameters in functions with complex assign");
-                        }
+        if (nodep->user5SetOnce()) return;  // Process once
+        iterateChildren(nodep);
+        if (nodep->isParam()) {
+            if (!nodep->valuep()) {
+                nodep->v3error("Parameter without initial value is never given value"
+                               << " (IEEE 1800-2017 6.20.1): " << nodep->prettyNameQ());
+            } else {
+                V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
+                if (!VN_IS(nodep->valuep(), Const)
+                    && !VN_IS(nodep->valuep(), Unbounded)) {  // Complex init, like an array
+                    // Make a new INITIAL to set the value.
+                    // This allows the normal array/struct handling code to properly
+                    // initialize the parameter.
+                    nodep->addNext(new AstInitial(
+                        nodep->fileline(),
+                        new AstAssign(nodep->fileline(),
+                                      new AstVarRef(nodep->fileline(), nodep, VAccess::WRITE),
+                                      nodep->valuep()->cloneTree(true))));
+                    if (m_ftaskp) {
+                        // We put the initial in wrong place under a function.  We
+                        // should move the parameter out of the function and to the
+                        // module, with appropriate dotting, but this confuses LinkDot
+                        // (as then name isn't found later), so punt - probably can
+                        // treat as static function variable when that is supported.
+                        nodep->v3warn(E_UNSUPPORTED,
+                                      "Unsupported: Parameters in functions with complex assign");
                     }
                 }
             }
