@@ -288,10 +288,11 @@ private:
                     new AstAssign(
                         nodep->fileline(),
                         new AstVarRef(nodep->fileline(), newvarp, VAccess::WRITE),
-                        new AstOr(
-                            nodep->fileline(), new AstConst(nodep->fileline(), numb1),
-                            new AstAnd(nodep->fileline(), new AstConst(nodep->fileline(), numbx),
-                                       new AstRand(nodep->fileline(), nodep->dtypep(), true)))));
+                        new AstOr(nodep->fileline(), new AstConst(nodep->fileline(), numb1),
+                                  new AstAnd(nodep->fileline(),
+                                             new AstConst(nodep->fileline(), numbx),
+                                             new AstRand(nodep->fileline(), AstRand::Reset{},
+                                                         nodep->dtypep(), true)))));
                 // Add inits in front of other statement.
                 // In the future, we should stuff the initp into the module's constructor.
                 AstNode* afterp = m_modp->stmtsp()->unlinkFrBackWithNext();

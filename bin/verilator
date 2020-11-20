@@ -4113,10 +4113,10 @@ similar.
 
 =item $random, $urandom, $urandom_range
 
-$random and $urandom do not support the optional argument to set the seed.
-Use +verilator+seed argument to set the seed.  There is one random seed per
-C thread, not per module for $random, nor per object for random stability
-of $urandom/$urandom_range.
+Use +verilator+seed argument to set the seed if there is no $random or
+$urandom optional argument to set the seed.  There is one random seed per C
+thread, not per module for $random, nor per object for random stability of
+$urandom/$urandom_range.
 
 =item $readmemb, $readmemh
 

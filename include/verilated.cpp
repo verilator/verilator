@@ -256,6 +256,7 @@ Verilated::Serialized::Serialized() {
     s_errorLimit = 1;
     s_randReset = 0;
     s_randSeed = 0;
+    s_randSeedEpoch = 1;
     s_timeunit = VL_TIME_UNIT;  // Initial value until overriden by _Vconfigure
     s_timeprecision = VL_TIME_PRECISION;  // Initial value until overriden by _Vconfigure
 }
@@ -279,6 +280,8 @@ void* Verilated::serialized2Ptr() VL_MT_UNSAFE { return &VerilatedImp::s_s.v.m_s
 static vluint32_t vl_sys_rand32() VL_MT_UNSAFE {
     // Return random 32-bits using system library.
     // Used only to construct seed for Verilator's PNRG.
+    static VerilatedMutex s_mutex;
+    const VerilatedLockGuard lock(s_mutex);  // Otherwise rand is unsafe
 #if defined(_WIN32) && !defined(__CYGWIN__)
     // Windows doesn't have lrand48(), although Cygwin does.
     return (rand() << 16) ^ rand();
@@ -288,29 +291,18 @@ static vluint32_t vl_sys_rand32() VL_MT_UNSAFE {
 }
 
 vluint64_t vl_rand64() VL_MT_SAFE {
-    static VerilatedMutex s_mutex;
-    static VL_THREAD_LOCAL bool t_seeded = false;
+    static VL_THREAD_LOCAL vluint32_t t_seedEpoch = 0;
     static VL_THREAD_LOCAL vluint64_t t_state[2];
-    if (VL_UNLIKELY(!t_seeded)) {
-        t_seeded = true;
-        {
-            const VerilatedLockGuard lock(s_mutex);  // Otherwise vl_sys_rand32 is unsafe
-            if (Verilated::randSeed() != 0) {
-                t_state[0] = ((static_cast<vluint64_t>(Verilated::randSeed()) << 32)
-                              ^ (static_cast<vluint64_t>(Verilated::randSeed())));
-                t_state[1] = ((static_cast<vluint64_t>(Verilated::randSeed()) << 32)
-                              ^ (static_cast<vluint64_t>(Verilated::randSeed())));
-            } else {
-                t_state[0] = ((static_cast<vluint64_t>(vl_sys_rand32()) << 32)
-                              ^ (static_cast<vluint64_t>(vl_sys_rand32())));
-                t_state[1] = ((static_cast<vluint64_t>(vl_sys_rand32()) << 32)
-                              ^ (static_cast<vluint64_t>(vl_sys_rand32())));
-            }
-            // Fix state as algorithm is slow to randomize if many zeros
-            // This causes a loss of ~ 1 bit of seed entropy, no big deal
-            if (VL_COUNTONES_I(t_state[0]) < 10) t_state[0] = ~t_state[0];
-            if (VL_COUNTONES_I(t_state[1]) < 10) t_state[1] = ~t_state[1];
-        }
+    // For speed, we use a thread-local epoch number to know when to reseed
+    if (VL_UNLIKELY(t_seedEpoch != Verilated::randSeedEpoch())) {
+        // Set epoch before state, in case races with new seeding
+        t_seedEpoch = Verilated::randSeedEpoch();
+        t_state[0] = Verilated::randSeedDefault64();
+        t_state[1] = t_state[0];
+        // Fix state as algorithm is slow to randomize if many zeros
+        // This causes a loss of ~ 1 bit of seed entropy, no big deal
+        if (VL_COUNTONES_I(t_state[0]) < 10) t_state[0] = ~t_state[0];
+        if (VL_COUNTONES_I(t_state[1]) < 10) t_state[1] = ~t_state[1];
     }
     // Xoroshiro128+ algorithm
     vluint64_t result = t_state[0] + t_state[1];
@@ -333,6 +325,11 @@ WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     return outwp;
 }
 // LCOV_EXCL_STOP
+
+IData VL_RANDOM_SEEDED_II(int obits, IData seed) VL_MT_SAFE {
+    Verilated::randSeed(static_cast<int>(seed));
+    return VL_RANDOM_I(obits);
+}
 
 IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
     if (Verilated::randReset() == 0) return 0;
@@ -2223,6 +2220,22 @@ void Verilated::randReset(int val) VL_MT_SAFE {
 void Verilated::randSeed(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);
     s_s.s_randSeed = val;
+    vluint64_t newEpoch = s_s.s_randSeedEpoch + 1;
+    if (VL_UNLIKELY(newEpoch == 0)) newEpoch = 1;
+        // Obververs must see new epoch AFTER seed updated
+#ifdef VL_THREADED
+    std::atomic_signal_fence(std::memory_order_release);
+#endif
+    s_s.s_randSeedEpoch = newEpoch;
+}
+vluint64_t Verilated::randSeedDefault64() VL_MT_SAFE {
+    if (Verilated::randSeed() != 0) {
+        return ((static_cast<vluint64_t>(Verilated::randSeed()) << 32)
+                ^ (static_cast<vluint64_t>(Verilated::randSeed())));
+    } else {
+        return ((static_cast<vluint64_t>(vl_sys_rand32()) << 32)
+                ^ (static_cast<vluint64_t>(vl_sys_rand32())));
+    }
 }
 void Verilated::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);

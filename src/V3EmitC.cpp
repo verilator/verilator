@@ -836,6 +836,9 @@ public:
         putsQuoted(nodep->timeunit().ascii());
         puts(");\n");
     }
+    virtual void visit(AstRand* nodep) override {
+        emitOpName(nodep, nodep->emitC(), nodep->seedp(), nullptr, nullptr);
+    }
     virtual void visit(AstTime* nodep) override {
         puts("VL_TIME_UNITED_Q(");
         if (nodep->timeunit().isNone()) nodep->v3fatalSrc("$time has no units");

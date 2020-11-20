@@ -175,7 +175,9 @@ module Vt_debug_emitv;
         if ((32'sh5 != t.i)) begin
             $stop;
         end
-        t.sum = $urandom;
+        t.sum = 
+        ???? // RAND
+        32'sha;
     end
     /*verilator public_flat_rw @(posedge clk)@(negedge 
                                                clk) t.pubflat*/

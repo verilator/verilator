@@ -387,6 +387,7 @@ class Verilated final {
         int s_errorLimit;  ///< Stop on error number
         int s_randReset;  ///< Random reset: 0=all 0s, 1=all 1s, 2=random
         int s_randSeed;  ///< Random seed: 0=random
+        int s_randSeedEpoch;  ///< Number incrementing on each reseed, 0=illegal
         Serialized();
         ~Serialized() = default;
     } s_s;
@@ -443,6 +444,9 @@ public:
     static int randReset() VL_MT_SAFE { return s_s.s_randReset; }  ///< Return randReset value
     static void randSeed(int val) VL_MT_SAFE;
     static int randSeed() VL_MT_SAFE { return s_s.s_randSeed; }  ///< Return randSeed value
+    static vluint32_t randSeedEpoch() VL_MT_SAFE { return s_s.s_randSeedEpoch; }
+    /// Random seed extended to 64 bits, and defaulted if user seed==0
+    static vluint64_t randSeedDefault64() VL_MT_SAFE;
 
     /// Enable debug of internal verilated code
     static void debug(int level) VL_MT_SAFE;
@@ -649,6 +653,7 @@ extern vluint64_t vl_rand64() VL_MT_SAFE;
 inline IData VL_RANDOM_I(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_I(obits); }
 inline QData VL_RANDOM_Q(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_Q(obits); }
 extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);  ///< Randomize a signal
+extern IData VL_RANDOM_SEEDED_II(int obits, IData seed) VL_MT_SAFE;
 inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
     vluint64_t rnd = vl_rand64();
     if (VL_LIKELY(hi > lo)) {

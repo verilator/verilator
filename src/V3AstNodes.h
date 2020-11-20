@@ -5348,22 +5348,33 @@ public:
 //======================================================================
 // non-ary ops
 
-class AstRand final : public AstNodeTermop {
+class AstRand final : public AstNodeMath {
+    // $random/$random(seed) or $urandom/$urandom(seed)
     // Return a random number, based upon width()
 private:
+    bool m_urandom = false;  // $urandom vs $random
     bool m_reset = false;  // Random reset, versus always random
 public:
-    AstRand(FileLine* fl, AstNodeDType* dtp, bool reset)
+    class Reset {};
+    AstRand(FileLine* fl, Reset, AstNodeDType* dtp, bool reset)
         : ASTGEN_SUPER(fl)
         , m_reset{reset} {
         dtypep(dtp);
     }
-    explicit AstRand(FileLine* fl)
-        : ASTGEN_SUPER(fl) {}
+    AstRand(FileLine* fl, AstNode* seedp, bool urandom)
+        : ASTGEN_SUPER(fl)
+        , m_urandom(urandom) {
+        setNOp1p(seedp);
+    }
     ASTNODE_NODE_FUNCS(Rand)
-    virtual string emitVerilog() override { return "%f$random"; }
+    virtual string emitVerilog() override {
+        return seedp() ? (m_urandom ? "%f$urandom(%l)" : "%f$random(%l)")
+                       : (m_urandom ? "%f$urandom()" : "%f$random()");
+    }
     virtual string emitC() override {
-        return (m_reset ? "VL_RAND_RESET_%nq(%nw, %P)" : "VL_RANDOM_%nq(%nw, %P)");
+        return m_reset
+                   ? "VL_RAND_RESET_%nq(%nw, %P)"
+                   : seedp() ? "VL_RANDOM_SEEDED_%nq%lq(%nw, %P, %li)" : "VL_RANDOM_%nq(%nw, %P)";
     }
     virtual bool cleanOut() const override { return true; }
     virtual bool isGateOptimizable() const override { return false; }
@@ -5371,24 +5382,9 @@ public:
     virtual int instrCount() const override { return instrCountPli(); }
     virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode* samep) const override { return true; }
-};
-
-class AstURandom final : public AstNodeTermop {
-    // $urandom
-public:
-    explicit AstURandom(FileLine* fl)
-        : ASTGEN_SUPER(fl) {
-        dtypeSetUInt32();  // Says IEEE
-    }
-    ASTNODE_NODE_FUNCS(URandom)
-    virtual string emitVerilog() override { return "%f$urandom"; }
-    virtual string emitC() override { return "VL_RANDOM_%nq(%nw)"; }
-    virtual bool cleanOut() const override { return true; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return false; }
-    virtual int instrCount() const override { return instrCountPli(); }
-    virtual V3Hash sameHash() const override { return V3Hash(); }
-    virtual bool same(const AstNode* samep) const override { return true; }
+    AstNode* seedp() const { return op1p(); }
+    bool reset() const { return m_reset; }
+    bool urandom() const { return m_urandom; }
 };
 
 class AstURandomRange final : public AstNodeBiop {

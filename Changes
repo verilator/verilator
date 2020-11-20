@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.105 devel
 
+***   Support $random and $urandom seeds.
+
 ****  Fix trace signal names getting hashed (#2643).  [Barbara Gigerl]
 
 ****  Fix unpacked array parameters near functions (#2639). [Anderson Ignacio da Silva]

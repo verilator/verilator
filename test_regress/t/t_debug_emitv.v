@@ -146,7 +146,9 @@ module t (/*AUTOARG*/
       if (i != 5) $stop;
 
       sum = $random;
+      sum = $random(10);
       sum = $urandom;
+      sum = $urandom(10);
    end
 endmodule
 

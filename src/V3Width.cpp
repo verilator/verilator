@@ -1143,12 +1143,12 @@ private:
 
     virtual void visit(AstRand* nodep) override {
         if (m_vup->prelim()) {
-            nodep->dtypeSetSigned32();  // Says the spec
-        }
-    }
-    virtual void visit(AstURandom* nodep) override {
-        if (m_vup->prelim()) {
-            nodep->dtypeSetUInt32();  // Says the spec
+            if (nodep->urandom()) {
+                nodep->dtypeSetUInt32();  // Says the spec
+            } else {
+                nodep->dtypeSetSigned32();  // Says the spec
+            }
+            if (nodep->seedp()) iterateCheckSigned32(nodep, "seed", nodep->seedp(), BOTH);
         }
     }
     virtual void visit(AstURandomRange* nodep) override {
