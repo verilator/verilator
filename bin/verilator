@@ -1996,14 +1996,15 @@ section below for descriptions of some of the files that were created.
 
 (Verilator included a default compile rule and link rule, since we used
 --exe and passed a .cpp file on the Verilator command line.  Verilator also
-then used C<make> to build a final executable.  You can also write your own
-compile rules, and run make yourself as we'll show in the SYSTEMC section.)
+then used C<make> to build a final executable, since we used --build.  You
+can also write your own compile rules, and run make yourself as we'll show
+in the SYSTEMC section.
 
-And now we run it
+And now we run it:
 
     obj_dir/Vour
 
-And we get as output
+And we get as output:
 
     Hello World
     - our.v:2: Verilog $finish
