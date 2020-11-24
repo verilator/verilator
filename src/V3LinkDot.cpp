@@ -2774,15 +2774,20 @@ private:
                             if (AstClass* classp = VN_CAST(foundp->nodep(), Class)) {
                                 UINFO(8, "Import to " << nodep << " from export class " << classp
                                                       << endl);
-                                AstClassRefDType* newp
-                                    = new AstClassRefDType{nodep->fileline(), classp};
-                                cextp->childDTypep(newp);
-                                classp->isExtended(true);
-                                nodep->isExtended(true);
-                                VSymEnt* srcp = m_statep->getNodeSym(classp);
-                                m_curSymp->importFromClass(m_statep->symsp(), srcp);
-                                VL_DO_DANGLING(cpackagerefp->unlinkFrBack()->deleteTree(),
-                                               cpackagerefp);
+                                if (classp == nodep) {
+                                    cextp->v3error("Attempting to extend class "
+                                                   << nodep->prettyNameQ() << " from itself");
+                                } else {
+                                    AstClassRefDType* newp
+                                        = new AstClassRefDType{nodep->fileline(), classp};
+                                    cextp->childDTypep(newp);
+                                    classp->isExtended(true);
+                                    nodep->isExtended(true);
+                                    VSymEnt* srcp = m_statep->getNodeSym(classp);
+                                    m_curSymp->importFromClass(m_statep->symsp(), srcp);
+                                    VL_DO_DANGLING(cpackagerefp->unlinkFrBack()->deleteTree(),
+                                                   cpackagerefp);
+                                }
                                 ok = true;
                             }
                         }
