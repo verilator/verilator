@@ -100,6 +100,9 @@ module t (/*AUTOARG*/);
       qi = d.find_last_index with (item == 20);
       `checkh(qi.size, 0);
 
+      qi = d.find_index with (item.index == 2);
+      v = $sformatf("%p", qi); `checks(v, "'{'h2} ");
+
       qv = d.min;
       v = $sformatf("%p", qv); `checks(v, "'{'h1} ");
       qv = d.max;

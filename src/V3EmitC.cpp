@@ -430,8 +430,12 @@ public:
     virtual void visit(AstWith* nodep) override {
         // With uses a C++11 lambda
         putbs("[=](");
-        if (auto* argrefp = nodep->argrefp()) {
-            putbs(argrefp->dtypep()->cType(nodep->argrefp()->nameProtect(), false, false));
+        if (auto* argrefp = nodep->indexArgRefp()) {
+            putbs(argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
+            puts(",");
+        }
+        if (auto* argrefp = nodep->valueArgRefp()) {
+            putbs(argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
         }
         // Probably fragile, V3Task may need to convert to a AstCReturn
         puts(") { return ");

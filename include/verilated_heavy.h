@@ -250,14 +250,18 @@ public:
     void sort() { std::sort(m_deque.begin(), m_deque.end()); }
     template <typename Func> void sort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
-        std::sort(m_deque.begin(), m_deque.end(),
-                  [=](const T_Value& a, const T_Value& b) { return with_func(a) < with_func(b); });
+        std::sort(m_deque.begin(), m_deque.end(), [=](const T_Value& a, const T_Value& b) {
+            // index number is meaninless with sort, as it changes
+            return with_func(0, a) < with_func(0, b);
+        });
     }
     void rsort() { std::sort(m_deque.rbegin(), m_deque.rend()); }
     template <typename Func> void rsort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
-        std::sort(m_deque.rbegin(), m_deque.rend(),
-                  [=](const T_Value& a, const T_Value& b) { return with_func(a) < with_func(b); });
+        std::sort(m_deque.rbegin(), m_deque.rend(), [=](const T_Value& a, const T_Value& b) {
+            // index number is meaninless with sort, as it changes
+            return with_func(0, a) < with_func(0, b);
+        });
     }
     void reverse() { std::reverse(m_deque.begin(), m_deque.end()); }
     void shuffle() { std::shuffle(m_deque.begin(), m_deque.end(), VlURNG()); }
@@ -289,39 +293,54 @@ public:
     }
     template <typename Func> VlQueue find(Func with_func) const {
         VlQueue out;
-        for (const auto& i : m_deque)
-            if (with_func(i)) out.push_back(i);
+        IData index = 0;
+        for (const auto& i : m_deque) {
+            if (with_func(index, i)) out.push_back(i);
+            ++index;
+        }
         return out;
     }
     template <typename Func> VlQueue<IData> find_index(Func with_func) const {
         VlQueue<IData> out;
         IData index = 0;
         for (const auto& i : m_deque) {
-            if (with_func(i)) out.push_back(index);
+            if (with_func(index, i)) out.push_back(index);
             ++index;
         }
         return out;
     }
     template <typename Func> VlQueue find_first(Func with_func) const {
-        const auto it = std::find_if(m_deque.begin(), m_deque.end(), with_func);
-        if (it == m_deque.end()) return VlQueue{};
-        return VlQueue::cons(*it);
+        // Can't use std::find_if as need index number
+        IData index = 0;
+        for (const auto& i : m_deque) {
+            if (with_func(index, i)) return VlQueue::cons(i);
+            ++index;
+        }
+        return VlQueue{};
     }
     template <typename Func> VlQueue<IData> find_first_index(Func with_func) const {
-        const auto it = std::find_if(m_deque.begin(), m_deque.end(), with_func);
-        if (it == m_deque.end()) return VlQueue<IData>{};
-        return VlQueue<IData>::cons(std::distance(m_deque.begin(), it));
+        IData index = 0;
+        for (const auto& i : m_deque) {
+            if (with_func(index, i)) return VlQueue<IData>::cons(index);
+            ++index;
+        }
+        return VlQueue<IData>{};
     }
     template <typename Func> VlQueue find_last(Func with_func) const {
-        const auto it = std::find_if(m_deque.rbegin(), m_deque.rend(), with_func);
-        if (it == m_deque.rend()) return VlQueue{};
-        return VlQueue::cons(*it);
+        IData index = m_deque.size() - 1;
+        for (auto it = m_deque.rbegin(); it != m_deque.rend(); ++it) {
+            if (with_func(index, *it)) return VlQueue::cons(*it);
+            --index;
+        }
+        return VlQueue{};
     }
     template <typename Func> VlQueue<IData> find_last_index(Func with_func) const {
-        const auto it = std::find_if(m_deque.rbegin(), m_deque.rend(), with_func);
-        if (it == m_deque.rend()) return VlQueue<IData>{};
-        // Return index must be relative to beginning
-        return VlQueue<IData>::cons(m_deque.size() - 1 - std::distance(m_deque.rbegin(), it));
+        IData index = m_deque.size() - 1;
+        for (auto it = m_deque.rbegin(); it != m_deque.rend(); ++it) {
+            if (with_func(index, *it)) return VlQueue<IData>::cons(index);
+            --index;
+        }
+        return VlQueue<IData>{};
     }
 
     // Reduction operators
@@ -343,7 +362,8 @@ public:
     }
     template <typename Func> T_Value r_sum(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_deque) out += with_func(i);
+        IData index = 0;
+        for (const auto& i : m_deque) out += with_func(index++, i);
         return out;
     }
     T_Value r_product() const {
@@ -357,9 +377,11 @@ public:
     template <typename Func> T_Value r_product(Func with_func) const {
         if (m_deque.empty()) return T_Value(0);
         auto it = m_deque.begin();
-        T_Value out{with_func(*it)};
+        IData index = 0;
+        T_Value out{with_func(index, *it)};
         ++it;
-        for (; it != m_deque.end(); ++it) out *= with_func(*it);
+        ++index;
+        for (; it != m_deque.end(); ++it) out *= with_func(index++, *it);
         return out;
     }
     T_Value r_and() const {
@@ -373,9 +395,11 @@ public:
     template <typename Func> T_Value r_and(Func with_func) const {
         if (m_deque.empty()) return T_Value(0);
         auto it = m_deque.begin();
-        T_Value out{with_func(*it)};
+        IData index = 0;
+        T_Value out{with_func(index, *it)};
         ++it;
-        for (; it != m_deque.end(); ++it) out &= with_func(*it);
+        ++index;
+        for (; it != m_deque.end(); ++it) out &= with_func(index, *it);
         return out;
     }
     T_Value r_or() const {
@@ -385,7 +409,8 @@ public:
     }
     template <typename Func> T_Value r_or(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_deque) out |= with_func(i);
+        IData index = 0;
+        for (const auto& i : m_deque) out |= with_func(index++, i);
         return out;
     }
     T_Value r_xor() const {
@@ -395,7 +420,8 @@ public:
     }
     template <typename Func> T_Value r_xor(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_deque) out ^= with_func(i);
+        IData index = 0;
+        for (const auto& i : m_deque) out ^= with_func(index++, i);
         return out;
     }
 
@@ -588,19 +614,19 @@ public:
     template <typename Func> VlQueue<T_Value> find(Func with_func) const {
         VlQueue<T_Value> out;
         for (const auto& i : m_map)
-            if (with_func(i.second)) out.push_back(i.second);
+            if (with_func(i.first, i.second)) out.push_back(i.second);
         return out;
     }
     template <typename Func> VlQueue<T_Key> find_index(Func with_func) const {
         VlQueue<T_Key> out;
         for (const auto& i : m_map)
-            if (with_func(i.second)) out.push_back(i.first);
+            if (with_func(i.first, i.second)) out.push_back(i.first);
         return out;
     }
     template <typename Func> VlQueue<T_Value> find_first(Func with_func) const {
         const auto it
             = std::find_if(m_map.begin(), m_map.end(), [=](const std::pair<T_Key, T_Value>& i) {
-                  return with_func(i.second);
+                  return with_func(i.first, i.second);
               });
         if (it == m_map.end()) return VlQueue<T_Value>{};
         return VlQueue<T_Value>::cons(it->second);
@@ -608,7 +634,7 @@ public:
     template <typename Func> VlQueue<T_Key> find_first_index(Func with_func) const {
         const auto it
             = std::find_if(m_map.begin(), m_map.end(), [=](const std::pair<T_Key, T_Value>& i) {
-                  return with_func(i.second);
+                  return with_func(i.first, i.second);
               });
         if (it == m_map.end()) return VlQueue<T_Value>{};
         return VlQueue<T_Key>::cons(it->first);
@@ -616,7 +642,7 @@ public:
     template <typename Func> VlQueue<T_Value> find_last(Func with_func) const {
         const auto it
             = std::find_if(m_map.rbegin(), m_map.rend(), [=](const std::pair<T_Key, T_Value>& i) {
-                  return with_func(i.second);
+                  return with_func(i.first, i.second);
               });
         if (it == m_map.rend()) return VlQueue<T_Value>{};
         return VlQueue<T_Value>::cons(it->second);
@@ -624,7 +650,7 @@ public:
     template <typename Func> VlQueue<T_Key> find_last_index(Func with_func) const {
         const auto it
             = std::find_if(m_map.rbegin(), m_map.rend(), [=](const std::pair<T_Key, T_Value>& i) {
-                  return with_func(i.second);
+                  return with_func(i.first, i.second);
               });
         if (it == m_map.rend()) return VlQueue<T_Value>{};
         return VlQueue<T_Key>::cons(it->first);
@@ -657,7 +683,7 @@ public:
     }
     template <typename Func> T_Value r_sum(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_map) out += with_func(i.second);
+        for (const auto& i : m_map) out += with_func(i.first, i.second);
         return out;
     }
     T_Value r_product() const {
@@ -671,9 +697,9 @@ public:
     template <typename Func> T_Value r_product(Func with_func) const {
         if (m_map.empty()) return T_Value(0);
         auto it = m_map.begin();
-        T_Value out{with_func(it->second)};
+        T_Value out{with_func(it->first, it->second)};
         ++it;
-        for (; it != m_map.end(); ++it) out *= with_func(it->second);
+        for (; it != m_map.end(); ++it) out *= with_func(it->first, it->second);
         return out;
     }
     T_Value r_and() const {
@@ -687,9 +713,9 @@ public:
     template <typename Func> T_Value r_and(Func with_func) const {
         if (m_map.empty()) return T_Value(0);
         auto it = m_map.begin();
-        T_Value out{with_func(it->second)};
+        T_Value out{with_func(it->first, it->second)};
         ++it;
-        for (; it != m_map.end(); ++it) out &= with_func(it->second);
+        for (; it != m_map.end(); ++it) out &= with_func(it->first, it->second);
         return out;
     }
     T_Value r_or() const {
@@ -699,7 +725,7 @@ public:
     }
     template <typename Func> T_Value r_or(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_map) out |= with_func(i.second);
+        for (const auto& i : m_map) out |= with_func(i.first, i.second);
         return out;
     }
     T_Value r_xor() const {
@@ -709,7 +735,7 @@ public:
     }
     template <typename Func> T_Value r_xor(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_map) out ^= with_func(i.second);
+        for (const auto& i : m_map) out ^= with_func(i.first, i.second);
         return out;
     }
 

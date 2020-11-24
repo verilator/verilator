@@ -3107,11 +3107,13 @@ class AstLambdaArgRef final : public AstNodeMath {
     // optimizations and AstVar's are painful to remove.
 private:
     string m_name;  // Name of variable
+    bool m_index;  // Index, not value
 
 public:
-    AstLambdaArgRef(FileLine* fl, const string& name)
+    AstLambdaArgRef(FileLine* fl, const string& name, bool index)
         : ASTGEN_SUPER(fl)
-        , m_name{name} {}
+        , m_name{name}
+        , m_index(index) {}
     ASTNODE_NODE_FUNCS(LambdaArgRef)
     virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode* samep) const override { return true; }
@@ -3122,31 +3124,37 @@ public:
     virtual int instrCount() const override { return widthInstrs(); }
     virtual string name() const override { return m_name; }  // * = Var name
     virtual void name(const string& name) override { m_name = name; }
+    bool index() const { return m_index; }
 };
 
 class AstWith final : public AstNodeStmt {
     // Used as argument to method, then to AstCMethodHard
     // dtypep() contains the with lambda's return dtype
     // Parents: funcref (similar to AstArg)
-    // Children: VAR that declares the index variable
+    // Children: LambdaArgRef that declares the item variable
+    // Children: LambdaArgRef that declares the item.index variable
     // Children: math (equation establishing the with)
 public:
-    AstWith(FileLine* fl, AstLambdaArgRef* argrefp, AstNode* exprp)
+    AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
+            AstNode* exprp)
         : ASTGEN_SUPER(fl) {
-        addOp1p(argrefp);
-        addNOp2p(exprp);
+        addOp1p(indexArgRefp);
+        addOp2p(valueArgRefp);
+        addNOp3p(exprp);
     }
     ASTNODE_NODE_FUNCS(With)
     virtual V3Hash sameHash() const override { return V3Hash(); }
     virtual bool same(const AstNode* samep) const override { return true; }
     virtual bool hasDType() const override { return true; }
     virtual const char* broken() const override {
-        BROKEN_RTN(!argrefp());  // varp needed to know lambda's arg dtype
+        BROKEN_RTN(!indexArgRefp());  // varp needed to know lambda's arg dtype
+        BROKEN_RTN(!valueArgRefp());  // varp needed to know lambda's arg dtype
         return nullptr;
     }
     //
-    AstLambdaArgRef* argrefp() const { return VN_CAST(op1p(), LambdaArgRef); }
-    AstNode* exprp() const { return op2p(); }
+    AstLambdaArgRef* indexArgRefp() const { return VN_CAST(op1p(), LambdaArgRef); }
+    AstLambdaArgRef* valueArgRefp() const { return VN_CAST(op2p(), LambdaArgRef); }
+    AstNode* exprp() const { return op3p(); }
 };
 
 //######################################################################

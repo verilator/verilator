@@ -201,7 +201,7 @@ private:
     AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
-    AstLambdaArgRef* m_lambdaArgRefp = nullptr;  // Argument to above lambda
+    AstWith* m_withp = nullptr;  // Current 'with' statement
     AstFunc* m_funcp = nullptr;  // Current function
     AstAttrOf* m_attrp = nullptr;  // Current attribute
     bool m_doGenerate;  // Do errors later inside generate statement
@@ -2373,10 +2373,12 @@ private:
         }
     }
     AstWith* methodWithArgument(AstMethodCall* nodep, bool required, bool arbReturn,
-                                AstNodeDType* returnDtp, AstNodeDType* argDtp) {
+                                AstNodeDType* returnDtp, AstNodeDType* indexDtp,
+                                AstNodeDType* valueDtp) {
         UASSERT_OBJ(arbReturn || returnDtp, nodep, "Null return type");
         if (AstWith* withp = VN_CAST(nodep->pinsp(), With)) {
-            withp->argrefp()->dtypep(argDtp);
+            withp->indexArgRefp()->dtypep(indexDtp);
+            withp->valueArgRefp()->dtypep(valueDtp);
             userIterate(withp, WidthVP(returnDtp, BOTH).p());
             withp->unlinkFrBack();
             return withp;
@@ -2570,7 +2572,7 @@ private:
                    || nodep->name() == "sum" || nodep->name() == "product") {
             // All value return
             AstWith* withp = methodWithArgument(nodep, false, false, adtypep->subDTypep(),
-                                                adtypep->subDTypep());
+                                                adtypep->keyDTypep(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
@@ -2592,7 +2594,7 @@ private:
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
                    || nodep->name() == "find_last") {
             AstWith* withp = methodWithArgument(nodep, true, false, nodep->findLogicBoolDType(),
-                                                adtypep->subDTypep());
+                                                adtypep->keyDTypep(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
@@ -2602,7 +2604,7 @@ private:
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {
             AstWith* withp = methodWithArgument(nodep, true, false, nodep->findLogicBoolDType(),
-                                                adtypep->subDTypep());
+                                                adtypep->keyDTypep(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
@@ -2663,7 +2665,7 @@ private:
                    || nodep->name() == "sum" || nodep->name() == "product") {
             // All value return
             AstWith* withp = methodWithArgument(nodep, false, false, adtypep->subDTypep(),
-                                                adtypep->subDTypep());
+                                                nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
@@ -2674,7 +2676,8 @@ private:
                    || nodep->name() == "sort" || nodep->name() == "rsort") {
             AstWith* withp = nullptr;
             if (nodep->name() == "sort" || nodep->name() == "rsort") {
-                withp = methodWithArgument(nodep, false, true, nullptr, adtypep->subDTypep());
+                withp = methodWithArgument(nodep, false, true, nullptr, nodep->findUInt32DType(),
+                                           adtypep->subDTypep());
             }
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
@@ -2696,7 +2699,7 @@ private:
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
                    || nodep->name() == "find_last" || nodep->name() == "find_index") {
             AstWith* withp = methodWithArgument(nodep, true, false, nodep->findLogicBoolDType(),
-                                                adtypep->subDTypep());
+                                                nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
@@ -2706,7 +2709,7 @@ private:
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {
             AstWith* withp = methodWithArgument(nodep, true, false, nodep->findLogicBoolDType(),
-                                                adtypep->subDTypep());
+                                                nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
@@ -2794,7 +2797,7 @@ private:
         } else if (nodep->name() == "and" || nodep->name() == "or" || nodep->name() == "xor"
                    || nodep->name() == "sum" || nodep->name() == "product") {
             AstWith* withp = methodWithArgument(nodep, false, false, adtypep->subDTypep(),
-                                                adtypep->subDTypep());
+                                                nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
@@ -2805,7 +2808,8 @@ private:
                    || nodep->name() == "sort" || nodep->name() == "rsort") {
             AstWith* withp = nullptr;
             if (nodep->name() == "sort" || nodep->name() == "rsort") {
-                withp = methodWithArgument(nodep, false, true, nullptr, adtypep->subDTypep());
+                withp = methodWithArgument(nodep, false, true, nullptr, nodep->findUInt32DType(),
+                                           adtypep->subDTypep());
             }
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
@@ -2827,7 +2831,7 @@ private:
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
                    || nodep->name() == "find_last") {
             AstWith* withp = methodWithArgument(nodep, true, false, nodep->findLogicBoolDType(),
-                                                adtypep->subDTypep());
+                                                nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
@@ -2837,7 +2841,7 @@ private:
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {
             AstWith* withp = methodWithArgument(nodep, true, false, nodep->findLogicBoolDType(),
-                                                adtypep->subDTypep());
+                                                nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
@@ -4422,10 +4426,11 @@ private:
     virtual void visit(AstWith* nodep) override {
         // Should otherwise be underneath a method call
         AstNodeDType* vdtypep = m_vup->dtypeNullSkipRefp();
-        VL_RESTORER(m_lambdaArgRefp);
+        VL_RESTORER(m_withp);
         {
-            m_lambdaArgRefp = nodep->argrefp();
-            userIterateChildren(nodep->argrefp(), nullptr);
+            m_withp = nodep;
+            userIterateChildren(nodep->indexArgRefp(), nullptr);
+            userIterateChildren(nodep->valueArgRefp(), nullptr);
             if (vdtypep) {
                 userIterateAndNext(nodep->exprp(), WidthVP(nodep->dtypep(), PRELIM).p());
             } else {  // 'sort with' allows arbitrary type
@@ -4437,8 +4442,12 @@ private:
         }
     }
     virtual void visit(AstLambdaArgRef* nodep) override {
-        UASSERT_OBJ(m_lambdaArgRefp, nodep, "LambdaArgRef not underneath with lambda");
-        nodep->dtypeFrom(m_lambdaArgRefp);
+        UASSERT_OBJ(m_withp, nodep, "LambdaArgRef not underneath 'with' lambda");
+        if (nodep->index()) {
+            nodep->dtypeFrom(m_withp->indexArgRefp());
+        } else {
+            nodep->dtypeFrom(m_withp->valueArgRefp());
+        }
     }
     virtual void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.  That's faster

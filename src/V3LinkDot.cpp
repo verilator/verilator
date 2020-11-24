@@ -1281,9 +1281,10 @@ class LinkDotFindVisitor final : public AstNVisitor {
             VL_DO_DANGLING(argp->unlinkFrBackWithNext()->deleteTree(), argp);
         }
         // Type depends on the method used, let V3Width figure it out later
-        auto* argrefp = new AstLambdaArgRef(argFl, name);
-        auto* newp
-            = new AstWith(nodep->fileline(), argrefp, nodep->exprp()->unlinkFrBackWithNext());
+        auto* indexArgRefp = new AstLambdaArgRef(argFl, name + "__DOT__index", true);
+        auto* valueArgRefp = new AstLambdaArgRef(argFl, name, false);
+        auto* newp = new AstWith(nodep->fileline(), indexArgRefp, valueArgRefp,
+                                 nodep->exprp()->unlinkFrBackWithNext());
         funcrefp->addPinsp(newp);
         nodep->replaceWith(funcrefp->unlinkFrBack());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1298,9 +1299,11 @@ class LinkDotFindVisitor final : public AstNVisitor {
             m_curSymp = m_statep->insertBlock(m_curSymp, "__Vwith" + cvtToStr(m_modWithNum), nodep,
                                               m_packagep);
             m_curSymp->fallbackp(oldCurSymp);
-            UASSERT_OBJ(nodep->argrefp(), nodep, "Missing lambda argref");
+            UASSERT_OBJ(nodep->indexArgRefp(), nodep, "Missing lambda argref");
+            UASSERT_OBJ(nodep->valueArgRefp(), nodep, "Missing lambda argref");
             // Insert argref's name into symbol table
-            m_statep->insertSym(m_curSymp, nodep->argrefp()->name(), nodep->argrefp(), nullptr);
+            m_statep->insertSym(m_curSymp, nodep->valueArgRefp()->name(), nodep->valueArgRefp(),
+                                nullptr);
         }
     }
 
@@ -2034,6 +2037,7 @@ private:
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
                 m_ds.m_unlinkedScopep = nodep->lhsp();
             }
+            if (VN_IS(nodep->lhsp(), LambdaArgRef)) { m_ds.m_unlinkedScopep = nodep->lhsp(); }
             if (!m_ds.m_dotErr) {  // Once something wrong, give up
                 // Top 'final' dot RHS is final RHS, else it's a
                 // DOT(DOT(x,*here*),real-rhs) which we consider a RHS
@@ -2089,7 +2093,16 @@ private:
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
             m_ds.m_dotErr = true;
         }
-        if (m_ds.m_dotPos == DP_MEMBER) {
+        if (m_ds.m_dotPos == DP_FINAL && VN_IS(m_ds.m_unlinkedScopep, LambdaArgRef)
+            && nodep->name() == "index") {
+            // 'with' statement's 'item.index'
+            iterateChildren(nodep);
+            auto newp = new AstLambdaArgRef(nodep->fileline(),
+                                            m_ds.m_unlinkedScopep->name() + "__DOT__index", true);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        } else if (m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is membership.  {scope}.{var}.HERE {member}
             AstNode* varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
             AstNode* newp
@@ -2301,7 +2314,7 @@ private:
                 }
             } else if (AstLambdaArgRef* argrefp = VN_CAST(foundp->nodep(), LambdaArgRef)) {
                 if (allowVar) {
-                    AstNode* newp = new AstLambdaArgRef(nodep->fileline(), argrefp->name());
+                    AstNode* newp = new AstLambdaArgRef(nodep->fileline(), argrefp->name(), false);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     ok = true;
@@ -2729,6 +2742,11 @@ private:
             iterateChildren(nodep);
         }
         m_ds.m_dotSymp = m_curSymp = oldCurSymp;
+    }
+    virtual void visit(AstLambdaArgRef* nodep) override {
+        UINFO(5, "   " << nodep << endl);
+        // No checknodot(nodep), visit(AstScope) will check for LambdaArgRef
+        iterateChildren(nodep);
     }
     virtual void visit(AstClass* nodep) override {
         UINFO(5, "   " << nodep << endl);
