@@ -1761,7 +1761,7 @@ public:
     string warnOther() const { return fileline()->warnOther(); }
 
     virtual void dump(std::ostream& str = std::cout) const;
-    void dumpGdb();  // For GDB only
+    static void dumpGdb(const AstNode* nodep);  // For GDB only
     void dumpGdbHeader() const;
 
     // METHODS - Tree modifications
@@ -1811,12 +1811,12 @@ public:
     void dumpTree(const string& indent, int maxDepth = 0) const {
         dumpTree(cout, indent, maxDepth);
     }
-    void dumpTreeGdb();  // For GDB only
+    static void dumpTreeGdb(const AstNode* nodep);  // For GDB only
     void dumpTreeAndNext(std::ostream& os = std::cout, const string& indent = "    ",
                          int maxDepth = 0) const;
     void dumpTreeFile(const string& filename, bool append = false, bool doDump = true,
                       bool doCheck = true);
-    static void dumpTreeFileGdb(const char* filenamep = nullptr);
+    static void dumpTreeFileGdb(const AstNode* nodep, const char* filenamep = nullptr);
 
     // METHODS - queries
     // Changes control flow, disable some optimizations

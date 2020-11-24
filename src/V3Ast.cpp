@@ -1029,28 +1029,40 @@ void AstNode::checkTree() {
 }
 
 // cppcheck-suppress unusedFunction  // Debug only
-void AstNode::dumpGdb() {  // For GDB only  // LCOV_EXCL_LINE
-    dumpGdbHeader();  // LCOV_EXCL_LINE
+void AstNode::dumpGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_LINE
+    if (!nodep) {
+        cout << "<nullptr>" << endl;
+        return;
+    }
+    nodep->dumpGdbHeader();
     cout << "  ";
-    dump(cout);
-    cout << endl;  // LCOV_EXCL_LINE
-}
+    nodep->dump(cout);
+    cout << endl;
+}  // LCOV_EXCL_STOP
 // cppcheck-suppress unusedFunction  // Debug only
-void AstNode::dumpGdbHeader() const {  // For GDB only  // LCOV_EXCL_LINE
-    dumpPtrs(cout);  // LCOV_EXCL_LINE
-    cout << "  Fileline = " << fileline() << endl;  // LCOV_EXCL_LINE
-}
+void AstNode::dumpGdbHeader() const {  // For GDB only  // LCOV_EXCL_START
+    dumpPtrs(cout);
+    cout << "  Fileline = " << fileline() << endl;
+}  // LCOV_EXCL_STOP
 // cppcheck-suppress unusedFunction  // Debug only
-void AstNode::dumpTreeGdb() {  // For GDB only  // LCOV_EXCL_LINE
-    dumpGdbHeader();  // LCOV_EXCL_LINE
-    dumpTree(cout);  // LCOV_EXCL_LINE
-}
+void AstNode::dumpTreeGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_START
+    if (!nodep) {
+        cout << "<nullptr>" << endl;
+        return;
+    }
+    nodep->dumpGdbHeader();
+    nodep->dumpTree(cout);
+}  // LCOV_EXCL_STOP
 // cppcheck-suppress unusedFunction  // Debug only
-void AstNode::dumpTreeFileGdb(const char* filenamep) {  // For GDB only  // LCOV_EXCL_LINE
-    string filename
-        = filenamep ? filenamep : v3Global.debugFilename("debug.tree", 98);  // LCOV_EXCL_LINE
-    v3Global.rootp()->dumpTreeFile(filename);  // LCOV_EXCL_LINE
-}
+void AstNode::dumpTreeFileGdb(const AstNode* nodep,  // LCOV_EXCL_START
+                              const char* filenamep) {  // For GDB only
+    if (!nodep) {
+        cout << "<nullptr>" << endl;
+        return;
+    }
+    string filename = filenamep ? filenamep : v3Global.debugFilename("debug.tree", 98);
+    v3Global.rootp()->dumpTreeFile(filename);
+}  // LCOV_EXCL_STOP
 
 // cppcheck-suppress unusedFunction  // Debug only
 void AstNode::checkIter() const {
