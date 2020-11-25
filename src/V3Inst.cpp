@@ -383,7 +383,7 @@ private:
                                                   varrefp->name() + "__BRA__" + index + "__KET__",
                                                   "", VAccess::WRITE);
                 newp->dtypep(nodep->modVarp()->dtypep());
-                newp->packagep(varrefp->packagep());
+                newp->classOrPackagep(varrefp->classOrPackagep());
                 arrselp->addNextHere(newp);
                 VL_DO_DANGLING(arrselp->unlinkFrBack()->deleteTree(), arrselp);
             }

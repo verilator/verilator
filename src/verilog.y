@@ -3873,7 +3873,7 @@ taskId<ftaskp>:
 	//
 	|	packageClassScope id
 			{ $$ = new AstTask($<fl>$, *$2, nullptr);
-			  $$->packagep($1);
+			  $$->classOrPackagep($1);
 			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
 	;
 
@@ -3912,7 +3912,7 @@ funcIdNew<ftaskp>:		// IEEE: from class_constructor_declaration
 			  SYMP->pushNewUnder($$, nullptr); }
 	|	packageClassScopeNoId yNEW__PAREN
 			{ $$ = new AstFunc($<fl>2, "new", nullptr, nullptr);
-			  $$->packagep($1);
+			  $$->classOrPackagep($1);
 			  $$->isConstructor(true);
 			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
 	;
@@ -3934,7 +3934,7 @@ fIdScoped<funcp>:		// IEEE: part of function_body_declaration/task_body_declarat
 			{ $<fl>$ = $<fl>1;
 			  $<scp>$ = $<scp>1;
 			  $$ = new AstFunc($<fl>$, *$2, nullptr, nullptr);
-			  $$->packagep($1); }
+			  $$->classOrPackagep($1); }
 	;
 
 tfGuts<nodep>:

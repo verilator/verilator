@@ -303,7 +303,7 @@ class AstClass final : public AstNodeModule {
     typedef std::map<const string, AstNode*> MemberNameMap;
     // MEMBERS
     MemberNameMap m_members;  // Members or method children
-    AstClassPackage* m_packagep = nullptr;  // Class package this is under
+    AstClassPackage* m_classOrPackagep = nullptr;  // Class package this is under
     bool m_virtual = false;  // Virtual class
     bool m_extended = false;  // Is extension or extended by other classes
     void insertCache(AstNode* nodep);
@@ -318,12 +318,12 @@ public:
     virtual void dump(std::ostream& str) const override;
     virtual const char* broken() const override {
         BROKEN_BASE_RTN(AstNodeModule::broken());
-        BROKEN_RTN(m_packagep && !m_packagep->brokeExists());
+        BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
         return nullptr;
     }
     // op1/op2/op3 in AstNodeModule
-    AstClassPackage* packagep() const { return m_packagep; }
-    void packagep(AstClassPackage* classpackagep) { m_packagep = classpackagep; }
+    AstClassPackage* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstClassPackage* classpackagep) { m_classOrPackagep = classpackagep; }
     AstNode* membersp() const { return stmtsp(); }  // op2 = List of statements
     void addMembersp(AstNode* nodep) {
         insertCache(nodep);
@@ -990,7 +990,7 @@ class AstClassRefDType final : public AstNodeDType {
     // Reference to a class
 private:
     AstClass* m_classp;  // data type pointed to, BELOW the AstTypedef
-    AstNodeModule* m_packagep = nullptr;  // Package hierarchy
+    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
 public:
     AstClassRefDType(FileLine* fl, AstClass* classp)
         : ASTGEN_SUPER(fl)
@@ -1008,13 +1008,13 @@ public:
     }
     virtual bool same(const AstNode* samep) const override {
         const AstClassRefDType* asamep = static_cast<const AstClassRefDType*>(samep);
-        return (m_classp == asamep->m_classp && m_packagep == asamep->m_packagep);
+        return (m_classp == asamep->m_classp && m_classOrPackagep == asamep->m_classOrPackagep);
     }
     virtual bool similarDType(AstNodeDType* samep) const override {
         return this == samep || same(samep);
     }
     virtual V3Hash sameHash() const override {
-        return V3Hash(V3Hash(m_classp), V3Hash(m_packagep));
+        return V3Hash(V3Hash(m_classp), V3Hash(m_classOrPackagep));
     }
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual void dumpSmall(std::ostream& str) const override;
@@ -1028,8 +1028,8 @@ public:
     virtual AstNodeDType* virtRefDTypep() const override { return nullptr; }
     virtual void virtRefDTypep(AstNodeDType* nodep) override {}
     virtual AstNodeDType* subDTypep() const override { return nullptr; }
-    AstNodeModule* packagep() const { return m_packagep; }
-    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     AstClass* classp() const { return m_classp; }
     void classp(AstClass* nodep) { m_classp = nodep; }
 };
@@ -1167,7 +1167,7 @@ private:
     // Post-width typedefs are removed and point to type directly
     AstNodeDType* m_refDTypep = nullptr;  // data type pointed to, BELOW the AstTypedef
     string m_name;  // Name of an AstTypedef
-    AstNodeModule* m_packagep = nullptr;  // Package hierarchy
+    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
 public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl)
@@ -1197,13 +1197,13 @@ public:
     virtual bool same(const AstNode* samep) const override {
         const AstRefDType* asamep = static_cast<const AstRefDType*>(samep);
         return (m_typedefp == asamep->m_typedefp && m_refDTypep == asamep->m_refDTypep
-                && m_name == asamep->m_name && m_packagep == asamep->m_packagep);
+                && m_name == asamep->m_name && m_classOrPackagep == asamep->m_classOrPackagep);
     }
     virtual bool similarDType(AstNodeDType* samep) const override {
         return skipRefp()->similarDType(samep->skipRefp());
     }
     virtual V3Hash sameHash() const override {
-        return V3Hash(V3Hash(m_typedefp), V3Hash(m_packagep));
+        return V3Hash(V3Hash(m_typedefp), V3Hash(m_classOrPackagep));
     }
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual string name() const override { return m_name; }
@@ -1253,8 +1253,8 @@ public:
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const override { return refDTypep(); }
     virtual void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
-    AstNodeModule* packagep() const { return m_packagep; }
-    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     AstNode* typeofp() const { return op2p(); }
     AstNode* classOrPackageOpp() const { return op3p(); }
     AstPin* paramsp() const { return VN_CAST(op4p(), Pin); }
@@ -1395,12 +1395,12 @@ public:
 class AstEnumItemRef final : public AstNodeMath {
 private:
     AstEnumItem* m_itemp;  // [AfterLink] Pointer to item
-    AstNodeModule* m_packagep;  // Package hierarchy
+    AstNodeModule* m_classOrPackagep;  // Package hierarchy
 public:
-    AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstNodeModule* packagep)
+    AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstNodeModule* classOrPackagep)
         : ASTGEN_SUPER(fl)
         , m_itemp{itemp}
-        , m_packagep{packagep} {
+        , m_classOrPackagep{classOrPackagep} {
         dtypeFrom(m_itemp);
     }
     ASTNODE_NODE_FUNCS(EnumItemRef)
@@ -1422,8 +1422,8 @@ public:
     virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { return true; }
-    AstNodeModule* packagep() const { return m_packagep; }
-    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
 };
 
 class AstEnumDType final : public AstNodeDType {

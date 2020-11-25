@@ -982,7 +982,7 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
         const auto refit = m_refs.find(varp);
         if (refit == m_refs.end()) return;  // variable without split_var metacomment
         UASSERT_OBJ(varp->attrSplitVar(), varp, "split_var attribute must be attached");
-        UASSERT_OBJ(!nodep->packagep(), nodep,
+        UASSERT_OBJ(!nodep->classOrPackagep(), nodep,
                     "variable in package must have been dropped beforehand.");
         const AstBasicDType* basicp = refit->second.basicp();
         refit->second.append(PackedVarRefEntry(nodep, basicp->lsb(), varp->width()),

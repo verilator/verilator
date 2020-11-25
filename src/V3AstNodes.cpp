@@ -1528,7 +1528,7 @@ void AstVarScope::dump(std::ostream& str) const {
 }
 void AstNodeVarRef::dump(std::ostream& str) const {
     this->AstNodeMath::dump(str);
-    if (packagep()) str << " pkg=" << nodeAddr(packagep());
+    if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     str << " " << access().arrow() << " ";
 }
 void AstVarXRef::dump(std::ostream& str) const {
@@ -1620,7 +1620,7 @@ void AstActive::dump(std::ostream& str) const {
 }
 void AstNodeFTaskRef::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
-    if (packagep()) { str << " pkg=" << nodeAddr(packagep()); }
+    if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     str << " -> ";
     if (dotted() != "") { str << ".=" << dotted() << " "; }
     if (taskp()) {

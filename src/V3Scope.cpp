@@ -68,8 +68,8 @@ private:
         for (const auto& itr : m_varRefScopes) {
             AstVarRef* nodep = itr.first;
             AstScope* scopep = itr.second;
-            if (nodep->packagep() && !nodep->varp()->isClassMember()) {
-                const auto it2 = m_packageScopes.find(nodep->packagep());
+            if (nodep->classOrPackagep() && !nodep->varp()->isClassMember()) {
+                const auto it2 = m_packageScopes.find(nodep->classOrPackagep());
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
             }
@@ -365,7 +365,7 @@ private:
     virtual void visit(AstNodeFTaskRef* nodep) override {
         // The crossrefs are dealt with in V3LinkDot
         UINFO(9, "   Old pkg-taskref " << nodep << endl);
-        if (nodep->packagep()) {
+        if (nodep->classOrPackagep()) {
             // Point to the clone
             UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
             AstNodeFTask* newp = VN_CAST(nodep->taskp()->user2p(), NodeFTask);

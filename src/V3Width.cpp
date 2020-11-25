@@ -1415,7 +1415,7 @@ private:
                         = dimensionVarp(nodep->fromp()->dtypep(), nodep->attrType(), msbdim);
                     AstNode* dimp = nodep->dimp()->unlinkFrBack();
                     AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
-                    varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
+                    varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
                     AstNode* newp = new AstArraySel(nodep->fileline(), varrefp, dimp);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -2516,7 +2516,7 @@ private:
             int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
             AstVar* varp = enumVarp(adtypep, attrType, (1ULL << selwidth) - 1);
             AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
-            varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
+            varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
             AstNode* newp = new AstArraySel(
                 nodep->fileline(), varrefp,
                 // Select in case widths are
@@ -2886,7 +2886,7 @@ private:
                         newp = new AstFuncRef(nodep->fileline(), ftaskp->name(), argsp);
                     }
                     newp->taskp(ftaskp);
-                    newp->packagep(classp);
+                    newp->classOrPackagep(classp);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 } else {
@@ -3101,7 +3101,7 @@ private:
         UASSERT_OBJ(classp, nodep, "Unlinked");
         if (AstNodeFTask* ftaskp = VN_CAST(classp->findMember("new"), Func)) {
             nodep->taskp(ftaskp);
-            nodep->packagep(classp);
+            nodep->classOrPackagep(classp);
         } else {
             // Either made explicitly or V3LinkDot made implicitly
             classp->v3fatalSrc("Can't find class's new");

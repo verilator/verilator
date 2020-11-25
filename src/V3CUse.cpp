@@ -84,7 +84,7 @@ class CUseDTypeVisitor final : public AstNVisitor {
         if (nodep->user2SetOnce()) return;  // Process once
         if (!m_impOnly) m_stater.newUse(nodep, VUseType::INT_FWD_CLASS, nodep->classp()->name());
         // No class.h, it's inside the class package's h file
-        m_stater.newUse(nodep, VUseType::IMP_INCLUDE, nodep->classp()->packagep()->name());
+        m_stater.newUse(nodep, VUseType::IMP_INCLUDE, nodep->classp()->classOrPackagep()->name());
         // Need to include extends() when we implement, but no need for pointers to know
         VL_RESTORER(m_impOnly);
         {

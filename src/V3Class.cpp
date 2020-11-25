@@ -56,7 +56,7 @@ private:
         // Note origName is the same as the class origName so errors look correct
         AstClassPackage* packagep = new AstClassPackage(nodep->fileline(), nodep->origName());
         packagep->name(nodep->name() + "__Vclpkg");
-        nodep->packagep(packagep);
+        nodep->classOrPackagep(packagep);
         packagep->classp(nodep);
         v3Global.rootp()->addModulep(packagep);
         // Add package to hierarchy

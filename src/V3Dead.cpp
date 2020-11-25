@@ -107,7 +107,7 @@ private:
         if (AstNode* subnodep = nodep->getChildDTypep()) subnodep->user1Inc();
     }
     void checkVarRef(AstNodeVarRef* nodep) {
-        if (nodep->packagep() && m_elimCells) { nodep->packagep(nullptr); }
+        if (nodep->classOrPackagep() && m_elimCells) nodep->classOrPackagep(nullptr);
     }
     void checkDType(AstNodeDType* nodep) {
         if (!nodep->generic()  // Don't remove generic types
@@ -130,7 +130,7 @@ private:
                 checkAll(nodep);
                 if (AstClass* classp = VN_CAST(nodep, Class)) {
                     if (classp->extendsp()) classp->extendsp()->user1Inc();
-                    if (classp->packagep()) classp->packagep()->user1Inc();
+                    if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
                     m_classesp.push_back(classp);
                     // TODO we don't reclaim dead classes yet - graph implementation instead?
                     classp->user1Inc();
@@ -171,16 +171,16 @@ private:
             nodep->varScopep()->varp()->user1Inc();
         }
         if (nodep->varp()) nodep->varp()->user1Inc();
-        if (nodep->packagep()) nodep->packagep()->user1Inc();
+        if (nodep->classOrPackagep()) nodep->classOrPackagep()->user1Inc();
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
-        if (nodep->packagep()) {
+        if (nodep->classOrPackagep()) {
             if (m_elimCells) {
-                nodep->packagep(nullptr);
+                nodep->classOrPackagep(nullptr);
             } else {
-                nodep->packagep()->user1Inc();
+                nodep->classOrPackagep()->user1Inc();
             }
         }
     }
@@ -194,11 +194,11 @@ private:
         checkAll(nodep);
         UASSERT_OBJ(!(m_elimCells && nodep->typedefp()), nodep,
                     "RefDType should point to data type before typedefs removed");
-        if (nodep->packagep()) {
+        if (nodep->classOrPackagep()) {
             if (m_elimCells) {
-                nodep->packagep(nullptr);
+                nodep->classOrPackagep(nullptr);
             } else {
-                nodep->packagep()->user1Inc();
+                nodep->classOrPackagep()->user1Inc();
             }
         }
     }
@@ -206,11 +206,11 @@ private:
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
-        if (nodep->packagep()) {
+        if (nodep->classOrPackagep()) {
             if (m_elimCells) {
-                nodep->packagep(nullptr);
+                nodep->classOrPackagep(nullptr);
             } else {
-                nodep->packagep()->user1Inc();
+                nodep->classOrPackagep()->user1Inc();
             }
         }
         if (nodep->classp()) nodep->classp()->user1Inc();
@@ -223,11 +223,11 @@ private:
     virtual void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
-        if (nodep->packagep()) {
+        if (nodep->classOrPackagep()) {
             if (m_elimCells) {
-                nodep->packagep(nullptr);
+                nodep->classOrPackagep(nullptr);
             } else {
-                nodep->packagep()->user1Inc();
+                nodep->classOrPackagep()->user1Inc();
             }
         }
         checkAll(nodep);
@@ -372,7 +372,7 @@ private:
                 if (AstClass* nodep = itr) {  // nullptr if deleted earlier
                     if (nodep->user1() == 0) {
                         if (nodep->extendsp()) nodep->extendsp()->user1Inc(-1);
-                        if (nodep->packagep()) nodep->packagep()->user1Inc(-1);
+                        if (nodep->classOrPackagep()) nodep->classOrPackagep()->user1Inc(-1);
                         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                         itr = nullptr;
                         retry = true;

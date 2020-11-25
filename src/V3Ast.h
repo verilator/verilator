@@ -2298,7 +2298,7 @@ private:
     VAccess m_access;  // Left hand side assignment
     AstVar* m_varp;  // [AfterLink] Pointer to variable itself
     AstVarScope* m_varScopep = nullptr;  // Varscope for hierarchy
-    AstNodeModule* m_packagep = nullptr;  // Package hierarchy
+    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
     string m_name;  // Name of variable
     string m_hiername;  // Scope converted into name-> for emitting
     bool m_hierThis = false;  // Hiername points to "this" function
@@ -2336,8 +2336,8 @@ public:
     void hiername(const string& hn) { m_hiername = hn; }
     bool hierThis() const { return m_hierThis; }
     void hierThis(bool flag) { m_hierThis = flag; }
-    AstNodeModule* packagep() const { return m_packagep; }
-    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     // Know no children, and hot function, so skip iterator for speed
     // See checkTreeIter also that asserts no children
     // cppcheck-suppress functionConst
@@ -2723,8 +2723,8 @@ public:
     void addFvarp(AstNode* nodep) { addNOp1p(nodep); }
     bool isFunction() const { return fvarp() != nullptr; }
     // op2 = Class/package scope
-    AstNode* packagep() const { return op2p(); }
-    void packagep(AstNode* nodep) { setNOp2p(nodep); }
+    AstNode* classOrPackagep() const { return op2p(); }
+    void classOrPackagep(AstNode* nodep) { setNOp2p(nodep); }
     // op3 = Statements/Ports/Vars
     AstNode* stmtsp() const { return op3p(); }  // op3 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp3p(nodep); }
@@ -2774,7 +2774,7 @@ class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeStmt {
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
 private:
     AstNodeFTask* m_taskp = nullptr;  // [AfterLink] Pointer to task referenced
-    AstNodeModule* m_packagep = nullptr;  // Package hierarchy
+    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
     string m_name;  // Name of variable
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
@@ -2808,8 +2808,8 @@ public:
     void taskp(AstNodeFTask* taskp) { m_taskp = taskp; }
     virtual void name(const string& name) override { m_name = name; }
     void dotted(const string& name) { m_dotted = name; }
-    AstNodeModule* packagep() const { return m_packagep; }
-    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     bool pli() const { return m_pli; }
     void pli(bool flag) { m_pli = flag; }
     // op1 = namep
@@ -2994,7 +2994,7 @@ inline VNumRange AstNodeArrayDType::declRange() const {
 
 inline const char* AstNodeFTaskRef::broken() const {
     BROKEN_RTN(m_taskp && !m_taskp->brokeExists());
-    BROKEN_RTN(m_packagep && !m_packagep->brokeExists());
+    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
     return nullptr;
 }
 
