@@ -19,7 +19,7 @@ class Cls;
    task check;
       Cls o;
       if (m_pub != 1) $stop;
-      if (m_loc != 10) $stop;
+      if (m_loc != 2) $stop;
       if (m_prot != 20) $stop;
       f_pub();  // Ok
       f_loc();  // Ok
@@ -56,10 +56,6 @@ module t (/*AUTOARG*/);
       c = new;
       e = new;
       if (c.m_pub != 1) $stop;
-      if (c.m_loc != 2) $stop;
-      c.m_loc = 10;
-      if (c.m_loc != 10) $stop;
-      if (c.m_prot != 20) $stop;
       //
       if (mod_c.A != 10) $stop;
       //

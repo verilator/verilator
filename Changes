@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support 'with item.index'.
 
+***   Check for proper 'local' and 'protected' (#2228).
+
 ****  Fix trace signal names getting hashed (#2643).  [Barbara Gigerl]
 
 ****  Fix unpacked array parameters near functions (#2639). [Anderson Ignacio da Silva]

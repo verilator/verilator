@@ -70,8 +70,8 @@ struct VMemberQualifiers {
     }
     void applyToNodes(AstNodeFTask* nodesp) const {
         for (AstNodeFTask* nodep = nodesp; nodep; nodep = VN_CAST(nodep->nextp(), NodeFTask)) {
-            // Ignored for now: m_local
-            // Ignored for now: m_protected
+            if (m_local) nodep->isHideLocal(true);
+            if (m_protected) nodep->isHideProtected(true);
             if (m_virtual) nodep->isVirtual(true);
             if (m_automatic) nodep->lifetime(VLifetime::AUTOMATIC);
             if (m_static) nodep->lifetime(VLifetime::STATIC);
@@ -83,10 +83,10 @@ struct VMemberQualifiers {
     }
     void applyToNodes(AstVar* nodesp) const {
         for (AstVar* nodep = nodesp; nodep; nodep = VN_CAST(nodep->nextp(), Var)) {
-            // Ignored for now: m_local
-            // Ignored for now: m_protected
             // Ignored for now: m_rand
             // Ignored for now: m_randc
+            if (m_local) nodep->isHideLocal(true);
+            if (m_protected) nodep->isHideProtected(true);
             if (m_automatic) nodep->lifetime(VLifetime::AUTOMATIC);
             if (m_static) nodep->lifetime(VLifetime::STATIC);
             if (m_const) nodep->isConst(true);

@@ -1897,6 +1897,8 @@ private:
     bool m_isPullup : 1;  // Tri1
     bool m_isIfaceParent : 1;  // dtype is reference to interface present in this module
     bool m_isDpiOpenArray : 1;  // DPI import open array
+    bool m_isHideLocal : 1;  // Verilog local
+    bool m_isHideProtected : 1;  // Verilog protected
     bool m_noReset : 1;  // Do not do automated reset/randomization
     bool m_noSubst : 1;  // Do not substitute out references
     bool m_overridenParam : 1;  // Overridden parameter by #(...) or defparam
@@ -1934,6 +1936,8 @@ private:
         m_isPullup = false;
         m_isIfaceParent = false;
         m_isDpiOpenArray = false;
+        m_isHideLocal = false;
+        m_isHideProtected = false;
         m_noReset = false;
         m_noSubst = false;
         m_overridenParam = false;
@@ -2083,6 +2087,10 @@ public:
     void funcReturn(bool flag) { m_funcReturn = flag; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
     bool isDpiOpenArray() const { return m_isDpiOpenArray; }
+    bool isHideLocal() const { return m_isHideLocal; }
+    void isHideLocal(bool flag) { m_isHideLocal = flag; }
+    bool isHideProtected() const { return m_isHideProtected; }
+    void isHideProtected(bool flag) { m_isHideProtected = flag; }
     void noReset(bool flag) { m_noReset = flag; }
     bool noReset() const { return m_noReset; }
     void noSubst(bool flag) { m_noSubst = flag; }

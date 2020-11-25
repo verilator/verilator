@@ -2688,6 +2688,8 @@ private:
     bool m_dpiOpenChild : 1;  // DPI import open array child wrapper
     bool m_dpiTask : 1;  // DPI import task (vs. void function)
     bool m_isConstructor : 1;  // Class constructor
+    bool m_isHideLocal : 1;  // Verilog local
+    bool m_isHideProtected : 1;  // Verilog protected
     bool m_pure : 1;  // DPI import pure (vs. virtual pure)
     bool m_pureVirtual : 1;  // Pure virtual
     bool m_virtual : 1;  // Virtual method in class
@@ -2708,6 +2710,8 @@ public:
         , m_dpiOpenChild{false}
         , m_dpiTask{false}
         , m_isConstructor{false}
+        , m_isHideLocal{false}
+        , m_isHideProtected{false}
         , m_pure{false}
         , m_pureVirtual{false}
         , m_virtual{false} {
@@ -2766,6 +2770,10 @@ public:
     bool dpiTask() const { return m_dpiTask; }
     void isConstructor(bool flag) { m_isConstructor = flag; }
     bool isConstructor() const { return m_isConstructor; }
+    bool isHideLocal() const { return m_isHideLocal; }
+    void isHideLocal(bool flag) { m_isHideLocal = flag; }
+    bool isHideProtected() const { return m_isHideProtected; }
+    void isHideProtected(bool flag) { m_isHideProtected = flag; }
     void pure(bool flag) { m_pure = flag; }
     bool pure() const { return m_pure; }
     void pureVirtual(bool flag) { m_pureVirtual = flag; }

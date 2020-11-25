@@ -69,6 +69,9 @@ class WidthCommitVisitor final : public AstNVisitor {
     // AstVar::user1p           -> bool, processed
     AstUser1InUse m_inuser1;
 
+    // STATE
+    AstNodeModule* m_modp = nullptr;
+
 public:
     // METHODS
     static AstConst* newIfConstCommitSize(AstConst* nodep) {
@@ -112,7 +115,56 @@ private:
         }
         return nodep;
     }
+    void classEncapCheck(AstNode* nodep, AstNode* defp, AstClass* defClassp) {
+        // Call on non-local class to check local/protected status and complain
+        bool local = false;
+        bool prot = false;
+        if (const auto varp = VN_CAST(defp, Var)) {
+            local = varp->isHideLocal();
+            prot = varp->isHideProtected();
+        } else if (const auto ftaskp = VN_CAST(defp, NodeFTask)) {
+            local = ftaskp->isHideLocal();
+            prot = ftaskp->isHideProtected();
+        } else {
+            nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeName());
+        }
+        if (local || prot) {
+            auto refClassp = VN_CAST(m_modp, Class);
+            const char* how = nullptr;
+            if (local && defClassp && refClassp != defClassp) {
+                how = "'local'";
+            } else if (prot && defClassp && !classExtendedRecurse(refClassp, defClassp)) {
+                how = "'protected'";
+            }
+            if (how) {
+                UINFO(9, "refclass " << refClassp << endl);
+                UINFO(9, "defclass " << defClassp << endl);
+                nodep->v3warn(E_ENCAPSULATED, nodep->prettyNameQ()
+                                                  << " is hidden as " << how
+                                                  << " within this context (IEEE 1800-2017 8.18)\n"
+                                                  << nodep->warnContextPrimary() << endl
+                                                  << nodep->warnOther()
+                                                  << "... Location of definition" << endl
+                                                  << defp->warnContextSecondary());
+            }
+        }
+    }
+    static bool classExtendedRecurse(const AstClass* refClassp, const AstClass* defClassp) {
+        // Return true if refClassp is an extends class of defClassp
+        if (!refClassp || !defClassp) return false;
+        if (refClassp == defClassp) return true;
+        return classExtendedRecurse(refClassp->extendsp()->classp(), defClassp);
+    }
+
     // VISITORS
+    virtual void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        {
+            m_modp = nodep;
+            iterateChildren(nodep);
+            editDType(nodep);
+        }
+    }
     virtual void visit(AstConst* nodep) override {
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype");
         iterate(nodep->dtypep());  // Do datatype first
@@ -152,6 +204,23 @@ private:
         iterateChildren(nodep);
         nodep->virtRefDTypep(editOneDType(nodep->virtRefDTypep()));
         nodep->virtRefDType2p(editOneDType(nodep->virtRefDType2p()));
+    }
+    virtual void visit(AstNodeVarRef* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        classEncapCheck(nodep, nodep->varp(), VN_CAST(nodep->classOrPackagep(), Class));
+    }
+    virtual void visit(AstNodeFTaskRef* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        classEncapCheck(nodep, nodep->taskp(), VN_CAST(nodep->classOrPackagep(), Class));
+    }
+    virtual void visit(AstMemberSel* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        if (auto* classrefp = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
+            classEncapCheck(nodep, nodep->varp(), classrefp->classp());
+        }  // else might be struct, etc
     }
     virtual void visit(AstNodePreSel* nodep) override {  // LCOV_EXCL_LINE
         // This check could go anywhere after V3Param
