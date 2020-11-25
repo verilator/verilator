@@ -2892,6 +2892,7 @@ private:
                 } else {
                     nodep->taskp(ftaskp);
                     nodep->dtypeFrom(ftaskp);
+                    nodep->classOrPackagep(classp);
                     if (VN_IS(ftaskp, Task)) nodep->makeStatement();
                 }
                 return;
