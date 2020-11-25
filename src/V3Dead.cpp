@@ -30,9 +30,8 @@
 // Note on packagep: After the V3Scope/V3LinkDotScoped stage, package links
 // are no longer used, but their presence prevents us from removing empty
 // packages. As the links as no longer used after V3Scope, we remove them
-// here after scoping to allow more dead node
-// removal.
-// *************************************************************************
+// here after scoping to allow more dead node removal.
+//*************************************************************************
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -83,7 +82,7 @@ private:
     typedef std::multimap<AstVarScope*, AstNodeAssign*> AssignMap;
 
     // STATE
-    AstNodeModule* m_modp;  // Current module
+    AstNodeModule* m_modp = nullptr;  // Current module
     // List of all encountered to avoid another loop through tree
     std::vector<AstVar*> m_varsp;
     std::vector<AstNode*> m_dtypesp;
@@ -93,10 +92,10 @@ private:
     std::vector<AstClass*> m_classesp;
 
     AssignMap m_assignMap;  // List of all simple assignments for each variable
-    bool m_elimUserVars;  // Allow removal of user's vars
-    bool m_elimDTypes;  // Allow removal of DTypes
-    bool m_elimCells;  // Allow removal of Cells
-    bool m_sideEffect;  // Side effects discovered in assign RHS
+    const bool m_elimUserVars;  // Allow removal of user's vars
+    const bool m_elimDTypes;  // Allow removal of DTypes
+    const bool m_elimCells;  // Allow removal of Cells
+    bool m_sideEffect = false;  // Side effects discovered in assign RHS
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -438,12 +437,10 @@ private:
 public:
     // CONSTRUCTORS
     DeadVisitor(AstNetlist* nodep, bool elimUserVars, bool elimDTypes, bool elimScopes,
-                bool elimCells) {
-        m_modp = nullptr;
-        m_elimCells = elimCells;
-        m_elimUserVars = elimUserVars;
-        m_elimDTypes = elimDTypes;
-        m_sideEffect = false;
+                bool elimCells)
+        : m_elimUserVars{elimUserVars}
+        , m_elimDTypes{elimDTypes}
+        , m_elimCells{elimCells} {
         // Prepare to remove some datatypes
         nodep->typeTablep()->clearCache();
         // Operate on whole netlist

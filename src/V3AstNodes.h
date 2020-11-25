@@ -1256,7 +1256,7 @@ public:
     AstNodeModule* packagep() const { return m_packagep; }
     void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
     AstNode* typeofp() const { return op2p(); }
-    AstNode* classOrPackagep() const { return op3p(); }
+    AstNode* classOrPackageOpp() const { return op3p(); }
     AstPin* paramsp() const { return VN_CAST(op4p(), Pin); }
 };
 

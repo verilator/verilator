@@ -42,8 +42,8 @@ private:
     AstNodeModule* m_modp;  // Current module
     AstCFunc* m_tlFuncp;  // Top level function being built
     AstCFunc* m_funcp;  // Current function
-    int m_numStmts;  // Number of statements output
-    int m_funcNum;  // Function number being built
+    int m_numStmts = 0;  // Number of statements output
+    int m_funcNum = 0;  // Function number being built
 
 public:
     void add(AstNode* nodep) {
@@ -76,8 +76,6 @@ public:
         m_argsp = argsp;
         m_callargsp = callargsp;
         m_modp = nodep;
-        m_numStmts = 0;
-        m_funcNum = 0;
         m_tlFuncp = new AstCFunc(nodep->fileline(), basename, nullptr, "void");
         m_tlFuncp->declPrivate(true);
         m_tlFuncp->isStatic(false);

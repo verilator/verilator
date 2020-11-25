@@ -959,7 +959,7 @@ public:
 class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
     typedef std::map<AstVar*, PackedVarRef, AstNodeComparator> PackedVarRefMap;
     AstNetlist* m_netp;
-    AstNodeModule* m_modp;  // Current module (just for log)
+    AstNodeModule* m_modp = nullptr;  // Current module (just for log)
     int m_numSplit;  // Total number of split variables
     // key:variable to be split. value:location where the variable is referenced.
     PackedVarRefMap m_refs;
@@ -1207,9 +1207,7 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
 public:
     // When reusing the information from SplitUnpackedVarVisitor
     SplitPackedVarVisitor(AstNetlist* nodep, SplitVarRefsMap& refs)
-        : m_netp{nodep}
-        , m_modp{nullptr}
-        , m_numSplit{0} {
+        : m_netp{nodep} {
         // If you want ignore refs and walk the tne entire AST,
         // just call iterateChildren(m_modp) and split() for each module
         for (auto& i : refs) {

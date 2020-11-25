@@ -1526,11 +1526,13 @@ void AstVarScope::dump(std::ostream& str) const {
         str << " ->UNLINKED";
     }
 }
-void AstNodeVarRef::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
-void AstVarXRef::dump(std::ostream& str) const {
-    this->AstNodeVarRef::dump(str);
+void AstNodeVarRef::dump(std::ostream& str) const {
+    this->AstNodeMath::dump(str);
     if (packagep()) str << " pkg=" << nodeAddr(packagep());
     str << " " << access().arrow() << " ";
+}
+void AstVarXRef::dump(std::ostream& str) const {
+    this->AstNodeVarRef::dump(str);
     str << ".=" << dotted() << " ";
     if (inlinedDots() != "") str << " inline.=" << inlinedDots() << " - ";
     if (varScopep()) {
@@ -1543,8 +1545,6 @@ void AstVarXRef::dump(std::ostream& str) const {
 }
 void AstVarRef::dump(std::ostream& str) const {
     this->AstNodeVarRef::dump(str);
-    if (packagep()) str << " pkg=" << nodeAddr(packagep());
-    str << " " << access().arrow() << " ";
     if (varScopep()) {
         varScopep()->dump(str);
     } else if (varp()) {

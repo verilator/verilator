@@ -777,6 +777,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
         bool standalonePkg = !m_modSymp && (m_statep->forPrearray() && VN_IS(nodep, Package));
         bool doit = (m_modSymp || standalonePkg);
         VL_RESTORER(m_scope);
+        VL_RESTORER(m_packagep);
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_paramNum);
@@ -833,8 +834,6 @@ class LinkDotFindVisitor final : public AstNVisitor {
             // Can't remove now, as our backwards iterator will throw up
             UINFO(5, "Module not under any CELL or top - dead module: " << nodep << endl);
         }
-        // Prep for next
-        m_packagep = nullptr;
     }
     virtual void visit(AstClass* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Class not under module/package/$unit");
@@ -2824,7 +2823,7 @@ private:
     virtual void visit(AstRefDType* nodep) override {
         // Resolve its reference
         if (nodep->user3SetOnce()) return;
-        if (AstNode* cpackagep = nodep->classOrPackagep()) {
+        if (AstNode* cpackagep = nodep->classOrPackageOpp()) {
             if (AstClassOrPackageRef* cpackagerefp = VN_CAST(cpackagep, ClassOrPackageRef)) {
                 if (cpackagerefp->packagep()) {
                     nodep->packagep(cpackagerefp->packagep());
