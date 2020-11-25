@@ -960,7 +960,7 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
     typedef std::map<AstVar*, PackedVarRef, AstNodeComparator> PackedVarRefMap;
     AstNetlist* m_netp;
     AstNodeModule* m_modp = nullptr;  // Current module (just for log)
-    int m_numSplit;  // Total number of split variables
+    int m_numSplit = 0;  // Total number of split variables
     // key:variable to be split. value:location where the variable is referenced.
     PackedVarRefMap m_refs;
     virtual void visit(AstNodeFTask* nodep) override {
