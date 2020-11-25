@@ -2300,7 +2300,8 @@ private:
     AstVarScope* m_varScopep = nullptr;  // Varscope for hierarchy
     AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
     string m_name;  // Name of variable
-    string m_hiername;  // Scope converted into name-> for emitting
+    string m_hiernameToProt;  // Scope converted into name-> for emitting
+    string m_hiernameToUnprot;  // Scope converted into name-> for emitting
     bool m_hierThis = false;  // Hiername points to "this" function
 
 public:
@@ -2331,9 +2332,11 @@ public:
     void varp(AstVar* varp);
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
-    string hiername() const { return m_hiername; }
+    string hiernameToProt() const { return m_hiernameToProt; }
+    void hiernameToProt(const string& hn) { m_hiernameToProt = hn; }
+    string hiernameToUnprot() const { return m_hiernameToUnprot; }
+    void hiernameToUnprot(const string& hn) { m_hiernameToUnprot = hn; }
     string hiernameProtect() const;
-    void hiername(const string& hn) { m_hiername = hn; }
     bool hierThis() const { return m_hierThis; }
     void hierThis(bool flag) { m_hierThis = flag; }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
@@ -2620,7 +2623,8 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
     // A call of a C++ function, perhaps a AstCFunc or perhaps globally named
     // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
     AstCFunc* m_funcp;
-    string m_hiername;
+    string m_hiernameToProt;
+    string m_hiernameToUnprot;
     string m_argTypes;
 
 public:
@@ -2634,7 +2638,8 @@ public:
     AstNodeCCall(AstType t, AstNodeCCall* oldp, AstCFunc* funcp)
         : AstNodeStmt{t, oldp->fileline(), true}
         , m_funcp{funcp} {
-        m_hiername = oldp->hiername();
+        m_hiernameToProt = oldp->hiernameToProt();
+        m_hiernameToUnprot = oldp->hiernameToUnprot();
         m_argTypes = oldp->argTypes();
         if (oldp->argsp()) addNOp2p(oldp->argsp()->unlinkFrBackWithNext());
     }
@@ -2654,8 +2659,10 @@ public:
     virtual bool isPure() const override;
     virtual bool isOutputter() const override { return !isPure(); }
     AstCFunc* funcp() const { return m_funcp; }
-    string hiername() const { return m_hiername; }
-    void hiername(const string& hn) { m_hiername = hn; }
+    string hiernameToProt() const { return m_hiernameToProt; }
+    void hiernameToProt(const string& hn) { m_hiernameToProt = hn; }
+    string hiernameToUnprot() const { return m_hiernameToUnprot; }
+    void hiernameToUnprot(const string& hn) { m_hiernameToUnprot = hn; }
     string hiernameProtect() const;
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }

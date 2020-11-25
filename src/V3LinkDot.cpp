@@ -839,6 +839,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
         UASSERT_OBJ(m_curSymp, nodep, "Class not under module/package/$unit");
         UINFO(8, "   " << nodep << endl);
         VL_RESTORER(m_scope);
+        VL_RESTORER(m_classOrPackagep);
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_paramNum);
@@ -849,6 +850,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
             UINFO(4, "     Link Class: " << nodep << endl);
             VSymEnt* upperSymp = m_curSymp;
             m_scope = m_scope + "." + nodep->name();
+            m_classOrPackagep = nodep;
             m_curSymp = m_modSymp
                 = m_statep->insertBlock(upperSymp, nodep->name(), nodep, m_classOrPackagep);
             m_statep->insertMap(m_curSymp, m_scope);

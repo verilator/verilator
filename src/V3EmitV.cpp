@@ -613,7 +613,8 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         if (nodep->varScopep()) {
             putfs(nodep, nodep->varScopep()->prettyName());
         } else {
-            putfs(nodep, nodep->hiername());
+            putfs(nodep, nodep->hiernameToUnprot());
+            puts(nodep->hiernameToProt());
             puts(nodep->varp()->prettyName());
         }
     }

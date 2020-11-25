@@ -2347,7 +2347,7 @@ public:
     ASTNODE_NODE_FUNCS(VarRef)
     virtual void dump(std::ostream& str) const override;
     virtual V3Hash sameHash() const override {
-        return V3Hash(V3Hash(varp()->name()), V3Hash(hiername()));
+        return V3Hash(V3Hash(varp()->name()), V3Hash(hiernameToProt()));
     }
     virtual bool same(const AstNode* samep) const override {
         return same(static_cast<const AstVarRef*>(samep));
@@ -2356,16 +2356,18 @@ public:
         if (varScopep()) {
             return (varScopep() == samep->varScopep() && access() == samep->access());
         } else {
-            return (hiername() == samep->hiername() && varp()->name() == samep->varp()->name()
-                    && access() == samep->access());
+            return (hiernameToProt() == samep->hiernameToProt()
+                    && hiernameToUnprot() == samep->hiernameToUnprot()
+                    && varp()->name() == samep->varp()->name() && access() == samep->access());
         }
     }
     inline bool sameNoLvalue(AstVarRef* samep) const {
         if (varScopep()) {
             return (varScopep() == samep->varScopep());
         } else {
-            return (hiername() == samep->hiername()
-                    && (hiername() != "" || samep->hiername() != "")
+            return (hiernameToProt() == samep->hiernameToProt()
+                    && hiernameToUnprot() == samep->hiernameToUnprot()
+                    && (!hiernameToProt().empty() || !samep->hiernameToProt().empty())
                     && varp()->name() == samep->varp()->name());
         }
     }
@@ -2406,7 +2408,8 @@ public:
     virtual V3Hash sameHash() const override { return V3Hash(V3Hash(varp()), V3Hash(dotted())); }
     virtual bool same(const AstNode* samep) const override {
         const AstVarXRef* asamep = static_cast<const AstVarXRef*>(samep);
-        return (hiername() == asamep->hiername() && varp() == asamep->varp()
+        return (hiernameToProt() == asamep->hiernameToProt()
+                && hiernameToUnprot() == asamep->hiernameToUnprot() && varp() == asamep->varp()
                 && name() == asamep->name() && dotted() == asamep->dotted());
     }
 };

@@ -54,7 +54,7 @@ void AstNodeVarRef::cloneRelink() {
 }
 
 string AstNodeVarRef::hiernameProtect() const {
-    return VIdProtect::protectWordsIf(hiername(), protect());
+    return hiernameToUnprot() + VIdProtect::protectWordsIf(hiernameToProt(), protect());
 }
 
 int AstNodeSel::bitConst() const {
@@ -107,7 +107,7 @@ const char* AstNodeCCall::broken() const {
 }
 bool AstNodeCCall::isPure() const { return funcp()->pure(); }
 string AstNodeCCall::hiernameProtect() const {
-    return VIdProtect::protectWordsIf(hiername(), protect());
+    return hiernameToUnprot() + VIdProtect::protectWordsIf(hiernameToProt(), protect());
 }
 
 void AstNodeCond::numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,

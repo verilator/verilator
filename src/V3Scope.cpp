@@ -68,7 +68,7 @@ private:
         for (const auto& itr : m_varRefScopes) {
             AstVarRef* nodep = itr.first;
             AstScope* scopep = itr.second;
-            if (nodep->classOrPackagep() && !nodep->varp()->isClassMember()) {
+            if (nodep->classOrPackagep()) {
                 const auto it2 = m_packageScopes.find(nodep->classOrPackagep());
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
@@ -109,9 +109,7 @@ private:
             (m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp) : static_cast<AstNode*>(nodep))
                 ->fileline(),
             nodep, scopename, m_aboveScopep, m_aboveCellp);
-        if (VN_IS(nodep, Package)) {
-            m_packageScopes.insert(make_pair(VN_CAST(nodep, Package), m_scopep));
-        }
+        if (VN_IS(nodep, Package)) m_packageScopes.insert(make_pair(nodep, m_scopep));
 
         // Now for each child cell, iterate the module this cell points to
         for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp = cellnextp->nextp()) {
@@ -152,8 +150,10 @@ private:
         VL_RESTORER(m_scopep);
         VL_RESTORER(m_aboveCellp);
         VL_RESTORER(m_aboveScopep);
+        VL_RESTORER(m_modp);
         {
             m_aboveScopep = m_scopep;
+            m_modp = nodep;
 
             string scopename;
             if (!m_aboveScopep) {
@@ -169,6 +169,8 @@ private:
                                             : static_cast<AstNode*>(nodep));
             m_scopep
                 = new AstScope(abovep->fileline(), m_modp, scopename, m_aboveScopep, m_aboveCellp);
+            m_packageScopes.insert(make_pair(nodep, m_scopep));
+
             // Create scope for the current usage of this cell
             AstNode::user1ClearTree();
             nodep->addMembersp(m_scopep);
@@ -283,7 +285,8 @@ private:
         } else {
             // We may have not made the variable yet, and we can't make it now as
             // the var's referenced package etc might not be created yet.
-            // So push to a list and post-correct
+            // So push to a list and post-correct.
+            // No check here for nodep->classOrPackagep(), will check when walk list.
             m_varRefScopes.insert(make_pair(nodep, m_scopep));
         }
     }

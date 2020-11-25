@@ -122,6 +122,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) override {
+        if (m_modp) m_modp->user1Inc();  // e.g. Class under Package
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;

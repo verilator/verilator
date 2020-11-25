@@ -76,7 +76,8 @@ private:
     // Sets 'hierThisr' true if the object is local to this scope
     // (and could be made into a function-local later in V3Localize),
     // false if the object is in another scope.
-    string descopedName(const AstScope* scopep, bool& hierThisr, const AstVar* varp = nullptr) {
+    string descopedName(bool& hierThisr, string& hierUnprot, const AstScope* scopep,
+                        const AstVar* varp) {
         UASSERT(scopep, "Var/Func not scoped");
         hierThisr = (scopep == m_scopep);
 
@@ -118,6 +119,9 @@ private:
         } else if (relativeRefOk && scopep == m_scopep) {
             m_needThis = true;
             return "this->";
+        } else if (VN_IS(scopep->modp(), Class)) {
+            hierUnprot = v3Global.opt.modPrefix() + "_";  // Prefix before protected part
+            return scopep->modp()->name() + "::";
         } else if (relativeRefOk && scopep->aboveScopep() && scopep->aboveScopep() == m_scopep) {
             // Reference to scope of cell directly under this module, can just "cell->"
             string name = scopep->name();
@@ -249,12 +253,17 @@ private:
     virtual void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
         // Convert the hierch name
+        UINFO(9, "  ref-in " << nodep << endl);
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
         bool hierThis;
-        nodep->hiername(descopedName(nodep->varScopep()->scopep(), hierThis /*ref*/,
-                                     nodep->varScopep()->varp()));
+        string hierUnprot;
+        nodep->hiernameToProt(descopedName(hierThis /*ref*/, hierUnprot /*ref*/,
+                                           nodep->varScopep()->scopep(),
+                                           nodep->varScopep()->varp()));
+        nodep->hiernameToUnprot(hierUnprot);
         nodep->hierThis(hierThis);
         nodep->varScopep(nullptr);
+        UINFO(9, "  refout " << nodep << endl);
     }
     virtual void visit(AstNodeCCall* nodep) override {
         // UINFO(9, "       " << nodep << endl);
@@ -263,7 +272,10 @@ private:
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
         UASSERT_OBJ(nodep->funcp()->scopep(), nodep, "CFunc not under scope");
         bool hierThis;
-        nodep->hiername(descopedName(nodep->funcp()->scopep(), hierThis /*ref*/));
+        string hierUnprot;
+        nodep->hiernameToProt(
+            descopedName(hierThis /*ref*/, hierUnprot /*ref*/, nodep->funcp()->scopep(), nullptr));
+        nodep->hiernameToUnprot(hierUnprot);
         // Can't do this, as we may have more calls later
         // nodep->funcp()->scopep(nullptr);
     }
