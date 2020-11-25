@@ -2203,6 +2203,9 @@ private:
     }
     virtual void visit(AstClass* nodep) override {
         if (nodep->didWidthAndSet()) return;
+        // Must do extends first, as we may in functions under this class
+        // start following a tree of extends that takes us to other classes
+        userIterateAndNext(nodep->extendsp(), nullptr);
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->repairCache();
     }
