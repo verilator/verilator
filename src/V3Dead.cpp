@@ -106,6 +106,9 @@ private:
         }
         if (AstNode* subnodep = nodep->getChildDTypep()) subnodep->user1Inc();
     }
+    void checkVarRef(AstNodeVarRef* nodep) {
+        if (nodep->packagep() && m_elimCells) { nodep->packagep(nullptr); }
+    }
     void checkDType(AstNodeDType* nodep) {
         if (!nodep->generic()  // Don't remove generic types
             && m_elimDTypes  // dtypes stick around until post-widthing
@@ -159,20 +162,16 @@ private:
     }
 
     virtual void visit(AstNodeVarRef* nodep) override {
+        // Note NodeAssign skips calling this in some cases
         iterateChildren(nodep);
         checkAll(nodep);
+        checkVarRef(nodep);
         if (nodep->varScopep()) {
             nodep->varScopep()->user1Inc();
             nodep->varScopep()->varp()->user1Inc();
         }
         if (nodep->varp()) nodep->varp()->user1Inc();
-        if (nodep->packagep()) {
-            if (m_elimCells) {
-                nodep->packagep(nullptr);
-            } else {
-                nodep->packagep()->user1Inc();
-            }
-        }
+        if (nodep->packagep()) nodep->packagep()->user1Inc();
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
@@ -276,19 +275,22 @@ private:
         // See if simple assignments to variables may be eliminated because
         // that variable is never used.
         // Similar code in V3Life
-        m_sideEffect = false;
-        iterateAndNextNull(nodep->rhsp());
-        checkAll(nodep);
-        // Has to be direct assignment without any EXTRACTing.
-        AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
-        if (varrefp && !m_sideEffect
-            && varrefp->varScopep()) {  // For simplicity, we only remove post-scoping
-            m_assignMap.insert(make_pair(varrefp->varScopep(), nodep));
-            checkAll(varrefp);  // Must track reference to dtype()
-        } else {  // Track like any other statement
-            iterateAndNextNull(nodep->lhsp());
+        VL_RESTORER(m_sideEffect);
+        {
+            m_sideEffect = false;
+            iterateAndNextNull(nodep->rhsp());
+            checkAll(nodep);
+            // Has to be direct assignment without any EXTRACTing.
+            AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
+            if (varrefp && !m_sideEffect
+                && varrefp->varScopep()) {  // For simplicity, we only remove post-scoping
+                m_assignMap.insert(make_pair(varrefp->varScopep(), nodep));
+                checkAll(varrefp);  // Must track reference to dtype()
+                checkVarRef(varrefp);
+            } else {  // Track like any other statement
+                iterateAndNextNull(nodep->lhsp());
+            }
         }
-        checkAll(nodep);
     }
 
     //-----
