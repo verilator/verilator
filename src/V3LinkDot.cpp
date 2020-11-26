@@ -363,7 +363,8 @@ public:
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
         VSymEnt* symp = new VSymEnt(&m_syms, nodep);
         UINFO(9, "      INSERTblk se" << cvtToHex(symp) << "  above=se" << cvtToHex(abovep)
-                                      << "  node=" << nodep << endl);
+                                      << " pkg=" << cvtToHex(classOrPackagep) << "  node=" << nodep
+                                      << endl);
         symp->parentp(abovep);
         symp->classOrPackagep(classOrPackagep);
         symp->fallbackp(abovep);
@@ -378,7 +379,8 @@ public:
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
         VSymEnt* symp = new VSymEnt(&m_syms, nodep);
         UINFO(9, "      INSERTsym se" << cvtToHex(symp) << "  name='" << name << "' above=se"
-                                      << cvtToHex(abovep) << "  node=" << nodep << endl);
+                                      << cvtToHex(abovep) << " pkg=" << cvtToHex(classOrPackagep)
+                                      << "  node=" << nodep << endl);
         // We don't remember the ent associated with each node, because we
         // need a unique scope entry for each instantiation
         symp->classOrPackagep(classOrPackagep);
@@ -981,6 +983,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Function/Task not under module?");
         if (nodep->name() == "new") m_explicitNew = true;
         // Remember the existing symbol table scope
+        VL_RESTORER(m_classOrPackagep);
         VL_RESTORER(m_curSymp);
         VSymEnt* const oldCurSymp = m_curSymp;
         {
@@ -1007,14 +1010,13 @@ class LinkDotFindVisitor final : public AstNVisitor {
                     }
                 }
             }
+            // Set the class as package for iteration
+            if (VN_IS(m_curSymp->nodep(), Class)) {
+                m_classOrPackagep = VN_CAST(m_curSymp->nodep(), Class);
+            }
             // Create symbol table for the task's vars
             string name = string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
-            auto pkgp = m_classOrPackagep;
-            // Set the class as package for static class methods
-            if (nodep->lifetime().isStatic() && VN_IS(m_curSymp->nodep(), Class)) {
-                pkgp = VN_CAST(m_curSymp->nodep(), Class);
-            }
-            m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, pkgp);
+            m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_classOrPackagep);
             m_curSymp->fallbackp(oldCurSymp);
             // Convert the func's range to the output variable
             // This should probably be done in the Parser instead, as then we could
