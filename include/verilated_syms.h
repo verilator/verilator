@@ -31,6 +31,7 @@
 #include "verilated_sym_props.h"
 
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 //======================================================================
@@ -58,7 +59,8 @@ public:
 
 typedef std::vector<const VerilatedScope*> VerilatedScopeVector;
 
-class VerilatedHierarchyMap final : public std::map<const VerilatedScope*, VerilatedScopeVector> {
+class VerilatedHierarchyMap final
+    : public std::unordered_map<const VerilatedScope*, VerilatedScopeVector> {
 public:
     VerilatedHierarchyMap() = default;
     ~VerilatedHierarchyMap() = default;

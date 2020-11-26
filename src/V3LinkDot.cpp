@@ -141,7 +141,7 @@ public:
 private:
     // TYPES
     typedef std::multimap<string, VSymEnt*> NameScopeSymMap;
-    typedef std::map<VSymEnt*, VSymEnt*> ScopeAliasMap;
+    typedef std::unordered_map<VSymEnt*, VSymEnt*> ScopeAliasMap;
     typedef std::set<std::pair<AstNodeModule*, string>> ImplicitNameSet;
     typedef std::vector<VSymEnt*> IfaceVarSyms;
     typedef std::vector<std::pair<AstIface*, VSymEnt*>> IfaceModSyms;

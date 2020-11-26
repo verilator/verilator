@@ -74,10 +74,10 @@ private:
 
     // Within the context of a given module, LocalInstanceMap maps
     // from child modules to the count of each child's local instantiations.
-    typedef std::map<AstNodeModule*, int> LocalInstanceMap;
+    typedef std::unordered_map<AstNodeModule*, int> LocalInstanceMap;
 
     // We keep a LocalInstanceMap for each module in the design
-    std::map<AstNodeModule*, LocalInstanceMap> m_instances;
+    std::unordered_map<AstNodeModule*, LocalInstanceMap> m_instances;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

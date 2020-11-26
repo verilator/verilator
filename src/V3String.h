@@ -23,8 +23,9 @@
 // No V3 headers here - this is a base class for Vlc etc
 
 #include <map>
-#include <string>
 #include <sstream>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 //######################################################################

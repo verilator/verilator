@@ -104,7 +104,7 @@ private:
 
     // TYPES
     typedef std::map<std::pair<AstScope*, AstVar*>, AstVarScope*> VarToScopeMap;
-    typedef std::map<const AstNodeFTask*, AstClass*> FuncToClassMap;
+    typedef std::unordered_map<const AstNodeFTask*, AstClass*> FuncToClassMap;
     typedef std::vector<AstInitial*> Initials;
     // MEMBERS
     VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings

@@ -109,7 +109,7 @@ class EmitCSyms final : EmitCBaseVisitor {
     int m_numStmts = 0;  // Number of statements output
     int m_funcNum = 0;  // CFunc split function number
     V3OutCFile* m_ofpBase = nullptr;  // Base (not split) C file
-    std::map<int, bool> m_usesVfinal;  // Split method uses __Vfinal
+    std::unordered_map<int, bool> m_usesVfinal;  // Split method uses __Vfinal
 
     // METHODS
     void emitSymHdr();

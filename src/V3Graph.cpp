@@ -335,7 +335,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
 
     // We use a map here, as we don't want to corrupt anything (userp) in the graph,
     // and we don't care if this is slow.
-    std::map<const V3GraphVertex*, int> numMap;
+    std::unordered_map<const V3GraphVertex*, int> numMap;
 
     // Print vertices
     int n = 0;

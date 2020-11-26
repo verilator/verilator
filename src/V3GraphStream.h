@@ -81,7 +81,7 @@ private:
     };
 
     typedef std::set<VxHolder, VxHolderCmp&> ReadyVertices;
-    typedef std::unordered_map<const V3GraphVertex*, VxHolder> WaitingVertices;
+    typedef std::map<const V3GraphVertex*, VxHolder> WaitingVertices;
 
     // MEMBERS
     VxHolderCmp m_vxHolderCmp;  // Vertext comparison functor

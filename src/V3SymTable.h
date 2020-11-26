@@ -36,7 +36,7 @@ class VSymEnt;
 //######################################################################
 // Symbol table
 
-typedef std::set<const VSymEnt*> VSymConstMap;
+typedef std::unordered_set<const VSymEnt*> VSymConstMap;
 
 class VSymEnt final {
     // Symbol table that can have a "superior" table for resolving upper references

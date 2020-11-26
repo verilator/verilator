@@ -294,7 +294,7 @@ private:
             UINFO(9, "  On dfaState " << dfaStatep << endl);
 
             // From this dfaState, what corresponding nfaStates have what inputs?
-            std::set<int> inputs;
+            std::unordered_set<int> inputs;
             // Foreach NFA state (this DFA state was formed from)
             for (V3GraphEdge* dfaEdgep = dfaStatep->outBeginp(); dfaEdgep;
                  dfaEdgep = dfaEdgep->outNextp()) {

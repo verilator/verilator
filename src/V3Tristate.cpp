@@ -329,7 +329,7 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     // TYPES
     typedef std::vector<AstVarRef*> RefVec;
-    typedef std::map<AstVar*, RefVec*> VarMap;
+    typedef std::unordered_map<AstVar*, RefVec*> VarMap;
     enum : uint8_t {
         U2_GRAPHING = 1,  // bit[0] if did m_graphing visit
         U2_NONGRAPH = 2,  // bit[1] if did !m_graphing visit

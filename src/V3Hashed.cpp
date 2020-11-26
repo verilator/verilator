@@ -153,7 +153,7 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
     const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
     if (logp->fail()) v3fatal("Can't write " << filename);
 
-    std::map<int, int> dist;
+    std::unordered_map<int, int> dist;
 
     V3Hash lasthash;
     int num_in_bucket = 0;

@@ -61,7 +61,7 @@ public:
 };
 
 typedef std::deque<AstConst*> ConstDeque;
-typedef std::map<const AstNodeDType*, ConstDeque> ConstPile;
+typedef std::unordered_map<const AstNodeDType*, ConstDeque> ConstPile;
 
 class SimulateVisitor VL_NOT_FINAL : public AstNVisitor {
     // Simulate a node tree, returning value of variables

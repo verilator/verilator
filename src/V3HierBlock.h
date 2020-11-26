@@ -29,6 +29,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <unordered_set>
 #include <vector>
 
 class AstNodeModule;
@@ -40,8 +41,8 @@ class AstVar;
 class V3HierBlock final {
 public:
     typedef std::vector<AstVar*> GParams;
-    typedef std::set<V3HierBlock*> HierBlockSet;
-    typedef std::set<const AstNodeModule*> NodeModuleSet;
+    typedef std::unordered_set<V3HierBlock*> HierBlockSet;
+    typedef std::unordered_set<const AstNodeModule*> NodeModuleSet;
 
 private:
     // TYPES
@@ -96,7 +97,7 @@ public:
 
 // Holds relashonship between AstNodeModule and V3HierBlock
 class V3HierBlockPlan final {
-    typedef std::map<const AstNodeModule*, V3HierBlock*> HierMap;
+    typedef std::unordered_map<const AstNodeModule*, V3HierBlock*> HierMap;
     HierMap m_blocks;
 
     V3HierBlockPlan() = default;

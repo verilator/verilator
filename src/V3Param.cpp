@@ -216,7 +216,7 @@ private:
     typedef std::deque<std::pair<AstIfaceRefDType*, AstIfaceRefDType*>> IfaceRefRefs;
 
     // STATE
-    typedef std::map<const AstNode*, AstNode*> CloneMap;
+    typedef std::unordered_map<const AstNode*, AstNode*> CloneMap;
     struct ModInfo {
         AstNodeModule* m_modp;  // Module with specified name
         CloneMap m_cloneMap;  // Map of old-varp -> new cloned varp

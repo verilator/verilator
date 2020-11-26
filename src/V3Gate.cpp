@@ -906,7 +906,7 @@ void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode*
 class GateDedupeHash final : public V3HashedUserSame {
 public:
     // TYPES
-    typedef std::set<AstNode*> NodeSet;
+    typedef std::unordered_set<AstNode*> NodeSet;
 
 private:
     // NODE STATE

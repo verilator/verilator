@@ -32,6 +32,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 
 //===================================================================
 // String formatters (required by below containers)
@@ -267,7 +268,7 @@ public:
     void shuffle() { std::shuffle(m_deque.begin(), m_deque.end(), VlURNG()); }
     VlQueue unique() const {
         VlQueue out;
-        std::set<T_Value> saw;
+        std::unordered_set<T_Value> saw;
         for (const auto& i : m_deque) {
             auto it = saw.find(i);
             if (it == saw.end()) {
@@ -280,7 +281,7 @@ public:
     VlQueue<IData> unique_index() const {
         VlQueue<IData> out;
         IData index = 0;
-        std::set<T_Value> saw;
+        std::unordered_set<T_Value> saw;
         for (const auto& i : m_deque) {
             auto it = saw.find(i);
             if (it == saw.end()) {
