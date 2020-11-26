@@ -985,7 +985,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
         // Remember the existing symbol table scope
         VL_RESTORER(m_classOrPackagep);
         VL_RESTORER(m_curSymp);
-        VSymEnt* const oldCurSymp = m_curSymp;
+        VSymEnt* upSymp = m_curSymp;
         {
             // Change to appropriate package if extern declaration (vs definition)
             if (nodep->classOrPackagep()) {
@@ -1000,6 +1000,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
                         nodep->v3error("Extern declaration's scope is not a defined class");
                     } else {
                         m_curSymp = m_statep->getNodeSym(classp);
+                        upSymp = m_curSymp;
                         if (!nodep->isExternDef()) {
                             // Move it to proper spot under the target class
                             nodep->unlinkFrBack();
@@ -1017,7 +1018,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
             // Create symbol table for the task's vars
             string name = string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
             m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_classOrPackagep);
-            m_curSymp->fallbackp(oldCurSymp);
+            m_curSymp->fallbackp(upSymp);
             // Convert the func's range to the output variable
             // This should probably be done in the Parser instead, as then we could
             // just attach normal signal attributes to it.
