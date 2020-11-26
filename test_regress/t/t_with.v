@@ -26,6 +26,12 @@ module t (/*AUTOARG*/);
       found = aliases.find with (item == i);
       aliases.find with (item == i);
 
+`ifdef VERILATOR
+      // No expression (e.g. x.randomize() with {})
+      // Hack until randomize() supported
+      found = aliases.sort() with {};
+`endif
+
       // Unique (array method)
       id = 4;
       found = aliases.find with (id);

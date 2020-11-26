@@ -1290,11 +1290,13 @@ class LinkDotFindVisitor final : public AstNVisitor {
             VL_DO_DANGLING(argp->unlinkFrBackWithNext()->deleteTree(), argp);
         }
         // Type depends on the method used, let V3Width figure it out later
-        auto* indexArgRefp = new AstLambdaArgRef(argFl, name + "__DOT__index", true);
-        auto* valueArgRefp = new AstLambdaArgRef(argFl, name, false);
-        auto* newp = new AstWith(nodep->fileline(), indexArgRefp, valueArgRefp,
-                                 nodep->exprp()->unlinkFrBackWithNext());
-        funcrefp->addPinsp(newp);
+        const auto indexArgRefp = new AstLambdaArgRef(argFl, name + "__DOT__index", true);
+        const auto valueArgRefp = new AstLambdaArgRef(argFl, name, false);
+        if (nodep->exprp()) {  // Else empty expression and pretend no "with"
+            const auto newp = new AstWith(nodep->fileline(), indexArgRefp, valueArgRefp,
+                                          nodep->exprp()->unlinkFrBackWithNext());
+            funcrefp->addPinsp(newp);
+        }
         nodep->replaceWith(funcrefp->unlinkFrBack());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
