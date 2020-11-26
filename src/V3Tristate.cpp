@@ -1107,6 +1107,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 AstVar* enVarp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
                                             nodep->name() + "__en" + cvtToStr(m_unique++),
                                             VFlagBitPacked(), enModVarp->width());
+                enModVarp->direction(VDirection::INPUT);
                 UINFO(9, "       newenv " << enVarp << endl);
                 AstPin* enpinp
                     = new AstPin(nodep->fileline(), nodep->pinNum(),
