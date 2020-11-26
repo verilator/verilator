@@ -2024,7 +2024,7 @@ private:
             if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this") {
                 VSymEnt* classSymp = m_ds.m_dotSymp;
                 do {
-                    classSymp = classSymp->fallbackp();
+                    classSymp = classSymp->parentp();
                 } while (classSymp && !VN_IS(classSymp->nodep(), Class));
                 m_ds.m_dotSymp = classSymp;
                 if (!classSymp) {
