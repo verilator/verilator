@@ -11,20 +11,27 @@ class Base;
    function void test;
       if (value != 1) $stop;
       if (this.value != 1) $stop;
+      value = 2;
+      if (value != 2) $stop;
+      this.value = 3;
+      if (value != 3) $stop;
    endfunction
 endclass
 
 class Cls extends Base;
-   int value = 2;
+   int value = 20;
    function void test;
-      if (value != 2) $stop;
-      if (this.value != 2) $stop;
+      if (value != 20) $stop;
+      if (this.value != 20) $stop;
       if (super.value != 1) $stop;
+
       super.test();
-      super.value = 10;
-      this.value = 20;
-      if (super.value != 10) $stop;
-      if (value != 20) $stop;;
+      if (this.value != 20) $stop;
+
+      super.value = 9;
+      this.value = 29;
+      if (super.value != 9) $stop;
+      if (value != 29) $stop;;
    endfunction
 endclass
 

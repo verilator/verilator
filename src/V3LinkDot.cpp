@@ -2027,10 +2027,34 @@ private:
                 do {
                     classSymp = classSymp->parentp();
                 } while (classSymp && !VN_IS(classSymp->nodep(), Class));
-                m_ds.m_dotSymp = classSymp;
                 if (!classSymp) {
-                    nodep->v3error("'this' used outside class");
+                    nodep->v3error("'this' used outside class (IEEE 1800-2017 8.11)");
                     m_ds.m_dotErr = true;
+                } else {
+                    m_ds.m_dotSymp = classSymp;
+                    UINFO(8, "     this. " << m_ds.ascii() << endl);
+                }
+            } else if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "super") {
+                VSymEnt* classSymp = m_ds.m_dotSymp;
+                do {
+                    classSymp = classSymp->parentp();
+                } while (classSymp && !VN_IS(classSymp->nodep(), Class));
+                if (!classSymp) {
+                    nodep->v3error("'super' used outside class (IEEE 1800-2017 8.15)");
+                    m_ds.m_dotErr = true;
+                } else {
+                    auto classp = VN_CAST(classSymp->nodep(), Class);
+                    if (!classp->extendsp()) {
+                        nodep->v3error("'super' used on non-extended class (IEEE 1800-2017 8.15)");
+                        m_ds.m_dotErr = true;
+                    } else {
+                        auto cextp = VN_CAST(classp->extendsp(), ClassExtends);
+                        UASSERT_OBJ(cextp, nodep, "Bad super extends link");
+                        auto classp = cextp->classp();
+                        UASSERT_OBJ(classp, nodep, "Bad superclass");
+                        m_ds.m_dotSymp = m_statep->getNodeSym(classp);
+                        UINFO(8, "     super. " << m_ds.ascii() << endl);
+                    }
                 }
             } else if (VN_IS(nodep->lhsp(), ClassOrPackageRef)) {
                 // m_ds.m_dotText communicates the cell prefix between stages
@@ -2504,6 +2528,7 @@ private:
     virtual void visit(AstNodeFTaskRef* nodep) override {
         if (nodep->user3SetOnce()) return;
         UINFO(8, "     " << nodep << endl);
+        UINFO(8, "     " << m_ds.ascii() << endl);
         if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
@@ -2558,12 +2583,15 @@ private:
         } else {
             string baddot;
             VSymEnt* okSymp = nullptr;
-            VSymEnt* dotSymp = m_curSymp;  // Start search at module, as a variable
+            VSymEnt* dotSymp = nodep->dotted().empty()
+                                   ? m_ds.m_dotSymp  // Non-'super.' dotted reference
+                                   : m_curSymp;  // Start search at dotted point
             // of same name under a subtask isn't a relevant hit however a
             // function under a begin/end is.  So we want begins, but not
             // the function
             if (nodep->classOrPackagep()) {  // Look only in specified package
                 dotSymp = m_statep->getNodeSym(nodep->classOrPackagep());
+                UINFO(8, "    Override classOrPackage " << dotSymp << endl);
             } else {
                 if (nodep->inlinedDots() != "") {  // Correct for current scope
                     // Dotted lookup is always relative to module, as maybe

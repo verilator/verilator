@@ -1180,6 +1180,9 @@ void AstClass::dump(std::ostream& str) const {
 }
 AstClass* AstClassExtends::classp() const {
     AstClassRefDType* refp = VN_CAST(dtypep(), ClassRefDType);
+    if (VL_UNLIKELY(!refp)) {  // LinkDot uses this for 'super.'
+        refp = VN_CAST(childDTypep(), ClassRefDType);
+    }
     UASSERT_OBJ(refp, this, "class extends non-ref");
     return refp->classp();
 }

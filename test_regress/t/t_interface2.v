@@ -104,6 +104,10 @@ module counter_nansi(clkm, c_data, i_value);
 endmodule : counter_nansi
 `endif
 
+// Test uses Verilator --top-module, which means this isn't in the hierarchy
+// Other simulators will see it, and is illegal to have unconnected interface
+`ifdef VERILATOR
 module modunused (ifunused ifinunused);
    ifunused ifunused();
 endmodule
+`endif

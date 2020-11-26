@@ -1,0 +1,4 @@
+%Error: t/t_class_super_bad.v:15:12: 'super' used outside class (IEEE 1800-2017 8.15)
+   15 |       super.addr = 2;
+      |            ^
+%Error: Exiting due to
