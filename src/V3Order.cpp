@@ -290,8 +290,8 @@ private:
         // do the marking
         if (m_hasClk) {
             if (nodep->lhsp()->width() > m_rightClkWidth) {
-                nodep->v3warn(CLKDATA,
-                              "Clock is assigned to part of data signal " << nodep->lhsp());
+                nodep->v3warn(CLKDATA, "Clock is assigned to part of data signal "
+                                           << nodep->lhsp()->prettyNameQ());
                 UINFO(4, "CLKDATA: lhs with width " << nodep->lhsp()->width() << endl);
                 UINFO(4, "     but rhs clock with width " << m_rightClkWidth << endl);
                 return;  // skip the marking
