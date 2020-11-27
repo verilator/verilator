@@ -803,6 +803,7 @@ class ParamVisitor final : public AstNVisitor {
                 }
                 m_cellps.clear();
                 m_modp = nullptr;
+                UINFO(4, " MOD-done\n");
             }
         }
     }
@@ -815,6 +816,8 @@ class ParamVisitor final : public AstNVisitor {
             // Fake, made for recursive elimination
             UINFO(4, " MOD-recursive-dead.  " << nodep << endl);
             nodep->dead(true);  // So Dead checks won't count references to it
+        } else if (m_modp) {
+            UINFO(4, " MOD-under-MOD.  " << nodep << endl);
         } else if (nodep->level() <= 2  // Haven't added top yet, so level 2 is the top
                    || VN_IS(nodep, Package)) {  // Likewise haven't done wrapTopPackages yet
             // Add request to END of modules left to process

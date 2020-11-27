@@ -87,7 +87,8 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstPackage* nodep) override {
+    virtual void visit(AstNodeModule* nodep) override {
+        // Visit for NodeModules that are not AstClass (AstClass is-a AstNodeModule)
         VL_RESTORER(m_prefix);
         {
             m_prefix = nodep->name() + "__03a__03a";  // ::
