@@ -522,29 +522,8 @@ class ParamProcessor final {
         return newmodp;
     }
 
-public:
-    void cellDeparam(AstCell* nodep, AstNodeModule* modp, const string& hierName) {
-        m_modp = modp;
-        // Cell: Check for parameters in the instantiation.
-        // We always run this, even if no parameters, as need to look for interfaces,
-        // and remove any recursive references
-        UINFO(4, "De-parameterize: " << nodep << endl);
-        // Create new module name with _'s between the constants
-        if (debug() >= 10) nodep->dumpTree(cout, "-cell: ");
-        // Evaluate all module constants
-        V3Const::constifyParamsEdit(nodep);
+    void cellPinCleanup(AstCell* nodep, string& longnamer, bool& any_overridesr) {
         AstNodeModule* srcModp = nodep->modp();
-        srcModp->hierName(hierName + "." + nodep->name());
-
-        // Make sure constification worked
-        // Must be a separate loop, as constant conversion may have changed some pointers.
-        // if (debug()) nodep->dumpTree(cout, "-cel2: ");
-        string longname = srcModp->name();
-        bool any_overrides = false;
-        // Must always clone __Vrcm (recursive modules)
-        if (nodep->recursive()) any_overrides = true;
-        longname += "_";
-        if (debug() > 8) nodep->paramsp()->dumpTreeAndNext(cout, "-cellparams: ");
         for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
             if (!pinp->exprp()) continue;  // No-connect
             if (AstVar* modvarp = pinp->modVarp()) {
@@ -555,8 +534,8 @@ public:
                            && arraySubDTypep(modvarp->subDTypep())) {
                     // Array assigned to array
                     AstNode* exprp = pinp->exprp();
-                    longname += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
-                    any_overrides = true;
+                    longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
+                    any_overridesr = true;
                 } else {
                     AstConst* exprp = VN_CAST(pinp->exprp(), Const);
                     AstConst* origp = VN_CAST(modvarp->valuep(), Const);
@@ -572,13 +551,13 @@ public:
                         // obvious as it won't show up under a unique module page name.
                     } else if (exprp->num().isDouble() || exprp->num().isString()
                                || exprp->num().isFourState() || exprp->num().width() != 32) {
-                        longname
+                        longnamer
                             += ("_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp));
-                        any_overrides = true;
+                        any_overridesr = true;
                     } else {
-                        longname += ("_" + paramSmallName(srcModp, modvarp)
-                                     + exprp->num().ascii(false));
-                        any_overrides = true;
+                        longnamer += ("_" + paramSmallName(srcModp, modvarp)
+                                      + exprp->num().ascii(false));
+                        any_overridesr = true;
                     }
                 }
             } else if (AstParamTypeDType* modvarp = pinp->modPTypep()) {
@@ -599,9 +578,9 @@ public:
                         // obvious as it won't show up under a unique module page name.
                     } else {
                         V3Const::constifyParamsEdit(exprp);
-                        longname
+                        longnamer
                             += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
-                        any_overrides = true;
+                        any_overridesr = true;
                     }
                 }
             } else {
@@ -609,7 +588,11 @@ public:
                               << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
             }
         }
-        IfaceRefRefs ifaceRefRefs;
+    }
+
+    void cellInterfaceCleanup(AstCell* nodep, string& longnamer, bool& any_overridesr,
+                              IfaceRefRefs& ifaceRefRefs) {
+        AstNodeModule* srcModp = nodep->modp();
         for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
             AstVar* modvarp = pinp->modVarp();
             if (modvarp->isIfaceRef()) {
@@ -651,9 +634,9 @@ public:
                     UINFO(9, "     pinIfaceRef " << pinIrefp << endl);
                     if (portIrefp->ifaceViaCellp() != pinIrefp->ifaceViaCellp()) {
                         UINFO(9, "     IfaceRefDType needs reconnect  " << pinIrefp << endl);
-                        longname += ("_" + paramSmallName(srcModp, pinp->modVarp())
-                                     + paramValueNumber(pinIrefp));
-                        any_overrides = true;
+                        longnamer += ("_" + paramSmallName(srcModp, pinp->modVarp())
+                                      + paramValueNumber(pinIrefp));
+                        any_overridesr = true;
                         ifaceRefRefs.push_back(make_pair(portIrefp, pinIrefp));
                         if (portIrefp->ifacep() != pinIrefp->ifacep()
                             // Might be different only due to param cloning, so check names too
@@ -668,6 +651,35 @@ public:
                 }
             }
         }
+    }
+
+public:
+    void cellDeparam(AstCell* nodep, AstNodeModule* modp, const string& hierName) {
+        m_modp = modp;
+        // Cell: Check for parameters in the instantiation.
+        // We always run this, even if no parameters, as need to look for interfaces,
+        // and remove any recursive references
+        UINFO(4, "De-parameterize: " << nodep << endl);
+        // Create new module name with _'s between the constants
+        if (debug() >= 10) nodep->dumpTree(cout, "-cell: ");
+        // Evaluate all module constants
+        V3Const::constifyParamsEdit(nodep);
+        AstNodeModule* srcModp = nodep->modp();
+        srcModp->hierName(hierName + "." + nodep->name());
+
+        // Make sure constification worked
+        // Must be a separate loop, as constant conversion may have changed some pointers.
+        // if (debug()) nodep->dumpTree(cout, "-cel2: ");
+        string longname = srcModp->name();
+        bool any_overrides = false;
+        // Must always clone __Vrcm (recursive modules)
+        if (nodep->recursive()) any_overrides = true;
+        longname += "_";
+        if (debug() > 8) nodep->paramsp()->dumpTreeAndNext(cout, "-cellparams: ");
+
+        cellPinCleanup(nodep, longname /*ref*/, any_overrides /*ref*/);
+        IfaceRefRefs ifaceRefRefs;
+        cellInterfaceCleanup(nodep, longname /*ref*/, any_overrides /*ref*/, ifaceRefRefs /*ref*/);
 
         if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
