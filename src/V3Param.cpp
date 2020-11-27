@@ -519,9 +519,7 @@ class ParamVisitor final : public AstNVisitor {
                 } else if (AstParamTypeDType* modptp = pinp->modPTypep()) {
                     AstNodeDType* dtypep = VN_CAST(pinp->exprp(), NodeDType);
                     UASSERT_OBJ(dtypep, pinp, "unlinked param dtype");
-                    if (modptp->childDTypep()) {
-                        pushDeletep(modptp->childDTypep()->unlinkFrBack());
-                    }
+                    if (modptp->childDTypep()) modptp->childDTypep()->unlinkFrBack()->deleteTree();
                     // Set this parameter to value requested by cell
                     modptp->childDTypep(dtypep->cloneTree(false));
                     // Later V3LinkDot will convert the ParamDType to a Typedef
