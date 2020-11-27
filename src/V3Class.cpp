@@ -100,7 +100,7 @@ private:
         iterateChildren(nodep);
         // Don't move now, or wouldn't keep interating the class
         // TODO move class statics too
-        if (m_ftaskp && m_ftaskp->lifetime().isStatic()) {
+        if (m_packageScopep && m_ftaskp && m_ftaskp->lifetime().isStatic()) {
             m_moves.push_back(make_pair(nodep, m_packageScopep));
         }
     }
@@ -115,7 +115,7 @@ private:
         {
             m_ftaskp = nodep;
             iterateChildren(nodep);
-            if (nodep->lifetime().isStatic()) {
+            if (m_packageScopep && nodep->lifetime().isStatic()) {
                 m_moves.push_back(make_pair(nodep, m_packageScopep));
             }
         }
