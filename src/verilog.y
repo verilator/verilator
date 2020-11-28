@@ -1837,8 +1837,10 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//			// IEEE has ['.' modport] but that will conflict with port
 	//			// declarations which decode '.' modport themselves, so
 	//			// instead see data_typeVar
-	|	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/	{ $$ = nullptr; BBUNSUP($1, "Unsupported: virtual interface"); }
-	|	yVIRTUAL__anyID                id/*interface*/	{ $$ = nullptr; BBUNSUP($1, "Unsupported: virtual data type"); }
+	|	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/
+			{ $$ = new AstBasicDType($1, AstBasicDTypeKwd::CHANDLE); BBUNSUP($1, "Unsupported: virtual interface"); }
+	|	yVIRTUAL__anyID                id/*interface*/
+			{ $$ = new AstBasicDType($1, AstBasicDTypeKwd::CHANDLE); BBUNSUP($1, "Unsupported: virtual data type"); }
 	|	type_reference				{ $$ = $1; }
 	//			// IEEE: class_scope: see data_type above
 	//			// IEEE: class_type: see data_type above
