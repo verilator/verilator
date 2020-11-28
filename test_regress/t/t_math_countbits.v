@@ -96,7 +96,6 @@ module t(/*AUTOARG*/
          if ($countbits(val, '1, '1, 'x) != 7) $stop;
          if ($countbits(val, 'x, '0) != 25) $stop;
          if ($countbits(val, 'x, '0, '1) != 32) $stop;
-`ifndef VERILATOR
          // Optimization may depend on position of Z, so need to walk it
          if ($countbits(val, 'z) != 0) $stop;
          if ($countbits(val, 'z, '1) != 7) $stop;
@@ -106,7 +105,6 @@ module t(/*AUTOARG*/
          if ($countbits(val, 'z, '0, '1) != 32) $stop;
          //
          if ($countbits(val, 'x, 'z) != 0) $stop;
-`endif
       end
       else if (cyc == 1) begin
          in16 <= 16'h0AF0;

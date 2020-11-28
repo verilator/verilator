@@ -937,10 +937,11 @@ bool V3Number::isAnyX() const {
     }
     return false;
 }
-bool V3Number::isAnyXZ() const {
+bool V3Number::isAnyXZ() const { return isAnyX() || isAnyZ(); }
+bool V3Number::isAnyZ() const {
     if (isDouble() || isString()) return false;
     for (int bit = 0; bit < width(); bit++) {
-        if (bitIsX(bit) || bitIsZ(bit)) return true;
+        if (bitIsZ(bit)) return true;
     }
     return false;
 }

@@ -981,6 +981,65 @@ class TristateVisitor final : public TristateBaseVisitor {
     virtual void visit(AstEqWild* nodep) override { visitEqNeqWild(nodep); }
     virtual void visit(AstNeqWild* nodep) override { visitEqNeqWild(nodep); }
 
+    virtual void visit(AstCountBits* nodep) override {
+        std::array<bool, 3> dropop;
+        dropop[0] = VN_IS(nodep->rhsp(), Const) && VN_CAST(nodep->rhsp(), Const)->num().isAnyZ();
+        dropop[1] = VN_IS(nodep->thsp(), Const) && VN_CAST(nodep->thsp(), Const)->num().isAnyZ();
+        dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_CAST(nodep->fhsp(), Const)->num().isAnyZ();
+        UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep << endl);
+        AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);  // Input variable
+        if (m_graphing) {
+            iterateAndNextNull(nodep->lhsp());
+            if (!dropop[0]) iterateAndNextNull(nodep->rhsp());
+            if (!dropop[1]) iterateAndNextNull(nodep->thsp());
+            if (!dropop[2]) iterateAndNextNull(nodep->fhsp());
+        } else {
+            AstNode* nonXp = nullptr;
+            if (!dropop[0])
+                nonXp = nodep->rhsp();
+            else if (!dropop[1])
+                nonXp = nodep->thsp();
+            else if (!dropop[2])
+                nonXp = nodep->fhsp();
+            // Replace 'z with non-Z
+            if (dropop[0] || dropop[1] || dropop[2]) {
+                // Unsupported: A $countones('0) should compare with the enables, but we don't
+                // do so at present, we only compare if there is a z in the equation. Otherwise
+                // we'd need to attach an enable to every signal, then optimize them away later
+                // when we determine the signal has no tristate
+                if (!VN_IS(nodep->lhsp(), VarRef)) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported LHS tristate construct: "
+                                                     << nodep->prettyTypeName());
+                    return;
+                }
+                AstVar* envarp = getCreateEnVarp(varrefp->varp());
+                // If any drops, we need to add in the count of Zs (from __en)
+                UINFO(4, " COUNTBITS('z)-> " << nodep << endl);
+                AstNRelinker relinkHandle;
+                nodep->unlinkFrBack(&relinkHandle);
+                AstNode* newp = new AstCountOnes(
+                    nodep->fileline(), new AstVarRef(nodep->fileline(), envarp, VAccess::READ));
+                if (nonXp) {  // Need to still count '0 or '1 or 'x's
+                    if (dropop[0]) {
+                        nodep->rhsp()->unlinkFrBack()->deleteTree();
+                        nodep->rhsp(nonXp->cloneTree(true));
+                    }
+                    if (dropop[1]) {
+                        nodep->thsp()->unlinkFrBack()->deleteTree();
+                        nodep->thsp(nonXp->cloneTree(true));
+                    }
+                    if (dropop[2]) {
+                        nodep->fhsp()->unlinkFrBack()->deleteTree();
+                        nodep->fhsp(nonXp->cloneTree(true));
+                    }
+                    newp = new AstAdd(nodep->fileline(), nodep, newp);
+                }
+                if (debug() >= 9) newp->dumpTree(cout, "-countout: ");
+                relinkHandle.relink(newp);
+            }
+            iterateChildren(nodep);
+        }
+    }
     virtual void visit(AstPull* nodep) override {
         UINFO(9, dbgState() << nodep << endl);
         AstVarRef* varrefp = nullptr;

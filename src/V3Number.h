@@ -273,6 +273,7 @@ public:
     void isSigned(bool ssigned) { m_signed = ssigned; }
     bool isAnyX() const;
     bool isAnyXZ() const;
+    bool isAnyZ() const;
     bool isMsbXZ() const { return bitIsXZ(m_width); }
     uint32_t toUInt() const;
     vlsint32_t toSInt() const;
