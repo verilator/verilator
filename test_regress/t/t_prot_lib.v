@@ -55,6 +55,8 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
          logic [128:0] s129_out;
          logic [3:0] [31:0] s4x32_in;
          logic [3:0] [31:0] s4x32_out;
+         logic [31:0]       s4x32up_in[0:3];
+         logic [31:0]       s4x32up_out[0:3];
 
          wire 		    clk_en = crc[0];
 
@@ -80,6 +82,8 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
                    .s129_out,
                    .s4x32_in,
                    .s4x32_out,
+                   .s4x32up_in,
+                   .s4x32up_out,
                    .clk_en,
                    .clk);
 
@@ -99,6 +103,8 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
             `DRIVE(s65)
             `DRIVE(s129)
             `DRIVE(s4x32)
+            {s4x32up_in[0], s4x32up_in[1]} <= crc;
+            {s4x32up_in[3], s4x32up_in[2]} <= crc;
             if (cyc == 0) begin
                accum_in <= x*100;
                accum_bypass <= '0;
@@ -155,6 +161,7 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
             `CHECK(s65)
             `CHECK(s129)
             `CHECK(s4x32)
+            `CHECK(s4x32up)
          end
 
          assign accum_bypass_out_expect = accum_bypass ? accum_in :
