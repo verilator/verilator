@@ -1101,7 +1101,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (onoff(sw, "-structs-unpacked", flag /*ref*/)) {
                 m_structsPacked = flag;
             } else if (!strcmp(sw, "-sv")) {
-                m_defaultLanguage = V3LangCode::L1800_2005;
+                m_defaultLanguage = V3LangCode::L1800_2017;
             } else if (onoff(sw, "-threads-coarsen", flag /*ref*/)) {  // Undocumented, debug
                 m_threadsCoarsen = flag;
             } else if (onoff(sw, "-trace", flag /*ref*/)) {

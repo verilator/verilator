@@ -1461,7 +1461,7 @@ future version of Verilator no longer always packs unpacked structures.
 =item -sv
 
 Specifies SystemVerilog language features should be enabled; equivalent to
-"--language 1800-2005".  This option is selected by default, it exists for
+"--language 1800-2017".  This option is selected by default, it exists for
 compatibility with other simulators.
 
 =item  +systemverilogext+I<ext>
