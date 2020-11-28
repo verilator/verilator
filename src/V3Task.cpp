@@ -684,12 +684,12 @@ private:
         }
 
         const std::vector<std::pair<AstUnpackArrayDType*, int>> dimStrides
-            = unpackDimsAndStrides(portvscp->varp());
+            = unpackDimsAndStrides(portp);
         const int total = dimStrides.empty() ? 1
                                              : dimStrides.front().first->elementsConst()
                                                    * dimStrides.front().second;
         AstNode* newp = nullptr;
-        const int widthWords = portvscp->varp()->basicp()->widthWords();
+        const int widthWords = portp->basicp()->widthWords();
         for (int i = 0; i < total; ++i) {
             AstNode* srcp = new AstVarRef(portvscp->fileline(), portvscp, VAccess::WRITE);
             // extract a scalar from multi-dimensional array (internal format)
@@ -710,7 +710,7 @@ private:
                 string from = frstmt;
                 if (!dimStrides.empty()) {
                     // e.g. time is 64bit svLogicVector
-                    const int coef = portvscp->varp()->basicp()->isDpiLogicVec() ? widthWords : 1;
+                    const int coef = portp->basicp()->isDpiLogicVec() ? widthWords : 1;
                     from += "[" + cvtToStr(i * coef) + "]";
                 }
                 from += ket;
