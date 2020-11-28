@@ -988,14 +988,16 @@ public:
 
 class AstClassRefDType final : public AstNodeDType {
     // Reference to a class
+    // Children: PINs (for parameter settings)
 private:
     AstClass* m_classp;  // data type pointed to, BELOW the AstTypedef
     AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
 public:
-    AstClassRefDType(FileLine* fl, AstClass* classp)
+    AstClassRefDType(FileLine* fl, AstClass* classp, AstNode* paramsp)
         : ASTGEN_SUPER(fl)
         , m_classp{classp} {
         dtypep(this);
+        addNOp4p(paramsp);
     }
     ASTNODE_NODE_FUNCS(ClassRefDType)
     // METHODS
@@ -1032,6 +1034,7 @@ public:
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     AstClass* classp() const { return m_classp; }
     void classp(AstClass* nodep) { m_classp = nodep; }
+    AstPin* paramsp() const { return VN_CAST(op4p(), Pin); }
 };
 
 class AstIfaceRefDType final : public AstNodeDType {

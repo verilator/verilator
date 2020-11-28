@@ -1941,11 +1941,13 @@ private:
     virtual void visit(AstCell* nodep) override {
         // Cell: Recurse inside or cleanup not founds
         checkNoDot(nodep);
-        m_cellp = nodep;
         AstNode::user5ClearTree();
         UASSERT_OBJ(nodep->modp(), nodep,
                     "Cell has unlinked module");  // V3LinkCell should have errored out
+        VL_RESTORER(m_cellp);
+        VL_RESTORER(m_pinSymp);
         {
+            m_cellp = nodep;
             if (VN_IS(nodep->modp(), NotFoundModule)) {
                 // Prevent warnings about missing pin connects
                 if (nodep->pinsp()) nodep->pinsp()->unlinkFrBackWithNext()->deleteTree();
@@ -1960,12 +1962,25 @@ private:
                 // if (debug()) nodep->dumpTree(cout, "linkcell:");
                 // if (debug()) nodep->modp()->dumpTree(cout, "linkcemd:");
                 iterateChildren(nodep);
-                m_pinSymp = nullptr;
             }
         }
-        m_cellp = nullptr;
         // Parent module inherits child's publicity
         // This is done bottom up in the LinkBotupVisitor stage
+    }
+    virtual void visit(AstClassRefDType* nodep) override {
+        // Cell: Recurse inside or cleanup not founds
+        checkNoDot(nodep);
+        AstNode::user5ClearTree();
+        UASSERT_OBJ(nodep->classp(), nodep, "ClassRef has unlinked class");
+        VL_RESTORER(m_pinSymp);
+        {
+            // ClassRef's have pins, so track
+            m_pinSymp = m_statep->getNodeSym(nodep->classp());
+            UINFO(4, "(Backto) Link ClassRefDType: " << nodep << endl);
+            // if (debug()) nodep->dumpTree(cout, "linkcell:");
+            // if (debug()) nodep->modp()->dumpTree(cout, "linkcemd:");
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstPin* nodep) override {
         // Pin: Link to submodule's port
@@ -1976,7 +1991,8 @@ private:
             VSymEnt* foundp = m_pinSymp->findIdFlat(nodep->name());
             const char* whatp = nodep->param() ? "parameter pin" : "pin";
             if (!foundp) {
-                if (nodep->name() == "__paramNumber1" && VN_IS(m_cellp->modp(), Primitive)) {
+                if (nodep->name() == "__paramNumber1" && m_cellp
+                    && VN_IS(m_cellp->modp(), Primitive)) {
                     // Primitive parameter is really a delay we can just ignore
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                     return;
@@ -2540,7 +2556,7 @@ private:
                               "Unsupported: " << AstNode::prettyNameQ(cpackagerefp->name()));
             }
             if (cpackagerefp->paramsp()) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages for task calls");
             }
             UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
             nodep->classOrPackagep(cpackagerefp->classOrPackagep());
@@ -2817,8 +2833,10 @@ private:
                                     cextp->v3error("Attempting to extend class "
                                                    << nodep->prettyNameQ() << " from itself");
                                 } else {
-                                    AstClassRefDType* newp
-                                        = new AstClassRefDType{nodep->fileline(), classp};
+                                    AstNode* paramsp = cpackagerefp->paramsp();
+                                    if (paramsp) paramsp = paramsp->cloneTree(true);
+                                    const auto newp
+                                        = new AstClassRefDType{nodep->fileline(), classp, paramsp};
                                     cextp->childDTypep(newp);
                                     classp->isExtended(true);
                                     nodep->isExtended(true);
@@ -2909,7 +2927,9 @@ private:
                 nodep->refDTypep(defp);
                 nodep->classOrPackagep(foundp->classOrPackagep());
             } else if (AstClass* defp = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {
-                AstClassRefDType* newp = new AstClassRefDType(nodep->fileline(), defp);
+                AstNode* paramsp = nodep->paramsp();
+                if (paramsp) paramsp->unlinkFrBackWithNext();
+                AstClassRefDType* newp = new AstClassRefDType{nodep->fileline(), defp, paramsp};
                 newp->classOrPackagep(foundp->classOrPackagep());
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);

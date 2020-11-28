@@ -457,6 +457,13 @@ private:
         UINFO(4, " Link Cell done: " << nodep << endl);
     }
 
+    virtual void visit(AstRefDType* nodep) override {
+        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            pinp->param(true);
+            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
+        }
+    }
+
     // Accelerate the recursion
     // Must do statements to support Generates, math though...
     virtual void visit(AstNodeMath*) override {}
