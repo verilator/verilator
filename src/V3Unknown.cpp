@@ -258,6 +258,42 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
+    virtual void visit(AstCountBits* nodep) override {
+        // Ahh, we're two state, so this is easy
+        std::array<bool, 3> dropop;
+        dropop[0] = VN_IS(nodep->rhsp(), Const) && VN_CAST(nodep->rhsp(), Const)->num().isAnyX();
+        dropop[1] = VN_IS(nodep->thsp(), Const) && VN_CAST(nodep->thsp(), Const)->num().isAnyX();
+        dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_CAST(nodep->fhsp(), Const)->num().isAnyX();
+        UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep << endl);
+
+        AstNode* nonXp = nullptr;
+        if (!dropop[0])
+            nonXp = nodep->rhsp();
+        else if (!dropop[1])
+            nonXp = nodep->thsp();
+        else if (!dropop[2])
+            nonXp = nodep->fhsp();
+        else {  // Was all X-s
+            UINFO(4, " COUNTBITS('x)->0 " << nodep << endl);
+            AstConst* newp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+        if (dropop[0]) {
+            nodep->rhsp()->unlinkFrBack()->deleteTree();
+            nodep->rhsp(nonXp->cloneTree(true));
+        }
+        if (dropop[1]) {
+            nodep->thsp()->unlinkFrBack()->deleteTree();
+            nodep->thsp(nonXp->cloneTree(true));
+        }
+        if (dropop[2]) {
+            nodep->fhsp()->unlinkFrBack()->deleteTree();
+            nodep->fhsp(nonXp->cloneTree(true));
+        }
+        iterateChildren(nodep);
+    }
     virtual void visit(AstConst* nodep) override {
         if (m_constXCvt && nodep->num().isFourState()) {
             UINFO(4, " CONST4 " << nodep << endl);
