@@ -137,6 +137,7 @@ private:
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_constXCvt);
         {
             m_modp = nodep;
             m_constXCvt = true;
@@ -144,25 +145,34 @@ private:
         }
     }
     virtual void visit(AstAssignDly* nodep) override {
-        m_assigndlyp = nodep;
-        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        m_assigndlyp = nullptr;
+        VL_RESTORER(m_assigndlyp);
+        {
+            m_assigndlyp = nodep;
+            VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
+        }
     }
     virtual void visit(AstAssignW* nodep) override {
-        m_assignwp = nodep;
-        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        m_assignwp = nullptr;
+        VL_RESTORER(m_assignwp);
+        {
+            m_assignwp = nodep;
+            VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
+        }
     }
     virtual void visit(AstCaseItem* nodep) override {
-        m_constXCvt = false;  // Avoid losing the X's in casex
-        iterateAndNextNull(nodep->condsp());
-        m_constXCvt = true;
-        iterateAndNextNull(nodep->bodysp());
+        VL_RESTORER(m_constXCvt);
+        {
+            m_constXCvt = false;  // Avoid losing the X's in casex
+            iterateAndNextNull(nodep->condsp());
+            m_constXCvt = true;
+            iterateAndNextNull(nodep->bodysp());
+        }
     }
     virtual void visit(AstNodeDType* nodep) override {
-        m_constXCvt = false;  // Avoid losing the X's in casex
-        iterateChildren(nodep);
-        m_constXCvt = true;
+        VL_RESTORER(m_constXCvt);
+        {
+            m_constXCvt = false;  // Avoid losing the X's in casex
+            iterateChildren(nodep);
+        }
     }
     void visitEqNeqCase(AstNodeBiop* nodep) {
         UINFO(4, " N/EQCASE->EQ " << nodep << endl);
