@@ -3113,7 +3113,6 @@ private:
                 "Illegal to call 'new' using an abstract virtual class (IEEE 1800-2017 8.21)");
         }
         userIterate(nodep->taskp(), nullptr);
-        userIterateChildren(nodep, nullptr);
         processFTaskRefArgs(nodep);
     }
     virtual void visit(AstNewCopy* nodep) override {

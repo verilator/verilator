@@ -29,7 +29,7 @@ module t (/*AUTOARG*/);
       c1 = new;
       if (c1.imembera != 5) $stop;
 
-      c2 = new(2);
+      c2 = new(3 - 1);
       if (c2.imembera != 3) $stop;
       if (c2.geta() != 3) $stop;
 
