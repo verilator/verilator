@@ -154,6 +154,7 @@ public:
 
     // METHODS
     T_Value& atDefault() { return m_defaultValue; }
+    const T_Value& atDefault() const { return m_defaultValue; }
     const Deque& privateDeque() const { return m_deque; }
 
     // Size. Verilog: function int size(), or int num()
@@ -512,6 +513,7 @@ public:
 
     // METHODS
     T_Value& atDefault() { return m_defaultValue; }
+    const T_Value& atDefault() const { return m_defaultValue; }
 
     // Size of array. Verilog: function int size(), or int num()
     int size() const { return m_map.size(); }

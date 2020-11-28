@@ -1787,13 +1787,6 @@ private:
                 nodep->dtypep(newp);
                 v3Global.rootp()->typeTablep()->addTypesp(newp);
             }
-        } else if (nodep->isIO()
-                   && !(VN_IS(nodep->dtypeSkipRefp(), BasicDType)
-                        || VN_IS(nodep->dtypeSkipRefp(), ClassRefDType)
-                        || VN_IS(nodep->dtypeSkipRefp(), NodeArrayDType)
-                        || VN_IS(nodep->dtypeSkipRefp(), NodeUOrStructDType))) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Inputs and outputs must be simple data types");
         }
         if (VN_IS(nodep->dtypep()->skipRefToConstp(), ConstDType)) nodep->isConst(true);
         // Parameters if implicit untyped inherit from what they are assigned to
@@ -1999,7 +1992,7 @@ private:
     }
     virtual void visit(AstConsAssoc* nodep) override {
         // Type computed when constructed here
-        auto* vdtypep = VN_CAST(m_vup->dtypep(), AssocArrayDType);
+        auto* vdtypep = VN_CAST(m_vup->dtypep()->skipRefp(), AssocArrayDType);
         UASSERT_OBJ(vdtypep, nodep, "ConsAssoc requires assoc upper parent data type");
         if (m_vup->prelim()) {
             nodep->dtypeFrom(vdtypep);
@@ -2011,7 +2004,7 @@ private:
     }
     virtual void visit(AstSetAssoc* nodep) override {
         // Type computed when constructed here
-        auto* vdtypep = VN_CAST(m_vup->dtypep(), AssocArrayDType);
+        auto* vdtypep = VN_CAST(m_vup->dtypep()->skipRefp(), AssocArrayDType);
         UASSERT_OBJ(vdtypep, nodep, "SetsAssoc requires assoc upper parent data type");
         if (m_vup->prelim()) {
             nodep->dtypeFrom(vdtypep);
@@ -2024,7 +2017,7 @@ private:
     }
     virtual void visit(AstConsDynArray* nodep) override {
         // Type computed when constructed here
-        AstDynArrayDType* vdtypep = VN_CAST(m_vup->dtypep(), DynArrayDType);
+        AstDynArrayDType* vdtypep = VN_CAST(m_vup->dtypep()->skipRefp(), DynArrayDType);
         UASSERT_OBJ(vdtypep, nodep, "ConsDynArray requires queue upper parent data type");
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP(vdtypep, PRELIM).p());
@@ -2056,7 +2049,7 @@ private:
     }
     virtual void visit(AstConsQueue* nodep) override {
         // Type computed when constructed here
-        AstQueueDType* vdtypep = VN_CAST(m_vup->dtypep(), QueueDType);
+        AstQueueDType* vdtypep = VN_CAST(m_vup->dtypep()->skipRefp(), QueueDType);
         UASSERT_OBJ(vdtypep, nodep, "ConsQueue requires queue upper parent data type");
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP(vdtypep, PRELIM).p());

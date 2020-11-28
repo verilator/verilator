@@ -5,15 +5,17 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.105 devel
 
-***   Change -sv option to select 1800-2017 instead of 1800-2005.
+**    Change -sv option to select 1800-2017 instead of 1800-2005.
+
+***   Check for proper 'local' and 'protected' (#2228).
 
 ***   Support $random and $urandom seeds.
+
+***   Support complex function arguments.
 
 ***   Support 'super'.
 
 ***   Support 'with item.index'.
-
-***   Check for proper 'local' and 'protected' (#2228).
 
 ****  Fix trace signal names getting hashed (#2643).  [Barbara Gigerl]
 

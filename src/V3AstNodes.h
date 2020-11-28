@@ -395,7 +395,8 @@ public:
     virtual AstNodeDType* skipRefToEnump() const override { return subDTypep()->skipRefToEnump(); }
     virtual bool similarDType(AstNodeDType* samep) const override {
         const AstParamTypeDType* sp = static_cast<const AstParamTypeDType*>(samep);
-        return (sp && this->subDTypep()->skipRefp()->similarDType(sp->subDTypep()->skipRefp()));
+        return type() == samep->type() && sp
+               && this->subDTypep()->skipRefp()->similarDType(sp->subDTypep()->skipRefp());
     }
     virtual int widthAlignBytes() const override { return dtypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const override { return dtypep()->widthTotalBytes(); }
@@ -545,8 +546,8 @@ public:
     }
     virtual bool similarDType(AstNodeDType* samep) const override {
         const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
-        if (!asamep->subDTypep()) return false;
-        return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
+        return type() == samep->type() && asamep->subDTypep()
+               && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     virtual string prettyDTypeName() const override;
     virtual void dumpSmall(std::ostream& str) const override;
@@ -643,8 +644,8 @@ public:
     }
     virtual bool similarDType(AstNodeDType* samep) const override {
         const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
-        if (!asamep->subDTypep()) return false;
-        return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
+        return type() == samep->type() && asamep->subDTypep()
+               && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     virtual string prettyDTypeName() const override;
     virtual void dumpSmall(std::ostream& str) const override;
@@ -753,8 +754,8 @@ public:
     }
     virtual bool similarDType(AstNodeDType* samep) const override {
         const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
-        if (!asamep->subDTypep()) return false;
-        return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
+        return type() == samep->type() && asamep->subDTypep()
+               && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     virtual void dumpSmall(std::ostream& str) const override;
     virtual V3Hash sameHash() const override { return V3Hash(m_refDTypep); }
@@ -1013,7 +1014,7 @@ public:
         return (m_classp == asamep->m_classp && m_classOrPackagep == asamep->m_classOrPackagep);
     }
     virtual bool similarDType(AstNodeDType* samep) const override {
-        return this == samep || same(samep);
+        return this == samep || (type() == samep->type() && same(samep));
     }
     virtual V3Hash sameHash() const override {
         return V3Hash(V3Hash(m_classp), V3Hash(m_classOrPackagep));
@@ -1127,8 +1128,8 @@ public:
     }
     virtual bool similarDType(AstNodeDType* samep) const override {
         const AstQueueDType* asamep = static_cast<const AstQueueDType*>(samep);
-        if (!asamep->subDTypep()) return false;
-        return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
+        return type() == samep->type() && asamep->subDTypep()
+               && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     virtual void dumpSmall(std::ostream& str) const override;
     virtual V3Hash sameHash() const override { return V3Hash(m_refDTypep); }
