@@ -1,0 +1,4 @@
+%Error: t/t_class_virtual_pure_bad.v:8:22: Illegal to have 'pure virtual' in non-virtual class (IEEE 1800-2017 8.21)
+    8 |    pure virtual task pure_task;
+      |                      ^~~~~~~~~
+%Error: Exiting due to
