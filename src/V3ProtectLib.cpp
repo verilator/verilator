@@ -388,10 +388,6 @@ private:
 
     virtual void visit(AstVar* nodep) override {
         if (!nodep->isIO()) return;
-        if (VN_IS(nodep->dtypep(), UnpackArrayDType)) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: unpacked arrays with protect-lib on "
-                                             << nodep->prettyNameQ());
-        }
         if (nodep->direction() == VDirection::INPUT) {
             if (nodep->isUsedClock() || nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
                 UASSERT_OBJ(m_hasClk, nodep, "checkIfClockExists() didn't find this clock");
@@ -410,13 +406,7 @@ private:
     virtual void visit(AstNode*) override {}
 
     string cInputConnection(AstVar* varp) {
-        string frstmt;
-        string ket;
-        bool useSetWSvlv = V3Task::dpiToInternalFrStmt(varp, varp->name(), frstmt, ket);
-        if (useSetWSvlv) {
-            return frstmt + ket + " handlep__V->" + varp->name() + ", " + varp->name() + ");\n";
-        }
-        return "handlep__V->" + varp->name() + " = " + frstmt + ket + ";\n";
+        return V3Task::assignDpiToInternal("handlep__V->" + varp->name(), varp);
     }
 
     void handleClock(AstVar* varp) {

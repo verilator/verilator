@@ -1675,9 +1675,45 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
     return stmt;
 }
 
-bool V3Task::dpiToInternalFrStmt(AstVar* portp, const string& frName, string& frstmt,
-                                 string& ket) {
-    return TaskDpiUtils::dpiToInternalFrStmt(portp, frName, frstmt, ket);
+string V3Task::assignDpiToInternal(const string& lhsName, AstVar* varp) {
+    // Create assignment from DPI temporary into internal format
+    // DPI temporary is scalar or 1D array (if unpacked array)
+    // Internal representation is scalar, 1D, or multi-dimensional array (similar to SV)
+    const string frName = varp->name();
+    string frstmt;
+    string ket;
+    const bool useSetWSvlv = TaskDpiUtils::dpiToInternalFrStmt(varp, frName, frstmt, ket);
+
+    const std::vector<std::pair<AstUnpackArrayDType*, int>> dimStrides
+        = TaskDpiUtils::unpackDimsAndStrides(varp->dtypep());
+    const int total = dimStrides.empty()
+                          ? 1
+                          : dimStrides.front().first->elementsConst() * dimStrides.front().second;
+    const int widthWords = varp->basicp()->widthWords();
+    string statements;
+    for (int i = 0; i < total; ++i) {
+        string lhs = lhsName;
+        // extract a scalar from multi-dimensional array (internal format)
+        for (auto&& dimStride : dimStrides) {
+            const size_t dimIdx = (i / dimStride.second) % dimStride.first->elementsConst();
+            lhs += "[" + cvtToStr(dimIdx) + "]";
+        }
+        // extract a scalar from DPI temporary var that is scalar or 1D array
+        if (useSetWSvlv) {
+            statements += frstmt + ket + " " + lhs + ", " + frName + " + "
+                          + cvtToStr(i * widthWords) + ");\n";
+        } else {
+            string rhs = frstmt;
+            if (!dimStrides.empty()) {
+                // e.g. time is 64bit svLogicVector
+                const int coef = varp->basicp()->isDpiLogicVec() ? widthWords : 1;
+                rhs += "[" + cvtToStr(i * coef) + "]";
+            }
+            rhs += ket;
+            statements += lhs + " = " + rhs + ";\n";
+        }
+    }
+    return statements;
 }
 
 const char* V3Task::dpiTemporaryVarSuffix() {
