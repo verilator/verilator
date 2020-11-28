@@ -1789,6 +1789,7 @@ private:
             }
         } else if (nodep->isIO()
                    && !(VN_IS(nodep->dtypeSkipRefp(), BasicDType)
+                        || VN_IS(nodep->dtypeSkipRefp(), ClassRefDType)
                         || VN_IS(nodep->dtypeSkipRefp(), NodeArrayDType)
                         || VN_IS(nodep->dtypeSkipRefp(), NodeUOrStructDType))) {
             nodep->v3warn(E_UNSUPPORTED,
