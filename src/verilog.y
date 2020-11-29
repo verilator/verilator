@@ -3596,10 +3596,10 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_FDISPLAYH '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'h'); }
 	|	yD_FDISPLAYO '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, nullptr, 'o'); }
 	|	yD_FDISPLAYO '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'o'); }
-	|	yD_FWRITE   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5); }
-	|	yD_FWRITEB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5, 'b'); }
-	|	yD_FWRITEO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5, 'h'); }
-	|	yD_FWRITEH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5, 'o'); }
+	|	yD_FWRITE   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5); }
+	|	yD_FWRITEB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5, 'b'); }
+	|	yD_FWRITEH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5, 'h'); }
+	|	yD_FWRITEO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5, 'o'); }
 	|	yD_INFO	    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    nullptr, nullptr); }
 	|	yD_INFO	    '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    nullptr, $3); }
 	|	yD_WARNING  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, nullptr, nullptr); }
