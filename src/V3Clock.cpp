@@ -293,7 +293,7 @@ private:
         }
         m_scopep = nullptr;
     }
-    virtual void visit(AstAlways* nodep) override {
+    virtual void visit(AstNodeProcedure* nodep) override {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
@@ -326,15 +326,6 @@ private:
         newp->addIfsp(
             new AstAssign(nodep->fileline(), changep->cloneTree(false), origp->cloneTree(false)));
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    }
-    virtual void visit(AstInitial* nodep) override {
-        AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
-        nodep->replaceWith(cmtp);
-        if (AstNode* stmtsp = nodep->bodysp()) {
-            stmtsp->unlinkFrBackWithNext();
-            cmtp->addNextHere(stmtsp);
-        }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstCFunc* nodep) override {

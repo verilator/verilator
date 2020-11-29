@@ -467,9 +467,6 @@ private:
             }
         }
     }
-    virtual void visit(AstAlways* nodep) override {
-        iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts"), nullptr);
-    }
     virtual void visit(AstAlwaysPublic* nodep) override {
         VL_RESTORER(m_inSlow);
         {
@@ -489,10 +486,10 @@ private:
         }
         m_inSenItem = false;
     }
-    virtual void visit(AstInitial* nodep) override {
+    virtual void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_inSlow);
         {
-            m_inSlow = true;
+            m_inSlow = VN_IS(nodep, Initial) || VN_IS(nodep, Final);
             iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts"),
                            nullptr);
         }
