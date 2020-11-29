@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 
 top_filename("t/t_trace_litendian.v");
 
-# Travis environment offers 2 VCPUs, 2 thread setting causes the following warning.
+# CI environment offers 2 VCPUs, 2 thread setting causes the following warning.
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
 # Strangely, asking for more threads makes it go away.
 compile(
