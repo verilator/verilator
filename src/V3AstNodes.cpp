@@ -671,8 +671,6 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
             info.m_type = "const VerilatedScope*";
         } else if (bdtypep->keyword() == AstBasicDTypeKwd::DOUBLE) {
             info.m_type = "double";
-        } else if (bdtypep->keyword() == AstBasicDTypeKwd::FLOAT) {
-            info.m_type = "float";
         } else if (bdtypep->keyword() == AstBasicDTypeKwd::STRING) {
             info.m_type = "std::string";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width

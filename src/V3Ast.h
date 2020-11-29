@@ -450,7 +450,6 @@ public:
         LONGINT,
         DOUBLE,
         SHORTINT,
-        FLOAT,
         TIME,
         // Closer to a class type, but limited usage
         STRING,
@@ -468,18 +467,16 @@ public:
     enum en m_e;
     const char* ascii() const {
         static const char* const names[] = {
-            "%E-unk",  //
-            "bit",     "byte",  "chandle",  "event",          "int",  "integer", "logic",
-            "longint", "real",  "shortint", "shortreal",      "time", "string",  "VerilatedScope*",
-            "char*",   "IData", "QData",    "LOGIC_IMPLICIT", " MAX"};
+            "%E-unk", "bit",     "byte",  "chandle",        "event", "int",    "integer",
+            "logic",  "longint", "real",  "shortint",       "time",  "string", "VerilatedScope*",
+            "char*",  "IData",   "QData", "LOGIC_IMPLICIT", " MAX"};
         return names[m_e];
     }
     const char* dpiType() const {
         static const char* const names[]
-            = {"%E-unk",  //
-               "svBit",       "char",      "void*",       "char",  "int",   "%E-integer",
-               "svLogic",     "long long", "double",      "short", "float", "%E-time",
-               "const char*", "dpiScope",  "const char*", "IData", "QData", "%E-logic-implicit",
+            = {"%E-unk",      "svBit",    "char",        "void*",  "char",  "int",
+               "%E-integer",  "svLogic",  "long long",   "double", "short", "%E-time",
+               "const char*", "dpiScope", "const char*", "IData",  "QData", "%E-logic-implicit",
                " MAX"};
         return names[m_e];
     }
@@ -508,7 +505,6 @@ public:
         case LOGIC: return 1;  // scalar, can't bit extract unless ranged
         case LONGINT: return 64;
         case DOUBLE: return 64;  // opaque
-        case FLOAT: return 32;  // opaque
         case SHORTINT: return 16;
         case TIME: return 64;
         case STRING: return 64;  // opaque  // Just the pointer, for today
@@ -521,7 +517,7 @@ public:
     }
     bool isSigned() const {
         return m_e == BYTE || m_e == SHORTINT || m_e == INT || m_e == LONGINT || m_e == INTEGER
-               || m_e == DOUBLE || m_e == FLOAT;
+               || m_e == DOUBLE;
     }
     bool isUnsigned() const {
         return m_e == CHANDLE || m_e == EVENTVALUE || m_e == STRING || m_e == SCOPEPTR
@@ -532,8 +528,7 @@ public:
     }
     bool isZeroInit() const {  // Otherwise initializes to X
         return (m_e == BIT || m_e == BYTE || m_e == CHANDLE || m_e == EVENTVALUE || m_e == INT
-                || m_e == LONGINT || m_e == SHORTINT || m_e == STRING || m_e == DOUBLE
-                || m_e == FLOAT);
+                || m_e == LONGINT || m_e == SHORTINT || m_e == STRING || m_e == DOUBLE);
     }
     bool isIntNumeric() const {  // Enum increment supported
         return (m_e == BIT || m_e == BYTE || m_e == INT || m_e == INTEGER || m_e == LOGIC
@@ -553,8 +548,7 @@ public:
                 || m_e == DOUBLE || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64);
     }
     bool isOpaque() const {  // IE not a simple number we can bit optimize
-        return (m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR || m_e == DOUBLE
-                || m_e == FLOAT);
+        return (m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR || m_e == DOUBLE);
     }
     bool isDouble() const { return m_e == DOUBLE; }
     bool isEventValue() const { return m_e == EVENTVALUE; }
