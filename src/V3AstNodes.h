@@ -5997,10 +5997,15 @@ public:
 class AstCast final : public AstNode {
     // Cast to appropriate data type - note lhsp is value, to match AstTypedef, AstCCast, etc
 public:
-    AstCast(FileLine* fl, AstNode* lhsp, AstNodeDType* dtp)
+    AstCast(FileLine* fl, AstNode* lhsp, VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl) {
         setOp1p(lhsp);
         setOp2p(dtp);
+        dtypeFrom(dtp);
+    }
+    AstCast(FileLine* fl, AstNode* lhsp, AstNodeDType* dtp)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(lhsp);
         dtypeFrom(dtp);
     }
     ASTNODE_NODE_FUNCS(Cast)

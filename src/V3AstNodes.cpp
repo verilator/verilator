@@ -1175,6 +1175,7 @@ bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* ba
     // TAIL RECURSIVE
     if (!refClassp || !baseClassp) return false;
     if (refClassp == baseClassp) return true;
+    if (!refClassp->extendsp()) return false;
     return isClassExtendedFrom(refClassp->extendsp()->classp(), baseClassp);
 }
 void AstClass::dump(std::ostream& str) const {

@@ -4255,9 +4255,9 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: cast/constant_cast
 	//			// expanded from casting_type
-	|	simple_type yP_TICK '(' expr ')'	{ $$ = new AstCast($1->fileline(), $4, $1); }
+	|	simple_type yP_TICK '(' expr ')'	{ $$ = new AstCast($1->fileline(), $4, VFlagChildDType{}, $1); }
 	|	yTYPE '(' exprOrDataType ')' yP_TICK '(' expr ')'
-			{ $$ = new AstCast($1, $7, new AstRefDType($1, AstRefDType::FlagTypeOfExpr(), $3)); }
+			{ $$ = new AstCast($1, $7, VFlagChildDType(), new AstRefDType($1, AstRefDType::FlagTypeOfExpr(), $3)); }
 	|	ySIGNED yP_TICK '(' expr ')'		{ $$ = new AstSigned($1, $4); }
 	|	yUNSIGNED yP_TICK '(' expr ')'		{ $$ = new AstUnsigned($1, $4); }
 	|	ySTRING yP_TICK '(' expr ')'		{ $$ = new AstCvtPackString($1, $4); }
