@@ -170,7 +170,7 @@ private:
     // of the RHS is expected to be deleted by the caller.
     AstNode* foldAndUnlink(AstNode* rhsp, bool condTrue) {
         if (rhsp->sameTree(m_mgCondp)) {
-            return new AstConst(rhsp->fileline(), AstConst::BitTrueFalse(), condTrue);
+            return new AstConst(rhsp->fileline(), AstConst::BitTrue{}, condTrue);
         } else if (AstNodeCond* const condp = extractCond(rhsp)) {
             AstNode* const resp
                 = condTrue ? condp->expr1p()->unlinkFrBack() : condp->expr2p()->unlinkFrBack();

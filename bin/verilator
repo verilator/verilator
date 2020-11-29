@@ -4107,11 +4107,6 @@ $setup, $setuphold, $skew, $timeskew, $width
 
 All specify blocks and timing checks are ignored.
 
-=item $monitor, $strobe
-
-Monitor and strobe are not supported, convert to always_comb $display or
-similar.
-
 =item $random, $urandom, $urandom_range
 
 Use +verilator+seed argument to set the seed if there is no $random or

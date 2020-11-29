@@ -311,6 +311,15 @@ private:
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
+    virtual void visit(AstAlwaysPostponed* nodep) override {
+        AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
+        nodep->replaceWith(cmtp);
+        if (AstNode* stmtsp = nodep->bodysp()) {
+            stmtsp->unlinkFrBackWithNext();
+            cmtp->addNextHere(stmtsp);
+        }
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
     virtual void visit(AstCoverToggle* nodep) override {
         // nodep->dumpTree(cout, "ct:");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->

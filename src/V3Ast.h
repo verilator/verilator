@@ -879,12 +879,21 @@ inline bool operator==(VCaseType::en lhs, const VCaseType& rhs) { return lhs == 
 
 class AstDisplayType final {
 public:
-    enum en : uint8_t { DT_DISPLAY, DT_WRITE, DT_INFO, DT_ERROR, DT_WARNING, DT_FATAL };
+    enum en : uint8_t {
+        DT_DISPLAY,
+        DT_WRITE,
+        DT_MONITOR,
+        DT_STROBE,
+        DT_INFO,
+        DT_ERROR,
+        DT_WARNING,
+        DT_FATAL
+    };
     enum en m_e;
-    inline AstDisplayType()
+    AstDisplayType()
         : m_e{DT_DISPLAY} {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstDisplayType(en _e)
+    AstDisplayType(en _e)
         : m_e{_e} {}
     explicit inline AstDisplayType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
@@ -893,7 +902,7 @@ public:
     bool needScopeTracking() const { return m_e != DT_DISPLAY && m_e != DT_WRITE; }
     const char* ascii() const {
         static const char* const names[]
-            = {"display", "write", "info", "error", "warning", "fatal"};
+            = {"display", "write", "monitor", "strobe", "info", "error", "warning", "fatal"};
         return names[m_e];
     }
 };

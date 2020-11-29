@@ -740,11 +740,19 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_FGETS        "$fgets"
 %token<fl>              yD_FINISH       "$finish"
 %token<fl>              yD_FLOOR        "$floor"
+%token<fl>              yD_FMONITOR     "$fmonitor"
+%token<fl>              yD_FMONITORB    "$fmonitorb"
+%token<fl>              yD_FMONITORH    "$fmonitorh"
+%token<fl>              yD_FMONITORO    "$fmonitoro"
 %token<fl>              yD_FOPEN        "$fopen"
 %token<fl>              yD_FREAD        "$fread"
 %token<fl>              yD_FREWIND      "$frewind"
 %token<fl>              yD_FSCANF       "$fscanf"
 %token<fl>              yD_FSEEK        "$fseek"
+%token<fl>              yD_FSTROBE      "$fstrobe"
+%token<fl>              yD_FSTROBEB     "$fstrobeb"
+%token<fl>              yD_FSTROBEH     "$fstrobeh"
+%token<fl>              yD_FSTROBEO     "$fstrobeo"
 %token<fl>              yD_FTELL        "$ftell"
 %token<fl>              yD_FWRITE       "$fwrite"
 %token<fl>              yD_FWRITEB      "$fwriteb"
@@ -761,6 +769,12 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_LN           "$ln"
 %token<fl>              yD_LOG10        "$log10"
 %token<fl>              yD_LOW          "$low"
+%token<fl>              yD_MONITOR      "$monitor"
+%token<fl>              yD_MONITORB     "$monitorb"
+%token<fl>              yD_MONITORH     "$monitorh"
+%token<fl>              yD_MONITORO     "$monitoro"
+%token<fl>              yD_MONITOROFF   "$monitoroff"
+%token<fl>              yD_MONITORON    "$monitoron"
 %token<fl>              yD_ONEHOT       "$onehot"
 %token<fl>              yD_ONEHOT0      "$onehot0"
 %token<fl>              yD_PAST         "$past"
@@ -789,6 +803,10 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_STABLE       "$stable"
 %token<fl>              yD_STIME        "$stime"
 %token<fl>              yD_STOP         "$stop"
+%token<fl>              yD_STROBE       "$strobe"
+%token<fl>              yD_STROBEB      "$strobeb"
+%token<fl>              yD_STROBEH      "$strobeh"
+%token<fl>              yD_STROBEO      "$strobeo"
 %token<fl>              yD_SWRITE       "$swrite"
 %token<fl>              yD_SWRITEB      "$swriteb"
 %token<fl>              yD_SWRITEH      "$swriteh"
@@ -3580,6 +3598,14 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_DISPLAYH  '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, $3, 'h'); }
 	|	yD_DISPLAYO  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, nullptr, 'o'); }
 	|	yD_DISPLAYO  '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, $3, 'o'); }
+	|	yD_MONITOR   '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, nullptr, $3); }
+	|	yD_MONITORB  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, nullptr, $3, 'b'); }
+	|	yD_MONITORH  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, nullptr, $3, 'h'); }
+	|	yD_MONITORO  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, nullptr, $3, 'o'); }
+	|	yD_STROBE   '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, nullptr, $3); }
+	|	yD_STROBEB  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, nullptr, $3, 'b'); }
+	|	yD_STROBEH  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, nullptr, $3, 'h'); }
+	|	yD_STROBEO  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, nullptr, $3, 'o'); }
 	|	yD_WRITE    parenE			{ $$ = nullptr; }  // NOP
 	|	yD_WRITE    '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   nullptr, $3); }
 	|	yD_WRITEB   parenE			{ $$ = nullptr; }  // NOP
@@ -3596,6 +3622,14 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_FDISPLAYH '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'h'); }
 	|	yD_FDISPLAYO '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, nullptr, 'o'); }
 	|	yD_FDISPLAYO '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'o'); }
+	|	yD_FMONITOR   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, $3, $5); }
+	|	yD_FMONITORB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, $3, $5, 'b'); }
+	|	yD_FMONITORH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, $3, $5, 'h'); }
+	|	yD_FMONITORO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, $3, $5, 'o'); }
+	|	yD_FSTROBE   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, $3, $5); }
+	|	yD_FSTROBEB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, $3, $5, 'b'); }
+	|	yD_FSTROBEH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, $3, $5, 'h'); }
+	|	yD_FSTROBEO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, $3, $5, 'o'); }
 	|	yD_FWRITE   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5); }
 	|	yD_FWRITEB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5, 'b'); }
 	|	yD_FWRITEH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5, 'h'); }
@@ -3609,6 +3643,9 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_FATAL    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   nullptr, nullptr); $$->addNext(new AstStop($1, false)); }
 	|	yD_FATAL    '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   nullptr, nullptr); $$->addNext(new AstStop($1, false)); DEL($3); }
 	|	yD_FATAL    '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   nullptr, $5);   $$->addNext(new AstStop($1, false)); DEL($3); }
+	//
+	|	yD_MONITOROFF parenE			{ $$ = new AstMonitorOff($1, true); }
+	|	yD_MONITORON parenE			{ $$ = new AstMonitorOff($1, false); }
 	//
 	|	yD_PRINTTIMESCALE			{ $$ = new AstPrintTimeScale($1); }
 	|	yD_PRINTTIMESCALE '(' ')'		{ $$ = new AstPrintTimeScale($1); }

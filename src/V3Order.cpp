@@ -673,6 +673,7 @@ private:
     bool m_inClkAss = false;  // Underneath AstAssign
     bool m_inPre = false;  // Underneath AstAssignPre
     bool m_inPost = false;  // Underneath AstAssignPost
+    bool m_inPostponed = false;  // Underneath AstAssignPostponed
     OrderLogicVertex* m_activeSenVxp = nullptr;  // Sensitivity vertex
     std::deque<OrderUser*> m_orderUserps;  // All created OrderUser's for later deletion.
     // STATE... for inside process
@@ -1044,7 +1045,8 @@ private:
                 // We don't want to add extra edges if the logic block has many usages of same var
                 bool gen = false;
                 bool con = false;
-                if (nodep->access().isWriteOrRW()) gen = !(varscp->user4() & VU_GEN);
+                if (nodep->access().isWriteOrRW() && !m_inPostponed)
+                    gen = !(varscp->user4() & VU_GEN);
                 if (nodep->access().isReadOrRW()) {
                     con = !(varscp->user4() & VU_CON);
                     if ((varscp->user4() & VU_GEN) && !m_inClocked) {
@@ -1173,6 +1175,11 @@ private:
         m_inPost = true;
         iterateNewStmt(nodep);
         m_inPost = false;
+    }
+    virtual void visit(AstAlwaysPostponed* nodep) override {
+        VL_RESTORER(m_inPostponed);
+        m_inPostponed = true;
+        iterateNewStmt(nodep);
     }
     virtual void visit(AstAlways* nodep) override { iterateNewStmt(nodep); }
     virtual void visit(AstAlwaysPublic* nodep) override { iterateNewStmt(nodep); }

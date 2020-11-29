@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support $random and $urandom seeds.
 
+***   Support $monitor and $strobe.
+
 ***   Support complex function arguments.
 
 ***   Support 'super'.

@@ -36,7 +36,11 @@ private:
     // STATE
     AstNodeModule* m_modp = nullptr;  // Last module
     AstBegin* m_beginp = nullptr;  // Last begin
+    unsigned m_monitorNum = 0;  // Global $monitor numbering (not per module)
+    AstVar* m_monitorNumVarp = nullptr;  // $monitor number variable
+    AstVar* m_monitorOffVarp = nullptr;  // $monitoroff variable
     unsigned m_modPastNum = 0;  // Module past numbering
+    unsigned m_modStrobeNum = 0;  // Module $strobe numbering
     VDouble0 m_statCover;  // Statistic tracking
     VDouble0 m_statAsNotImm;  // Statistic tracking
     VDouble0 m_statAsImm;  // Statistic tracking
@@ -62,7 +66,26 @@ private:
             nodep->fmtp()->scopeNamep(new AstScopeName(nodep->fileline()));
         }
     }
-
+    AstVarRef* newMonitorNumVarRefp(AstNode* nodep, VAccess access) {
+        if (!m_monitorNumVarp) {
+            m_monitorNumVarp = new AstVar{nodep->fileline(), AstVarType::MODULETEMP,
+                                          "__VmonitorNum", nodep->findUInt64DType()};
+            v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(m_monitorNumVarp);
+        }
+        const auto varrefp = new AstVarRef(nodep->fileline(), m_monitorNumVarp, access);
+        varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
+        return varrefp;
+    }
+    AstVarRef* newMonitorOffVarRefp(AstNode* nodep, VAccess access) {
+        if (!m_monitorOffVarp) {
+            m_monitorOffVarp = new AstVar{nodep->fileline(), AstVarType::MODULETEMP,
+                                          "__VmonitorOff", nodep->findBitDType()};
+            v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(m_monitorOffVarp);
+        }
+        const auto varrefp = new AstVarRef(nodep->fileline(), m_monitorOffVarp, access);
+        varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
+        return varrefp;
+    }
     AstNode* newIfAssertOn(AstNode* nodep) {
         // Add a internal if to check assertions are on.
         // Don't make this a AND term, as it's unlikely to need to test this.
@@ -342,9 +365,54 @@ private:
         } else if (nodep->displayType() == AstDisplayType::DT_ERROR
                    || nodep->displayType() == AstDisplayType::DT_FATAL) {
             replaceDisplay(nodep, "%%Error");
+        } else if (nodep->displayType() == AstDisplayType::DT_MONITOR) {
+            nodep->displayType(AstDisplayType::DT_DISPLAY);
+            const auto fl = nodep->fileline();
+            const auto monNum = ++m_monitorNum;
+            // Where $monitor was we do "__VmonitorNum = N;"
+            const auto newsetp = new AstAssign{fl, newMonitorNumVarRefp(nodep, VAccess::WRITE),
+                                               new AstConst{fl, monNum}};
+            nodep->replaceWith(newsetp);
+            // Add "always_comb if (__VmonitorOn && __VmonitorNum==N) $display(...);"
+            AstNode* stmtsp = nodep;
+            AstIf* ifp = new AstIf{
+                fl,
+                new AstLogAnd{fl, new AstLogNot{fl, newMonitorOffVarRefp(nodep, VAccess::READ)},
+                              new AstEq{fl, new AstConst{fl, monNum},
+                                        newMonitorNumVarRefp(nodep, VAccess::READ)}},
+                stmtsp, nullptr};
+            ifp->branchPred(VBranchPred::BP_UNLIKELY);
+            AstNode* newp = new AstAlwaysPostponed{fl, ifp};
+            m_modp->addStmtp(newp);
+        } else if (nodep->displayType() == AstDisplayType::DT_STROBE) {
+            nodep->displayType(AstDisplayType::DT_DISPLAY);
+            // Need one-shot
+            const auto fl = nodep->fileline();
+            const auto varp
+                = new AstVar{fl, AstVarType::MODULETEMP, "__Vstrobe" + cvtToStr(m_modStrobeNum++),
+                             nodep->findBitDType()};
+            m_modp->addStmtp(varp);
+            // Where $strobe was we do "__Vstrobe = '1;"
+            const auto newsetp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                               new AstConst{fl, AstConst::BitTrue{}}};
+            nodep->replaceWith(newsetp);
+            // Add "always_comb if (__Vstrobe) begin $display(...); __Vstrobe = '0; end"
+            AstNode* stmtsp = nodep;
+            AstIf* ifp = new AstIf{fl, new AstVarRef{fl, varp, VAccess::READ}, stmtsp, nullptr};
+            ifp->branchPred(VBranchPred::BP_UNLIKELY);
+            AstNode* newp = new AstAlwaysPostponed{fl, ifp};
+            stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                          new AstConst{fl, AstConst::BitFalse{}}});
+            m_modp->addStmtp(newp);
         }
     }
-
+    virtual void visit(AstMonitorOff* nodep) override {
+        const auto newp
+            = new AstAssign(nodep->fileline(), newMonitorOffVarRefp(nodep, VAccess::WRITE),
+                            new AstConst(nodep->fileline(), AstConst::BitTrue{}, nodep->off()));
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     virtual void visit(AstAssert* nodep) override {
         iterateChildren(nodep);
         newPslAssertion(nodep, nodep->failsp());
@@ -362,9 +430,11 @@ private:
     virtual void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modPastNum);
+        VL_RESTORER(m_modStrobeNum);
         {
             m_modp = nodep;
             m_modPastNum = 0;
+            m_modStrobeNum = 0;
             iterateChildren(nodep);
         }
     }

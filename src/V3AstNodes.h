@@ -146,16 +146,11 @@ public:
         , m_num(this, 1, 0) {
         dtypeSetBit();
     }
+    // Shorthand const 1 (or with argument 0/1), dtype should be a logic of size 1
     class BitTrue {};
-    AstConst(FileLine* fl, BitTrue)  // Shorthand const 1, dtype should be a logic of size 1
+    AstConst(FileLine* fl, BitTrue, bool on = true)
         : ASTGEN_SUPER(fl)
-        , m_num(this, 1, 1) {
-        dtypeSetBit();
-    }
-    class BitTrueFalse {};
-    AstConst(FileLine* fl, BitTrueFalse, bool on)
-        : ASTGEN_SUPER(fl)
-        , m_num(this, 1, on ? 1 : 0) {
+        , m_num(this, 1, on) {
         dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(Const)
@@ -3296,6 +3291,14 @@ public:
     void sensesp(AstSenTree* nodep) { setOp1p(nodep); }
     VAlwaysKwd keyword() const { return m_keyword; }
 };
+class AstAlwaysPostponed final : public AstNodeProcedure {
+    // Like always but postponement scheduling region
+
+public:
+    AstAlwaysPostponed(FileLine* fl, AstNode* bodysp)
+        : ASTGEN_SUPER(fl, bodysp) {}
+    ASTNODE_NODE_FUNCS(AlwaysPostponed)
+};
 
 class AstAlwaysPublic final : public AstNodeStmt {
     // "Fake" sensitivity created by /*verilator public_flat_rw @(edgelist)*/
@@ -4280,6 +4283,29 @@ public:
     ASTNODE_NODE_FUNCS(WriteMem)
     virtual string verilogKwd() const override { return (isHex() ? "$writememh" : "$writememb"); }
     virtual const char* cFuncPrefixp() const override { return "VL_WRITEMEM_"; }
+};
+
+class AstMonitorOff final : public AstNodeStmt {
+    bool m_off;  // Monitor off.  Using 0=on allows faster init and comparison
+
+public:
+    AstMonitorOff(FileLine* fl, bool off)
+        : ASTGEN_SUPER(fl)
+        , m_off{off} {}
+    ASTNODE_NODE_FUNCS(MonitorOff)
+    virtual string verilogKwd() const override { return m_off ? "$monitoroff" : "$monitoron"; }
+    virtual bool isGateOptimizable() const override { return false; }  // Though deleted before opt
+    virtual bool isPredictOptimizable() const override {
+        return false;
+    }  // Though deleted before opt
+    virtual bool isPure() const override { return false; }  // Though deleted before opt
+    virtual bool isOutputter() const override { return true; }  // Though deleted before opt
+    virtual int instrCount() const override { return instrCountPli(); }
+    virtual V3Hash sameHash() const override { return V3Hash(m_off); }
+    virtual bool same(const AstNode* samep) const override {
+        return m_off == static_cast<const AstMonitorOff*>(samep)->m_off;
+    }
+    bool off() const { return m_off; }
 };
 
 class AstSystemT final : public AstNodeStmt {
