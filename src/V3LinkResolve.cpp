@@ -472,10 +472,10 @@ private:
                         }
                         varoutp = varp;
                         // Tie off
-                        m_modp->addStmtp(new AstAssignW(
-                            varp->fileline(),
-                            new AstVarRef(varp->fileline(), varp, VAccess::WRITE),
-                            new AstConst(varp->fileline(), AstConst::LogicFalse())));
+                        m_modp->addStmtp(
+                            new AstAssignW(varp->fileline(),
+                                           new AstVarRef(varp->fileline(), varp, VAccess::WRITE),
+                                           new AstConst(varp->fileline(), AstConst::BitFalse())));
                     } else {
                         varp->v3error("Only inputs and outputs are allowed in udp modules");
                     }

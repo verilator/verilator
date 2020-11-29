@@ -318,7 +318,7 @@ private:
              itemp = VN_CAST(itemp->nextp(), CaseItem)) {
             if (!itemp->condsp()) {
                 // Default clause.  Just make true, we'll optimize it away later
-                itemp->condsp(new AstConst(itemp->fileline(), AstConst::LogicTrue()));
+                itemp->condsp(new AstConst(itemp->fileline(), AstConst::BitTrue()));
                 hadDefault = true;
             } else {
                 // Expressioned clause
@@ -336,7 +336,7 @@ private:
                         VL_DANGLING(iconstp);
                         // For simplicity, make expression that is not equal, and let later
                         // optimizations remove it
-                        condp = new AstConst(itemp->fileline(), AstConst::LogicFalse());
+                        condp = new AstConst(itemp->fileline(), AstConst::BitFalse());
                     } else if (AstInsideRange* irangep = VN_CAST(icondp, InsideRange)) {
                         // Similar logic in V3Width::visit(AstInside)
                         condp = irangep->newAndFromInside(cexprp, irangep->lhsp()->unlinkFrBack(),
@@ -375,9 +375,8 @@ private:
         if (!hadDefault) {
             // If there was no default, add a empty one, this greatly simplifies below code
             // and constant propagation will just eliminate it for us later.
-            nodep->addItemsp(
-                new AstCaseItem(nodep->fileline(),
-                                new AstConst(nodep->fileline(), AstConst::LogicTrue()), nullptr));
+            nodep->addItemsp(new AstCaseItem(
+                nodep->fileline(), new AstConst(nodep->fileline(), AstConst::BitTrue()), nullptr));
         }
         if (debug() >= 9) nodep->dumpTree(cout, "    _comp_COND: ");
         // Now build the IF statement tree
@@ -419,7 +418,7 @@ private:
                 VL_DANGLING(ifexprp);
                 if (depth == CASE_ENCODER_GROUP_DEPTH) {  // End of group - can skip the condition
                     VL_DO_DANGLING(itemexprp->deleteTree(), itemexprp);
-                    itemexprp = new AstConst(itemp->fileline(), AstConst::LogicTrue());
+                    itemexprp = new AstConst(itemp->fileline(), AstConst::BitTrue());
                 }
                 AstIf* newp = new AstIf(itemp->fileline(), itemexprp, istmtsp, nullptr);
                 if (itemnextp) {

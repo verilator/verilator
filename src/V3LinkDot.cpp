@@ -2099,7 +2099,7 @@ private:
             if (start) {
                 AstNode* newp;
                 if (m_ds.m_dotErr) {
-                    newp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
+                    newp = new AstConst(nodep->fileline(), AstConst::BitFalse());
                 } else {
                     // RHS is what we're left with
                     newp = nodep->rhsp()->unlinkFrBack();

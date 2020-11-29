@@ -103,7 +103,7 @@ private:
         AstNode* past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstAnd(fl, past, new AstNot(fl, exprp->cloneTree(false)));
-        exprp->dtypeSetLogicBool();
+        exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -122,7 +122,7 @@ private:
         AstNode* past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstAnd(fl, new AstNot(fl, past), exprp->cloneTree(false));
-        exprp->dtypeSetLogicBool();
+        exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -135,7 +135,7 @@ private:
         AstNode* past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstEq(fl, past, exprp->cloneTree(false));
-        exprp->dtypeSetLogicBool();
+        exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -153,7 +153,7 @@ private:
         AstNode* past = new AstPast(fl, lhsp, nullptr);
         past->dtypeFrom(lhsp);
         AstNode* exprp = new AstOr(fl, new AstNot(fl, past), rhsp);
-        exprp->dtypeSetLogicBool();
+        exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

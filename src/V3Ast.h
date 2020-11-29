@@ -1721,7 +1721,7 @@ public:
     void dtypeSetLogicSized(int width, VSigning numeric) {
         dtypep(findLogicDType(width, width, numeric));  // Since sized, widthMin is width
     }
-    void dtypeSetLogicBool() { dtypep(findLogicBoolDType()); }
+    void dtypeSetBit() { dtypep(findBitDType()); }
     void dtypeSetDouble() { dtypep(findDoubleDType()); }
     void dtypeSetString() { dtypep(findStringDType()); }
     void dtypeSetSigned32() { dtypep(findSigned32DType()); }
@@ -1730,7 +1730,7 @@ public:
     void dtypeSetVoid() { dtypep(findVoidDType()); }
 
     // Data type locators
-    AstNodeDType* findLogicBoolDType() { return findBasicDType(AstBasicDTypeKwd::LOGIC); }
+    AstNodeDType* findBitDType() { return findBasicDType(AstBasicDTypeKwd::LOGIC); }
     AstNodeDType* findDoubleDType() { return findBasicDType(AstBasicDTypeKwd::DOUBLE); }
     AstNodeDType* findStringDType() { return findBasicDType(AstBasicDTypeKwd::STRING); }
     AstNodeDType* findSigned32DType() { return findBasicDType(AstBasicDTypeKwd::INTEGER); }

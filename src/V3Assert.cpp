@@ -73,7 +73,7 @@ private:
                         // This allows syntax errors and such to be detected normally.
                         (v3Global.opt.assertOn()
                              ? static_cast<AstNode*>(new AstCMath(fl, "Verilated::assertOn()", 1))
-                             : static_cast<AstNode*>(new AstConst(fl, AstConst::LogicFalse()))),
+                             : static_cast<AstNode*>(new AstConst(fl, AstConst::BitFalse()))),
                         nodep, nullptr);
         newp->user1(true);  // Don't assert/cover this if
         return newp;
@@ -207,7 +207,7 @@ private:
             bool allow_none = nodep->unique0Pragma();
 
             // Empty case means no property
-            if (!propp) propp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
+            if (!propp) propp = new AstConst(nodep->fileline(), AstConst::BitFalse());
 
             // Note: if this ends with an 'else', then we don't need to validate that one of the
             // predicates evaluates to true.
@@ -276,7 +276,7 @@ private:
                         }
                     }
                     // Empty case means no property
-                    if (!propp) propp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
+                    if (!propp) propp = new AstConst(nodep->fileline(), AstConst::BitFalse());
 
                     bool allow_none = has_default || nodep->unique0Pragma();
                     AstNode* ohot

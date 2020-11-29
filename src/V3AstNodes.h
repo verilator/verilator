@@ -140,17 +140,23 @@ public:
         , m_num(V3Number::String(), this, num) {
         dtypeSetString();
     }
-    class LogicFalse {};
-    AstConst(FileLine* fl, LogicFalse)  // Shorthand const 0, dtype should be a logic of size 1
+    class BitFalse {};
+    AstConst(FileLine* fl, BitFalse)  // Shorthand const 0, dtype should be a logic of size 1
         : ASTGEN_SUPER(fl)
         , m_num(this, 1, 0) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
-    class LogicTrue {};
-    AstConst(FileLine* fl, LogicTrue)  // Shorthand const 1, dtype should be a logic of size 1
+    class BitTrue {};
+    AstConst(FileLine* fl, BitTrue)  // Shorthand const 1, dtype should be a logic of size 1
         : ASTGEN_SUPER(fl)
         , m_num(this, 1, 1) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
+    }
+    class BitTrueFalse {};
+    AstConst(FileLine* fl, BitTrueFalse, bool on)
+        : ASTGEN_SUPER(fl)
+        , m_num(this, 1, on ? 1 : 0) {
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(Const)
     virtual string name() const override { return num().ascii(); }  // * = Value
@@ -4822,7 +4828,7 @@ public:
         : ASTGEN_SUPER(fl) {
         addOp1p(exprp);
         addOp2p(itemsp);
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(Inside)
     AstNode* exprp() const { return op1p(); }  // op1 = LHS expression to compare with
@@ -5545,7 +5551,7 @@ class AstRedAnd final : public AstNodeUniop {
 public:
     AstRedAnd(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(RedAnd)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedAnd(lhs); }
@@ -5559,7 +5565,7 @@ class AstRedOr final : public AstNodeUniop {
 public:
     AstRedOr(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(RedOr)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedOr(lhs); }
@@ -5573,7 +5579,7 @@ class AstRedXor final : public AstNodeUniop {
 public:
     AstRedXor(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(RedXor)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedXor(lhs); }
@@ -5592,7 +5598,7 @@ class AstRedXnor final : public AstNodeUniop {
 public:
     AstRedXnor(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(RedXnor)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedXnor(lhs); }
@@ -5626,7 +5632,7 @@ class AstLogNot final : public AstNodeUniop {
 public:
     AstLogNot(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(LogNot)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opLogNot(lhs); }
@@ -5899,7 +5905,7 @@ class AstIsUnknown final : public AstNodeUniop {
 public:
     AstIsUnknown(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(IsUnknown)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
@@ -5916,7 +5922,7 @@ class AstIsUnbounded final : public AstNodeUniop {
 public:
     AstIsUnbounded(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(IsUnbounded)
     virtual void numberOperate(V3Number& out, const V3Number&) override {
@@ -5934,7 +5940,7 @@ class AstOneHot final : public AstNodeUniop {
 public:
     AstOneHot(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(OneHot)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opOneHot(lhs); }
@@ -5950,7 +5956,7 @@ class AstOneHot0 final : public AstNodeUniop {
 public:
     AstOneHot0(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(OneHot0)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opOneHot0(lhs); }
@@ -6523,7 +6529,7 @@ class AstLogOr final : public AstNodeBiop {
 public:
     AstLogOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(LogOr)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6546,7 +6552,7 @@ class AstLogAnd final : public AstNodeBiop {
 public:
     AstLogAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(LogAnd)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6569,7 +6575,7 @@ class AstLogEq final : public AstNodeBiCom {
 public:
     AstLogEq(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(LogEq)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6592,7 +6598,7 @@ class AstLogIf final : public AstNodeBiop {
 public:
     AstLogIf(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(LogIf)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6703,7 +6709,7 @@ class AstEq final : public AstNodeBiCom {
 public:
     AstEq(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(Eq)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6727,7 +6733,7 @@ class AstEqD final : public AstNodeBiCom {
 public:
     AstEqD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(EqD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6751,7 +6757,7 @@ class AstEqN final : public AstNodeBiCom {
 public:
     AstEqN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(EqN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6775,7 +6781,7 @@ class AstNeq final : public AstNodeBiCom {
 public:
     AstNeq(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(Neq)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6797,7 +6803,7 @@ class AstNeqD final : public AstNodeBiCom {
 public:
     AstNeqD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(NeqD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6821,7 +6827,7 @@ class AstNeqN final : public AstNodeBiCom {
 public:
     AstNeqN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(NeqN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6845,7 +6851,7 @@ class AstLt final : public AstNodeBiop {
 public:
     AstLt(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(Lt)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6867,7 +6873,7 @@ class AstLtD final : public AstNodeBiop {
 public:
     AstLtD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(LtD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6891,7 +6897,7 @@ class AstLtS final : public AstNodeBiop {
 public:
     AstLtS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(LtS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6914,7 +6920,7 @@ class AstLtN final : public AstNodeBiop {
 public:
     AstLtN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(LtN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6938,7 +6944,7 @@ class AstGt final : public AstNodeBiop {
 public:
     AstGt(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(Gt)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6960,7 +6966,7 @@ class AstGtD final : public AstNodeBiop {
 public:
     AstGtD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(GtD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -6984,7 +6990,7 @@ class AstGtS final : public AstNodeBiop {
 public:
     AstGtS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(GtS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7007,7 +7013,7 @@ class AstGtN final : public AstNodeBiop {
 public:
     AstGtN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(GtN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7031,7 +7037,7 @@ class AstGte final : public AstNodeBiop {
 public:
     AstGte(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(Gte)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7055,7 +7061,7 @@ class AstGteD final : public AstNodeBiop {
 public:
     AstGteD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(GteD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7079,7 +7085,7 @@ class AstGteS final : public AstNodeBiop {
 public:
     AstGteS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(GteS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7102,7 +7108,7 @@ class AstGteN final : public AstNodeBiop {
 public:
     AstGteN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(GteN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7126,7 +7132,7 @@ class AstLte final : public AstNodeBiop {
 public:
     AstLte(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(Lte)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7150,7 +7156,7 @@ class AstLteD final : public AstNodeBiop {
 public:
     AstLteD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(LteD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7174,7 +7180,7 @@ class AstLteS final : public AstNodeBiop {
 public:
     AstLteS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(LteS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7197,7 +7203,7 @@ class AstLteN final : public AstNodeBiop {
 public:
     AstLteN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(LteN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7794,7 +7800,7 @@ class AstEqCase final : public AstNodeBiCom {
 public:
     AstEqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(EqCase)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7816,7 +7822,7 @@ class AstNeqCase final : public AstNodeBiCom {
 public:
     AstNeqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(NeqCase)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7839,7 +7845,7 @@ class AstEqWild final : public AstNodeBiop {
 public:
     AstEqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(EqWild)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7863,7 +7869,7 @@ class AstNeqWild final : public AstNodeBiop {
 public:
     AstNeqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool();
+        dtypeSetBit();
     }
     ASTNODE_NODE_FUNCS(NeqWild)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {

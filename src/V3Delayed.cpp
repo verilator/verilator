@@ -289,7 +289,7 @@ private:
                                         new AstConst(nodep->fileline(), 0));
             AstAssign* setassignp = new AstAssign(
                 nodep->fileline(), new AstVarRef(nodep->fileline(), setvscp, VAccess::WRITE),
-                new AstConst(nodep->fileline(), AstConst::LogicTrue()));
+                new AstConst(nodep->fileline(), AstConst::BitTrue()));
             nodep->addNextHere(setassignp);
         }
         if (m_nextDlyp) {  // Tell next assigndly it can share the variable
@@ -436,7 +436,7 @@ private:
                         prep = new AstAssignPre(
                             nodep->fileline(),
                             new AstVarRef(nodep->fileline(), dlyvscp, VAccess::WRITE),
-                            new AstConst(nodep->fileline(), AstConst::LogicFalse()));
+                            new AstConst(nodep->fileline(), AstConst::BitFalse()));
                     } else {
                         prep = new AstAssignPre(
                             nodep->fileline(),

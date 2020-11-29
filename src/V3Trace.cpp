@@ -426,7 +426,7 @@ private:
     void addActivitySetter(AstNode* insertp, uint32_t code) {
         FileLine* const fl = insertp->fileline();
         AstAssign* const setterp = new AstAssign(fl, selectActivity(fl, code, VAccess::WRITE),
-                                                 new AstConst(fl, AstConst::LogicTrue()));
+                                                 new AstConst(fl, AstConst::BitTrue()));
         if (AstCCall* const callp = VN_CAST(insertp, CCall)) {
             callp->addNextHere(setterp);
         } else if (AstCFunc* const funcp = VN_CAST(insertp, CFunc)) {
@@ -687,7 +687,7 @@ private:
         // Clear fine grained activity flags
         for (uint32_t i = 0; i < m_activityNumber; ++i) {
             AstNode* const clrp = new AstAssign(fl, selectActivity(fl, i, VAccess::WRITE),
-                                                new AstConst(fl, AstConst::LogicFalse()));
+                                                new AstConst(fl, AstConst::BitFalse()));
             cleanupFuncp->addStmtsp(clrp);
         }
     }

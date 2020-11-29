@@ -3114,14 +3114,14 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	yP_MINUSGT idDotted/*hierarchical_identifier-event*/ ';'
 			{ // AssignDly because we don't have stratified queue, and need to
 			  // read events, clear next event, THEN apply this set
-			  $$ = new AstAssignDly($1, $2, new AstConst($1, AstConst::LogicTrue())); }
+			  $$ = new AstAssignDly($1, $2, new AstConst($1, AstConst::BitTrue())); }
 	//UNSUP	yP_MINUSGTGT delay_or_event_controlE hierarchical_identifier/*event*/ ';'	{ UNSUP }
 	//			// IEEE remove below
 	|	yP_MINUSGTGT delayE idDotted/*hierarchical_identifier-event*/ ';'
-			{ $$ = new AstAssignDly($1, $3, new AstConst($1, AstConst::LogicTrue())); }
+			{ $$ = new AstAssignDly($1, $3, new AstConst($1, AstConst::BitTrue())); }
 	//
 	//			// IEEE: loop_statement
-	|	yFOREVER stmtBlock			{ $$ = new AstWhile($1,new AstConst($1,AstConst::LogicTrue()),$2); }
+	|	yFOREVER stmtBlock			{ $$ = new AstWhile($1,new AstConst($1, AstConst::BitTrue()), $2); }
 	|	yREPEAT '(' expr ')' stmtBlock		{ $$ = new AstRepeat($1,$3,$5);}
 	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
 	//			// for's first ';' is in for_initialization
@@ -3179,7 +3179,7 @@ statementFor<beginp>:		// IEEE: part of statement
 							  $$->addStmtsp(new AstWhile($1, $4,$8,$6)); }
 	|	yFOR '(' for_initialization ';' for_stepE ')' stmtBlock
 							{ $$ = new AstBegin($1, "", $3, false, true);
-							  $$->addStmtsp(new AstWhile($1, new AstConst($1,AstConst::LogicTrue()),$7,$5)); }
+							  $$->addStmtsp(new AstWhile($1, new AstConst($1,AstConst::BitTrue()), $7, $5)); }
 	;
 
 statementVerilatorPragmas<nodep>:
@@ -4191,7 +4191,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// IEEE: "... hierarchical_identifier select"  see below
 	//
 	//			// IEEE: empty_queue (IEEE 1800-2017 empty_unpacked_array_concatenation)
-	|	'{' '}'					{ $$ = new AstConst($1, AstConst::LogicFalse());
+	|	'{' '}'					{ $$ = new AstConst($1, AstConst::BitFalse());
 							  BBUNSUP($<fl>1, "Unsupported: empty queues (\"{ }\")"); }
 	//
 	//			// IEEE: concatenation/constant_concatenation
@@ -4250,7 +4250,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: cond_predicate - here to avoid reduce problems
 	//			// Note expr includes cond_pattern
-	|	~l~expr yP_ANDANDAND ~r~expr		{ $$ = new AstConst($2, AstConst::LogicFalse());
+	|	~l~expr yP_ANDANDAND ~r~expr		{ $$ = new AstConst($2, AstConst::BitFalse());
 							  BBUNSUP($<fl>2, "Unsupported: &&& expression"); }
 	//
 	//			// IEEE: cond_pattern - here to avoid reduce problems

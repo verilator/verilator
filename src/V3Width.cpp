@@ -794,7 +794,7 @@ private:
             AstConst* widthConstp = VN_CAST(nodep->widthp(), Const);
             if (!widthConstp) {
                 nodep->v3error("Width of bit extract isn't a constant");
-                nodep->dtypeSetLogicBool();
+                nodep->dtypeSetBit();
                 return;
             }
             int width = nodep->widthConst();
@@ -1085,7 +1085,7 @@ private:
     virtual void visit(AstFell* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
     virtual void visit(AstPast* nodep) override {
@@ -1115,7 +1115,7 @@ private:
     virtual void visit(AstRose* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
 
@@ -1129,7 +1129,7 @@ private:
     virtual void visit(AstStable* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
 
@@ -1137,7 +1137,7 @@ private:
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckBool(nodep, "RHS", nodep->rhsp(), BOTH);
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
 
@@ -1182,7 +1182,7 @@ private:
     virtual void visit(AstIsUnbounded* nodep) override {
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
     virtual void visit(AstUCFunc* nodep) override {
@@ -1567,7 +1567,7 @@ private:
     virtual void visit(AstRefDType* nodep) override {
         if (nodep->doingWidth()) {  // Early exit if have circular parameter definition
             nodep->v3error("Typedef's type is circular: " << nodep->prettyName());
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
             nodep->doingWidth(false);
             return;
         }
@@ -1729,7 +1729,7 @@ private:
         if (!underDtp) underDtp = underp->dtypep()->basicp();
         if (!underDtp) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Size-changing cast on non-basic data type");
-            underDtp = VN_CAST(nodep->findLogicBoolDType(), BasicDType);
+            underDtp = VN_CAST(nodep->findBitDType(), BasicDType);
         }
         UASSERT_OBJ(underp == nodep->op1p(), nodep, "Assuming op1 is cast value");
         // A cast propagates its size to the lower expression and is included in the maximum
@@ -1770,7 +1770,7 @@ private:
             UASSERT_OBJ(nodep->valuep(), nodep, "circular, but without value");
             nodep->v3error("Variable's initial value is circular: " << nodep->prettyNameQ());
             pushDeletep(nodep->valuep()->unlinkFrBack());
-            nodep->valuep(new AstConst(nodep->fileline(), AstConst::LogicTrue()));
+            nodep->valuep(new AstConst(nodep->fileline(), AstConst::BitTrue()));
             nodep->dtypeFrom(nodep->valuep());
             nodep->didWidth(true);
             return;
@@ -2116,7 +2116,7 @@ private:
         for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
             iterateCheck(nodep, "Inside Item", itemp, CONTEXT, FINAL, subDTypep, EXTEND_EXP);
         }
-        nodep->dtypeSetLogicBool();
+        nodep->dtypeSetBit();
         if (debug() >= 9) nodep->dumpTree(cout, "-inside-in: ");
         // Now rip out the inside and replace with simple math
         AstNode* newp = nullptr;
@@ -2140,7 +2140,7 @@ private:
                 newp = inewp;
             }
         }
-        if (!newp) newp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
+        if (!newp) newp = new AstConst(nodep->fileline(), AstConst::BitFalse());
         if (debug() >= 9) newp->dumpTree(cout, "-inside-out: ");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -2270,7 +2270,7 @@ private:
                            << nodep->fromp()->dtypep()->prettyTypeName() << "'");
         }
         // Error handling
-        nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
+        nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::BitFalse()));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     AstNode* memberSelClass(AstMemberSel* nodep, AstClassRefDType* adtypep) {
@@ -2590,7 +2590,7 @@ private:
             if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
                    || nodep->name() == "find_last") {
-            AstWith* withp = methodWithArgument(nodep, true, false, nodep->findLogicBoolDType(),
+            AstWith* withp = methodWithArgument(nodep, true, false, nodep->findBitDType(),
                                                 adtypep->keyDTypep(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
@@ -2600,7 +2600,7 @@ private:
             if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {
-            AstWith* withp = methodWithArgument(nodep, true, false, nodep->findLogicBoolDType(),
+            AstWith* withp = methodWithArgument(nodep, true, false, nodep->findBitDType(),
                                                 adtypep->keyDTypep(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
@@ -2695,7 +2695,7 @@ private:
             if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
                    || nodep->name() == "find_last" || nodep->name() == "find_index") {
-            AstWith* withp = methodWithArgument(nodep, true, false, nodep->findLogicBoolDType(),
+            AstWith* withp = methodWithArgument(nodep, true, false, nodep->findBitDType(),
                                                 nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
@@ -2705,7 +2705,7 @@ private:
             if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {
-            AstWith* withp = methodWithArgument(nodep, true, false, nodep->findLogicBoolDType(),
+            AstWith* withp = methodWithArgument(nodep, true, false, nodep->findBitDType(),
                                                 nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
@@ -2827,7 +2827,7 @@ private:
             if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
                    || nodep->name() == "find_last") {
-            AstWith* withp = methodWithArgument(nodep, true, false, nodep->findLogicBoolDType(),
+            AstWith* withp = methodWithArgument(nodep, true, false, nodep->findBitDType(),
                                                 nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
@@ -2837,7 +2837,7 @@ private:
             if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {
-            AstWith* withp = methodWithArgument(nodep, true, false, nodep->findLogicBoolDType(),
+            AstWith* withp = methodWithArgument(nodep, true, false, nodep->findBitDType(),
                                                 nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
@@ -3453,7 +3453,7 @@ private:
             }
             if (patp) {
                 // Determine initial values
-                vdtypep = nodep->findLogicBoolDType();
+                vdtypep = nodep->findBitDType();
                 patp->dtypep(vdtypep);
                 AstNode* valuep = patternMemberValueIterate(patp);
                 {  // Packed. Convert to concat for now.
@@ -3537,7 +3537,7 @@ private:
                 iterateCheckBool(nodep, "Disable", nodep->disablep(),
                                  BOTH);  // it's like an if() condition.
             }
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
 
@@ -4184,7 +4184,7 @@ private:
         if (nodep->didWidth()) return;
         if (nodep->doingWidth()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function or task call");
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
             nodep->didWidth(true);
             return;
         }
@@ -4539,7 +4539,7 @@ private:
         UASSERT_OBJ(!nodep->op2p(), nodep, "For unary ops only!");
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->op1p(), BOTH);
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
     void visit_log_and_or(AstNodeBiop* nodep) {
@@ -4551,7 +4551,7 @@ private:
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckBool(nodep, "RHS", nodep->rhsp(), BOTH);
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
     void visit_red_and_or(AstNodeUniop* nodep) {
@@ -4563,7 +4563,7 @@ private:
         //   Sign: unsigned out (11.8.1)
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
     void visit_red_unknown(AstNodeUniop* nodep) {
@@ -4575,7 +4575,7 @@ private:
         //   Sign: unsigned out (11.8.1)
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
 
@@ -4638,7 +4638,7 @@ private:
                 iterateCheck(nodep, "RHS", nodep->rhsp(), CONTEXT, FINAL, subDTypep,
                              (signedFl ? EXTEND_LHS : EXTEND_ZERO), warnOn);
             }
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
     void visit_cmp_real(AstNodeBiop* nodep) {
@@ -4653,7 +4653,7 @@ private:
             // See similar handling in visit_cmp_eq_gt where created
             iterateCheckReal(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckReal(nodep, "RHS", nodep->rhsp(), BOTH);
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
     void visit_cmp_string(AstNodeBiop* nodep) {
@@ -4666,7 +4666,7 @@ private:
             // See similar handling in visit_cmp_eq_gt where created
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckString(nodep, "RHS", nodep->rhsp(), BOTH);
-            nodep->dtypeSetLogicBool();
+            nodep->dtypeSetBit();
         }
     }
 
@@ -5181,10 +5181,10 @@ private:
             nodep->v3error("Logical operator " << nodep->prettyTypeName()
                                                << " expects a non-complex data type on the "
                                                << side << ".");
-            underp->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
+            underp->replaceWith(new AstConst(nodep->fileline(), AstConst::BitFalse()));
             VL_DO_DANGLING(pushDeletep(underp), underp);
         } else {
-            bool bad = widthBad(underp, nodep->findLogicBoolDType());
+            bool bad = widthBad(underp, nodep->findBitDType());
             if (bad) {
                 {  // if (warnOn), but not needed here
                     if (debug() > 4) nodep->backp()->dumpTree(cout, "  back: ");

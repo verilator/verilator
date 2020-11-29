@@ -254,7 +254,7 @@ private:
         iterateChildren(nodep);
         // Ahh, we're two state, so this is easy
         UINFO(4, " ISUNKNOWN->0 " << nodep << endl);
-        AstConst* newp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
+        AstConst* newp = new AstConst(nodep->fileline(), AstConst::BitFalse());
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -275,7 +275,7 @@ private:
             nonXp = nodep->fhsp();
         else {  // Was all X-s
             UINFO(4, " COUNTBITS('x)->0 " << nodep << endl);
-            AstConst* newp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
+            AstConst* newp = new AstConst(nodep->fileline(), AstConst::BitFalse());
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
