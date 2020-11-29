@@ -341,6 +341,9 @@ public:
     void isExtended(bool flag) { m_extended = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
+    // Return true if this class is an extension of base class (SLOW)
+    // Accepts nullptrs
+    static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
 };
 
 class AstClassExtends final : public AstNode {

@@ -1171,6 +1171,12 @@ void AstClass::repairCache() {
     clearCache();
     for (AstNode* itemp = membersp(); itemp; itemp = itemp->nextp()) { insertCache(itemp); }
 }
+bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp) {
+    // TAIL RECURSIVE
+    if (!refClassp || !baseClassp) return false;
+    if (refClassp == baseClassp) return true;
+    return isClassExtendedFrom(refClassp->extendsp()->classp(), baseClassp);
+}
 void AstClass::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isExtended()) str << " [EXT]";

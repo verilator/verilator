@@ -133,7 +133,7 @@ private:
             const char* how = nullptr;
             if (local && defClassp && refClassp != defClassp) {
                 how = "'local'";
-            } else if (prot && defClassp && !classExtendedRecurse(refClassp, defClassp)) {
+            } else if (prot && defClassp && !AstClass::isClassExtendedFrom(refClassp, defClassp)) {
                 how = "'protected'";
             }
             if (how) {
@@ -148,12 +148,6 @@ private:
                                                   << defp->warnContextSecondary());
             }
         }
-    }
-    static bool classExtendedRecurse(const AstClass* refClassp, const AstClass* defClassp) {
-        // Return true if refClassp is an extends class of defClassp
-        if (!refClassp || !defClassp) return false;
-        if (refClassp == defClassp) return true;
-        return classExtendedRecurse(refClassp->extendsp()->classp(), defClassp);
     }
 
     // VISITORS
