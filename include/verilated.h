@@ -457,7 +457,7 @@ public:
     static inline int debug() VL_MT_SAFE { return s_s.s_debug; }
 #else
     /// Return constant 0 debug level, so C++'s optimizer rips up
-    static inline int debug() VL_PURE { return 0; }
+    static constexpr int debug() VL_PURE { return 0; }
 #endif
     /// Enable calculation of unused signals
     static void calcUnusedSigs(bool flag) VL_MT_SAFE;
@@ -572,8 +572,8 @@ public:
     static int dpiLineno() VL_MT_SAFE { return t_s.t_dpiLineno; }
     static int exportFuncNum(const char* namep) VL_MT_SAFE;
 
-    static size_t serialized1Size() VL_PURE { return sizeof(s_s); }
-    static void* serialized1Ptr() VL_MT_UNSAFE { return &s_s; }  // Unsafe, for Serialize only
+    static constexpr size_t serialized1Size() VL_PURE { return sizeof(s_s); }
+    static constexpr void* serialized1Ptr() VL_MT_UNSAFE { return &s_s; }  // For Serialize only
     static size_t serialized2Size() VL_PURE;
     static void* serialized2Ptr() VL_MT_UNSAFE;
 #ifdef VL_THREADED

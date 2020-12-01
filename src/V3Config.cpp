@@ -234,7 +234,7 @@ public:
         , m_code{code}
         , m_on{on} {}
     ~V3ConfigIgnoresLine() = default;
-    inline bool operator<(const V3ConfigIgnoresLine& rh) const {
+    bool operator<(const V3ConfigIgnoresLine& rh) const {
         if (m_lineno < rh.m_lineno) return true;
         if (m_lineno > rh.m_lineno) return false;
         if (m_code < rh.m_code) return true;
@@ -356,7 +356,7 @@ class V3ConfigResolver final {
     ~V3ConfigResolver() = default;
 
 public:
-    inline static V3ConfigResolver& s() { return s_singleton; }
+    static V3ConfigResolver& s() { return s_singleton; }
 
     V3ConfigModuleResolver& modules() { return m_modules; }
     V3ConfigFileResolver& files() { return m_files; }

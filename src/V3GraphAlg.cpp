@@ -469,12 +469,12 @@ void V3Graph::makeEdgesNonCutable(V3EdgeFuncP edgeFuncp) {
 // Algorithms - sorting
 
 struct GraphSortVertexCmp {
-    inline bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
+    bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
         return lhsp->sortCmp(rhsp) < 0;
     }
 };
 struct GraphSortEdgeCmp {
-    inline bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
+    bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
         return lhsp->sortCmp(rhsp) < 0;
     }
 };

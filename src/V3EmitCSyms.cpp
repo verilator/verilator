@@ -79,12 +79,12 @@ class EmitCSyms final : EmitCBaseVisitor {
     typedef std::vector<string> ScopeNameList;
     typedef std::map<const string, ScopeNameList> ScopeNameHierarchy;
     struct CmpName {
-        inline bool operator()(const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
+        bool operator()(const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
             return lhsp.first->name() < rhsp.first->name();
         }
     };
     struct CmpDpi {
-        inline bool operator()(const AstCFunc* lhsp, const AstCFunc* rhsp) const {
+        bool operator()(const AstCFunc* lhsp, const AstCFunc* rhsp) const {
             if (lhsp->dpiImport() != rhsp->dpiImport()) {
                 // cppcheck-suppress comparisonOfFuncReturningBoolError
                 return lhsp->dpiImport() < rhsp->dpiImport();

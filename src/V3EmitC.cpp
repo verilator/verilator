@@ -216,7 +216,7 @@ public:
     }
 
     struct CmpName {
-        inline bool operator()(const AstNode* lhsp, const AstNode* rhsp) const {
+        bool operator()(const AstNode* lhsp, const AstNode* rhsp) const {
             return lhsp->name() < rhsp->name();
         }
     };

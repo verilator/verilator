@@ -989,10 +989,10 @@ public:
             bool m_littleEndian : 1;  // Bit vector is little endian
         };
     };
-    inline bool operator==(const VNumRange& rhs) const {
+    bool operator==(const VNumRange& rhs) const {
         return m_hi == rhs.m_hi && m_lo == rhs.m_lo && mu_flags == rhs.mu_flags;
     }
-    inline bool operator<(const VNumRange& rhs) const {
+    bool operator<(const VNumRange& rhs) const {
         if ((m_hi < rhs.m_hi)) return true;
         if (!(m_hi == rhs.m_hi)) return false;  // lhs > rhs
         if ((m_lo < rhs.m_lo)) return true;
@@ -1091,11 +1091,11 @@ public:
     VSigning m_numeric;  // From AstNodeDType: Node is signed
     AstBasicDTypeKwd m_keyword;  // From AstBasicDType: What keyword created basic type
     VNumRange m_nrange;  // From AstBasicDType: Numeric msb/lsb (if non-opaque keyword)
-    inline bool operator==(const VBasicTypeKey& rhs) const {
+    bool operator==(const VBasicTypeKey& rhs) const {
         return m_width == rhs.m_width && m_widthMin == rhs.m_widthMin && m_numeric == rhs.m_numeric
                && m_keyword == rhs.m_keyword && m_nrange == rhs.m_nrange;
     }
-    inline bool operator<(const VBasicTypeKey& rhs) const {
+    bool operator<(const VBasicTypeKey& rhs) const {
         if ((m_width < rhs.m_width)) return true;
         if (!(m_width == rhs.m_width)) return false;  // lhs > rhs
         if ((m_widthMin < rhs.m_widthMin)) return true;
@@ -1148,7 +1148,7 @@ public:
     AstNode* toNodep() const { return reinterpret_cast<AstNode*>(m_u.up); }
     V3GraphVertex* toGraphVertex() const { return reinterpret_cast<V3GraphVertex*>(m_u.up); }
     int toInt() const { return m_u.ui; }
-    static inline VNUser fromInt(int i) { return VNUser(i); }
+    static VNUser fromInt(int i) { return VNUser(i); }
 };
 
 //######################################################################
@@ -1350,9 +1350,9 @@ public:
     uint32_t depth() const { return (m_both >> 24) & 255; }
     uint32_t hshval() const { return m_both & M24; }
     // OPERATORS
-    inline bool operator==(const V3Hash& rh) const { return m_both == rh.m_both; }
-    inline bool operator!=(const V3Hash& rh) const { return m_both != rh.m_both; }
-    inline bool operator<(const V3Hash& rh) const { return m_both < rh.m_both; }
+    bool operator==(const V3Hash& rh) const { return m_both == rh.m_both; }
+    bool operator!=(const V3Hash& rh) const { return m_both != rh.m_both; }
+    bool operator<(const V3Hash& rh) const { return m_both < rh.m_both; }
     // CONSTRUCTORS
     class Illegal {};  // for creator type-overload selection
     class FullValue {};  // for creator type-overload selection

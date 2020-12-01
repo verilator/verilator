@@ -65,12 +65,12 @@ class VWidthMinUsage final {
 public:
     enum en : uint8_t { LINT_WIDTH, MATCHES_WIDTH, VERILOG_WIDTH };
     enum en m_e;
-    inline VWidthMinUsage()
+    VWidthMinUsage()
         : m_e{LINT_WIDTH} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VWidthMinUsage(en _e)
+    VWidthMinUsage(en _e)
         : m_e{_e} {}
-    explicit inline VWidthMinUsage(int _e)
+    explicit VWidthMinUsage(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };

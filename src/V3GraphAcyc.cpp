@@ -77,7 +77,7 @@ public:
 //--------------------------------------------------------------------
 
 struct GraphAcycEdgeCmp {
-    inline bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
+    bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
         if (lhsp->weight() > rhsp->weight()) return true;  // LHS goes first
         if (lhsp->weight() < rhsp->weight()) return false;  // RHS goes first
         return false;

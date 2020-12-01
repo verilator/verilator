@@ -1671,7 +1671,7 @@ bool V3Task::dpiToInternalFrStmt(AstVar* portp, const string& frName, string& fr
 }
 
 const char* V3Task::dpiTemporaryVarSuffix() {
-    static const char* suffix = "__Vcvt";
+    static const char* const suffix = "__Vcvt";
     return suffix;
 }
 

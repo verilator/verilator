@@ -57,7 +57,7 @@ class VSymEnt final {
         return level;
     }
 #else
-    static inline int debug() { return 0; }  // NOT runtime, too hot of a function
+    static constexpr int debug() { return 0; }  // NOT runtime, too hot of a function
 #endif
 public:
     typedef IdNameMap::const_iterator const_iterator;

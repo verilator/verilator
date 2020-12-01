@@ -63,7 +63,7 @@ public:
     // CONSTRUCTORS
     VerilatedVpio() = default;
     virtual ~VerilatedVpio() = default;
-    inline static void* operator new(size_t size) VL_MT_SAFE {
+    static void* operator new(size_t size) VL_MT_SAFE {
         // We new and delete tons of vpi structures, so keep them around
         // To simplify our free list, we use a size large enough for all derived types
         // We reserve word zero for the next pointer, as that's safer in case a
@@ -79,13 +79,13 @@ public:
         vluint8_t* newp = reinterpret_cast<vluint8_t*>(::operator new(chunk + 8));
         return newp + 8;
     }
-    inline static void operator delete(void* obj, size_t /*size*/)VL_MT_SAFE {
+    static void operator delete(void* obj, size_t /*size*/)VL_MT_SAFE {
         vluint8_t* oldp = (static_cast<vluint8_t*>(obj)) - 8;
         *(reinterpret_cast<void**>(oldp)) = t_freeHead;
         t_freeHead = oldp;
     }
     // MEMBERS
-    static inline VerilatedVpio* castp(vpiHandle h) {
+    static VerilatedVpio* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpio*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     inline vpiHandle castVpiHandle() { return reinterpret_cast<vpiHandle>(this); }
@@ -115,7 +115,7 @@ public:
         m_cbData.value = &m_value;
     }
     virtual ~VerilatedVpioCb() override = default;
-    static inline VerilatedVpioCb* castp(vpiHandle h) {
+    static VerilatedVpioCb* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioCb*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     virtual vluint32_t type() const override { return vpiCallback; }
@@ -132,7 +132,7 @@ public:
     explicit VerilatedVpioConst(vlsint32_t num)
         : m_num{num} {}
     virtual ~VerilatedVpioConst() override = default;
-    static inline VerilatedVpioConst* castp(vpiHandle h) {
+    static VerilatedVpioConst* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioConst*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     virtual vluint32_t type() const override { return vpiConstant; }
@@ -150,7 +150,7 @@ public:
 
     virtual ~VerilatedVpioParam() override = default;
 
-    static inline VerilatedVpioParam* castp(vpiHandle h) {
+    static VerilatedVpioParam* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioParam*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     virtual vluint32_t type() const override { return vpiParameter; }
@@ -173,7 +173,7 @@ public:
     explicit VerilatedVpioRange(const VerilatedRange* range)
         : m_range{range} {}
     virtual ~VerilatedVpioRange() override = default;
-    static inline VerilatedVpioRange* castp(vpiHandle h) {
+    static VerilatedVpioRange* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioRange*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     virtual vluint32_t type() const override { return vpiRange; }
@@ -199,7 +199,7 @@ public:
     explicit VerilatedVpioScope(const VerilatedScope* scopep)
         : m_scopep{scopep} {}
     virtual ~VerilatedVpioScope() override = default;
-    static inline VerilatedVpioScope* castp(vpiHandle h) {
+    static VerilatedVpioScope* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioScope*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     virtual vluint32_t type() const override { return vpiScope; }
@@ -236,7 +236,7 @@ public:
     virtual ~VerilatedVpioVar() override {
         if (m_prevDatap) VL_DO_CLEAR(delete[] m_prevDatap, m_prevDatap = nullptr);
     }
-    static inline VerilatedVpioVar* castp(vpiHandle h) {
+    static VerilatedVpioVar* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioVar*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     const VerilatedVar* varp() const { return m_varp; }
@@ -275,7 +275,7 @@ public:
         m_varDatap = (static_cast<vluint8_t*>(varp->datap())) + entSize() * offset;
     }
     virtual ~VerilatedVpioMemoryWord() override = default;
-    static inline VerilatedVpioMemoryWord* castp(vpiHandle h) {
+    static VerilatedVpioMemoryWord* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioMemoryWord*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     virtual vluint32_t type() const override { return vpiMemoryWord; }
@@ -299,7 +299,7 @@ public:
     explicit VerilatedVpioVarIter(const VerilatedScope* scopep)
         : m_scopep{scopep} {}
     virtual ~VerilatedVpioVarIter() override = default;
-    static inline VerilatedVpioVarIter* castp(vpiHandle h) {
+    static VerilatedVpioVarIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioVarIter*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     virtual vluint32_t type() const override { return vpiIterator; }
@@ -335,7 +335,7 @@ public:
         , m_iteration{varp->unpacked().right()}
         , m_direction{VL_LIKELY(varp->unpacked().left() > varp->unpacked().right()) ? 1 : -1} {}
     virtual ~VerilatedVpioMemoryWordIter() override = default;
-    static inline VerilatedVpioMemoryWordIter* castp(vpiHandle h) {
+    static VerilatedVpioMemoryWordIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioMemoryWordIter*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     virtual vluint32_t type() const override { return vpiIterator; }
@@ -362,7 +362,7 @@ public:
         if (strncmp(m_fullname, "TOP.", 4) == 0) m_fullname += 4;
         m_name = m_scopep->identifier();
     }
-    static inline VerilatedVpioModule* castp(vpiHandle h) {
+    static VerilatedVpioModule* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioModule*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     virtual vluint32_t type() const override { return vpiModule; }
@@ -380,7 +380,7 @@ public:
         m_it = m_vec->begin();
     }
     virtual ~VerilatedVpioModuleIter() override = default;
-    static inline VerilatedVpioModuleIter* castp(vpiHandle h) {
+    static VerilatedVpioModuleIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioModuleIter*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     virtual vluint32_t type() const override { return vpiIterator; }
@@ -409,10 +409,6 @@ class VerilatedVpiImp final {
     enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime + 1 };  // Maxium callback reason
     typedef std::list<VerilatedVpioCb*> VpioCbList;
     typedef std::set<std::pair<QData, VerilatedVpioCb*>, VerilatedVpiTimedCbsCmp> VpioTimedCbs;
-
-    struct product_info {
-        PLI_BYTE8* product;
-    };
 
     VpioCbList m_cbObjLists[CB_ENUM_MAX_VALUE];  // Callbacks for each supported reason
     VpioTimedCbs m_timedCbs;  // Time based callbacks

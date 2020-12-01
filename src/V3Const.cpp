@@ -1730,7 +1730,7 @@ private:
     }
 
     struct SenItemCmp {
-        inline bool operator()(const AstSenItem* lhsp, const AstSenItem* rhsp) const {
+        bool operator()(const AstSenItem* lhsp, const AstSenItem* rhsp) const {
             if (lhsp->type() < rhsp->type()) return true;
             if (lhsp->type() > rhsp->type()) return false;
             // Looks visually better if we keep sorted by name

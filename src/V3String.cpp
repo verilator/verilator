@@ -307,7 +307,7 @@ uint64_t VHashSha256::digestUInt64() {
 }
 
 string VHashSha256::digestHex() {
-    static const char* digits = "0123456789abcdef";
+    static const char* const digits = "0123456789abcdef";
     const string& binhash = digestBinary();
     string out;
     out.reserve(70);
@@ -323,7 +323,8 @@ string VHashSha256::digestSymbol() {
     // has + and / for last two digits, but need C symbol, and we also
     // avoid conflicts with use of _, so use "AB" at the end.
     // Thus this function is non-reversible.
-    static const char* digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789AB";
+    static const char* const digits
+        = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789AB";
     const string& binhash = digestBinary();
     string out;
     out.reserve(28);
