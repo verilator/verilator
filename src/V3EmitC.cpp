@@ -1275,13 +1275,13 @@ class EmitVarTspSorter final : public V3TSP::TspStateBase {
 private:
     // MEMBERS
     const MTaskIdSet& m_mtaskIds;  // Mtask we're ordering
-    static unsigned m_serialNext;  // Unique ID to establish serial order
+    static unsigned s_serialNext;  // Unique ID to establish serial order
     unsigned m_serial;  // Serial ordering
 public:
     // CONSTRUCTORS
     explicit EmitVarTspSorter(const MTaskIdSet& mtaskIds)
         : m_mtaskIds(mtaskIds) {  // Cannot be {} or GCC 4.8 false warning
-        m_serial = ++m_serialNext;  // Cannot be ()/{} or GCC 4.8 false warning
+        m_serial = ++s_serialNext;  // Cannot be ()/{} or GCC 4.8 false warning
     }
     virtual ~EmitVarTspSorter() = default;
     // METHODS
@@ -1308,7 +1308,7 @@ public:
     }
 };
 
-unsigned EmitVarTspSorter::m_serialNext = 0;
+unsigned EmitVarTspSorter::s_serialNext = 0;
 
 //######################################################################
 // Internal EmitC implementation

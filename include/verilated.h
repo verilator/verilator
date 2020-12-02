@@ -371,7 +371,7 @@ public:
 class Verilated final {
     // MEMBERS
     // Slow path variables
-    static VerilatedMutex m_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
+    static VerilatedMutex s_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
 
     static struct Serialized {  // All these members serialized/deserialized
         // Fast path

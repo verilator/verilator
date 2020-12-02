@@ -499,7 +499,7 @@ public:
     TspTestState(unsigned xpos, unsigned ypos)
         : m_xpos{xpos}
         , m_ypos{ypos}
-        , m_serial{++m_serialNext} {}
+        , m_serial{++s_serialNext} {}
     ~TspTestState() = default;
     virtual int cost(const TspStateBase* otherp) const override {
         return cost(dynamic_cast<const TspTestState*>(otherp));
@@ -530,10 +530,10 @@ private:
     unsigned m_xpos;
     unsigned m_ypos;
     unsigned m_serial;
-    static unsigned m_serialNext;
+    static unsigned s_serialNext;
 };
 
-unsigned TspTestState::m_serialNext = 0;
+unsigned TspTestState::s_serialNext = 0;
 
 void V3TSP::selfTestStates() {
     // Linear test -- coords all along the x-axis

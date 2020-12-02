@@ -159,9 +159,9 @@ public:
     const VerilatedScope* scopep() const { return m_scopep; }
     virtual const char* name() const override { return m_varp->name(); }
     virtual const char* fullname() const override {
-        static VL_THREAD_LOCAL std::string out;
-        out = std::string(m_scopep->name()) + "." + name();
-        return out.c_str();
+        static VL_THREAD_LOCAL std::string t_out;
+        t_out = std::string(m_scopep->name()) + "." + name();
+        return t_out.c_str();
     }
 };
 
@@ -252,9 +252,9 @@ public:
     virtual const VerilatedRange* rangep() const override { return &get_range(); }
     virtual const char* name() const override { return m_varp->name(); }
     virtual const char* fullname() const override {
-        static VL_THREAD_LOCAL std::string out;
-        out = std::string(m_scopep->name()) + "." + name();
-        return out.c_str();
+        static VL_THREAD_LOCAL std::string t_out;
+        t_out = std::string(m_scopep->name()) + "." + name();
+        return t_out.c_str();
     }
     void* prevDatap() const { return m_prevDatap; }
     void* varDatap() const { return m_varDatap; }
@@ -282,11 +282,11 @@ public:
     virtual vluint32_t size() const override { return varp()->packed().elements(); }
     virtual const VerilatedRange* rangep() const override { return &(varp()->packed()); }
     virtual const char* fullname() const override {
-        static VL_THREAD_LOCAL std::string out;
+        static VL_THREAD_LOCAL std::string t_out;
         char num[20];
         sprintf(num, "%d", m_index);
-        out = std::string(scopep()->name()) + "." + name() + "[" + num + "]";
-        return out.c_str();
+        t_out = std::string(scopep()->name()) + "." + name() + "[" + num + "]";
+        return t_out.c_str();
     }
 };
 
@@ -568,14 +568,14 @@ public:
     }
     void setMessage(const std::string& file, PLI_INT32 line, const char* message, ...) {
         // message cannot be a const string& as va_start cannot use a reference
-        static VL_THREAD_LOCAL std::string filehold;
+        static VL_THREAD_LOCAL std::string t_filehold;
         va_list args;
         va_start(args, message);
         VL_VSNPRINTF(m_buff, sizeof(m_buff), message, args);
         va_end(args);
         m_errorInfo.state = vpiPLI;
-        filehold = file;
-        setError((PLI_BYTE8*)m_buff, nullptr, const_cast<PLI_BYTE8*>(filehold.c_str()), line);
+        t_filehold = file;
+        setError((PLI_BYTE8*)m_buff, nullptr, const_cast<PLI_BYTE8*>(t_filehold.c_str()), line);
     }
     p_vpi_error_info getError() {
         if (m_flag) return &m_errorInfo;
@@ -1419,34 +1419,34 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                   const char* fullname) {
     if (!vl_check_format(varp, valuep, fullname, true)) return;
     // Maximum required size is for binary string, one byte per bit plus null termination
-    static VL_THREAD_LOCAL char outStr[1 + VL_MULS_MAX_WORDS * 32];
+    static VL_THREAD_LOCAL char t_outStr[1 + VL_MULS_MAX_WORDS * 32];
     // cppcheck-suppress variableScope
-    static VL_THREAD_LOCAL int outStrSz = sizeof(outStr) - 1;
+    static VL_THREAD_LOCAL int t_outStrSz = sizeof(t_outStr) - 1;
     // We used to presume vpiValue.format = vpiIntVal or if single bit vpiScalarVal
     // This may cause backward compatibility issues with older code.
     if (valuep->format == vpiVectorVal) {
         // Vector pointer must come from our memory pool
         // It only needs to persist until the next vpi_get_value
-        static VL_THREAD_LOCAL t_vpi_vecval out[VL_MULS_MAX_WORDS * 2];
-        valuep->value.vector = out;
+        static VL_THREAD_LOCAL t_vpi_vecval t_out[VL_MULS_MAX_WORDS * 2];
+        valuep->value.vector = t_out;
         if (varp->vltype() == VLVT_UINT8) {
-            out[0].aval = *(reinterpret_cast<CData*>(varDatap));
-            out[0].bval = 0;
+            t_out[0].aval = *(reinterpret_cast<CData*>(varDatap));
+            t_out[0].bval = 0;
             return;
         } else if (varp->vltype() == VLVT_UINT16) {
-            out[0].aval = *(reinterpret_cast<SData*>(varDatap));
-            out[0].bval = 0;
+            t_out[0].aval = *(reinterpret_cast<SData*>(varDatap));
+            t_out[0].bval = 0;
             return;
         } else if (varp->vltype() == VLVT_UINT32) {
-            out[0].aval = *(reinterpret_cast<IData*>(varDatap));
-            out[0].bval = 0;
+            t_out[0].aval = *(reinterpret_cast<IData*>(varDatap));
+            t_out[0].bval = 0;
             return;
         } else if (varp->vltype() == VLVT_UINT64) {
             QData data = *(reinterpret_cast<QData*>(varDatap));
-            out[1].aval = static_cast<IData>(data >> 32ULL);
-            out[1].bval = 0;
-            out[0].aval = static_cast<IData>(data);
-            out[0].bval = 0;
+            t_out[1].aval = static_cast<IData>(data >> 32ULL);
+            t_out[1].bval = 0;
+            t_out[0].aval = static_cast<IData>(data);
+            t_out[0].bval = 0;
             return;
         } else if (varp->vltype() == VLVT_WDATA) {
             int words = VL_WORDS_I(varp->packed().elements());
@@ -1457,47 +1457,47 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             }
             WDataInP datap = (reinterpret_cast<EData*>(varDatap));
             for (int i = 0; i < words; ++i) {
-                out[i].aval = datap[i];
-                out[i].bval = 0;
+                t_out[i].aval = datap[i];
+                t_out[i].bval = 0;
             }
             return;
         }
     } else if (valuep->format == vpiBinStrVal) {
-        valuep->value.str = outStr;
+        valuep->value.str = t_outStr;
         int bits = varp->packed().elements();
         CData* datap = (reinterpret_cast<CData*>(varDatap));
         int i;
-        if (bits > outStrSz) {
+        if (bits > t_outStrSz) {
             // limit maximum size of output to size of buffer to prevent overrun.
-            bits = outStrSz;
+            bits = t_outStrSz;
             _VL_VPI_WARNING(
                 __FILE__, __LINE__,
                 "%s: Truncating string value of %s for %s"
                 " as buffer size (%d, VL_MULS_MAX_WORDS=%d) is less than required (%d)",
-                VL_FUNC, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, outStrSz,
+                VL_FUNC, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, t_outStrSz,
                 VL_MULS_MAX_WORDS, bits);
         }
         for (i = 0; i < bits; ++i) {
             char val = (datap[i >> 3] >> (i & 7)) & 1;
-            outStr[bits - i - 1] = val ? '1' : '0';
+            t_outStr[bits - i - 1] = val ? '1' : '0';
         }
-        outStr[i] = '\0';
+        t_outStr[i] = '\0';
         return;
     } else if (valuep->format == vpiOctStrVal) {
-        valuep->value.str = outStr;
+        valuep->value.str = t_outStr;
         int chars = (varp->packed().elements() + 2) / 3;
         int bytes = VL_BYTES_I(varp->packed().elements());
         CData* datap = (reinterpret_cast<CData*>(varDatap));
         int i;
-        if (chars > outStrSz) {
+        if (chars > t_outStrSz) {
             // limit maximum size of output to size of buffer to prevent overrun.
             _VL_VPI_WARNING(
                 __FILE__, __LINE__,
                 "%s: Truncating string value of %s for %s"
                 " as buffer size (%d, VL_MULS_MAX_WORDS=%d) is less than required (%d)",
-                VL_FUNC, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, outStrSz,
+                VL_FUNC, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, t_outStrSz,
                 VL_MULS_MAX_WORDS, chars);
-            chars = outStrSz;
+            chars = t_outStrSz;
         }
         for (i = 0; i < chars; ++i) {
             div_t idx = div(i * 3, 8);
@@ -1518,44 +1518,44 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                     val &= (1 << rem) - 1;
                 }
             }
-            outStr[chars - i - 1] = '0' + (val & 7);
+            t_outStr[chars - i - 1] = '0' + (val & 7);
         }
-        outStr[i] = '\0';
+        t_outStr[i] = '\0';
         return;
     } else if (valuep->format == vpiDecStrVal) {
-        valuep->value.str = outStr;
+        valuep->value.str = t_outStr;
         // outStrSz does not include nullptr termination so add one
         if (varp->vltype() == VLVT_UINT8) {
-            VL_SNPRINTF(outStr, outStrSz + 1, "%hhu",
+            VL_SNPRINTF(t_outStr, t_outStrSz + 1, "%hhu",
                         static_cast<unsigned char>(*(reinterpret_cast<CData*>(varDatap))));
             return;
         } else if (varp->vltype() == VLVT_UINT16) {
-            VL_SNPRINTF(outStr, outStrSz + 1, "%hu",
+            VL_SNPRINTF(t_outStr, t_outStrSz + 1, "%hu",
                         static_cast<unsigned short>(*(reinterpret_cast<SData*>(varDatap))));
             return;
         } else if (varp->vltype() == VLVT_UINT32) {
-            VL_SNPRINTF(outStr, outStrSz + 1, "%u",
+            VL_SNPRINTF(t_outStr, t_outStrSz + 1, "%u",
                         static_cast<unsigned int>(*(reinterpret_cast<IData*>(varDatap))));
             return;
         } else if (varp->vltype() == VLVT_UINT64) {
-            VL_SNPRINTF(outStr, outStrSz + 1, "%llu",
+            VL_SNPRINTF(t_outStr, t_outStrSz + 1, "%llu",
                         static_cast<unsigned long long>(*(reinterpret_cast<QData*>(varDatap))));
             return;
         }
     } else if (valuep->format == vpiHexStrVal) {
-        valuep->value.str = outStr;
+        valuep->value.str = t_outStr;
         int chars = (varp->packed().elements() + 3) >> 2;
         CData* datap = (reinterpret_cast<CData*>(varDatap));
         int i;
-        if (chars > outStrSz) {
+        if (chars > t_outStrSz) {
             // limit maximum size of output to size of buffer to prevent overrun.
             _VL_VPI_WARNING(
                 __FILE__, __LINE__,
                 "%s: Truncating string value of %s for %s"
                 " as buffer size (%d, VL_MULS_MAX_WORDS=%d) is less than required (%d)",
-                VL_FUNC, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, outStrSz,
+                VL_FUNC, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, t_outStrSz,
                 VL_MULS_MAX_WORDS, chars);
-            chars = outStrSz;
+            chars = t_outStrSz;
         }
         for (i = 0; i < chars; ++i) {
             char val = (datap[i >> 1] >> ((i & 1) << 2)) & 15;
@@ -1568,35 +1568,35 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                     val &= (1 << rem) - 1;
                 }
             }
-            outStr[chars - i - 1] = "0123456789abcdef"[static_cast<int>(val)];
+            t_outStr[chars - i - 1] = "0123456789abcdef"[static_cast<int>(val)];
         }
-        outStr[i] = '\0';
+        t_outStr[i] = '\0';
         return;
     } else if (valuep->format == vpiStringVal) {
         if (varp->vltype() == VLVT_STRING) {
             valuep->value.str = reinterpret_cast<char*>(varDatap);
             return;
         } else {
-            valuep->value.str = outStr;
+            valuep->value.str = t_outStr;
             int bytes = VL_BYTES_I(varp->packed().elements());
             CData* datap = (reinterpret_cast<CData*>(varDatap));
             int i;
-            if (bytes > outStrSz) {
+            if (bytes > t_outStrSz) {
                 // limit maximum size of output to size of buffer to prevent overrun.
                 _VL_VPI_WARNING(
                     __FILE__, __LINE__,
                     "%s: Truncating string value of %s for %s"
                     " as buffer size (%d, VL_MULS_MAX_WORDS=%d) is less than required (%d)",
-                    VL_FUNC, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, outStrSz,
-                    VL_MULS_MAX_WORDS, bytes);
-                bytes = outStrSz;
+                    VL_FUNC, VerilatedVpiError::strFromVpiVal(valuep->format), fullname,
+                    t_outStrSz, VL_MULS_MAX_WORDS, bytes);
+                bytes = t_outStrSz;
             }
             for (i = 0; i < bytes; ++i) {
                 char val = datap[bytes - i - 1];
                 // other simulators replace [leading?] zero chars with spaces, replicate here.
-                outStr[i] = val ? val : ' ';
+                t_outStr[i] = val ? val : ' ';
             }
-            outStr[i] = '\0';
+            t_outStr[i] = '\0';
             return;
         }
     } else if (valuep->format == vpiIntVal) {
