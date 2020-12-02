@@ -75,7 +75,7 @@ VerilatedImp::VerilatedImpU VerilatedImp::s_s;
 struct VerilatedImpInitializer {
     VerilatedImpInitializer() { VerilatedImp::setup(); }
     ~VerilatedImpInitializer() { VerilatedImp::teardown(); }
-} g_VerilatedImpInitializer;
+} s_VerilatedImpInitializer;
 
 //===========================================================================
 // User definable functions
@@ -2340,8 +2340,8 @@ const char* Verilated::catName(const char* n1, const char* n2, const char* delim
 // Keeping these out of class Verilated to avoid having to include <list>
 // in verilated.h (for compilation speed)
 typedef std::list<std::pair<Verilated::VoidPCb, void*>> VoidPCbList;
-static VoidPCbList g_flushCbs;
-static VoidPCbList g_exitCbs;
+static VoidPCbList s_flushCbs;
+static VoidPCbList s_exitCbs;
 
 static void addCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
@@ -2358,15 +2358,15 @@ static void runCallbacks(VoidPCbList& cbs) VL_MT_SAFE {
 
 void Verilated::addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
     const VerilatedLockGuard lock(s_mutex);
-    addCb(cb, datap, g_flushCbs);
+    addCb(cb, datap, s_flushCbs);
 }
 void Verilated::removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
     const VerilatedLockGuard lock(s_mutex);
-    removeCb(cb, datap, g_flushCbs);
+    removeCb(cb, datap, s_flushCbs);
 }
 void Verilated::runFlushCallbacks() VL_MT_SAFE {
     const VerilatedLockGuard lock(s_mutex);
-    runCallbacks(g_flushCbs);
+    runCallbacks(s_flushCbs);
     fflush(stderr);
     fflush(stdout);
     // When running internal code coverage (gcc --coverage, as opposed to
@@ -2377,15 +2377,15 @@ void Verilated::runFlushCallbacks() VL_MT_SAFE {
 
 void Verilated::addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
     const VerilatedLockGuard lock(s_mutex);
-    addCb(cb, datap, g_exitCbs);
+    addCb(cb, datap, s_exitCbs);
 }
 void Verilated::removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
     const VerilatedLockGuard lock(s_mutex);
-    removeCb(cb, datap, g_exitCbs);
+    removeCb(cb, datap, s_exitCbs);
 }
 void Verilated::runExitCallbacks() VL_MT_SAFE {
     const VerilatedLockGuard lock(s_mutex);
-    runCallbacks(g_exitCbs);
+    runCallbacks(s_exitCbs);
 }
 
 const char* Verilated::productName() VL_PURE { return VERILATOR_PRODUCT; }
