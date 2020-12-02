@@ -2488,33 +2488,16 @@ private:
                 return;
             }
             // Need a runtime lookup table.  Yuk.
-            // Most enums unless overridden are 32 bits, so we size array
-            // based on max enum value used.
-            // Ideally we would have a fast algorithm when a number is
-            // of small width and complete and so can use an array, and
-            // a map for when the value is many bits and sparse.
-            uint64_t msbdim = 0;
-            {
-                for (AstEnumItem* itemp = adtypep->itemsp(); itemp;
-                     itemp = VN_CAST(itemp->nextp(), EnumItem)) {
-                    const AstConst* vconstp = VN_CAST(itemp->valuep(), Const);
-                    UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
-                    if (vconstp->toUQuad() >= msbdim) msbdim = vconstp->toUQuad();
-                }
-                if (adtypep->itemsp()->width() > 64 || msbdim >= (1 << 16)) {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: enum next/prev method on enum with > 10 bits");
-                    return;
-                }
-            }
+            uint64_t msbdim = enumMaxValue(nodep, adtypep);
             int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
             AstVar* varp = enumVarp(adtypep, attrType, (1ULL << selwidth) - 1);
             AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, VAccess::READ);
             varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
             AstNode* newp = new AstArraySel(
                 nodep->fileline(), varrefp,
-                // Select in case widths are
-                // off due to msblen!=width
+                // Select in case widths are off due to msblen!=width
+                // We return "random" values if outside the range, which is fine
+                // as next/previous on illegal values just need something good out
                 new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(), 0, selwidth));
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -5267,7 +5250,8 @@ private:
                                 << " expected non-interface on " << side << " but '"
                                 << underp->name() << "' is an interface.");
             } else {
-                // Hope it just works out
+                // Hope it just works out (perhaps a cast will deal with it)
+                underp = userIterateSubtreeReturnEdits(underp, WidthVP(expDTypep, FINAL).p());
             }
         }
         return underp;
@@ -5716,6 +5700,26 @@ private:
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
         m_tableMap.insert(make_pair(make_pair(nodep, attrType), varp));
         return varp;
+    }
+    uint64_t enumMaxValue(const AstNode* errNodep, const AstEnumDType* adtypep) {
+        // Most enums unless overridden are 32 bits, so we size array
+        // based on max enum value used.
+        // Ideally we would have a fast algorithm when a number is
+        // of small width and complete and so can use an array, and
+        // a map for when the value is many bits and sparse.
+        uint64_t maxval = 0;
+        for (const AstEnumItem* itemp = adtypep->itemsp(); itemp;
+             itemp = VN_CAST(itemp->nextp(), EnumItem)) {
+            const AstConst* vconstp = VN_CAST(itemp->valuep(), Const);
+            UASSERT_OBJ(vconstp, errNodep, "Enum item without constified value");
+            if (vconstp->toUQuad() >= maxval) maxval = vconstp->toUQuad();
+        }
+        if (adtypep->itemsp()->width() > 64 || maxval >= (1 << 16)) {
+            errNodep->v3warn(E_UNSUPPORTED,
+                             "Unsupported: enum next/prev method on enum with > 10 bits");
+            return 0;
+        }
+        return maxval;
     }
     AstVar* enumVarp(AstEnumDType* nodep, AstAttrType attrType, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
