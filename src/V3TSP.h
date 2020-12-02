@@ -39,6 +39,8 @@ public:
     // key maps so that iteration is stable, without relying
     // on pointer values that could lead to nondeterminism.
     virtual bool operator<(const TspStateBase& otherp) const = 0;
+
+    virtual ~TspStateBase() = default;
 };
 
 typedef std::vector<const TspStateBase*> StateVec;
