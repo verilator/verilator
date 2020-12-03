@@ -603,7 +603,11 @@ string V3Options::getenvBuiltins(const string& var) {
     }
 }
 
+#ifdef __FreeBSD__
+string V3Options::getenvMAKE() { return V3Os::getenvStr("MAKE", "gmake"); }
+#else
 string V3Options::getenvMAKE() { return V3Os::getenvStr("MAKE", "make"); }
+#endif
 
 string V3Options::getenvPERL() {  //
     return V3Os::getenvStr("PERL", "perl");
