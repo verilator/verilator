@@ -628,8 +628,6 @@ https://github.com/veripool/vcddiff
 
 * Cmake for build paths that use it.
 
-* Bit::Vector to test vgen.pl
-
 === Controlling the Test Driver
 
 Test drivers are written in PERL. All invoke the main test driver script,
