@@ -306,7 +306,8 @@ private:
     }
     void go() {
         // Generate a pseudo-random graph
-        std::array<vluint64_t, 2> rngState = {0x12345678ULL, 0x9abcdef0ULL};
+        std::array<vluint64_t, 2> rngState
+            = {{0x12345678ULL, 0x9abcdef0ULL}};  // GCC 3.8.0 wants {{}}
         // Create 50 vertices
         for (auto& i : m_vx) i = new V3GraphVertex(&m_graph);
         // Create 250 edges at random. Edges must go from

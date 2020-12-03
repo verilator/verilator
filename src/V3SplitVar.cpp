@@ -1006,7 +1006,8 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
         UASSERT_OBJ(varp->attrSplitVar(), varp, "split_var attribute must be attached");
 
         std::array<AstConst*, 2> consts
-            = {VN_CAST(nodep->lsbp(), Const), VN_CAST(nodep->widthp(), Const)};
+            = {{VN_CAST(nodep->lsbp(), Const),
+                VN_CAST(nodep->widthp(), Const)}};  // GCC 3.8.0 wants {{}}
         if (consts[0] && consts[1]) {  // OK
             refit->second.append(
                 PackedVarRefEntry(nodep, consts[0]->toSInt() + refit->second.basicp()->lsb(),
