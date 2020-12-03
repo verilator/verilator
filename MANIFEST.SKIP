@@ -1,3 +1,4 @@
+\.ccache/
 \.clang-format
 \.clang-tidy
 \.git/

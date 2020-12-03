@@ -1,0 +1,53 @@
+name: Verilator PR ci
+
+on: push
+
+jobs:
+    vlt:
+        runs-on: ubuntu-18.04
+        name: build and test
+        env:
+            TRAVIS_OS_NAME: linux
+            CCACHE_COMPRESS: 1
+            CCACHE_DIR: ${{ github.workspace }}/.ccache
+            CC: ccache gcc
+            CXX: ccache g++
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+            - name: Cache
+              uses: actions/cache@v2
+              env:
+                  cache-name: ccache
+              with:
+                  path: ${{ github.workspace }}/.ccache
+                  key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.ref }}-${{ github.sha }}
+                  restore-keys: |
+                      ${{ runner.os }}-build-${{ env.cache-name }}-
+                      ${{ runner.os }}-build-
+                      ${{ runner.os }}-
+            - name: Build
+              env:
+                  TRAVIS_BUILD_STAGE_NAME: build
+              run: mkdir -p $CCACHE_DIR && bash ci/travis-install.bash && sudo apt install -y ccache && bash ci/travis-script.bash && du -hs $CCACHE_DIR
+            - name: Test dist-vlt-0
+              env:
+                  TRAVIS_BUILD_STAGE_NAME: test
+                  TESTS: dist-vlt-0
+              run: bash ci/travis-install.bash && bash ci/travis-script.bash
+            - name: Test dist-vlt-1
+              env:
+                  TRAVIS_BUILD_STAGE_NAME: test
+                  TESTS: dist-vlt-1
+              run: bash ci/travis-install.bash && bash ci/travis-script.bash
+            - name: Test vltmt-0
+              env:
+                  TRAVIS_BUILD_STAGE_NAME: test
+                  TESTS: vltmt-0
+              run: bash ci/travis-install.bash && bash ci/travis-script.bash
+            - name: Test vltmt-1
+              env:
+                  TRAVIS_BUILD_STAGE_NAME: test
+                  TESTS: vltmt-1
+              run: bash ci/travis-install.bash && bash ci/travis-script.bash
+
