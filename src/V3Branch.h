@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Branch {
+class V3Branch final {
 public:
     // CONSTRUCTORS
     static void branchAll(AstNetlist* nodep);

@@ -30,7 +30,7 @@
 //######################################################################
 // Symbol table for parsing
 
-class V3ParseSym {
+class V3ParseSym final {
     // TYPES
     typedef std::vector<VSymEnt*> SymStack;
 
@@ -50,7 +50,7 @@ public:
         pushScope(findNewTable(rootp));
         m_symCurrentp = symCurrentp();
     }
-    ~V3ParseSym() {}
+    ~V3ParseSym() = default;
 
 private:
     // METHODS

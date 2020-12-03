@@ -61,16 +61,16 @@ public:
 
 //######################################################################
 
-class VWidthMinUsage {
+class VWidthMinUsage final {
 public:
     enum en : uint8_t { LINT_WIDTH, MATCHES_WIDTH, VERILOG_WIDTH };
     enum en m_e;
-    inline VWidthMinUsage()
+    VWidthMinUsage()
         : m_e{LINT_WIDTH} {}
     // cppcheck-suppress noExplicitConstructor
-    inline VWidthMinUsage(en _e)
+    VWidthMinUsage(en _e)
         : m_e{_e} {}
-    explicit inline VWidthMinUsage(int _e)
+    explicit VWidthMinUsage(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     operator en() const { return m_e; }
 };
@@ -87,7 +87,7 @@ inline bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
 //######################################################################
 // V3Global - The top level class for the entire program
 
-class V3Global {
+class V3Global final {
     // Globals
     AstNetlist* m_rootp;  // Root of entire netlist
     V3HierBlockPlan* m_hierPlanp;  // Hierarchical verilation plan, nullptr unless hier_block
@@ -95,6 +95,7 @@ class V3Global {
 
     int m_debugFileNumber = 0;  // Number to append to debug files created
     bool m_assertDTypesResolved = false;  // Tree should have dtypep()'s
+    bool m_assertScoped = false;  // Tree is scoped
     bool m_constRemoveXs = false;  // Const needs to strip any Xs
     bool m_needHeavy = false;  // Need verilated_heavy.h include
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
@@ -125,6 +126,7 @@ public:
     AstNetlist* rootp() const { return m_rootp; }
     VWidthMinUsage widthMinUsage() const { return m_widthMinUsage; }
     bool assertDTypesResolved() const { return m_assertDTypesResolved; }
+    bool assertScoped() const { return m_assertScoped; }
 
     // METHODS
     void readFiles();
@@ -132,6 +134,7 @@ public:
     static void dumpCheckGlobalTree(const string& stagename, int newNumber = 0,
                                     bool doDump = true);
     void assertDTypesResolved(bool flag) { m_assertDTypesResolved = flag; }
+    void assertScoped(bool flag) { m_assertScoped = flag; }
     void widthMinUsage(const VWidthMinUsage& flag) { m_widthMinUsage = flag; }
     bool constRemoveXs() const { return m_constRemoveXs; }
     void constRemoveXs(bool flag) { m_constRemoveXs = flag; }

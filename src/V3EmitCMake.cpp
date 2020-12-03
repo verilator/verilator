@@ -28,7 +28,7 @@
 //######################################################################
 // Emit statements
 
-class CMakeEmitter {
+class CMakeEmitter final {
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -256,7 +256,7 @@ class CMakeEmitter {
 
 public:
     explicit CMakeEmitter() { emitOverallCMake(); }
-    virtual ~CMakeEmitter() {}
+    virtual ~CMakeEmitter() = default;
 };
 
 void V3EmitCMake::emit() {

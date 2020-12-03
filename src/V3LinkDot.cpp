@@ -78,25 +78,25 @@
 //######################################################################
 // Matcher classes (for suggestion matching)
 
-class LinkNodeMatcherClass : public VNodeMatcher {
+class LinkNodeMatcherClass final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, Class); }
 };
-class LinkNodeMatcherFTask : public VNodeMatcher {
+class LinkNodeMatcherFTask final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, NodeFTask); }
 };
-class LinkNodeMatcherModport : public VNodeMatcher {
+class LinkNodeMatcherModport final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, Modport); }
 };
-class LinkNodeMatcherVar : public VNodeMatcher {
+class LinkNodeMatcherVar final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override {
         return VN_IS(nodep, Var) || VN_IS(nodep, LambdaArgRef);
     }
 };
-class LinkNodeMatcherVarIO : public VNodeMatcher {
+class LinkNodeMatcherVarIO final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override {
         const AstVar* varp = VN_CAST_CONST(nodep, Var);
@@ -104,7 +104,7 @@ public:
         return varp->isIO();
     }
 };
-class LinkNodeMatcherVarParam : public VNodeMatcher {
+class LinkNodeMatcherVarParam final : public VNodeMatcher {
 public:
     virtual bool nodeMatch(const AstNode* nodep) const override {
         const AstVar* varp = VN_CAST_CONST(nodep, Var);
@@ -116,7 +116,7 @@ public:
 //######################################################################
 // LinkDot state, as a visitor of each AstNode
 
-class LinkDotState {
+class LinkDotState final {
 private:
     // NODE STATE
     // Cleared on Netlist
@@ -141,7 +141,7 @@ public:
 private:
     // TYPES
     typedef std::multimap<string, VSymEnt*> NameScopeSymMap;
-    typedef std::map<VSymEnt*, VSymEnt*> ScopeAliasMap;
+    typedef std::unordered_map<VSymEnt*, VSymEnt*> ScopeAliasMap;
     typedef std::set<std::pair<AstNodeModule*, string>> ImplicitNameSet;
     typedef std::vector<VSymEnt*> IfaceVarSyms;
     typedef std::vector<std::pair<AstIface*, VSymEnt*>> IfaceModSyms;
@@ -153,7 +153,7 @@ private:
     VSymEnt* m_dunitEntp;  // $unit entry
     NameScopeSymMap m_nameScopeSymMap;  // Map of scope referenced by non-pretty textual name
     ImplicitNameSet m_implicitNameSet;  // For [module][signalname] if we can implicitly create it
-    ScopeAliasMap m_scopeAliasMap[SAMN__MAX];  // Map of <lhs,rhs> aliases
+    std::array<ScopeAliasMap, SAMN__MAX> m_scopeAliasMap;  // Map of <lhs,rhs> aliases
     IfaceVarSyms m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
     IfaceModSyms m_ifaceModSyms;  // List of AstIface+Symbols to be processed
     bool m_forPrimary;  // First link
@@ -180,7 +180,7 @@ public:
                         // left side is what we will import into
                         os << "\t" << samn << "\t" << it->first << " ("
                            << it->first->nodep()->typeName() << ") <- " << it->second << " "
-                           << it->second->nodep() << endl;
+                           << it->second->nodep() << '\n';
                     }
                 }
             }
@@ -269,15 +269,15 @@ public:
             UINFO(4, "Var2 " << fnodep << endl);
             if (nodep->type() == fnodep->type()) {
                 nodep->v3error("Duplicate declaration of "
-                               << nodeTextType(fnodep) << ": " << nodep->prettyNameQ() << endl
-                               << nodep->warnContextPrimary() << endl
+                               << nodeTextType(fnodep) << ": " << nodep->prettyNameQ() << '\n'
+                               << nodep->warnContextPrimary() << '\n'
                                << fnodep->warnOther() << "... Location of original declaration\n"
                                << fnodep->warnContextSecondary());
             } else {
                 nodep->v3error("Unsupported in C: "
                                << ucfirst(nodeTextType(nodep)) << " has the same name as "
-                               << nodeTextType(fnodep) << ": " << nodep->prettyNameQ() << endl
-                               << nodep->warnContextPrimary() << endl
+                               << nodeTextType(fnodep) << ": " << nodep->prettyNameQ() << '\n'
+                               << nodep->warnContextPrimary() << '\n'
                                << fnodep->warnOther() << "... Location of original declaration\n"
                                << fnodep->warnContextSecondary());
             }
@@ -355,7 +355,7 @@ public:
         return symp;
     }
     VSymEnt* insertBlock(VSymEnt* abovep, const string& name, AstNode* nodep,
-                         AstNodeModule* packagep) {
+                         AstNodeModule* classOrPackagep) {
         // A fake point in the hierarchy, corresponding to a begin or function/task block
         // After we remove begins these will go away
         // Note we fallback to the symbol table of the parent, as we want to find variables there
@@ -363,9 +363,10 @@ public:
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
         VSymEnt* symp = new VSymEnt(&m_syms, nodep);
         UINFO(9, "      INSERTblk se" << cvtToHex(symp) << "  above=se" << cvtToHex(abovep)
-                                      << "  node=" << nodep << endl);
+                                      << " pkg=" << cvtToHex(classOrPackagep) << "  node=" << nodep
+                                      << endl);
         symp->parentp(abovep);
-        symp->packagep(packagep);
+        symp->classOrPackagep(classOrPackagep);
         symp->fallbackp(abovep);
         nodep->user1p(symp);
         if (name != "") { checkDuplicate(abovep, nodep, name); }
@@ -374,14 +375,15 @@ public:
         return symp;
     }
     VSymEnt* insertSym(VSymEnt* abovep, const string& name, AstNode* nodep,
-                       AstNodeModule* packagep) {
+                       AstNodeModule* classOrPackagep) {
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
         VSymEnt* symp = new VSymEnt(&m_syms, nodep);
         UINFO(9, "      INSERTsym se" << cvtToHex(symp) << "  name='" << name << "' above=se"
-                                      << cvtToHex(abovep) << "  node=" << nodep << endl);
+                                      << cvtToHex(abovep) << " pkg=" << cvtToHex(classOrPackagep)
+                                      << "  node=" << nodep << endl);
         // We don't remember the ent associated with each node, because we
         // need a unique scope entry for each instantiation
-        symp->packagep(packagep);
+        symp->classOrPackagep(classOrPackagep);
         symp->parentp(abovep);
         symp->fallbackp(abovep);
         nodep->user1p(symp);
@@ -481,7 +483,7 @@ public:
                     ifacerefp->modportFileline()->v3error(
                         "Modport not found under interface "
                         << ifacerefp->prettyNameQ(ifacerefp->ifaceName()) << ": "
-                        << ifacerefp->prettyNameQ(ifacerefp->modportName()) << endl
+                        << ifacerefp->prettyNameQ(ifacerefp->modportName()) << '\n'
                         << (suggest.empty() ? "" : ifacerefp->warnMore() + suggest));
                 }
             }
@@ -705,10 +707,10 @@ LinkDotState* LinkDotState::s_errorThisp = nullptr;
 
 //======================================================================
 
-class LinkDotFindVisitor : public AstNVisitor {
+class LinkDotFindVisitor final : public AstNVisitor {
     // STATE
     LinkDotState* m_statep;  // State to pass between visitors, including symbol table
-    AstNodeModule* m_packagep = nullptr;  // Current package
+    AstNodeModule* m_classOrPackagep = nullptr;  // Current package
     VSymEnt* m_modSymp = nullptr;  // Symbol Entry for current module
     VSymEnt* m_curSymp = nullptr;  // Symbol Entry for current table, where to lookup/insert
     string m_scope;  // Scope text
@@ -729,7 +731,7 @@ class LinkDotFindVisitor : public AstNVisitor {
         newp->isConstructor(true);
         nodep->addMembersp(newp);
         UINFO(8, "Made implicit new for " << nodep->name() << ": " << nodep << endl);
-        m_statep->insertBlock(m_curSymp, newp->name(), newp, m_packagep);
+        m_statep->insertBlock(m_curSymp, newp->name(), newp, m_classOrPackagep);
     }
 
     bool isHierBlockWrapper(const string& name) const {
@@ -777,6 +779,7 @@ class LinkDotFindVisitor : public AstNVisitor {
         bool standalonePkg = !m_modSymp && (m_statep->forPrearray() && VN_IS(nodep, Package));
         bool doit = (m_modSymp || standalonePkg);
         VL_RESTORER(m_scope);
+        VL_RESTORER(m_classOrPackagep);
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_paramNum);
@@ -793,7 +796,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             UASSERT_OBJ(!nodep->dead(), nodep, "Module in cell tree mislabeled as dead?");
             VSymEnt* upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
             AstPackage* pkgp = VN_CAST(nodep, Package);
-            m_packagep = pkgp;
+            m_classOrPackagep = pkgp;
             if (standalonePkg) {
                 if (pkgp->isDollarUnit()) {
                     m_curSymp = m_modSymp = m_statep->dunitEntp();
@@ -801,7 +804,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                 } else {
                     m_scope = nodep->name();
                     m_curSymp = m_modSymp = m_statep->insertBlock(
-                        upperSymp, nodep->name() + "::", nodep, m_packagep);
+                        upperSymp, nodep->name() + "::", nodep, m_classOrPackagep);
                     UINFO(9, "New module scope " << m_curSymp << endl);
                 }
             }
@@ -825,7 +828,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             m_scope = nodep->name();
             VSymEnt* upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
             m_curSymp = m_modSymp
-                = m_statep->insertBlock(upperSymp, nodep->name() + "::", nodep, m_packagep);
+                = m_statep->insertBlock(upperSymp, nodep->name() + "::", nodep, m_classOrPackagep);
             iterateChildren(nodep);
             nodep->user4(true);
         } else {  // !doit
@@ -833,13 +836,12 @@ class LinkDotFindVisitor : public AstNVisitor {
             // Can't remove now, as our backwards iterator will throw up
             UINFO(5, "Module not under any CELL or top - dead module: " << nodep << endl);
         }
-        // Prep for next
-        m_packagep = nullptr;
     }
     virtual void visit(AstClass* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Class not under module/package/$unit");
         UINFO(8, "   " << nodep << endl);
         VL_RESTORER(m_scope);
+        VL_RESTORER(m_classOrPackagep);
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_paramNum);
@@ -850,8 +852,9 @@ class LinkDotFindVisitor : public AstNVisitor {
             UINFO(4, "     Link Class: " << nodep << endl);
             VSymEnt* upperSymp = m_curSymp;
             m_scope = m_scope + "." + nodep->name();
+            m_classOrPackagep = nodep;
             m_curSymp = m_modSymp
-                = m_statep->insertBlock(upperSymp, nodep->name(), nodep, m_packagep);
+                = m_statep->insertBlock(upperSymp, nodep->name(), nodep, m_classOrPackagep);
             m_statep->insertMap(m_curSymp, m_scope);
             UINFO(9, "New module scope " << m_curSymp << endl);
             //
@@ -966,7 +969,8 @@ class LinkDotFindVisitor : public AstNVisitor {
             {
                 m_blockNum = 0;
                 m_blockp = nodep;
-                m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_packagep);
+                m_curSymp
+                    = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
                 m_curSymp->fallbackp(oldCurSymp);
                 // Iterate
                 iterateChildren(nodep);
@@ -979,12 +983,14 @@ class LinkDotFindVisitor : public AstNVisitor {
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Function/Task not under module?");
         if (nodep->name() == "new") m_explicitNew = true;
         // Remember the existing symbol table scope
+        VL_RESTORER(m_classOrPackagep);
         VL_RESTORER(m_curSymp);
-        VSymEnt* const oldCurSymp = m_curSymp;
+        VSymEnt* upSymp = m_curSymp;
         {
             // Change to appropriate package if extern declaration (vs definition)
-            if (nodep->packagep()) {
-                AstClassOrPackageRef* cpackagerefp = VN_CAST(nodep->packagep(), ClassOrPackageRef);
+            if (nodep->classOrPackagep()) {
+                AstClassOrPackageRef* cpackagerefp
+                    = VN_CAST(nodep->classOrPackagep(), ClassOrPackageRef);
                 if (!cpackagerefp) {
                     nodep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: extern function definition with class-in-class");
@@ -994,25 +1000,25 @@ class LinkDotFindVisitor : public AstNVisitor {
                         nodep->v3error("Extern declaration's scope is not a defined class");
                     } else {
                         m_curSymp = m_statep->getNodeSym(classp);
+                        upSymp = m_curSymp;
                         if (!nodep->isExternDef()) {
                             // Move it to proper spot under the target class
                             nodep->unlinkFrBack();
                             classp->addStmtp(nodep);
                             nodep->isExternDef(true);  // So we check there's a matching extern
-                            nodep->packagep()->unlinkFrBack()->deleteTree();
+                            nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
                         }
                     }
                 }
             }
+            // Set the class as package for iteration
+            if (VN_IS(m_curSymp->nodep(), Class)) {
+                m_classOrPackagep = VN_CAST(m_curSymp->nodep(), Class);
+            }
             // Create symbol table for the task's vars
             string name = string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
-            auto pkgp = m_packagep;
-            // Set the class as package for static class methods
-            if (nodep->lifetime().isStatic() && VN_IS(m_curSymp->nodep(), Class)) {
-                pkgp = VN_CAST(m_curSymp->nodep(), Class);
-            }
-            m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, pkgp);
-            m_curSymp->fallbackp(oldCurSymp);
+            m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_classOrPackagep);
+            m_curSymp->fallbackp(upSymp);
             // Convert the func's range to the output variable
             // This should probably be done in the Parser instead, as then we could
             // just attach normal signal attributes to it.
@@ -1034,7 +1040,8 @@ class LinkDotFindVisitor : public AstNVisitor {
                 newvarp->attrIsolateAssign(nodep->attrIsolateAssign());
                 nodep->addFvarp(newvarp);
                 // Explicit insert required, as the var name shadows the upper level's task name
-                m_statep->insertSym(m_curSymp, newvarp->name(), newvarp, nullptr /*packagep*/);
+                m_statep->insertSym(m_curSymp, newvarp->name(), newvarp,
+                                    nullptr /*classOrPackagep*/);
             }
             m_ftaskp = nodep;
             iterateChildren(nodep);
@@ -1081,15 +1088,15 @@ class LinkDotFindVisitor : public AstNVisitor {
                             if (didAnsiWarn++) ansiWarn = false;
                         }
                         nodep->v3error("Duplicate declaration of signal: "
-                                       << nodep->prettyNameQ() << endl
+                                       << nodep->prettyNameQ() << '\n'
                                        << (ansiWarn ? nodep->warnMore()
                                                           + "... note: ANSI ports must have"
                                                             " type declared with the I/O (IEEE "
                                                             "1800-2017 23.2.2.2)\n"
                                                     : "")
-                                       << nodep->warnContextPrimary() << endl
+                                       << nodep->warnContextPrimary() << '\n'
                                        << findvarp->warnOther()
-                                       << "... Location of original declaration" << endl
+                                       << "... Location of original declaration\n"
                                        << findvarp->warnContextSecondary());
                         // Combining most likely reduce other errors
                         findvarp->combineType(nodep);
@@ -1119,8 +1126,8 @@ class LinkDotFindVisitor : public AstNVisitor {
                         && !foundp->nodep()->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)) {
                         nodep->v3warn(VARHIDDEN,
                                       "Declaration of signal hides declaration in upper scope: "
-                                          << nodep->prettyNameQ() << endl
-                                          << nodep->warnContextPrimary() << endl
+                                          << nodep->prettyNameQ() << '\n'
+                                          << nodep->warnContextPrimary() << '\n'
                                           << foundp->nodep()->warnOther()
                                           << "... Location of original declaration\n"
                                           << foundp->nodep()->warnContextSecondary());
@@ -1151,11 +1158,13 @@ class LinkDotFindVisitor : public AstNVisitor {
                         }
                     }
                 }
-                VSymEnt* insp = m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
+                VSymEnt* insp
+                    = m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
                 if (m_statep->forPrimary() && nodep->isGParam()) {
                     m_paramNum++;
-                    VSymEnt* symp = m_statep->insertSym(
-                        m_curSymp, "__paramNumber" + cvtToStr(m_paramNum), nodep, m_packagep);
+                    VSymEnt* symp
+                        = m_statep->insertSym(m_curSymp, "__paramNumber" + cvtToStr(m_paramNum),
+                                              nodep, m_classOrPackagep);
                     symp->exported(false);
                 }
                 AstIfaceRefDType* ifacerefp = LinkDotState::ifaceRefFromArray(nodep->subDTypep());
@@ -1170,7 +1179,7 @@ class LinkDotFindVisitor : public AstNVisitor {
     virtual void visit(AstTypedef* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Typedef not under module/package/$unit");
         iterateChildren(nodep);
-        m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
+        m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
     }
     virtual void visit(AstTypedefFwd* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Typedef not under module/package/$unit");
@@ -1181,7 +1190,7 @@ class LinkDotFindVisitor : public AstNVisitor {
     virtual void visit(AstParamTypeDType* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Parameter type not under module/package/$unit");
         iterateChildren(nodep);
-        m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
+        m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
     }
     virtual void visit(AstCFunc* nodep) override {
         // For dotted resolution, ignore all AstVars under functions, otherwise shouldn't exist
@@ -1204,8 +1213,8 @@ class LinkDotFindVisitor : public AstNVisitor {
             if (foundp->parentp() == m_curSymp  // Only when on same level
                 && !foundp->imported()) {  // and not from package
                 nodep->v3error("Duplicate declaration of enum value: "
-                               << nodep->prettyName() << endl
-                               << nodep->warnContextPrimary() << endl
+                               << nodep->prettyName() << '\n'
+                               << nodep->warnContextPrimary() << '\n'
                                << foundp->nodep()->warnOther()
                                << "... Location of original declaration\n"
                                << foundp->nodep()->warnContextSecondary());
@@ -1215,8 +1224,8 @@ class LinkDotFindVisitor : public AstNVisitor {
                     && !foundp->nodep()->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)) {
                     nodep->v3warn(VARHIDDEN,
                                   "Declaration of enum value hides declaration in upper scope: "
-                                      << nodep->prettyName() << endl
-                                      << nodep->warnContextPrimary() << endl
+                                      << nodep->prettyName() << '\n'
+                                      << nodep->warnContextPrimary() << '\n'
                                       << foundp->nodep()->warnOther()
                                       << "... Location of original declaration\n"
                                       << nodep->warnContextSecondary());
@@ -1224,7 +1233,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                 ins = true;
             }
         }
-        if (ins) m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
+        if (ins) m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
     }
     virtual void visit(AstPackageImport* nodep) override {
         UINFO(4, "  Link: " << nodep << endl);
@@ -1281,10 +1290,13 @@ class LinkDotFindVisitor : public AstNVisitor {
             VL_DO_DANGLING(argp->unlinkFrBackWithNext()->deleteTree(), argp);
         }
         // Type depends on the method used, let V3Width figure it out later
-        auto* argrefp = new AstLambdaArgRef(argFl, name);
-        auto* newp
-            = new AstWith(nodep->fileline(), argrefp, nodep->exprp()->unlinkFrBackWithNext());
-        funcrefp->addPinsp(newp);
+        const auto indexArgRefp = new AstLambdaArgRef(argFl, name + "__DOT__index", true);
+        const auto valueArgRefp = new AstLambdaArgRef(argFl, name, false);
+        if (nodep->exprp()) {  // Else empty expression and pretend no "with"
+            const auto newp = new AstWith(nodep->fileline(), indexArgRefp, valueArgRefp,
+                                          nodep->exprp()->unlinkFrBackWithNext());
+            funcrefp->addPinsp(newp);
+        }
         nodep->replaceWith(funcrefp->unlinkFrBack());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -1296,11 +1308,13 @@ class LinkDotFindVisitor : public AstNVisitor {
         {
             ++m_modWithNum;
             m_curSymp = m_statep->insertBlock(m_curSymp, "__Vwith" + cvtToStr(m_modWithNum), nodep,
-                                              m_packagep);
+                                              m_classOrPackagep);
             m_curSymp->fallbackp(oldCurSymp);
-            UASSERT_OBJ(nodep->argrefp(), nodep, "Missing lambda argref");
+            UASSERT_OBJ(nodep->indexArgRefp(), nodep, "Missing lambda argref");
+            UASSERT_OBJ(nodep->valueArgRefp(), nodep, "Missing lambda argref");
             // Insert argref's name into symbol table
-            m_statep->insertSym(m_curSymp, nodep->argrefp()->name(), nodep->argrefp(), nullptr);
+            m_statep->insertSym(m_curSymp, nodep->valueArgRefp()->name(), nodep->valueArgRefp(),
+                                nullptr);
         }
     }
 
@@ -1314,12 +1328,12 @@ public:
 
         iterate(rootp);
     }
-    virtual ~LinkDotFindVisitor() override {}
+    virtual ~LinkDotFindVisitor() override = default;
 };
 
 //======================================================================
 
-class LinkDotParamVisitor : public AstNVisitor {
+class LinkDotParamVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on global
@@ -1417,15 +1431,15 @@ private:
         } else {
             if (refp->user4()) {
                 nodep->v3error("Duplicate declaration of port: "
-                               << nodep->prettyNameQ() << endl
-                               << nodep->warnContextPrimary() << endl
+                               << nodep->prettyNameQ() << '\n'
+                               << nodep->warnContextPrimary() << '\n'
                                << refp->warnOther() << "... Location of original declaration\n"
                                << refp->warnContextSecondary());
             }
             refp->user4(true);
             VSymEnt* symp = m_statep->insertSym(m_statep->getNodeSym(m_modp),
                                                 "__pinNumber" + cvtToStr(nodep->pinNum()), refp,
-                                                nullptr /*packagep*/);
+                                                nullptr /*classOrPackagep*/);
             symp->exported(false);
         }
         // Ports not needed any more
@@ -1479,12 +1493,12 @@ public:
         UINFO(4, __FUNCTION__ << ": " << endl);
         iterate(rootp);
     }
-    virtual ~LinkDotParamVisitor() override {}
+    virtual ~LinkDotParamVisitor() override = default;
 };
 
 //======================================================================
 
-class LinkDotScopeVisitor : public AstNVisitor {
+class LinkDotScopeVisitor final : public AstNVisitor {
 
     // STATE
     LinkDotState* m_statep;  // State to pass between visitors, including symbol table
@@ -1637,13 +1651,13 @@ public:
         UINFO(4, __FUNCTION__ << ": " << endl);
         iterate(rootp);
     }
-    virtual ~LinkDotScopeVisitor() override {}
+    virtual ~LinkDotScopeVisitor() override = default;
 };
 
 //======================================================================
 
 // Iterate an interface to resolve modports
-class LinkDotIfaceVisitor : public AstNVisitor {
+class LinkDotIfaceVisitor final : public AstNVisitor {
     // STATE
     LinkDotState* m_statep;  // State to pass between visitors, including symbol table
     VSymEnt* m_curSymp;  // Symbol Entry for current table, where to lookup/insert
@@ -1722,7 +1736,7 @@ public:
         m_statep = statep;
         iterate(nodep);
     }
-    virtual ~LinkDotIfaceVisitor() override {}
+    virtual ~LinkDotIfaceVisitor() override = default;
 };
 
 void LinkDotState::computeIfaceModSyms() {
@@ -1736,7 +1750,7 @@ void LinkDotState::computeIfaceModSyms() {
 
 //======================================================================
 
-class LinkDotResolveVisitor : public AstNVisitor {
+class LinkDotResolveVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on global
@@ -1777,7 +1791,7 @@ private:
         bool m_dotErr;  // Error found in dotted resolution, ignore upwards
         string m_dotText;  // String of dotted names found in below parseref
         DotStates() { init(nullptr); }
-        ~DotStates() {}
+        ~DotStates() = default;
         void init(VSymEnt* curSymp) {
             m_dotPos = DP_NONE;
             m_dotSymp = curSymp;
@@ -1811,7 +1825,7 @@ private:
                                                                   LinkNodeMatcherVar());
                     nodep->v3error("Signal definition not found, and implicit disabled with "
                                    "`default_nettype: "
-                                   << nodep->prettyNameQ() << endl
+                                   << nodep->prettyNameQ() << '\n'
                                    << (suggest.empty() ? "" : nodep->warnMore() + suggest));
 
                 }
@@ -1822,7 +1836,7 @@ private:
                                                                   LinkNodeMatcherVar());
                     nodep->v3warn(IMPLICIT,
                                   "Signal definition not found, creating implicitly: "
-                                      << nodep->prettyNameQ() << endl
+                                      << nodep->prettyNameQ() << '\n'
                                       << (suggest.empty() ? "" : nodep->warnMore() + suggest));
                 }
             }
@@ -1833,7 +1847,7 @@ private:
             modp->addStmtp(newp);
             // Link it to signal list, must add the variable under the module;
             // current scope might be lower now
-            m_statep->insertSym(moduleSymp, newp->name(), newp, nullptr /*packagep*/);
+            m_statep->insertSym(moduleSymp, newp->name(), newp, nullptr /*classOrPackagep*/);
         }
     }
     AstVar* foundToVarp(const VSymEnt* symp, AstNode* nodep, VAccess access) {
@@ -1876,8 +1890,8 @@ private:
     }
     void markAndCheckPinDup(AstNode* nodep, AstNode* refp, const char* whatp) {
         if (refp->user5p() && refp->user5p() != nodep) {
-            nodep->v3error("Duplicate " << whatp << " connection: " << nodep->prettyNameQ() << endl
-                                        << nodep->warnContextPrimary() << endl
+            nodep->v3error("Duplicate " << whatp << " connection: " << nodep->prettyNameQ() << '\n'
+                                        << nodep->warnContextPrimary() << '\n'
                                         << refp->user5p()->warnOther()
                                         << "... Location of original " << whatp << " connection\n"
                                         << refp->user5p()->warnContextSecondary());
@@ -1927,11 +1941,13 @@ private:
     virtual void visit(AstCell* nodep) override {
         // Cell: Recurse inside or cleanup not founds
         checkNoDot(nodep);
-        m_cellp = nodep;
         AstNode::user5ClearTree();
         UASSERT_OBJ(nodep->modp(), nodep,
                     "Cell has unlinked module");  // V3LinkCell should have errored out
+        VL_RESTORER(m_cellp);
+        VL_RESTORER(m_pinSymp);
         {
+            m_cellp = nodep;
             if (VN_IS(nodep->modp(), NotFoundModule)) {
                 // Prevent warnings about missing pin connects
                 if (nodep->pinsp()) nodep->pinsp()->unlinkFrBackWithNext()->deleteTree();
@@ -1946,12 +1962,25 @@ private:
                 // if (debug()) nodep->dumpTree(cout, "linkcell:");
                 // if (debug()) nodep->modp()->dumpTree(cout, "linkcemd:");
                 iterateChildren(nodep);
-                m_pinSymp = nullptr;
             }
         }
-        m_cellp = nullptr;
         // Parent module inherits child's publicity
         // This is done bottom up in the LinkBotupVisitor stage
+    }
+    virtual void visit(AstClassRefDType* nodep) override {
+        // Cell: Recurse inside or cleanup not founds
+        checkNoDot(nodep);
+        AstNode::user5ClearTree();
+        UASSERT_OBJ(nodep->classp(), nodep, "ClassRef has unlinked class");
+        VL_RESTORER(m_pinSymp);
+        {
+            // ClassRef's have pins, so track
+            m_pinSymp = m_statep->getNodeSym(nodep->classp());
+            UINFO(4, "(Backto) Link ClassRefDType: " << nodep << endl);
+            // if (debug()) nodep->dumpTree(cout, "linkcell:");
+            // if (debug()) nodep->modp()->dumpTree(cout, "linkcemd:");
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstPin* nodep) override {
         // Pin: Link to submodule's port
@@ -1962,7 +1991,8 @@ private:
             VSymEnt* foundp = m_pinSymp->findIdFlat(nodep->name());
             const char* whatp = nodep->param() ? "parameter pin" : "pin";
             if (!foundp) {
-                if (nodep->name() == "__paramNumber1" && VN_IS(m_cellp->modp(), Primitive)) {
+                if (nodep->name() == "__paramNumber1" && m_cellp
+                    && VN_IS(m_cellp->modp(), Primitive)) {
                     // Primitive parameter is really a delay we can just ignore
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                     return;
@@ -1973,7 +2003,7 @@ private:
                                       : m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
                                                                  LinkNodeMatcherVarIO()));
                 nodep->v3error(ucfirst(whatp)
-                               << " not found: " << nodep->prettyNameQ() << endl
+                               << " not found: " << nodep->prettyNameQ() << '\n'
                                << (suggest.empty() ? "" : nodep->warnMore() + suggest));
             } else if (AstVar* refp = VN_CAST(foundp->nodep(), Var)) {
                 if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
@@ -2013,12 +2043,36 @@ private:
             if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this") {
                 VSymEnt* classSymp = m_ds.m_dotSymp;
                 do {
-                    classSymp = classSymp->fallbackp();
+                    classSymp = classSymp->parentp();
                 } while (classSymp && !VN_IS(classSymp->nodep(), Class));
-                m_ds.m_dotSymp = classSymp;
                 if (!classSymp) {
-                    nodep->v3error("'this' used outside class");
+                    nodep->v3error("'this' used outside class (IEEE 1800-2017 8.11)");
                     m_ds.m_dotErr = true;
+                } else {
+                    m_ds.m_dotSymp = classSymp;
+                    UINFO(8, "     this. " << m_ds.ascii() << endl);
+                }
+            } else if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "super") {
+                VSymEnt* classSymp = m_ds.m_dotSymp;
+                do {
+                    classSymp = classSymp->parentp();
+                } while (classSymp && !VN_IS(classSymp->nodep(), Class));
+                if (!classSymp) {
+                    nodep->v3error("'super' used outside class (IEEE 1800-2017 8.15)");
+                    m_ds.m_dotErr = true;
+                } else {
+                    auto classp = VN_CAST(classSymp->nodep(), Class);
+                    if (!classp->extendsp()) {
+                        nodep->v3error("'super' used on non-extended class (IEEE 1800-2017 8.15)");
+                        m_ds.m_dotErr = true;
+                    } else {
+                        auto cextp = VN_CAST(classp->extendsp(), ClassExtends);
+                        UASSERT_OBJ(cextp, nodep, "Bad super extends link");
+                        auto classp = cextp->classp();
+                        UASSERT_OBJ(classp, nodep, "Bad superclass");
+                        m_ds.m_dotSymp = m_statep->getNodeSym(classp);
+                        UINFO(8, "     super. " << m_ds.ascii() << endl);
+                    }
                 }
             } else if (VN_IS(nodep->lhsp(), ClassOrPackageRef)) {
                 // m_ds.m_dotText communicates the cell prefix between stages
@@ -2034,6 +2088,7 @@ private:
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
                 m_ds.m_unlinkedScopep = nodep->lhsp();
             }
+            if (VN_IS(nodep->lhsp(), LambdaArgRef)) { m_ds.m_unlinkedScopep = nodep->lhsp(); }
             if (!m_ds.m_dotErr) {  // Once something wrong, give up
                 // Top 'final' dot RHS is final RHS, else it's a
                 // DOT(DOT(x,*here*),real-rhs) which we consider a RHS
@@ -2044,7 +2099,7 @@ private:
             if (start) {
                 AstNode* newp;
                 if (m_ds.m_dotErr) {
-                    newp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
+                    newp = new AstConst(nodep->fileline(), AstConst::BitFalse());
                 } else {
                     // RHS is what we're left with
                     newp = nodep->rhsp()->unlinkFrBack();
@@ -2089,7 +2144,16 @@ private:
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
             m_ds.m_dotErr = true;
         }
-        if (m_ds.m_dotPos == DP_MEMBER) {
+        if (m_ds.m_dotPos == DP_FINAL && VN_IS(m_ds.m_unlinkedScopep, LambdaArgRef)
+            && nodep->name() == "index") {
+            // 'with' statement's 'item.index'
+            iterateChildren(nodep);
+            auto newp = new AstLambdaArgRef(nodep->fileline(),
+                                            m_ds.m_unlinkedScopep->name() + "__DOT__index", true);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        } else if (m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is membership.  {scope}.{var}.HERE {member}
             AstNode* varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
             AstNode* newp
@@ -2107,7 +2171,7 @@ private:
             bool allowVar = false;
             if (m_ds.m_dotPos == DP_PACKAGE) {
                 // {package}::{a}
-                AstNodeModule* packagep = nullptr;
+                AstNodeModule* classOrPackagep = nullptr;
                 expectWhat = "scope/variable";
                 allowScope = true;
                 allowVar = true;
@@ -2115,9 +2179,9 @@ private:
                             "Bad package link");
                 AstClassOrPackageRef* cpackagerefp
                     = VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
-                packagep = cpackagerefp->classOrPackagep();
-                UASSERT_OBJ(packagep, m_ds.m_dotp->lhsp(), "Bad package link");
-                m_ds.m_dotSymp = m_statep->getNodeSym(packagep);
+                classOrPackagep = cpackagerefp->classOrPackagep();
+                UASSERT_OBJ(classOrPackagep, m_ds.m_dotp->lhsp(), "Bad package link");
+                m_ds.m_dotSymp = m_statep->getNodeSym(classOrPackagep);
                 m_ds.m_dotPos = DP_SCOPE;
             } else if (m_ds.m_dotPos == DP_SCOPE) {
                 // {a}.{b}, where {a} maybe a module name
@@ -2234,7 +2298,7 @@ private:
                         AstVarRef* refp
                             = new AstVarRef(nodep->fileline(), varp,
                                             VAccess::READ);  // lvalue'ness computed later
-                        refp->packagep(foundp->packagep());
+                        refp->classOrPackagep(foundp->classOrPackagep());
                         newp = refp;
                     }
                     UINFO(9, "    new " << newp << endl);
@@ -2293,7 +2357,7 @@ private:
             } else if (AstEnumItem* valuep = VN_CAST(foundp->nodep(), EnumItem)) {
                 if (allowVar) {
                     AstNode* newp
-                        = new AstEnumItemRef(nodep->fileline(), valuep, foundp->packagep());
+                        = new AstEnumItemRef(nodep->fileline(), valuep, foundp->classOrPackagep());
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     ok = true;
@@ -2301,7 +2365,7 @@ private:
                 }
             } else if (AstLambdaArgRef* argrefp = VN_CAST(foundp->nodep(), LambdaArgRef)) {
                 if (allowVar) {
-                    AstNode* newp = new AstLambdaArgRef(nodep->fileline(), argrefp->name());
+                    AstNode* newp = new AstLambdaArgRef(nodep->fileline(), argrefp->name(), false);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     ok = true;
@@ -2327,7 +2391,7 @@ private:
                         string suggest = m_statep->suggestSymFallback(
                             m_ds.m_dotSymp, nodep->name(), VNodeMatcher());
                         nodep->v3error("Can't find definition of "
-                                       << expectWhat << ": " << nodep->prettyNameQ() << endl
+                                       << expectWhat << ": " << nodep->prettyNameQ() << '\n'
                                        << (suggest.empty() ? "" : nodep->warnMore() + suggest));
                     } else {
                         nodep->v3error("Can't find definition of "
@@ -2367,7 +2431,7 @@ private:
             if (AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr) {
                 nodep->varp(varp);
                 // Generally set by parse, but might be an import
-                nodep->packagep(foundp->packagep());
+                nodep->classOrPackagep(foundp->classOrPackagep());
             }
             if (!nodep->varp()) {
                 nodep->v3error("Can't find definition of signal, again: " << nodep->prettyNameQ());
@@ -2482,6 +2546,7 @@ private:
     virtual void visit(AstNodeFTaskRef* nodep) override {
         if (nodep->user3SetOnce()) return;
         UINFO(8, "     " << nodep << endl);
+        UINFO(8, "     " << m_ds.ascii() << endl);
         if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
@@ -2491,10 +2556,10 @@ private:
                               "Unsupported: " << AstNode::prettyNameQ(cpackagerefp->name()));
             }
             if (cpackagerefp->paramsp()) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages for task calls");
             }
             UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
-            nodep->packagep(cpackagerefp->classOrPackagep());
+            nodep->classOrPackagep(cpackagerefp->classOrPackagep());
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = nullptr;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
@@ -2524,7 +2589,7 @@ private:
         } else {
             checkNoDot(nodep);
         }
-        if (nodep->packagep() && nodep->taskp()) {
+        if (nodep->classOrPackagep() && nodep->taskp()) {
             // References into packages don't care about cell hierarchy.
         } else if (!m_modSymp) {
             // Module that is not in hierarchy.  We'll be dead code eliminating it later.
@@ -2536,12 +2601,15 @@ private:
         } else {
             string baddot;
             VSymEnt* okSymp = nullptr;
-            VSymEnt* dotSymp = m_curSymp;  // Start search at module, as a variable
+            VSymEnt* dotSymp = nodep->dotted().empty()
+                                   ? m_ds.m_dotSymp  // Non-'super.' dotted reference
+                                   : m_curSymp;  // Start search at dotted point
             // of same name under a subtask isn't a relevant hit however a
             // function under a begin/end is.  So we want begins, but not
             // the function
-            if (nodep->packagep()) {  // Look only in specified package
-                dotSymp = m_statep->getNodeSym(nodep->packagep());
+            if (nodep->classOrPackagep()) {  // Look only in specified package
+                dotSymp = m_statep->getNodeSym(nodep->classOrPackagep());
+                UINFO(8, "    Override classOrPackage " << dotSymp << endl);
             } else {
                 if (nodep->inlinedDots() != "") {  // Correct for current scope
                     // Dotted lookup is always relative to module, as maybe
@@ -2567,7 +2635,7 @@ private:
                 = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;  // Maybe nullptr
             if (taskp) {
                 nodep->taskp(taskp);
-                nodep->packagep(foundp->packagep());
+                nodep->classOrPackagep(foundp->classOrPackagep());
                 UINFO(7, "         Resolved " << nodep << endl);  // Also prints taskp
             } else {
                 // Note ParseRef has similar error handling/message output
@@ -2605,14 +2673,14 @@ private:
                             VL_DO_DANGLING(nodep->deleteTree(), nodep);
                             return;
                         } else {
-                            nodep->v3error("Unsupported or unknown PLI call: "
-                                           << nodep->prettyNameQ() << endl);
+                            nodep->v3error(
+                                "Unsupported or unknown PLI call: " << nodep->prettyNameQ());
                         }
                     } else {
                         string suggest = m_statep->suggestSymFallback(dotSymp, nodep->name(),
                                                                       LinkNodeMatcherFTask());
                         nodep->v3error("Can't find definition of task/function: "
-                                       << nodep->prettyNameQ() << endl
+                                       << nodep->prettyNameQ() << '\n'
                                        << (suggest.empty() ? "" : nodep->warnMore() + suggest));
                     }
                 } else {
@@ -2730,6 +2798,11 @@ private:
         }
         m_ds.m_dotSymp = m_curSymp = oldCurSymp;
     }
+    virtual void visit(AstLambdaArgRef* nodep) override {
+        UINFO(5, "   " << nodep << endl);
+        // No checknodot(nodep), visit(AstScope) will check for LambdaArgRef
+        iterateChildren(nodep);
+    }
     virtual void visit(AstClass* nodep) override {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
@@ -2756,15 +2829,22 @@ private:
                             if (AstClass* classp = VN_CAST(foundp->nodep(), Class)) {
                                 UINFO(8, "Import to " << nodep << " from export class " << classp
                                                       << endl);
-                                AstClassRefDType* newp
-                                    = new AstClassRefDType{nodep->fileline(), classp};
-                                cextp->childDTypep(newp);
-                                classp->isExtended(true);
-                                nodep->isExtended(true);
-                                VSymEnt* srcp = m_statep->getNodeSym(classp);
-                                m_curSymp->importFromClass(m_statep->symsp(), srcp);
-                                VL_DO_DANGLING(cpackagerefp->unlinkFrBack()->deleteTree(),
-                                               cpackagerefp);
+                                if (classp == nodep) {
+                                    cextp->v3error("Attempting to extend class "
+                                                   << nodep->prettyNameQ() << " from itself");
+                                } else {
+                                    AstNode* paramsp = cpackagerefp->paramsp();
+                                    if (paramsp) paramsp = paramsp->cloneTree(true);
+                                    const auto newp
+                                        = new AstClassRefDType{nodep->fileline(), classp, paramsp};
+                                    cextp->childDTypep(newp);
+                                    classp->isExtended(true);
+                                    nodep->isExtended(true);
+                                    VSymEnt* srcp = m_statep->getNodeSym(classp);
+                                    m_curSymp->importFromClass(m_statep->symsp(), srcp);
+                                    VL_DO_DANGLING(cpackagerefp->unlinkFrBack()->deleteTree(),
+                                                   cpackagerefp);
+                                }
                                 ok = true;
                             }
                         }
@@ -2773,7 +2853,7 @@ private:
                                 m_curSymp, cpackagerefp->name(), LinkNodeMatcherClass{});
                             cpackagerefp->v3error(
                                 "Class to extend not found: "
-                                << cpackagerefp->prettyNameQ() << endl
+                                << cpackagerefp->prettyNameQ() << '\n'
                                 << (suggest.empty() ? "" : cpackagerefp->warnMore() + suggest));
                         }
                     }
@@ -2790,7 +2870,7 @@ private:
                 if (!nodep->findMember(it->first)) {
                     if (AstEnumItem* aitemp = VN_CAST(itemp, EnumItem)) {
                         AstEnumItemRef* newp = new AstEnumItemRef(aitemp->fileline(), aitemp,
-                                                                  it->second->packagep());
+                                                                  it->second->classOrPackagep());
                         UINFO(8, "Class import noderef '" << it->first << "' " << newp << endl);
                         nodep->addMembersp(newp);
                     }
@@ -2801,18 +2881,15 @@ private:
     virtual void visit(AstRefDType* nodep) override {
         // Resolve its reference
         if (nodep->user3SetOnce()) return;
-        if (AstNode* cpackagep = nodep->classOrPackagep()) {
+        if (AstNode* cpackagep = nodep->classOrPackageOpp()) {
             if (AstClassOrPackageRef* cpackagerefp = VN_CAST(cpackagep, ClassOrPackageRef)) {
-                if (cpackagerefp->packagep()) {
-                    nodep->packagep(cpackagerefp->packagep());
-                } else {
-                    nodep->packagep(cpackagerefp->classOrPackagep());
-                    if (!VN_IS(nodep->packagep(), Class) && !VN_IS(nodep->packagep(), Package)) {
-                        cpackagerefp->v3error(
-                            "'::' expected to reference a class/package but referenced "
-                            << nodep->packagep()->prettyTypeName() << endl
-                            << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
-                    }
+                nodep->classOrPackagep(cpackagerefp->classOrPackagep());
+                if (!VN_IS(nodep->classOrPackagep(), Class)
+                    && !VN_IS(nodep->classOrPackagep(), Package)) {
+                    cpackagerefp->v3error(
+                        "'::' expected to reference a class/package but referenced "
+                        << nodep->classOrPackagep()->prettyTypeName() << '\n'
+                        << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
                 }
             } else {
                 cpackagep->v3warn(E_UNSUPPORTED,
@@ -2825,9 +2902,10 @@ private:
         if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
-            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->packagep(),
+            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->classOrPackagep(),
                         m_ds.m_dotp->lhsp(), "Bad package link");
-            nodep->packagep(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->packagep());
+            nodep->classOrPackagep(
+                VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->classOrPackagep());
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = nullptr;
         } else {
@@ -2836,21 +2914,23 @@ private:
         if (nodep->typeofp()) {  // Really is a typeof not a reference
         } else if (!nodep->typedefp() && !nodep->subDTypep()) {
             VSymEnt* foundp;
-            if (nodep->packagep()) {
-                foundp = m_statep->getNodeSym(nodep->packagep())->findIdFlat(nodep->name());
+            if (nodep->classOrPackagep()) {
+                foundp = m_statep->getNodeSym(nodep->classOrPackagep())->findIdFlat(nodep->name());
             } else {
                 foundp = m_curSymp->findIdFallback(nodep->name());
             }
             if (AstTypedef* defp = foundp ? VN_CAST(foundp->nodep(), Typedef) : nullptr) {
                 nodep->typedefp(defp);
-                nodep->packagep(foundp->packagep());
+                nodep->classOrPackagep(foundp->classOrPackagep());
             } else if (AstParamTypeDType* defp
                        = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {
                 nodep->refDTypep(defp);
-                nodep->packagep(foundp->packagep());
+                nodep->classOrPackagep(foundp->classOrPackagep());
             } else if (AstClass* defp = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {
-                AstClassRefDType* newp = new AstClassRefDType(nodep->fileline(), defp);
-                newp->packagep(foundp->packagep());
+                AstNode* paramsp = nodep->paramsp();
+                if (paramsp) paramsp->unlinkFrBackWithNext();
+                AstClassRefDType* newp = new AstClassRefDType{nodep->fileline(), defp, paramsp};
+                newp->classOrPackagep(foundp->classOrPackagep());
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
@@ -2919,7 +2999,7 @@ public:
         UINFO(4, __FUNCTION__ << ": " << endl);
         iterate(rootp);
     }
-    virtual ~LinkDotResolveVisitor() override {}
+    virtual ~LinkDotResolveVisitor() override = default;
 };
 
 //######################################################################
@@ -2947,6 +3027,7 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
         // Well after the initial link when we're ready to operate on the flat design,
         // process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
         LinkDotScopeVisitor visitors(rootp, &state);
+        v3Global.assertScoped(true);
         if (LinkDotState::debug() >= 5 || v3Global.opt.dumpTree() >= 9) {
             v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-scoped.tree"));
         }

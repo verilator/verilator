@@ -36,9 +36,9 @@ class VSymEnt;
 //######################################################################
 // Symbol table
 
-typedef std::set<const VSymEnt*> VSymConstMap;
+typedef std::unordered_set<const VSymEnt*> VSymConstMap;
 
-class VSymEnt {
+class VSymEnt final {
     // Symbol table that can have a "superior" table for resolving upper references
     // MEMBERS
     typedef std::multimap<string, VSymEnt*> IdNameMap;
@@ -46,7 +46,7 @@ class VSymEnt {
     AstNode* m_nodep;  // Node that entry belongs to
     VSymEnt* m_fallbackp;  // Table "above" this one in name scope, for fallback resolution
     VSymEnt* m_parentp;  // Table that created this table, dot notation needed to resolve into it
-    AstNodeModule* m_packagep;  // Package node is in (for V3LinkDot, unused here)
+    AstNodeModule* m_classOrPackagep;  // Package node is in (for V3LinkDot, unused here)
     string m_symPrefix;  // String to prefix symbols with (for V3LinkDot, unused here)
     bool m_exported;  // Allow importing
     bool m_imported;  // Was imported
@@ -57,7 +57,7 @@ class VSymEnt {
         return level;
     }
 #else
-    static inline int debug() { return 0; }  // NOT runtime, too hot of a function
+    static constexpr int debug() { return 0; }  // NOT runtime, too hot of a function
 #endif
 public:
     typedef IdNameMap::const_iterator const_iterator;
@@ -72,7 +72,7 @@ public:
         os << "  fallb=se" << cvtToHex(m_fallbackp);
         if (m_symPrefix != "") os << "  symPrefix=" << m_symPrefix;
         os << "  n=" << nodep();
-        os << endl;
+        os << '\n';
         if (VL_UNCOVERABLE(doneSymsr.find(this) != doneSymsr.end())) {
             os << indent << "| ^ duplicate, so no children printed\n";  // LCOV_EXCL_LINE
         } else {
@@ -100,7 +100,7 @@ public:
         m_nodep = reinterpret_cast<AstNode*>(1);
         m_fallbackp = reinterpret_cast<VSymEnt*>(1);
         m_parentp = reinterpret_cast<VSymEnt*>(1);
-        m_packagep = reinterpret_cast<AstNodeModule*>(1);
+        m_classOrPackagep = reinterpret_cast<AstNodeModule*>(1);
 #endif
     }
 #if defined(VL_DEBUG) && !defined(VL_LEAK_CHECKS)
@@ -111,8 +111,8 @@ public:
     VSymEnt* fallbackp() const { return m_fallbackp; }
     void parentp(VSymEnt* entp) { m_parentp = entp; }
     VSymEnt* parentp() const { return m_parentp; }
-    void packagep(AstNodeModule* entp) { m_packagep = entp; }
-    AstNodeModule* packagep() const { return m_packagep; }
+    void classOrPackagep(AstNodeModule* entp) { m_classOrPackagep = entp; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     AstNode* nodep() const { return m_nodep; }
     string symPrefix() const { return m_symPrefix; }
     void symPrefix(const string& name) { m_symPrefix = name; }
@@ -126,8 +126,7 @@ public:
         if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
             if (!V3Error::errorCount()) {  // Else may have just reported warning
                 if (debug() >= 9 || V3Error::debugDefault()) dump(cout, "- err-dump: ", 1);
-                entp->nodep()->v3fatalSrc("Inserting two symbols with same name: " << name
-                                                                                   << endl);
+                entp->nodep()->v3fatalSrc("Inserting two symbols with same name: " << name);
             }
         } else {
             m_idNameMap.insert(make_pair(name, entp));
@@ -278,7 +277,7 @@ public:
 //######################################################################
 // Symbol tables
 
-class VSymGraph {
+class VSymGraph final {
     // Collection of symbol tables
     // TYPES
     typedef std::vector<VSymEnt*> SymStack;
@@ -338,7 +337,7 @@ inline VSymEnt::VSymEnt(VSymGraph* graphp, AstNode* nodep)
     // by an earlier search insertion.
     m_fallbackp = nullptr;
     m_parentp = nullptr;
-    m_packagep = nullptr;
+    m_classOrPackagep = nullptr;
     m_exported = true;
     m_imported = false;
     graphp->pushNewEnt(this);
@@ -348,7 +347,7 @@ inline VSymEnt::VSymEnt(VSymGraph* graphp, const VSymEnt* symp)
     : m_nodep(symp->m_nodep) {
     m_fallbackp = symp->m_fallbackp;
     m_parentp = symp->m_parentp;
-    m_packagep = symp->m_packagep;
+    m_classOrPackagep = symp->m_classOrPackagep;
     m_exported = symp->m_exported;
     m_imported = symp->m_imported;
     graphp->pushNewEnt(this);

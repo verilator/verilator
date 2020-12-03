@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Order {
+class V3Order final {
 public:
     static void orderAll(AstNetlist* nodep);
 };

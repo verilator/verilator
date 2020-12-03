@@ -42,7 +42,6 @@ module t(/*AUTOARG*/);
          if (v1 != 0 && v1 != 1) $stop;
       end
 
-`ifndef VERILATOR
       // Seed stability
       // Note UVM doesn't use $urandom seeding
       v1 = $urandom(1);
@@ -50,7 +49,6 @@ module t(/*AUTOARG*/);
       if (v1 != v2) $stop;
       v2 = $urandom(1);
       if (v1 != v2) $stop;
-`endif
 
 `ifdef PROC
       // Seed stability via process.srandom

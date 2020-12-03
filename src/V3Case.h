@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Case {
+class V3Case final {
 public:
     static void caseAll(AstNetlist* nodep);
     static void caseLint(AstNodeCase* nodep);

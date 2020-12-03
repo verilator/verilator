@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Assert {
+class V3Assert final {
 public:
     static void assertAll(AstNetlist* nodep);
 };

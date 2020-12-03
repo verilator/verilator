@@ -32,6 +32,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 
 //===================================================================
 // String formatters (required by below containers)
@@ -46,7 +47,7 @@ extern std::string VL_TO_STRING_W(int words, WDataInP obj);
 //===================================================================
 // Shuffle RNG
 
-class VlURNG {
+class VlURNG final {
 public:
     typedef size_t result_type;
     static constexpr size_t min() { return 0; }
@@ -57,7 +58,7 @@ public:
 //===================================================================
 // Readmem/Writemem operation classes
 
-class VlReadMem {
+class VlReadMem final {
     bool m_hex;  // Hex format
     int m_bits;  // Bit width of values
     const std::string& m_filename;  // Filename
@@ -74,7 +75,7 @@ public:
     void setData(void* valuep, const std::string& rhs);
 };
 
-class VlWriteMem {
+class VlWriteMem final {
     bool m_hex;  // Hex format
     int m_bits;  // Bit width of values
     FILE* m_fp;  // File handle for filename
@@ -93,7 +94,7 @@ public:
 //
 // Bound here is the maximum size() allowed, e.g. 1 + SystemVerilog bound
 // For dynamic arrays it is always zero
-template <class T_Value, size_t T_MaxSize = 0> class VlQueue {
+template <class T_Value, size_t T_MaxSize = 0> class VlQueue final {
 private:
     // TYPES
     typedef std::deque<T_Value> Deque;
@@ -108,10 +109,13 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlQueue() {
-        // m_defaultValue isn't defaulted. Caller's constructor must do it.
-    }
-    ~VlQueue() {}
+    // m_defaultValue isn't defaulted. Caller's constructor must do it.
+    VlQueue() = default;
+    ~VlQueue() = default;
+    VlQueue(const VlQueue&) = default;
+    VlQueue(VlQueue&&) = default;
+    VlQueue& operator=(const VlQueue&) = default;
+    VlQueue& operator=(VlQueue&&) = default;
 
     // Standard copy constructor works. Verilog: assoca = assocb
     // Also must allow conversion from a different T_MaxSize queue
@@ -150,6 +154,7 @@ public:
 
     // METHODS
     T_Value& atDefault() { return m_defaultValue; }
+    const T_Value& atDefault() const { return m_defaultValue; }
     const Deque& privateDeque() const { return m_deque; }
 
     // Size. Verilog: function int size(), or int num()
@@ -247,20 +252,24 @@ public:
     void sort() { std::sort(m_deque.begin(), m_deque.end()); }
     template <typename Func> void sort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
-        std::sort(m_deque.begin(), m_deque.end(),
-                  [=](const T_Value& a, const T_Value& b) { return with_func(a) < with_func(b); });
+        std::sort(m_deque.begin(), m_deque.end(), [=](const T_Value& a, const T_Value& b) {
+            // index number is meaninless with sort, as it changes
+            return with_func(0, a) < with_func(0, b);
+        });
     }
     void rsort() { std::sort(m_deque.rbegin(), m_deque.rend()); }
     template <typename Func> void rsort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
-        std::sort(m_deque.rbegin(), m_deque.rend(),
-                  [=](const T_Value& a, const T_Value& b) { return with_func(a) < with_func(b); });
+        std::sort(m_deque.rbegin(), m_deque.rend(), [=](const T_Value& a, const T_Value& b) {
+            // index number is meaninless with sort, as it changes
+            return with_func(0, a) < with_func(0, b);
+        });
     }
     void reverse() { std::reverse(m_deque.begin(), m_deque.end()); }
     void shuffle() { std::shuffle(m_deque.begin(), m_deque.end(), VlURNG()); }
     VlQueue unique() const {
         VlQueue out;
-        std::set<T_Value> saw;
+        std::unordered_set<T_Value> saw;
         for (const auto& i : m_deque) {
             auto it = saw.find(i);
             if (it == saw.end()) {
@@ -273,7 +282,7 @@ public:
     VlQueue<IData> unique_index() const {
         VlQueue<IData> out;
         IData index = 0;
-        std::set<T_Value> saw;
+        std::unordered_set<T_Value> saw;
         for (const auto& i : m_deque) {
             auto it = saw.find(i);
             if (it == saw.end()) {
@@ -286,39 +295,54 @@ public:
     }
     template <typename Func> VlQueue find(Func with_func) const {
         VlQueue out;
-        for (const auto& i : m_deque)
-            if (with_func(i)) out.push_back(i);
+        IData index = 0;
+        for (const auto& i : m_deque) {
+            if (with_func(index, i)) out.push_back(i);
+            ++index;
+        }
         return out;
     }
     template <typename Func> VlQueue<IData> find_index(Func with_func) const {
         VlQueue<IData> out;
         IData index = 0;
         for (const auto& i : m_deque) {
-            if (with_func(i)) out.push_back(index);
+            if (with_func(index, i)) out.push_back(index);
             ++index;
         }
         return out;
     }
     template <typename Func> VlQueue find_first(Func with_func) const {
-        const auto it = std::find_if(m_deque.begin(), m_deque.end(), with_func);
-        if (it == m_deque.end()) return VlQueue{};
-        return VlQueue::cons(*it);
+        // Can't use std::find_if as need index number
+        IData index = 0;
+        for (const auto& i : m_deque) {
+            if (with_func(index, i)) return VlQueue::cons(i);
+            ++index;
+        }
+        return VlQueue{};
     }
     template <typename Func> VlQueue<IData> find_first_index(Func with_func) const {
-        const auto it = std::find_if(m_deque.begin(), m_deque.end(), with_func);
-        if (it == m_deque.end()) return VlQueue<IData>{};
-        return VlQueue<IData>::cons(std::distance(m_deque.begin(), it));
+        IData index = 0;
+        for (const auto& i : m_deque) {
+            if (with_func(index, i)) return VlQueue<IData>::cons(index);
+            ++index;
+        }
+        return VlQueue<IData>{};
     }
     template <typename Func> VlQueue find_last(Func with_func) const {
-        const auto it = std::find_if(m_deque.rbegin(), m_deque.rend(), with_func);
-        if (it == m_deque.rend()) return VlQueue{};
-        return VlQueue::cons(*it);
+        IData index = m_deque.size() - 1;
+        for (auto it = m_deque.rbegin(); it != m_deque.rend(); ++it) {
+            if (with_func(index, *it)) return VlQueue::cons(*it);
+            --index;
+        }
+        return VlQueue{};
     }
     template <typename Func> VlQueue<IData> find_last_index(Func with_func) const {
-        const auto it = std::find_if(m_deque.rbegin(), m_deque.rend(), with_func);
-        if (it == m_deque.rend()) return VlQueue<IData>{};
-        // Return index must be relative to beginning
-        return VlQueue<IData>::cons(m_deque.size() - 1 - std::distance(m_deque.rbegin(), it));
+        IData index = m_deque.size() - 1;
+        for (auto it = m_deque.rbegin(); it != m_deque.rend(); ++it) {
+            if (with_func(index, *it)) return VlQueue<IData>::cons(index);
+            --index;
+        }
+        return VlQueue<IData>{};
     }
 
     // Reduction operators
@@ -340,7 +364,8 @@ public:
     }
     template <typename Func> T_Value r_sum(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_deque) out += with_func(i);
+        IData index = 0;
+        for (const auto& i : m_deque) out += with_func(index++, i);
         return out;
     }
     T_Value r_product() const {
@@ -354,9 +379,11 @@ public:
     template <typename Func> T_Value r_product(Func with_func) const {
         if (m_deque.empty()) return T_Value(0);
         auto it = m_deque.begin();
-        T_Value out{with_func(*it)};
+        IData index = 0;
+        T_Value out{with_func(index, *it)};
         ++it;
-        for (; it != m_deque.end(); ++it) out *= with_func(*it);
+        ++index;
+        for (; it != m_deque.end(); ++it) out *= with_func(index++, *it);
         return out;
     }
     T_Value r_and() const {
@@ -370,9 +397,11 @@ public:
     template <typename Func> T_Value r_and(Func with_func) const {
         if (m_deque.empty()) return T_Value(0);
         auto it = m_deque.begin();
-        T_Value out{with_func(*it)};
+        IData index = 0;
+        T_Value out{with_func(index, *it)};
         ++it;
-        for (; it != m_deque.end(); ++it) out &= with_func(*it);
+        ++index;
+        for (; it != m_deque.end(); ++it) out &= with_func(index, *it);
         return out;
     }
     T_Value r_or() const {
@@ -382,7 +411,8 @@ public:
     }
     template <typename Func> T_Value r_or(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_deque) out |= with_func(i);
+        IData index = 0;
+        for (const auto& i : m_deque) out |= with_func(index++, i);
         return out;
     }
     T_Value r_xor() const {
@@ -392,7 +422,8 @@ public:
     }
     template <typename Func> T_Value r_xor(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_deque) out ^= with_func(i);
+        IData index = 0;
+        for (const auto& i : m_deque) out ^= with_func(index++, i);
         return out;
     }
 
@@ -421,13 +452,18 @@ template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
 // This is only used when we need an upper-level container and so can't
 // simply use a C style array (which is just a pointer).
 
-template <std::size_t T_Words> class VlWide {
+template <std::size_t T_Words> class VlWide final {
     WData m_storage[T_Words];
 
 public:
     // cppcheck-suppress uninitVar
-    VlWide() {}
-    ~VlWide() {}
+    VlWide() = default;
+    ~VlWide() = default;
+    VlWide(const VlWide&) = default;
+    VlWide(VlWide&&) = default;
+    VlWide& operator=(const VlWide&) = default;
+    VlWide& operator=(VlWide&&) = default;
+    // METHODS
     const WData& at(size_t index) const { return m_storage[index]; }
     WData& at(size_t index) { return m_storage[index]; }
     WData* data() { return &m_storage[0]; }
@@ -452,7 +488,7 @@ template <std::size_t T_Words> std::string VL_TO_STRING(const VlWide<T_Words>& o
 // There are no multithreaded locks on this; the base variable must
 // be protected by other means
 //
-template <class T_Key, class T_Value> class VlAssocArray {
+template <class T_Key, class T_Value> class VlAssocArray final {
 private:
     // TYPES
     typedef std::map<T_Key, T_Value> Map;
@@ -467,14 +503,17 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlAssocArray() {
-        // m_defaultValue isn't defaulted. Caller's constructor must do it.
-    }
-    ~VlAssocArray() {}
-    // Standard copy constructor works. Verilog: assoca = assocb
+    // m_defaultValue isn't defaulted. Caller's constructor must do it.
+    VlAssocArray() = default;
+    ~VlAssocArray() = default;
+    VlAssocArray(const VlAssocArray&) = default;
+    VlAssocArray(VlAssocArray&&) = default;
+    VlAssocArray& operator=(const VlAssocArray&) = default;
+    VlAssocArray& operator=(VlAssocArray&&) = default;
 
     // METHODS
     T_Value& atDefault() { return m_defaultValue; }
+    const T_Value& atDefault() const { return m_defaultValue; }
 
     // Size of array. Verilog: function int size(), or int num()
     int size() const { return m_map.size(); }
@@ -578,19 +617,19 @@ public:
     template <typename Func> VlQueue<T_Value> find(Func with_func) const {
         VlQueue<T_Value> out;
         for (const auto& i : m_map)
-            if (with_func(i.second)) out.push_back(i.second);
+            if (with_func(i.first, i.second)) out.push_back(i.second);
         return out;
     }
     template <typename Func> VlQueue<T_Key> find_index(Func with_func) const {
         VlQueue<T_Key> out;
         for (const auto& i : m_map)
-            if (with_func(i.second)) out.push_back(i.first);
+            if (with_func(i.first, i.second)) out.push_back(i.first);
         return out;
     }
     template <typename Func> VlQueue<T_Value> find_first(Func with_func) const {
         const auto it
             = std::find_if(m_map.begin(), m_map.end(), [=](const std::pair<T_Key, T_Value>& i) {
-                  return with_func(i.second);
+                  return with_func(i.first, i.second);
               });
         if (it == m_map.end()) return VlQueue<T_Value>{};
         return VlQueue<T_Value>::cons(it->second);
@@ -598,7 +637,7 @@ public:
     template <typename Func> VlQueue<T_Key> find_first_index(Func with_func) const {
         const auto it
             = std::find_if(m_map.begin(), m_map.end(), [=](const std::pair<T_Key, T_Value>& i) {
-                  return with_func(i.second);
+                  return with_func(i.first, i.second);
               });
         if (it == m_map.end()) return VlQueue<T_Value>{};
         return VlQueue<T_Key>::cons(it->first);
@@ -606,7 +645,7 @@ public:
     template <typename Func> VlQueue<T_Value> find_last(Func with_func) const {
         const auto it
             = std::find_if(m_map.rbegin(), m_map.rend(), [=](const std::pair<T_Key, T_Value>& i) {
-                  return with_func(i.second);
+                  return with_func(i.first, i.second);
               });
         if (it == m_map.rend()) return VlQueue<T_Value>{};
         return VlQueue<T_Value>::cons(it->second);
@@ -614,7 +653,7 @@ public:
     template <typename Func> VlQueue<T_Key> find_last_index(Func with_func) const {
         const auto it
             = std::find_if(m_map.rbegin(), m_map.rend(), [=](const std::pair<T_Key, T_Value>& i) {
-                  return with_func(i.second);
+                  return with_func(i.first, i.second);
               });
         if (it == m_map.rend()) return VlQueue<T_Value>{};
         return VlQueue<T_Key>::cons(it->first);
@@ -647,7 +686,7 @@ public:
     }
     template <typename Func> T_Value r_sum(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_map) out += with_func(i.second);
+        for (const auto& i : m_map) out += with_func(i.first, i.second);
         return out;
     }
     T_Value r_product() const {
@@ -661,9 +700,9 @@ public:
     template <typename Func> T_Value r_product(Func with_func) const {
         if (m_map.empty()) return T_Value(0);
         auto it = m_map.begin();
-        T_Value out{with_func(it->second)};
+        T_Value out{with_func(it->first, it->second)};
         ++it;
-        for (; it != m_map.end(); ++it) out *= with_func(it->second);
+        for (; it != m_map.end(); ++it) out *= with_func(it->first, it->second);
         return out;
     }
     T_Value r_and() const {
@@ -677,9 +716,9 @@ public:
     template <typename Func> T_Value r_and(Func with_func) const {
         if (m_map.empty()) return T_Value(0);
         auto it = m_map.begin();
-        T_Value out{with_func(it->second)};
+        T_Value out{with_func(it->first, it->second)};
         ++it;
-        for (; it != m_map.end(); ++it) out &= with_func(it->second);
+        for (; it != m_map.end(); ++it) out &= with_func(it->first, it->second);
         return out;
     }
     T_Value r_or() const {
@@ -689,7 +728,7 @@ public:
     }
     template <typename Func> T_Value r_or(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_map) out |= with_func(i.second);
+        for (const auto& i : m_map) out |= with_func(i.first, i.second);
         return out;
     }
     T_Value r_xor() const {
@@ -699,7 +738,7 @@ public:
     }
     template <typename Func> T_Value r_xor(Func with_func) const {
         T_Value out(0);  // Type must have assignment operator
-        for (const auto& i : m_map) out ^= with_func(i.second);
+        for (const auto& i : m_map) out ^= with_func(i.first, i.second);
         return out;
     }
 
@@ -773,6 +812,7 @@ inline std::string VL_CVT_PACK_STR_NQ(QData lhs) VL_PURE {
     return VL_CVT_PACK_STR_NW(VL_WQ_WORDS_E, lw);
 }
 inline std::string VL_CVT_PACK_STR_NN(const std::string& lhs) VL_PURE { return lhs; }
+inline std::string& VL_CVT_PACK_STR_NN(std::string& lhs) VL_PURE { return lhs; }
 inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
     WData lw[VL_WQ_WORDS_E];
     VL_SET_WI(lw, lhs);

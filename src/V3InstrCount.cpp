@@ -29,7 +29,7 @@
 /// we'll count instructions from either the 'if' or the 'else' branch,
 /// whichever is larger. We know we won't run both.
 
-class InstrCountVisitor : public AstNVisitor {
+class InstrCountVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstNode::user4()        -> int.  Path cost + 1, 0 means don't dump
@@ -46,7 +46,7 @@ private:
 
     // TYPES
     // Little class to cleanly call startVisitBase/endVisitBase
-    class VisitBase {
+    class VisitBase final {
     private:
         // MEMBERS
         uint32_t m_savedCount;
@@ -74,7 +74,7 @@ public:
         , m_osp{osp} {
         if (nodep) iterate(nodep);
     }
-    virtual ~InstrCountVisitor() override {}
+    virtual ~InstrCountVisitor() override = default;
 
     // METHODS
     uint32_t instrCount() const { return m_instrCount; }
@@ -258,7 +258,7 @@ private:
 };
 
 // Iterate the graph printing the critical path marked by previous visitation
-class InstrCountDumpVisitor : public AstNVisitor {
+class InstrCountDumpVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstNode::user4()        -> int.  Path cost, 0 means don't dump
@@ -275,7 +275,7 @@ public:
         UASSERT_OBJ(osp, nodep, "Don't call if not dumping");
         if (nodep) iterate(nodep);
     }
-    virtual ~InstrCountDumpVisitor() override {}
+    virtual ~InstrCountDumpVisitor() override = default;
 
 private:
     // METHODS
@@ -284,7 +284,7 @@ private:
         ++m_depth;
         if (unsigned costPlus1 = nodep->user4()) {
             *m_osp << "  " << indent() << "cost " << std::setw(6) << std::left << (costPlus1 - 1)
-                   << "  " << nodep << endl;
+                   << "  " << nodep << '\n';
             iterateChildren(nodep);
         }
         --m_depth;

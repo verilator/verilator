@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Inline {
+class V3Inline final {
 public:
     static void inlineAll(AstNetlist* nodep);
 };

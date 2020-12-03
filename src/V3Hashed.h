@@ -24,11 +24,11 @@
 
 //============================================================================
 
-class VHashedBase {
+class VHashedBase VL_NOT_FINAL {
 public:
     // CONSTRUCTORS
-    VHashedBase() {}
-    ~VHashedBase() {}
+    VHashedBase() = default;
+    ~VHashedBase() = default;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -39,11 +39,11 @@ public:
 struct V3HashedUserSame {
     // Functor for V3Hashed::findDuplicate
     virtual bool isSame(AstNode*, AstNode*) = 0;
-    V3HashedUserSame() {}
-    virtual ~V3HashedUserSame() {}
+    V3HashedUserSame() = default;
+    virtual ~V3HashedUserSame() = default;
 };
 
-class V3Hashed : public VHashedBase {
+class V3Hashed final : public VHashedBase {
     // NODE STATE
     //  AstNode::user4()        -> V3Hash.  Hash value of this node (hash of 0 is illegal)
     AstUser4InUse m_inuser4;
@@ -60,7 +60,7 @@ private:
 public:
     // CONSTRUCTORS
     V3Hashed() { clear(); }
-    ~V3Hashed() {}
+    ~V3Hashed() = default;
 
     // ACCESSORS
     HashMmap& mmap() { return m_hashMmap; }  // Return map for iteration

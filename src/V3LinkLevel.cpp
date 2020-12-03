@@ -34,7 +34,7 @@
 // Levelizing class functions
 
 struct CmpLevel {
-    inline bool operator()(const AstNodeModule* lhsp, const AstNodeModule* rhsp) const {
+    bool operator()(const AstNodeModule* lhsp, const AstNodeModule* rhsp) const {
         return lhsp->level() < rhsp->level();
     }
 };

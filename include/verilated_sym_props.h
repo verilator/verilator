@@ -36,16 +36,14 @@
 /// Thread safety: Assume is constructed only with model, then any number of readers
 
 // See also V3Ast::VNumRange
-class VerilatedRange {
-    int m_left;
-    int m_right;
+class VerilatedRange final {
+    int m_left = 0;
+    int m_right = 0;
 
 protected:
     friend class VerilatedVarProps;
     friend class VerilatedScope;
-    VerilatedRange()
-        : m_left{0}
-        , m_right{0} {}
+    VerilatedRange() = default;
     VerilatedRange(int left, int right)
         : m_left{left}
         , m_right{right} {}
@@ -55,7 +53,7 @@ protected:
     }
 
 public:
-    ~VerilatedRange() {}
+    ~VerilatedRange() = default;
     int left() const { return m_left; }
     int right() const { return m_right; }
     int low() const { return (m_left < m_right) ? m_left : m_right; }
@@ -70,7 +68,7 @@ public:
 /// Verilator variable
 /// Thread safety: Assume is constructed only with model, then any number of readers
 
-class VerilatedVarProps {
+class VerilatedVarProps VL_NOT_FINAL {
     // TYPES
     enum { MAGIC = 0xddc4f829 };
     // MEMBERS
@@ -138,7 +136,7 @@ public:
     }
 
 public:
-    ~VerilatedVarProps() {}
+    ~VerilatedVarProps() = default;
     // METHODS
     bool magicOk() const { return m_magic == MAGIC; }
     VerilatedVarType vltype() const { return m_vltype; }
@@ -189,7 +187,7 @@ public:
 //===========================================================================
 /// Verilator DPI open array variable
 
-class VerilatedDpiOpenVar {
+class VerilatedDpiOpenVar final {
     // MEMBERS
     const VerilatedVarProps* m_propsp;  // Variable properties
     void* m_datap;  // Location of data (local to thread always, so safe)
@@ -201,7 +199,7 @@ public:
     VerilatedDpiOpenVar(const VerilatedVarProps* propsp, const void* datap)
         : m_propsp{propsp}
         , m_datap{const_cast<void*>(datap)} {}
-    ~VerilatedDpiOpenVar() {}
+    ~VerilatedDpiOpenVar() = default;
     // METHODS
     void* datap() const { return m_datap; }
     // METHODS - from VerilatedVarProps
@@ -227,7 +225,7 @@ public:
 /// Verilator variable
 /// Thread safety: Assume is constructed only with model, then any number of readers
 
-class VerilatedVar : public VerilatedVarProps {
+class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS
     void* m_datap;  // Location of data
     const char* m_namep;  // Name - slowpath
@@ -243,7 +241,7 @@ protected:
         , m_isParam{isParam} {}
 
 public:
-    ~VerilatedVar() {}
+    ~VerilatedVar() = default;
     // ACCESSORS
     void* datap() const { return m_datap; }
     const VerilatedRange& range() const { return packed(); }  // Deprecated

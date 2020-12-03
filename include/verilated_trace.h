@@ -40,7 +40,7 @@
 // Threaded tracing
 
 // A simple synchronized first in first out queue
-template <class T> class VerilatedThreadQueue {  // LCOV_EXCL_LINE  // lcov bug
+template <class T> class VerilatedThreadQueue final {  // LCOV_EXCL_LINE  // lcov bug
 private:
     VerilatedMutex m_mutex;  // Protects m_queue
     std::condition_variable_any m_cv;
@@ -83,7 +83,7 @@ public:
 
 // Commands used by thread tracing. Anonymous enum in class, as we want
 // it scoped, but we also want the automatic conversion to integer types.
-class VerilatedTraceCommand {
+class VerilatedTraceCommand final {
 public:
     // These must all fit in 4 bit at the moment, as the tracing routines
     // pack parameters in the top bits.
@@ -110,7 +110,7 @@ public:
 // VerilatedTrace uses F-bounded polymorphism to access duck-typed
 // implementations in the format specific derived class, which must be passed
 // as the type parameter T_Derived
-template <class T_Derived> class VerilatedTrace {
+template <class T_Derived> class VerilatedTrace VL_NOT_FINAL {
 public:
     //=========================================================================
     // Generic tracing internals

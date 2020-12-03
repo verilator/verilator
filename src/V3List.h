@@ -36,8 +36,8 @@ private:
     friend class V3ListEnt<T>;
 
 public:
-    V3List() {}
-    ~V3List() {}
+    V3List() = default;
+    ~V3List() = default;
     // METHODS
     T begin() const { return m_headp; }
     T end() const { return nullptr; }
@@ -65,7 +65,7 @@ private:
     }
 
 public:
-    V3ListEnt() {}
+    V3ListEnt() = default;
     ~V3ListEnt() {
 #ifdef VL_DEBUG
         // Load bogus pointers so we can catch deletion bugs

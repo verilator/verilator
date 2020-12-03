@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Clock {
+class V3Clock final {
 public:
     static void clockAll(AstNetlist* nodep);
 };

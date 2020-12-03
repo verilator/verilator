@@ -1,0 +1,2 @@
+%Error: t/t_pp_recursedef_bad.v:9:8012: Recursive `define substitution: `RECURSE
+%Error: Exiting due to

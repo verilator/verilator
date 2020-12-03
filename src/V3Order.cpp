@@ -113,7 +113,7 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top);
 // Functions for above graph classes
 
 void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
-    if (debug()) cout << "-Info-Loop: " << vertexp << " " << endl;
+    if (debug()) cout << "-Info-Loop: " << vertexp << "\n";
     if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
         std::cerr << vvertexp->nodep()->fileline()->warnOther()
                   << "     Example path: " << vvertexp->nodep()->typeName() << endl;
@@ -126,7 +126,7 @@ void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
 
 //######################################################################
 
-class OrderMoveDomScope {
+class OrderMoveDomScope final {
     // Information stored for each unique loop, domain & scope trifecta
 public:
     V3ListEnt<OrderMoveDomScope*> m_readyDomScopeE;  // List of next ready dom scope
@@ -186,11 +186,11 @@ inline std::ostream& operator<<(std::ostream& lhs, const OrderMoveDomScope& rhs)
 // Types of vertex we can create
 enum WhichVertex : uint8_t { WV_STD, WV_PRE, WV_PORD, WV_POST, WV_SETL, WV_MAX };
 
-class OrderUser {
+class OrderUser final {
     // Stored in AstVarScope::user1p, a list of all the various vertices
     // that can exist for one given variable
 private:
-    OrderVarVertex* m_vertexp[WV_MAX];  // Vertex of each type (if non nullptr)
+    std::array<OrderVarVertex*, WV_MAX> m_vertexp;  // Vertex of each type (if non nullptr)
 public:
     // METHODS
     OrderVarVertex* newVarUserVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varscp,
@@ -219,7 +219,7 @@ public:
     OrderUser() {
         for (auto& vertexp : m_vertexp) vertexp = nullptr;
     }
-    ~OrderUser() {}
+    ~OrderUser() = default;
 };
 
 //######################################################################
@@ -252,7 +252,7 @@ struct OrderVarFanoutCmp {
 // In addition it also check whether clock and data signals are mixed, and
 // produce a CLKDATA warning if so.
 //
-class OrderClkMarkVisitor : public AstNVisitor {
+class OrderClkMarkVisitor final : public AstNVisitor {
 private:
     bool m_hasClk = false;  // flag indicating whether there is clock signal on rhs
     bool m_inClocked = false;  // Currently inside a sequential block
@@ -273,7 +273,7 @@ private:
                 if (m_inClocked) {
                     varrefp->v3warn(
                         CLKDATA, "Clock used as data (on rhs of assignment) in sequential block "
-                                     << varrefp->prettyNameQ() << endl);
+                                     << varrefp->prettyNameQ());
                 } else {
                     m_hasClk = true;
                     UINFO(5, "node is already marked as clocker " << varrefp << endl);
@@ -290,8 +290,8 @@ private:
         // do the marking
         if (m_hasClk) {
             if (nodep->lhsp()->width() > m_rightClkWidth) {
-                nodep->v3warn(CLKDATA, "Clock is assigned to part of data signal " << nodep->lhsp()
-                                                                                   << endl);
+                nodep->v3warn(CLKDATA, "Clock is assigned to part of data signal "
+                                           << nodep->lhsp()->prettyNameQ());
                 UINFO(4, "CLKDATA: lhs with width " << nodep->lhsp()->width() << endl);
                 UINFO(4, "     but rhs clock with width " << m_rightClkWidth << endl);
                 return;  // skip the marking
@@ -366,13 +366,13 @@ public:
             iterate(nodep);
         } while (m_newClkMarked);
     }
-    virtual ~OrderClkMarkVisitor() override {}
+    virtual ~OrderClkMarkVisitor() override = default;
 };
 
 //######################################################################
 // The class checks if the assignment generates a clock.
 
-class OrderClkAssVisitor : public AstNVisitor {
+class OrderClkAssVisitor final : public AstNVisitor {
 private:
     bool m_clkAss = false;  // There is signals marked as clocker in the assignment
     // METHODS
@@ -397,7 +397,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit OrderClkAssVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~OrderClkAssVisitor() override {}
+    virtual ~OrderClkAssVisitor() override = default;
     // METHODS
     bool isClkAss() const { return m_clkAss; }
 };
@@ -429,7 +429,7 @@ template <class T_MoveVertex> class ProcessMoveBuildGraph {
     typedef std::unordered_map<const OrderLogicVertex*, T_MoveVertex*> Logic2Move;
 
 public:
-    class MoveVertexMaker {
+    class MoveVertexMaker VL_NOT_FINAL {
     public:
         // Clients of ProcessMoveBuildGraph must supply MoveVertexMaker
         // which creates new T_MoveVertex's. Each new vertex wraps lvertexp
@@ -457,7 +457,7 @@ public:
         : m_graphp{logicGraphp}
         , m_outGraphp{outGraphp}
         , m_vxMakerp{vxMakerp} {}
-    virtual ~ProcessMoveBuildGraph() {}
+    virtual ~ProcessMoveBuildGraph() = default;
 
     // METHODS
     void build() {
@@ -551,7 +551,7 @@ private:
 //######################################################################
 // OrderMoveVertexMaker and related
 
-class OrderMoveVertexMaker : public ProcessMoveBuildGraph<OrderMoveVertex>::MoveVertexMaker {
+class OrderMoveVertexMaker final : public ProcessMoveBuildGraph<OrderMoveVertex>::MoveVertexMaker {
     // MEMBERS
     V3Graph* m_pomGraphp;
     V3List<OrderMoveVertex*>* m_pomWaitingp;
@@ -579,7 +579,8 @@ private:
     VL_UNCOPYABLE(OrderMoveVertexMaker);
 };
 
-class OrderMTaskMoveVertexMaker : public ProcessMoveBuildGraph<MTaskMoveVertex>::MoveVertexMaker {
+class OrderMTaskMoveVertexMaker final
+    : public ProcessMoveBuildGraph<MTaskMoveVertex>::MoveVertexMaker {
     V3Graph* m_pomGraphp;
 
 public:
@@ -602,7 +603,7 @@ private:
     VL_UNCOPYABLE(OrderMTaskMoveVertexMaker);
 };
 
-class OrderVerticesByDomainThenScope {
+class OrderVerticesByDomainThenScope final {
     PartPtrIdMap m_ids;
 
 public:
@@ -619,10 +620,10 @@ public:
     }
 };
 
-class MTaskVxIdLessThan {
+class MTaskVxIdLessThan final {
 public:
-    MTaskVxIdLessThan() {}
-    virtual ~MTaskVxIdLessThan() {}
+    MTaskVxIdLessThan() = default;
+    virtual ~MTaskVxIdLessThan() = default;
 
     // Sort vertex's, which must be AbstractMTask's, into a deterministic
     // order by comparing their serial IDs.
@@ -636,7 +637,7 @@ public:
 //######################################################################
 // Order class functions
 
-class OrderVisitor : public AstNVisitor {
+class OrderVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Forming graph:
@@ -673,6 +674,7 @@ private:
     bool m_inPre = false;  // Underneath AstAssignPre
     bool m_inPost = false;  // Underneath AstAssignPost
     bool m_inTimedEvent = false;  // Underneath TimedEvent
+    bool m_inPostponed = false;  // Underneath AstAssignPostponed
     OrderLogicVertex* m_activeSenVxp = nullptr;  // Sensitivity vertex
     std::deque<OrderUser*> m_orderUserps;  // All created OrderUser's for later deletion.
     // STATE... for inside process
@@ -687,7 +689,7 @@ protected:
 
 private:
     // STATS
-    VDouble0 m_statCut[OrderVEdgeType::_ENUM_END];  // Count of each edge type cut
+    std::array<VDouble0, OrderVEdgeType::_ENUM_END> m_statCut;  // Count of each edge type cut
 
     // TYPES
     enum VarUsage : uint8_t { VU_NONE = 0, VU_CON = 1, VU_GEN = 2 };
@@ -756,7 +758,7 @@ private:
         AstMTaskBody* m_mtaskBodyp = nullptr;
         Logics m_logics;
         ExecMTask* m_execMTaskp = nullptr;
-        MTaskState() {}
+        MTaskState() = default;
     };
     void processMTasks();
     typedef enum : uint8_t { LOGIC_INITIAL, LOGIC_SETTLE } InitialLogicE;
@@ -871,7 +873,7 @@ private:
         m_graph.userClearVertices();
         // May be very large vector, so only report the "most important"
         // elements. Up to 10 of the widest
-        std::cerr << V3Error::warnMore() << "... Widest candidate vars to split:" << endl;
+        std::cerr << V3Error::warnMore() << "... Widest candidate vars to split:\n";
         std::stable_sort(m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarWidthCmp());
         std::unordered_set<const AstVar*> canSplitList;
         int lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
@@ -886,10 +888,10 @@ private:
                 std::cerr << ", can split_var";
                 canSplitList.insert(varp);
             }
-            std::cerr << std::endl;
+            std::cerr << '\n';
         }
         // Up to 10 of the most fanned out
-        std::cerr << V3Error::warnMore() << "... Most fanned out candidate vars to split:" << endl;
+        std::cerr << V3Error::warnMore() << "... Most fanned out candidate vars to split:\n";
         std::stable_sort(m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarFanoutCmp());
         lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
         for (int i = 0; i < lim; i++) {
@@ -903,7 +905,7 @@ private:
                 std::cerr << ", can split_var";
                 canSplitList.insert(varp);
             }
-            std::cerr << endl;
+            std::cerr << '\n';
         }
         if (!canSplitList.empty()) {
             std::cerr << V3Error::warnMore()
@@ -1047,7 +1049,8 @@ private:
                 // We don't want to add extra edges if the logic block has many usages of same var
                 bool gen = false;
                 bool con = false;
-                if (nodep->access().isWriteOrRW()) gen = !(varscp->user4() & VU_GEN);
+                if (nodep->access().isWriteOrRW() && !m_inPostponed)
+                    gen = !(varscp->user4() & VU_GEN);
                 if (nodep->access().isReadOrRW()) {
                     con = !(varscp->user4() & VU_CON);
                     if ((varscp->user4() & VU_GEN) && !m_inClocked) {
@@ -1182,6 +1185,11 @@ private:
         m_inPost = true;
         iterateNewStmt(nodep);
         m_inPost = false;
+    }
+    virtual void visit(AstAlwaysPostponed* nodep) override {
+        VL_RESTORER(m_inPostponed);
+        m_inPostponed = true;
+        iterateNewStmt(nodep);
     }
     virtual void visit(AstAlways* nodep) override { iterateNewStmt(nodep); }
     virtual void visit(AstAlwaysPublic* nodep) override { iterateNewStmt(nodep); }
@@ -1583,9 +1591,9 @@ void OrderVisitor::processEdgeReport() {
         }
     }
 
-    *logp << "Signals and their clock domains:" << endl;
+    *logp << "Signals and their clock domains:\n";
     stable_sort(report.begin(), report.end());
-    for (const string& i : report) *logp << i << endl;
+    for (const string& i : report) *logp << i << '\n';
 }
 
 void OrderVisitor::processMoveClear() {

@@ -41,21 +41,21 @@
 //######################################################################
 // Graph subclasses
 
-class LinkCellsGraph : public V3Graph {
+class LinkCellsGraph final : public V3Graph {
 public:
-    LinkCellsGraph() {}
-    virtual ~LinkCellsGraph() override {}
+    LinkCellsGraph() = default;
+    virtual ~LinkCellsGraph() override = default;
     virtual void loopsMessageCb(V3GraphVertex* vertexp) override;
 };
 
-class LinkCellsVertex : public V3GraphVertex {
+class LinkCellsVertex final : public V3GraphVertex {
     AstNodeModule* m_modp;
 
 public:
     LinkCellsVertex(V3Graph* graphp, AstNodeModule* modp)
         : V3GraphVertex{graphp}
         , m_modp{modp} {}
-    virtual ~LinkCellsVertex() override {}
+    virtual ~LinkCellsVertex() override = default;
     AstNodeModule* modp() const { return m_modp; }
     virtual string name() const override { return modp()->name(); }
     virtual FileLine* fileline() const override { return modp()->fileline(); }
@@ -65,11 +65,11 @@ public:
     }
 };
 
-class LibraryVertex : public V3GraphVertex {
+class LibraryVertex final : public V3GraphVertex {
 public:
     explicit LibraryVertex(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
-    virtual ~LibraryVertex() override {}
+    virtual ~LibraryVertex() override = default;
     virtual string name() const override { return "*LIBRARY*"; }
 };
 
@@ -78,7 +78,7 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
         vvertexp->modp()->v3warn(E_UNSUPPORTED,
                                  "Unsupported: Recursive multiple modules (module instantiates "
                                  "something leading back to itself): "
-                                     << vvertexp->modp()->prettyNameQ() << endl
+                                     << vvertexp->modp()->prettyNameQ() << '\n'
                                      << V3Error::warnMore()
                                      << "... note: self-recursion (module instantiating itself "
                                         "directly) is supported.");
@@ -91,7 +91,7 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkCellsVisitor : public AstNVisitor {
+class LinkCellsVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  Entire netlist:
@@ -457,6 +457,13 @@ private:
         UINFO(4, " Link Cell done: " << nodep << endl);
     }
 
+    virtual void visit(AstRefDType* nodep) override {
+        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            pinp->param(true);
+            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
+        }
+    }
+
     // Accelerate the recursion
     // Must do statements to support Generates, math though...
     virtual void visit(AstNodeMath*) override {}
@@ -482,10 +489,10 @@ private:
                       || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP)
                       || hierBlocks.find(nodep->name()) != hierBlocks.end())) {
                     nodep->v3warn(MODDUP, "Duplicate declaration of module: "
-                                              << nodep->prettyNameQ() << endl
-                                              << nodep->warnContextPrimary() << endl
+                                              << nodep->prettyNameQ() << '\n'
+                                              << nodep->warnContextPrimary() << '\n'
                                               << foundp->warnOther()
-                                              << "... Location of original declaration" << endl
+                                              << "... Location of original declaration\n"
                                               << foundp->warnContextSecondary());
                 }
                 nodep->unlinkFrBack();
@@ -517,7 +524,7 @@ public:
         }
         iterate(nodep);
     }
-    virtual ~LinkCellsVisitor() override {}
+    virtual ~LinkCellsVisitor() override = default;
 };
 
 //######################################################################

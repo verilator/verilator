@@ -31,7 +31,7 @@
 //============================================================================
 // V3File: Create streams, recording dependency information
 
-class V3File {
+class V3File final {
 public:
     static std::ifstream* new_ifstream(const string& filename) {
         addSrcDepend(filename);
@@ -76,7 +76,7 @@ public:
 
 class VInFilterImp;
 
-class VInFilter {
+class VInFilter final {
 public:
     // TYPES
     typedef std::list<string> StrList;
@@ -99,7 +99,7 @@ public:
 //============================================================================
 // V3OutFormatter: A class for automatic indentation of C++ or Verilog code.
 
-class V3OutFormatter {
+class V3OutFormatter VL_NOT_FINAL {
     // TYPES
     static constexpr int MAXSPACE = 80;  // After this indent, stop indenting more
 public:
@@ -130,7 +130,7 @@ private:
 
 public:
     V3OutFormatter(const string& filename, Language lang);
-    virtual ~V3OutFormatter() {}
+    virtual ~V3OutFormatter() = default;
     // ACCESSORS
     string filename() const { return m_filename; }
     int column() const { return m_column; }
@@ -176,7 +176,7 @@ public:
 //============================================================================
 // V3OutFile: A class for printing to a file, with automatic indentation of C++ code.
 
-class V3OutFile : public V3OutFormatter {
+class V3OutFile VL_NOT_FINAL : public V3OutFormatter {
     // MEMBERS
     FILE* m_fp;
 
@@ -190,7 +190,7 @@ private:
     virtual void putcOutput(char chr) override { fputc(chr, m_fp); }
 };
 
-class V3OutCFile : public V3OutFile {
+class V3OutCFile VL_NOT_FINAL : public V3OutFile {
     int m_guard = false;  // Created header guard
     int m_private;  // 1 = Most recently emitted private:, 2 = public:
 public:
@@ -198,7 +198,7 @@ public:
         : V3OutFile{filename, V3OutFormatter::LA_C} {
         resetPrivate();
     }
-    virtual ~V3OutCFile() override {}
+    virtual ~V3OutCFile() override = default;
     virtual void putsHeader() { puts("// Verilated -*- C++ -*-\n"); }
     virtual void putsIntTopInclude() { putsForceIncs(); }
     virtual void putsGuard();
@@ -218,11 +218,11 @@ public:
     }
 };
 
-class V3OutScFile : public V3OutCFile {
+class V3OutScFile final : public V3OutCFile {
 public:
     explicit V3OutScFile(const string& filename)
         : V3OutCFile{filename} {}
-    virtual ~V3OutScFile() override {}
+    virtual ~V3OutScFile() override = default;
     virtual void putsHeader() override { puts("// Verilated -*- SystemC -*-\n"); }
     virtual void putsIntTopInclude() override {
         putsForceIncs();
@@ -231,29 +231,29 @@ public:
     }
 };
 
-class V3OutVFile : public V3OutFile {
+class V3OutVFile final : public V3OutFile {
 public:
     explicit V3OutVFile(const string& filename)
         : V3OutFile{filename, V3OutFormatter::LA_VERILOG} {}
-    virtual ~V3OutVFile() override {}
+    virtual ~V3OutVFile() override = default;
     virtual void putsHeader() { puts("// Verilated -*- Verilog -*-\n"); }
 };
 
-class V3OutXmlFile : public V3OutFile {
+class V3OutXmlFile final : public V3OutFile {
 public:
     explicit V3OutXmlFile(const string& filename)
         : V3OutFile{filename, V3OutFormatter::LA_XML} {
         blockIndent(2);
     }
-    virtual ~V3OutXmlFile() override {}
+    virtual ~V3OutXmlFile() override = default;
     virtual void putsHeader() { puts("<?xml version=\"1.0\" ?>\n"); }
 };
 
-class V3OutMkFile : public V3OutFile {
+class V3OutMkFile final : public V3OutFile {
 public:
     explicit V3OutMkFile(const string& filename)
         : V3OutFile{filename, V3OutFormatter::LA_MK} {}
-    virtual ~V3OutMkFile() override {}
+    virtual ~V3OutMkFile() override = default;
     virtual void putsHeader() { puts("# Verilated -*- Makefile -*-\n"); }
     // No automatic indentation yet.
     void puts(const char* strg) { putsNoTracking(strg); }
@@ -265,7 +265,7 @@ public:
 
 class VIdProtectImp;
 
-class VIdProtect {
+class VIdProtect final {
 public:
     // METHODS
     // Rename to a new encoded string (unless earlier passthru'ed)

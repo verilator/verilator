@@ -26,7 +26,7 @@
 
 //######################################################################
 
-class EmitCMain : EmitCBaseVisitor {
+class EmitCMain final : EmitCBaseVisitor {
     // METHODS
 
     // VISITORS

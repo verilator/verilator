@@ -39,7 +39,7 @@ constexpr int EMITC_NUM_CONSTW
 //######################################################################
 // Emit statements and math operators
 
-class EmitCStmts : public EmitCBaseVisitor {
+class EmitCStmts VL_NOT_FINAL : public EmitCBaseVisitor {
 private:
     typedef std::vector<const AstVar*> VarVec;
     typedef std::map<int, VarVec> VarSortMap;  // Map size class to VarVec
@@ -216,7 +216,7 @@ public:
     }
 
     struct CmpName {
-        inline bool operator()(const AstNode* lhsp, const AstNode* rhsp) const {
+        bool operator()(const AstNode* lhsp, const AstNode* rhsp) const {
             return lhsp->name() < rhsp->name();
         }
     };
@@ -430,8 +430,12 @@ public:
     virtual void visit(AstWith* nodep) override {
         // With uses a C++11 lambda
         putbs("[=](");
-        if (auto* argrefp = nodep->argrefp()) {
-            putbs(argrefp->dtypep()->cType(nodep->argrefp()->nameProtect(), false, false));
+        if (auto* argrefp = nodep->indexArgRefp()) {
+            putbs(argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
+            puts(",");
+        }
+        if (auto* argrefp = nodep->valueArgRefp()) {
+            putbs(argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
         }
         // Probably fragile, V3Task may need to convert to a AstCReturn
         puts(") { return ");
@@ -835,6 +839,9 @@ public:
         puts(", ");
         putsQuoted(nodep->timeunit().ascii());
         puts(");\n");
+    }
+    virtual void visit(AstRand* nodep) override {
+        emitOpName(nodep, nodep->emitC(), nodep->seedp(), nullptr, nullptr);
     }
     virtual void visit(AstTime* nodep) override {
         puts("VL_TIME_UNITED_Q(");
@@ -1265,25 +1272,25 @@ public:
         m_trackText = trackText;
         iterate(nodep);
     }
-    virtual ~EmitCStmts() override {}
+    virtual ~EmitCStmts() override = default;
 };
 
 //######################################################################
 // Establish mtask variable sort order in mtasks mode
 
-class EmitVarTspSorter : public V3TSP::TspStateBase {
+class EmitVarTspSorter final : public V3TSP::TspStateBase {
 private:
     // MEMBERS
     const MTaskIdSet& m_mtaskIds;  // Mtask we're ordering
-    static unsigned m_serialNext;  // Unique ID to establish serial order
+    static unsigned s_serialNext;  // Unique ID to establish serial order
     unsigned m_serial;  // Serial ordering
 public:
     // CONSTRUCTORS
     explicit EmitVarTspSorter(const MTaskIdSet& mtaskIds)
         : m_mtaskIds(mtaskIds) {  // Cannot be {} or GCC 4.8 false warning
-        m_serial = ++m_serialNext;  // Cannot be ()/{} or GCC 4.8 false warning
+        m_serial = ++s_serialNext;  // Cannot be ()/{} or GCC 4.8 false warning
     }
-    virtual ~EmitVarTspSorter() {}
+    virtual ~EmitVarTspSorter() = default;
     // METHODS
     virtual bool operator<(const TspStateBase& other) const override {
         return operator<(dynamic_cast<const EmitVarTspSorter&>(other));
@@ -1308,12 +1315,12 @@ public:
     }
 };
 
-unsigned EmitVarTspSorter::m_serialNext = 0;
+unsigned EmitVarTspSorter::s_serialNext = 0;
 
 //######################################################################
 // Internal EmitC implementation
 
-class EmitCImp : EmitCStmts {
+class EmitCImp final : EmitCStmts {
     // MEMBERS
     AstNodeModule* m_modp = nullptr;
     std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
@@ -1847,8 +1854,8 @@ class EmitCImp : EmitCStmts {
     void maybeSplit(AstNodeModule* modp);
 
 public:
-    EmitCImp() {}
-    virtual ~EmitCImp() override {}
+    EmitCImp() = default;
+    virtual ~EmitCImp() override = default;
     void mainImp(AstNodeModule* modp, bool slow);
     void mainInt(AstNodeModule* modp);
     void mainDoFunc(AstCFunc* nodep) { iterate(nodep); }
@@ -3427,7 +3434,7 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
 //######################################################################
 // Tracing routines
 
-class EmitCTrace : EmitCStmts {
+class EmitCTrace final : EmitCStmts {
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user1()        -> int.  Enum number
@@ -3866,7 +3873,7 @@ class EmitCTrace : EmitCStmts {
 public:
     explicit EmitCTrace(bool slow)
         : m_slow{slow} {}
-    virtual ~EmitCTrace() override {}
+    virtual ~EmitCTrace() override = default;
     void main() {
         // Put out the file
         newOutCFile(0);

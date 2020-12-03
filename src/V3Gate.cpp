@@ -43,7 +43,7 @@ constexpr int GATE_DEDUP_MAX_DEPTH = 20;
 
 //######################################################################
 
-class GateBaseVisitor : public AstNVisitor {
+class GateBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 public:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -52,12 +52,12 @@ public:
 
 class GateLogicVertex;
 class GateVarVertex;
-class GateGraphBaseVisitor {
+class GateGraphBaseVisitor VL_NOT_FINAL {
 public:
     V3Graph* m_graphp;  // Graph this class is visiting
     explicit GateGraphBaseVisitor(V3Graph* graphp)
         : m_graphp{graphp} {}
-    virtual ~GateGraphBaseVisitor() {}
+    virtual ~GateGraphBaseVisitor() = default;
     virtual VNUser visit(GateLogicVertex* vertexp, VNUser vu = VNUser(0)) = 0;
     virtual VNUser visit(GateVarVertex* vertexp, VNUser vu = VNUser(0)) = 0;
     VL_DEBUG_FUNC;  // Declare debug()
@@ -66,7 +66,7 @@ public:
 //######################################################################
 // Support classes
 
-class GateEitherVertex : public V3GraphVertex {
+class GateEitherVertex VL_NOT_FINAL : public V3GraphVertex {
     AstScope* m_scopep;  // Scope vertex refers to
     bool m_reducible = true;  // True if this node should be able to be eliminated
     bool m_dedupable = true;  // True if this node should be able to be deduped
@@ -75,7 +75,7 @@ public:
     GateEitherVertex(V3Graph* graphp, AstScope* scopep)
         : V3GraphVertex{graphp}
         , m_scopep{scopep} {}
-    virtual ~GateEitherVertex() override {}
+    virtual ~GateEitherVertex() override = default;
     // ACCESSORS
     virtual string dotStyle() const override { return m_consumed ? "" : "dotted"; }
     AstScope* scopep() const { return m_scopep; }
@@ -123,7 +123,7 @@ public:
     }
 };
 
-class GateVarVertex : public GateEitherVertex {
+class GateVarVertex final : public GateEitherVertex {
     AstVarScope* m_varScp;
     bool m_isTop = false;
     bool m_isClock = false;
@@ -133,7 +133,7 @@ public:
     GateVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
         : GateEitherVertex{graphp, scopep}
         , m_varScp{varScp} {}
-    virtual ~GateVarVertex() override {}
+    virtual ~GateVarVertex() override = default;
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
     virtual string name() const override { return (cvtToHex(m_varScp) + " " + varScp()->name()); }
@@ -163,7 +163,7 @@ public:
     }
 };
 
-class GateLogicVertex : public GateEitherVertex {
+class GateLogicVertex final : public GateEitherVertex {
     AstNode* m_nodep;
     AstActive* m_activep;  // Under what active; nullptr is ok (under cfunc or such)
     bool m_slow;  // In slow block
@@ -174,7 +174,7 @@ public:
         , m_nodep{nodep}
         , m_activep{activep}
         , m_slow{slow} {}
-    virtual ~GateLogicVertex() override {}
+    virtual ~GateLogicVertex() override = default;
     // ACCESSORS
     virtual string name() const override {
         return (cvtToHex(m_nodep) + "@" + scopep()->prettyName());
@@ -192,7 +192,7 @@ public:
 //######################################################################
 // Is this a simple math expression with a single input and single output?
 
-class GateOkVisitor : public GateBaseVisitor {
+class GateOkVisitor final : public GateBaseVisitor {
 private:
     // RETURN STATE
     bool m_isSimple = true;  // Set false when we know it isn't simple
@@ -291,7 +291,7 @@ public:
         }
         if (debug() >= 9 && !m_isSimple) nodep->dumpTree(cout, "    gate!Ok: ");
     }
-    virtual ~GateOkVisitor() override {}
+    virtual ~GateOkVisitor() override = default;
     // PUBLIC METHODS
     bool isSimple() const { return m_isSimple; }
     AstNode* substTree() const { return m_substTreep; }
@@ -301,7 +301,7 @@ public:
 //######################################################################
 // Gate class functions
 
-class GateVisitor : public GateBaseVisitor {
+class GateVisitor final : public GateBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:
@@ -467,9 +467,6 @@ private:
             }
         }
     }
-    virtual void visit(AstAlways* nodep) override {
-        iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts"), nullptr);
-    }
     virtual void visit(AstAlwaysPublic* nodep) override {
         VL_RESTORER(m_inSlow);
         {
@@ -489,10 +486,10 @@ private:
         }
         m_inSenItem = false;
     }
-    virtual void visit(AstInitial* nodep) override {
+    virtual void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_inSlow);
         {
-            m_inSlow = true;
+            m_inSlow = VN_IS(nodep, Initial) || VN_IS(nodep, Final);
             iterateNewStmt(nodep, (nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts"),
                            nullptr);
         }
@@ -810,10 +807,10 @@ void GateVisitor::warnSignals() {
                     vscp->varp()->user2(true);  // Warn only once per signal
                     vscp->v3warn(SYNCASYNCNET,
                                  "Signal flopped as both synchronous and async: "
-                                     << vscp->prettyNameQ() << endl
-                                     << ap->warnOther() << "... Location of async usage" << endl
-                                     << ap->warnContextPrimary() << endl
-                                     << sp->warnOther() << "... Location of sync usage" << endl
+                                     << vscp->prettyNameQ() << '\n'
+                                     << ap->warnOther() << "... Location of async usage\n"
+                                     << ap->warnContextPrimary() << '\n'
+                                     << sp->warnOther() << "... Location of sync usage\n"
                                      << sp->warnContextSecondary());
                 }
             }
@@ -826,7 +823,7 @@ void GateVisitor::warnSignals() {
 
 class GateDedupeVarVisitor;
 
-class GateElimVisitor : public GateBaseVisitor {
+class GateElimVisitor final : public GateBaseVisitor {
 private:
     // NODE STATE
     // STATE
@@ -870,7 +867,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    virtual ~GateElimVisitor() override {}
+    virtual ~GateElimVisitor() override = default;
     GateElimVisitor(AstNode* nodep, AstVarScope* varscp, AstNode* replaceTreep,
                     GateDedupeVarVisitor* varVisp) {
         UINFO(9, "     elimvisitor " << nodep << endl);
@@ -903,10 +900,10 @@ void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode*
 //######################################################################
 // Auxiliary hash class for GateDedupeVarVisitor
 
-class GateDedupeHash : public V3HashedUserSame {
+class GateDedupeHash final : public V3HashedUserSame {
 public:
     // TYPES
-    typedef std::set<AstNode*> NodeSet;
+    typedef std::unordered_set<AstNode*> NodeSet;
 
 private:
     // NODE STATE
@@ -939,7 +936,7 @@ private:
     }
 
 public:
-    GateDedupeHash() {}
+    GateDedupeHash() = default;
     virtual ~GateDedupeHash() override {
         if (v3Global.opt.debugCheck()) check();
     }
@@ -1021,7 +1018,7 @@ public:
 //######################################################################
 // Have we seen the rhs of this assign before?
 
-class GateDedupeVarVisitor : public GateBaseVisitor {
+class GateDedupeVarVisitor final : public GateBaseVisitor {
     // Given a node, it is visited to try to find the AstNodeAssign under
     // it that can used for dedupe.
     // Right now, only the following node trees are supported for dedupe.
@@ -1086,8 +1083,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    GateDedupeVarVisitor() {}
-    virtual ~GateDedupeVarVisitor() override {}
+    GateDedupeVarVisitor() = default;
+    virtual ~GateDedupeVarVisitor() override = default;
     // PUBLIC METHODS
     AstNodeVarRef* findDupe(AstNode* nodep, AstVarScope* consumerVarScopep, AstActive* activep) {
         m_assignp = nullptr;
@@ -1121,7 +1118,7 @@ void GateElimVisitor::hashReplace(AstNode* oldp, AstNode* newp) {
 //######################################################################
 // Recurse through the graph, looking for duplicate expressions on the rhs of an assign
 
-class GateDedupeGraphVisitor : public GateGraphBaseVisitor {
+class GateDedupeGraphVisitor final : public GateGraphBaseVisitor {
 private:
     // NODE STATE
     // AstVarScope::user2p      -> bool: already visited
@@ -1248,7 +1245,7 @@ void GateVisitor::dedupe() {
 //######################################################################
 // Recurse through the graph, try to merge assigns
 
-class GateMergeAssignsGraphVisitor : public GateGraphBaseVisitor {
+class GateMergeAssignsGraphVisitor final : public GateGraphBaseVisitor {
 private:
     // NODE STATE
     AstNodeAssign* m_assignp = nullptr;
@@ -1378,7 +1375,7 @@ void GateVisitor::mergeAssigns() {
 //######################################################################
 // Find a var's offset in a concatenation
 
-class GateConcatVisitor : public GateBaseVisitor {
+class GateConcatVisitor final : public GateBaseVisitor {
 private:
     // STATE
     AstVarScope* m_vscp = nullptr;  // Varscope we're trying to find
@@ -1409,8 +1406,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    GateConcatVisitor() {}
-    virtual ~GateConcatVisitor() override {}
+    GateConcatVisitor() = default;
+    virtual ~GateConcatVisitor() override = default;
     // PUBLIC METHODS
     bool concatOffset(AstConcat* concatp, AstVarScope* vscp, int& offsetr) {
         m_vscp = vscp;
@@ -1429,17 +1426,17 @@ public:
 //######################################################################
 // Recurse through the graph, looking for clock vectors to bypass
 
-class GateClkDecompState {
+class GateClkDecompState final {
 public:
     int m_offset;
     AstVarScope* m_last_vsp;
     GateClkDecompState(int offset, AstVarScope* vsp)
         : m_offset{offset}
         , m_last_vsp{vsp} {}
-    virtual ~GateClkDecompState() {}
+    virtual ~GateClkDecompState() = default;
 };
 
-class GateClkDecompGraphVisitor : public GateGraphBaseVisitor {
+class GateClkDecompGraphVisitor final : public GateGraphBaseVisitor {
 private:
     // NODE STATE
     // AstVarScope::user2p      -> bool: already visited
@@ -1571,7 +1568,7 @@ void GateVisitor::decomposeClkVectors() {
 //######################################################################
 // Convert VARSCOPE(ASSIGN(default, VARREF)) to just VARSCOPE(default)
 
-class GateDeassignVisitor : public GateBaseVisitor {
+class GateDeassignVisitor final : public GateBaseVisitor {
 private:
     // VISITORS
     virtual void visit(AstVarScope* nodep) override {
@@ -1591,7 +1588,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit GateDeassignVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~GateDeassignVisitor() override {}
+    virtual ~GateDeassignVisitor() override = default;
 };
 
 //######################################################################

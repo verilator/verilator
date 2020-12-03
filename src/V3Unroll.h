@@ -28,7 +28,7 @@
 
 class UnrollVisitor;
 
-class UnrollStateful {
+class UnrollStateful final {
     // MEMBERS
     UnrollVisitor* m_unrollerp;
     VL_UNCOPYABLE(UnrollStateful);
@@ -44,7 +44,7 @@ public:
 
 //============================================================================
 
-class V3Unroll {
+class V3Unroll final {
 public:
     static void unrollAll(AstNetlist* nodep);
 };

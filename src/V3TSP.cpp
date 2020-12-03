@@ -59,7 +59,7 @@ public:
     TspVertexTmpl(V3Graph* graphp, const T_Key& k)
         : V3GraphVertex{graphp}
         , m_key{k} {}
-    virtual ~TspVertexTmpl() override {}
+    virtual ~TspVertexTmpl() override = default;
     const T_Key& key() const { return m_key; }
 
 private:
@@ -80,7 +80,7 @@ public:
     // CONSTRUCTORS
     TspGraphTmpl()
         : V3Graph{} {}
-    virtual ~TspGraphTmpl() override {}
+    virtual ~TspGraphTmpl() override = default;
 
     // METHODS
     void addVertex(const T_Key& key) {
@@ -119,13 +119,13 @@ public:
         return vertices;
     }
 
-    class EdgeCmp {
+    class EdgeCmp final {
         // Provides a deterministic compare for outgoing V3GraphEdge's
         // to be used in Prim's algorithm below. Also used in the
         // perfectMatching() routine.
     public:
         // CONSTRUCTORS
-        EdgeCmp() {}
+        EdgeCmp() = default;
         // METHODS
         bool operator()(const V3GraphEdge* ap, const V3GraphEdge* bp) {
             int aCost = ap->weight();
@@ -346,10 +346,10 @@ public:
         os << "At " << nameComment << ", dumping graph. Keys:\n";
         for (V3GraphVertex* vxp = verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             Vertex* tspvp = castVertexp(vxp);
-            os << " " << tspvp->key() << endl;
+            os << " " << tspvp->key() << '\n';
             for (V3GraphEdge* edgep = tspvp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 Vertex* neighborp = castVertexp(edgep->top());
-                os << "   has edge " << edgep->user() << " to " << neighborp->key() << endl;
+                os << "   has edge " << edgep->user() << " to " << neighborp->key() << '\n';
             }
         }
     }
@@ -494,13 +494,13 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
 //######################################################################
 // Self Tests
 
-class TspTestState : public V3TSP::TspStateBase {
+class TspTestState final : public V3TSP::TspStateBase {
 public:
     TspTestState(unsigned xpos, unsigned ypos)
         : m_xpos{xpos}
         , m_ypos{ypos}
-        , m_serial{++m_serialNext} {}
-    ~TspTestState() {}
+        , m_serial{++s_serialNext} {}
+    ~TspTestState() = default;
     virtual int cost(const TspStateBase* otherp) const override {
         return cost(dynamic_cast<const TspTestState*>(otherp));
     }
@@ -530,10 +530,10 @@ private:
     unsigned m_xpos;
     unsigned m_ypos;
     unsigned m_serial;
-    static unsigned m_serialNext;
+    static unsigned s_serialNext;
 };
 
-unsigned TspTestState::m_serialNext = 0;
+unsigned TspTestState::s_serialNext = 0;
 
 void V3TSP::selfTestStates() {
     // Linear test -- coords all along the x-axis

@@ -26,7 +26,7 @@
 
 //######################################################################
 
-class V3Config {
+class V3Config final {
 public:
     static void addCaseFull(const string& file, int lineno);
     static void addCaseParallel(const string& file, int lineno);

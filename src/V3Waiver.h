@@ -22,7 +22,7 @@
 #include <vector>
 #include <string>
 
-class V3Waiver {
+class V3Waiver final {
     // TYPES
     typedef std::vector<std::string> WaiverList;
     static WaiverList s_waiverList;

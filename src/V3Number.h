@@ -37,7 +37,7 @@ inline bool v3EpsilonEqual(double a, double b) {
 
 class AstNode;
 
-class V3Number {
+class V3Number final {
     // Large 4-state number handling
     int m_width;  // Width as specified/calculated.
     bool m_sized : 1;  // True if the user specified the width, else we track it.
@@ -273,6 +273,7 @@ public:
     void isSigned(bool ssigned) { m_signed = ssigned; }
     bool isAnyX() const;
     bool isAnyXZ() const;
+    bool isAnyZ() const;
     bool isMsbXZ() const { return bitIsXZ(m_width); }
     uint32_t toUInt() const;
     vlsint32_t toSInt() const;
@@ -348,7 +349,6 @@ public:
     V3Number& opLogOr(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLogEq(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLogIf(const V3Number& lhs, const V3Number& rhs);
-    V3Number& opAbsS(const V3Number& lhs);
     V3Number& opNegate(const V3Number& lhs);
     V3Number& opAdd(const V3Number& lhs, const V3Number& rhs);
     V3Number& opSub(const V3Number& lhs, const V3Number& rhs);

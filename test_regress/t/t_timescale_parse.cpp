@@ -19,4 +19,5 @@ int main() {
     tb->eval();
 
     tb->final();
+    VL_DO_DANGLING(delete tb, tb);
 }

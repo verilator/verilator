@@ -30,7 +30,7 @@
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkLValueVisitor : public AstNVisitor {
+class LinkLValueVisitor final : public AstNVisitor {
 private:
     // NODE STATE
 
@@ -290,7 +290,7 @@ public:
         : m_setRefLvalue{start} {
         iterate(nodep);
     }
-    virtual ~LinkLValueVisitor() override {}
+    virtual ~LinkLValueVisitor() override = default;
 };
 
 //######################################################################

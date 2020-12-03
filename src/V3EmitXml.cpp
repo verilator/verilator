@@ -28,7 +28,7 @@
 //######################################################################
 // Emit statements and math operators
 
-class EmitXmlFileVisitor : public AstNVisitor {
+class EmitXmlFileVisitor final : public AstNVisitor {
     // NODE STATE
     // Entire netlist:
     // AstNode::user1           -> uint64_t, number to connect crossrefs
@@ -250,13 +250,13 @@ public:
         : m_ofp{ofp} {
         iterate(nodep);
     }
-    virtual ~EmitXmlFileVisitor() override {}
+    virtual ~EmitXmlFileVisitor() override = default;
 };
 
 //######################################################################
 // List of module files xml visitor
 
-class ModuleFilesXmlVisitor : public AstNVisitor {
+class ModuleFilesXmlVisitor final : public AstNVisitor {
 private:
     // MEMBERS
     std::ostream& m_os;
@@ -298,13 +298,13 @@ public:
         }
         m_os << "</module_files>\n";
     }
-    virtual ~ModuleFilesXmlVisitor() override {}
+    virtual ~ModuleFilesXmlVisitor() override = default;
 };
 
 //######################################################################
 // Hierarchy of Cells visitor
 
-class HierCellsXmlVisitor : public AstNVisitor {
+class HierCellsXmlVisitor final : public AstNVisitor {
 private:
     // MEMBERS
     std::ostream& m_os;
@@ -363,7 +363,7 @@ public:
         // Operate on whole netlist
         nodep->accept(*this);
     }
-    virtual ~HierCellsXmlVisitor() override {}
+    virtual ~HierCellsXmlVisitor() override = default;
 };
 
 //######################################################################

@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Premit {
+class V3Premit final {
 public:
     static void premitAll(AstNetlist* nodep);
 };

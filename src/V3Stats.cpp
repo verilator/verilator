@@ -30,7 +30,7 @@
 //######################################################################
 // Stats class functions
 
-class StatsVisitor : public AstNVisitor {
+class StatsVisitor final : public AstNVisitor {
 private:
     // NODE STATE/TYPES
 
@@ -49,7 +49,7 @@ private:
 
     std::vector<VDouble0> m_statTypeCount;  // Nodes of given type
     VDouble0 m_statAbove[AstType::_ENUM_END][AstType::_ENUM_END];  // Nodes of given type
-    VDouble0 m_statPred[VBranchPred::_ENUM_END];  // Nodes of given type
+    std::array<VDouble0, VBranchPred::_ENUM_END> m_statPred;  // Nodes of given type
     VDouble0 m_statInstr;  // Instruction count
     VDouble0 m_statInstrFast;  // Instruction count, non-slow() eval functions only
     std::vector<VDouble0> m_statVarWidths;  // Variables of given width

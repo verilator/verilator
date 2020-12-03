@@ -33,7 +33,7 @@ class FileLine;
 
 //######################################################################
 
-class VOptionBool {
+class VOptionBool final {
     // Class to track options that are either not specified (and default
     // true/false), versus user setting the option to true or false
 public:
@@ -69,7 +69,7 @@ inline std::ostream& operator<<(std::ostream& os, const VOptionBool& rhs) {
 
 //######################################################################
 
-class VTimescale {
+class VTimescale final {
 public:
     enum en : uint8_t {
         // clang-format off
@@ -167,7 +167,7 @@ inline std::ostream& operator<<(std::ostream& os, const VTimescale& rhs) {
 
 //######################################################################
 
-class TraceFormat {
+class TraceFormat final {
 public:
     enum en : uint8_t { VCD = 0, FST } m_e;
     // cppcheck-suppress noExplicitConstructor
@@ -198,7 +198,7 @@ typedef std::set<string> V3StringSet;
 //######################################################################
 
 // Information given by --hierarchical-block option
-class V3HierarchicalBlockOption {
+class V3HierarchicalBlockOption final {
 public:
     // key:parameter name, value:value (as string)
     typedef std::map<const string, string> ParamStrMap;
@@ -223,7 +223,7 @@ typedef std::map<const string, V3HierarchicalBlockOption> V3HierBlockOptSet;
 //######################################################################
 // V3Options - Command line options
 
-class V3Options {
+class V3Options final {
 public:
 private:
     // TYPES

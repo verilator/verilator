@@ -48,6 +48,7 @@ int main(int argc, const char** argv) {
         exit(1);
     }
 
+    VL_DO_DANGLING(delete top, top);
     std::cout << "*-* All Finished *-*" << std::endl;
     return 0;
 }

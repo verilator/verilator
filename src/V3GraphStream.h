@@ -40,7 +40,7 @@
 template <class T_Compare> class GraphStream {
 private:
     // TYPES
-    class VxHolder {
+    class VxHolder final {
     public:
         // MEMBERS
         const V3GraphVertex* m_vxp;  // [mtask] Vertex
@@ -62,7 +62,7 @@ private:
         }
     };
 
-    class VxHolderCmp {
+    class VxHolderCmp final {
     public:
         // MEMBERS
         T_Compare m_lessThan;  // Sorting functor
@@ -81,7 +81,7 @@ private:
     };
 
     typedef std::set<VxHolder, VxHolderCmp&> ReadyVertices;
-    typedef std::unordered_map<const V3GraphVertex*, VxHolder> WaitingVertices;
+    typedef std::map<const V3GraphVertex*, VxHolder> WaitingVertices;
 
     // MEMBERS
     VxHolderCmp m_vxHolderCmp;  // Vertext comparison functor
@@ -132,7 +132,7 @@ public:
             }
         }
     }
-    ~GraphStream() {}
+    ~GraphStream() = default;
 
     // METHODS
 

@@ -43,12 +43,12 @@
 //######################################################################
 // Collect existing active names
 
-class ActiveBaseVisitor : public AstNVisitor {
+class ActiveBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 protected:
     VL_DEBUG_FUNC;  // Declare debug()
 };
 
-class ActiveNamer : public ActiveBaseVisitor {
+class ActiveNamer final : public ActiveBaseVisitor {
 private:
     // STATE
     AstScope* m_scopep = nullptr;  // Current scope to add statement to
@@ -130,15 +130,15 @@ public:
     }
 
     // CONSTRUCTORS
-    ActiveNamer() {}
-    virtual ~ActiveNamer() override {}
+    ActiveNamer() = default;
+    virtual ~ActiveNamer() override = default;
     void main(AstScope* nodep) { iterate(nodep); }
 };
 
 //######################################################################
 // Active AssignDly replacement functions
 
-class ActiveDlyVisitor : public ActiveBaseVisitor {
+class ActiveDlyVisitor final : public ActiveBaseVisitor {
 public:
     enum CheckType : uint8_t { CT_SEQ, CT_COMBO, CT_INITIAL, CT_LATCH };
 
@@ -205,13 +205,13 @@ public:
         , m_alwaysp{nodep} {
         iterate(nodep);
     }
-    virtual ~ActiveDlyVisitor() override {}
+    virtual ~ActiveDlyVisitor() override = default;
 };
 
 //######################################################################
 // Active class functions
 
-class ActiveVisitor : public ActiveBaseVisitor {
+class ActiveVisitor final : public ActiveBaseVisitor {
 private:
     // NODE STATE
     //  Each call to V3Const::constify
@@ -364,6 +364,14 @@ private:
         }
         visitAlways(nodep, nodep->sensesp(), nodep->keyword());
     }
+    virtual void visit(AstAlwaysPostponed* nodep) override {
+        UINFO(4, "    ALW   " << nodep << endl);
+        if (!nodep->bodysp()) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        visitAlways(nodep, nullptr, VAlwaysKwd::ALWAYS);
+    }
     virtual void visit(AstAlwaysPublic* nodep) override {
         // Move always to appropriate ACTIVE based on its sense list
         UINFO(4, "    ALWPub   " << nodep << endl);
@@ -406,7 +414,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ActiveVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ActiveVisitor() override {}
+    virtual ~ActiveVisitor() override = default;
 };
 
 //######################################################################

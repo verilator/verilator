@@ -36,7 +36,7 @@
 //######################################################################
 // Utilities
 
-class ConstVarMarkVisitor : public AstNVisitor {
+class ConstVarMarkVisitor final : public AstNVisitor {
     // NODE STATE
     // AstVar::user4p           -> bool, Var marked, 0=not set yet
 private:
@@ -52,10 +52,10 @@ public:
         AstNode::user4ClearTree();  // Check marked InUse before we're called
         iterate(nodep);
     }
-    virtual ~ConstVarMarkVisitor() override {}
+    virtual ~ConstVarMarkVisitor() override = default;
 };
 
-class ConstVarFindVisitor : public AstNVisitor {
+class ConstVarFindVisitor final : public AstNVisitor {
     // NODE STATE
     // AstVar::user4p           -> bool, input from ConstVarMarkVisitor
     // MEMBERS
@@ -71,7 +71,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ConstVarFindVisitor(AstNode* nodep) { iterateAndNextNull(nodep); }
-    virtual ~ConstVarFindVisitor() override {}
+    virtual ~ConstVarFindVisitor() override = default;
     // METHODS
     bool found() const { return m_found; }
 };
@@ -79,7 +79,7 @@ public:
 //######################################################################
 // Const state, as a visitor of each AstNode
 
-class ConstVisitor : public AstNVisitor {
+class ConstVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // ** only when m_warn/m_doExpensive is set.  If state is needed other times,
@@ -1262,7 +1262,7 @@ private:
             AstNode* errorp = simvis.whyNotNodep();
             if (!errorp) errorp = nodep;
             nodep->v3error("Expecting expression to be constant, but can't determine constant for "
-                           << nodep->prettyTypeName() << endl
+                           << nodep->prettyTypeName() << '\n'
                            << errorp->warnOther() << "... Location of non-constant "
                            << errorp->prettyTypeName() << ": " << simvis.whyNotMessage());
             VL_DO_DANGLING(replaceZero(nodep), nodep);
@@ -1730,7 +1730,7 @@ private:
     }
 
     struct SenItemCmp {
-        inline bool operator()(const AstSenItem* lhsp, const AstSenItem* rhsp) const {
+        bool operator()(const AstSenItem* lhsp, const AstSenItem* rhsp) const {
             if (lhsp->type() < rhsp->type()) return true;
             if (lhsp->type() > rhsp->type()) return false;
             // Looks visually better if we keep sorted by name
@@ -1930,8 +1930,9 @@ private:
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             } else if (ifSameAssign(nodep)) {
-                UINFO(4, "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})"
-                             << endl);
+                UINFO(
+                    4,
+                    "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})\n");
                 AstNodeAssign* ifp = VN_CAST(nodep->ifsp(), NodeAssign);
                 AstNodeAssign* elsep = VN_CAST(nodep->elsesp(), NodeAssign);
                 ifp->unlinkFrBack();
@@ -2563,7 +2564,7 @@ public:
         }
         // clang-format on
     }
-    virtual ~ConstVisitor() override {}
+    virtual ~ConstVisitor() override = default;
     AstNode* mainAcceptEdit(AstNode* nodep) {
         // Operate starting at a random place
         return iterateSubtreeReturnEdits(nodep);

@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Expand {
+class V3Expand final {
 public:
     static void expandAll(AstNetlist* nodep);
 };

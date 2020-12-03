@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Unknown {
+class V3Unknown final {
 public:
     static void unknownAll(AstNetlist* nodep);
 };

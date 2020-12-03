@@ -23,6 +23,7 @@
 // Limited V3 headers here - this is a base class for Vlc etc
 #include "V3String.h"
 
+#include <array>
 #include <bitset>
 #include <cassert>
 #include <deque>
@@ -32,7 +33,7 @@
 
 //######################################################################
 
-class V3ErrorCode {
+class V3ErrorCode final {
 public:
     // clang-format off
     enum en: uint8_t  {
@@ -51,6 +52,7 @@ public:
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
         // Error codes:
         E_DETECTARRAY,  // Error: Unsupported: Can't detect changes on arrayed variable
+        E_ENCAPSULATED, // Error: local/protected violation
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
         E_UNSUPPORTED,  // Error: Unsupported (generally)
         E_TASKNSVAR,    // Error: Task I/O not simple
@@ -146,7 +148,7 @@ public:
             // Boolean
             " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
             // Errors
-            "DETECTARRAY", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
+            "DETECTARRAY", "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
@@ -216,7 +218,7 @@ inline std::ostream& operator<<(std::ostream& os, const V3ErrorCode& rhs) {
 
 //######################################################################
 
-class V3Error {
+class V3Error final {
     // Base class for any object that wants debugging and error reporting
 
     typedef std::set<string> MessagesSet;
@@ -224,9 +226,10 @@ class V3Error {
 
 private:
     static bool s_describedWarnings;  // Told user how to disable warns
-    static bool
-        s_describedEachWarn[V3ErrorCode::_ENUM_MAX];  // Told user specifics about this warning
-    static bool s_pretendError[V3ErrorCode::_ENUM_MAX];  // Pretend this warning is an error
+    static std::array<bool, V3ErrorCode::_ENUM_MAX>
+        s_describedEachWarn;  // Told user specifics about this warning
+    static std::array<bool, V3ErrorCode::_ENUM_MAX>
+        s_pretendError;  // Pretend this warning is an error
     static int s_debugDefault;  // Option: --debugi Default debugging level
     static int s_errorLimit;  // Option: --error-limit Number of errors before exit
     static bool s_warnFatal;  // Option: --warnFatal Warnings are fatal

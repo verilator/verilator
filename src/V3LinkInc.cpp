@@ -47,7 +47,7 @@
 
 //######################################################################
 
-class LinkIncVisitor : public AstNVisitor {
+class LinkIncVisitor final : public AstNVisitor {
 private:
     // TYPES
     enum InsertMode : uint8_t {
@@ -238,7 +238,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LinkIncVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~LinkIncVisitor() override {}
+    virtual ~LinkIncVisitor() override = default;
 };
 
 //######################################################################

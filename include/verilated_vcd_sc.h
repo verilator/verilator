@@ -31,7 +31,7 @@
 /// This class is passed to the SystemC simulation kernel, just like a
 /// documented SystemC trace format.
 
-class VerilatedVcdSc : sc_trace_file, public VerilatedVcdC {
+class VerilatedVcdSc final : sc_trace_file, public VerilatedVcdC {
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcdSc);
 

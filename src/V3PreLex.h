@@ -126,7 +126,7 @@ void yy_delete_buffer(YY_BUFFER_STATE b);
 //======================================================================
 // Entry for each file processed; a stack of entries included
 
-class VPreStream {
+class VPreStream final {
 public:
     FileLine* m_curFilelinep;  // Current processing point (see also m_tokFilelinep)
     V3PreLex* m_lexp;  // Lexer, for resource tracking
@@ -149,7 +149,7 @@ private:
 //======================================================================
 // Class entry for each per-lexer state
 
-class V3PreLex {
+class V3PreLex final {
 public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     V3PreProcImp* m_preimpp;  // Preprocessor lexor belongs to
     std::stack<VPreStream*> m_streampStack;  // Stack of processing files

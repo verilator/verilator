@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Width {
+class V3Width final {
 public:
     static int debug();
     static void width(AstNetlist* nodep);

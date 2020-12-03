@@ -134,12 +134,12 @@ extern vluint32_t VL_THREAD_ID() VL_MT_SAFE;
 #define VL_LOCK_SPINS 50000  /// Number of times to spin for a mutex before relaxing
 
 /// Mutex, wrapped to allow -fthread_safety checks
-class VL_CAPABILITY("mutex") VerilatedMutex {
+class VL_CAPABILITY("mutex") VerilatedMutex final {
 private:
     std::mutex m_mutex;  // Mutex
 public:
-    VerilatedMutex() {}
-    ~VerilatedMutex() {}
+    VerilatedMutex() = default;
+    ~VerilatedMutex() = default;
     const VerilatedMutex& operator!() const { return *this; }  // For -fthread_safety
     /// Acquire/lock mutex
     void lock() VL_ACQUIRE() {
@@ -160,7 +160,7 @@ public:
 };
 
 /// Lock guard for mutex (ala std::unique_lock), wrapped to allow -fthread_safety checks
-class VL_SCOPED_CAPABILITY VerilatedLockGuard {
+class VL_SCOPED_CAPABILITY VerilatedLockGuard final {
     VL_UNCOPYABLE(VerilatedLockGuard);
 
 private:
@@ -179,19 +179,19 @@ public:
 #else  // !VL_THREADED
 
 /// Empty non-threaded mutex to avoid #ifdefs in consuming code
-class VerilatedMutex {
+class VerilatedMutex final {
 public:
     void lock() {}
     void unlock() {}
 };
 
 /// Empty non-threaded lock guard to avoid #ifdefs in consuming code
-class VerilatedLockGuard {
+class VerilatedLockGuard final {
     VL_UNCOPYABLE(VerilatedLockGuard);
 
 public:
     explicit VerilatedLockGuard(VerilatedMutex&) {}
-    ~VerilatedLockGuard() {}
+    ~VerilatedLockGuard() = default;
     void lock() {}
     void unlock() {}
 };
@@ -199,7 +199,7 @@ public:
 #endif  // VL_THREADED
 
 /// Remember the calling thread at construction time, and make sure later calls use same thread
-class VerilatedAssertOneThread {
+class VerilatedAssertOneThread final {
     // MEMBERS
 #if defined(VL_THREADED) && defined(VL_DEBUG)
     vluint32_t m_threadid;  /// Thread that is legal
@@ -235,7 +235,7 @@ public:
 
 class VerilatedScope;
 
-class VerilatedModule {
+class VerilatedModule VL_NOT_FINAL {
     VL_UNCOPYABLE(VerilatedModule);
 
 private:
@@ -274,7 +274,8 @@ public:
 #define VL_CELL(instname, type)  ///< Declare a cell, ala SP_CELL
 
 /// Declare a module, ala SC_MODULE
-#define VL_MODULE(modname) class modname : public VerilatedModule
+#define VL_MODULE(modname) class modname VL_NOT_FINAL : public VerilatedModule
+// Not class final in VL_MODULE, as users might be abstracting our models (--hierarchical)
 
 /// Constructor, ala SC_CTOR
 #define VL_CTOR(modname) modname(const char* __VCname = "")
@@ -303,7 +304,7 @@ public:
 //===========================================================================
 /// Verilator symbol table base class
 
-class VerilatedSyms {
+class VerilatedSyms VL_NOT_FINAL {
 public:  // But for internal use only
 #ifdef VL_THREADED
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
@@ -319,7 +320,7 @@ public:  // But for internal use only
 /// Verilator global class information class
 /// This class is initialized by main thread only. Reading post-init is thread safe.
 
-class VerilatedScope {
+class VerilatedScope final {
 public:
     typedef enum : vluint8_t {
         SCOPE_MODULE,
@@ -338,7 +339,7 @@ private:
     Type m_type = SCOPE_OTHER;  ///< Type of the scope
 
 public:  // But internals only - called from VerilatedModule's
-    VerilatedScope();
+    VerilatedScope() = default;
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
                    const char* identifier, vlsint8_t timeunit, const Type& type) VL_MT_UNSAFE;
@@ -367,7 +368,7 @@ public:  // But internals only - called from VerilatedModule's
     Type type() const { return m_type; }
 };
 
-class VerilatedHierarchy {
+class VerilatedHierarchy final {
 public:
     static void add(VerilatedScope* fromp, VerilatedScope* top);
 };
@@ -375,10 +376,10 @@ public:
 //===========================================================================
 /// Verilator global static information class
 
-class Verilated {
+class Verilated final {
     // MEMBERS
     // Slow path variables
-    static VerilatedMutex m_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
+    static VerilatedMutex s_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
 
     static struct Serialized {  // All these members serialized/deserialized
         // Fast path
@@ -394,8 +395,9 @@ class Verilated {
         int s_errorLimit;  ///< Stop on error number
         int s_randReset;  ///< Random reset: 0=all 0s, 1=all 1s, 2=random
         int s_randSeed;  ///< Random seed: 0=random
+        int s_randSeedEpoch;  ///< Number incrementing on each reseed, 0=illegal
         Serialized();
-        ~Serialized() {}
+        ~Serialized() = default;
     } s_s;
 
     static struct NonSerialized {  // Non-serialized information
@@ -415,8 +417,8 @@ class Verilated {
         VerilatedMutex m_argMutex;  ///< Mutex for s_args members, when VL_THREADED
         int argc = 0;
         const char** argv = nullptr;
-        CommandArgValues() {}
-        ~CommandArgValues() {}
+        CommandArgValues() = default;
+        ~CommandArgValues() = default;
     } s_args;
 
     // Not covered by mutex, as per-thread
@@ -430,8 +432,8 @@ class Verilated {
         const char* t_dpiFilename = nullptr;  ///< DPI context filename
         int t_dpiLineno = 0;  ///< DPI context line number
 
-        ThreadLocal();
-        ~ThreadLocal();
+        ThreadLocal() = default;
+        ~ThreadLocal() = default;
     } t_s;
 
 private:
@@ -450,6 +452,9 @@ public:
     static int randReset() VL_MT_SAFE { return s_s.s_randReset; }  ///< Return randReset value
     static void randSeed(int val) VL_MT_SAFE;
     static int randSeed() VL_MT_SAFE { return s_s.s_randSeed; }  ///< Return randSeed value
+    static vluint32_t randSeedEpoch() VL_MT_SAFE { return s_s.s_randSeedEpoch; }
+    /// Random seed extended to 64 bits, and defaulted if user seed==0
+    static vluint64_t randSeedDefault64() VL_MT_SAFE;
 
     /// Enable debug of internal verilated code
     static void debug(int level) VL_MT_SAFE;
@@ -460,7 +465,7 @@ public:
     static inline int debug() VL_MT_SAFE { return s_s.s_debug; }
 #else
     /// Return constant 0 debug level, so C++'s optimizer rips up
-    static inline int debug() VL_PURE { return 0; }
+    static constexpr int debug() VL_PURE { return 0; }
 #endif
     /// Enable calculation of unused signals
     static void calcUnusedSigs(bool flag) VL_MT_SAFE;
@@ -576,8 +581,8 @@ public:
     static int dpiLineno() VL_MT_SAFE { return t_s.t_dpiLineno; }
     static int exportFuncNum(const char* namep) VL_MT_SAFE;
 
-    static size_t serialized1Size() VL_PURE { return sizeof(s_s); }
-    static void* serialized1Ptr() VL_MT_UNSAFE { return &s_s; }  // Unsafe, for Serialize only
+    static constexpr size_t serialized1Size() VL_PURE { return sizeof(s_s); }
+    static constexpr void* serialized1Ptr() VL_MT_UNSAFE { return &s_s; }  // For Serialize only
     static size_t serialized2Size() VL_PURE;
     static void* serialized2Ptr() VL_MT_UNSAFE;
 #ifdef VL_THREADED
@@ -665,6 +670,7 @@ extern vluint64_t vl_rand64() VL_MT_SAFE;
 inline IData VL_RANDOM_I(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_I(obits); }
 inline QData VL_RANDOM_Q(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_Q(obits); }
 extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);  ///< Randomize a signal
+extern IData VL_RANDOM_SEEDED_II(int obits, IData seed) VL_MT_SAFE;
 inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
     vluint64_t rnd = vl_rand64();
     if (VL_LIKELY(hi > lo)) {
@@ -770,9 +776,9 @@ static inline void* VL_CVT_Q_VP(QData lhs) VL_PURE {
     u.q = lhs;
     return u.fp;
 }
-/// Return QData from void*
-static inline QData VL_CVT_VP_Q(void* fp) VL_PURE {
-    union { void* fp; QData q; } u;
+/// Return QData from const void*
+static inline QData VL_CVT_VP_Q(const void* fp) VL_PURE {
+    union { const void* fp; QData q; } u;
     u.q = 0;
     u.fp = fp;
     return u.q;

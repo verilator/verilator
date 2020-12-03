@@ -37,7 +37,7 @@ class FileLine;
 
 //! This singleton class contains tables of data that are unchanging in each
 //! source file (each with its own unique filename number).
-class FileLineSingleton {
+class FileLineSingleton final {
     // TYPES
     typedef std::map<const string, int> FileNameNumMap;
     // MEMBERS
@@ -45,8 +45,8 @@ class FileLineSingleton {
     std::deque<string> m_names;  // filename text for each filenameno
     std::deque<V3LangCode> m_languages;  // language for each filenameno
     // CONSTRUCTORS
-    FileLineSingleton() {}
-    ~FileLineSingleton() {}
+    FileLineSingleton() = default;
+    ~FileLineSingleton() = default;
 
 protected:
     friend class FileLine;
@@ -64,7 +64,7 @@ protected:
 };
 
 //! All source lines from a file/stream, to enable errors to show sources
-class VFileContent {
+class VFileContent final {
     // MEMBERS
     int m_id;  // Content ID number
     std::deque<string> m_lines;  // Source text lines
@@ -73,7 +73,7 @@ public:
         static int s_id = 0;
         m_id = ++s_id;
     }
-    ~VFileContent() {}
+    ~VFileContent() = default;
     // METHODS
     void pushText(const string& text);  // Add arbitrary text (need not be line-by-line)
     string getLine(int lineno) const;
@@ -87,22 +87,22 @@ std::ostream& operator<<(std::ostream& os, VFileContent* contentp);
 //! This class is instantiated for every source code line (potentially
 //! millions). To save space, per-file information (e.g. filename, source
 //! language is held in tables in the FileLineSingleton class.
-class FileLine {
+class FileLine final {
     // CONSTANTS
     static constexpr unsigned SHOW_SOURCE_MAX_LENGTH = 400;  // Don't show source lines > this long
 
     // MEMBERS
     // Columns here means number of chars from beginning (i.e. tabs count as one)
-    int m_firstLineno;  // `line corrected token's first line number
-    int m_firstColumn;  // `line corrected token's first column number
-    int m_lastLineno;  // `line corrected token's last line number
-    int m_lastColumn;  // `line corrected token's last column number
+    int m_firstLineno = 0;  // `line corrected token's first line number
+    int m_firstColumn = 0;  // `line corrected token's first column number
+    int m_lastLineno = 0;  // `line corrected token's last line number
+    int m_lastColumn = 0;  // `line corrected token's last column number
     int m_filenameno;  // `line corrected filename number
-    int m_contentLineno;  // Line number within source stream
-    VFileContent* m_contentp;  // Source text contents line is within
-    FileLine* m_parent;  // Parent line that included this line
+    int m_contentLineno = 0;  // Line number within source stream
+    VFileContent* m_contentp = nullptr;  // Source text contents line is within
+    FileLine* m_parent = nullptr;  // Parent line that included this line
     std::bitset<V3ErrorCode::_ENUM_MAX> m_warnOn;
-    bool m_waive;  // Waive warning
+    bool m_waive = false;  // Waive warning
 
 protected:
     // User routines should never need to change line numbers
@@ -126,16 +126,8 @@ private:
 
 public:
     explicit FileLine(const string& filename)
-        : m_firstLineno{0}
-        , m_firstColumn{0}
-        , m_lastLineno{0}
-        , m_lastColumn{0}
-        , m_filenameno{singleton().nameToNumber(filename)}
-        , m_contentLineno{0}
-        , m_contentp{nullptr}
-        , m_parent{nullptr}
-        , m_warnOn{defaultFileLine().m_warnOn}
-        , m_waive{false} {}
+        : m_filenameno{singleton().nameToNumber(filename)}
+        , m_warnOn{defaultFileLine().m_warnOn} {}
     explicit FileLine(FileLine* fromp)
         : m_firstLineno{fromp->m_firstLineno}
         , m_firstColumn{fromp->m_firstColumn}
@@ -151,7 +143,7 @@ public:
     explicit FileLine(EmptySecret);
     FileLine* copyOrSameFileLine();
     static void deleteAllRemaining();
-    ~FileLine() {}
+    ~FileLine() = default;
 #ifdef VL_LEAK_CHECKS
     static void* operator new(size_t size);
     static void operator delete(void* obj, size_t size);

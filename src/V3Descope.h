@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Descope {
+class V3Descope final {
 public:
     static void descopeAll(AstNetlist* nodep);
 };

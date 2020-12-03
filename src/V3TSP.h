@@ -27,7 +27,7 @@ namespace V3TSP {
 // Perform a "Traveling Salesman Problem" optimizing sort
 // on any type you like -- so long as inherits from TspStateBase.
 
-class TspStateBase {
+class TspStateBase VL_NOT_FINAL {
 public:
     // This is the cost function that the TSP sort will minimize.
     // All costs in V3TSP are int, chosen to match the type of
@@ -39,6 +39,8 @@ public:
     // key maps so that iteration is stable, without relying
     // on pointer values that could lead to nondeterminism.
     virtual bool operator<(const TspStateBase& otherp) const = 0;
+
+    virtual ~TspStateBase() = default;
 };
 
 typedef std::vector<const TspStateBase*> StateVec;

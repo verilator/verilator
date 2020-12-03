@@ -37,6 +37,18 @@ module t(/*AUTOARG*/
    reg [5:0] result_59_3;
    reg [6:0] result_70_3;
 
+   initial begin
+      if ($countbits(32'b111100000000, '1) != 4) $stop;
+      if ($countbits(32'b111100000000, '0) != 28) $stop;
+      if ($countbits(32'b111100000000, '0, '1) != 32) $stop;
+      if ($countbits(4'bxxx0, 'x) != 3) $stop;
+      if ($countbits(4'bzzz0, 'z) != 3) $stop;
+      if ($countbits(4'b1zz0, 'z, '0) != 3) $stop;
+      if ($countbits(4'b1xx0, 'x, '0) != 3) $stop;
+      if ($countbits(4'b1xx0, 'x, '0, '1) != 4) $stop;
+      if ($countbits(4'bzzx0, 'x, 'z) != 3) $stop;
+   end
+
    always @* begin
       result_16_1 = $countbits(in16, ctrl0);
       result_16_2 = $countbits(in16, ctrl0, ctrl1);
@@ -73,13 +85,26 @@ module t(/*AUTOARG*/
          if ($countbits(32'b1100x01z101, 'x, 'z) != 2) $stop;
          if ($countbits(32'b1100x01z101, 'x, 'z, '1) != 7) $stop;
 
-`ifndef VERILATOR   // Unsup
          if ($countbits(val, '1) != 7) $stop;
          if ($countones(val) != 7) $stop;
          if ($countbits(val, '0) != 25) $stop;
          if ($countbits(val, '0, '1) != 32) $stop;
+         // Optimization may depend on position of X, so need to walk it
+         if ($countbits(val, 'x) != 0) $stop;
+         if ($countbits(val, 'x, '1) != 7) $stop;
+         if ($countbits(val, '1, 'x) != 7) $stop;
+         if ($countbits(val, '1, '1, 'x) != 7) $stop;
+         if ($countbits(val, 'x, '0) != 25) $stop;
+         if ($countbits(val, 'x, '0, '1) != 32) $stop;
+         // Optimization may depend on position of Z, so need to walk it
+         if ($countbits(val, 'z) != 0) $stop;
+         if ($countbits(val, 'z, '1) != 7) $stop;
+         if ($countbits(val, '1, 'z) != 7) $stop;
+         if ($countbits(val, '1, '1, 'z) != 7) $stop;
+         if ($countbits(val, 'z, '0) != 25) $stop;
+         if ($countbits(val, 'z, '0, '1) != 32) $stop;
+         //
          if ($countbits(val, 'x, 'z) != 0) $stop;
-`endif
       end
       else if (cyc == 1) begin
          in16 <= 16'h0AF0;

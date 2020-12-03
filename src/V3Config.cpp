@@ -38,8 +38,8 @@ template <typename T> class V3ConfigWildcardResolver {
     Map m_mapWildcard;  // Wildcard strings to entities
     Map m_mapResolved;  // Resolved strings to converged entities
 public:
-    V3ConfigWildcardResolver() {}
-    ~V3ConfigWildcardResolver() {}
+    V3ConfigWildcardResolver() = default;
+    ~V3ConfigWildcardResolver() = default;
 
     /// Update into maps from other
     void update(const V3ConfigWildcardResolver& other) {
@@ -82,7 +82,7 @@ public:
 };
 
 // Only public_flat_rw has the sensitity tree
-class V3ConfigVarAttr {
+class V3ConfigVarAttr final {
 public:
     AstAttrType m_type;  // Type of attribute
     AstSenTree* m_sentreep;  // Sensitivity tree for public_flat_rw
@@ -92,7 +92,7 @@ public:
 };
 
 // Overload vector with the required update function and to apply all entries
-class V3ConfigVar : public std::vector<V3ConfigVarAttr> {
+class V3ConfigVar final : public std::vector<V3ConfigVarAttr> {
 public:
     // Update from other by copying all attributes
     void update(const V3ConfigVar& node) {
@@ -116,14 +116,14 @@ typedef V3ConfigWildcardResolver<V3ConfigVar> V3ConfigVarResolver;
 //######################################################################
 // Function or task: Have variables and properties
 
-class V3ConfigFTask {
+class V3ConfigFTask final {
     V3ConfigVarResolver m_vars;  // Variables in function/task
     bool m_isolate = false;  // Isolate function return
     bool m_noinline = false;  // Don't inline function/task
     bool m_public = false;  // Public function/task
 
 public:
-    V3ConfigFTask() {}
+    V3ConfigFTask() = default;
     void update(const V3ConfigFTask& f) {
         // Don't overwrite true with false
         if (f.m_isolate) m_isolate = true;
@@ -153,7 +153,7 @@ typedef V3ConfigWildcardResolver<V3ConfigFTask> V3ConfigFTaskResolver;
 //######################################################################
 // Modules have tasks, variables, named blocks and properties
 
-class V3ConfigModule {
+class V3ConfigModule final {
     typedef std::unordered_set<string> StringSet;
     typedef std::set<AstPragmaType> PragmaSet;
 
@@ -165,7 +165,7 @@ class V3ConfigModule {
     bool m_inlineValue = false;  // The inline value (on/off)
 
 public:
-    V3ConfigModule() {}
+    V3ConfigModule() = default;
 
     void update(const V3ConfigModule& m) {
         m_tasks.update(m.m_tasks);
@@ -224,7 +224,7 @@ typedef V3ConfigWildcardResolver<V3ConfigModule> V3ConfigModuleResolver;
 //  - Line attributes: Attributes attached to lines
 
 // lint/coverage/tracing on/off
-class V3ConfigIgnoresLine {
+class V3ConfigIgnoresLine final {
 public:
     int m_lineno;  // Line number to make change at
     V3ErrorCode m_code;  // Error code
@@ -233,8 +233,8 @@ public:
         : m_lineno{lineno}
         , m_code{code}
         , m_on{on} {}
-    ~V3ConfigIgnoresLine() {}
-    inline bool operator<(const V3ConfigIgnoresLine& rh) const {
+    ~V3ConfigIgnoresLine() = default;
+    bool operator<(const V3ConfigIgnoresLine& rh) const {
         if (m_lineno < rh.m_lineno) return true;
         if (m_lineno > rh.m_lineno) return false;
         if (m_code < rh.m_code) return true;
@@ -253,7 +253,7 @@ std::ostream& operator<<(std::ostream& os, const V3ConfigIgnoresLine& rhs) {
 typedef std::bitset<AstPragmaType::ENUM_SIZE> V3ConfigLineAttribute;
 
 // File entity
-class V3ConfigFile {
+class V3ConfigFile final {
     typedef std::map<int, V3ConfigLineAttribute> LineAttrMap;  // Map line->bitset of attributes
     typedef std::multiset<V3ConfigIgnoresLine> IgnLines;  // list of {line,code,on}
     typedef std::pair<V3ErrorCode, string> WaiverSetting;  // Waive code if string matches
@@ -347,16 +347,16 @@ typedef V3ConfigWildcardResolver<V3ConfigFile> V3ConfigFileResolver;
 //######################################################################
 // Resolve modules and files in the design
 
-class V3ConfigResolver {
+class V3ConfigResolver final {
     V3ConfigModuleResolver m_modules;  // Access to module names (with wildcards)
     V3ConfigFileResolver m_files;  // Access to file names (with wildcards)
 
     static V3ConfigResolver s_singleton;  // Singleton (not via local static, as that's slow)
-    V3ConfigResolver() {}
-    ~V3ConfigResolver() {}
+    V3ConfigResolver() = default;
+    ~V3ConfigResolver() = default;
 
 public:
-    inline static V3ConfigResolver& s() { return s_singleton; }
+    static V3ConfigResolver& s() { return s_singleton; }
 
     V3ConfigModuleResolver& modules() { return m_modules; }
     V3ConfigFileResolver& files() { return m_files; }
@@ -405,7 +405,7 @@ void V3Config::addInline(FileLine* fl, const string& module, const string& ftask
         V3ConfigResolver::s().modules().at(module).setInline(on);
     } else {
         if (!on) {
-            fl->v3error("no_inline not supported for tasks" << endl);
+            fl->v3error("no_inline not supported for tasks");
         } else {
             V3ConfigResolver::s().modules().at(module).ftasks().at(ftask).setNoInline(on);
         }
@@ -416,15 +416,14 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
                           const string& var, AstAttrType attr, AstSenTree* sensep) {
     // Semantics: sensep only if public_flat_rw
     if ((attr != AstAttrType::VAR_PUBLIC_FLAT_RW) && sensep) {
-        sensep->v3error("sensitivity not expected for attribute" << endl);
+        sensep->v3error("sensitivity not expected for attribute");
         return;
     }
     // Semantics: Most of the attributes operate on signals
     if (var.empty()) {
         if (attr == AstAttrType::VAR_ISOLATE_ASSIGNMENTS) {
             if (ftask.empty()) {
-                fl->v3error("isolate_assignments only applies to signals or functions/tasks"
-                            << endl);
+                fl->v3error("isolate_assignments only applies to signals or functions/tasks");
             } else {
                 V3ConfigResolver::s().modules().at(module).ftasks().at(ftask).setIsolate(true);
             }
@@ -437,7 +436,7 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
                 V3ConfigResolver::s().modules().at(module).ftasks().at(ftask).setPublic(true);
             }
         } else {
-            fl->v3error("missing -signal" << endl);
+            fl->v3error("missing -signal");
         }
     } else {
         V3ConfigModule& mod = V3ConfigResolver::s().modules().at(module);

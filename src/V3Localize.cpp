@@ -35,7 +35,7 @@
 //######################################################################
 // Localize base class
 
-class LocalizeBaseVisitor : public AstNVisitor {
+class LocalizeBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 protected:
     // NODE STATE
     // Cleared on entire tree
@@ -66,7 +66,7 @@ protected:
 //######################################################################
 // Localize class functions
 
-class LocalizeDehierVisitor : public LocalizeBaseVisitor {
+class LocalizeDehierVisitor final : public LocalizeBaseVisitor {
 private:
     // NODE STATE/TYPES
     // See above
@@ -76,7 +76,8 @@ private:
         // cppcheck-suppress unreadVariable  // cppcheck 1.90 bug
         VarFlags flags(nodep->varp());
         if (flags.m_done) {
-            nodep->hiername("");  // Remove this->
+            nodep->hiernameToProt("");  // Remove this->
+            nodep->hiernameToUnprot("");  // Remove this->
             nodep->hierThis(true);
         }
     }
@@ -85,13 +86,13 @@ private:
 public:
     // CONSTRUCTORS
     explicit LocalizeDehierVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~LocalizeDehierVisitor() override {}
+    virtual ~LocalizeDehierVisitor() override = default;
 };
 
 //######################################################################
 // Localize class functions
 
-class LocalizeVisitor : public LocalizeBaseVisitor {
+class LocalizeVisitor final : public LocalizeBaseVisitor {
 private:
     // NODE STATE/TYPES
     // See above

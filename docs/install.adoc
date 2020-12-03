@@ -102,7 +102,6 @@ Those developing Verilator itself may also want these (see internals.adoc):
    cpan install Pod::Perldoc
    cpan install Unix::Processors
    cpan install Parallel::Forker
-   cpan install Bit::Vector
 
 ==== Install SystemC
 

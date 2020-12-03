@@ -19,7 +19,7 @@
 
 #include "V3Scoreboard.h"
 
-class ScoreboardTestElem {
+class ScoreboardTestElem final {
 public:
     // MEMBERS
     uint32_t m_score;
@@ -30,7 +30,7 @@ public:
         static uint32_t s_serial = 0;
         m_id = ++s_serial;
     }
-    ScoreboardTestElem() {}
+    ScoreboardTestElem() = default;
     // METHODS
     static uint32_t scoreFn(const ScoreboardTestElem* elp) { return elp->m_score; }
 

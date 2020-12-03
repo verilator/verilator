@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3TraceDecl {
+class V3TraceDecl final {
 public:
     static void traceDeclAll(AstNetlist* nodep);
 };

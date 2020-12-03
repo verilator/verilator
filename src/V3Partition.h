@@ -34,14 +34,14 @@ typedef std::unordered_map<const MTaskMoveVertex*, LogicMTask*> Vx2MTaskMap;
 /// of which contains of set of the logic nodes from the fine-grained
 /// graph.
 
-class V3Partition {
+class V3Partition final {
     // MEMBERS
     V3Graph* m_fineDepsGraphp;  // Fine-grained dependency graph
 public:
     // CONSTRUCTORS
     explicit V3Partition(V3Graph* fineDepsGraphp)
         : m_fineDepsGraphp{fineDepsGraphp} {}
-    ~V3Partition() {}
+    ~V3Partition() = default;
 
     // METHODS
 
@@ -73,7 +73,7 @@ private:
 //*************************************************************************
 // Map a pointer into a id, for e.g. nodep to mtask mappings
 
-class PartPtrIdMap {
+class PartPtrIdMap final {
 private:
     // TYPES
     typedef std::unordered_map<const void*, vluint64_t> PtrMap;
@@ -83,7 +83,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    PartPtrIdMap() {}
+    PartPtrIdMap() = default;
     // METHODS
     vluint64_t findId(const void* ptrp) const {
         const auto it = m_id.find(ptrp);

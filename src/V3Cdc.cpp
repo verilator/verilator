@@ -41,7 +41,7 @@ constexpr int CDC_WEIGHT_ASYNC = 0x1000;  // Weight for edges that feed async lo
 
 //######################################################################
 
-class CdcBaseVisitor : public AstNVisitor {
+class CdcBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 public:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -49,7 +49,7 @@ public:
 //######################################################################
 // Graph support classes
 
-class CdcEitherVertex : public V3GraphVertex {
+class CdcEitherVertex VL_NOT_FINAL : public V3GraphVertex {
     AstScope* m_scopep;
     AstNode* m_nodep;
     AstSenTree* m_srcDomainp = nullptr;
@@ -66,7 +66,7 @@ public:
         , m_srcDomainSet{false}
         , m_dstDomainSet{false}
         , m_asyncPath{false} {}
-    virtual ~CdcEitherVertex() override {}
+    virtual ~CdcEitherVertex() override = default;
     // ACCESSORS
     virtual FileLine* fileline() const override { return nodep()->fileline(); }
     AstScope* scopep() const { return m_scopep; }
@@ -83,7 +83,7 @@ public:
     void asyncPath(bool flag) { m_asyncPath = flag; }
 };
 
-class CdcVarVertex : public CdcEitherVertex {
+class CdcVarVertex final : public CdcEitherVertex {
     AstVarScope* m_varScp;
     int m_cntAsyncRst = 0;
     bool m_fromFlop = false;
@@ -92,7 +92,7 @@ public:
     CdcVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
         : CdcEitherVertex{graphp, scopep, varScp}
         , m_varScp{varScp} {}
-    virtual ~CdcVarVertex() override {}
+    virtual ~CdcVarVertex() override = default;
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
     virtual string name() const override { return (cvtToHex(m_varScp) + " " + varScp()->name()); }
@@ -105,7 +105,7 @@ public:
     void fromFlop(bool flag) { m_fromFlop = flag; }
 };
 
-class CdcLogicVertex : public CdcEitherVertex {
+class CdcLogicVertex final : public CdcEitherVertex {
     bool m_hazard : 1;
     bool m_isFlop : 1;
 
@@ -117,7 +117,7 @@ public:
         srcDomainp(sensenodep);
         dstDomainp(sensenodep);
     }
-    virtual ~CdcLogicVertex() override {}
+    virtual ~CdcLogicVertex() override = default;
     // ACCESSORS
     virtual string name() const override {
         return (cvtToHex(nodep()) + "@" + scopep()->prettyName());
@@ -135,7 +135,7 @@ public:
 
 //######################################################################
 
-class CdcDumpVisitor : public CdcBaseVisitor {
+class CdcDumpVisitor final : public CdcBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:
@@ -150,7 +150,7 @@ private:
         } else {
             *m_ofp << "  ";
         }
-        *m_ofp << nodep->prettyTypeName() << " " << endl;
+        *m_ofp << nodep->prettyTypeName() << "\n";
         string lastPrefix = m_prefix;
         m_prefix = lastPrefix + "1:";
         iterateAndNextNull(nodep->op1p());
@@ -170,12 +170,12 @@ public:
         , m_prefix{prefix} {
         iterate(nodep);
     }
-    virtual ~CdcDumpVisitor() override {}
+    virtual ~CdcDumpVisitor() override = default;
 };
 
 //######################################################################
 
-class CdcWidthVisitor : public CdcBaseVisitor {
+class CdcWidthVisitor final : public CdcBaseVisitor {
 private:
     int m_maxLineno = 0;
     size_t m_maxFilenameLen = 0;
@@ -194,7 +194,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit CdcWidthVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~CdcWidthVisitor() override {}
+    virtual ~CdcWidthVisitor() override = default;
     // ACCESSORS
     int maxWidth() const {
         size_t width = 1;
@@ -209,7 +209,7 @@ public:
 //######################################################################
 // Cdc class functions
 
-class CdcVisitor : public CdcBaseVisitor {
+class CdcVisitor final : public CdcBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:
@@ -292,7 +292,7 @@ private:
             told_file = true;
             std::cerr << V3Error::msgPrefix() << "     See details in " << m_ofFilename << endl;
         }
-        *m_ofp << "%Warning-" << code.ascii() << ": " << nodep->fileline() << " " << msg << endl;
+        *m_ofp << "%Warning-" << code.ascii() << ": " << nodep->fileline() << " " << msg << '\n';
     }
 
     void setNodeHazard(AstNode* nodep) {
@@ -462,7 +462,7 @@ private:
         string front
             = pad(filelineWidth(), nodep->fileline()->ascii() + ":") + " " + prefix + " +- ";
         if (VN_IS(nodep, VarScope)) {
-            *m_ofp << front << "Variable: " << nodep->prettyName() << endl;
+            *m_ofp << front << "Variable: " << nodep->prettyName() << '\n';
         } else {
             V3EmitV::verilogPrefixedTree(nodep, *m_ofp, prefix + " +- ", filelineWidth(),
                                          vertexp->srcDomainp(), true);
@@ -509,7 +509,7 @@ private:
         string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__cdc_edges.txt";
         const std::unique_ptr<std::ofstream> ofp(V3File::new_ofstream(filename));
         if (ofp->fail()) v3fatal("Can't write " << filename);
-        *ofp << "Edge Report for " << v3Global.opt.prefix() << endl;
+        *ofp << "Edge Report for " << v3Global.opt.prefix() << '\n';
 
         std::deque<string> report;  // Sort output by name
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
@@ -536,7 +536,7 @@ private:
                         V3EmitV::verilogForTree(vvertexp->dstDomainp(), os);
                     }
                     os << std::setw(0);
-                    os << endl;
+                    os << '\n';
                     report.push_back(os.str());
                 }
             }
@@ -732,7 +732,7 @@ public:
         m_ofp = V3File::new_ofstream(filename);
         if (m_ofp->fail()) v3fatal("Can't write " << filename);
         m_ofFilename = filename;
-        *m_ofp << "CDC Report for " << v3Global.opt.prefix() << endl;
+        *m_ofp << "CDC Report for " << v3Global.opt.prefix() << '\n';
         *m_ofp
             << "Each dump below traces logic from inputs/source flops to destination flop(s).\n";
         *m_ofp << "First source logic is listed, then a variable that logic generates,\n";
@@ -745,7 +745,7 @@ public:
         if (false) {
             *m_ofp << "\nDBG-test-dumper\n";
             V3EmitV::verilogPrefixedTree(nodep, *m_ofp, "DBG ", 40, nullptr, true);
-            *m_ofp << endl;
+            *m_ofp << '\n';
         }
     }
     virtual ~CdcVisitor() override {

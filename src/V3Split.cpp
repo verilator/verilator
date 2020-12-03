@@ -95,14 +95,14 @@
 //######################################################################
 // Support classes
 
-class SplitNodeVertex : public V3GraphVertex {
+class SplitNodeVertex VL_NOT_FINAL : public V3GraphVertex {
     AstNode* m_nodep;
 
 protected:
     SplitNodeVertex(V3Graph* graphp, AstNode* nodep)
         : V3GraphVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~SplitNodeVertex() override {}
+    virtual ~SplitNodeVertex() override = default;
     // ACCESSORS
     // Do not make accessor for nodep(),  It may change due to
     // reordering a lower block, but we don't repair it
@@ -115,36 +115,36 @@ public:
     virtual AstNode* nodep() const { return m_nodep; }
 };
 
-class SplitPliVertex : public SplitNodeVertex {
+class SplitPliVertex final : public SplitNodeVertex {
 public:
     explicit SplitPliVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
-    virtual ~SplitPliVertex() override {}
+    virtual ~SplitPliVertex() override = default;
     virtual string name() const override { return "*PLI*"; }
     virtual string dotColor() const override { return "green"; }
 };
 
-class SplitLogicVertex : public SplitNodeVertex {
+class SplitLogicVertex final : public SplitNodeVertex {
 public:
     SplitLogicVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
-    virtual ~SplitLogicVertex() override {}
+    virtual ~SplitLogicVertex() override = default;
     virtual string dotColor() const override { return "yellow"; }
 };
 
-class SplitVarStdVertex : public SplitNodeVertex {
+class SplitVarStdVertex final : public SplitNodeVertex {
 public:
     SplitVarStdVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
-    virtual ~SplitVarStdVertex() override {}
+    virtual ~SplitVarStdVertex() override = default;
     virtual string dotColor() const override { return "skyblue"; }
 };
 
-class SplitVarPostVertex : public SplitNodeVertex {
+class SplitVarPostVertex final : public SplitNodeVertex {
 public:
     SplitVarPostVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
-    virtual ~SplitVarPostVertex() override {}
+    virtual ~SplitVarPostVertex() override = default;
     virtual string name() const override { return string("POST ") + SplitNodeVertex::name(); }
     virtual string dotColor() const override { return "CadetBlue"; }
 };
@@ -152,7 +152,7 @@ public:
 //######################################################################
 // Edge types
 
-class SplitEdge : public V3GraphEdge {
+class SplitEdge VL_NOT_FINAL : public V3GraphEdge {
     uint32_t m_ignoreInStep = 0;  // Step number that if set to, causes this edge to be ignored
     static uint32_t s_stepNum;  // Global step number
 protected:
@@ -160,7 +160,7 @@ protected:
     SplitEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
               bool cutable = CUTABLE)
         : V3GraphEdge{graphp, fromp, top, weight, cutable} {}
-    virtual ~SplitEdge() override {}
+    virtual ~SplitEdge() override = default;
 
 public:
     // Iterator for graph functions
@@ -185,29 +185,29 @@ public:
 };
 uint32_t SplitEdge::s_stepNum = 0;
 
-class SplitPostEdge : public SplitEdge {
+class SplitPostEdge final : public SplitEdge {
 public:
     SplitPostEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL} {}
-    virtual ~SplitPostEdge() override {}
+    virtual ~SplitPostEdge() override = default;
     virtual bool followScoreboard() const override { return false; }
     virtual string dotColor() const override { return "khaki"; }
 };
 
-class SplitLVEdge : public SplitEdge {
+class SplitLVEdge final : public SplitEdge {
 public:
     SplitLVEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL} {}
-    virtual ~SplitLVEdge() override {}
+    virtual ~SplitLVEdge() override = default;
     virtual bool followScoreboard() const override { return true; }
     virtual string dotColor() const override { return "yellowGreen"; }
 };
 
-class SplitRVEdge : public SplitEdge {
+class SplitRVEdge final : public SplitEdge {
 public:
     SplitRVEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL} {}
-    virtual ~SplitRVEdge() override {}
+    virtual ~SplitRVEdge() override = default;
     virtual bool followScoreboard() const override { return true; }
     virtual string dotColor() const override { return "green"; }
 };
@@ -216,7 +216,7 @@ struct SplitScorebdEdge : public SplitEdge {
 public:
     SplitScorebdEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL} {}
-    virtual ~SplitScorebdEdge() override {}
+    virtual ~SplitScorebdEdge() override = default;
     virtual bool followScoreboard() const override { return true; }
     virtual string dotColor() const override { return "blue"; }
 };
@@ -227,7 +227,7 @@ struct SplitStrictEdge : public SplitEdge {
 public:
     SplitStrictEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL, NOT_CUTABLE} {}
-    virtual ~SplitStrictEdge() override {}
+    virtual ~SplitStrictEdge() override = default;
     virtual bool followScoreboard() const override { return true; }
     virtual string dotColor() const override { return "blue"; }
 };
@@ -235,7 +235,7 @@ public:
 //######################################################################
 // Split class functions
 
-class SplitReorderBaseVisitor : public AstNVisitor {
+class SplitReorderBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 private:
     // NODE STATE
     // AstVarScope::user1p      -> Var SplitNodeVertex* for usage var, 0=not set yet
@@ -439,11 +439,11 @@ private:
     VL_UNCOPYABLE(SplitReorderBaseVisitor);
 };
 
-class ReorderVisitor : public SplitReorderBaseVisitor {
+class ReorderVisitor final : public SplitReorderBaseVisitor {
     // CONSTRUCTORS
 public:
     explicit ReorderVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ReorderVisitor() override {}
+    virtual ~ReorderVisitor() override = default;
 
     // METHODS
 protected:
@@ -622,7 +622,7 @@ private:
 typedef std::unordered_set<uint32_t> ColorSet;
 typedef std::vector<AstAlways*> AlwaysVec;
 
-class IfColorVisitor : public AstNVisitor {
+class IfColorVisitor final : public AstNVisitor {
     // MEMBERS
     ColorSet m_colors;  // All colors in the original always block
 
@@ -638,7 +638,7 @@ public:
     // Visit through *nodep and map each AstNodeIf within to the set of
     // colors it will participate in. Also find the whole set of colors.
     explicit IfColorVisitor(AstAlways* nodep) { iterate(nodep); }
-    virtual ~IfColorVisitor() override {}
+    virtual ~IfColorVisitor() override = default;
 
     // METHODS
     const ColorSet& colors() const { return m_colors; }
@@ -680,7 +680,7 @@ private:
     VL_UNCOPYABLE(IfColorVisitor);
 };
 
-class EmitSplitVisitor : public AstNVisitor {
+class EmitSplitVisitor final : public AstNVisitor {
     // MEMBERS
     AstAlways* m_origAlwaysp;  // Block that *this will split
     const IfColorVisitor* m_ifColorp;  // Digest of results of prior coloring
@@ -703,7 +703,7 @@ public:
         UINFO(6, "  splitting always " << nodep << endl);
     }
 
-    virtual ~EmitSplitVisitor() override {}
+    virtual ~EmitSplitVisitor() override = default;
 
     // METHODS
     void go() {
@@ -793,7 +793,7 @@ private:
     VL_UNCOPYABLE(EmitSplitVisitor);
 };
 
-class RemovePlaceholdersVisitor : public AstNVisitor {
+class RemovePlaceholdersVisitor final : public AstNVisitor {
     typedef std::unordered_set<AstNode*> NodeSet;
     NodeSet m_removeSet;  // placeholders to be removed
 public:
@@ -804,7 +804,7 @@ public:
             VL_DO_DANGLING(np->deleteTree(), np);
         }
     }
-    virtual ~RemovePlaceholdersVisitor() override {}
+    virtual ~RemovePlaceholdersVisitor() override = default;
     virtual void visit(AstSplitPlaceholder* nodep) override { m_removeSet.insert(nodep); }
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
@@ -812,7 +812,7 @@ private:
     VL_UNCOPYABLE(RemovePlaceholdersVisitor);
 };
 
-class SplitVisitor : public SplitReorderBaseVisitor {
+class SplitVisitor final : public SplitReorderBaseVisitor {
 private:
     // Keys are original always blocks pending delete,
     // values are newly split always blocks pending insertion
@@ -844,7 +844,7 @@ public:
         }
     }
 
-    virtual ~SplitVisitor() override {}
+    virtual ~SplitVisitor() override = default;
 
     // METHODS
 protected:

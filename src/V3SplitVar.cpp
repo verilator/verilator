@@ -232,7 +232,7 @@ struct AstNodeComparator {
     }
 };
 
-class UnpackRef {
+class UnpackRef final {
     // m_nodep is called in this context (AstNodeStmt, AstCell, AstNodeFTask, or AstAlways)
     AstNode* m_contextp;
     AstNode* m_nodep;  // ArraySel, SliceSel, ArrayVarRef (entire value)
@@ -283,7 +283,7 @@ public:
     }
 };
 
-class UnpackRefMap {
+class UnpackRefMap final {
 public:
     typedef std::map<AstVar*, std::set<UnpackRef>, AstNodeComparator> MapType;
     typedef MapType::iterator MapIt;
@@ -384,7 +384,7 @@ public:
 
 typedef std::map<AstNodeModule*, RefsInModule, AstNodeComparator> SplitVarRefsMap;
 
-class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
+class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
     typedef std::set<AstVar*, AstNodeComparator> VarSet;
     VarSet m_foundTargetVar;
     UnpackRefMap m_refs;
@@ -802,7 +802,7 @@ public:
 //  Split packed variables
 
 // Split variable
-class SplitNewVar {
+class SplitNewVar final {
     int m_lsb;  // LSB in the original bitvector
     int m_bitwidth;
     AstVar* m_varp;  // The LSB of this variable is always 0, not m_lsb
@@ -828,7 +828,7 @@ public:
 };
 
 // One Entry instance for an AstVarRef instance
-class PackedVarRefEntry {
+class PackedVarRefEntry final {
     AstNode* m_nodep;  // Either AstSel or AstVarRef is expected.
     int m_lsb;
     int m_bitwidth;
@@ -859,7 +859,7 @@ public:
 };
 
 // How a variable is used
-class PackedVarRef {
+class PackedVarRef final {
     struct SortByFirst {
         bool operator()(const std::pair<int, bool>& a, const std::pair<int, bool>& b) const {
             if (a.first == b.first) return a.second < b.second;
@@ -956,11 +956,11 @@ public:
     }
 };
 
-class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
+class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
     typedef std::map<AstVar*, PackedVarRef, AstNodeComparator> PackedVarRefMap;
     AstNetlist* m_netp;
-    AstNodeModule* m_modp;  // Current module (just for log)
-    int m_numSplit;  // Total number of split variables
+    AstNodeModule* m_modp = nullptr;  // Current module (just for log)
+    int m_numSplit = 0;  // Total number of split variables
     // key:variable to be split. value:location where the variable is referenced.
     PackedVarRefMap m_refs;
     virtual void visit(AstNodeFTask* nodep) override {
@@ -982,7 +982,7 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
         const auto refit = m_refs.find(varp);
         if (refit == m_refs.end()) return;  // variable without split_var metacomment
         UASSERT_OBJ(varp->attrSplitVar(), varp, "split_var attribute must be attached");
-        UASSERT_OBJ(!nodep->packagep(), nodep,
+        UASSERT_OBJ(!nodep->classOrPackagep(), nodep,
                     "variable in package must have been dropped beforehand.");
         const AstBasicDType* basicp = refit->second.basicp();
         refit->second.append(PackedVarRefEntry(nodep, basicp->lsb(), varp->width()),
@@ -1005,7 +1005,9 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
         }
         UASSERT_OBJ(varp->attrSplitVar(), varp, "split_var attribute must be attached");
 
-        AstConst* consts[2] = {VN_CAST(nodep->lsbp(), Const), VN_CAST(nodep->widthp(), Const)};
+        std::array<AstConst*, 2> consts
+            = {{VN_CAST(nodep->lsbp(), Const),
+                VN_CAST(nodep->widthp(), Const)}};  // GCC 3.8.0 wants {{}}
         if (consts[0] && consts[1]) {  // OK
             refit->second.append(
                 PackedVarRefEntry(nodep, consts[0]->toSInt() + refit->second.basicp()->lsb(),
@@ -1206,9 +1208,7 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
 public:
     // When reusing the information from SplitUnpackedVarVisitor
     SplitPackedVarVisitor(AstNetlist* nodep, SplitVarRefsMap& refs)
-        : m_netp{nodep}
-        , m_modp{nullptr}
-        , m_numSplit{0} {
+        : m_netp{nodep} {
         // If you want ignore refs and walk the tne entire AST,
         // just call iterateChildren(m_modp) and split() for each module
         for (auto& i : refs) {

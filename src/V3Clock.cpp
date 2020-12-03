@@ -40,7 +40,7 @@
 //######################################################################
 // Clock state, as a visitor of each AstNode
 
-class ClockVisitor : public AstNVisitor {
+class ClockVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared each Module:
@@ -293,7 +293,7 @@ private:
         }
         m_scopep = nullptr;
     }
-    virtual void visit(AstAlways* nodep) override {
+    virtual void visit(AstNodeProcedure* nodep) override {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
@@ -303,6 +303,15 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstAlwaysPost* nodep) override {
+        AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
+        nodep->replaceWith(cmtp);
+        if (AstNode* stmtsp = nodep->bodysp()) {
+            stmtsp->unlinkFrBackWithNext();
+            cmtp->addNextHere(stmtsp);
+        }
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+    virtual void visit(AstAlwaysPostponed* nodep) override {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
@@ -326,15 +335,6 @@ private:
         newp->addIfsp(
             new AstAssign(nodep->fileline(), changep->cloneTree(false), origp->cloneTree(false)));
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    }
-    virtual void visit(AstInitial* nodep) override {
-        AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
-        nodep->replaceWith(cmtp);
-        if (AstNode* stmtsp = nodep->bodysp()) {
-            stmtsp->unlinkFrBackWithNext();
-            cmtp->addNextHere(stmtsp);
-        }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstCFunc* nodep) override {
@@ -454,7 +454,7 @@ public:
         // easily without iterating through the tree.
         nodep->evalp(m_evalFuncp);
     }
-    virtual ~ClockVisitor() override {}
+    virtual ~ClockVisitor() override = default;
 };
 
 //######################################################################

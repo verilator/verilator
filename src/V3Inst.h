@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Inst {
+class V3Inst final {
 public:
     static void instAll(AstNetlist* nodep);
     static void dearrayAll(AstNetlist* nodep);

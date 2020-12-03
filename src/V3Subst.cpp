@@ -36,7 +36,7 @@
 //######################################################################
 // Common debugging baseclass
 
-class SubstBaseVisitor : public AstNVisitor {
+class SubstBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 public:
     VL_DEBUG_FUNC;  // Declare debug()
 };
@@ -44,7 +44,7 @@ public:
 //######################################################################
 // Class for each word of a multi-word variable
 
-class SubstVarWord {
+class SubstVarWord final {
 protected:
     // MEMBERS
     AstNodeAssign* m_assignp;  // Last assignment to each word of this var
@@ -64,7 +64,7 @@ protected:
 //######################################################################
 // Class for every variable we may process
 
-class SubstVarEntry {
+class SubstVarEntry final {
     // MEMBERS
     AstVar* m_varp;  // Variable this tracks
     bool m_wordAssign = false;  // True if any word assignments
@@ -81,7 +81,7 @@ public:
         m_whole.clear();
         for (int i = 0; i < varp->widthWords(); i++) m_words[i].clear();
     }
-    ~SubstVarEntry() {}
+    ~SubstVarEntry() = default;
 
 private:
     // METHODS
@@ -174,7 +174,7 @@ public:
 // See if any variables have changed value since we determined subst value,
 // as a visitor of each AstNode
 
-class SubstUseVisitor : public SubstBaseVisitor {
+class SubstUseVisitor final : public SubstBaseVisitor {
 private:
     // NODE STATE
     // See SubstVisitor
@@ -213,7 +213,7 @@ public:
         UINFO(9, "        SubstUseVisitor " << origStep << " " << nodep << endl);
         iterate(nodep);
     }
-    virtual ~SubstUseVisitor() override {}
+    virtual ~SubstUseVisitor() override = default;
     // METHODS
     bool ok() const { return m_ok; }
 };
@@ -221,7 +221,7 @@ public:
 //######################################################################
 // Subst state, as a visitor of each AstNode
 
-class SubstVisitor : public SubstBaseVisitor {
+class SubstVisitor final : public SubstBaseVisitor {
 private:
     // NODE STATE
     // Passed to SubstUseVisitor

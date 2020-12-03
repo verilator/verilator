@@ -29,7 +29,7 @@
 //######################################################################
 // Symbol table emitting
 
-class EmitCSyms : EmitCBaseVisitor {
+class EmitCSyms final : EmitCBaseVisitor {
     // NODE STATE
     // Cleared on Netlist
     //  AstNodeModule::user1()  -> bool.  Set true __Vconfigure called
@@ -79,12 +79,12 @@ class EmitCSyms : EmitCBaseVisitor {
     typedef std::vector<string> ScopeNameList;
     typedef std::map<const string, ScopeNameList> ScopeNameHierarchy;
     struct CmpName {
-        inline bool operator()(const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
+        bool operator()(const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
             return lhsp.first->name() < rhsp.first->name();
         }
     };
     struct CmpDpi {
-        inline bool operator()(const AstCFunc* lhsp, const AstCFunc* rhsp) const {
+        bool operator()(const AstCFunc* lhsp, const AstCFunc* rhsp) const {
             if (lhsp->dpiImport() != rhsp->dpiImport()) {
                 // cppcheck-suppress comparisonOfFuncReturningBoolError
                 return lhsp->dpiImport() < rhsp->dpiImport();
@@ -109,7 +109,7 @@ class EmitCSyms : EmitCBaseVisitor {
     int m_numStmts = 0;  // Number of statements output
     int m_funcNum = 0;  // CFunc split function number
     V3OutCFile* m_ofpBase = nullptr;  // Base (not split) C file
-    std::map<int, bool> m_usesVfinal;  // Split method uses __Vfinal
+    std::unordered_map<int, bool> m_usesVfinal;  // Split method uses __Vfinal
 
     // METHODS
     void emitSymHdr();
@@ -467,7 +467,7 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// CREATORS\n");
     puts(symClassName() + "(" + topClassName() + "* topp, const char* namep);\n");
-    puts(string("~") + symClassName() + "() {}\n");
+    puts(string("~") + symClassName() + "() = default;\n");
 
     for (const auto& i : m_usesVfinal) {
         puts("void " + symClassName() + "_" + cvtToStr(i.first) + "(");

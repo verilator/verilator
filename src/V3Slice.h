@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Slice {
+class V3Slice final {
 public:
     static void sliceAll(AstNetlist* nodep);
 };

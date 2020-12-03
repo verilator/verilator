@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Name {
+class V3Name final {
 public:
     static void nameAll(AstNetlist* nodep);
 };

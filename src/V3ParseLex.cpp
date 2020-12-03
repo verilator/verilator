@@ -32,12 +32,12 @@
 // Lex-derived class
 
 /// Override the base lexer class so we can add some access functions
-class V3Lexer : public V3LexerBase {
+class V3Lexer final : public V3LexerBase {
 public:
     // CONSTRUCTORS
     V3Lexer()
         : V3LexerBase{nullptr} {}
-    ~V3Lexer() override {}
+    ~V3Lexer() override = default;
     // METHODS
     void unputString(const char* textp, size_t length) {
         // Add characters to input stream in back-to-front order

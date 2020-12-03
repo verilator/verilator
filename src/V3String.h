@@ -22,8 +22,10 @@
 
 // No V3 headers here - this is a base class for Vlc etc
 
-#include <string>
+#include <map>
 #include <sstream>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 //######################################################################
@@ -65,7 +67,7 @@ inline string ucfirst(const string& text) {
 //######################################################################
 // VString - String manipulation
 
-class VString {
+class VString final {
     static bool wildmatchi(const char* s, const char* p);
 
 public:
@@ -103,7 +105,7 @@ public:
 //######################################################################
 // VHashSha256 - Compute Sha256 hashes
 
-class VHashSha256 {
+class VHashSha256 final {
     // As blocks must be processed in 64 byte chunks, this does not at present
     // support calling input() on multiple non-64B chunks and getting the correct
     // hash. To do that first combine the string before calling here.
@@ -130,7 +132,7 @@ public:
         : VHashSha256{} {
         insert(data);
     }
-    ~VHashSha256() {}
+    ~VHashSha256() = default;
 
     // METHODS
     string digestBinary();  // Return digest as 32 character binary
@@ -156,17 +158,19 @@ private:
 // VName - string which contains a possibly hashed string
 // TODO use this wherever there is currently a "string m_name"
 
-class VName {
+class VName final {
     string m_name;
     string m_hashed;
+    static std::map<string, string> s_dehashMap;  // hashed -> original decoder
 
     static size_t s_maxLength;  // Length at which to start hashing
     static size_t s_minLength;  // Length to preserve if over maxLength
+
 public:
     // CONSTRUCTORS
     explicit VName(const string& name)
         : m_name{name} {}
-    ~VName() {}
+    ~VName() = default;
     // METHODS
     void name(const string& name) {
         m_name = name;
@@ -178,12 +182,13 @@ public:
     // Length at which to start hashing, 0=disable
     static void maxLength(size_t flag) { s_maxLength = flag; }
     static size_t maxLength() { return s_maxLength; }
+    static string dehash(const string& in);
 };
 
 //######################################################################
 // VSpellCheck - Find near-match spelling suggestions given list of possibilities
 
-class VSpellCheck {
+class VSpellCheck final {
     // CONSTANTS
     static constexpr unsigned NUM_CANDIDATE_LIMIT = 10000;  // Avoid searching huge netlists
     static constexpr unsigned LENGTH_LIMIT = 100;  // Maximum string length to search
@@ -194,8 +199,8 @@ class VSpellCheck {
     Candidates m_candidates;  // Strings we try to match
 public:
     // CONSTRUCTORS
-    explicit VSpellCheck() {}
-    ~VSpellCheck() {}
+    VSpellCheck() = default;
+    ~VSpellCheck() = default;
     // METHODS
     // Push a symbol table value to be considered as a candidate
     // The first item pushed has highest priority, all else being equal

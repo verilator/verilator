@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3EmitXml {
+class V3EmitXml final {
 public:
     static void emitxml();
 };

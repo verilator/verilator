@@ -29,7 +29,7 @@
 
 //######################################################################
 
-class ClassVisitor : public AstNVisitor {
+class ClassVisitor final : public AstNVisitor {
 private:
     // MEMBERS
     AstUser1InUse m_inuser1;
@@ -56,7 +56,7 @@ private:
         // Note origName is the same as the class origName so errors look correct
         AstClassPackage* packagep = new AstClassPackage(nodep->fileline(), nodep->origName());
         packagep->name(nodep->name() + "__Vclpkg");
-        nodep->packagep(packagep);
+        nodep->classOrPackagep(packagep);
         packagep->classp(nodep);
         v3Global.rootp()->addModulep(packagep);
         // Add package to hierarchy
@@ -87,7 +87,8 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstPackage* nodep) override {
+    virtual void visit(AstNodeModule* nodep) override {
+        // Visit for NodeModules that are not AstClass (AstClass is-a AstNodeModule)
         VL_RESTORER(m_prefix);
         {
             m_prefix = nodep->name() + "__03a__03a";  // ::
@@ -99,7 +100,7 @@ private:
         iterateChildren(nodep);
         // Don't move now, or wouldn't keep interating the class
         // TODO move class statics too
-        if (m_ftaskp && m_ftaskp->lifetime().isStatic()) {
+        if (m_packageScopep && m_ftaskp && m_ftaskp->lifetime().isStatic()) {
             m_moves.push_back(make_pair(nodep, m_packageScopep));
         }
     }
@@ -114,7 +115,7 @@ private:
         {
             m_ftaskp = nodep;
             iterateChildren(nodep);
-            if (nodep->lifetime().isStatic()) {
+            if (m_packageScopep && nodep->lifetime().isStatic()) {
                 m_moves.push_back(make_pair(nodep, m_packageScopep));
             }
         }

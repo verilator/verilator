@@ -94,7 +94,6 @@ elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
   if [ "$TRAVIS_DIST" != "trusty" ]; then
     TRAVIS_CPAN_REPO=https://cpan.org
   fi
-  # Not listing Bit::Vector as slow to install, and only skips one test
   yes yes | sudo cpan -M $TRAVIS_CPAN_REPO -fi Unix::Processors Parallel::Forker
   install-vcddiff
 else

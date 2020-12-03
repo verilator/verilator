@@ -51,7 +51,7 @@ DfaVertex* DfaGraph::findStart() {
 // Algorithms - convert NFA to a DFA
 // Uses the Subset Construction Algorithm
 
-class GraphNfaToDfa : GraphAlg<> {
+class GraphNfaToDfa final : GraphAlg<> {
     // We have two types of nodes in one graph, NFA and DFA nodes.
     // Edges from NFA to NFA come from the user, and indicate input or epsilon transitions
     // Edges from DFA to NFA indicate the NFA from which that DFA was formed.
@@ -294,7 +294,7 @@ private:
             UINFO(9, "  On dfaState " << dfaStatep << endl);
 
             // From this dfaState, what corresponding nfaStates have what inputs?
-            std::set<int> inputs;
+            std::unordered_set<int> inputs;
             // Foreach NFA state (this DFA state was formed from)
             for (V3GraphEdge* dfaEdgep = dfaStatep->outBeginp(); dfaEdgep;
                  dfaEdgep = dfaEdgep->outNextp()) {
@@ -368,7 +368,7 @@ public:
         m_step = 0;
         main();
     }
-    ~GraphNfaToDfa() {}
+    ~GraphNfaToDfa() = default;
 };
 
 void DfaGraph::nfaToDfa() { GraphNfaToDfa(this, &V3GraphEdge::followAlwaysTrue); }
@@ -379,7 +379,7 @@ void DfaGraph::nfaToDfa() { GraphNfaToDfa(this, &V3GraphEdge::followAlwaysTrue);
 //
 // Scan the DFA, cleaning up trailing states.
 
-class DfaGraphReduce : GraphAlg<> {
+class DfaGraphReduce final : GraphAlg<> {
 private:
     // METHODS
 #ifdef VL_CPPCHECK
@@ -502,7 +502,7 @@ public:
         optimize_no_outbound();
         if (debug() >= 6) m_graphp->dumpDotFilePrefixed("opt_noout");
     }
-    ~DfaGraphReduce() {}
+    ~DfaGraphReduce() = default;
 };
 
 void DfaGraph::dfaReduce() { DfaGraphReduce(this, &V3GraphEdge::followAlwaysTrue); }
@@ -527,7 +527,7 @@ void DfaGraph::dfaReduce() { DfaGraphReduce(this, &V3GraphEdge::followAlwaysTrue
 // The user's old accept is now the new accept.  This is important as
 // we want the virtual type of it to be intact.
 
-class DfaGraphComplement : GraphAlg<> {
+class DfaGraphComplement final : GraphAlg<> {
 private:
     // MEMBERS
     DfaVertex* m_tempNewerReject;
@@ -598,7 +598,7 @@ public:
         VL_DO_CLEAR(m_tempNewerReject->unlinkDelete(graphp()), m_tempNewerReject = nullptr);
         if (debug() >= 6) m_graphp->dumpDotFilePrefixed("comp_out");
     }
-    ~DfaGraphComplement() {}
+    ~DfaGraphComplement() = default;
     VL_UNCOPYABLE(DfaGraphComplement);
 };
 

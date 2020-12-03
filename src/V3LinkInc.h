@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3LinkInc {
+class V3LinkInc final {
 public:
     static void linkIncrements(AstNetlist* nodep);
 

@@ -30,7 +30,7 @@
 //######################################################################
 // Base Visitor class -- holds output file pointer
 
-class EmitCBaseVisitor : public AstNVisitor {
+class EmitCBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 public:
     // STATE
     V3OutCFile* m_ofp = nullptr;
@@ -106,14 +106,14 @@ public:
     }
 
     // CONSTRUCTORS
-    EmitCBaseVisitor() {}
-    virtual ~EmitCBaseVisitor() override {}
+    EmitCBaseVisitor() = default;
+    virtual ~EmitCBaseVisitor() override = default;
 };
 
 //######################################################################
 // Count operations under the given node, as a visitor of each AstNode
 
-class EmitCBaseCounterVisitor : public AstNVisitor {
+class EmitCBaseCounterVisitor final : public AstNVisitor {
 private:
     // MEMBERS
     int m_count = 0;  // Number of statements
@@ -126,7 +126,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit EmitCBaseCounterVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~EmitCBaseCounterVisitor() override {}
+    virtual ~EmitCBaseCounterVisitor() override = default;
     int count() const { return m_count; }
 };
 

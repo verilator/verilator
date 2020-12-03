@@ -36,7 +36,7 @@
 //######################################################################
 // Scope class functions
 
-class ScopeVisitor : public AstNVisitor {
+class ScopeVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // AstVar::user1p           -> AstVarScope replacement for this variable
@@ -68,8 +68,8 @@ private:
         for (const auto& itr : m_varRefScopes) {
             AstVarRef* nodep = itr.first;
             AstScope* scopep = itr.second;
-            if (nodep->packagep() && !nodep->varp()->isClassMember()) {
-                const auto it2 = m_packageScopes.find(nodep->packagep());
+            if (nodep->classOrPackagep()) {
+                const auto it2 = m_packageScopes.find(nodep->classOrPackagep());
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
             }
@@ -109,9 +109,7 @@ private:
             (m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp) : static_cast<AstNode*>(nodep))
                 ->fileline(),
             nodep, scopename, m_aboveScopep, m_aboveCellp);
-        if (VN_IS(nodep, Package)) {
-            m_packageScopes.insert(make_pair(VN_CAST(nodep, Package), m_scopep));
-        }
+        if (VN_IS(nodep, Package)) m_packageScopes.insert(make_pair(nodep, m_scopep));
 
         // Now for each child cell, iterate the module this cell points to
         for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp = cellnextp->nextp()) {
@@ -152,8 +150,10 @@ private:
         VL_RESTORER(m_scopep);
         VL_RESTORER(m_aboveCellp);
         VL_RESTORER(m_aboveScopep);
+        VL_RESTORER(m_modp);
         {
             m_aboveScopep = m_scopep;
+            m_modp = nodep;
 
             string scopename;
             if (!m_aboveScopep) {
@@ -169,6 +169,8 @@ private:
                                             : static_cast<AstNode*>(nodep));
             m_scopep
                 = new AstScope(abovep->fileline(), m_modp, scopename, m_aboveScopep, m_aboveCellp);
+            m_packageScopes.insert(make_pair(nodep, m_scopep));
+
             // Create scope for the current usage of this cell
             AstNode::user1ClearTree();
             nodep->addMembersp(m_scopep);
@@ -283,7 +285,8 @@ private:
         } else {
             // We may have not made the variable yet, and we can't make it now as
             // the var's referenced package etc might not be created yet.
-            // So push to a list and post-correct
+            // So push to a list and post-correct.
+            // No check here for nodep->classOrPackagep(), will check when walk list.
             m_varRefScopes.insert(make_pair(nodep, m_scopep));
         }
     }
@@ -313,13 +316,13 @@ private:
 public:
     // CONSTRUCTORS
     explicit ScopeVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ScopeVisitor() override {}
+    virtual ~ScopeVisitor() override = default;
 };
 
 //######################################################################
 // Scope cleanup -- remove unused activates
 
-class ScopeCleanupVisitor : public AstNVisitor {
+class ScopeCleanupVisitor final : public AstNVisitor {
 private:
     // STATE
     AstScope* m_scopep = nullptr;  // Current scope we are building
@@ -365,7 +368,7 @@ private:
     virtual void visit(AstNodeFTaskRef* nodep) override {
         // The crossrefs are dealt with in V3LinkDot
         UINFO(9, "   Old pkg-taskref " << nodep << endl);
-        if (nodep->packagep()) {
+        if (nodep->classOrPackagep()) {
             // Point to the clone
             UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
             AstNodeFTask* newp = VN_CAST(nodep->taskp()->user2p(), NodeFTask);
@@ -391,7 +394,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ScopeCleanupVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ScopeCleanupVisitor() override {}
+    virtual ~ScopeCleanupVisitor() override = default;
 };
 
 //######################################################################

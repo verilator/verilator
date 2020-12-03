@@ -39,5 +39,9 @@ int main(int argc, char* argv[]) {
         CHECK_RESULT(topp->b__02Eout, 1);
         CHECK_RESULT(topp->uniq_out, 0);
     }
+
+    topp->final();
+    VL_DO_DANGLING(delete topp, topp);
+
     printf("*-* All Finished *-*\n");
 }

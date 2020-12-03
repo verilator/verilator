@@ -30,7 +30,7 @@ class V3ParseSym;
 
 //============================================================================
 
-class V3Parse {
+class V3Parse final {
 private:
     V3ParseImp* m_impp;
 

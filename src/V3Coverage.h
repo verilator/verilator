@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Coverage {
+class V3Coverage final {
 public:
     // CONSTRUCTORS
     static void coverage(AstNetlist* rootp);

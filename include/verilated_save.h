@@ -28,7 +28,7 @@
 // VerilatedSerialize - convert structures to a stream representation
 // This class is not thread safe, it must be called by a single thread
 
-class VerilatedSerialize {
+class VerilatedSerialize VL_NOT_FINAL {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
@@ -38,8 +38,8 @@ protected:
     std::string m_filename;  ///< Filename, for error messages
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
 
-    inline static size_t bufferSize() { return 256 * 1024; }  // See below for slack calculation
-    inline static size_t bufferInsertSize() { return 16 * 1024; }
+    static constexpr size_t bufferSize() { return 256 * 1024; }  // See below for slack calculation
+    static constexpr size_t bufferInsertSize() { return 16 * 1024; }
 
     void header() VL_MT_UNSAFE_ONE;
     void trailer() VL_MT_UNSAFE_ONE;
@@ -87,7 +87,7 @@ private:
 // VerilatedDeserial - load structures from a stream representation
 // This class is not thread safe, it must be called by a single thread
 
-class VerilatedDeserialize {
+class VerilatedDeserialize VL_NOT_FINAL {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
@@ -98,8 +98,8 @@ protected:
     std::string m_filename;  ///< Filename, for error messages
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
 
-    inline static size_t bufferSize() { return 256 * 1024; }  // See below for slack calculation
-    inline static size_t bufferInsertSize() { return 16 * 1024; }
+    static constexpr size_t bufferSize() { return 256 * 1024; }  // See below for slack calculation
+    static constexpr size_t bufferInsertSize() { return 16 * 1024; }
 
     virtual void fill() = 0;
     void header() VL_MT_UNSAFE_ONE;
@@ -154,13 +154,13 @@ private:
 // VerilatedSave - serialize to a file
 // This class is not thread safe, it must be called by a single thread
 
-class VerilatedSave : public VerilatedSerialize {
+class VerilatedSave final : public VerilatedSerialize {
 private:
     int m_fd = -1;  ///< File descriptor we're writing to
 
 public:
     // CONSTRUCTORS
-    VerilatedSave() {}
+    VerilatedSave() = default;
     virtual ~VerilatedSave() override { close(); }
     // METHODS
     /// Open the file; call isOpen() to see if errors
@@ -174,13 +174,13 @@ public:
 // VerilatedRestore - deserialize from a file
 // This class is not thread safe, it must be called by a single thread
 
-class VerilatedRestore : public VerilatedDeserialize {
+class VerilatedRestore final : public VerilatedDeserialize {
 private:
     int m_fd = -1;  ///< File descriptor we're writing to
 
 public:
     // CONSTRUCTORS
-    VerilatedRestore() {}
+    VerilatedRestore() = default;
     virtual ~VerilatedRestore() override { close(); }
 
     // METHODS

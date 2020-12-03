@@ -51,19 +51,19 @@ constexpr int COMBINE_MIN_STATEMENTS = 50;  // Min # of statements to be worth m
 
 //######################################################################
 
-class CombBaseVisitor : public AstNVisitor {
+class CombBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 protected:
     // STATE
 
     // METHODS
-    virtual ~CombBaseVisitor() override {}
+    virtual ~CombBaseVisitor() override = default;
     VL_DEBUG_FUNC;  // Declare debug()
 };
 
 //######################################################################
 // Combine replacement function
 
-class CombCallVisitor : CombBaseVisitor {
+class CombCallVisitor final : CombBaseVisitor {
     // Find all CCALLS of each CFUNC, so that we can later rename them
 private:
     // NODE STATE
@@ -131,15 +131,15 @@ private:
 
 public:
     // CONSTRUCTORS
-    CombCallVisitor() {}
-    virtual ~CombCallVisitor() override {}
+    CombCallVisitor() = default;
+    virtual ~CombCallVisitor() override = default;
     void main(AstNetlist* nodep) { iterate(nodep); }
 };
 
 //######################################################################
 // Combine marking function
 
-class CombMarkVisitor : CombBaseVisitor {
+class CombMarkVisitor final : CombBaseVisitor {
     // Mark all nodes under specified one.
 private:
     // OUTPUT:
@@ -153,13 +153,13 @@ private:
 public:
     // CONSTRUCTORS
     explicit CombMarkVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~CombMarkVisitor() override {}
+    virtual ~CombMarkVisitor() override = default;
 };
 
 //######################################################################
 // Combine state, as a visitor of each AstNode
 
-class CombineVisitor : CombBaseVisitor {
+class CombineVisitor final : CombBaseVisitor {
 private:
     // NODE STATE
     // Entire netlist:

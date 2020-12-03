@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3CUse {
+class V3CUse final {
 public:
     static void cUseAll();
 };

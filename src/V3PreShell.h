@@ -29,7 +29,7 @@ class VSpellCheck;
 
 //============================================================================
 
-class V3PreShell {
+class V3PreShell final {
     // Static class for calling preprocessor
 public:
     static void boot(char** env);

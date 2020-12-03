@@ -38,7 +38,7 @@
 //######################################################################
 // Structure for global state
 
-class LifeState {
+class LifeState final {
     // NODE STATE
     //   See below
     AstUser1InUse m_inuser1;
@@ -50,7 +50,7 @@ public:
     std::vector<AstNode*> m_unlinkps;
 
     // CONSTRUCTORS
-    LifeState() {}
+    LifeState() = default;
     ~LifeState() {
         V3Stats::addStatSum("Optimizations, Lifetime assign deletions", m_statAssnDel);
         V3Stats::addStatSum("Optimizations, Lifetime constant prop", m_statAssnCon);
@@ -66,7 +66,7 @@ public:
 //######################################################################
 // Structure for each variable encountered
 
-class LifeVarEntry {
+class LifeVarEntry final {
     // Last assignment to this varscope, nullptr if no longer relevant
     AstNodeAssign* m_assignp = nullptr;
     AstConst* m_constp = nullptr;  // Known constant value
@@ -92,7 +92,7 @@ public:
         : m_setBeforeUse{false} {
         consumed();
     }
-    ~LifeVarEntry() {}
+    ~LifeVarEntry() = default;
     inline void simpleAssign(AstNodeAssign* assp) {  // New simple A=.... assignment
         m_assignp = assp;
         m_constp = nullptr;
@@ -116,14 +116,14 @@ public:
 //######################################################################
 // Structure for all variables under a given meta-basic block
 
-class LifeBlock {
+class LifeBlock final {
     // NODE STATE
     // Cleared each AstIf:
     //   AstVarScope::user1()   -> int.       Used in combining to detect duplicates
 
     // LIFE MAP
     //  For each basic block, we'll make a new map of what variables that if/else is changing
-    typedef std::map<AstVarScope*, LifeVarEntry> LifeMap;
+    typedef std::unordered_map<AstVarScope*, LifeVarEntry> LifeMap;
     LifeMap m_map;  // Current active lifetime map for current scope
     LifeBlock* m_aboveLifep;  // Upper life, or nullptr
     LifeState* m_statep;  // Current global state
@@ -135,7 +135,7 @@ public:
         m_aboveLifep = aboveLifep;  // Null if top
         m_statep = statep;
     }
-    ~LifeBlock() {}
+    ~LifeBlock() = default;
     // METHODS
     void checkRemoveAssign(const LifeMap::iterator& it) {
         AstVar* varp = it->first->varp();
@@ -268,7 +268,7 @@ public:
 //######################################################################
 // Life state, as a visitor of each AstNode
 
-class LifeVisitor : public AstNVisitor {
+class LifeVisitor final : public AstNVisitor {
 private:
     // STATE
     LifeState* m_statep;  // Current state
@@ -278,7 +278,7 @@ private:
 
     // LIFE MAP
     //  For each basic block, we'll make a new map of what variables that if/else is changing
-    typedef std::map<AstVarScope*, LifeVarEntry> LifeMap;
+    typedef std::unordered_map<AstVarScope*, LifeVarEntry> LifeMap;
     // cppcheck-suppress memleak  // cppcheck bug - it is deleted
     LifeBlock* m_lifep;  // Current active lifetime map for current scope
 
@@ -450,7 +450,7 @@ public:
 
 //######################################################################
 
-class LifeTopVisitor : public AstNVisitor {
+class LifeTopVisitor final : public AstNVisitor {
     // Visit all top nodes searching for functions that are entry points we want to start
     // finding code within.
 private:
@@ -479,7 +479,7 @@ public:
         : m_statep{statep} {
         iterate(nodep);
     }
-    virtual ~LifeTopVisitor() override {}
+    virtual ~LifeTopVisitor() override = default;
 };
 
 //######################################################################

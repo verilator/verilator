@@ -28,7 +28,7 @@
 //! Class for the different languages supported.
 //! A separate file, since used both in V3Options (globally) and FileLine 9per
 //! file).
-class V3LangCode {
+class V3LangCode final {
 public:
     enum en : uint8_t {
         L_ERROR,  // Must be first.

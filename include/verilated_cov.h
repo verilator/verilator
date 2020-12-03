@@ -88,7 +88,7 @@ template <class T> std::string vlCovCvtToStr(const T& t) VL_PURE {
 /// Global class with methods affecting all coverage data.
 /// All public methods in this class are thread safe.
 
-class VerilatedCov {
+class VerilatedCov final {
     VL_UNCOPYABLE(VerilatedCov);
 
 public:

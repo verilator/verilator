@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Gate {
+class V3Gate final {
 public:
     static void gateAll(AstNetlist* nodep);
 };

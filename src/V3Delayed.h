@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Delayed {
+class V3Delayed final {
 public:
     static void delayedAll(AstNetlist* nodep);
 };

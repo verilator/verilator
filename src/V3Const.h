@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Const {
+class V3Const final {
 public:
     static AstNode* constifyParamsEdit(AstNode* nodep);
     static AstNode* constifyGenerateParamsEdit(AstNode* nodep);

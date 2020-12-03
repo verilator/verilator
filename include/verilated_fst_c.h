@@ -35,7 +35,7 @@
 /// Base class to create a Verilator FST dump
 /// This is an internally used class - see VerilatedFstC for what to call from applications
 
-class VerilatedFst : public VerilatedTrace<VerilatedFst> {
+class VerilatedFst final : public VerilatedTrace<VerilatedFst> {
 private:
     // Give the superclass access to private bits (to avoid virtual functions)
     friend class VerilatedTrace<VerilatedFst>;
@@ -128,7 +128,7 @@ template <> void VerilatedTrace<VerilatedFst>::set_time_resolution(const std::st
 /// Also derived for use in SystemC simulations.
 /// Thread safety: Unless otherwise indicated, every function is VL_MT_UNSAFE_ONE
 
-class VerilatedFstC {
+class VerilatedFstC final {
     VerilatedFst m_sptrace;  ///< Trace file being created
 
     // CONSTRUCTORS

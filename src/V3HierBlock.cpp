@@ -234,13 +234,13 @@ string V3HierBlock::commandArgsFileName(bool forCMake) const {
 
 //######################################################################
 // Collect how hierarchical blocks are used
-class HierBlockUsageCollectVisitor : public AstNVisitor {
+class HierBlockUsageCollectVisitor final : public AstNVisitor {
     // NODE STATE
     // AstNode::user1()            -> bool. Processed
     AstUser1InUse m_inuser1;
 
     // STATE
-    typedef std::set<const AstModule*> ModuleSet;
+    typedef std::unordered_set<const AstModule*> ModuleSet;
     V3HierBlockPlan* const m_planp;
     AstModule* m_modp = nullptr;  // The current module
     AstModule* m_hierBlockp = nullptr;  // The nearest parent module that is a hierarchical block
@@ -304,8 +304,6 @@ public:
 
 //######################################################################
 
-V3HierBlockPlan::V3HierBlockPlan() {}
-
 bool V3HierBlockPlan::isHierBlock(const AstNodeModule* modp) const {
     return m_blocks.find(modp) != m_blocks.end();
 }
@@ -357,7 +355,8 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
 }
 
 V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
-    typedef std::map<const V3HierBlock*, std::set<const V3HierBlock*>> ChildrenMap;
+    typedef std::unordered_map<const V3HierBlock*, std::unordered_set<const V3HierBlock*>>
+        ChildrenMap;
     ChildrenMap childrenOfHierBlock;
 
     HierVector sorted;

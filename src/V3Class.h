@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Class {
+class V3Class final {
 public:
     static void classAll(AstNetlist* nodep);
 };

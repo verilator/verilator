@@ -23,7 +23,7 @@
 
 class AstNode;
 
-class V3InstrCount {
+class V3InstrCount final {
 public:
     // Return the estimate count of instructions we'd incur while running
     // code in and under nodep.

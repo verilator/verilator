@@ -44,6 +44,9 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    sim->final();
+    VL_DO_DANGLING(delete sim, sim);
+
     if (errs) {
         vl_stop(__FILE__, __LINE__, "TOP-cpp");
         exit(10);

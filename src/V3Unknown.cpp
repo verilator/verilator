@@ -41,7 +41,7 @@
 
 //######################################################################
 
-class UnknownVisitor : public AstNVisitor {
+class UnknownVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on Netlist
@@ -137,6 +137,7 @@ private:
     virtual void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_constXCvt);
         {
             m_modp = nodep;
             m_constXCvt = true;
@@ -144,25 +145,34 @@ private:
         }
     }
     virtual void visit(AstAssignDly* nodep) override {
-        m_assigndlyp = nodep;
-        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        m_assigndlyp = nullptr;
+        VL_RESTORER(m_assigndlyp);
+        {
+            m_assigndlyp = nodep;
+            VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
+        }
     }
     virtual void visit(AstAssignW* nodep) override {
-        m_assignwp = nodep;
-        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        m_assignwp = nullptr;
+        VL_RESTORER(m_assignwp);
+        {
+            m_assignwp = nodep;
+            VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
+        }
     }
     virtual void visit(AstCaseItem* nodep) override {
-        m_constXCvt = false;  // Avoid losing the X's in casex
-        iterateAndNextNull(nodep->condsp());
-        m_constXCvt = true;
-        iterateAndNextNull(nodep->bodysp());
+        VL_RESTORER(m_constXCvt);
+        {
+            m_constXCvt = false;  // Avoid losing the X's in casex
+            iterateAndNextNull(nodep->condsp());
+            m_constXCvt = true;
+            iterateAndNextNull(nodep->bodysp());
+        }
     }
     virtual void visit(AstNodeDType* nodep) override {
-        m_constXCvt = false;  // Avoid losing the X's in casex
-        iterateChildren(nodep);
-        m_constXCvt = true;
+        VL_RESTORER(m_constXCvt);
+        {
+            m_constXCvt = false;  // Avoid losing the X's in casex
+            iterateChildren(nodep);
+        }
     }
     void visitEqNeqCase(AstNodeBiop* nodep) {
         UINFO(4, " N/EQCASE->EQ " << nodep << endl);
@@ -244,9 +254,45 @@ private:
         iterateChildren(nodep);
         // Ahh, we're two state, so this is easy
         UINFO(4, " ISUNKNOWN->0 " << nodep << endl);
-        AstConst* newp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
+        AstConst* newp = new AstConst(nodep->fileline(), AstConst::BitFalse());
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+    virtual void visit(AstCountBits* nodep) override {
+        // Ahh, we're two state, so this is easy
+        std::array<bool, 3> dropop;
+        dropop[0] = VN_IS(nodep->rhsp(), Const) && VN_CAST(nodep->rhsp(), Const)->num().isAnyX();
+        dropop[1] = VN_IS(nodep->thsp(), Const) && VN_CAST(nodep->thsp(), Const)->num().isAnyX();
+        dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_CAST(nodep->fhsp(), Const)->num().isAnyX();
+        UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep << endl);
+
+        AstNode* nonXp = nullptr;
+        if (!dropop[0])
+            nonXp = nodep->rhsp();
+        else if (!dropop[1])
+            nonXp = nodep->thsp();
+        else if (!dropop[2])
+            nonXp = nodep->fhsp();
+        else {  // Was all X-s
+            UINFO(4, " COUNTBITS('x)->0 " << nodep << endl);
+            AstConst* newp = new AstConst(nodep->fileline(), AstConst::BitFalse());
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+        if (dropop[0]) {
+            nodep->rhsp()->unlinkFrBack()->deleteTree();
+            nodep->rhsp(nonXp->cloneTree(true));
+        }
+        if (dropop[1]) {
+            nodep->thsp()->unlinkFrBack()->deleteTree();
+            nodep->thsp(nonXp->cloneTree(true));
+        }
+        if (dropop[2]) {
+            nodep->fhsp()->unlinkFrBack()->deleteTree();
+            nodep->fhsp(nonXp->cloneTree(true));
+        }
+        iterateChildren(nodep);
     }
     virtual void visit(AstConst* nodep) override {
         if (m_constXCvt && nodep->num().isFourState()) {
@@ -288,10 +334,11 @@ private:
                     new AstAssign(
                         nodep->fileline(),
                         new AstVarRef(nodep->fileline(), newvarp, VAccess::WRITE),
-                        new AstOr(
-                            nodep->fileline(), new AstConst(nodep->fileline(), numb1),
-                            new AstAnd(nodep->fileline(), new AstConst(nodep->fileline(), numbx),
-                                       new AstRand(nodep->fileline(), nodep->dtypep(), true)))));
+                        new AstOr(nodep->fileline(), new AstConst(nodep->fileline(), numb1),
+                                  new AstAnd(nodep->fileline(),
+                                             new AstConst(nodep->fileline(), numbx),
+                                             new AstRand(nodep->fileline(), AstRand::Reset{},
+                                                         nodep->dtypep(), true)))));
                 // Add inits in front of other statement.
                 // In the future, we should stuff the initp into the module's constructor.
                 AstNode* afterp = m_modp->stmtsp()->unlinkFrBackWithNext();

@@ -31,7 +31,7 @@
 //######################################################################
 // TraceDecl state, as a visitor of each AstNode
 
-class TraceDeclVisitor : public EmitCBaseVisitor {
+class TraceDeclVisitor final : public EmitCBaseVisitor {
 private:
     // NODE STATE
 

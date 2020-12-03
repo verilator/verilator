@@ -69,10 +69,10 @@ void VlcTop::writeCoverage(const string& filename) {
         return;
     }
 
-    os << "# SystemC::Coverage-3" << endl;
+    os << "# SystemC::Coverage-3\n";
     for (const auto& i : m_points) {
         const VlcPoint& point = m_points.pointNumber(i.second);
-        os << "C '" << point.name() << "' " << point.count() << endl;
+        os << "C '" << point.name() << "' " << point.count() << '\n';
     }
 }
 
@@ -109,7 +109,7 @@ void VlcTop::writeInfo(const string& filename) {
     os << "TN:verilator_coverage\n";
     for (auto& si : m_sources) {
         VlcSource& source = si.second;
-        os << "SF:" << source.name() << endl;
+        os << "SF:" << source.name() << '\n';
         VlcSource::LinenoMap& lines = source.lines();
         for (auto& li : lines) {
             int lineno = li.first;
@@ -134,7 +134,7 @@ void VlcTop::writeInfo(const string& filename) {
 //********************************************************************
 
 struct CmpComputrons {
-    inline bool operator()(const VlcTest* lhsp, const VlcTest* rhsp) const {
+    bool operator()(const VlcTest* lhsp, const VlcTest* rhsp) const {
         if (lhsp->computrons() != rhsp->computrons()) {
             return lhsp->computrons() < rhsp->computrons();
         }
@@ -206,7 +206,7 @@ void VlcTop::annotateCalc() {
             unsigned thresh = (!threshStr.empty()) ? atoi(threshStr.c_str()) : opt.annotateMin();
             bool ok = (point.count() >= thresh);
             UINFO(9, "AnnoCalc count " << filename << ":" << lineno << ":" << point.column() << " "
-                                       << point.count() << " " << point.linescov() << endl);
+                                       << point.count() << " " << point.linescov() << '\n');
             // Base coverage
             source.incCount(lineno, point.column(), point.count(), ok);
             // Additional lines covered by this statement
@@ -263,8 +263,8 @@ void VlcTop::annotateCalcNeeded() {
     }
     float pct = totCases ? (100 * totOk / totCases) : 0;
     cout << "Total coverage (" << totOk << "/" << totCases << ") ";
-    cout << std::fixed << std::setw(3) << std::setprecision(2) << pct << "%" << endl;
-    if (totOk != totCases) cout << "See lines with '%00' in " << opt.annotateOut() << endl;
+    cout << std::fixed << std::setw(3) << std::setprecision(2) << pct << "%\n";
+    if (totOk != totCases) cout << "See lines with '%00' in " << opt.annotateOut() << '\n';
 }
 
 void VlcTop::annotateOutputFiles(const string& dirname) {
@@ -290,7 +290,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
             return;
         }
 
-        os << "\t// verilator_coverage annotation" << endl;
+        os << "\t// verilator_coverage annotation\n";
 
         int lineno = 0;
         while (!is.eof()) {
@@ -308,7 +308,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
                     // UINFO(0,"Source
                     // "<<source.name()<<":"<<col.lineno()<<":"<<col.column()<<endl);
                     os << (col.ok() ? " " : "%") << std::setfill('0') << std::setw(6)
-                       << col.count() << "\t" << line << endl;
+                       << col.count() << "\t" << line << '\n';
                     if (first) {
                         first = false;
                         // Multiple columns on same line; print line just once
@@ -322,7 +322,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
                 }
             }
 
-            if (first) os << "\t" << line << endl;
+            if (first) os << "\t" << line << '\n';
         }
     }
 }

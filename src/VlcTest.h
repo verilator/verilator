@@ -29,7 +29,7 @@
 //********************************************************************
 // VlcTest - a single testrun i.e. a file containing coverage data
 
-class VlcTest {
+class VlcTest final {
 private:
     // MEMBERS
     string m_name;  //< Name of the test
@@ -46,7 +46,7 @@ public:
         : m_name{name}
         , m_computrons{comp}
         , m_testrun{testrun} {}
-    ~VlcTest() {}
+    ~VlcTest() = default;
 
     // ACCESSORS
     const string& name() const { return m_name; }
@@ -65,7 +65,7 @@ public:
     static void dumpHeader() {
         cout << "Tests:\n";
         // cout<<"  Testrun, Computrons,";  // Currently not loaded
-        cout << "  Covered,     Rank,  RankPts,  Filename" << endl;
+        cout << "  Covered,     Rank,  RankPts,  Filename\n";
     }
     void dump(bool bucketsToo) {
         if (testrun() || computrons() != 0.0) {  // currently unused // LCOV_EXCL_LINE
@@ -76,7 +76,7 @@ public:
         cout << "  " << std::setw(7) << std::setfill(' ') << bucketsCovered();
         cout << ",  " << std::setw(7) << std::setfill(' ') << rank();
         cout << ",  " << std::setw(7) << std::setfill(' ') << rankPoints();
-        cout << ",  \"" << name() << "\"" << endl;
+        cout << ",  \"" << name() << "\"\n";
         if (bucketsToo) m_buckets.dump();
     }
 };
@@ -84,7 +84,7 @@ public:
 //********************************************************************
 // VlcTests - Container of all tests
 
-class VlcTests {
+class VlcTests final {
 public:
     // TYPES
     typedef std::vector<VlcTest*> ByName;
@@ -100,7 +100,7 @@ public:
     ByName::iterator end() { return m_tests.end(); }
 
     // CONSTRUCTORS
-    VlcTests() {}
+    VlcTests() = default;
     ~VlcTests() {
         for (auto it = begin(); it != end(); ++it) { VL_DO_CLEAR(delete *it, *it = nullptr); }
     }

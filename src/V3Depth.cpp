@@ -34,7 +34,7 @@
 
 //######################################################################
 
-class DepthVisitor : public AstNVisitor {
+class DepthVisitor final : public AstNVisitor {
 private:
     // NODE STATE
 
@@ -155,7 +155,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit DepthVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~DepthVisitor() override {}
+    virtual ~DepthVisitor() override = default;
 };
 
 //######################################################################

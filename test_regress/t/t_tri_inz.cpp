@@ -44,5 +44,6 @@ int main() {
     } else {
         vl_fatal(__FILE__, __LINE__, "top", "Unexpected results from t_tri_inz\n");
     }
+    VL_DO_DANGLING(delete tb, tb);
     return 0;
 }

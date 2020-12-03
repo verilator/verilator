@@ -50,6 +50,7 @@ int main(int argc, char** argv, char** env) {
     CHECK_RESULT(VL_TIME_STR_CONVERT(0), 0);
 
     top->final();
+    VL_DO_DANGLING(delete top, top);
     printf("*-* All Finished *-*\n");
     return 0;
 }
