@@ -3,6 +3,9 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
+* Verilator 4.107 devel
+
+
 * Verilator 4.106 2020-12-02
 
 **    Change -sv option to select 1800-2017 instead of 1800-2005.
