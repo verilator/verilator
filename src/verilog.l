@@ -205,11 +205,19 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fgets"              { FL; return yD_FGETS; }
   "$finish"             { FL; return yD_FINISH; }
   "$floor"              { FL; return yD_FLOOR; }
+  "$fmonitor"           { FL; return yD_FMONITOR; }
+  "$fmonitorb"          { FL; return yD_FMONITORB; }
+  "$fmonitorh"          { FL; return yD_FMONITORH; }
+  "$fmonitoro"          { FL; return yD_FMONITORO; }
   "$fopen"              { FL; return yD_FOPEN; }
   "$fread"              { FL; return yD_FREAD; }
   "$frewind"            { FL; return yD_FREWIND; }
   "$fscanf"             { FL; return yD_FSCANF; }
   "$fseek"              { FL; return yD_FSEEK; }
+  "$fstrobe"            { FL; return yD_FSTROBE; }
+  "$fstrobeb"           { FL; return yD_FSTROBEB; }
+  "$fstrobeh"           { FL; return yD_FSTROBEH; }
+  "$fstrobeo"           { FL; return yD_FSTROBEO; }
   "$ftell"              { FL; return yD_FTELL; }
   "$fullskew"           { FL; return yaTIMINGSPEC; }
   "$fwrite"             { FL; return yD_FWRITE; }
@@ -221,6 +229,12 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$itor"               { FL; return yD_ITOR; }
   "$ln"                 { FL; return yD_LN; }
   "$log10"              { FL; return yD_LOG10; }
+  "$monitor"            { FL; return yD_MONITOR; }
+  "$monitorb"           { FL; return yD_MONITORB; }
+  "$monitorh"           { FL; return yD_MONITORH; }
+  "$monitoro"           { FL; return yD_MONITORO; }
+  "$monitoroff"         { FL; return yD_MONITOROFF; }
+  "$monitoron"          { FL; return yD_MONITORON; }
   "$nochange"           { FL; return yaTIMINGSPEC; }
   "$period"             { FL; return yaTIMINGSPEC; }
   "$pow"                { FL; return yD_POW; }
@@ -248,6 +262,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$sscanf"             { FL; return yD_SSCANF; }
   "$stime"              { FL; return yD_STIME; }
   "$stop"               { FL; return yD_STOP; }
+  "$strobe"             { FL; return yD_STROBE; }
+  "$strobeb"            { FL; return yD_STROBEB; }
+  "$strobeh"            { FL; return yD_STROBEH; }
+  "$strobeo"            { FL; return yD_STROBEO; }
   "$swrite"             { FL; return yD_SWRITE; }
   "$swriteb"            { FL; return yD_SWRITEB; }
   "$swriteh"            { FL; return yD_SWRITEH; }
@@ -268,9 +286,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$write"              { FL; return yD_WRITE; }
   "$writeb"             { FL; return yD_WRITEB; }
   "$writeh"             { FL; return yD_WRITEH; }
-  "$writeo"             { FL; return yD_WRITEO; }
   "$writememb"          { FL; return yD_WRITEMEMB; }
   "$writememh"          { FL; return yD_WRITEMEMH; }
+  "$writeo"             { FL; return yD_WRITEO; }
   /*     Keywords */
   "always"              { FL; return yALWAYS; }
   "and"                 { FL; return yAND; }

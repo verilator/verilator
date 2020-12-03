@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3ActiveTop {
+class V3ActiveTop final {
 public:
     static void activeTopAll(AstNetlist* nodep);
 };

@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Cdc {
+class V3Cdc final {
 public:
     static void cdcAll(AstNetlist* nodep);
 };

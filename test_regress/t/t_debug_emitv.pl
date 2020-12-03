@@ -13,7 +13,7 @@ scenarios(vlt => 1);
 lint(
     # We also have dump-tree turned on, so hit a lot of AstNode*::dump() functions
     # Likewise XML
-    v_flags => ["--lint-only --dump-treei 9 --debug-emitv"],
+    v_flags => ["--lint-only --dump-treei 9 --dump-treei-V3EmitV 9 --debug-emitv"],
     );
 
 files_identical("$Self->{obj_dir}/$Self->{VM_PREFIX}__preorder.v", $Self->{golden_filename});

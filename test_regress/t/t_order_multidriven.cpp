@@ -56,5 +56,9 @@ int main() {
     }
 
     vcd->close();
+
+    vcore->final();
+    VL_DO_DANGLING(delete vcore, vcore);
+
     printf("*-* All Finished *-*\n");
 }

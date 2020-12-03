@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3GenClk {
+class V3GenClk final {
 public:
     static void genClkAll(AstNetlist* nodep);
 };

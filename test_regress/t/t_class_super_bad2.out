@@ -1,0 +1,4 @@
+%Error: t/t_class_super_bad2.v:10:12: 'super' used on non-extended class (IEEE 1800-2017 8.15)
+   10 |       super.i = 1;   
+      |            ^
+%Error: Exiting due to

@@ -16,17 +16,34 @@ class Cls;
       if (x != 23) $stop;
       return 42;
    endfunction
-
 endclass : Cls
+
+class OCls;
+   int i;
+   static function OCls create();
+      OCls o = new;
+      o.i = 42;
+      return o;
+   endfunction
+   static task test_obj(OCls o);
+      if (o.i != 42) $stop;
+   endtask
+endclass
 
 module t (/*AUTOARG*/);
 
    initial begin
       int x;
+      OCls oc;
+
       Cls::static_task(16);
       x = Cls::static_function(23);
       $write("Static function result: %d\n", x);
       if (x != 42) $stop;
+
+      oc = OCls::create();
+      OCls::test_obj(oc);
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

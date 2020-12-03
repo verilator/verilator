@@ -29,7 +29,7 @@
 
 //######################################################################
 
-class V3PreShellImp {
+class V3PreShellImp final {
 protected:
     friend class V3PreShell;
 
@@ -151,8 +151,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    V3PreShellImp() {}
-    ~V3PreShellImp() {}
+    V3PreShellImp() = default;
+    ~V3PreShellImp() = default;
 };
 
 V3PreShellImp V3PreShellImp::s_preImp;

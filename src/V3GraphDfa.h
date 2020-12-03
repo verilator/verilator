@@ -58,11 +58,11 @@ class DfaEdge;
 ///                        |                 ^\----[epsilon]<-------/           |
 ///                        \->[epsilon]-----------------------------------------/
 
-class DfaGraph : public V3Graph {
+class DfaGraph final : public V3Graph {
 public:
     // CONSTRUCTORS
-    DfaGraph() {}
-    virtual ~DfaGraph() override {}
+    DfaGraph() = default;
+    virtual ~DfaGraph() override = default;
     // METHODS
     /// Find start node
     DfaVertex* findStart();
@@ -77,7 +77,7 @@ public:
 //=============================================================================
 // Vertex
 
-class DfaVertex : public V3GraphVertex {
+class DfaVertex VL_NOT_FINAL : public V3GraphVertex {
     // Each DFA state is captured in this vertex.
     // Start and accepting are members, rather than the more intuitive
     // subclasses, as subclassing them would make it harder to inherit from here.
@@ -93,7 +93,7 @@ public:
     virtual DfaVertex* clone(DfaGraph* graphp) {
         return new DfaVertex(graphp, start(), accepting());
     }
-    virtual ~DfaVertex() override {}
+    virtual ~DfaVertex() override = default;
     // ACCESSORS
     virtual string dotShape() const override { return (accepting() ? "doublecircle" : ""); }
     virtual string dotColor() const override {
@@ -113,7 +113,7 @@ typedef VNUser DfaInput;
 //============================================================================
 // Edge types
 
-class DfaEdge : public V3GraphEdge {
+class DfaEdge final : public V3GraphEdge {
     DfaInput m_input;
     bool m_complement;  // Invert value when doing compare
 public:
@@ -128,7 +128,7 @@ public:
         : V3GraphEdge{graphp, fromp, top, copyfrom->weight()}
         , m_input{copyfrom->input()}
         , m_complement{copyfrom->complement()} {}
-    virtual ~DfaEdge() override {}
+    virtual ~DfaEdge() override = default;
     // METHODS
     virtual string dotColor() const override {
         return (na() ? "yellow" : epsilon() ? "green" : "black");

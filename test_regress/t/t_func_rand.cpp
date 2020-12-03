@@ -24,5 +24,7 @@ int main(int argc, char* argv[]) {
     if (topp->Rand != 0xfeed0fad) {
         vl_fatal(__FILE__, __LINE__, "top", "Unexpected value for Rand output\n");
     }
+    topp->final();
+    VL_DO_DANGLING(delete topp, topp);
     printf("*-* All Finished *-*\n");
 }

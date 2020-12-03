@@ -36,7 +36,7 @@
 //######################################################################
 // Width state, as a visitor of each AstNode
 
-class WidthSelVisitor : public AstNVisitor {
+class WidthSelVisitor final : public AstNVisitor {
 private:
     // IMPORTANT
     //**** This is not a normal visitor, in that all iteration is instead
@@ -67,7 +67,7 @@ private:
             : m_errp{errp}
             , m_dtypep{dtypep}
             , m_fromRange{fromRange} {}
-        ~FromData() {}
+        ~FromData() = default;
     };
     FromData fromDataForArray(AstNode* nodep, AstNode* basefromp) {
         // What is the data type and information for this SEL-ish's from()?
@@ -579,9 +579,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    WidthSelVisitor() {}
+    WidthSelVisitor() = default;
+    virtual ~WidthSelVisitor() override = default;
     AstNode* mainAcceptEdit(AstNode* nodep) { return iterateSubtreeReturnEdits(nodep); }
-    virtual ~WidthSelVisitor() override {}
 };
 
 //######################################################################

@@ -43,7 +43,7 @@ constexpr unsigned RELOOP_MIN_ITERS = 40;  // Need at least this many loops to d
 
 //######################################################################
 
-class ReloopVisitor : public AstNVisitor {
+class ReloopVisitor final : public AstNVisitor {
 private:
     // TYPES
     typedef std::vector<AstNodeAssign*> AssVec;

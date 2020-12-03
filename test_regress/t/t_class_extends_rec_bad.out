@@ -1,0 +1,4 @@
+%Error: t/t_class_extends_rec_bad.v:7:31: Attempting to extend class 'RecursiveExtCls' from itself
+    7 | class RecursiveExtCls extends RecursiveExtCls;
+      |                               ^~~~~~~~~~~~~~~
+%Error: Exiting due to

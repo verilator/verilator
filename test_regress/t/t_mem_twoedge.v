@@ -90,9 +90,9 @@ module Test (/*AUTOARG*/
    input [7:0] d0;
    input [7:0] d1;
    output reg [31:0] out;
+   // verilator lint_off MULTIDRIVEN
    output reg [15:0] out2;
 
-   // verilator lint_off MULTIDRIVEN
    reg [7:0] 	     mem [4];
    // verilator lint_on MULTIDRIVEN
 

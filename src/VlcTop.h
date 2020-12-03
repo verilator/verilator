@@ -28,7 +28,7 @@
 //######################################################################
 // VlcTop - Top level options container
 
-class VlcTop {
+class VlcTop final {
 public:
     // PUBLIC MEMBERS
     VlcOptions opt;  //< Runtime options
@@ -45,8 +45,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlcTop() {}
-    ~VlcTop() {}
+    VlcTop() = default;
+    ~VlcTop() = default;
 
     // ACCESSORS
     VlcTests& tests() { return m_tests; }

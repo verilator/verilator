@@ -14,7 +14,7 @@ top_filename("t/t_unopt_combo.v");
 
 compile(
     v_flags2 => ['+define+ATTRIBUTES', "t/t_unopt_combo.vlt"],
-    expect_filename => $Self->{golden_filename},  # Expect no output, as we waived
+    # Passes, as we waived
     );
 
 ok(1);

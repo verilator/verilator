@@ -35,7 +35,7 @@
 //######################################################################
 // Active class functions
 
-class ActiveTopVisitor : public AstNVisitor {
+class ActiveTopVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  Entire netlist
@@ -128,7 +128,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ActiveTopVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ActiveTopVisitor() override {}
+    virtual ~ActiveTopVisitor() override = default;
 };
 
 //######################################################################

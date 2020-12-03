@@ -45,13 +45,17 @@ module t (/*AUTOARG*/
 	 //
 	 if (5'd10 != 5'b1010) $stop;
 	 if (5'd10 != 5'd10) $stop;
+	 if (5'd10 != 5'd1_0) $stop;
 	 if (5'd10 != 5'ha) $stop;
 	 if (5'd10 != 5'o12) $stop;
+	 if (5'd10 != 5'o1_2) $stop;
 	 if (5'd10 != 5'B 1010) $stop;
+	 if (5'd10 != 5'B 10_10) $stop;
 	 if (5'd10 != 5'D10) $stop;
 	 if (5'd10 != 5'H a) $stop;
 	 if (5'd10 != 5 'O 12) $stop;
 	 if (24'h29cbb8 != 24'o12345670) $stop;
+	 if (24'h29__cbb8 != 24'o123456__70) $stop;
 	 if (6'b111xxx !== 6'o7x) $stop;
 	 if (6'b111??? !== 6'o7?) $stop;
 	 if (6'b111zzz !== 6'o7z) $stop;

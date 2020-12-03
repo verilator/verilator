@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Depth {
+class V3Depth final {
 public:
     static void depthAll(AstNetlist* nodep);
 };

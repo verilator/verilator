@@ -26,7 +26,7 @@
 
 //######################################################################
 
-class EmitCInlines : EmitCBaseVisitor {
+class EmitCInlines final : EmitCBaseVisitor {
     // STATE
 
     // METHODS

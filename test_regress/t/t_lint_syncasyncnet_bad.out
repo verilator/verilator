@@ -1,9 +1,9 @@
-%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:16:25: Signal flopped as both synchronous and async: 'rst_both_l'
-                       t/t_lint_syncasyncnet_bad.v:91:15: ... Location of async usage
-   91 |       q2 <= (~rst_both_l) ? 1'b0 : d;
+%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:14:10: Signal flopped as both synchronous and async: 'rst_both_l'
+                       t/t_lint_syncasyncnet_bad.v:52:15: ... Location of async usage
+   52 |       q4 <= (~rst_both_l) ? 1'b0 : d;
       |               ^~~~~~~~~~
-                       t/t_lint_syncasyncnet_bad.v:59:14: ... Location of sync usage
-   59 |       q2 <= (rst_both_l) ? d : 1'b0;
+                       t/t_lint_syncasyncnet_bad.v:34:14: ... Location of sync usage
+   34 |       q2 <= (rst_both_l) ? d : 1'b0;
       |              ^~~~~~~~~~
                        ... Use "/* verilator lint_off SYNCASYNCNET */" and lint_on around source to disable this message.
 %Error: Exiting due to

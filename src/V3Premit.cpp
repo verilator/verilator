@@ -36,7 +36,7 @@
 //######################################################################
 // Structure for global state
 
-class PremitAssignVisitor : public AstNVisitor {
+class PremitAssignVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstVar::user4()         // bool; occurs on LHS of current assignment
@@ -75,14 +75,14 @@ public:
         UINFO(4, "  PremitAssignVisitor on " << nodep << endl);
         iterate(nodep);
     }
-    virtual ~PremitAssignVisitor() override {}
+    virtual ~PremitAssignVisitor() override = default;
     bool noOpt() const { return m_noopt; }
 };
 
 //######################################################################
 // Premit state, as a visitor of each AstNode
 
-class PremitVisitor : public AstNVisitor {
+class PremitVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstNodeMath::user()     -> bool.  True if iterated already
@@ -127,7 +127,9 @@ private:
                 } else if (VN_IS(nodep->backp(), Sel)
                            && VN_CAST(nodep->backp(), Sel)->widthp() == nodep) {
                     // AstSel::width must remain a constant
-                } else if (nodep->firstAbovep() && VN_IS(nodep->firstAbovep(), ArraySel)) {
+                } else if ((nodep->firstAbovep() && VN_IS(nodep->firstAbovep(), ArraySel))
+                           || ((VN_IS(m_stmtp, CCall) || VN_IS(m_stmtp, CStmt))
+                               && VN_IS(nodep, ArraySel))) {
                     // ArraySel's are pointer refs, ignore
                 } else {
                     UINFO(4, "Cre Temp: " << nodep << endl);
@@ -397,7 +399,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit PremitVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~PremitVisitor() override {}
+    virtual ~PremitVisitor() override = default;
 };
 
 //----------------------------------------------------------------------

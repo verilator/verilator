@@ -37,7 +37,7 @@
 //######################################################################
 // Class for every variable we may process
 
-class UndrivenVarEntry {
+class UndrivenVarEntry final {
     // MEMBERS
     AstVar* m_varp;  // Variable this tracks
     std::vector<bool> m_wholeFlags;  // Used/Driven on whole vector
@@ -57,7 +57,7 @@ public:
         m_bitFlags.resize(varp->width() * FLAGS_PER_BIT);
         for (int i = 0; i < varp->width() * FLAGS_PER_BIT; i++) m_bitFlags[i] = false;
     }
-    ~UndrivenVarEntry() {}
+    ~UndrivenVarEntry() = default;
 
 private:
     // METHODS
@@ -226,7 +226,7 @@ public:
 //######################################################################
 // Undriven state, as a visitor of each AstNode
 
-class UndrivenVisitor : public AstNVisitor {
+class UndrivenVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Netlist:
@@ -237,7 +237,7 @@ private:
     AstUser2InUse m_inuser2;
 
     // STATE
-    std::vector<UndrivenVarEntry*> m_entryps[3];  // Nodes to delete when we are finished
+    std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps;  // Nodes to delete when finished
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inProcAssign = false;  // In procedural assignment

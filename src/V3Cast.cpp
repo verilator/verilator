@@ -49,7 +49,7 @@
 //######################################################################
 // Cast state, as a visitor of each AstNode
 
-class CastVisitor : public AstNVisitor {
+class CastVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
@@ -193,7 +193,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit CastVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~CastVisitor() override {}
+    virtual ~CastVisitor() override = default;
 };
 
 //######################################################################

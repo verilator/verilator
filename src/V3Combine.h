@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Combine {
+class V3Combine final {
 public:
     static void combineAll(AstNetlist* nodep);
 };

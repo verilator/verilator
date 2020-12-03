@@ -52,7 +52,7 @@ typedef void* VlThrSymTab;
 typedef void (*VlExecFnp)(bool, VlThrSymTab);
 
 /// Track dependencies for a single MTask.
-class VlMTaskVertex {
+class VlMTaskVertex final {
     // MEMBERS
     static std::atomic<vluint64_t> s_yields;  // Statistics
 
@@ -82,7 +82,7 @@ public:
     // that must notify this MTaskVertex before it will become ready
     // to run.
     explicit VlMTaskVertex(vluint32_t upstreamDepCount);
-    ~VlMTaskVertex() {}
+    ~VlMTaskVertex() = default;
 
     static vluint64_t yields() { return s_yields; }
     static void yieldThread() {
@@ -124,7 +124,7 @@ public:
 };
 
 // Profiling support
-class VlProfileRec {
+class VlProfileRec final {
 protected:
     friend class VlThreadPool;
     enum VlProfileE { TYPE_MTASK_RUN, TYPE_BARRIER };
@@ -136,7 +136,7 @@ protected:
     unsigned m_cpu;  // Execution CPU number (at start anyways)
 public:
     class Barrier {};
-    VlProfileRec() {}
+    VlProfileRec() = default;
     explicit VlProfileRec(Barrier) { m_cpu = getcpu(); }
     void startRecord(vluint64_t time, uint32_t mtask, uint32_t predict) {
         m_type = VlProfileRec::TYPE_MTASK_RUN;
@@ -168,7 +168,7 @@ public:
 
 class VlThreadPool;
 
-class VlWorkerThread {
+class VlWorkerThread final {
 private:
     // TYPES
     struct ExecRec {
@@ -247,7 +247,7 @@ public:
     static void startWorker(VlWorkerThread* workerp);
 };
 
-class VlThreadPool {
+class VlThreadPool final {
     // TYPES
     typedef std::vector<VlProfileRec> ProfileTrace;
     typedef std::set<ProfileTrace*> ProfileSet;

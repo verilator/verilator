@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3LinkJump {
+class V3LinkJump final {
 public:
     static void linkJump(AstNetlist* nodep);
 };

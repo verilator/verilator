@@ -36,7 +36,7 @@
 
 //######################################################################
 
-class BeginState {
+class BeginState final {
 private:
     // NODE STATE
     // Entire netlist:
@@ -45,8 +45,8 @@ private:
     bool m_anyFuncInBegin = false;
 
 public:
-    BeginState() {}
-    ~BeginState() {}
+    BeginState() = default;
+    ~BeginState() = default;
     void userMarkChanged(AstNode* nodep) {
         nodep->user1(true);
         m_anyFuncInBegin = true;
@@ -56,7 +56,7 @@ public:
 
 //######################################################################
 
-class BeginVisitor : public AstNVisitor {
+class BeginVisitor final : public AstNVisitor {
 private:
     // STATE
     BeginState* m_statep;  // Current global state
@@ -242,12 +242,12 @@ public:
         : m_statep{statep} {
         iterate(nodep);
     }
-    virtual ~BeginVisitor() override {}
+    virtual ~BeginVisitor() override = default;
 };
 
 //######################################################################
 
-class BeginRelinkVisitor : public AstNVisitor {
+class BeginRelinkVisitor final : public AstNVisitor {
     // Replace tasks with new pointer
 private:
     // NODE STATE
@@ -283,7 +283,7 @@ private:
 public:
     // CONSTRUCTORS
     BeginRelinkVisitor(AstNetlist* nodep, BeginState*) { iterate(nodep); }
-    virtual ~BeginRelinkVisitor() override {}
+    virtual ~BeginRelinkVisitor() override = default;
 };
 
 //######################################################################

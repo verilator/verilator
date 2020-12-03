@@ -52,7 +52,7 @@
 
 //######################################################################
 
-class CheckMergeableVisitor : public AstNVisitor {
+class CheckMergeableVisitor final : public AstNVisitor {
 private:
     // STATE
     bool m_mergeable
@@ -86,7 +86,7 @@ private:
     }
 
 public:
-    CheckMergeableVisitor() {}
+    CheckMergeableVisitor() = default;
 
     // Return false if this node should not be merged at all because:
     // - It contains an impure expression
@@ -98,7 +98,7 @@ public:
     }
 };
 
-class MarkVarsVisitor : public AstNVisitor {
+class MarkVarsVisitor final : public AstNVisitor {
 private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -115,7 +115,7 @@ public:
     void mark(AstNode* node) { iterate(node); }
 };
 
-class MergeCondVisitor : public AstNVisitor {
+class MergeCondVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // AstVar::user1 -> Flag set for variables referenced by m_mgCondp
@@ -161,7 +161,7 @@ private:
     // rarely required (only when trying to merge a "cond & value" with an
     // earlier ternary), we will just always mask it for safety.
     AstNode* maskLsb(AstNode* nodep) {
-        AstNode* const maskp = new AstConst(nodep->fileline(), AstConst::LogicTrue());
+        AstNode* const maskp = new AstConst(nodep->fileline(), AstConst::BitTrue());
         return new AstAnd(nodep->fileline(), nodep, maskp);
     }
 
@@ -170,8 +170,7 @@ private:
     // of the RHS is expected to be deleted by the caller.
     AstNode* foldAndUnlink(AstNode* rhsp, bool condTrue) {
         if (rhsp->sameTree(m_mgCondp)) {
-            return condTrue ? new AstConst(rhsp->fileline(), AstConst::LogicTrue())
-                            : new AstConst(rhsp->fileline(), AstConst::LogicFalse());
+            return new AstConst(rhsp->fileline(), AstConst::BitTrue{}, condTrue);
         } else if (AstNodeCond* const condp = extractCond(rhsp)) {
             AstNode* const resp
                 = condTrue ? condp->expr1p()->unlinkFrBack() : condp->expr2p()->unlinkFrBack();
@@ -183,12 +182,12 @@ private:
         } else if (AstAnd* const andp = VN_CAST(rhsp, And)) {
             if (andp->lhsp()->sameTree(m_mgCondp)) {
                 return condTrue ? maskLsb(andp->rhsp()->unlinkFrBack())
-                                : new AstConst(rhsp->fileline(), AstConst::LogicFalse());
+                                : new AstConst(rhsp->fileline(), AstConst::BitFalse());
             } else {
                 UASSERT_OBJ(andp->rhsp()->sameTree(m_mgCondp), rhsp,
                             "AstAnd doesn't hold condition expression");
                 return condTrue ? maskLsb(andp->lhsp()->unlinkFrBack())
-                                : new AstConst(rhsp->fileline(), AstConst::LogicFalse());
+                                : new AstConst(rhsp->fileline(), AstConst::BitFalse());
             }
         }
         rhsp->v3fatalSrc("Don't know how to fold expression");

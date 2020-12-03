@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Table {
+class V3Table final {
 public:
     static void tableAll(AstNetlist* nodep);
 };

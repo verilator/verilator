@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3EmitC {
+class V3EmitC final {
 public:
     static void emitc();
     static void emitcInlines();

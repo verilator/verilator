@@ -19,6 +19,11 @@ class ClsArg;
    function int geta;
       return imembera;
    endfunction
+   static function ClsArg create6;
+      ClsArg obj;
+      obj = new(6 - 1);
+      return obj;
+   endfunction
 endclass
 
 module t (/*AUTOARG*/);
@@ -29,9 +34,13 @@ module t (/*AUTOARG*/);
       c1 = new;
       if (c1.imembera != 5) $stop;
 
-      c2 = new(2);
+      c2 = new(3 - 1);
       if (c2.imembera != 3) $stop;
       if (c2.geta() != 3) $stop;
+
+      c2 = ClsArg::create6();
+      if (c2.imembera != 6) $stop;
+      if (c2.geta() != 6) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

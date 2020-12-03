@@ -29,7 +29,7 @@
 // Algorithms - acyclic
 //      Break the minimal number of backward edges to make the graph acyclic
 
-class GraphAcycVertex : public V3GraphVertex {
+class GraphAcycVertex final : public V3GraphVertex {
     // user() is used for various sub-algorithm pieces
     V3GraphVertex* m_origVertexp;  // Pointer to first vertex this represents
 protected:
@@ -42,7 +42,7 @@ public:
     GraphAcycVertex(V3Graph* graphp, V3GraphVertex* origVertexp)
         : V3GraphVertex{graphp}
         , m_origVertexp{origVertexp} {}
-    virtual ~GraphAcycVertex() override {}
+    virtual ~GraphAcycVertex() override = default;
     V3GraphVertex* origVertexp() const { return m_origVertexp; }
     void setDelete() { m_deleted = true; }
     bool isDelete() const { return m_deleted; }
@@ -53,13 +53,13 @@ public:
 
 //--------------------------------------------------------------------
 
-class GraphAcycEdge : public V3GraphEdge {
+class GraphAcycEdge final : public V3GraphEdge {
     // userp() is always used to point to the head original graph edge
 private:
     typedef std::list<V3GraphEdge*> OrigEdgeList;  // List of orig edges, see also GraphAcyc's decl
     V3GraphEdge* origEdgep() const {
         OrigEdgeList* oEListp = static_cast<OrigEdgeList*>(userp());
-        if (!oEListp) v3fatalSrc("No original edge associated with acyc edge " << this << endl);
+        if (!oEListp) v3fatalSrc("No original edge associated with acyc edge " << this);
         return (oEListp->front());
     }
 
@@ -67,7 +67,7 @@ public:
     GraphAcycEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
                   bool cutable = false)
         : V3GraphEdge{graphp, fromp, top, weight, cutable} {}
-    virtual ~GraphAcycEdge() override {}
+    virtual ~GraphAcycEdge() override = default;
     // yellow=we might still cut it, else oldEdge: yellowGreen=made uncutable, red=uncutable
     virtual string dotColor() const override {
         return (cutable() ? "yellow" : origEdgep()->dotColor());
@@ -77,7 +77,7 @@ public:
 //--------------------------------------------------------------------
 
 struct GraphAcycEdgeCmp {
-    inline bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
+    bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
         if (lhsp->weight() > rhsp->weight()) return true;  // LHS goes first
         if (lhsp->weight() < rhsp->weight()) return false;  // RHS goes first
         return false;
@@ -87,7 +87,7 @@ struct GraphAcycEdgeCmp {
 //--------------------------------------------------------------------
 
 // CLASSES
-class GraphAcyc {
+class GraphAcyc final {
 private:
     typedef std::list<V3GraphEdge*>
         OrigEdgeList;  // List of orig edges, see also GraphAcycEdge's decl
@@ -155,7 +155,7 @@ private:
         breakEdgep->cut();
         OrigEdgeList* oEListp = static_cast<OrigEdgeList*>(breakEdgep->userp());
         if (!oEListp) {
-            v3fatalSrc("No original edge associated with cutting edge " << breakEdgep << endl);
+            v3fatalSrc("No original edge associated with cutting edge " << breakEdgep);
         }
         // The breakGraph edge may represent multiple real edges; cut them all
         for (const auto& origEdgep : *oEListp) {

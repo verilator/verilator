@@ -1,0 +1,20 @@
+[110] cyc=11
+[120] cyc=12
+[130] cyc=13
+[140] cyc=14
+[150] cyc=15
+[160] cyc=16
+[170] cyc=17
+00000000000000000000000000010010b
+00000013h
+00000000024o
+00000000025o
+00000000026o
+[230] cyc=23 new-monitor
+[240] cyc=24 new-monitor
+[270] cyc=27 new-monitor
+[280] cyc=28 new-monitor
+[290] cyc=29 new-monitor
+[300] cyc=30 new-monitor
+*-* All Finished *-*
+[310] cyc=31 new-monitor

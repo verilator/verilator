@@ -29,7 +29,7 @@
 // VerilatedCovImpBase
 /// Implementation base class for constants
 
-struct VerilatedCovImpBase {
+struct VerilatedCovImpBase VL_NOT_FINAL {
     // TYPES
     enum { MAX_KEYS = 33 };  /// Maximum user arguments + filename+lineno
     enum { KEY_UNDEF = 0 };  /// Magic key # for unspecified values
@@ -39,7 +39,7 @@ struct VerilatedCovImpBase {
 // VerilatedCovImpItem
 /// Implementation class for a VerilatedCov item
 
-class VerilatedCovImpItem : VerilatedCovImpBase {
+class VerilatedCovImpItem VL_NOT_FINAL : VerilatedCovImpBase {
 public:  // But only local to this file
     // MEMBERS
     int m_keys[MAX_KEYS];  ///< Key
@@ -52,7 +52,7 @@ public:  // But only local to this file
             m_vals[i] = 0;
         }
     }
-    virtual ~VerilatedCovImpItem() {}
+    virtual ~VerilatedCovImpItem() = default;
     virtual vluint64_t count() const = 0;
     virtual void zero() const = 0;
 };
@@ -63,7 +63,7 @@ public:  // But only local to this file
 /// This isn't in the header file for auto-magic conversion because it
 /// inlines to too much code and makes compilation too slow.
 
-template <class T> class VerilatedCoverItemSpec : public VerilatedCovImpItem {
+template <class T> class VerilatedCoverItemSpec final : public VerilatedCovImpItem {
 private:
     // MEMBERS
     T* m_countp;  ///< Count value
@@ -78,7 +78,7 @@ public:
         : m_countp{countp} {
         *m_countp = 0;
     }
-    virtual ~VerilatedCoverItemSpec() override {}
+    virtual ~VerilatedCoverItemSpec() override = default;
 };
 
 //=============================================================================
@@ -87,7 +87,7 @@ public:
 /// All value and keys are indexed into a unique number.  Thus we can greatly reduce
 /// the storage requirements for otherwise identical keys.
 
-class VerilatedCovImp : VerilatedCovImpBase {
+class VerilatedCovImp final : VerilatedCovImpBase {
 private:
     // TYPES
     typedef std::map<const std::string, int> ValueIndexMap;
@@ -99,13 +99,14 @@ private:
     ValueIndexMap m_valueIndexes VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for values
     IndexValueMap m_indexValues VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for keys
     ItemList m_items VL_GUARDED_BY(m_mutex);  ///< List of all items
+    int m_nextIndex VL_GUARDED_BY(m_mutex) = (KEY_UNDEF + 1);  ///< Next insert value
 
     VerilatedCovImpItem* m_insertp VL_GUARDED_BY(m_mutex) = nullptr;  ///< Item about to insert
     const char* m_insertFilenamep VL_GUARDED_BY(m_mutex) = nullptr;  ///< Filename about to insert
     int m_insertLineno VL_GUARDED_BY(m_mutex) = 0;  ///< Line number about to insert
 
     // CONSTRUCTORS
-    VerilatedCovImp() {}
+    VerilatedCovImp() = default;
     VL_UNCOPYABLE(VerilatedCovImp);
 
 public:
@@ -118,14 +119,13 @@ public:
 private:
     // PRIVATE METHODS
     int valueIndex(const std::string& value) VL_REQUIRES(m_mutex) {
-        static int nextIndex = KEY_UNDEF + 1;
         const auto iter = m_valueIndexes.find(value);
         if (iter != m_valueIndexes.end()) return iter->second;
-        nextIndex++;
-        assert(nextIndex > 0);  // Didn't rollover
-        m_valueIndexes.insert(std::make_pair(value, nextIndex));
-        m_indexValues.insert(std::make_pair(nextIndex, value));
-        return nextIndex;
+        m_nextIndex++;
+        assert(m_nextIndex > 0);  // Didn't rollover
+        m_valueIndexes.insert(std::make_pair(value, m_nextIndex));
+        m_indexValues.insert(std::make_pair(m_nextIndex, value));
+        return m_nextIndex;
     }
     static std::string dequote(const std::string& text) VL_PURE {
         // Quote any special characters
@@ -235,6 +235,7 @@ private:
         m_items.clear();
         m_indexValues.clear();
         m_valueIndexes.clear();
+        m_nextIndex = KEY_UNDEF + 1;
     }
 
 public:
@@ -399,7 +400,7 @@ public:
             os << i.first;
             if (!i.second.first.empty()) os << keyValueFormatter(VL_CIK_HIER, i.second.first);
             os << "' " << i.second.second;
-            os << std::endl;
+            os << '\n';
         }
     }
 };

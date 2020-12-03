@@ -24,7 +24,7 @@
 
 //============================================================================
 
-class V3LanguageWords {
+class V3LanguageWords final {
     // List of common reserved keywords
 private:
     typedef std::map<const string, string> KeywordMap;

@@ -34,7 +34,7 @@
 /// Remove all $signed, $unsigned, we're done with them.
 /// This step is only called on real V3Width, not intermediate e.g. widthParams
 
-class WidthRemoveVisitor : public AstNVisitor {
+class WidthRemoveVisitor final : public AstNVisitor {
 private:
     // METHODS
     void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
@@ -55,8 +55,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    WidthRemoveVisitor() {}
-    virtual ~WidthRemoveVisitor() override {}
+    WidthRemoveVisitor() = default;
+    virtual ~WidthRemoveVisitor() override = default;
     AstNode* mainAcceptEdit(AstNode* nodep) { return iterateSubtreeReturnEdits(nodep); }
 };
 
@@ -64,10 +64,13 @@ public:
 // Now that all widthing is complete,
 // Copy all width() to widthMin().  V3Const expects this
 
-class WidthCommitVisitor : public AstNVisitor {
+class WidthCommitVisitor final : public AstNVisitor {
     // NODE STATE
     // AstVar::user1p           -> bool, processed
     AstUser1InUse m_inuser1;
+
+    // STATE
+    AstNodeModule* m_modp = nullptr;
 
 public:
     // METHODS
@@ -112,7 +115,50 @@ private:
         }
         return nodep;
     }
+    void classEncapCheck(AstNode* nodep, AstNode* defp, AstClass* defClassp) {
+        // Call on non-local class to check local/protected status and complain
+        bool local = false;
+        bool prot = false;
+        if (const auto varp = VN_CAST(defp, Var)) {
+            local = varp->isHideLocal();
+            prot = varp->isHideProtected();
+        } else if (const auto ftaskp = VN_CAST(defp, NodeFTask)) {
+            local = ftaskp->isHideLocal();
+            prot = ftaskp->isHideProtected();
+        } else {
+            nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeName());
+        }
+        if (local || prot) {
+            auto refClassp = VN_CAST(m_modp, Class);
+            const char* how = nullptr;
+            if (local && defClassp && refClassp != defClassp) {
+                how = "'local'";
+            } else if (prot && defClassp && !AstClass::isClassExtendedFrom(refClassp, defClassp)) {
+                how = "'protected'";
+            }
+            if (how) {
+                UINFO(9, "refclass " << refClassp << endl);
+                UINFO(9, "defclass " << defClassp << endl);
+                nodep->v3warn(E_ENCAPSULATED, nodep->prettyNameQ()
+                                                  << " is hidden as " << how
+                                                  << " within this context (IEEE 1800-2017 8.18)\n"
+                                                  << nodep->warnContextPrimary() << endl
+                                                  << nodep->warnOther()
+                                                  << "... Location of definition" << endl
+                                                  << defp->warnContextSecondary());
+            }
+        }
+    }
+
     // VISITORS
+    virtual void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        {
+            m_modp = nodep;
+            iterateChildren(nodep);
+            editDType(nodep);
+        }
+    }
     virtual void visit(AstConst* nodep) override {
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype");
         iterate(nodep->dtypep());  // Do datatype first
@@ -153,6 +199,32 @@ private:
         nodep->virtRefDTypep(editOneDType(nodep->virtRefDTypep()));
         nodep->virtRefDType2p(editOneDType(nodep->virtRefDType2p()));
     }
+    virtual void visit(AstNodeFTask* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        if (nodep->classMethod() && nodep->pureVirtual() && VN_IS(m_modp, Class)
+            && !VN_CAST(m_modp, Class)->isVirtual()) {
+            nodep->v3error(
+                "Illegal to have 'pure virtual' in non-virtual class (IEEE 1800-2017 8.21)");
+        }
+    }
+    virtual void visit(AstNodeVarRef* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        classEncapCheck(nodep, nodep->varp(), VN_CAST(nodep->classOrPackagep(), Class));
+    }
+    virtual void visit(AstNodeFTaskRef* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        classEncapCheck(nodep, nodep->taskp(), VN_CAST(nodep->classOrPackagep(), Class));
+    }
+    virtual void visit(AstMemberSel* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        if (auto* classrefp = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
+            classEncapCheck(nodep, nodep->varp(), classrefp->classp());
+        }  // else might be struct, etc
+    }
     virtual void visit(AstNodePreSel* nodep) override {  // LCOV_EXCL_LINE
         // This check could go anywhere after V3Param
         nodep->v3fatalSrc("Presels should have been removed before this point");
@@ -171,7 +243,7 @@ public:
         // Don't want to repairCache, as all needed nodes have been added back in
         // a repair would prevent dead nodes from being detected
     }
-    virtual ~WidthCommitVisitor() override {}
+    virtual ~WidthCommitVisitor() override = default;
 };
 
 //######################################################################

@@ -28,7 +28,7 @@
 //######################################################################
 // ProtectLib top-level visitor
 
-class ProtectVisitor : public AstNVisitor {
+class ProtectVisitor final : public AstNVisitor {
 private:
     AstVFile* m_vfilep = nullptr;  // DPI-enabled Verilog wrapper
     AstCFile* m_cfilep = nullptr;  // C implementation of DPI functions
@@ -411,11 +411,12 @@ private:
 
     string cInputConnection(AstVar* varp) {
         string frstmt;
-        bool useSetWSvlv = V3Task::dpiToInternalFrStmt(varp, varp->name(), frstmt);
+        string ket;
+        bool useSetWSvlv = V3Task::dpiToInternalFrStmt(varp, varp->name(), frstmt, ket);
         if (useSetWSvlv) {
-            return frstmt + " handlep__V->" + varp->name() + ", " + varp->name() + ");\n";
+            return frstmt + ket + " handlep__V->" + varp->name() + ", " + varp->name() + ");\n";
         }
-        return "handlep__V->" + varp->name() + " = " + frstmt + ";\n";
+        return "handlep__V->" + varp->name() + " = " + frstmt + ket + ";\n";
     }
 
     void handleClock(AstVar* varp) {

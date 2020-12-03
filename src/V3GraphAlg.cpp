@@ -69,7 +69,7 @@ void V3Graph::deleteCutableOnlyEdges() {
 //######################################################################
 // Algorithms - weakly connected components
 
-class GraphRemoveRedundant : GraphAlg<> {
+class GraphRemoveRedundant final : GraphAlg<> {
     bool m_sumWeights;  ///< Sum, rather then maximize weights
 private:
     void main() {
@@ -123,7 +123,7 @@ public:
         , m_sumWeights{sumWeights} {
         main();
     }
-    ~GraphRemoveRedundant() {}
+    ~GraphRemoveRedundant() = default;
 };
 
 void V3Graph::removeRedundantEdges(V3EdgeFuncP edgeFuncp) {
@@ -137,7 +137,7 @@ void V3Graph::removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp) {
 //######################################################################
 // Algorithms - remove transitive
 
-class GraphAlgRemoveTransitiveEdges : GraphAlg<> {
+class GraphAlgRemoveTransitiveEdges final : GraphAlg<> {
 public:
     explicit GraphAlgRemoveTransitiveEdges(V3Graph* graphp)
         : GraphAlg<>(graphp, nullptr) {}
@@ -168,7 +168,7 @@ void V3Graph::removeTransitiveEdges() { GraphAlgRemoveTransitiveEdges(this).go()
 //######################################################################
 // Algorithms - weakly connected components
 
-class GraphAlgWeakly : GraphAlg<> {
+class GraphAlgWeakly final : GraphAlg<> {
 private:
     void main() {
         // Initialize state
@@ -200,7 +200,7 @@ public:
         : GraphAlg<>(graphp, edgeFuncp) {
         main();
     }
-    ~GraphAlgWeakly() {}
+    ~GraphAlgWeakly() = default;
 };
 
 void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgWeakly(this, edgeFuncp); }
@@ -209,7 +209,7 @@ void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgWeakly(this, edge
 //######################################################################
 // Algorithms - strongly connected components
 
-class GraphAlgStrongly : GraphAlg<> {
+class GraphAlgStrongly final : GraphAlg<> {
 private:
     uint32_t m_currentDfs;  // DFS count
     std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
@@ -288,7 +288,7 @@ public:
         m_currentDfs = 0;
         main();
     }
-    ~GraphAlgStrongly() {}
+    ~GraphAlgStrongly() = default;
 };
 
 void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgStrongly(this, edgeFuncp); }
@@ -297,7 +297,7 @@ void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgStrongly(this, 
 //######################################################################
 // Algorithms - ranking
 
-class GraphAlgRank : GraphAlg<> {
+class GraphAlgRank final : GraphAlg<> {
 private:
     void main() {
         // Rank each vertex, ignoring cutable edges
@@ -339,7 +339,7 @@ public:
         : GraphAlg<>{graphp, edgeFuncp} {
         main();
     }
-    ~GraphAlgRank() {}
+    ~GraphAlgRank() = default;
 };
 
 void V3Graph::rank() { GraphAlgRank(this, &V3GraphEdge::followAlwaysTrue); }
@@ -350,7 +350,7 @@ void V3Graph::rank(V3EdgeFuncP edgeFuncp) { GraphAlgRank(this, edgeFuncp); }
 //######################################################################
 // Algorithms - ranking
 
-class GraphAlgRLoops : GraphAlg<> {
+class GraphAlgRLoops final : GraphAlg<> {
 private:
     std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
     bool m_done;  // Exit algorithm
@@ -393,7 +393,7 @@ public:
         m_done = false;
         main(vertexp);
     }
-    ~GraphAlgRLoops() {}
+    ~GraphAlgRLoops() = default;
 };
 
 void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
@@ -404,7 +404,7 @@ void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
 //######################################################################
 // Algorithms - subtrees
 
-class GraphAlgSubtrees : GraphAlg<> {
+class GraphAlgSubtrees final : GraphAlg<> {
 private:
     V3Graph* m_loopGraphp;
 
@@ -441,7 +441,7 @@ public:
         m_graphp->userClearEdges();
         (void)vertexIterateAll(vertexp);
     }
-    ~GraphAlgSubtrees() {}
+    ~GraphAlgSubtrees() = default;
 };
 
 //! Report the entire connected graph with a loop or loops
@@ -469,12 +469,12 @@ void V3Graph::makeEdgesNonCutable(V3EdgeFuncP edgeFuncp) {
 // Algorithms - sorting
 
 struct GraphSortVertexCmp {
-    inline bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
+    bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
         return lhsp->sortCmp(rhsp) < 0;
     }
 };
 struct GraphSortEdgeCmp {
-    inline bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
+    bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
         return lhsp->sortCmp(rhsp) < 0;
     }
 };

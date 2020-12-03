@@ -94,7 +94,6 @@ LIBS = $(CFG_LIBS) -lm
 
 CPPFLAGS += -MMD
 CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir) -I../../include
-CPPFLAGS += -DYYDEBUG 	# Required to get nice error messages
 #CPPFLAGS += -DVL_LEAK_CHECKS 	# If running valgrind or other hunting tool
 CPPFLAGS += $(COPT)
 CPPFLAGS += -MP # Only works on recent GCC versions

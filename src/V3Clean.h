@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Clean {
+class V3Clean final {
 public:
     static void cleanAll(AstNetlist* nodep);
 };

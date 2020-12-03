@@ -2,9 +2,35 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
+
+* Verilator 4.106 2020-12-02
+
+**    Change -sv option to select 1800-2017 instead of 1800-2005.
+
+***   Check for proper 'local' and 'protected' (#2228).
+
+***   Support $random and $urandom seeds.
+
+***   Support $monitor and $strobe.
+
+***   Support complex function arguments.
+
+***   Support 'super'.
+
+***   Support 'with item.index'.
+
+****  Fix the default GNU Make executable name on FreeBSD (#2553). [Yuri Victorovich]
+
+****  Fix trace signal names getting hashed (#2643).  [Barbara Gigerl]
+
+****  Fix unpacked array parameters near functions (#2639). [Anderson Ignacio da Silva]
+
+****  Fix access to non-overridden base class variable (#2654). [Tobias Rosenkranz]
+
+
 * Verilator 4.104 2020-11-14
 
-***   Support queue and associative array 'with' statements. (#2616)
+***   Support queue and associative array 'with' statements (#2616).
 
 ***   Support queue slicing (#2326).
 

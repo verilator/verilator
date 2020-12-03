@@ -51,7 +51,7 @@
 //######################################################################
 // Graph vertexes
 
-class TraceActivityVertex : public V3GraphVertex {
+class TraceActivityVertex final : public V3GraphVertex {
     AstNode* const m_insertp;
     vlsint32_t m_activityCode;
     bool m_slow;  // If always slow, we can use the same code
@@ -71,7 +71,7 @@ public:
         m_activityCode = code;
         m_slow = false;
     }
-    virtual ~TraceActivityVertex() override {}
+    virtual ~TraceActivityVertex() override = default;
     // ACCESSORS
     AstNode* insertp() const {
         if (!m_insertp) v3fatalSrc("Null insertp; probably called on a special always/slow.");
@@ -95,14 +95,14 @@ public:
     }
 };
 
-class TraceCFuncVertex : public V3GraphVertex {
+class TraceCFuncVertex final : public V3GraphVertex {
     AstCFunc* m_nodep;
 
 public:
     TraceCFuncVertex(V3Graph* graphp, AstCFunc* nodep)
         : V3GraphVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~TraceCFuncVertex() override {}
+    virtual ~TraceCFuncVertex() override = default;
     // ACCESSORS
     AstCFunc* nodep() const { return m_nodep; }
     virtual string name() const override { return nodep()->name(); }
@@ -110,7 +110,7 @@ public:
     virtual FileLine* fileline() const override { return nodep()->fileline(); }
 };
 
-class TraceTraceVertex : public V3GraphVertex {
+class TraceTraceVertex final : public V3GraphVertex {
     AstTraceDecl* const m_nodep;  // TRACEINC this represents
     // nullptr, or other vertex with the real code() that duplicates this one
     TraceTraceVertex* m_duplicatep = nullptr;
@@ -119,7 +119,7 @@ public:
     TraceTraceVertex(V3Graph* graphp, AstTraceDecl* nodep)
         : V3GraphVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~TraceTraceVertex() override {}
+    virtual ~TraceTraceVertex() override = default;
     // ACCESSORS
     AstTraceDecl* nodep() const { return m_nodep; }
     virtual string name() const override { return nodep()->name(); }
@@ -132,14 +132,14 @@ public:
     }
 };
 
-class TraceVarVertex : public V3GraphVertex {
+class TraceVarVertex final : public V3GraphVertex {
     AstVarScope* m_nodep;
 
 public:
     TraceVarVertex(V3Graph* graphp, AstVarScope* nodep)
         : V3GraphVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~TraceVarVertex() override {}
+    virtual ~TraceVarVertex() override = default;
     // ACCESSORS
     AstVarScope* nodep() const { return m_nodep; }
     virtual string name() const override { return nodep()->name(); }
@@ -150,7 +150,7 @@ public:
 //######################################################################
 // Trace state, as a visitor of each AstNode
 
-class TraceVisitor : public EmitCBaseVisitor {
+class TraceVisitor final : public EmitCBaseVisitor {
 private:
     // NODE STATE
     // V3Hashed
@@ -426,7 +426,7 @@ private:
     void addActivitySetter(AstNode* insertp, uint32_t code) {
         FileLine* const fl = insertp->fileline();
         AstAssign* const setterp = new AstAssign(fl, selectActivity(fl, code, VAccess::WRITE),
-                                                 new AstConst(fl, AstConst::LogicTrue()));
+                                                 new AstConst(fl, AstConst::BitTrue()));
         if (AstCCall* const callp = VN_CAST(insertp, CCall)) {
             callp->addNextHere(setterp);
         } else if (AstCFunc* const funcp = VN_CAST(insertp, CFunc)) {
@@ -687,7 +687,7 @@ private:
         // Clear fine grained activity flags
         for (uint32_t i = 0; i < m_activityNumber; ++i) {
             AstNode* const clrp = new AstAssign(fl, selectActivity(fl, i, VAccess::WRITE),
-                                                new AstConst(fl, AstConst::LogicFalse()));
+                                                new AstConst(fl, AstConst::BitFalse()));
             cleanupFuncp->addStmtsp(clrp);
         }
     }

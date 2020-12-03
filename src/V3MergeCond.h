@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3MergeCond {
+class V3MergeCond final {
 public:
     static void mergeAll(AstNetlist* nodep);
 };

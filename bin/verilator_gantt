@@ -60,6 +60,7 @@ sub process {
     my $filename = shift;
 
     read_data($filename);
+    read_cpuinfo();
     report();
 }
 
@@ -70,7 +71,7 @@ sub read_data {
 
     %Global = (rdtsc_cycle_time => 0);
 
-    my $fh = IO::File->new ($filename) or die "%Error: $! $filename,";
+    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename,";
     while (my $line = $fh->getline) {
         if ($line =~ m/VLPROF mtask\s(\d+)\sstart\s(\d+)\send\s(\d+)\selapsed\s(\d+)\spredict_time\s(\d+)\scpu\s(\d+)\son thread (\d+)/) {
             my $mtask = $1;
@@ -112,6 +113,27 @@ sub read_data {
         }
     }
 }
+
+sub read_cpuinfo {
+    my $filename = "/proc/cpuinfo";
+    my $fh = IO::File->new("<$filename") or return;
+    my $cpu;
+    while (my $line = $fh->getline) {
+        chomp $line;
+        if ($line =~ m/^processor\s*:\s*(\d+)\s*$/) {
+            $cpu = $1;
+        }
+        if ($cpu && $line =~ m/^([a-z_ ]+)\s*:\s*(.*)$/) {
+            my ($term, $value) = ($1, $2);
+            $term =~ s/\s+$//;
+            $term =~ s/\s+/_/;
+            $value =~ s/\s+$//;
+            $Global{cpuinfo}{$cpu}{$term} = $value;
+        }
+    }
+}
+
+#######################################################################
 
 sub report {
     print "Verilator Gantt report\n";
@@ -162,9 +184,9 @@ sub report {
     printf "  Total eval time           = %d rdtsc ticks\n", $Global{last_end};
     printf "  Longest mtask time        = %d rdtsc ticks\n", $long_mtask_time;
     printf "  All-thread mtask time     = %d rdtsc ticks\n", $mt_mtask_time;
-    my $long_efficiency = $long_mtask_time/($Global{last_end});
+    my $long_efficiency = $long_mtask_time/($Global{last_end} || 1);
     printf "  Longest-thread efficiency = %0.1f%%\n", $long_efficiency*100;
-    my $mt_efficiency = $mt_mtask_time/($Global{last_end}*$nthreads);
+    my $mt_efficiency = $mt_mtask_time/($Global{last_end}*$nthreads || 1);
     printf "  All-thread efficiency     = %0.1f%%\n", $mt_efficiency*100;
     printf "  All-thread speedup        = %0.1f\n", $mt_efficiency*$nthreads;
     if ($Global{rdtsc_cycle_time} > 0) {
@@ -210,12 +232,57 @@ sub report {
     printf "  mean = %0.3f\n", $mean;
     printf "  stddev = %0.3f\n", $stddev;
     printf "  e ^ stddev = %0.3f\n", exp($stddev);
-    print "\n";
+
+    report_cpus();
 
     if ($nthreads > $ncpus) {
+        print "\n";
         print "%Warning: There were fewer CPUs ($ncpus) then threads ($nthreads).\n";
         print "        : See docs on use of numactl.\n";
+    } else {
+        if ($Global{cpu_socket_cores_warning}) {
+            print "\n";
+            print "%Warning: Multiple threads scheduled on same hyperthreaded core.\n";
+            print "        : See docs on use of numactl.\n";
+        }
+        if ($Global{cpu_sockets_warning}) {
+            print "\n";
+            print "%Warning: Threads scheduled on multiple sockets.\n";
+            print "        : See docs on use of numactl.\n";
+        }
+    }
+    print "\n";
+}
+
+sub report_cpus {
+    print "\nCPUs:\n";
+    # Test - show all cores
+    # for (my $i=0; $i<73; ++$i) { $Global{cpus}{$i} ||= {cpu_time => 0}; }
+
+    $Global{cpu_sockets} ||= {};
+    $Global{cpu_socket_cores} ||= {};
+
+    foreach my $cpu (sort {$a <=> $b} keys %{$Global{cpus}}) {
+        printf "  cpu %d: ", $cpu;
+        printf "cpu_time=%d", $Global{cpus}{$cpu}{cpu_time};
+
+        my $socket = $Global{cpuinfo}{$cpu}{physical_id};
+        $Global{cpu_sockets}{$socket}++ if defined $socket;
+        printf " socket=%d", $socket if defined $socket;
+
+        my $core = $Global{cpuinfo}{$cpu}{core_id};
+        $Global{cpu_socket_cores}{$socket."__".$core}++ if defined $socket && defined $core;
+        printf " core=%d", $core if defined $core;
+
+        my $model = $Global{cpuinfo}{$cpu}{model_name};
+        printf "  %s", $model if defined $model;
         print "\n";
+    }
+
+    $Global{cpu_sockets_warning} = 1
+        if (scalar keys %{$Global{cpu_sockets}} > 1);
+    foreach my $scn (values %{$Global{cpu_socket_cores}}) {
+        $Global{cpu_socket_cores_warning} = 1 if $scn > 1;
     }
 }
 
@@ -230,6 +297,7 @@ sub report_graph {
         }
         # One more step so we can fit more labels
         $time_per = int($time_per/2);
+        $time_per ||= 1;
     }
 
     my ($graph, $conflicts) = _make_graph($time_per);

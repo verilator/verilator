@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3CCtors {
+class V3CCtors final {
 public:
     static void cctorsAll();
 

@@ -36,7 +36,7 @@
 
 //######################################################################
 
-class BrokenTable : public AstNVisitor {
+class BrokenTable VL_NOT_FINAL : public AstNVisitor {
     // Table of brokenExists node pointers
 private:
     // MEMBERS
@@ -190,8 +190,8 @@ public:
     }
 
     // CONSTRUCTORS
-    BrokenTable() {}
-    virtual ~BrokenTable() override {}
+    BrokenTable() = default;
+    virtual ~BrokenTable() override = default;
 };
 
 BrokenTable::NodeMap BrokenTable::s_nodes;
@@ -211,7 +211,7 @@ bool AstNode::brokeExistsBelow() const {
 
 //######################################################################
 
-class BrokenMarkVisitor : public AstNVisitor {
+class BrokenMarkVisitor final : public AstNVisitor {
     // Mark every node in the tree
 private:
     // NODE STATE
@@ -231,13 +231,15 @@ private:
 public:
     // CONSTRUCTORS
     explicit BrokenMarkVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~BrokenMarkVisitor() override {}
+    virtual ~BrokenMarkVisitor() override = default;
 };
 
 //######################################################################
 // Broken state, as a visitor of each AstNode
 
-class BrokenCheckVisitor : public AstNVisitor {
+class BrokenCheckVisitor final : public AstNVisitor {
+    bool m_inScope = false;  // Under AstScope
+
 private:
     static void checkWidthMin(const AstNode* nodep) {
         UASSERT_OBJ(nodep->width() == nodep->widthMin()
@@ -278,6 +280,22 @@ private:
                       && !VN_CAST(nodep->lhsp(), NodeVarRef)->access().isWriteOrRW()),
                     nodep, "Assignment LHS is not an lvalue");
     }
+    virtual void visit(AstScope* nodep) override {
+        VL_RESTORER(m_inScope);
+        {
+            m_inScope = true;
+            processAndIterate(nodep);
+        }
+    }
+    virtual void visit(AstNodeVarRef* nodep) override {
+        processAndIterate(nodep);
+        // m_inScope because some Vars have initial variable references without scopes
+        // This might false fire with some debug flags, as not certain we don't have temporary
+        // clear varScopep's during some an infrequent dump just before we re-LinkDot.
+        UASSERT_OBJ(
+            !(v3Global.assertScoped() && m_inScope && nodep->varp() && !nodep->varScopep()), nodep,
+            "VarRef missing VarScope pointer");
+    }
     virtual void visit(AstNode* nodep) override {
         // Process not just iterate
         processAndIterate(nodep);
@@ -286,7 +304,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit BrokenCheckVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~BrokenCheckVisitor() override {}
+    virtual ~BrokenCheckVisitor() override = default;
 };
 
 //######################################################################

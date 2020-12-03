@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 if ($Self->{vltmt} && exists $ENV{TRAVIS_DIST} &&
     $ENV{TRAVIS_DIST} eq "trusty")
 {
-    skip("Multithreaded test does not work under Travis w/ Ubuntu Trusty");
+    skip("Multithreaded test does not work under CI w/ Ubuntu Trusty");
 }
 
 scenarios(vlt_all => 1);

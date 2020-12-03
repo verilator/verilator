@@ -37,7 +37,7 @@
 //######################################################################
 // Expand state, as a visitor of each AstNode
 
-class ExpandVisitor : public AstNVisitor {
+class ExpandVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     //  AstNode::user1()        -> bool.  Processed
@@ -879,7 +879,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit ExpandVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~ExpandVisitor() override {}
+    virtual ~ExpandVisitor() override = default;
 };
 
 //----------------------------------------------------------------------

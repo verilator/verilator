@@ -57,6 +57,7 @@ exclude_line_regexp(qr/(\bv3fatalSrc\b
 # Exclude for branch coverage only
 exclude_branch_regexp(qr/(\bdebug\(\)
                          |\bassert\(
+                         |\bBROKEN_RTK\(
                          |\bSELF_CHECK)/x);
 
 1;

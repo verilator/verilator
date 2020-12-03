@@ -20,6 +20,9 @@ int main()
     Verilated::debug(0);
     tb = new VM_PREFIX("tb");
 
+    tb->final();
+    VL_DO_DANGLING(delete tb, tb);
+
     // Just a constructor test
     VL_PRINTF("*-* All Finished *-*\n");
     return 0;

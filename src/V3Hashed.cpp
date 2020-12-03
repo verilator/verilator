@@ -37,7 +37,7 @@
 //######################################################################
 // Hashed state, as a visitor of each AstNode
 
-class HashedVisitor : public AstNVisitor {
+class HashedVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
@@ -102,7 +102,7 @@ public:
         nodeHashIterate(const_cast<AstNode*>(nodep));
     }
     V3Hash finalHash() const { return m_lowerHash; }
-    virtual ~HashedVisitor() override {}
+    virtual ~HashedVisitor() override = default;
 };
 
 //######################################################################
@@ -153,7 +153,7 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
     const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
     if (logp->fail()) v3fatal("Can't write " << filename);
 
-    std::map<int, int> dist;
+    std::unordered_map<int, int> dist;
 
     V3Hash lasthash;
     int num_in_bucket = 0;
@@ -172,19 +172,19 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
         if (it == end()) break;
         num_in_bucket++;
     }
-    *logp << "\n*** STATS:\n" << endl;
+    *logp << "\n*** STATS:\n\n";
     *logp << "    #InBucket   Occurrences\n";
     for (const auto& i : dist) {
-        *logp << "    " << std::setw(9) << i.first << "  " << std::setw(12) << i.second << endl;
+        *logp << "    " << std::setw(9) << i.first << "  " << std::setw(12) << i.second << '\n';
     }
 
-    *logp << "\n*** Dump:\n" << endl;
+    *logp << "\n*** Dump:\n\n";
     for (const auto& itr : *this) {
         if (lasthash != itr.first) {
             lasthash = itr.first;
-            *logp << "    " << itr.first << endl;
+            *logp << "    " << itr.first << '\n';
         }
-        *logp << "\t" << itr.second << endl;
+        *logp << "\t" << itr.second << '\n';
         // Dumping the entire tree may make nearly N^2 sized dumps,
         // because the nodes under this one may also be in the hash table!
         if (tree) itr.second->dumpTree(*logp, "    ");

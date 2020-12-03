@@ -45,7 +45,7 @@ typedef bool (*V3EdgeFuncP)(const V3GraphEdge* edgep);
 // it's useful to have algorithms that can walk in either direction, hence
 // some methods take GraphWay to programmatically select the direction.
 
-class GraphWay {
+class GraphWay final {
 public:
     enum en : uint8_t {
         FORWARD = 0,
@@ -77,7 +77,7 @@ inline bool operator==(GraphWay::en lhs, const GraphWay& rhs) { return lhs == rh
 
 //============================================================================
 
-class V3Graph {
+class V3Graph VL_NOT_FINAL {
 private:
     // MEMBERS
     V3List<V3GraphVertex*> m_vertices;  // All vertices
@@ -185,7 +185,7 @@ public:
 
 //============================================================================
 
-class V3GraphVertex {
+class V3GraphVertex VL_NOT_FINAL {
     // Vertices may be a 'gate'/wire statement OR a variable
 protected:
     friend class V3Graph;
@@ -218,7 +218,7 @@ public:
     virtual V3GraphVertex* clone(V3Graph* graphp) const {
         return new V3GraphVertex(graphp, *this);
     }
-    virtual ~V3GraphVertex() {}
+    virtual ~V3GraphVertex() = default;
     void unlinkEdges(V3Graph* graphp);
     void unlinkDelete(V3Graph* graphp);
 
@@ -273,7 +273,7 @@ std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp);
 
 //============================================================================
 
-class V3GraphEdge {
+class V3GraphEdge VL_NOT_FINAL {
     // Wires/variables aren't edges.  Edges have only a single to/from vertex
 public:
     // ENUMS
@@ -317,7 +317,7 @@ public:
     virtual V3GraphEdge* clone(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top) const {
         return new V3GraphEdge(graphp, fromp, top, *this);
     }
-    virtual ~V3GraphEdge() {}
+    virtual ~V3GraphEdge() = default;
     // METHODS
     virtual string name() const { return m_fromp->name() + "->" + m_top->name(); }
     virtual string dotLabel() const { return ""; }

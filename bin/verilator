@@ -1461,7 +1461,7 @@ future version of Verilator no longer always packs unpacked structures.
 =item -sv
 
 Specifies SystemVerilog language features should be enabled; equivalent to
-"--language 1800-2005".  This option is selected by default, it exists for
+"--language 1800-2017".  This option is selected by default, it exists for
 compatibility with other simulators.
 
 =item  +systemverilogext+I<ext>
@@ -1996,14 +1996,15 @@ section below for descriptions of some of the files that were created.
 
 (Verilator included a default compile rule and link rule, since we used
 --exe and passed a .cpp file on the Verilator command line.  Verilator also
-then used C<make> to build a final executable.  You can also write your own
-compile rules, and run make yourself as we'll show in the SYSTEMC section.)
+then used C<make> to build a final executable, since we used --build.  You
+can also write your own compile rules, and run make yourself as we'll show
+in the SYSTEMC section.
 
-And now we run it
+And now we run it:
 
     obj_dir/Vour
 
-And we get as output
+And we get as output:
 
     Hello World
     - our.v:2: Verilog $finish
@@ -4106,17 +4107,12 @@ $setup, $setuphold, $skew, $timeskew, $width
 
 All specify blocks and timing checks are ignored.
 
-=item $monitor, $strobe
-
-Monitor and strobe are not supported, convert to always_comb $display or
-similar.
-
 =item $random, $urandom, $urandom_range
 
-$random and $urandom do not support the optional argument to set the seed.
-Use +verilator+seed argument to set the seed.  There is one random seed per
-C thread, not per module for $random, nor per object for random stability
-of $urandom/$urandom_range.
+Use +verilator+seed argument to set the seed if there is no $random or
+$urandom optional argument to set the seed.  There is one random seed per C
+thread, not per module for $random, nor per object for random stability of
+$urandom/$urandom_range.
 
 =item $readmemb, $readmemh
 

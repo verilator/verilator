@@ -279,7 +279,7 @@ void V3Graph::dump(std::ostream& os) {
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
         os << "\tNode: " << vertexp->name();
         if (vertexp->color()) os << "  color=" << vertexp->color();
-        os << endl;
+        os << '\n';
         // Print edges
         for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
             dumpEdge(os, vertexp, edgep);
@@ -296,7 +296,7 @@ void V3Graph::dumpEdge(std::ostream& os, V3GraphVertex* vertexp, V3GraphEdge* ed
         if (edgep->fromp() == vertexp) os << "-> " << edgep->top()->name();
         if (edgep->top() == vertexp) os << "<- " << edgep->fromp()->name();
         if (edgep->cutable()) os << "  [CUTABLE]";
-        os << endl;
+        os << '\n';
     }
 }
 
@@ -335,7 +335,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
 
     // We use a map here, as we don't want to corrupt anything (userp) in the graph,
     // and we don't care if this is slow.
-    std::map<const V3GraphVertex*, int> numMap;
+    std::unordered_map<const V3GraphVertex*, int> numMap;
 
     // Print vertices
     int n = 0;

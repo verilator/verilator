@@ -243,7 +243,7 @@ private:
     VL_UNCOPYABLE(PartPropagateCp);
 };
 
-class PartPropagateCpSelfTest {
+class PartPropagateCpSelfTest final {
 private:
     // MEMBERS
     V3Graph m_graph;  // A graph
@@ -253,8 +253,8 @@ private:
     CpMap m_seen;  // Set of vertices we've seen
 
     // CONSTRUCTORS
-    PartPropagateCpSelfTest() {}
-    ~PartPropagateCpSelfTest() {}
+    PartPropagateCpSelfTest() = default;
+    ~PartPropagateCpSelfTest() = default;
 
     // METHODS
 protected:
@@ -306,7 +306,8 @@ private:
     }
     void go() {
         // Generate a pseudo-random graph
-        vluint64_t rngState[2] = {0x12345678ULL, 0x9abcdef0ULL};
+        std::array<vluint64_t, 2> rngState
+            = {{0x12345678ULL, 0x9abcdef0ULL}};  // GCC 3.8.0 wants {{}}
         // Create 50 vertices
         for (auto& i : m_vx) i = new V3GraphVertex(&m_graph);
         // Create 250 edges at random. Edges must go from
@@ -350,7 +351,7 @@ public:
 //######################################################################
 // LogicMTask
 
-class LogicMTask : public AbstractLogicMTask {
+class LogicMTask final : public AbstractLogicMTask {
 public:
     // TYPES
     typedef std::list<MTaskMoveVertex*> VxList;
@@ -366,10 +367,10 @@ public:
     //  - PartPropagateCp can thus be declared before LogicMTask
     //  - PartPropagateCp could be reused with graphs of other node types
     //    in the future, using another Accessor adaptor.
-    class CpCostAccessor {
+    class CpCostAccessor final {
     public:
-        CpCostAccessor() {}
-        ~CpCostAccessor() {}
+        CpCostAccessor() = default;
+        ~CpCostAccessor() = default;
         // Return cost of this node
         uint32_t cost(const V3GraphVertex* vxp) const {
             const LogicMTask* mtaskp = dynamic_cast<const LogicMTask*>(vxp);
@@ -425,7 +426,7 @@ private:
     // Cost of critical paths going FORWARD from graph-start to the start
     // of this vertex, and also going REVERSE from the end of the graph to
     // the end of the vertex. Same units as m_cost.
-    uint32_t m_critPathCost[GraphWay::NUM_WAYS];
+    std::array<uint32_t, GraphWay::NUM_WAYS> m_critPathCost;
 
     uint32_t m_serialId;  // Unique MTask ID number
 
@@ -443,7 +444,7 @@ private:
     // relatives in longest-to-shortest CP order.  We rely on this ordering
     // in more than one place.
     typedef SortByValueMap<LogicMTask*, uint32_t, CmpLogicMTask> EdgeSet;
-    EdgeSet m_edges[GraphWay::NUM_WAYS];
+    std::array<EdgeSet, GraphWay::NUM_WAYS> m_edges;
 
 public:
     // CONSTRUCTORS
@@ -663,7 +664,7 @@ public:
 
         // Dump
         for (const LogicMTask* mtaskp : path) {
-            *osp << "begin mtask with cost " << mtaskp->cost() << endl;
+            *osp << "begin mtask with cost " << mtaskp->cost() << '\n';
             for (VxList::const_iterator lit = mtaskp->vertexListp()->begin();
                  lit != mtaskp->vertexListp()->end(); ++lit) {
                 const OrderLogicVertex* logicp = (*lit)->logicp();
@@ -690,17 +691,17 @@ private:
 
 // Sort AbstractMTask objects into deterministic order by calling id()
 // which is a unique and stable serial number.
-class MTaskIdLessThan {
+class MTaskIdLessThan final {
 public:
-    MTaskIdLessThan() {}
-    virtual ~MTaskIdLessThan() {}
+    MTaskIdLessThan() = default;
+    virtual ~MTaskIdLessThan() = default;
     virtual bool operator()(const AbstractMTask* lhsp, const AbstractMTask* rhsp) const {
         return lhsp->id() < rhsp->id();
     }
 };
 
 // Information associated with scoreboarding an MTask
-class MergeCandidate {
+class MergeCandidate VL_NOT_FINAL {
 private:
     bool m_removedFromSb = false;  // Not on scoreboard, generally ignore
     vluint64_t m_id;  // Serial number for ordering
@@ -720,7 +721,7 @@ public:
 
 // A pair of associated LogicMTask's that are merge candidates for sibling
 // contraction
-class SiblingMC : public MergeCandidate {
+class SiblingMC final : public MergeCandidate {
 private:
     LogicMTask* m_ap;
     LogicMTask* m_bp;
@@ -739,7 +740,7 @@ public:
             m_bp = ap;
         }
     }
-    virtual ~SiblingMC() {}
+    virtual ~SiblingMC() = default;
     // METHODS
     LogicMTask* ap() const { return m_ap; }
     LogicMTask* bp() const { return m_bp; }
@@ -755,7 +756,7 @@ public:
 };
 
 // GraphEdge for the MTask graph
-class MTaskEdge : public V3GraphEdge, public MergeCandidate {
+class MTaskEdge final : public V3GraphEdge, public MergeCandidate {
 public:
     // CONSTRUCTORS
     MTaskEdge(V3Graph* graphp, LogicMTask* fromp, LogicMTask* top, int weight)
@@ -801,7 +802,7 @@ private:
 //######################################################################
 // Vertex utility classes
 
-class OrderByPtrId {
+class OrderByPtrId final {
     PartPtrIdMap m_ids;
 
 public:
@@ -815,7 +816,7 @@ public:
 //######################################################################
 // PartParallelismEst - Estimate parallelism of graph
 
-class PartParallelismEst {
+class PartParallelismEst final {
     // MEMBERS
     const V3Graph* m_graphp;  // Mtask-containing graph
 
@@ -1028,7 +1029,7 @@ static void partMergeEdgesFrom(V3Graph* mtasksp, LogicMTask* recipientp, LogicMT
 // PartContraction
 
 // Perform edge or sibling contraction on the partition graph
-class PartContraction {
+class PartContraction final {
 private:
     // TYPES
 
@@ -1633,7 +1634,7 @@ const GraphWay* PartContraction::s_shortestWaywardCpInclusiveWay = nullptr;
 
 // Scan node, indicate whether it contains a call to a DPI imported
 // routine.
-class DpiImportCallVisitor : public AstNVisitor {
+class DpiImportCallVisitor final : public AstNVisitor {
 private:
     bool m_hasDpiHazard = false;  // Found a DPI import call.
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
@@ -1663,7 +1664,7 @@ public:
     // CONSTRUCTORS
     explicit DpiImportCallVisitor(AstNode* nodep) { iterate(nodep); }
     bool hasDpiHazard() const { return m_hasDpiHazard; }
-    virtual ~DpiImportCallVisitor() override {}
+    virtual ~DpiImportCallVisitor() override = default;
 
 private:
     VL_UNCOPYABLE(DpiImportCallVisitor);
@@ -1753,7 +1754,7 @@ private:
 //     clock signal. This leads to unordered reader/writer pairs in
 //     parallel mode.
 //
-class PartFixDataHazards {
+class PartFixDataHazards final {
 private:
     // TYPES
     typedef std::set<LogicMTask*, MTaskIdLessThan> LogicMTaskSet;
@@ -2015,7 +2016,7 @@ private:
 // depending on which thread is looking. Be a little bit pessimistic when
 // thread A checks the end time of an mtask running on thread B. This extra
 // "padding" avoids tight "layovers" at cross-thread dependencies.
-class PartPackMTasks {
+class PartPackMTasks final {
 private:
     // TYPES
     struct MTaskState {
@@ -2052,7 +2053,7 @@ public:
         , m_sandbagNumerator{sandbagNumerator}
         , m_sandbagDenom{sandbagDenom}
         , m_ready{m_mtaskCmp} {}
-    ~PartPackMTasks() {}
+    ~PartPackMTasks() = default;
 
     // METHODS
     uint32_t completionTime(const ExecMTask* mtaskp, uint32_t thread) {
@@ -2252,8 +2253,8 @@ void V3Partition::debugMTaskGraphStats(const V3Graph* graphp, const string& stag
     UINFO(4, " Stats for " << stage << endl);
     uint32_t mtaskCount = 0;
     uint32_t totalCost = 0;
-    uint32_t mtaskCostHist[32];
-    memset(mtaskCostHist, 0, sizeof(mtaskCostHist));
+    std::array<uint32_t, 32> mtaskCostHist;
+    mtaskCostHist.fill(0);
 
     for (const V3GraphVertex* mtaskp = graphp->verticesBeginp(); mtaskp;
          mtaskp = mtaskp->verticesNextp()) {

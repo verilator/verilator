@@ -143,14 +143,7 @@ std::ostream& operator<<(std::ostream& os, VFileContent* contentp) {
 // FileLine class functions
 
 // Sort of a singleton
-FileLine::FileLine(FileLine::EmptySecret)
-    : m_firstLineno{0}
-    , m_firstColumn{0}
-    , m_lastLineno{0}
-    , m_lastColumn{0}
-    , m_contentLineno{0}
-    , m_contentp{nullptr}
-    , m_parent{nullptr} {
+FileLine::FileLine(FileLine::EmptySecret) {
     m_filenameno = singleton().nameToNumber(FileLine::builtInFilename());
 
     m_warnOn = 0;

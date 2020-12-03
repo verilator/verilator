@@ -33,7 +33,7 @@
 class VInFilter;
 class VSpellCheck;
 
-class V3PreProc {
+class V3PreProc VL_NOT_FINAL {
     // This defines a preprocessor.  Functions are virtual so implementation can be hidden.
     // After creating, call open(), then getline() in a loop.  The class will to the rest...
 
@@ -103,7 +103,7 @@ protected:
 
 public:
     static V3PreProc* createPreProc(FileLine* fl);
-    virtual ~V3PreProc() {}  // LCOV_EXCL_LINE  // Persistent
+    virtual ~V3PreProc() = default;  // LCOV_EXCL_LINE  // Persistent
 };
 
 #endif  // Guard

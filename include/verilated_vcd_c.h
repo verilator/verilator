@@ -34,13 +34,13 @@ class VerilatedVcd;
 // VerilatedFile
 /// File handling routines, which can be overrode for e.g. socket I/O
 
-class VerilatedVcdFile {
+class VerilatedVcdFile final {
 private:
     int m_fd = 0;  ///< File descriptor we're writing to
 public:
     // METHODS
-    VerilatedVcdFile() {}
-    virtual ~VerilatedVcdFile() {}
+    VerilatedVcdFile() = default;
+    virtual ~VerilatedVcdFile() = default;
     virtual bool open(const std::string& name) VL_MT_UNSAFE;
     virtual void close() VL_MT_UNSAFE;
     virtual ssize_t write(const char* bufp, ssize_t len) VL_MT_UNSAFE;
@@ -51,7 +51,7 @@ public:
 /// Base class to create a Verilator VCD dump
 /// This is an internally used class - see VerilatedVcdC for what to call from applications
 
-class VerilatedVcd : public VerilatedTrace<VerilatedVcd> {
+class VerilatedVcd VL_NOT_FINAL : public VerilatedTrace<VerilatedVcd> {
 private:
     // Give the superclass access to private bits (to avoid virtual functions)
     friend class VerilatedTrace<VerilatedVcd>;
@@ -329,7 +329,7 @@ template <> void VerilatedTrace<VerilatedVcd>::set_time_resolution(const std::st
 /// Also derived for use in SystemC simulations.
 /// Thread safety: Unless otherwise indicated, every function is VL_MT_UNSAFE_ONE
 
-class VerilatedVcdC {
+class VerilatedVcdC VL_NOT_FINAL {
     VerilatedVcd m_sptrace;  ///< Trace file being created
 
     // CONSTRUCTORS

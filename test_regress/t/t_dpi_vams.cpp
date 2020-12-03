@@ -51,5 +51,8 @@ int main(int argc, char* argv[]) {
     } else {
         vl_fatal(__FILE__, __LINE__, "top", "Unexpected results\n");
     }
+
+    topp->final();
+    VL_DO_DANGLING(delete topp, topp);
     return 0;
 }

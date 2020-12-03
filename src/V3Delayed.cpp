@@ -63,7 +63,7 @@
 //######################################################################
 // Delayed state, as a visitor of each AstNode
 
-class DelayedVisitor : public AstNVisitor {
+class DelayedVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared each module:
@@ -98,7 +98,7 @@ private:
     typedef std::map<const std::pair<AstNodeModule*, string>, AstVar*> VarMap;
     VarMap m_modVarMap;  // Table of new var names created under module
     VDouble0 m_statSharedSet;  // Statistic tracking
-    typedef std::map<const AstVarScope*, int> ScopeVecMap;
+    typedef std::unordered_map<const AstVarScope*, int> ScopeVecMap;
     ScopeVecMap m_scopeVecMap;  // Next var number for each scope
 
     // METHODS
@@ -160,10 +160,10 @@ private:
                 varrefp->varp()->v3warn(
                     MULTIDRIVEN,
                     "Signal has multiple driving blocks with different clocking: "
-                        << varrefp->varp()->prettyNameQ() << endl
-                        << varrefp->warnOther() << "... Location of first driving block" << endl
-                        << varrefp->warnContextPrimary() << endl
-                        << oldactivep->warnOther() << "... Location of other driving block" << endl
+                        << varrefp->varp()->prettyNameQ() << '\n'
+                        << varrefp->warnOther() << "... Location of first driving block\n"
+                        << varrefp->warnContextPrimary() << '\n'
+                        << oldactivep->warnOther() << "... Location of other driving block\n"
                         << oldactivep->warnContextSecondary());
                 varrefp->varp()->user2(true);
             }
@@ -289,7 +289,7 @@ private:
                                         new AstConst(nodep->fileline(), 0));
             AstAssign* setassignp = new AstAssign(
                 nodep->fileline(), new AstVarRef(nodep->fileline(), setvscp, VAccess::WRITE),
-                new AstConst(nodep->fileline(), AstConst::LogicTrue()));
+                new AstConst(nodep->fileline(), AstConst::BitTrue()));
             nodep->addNextHere(setassignp);
         }
         if (m_nextDlyp) {  // Tell next assigndly it can share the variable
@@ -436,7 +436,7 @@ private:
                         prep = new AstAssignPre(
                             nodep->fileline(),
                             new AstVarRef(nodep->fileline(), dlyvscp, VAccess::WRITE),
-                            new AstConst(nodep->fileline(), AstConst::LogicFalse()));
+                            new AstConst(nodep->fileline(), AstConst::BitFalse()));
                     } else {
                         prep = new AstAssignPre(
                             nodep->fileline(),

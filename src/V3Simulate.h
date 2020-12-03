@@ -48,7 +48,7 @@
 //######################################################################
 // Simulate class functions
 
-class SimStackNode {
+class SimStackNode final {
 public:
     // MEMBERS
     AstFuncRef* m_funcp;
@@ -57,13 +57,13 @@ public:
     SimStackNode(AstFuncRef* funcp, V3TaskConnects* tconnects)
         : m_funcp{funcp}
         , m_tconnects{tconnects} {}
-    ~SimStackNode() {}
+    ~SimStackNode() = default;
 };
 
 typedef std::deque<AstConst*> ConstDeque;
-typedef std::map<const AstNodeDType*, ConstDeque> ConstPile;
+typedef std::unordered_map<const AstNodeDType*, ConstDeque> ConstPile;
 
-class SimulateVisitor : public AstNVisitor {
+class SimulateVisitor VL_NOT_FINAL : public AstNVisitor {
     // Simulate a node tree, returning value of variables
     // Two major operating modes:
     //   Test the tree to see if it is conformant

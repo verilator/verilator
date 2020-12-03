@@ -40,7 +40,7 @@ execute(
 run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_gantt",
             "$Self->{obj_dir}/profile_threads.dat",
             "--vcd $Self->{obj_dir}/profile_threads.vcd",
-            "> $Self->{obj_dir}/gantt.log"],
+            "| tee $Self->{obj_dir}/gantt.log"],
     verilator_run => 1,
     );
 

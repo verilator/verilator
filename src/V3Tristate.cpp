@@ -69,7 +69,7 @@
 
 //######################################################################
 
-class TristateBaseVisitor : public AstNVisitor {
+class TristateBaseVisitor VL_NOT_FINAL : public AstNVisitor {
 public:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -78,7 +78,7 @@ public:
 //######################################################################
 // Graph support classes
 
-class TristateVertex : public V3GraphVertex {
+class TristateVertex final : public V3GraphVertex {
     AstNode* m_nodep;
     bool m_isTristate = false;  // Logic indicates a tristate
     bool m_feedsTri = false;  // Propagates to a tristate node (on RHS)
@@ -87,7 +87,7 @@ public:
     TristateVertex(V3Graph* graphp, AstNode* nodep)
         : V3GraphVertex{graphp}
         , m_nodep{nodep} {}
-    virtual ~TristateVertex() override {}
+    virtual ~TristateVertex() override = default;
     // ACCESSORS
     AstNode* nodep() const { return m_nodep; }
     AstVar* varp() const { return VN_CAST(nodep(), Var); }
@@ -110,7 +110,7 @@ public:
 
 //######################################################################
 
-class TristateGraph {
+class TristateGraph final {
     // NODE STATE
     //   AstVar::user5p         -> TristateVertex* for variable being built
     // AstUser5InUse     m_inuser5;   // In visitor below
@@ -271,7 +271,7 @@ public:
 // Given a node, flip any VarRef from LValue to RValue (i.e. make it an input)
 // See also V3LinkLValue::linkLValueSet
 
-class TristatePinVisitor : public TristateBaseVisitor {
+class TristatePinVisitor final : public TristateBaseVisitor {
     TristateGraph& m_tgraph;
     bool m_lvalue;  // Flip to be an LVALUE
     // VISITORS
@@ -307,12 +307,12 @@ public:
         , m_lvalue{lvalue} {
         iterate(nodep);
     }
-    virtual ~TristatePinVisitor() override {}
+    virtual ~TristatePinVisitor() override = default;
 };
 
 //######################################################################
 
-class TristateVisitor : public TristateBaseVisitor {
+class TristateVisitor final : public TristateBaseVisitor {
     // NODE STATE
     //   *::user1p              -> pointer to output enable __en expressions
     //   *::user2               -> int - already visited, see U2_ enum
@@ -329,7 +329,7 @@ class TristateVisitor : public TristateBaseVisitor {
 
     // TYPES
     typedef std::vector<AstVarRef*> RefVec;
-    typedef std::map<AstVar*, RefVec*> VarMap;
+    typedef std::unordered_map<AstVar*, RefVec*> VarMap;
     enum : uint8_t {
         U2_GRAPHING = 1,  // bit[0] if did m_graphing visit
         U2_NONGRAPH = 2,  // bit[1] if did !m_graphing visit
@@ -449,7 +449,7 @@ class TristateVisitor : public TristateBaseVisitor {
         } else {
             if (oldpullp->direction() != pullp->direction()) {
                 pullp->v3warn(E_UNSUPPORTED, "Unsupported: Conflicting pull directions.\n"
-                                                 << pullp->warnContextPrimary() << endl
+                                                 << pullp->warnContextPrimary() << '\n'
                                                  << oldpullp->warnOther()
                                                  << "... Location of conflicting pull.\n"
                                                  << oldpullp->warnContextSecondary());
@@ -981,6 +981,65 @@ class TristateVisitor : public TristateBaseVisitor {
     virtual void visit(AstEqWild* nodep) override { visitEqNeqWild(nodep); }
     virtual void visit(AstNeqWild* nodep) override { visitEqNeqWild(nodep); }
 
+    virtual void visit(AstCountBits* nodep) override {
+        std::array<bool, 3> dropop;
+        dropop[0] = VN_IS(nodep->rhsp(), Const) && VN_CAST(nodep->rhsp(), Const)->num().isAnyZ();
+        dropop[1] = VN_IS(nodep->thsp(), Const) && VN_CAST(nodep->thsp(), Const)->num().isAnyZ();
+        dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_CAST(nodep->fhsp(), Const)->num().isAnyZ();
+        UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep << endl);
+        AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);  // Input variable
+        if (m_graphing) {
+            iterateAndNextNull(nodep->lhsp());
+            if (!dropop[0]) iterateAndNextNull(nodep->rhsp());
+            if (!dropop[1]) iterateAndNextNull(nodep->thsp());
+            if (!dropop[2]) iterateAndNextNull(nodep->fhsp());
+        } else {
+            AstNode* nonXp = nullptr;
+            if (!dropop[0])
+                nonXp = nodep->rhsp();
+            else if (!dropop[1])
+                nonXp = nodep->thsp();
+            else if (!dropop[2])
+                nonXp = nodep->fhsp();
+            // Replace 'z with non-Z
+            if (dropop[0] || dropop[1] || dropop[2]) {
+                // Unsupported: A $countones('0) should compare with the enables, but we don't
+                // do so at present, we only compare if there is a z in the equation. Otherwise
+                // we'd need to attach an enable to every signal, then optimize them away later
+                // when we determine the signal has no tristate
+                if (!VN_IS(nodep->lhsp(), VarRef)) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported LHS tristate construct: "
+                                                     << nodep->prettyTypeName());
+                    return;
+                }
+                AstVar* envarp = getCreateEnVarp(varrefp->varp());
+                // If any drops, we need to add in the count of Zs (from __en)
+                UINFO(4, " COUNTBITS('z)-> " << nodep << endl);
+                AstNRelinker relinkHandle;
+                nodep->unlinkFrBack(&relinkHandle);
+                AstNode* newp = new AstCountOnes(
+                    nodep->fileline(), new AstVarRef(nodep->fileline(), envarp, VAccess::READ));
+                if (nonXp) {  // Need to still count '0 or '1 or 'x's
+                    if (dropop[0]) {
+                        nodep->rhsp()->unlinkFrBack()->deleteTree();
+                        nodep->rhsp(nonXp->cloneTree(true));
+                    }
+                    if (dropop[1]) {
+                        nodep->thsp()->unlinkFrBack()->deleteTree();
+                        nodep->thsp(nonXp->cloneTree(true));
+                    }
+                    if (dropop[2]) {
+                        nodep->fhsp()->unlinkFrBack()->deleteTree();
+                        nodep->fhsp(nonXp->cloneTree(true));
+                    }
+                    newp = new AstAdd(nodep->fileline(), nodep, newp);
+                }
+                if (debug() >= 9) newp->dumpTree(cout, "-countout: ");
+                relinkHandle.relink(newp);
+            }
+            iterateChildren(nodep);
+        }
+    }
     virtual void visit(AstPull* nodep) override {
         UINFO(9, dbgState() << nodep << endl);
         AstVarRef* varrefp = nullptr;
@@ -1107,6 +1166,7 @@ class TristateVisitor : public TristateBaseVisitor {
                 AstVar* enVarp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
                                             nodep->name() + "__en" + cvtToStr(m_unique++),
                                             VFlagBitPacked(), enModVarp->width());
+                enModVarp->direction(VDirection::INPUT);
                 UINFO(9, "       newenv " << enVarp << endl);
                 AstPin* enpinp
                     = new AstPin(nodep->fileline(), nodep->pinNum(),

@@ -46,7 +46,7 @@ class VerilatedScope;
 
 #ifdef VL_THREADED
 /// Message, enqueued on an mtask, and consumed on the main eval thread
-class VerilatedMsg {
+class VerilatedMsg final {
 public:
     // TYPES
     struct Cmp {
@@ -64,7 +64,11 @@ public:
     VerilatedMsg(const std::function<void()>& cb)
         : m_mtaskId{Verilated::mtaskId()}
         , m_cb{cb} {}
-    ~VerilatedMsg() {}
+    ~VerilatedMsg() = default;
+    VerilatedMsg(const VerilatedMsg&) = default;
+    VerilatedMsg(VerilatedMsg&&) = default;
+    VerilatedMsg& operator=(const VerilatedMsg&) = default;
+    VerilatedMsg& operator=(VerilatedMsg&&) = default;
     // METHODS
     vluint32_t mtaskId() const { return m_mtaskId; }
     /// Execute the lambda function
@@ -74,7 +78,7 @@ public:
 /// Each thread has a queue it pushes to
 /// This assumes no thread starts pushing the next tick until the previous has drained.
 /// If more aggressiveness is needed, a double-buffered scheme might work well.
-class VerilatedEvalMsgQueue {
+class VerilatedEvalMsgQueue final {
     typedef std::multiset<VerilatedMsg, VerilatedMsg::Cmp> VerilatedThreadQueue;
 
     std::atomic<vluint64_t> m_depth;  ///< Current depth of queue (see comments below)
@@ -87,7 +91,7 @@ public:
         : m_depth{0} {
         assert(atomic_is_lock_free(&m_depth));
     }
-    ~VerilatedEvalMsgQueue() {}
+    ~VerilatedEvalMsgQueue() = default;
 
 private:
     VL_UNCOPYABLE(VerilatedEvalMsgQueue);
@@ -126,7 +130,7 @@ public:
 };
 
 /// Each thread has a local queue to build up messages until the end of the eval() call
-class VerilatedThreadMsgQueue {
+class VerilatedThreadMsgQueue final {
     std::queue<VerilatedMsg> m_queue;
 
 public:
@@ -170,7 +174,7 @@ public:
 #endif  // VL_THREADED
 
 // FILE* list constructed from a file-descriptor
-class VerilatedFpList {
+class VerilatedFpList final {
     FILE* m_fp[31];
     std::size_t m_sz = 0;
 
@@ -189,7 +193,7 @@ public:
 //======================================================================
 // VerilatedImp
 
-class VerilatedImpData {
+class VerilatedImpData final {
     // Whole class is internal use only - Global information shared between verilated*.cpp files.
 protected:
     friend class Verilated;
@@ -207,8 +211,8 @@ protected:
         int m_timeFormatPrecision = 0;  // $timeformat number of decimal places
         int m_timeFormatWidth = 20;  // $timeformat character width
         enum { UNITS_NONE = 99 };  // Default based on precision
-        Serialized() {}
-        ~Serialized() {}
+        Serialized() = default;
+        ~Serialized() = default;
     } m_ser;
 
     VerilatedMutex m_sergMutex;  ///< Protect m_ser
@@ -260,7 +264,7 @@ protected:
     }
 };
 
-class VerilatedImp {
+class VerilatedImp final {
     // Whole class is internal use only - Global information shared between verilated*.cpp files.
 protected:
     friend class Verilated;
@@ -268,15 +272,15 @@ protected:
     // MEMBERS
     union VerilatedImpU {  ///< Enclose in an union to call ctor/dtor manually
         VerilatedImpData v;
-        VerilatedImpU() {}
-        ~VerilatedImpU() {}
+        VerilatedImpU() {}  // Can't be = default;
+        ~VerilatedImpU() {}  // Can't be = default;
     };
     static VerilatedImpU s_s;  ///< Static Singleton; One and only static this
 
 public:  // But only for verilated*.cpp
     // CONSTRUCTORS
-    VerilatedImp() {}
-    ~VerilatedImp() {}
+    VerilatedImp() = default;
+    ~VerilatedImp() = default;
     static void setup();
     static void teardown();
 

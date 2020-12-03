@@ -67,6 +67,11 @@ module t (/*AUTOARG*/);
       qi = q.find_last_index with (item == 20);
       v = $sformatf("%p", qi); `checks(v, "'{}");
 
+      qi = q.find_index with (item.index == 12);
+      v = $sformatf("%p", qi); `checks(v, "'{'hc} ");
+      qi = q.find with (item.index == 12);
+      v = $sformatf("%p", qi); `checks(v, "'{'h2} ");
+
       qv = q.min;
       v = $sformatf("%p", qv); `checks(v, "'{'h1} ");
       qv = q.max;

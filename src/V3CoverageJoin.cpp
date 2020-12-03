@@ -30,7 +30,7 @@
 //######################################################################
 // CoverageJoin state, as a visitor of each AstNode
 
-class CoverageJoinVisitor : public AstNVisitor {
+class CoverageJoinVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // V3Hashed

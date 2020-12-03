@@ -628,8 +628,6 @@ https://github.com/veripool/vcddiff
 
 * Cmake for build paths that use it.
 
-* Bit::Vector to test vgen.pl
-
 === Controlling the Test Driver
 
 Test drivers are written in PERL. All invoke the main test driver script,
@@ -959,9 +957,9 @@ Then, when the watch fires, to break at every following change to that node:
 To print a node:
 
    pn nodep
-   # or: call nodep->dumpGdb()  # aliased to "pn" in src/.gdbinit
+   # or: call dumpGdb(nodep)  # aliased to "pn" in src/.gdbinit
    pnt nodep
-   # or: call nodep->dumpTreeGdb()  # aliased to "pnt" in src/.gdbinit
+   # or: call dumpTreeGdb(nodep)  # aliased to "pnt" in src/.gdbinit
 
 When GDB halts, it is useful to understand that the backtrace will commonly
 show the iterator functions between each invocation of `visit` in the

@@ -740,11 +740,19 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_FGETS        "$fgets"
 %token<fl>              yD_FINISH       "$finish"
 %token<fl>              yD_FLOOR        "$floor"
+%token<fl>              yD_FMONITOR     "$fmonitor"
+%token<fl>              yD_FMONITORB    "$fmonitorb"
+%token<fl>              yD_FMONITORH    "$fmonitorh"
+%token<fl>              yD_FMONITORO    "$fmonitoro"
 %token<fl>              yD_FOPEN        "$fopen"
 %token<fl>              yD_FREAD        "$fread"
 %token<fl>              yD_FREWIND      "$frewind"
 %token<fl>              yD_FSCANF       "$fscanf"
 %token<fl>              yD_FSEEK        "$fseek"
+%token<fl>              yD_FSTROBE      "$fstrobe"
+%token<fl>              yD_FSTROBEB     "$fstrobeb"
+%token<fl>              yD_FSTROBEH     "$fstrobeh"
+%token<fl>              yD_FSTROBEO     "$fstrobeo"
 %token<fl>              yD_FTELL        "$ftell"
 %token<fl>              yD_FWRITE       "$fwrite"
 %token<fl>              yD_FWRITEB      "$fwriteb"
@@ -761,6 +769,12 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_LN           "$ln"
 %token<fl>              yD_LOG10        "$log10"
 %token<fl>              yD_LOW          "$low"
+%token<fl>              yD_MONITOR      "$monitor"
+%token<fl>              yD_MONITORB     "$monitorb"
+%token<fl>              yD_MONITORH     "$monitorh"
+%token<fl>              yD_MONITORO     "$monitoro"
+%token<fl>              yD_MONITOROFF   "$monitoroff"
+%token<fl>              yD_MONITORON    "$monitoron"
 %token<fl>              yD_ONEHOT       "$onehot"
 %token<fl>              yD_ONEHOT0      "$onehot0"
 %token<fl>              yD_PAST         "$past"
@@ -789,6 +803,10 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_STABLE       "$stable"
 %token<fl>              yD_STIME        "$stime"
 %token<fl>              yD_STOP         "$stop"
+%token<fl>              yD_STROBE       "$strobe"
+%token<fl>              yD_STROBEB      "$strobeb"
+%token<fl>              yD_STROBEH      "$strobeh"
+%token<fl>              yD_STROBEO      "$strobeo"
 %token<fl>              yD_SWRITE       "$swrite"
 %token<fl>              yD_SWRITEB      "$swriteb"
 %token<fl>              yD_SWRITEH      "$swriteh"
@@ -1837,8 +1855,10 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//			// IEEE has ['.' modport] but that will conflict with port
 	//			// declarations which decode '.' modport themselves, so
 	//			// instead see data_typeVar
-	|	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/	{ $$ = nullptr; BBUNSUP($1, "Unsupported: virtual interface"); }
-	|	yVIRTUAL__anyID                id/*interface*/	{ $$ = nullptr; BBUNSUP($1, "Unsupported: virtual data type"); }
+	|	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/
+			{ $$ = new AstBasicDType($1, AstBasicDTypeKwd::CHANDLE); BBUNSUP($1, "Unsupported: virtual interface"); }
+	|	yVIRTUAL__anyID                id/*interface*/
+			{ $$ = new AstBasicDType($1, AstBasicDTypeKwd::CHANDLE); BBUNSUP($1, "Unsupported: virtual data type"); }
 	|	type_reference				{ $$ = $1; }
 	//			// IEEE: class_scope: see data_type above
 	//			// IEEE: class_type: see data_type above
@@ -3112,14 +3132,14 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	yP_MINUSGT idDotted/*hierarchical_identifier-event*/ ';'
 			{ // AssignDly because we don't have stratified queue, and need to
 			  // read events, clear next event, THEN apply this set
-			  $$ = new AstAssignDly($1, $2, new AstConst($1, AstConst::LogicTrue())); }
+			  $$ = new AstAssignDly($1, $2, new AstConst($1, AstConst::BitTrue())); }
 	//UNSUP	yP_MINUSGTGT delay_or_event_controlE hierarchical_identifier/*event*/ ';'	{ UNSUP }
 	//			// IEEE remove below
 	|	yP_MINUSGTGT delayE idDotted/*hierarchical_identifier-event*/ ';'
-			{ $$ = new AstAssignDly($1, $3, new AstConst($1, AstConst::LogicTrue())); }
+			{ $$ = new AstAssignDly($1, $3, new AstConst($1, AstConst::BitTrue())); }
 	//
 	//			// IEEE: loop_statement
-	|	yFOREVER stmtBlock			{ $$ = new AstWhile($1,new AstConst($1,AstConst::LogicTrue()),$2); }
+	|	yFOREVER stmtBlock			{ $$ = new AstWhile($1,new AstConst($1, AstConst::BitTrue()), $2); }
 	|	yREPEAT '(' expr ')' stmtBlock		{ $$ = new AstRepeat($1,$3,$5);}
 	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
 	//			// for's first ';' is in for_initialization
@@ -3177,7 +3197,7 @@ statementFor<beginp>:		// IEEE: part of statement
 							  $$->addStmtsp(new AstWhile($1, $4,$8,$6)); }
 	|	yFOR '(' for_initialization ';' for_stepE ')' stmtBlock
 							{ $$ = new AstBegin($1, "", $3, false, true);
-							  $$->addStmtsp(new AstWhile($1, new AstConst($1,AstConst::LogicTrue()),$7,$5)); }
+							  $$->addStmtsp(new AstWhile($1, new AstConst($1,AstConst::BitTrue()), $7, $5)); }
 	;
 
 statementVerilatorPragmas<nodep>:
@@ -3578,6 +3598,14 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_DISPLAYH  '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, $3, 'h'); }
 	|	yD_DISPLAYO  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, nullptr, 'o'); }
 	|	yD_DISPLAYO  '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, nullptr, $3, 'o'); }
+	|	yD_MONITOR   '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, nullptr, $3); }
+	|	yD_MONITORB  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, nullptr, $3, 'b'); }
+	|	yD_MONITORH  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, nullptr, $3, 'h'); }
+	|	yD_MONITORO  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, nullptr, $3, 'o'); }
+	|	yD_STROBE   '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, nullptr, $3); }
+	|	yD_STROBEB  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, nullptr, $3, 'b'); }
+	|	yD_STROBEH  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, nullptr, $3, 'h'); }
+	|	yD_STROBEO  '(' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, nullptr, $3, 'o'); }
 	|	yD_WRITE    parenE			{ $$ = nullptr; }  // NOP
 	|	yD_WRITE    '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   nullptr, $3); }
 	|	yD_WRITEB   parenE			{ $$ = nullptr; }  // NOP
@@ -3594,10 +3622,18 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_FDISPLAYH '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'h'); }
 	|	yD_FDISPLAYO '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, nullptr, 'o'); }
 	|	yD_FDISPLAYO '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'o'); }
-	|	yD_FWRITE   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5); }
-	|	yD_FWRITEB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5, 'b'); }
-	|	yD_FWRITEO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5, 'h'); }
-	|	yD_FWRITEH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5, 'o'); }
+	|	yD_FMONITOR   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, $3, $5); }
+	|	yD_FMONITORB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, $3, $5, 'b'); }
+	|	yD_FMONITORH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, $3, $5, 'h'); }
+	|	yD_FMONITORO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_MONITOR, $3, $5, 'o'); }
+	|	yD_FSTROBE   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, $3, $5); }
+	|	yD_FSTROBEB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, $3, $5, 'b'); }
+	|	yD_FSTROBEH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, $3, $5, 'h'); }
+	|	yD_FSTROBEO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_STROBE, $3, $5, 'o'); }
+	|	yD_FWRITE   '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5); }
+	|	yD_FWRITEB  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5, 'b'); }
+	|	yD_FWRITEH  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5, 'h'); }
+	|	yD_FWRITEO  '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1, AstDisplayType::DT_WRITE, $3, $5, 'o'); }
 	|	yD_INFO	    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    nullptr, nullptr); }
 	|	yD_INFO	    '(' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    nullptr, $3); }
 	|	yD_WARNING  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, nullptr, nullptr); }
@@ -3607,6 +3643,9 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_FATAL    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   nullptr, nullptr); $$->addNext(new AstStop($1, false)); }
 	|	yD_FATAL    '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   nullptr, nullptr); $$->addNext(new AstStop($1, false)); DEL($3); }
 	|	yD_FATAL    '(' expr ',' exprDispList ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   nullptr, $5);   $$->addNext(new AstStop($1, false)); DEL($3); }
+	//
+	|	yD_MONITOROFF parenE			{ $$ = new AstMonitorOff($1, true); }
+	|	yD_MONITORON parenE			{ $$ = new AstMonitorOff($1, false); }
 	//
 	|	yD_PRINTTIMESCALE			{ $$ = new AstPrintTimeScale($1); }
 	|	yD_PRINTTIMESCALE '(' ')'		{ $$ = new AstPrintTimeScale($1); }
@@ -3711,9 +3750,8 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_PAST '(' expr ',' expr ',' expr ')'		{ $$ = $3; BBUNSUP($1, "Unsupported: $past expr2 and clock arguments"); }
 	|	yD_PAST '(' expr ',' expr ',' expr ',' expr')'	{ $$ = $3; BBUNSUP($1, "Unsupported: $past expr2 and clock arguments"); }
 	|	yD_POW '(' expr ',' expr ')'		{ $$ = new AstPowD($1,$3,$5); }
-	//			// Seeding is unsupported as would be slow to invalidate all per-thread RNGs
-	|	yD_RANDOM '(' expr ')'			{ $$ = new AstRand($1); BBUNSUP($1, "Unsupported: Seed on $random. Suggest use +verilator+seed+ runtime flag"); }
-	|	yD_RANDOM parenE			{ $$ = new AstRand($1); }
+	|	yD_RANDOM '(' expr ')'			{ $$ = new AstRand($1, $3, false); }
+	|	yD_RANDOM parenE			{ $$ = new AstRand($1, nullptr, false); }
 	|	yD_REALTIME parenE			{ $$ = new AstTimeD($1, VTimescale(VTimescale::NONE)); }
 	|	yD_REALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); }
 	|	yD_REWIND '(' idClassSel ')'		{ $$ = new AstFSeek($1, $3, new AstConst($1, 0), new AstConst($1, 0)); }
@@ -3742,9 +3780,9 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_TYPENAME '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1, AstAttrType::TYPENAME, $3); }
 	|	yD_UNGETC '(' expr ',' expr ')'		{ $$ = new AstFUngetC($1, $5, $3); }  // Arg swap to file first
 	|	yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_UNPK_DIMENSIONS,$3); }
-	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }
-	|	yD_URANDOM '(' expr ')'			{ $$ = new AstURandom($1); BBUNSUP($1, "Unsupported: Seed on $urandom. Suggest use +verilator+seed+ runtime flag"); }
-	|	yD_URANDOM parenE			{ $$ = new AstURandom($1); }
+	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1, $3); }
+	|	yD_URANDOM '(' expr ')'			{ $$ = new AstRand($1, $3, true); }
+	|	yD_URANDOM parenE			{ $$ = new AstRand($1, nullptr, true); }
 	|	yD_URANDOM_RANGE '(' expr ',' expr ')'	{ $$ = new AstURandomRange($1, $3, $5); }
 	|	yD_VALUEPLUSARGS '(' expr ',' expr ')'	{ $$ = new AstValuePlusArgs($1, $3, $5); }
 	;
@@ -3874,7 +3912,7 @@ taskId<ftaskp>:
 	//
 	|	packageClassScope id
 			{ $$ = new AstTask($<fl>$, *$2, nullptr);
-			  $$->packagep($1);
+			  $$->classOrPackagep($1);
 			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
 	;
 
@@ -3913,7 +3951,7 @@ funcIdNew<ftaskp>:		// IEEE: from class_constructor_declaration
 			  SYMP->pushNewUnder($$, nullptr); }
 	|	packageClassScopeNoId yNEW__PAREN
 			{ $$ = new AstFunc($<fl>2, "new", nullptr, nullptr);
-			  $$->packagep($1);
+			  $$->classOrPackagep($1);
 			  $$->isConstructor(true);
 			  SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
 	;
@@ -3935,7 +3973,7 @@ fIdScoped<funcp>:		// IEEE: part of function_body_declaration/task_body_declarat
 			{ $<fl>$ = $<fl>1;
 			  $<scp>$ = $<scp>1;
 			  $$ = new AstFunc($<fl>$, *$2, nullptr, nullptr);
-			  $$->packagep($1); }
+			  $$->classOrPackagep($1); }
 	;
 
 tfGuts<nodep>:
@@ -4190,7 +4228,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// IEEE: "... hierarchical_identifier select"  see below
 	//
 	//			// IEEE: empty_queue (IEEE 1800-2017 empty_unpacked_array_concatenation)
-	|	'{' '}'					{ $$ = new AstConst($1, AstConst::LogicFalse());
+	|	'{' '}'					{ $$ = new AstConst($1, AstConst::BitFalse());
 							  BBUNSUP($<fl>1, "Unsupported: empty queues (\"{ }\")"); }
 	//
 	//			// IEEE: concatenation/constant_concatenation
@@ -4217,7 +4255,9 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: cast/constant_cast
 	//			// expanded from casting_type
-	|	simple_type yP_TICK '(' expr ')'	{ $$ = new AstCast($1->fileline(), $4, $1); }
+	|	simple_type yP_TICK '(' expr ')'	{ $$ = new AstCast($1->fileline(), $4, VFlagChildDType{}, $1); }
+	|	yTYPE '(' exprOrDataType ')' yP_TICK '(' expr ')'
+			{ $$ = new AstCast($1, $7, VFlagChildDType(), new AstRefDType($1, AstRefDType::FlagTypeOfExpr(), $3)); }
 	|	ySIGNED yP_TICK '(' expr ')'		{ $$ = new AstSigned($1, $4); }
 	|	yUNSIGNED yP_TICK '(' expr ')'		{ $$ = new AstUnsigned($1, $4); }
 	|	ySTRING yP_TICK '(' expr ')'		{ $$ = new AstCvtPackString($1, $4); }
@@ -4247,7 +4287,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: cond_predicate - here to avoid reduce problems
 	//			// Note expr includes cond_pattern
-	|	~l~expr yP_ANDANDAND ~r~expr		{ $$ = new AstConst($2, AstConst::LogicFalse());
+	|	~l~expr yP_ANDANDAND ~r~expr		{ $$ = new AstConst($2, AstConst::BitFalse());
 							  BBUNSUP($<fl>2, "Unsupported: &&& expression"); }
 	//
 	//			// IEEE: cond_pattern - here to avoid reduce problems
@@ -6266,7 +6306,7 @@ vltItem:
 			{ V3Config::addIgnore($1, false, *$3, $5->toUInt(), $7->toUInt()+1); }
 	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_MATCH yaSTRING
 			{	if (($1==V3ErrorCode::I_COVERAGE) || ($1==V3ErrorCode::I_TRACING)) {
-					$<fl>1->v3error("Argument -match only supported for lint_off"<<endl);
+					$<fl>1->v3error("Argument -match only supported for lint_off");
 				} else {
 					V3Config::addWaiver($1,*$3,*$5);
 				}}
@@ -6305,11 +6345,11 @@ vltOffFront<errcodeen>:
 	|	yVLT_LINT_OFF				{ $$ = V3ErrorCode::I_LINT; }
 	|	yVLT_LINT_OFF yVLT_D_MSG idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl); }
-			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."<<endl); }
+			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3); }
+			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."); }
 	|	yVLT_LINT_OFF yVLT_D_RULE idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
+			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
 	;
 
 vltOnFront<errcodeen>:
@@ -6318,11 +6358,11 @@ vltOnFront<errcodeen>:
 	|	yVLT_LINT_ON				{ $$ = V3ErrorCode::I_LINT; }
 	|	yVLT_LINT_ON yVLT_D_MSG idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  }
-			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."<<endl); }
+			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  }
+			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."); }
 	|	yVLT_LINT_ON yVLT_D_RULE idAny
 			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
+			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
 	;
 
 vltDModuleE<strp>:

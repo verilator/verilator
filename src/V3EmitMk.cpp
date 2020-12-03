@@ -26,7 +26,7 @@
 //######################################################################
 // Emit statements and math operators
 
-class EmitMk {
+class EmitMk final {
 public:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -285,11 +285,11 @@ public:
         emitClassMake();
         emitOverallMake();
     }
-    virtual ~EmitMk() {}
+    virtual ~EmitMk() = default;
 };
 
 //######################################################################
-class EmitMkHierVerilation {
+class EmitMkHierVerilation final {
     const V3HierBlockPlan* const m_planp;
     const string m_makefile;  // path of this makefile
     void emitCommonOpts(V3OutMkFile& of) const {

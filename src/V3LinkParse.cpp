@@ -34,7 +34,7 @@
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-class LinkParseVisitor : public AstNVisitor {
+class LinkParseVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on netlist
@@ -45,7 +45,7 @@ private:
 
     // TYPES
     typedef std::map<const std::pair<void*, string>, AstTypedef*> ImplTypedefMap;
-    typedef std::set<FileLine*> FileLineSet;
+    typedef std::unordered_set<FileLine*> FileLineSet;
 
     // STATE
     AstVar* m_varp = nullptr;  // Variable we're under
@@ -606,7 +606,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
-    virtual ~LinkParseVisitor() override {}
+    virtual ~LinkParseVisitor() override = default;
 };
 
 //######################################################################

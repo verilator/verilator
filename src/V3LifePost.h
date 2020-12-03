@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3LifePost {
+class V3LifePost final {
 public:
     static void lifepostAll(AstNetlist* nodep);
 };

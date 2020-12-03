@@ -227,7 +227,7 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
                     if (product.bitsValue(width(), 4)) {  // Overflowed
                         static int warned = 0;
                         v3error("Too many digits for "
-                                << width() << " bit number: " << sourcep << std::endl
+                                << width() << " bit number: " << sourcep << '\n'
                                 << ((!m_sized && !warned++) ? (
                                         V3Error::warnMore() + "... As that number was unsized"
                                         + " ('d...) it is limited to 32 bits (IEEE 1800-2017 "
@@ -937,10 +937,11 @@ bool V3Number::isAnyX() const {
     }
     return false;
 }
-bool V3Number::isAnyXZ() const {
+bool V3Number::isAnyXZ() const { return isAnyX() || isAnyZ(); }
+bool V3Number::isAnyZ() const {
     if (isDouble() || isString()) return false;
     for (int bit = 0; bit < width(); bit++) {
-        if (bitIsX(bit) || bitIsZ(bit)) return true;
+        if (bitIsZ(bit)) return true;
     }
     return false;
 }
@@ -1775,16 +1776,6 @@ V3Number& V3Number::opShiftL(const V3Number& lhs, const V3Number& rhs) {
 //======================================================================
 // Ops - Arithmetic
 
-V3Number& V3Number::opAbsS(const V3Number& lhs) {
-    // op i, L(lhs) bit return
-    NUM_ASSERT_OP_ARGS1(lhs);
-    if (lhs.isFourState()) return setAllBitsX();
-    if (lhs.isNegative()) {
-        return opNegate(lhs);
-    } else {
-        return opAssign(lhs);
-    }
-}
 V3Number& V3Number::opNegate(const V3Number& lhs) {
     // op i, L(lhs) bit return
     NUM_ASSERT_OP_ARGS1(lhs);

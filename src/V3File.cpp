@@ -62,23 +62,22 @@ constexpr int INFILTER_CACHE_MAX = (64 * 1024);  // Maximum bytes to cache if sa
 //######################################################################
 // V3File Internal state
 
-class V3FileDependImp {
+class V3FileDependImp final {
     // TYPES
-    class DependFile {
+    class DependFile final {
         // A single file
         bool m_target;  // True if write, else read
-        bool m_exists;
+        bool m_exists = true;
         string m_filename;  // Filename
         struct stat m_stat;  // Stat information
     public:
         DependFile(const string& filename, bool target)
             : m_target{target}
-            , m_exists{true}
             , m_filename{filename} {
             m_stat.st_ctime = 0;
             m_stat.st_mtime = 0;
         }
-        ~DependFile() {}
+        ~DependFile() = default;
         const string& filename() const { return m_filename; }
         bool target() const { return m_target; }
         bool exists() const { return m_exists; }
@@ -160,12 +159,12 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
         if (!i.target()) *ofp << i.filename() << " ";
     }
 
-    *ofp << endl;
+    *ofp << '\n';
 
     if (v3Global.opt.makePhony()) {
-        *ofp << endl;
+        *ofp << '\n';
         for (const DependFile& i : m_filenameList) {
-            if (!i.target()) *ofp << i.filename() << ":" << endl;
+            if (!i.target()) *ofp << i.filename() << ":\n";
         }
     }
 }
@@ -184,9 +183,8 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
 
     string cmdline = stripQuotes(cmdlineIn);
     *ofp << "# DESCR"
-         << "IPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will."
-         << endl;
-    *ofp << "C \"" << cmdline << "\"" << endl;
+         << "IPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will.\n";
+    *ofp << "C \"" << cmdline << "\"\n";
 
     for (std::set<DependFile>::iterator iter = m_filenameList.begin();
          iter != m_filenameList.end(); ++iter) {
@@ -210,7 +208,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
         *ofp << " " << std::setw(11) << iter->mstime();
         *ofp << " " << std::setw(11) << iter->mnstime();
         *ofp << " \"" << iter->filename() << "\"";
-        *ofp << endl;
+        *ofp << '\n';
     }
 }
 
@@ -329,7 +327,7 @@ void V3File::createMakeDir() {
 //######################################################################
 // VInFilterImp
 
-class VInFilterImp {
+class VInFilterImp final {
     typedef std::map<const string, string> FileContentsMap;
     typedef VInFilter::StrList StrList;
 
@@ -951,7 +949,7 @@ void V3OutCFile::putsGuard() {
 //######################################################################
 // VIdProtect
 
-class VIdProtectImp {
+class VIdProtectImp final {
     // MEMBERS
     typedef std::map<const string, string> IdMap;
     IdMap m_nameMap;  // Map of old name into new name
@@ -972,7 +970,7 @@ public:
         passthru("vlTOPp");
         passthru("vlSymsp");
     }
-    ~VIdProtectImp() {}
+    ~VIdProtectImp() = default;
     // METHODS
     string passthru(const string& old) {
         if (!v3Global.opt.protectIds()) return old;

@@ -38,7 +38,7 @@
 
 //######################################################################
 
-class ChangedState {
+class ChangedState final {
 public:
     // STATE
     AstNodeModule* m_topModp = nullptr;  // Top module
@@ -48,8 +48,8 @@ public:
     int m_numStmts = 0;  // Number of statements added to m_chgFuncp
     int m_funcNum = 0;  // Number of change functions emitted
 
-    ChangedState() {}
-    ~ChangedState() {}
+    ChangedState() = default;
+    ~ChangedState() = default;
 
     void maybeCreateChgFuncp() {
         // Don't create an extra function call if splitting is disabled
@@ -94,7 +94,7 @@ public:
 //######################################################################
 // Utility visitor to find elements to be compared
 
-class ChangedInsertVisitor : public AstNVisitor {
+class ChangedInsertVisitor final : public AstNVisitor {
 private:
     // STATE
     ChangedState* m_statep;  // Shared state across visitors
@@ -117,10 +117,9 @@ private:
                            "Unsupported: Can't detect more than "
                                << cvtToStr(DETECTARRAY_MAX_INDEXES)
                                << " array indexes (probably with UNOPTFLAT warning suppressed): "
-                               << m_vscp->prettyName() << endl
+                               << m_vscp->prettyName() << '\n'
                                << m_vscp->warnMore()
-                               << "... Could recompile with DETECTARRAY_MAX_INDEXES increased"
-                               << endl);
+                               << "... Could recompile with DETECTARRAY_MAX_INDEXES increased");
             return;
         }
         m_statep->maybeCreateChgFuncp();
@@ -208,14 +207,14 @@ public:
         m_newLvEqnp->deleteTree();
         m_newRvEqnp->deleteTree();
     }
-    virtual ~ChangedInsertVisitor() override {}
+    virtual ~ChangedInsertVisitor() override = default;
     VL_UNCOPYABLE(ChangedInsertVisitor);
 };
 
 //######################################################################
 // Changed state, as a visitor of each AstNode
 
-class ChangedVisitor : public AstNVisitor {
+class ChangedVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
@@ -280,7 +279,7 @@ public:
         : m_statep{statep} {
         iterate(nodep);
     }
-    virtual ~ChangedVisitor() override {}
+    virtual ~ChangedVisitor() override = default;
 };
 
 //######################################################################

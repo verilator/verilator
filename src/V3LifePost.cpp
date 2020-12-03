@@ -40,7 +40,7 @@
 //######################################################################
 // LifePost class functions
 
-class LifePostElimVisitor : public AstNVisitor {
+class LifePostElimVisitor final : public AstNVisitor {
 private:
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
 
@@ -91,7 +91,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LifePostElimVisitor(AstTopScope* nodep) { iterate(nodep); }
-    virtual ~LifePostElimVisitor() override {}
+    virtual ~LifePostElimVisitor() override = default;
 };
 
 //######################################################################
@@ -103,7 +103,7 @@ struct LifeLocation {
     uint32_t sequence = 0;
 
 public:
-    LifeLocation() {}
+    LifeLocation() = default;
     LifeLocation(const ExecMTask* mtaskp_, uint32_t sequence_)
         : mtaskp{mtaskp_}
         , sequence{sequence_} {}
@@ -119,7 +119,7 @@ public:
 struct LifePostLocation {
     LifeLocation loc;
     AstAssignPost* nodep = nullptr;
-    LifePostLocation() {}
+    LifePostLocation() = default;
     LifePostLocation(LifeLocation loc_, AstAssignPost* nodep_)
         : loc{loc_}
         , nodep{nodep_} {}
@@ -128,7 +128,7 @@ struct LifePostLocation {
 //######################################################################
 // LifePost delay elimination
 
-class LifePostDlyVisitor : public AstNVisitor {
+class LifePostDlyVisitor final : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on entire tree

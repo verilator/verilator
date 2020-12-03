@@ -127,8 +127,9 @@ string AstNode::encodeName(const string& namein) {
     }
     // Shorten names
     // TODO long term use VName in place of "string name"
-    VName vname(out);
-    out = vname.hashedName();
+    // Then we also won't need to save the table of hased values
+    VName vname{out};
+    return vname.hashedName();
     return out;
 }
 
@@ -161,7 +162,8 @@ string AstNode::dedotName(const string& namein) {
 string AstNode::vcdName(const string& namein) {
     // VCD tracing expects space to separate hierarchy
     // Dots are reserved for dots the user put in the name
-    string pretty = namein;
+    // We earlier hashed all symbols, dehash them so user sees real name
+    string pretty{VName::dehash(namein)};
     string::size_type pos;
     while ((pos = pretty.find("__DOT__")) != string::npos) pretty.replace(pos, 7, " ");
     while ((pos = pretty.find('.')) != string::npos) pretty.replace(pos, 1, " ");
@@ -1027,28 +1029,40 @@ void AstNode::checkTree() {
 }
 
 // cppcheck-suppress unusedFunction  // Debug only
-void AstNode::dumpGdb() {  // For GDB only  // LCOV_EXCL_LINE
-    dumpGdbHeader();  // LCOV_EXCL_LINE
+void AstNode::dumpGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_LINE
+    if (!nodep) {
+        cout << "<nullptr>" << endl;
+        return;
+    }
+    nodep->dumpGdbHeader();
     cout << "  ";
-    dump(cout);
-    cout << endl;  // LCOV_EXCL_LINE
-}
+    nodep->dump(cout);
+    cout << endl;
+}  // LCOV_EXCL_STOP
 // cppcheck-suppress unusedFunction  // Debug only
-void AstNode::dumpGdbHeader() const {  // For GDB only  // LCOV_EXCL_LINE
-    dumpPtrs(cout);  // LCOV_EXCL_LINE
-    cout << "  Fileline = " << fileline() << endl;  // LCOV_EXCL_LINE
-}
+void AstNode::dumpGdbHeader() const {  // For GDB only  // LCOV_EXCL_START
+    dumpPtrs(cout);
+    cout << "  Fileline = " << fileline() << endl;
+}  // LCOV_EXCL_STOP
 // cppcheck-suppress unusedFunction  // Debug only
-void AstNode::dumpTreeGdb() {  // For GDB only  // LCOV_EXCL_LINE
-    dumpGdbHeader();  // LCOV_EXCL_LINE
-    dumpTree(cout);  // LCOV_EXCL_LINE
-}
+void AstNode::dumpTreeGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_START
+    if (!nodep) {
+        cout << "<nullptr>" << endl;
+        return;
+    }
+    nodep->dumpGdbHeader();
+    nodep->dumpTree(cout);
+}  // LCOV_EXCL_STOP
 // cppcheck-suppress unusedFunction  // Debug only
-void AstNode::dumpTreeFileGdb(const char* filenamep) {  // For GDB only  // LCOV_EXCL_LINE
-    string filename
-        = filenamep ? filenamep : v3Global.debugFilename("debug.tree", 98);  // LCOV_EXCL_LINE
-    v3Global.rootp()->dumpTreeFile(filename);  // LCOV_EXCL_LINE
-}
+void AstNode::dumpTreeFileGdb(const AstNode* nodep,  // LCOV_EXCL_START
+                              const char* filenamep) {  // For GDB only
+    if (!nodep) {
+        cout << "<nullptr>" << endl;
+        return;
+    }
+    string filename = filenamep ? filenamep : v3Global.debugFilename("debug.tree", 98);
+    v3Global.rootp()->dumpTreeFile(filename);
+}  // LCOV_EXCL_STOP
 
 // cppcheck-suppress unusedFunction  // Debug only
 void AstNode::checkIter() const {
@@ -1086,14 +1100,14 @@ void AstNode::dumpPtrs(std::ostream& os) const {
 
 void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) const {
     static int s_debugFileline = v3Global.opt.debugSrcLevel("fileline");  // --debugi-fileline 9
-    os << indent << " " << this << endl;
+    os << indent << " " << this << '\n';
     if (debug() > 8) {
         os << indent << "     ";
         dumpPtrs(os);
     }
     if (s_debugFileline >= 9) { os << fileline()->warnContextSecondary(); }
     if (maxDepth == 1) {
-        if (op1p() || op2p() || op3p() || op4p()) { os << indent << "1: ...(maxDepth)" << endl; }
+        if (op1p() || op2p() || op3p() || op4p()) os << indent << "1: ...(maxDepth)\n";
     } else {
         for (const AstNode* nodep = op1p(); nodep; nodep = nodep->nextp()) {
             nodep->dumpTree(os, indent + "1:", maxDepth - 1);
@@ -1125,9 +1139,9 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
             const std::unique_ptr<std::ofstream> logsp(V3File::new_ofstream(filename, append));
             if (logsp->fail()) v3fatal("Can't write " << filename);
             *logsp << "Verilator Tree Dump (format 0x3900) from <e" << std::dec << editCountLast();
-            *logsp << "> to <e" << std::dec << editCountGbl() << ">" << endl;
+            *logsp << "> to <e" << std::dec << editCountGbl() << ">\n";
             if (editCountGbl() == editCountLast() && !(v3Global.opt.dumpTree() >= 9)) {
-                *logsp << endl;
+                *logsp << '\n';
                 *logsp << "No changes since last dump!\n";
             } else {
                 dumpTree(*logsp);
@@ -1197,7 +1211,7 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
         std::ostringstream nsstr;
         nsstr << str.str();
         if (debug()) {
-            nsstr << endl;
+            nsstr << '\n';
             nsstr << "-node: ";
             const_cast<AstNode*>(this)->dump(nsstr);
             nsstr << endl;

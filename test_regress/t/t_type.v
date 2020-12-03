@@ -15,6 +15,8 @@ module t(/*AUTOARG*/);
       y = 2.3;
       z = x + y;
       if (z != (1.2+2.3)) $stop;
+      z = type(z)'(22);
+      if (z != 22.0) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

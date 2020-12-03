@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Broken {
+class V3Broken final {
 public:
     static void brokenAll(AstNetlist* nodep);
     static void addNewed(AstNode* nodep);

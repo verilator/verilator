@@ -36,7 +36,7 @@
 
 //######################################################################
 
-class CUseState {
+class CUseState final {
 private:
     // MEMBERS
     AstNodeModule* m_modInsertp;  // Current module to insert AstCUse under
@@ -68,14 +68,14 @@ public:
     // CONSTRUCTORS
     explicit CUseState(AstNodeModule* nodep)
         : m_modInsertp{nodep} {}
-    virtual ~CUseState() {}
+    virtual ~CUseState() = default;
     VL_UNCOPYABLE(CUseState);
 };
 
 // Visit within a module all nodes and data types they reference, finding
 // any classes so we can make sure they are defined when Verilated code
 // compiles
-class CUseDTypeVisitor : public AstNVisitor {
+class CUseDTypeVisitor final : public AstNVisitor {
     // MEMBERS
     CUseState& m_stater;  // State for inserter
     bool m_impOnly = false;  // In details needed only for implementation
@@ -84,7 +84,7 @@ class CUseDTypeVisitor : public AstNVisitor {
         if (nodep->user2SetOnce()) return;  // Process once
         if (!m_impOnly) m_stater.newUse(nodep, VUseType::INT_FWD_CLASS, nodep->classp()->name());
         // No class.h, it's inside the class package's h file
-        m_stater.newUse(nodep, VUseType::IMP_INCLUDE, nodep->classp()->packagep()->name());
+        m_stater.newUse(nodep, VUseType::IMP_INCLUDE, nodep->classp()->classOrPackagep()->name());
         // Need to include extends() when we implement, but no need for pointers to know
         VL_RESTORER(m_impOnly);
         {
@@ -109,11 +109,11 @@ public:
         : m_stater(stater) {  // Need () or GCC 4.8 false warning
         iterate(nodep);
     }
-    virtual ~CUseDTypeVisitor() override {}
+    virtual ~CUseDTypeVisitor() override = default;
     VL_UNCOPYABLE(CUseDTypeVisitor);
 };
 
-class CUseVisitor : public AstNVisitor {
+class CUseVisitor final : public AstNVisitor {
     // MEMBERS
     CUseState m_state;  // Inserter state
 
@@ -219,7 +219,7 @@ public:
         : m_state{nodep} {
         iterate(nodep);
     }
-    virtual ~CUseVisitor() override {}
+    virtual ~CUseVisitor() override = default;
     VL_UNCOPYABLE(CUseVisitor);
 };
 

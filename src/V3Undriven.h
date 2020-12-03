@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Undriven {
+class V3Undriven final {
 public:
     static void undrivenAll(AstNetlist* nodep);
 };

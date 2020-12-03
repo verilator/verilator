@@ -31,7 +31,7 @@
 
 typedef std::set<string> VlStringSet;
 
-class VlcOptions {
+class VlcOptions final {
     // MEMBERS (general options)
     // clang-format off
     string m_annotateOut;       // main switch: --annotate I<output_directory>
@@ -51,8 +51,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlcOptions() {}
-    ~VlcOptions() {}
+    VlcOptions() = default;
+    ~VlcOptions() = default;
 
     // METHODS
     void parseOptsList(int argc, char** argv);

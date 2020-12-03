@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Cast {
+class V3Cast final {
 public:
     static void castAll(AstNetlist* nodep);
 };

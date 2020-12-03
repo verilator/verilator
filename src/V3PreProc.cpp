@@ -43,7 +43,7 @@
 
 //*************************************************************************
 
-class VDefine {
+class VDefine final {
     // Define class.  One for each define.
     // string    m_name;         // Name of the define (list is keyed by this)
     FileLine* m_fileline;  // Where it was declared
@@ -64,7 +64,7 @@ public:
 
 //*************************************************************************
 
-class VDefineRef {
+class VDefineRef final {
     // One for each pending define substitution
     string m_name;  // Define last name being defined
     string m_params;  // Define parameter list for next expansion
@@ -83,13 +83,13 @@ public:
     VDefineRef(const string& name, const string& params)
         : m_name{name}
         , m_params{params} {}
-    ~VDefineRef() {}
+    ~VDefineRef() = default;
 };
 
 //*************************************************************************
 /// Data for parsing on/off
 
-class VPreIfEntry {
+class VPreIfEntry final {
     // One for each pending ifdef/ifndef
     bool m_on;  // Current parse for this ifdef level is "on"
     bool m_everOn;  // Some if term in elsif tree has been on
@@ -99,13 +99,13 @@ public:
     VPreIfEntry(bool on, bool everOn)
         : m_on{on}
         , m_everOn{everOn || on} {}  // Note everOn includes new state
-    ~VPreIfEntry() {}
+    ~VPreIfEntry() = default;
 };
 
 //*************************************************************************
 // Data for a preprocessor instantiation.
 
-class V3PreProcImp : public V3PreProc {
+class V3PreProcImp final : public V3PreProc {
 public:
     // TYPES
     typedef std::map<const string, VDefine> DefinesMap;
@@ -855,7 +855,7 @@ void V3PreProcImp::dumpDefines(std::ostream& os) {
         // No need to print "()" below as already part of params()
         if (!it->second.params().empty()) os << it->second.params();
         if (!it->second.value().empty()) os << " " << it->second.value();
-        os << endl;
+        os << '\n';
     }
 }
 

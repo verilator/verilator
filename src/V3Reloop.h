@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Reloop {
+class V3Reloop final {
 public:
     static void reloopAll(AstNetlist* nodep);
 };
