@@ -27,10 +27,17 @@ jobs:
                       ${{ runner.os }}-build-${{ env.cache-name }}-
                       ${{ runner.os }}-build-
                       ${{ runner.os }}-
+
+            - name: Install packages for build
+              env:
+                  CI_BUILD_STAGE_NAME: build
+              run: bash ci/ci-install.bash
+            - name: CCACHE maintenance
+              run: mkdir -p $CCACHE_DIR && bash ci/ci-ccache-maint.bash
             - name: Build
               env:
                   CI_BUILD_STAGE_NAME: build
-              run: mkdir -p $CCACHE_DIR && bash ci/ci-install.bash && bash ci/ci-script.bash
+              run: bash ci/ci-script.bash
             - name: Install packages for tests
               env:
                   CI_BUILD_STAGE_NAME: test
