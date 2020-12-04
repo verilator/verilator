@@ -1,4 +1,4 @@
-name: Verilator PR ci
+name: Verilator PR CI
 
 on: push
 
@@ -50,4 +50,3 @@ jobs:
                   TRAVIS_BUILD_STAGE_NAME: test
                   TESTS: vltmt-1
               run: bash ci/travis-install.bash && bash ci/travis-script.bash
-
