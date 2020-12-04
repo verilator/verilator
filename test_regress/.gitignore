@@ -16,3 +16,4 @@ vc_hdrs.h
 xsim.*/
 *.jou
 *.pb
+t/a_file.mem

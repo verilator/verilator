@@ -545,6 +545,9 @@ public:
 
 public:
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
+    // Sets a directory (other than CWD) to use for all Verilog file IO
+    static void setVerilogIODir(const char* dir);
+
     // Internal: Create a new module name by concatenating two strings
     static const char* catName(const char* n1, const char* n2,
                                const char* delimiter = ".");  // Returns static data

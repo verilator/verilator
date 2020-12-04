@@ -245,6 +245,7 @@ protected:
     int m_exportNext VL_GUARDED_BY(m_exportMutex);  ///< Next export funcnum
 
     // File I/O
+    std::string m_verilogIODir; ///< Directory for Verilog file IO
     VerilatedMutex m_fdMutex;  ///< Protect m_fdps, m_fdFree
     std::vector<FILE*> m_fdps VL_GUARDED_BY(m_fdMutex);  ///< File descriptors
     /// List of free descriptors (SLOW - FOPEN/CLOSE only)
@@ -569,6 +570,13 @@ public:  // But only for verilated*.cpp
         const VerilatedFpList fdlist = fdToFpList(fdi);
         if (VL_UNLIKELY(fdlist.size() != 1)) return nullptr;
         return *fdlist.begin();
+    }
+
+    static void setVerilogIODir(const char* dir) {
+        s_s.v.m_verilogIODir = std::string(dir) + "/";
+    }
+    static std::string getVerilogIODir() {
+        return s_s.v.m_verilogIODir;
     }
 
 private:

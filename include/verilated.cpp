@@ -1310,11 +1310,17 @@ IData VL_FERROR_IN(IData, std::string& outputr) VL_MT_SAFE {
     return ret;
 }
 
+void Verilated::setVerilogIODir(const char* dir) {
+    VerilatedImp::setVerilogIODir(dir);
+}
+
 IData VL_FOPEN_NN(const std::string& filename, const std::string& mode) {
-    return VerilatedImp::fdNew(filename.c_str(), mode.c_str());
+    std::string fileAndPath = VerilatedImp::getVerilogIODir() + filename;
+    return VerilatedImp::fdNew(fileAndPath.c_str(), mode.c_str());
 }
 IData VL_FOPEN_MCD_N(const std::string& filename) VL_MT_SAFE {
-    return VerilatedImp::fdNewMcd(filename.c_str());
+    std::string fileAndPath = VerilatedImp::getVerilogIODir() + filename;
+    return VerilatedImp::fdNewMcd(fileAndPath.c_str());
 }
 
 void VL_FFLUSH_I(IData fdi) VL_MT_SAFE { VerilatedImp::fdFlush(fdi); }
@@ -1791,10 +1797,11 @@ VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData star
     , m_end{end}
     , m_addr{start}
     , m_linenum{0} {
-    m_fp = fopen(filename.c_str(), "r");
+    std::string fileAndPath = VerilatedImp::getVerilogIODir() + filename;
+    m_fp = fopen(fileAndPath.c_str(), "r");
     if (VL_UNLIKELY(!m_fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
-        VL_FATAL_MT(filename.c_str(), 0, "", "$readmem file not found");
+        VL_FATAL_MT(fileAndPath.c_str(), 0, "", "$readmem file not found");
         // cppcheck-suppress resourceLeak  // m_fp is nullptr - bug in cppcheck
         return;
     }
@@ -1928,10 +1935,10 @@ VlWriteMem::VlWriteMem(bool hex, int bits, const std::string& filename, QData st
         VL_FATAL_MT(filename.c_str(), 0, "", "$writemem invalid address range");
         return;
     }
-
-    m_fp = fopen(filename.c_str(), "w");
+    std::string fileAndPath = VerilatedImp::getVerilogIODir() + filename;
+    m_fp = fopen(fileAndPath.c_str(), "w");
     if (VL_UNLIKELY(!m_fp)) {
-        VL_FATAL_MT(filename.c_str(), 0, "", "$writemem file not found");
+        VL_FATAL_MT(fileAndPath.c_str(), 0, "", "$writemem file not found");
         // cppcheck-suppress resourceLeak  // m_fp is nullptr - bug in cppcheck
         return;
     }
