@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DESCRIPTION: Verilator: Travis CI main job script
+# DESCRIPTION: Verilator: CI main job script
 #
 # Copyright 2020 by Geza Lore. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
@@ -10,9 +10,8 @@
 
 ################################################################################
 # This is the main script executed in the 'script' phase by all jobs. We use a
-# single script to keep the .travis.yml spec simple. We pass job parameters via
-# environment variables using 'env' keys. Having different 'env' keys in jobs
-# ensures they use different Travis build caches.
+# single script to keep the CI setting simple. We pass job parameters via
+# environment variables using 'env' keys.
 ################################################################################
 
 set -e
@@ -22,20 +21,20 @@ fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }
 
-if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+if [ "$CI_OS_NAME" = "linux" ]; then
   export MAKE=make
   NPROC=$(nproc)
-elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+elif [ "$CI_OS_NAME" = "osx" ]; then
   export MAKE=make
   NPROC=$(sysctl -n hw.logicalcpu)
-elif [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
+elif [ "$CI_OS_NAME" = "freebsd" ]; then
   export MAKE=gmake
   NPROC=$(sysctl -n hw.ncpu)
 else
-  fatal "Unknown os: '$TRAVIS_OS_NAME'"
+  fatal "Unknown os: '$CI_OS_NAME'"
 fi
 
-if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
+if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
   ##############################################################################
   # Build verilator
 
@@ -43,7 +42,7 @@ if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
     autoconf
     ./configure --enable-longtests --enable-ccwarn
     "$MAKE" -j "$NPROC" -k
-    if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+    if [ "$CI_OS_NAME" = "osx" ]; then
       file bin/verilator_bin
       file bin/verilator_bin_dbg
       md5 bin/verilator_bin
@@ -54,11 +53,11 @@ if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
   else
     nodist/code_coverage --stages 1-2
   fi
-elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
+elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ##############################################################################
   # Run tests
 
-  if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  if [ "$CI_OS_NAME" = "osx" ]; then
     export VERILATOR_TEST_NO_GDB=1 # Pain to get GDB to work on OS X
     export VERILATOR_TEST_NO_GPROF=1 # Apple Clang has no -pg
     # export PATH="/Applications/gtkwave.app/Contents/Resources/bin:$PATH" # fst2vcd
@@ -73,7 +72,7 @@ elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
     # one for Travis. Remove the file and re-link...
     rm bin/verilator_bin_dbg
     "$MAKE" -j "$NPROC" -k
-  elif [ "$TRAVIS_OS_NAME" = "freebsd" ]; then
+  elif [ "$CI_OS_NAME" = "freebsd" ]; then
     export VERILATOR_TEST_NO_GDB=1 # Disable for now, ideally should run
     export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable
   fi
@@ -130,5 +129,5 @@ elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
 else
   ##############################################################################
   # Unknown build stage
-  fatal "Unknown build stage: '$TRAVIS_BUILD_STAGE_NAME'"
+  fatal "Unknown build stage: '$CI_BUILD_STAGE_NAME'"
 fi
