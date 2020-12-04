@@ -48,6 +48,8 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     sudo apt-get update
     sudo apt-get install libfl-dev
     sudo apt-get install libgoogle-perftools-dev
+    sudo apt-get install ccache
+    sudo apt-get install libsystemc libsystemc-dev
     if [ "$COVERAGE" = 1 ]; then
       yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
     fi
