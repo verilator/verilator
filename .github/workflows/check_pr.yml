@@ -4,12 +4,13 @@ on: push
 
 jobs:
     vlt:
-        runs-on: ubuntu-18.04
+        runs-on: ubuntu-20.04
         name: build and test
         env:
-            TRAVIS_OS_NAME: linux
+            CI_OS_NAME: linux
             CCACHE_COMPRESS: 1
             CCACHE_DIR: ${{ github.workspace }}/.ccache
+            CCACHE_MAXSIZE: 4Gi
             CC: ccache gcc
             CXX: ccache g++
         steps:
@@ -28,25 +29,29 @@ jobs:
                       ${{ runner.os }}-
             - name: Build
               env:
-                  TRAVIS_BUILD_STAGE_NAME: build
-              run: mkdir -p $CCACHE_DIR && bash ci/travis-install.bash && sudo apt install -y ccache && bash ci/travis-script.bash && du -hs $CCACHE_DIR
+                  CI_BUILD_STAGE_NAME: build
+              run: mkdir -p $CCACHE_DIR && bash ci/ci-install.bash && bash ci/ci-script.bash
+            - name: Install packages for tests
+              env:
+                  CI_BUILD_STAGE_NAME: test
+              run: bash ci/ci-install.bash
             - name: Test dist-vlt-0
               env:
-                  TRAVIS_BUILD_STAGE_NAME: test
+                  CI_BUILD_STAGE_NAME: test
                   TESTS: dist-vlt-0
-              run: bash ci/travis-install.bash && bash ci/travis-script.bash
+              run: bash ci/ci-script.bash
             - name: Test dist-vlt-1
               env:
-                  TRAVIS_BUILD_STAGE_NAME: test
+                  CI_BUILD_STAGE_NAME: test
                   TESTS: dist-vlt-1
-              run: bash ci/travis-install.bash && bash ci/travis-script.bash
+              run: bash ci/ci-script.bash
             - name: Test vltmt-0
               env:
-                  TRAVIS_BUILD_STAGE_NAME: test
+                  CI_BUILD_STAGE_NAME: test
                   TESTS: vltmt-0
-              run: bash ci/travis-install.bash && bash ci/travis-script.bash
+              run: bash ci/ci-script.bash
             - name: Test vltmt-1
               env:
-                  TRAVIS_BUILD_STAGE_NAME: test
+                  CI_BUILD_STAGE_NAME: test
                   TESTS: vltmt-1
-              run: bash ci/travis-install.bash && bash ci/travis-script.bash
+              run: bash ci/ci-script.bash
