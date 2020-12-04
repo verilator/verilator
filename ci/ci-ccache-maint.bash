@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DESCRIPTION: Verilator: Travis CI ccache maintenance
+# DESCRIPTION: Verilator: CI ccache maintenance
 #
 # Copyright 2020 by Geza Lore. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
@@ -20,7 +20,7 @@ ccache --version
 
 # Flush ccache if requested in commit message
 COMMIT="${TRAVIS_PULL_REQUEST_SHA:-$TRAVIS_COMMIT}"
-if git log --format=%B -n 1 "$COMMIT" | grep -q -i '\[travis\s\+ccache\s\+clear\]'; then
+if git log --format=%B -n 1 "$COMMIT" | grep -q -i '\[CI\s\+ccache\s\+clear\]'; then
   echo "Flushing ccache due to commit message"
   ccache -C
 fi

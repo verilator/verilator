@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DESCRIPTION: Verilator: Travis CI ccache sizer
+# DESCRIPTION: Verilator: CI ccache sizer
 #
 # Copyright 2020 by Geza Lore. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
@@ -20,18 +20,18 @@ fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }
 
-if [ "$TRAVIS_BUILD_STAGE_NAME" = "build" ]; then
+if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
   if [ "$COVERAGE" == 1 ]; then
-    echo "1024M"
+    echo "4096M"
   else
-    echo "768M"
+    echo "4096M"
   fi
-elif [ "$TRAVIS_BUILD_STAGE_NAME" = "test" ]; then
+elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   if [[ $TESTS == coverage-* ]]; then
-    echo "1536M"
+    echo "4096M"
   else
-    echo "256M"
+    echo "4096M"
   fi
 else
-  fatal "Unknown build stage: '$TRAVIS_BUILD_STAGE_NAME'"
+  fatal "Unknown build stage: '$CI_BUILD_STAGE_NAME'"
 fi
