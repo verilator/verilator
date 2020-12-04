@@ -1,6 +1,12 @@
-name: Verilator PR CI
+# DESCRIPTION: Github actions config
+# This name is key to badges in README.adoc, so we use the name build
+name: build
 
-on: push
+on: 
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * 0' # weekly
 
 jobs:
     vlt:
