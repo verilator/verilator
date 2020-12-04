@@ -1,70 +1,71 @@
 # DESCRIPTION: Github actions config
 # This name is key to badges in README.adoc, so we use the name build
+
 name: build
 
 on: 
   push:
   pull_request:
   schedule:
-    - cron: '0 0 * * 0' # weekly
+  - cron: '0 0 * * 0' # weekly
 
 jobs:
-    vlt:
-        runs-on: ubuntu-20.04
-        name: build and test
+  vlt:
+    runs-on: ubuntu-20.04
+    name: build and test
+    env:
+      CI_OS_NAME: linux
+      CCACHE_COMPRESS: 1
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 4Gi
+      CC: ccache gcc
+      CXX: ccache g++
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Cache
+        uses: actions/cache@v2
         env:
-            CI_OS_NAME: linux
-            CCACHE_COMPRESS: 1
-            CCACHE_DIR: ${{ github.workspace }}/.ccache
-            CCACHE_MAXSIZE: 4Gi
-            CC: ccache gcc
-            CXX: ccache g++
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v2
-            - name: Cache
-              uses: actions/cache@v2
-              env:
-                  cache-name: ccache
-              with:
-                  path: ${{ github.workspace }}/.ccache
-                  key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.ref }}-${{ github.sha }}
-                  restore-keys: |
-                      ${{ runner.os }}-build-${{ env.cache-name }}-
-                      ${{ runner.os }}-build-
-                      ${{ runner.os }}-
+          cache-name: ccache
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
 
-            - name: Install packages for build
-              env:
-                  CI_BUILD_STAGE_NAME: build
-              run: bash ci/ci-install.bash
-            - name: CCACHE maintenance
-              run: mkdir -p $CCACHE_DIR && bash ci/ci-ccache-maint.bash
-            - name: Build
-              env:
-                  CI_BUILD_STAGE_NAME: build
-              run: bash ci/ci-script.bash
-            - name: Install packages for tests
-              env:
-                  CI_BUILD_STAGE_NAME: test
-              run: bash ci/ci-install.bash
-            - name: Test dist-vlt-0
-              env:
-                  CI_BUILD_STAGE_NAME: test
-                  TESTS: dist-vlt-0
-              run: bash ci/ci-script.bash
-            - name: Test dist-vlt-1
-              env:
-                  CI_BUILD_STAGE_NAME: test
-                  TESTS: dist-vlt-1
-              run: bash ci/ci-script.bash
-            - name: Test vltmt-0
-              env:
-                  CI_BUILD_STAGE_NAME: test
-                  TESTS: vltmt-0
-              run: bash ci/ci-script.bash
-            - name: Test vltmt-1
-              env:
-                  CI_BUILD_STAGE_NAME: test
-                  TESTS: vltmt-1
-              run: bash ci/ci-script.bash
+      - name: Install packages for build
+        env:
+          CI_BUILD_STAGE_NAME: build
+        run: bash ci/ci-install.bash
+      - name: CCACHE maintenance
+        run: mkdir -p $CCACHE_DIR && bash ci/ci-ccache-maint.bash
+      - name: Build
+        env:
+          CI_BUILD_STAGE_NAME: build
+        run: bash ci/ci-script.bash
+      - name: Install packages for tests
+        env:
+          CI_BUILD_STAGE_NAME: test
+        run: bash ci/ci-install.bash
+      - name: Test dist-vlt-0
+        env:
+          CI_BUILD_STAGE_NAME: test
+          TESTS: dist-vlt-0
+        run: bash ci/ci-script.bash
+      - name: Test dist-vlt-1
+        env:
+          CI_BUILD_STAGE_NAME: test
+          TESTS: dist-vlt-1
+        run: bash ci/ci-script.bash
+      - name: Test vltmt-0
+        env:
+          CI_BUILD_STAGE_NAME: test
+          TESTS: vltmt-0
+        run: bash ci/ci-script.bash
+      - name: Test vltmt-1
+        env:
+          CI_BUILD_STAGE_NAME: test
+          TESTS: vltmt-1
+        run: bash ci/ci-script.bash
