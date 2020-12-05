@@ -409,6 +409,7 @@ arguments.
     --threads-max-mtasks <mtasks>  Tune maximum mtask partitioning
     --timescale <timescale>     Sets default timescale
     --timescale-override <timescale>  Overrides all timescales
+    --top <topname>             Alias of --top-module
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-coverage            Enable tracing of coverage
@@ -1260,8 +1261,8 @@ With -E, show comments in preprocessor output.
 =item --prefix I<topname>
 
 Specifies the name of the top level class and makefile.  Defaults to V
-prepended to the name of the --top-module switch, or V prepended to the
-first Verilog filename passed on the command line.
+prepended to the name of the --top switch, or V prepended to the first
+Verilog filename passed on the command line.
 
 =item --prof-cfuncs
 
@@ -1522,6 +1523,8 @@ The time precision must be consistent with SystemC's
 sc_set_time_resolution, or the C++ code instantiating the Verilated module.
 As 1fs is the finest time precision it may be desirable to always use a
 precision of 1fs.
+
+=item --top I<topname>
 
 =item --top-module I<topname>
 
@@ -4628,10 +4631,10 @@ automatically resolved by having filenames that match the module names.
 
 2. A single module is intended to be the top, the name of it is known, and
 all other modules should be ignored if not part of the design.  The best
-solution is to use the --top-module option to specify the top module's
-name. All other modules that are not part of the design will be for the
-most part ignored (they must be clean in syntax and their contents will be
-removed as part of the Verilog module elaboration process.)
+solution is to use the --top option to specify the top module's name. All
+other modules that are not part of the design will be for the most part
+ignored (they must be clean in syntax and their contents will be removed as
+part of the Verilog module elaboration process.)
 
 3. Multiple modules are intended to be design tops, e.g. when linting a
 library file.  As multiple modules are desired, disable the MULTITOP

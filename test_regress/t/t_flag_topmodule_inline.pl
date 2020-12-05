@@ -11,7 +11,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 compile(
-    v_flags2 => ["--top-module b"],
+    # This also tests --top as opposed to --top-module
+    v_flags2 => ["--top b"],
     );
 
 execute(
