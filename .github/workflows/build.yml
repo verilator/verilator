@@ -11,15 +11,28 @@ on:
 
 jobs:
   vlt:
-    runs-on: ubuntu-20.04
-    name: build and test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        compiler: [clang, gcc]
+        include:
+          - compiler: clang
+            cc: clang
+            cxx: clang++
+          - compiler: gcc
+            cc: gcc
+            cxx: g++
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }}-${{ matrix.compiler }}-build-test
     env:
       CI_OS_NAME: linux
+      CI_COMMIT: ${{ github.sha }}
       CCACHE_COMPRESS: 1
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_MAXSIZE: 4Gi
-      CC: ccache gcc
-      CXX: ccache g++
+      CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -29,12 +42,9 @@ jobs:
           cache-name: ccache
         with:
           path: ${{ github.workspace }}/.ccache
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.ref }}-${{ github.sha }}
+          key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ env.cache-name }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
+            ${{ matrix.os }}-${{ matrix.compiler }}-${{ env.cache-name }}
       - name: Install packages for build
         env:
           CI_BUILD_STAGE_NAME: build
