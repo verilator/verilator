@@ -804,13 +804,29 @@ class ParamVisitor final : public AstNVisitor {
     virtual void visit(AstNodeModule* nodep) override {
         if (nodep->dead()) {
             UINFO(4, " MOD-dead.  " << nodep << endl);  // Marked by LinkDot
+            return;
         } else if (nodep->recursiveClone()) {
             // Fake, made for recursive elimination
             UINFO(4, " MOD-recursive-dead.  " << nodep << endl);
             nodep->dead(true);  // So Dead checks won't count references to it
-        } else if (m_modp) {
+            return;
+        }
+        //
+        if (!nodep->dead() && VN_IS(nodep, Class)) {
+            for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (AstVar* varp = VN_CAST(stmtp, Var)) {
+                    if (varp->isParam()) {
+                        varp->v3warn(E_UNSUPPORTED, "Unsupported: class parameters");
+                    }
+                }
+            }
+        }
+        //
+        if (m_modp) {
             UINFO(4, " MOD-under-MOD.  " << nodep << endl);
+            iterateChildren(nodep);
         } else if (nodep->level() <= 2  // Haven't added top yet, so level 2 is the top
+                   || VN_IS(nodep, Class)  // Nor moved classes
                    || VN_IS(nodep, Package)) {  // Likewise haven't done wrapTopPackages yet
             // Add request to END of modules left to process
             m_todoModps.insert(make_pair(nodep->level(), nodep));
@@ -828,6 +844,14 @@ class ParamVisitor final : public AstNVisitor {
         string* genHierNamep = new string(m_generateHierName);
         nodep->user5p(genHierNamep);
         m_cellps.push_back(nodep);
+    }
+
+    virtual void visit(AstClassRefDType* nodep) override {
+        if (nodep->paramsp()) {
+            nodep->paramsp()->v3warn(E_UNSUPPORTED, "Unsupported: parameterized classes");
+            pushDeletep(nodep->paramsp()->unlinkFrBackWithNext());
+        }
+        iterateChildren(nodep);
     }
 
     // Make sure all parameters are constantified

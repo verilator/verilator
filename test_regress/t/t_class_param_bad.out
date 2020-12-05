@@ -1,17 +1,8 @@
-%Error-UNSUPPORTED: t/t_class_param_bad.v:12:4: Unsupported: parameterized packages
-   12 |    Cls #(.PARAMBAD(1)) c;   
-      |    ^~~
 %Error: t/t_class_param_bad.v:12:11: Parameter pin not found: 'PARAMBAD'
                                    : ... Suggested alternative: 'PARAMB'
    12 |    Cls #(.PARAMBAD(1)) c;   
       |           ^~~~~~~~
-%Error-UNSUPPORTED: t/t_class_param_bad.v:13:4: Unsupported: parameterized packages
-   13 |    Cls #(13, 1) cd;   
-      |    ^~~
 %Error: t/t_class_param_bad.v:13:14: Parameter pin not found: '__paramNumber2'
    13 |    Cls #(13, 1) cd;   
       |              ^
-%Error-UNSUPPORTED: t/t_class_param_bad.v:7:23: Unsupported: class parameter
-    7 | class Cls #(parameter PARAMB = 12);
-      |                       ^~~~~~
 %Error: Exiting due to

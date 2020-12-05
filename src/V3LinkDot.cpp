@@ -1978,6 +1978,8 @@ private:
         checkNoDot(nodep);
         AstNode::user5ClearTree();
         UASSERT_OBJ(nodep->classp(), nodep, "ClassRef has unlinked class");
+        UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp(), nodep,
+                    "class reference parameter not removed by V3Param");
         VL_RESTORER(m_pinSymp);
         {
             // ClassRef's have pins, so track
@@ -2902,8 +2904,6 @@ private:
                                   "Unsupported: Multiple '::' package/class reference");
             }
             VL_DO_DANGLING(cpackagep->unlinkFrBack()->deleteTree(), cpackagep);
-        } else if (nodep->paramsp()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages");
         }
         if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
