@@ -1605,10 +1605,10 @@ void AstParseRef::dump(std::ostream& str) const {
 }
 void AstClassOrPackageRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (classOrPackagep()) { str << " cpkg=" << nodeAddr(classOrPackagep()); }
+    if (classOrPackageNodep()) str << " cpkg=" << nodeAddr(classOrPackageNodep());
     str << " -> ";
-    if (classOrPackagep()) {
-        classOrPackagep()->dump(str);
+    if (classOrPackageNodep()) {
+        classOrPackageNodep()->dump(str);
     } else {
         str << "UNLINKED";
     }

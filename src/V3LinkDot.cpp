@@ -1476,6 +1476,28 @@ private:
         // We're done with implicit gates
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
+    virtual void visit(AstClassOrPackageRef* nodep) override {
+        if (auto* fwdp = VN_CAST(nodep->classOrPackageNodep(), TypedefFwd)) {
+            // Relink forward definitions to the "real" definition
+            VSymEnt* foundp = m_statep->getNodeSym(fwdp)->findIdFallback(fwdp->name());
+            if (foundp && (VN_IS(foundp->nodep(), Class) || VN_IS(foundp->nodep(), Package))) {
+                nodep->classOrPackagep(VN_CAST(foundp->nodep(), NodeModule));
+            } else if (foundp && VN_IS(foundp->nodep(), ParamTypeDType)) {
+                UASSERT(m_statep->forPrimary(), "Param types should have been resolved");
+                nodep->classOrPackageNodep(foundp->nodep());
+            } else {
+                if (foundp) UINFO(1, "found nodep = " << foundp->nodep() << endl);
+                nodep->v3error(
+                    "Forward typedef used as class/package does not resolve to class/package: "
+                    << nodep->prettyNameQ() << '\n'
+                    << nodep->warnContextPrimary() << '\n'
+                    << (foundp ? nodep->warnMore() + "... Object with matching name\n"
+                                     + foundp->nodep()->warnContextSecondary()
+                               : ""));
+            }
+        }
+        iterateChildren(nodep);
+    }
     virtual void visit(AstTypedefFwd* nodep) override {
         VSymEnt* foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->name());
         if (!foundp && v3Global.opt.pedantic()) {
@@ -1487,7 +1509,8 @@ private:
                 << nodep->prettyNameQ());
         }
         // We only needed the forward declaration in order to parse correctly.
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        // Delete later as may be ClassOrPackageRef's still pointing to it
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -2563,9 +2586,6 @@ private:
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: " << AstNode::prettyNameQ(cpackagerefp->name()));
             }
-            if (cpackagerefp->paramsp()) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: parameterized packages for task calls");
-            }
             UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
             nodep->classOrPackagep(cpackagerefp->classOrPackagep());
             m_ds.m_dotPos = DP_SCOPE;
@@ -2895,8 +2915,10 @@ private:
                 if (!VN_IS(nodep->classOrPackagep(), Class)
                     && !VN_IS(nodep->classOrPackagep(), Package)) {
                     cpackagerefp->v3error(
-                        "'::' expected to reference a class/package but referenced "
-                        << nodep->classOrPackagep()->prettyTypeName() << '\n'
+                        "'::' expected to reference a class/package but referenced '"
+                        << (nodep->classOrPackagep() ? nodep->classOrPackagep()->prettyTypeName()
+                                                     : "<unresolved-object>")
+                        << "'\n"
                         << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
                 }
             } else {
@@ -2908,10 +2930,9 @@ private:
         if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
-            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->classOrPackagep(),
-                        m_ds.m_dotp->lhsp(), "Bad package link");
-            nodep->classOrPackagep(
-                VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef)->classOrPackagep());
+            auto* cpackagerefp = VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
+            UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
+            nodep->classOrPackagep(cpackagerefp->classOrPackagep());
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = nullptr;
         } else {

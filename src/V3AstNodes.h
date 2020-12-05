@@ -2967,36 +2967,39 @@ public:
 class AstClassOrPackageRef final : public AstNode {
 private:
     string m_name;
-    AstNode* m_classOrPackagep;  // Package hierarchy
+    // Node not NodeModule to appease some early parser usage
+    AstNode* m_classOrPackageNodep;  // Package hierarchy
 public:
-    AstClassOrPackageRef(FileLine* fl, const string& name, AstNode* classOrPackagep,
+    AstClassOrPackageRef(FileLine* fl, const string& name, AstNode* classOrPackageNodep,
                          AstNode* paramsp)
         : ASTGEN_SUPER(fl)
         , m_name{name}
-        , m_classOrPackagep{classOrPackagep} {
+        , m_classOrPackageNodep{classOrPackageNodep} {
         addNOp4p(paramsp);
     }
     ASTNODE_NODE_FUNCS(ClassOrPackageRef)
     // METHODS
     virtual const char* broken() const override {
-        BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
+        BROKEN_RTN(m_classOrPackageNodep && !m_classOrPackageNodep->brokeExists());
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_classOrPackagep && m_classOrPackagep->clonep()) {
-            m_classOrPackagep = m_classOrPackagep->clonep();
+        if (m_classOrPackageNodep && m_classOrPackageNodep->clonep()) {
+            m_classOrPackageNodep = m_classOrPackageNodep->clonep();
         }
     }
     virtual bool same(const AstNode* samep) const override {
-        return (m_classOrPackagep
-                == static_cast<const AstClassOrPackageRef*>(samep)->m_classOrPackagep);
+        return (m_classOrPackageNodep
+                == static_cast<const AstClassOrPackageRef*>(samep)->m_classOrPackageNodep);
     }
-    virtual V3Hash sameHash() const override { return V3Hash(m_classOrPackagep); }
+    virtual V3Hash sameHash() const override { return V3Hash(m_classOrPackageNodep); }
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual string name() const override { return m_name; }  // * = Var name
-    AstNodeModule* classOrPackagep() const { return VN_CAST(m_classOrPackagep, NodeModule); }
-    AstPackage* packagep() const { return VN_CAST(classOrPackagep(), Package); }
-    void classOrPackagep(AstNode* nodep) { m_classOrPackagep = nodep; }
+    AstNode* classOrPackageNodep() const { return m_classOrPackageNodep; }
+    void classOrPackageNodep(AstNode* nodep) { m_classOrPackageNodep = nodep; }
+    AstNodeModule* classOrPackagep() const { return VN_CAST(m_classOrPackageNodep, NodeModule); }
+    AstPackage* packagep() const { return VN_CAST(classOrPackageNodep(), Package); }
+    void classOrPackagep(AstNodeModule* nodep) { m_classOrPackageNodep = nodep; }
     AstPin* paramsp() const { return VN_CAST(op4p(), Pin); }
 };
 
