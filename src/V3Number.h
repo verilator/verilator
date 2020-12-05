@@ -43,6 +43,7 @@ class V3Number final {
     bool m_sized : 1;  // True if the user specified the width, else we track it.
     bool m_signed : 1;  // True if signed value
     bool m_double : 1;  // True if double real value
+    bool m_isNull : 1;  // True if "null" versus normal 0
     bool m_isString : 1;  // True if string
     bool m_fromString : 1;  // True if from string literal
     bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
@@ -176,6 +177,12 @@ public:
         init(nodep, 0);
         setString(value);
     }
+    class Null {};
+    V3Number(Null, AstNode* nodep) {
+        init(nodep, 0);
+        m_isNull = true;
+        m_autoExtend = true;
+    }
     explicit V3Number(const V3Number* nump, int width = 1) {
         init(nullptr, width);
         m_fileline = nump->fileline();
@@ -193,6 +200,7 @@ private:
         setNames(nodep);
         m_signed = false;
         m_double = false;
+        m_isNull = false;
         m_isString = false;
         m_autoExtend = false;
         m_fromString = false;
@@ -250,6 +258,7 @@ public:
     bool isString() const { return m_isString; }
     void isString(bool flag) { m_isString = flag; }
     bool isNegative() const { return bitIs1(width() - 1); }
+    bool isNull() const { return m_isNull; }
     bool isFourState() const;
     bool hasZ() const {
         for (int i = 0; i < words(); i++) {

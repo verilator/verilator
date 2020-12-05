@@ -153,6 +153,13 @@ public:
         , m_num(this, 1, on) {
         dtypeSetBit();
     }
+    class Null {};
+    AstConst(FileLine* fl, Null)
+        : ASTGEN_SUPER(fl)
+        , m_num(V3Number::Null{}, this) {
+        dtypeSetBit();  // Events 1 bit, objects 64 bits, so autoExtend=1 and use bit here
+        initWithNumber();
+    }
     ASTNODE_NODE_FUNCS(Const)
     virtual string name() const override { return num().ascii(); }  // * = Value
     const V3Number& num() const { return m_num; }  // * = Value

@@ -495,6 +495,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
             out << "'";
             if (bitIs0(0)) {
                 out << '0';
+                if (isNull()) out << "[null]";
             } else if (bitIs1(0)) {
                 out << '1';
             } else if (bitIsZ(0)) {
@@ -529,6 +530,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
         // Always deal with 4 bits at once.  Note no 4-state, it's above.
         out << displayed("%0h");
     }
+    if (isNull() && VL_UNCOVERABLE(!isEqZero())) out << "-%E-null-not-zero";
     return out.str();
 }
 
