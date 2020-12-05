@@ -17,32 +17,42 @@ module t (/*AUTOARG*/
    output T_t o;
    output T_t o2;
 
-   sub #(.T_t(T_t))
-   sub (.i, .o);
+   sub1 #(.T_t(T_t), .CHECK(1))
+   sub1 (.i, .o);
 
-   sub2 #(.T_t(T_t))
+   sub2 #(.T_t(T_t), .CHECK(2))
    sub2 (.i, .o(o2));
+
+   sub1 #(T_t, 1)
+   sub1b (i, o);
+
+   sub2 #(T_t, 2)
+   sub2b (i, o2);
 
 endmodule
 
-module sub (i,o);
-   parameter type T_t = logic;
+module sub1 (i,o);
+   parameter type T_t = real;
    localparam type T2_t = T_t;
+   parameter int CHECK = 0;
    input  T_t i;
    output T2_t o;
    assign o = i;
+   if (CHECK != 1) $error;
 endmodule
 
 module sub2
   #(
-    parameter type T_t = logic,
-    localparam type T2_t = T_t
+    parameter type T_t = real,
+    localparam type T2_t = T_t,
+    parameter int CHECK = 0
     )
    (
     input  T_t i,
     output T_t o
     );
    assign o = i;
+   if (CHECK != 2) $error;
 endmodule
 
 // Local Variables:

@@ -1161,7 +1161,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
                 VSymEnt* insp
                     = m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
                 if (m_statep->forPrimary() && nodep->isGParam()) {
-                    m_paramNum++;
+                    ++m_paramNum;
                     VSymEnt* symp
                         = m_statep->insertSym(m_curSymp, "__paramNumber" + cvtToStr(m_paramNum),
                                               nodep, m_classOrPackagep);
@@ -1191,6 +1191,12 @@ class LinkDotFindVisitor final : public AstNVisitor {
         UASSERT_OBJ(m_curSymp, nodep, "Parameter type not under module/package/$unit");
         iterateChildren(nodep);
         m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
+        if (m_statep->forPrimary() && nodep->isGParam()) {
+            ++m_paramNum;
+            VSymEnt* symp = m_statep->insertSym(m_curSymp, "__paramNumber" + cvtToStr(m_paramNum),
+                                                nodep, m_classOrPackagep);
+            symp->exported(false);
+        }
     }
     virtual void visit(AstCFunc* nodep) override {
         // For dotted resolution, ignore all AstVars under functions, otherwise shouldn't exist

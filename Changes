@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.107 devel
 
+****  Fix passing parameter type instantiations by position number.
+
 
 * Verilator 4.106 2020-12-02
 
