@@ -6025,6 +6025,7 @@ public:
     virtual bool cleanLhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
     AstNode* lhsp() const { return op1p(); }
+    AstNode* fromp() const { return lhsp(); }
     void lhsp(AstNode* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* childDTypep() const { return VN_CAST(op2p(), NodeDType); }
@@ -6036,6 +6037,9 @@ class AstCastDynamic final : public AstNodeBiop {
     // Task usage of $cast is converted during parse to assert($cast(...))
     // Parents: MATH
     // Children: MATH
+    // lhsp() is value (we are converting FROM) to match AstCCast etc, this
+    // is opposite of $cast's order, because the first access is to the
+    // value reading from.  Suggest use fromp()/top() instead of lhsp/rhsp().
 public:
     AstCastDynamic(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {}
@@ -6046,7 +6050,7 @@ public:
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstCastDynamic(this->fileline(), lhsp, rhsp);
     }
-    virtual string emitVerilog() override { return "%f$cast(%r, %l)"; }
+    virtual string emitVerilog() override { return "%f$cast(%l, %r)"; }
     // Non-existent filehandle returns EOF
     virtual string emitC() override { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const override { return true; }
@@ -6056,6 +6060,8 @@ public:
     virtual bool sizeMattersRhs() const override { return false; }
     virtual int instrCount() const override { return widthInstrs() * 20; }
     virtual bool isPure() const override { return true; }
+    AstNode* fromp() const { return lhsp(); }
+    AstNode* top() const { return rhsp(); }
 };
 
 class AstCastParse final : public AstNode {

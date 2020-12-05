@@ -3667,7 +3667,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstWriteMem($1, true,  $3, $5, $7, $9); }
 	//
 	|	yD_CAST '(' expr ',' expr ')'
-			{ $$ = new AstAssert($1, new AstCastDynamic($1, $3, $5), nullptr, nullptr, true); }
+			{ $$ = new AstAssert($1, new AstCastDynamic($1, $5, $3), nullptr, nullptr, true); }
 	//
 	// Any system function as a task
 	|	system_f_call_or_t			{ $$ = new AstSysFuncAsTask($<fl>1, $1); }
@@ -3677,7 +3677,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 		yaD_PLI systemDpiArgsE			{ $$ = new AstFuncRef($<fl>1, *$1, $2); VN_CAST($$, FuncRef)->pli(true); }
 	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? nullptr : new AstUCFunc($1,$3)); }
-	|	yD_CAST '(' expr ',' expr ')'		{ $$ = new AstCastDynamic($1, $3, $5); }
+	|	yD_CAST '(' expr ',' expr ')'		{ $$ = new AstCastDynamic($1, $5, $3); }
 	|	yD_SYSTEM  '(' expr ')'			{ $$ = new AstSystemF($1,$3); }
 	//
 	|	system_f_call_or_t			{ $$ = $1; }
@@ -4264,7 +4264,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	yCONST__ETC yP_TICK '(' expr ')'	{ $$ = $4; }  // Not linting const presently
 	//			// Spec only allows primary with addition of a type reference
 	//			// We'll be more general, and later assert LHS was a type.
-	|	~l~expr yP_TICK '(' expr ')'		{ $$ = new AstCastParse($2,$4,$1); }
+	|	~l~expr yP_TICK '(' expr ')'		{ $$ = new AstCastParse($2, $4, $1); }
 	//
 	//			// IEEE: assignment_pattern_expression
 	//			// IEEE: streaming_concatenation

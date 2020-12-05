@@ -1652,27 +1652,27 @@ private:
     virtual void visit(AstCast* nodep) override {
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         // if (debug()) nodep->dumpTree(cout, "  CastPre: ");
-        userIterateAndNext(nodep->lhsp(), WidthVP(SELF, PRELIM).p());
+        userIterateAndNext(nodep->fromp(), WidthVP(SELF, PRELIM).p());
 
         // When more general casts are supported, the cast elimination will be done later.
         // For now, replace it ASAP, so widthing can propagate easily
         // The cast may change signing, but we don't know the sign yet.  Make it so.
-        // Note we don't sign lhsp() that would make the algorithm O(n^2) if lots of casting.
+        // Note we don't sign fromp() that would make the algorithm O(n^2) if lots of casting.
         AstBasicDType* basicp = nodep->dtypep()->basicp();
         UASSERT_OBJ(basicp, nodep, "Unimplemented: Casting non-simple data type");
         if (m_vup->prelim()) {
-            userIterateAndNext(nodep->lhsp(), WidthVP(SELF, PRELIM).p());
+            userIterateAndNext(nodep->fromp(), WidthVP(SELF, PRELIM).p());
             // When implement more complicated types need to convert childDTypep to
             // dtypep() not as a child
-            if (!basicp->isDouble() && !nodep->lhsp()->isDouble()) {
-                // Note castSized might modify nodep->lhsp()
+            if (!basicp->isDouble() && !nodep->fromp()->isDouble()) {
+                // Note castSized might modify nodep->fromp()
                 int width = nodep->dtypep()->width();
-                castSized(nodep, nodep->lhsp(), width);
+                castSized(nodep, nodep->fromp(), width);
             } else {
-                iterateCheck(nodep, "value", nodep->lhsp(), SELF, FINAL, nodep->lhsp()->dtypep(),
+                iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, nodep->fromp()->dtypep(),
                              EXTEND_EXP, false);
             }
-            AstNode* newp = nodep->lhsp()->unlinkFrBack();
+            AstNode* newp = nodep->fromp()->unlinkFrBack();
             if (basicp->isDouble() && !newp->isDouble()) {
                 if (newp->isSigned()) {
                     newp = new AstISToRD(nodep->fileline(), newp);
