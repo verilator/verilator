@@ -198,7 +198,7 @@ private:
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
-            UINFO(2, "Link Module: " << nodep << endl);
+            UINFO(4, "Link Module: " << nodep << endl);
             if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
                 && !v3Global.opt.isLibraryFile(nodep->fileline()->filename())
                 && !VN_IS(nodep, NotFoundModule) && !nodep->recursiveClone()
