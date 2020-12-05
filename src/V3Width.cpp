@@ -4407,8 +4407,8 @@ private:
     virtual void visit(AstWith* nodep) override {
         // Should otherwise be underneath a method call
         AstNodeDType* vdtypep = m_vup->dtypeNullSkipRefp();
-        VL_RESTORER(m_withp);
         {
+            VL_RESTORER(m_withp);
             m_withp = nodep;
             userIterateChildren(nodep->indexArgRefp(), nullptr);
             userIterateChildren(nodep->valueArgRefp(), nullptr);
@@ -5908,50 +5908,45 @@ private:
 
     AstNode* userIterateSubtreeReturnEdits(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return nullptr;
-        WidthVP* saveVup = m_vup;
         AstNode* ret;
         {
+            VL_RESTORER(m_vup);
             m_vup = vup;
             ret = iterateSubtreeReturnEdits(nodep);
         }
-        m_vup = saveVup;
         return ret;
     }
     void userIterate(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
-        WidthVP* saveVup = m_vup;
         {
+            VL_RESTORER(m_vup);
             m_vup = vup;
             iterate(nodep);
         }
-        m_vup = saveVup;
     }
     void userIterateAndNext(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
-        WidthVP* saveVup = m_vup;
         {
+            VL_RESTORER(m_vup);
             m_vup = vup;
             iterateAndNextNull(nodep);
         }
-        m_vup = saveVup;
     }
     void userIterateChildren(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
-        WidthVP* saveVup = m_vup;
         {
+            VL_RESTORER(m_vup);
             m_vup = vup;
             iterateChildren(nodep);
         }
-        m_vup = saveVup;
     }
     void userIterateChildrenBackwards(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
-        WidthVP* saveVup = m_vup;
         {
+            VL_RESTORER(m_vup);
             m_vup = vup;
             iterateChildrenBackwards(nodep);
         }
-        m_vup = saveVup;
     }
 
 public:
