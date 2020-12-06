@@ -351,7 +351,7 @@ private:
                 if (!inputPin
                     && !VN_IS(exprp, VarRef)
                     // V3Const will collapse the SEL with the one we're about to make
-                    && !VN_IS(exprp, Concat) && !VN_IS(exprp, Sel)) {
+                    && !VN_IS(exprp, Concat) && !VN_IS(exprp, Replicate) && !VN_IS(exprp, Sel)) {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: Per-bit array instantiations "
                                                  "with output connections to non-wires.");
                     // Note spec allows more complicated matches such as slices and such

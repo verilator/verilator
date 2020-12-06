@@ -784,12 +784,10 @@ class ParamVisitor final : public AstNVisitor {
                             string fullName(m_modp->hierName());
                             if (const string* genHierNamep = (string*)cellp->user5p()) {
                                 fullName += *genHierNamep;
-                            }
-                            visitCellDeparam(cellp, fullName);
-                            if (const string* genHierNamep = (string*)cellp->user5p()) {
                                 cellp->user5p(nullptr);
                                 VL_DO_DANGLING(delete genHierNamep, genHierNamep);
                             }
+                            VL_DO_DANGLING(visitCellDeparam(cellp, fullName), cellp);
                         }
                     }
                 }
@@ -1050,10 +1048,9 @@ class ParamVisitor final : public AstNVisitor {
                 // Note this clears nodep->genforp(), so begin is no longer special
             }
         } else {
-            string rootHierName(m_generateHierName);
+            VL_RESTORER(m_generateHierName);
             m_generateHierName += "." + nodep->prettyName();
             iterateChildren(nodep);
-            m_generateHierName = rootHierName;
         }
     }
     virtual void visit(AstGenFor* nodep) override {  // LCOV_EXCL_LINE

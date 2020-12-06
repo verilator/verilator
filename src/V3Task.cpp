@@ -206,18 +206,19 @@ private:
     }
     virtual void visit(AstNodeFTask* nodep) override {
         UINFO(9, "  TASK " << nodep << endl);
-        TaskBaseVertex* lastVxp = m_curVxp;
-        m_curVxp = getFTaskVertex(nodep);
-        if (nodep->dpiImport()) m_curVxp->noInline(true);
-        if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
-        if (nodep->isConstructor()) {
-            m_curVxp->noInline(true);
-            m_ctorp = nodep;
-            UASSERT_OBJ(m_classp, nodep, "Ctor not under class");
-            m_funcToClassMap[nodep] = m_classp;
+        {
+            VL_RESTORER(m_curVxp);
+            m_curVxp = getFTaskVertex(nodep);
+            if (nodep->dpiImport()) m_curVxp->noInline(true);
+            if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
+            if (nodep->isConstructor()) {
+                m_curVxp->noInline(true);
+                m_ctorp = nodep;
+                UASSERT_OBJ(m_classp, nodep, "Ctor not under class");
+                m_funcToClassMap[nodep] = m_classp;
+            }
+            iterateChildren(nodep);
         }
-        iterateChildren(nodep);
-        m_curVxp = lastVxp;
     }
     virtual void visit(AstPragma* nodep) override {
         if (nodep->pragType() == AstPragmaType::NO_INLINE_TASK) {

@@ -210,6 +210,7 @@ private:
     // VISITORS - BOTH
     virtual void visit(AstNodeModule* nodep) override {
         AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         VL_RESTORER(m_state);
         {
             createHandle(nodep);
@@ -223,7 +224,6 @@ private:
             }
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
 
     virtual void visit(AstNodeProcedure* nodep) override { iterateProcedure(nodep); }

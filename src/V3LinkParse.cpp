@@ -96,10 +96,11 @@ private:
     void visitIterateNodeDType(AstNodeDType* nodep) {
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
-            AstNodeDType* upperDtypep = m_dtypep;
-            m_dtypep = nodep;
-            iterateChildren(nodep);
-            m_dtypep = upperDtypep;
+            {
+                VL_RESTORER(m_dtypep);
+                m_dtypep = nodep;
+                iterateChildren(nodep);
+            }
         }
     }
 
@@ -125,10 +126,11 @@ private:
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
             UINFO(5, "   " << nodep << endl);
-            AstNodeModule* upperValueModp = m_valueModp;
-            m_valueModp = nullptr;
-            iterateChildren(nodep);
-            m_valueModp = upperValueModp;
+            {
+                VL_RESTORER(m_valueModp);
+                m_valueModp = nullptr;
+                iterateChildren(nodep);
+            }
         }
     }
     virtual void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
@@ -510,17 +512,17 @@ private:
     void visitIterateNoValueMod(AstNode* nodep) {
         // Iterate a node which shouldn't have any local variables moved to an Initial
         cleanFileline(nodep);
-        //
-        AstNodeModule* upperValueModp = m_valueModp;
-        m_valueModp = nullptr;
-        iterateChildren(nodep);
-        m_valueModp = upperValueModp;
+        {
+            VL_RESTORER(m_valueModp);
+            m_valueModp = nullptr;
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstNodeProcedure* nodep) override { visitIterateNoValueMod(nodep); }
     virtual void visit(AstAlways* nodep) override {
+        VL_RESTORER(m_inAlways);
         m_inAlways = true;
         visitIterateNoValueMod(nodep);
-        m_inAlways = false;
     }
     virtual void visit(AstCover* nodep) override { visitIterateNoValueMod(nodep); }
     virtual void visit(AstRestrict* nodep) override { visitIterateNoValueMod(nodep); }

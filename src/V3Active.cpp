@@ -171,10 +171,9 @@ private:
     }
     virtual void visit(AstAssign* nodep) override {
         if (m_check == CT_SEQ) {
-            AstNode* las = m_assignp;
+            VL_RESTORER(m_assignp);
             m_assignp = nodep;
             iterateAndNextNull(nodep->lhsp());
-            m_assignp = las;
         }
     }
     virtual void visit(AstVarRef* nodep) override {
