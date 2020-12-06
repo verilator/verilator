@@ -24,6 +24,7 @@
 /obj_dir/
 /obj_dist/
 /obj_iv/
+/obj_ms/
 /obj_nc/
 /obj_opt/
 /obj_vcs/
@@ -46,6 +47,7 @@ src/Makefile$
 src/Makefile_obj$
 include/verilated.mk$
 test_regress/.gdbinit$
+test_regress/transcript
 codecov.yml
 config.cache$
 config.status$
