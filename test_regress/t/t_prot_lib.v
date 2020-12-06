@@ -16,19 +16,19 @@ if (cyc > 0 && sig``_in != sig``_out) begin \
        end
 
 module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
-                                    // Inputs
-                                    clk
-                                    );
+   // Inputs
+   clk
+   );
    input clk;
 
    localparam last_cyc =
 `ifdef TEST_BENCHMARK
-                       `TEST_BENCHMARK;
+              `TEST_BENCHMARK;
 `else
    10;
 `endif
 
-   genvar x;
+   genvar     x;
    generate
       for (x = 0; x < 2; x = x + 1) begin: gen_loop
          integer cyc = 0;
