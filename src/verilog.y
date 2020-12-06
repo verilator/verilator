@@ -3667,7 +3667,9 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstWriteMem($1, true,  $3, $5, $7, $9); }
 	//
 	|	yD_CAST '(' expr ',' expr ')'
-			{ $$ = new AstAssert($1, new AstCastDynamic($1, $5, $3), nullptr, nullptr, true); }
+			{ FileLine* fl_nowarn = new FileLine($1);
+			  fl_nowarn->warnOff(V3ErrorCode::WIDTH, true);
+			  $$ = new AstAssertIntrinsic(fl_nowarn, new AstCastDynamic(fl_nowarn, $5, $3), nullptr, nullptr, true); }
 	//
 	// Any system function as a task
 	|	system_f_call_or_t			{ $$ = new AstSysFuncAsTask($<fl>1, $1); }

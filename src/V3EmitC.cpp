@@ -818,6 +818,15 @@ public:
         }
         puts("}\n");
     }
+    virtual void visit(AstExprStmt* nodep) override {
+        // GCC allows compound statements in expressions, but this is not standard.
+        // So we use an immediate-evaluation lambda and comma operator
+        putbs("([&]() {\n");
+        iterateAndNextNull(nodep->stmtsp());
+        puts("}(), ");
+        iterateAndNextNull(nodep->resultp());
+        puts(")");
+    }
     virtual void visit(AstStop* nodep) override {
         puts("VL_STOP_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
@@ -1060,6 +1069,13 @@ public:
         }
         emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)", nodep->lhsp(),
                    nodep->rhsp(), nullptr);
+    }
+    virtual void visit(AstCastDynamic* nodep) override {
+        putbs("VL_CAST_DYNAMIC(");
+        iterateAndNextNull(nodep->lhsp());
+        puts(", ");
+        iterateAndNextNull(nodep->rhsp());
+        puts(")");
     }
     virtual void visit(AstCountBits* nodep) override {
         putbs("VL_COUNTBITS_");

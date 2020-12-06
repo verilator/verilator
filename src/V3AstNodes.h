@@ -3460,6 +3460,30 @@ public:
     virtual bool brokeLhsMustBeLvalue() const override { return true; }
 };
 
+class AstExprStmt final : public AstNodeMath {
+    // Perform a statement, often assignment inside an expression/math node,
+    // the parent gets passed the 'resultp()'.
+    // resultp is evaluated AFTER the statement(s).
+public:
+    AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNode* resultp)
+        : ASTGEN_SUPER(fl) {
+        addOp1p(stmtsp);
+        setOp2p(resultp);  // Possibly in future nullptr could mean return rhsp()
+        dtypeFrom(resultp);
+    }
+    ASTNODE_NODE_FUNCS(ExprStmt)
+    // ACCESSORS
+    AstNode* stmtsp() const { return op1p(); }
+    void addStmtsp(AstNode* nodep) { addOp1p(nodep); }
+    AstNode* resultp() const { return op2p(); }
+    // METHODS
+    virtual string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const override { return false; }
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode*) const override { return true; }
+};
+
 class AstComment final : public AstNodeStmt {
     // Some comment to put into the output stream
     // Parents:  {statement list}
@@ -6050,9 +6074,8 @@ public:
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         return new AstCastDynamic(this->fileline(), lhsp, rhsp);
     }
-    virtual string emitVerilog() override { return "%f$cast(%l, %r)"; }
-    // Non-existent filehandle returns EOF
-    virtual string emitC() override { V3ERROR_NA_RETURN(""); }
+    virtual string emitVerilog() override { return "%f$cast(%r, %l)"; }
+    virtual string emitC() override { return "VL_DYNAMIC_CAST(%r, %l)"; }
     virtual bool cleanOut() const override { return true; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool cleanRhs() const override { return true; }
@@ -8576,6 +8599,18 @@ public:
     ASTNODE_NODE_FUNCS(Assert)
     AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp, bool immediate,
               const string& name = "")
+        : ASTGEN_SUPER(fl, propp, passsp, immediate, name) {
+        addNOp3p(failsp);
+    }
+    AstNode* failsp() const { return op3p(); }  // op3 = if assertion fails
+};
+
+class AstAssertIntrinsic final : public AstNodeCoverOrAssert {
+    // A $cast or other compiler inserted assert, that must run even without --assert option
+public:
+    ASTNODE_NODE_FUNCS(AssertIntrinsic)
+    AstAssertIntrinsic(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp,
+                       bool immediate, const string& name = "")
         : ASTGEN_SUPER(fl, propp, passsp, immediate, name) {
         addNOp3p(failsp);
     }

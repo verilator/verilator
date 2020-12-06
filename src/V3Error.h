@@ -71,6 +71,7 @@ public:
         CASEOVERLAP,    // Case statements overlap
         CASEWITHX,      // Case with X values
         CASEX,          // Casex
+        CASTCONST,      // Cast is constant
         CDCRSTLOGIC,    // Logic in async reset path
         CLKDATA,        // Clock used as data
         CMPCONST,       // Comparison is constant due to limited range
@@ -153,7 +154,7 @@ public:
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
-            "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CLKDATA",
+            "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
             "DEFPARAM", "DECLFILENAME", "DEPRECATED",
             "ENDLABEL", "GENCLK", "HIERBLOCK",
@@ -195,9 +196,10 @@ public:
     // Warnings that are lint only
     bool lintError() const {
         return (m_e == ALWCOMBORDER || m_e == BSSPACE || m_e == CASEINCOMPLETE
-                || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CMPCONST
-                || m_e == COLONPLUS || m_e == ENDLABEL || m_e == IMPLICIT || m_e == LITENDIAN
-                || m_e == PINMISSING || m_e == REALCVT || m_e == UNSIGNED || m_e == WIDTH);
+                || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
+                || m_e == CMPCONST || m_e == COLONPLUS || m_e == ENDLABEL || m_e == IMPLICIT
+                || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT || m_e == UNSIGNED
+                || m_e == WIDTH);
     }
     // Warnings that are style only
     bool styleError() const {

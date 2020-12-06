@@ -380,6 +380,7 @@ public:
         ENUM_NEXT,                      // V3Width processes
         ENUM_PREV,                      // V3Width processes
         ENUM_NAME,                      // V3Width processes
+        ENUM_VALID,                     // V3Width processes
         //
         MEMBER_BASE,                    // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         //
@@ -408,7 +409,7 @@ public:
             "DIM_LOW", "DIM_RIGHT", "DIM_SIZE", "DIM_UNPK_DIMENSIONS",
             "DT_PUBLIC",
             "ENUM_BASE", "ENUM_FIRST", "ENUM_LAST", "ENUM_NUM",
-            "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME",
+            "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
             "MEMBER_BASE",
             "TYPENAME",
             "VAR_BASE", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",

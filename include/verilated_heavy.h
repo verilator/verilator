@@ -802,6 +802,17 @@ inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {
     return t;
 }
 
+template <typename T, typename U>
+static inline bool VL_CAST_DYNAMIC(VlClassRef<T> in, VlClassRef<U>& outr) {
+    VlClassRef<U> casted = std::dynamic_pointer_cast<U>(in);
+    if (VL_LIKELY(casted)) {
+        outr = casted;
+        return true;
+    } else {
+        return false;
+    }
+}
+
 //======================================================================
 // Conversion functions
 
