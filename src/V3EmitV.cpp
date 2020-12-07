@@ -647,7 +647,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             }
         }
         // If nodep is an unpacked array, append unpacked dimensions
-        for (auto unpackp : unpackps) {
+        for (const auto& unpackp : unpackps) {
             puts("[");
             puts(cvtToStr(unpackp->rangep()->leftConst()));
             puts(":");
