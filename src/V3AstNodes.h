@@ -1491,6 +1491,11 @@ public:
     virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
+    int itemCount() const {
+        size_t count = 0;
+        for (AstNode* itemp = itemsp(); itemp; itemp = itemp->nextp()) count++;
+        return count;
+    }
 };
 
 class AstParseTypeDType final : public AstNodeDType {
@@ -5433,9 +5438,9 @@ public:
                        : (m_urandom ? "%f$urandom()" : "%f$random()");
     }
     virtual string emitC() override {
-        return m_reset
-                   ? "VL_RAND_RESET_%nq(%nw, %P)"
-                   : seedp() ? "VL_RANDOM_SEEDED_%nq%lq(%nw, %P, %li)" : "VL_RANDOM_%nq(%nw, %P)";
+        return m_reset   ? "VL_RAND_RESET_%nq(%nw, %P)"
+               : seedp() ? "VL_RANDOM_SEEDED_%nq%lq(%nw, %P, %li)"
+                         : "VL_RANDOM_%nq(%nw, %P)";
     }
     virtual bool cleanOut() const override { return true; }
     virtual bool isGateOptimizable() const override { return false; }

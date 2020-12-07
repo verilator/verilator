@@ -64,8 +64,9 @@ private:
         }
     }
     void markDerived(AstClass* nodep) {
-        if (m_baseToDerivedMap.find(nodep) != m_baseToDerivedMap.end()) {
-            for (auto* classp : m_baseToDerivedMap.at(nodep)) {
+        const auto it = m_baseToDerivedMap.find(nodep);
+        if (it != m_baseToDerivedMap.end()) {
+            for (auto* classp : it->second) {
                 classp->user1(true);
                 markMembers(classp);
                 markDerived(classp);
@@ -115,31 +116,26 @@ private:
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
+    //  AstEnumDType::user2()   -> AstVar*.  Pointer to table with enum values
     // AstUser1InUse    m_inuser1;      (Allocated for use in RandomizeMarkVisitor)
-
-    // TYPES
-    typedef std::unordered_map<AstNodeDType*, AstVar*> ValueTableMap;
+    AstUser2InUse m_inuser2;
 
     // STATE
-    ValueTableMap m_enumValueTabMap;  // Tables with enum values
+    size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
 
     // METHODS
     VL_DEBUG_FUNC;
 
     AstVar* enumValueTabp(AstEnumDType* nodep) {
-        const auto pos = m_enumValueTabMap.find(nodep);
-        if (pos != m_enumValueTabMap.end()) return pos->second;
+        if (nodep->user2p()) return VN_CAST(nodep->user2p(), Var);
         UINFO(9, "Construct Venumvaltab " << nodep << endl);
-        size_t itemCount = 0;  // Number of enum items
-        for (auto* itemp = nodep->itemsp(); itemp; itemp = VN_CAST(itemp->nextp(), EnumItem))
-            itemCount++;
-        AstNodeArrayDType* vardtypep = new AstUnpackArrayDType(
-            nodep->fileline(), nodep->dtypep(), new AstRange(nodep->fileline(), itemCount, 0));
+        AstNodeArrayDType* vardtypep
+            = new AstUnpackArrayDType(nodep->fileline(), nodep->dtypep(),
+                                      new AstRange(nodep->fileline(), nodep->itemCount(), 0));
         AstInitArray* initp = new AstInitArray(nodep->fileline(), vardtypep, nullptr);
         v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-        AstVar* varp
-            = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
-                         "__Venumvaltab_" + cvtToStr(m_enumValueTabMap.size()), vardtypep);
+        AstVar* varp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
+                                  "__Venumvaltab_" + cvtToStr(m_enumValueTabCount++), vardtypep);
         varp->isConst(true);
         varp->isStatic(true);
         varp->valuep(initp);
@@ -152,7 +148,7 @@ private:
             UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
             initp->addValuep(vconstp->cloneTree(false));
         }
-        m_enumValueTabMap.insert(make_pair(nodep, varp));
+        nodep->user2p(varp);
         return varp;
     }
     AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeVarRef* varrefp, int offset = 0,
@@ -166,10 +162,11 @@ private:
                  memberp = VN_CAST(memberp->nextp(), MemberDType)) {
                 auto* randp = newRandStmtsp(fl, stmtsp ? varrefp->cloneTree(false) : varrefp,
                                             offset, memberp);
-                if (stmtsp)
+                if (stmtsp) {
                     stmtsp->addNext(randp);
-                else
+                } else {
                     stmtsp = randp;
+                }
             }
             return stmtsp;
         } else {
@@ -177,14 +174,10 @@ private:
             if (auto* enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
                                                 : varrefp->dtypep()->subDTypep(),
                                         EnumDType)) {
-                size_t itemCount = 0;  // Number of enum items
-                for (auto* itemp = enumDtp->itemsp(); itemp;
-                     itemp = VN_CAST(itemp->nextp(), EnumItem))
-                    itemCount++;
                 AstVarRef* tabRefp = new AstVarRef(fl, enumValueTabp(enumDtp), VAccess::READ);
                 tabRefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
                 auto* randp = new AstRand(fl, nullptr, false);
-                auto* moddivp = new AstModDiv(fl, randp, new AstConst(fl, itemCount));
+                auto* moddivp = new AstModDiv(fl, randp, new AstConst(fl, enumDtp->itemCount()));
                 randp->dtypep(varrefp->findBasicDType(AstBasicDTypeKwd::UINT32));
                 moddivp->dtypep(enumDtp);
                 valp = new AstArraySel(fl, tabRefp, moddivp);
@@ -214,12 +207,12 @@ private:
             for (auto* memberp = classp->stmtsp(); memberp; memberp = memberp->nextp()) {
                 auto* memberVarp = VN_CAST(memberp, Var);
                 if (!memberVarp || !memberVarp->isRand()) continue;
-                if (VN_IS(memberp->dtypep()->skipRefp(), BasicDType)
-                    || VN_IS(memberp->dtypep()->skipRefp(), StructDType)) {
+                auto* dtypep = memberp->dtypep()->skipRefp();
+                if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)) {
                     auto* refp = new AstVarRef(nodep->fileline(), memberVarp, VAccess::WRITE);
                     auto* stmtp = newRandStmtsp(nodep->fileline(), refp);
                     funcp->addStmtsp(stmtp);
-                } else if (auto* classRefp = VN_CAST(memberp->dtypep(), ClassRefDType)) {
+                } else if (auto* classRefp = VN_CAST(dtypep, ClassRefDType)) {
                     auto* refp = new AstVarRef(nodep->fileline(), memberVarp, VAccess::WRITE);
                     auto* memberFuncp = V3Randomize::newRandomizeFunc(classRefp->classp());
                     auto* callp = new AstMethodCall(nodep->fileline(), refp, "randomize", nullptr);
@@ -272,7 +265,7 @@ AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep) {
         funcp = new AstFunc(nodep->fileline(), "randomize", nullptr, fvarp);
         funcp->dtypep(dtypep);
         funcp->classMethod(true);
-        funcp->isVirtual(true);
+        funcp->isVirtual(nodep->isExtended());
         nodep->addMembersp(funcp);
         nodep->repairCache();
     }
