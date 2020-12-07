@@ -25,8 +25,8 @@ module secret #(parameter GATED_CLK = 0)
     output logic [128:0]      s129_out,
     input [3:0] [31:0]        s4x32_in,
     output logic [3:0] [31:0] s4x32_out,
-    input [31:0]              s4x32up_in[0:3],
-    output logic [31:0]       s4x32up_out[0:3],
+    input [31:0]              s4x32up_in[2][0:3],
+    output logic [31:0]       s4x32up_out[2][0:3],
     input                     clk_en,
     input                     clk /*verilator clocker*/);
 
@@ -64,7 +64,8 @@ module secret #(parameter GATED_CLK = 0)
    end
 
    for (genvar i = 0; i < 4; ++i) begin
-      assign s4x32up_out[i] = s4x32up_in[i];
+      assign s4x32up_out[0][i] = s4x32up_in[0][i];
+      assign s4x32up_out[1][i] = s4x32up_in[1][i];
    end
 
    sub sub (.sub_in(s33_in), .sub_out(s33_out));
