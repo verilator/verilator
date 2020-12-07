@@ -633,7 +633,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             putfs(nodep, nodep->verilogKwd());
             puts(" ");
         }
-        std::vector<AstUnpackArrayDType*> unpackps;
+        std::vector<const AstUnpackArrayDType*> unpackps;
         for (AstNodeDType* dtypep = nodep->dtypep(); dtypep;) {
             if (AstUnpackArrayDType* unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
                 unpackps.push_back(unpackp);
