@@ -777,8 +777,9 @@ private:
             // Note width() not set on range; use elementsConst()
             if (nodep->littleEndian() && !VN_IS(nodep->backp(), UnpackArrayDType)
                 && !VN_IS(nodep->backp(), Cell)) {  // For cells we warn in V3Inst
-                nodep->v3warn(LITENDIAN, "Little bit endian vector: MSB < LSB of bit range: "
-                                             << nodep->lsbConst() << ":" << nodep->msbConst());
+                nodep->v3warn(LITENDIAN, "Little bit endian vector: left < right of bit range: ["
+                                             << nodep->leftConst() << ":" << nodep->rightConst()
+                                             << "]");
             }
         }
     }
