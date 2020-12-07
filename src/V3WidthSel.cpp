@@ -96,8 +96,8 @@ private:
             } else if (adtypep->isRanged()) {
                 UASSERT_OBJ(
                     !(adtypep->rangep()
-                      && (!VN_IS(adtypep->rangep()->msbp(), Const)
-                          || !VN_IS(adtypep->rangep()->lsbp(), Const))),
+                      && (!VN_IS(adtypep->rangep()->leftp(), Const)
+                          || !VN_IS(adtypep->rangep()->rightp(), Const))),
                     nodep,
                     "Non-constant variable range; errored earlier");  // in constifyParam(bfdtypep)
                 fromRange = adtypep->declRange();
@@ -324,12 +324,12 @@ private:
         UINFO(6, "SELEXTRACT " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "--SELEX0: ");
         // Below 2 lines may change nodep->widthp()
-        V3Const::constifyParamsEdit(nodep->lsbp());  // May relink pointed to node
-        V3Const::constifyParamsEdit(nodep->msbp());  // May relink pointed to node
+        V3Const::constifyParamsEdit(nodep->leftp());  // May relink pointed to node
+        V3Const::constifyParamsEdit(nodep->rightp());  // May relink pointed to node
         // if (debug() >= 9) nodep->dumpTree(cout, "--SELEX3: ");
-        checkConstantOrReplace(nodep->lsbp(),
+        checkConstantOrReplace(nodep->leftp(),
                                "First value of [a:b] isn't a constant, maybe you want +: or -:");
-        checkConstantOrReplace(nodep->msbp(),
+        checkConstantOrReplace(nodep->rightp(),
                                "Second value of [a:b] isn't a constant, maybe you want +: or -:");
         AstNode* fromp = nodep->lhsp()->unlinkFrBack();
         AstNode* msbp = nodep->rhsp()->unlinkFrBack();
@@ -351,9 +351,9 @@ private:
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {  // Slice
-                AstSliceSel* newp = new AstSliceSel(
-                    nodep->fileline(), fromp,
-                    VNumRange(VNumRange::LeftRight(), msb - fromRange.lo(), lsb - fromRange.lo()));
+                AstSliceSel* newp
+                    = new AstSliceSel{nodep->fileline(), fromp,
+                                      VNumRange{msb - fromRange.lo(), lsb - fromRange.lo()}};
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }

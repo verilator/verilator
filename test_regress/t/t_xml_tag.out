@@ -72,8 +72,8 @@
       <refdtype fl="d31" loc="d,31,4,31,13" id="16" name="my_struct" sub_dtype_id="2"/>
       <unpackarraydtype fl="d31" loc="d,31,26,31,27" id="4" sub_dtype_id="2">
         <range fl="d31" loc="d,31,26,31,27">
-          <const fl="d31" loc="d,31,27,31,28" name="32&apos;h1" dtype_id="5"/>
           <const fl="d31" loc="d,31,27,31,28" name="32&apos;h0" dtype_id="5"/>
+          <const fl="d31" loc="d,31,27,31,28" name="32&apos;h1" dtype_id="5"/>
         </range>
       </unpackarraydtype>
       <basicdtype fl="d35" loc="d,35,21,35,27" id="7" name="string"/>

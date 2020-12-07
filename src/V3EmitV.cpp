@@ -513,11 +513,11 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     }
     virtual void visit(AstRange* nodep) override {
         puts("[");
-        if (VN_IS(nodep->msbp(), Const) && VN_IS(nodep->lsbp(), Const)) {
+        if (VN_IS(nodep->leftp(), Const) && VN_IS(nodep->rightp(), Const)) {
             // Looks nicer if we print [1:0] rather than [32'sh1:32sh0]
-            puts(cvtToStr(VN_CAST(nodep->leftp(), Const)->toSInt()));
+            puts(cvtToStr(nodep->leftConst()));
             puts(":");
-            puts(cvtToStr(VN_CAST(nodep->rightp(), Const)->toSInt()));
+            puts(cvtToStr(nodep->rightConst()));
             puts("]");
         } else {
             iterateAndNextNull(nodep->leftp());
@@ -570,7 +570,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             puts(" ");
         } else if (nodep->isRanged()) {
             puts(" [");
-            puts(cvtToStr(nodep->msb()));
+            puts(cvtToStr(nodep->hi()));
             puts(":0] ");
         }
     }

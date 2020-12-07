@@ -185,46 +185,25 @@ public:
 
 class AstRange final : public AstNodeRange {
     // Range specification, for use under variables and cells
-private:
-    bool m_littleEndian : 1;  // Bit vector is little endian
 public:
-    AstRange(FileLine* fl, AstNode* msbp, AstNode* lsbp)
+    AstRange(FileLine* fl, AstNode* leftp, AstNode* rightp)
         : ASTGEN_SUPER(fl) {
-        m_littleEndian = false;
-        setOp2p(msbp);
-        setOp3p(lsbp);
+        setOp2p(leftp);
+        setOp3p(rightp);
     }
-    AstRange(FileLine* fl, int msb, int lsb)
+    AstRange(FileLine* fl, int left, int right)
         : ASTGEN_SUPER(fl) {
-        m_littleEndian = false;
-        setOp2p(new AstConst(fl, msb));
-        setOp3p(new AstConst(fl, lsb));
+        setOp2p(new AstConst(fl, left));
+        setOp3p(new AstConst(fl, right));
     }
     AstRange(FileLine* fl, const VNumRange& range)
         : ASTGEN_SUPER(fl) {
-        m_littleEndian = range.littleEndian();
-        setOp2p(new AstConst(fl, range.hi()));
-        setOp3p(new AstConst(fl, range.lo()));
+        setOp2p(new AstConst(fl, range.left()));
+        setOp3p(new AstConst(fl, range.right()));
     }
     ASTNODE_NODE_FUNCS(Range)
-    AstNode* msbp() const { return op2p(); }  // op2 = Msb expression
-    AstNode* lsbp() const { return op3p(); }  // op3 = Lsb expression
-    AstNode* leftp() const {
-        return littleEndian() ? lsbp() : msbp();
-    }  // How to show a declaration
-    AstNode* rightp() const { return littleEndian() ? msbp() : lsbp(); }
-    int msbConst() const {
-        AstConst* constp = VN_CAST(msbp(), Const);
-        return (constp ? constp->toSInt() : 0);
-    }
-    int lsbConst() const {
-        AstConst* constp = VN_CAST(lsbp(), Const);
-        return (constp ? constp->toSInt() : 0);
-    }
-    int elementsConst() const {
-        return (msbConst() > lsbConst()) ? msbConst() - lsbConst() + 1
-                                         : lsbConst() - msbConst() + 1;
-    }
+    AstNode* leftp() const { return op2p(); }
+    AstNode* rightp() const { return op3p(); }
     int leftConst() const {
         AstConst* constp = VN_CAST(leftp(), Const);
         return (constp ? constp->toSInt() : 0);
@@ -233,9 +212,18 @@ public:
         AstConst* constp = VN_CAST(rightp(), Const);
         return (constp ? constp->toSInt() : 0);
     }
-    int leftToRightInc() const { return littleEndian() ? 1 : -1; }
-    bool littleEndian() const { return m_littleEndian; }
-    void littleEndian(bool flag) { m_littleEndian = flag; }
+    int hiConst() const {
+        int l = leftConst();
+        int r = rightConst();
+        return l > r ? l : r;
+    }
+    int loConst() const {
+        int l = leftConst();
+        int r = rightConst();
+        return l > r ? r : l;
+    }
+    int elementsConst() const { return hiConst() - loConst() + 1; }
+    bool littleEndian() const { return leftConst() < rightConst(); }
     virtual void dump(std::ostream& str) const override;
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual V3Hash sameHash() const override { return V3Hash(); }
@@ -924,22 +912,20 @@ public:
     bool isDpiPrimitive() const {  // DPI uses a primitive type
         return !isDpiBitVec() && !isDpiLogicVec();
     }
-    // Generally the msb/lsb/etc funcs should be used instead
+    // Generally the lo/hi/left/right funcs should be used instead of nrange()
     const VNumRange& nrange() const { return m.m_nrange; }
-    int msb() const { return (rangep() ? rangep()->msbConst() : m.m_nrange.hi()); }
-    int lsb() const { return (rangep() ? rangep()->lsbConst() : m.m_nrange.lo()); }
-    int left() const { return littleEndian() ? lsb() : msb(); }  // How to show a declaration
-    int right() const { return littleEndian() ? msb() : lsb(); }
+    int hi() const { return (rangep() ? rangep()->hiConst() : m.m_nrange.hi()); }
+    int lo() const { return (rangep() ? rangep()->loConst() : m.m_nrange.lo()); }
+    int left() const { return littleEndian() ? lo() : hi(); }  // How to show a declaration
+    int right() const { return littleEndian() ? hi() : lo(); }
     bool littleEndian() const {
         return (rangep() ? rangep()->littleEndian() : m.m_nrange.littleEndian());
     }
     bool implicit() const { return keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT; }
-    VNumRange declRange() const {
-        return isRanged() ? VNumRange(msb(), lsb(), littleEndian()) : VNumRange();
-    }
+    VNumRange declRange() const { return isRanged() ? VNumRange{left(), right()} : VNumRange{}; }
     void cvtRangeConst() {  // Convert to smaller representation
-        if (rangep() && VN_IS(rangep()->msbp(), Const) && VN_IS(rangep()->lsbp(), Const)) {
-            m.m_nrange.init(rangep()->msbConst(), rangep()->lsbConst(), rangep()->littleEndian());
+        if (rangep() && VN_IS(rangep()->leftp(), Const) && VN_IS(rangep()->rightp(), Const)) {
+            m.m_nrange = VNumRange{rangep()->leftConst(), rangep()->rightConst()};
             rangep()->unlinkFrBackWithNext()->deleteTree();
             rangep(nullptr);
         }
@@ -1658,8 +1644,8 @@ public:
     AstSelExtract(FileLine* fl, AstNode* fromp, AstNode* msbp, AstNode* lsbp)
         : ASTGEN_SUPER(fl, fromp, msbp, lsbp) {}
     ASTNODE_NODE_FUNCS(SelExtract)
-    AstNode* msbp() const { return rhsp(); }
-    AstNode* lsbp() const { return thsp(); }
+    AstNode* leftp() const { return rhsp(); }
+    AstNode* rightp() const { return thsp(); }
 };
 
 class AstSelBit final : public AstNodePreSel {

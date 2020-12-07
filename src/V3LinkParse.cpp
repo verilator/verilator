@@ -151,16 +151,16 @@ private:
         cleanFileline(nodep);
         iterateChildren(nodep);
         if (nodep->rangep()) {
-            if (!VN_IS(nodep->rangep()->msbp(), Const)  //
-                || !VN_IS(nodep->rangep()->lsbp(), Const)) {
+            if (!VN_IS(nodep->rangep()->leftp(), Const)  //
+                || !VN_IS(nodep->rangep()->rightp(), Const)) {
                 nodep->v3error("Enum ranges must be integral, per spec");
             }
-            int msb = nodep->rangep()->msbConst();
-            int lsb = nodep->rangep()->lsbConst();
-            int increment = (msb > lsb) ? -1 : 1;
+            int left = nodep->rangep()->leftConst();
+            int right = nodep->rangep()->rightConst();
+            int increment = (left > right) ? -1 : 1;
             int offset_from_init = 0;
             AstNode* addp = nullptr;
-            for (int i = msb; i != (lsb + increment); i += increment, offset_from_init++) {
+            for (int i = left; i != (right + increment); i += increment, offset_from_init++) {
                 string name = nodep->name() + cvtToStr(i);
                 AstNode* valuep = nullptr;
                 if (nodep->valuep()) {

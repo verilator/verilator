@@ -752,9 +752,9 @@ void EmitCSyms::emitSymImp() {
                 // Range is always first, it's not in "C" order
                 if (basicp->isRanged()) {
                     bounds += " ,";
-                    bounds += cvtToStr(basicp->msb());
+                    bounds += cvtToStr(basicp->hi());
                     bounds += ",";
-                    bounds += cvtToStr(basicp->lsb());
+                    bounds += cvtToStr(basicp->lo());
                     pdim++;
                 }
                 for (AstNodeDType* dtypep = varp->dtypep(); dtypep;) {
@@ -762,9 +762,9 @@ void EmitCSyms::emitSymImp() {
                         = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
                     if (const AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
                         bounds += " ,";
-                        bounds += cvtToStr(adtypep->msb());
+                        bounds += cvtToStr(adtypep->hi());
                         bounds += ",";
-                        bounds += cvtToStr(adtypep->lsb());
+                        bounds += cvtToStr(adtypep->lo());
                         if (VN_IS(dtypep, PackArrayDType)) {
                             pdim++;
                         } else {

@@ -752,21 +752,10 @@ private:
         // Signed: unsigned output, input either
         // Convert all range values to constants
         UINFO(6, "RANGE " << nodep << endl);
-        V3Const::constifyParamsEdit(nodep->msbp());  // May relink pointed to node
-        V3Const::constifyParamsEdit(nodep->lsbp());  // May relink pointed to node
-        checkConstantOrReplace(nodep->msbp(), "MSB of bit range isn't a constant");
-        checkConstantOrReplace(nodep->lsbp(), "LSB of bit range isn't a constant");
-        int msb = nodep->msbConst();
-        int lsb = nodep->lsbConst();
-        if (msb < lsb) {
-            // Little endian bits are legal, just remember to swap
-            // Warning is in V3Width to avoid false warnings when in "off" generate if's
-            nodep->littleEndian(!nodep->littleEndian());
-            // Internally we'll always have msb() be the greater number
-            // We only need to correct when doing [] AstSel extraction,
-            // and when tracing the vector.
-            nodep->msbp()->swapWith(nodep->lsbp());
-        }
+        V3Const::constifyParamsEdit(nodep->leftp());  // May relink pointed to node
+        V3Const::constifyParamsEdit(nodep->rightp());  // May relink pointed to node
+        checkConstantOrReplace(nodep->leftp(), "left side of bit range isn't a constant");
+        checkConstantOrReplace(nodep->rightp(), "right side of bit range isn't a constant");
         if (m_vup->prelim()) {
             // Don't need to iterate because V3Const already constified
             int width = nodep->elementsConst();
@@ -807,7 +796,7 @@ private:
             int width = nodep->widthConst();
             UASSERT_OBJ(nodep->dtypep(), nodep, "dtype wasn't set");  // by V3WidthSel
             if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() < nodep->lsbConst()) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: MSB < LSB of bit extract: "
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: left < right of bit extract: "
                                                  << nodep->msbConst() << "<" << nodep->lsbConst());
                 width = (nodep->lsbConst() - nodep->msbConst() + 1);
                 nodep->dtypeSetLogicSized(width, VSigning::UNSIGNED);
@@ -903,8 +892,8 @@ private:
             int fromlsb;
             AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefp();
             if (const AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
-                frommsb = adtypep->msb();
-                fromlsb = adtypep->lsb();
+                frommsb = adtypep->hi();
+                fromlsb = adtypep->lo();
                 if (fromlsb > frommsb) {
                     int t = frommsb;
                     frommsb = fromlsb;
@@ -1929,7 +1918,7 @@ private:
                         // "foo[0]" from a parameter but not a wire
                         nodep->dtypeChgWidthSigned(width, nodep->valuep()->widthMin(),
                                                    VSigning::fromBool(issigned));
-                        nodep->dtypep(nodep->findLogicRangeDType(VNumRange(0, 0, false),
+                        nodep->dtypep(nodep->findLogicRangeDType(VNumRange{0, 0},
                                                                  nodep->valuep()->widthMin(),
                                                                  VSigning::fromBool(issigned)));
                     } else {

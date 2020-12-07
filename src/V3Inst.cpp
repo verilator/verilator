@@ -207,7 +207,7 @@ private:
             UINFO(8, "   dv-vec-VAR    " << nodep << endl);
             AstUnpackArrayDType* arrdtype = VN_CAST(nodep->dtypep(), UnpackArrayDType);
             AstNode* prevp = nullptr;
-            for (int i = arrdtype->lsb(); i <= arrdtype->msb(); ++i) {
+            for (int i = arrdtype->lo(); i <= arrdtype->hi(); ++i) {
                 string varNewName = nodep->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 UINFO(8, "VAR name insert " << varNewName << "  " << nodep << endl);
                 if (!m_deModVars.find(varNewName)) {
@@ -255,7 +255,7 @@ private:
             for (int i = 0; i < m_cellRangep->elementsConst(); i++) {
                 m_instSelNum
                     = m_cellRangep->littleEndian() ? (m_cellRangep->elementsConst() - 1 - i) : i;
-                int instNum = m_cellRangep->lsbConst() + i;
+                int instNum = m_cellRangep->loConst() + i;
 
                 AstCell* newp = nodep->cloneTree(false);
                 nodep->addNextHere(newp);
@@ -341,10 +341,11 @@ private:
                 // Arrayed instants: one bit for each of the instants (each
                 // assign is 1 pinwidth wide)
                 if (m_cellRangep->littleEndian()) {
-                    nodep->exprp()->v3warn(LITENDIAN, "Little endian cell range connecting to "
-                                                      "vector: left < right of cell range: ["
-                                                          << m_cellRangep->leftConst() << ":"
-                                                          << m_cellRangep->rightConst() << "]");
+                    nodep->exprp()->v3warn(
+                        LITENDIAN,
+                        "Little endian cell range connecting to vector: left < right of cell range: ["
+                            << m_cellRangep->leftConst() << ":" << m_cellRangep->rightConst()
+                            << "]");
                 }
                 AstNode* exprp = nodep->exprp()->unlinkFrBack();
                 bool inputPin = nodep->modVarp()->isNonOutput();
@@ -396,7 +397,7 @@ private:
             AstNode* prevPinp = nullptr;
             // Clone the var referenced by the pin, and clone each var referenced by the varref
             // Clone pin varp:
-            for (int i = pinArrp->lsb(); i <= pinArrp->msb(); ++i) {
+            for (int i = pinArrp->lo(); i <= pinArrp->hi(); ++i) {
                 string varNewName = pinVarp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 AstVar* varNewp = nullptr;
 
@@ -529,7 +530,7 @@ public:
                    && connectXRefp->varp()->isIfaceRef()) {
         } else if (!alwaysCvt && connBasicp && pinBasicp
                    && connBasicp->width() == pinBasicp->width()
-                   && connBasicp->lsb() == pinBasicp->lsb()
+                   && connBasicp->lo() == pinBasicp->lo()
                    && !connectRefp->varp()
                            ->isSc()  // Need the signal as a 'shell' to convert types
                    && connBasicp->width() == pinVarp->width()) {

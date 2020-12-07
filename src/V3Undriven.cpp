@@ -90,14 +90,14 @@ private:
                 int lsb = bit + 1;
                 if (bits != "") bits += ",";
                 if (lsb == msb) {
-                    bits += cvtToStr(lsb + bdtypep->lsb());
+                    bits += cvtToStr(lsb + bdtypep->lo());
                 } else {
                     if (bdtypep->littleEndian()) {
-                        bits += cvtToStr(lsb + bdtypep->lsb()) + ":"
-                                + cvtToStr(msb + bdtypep->lsb());
+                        bits
+                            += cvtToStr(lsb + bdtypep->lo()) + ":" + cvtToStr(msb + bdtypep->lo());
                     } else {
-                        bits += cvtToStr(msb + bdtypep->lsb()) + ":"
-                                + cvtToStr(lsb + bdtypep->lsb());
+                        bits
+                            += cvtToStr(msb + bdtypep->lo()) + ":" + cvtToStr(lsb + bdtypep->lo());
                     }
                 }
                 prev = false;
