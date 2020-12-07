@@ -204,7 +204,7 @@ private:
         UINFO(6, "SELBIT " << nodep << endl);
         if (debug() >= 9) nodep->backp()->dumpTree(cout, "--SELBT0: ");
         // lhsp/rhsp do not need to be constant
-        AstNode* fromp = nodep->lhsp()->unlinkFrBack();
+        AstNode* fromp = nodep->fromp()->unlinkFrBack();
         AstNode* rhsp = nodep->rhsp()->unlinkFrBack();  // bit we're extracting
         if (debug() >= 9) nodep->dumpTree(cout, "--SELBT2: ");
         FromData fromdata = fromDataForArray(nodep, fromp);
@@ -331,7 +331,7 @@ private:
                                "First value of [a:b] isn't a constant, maybe you want +: or -:");
         checkConstantOrReplace(nodep->rightp(),
                                "Second value of [a:b] isn't a constant, maybe you want +: or -:");
-        AstNode* fromp = nodep->lhsp()->unlinkFrBack();
+        AstNode* fromp = nodep->fromp()->unlinkFrBack();
         AstNode* msbp = nodep->rhsp()->unlinkFrBack();
         AstNode* lsbp = nodep->thsp()->unlinkFrBack();
         vlsint32_t msb = VN_CAST(msbp, Const)->toSInt();
@@ -474,7 +474,7 @@ private:
         checkConstantOrReplace(nodep->thsp(), "Width of :+ or :- bit extract isn't a constant");
         if (debug() >= 9) nodep->dumpTree(cout, "--SELPM3: ");
         // Now replace it with an AstSel
-        AstNode* fromp = nodep->lhsp()->unlinkFrBack();
+        AstNode* fromp = nodep->fromp()->unlinkFrBack();
         AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
         AstNode* widthp = nodep->thsp()->unlinkFrBack();
         warnTri(rhsp);

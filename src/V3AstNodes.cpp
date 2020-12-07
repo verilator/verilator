@@ -809,7 +809,7 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep) {
             if (VN_CAST(nodep, NodePreSel)->attrp()) {
                 nodep = VN_CAST(nodep, NodePreSel)->attrp();
             } else {
-                nodep = VN_CAST(nodep, NodePreSel)->lhsp();
+                nodep = VN_CAST(nodep, NodePreSel)->fromp();
             }
             continue;
         } else {

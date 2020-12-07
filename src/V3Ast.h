@@ -2144,19 +2144,18 @@ public:
 class AstNodePreSel VL_NOT_FINAL : public AstNode {
     // Something that becomes an AstSel
 public:
-    AstNodePreSel(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths)
+    AstNodePreSel(AstType t, FileLine* fl, AstNode* fromp, AstNode* rhs, AstNode* ths)
         : AstNode{t, fl} {
-        setOp1p(lhs);
+        setOp1p(fromp);
         setOp2p(rhs);
         setNOp3p(ths);
     }
     ASTNODE_BASE_FUNCS(NodePreSel)
-    AstNode* lhsp() const { return op1p(); }
-    AstNode* fromp() const { return lhsp(); }
+    AstNode* fromp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
     AstNode* thsp() const { return op3p(); }
     AstAttrOf* attrp() const { return VN_CAST(op4p(), AttrOf); }
-    void lhsp(AstNode* nodep) { return setOp1p(nodep); }
+    void fromp(AstNode* nodep) { return setOp1p(nodep); }
     void rhsp(AstNode* nodep) { return setOp2p(nodep); }
     void thsp(AstNode* nodep) { return setOp3p(nodep); }
     void attrp(AstAttrOf* nodep) { return setOp4p((AstNode*)nodep); }

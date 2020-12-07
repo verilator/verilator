@@ -196,7 +196,7 @@ private:
                     did = true;
                 }
                 if (AstNodePreSel* selp = VN_CAST(nodep->sensp(), NodePreSel)) {
-                    AstNode* fromp = selp->lhsp()->unlinkFrBack();
+                    AstNode* fromp = selp->fromp()->unlinkFrBack();
                     selp->replaceWith(fromp);
                     VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = true;
