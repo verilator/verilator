@@ -1484,6 +1484,11 @@ public:
     virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
+    int itemCount() const {
+        size_t count = 0;
+        for (AstNode* itemp = itemsp(); itemp; itemp = itemp->nextp()) count++;
+        return count;
+    }
 };
 
 class AstParseTypeDType final : public AstNodeDType {
@@ -1892,6 +1897,7 @@ private:
     bool m_attrSFormat : 1;  // User sformat attribute
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
     bool m_fileDescr : 1;  // File descriptor
+    bool m_isRand : 1;  // Random variable
     bool m_isConst : 1;  // Table contains constant data
     bool m_isStatic : 1;  // Static C variable (for Verilog see instead isAutomatic)
     bool m_isPulldown : 1;  // Tri0
@@ -2081,6 +2087,7 @@ public:
     void sc(bool flag) { m_sc = flag; }
     void scSensitive(bool flag) { m_scSensitive = flag; }
     void primaryIO(bool flag) { m_primaryIO = flag; }
+    void isRand(bool flag) { m_isRand = flag; }
     void isConst(bool flag) { m_isConst = flag; }
     void isStatic(bool flag) { m_isStatic = flag; }
     void isIfaceParent(bool flag) { m_isIfaceParent = flag; }
@@ -2149,6 +2156,7 @@ public:
     bool isSigUserRdPublic() const { return m_sigUserRdPublic; }
     bool isSigUserRWPublic() const { return m_sigUserRWPublic; }
     bool isTrace() const { return m_trace; }
+    bool isRand() const { return m_isRand; }
     bool isConst() const { return m_isConst; }
     bool isStatic() const { return m_isStatic; }
     bool isFuncLocal() const { return m_funcLocal; }
@@ -5450,9 +5458,9 @@ public:
                        : (m_urandom ? "%f$urandom()" : "%f$random()");
     }
     virtual string emitC() override {
-        return m_reset
-                   ? "VL_RAND_RESET_%nq(%nw, %P)"
-                   : seedp() ? "VL_RANDOM_SEEDED_%nq%lq(%nw, %P, %li)" : "VL_RANDOM_%nq(%nw, %P)";
+        return m_reset   ? "VL_RAND_RESET_%nq(%nw, %P)"
+               : seedp() ? "VL_RANDOM_SEEDED_%nq%lq(%nw, %P, %li)"
+                         : "VL_RANDOM_%nq(%nw, %P)";
     }
     virtual bool cleanOut() const override { return true; }
     virtual bool isGateOptimizable() const override { return false; }

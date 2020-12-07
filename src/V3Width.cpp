@@ -70,6 +70,7 @@
 #include "V3Width.h"
 #include "V3Number.h"
 #include "V3Const.h"
+#include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"
 
@@ -2937,6 +2938,10 @@ private:
     void methodCallClass(AstMethodCall* nodep, AstClassRefDType* adtypep) {
         // No need to width-resolve the class, as it was done when we did the child
         AstClass* first_classp = adtypep->classp();
+        if (nodep->name() == "randomize") {
+            v3Global.useRandomizeMethods(true);
+            V3Randomize::newRandomizeFunc(first_classp);
+        }
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
             if (AstNodeFTask* ftaskp = VN_CAST(classp->findMember(nodep->name()), NodeFTask)) {
