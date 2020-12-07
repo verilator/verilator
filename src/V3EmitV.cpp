@@ -635,6 +635,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         }
         std::vector<const AstUnpackArrayDType*> unpackps;
         for (AstNodeDType* dtypep = nodep->dtypep(); dtypep;) {
+            dtypep = dtypep->skipRefp();
             if (AstUnpackArrayDType* unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
                 unpackps.push_back(unpackp);
                 dtypep = unpackp->subDTypep();
