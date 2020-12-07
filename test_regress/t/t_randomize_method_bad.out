@@ -1,0 +1,7 @@
+%Error: t/t_randomize_method_bad.v:8:17: 'randomize' is a predefined class method; redefinition not allowed (IEEE 1800-2017 18.6.3)
+    8 |    function int randomize;
+      |                 ^~~~~~~~~
+%Error: t/t_randomize_method_bad.v:14:18: 'randomize' is a predefined class method; redefinition not allowed (IEEE 1800-2017 18.6.3)
+   14 |    function void randomize(int x);
+      |                  ^~~~~~~~~
+%Error: Exiting due to
