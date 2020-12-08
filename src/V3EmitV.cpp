@@ -608,6 +608,11 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         puts(")");
     }
     virtual void visit(AstArg* nodep) override { iterateAndNextNull(nodep->exprp()); }
+    virtual void visit(AstPrintTimeScale* nodep) override {
+        puts(nodep->verilogKwd());
+        puts(";\n");
+    }
+
     // Terminals
     virtual void visit(AstVarRef* nodep) override {
         if (nodep->varScopep()) {

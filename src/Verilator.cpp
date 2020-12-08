@@ -23,6 +23,7 @@
 #include "V3AssertPre.h"
 #include "V3Begin.h"
 #include "V3Branch.h"
+#include "V3Broken.h"
 #include "V3CCtors.h"
 #include "V3CUse.h"
 #include "V3Case.h"
@@ -574,6 +575,7 @@ static void verilate(const string& argString) {
         V3TSP::selfTest();
         V3ScoreboardBase::selfTest();
         V3Partition::selfTest();
+        V3Broken::selfTest();
     }
 
     // Read first filename

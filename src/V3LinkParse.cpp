@@ -151,10 +151,11 @@ private:
         cleanFileline(nodep);
         iterateChildren(nodep);
         if (nodep->rangep()) {
-            if (!VN_IS(nodep->rangep()->leftp(), Const)  //
-                || !VN_IS(nodep->rangep()->rightp(), Const)) {
+            if (VL_UNCOVERABLE(!VN_IS(nodep->rangep()->leftp(), Const)  // LCOV_EXCL_START
+                               || !VN_IS(nodep->rangep()->rightp(), Const))) {
+                // We check this rule in the parser, so shouldn't fire
                 nodep->v3error("Enum ranges must be integral, per spec");
-            }
+            }  // LCOV_EXCL_STOP
             int left = nodep->rangep()->leftConst();
             int right = nodep->rangep()->rightConst();
             int increment = (left > right) ? -1 : 1;

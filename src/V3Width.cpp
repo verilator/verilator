@@ -5549,7 +5549,8 @@ private:
         case AstType::atMulS: newp = new AstMul(fl, lhsp, rhsp); break;
         case AstType::atShiftR: newp = new AstShiftRS(fl, lhsp, rhsp); break;
         case AstType::atShiftRS: newp = new AstShiftR(fl, lhsp, rhsp); break;
-        default: nodep->v3fatalSrc("Node needs sign change, but bad case: " << nodep); break;
+        default:   // LCOV_EXCL_LINE
+            nodep->v3fatalSrc("Node needs sign change, but bad case: " << nodep); break;
         }
         UINFO(6, "   ReplaceWithUOrSVersion: " << nodep << " w/ " << newp << endl);
         nodep->replaceWith(newp);
@@ -5586,7 +5587,7 @@ private:
         case AstType::atDivS: newp = new AstDivD(fl, lhsp, rhsp); break;
         case AstType::atMul:
         case AstType::atMulS: newp = new AstMulD(fl, lhsp, rhsp); break;
-        default:
+        default:  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Node needs conversion to double, but bad case: " << nodep);
             break;
         }
@@ -5618,7 +5619,7 @@ private:
         case AstType::atLtS: newp = new AstLtN(fl, lhsp, rhsp); break;
         case AstType::atLte:
         case AstType::atLteS: newp = new AstLteN(fl, lhsp, rhsp); break;
-        default:
+        default:  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Node needs conversion to string, but bad case: " << nodep);
             break;
         }
@@ -5637,7 +5638,7 @@ private:
         AstNodeUniop* newp = nullptr;
         switch (nodep->type()) {
         case AstType::atNegate: newp = new AstNegateD(fl, lhsp); break;
-        default:
+        default:  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Node needs conversion to double, but bad case: " << nodep);
             break;
         }
@@ -5732,7 +5733,7 @@ private:
                 if (adtypep->isRanged()) declRange = adtypep->declRange();
                 break;
             }
-            break;
+            break;  // LCOV_EXCL_LINE
         }
         AstConst* valp = nullptr;  // If nullptr, construct from val
         int val = 0;
@@ -5762,7 +5763,7 @@ private:
             } else {
                 val = bits;
             }
-            break;
+            break;  // LCOV_EXCL_LINE
         }
         case AstAttrType::DIM_HIGH: val = !declRange.ranged() ? 0 : declRange.hi(); break;
         case AstAttrType::DIM_LEFT: val = !declRange.ranged() ? 0 : declRange.left(); break;
