@@ -30,6 +30,8 @@ $Fork->max_proc(Unix::Processors->new->max_online * 1.5);
 $SIG{CHLD} = sub { Parallel::Forker::sig_child($Fork); };
 $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork && $Fork->in_parent; die "Quitting...\n"; };
 
+$ENV{VERILATOR_ROOT} ||= Cwd::getcwd();
+
 #======================================================================
 # main
 
