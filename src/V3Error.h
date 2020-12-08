@@ -56,6 +56,7 @@ public:
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
         E_UNSUPPORTED,  // Error: Unsupported (generally)
         E_TASKNSVAR,    // Error: Task I/O not simple
+        E_RANDC,        // Error: Unsupported: 'randc'
         //
         // Warning codes:
         EC_FIRST_WARN,  // Just a code so the program knows where to start warnings
@@ -149,7 +150,7 @@ public:
             // Boolean
             " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
             // Errors
-            "DETECTARRAY", "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
+            "DETECTARRAY", "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "RANDC",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
