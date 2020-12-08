@@ -105,7 +105,7 @@ private:
 
     virtual void visit(AstNodeVarRef* nodep) override {
         // VarRef: Resolve its reference
-        if (nodep->varp()) { nodep->varp()->usedParam(true); }
+        if (nodep->varp()) nodep->varp()->usedParam(true);
         iterateChildren(nodep);
     }
 

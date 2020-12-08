@@ -4973,10 +4973,10 @@ design simulate incorrectly; see the details under --bbox-unsup.
 
 =item UNUSED
 
-Warns that the specified signal is never used/consumed.  Verilator is
-fairly liberal in the usage calculations; making a signal public, a signal
-matching --unused-regexp ("*unused*") or accessing only a single array
-element marks the entire signal as used.
+Warns that the specified signal or parameter is never used/consumed.
+Verilator is fairly liberal in the usage calculations; making a signal
+public, a signal matching --unused-regexp ("*unused*") or accessing only a
+single array element marks the entire signal as used.
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.

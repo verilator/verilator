@@ -8,7 +8,6 @@ module t (/*AUTOARG*/
    // Inputs
    clk
    );
-   parameter PAR = 3;
 
    input clk;
    integer cyc=1;

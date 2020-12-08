@@ -44,8 +44,6 @@ module sub;
 
    wire pub /*verilator public*/;   // Ignore publics
 
-   localparam THREE = 3;
-
 endmodule
 
 primitive udp_mux2 (q, a, b, s);
