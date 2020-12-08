@@ -5,6 +5,25 @@
 // without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+package Pkg;
+   localparam PKG_PARAM = 1;
+endpackage
+package PkgImp;
+   import Pkg::*;
+   export Pkg::*;
+endpackage
+
+class Cls;
+   int member = 1;
+   function void method;
+   endfunction
+endclass
+
+interface Iface;
+   logic ifsig;
+   modport mp(input ifsig);
+endinterface
+
 module t (/*AUTOARG*/
    // Inputs
    clk, in
@@ -42,6 +61,10 @@ module t (/*AUTOARG*/
    wire [15:0]    pubflat_w = pubflat;
    int            fd;
    int            i;
+
+   int            q[$];
+   int            assoc[string];
+   int            dyn[];
 
    task t;
       $display("stmt");
@@ -91,7 +114,7 @@ module t (/*AUTOARG*/
       sub.inc(fo, sum);
       sum = sub.f(sum);
       $display("[%0t] sum = %d", $time, sum);
-      $display("a?= $d", $c(1) ? $c32(20) : $c32(30));
+      $display("a?= %d", $c(1) ? $c32(20) : $c32(30));
 
       $c(";");
       $display("%d", $c("0"));
@@ -143,12 +166,16 @@ module t (/*AUTOARG*/
       $display("str = %s", str);
       $display("%% [%t] [%t] to=%o td=%d", $time, $realtime, $time, $time);
       $sscanf("foo=5", "foo=%d", i);
+      $printtimescale;
       if (i != 5) $stop;
 
       sum = $random;
       sum = $random(10);
       sum = $urandom;
       sum = $urandom(10);
+
+      if (Pkg::PKG_PARAM != 1) $stop;
+      sub.r = 62.0;
    end
 endmodule
 

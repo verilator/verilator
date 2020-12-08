@@ -34,9 +34,21 @@ module sub;
 
    localparam THREE = 3;
 
+   parameter UNUSED_P = 1;
+   localparam UNUSED_LP = 2;
+
+   genvar     unused_gv;
+   genvar     ok_gv;
+
    initial begin
       if (0 && assunu1[0] != 0 && udrb2 != 0) begin end
       if (0 && assunub2[THREE] && assunub2[1:0]!=0) begin end
       if (0 && mixed[1:0] != 0) begin end
    end
+
+   generate
+      if (0)
+        for (ok_gv = 0; ok_gv < 1; ++ok_gv) begin end
+   endgenerate
+
 endmodule

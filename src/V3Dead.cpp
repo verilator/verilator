@@ -330,12 +330,6 @@ private:
         if (nodep->isSigPublic()) return false;  // Can't elim publics!
         if (nodep->isIO() || nodep->isClassMember()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;
-        if (nodep->isParam()) {
-            const bool overriddenForHierBlock
-                = m_modp && m_modp->hierBlock() && nodep->overriddenParam();
-            if (!nodep->isTrace() && !overriddenForHierBlock && !v3Global.opt.xmlOnly())
-                return true;
-        }
         return m_elimUserVars;  // Post-Trace can kill most anything
     }
 

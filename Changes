@@ -5,7 +5,13 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.107 devel
 
+**    Support randomize() class method and rand (#2607). [Krzysztof Bieganski]
+
+***   Support $cast and new CASTCONST warning.
+
 ***   Add --top option as alias of --top-module.
+
+****  Report UNUSED on parameters, localparam and genvars (#2627). [Charles Eric LaForest]
 
 ****  Fix passing parameter type instantiations by position number.
 

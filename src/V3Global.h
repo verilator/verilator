@@ -101,6 +101,7 @@ class V3Global final {
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
     bool m_useParallelBuild = false;  // Use parallel build for model
+    bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
 
     // Memory address to short string mapping (for debug)
     typedef std::unordered_map<const void*, std::string> PtrToIdMap;  // The map type
@@ -158,6 +159,8 @@ public:
     }
     void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useParallelBuild() const { return m_useParallelBuild; }
+    void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }
+    bool useRandomizeMethods() const { return m_useRandomizeMethods; }
     const std::string& ptrToId(const void* p);
 };
 

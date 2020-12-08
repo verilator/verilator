@@ -30,6 +30,8 @@ $Fork->max_proc(Unix::Processors->new->max_online * 1.5);
 $SIG{CHLD} = sub { Parallel::Forker::sig_child($Fork); };
 $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork && $Fork->in_parent; die "Quitting...\n"; };
 
+$ENV{VERILATOR_ROOT} ||= Cwd::getcwd();
+
 #======================================================================
 # main
 
@@ -428,10 +430,10 @@ sub run {
 our $_Ci_Action;
 sub ci_fold_start {
     $_Ci_Action = shift;
-    print "travis_fold:start:$_Ci_Action\n";
+    print "::group::$_Ci_Action\n";
 }
 sub ci_fold_end {
-    print "travis_fold:end:$_Ci_Action\n";
+    print "::endgroup::\n";
 }
 
 #######################################################################

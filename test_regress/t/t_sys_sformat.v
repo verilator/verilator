@@ -65,8 +65,11 @@ module t;
 `ifdef TEST_VERBOSE  $display("chku %s", str3);  `endif
       if (str3 !== "u=dcba") $stop;
 
-      str3 = $sformatf("v=%v", {"a","b","c","d"}); // Value selected so is printable
+      str3 = $sformatf("v=%v", 4'b01xz); // Value selected so is printable
 `ifdef TEST_VERBOSE  $display("chkv %s", str3);  `endif
+
+      str3 = $sformatf("z=%z", {"a","b","c","d"}); // Value selected so is printable
+`ifdef TEST_VERBOSE  $display("chkz %s", str3);  `endif
 
       $sformat(ochar,"%s","c");
       if (ochar != "c") $stop;

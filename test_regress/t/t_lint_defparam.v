@@ -13,4 +13,5 @@ endmodule
 
 module sub;
    parameter P = 6;
+   if (P != 0) ;  // Prevent unused
 endmodule

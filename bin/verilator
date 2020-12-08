@@ -1717,7 +1717,7 @@ than using this option.
 
 Disable all lint related warning messages, and all style warnings.  This is
 equivalent to "-Wno-ALWCOMBORDER -Wno-BSSPACE -Wno-CASEINCOMPLETE
--Wno-CASEOVERLAP -Wno-CASEX -Wno-CASEWITHX -Wno-CMPCONST -Wno-COLONPLUS
+-Wno-CASEOVERLAP -Wno-CASEX -Wno-CASTCONST -Wno-CASEWITHX -Wno-CMPCONST -Wno-COLONPLUS
 -Wno-ENDLABEL -Wno-IMPLICIT -Wno-LITENDIAN -Wno-PINCONNECTEMPTY
 -Wno-PINMISSING -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED
 -Wno-WIDTH" plus the list shown for Wno-style.
@@ -1749,7 +1749,7 @@ Enables the specified warning message.
 Enable all lint related warning messages (note by default they are already
 enabled), but do not affect style messages.  This is equivalent to
 "-Wwarn-ALWCOMBORDER -Wwarn-BSSPACE -Wwarn-CASEINCOMPLETE
--Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASEWITHX -Wwarn-CMPCONST
+-Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASTCONST -Wwarn-CASEWITHX -Wwarn-CMPCONST
 -Wwarn-COLONPLUS -Wwarn-ENDLABEL -Wwarn-IMPLICIT -Wwarn-LITENDIAN
 -Wwarn-PINMISSING -Wwarn-REALCVT -Wwarn-UNSIGNED -Wwarn-WIDTH".
 
@@ -4317,15 +4317,6 @@ not overlap.
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
-=item CASEX
-
-Warns that it is simply better style to use casez, and C<?> in place of
-C<x>'s.  See
-L<http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase_rev1_1.pdf>
-
-Ignoring this warning will only suppress the lint check, it will simulate
-correctly.
-
 =item CASEWITHX
 
 Warns that a case statement contains a constant with a C<x>.  Verilator is
@@ -4335,6 +4326,25 @@ instead intended is to use a casez with C<?>.
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
+
+=item CASEX
+
+Warns that it is simply better style to use casez, and C<?> in place of
+C<x>'s.  See
+L<http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase_rev1_1.pdf>
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
+=item CASTCONST
+
+Warns that a dynamic cast ($cast) is unnecessary as the $cast will always
+succeed or fail.  If it will always fail, the $cast is useless. If it will
+always succeed a static cast may be preferred.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.  On other simulators, not fixing CASTCONST may result in
+decreased performance.
 
 =item CDCRSTLOGIC
 
@@ -4785,12 +4795,12 @@ correctly.
 
 =item TASKNSVAR
 
-Error when a call to a task or function has a output from that task tied to
+Error when a call to a task or function has an inout from that task tied to
 a non-simple signal.  Instead connect the task output to a temporary signal
 of the appropriate width, and use that signal to set the appropriate
 expression as the next statement.  For example:
 
-      task foo; output sig; ... endtask
+      task foo(inout sig); ... endtask
       always @* begin
            foo(bus_we_select_from[2]);  // Will get TASKNSVAR error
       end
@@ -4963,10 +4973,10 @@ design simulate incorrectly; see the details under --bbox-unsup.
 
 =item UNUSED
 
-Warns that the specified signal is never used/consumed.  Verilator is
-fairly liberal in the usage calculations; making a signal public, a signal
-matching --unused-regexp ("*unused*") or accessing only a single array
-element marks the entire signal as used.
+Warns that the specified signal or parameter is never used/consumed.
+Verilator is fairly liberal in the usage calculations; making a signal
+public, a signal matching --unused-regexp ("*unused*") or accessing only a
+single array element marks the entire signal as used.
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.

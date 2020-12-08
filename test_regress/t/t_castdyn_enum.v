@@ -15,8 +15,22 @@ module t (/*AUTOARG*/
    input clk;
 
    int i;
+   int i_const;
    int cyc;
    enum_t en;
+
+   // Constant propagation tests
+   initial begin
+      en = SIXTEEN;
+      i_const = $cast(en, 1);
+      if (i_const != 0) $stop;
+      if (en != SIXTEEN) $stop;
+
+      en = SIXTEEN;
+      i_const = $cast(en, 10);
+      if (i_const != 1) $stop;
+      if (en != TEN) $stop;
+   end
 
    // Test loop
    always @ (posedge clk) begin

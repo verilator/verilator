@@ -1,0 +1,4 @@
+%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:17:21: Unsupported: Blocked and non-blocking assignments to same variable: 't.array'
+   17 |    logic [1:0][3:0] array;
+      |                     ^~~~~
+%Error: Exiting due to

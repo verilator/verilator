@@ -23,6 +23,8 @@ module t (/*AUTOARG*/);
    BasedB bb;
    BasedB bbo;
 
+   // verilator lint_off CASTCONST
+
    initial begin
       a = 1234;
       i = $cast(ao, a);

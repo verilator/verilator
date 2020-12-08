@@ -96,10 +96,11 @@ private:
     void visitIterateNodeDType(AstNodeDType* nodep) {
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
-            AstNodeDType* upperDtypep = m_dtypep;
-            m_dtypep = nodep;
-            iterateChildren(nodep);
-            m_dtypep = upperDtypep;
+            {
+                VL_RESTORER(m_dtypep);
+                m_dtypep = nodep;
+                iterateChildren(nodep);
+            }
         }
     }
 
@@ -125,10 +126,11 @@ private:
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
             UINFO(5, "   " << nodep << endl);
-            AstNodeModule* upperValueModp = m_valueModp;
-            m_valueModp = nullptr;
-            iterateChildren(nodep);
-            m_valueModp = upperValueModp;
+            {
+                VL_RESTORER(m_valueModp);
+                m_valueModp = nullptr;
+                iterateChildren(nodep);
+            }
         }
     }
     virtual void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
@@ -149,16 +151,17 @@ private:
         cleanFileline(nodep);
         iterateChildren(nodep);
         if (nodep->rangep()) {
-            if (!VN_IS(nodep->rangep()->msbp(), Const)  //
-                || !VN_IS(nodep->rangep()->lsbp(), Const)) {
+            if (VL_UNCOVERABLE(!VN_IS(nodep->rangep()->leftp(), Const)  // LCOV_EXCL_START
+                               || !VN_IS(nodep->rangep()->rightp(), Const))) {
+                // We check this rule in the parser, so shouldn't fire
                 nodep->v3error("Enum ranges must be integral, per spec");
-            }
-            int msb = nodep->rangep()->msbConst();
-            int lsb = nodep->rangep()->lsbConst();
-            int increment = (msb > lsb) ? -1 : 1;
+            }  // LCOV_EXCL_STOP
+            int left = nodep->rangep()->leftConst();
+            int right = nodep->rangep()->rightConst();
+            int increment = (left > right) ? -1 : 1;
             int offset_from_init = 0;
             AstNode* addp = nullptr;
-            for (int i = msb; i != (lsb + increment); i += increment, offset_from_init++) {
+            for (int i = left; i != (right + increment); i += increment, offset_from_init++) {
                 string name = nodep->name() + cvtToStr(i);
                 AstNode* valuep = nullptr;
                 if (nodep->valuep()) {
@@ -510,17 +513,17 @@ private:
     void visitIterateNoValueMod(AstNode* nodep) {
         // Iterate a node which shouldn't have any local variables moved to an Initial
         cleanFileline(nodep);
-        //
-        AstNodeModule* upperValueModp = m_valueModp;
-        m_valueModp = nullptr;
-        iterateChildren(nodep);
-        m_valueModp = upperValueModp;
+        {
+            VL_RESTORER(m_valueModp);
+            m_valueModp = nullptr;
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstNodeProcedure* nodep) override { visitIterateNoValueMod(nodep); }
     virtual void visit(AstAlways* nodep) override {
+        VL_RESTORER(m_inAlways);
         m_inAlways = true;
         visitIterateNoValueMod(nodep);
-        m_inAlways = false;
     }
     virtual void visit(AstCover* nodep) override { visitIterateNoValueMod(nodep); }
     virtual void visit(AstRestrict* nodep) override { visitIterateNoValueMod(nodep); }
