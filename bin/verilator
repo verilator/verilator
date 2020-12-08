@@ -4795,12 +4795,12 @@ correctly.
 
 =item TASKNSVAR
 
-Error when a call to a task or function has a output from that task tied to
+Error when a call to a task or function has an inout from that task tied to
 a non-simple signal.  Instead connect the task output to a temporary signal
 of the appropriate width, and use that signal to set the appropriate
 expression as the next statement.  For example:
 
-      task foo; output sig; ... endtask
+      task foo(inout sig); ... endtask
       always @* begin
            foo(bus_we_select_from[2]);  // Will get TASKNSVAR error
       end

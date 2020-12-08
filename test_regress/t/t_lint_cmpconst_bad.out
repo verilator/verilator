@@ -1,0 +1,6 @@
+%Warning-CMPCONST: t/t_lint_cmpconst_bad.v:13:15: Comparison is constant due to limited range
+                                                : ... In instance t
+   13 |       if (uns > 3'b111) $stop;
+      |               ^
+                   ... Use "/* verilator lint_off CMPCONST */" and lint_on around source to disable this message.
+%Error: Exiting due to

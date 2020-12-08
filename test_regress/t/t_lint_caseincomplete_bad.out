@@ -1,0 +1,5 @@
+%Warning-CASEINCOMPLETE: t/t_lint_caseincomplete_bad.v:15:7: Case values incompletely covered (example pattern 0x1)
+   15 |       case (i)
+      |       ^~~~
+                         ... Use "/* verilator lint_off CASEINCOMPLETE */" and lint_on around source to disable this message.
+%Error: Exiting due to
