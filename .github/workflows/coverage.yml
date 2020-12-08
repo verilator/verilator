@@ -54,48 +54,8 @@ jobs:
           CI_BUILD_STAGE_NAME: test
         run: bash ci/ci-install.bash
 
-      - name: Test coverage-dist
+      - name: Test coverage-all
         env:
           CI_BUILD_STAGE_NAME: test
-          TESTS: coverage-dist
-        run: bash ci/ci-script.bash
-      - name: Test coverage-vlt-0
-        env:
-          CI_BUILD_STAGE_NAME: test
-          TESTS: coverage-vlt-0
-        run: bash ci/ci-script.bash
-      - name: Test coverage-vlt-1
-        env:
-          CI_BUILD_STAGE_NAME: test
-          TESTS: coverage-vlt-1
-        run: bash ci/ci-script.bash
-      - name: Test coverage-vlt-2
-        env:
-          CI_BUILD_STAGE_NAME: test
-          TESTS: coverage-vlt-2
-        run: bash ci/ci-script.bash
-      - name: Test coverage-vlt-3
-        env:
-          CI_BUILD_STAGE_NAME: test
-          TESTS: coverage-vlt-3
-        run: bash ci/ci-script.bash
-      - name: Test coverage-vltmt-0
-        env:
-          CI_BUILD_STAGE_NAME: test
-          TESTS: coverage-vltmt-0
-        run: bash ci/ci-script.bash
-      - name: Test coverage-vltmt-1
-        env:
-          CI_BUILD_STAGE_NAME: test
-          TESTS: coverage-vltmt-1
-        run: bash ci/ci-script.bash
-      - name: Test coverage-vltmt-2
-        env:
-          CI_BUILD_STAGE_NAME: test
-          TESTS: coverage-vltmt-2
-        run: bash ci/ci-script.bash
-      - name: Test coverage-vltmt-3
-        env:
-          CI_BUILD_STAGE_NAME: test
-          TESTS: coverage-vltmt-3
+          TESTS: coverage-all
         run: bash ci/ci-script.bash

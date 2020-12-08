@@ -91,6 +91,9 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     vltmt-1)
       "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
       ;;
+    coverage-all)
+      nodist/code_coverage --stages 3-
+      ;;
     coverage-dist)
       nodist/code_coverage --stages 3- --scenarios=--dist
       ;;
