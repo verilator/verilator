@@ -213,7 +213,7 @@ endpackage
 package Vt_debug_emitv_Pkg;
 endpackage
 class Vt_debug_emitv___024unit__03a__03aCls;
-int signed int [31:0]  member;
+signed int [31:0]  member;
 
 ???? // CFUNC '__VnoInFunc_method'
 $_CSTMT(Vt_debug_emitv* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
