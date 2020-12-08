@@ -388,10 +388,6 @@ private:
 
     virtual void visit(AstVar* nodep) override {
         if (!nodep->isIO()) return;
-        if (VN_IS(nodep->dtypep(), UnpackArrayDType)) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: unpacked arrays with protect-lib on "
-                                             << nodep->prettyNameQ());
-        }
         if (nodep->direction() == VDirection::INPUT) {
             if (nodep->isUsedClock() || nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
                 UASSERT_OBJ(m_hasClk, nodep, "checkIfClockExists() didn't find this clock");
@@ -410,13 +406,7 @@ private:
     virtual void visit(AstNode*) override {}
 
     string cInputConnection(AstVar* varp) {
-        string frstmt;
-        string ket;
-        bool useSetWSvlv = V3Task::dpiToInternalFrStmt(varp, varp->name(), frstmt, ket);
-        if (useSetWSvlv) {
-            return frstmt + ket + " handlep__V->" + varp->name() + ", " + varp->name() + ");\n";
-        }
-        return "handlep__V->" + varp->name() + " = " + frstmt + ket + ";\n";
+        return V3Task::assignDpiToInternal("handlep__V->" + varp->name(), varp);
     }
 
     void handleClock(AstVar* varp) {
@@ -445,6 +435,13 @@ private:
 
     void handleInput(AstVar* varp) { m_modPortsp->addNodep(varp->cloneTree(false)); }
 
+    static void addLocalVariable(AstTextBlock* textp, AstVar* varp, const char* suffix) {
+        AstVar* newVarp
+            = new AstVar(varp->fileline(), AstVarType::VAR, varp->name() + suffix, varp->dtypep());
+        textp->addNodep(newVarp);
+        textp->addText(varp->fileline(), ";\n");
+    }
+
     void handleOutput(AstVar* varp) {
         FileLine* fl = varp->fileline();
         m_modPortsp->addNodep(varp->cloneTree(false));
@@ -455,18 +452,11 @@ private:
             m_seqParamsp->addText(fl, varp->name() + "_tmp__V\n");
         }
 
-        AstNodeDType* comboDtypep = varp->dtypep()->cloneTree(false);
-        m_comboDeclsp->addNodep(comboDtypep);
-        m_comboDeclsp->addText(fl, " " + varp->name() + "_combo__V;\n");
+        addLocalVariable(m_comboDeclsp, varp, "_combo__V");
 
         if (m_hasClk) {
-            AstNodeDType* seqDtypep = varp->dtypep()->cloneTree(false);
-            m_seqDeclsp->addNodep(seqDtypep);
-            m_seqDeclsp->addText(fl, " " + varp->name() + "_seq__V;\n");
-
-            AstNodeDType* tmpDtypep = varp->dtypep()->cloneTree(false);
-            m_tmpDeclsp->addNodep(tmpDtypep);
-            m_tmpDeclsp->addText(fl, " " + varp->name() + "_tmp__V;\n");
+            addLocalVariable(m_seqDeclsp, varp, "_seq__V");
+            addLocalVariable(m_tmpDeclsp, varp, "_tmp__V");
 
             m_nbAssignsp->addText(fl, varp->name() + "_seq__V <= " + varp->name() + "_tmp__V;\n");
             m_seqAssignsp->addText(fl, varp->name() + " = " + varp->name() + "_seq__V;\n");

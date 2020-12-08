@@ -25,6 +25,14 @@ module secret #(parameter GATED_CLK = 0)
     output logic [128:0]      s129_out,
     input [3:0] [31:0]        s4x32_in,
     output logic [3:0] [31:0] s4x32_out,
+    /*verilator lint_off LITENDIAN*/
+    input [0:15]              s6x16up_in[0:1][2:0],
+    output logic [0:15]       s6x16up_out[0:1][2:0],
+    /*verilator lint_on LITENDIAN*/
+    input [15:0]              s8x16up_in[1:0][0:3],
+    output logic [15:0]       s8x16up_out[1:0][0:3],
+    input [15:0]              s8x16up_3d_in[1:0][0:1][0:1],
+    output logic [15:0]       s8x16up_3d_out[1:0][0:1][0:1],
     input                     clk_en,
     input                     clk /*verilator clocker*/);
 
@@ -60,6 +68,19 @@ module secret #(parameter GATED_CLK = 0)
       s129_out = s129_in;
       s4x32_out = s4x32_in;
    end
+
+   for (genvar i = 0; i < 3; ++i) begin
+      assign s6x16up_out[0][i] = s6x16up_in[0][i];
+      assign s6x16up_out[1][i] = s6x16up_in[1][i];
+   end
+   for (genvar i = 0; i < 4; ++i) begin
+      assign s8x16up_out[0][i] = s8x16up_in[0][i];
+      assign s8x16up_out[1][i] = s8x16up_in[1][i];
+   end
+   for (genvar i = 0; i < 8; ++i) begin
+      assign s8x16up_3d_out[i[2]][i[1]][i[0]] = s8x16up_3d_in[i[2]][i[1]][i[0]];
+   end
+
 
    sub sub (.sub_in(s33_in), .sub_out(s33_out));
 

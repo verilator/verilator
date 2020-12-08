@@ -634,11 +634,31 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     virtual void visit(AstTopScope* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstScope* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstVar* nodep) override {
-        putfs(nodep, nodep->verilogKwd());
-        puts(" ");
-        iterate(nodep->dtypep());
-        puts(" ");
-        puts(nodep->prettyName());
+        if (nodep->isIO()) {
+            putfs(nodep, nodep->verilogKwd());
+            puts(" ");
+        }
+        std::vector<const AstUnpackArrayDType*> unpackps;
+        for (AstNodeDType* dtypep = nodep->dtypep(); dtypep;) {
+            dtypep = dtypep->skipRefp();
+            if (AstUnpackArrayDType* unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
+                unpackps.push_back(unpackp);
+                dtypep = unpackp->subDTypep();
+            } else {
+                iterate(dtypep);
+                puts(" ");
+                puts(nodep->prettyName());
+                dtypep = nullptr;
+            }
+        }
+        // If nodep is an unpacked array, append unpacked dimensions
+        for (const auto& unpackp : unpackps) {
+            puts("[");
+            puts(cvtToStr(unpackp->rangep()->leftConst()));
+            puts(":");
+            puts(cvtToStr(unpackp->rangep()->rightConst()));
+            puts("]");
+        }
         if (!m_suppressVarSemi) {
             puts(";\n");
         } else {

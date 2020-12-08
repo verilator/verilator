@@ -39,8 +39,7 @@ public:
     static V3TaskConnects taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp);
     static string assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
                                       const string& toSuffix, const string& frPrefix = "");
-    static bool dpiToInternalFrStmt(AstVar* portp, const string& frName, string& frstmt,
-                                    string& ket);
+    static string assignDpiToInternal(const string& lhsName, AstVar* rhsp);
     static const char* dpiTemporaryVarSuffix();
 };
 
