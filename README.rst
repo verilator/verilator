@@ -15,6 +15,8 @@
     :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
 .. image:: https://github.com/verilator/verilator/workflows/Build%20Windows/badge.svg
     :target: https://github.com/verilator/verilator/actions?query=workflow%3ABuild%20Windows
+.. image:: https://github.com/verilator/verilator/workflows/Extended%20Tests/badge.svg
+    :target: https://github.com/verilator/verilator/actions?query=workflow%3AExtended%20Tests
 
 
 Welcome to Verilator

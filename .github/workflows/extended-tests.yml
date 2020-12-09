@@ -1,7 +1,7 @@
 # DESCRIPTION: Github actions config
-# This name is key to badges in README.adoc, so we use the name 'Build Windows'
+# This name is key to badges in README.adoc, so we use the name 'Extended Tests'
 
-name: Build Windows
+name: Extended Tests
 
 on:
   push:
