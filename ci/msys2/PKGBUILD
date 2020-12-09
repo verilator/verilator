@@ -1,0 +1,46 @@
+_realname=verilator
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=ci
+pkgrel=1
+pkgdesc="The fastest free Verilog HDL simulator (mingw-w64)"
+arch=('any')
+url="https://www.veripool.org/projects/verilator/wiki/Intro"
+license=("LGPL")
+makedepends=(
+  "${MINGW_PACKAGE_PREFIX}-autotools"
+  "${MINGW_PACKAGE_PREFIX}-cc"
+  "${MINGW_PACKAGE_PREFIX}-python"
+  "flex"
+)
+depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+
+source=()
+sha256sums=()
+
+prepare() {
+  cp -rf "${srcdir}"/../../.. /tmp/"${_realname}-build-${MINGW_CHOST}"
+  mv /tmp/"${_realname}-build-${MINGW_CHOST}" "${srcdir}/build-${MINGW_CHOST}"
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  sh autoconf
+}
+
+build() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  cp /usr/include/FlexLexer.h src/
+
+  export MSYS2_ARG_CONV_EXCL="-DDEFENV"
+
+  ./configure \
+    --prefix=${MINGW_PREFIX} \
+    --build=${MINGW_CHOST} \
+    --host=${MINGW_CHOST}
+
+  make
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR="${pkgdir}" install
+}
