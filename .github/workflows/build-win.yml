@@ -1,0 +1,80 @@
+# DESCRIPTION: Github actions config
+# This name is key to badges in README.adoc, so we use the name 'Build Windows'
+
+name: Build Windows
+
+on:
+  push:
+  pull_request:
+  schedule:
+  - cron: '0 0 * * 0' # weekly
+
+jobs:
+
+
+  win-makepkg:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { msystem: MINGW64, arch: x86_64 }
+          - { msystem: MINGW32, arch: i686   }
+    name: ${{ matrix.msystem }} | ${{ matrix.arch }} | makepkg
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+
+    - run: git config --global core.autocrlf input
+      shell: bash
+
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.msystem }}
+        update: true
+        install: >
+          base-devel
+          mingw-w64-${{ matrix.arch }}-toolchain
+
+    - name: Build
+      run: |
+        cd ci/msys2
+        makepkg-mingw --noconfirm --noprogressbar -sCLf
+      env:
+        MINGW_INSTALLS: ${{ matrix.msystem }}
+
+    - uses: actions/upload-artifact@v2
+      with:
+        path: ci/msys2/*.zst
+
+
+  win-test:
+    needs: win-makepkg
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { msystem: MINGW64, arch: x86_64 }
+          - { msystem: MINGW32, arch: i686   }
+    name: ${{ matrix.msystem }} | ${{ matrix.arch }} | test
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.msystem }}
+        update: true
+
+    - uses: actions/download-artifact@v2
+
+    - run: pacman -U --noconfirm --noprogressbar artifact/*.zst
+
+    - run: verilator --help
