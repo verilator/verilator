@@ -84,8 +84,7 @@ struct VMemberQualifiers {
     void applyToNodes(AstVar* nodesp) const {
         for (AstVar* nodep = nodesp; nodep; nodep = VN_CAST(nodep->nextp(), Var)) {
             if (m_randc) {
-                nodep->v3warn(E_RANDC,
-                              "Unsupported: 'randc'. Use --randc-alias to treat as 'rand'");
+                nodep->v3warn(RANDC, "Unsupported: Converting 'randc' to 'rand'");
                 nodep->isRand(true);
             }
             if (m_rand) nodep->isRand(true);

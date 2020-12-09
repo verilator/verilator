@@ -56,7 +56,6 @@ public:
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
         E_UNSUPPORTED,  // Error: Unsupported (generally)
         E_TASKNSVAR,    // Error: Task I/O not simple
-        E_RANDC,        // Error: Unsupported: 'randc'
         //
         // Warning codes:
         EC_FIRST_WARN,  // Just a code so the program knows where to start warnings
@@ -104,6 +103,7 @@ public:
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
         PKGNODECL,      // Error: Package/class needs to be predeclared
         PROCASSWIRE,    // Procedural assignment on wire
+        RANDC,          // Unsupported: 'randc' converted to 'rand'
         REALCVT,        // Real conversion
         REDEFMACRO,     // Redefining existing define macro
         SELRANGE,       // Selection index out of range
@@ -150,7 +150,7 @@ public:
             // Boolean
             " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
             // Errors
-            "DETECTARRAY", "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "RANDC",
+            "DETECTARRAY", "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
@@ -165,7 +165,7 @@ public:
             "LITENDIAN", "MODDUP",
             "MULTIDRIVEN", "MULTITOP",
             "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PKGNODECL", "PROCASSWIRE",
-            "REALCVT", "REDEFMACRO",
+            "RANDC", "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",

@@ -394,7 +394,6 @@ arguments.
     --public-flat-rw            Mark all variables, etc as public_flat_rw
      -pvalue+<name>=<value>     Overwrite toplevel parameter
     --quiet-exit                Don't print the command on failure
-    --randc-alias               Alias 'randc' to 'rand'
     --relative-includes         Resolve includes relative to current file
     --no-relative-cfuncs        Disallow 'this->' in generated functions
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
@@ -4692,6 +4691,11 @@ declared before being used.
 
 Error that a procedural assignment is setting a wire. According to IEEE, a
 var/reg must be used as the target of procedural assignments.
+
+=item RANDC
+
+Warns that the 'randc' keyword is currently unsupported, and that it is
+being converted to 'rand'.
 
 =item REALCVT
 

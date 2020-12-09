@@ -1084,8 +1084,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 addParameter(string(sw + strlen("-pvalue+")), false);
             } else if (onoff(sw, "-quiet-exit", flag /*ref*/)) {
                 m_quietExit = flag;
-            } else if (onoff(sw, "-randc-alias", flag /*ref*/)) {
-                FileLine::globalWarnOff(V3ErrorCode::E_RANDC, true);
             } else if (onoff(sw, "-relative-cfuncs", flag /*ref*/)) {
                 m_relativeCFuncs = flag;
             } else if (onoff(sw, "-relative-includes", flag /*ref*/)) {
