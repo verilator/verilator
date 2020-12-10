@@ -22,59 +22,68 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-20.04
     steps:
-    - name: Build
-      uses: actions/coverage-build-action
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/coverage-build
 
   test-dist:
     needs: buildjob
     steps:
-    - uses: actions/coverage-build-action
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/coverage-build
     - run: bash TESTS=coverage-dist ci/ci-script.bash
 
   test-vlt-0:
     needs: buildjob
     steps:
-    - uses: actions/coverage-build-action
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/coverage-build
     - run: bash TESTS=coverage-vlt-0 ci/ci-script.bash
 
   test-vlt-1:
     needs: buildjob
     steps:
-    - uses: actions/coverage-build-action
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/coverage-build
     - run: bash TESTS=coverage-vlt-1 ci/ci-script.bash
 
   test-vlt-2:
     needs: buildjob
     steps:
-    - uses: actions/coverage-build-action
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/coverage-build
     - run: bash TESTS=coverage-vlt-2 ci/ci-script.bash
 
   test-vlt-3:
     needs: buildjob
     steps:
-    - uses: actions/coverage-build-action
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/coverage-build
     - run: bash TESTS=coverage-vlt-3 ci/ci-script.bash
 
   test-vltmt-0:
     needs: buildjob
     steps:
-    - uses: actions/coverage-build-action
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/coverage-build
     - run: bash TESTS=coverage-vltmt-0 ci/ci-script.bash
 
   test-vltmt-1:
     needs: buildjob
     steps:
-    - uses: actions/coverage-build-action
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/coverage-build
     - run: bash TESTS=coverage-vltmt-1 ci/ci-script.bash
 
   test-vltmt-2:
     needs: buildjob
     steps:
-    - uses: actions/coverage-build-action
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/coverage-build
     - run: bash TESTS=coverage-vltmt-2 ci/ci-script.bash
 
   test-vltmt-3:
     needs: buildjob
     steps:
-    - uses: actions/coverage-build-action
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/coverage-build
     - run: bash TESTS=coverage-vltmt-3 ci/ci-script.bash

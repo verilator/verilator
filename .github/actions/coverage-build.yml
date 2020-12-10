@@ -6,9 +6,6 @@ description: "Common steps needed for coverage build jobs"
 runs:
   using: "Composite"
   steps:
-  - name: Checkout
-    uses: actions/checkout@v2
-
   - name: Cache
     uses: actions/cache@v2
     env:
