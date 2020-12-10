@@ -5990,13 +5990,13 @@ private:
         toDtp = toDtp->skipRefToEnump();
         fromDtp = fromDtp->skipRefToEnump();
         if (toDtp == fromDtp) return COMPATIBLE;
+        bool fromNumericable = VN_IS(fromDtp, BasicDType) || VN_IS(fromDtp, EnumDType)
+                               || VN_IS(fromDtp, NodeUOrStructDType);
         // UNSUP unpacked struct/unions (treated like BasicDType)
         if (VN_IS(toDtp, BasicDType) || VN_IS(toDtp, NodeUOrStructDType)) {
-            if (VN_IS(fromDtp, BasicDType)) return COMPATIBLE;
-            if (VN_IS(fromDtp, EnumDType)) return COMPATIBLE;
-            if (VN_IS(fromDtp, NodeUOrStructDType)) return COMPATIBLE;
+            if (fromNumericable) return COMPATIBLE;
         } else if (VN_IS(toDtp, EnumDType)) {
-            if (VN_IS(fromDtp, BasicDType) || VN_IS(fromDtp, EnumDType)) return DYNAMIC_ENUM;
+            if (fromNumericable) return DYNAMIC_ENUM;
         } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromConstp, Const)) {
             if (VN_IS(fromConstp, Const) && VN_CAST(fromConstp, Const)->num().isNull())
                 return COMPATIBLE;
