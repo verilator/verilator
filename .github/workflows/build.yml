@@ -25,7 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ 'ubuntu-18.04', 'ubuntu-20.04' ]
-        debug: [ opt, dbh ]
+        debug: [ opt, dbg ]
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
@@ -42,7 +42,7 @@ jobs:
       CXX: ${{ matrix.compiler.cxx }}
       CI_BUILD_STAGE_NAME: build
       CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}
-      DEBUG: ${{ matrix.debug }}
+      CI_MAKE_SRC_TARGET: ${{ matrix.debug }}
     steps:
 
     - name: Checkout
@@ -79,7 +79,7 @@ jobs:
       max-parallel: 2
       matrix:
         os: [ 'ubuntu-18.04', 'ubuntu-20.04' ]
-        debug: [ opt, dbh ]
+        debug: [ opt, dbg ]
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
