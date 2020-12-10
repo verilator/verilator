@@ -216,7 +216,6 @@ protected:
     double timeRes() const { return m_timeRes; }
     double timeUnit() const { return m_timeUnit; }
     std::string timeResStr() const;
-    std::string timeUnitStr() const;
 
     void traceInit() VL_MT_UNSAFE;
 

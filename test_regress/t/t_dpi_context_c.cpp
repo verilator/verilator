@@ -82,6 +82,8 @@ int dpic_line() {
 
 extern int Dpic_Unique;
 int Dpic_Unique = 0;  // Address used for uniqueness
+extern int Dpic_Value;
+int Dpic_Value = 0;  // Address used for testing
 
 int dpic_save(int value) {
     svScope scope = svGetScope();
@@ -95,6 +97,21 @@ int dpic_save(int value) {
         void* ptr;
         int i;
     } vp;
+
+    // Load the value here, and below, to test we can reinsert correctly
+    if (svPutUserData(scope, &Dpic_Unique, &Dpic_Value)) {
+        printf("%%Warning: svPutUserData failed (initial)\n");
+        return 0;
+    }
+    if (void* userp = svGetUserData(scope, &Dpic_Unique)) {
+        if (userp != &Dpic_Value) {
+            printf("%%Warning: svGetUserData failed (initial wrong data)\n");
+            return 0;
+        }
+    } else {
+        printf("%%Warning: svGetUserData failed (initial)\n");
+        return 0;
+    }
 
     vp.i = value;
     if (vp.i) {}
@@ -131,4 +148,14 @@ unsigned dpic_getcontext() {
     printf("%%Info: svGetScope returned scope (%p) with name %s\n",  //
            scope, svGetNameFromScope(scope));
     return (unsigned)(uintptr_t)scope;
+}
+
+void dpic_final() {
+    static int s_once = 0;
+    if (s_once++) return;
+    printf("%s:\n", __func__);
+#ifdef VERILATOR
+    // Cover VerilatedImp::userDump
+    Verilated::internalsDump();
+#endif
 }

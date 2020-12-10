@@ -21,6 +21,9 @@ module t ();
       $finish;
    end
 
+   import "DPI-C" context function void dpic_final();
+   final dpic_final();
+
 endmodule
 
 module sub (input integer inst);
@@ -31,6 +34,15 @@ module sub (input integer inst);
    import "DPI-C" context function int unsigned dpic_getcontext();
 
    int result;
+
+   // Exports here are only to cover the export dumper of Verilated::internalsDump
+   export "DPI-C" function dpix_void;
+   function void dpix_void;
+   endfunction
+   export "DPI-C" function dpix_result;
+   function int dpix_result;
+      return result;
+   endfunction
 
    task test1;
       // Check line numbering

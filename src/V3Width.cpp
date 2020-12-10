@@ -5549,8 +5549,9 @@ private:
         case AstType::atMulS: newp = new AstMul(fl, lhsp, rhsp); break;
         case AstType::atShiftR: newp = new AstShiftRS(fl, lhsp, rhsp); break;
         case AstType::atShiftRS: newp = new AstShiftR(fl, lhsp, rhsp); break;
-        default:   // LCOV_EXCL_LINE
-            nodep->v3fatalSrc("Node needs sign change, but bad case: " << nodep); break;
+        default:  // LCOV_EXCL_LINE
+            nodep->v3fatalSrc("Node needs sign change, but bad case: " << nodep);
+            break;
         }
         UINFO(6, "   ReplaceWithUOrSVersion: " << nodep << " w/ " << newp << endl);
         nodep->replaceWith(newp);

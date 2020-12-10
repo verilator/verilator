@@ -26,7 +26,6 @@
 //            OrderVarPreVertex
 //            OrderVarPostVertex
 //            OrderVarPordVertex
-//            OrderVarSettleVertex
 //
 //      V3GraphEdge
 //        OrderEdge
@@ -294,24 +293,6 @@ public:
         return (cvtToHex(varScp()) + " PORD\\n " + varScp()->name());
     }
     virtual string dotColor() const override { return "NavyBlue"; }
-    virtual bool domainMatters() override { return false; }
-};
-class OrderVarSettleVertex final : public OrderVarVertex {
-    OrderVarSettleVertex(V3Graph* graphp, const OrderVarSettleVertex& old)
-        : OrderVarVertex{graphp, old} {}
-
-public:
-    OrderVarSettleVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
-        : OrderVarVertex{graphp, scopep, varScp} {}
-    virtual ~OrderVarSettleVertex() override = default;
-    virtual OrderVarSettleVertex* clone(V3Graph* graphp) const override {
-        return new OrderVarSettleVertex(graphp, *this);
-    }
-    virtual OrderVEdgeType type() const override { return OrderVEdgeType::VERTEX_VARSETTLE; }
-    virtual string name() const override {
-        return (cvtToHex(varScp()) + " STL\\n " + varScp()->name());
-    }
-    virtual string dotColor() const override { return "PowderBlue"; }
     virtual bool domainMatters() override { return false; }
 };
 
