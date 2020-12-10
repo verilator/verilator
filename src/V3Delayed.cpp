@@ -107,10 +107,10 @@ private:
         if (blocking) nodep->user5(true);
         AstVarScope* vscp = nodep->varScopep();
         // UINFO(4, " MVU " << blocking << " " << nodep << endl);
-        if (!vscp->user5p()) {
+        AstNode* lastrefp = vscp->user5p();
+        if (!lastrefp) {
             vscp->user5p(nodep);
         } else {
-            AstNode* lastrefp = vscp->user5p();
             bool last_was_blocking = lastrefp->user5();
             if (last_was_blocking != blocking) {
                 AstNode* nonblockingp = blocking ? nodep : lastrefp;
@@ -412,9 +412,9 @@ private:
             if (newlhsp) {
                 nodep->lhsp(newlhsp);
             } else {
-                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             }
-            VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+            VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
         } else {
             iterateChildren(nodep);
         }
@@ -472,7 +472,7 @@ private:
                 AstVarRef* newrefp = new AstVarRef(nodep->fileline(), dlyvscp, VAccess::WRITE);
                 newrefp->user2(true);  // No reason to do it again
                 nodep->replaceWith(newrefp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (!m_inDly && nodep->access().isWriteOrRW()) {
                 // UINFO(9, "NBA " << nodep << endl);
                 if (!m_inInitial) {
