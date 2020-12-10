@@ -2,60 +2,79 @@
 
 name: coverage
 
-on: 
+on:
   workflow_dispatch:
   schedule:
   - cron: '0 0 * * 0' # weekly
 
+env:
+  CI_OS_NAME: linux
+  CI_COMMIT: ${{ github.sha }}
+  CCACHE_COMPRESS: 1
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
+  COVERAGE: 1
+  CI_BUILD_STAGE_NAME: test
+
 jobs:
-  vlt:
+  buildjob:
     strategy:
       fail-fast: false
-      matrix:
-        os: [ubuntu-20.04]
-        compiler: [gcc]
-        include:
-          - compiler: gcc
-            cc: gcc
-            cxx: g++
-    runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }}-${{ matrix.compiler }}-build-test
-    env:
-      CI_OS_NAME: linux
-      CI_COMMIT: ${{ github.sha }}
-      CCACHE_COMPRESS: 1
-      CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
-      COVERAGE: 1
+    runs-on: ubuntu-20.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Cache
-        uses: actions/cache@v2
-        env:
-          cache-name: ccache
-        with:
-          path: ${{ github.workspace }}/.ccache
-          key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ env.cache-name }}-${{ github.sha }}
-          restore-keys: |
-            ${{ matrix.os }}-${{ matrix.compiler }}-${{ env.cache-name }}
-      - name: Install packages for build
-        env:
-          CI_BUILD_STAGE_NAME: build
-        run: bash ci/ci-install.bash
-      - name: CCACHE maintenance
-        run: mkdir -p $CCACHE_DIR && bash ci/ci-ccache-maint.bash
-      - name: Build
-        env:
-          CI_BUILD_STAGE_NAME: build
-        run: bash ci/ci-script.bash
-      - name: Install packages for tests
-        env:
-          CI_BUILD_STAGE_NAME: test
-        run: bash ci/ci-install.bash
+    - name: Build
+      uses: actions/coverage-build-action
 
-      - name: Test coverage-all
-        env:
-          CI_BUILD_STAGE_NAME: test
-          TESTS: coverage-all
-        run: bash ci/ci-script.bash
+  test-dist:
+    needs: buildjob
+    steps:
+    - uses: actions/coverage-build-action
+    - run: bash TESTS=coverage-dist ci/ci-script.bash
+
+  test-vlt-0:
+    needs: buildjob
+    steps:
+    - uses: actions/coverage-build-action
+    - run: bash TESTS=coverage-vlt-0 ci/ci-script.bash
+
+  test-vlt-1:
+    needs: buildjob
+    steps:
+    - uses: actions/coverage-build-action
+    - run: bash TESTS=coverage-vlt-1 ci/ci-script.bash
+
+  test-vlt-2:
+    needs: buildjob
+    steps:
+    - uses: actions/coverage-build-action
+    - run: bash TESTS=coverage-vlt-2 ci/ci-script.bash
+
+  test-vlt-3:
+    needs: buildjob
+    steps:
+    - uses: actions/coverage-build-action
+    - run: bash TESTS=coverage-vlt-3 ci/ci-script.bash
+
+  test-vltmt-0:
+    needs: buildjob
+    steps:
+    - uses: actions/coverage-build-action
+    - run: bash TESTS=coverage-vltmt-0 ci/ci-script.bash
+
+  test-vltmt-1:
+    needs: buildjob
+    steps:
+    - uses: actions/coverage-build-action
+    - run: bash TESTS=coverage-vltmt-1 ci/ci-script.bash
+
+  test-vltmt-2:
+    needs: buildjob
+    steps:
+    - uses: actions/coverage-build-action
+    - run: bash TESTS=coverage-vltmt-2 ci/ci-script.bash
+
+  test-vltmt-3:
+    needs: buildjob
+    steps:
+    - uses: actions/coverage-build-action
+    - run: bash TESTS=coverage-vltmt-3 ci/ci-script.bash

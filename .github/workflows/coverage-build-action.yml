@@ -1,0 +1,33 @@
+# DESCRIPTION: Github actions config
+
+name: coverage-build-action
+description: "Common steps needed for coverage build jobs"
+
+runs:
+  using: "Composite"
+  steps:
+  - name: Checkout
+    uses: actions/checkout@v2
+
+  - name: Cache
+    uses: actions/cache@v2
+    env:
+      cache-name: ccache
+    with:
+      path: ${{ github.workspace }}/.ccache
+      key: coverage-${{ env.cache-name }}-${{ github.sha }}
+      restore-keys: |
+        coverage-${{ env.cache-name }}
+
+  - name: Install and build
+    env:
+      CI_BUILD_STAGE_NAME: build
+    run: |
+      bash ci/ci-install.bash
+      mkdir -p $CCACHE_DIR && bash ci/ci-ccache-maint.bash
+      bash ci/ci-script.bash
+
+  - name: Install packages for tests
+    env:
+      CI_BUILD_STAGE_NAME: test
+    run: bash ci/ci-install.bash
