@@ -18,9 +18,38 @@ env:
   CI_BUILD_STAGE_NAME: test
 
 jobs:
+
   buildjob:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
+
+
+  test:
+    needs: buildjob
     strategy:
       fail-fast: false
+      matrix:
+        test:
+        - vlt-
+        - vltmt-
+        num:
+        - 0
+        - 1
+        - 2
+        - 3
+        include:
+        - { test: dist, num: '' }
+    name: test-${{ matrix.test }}${{ matrix.num }}
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
@@ -33,148 +62,4 @@ jobs:
         restore-keys: |
           coverage-${{ env.cache-name }}
     - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
-
-
-  test-dist:
-    needs: buildjob
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      env:
-        cache-name: ccache
-      with:
-        path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          coverage-${{ env.cache-name }}
-    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
-    - run: bash -c "TESTS=coverage-dist ci/ci-script.bash"
-
-  test-vlt-0:
-    needs: buildjob
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      env:
-        cache-name: ccache
-      with:
-        path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          coverage-${{ env.cache-name }}
-    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
-    - run: bash -c "TESTS=coverage-vlt-0 ci/ci-script.bash"
-
-  test-vlt-1:
-    needs: buildjob
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      env:
-        cache-name: ccache
-      with:
-        path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          coverage-${{ env.cache-name }}
-    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
-    - run: bash -c "TESTS=coverage-vlt-1 ci/ci-script.bash"
-
-  test-vlt-2:
-    needs: buildjob
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      env:
-        cache-name: ccache
-      with:
-        path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          coverage-${{ env.cache-name }}
-    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
-    - run: bash -c "TESTS=coverage-vlt-2 ci/ci-script.bash"
-
-  test-vlt-3:
-    needs: buildjob
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      env:
-        cache-name: ccache
-      with:
-        path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          coverage-${{ env.cache-name }}
-    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
-    - run: bash -c "TESTS=coverage-vlt-3 ci/ci-script.bash"
-
-  test-vltmt-0:
-    needs: buildjob
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      env:
-        cache-name: ccache
-      with:
-        path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          coverage-${{ env.cache-name }}
-    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
-    - run: bash -c "TESTS=coverage-vltmt-0 ci/ci-script.bash"
-
-  test-vltmt-1:
-    needs: buildjob
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      env:
-        cache-name: ccache
-      with:
-        path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          coverage-${{ env.cache-name }}
-    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
-    - run: bash -c "TESTS=coverage-vltmt-1 ci/ci-script.bash"
-
-  test-vltmt-2:
-    needs: buildjob
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      env:
-        cache-name: ccache
-      with:
-        path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          coverage-${{ env.cache-name }}
-    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
-    - run: bash -c "TESTS=coverage-vltmt-2 ci/ci-script.bash"
-
-  test-vltmt-3:
-    needs: buildjob
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      env:
-        cache-name: ccache
-      with:
-        path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          coverage-${{ env.cache-name }}
-    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
-    - run: bash -c "TESTS=coverage-vltmt-3 ci/ci-script.bash"
+    - run: bash -c "TESTS=coverage-${{ matrix.test }}${{ matrix.num }} ci/ci-script.bash"
