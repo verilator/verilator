@@ -55,6 +55,8 @@ POD2LATEXFIX = $(srcdir)/src/pod2latexfix
 MKINSTALLDIRS = $(SHELL) $(srcdir)/src/mkinstalldirs
 PERL = @PERL@
 
+DEBUG = opt
+
 # Destination prefix for RPMs
 DESTDIR =
 
@@ -219,7 +221,7 @@ all_nomsg: verilator_exe $(VL_INST_MAN_FILES)
 verilator_exe verilator_bin verilator_bin_dbg verilator_coverage_bin_dbg:
 	@echo ------------------------------------------------------------
 	@echo "making verilator in src"
-	$(MAKE) -C src $(OBJCACHE_JOBS)
+	$(MAKE) VL_DEBUG=$(DEBUG) -C src $(OBJCACHE_JOBS)
 
 .PHONY:msg_test
 msg_test: all_nomsg
