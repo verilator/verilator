@@ -4692,6 +4692,11 @@ declared before being used.
 Error that a procedural assignment is setting a wire. According to IEEE, a
 var/reg must be used as the target of procedural assignments.
 
+=item RANDC
+
+Warns that the 'randc' keyword is currently unsupported, and that it is
+being converted to 'rand'.
+
 =item REALCVT
 
 Warns that a real number is being implicitly rounded to an integer, with

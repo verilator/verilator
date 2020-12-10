@@ -103,6 +103,7 @@ public:
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
         PKGNODECL,      // Error: Package/class needs to be predeclared
         PROCASSWIRE,    // Procedural assignment on wire
+        RANDC,          // Unsupported: 'randc' converted to 'rand'
         REALCVT,        // Real conversion
         REDEFMACRO,     // Redefining existing define macro
         SELRANGE,       // Selection index out of range
@@ -164,7 +165,7 @@ public:
             "LITENDIAN", "MODDUP",
             "MULTIDRIVEN", "MULTITOP",
             "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PKGNODECL", "PROCASSWIRE",
-            "REALCVT", "REDEFMACRO",
+            "RANDC", "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",

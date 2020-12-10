@@ -83,7 +83,10 @@ struct VMemberQualifiers {
     }
     void applyToNodes(AstVar* nodesp) const {
         for (AstVar* nodep = nodesp; nodep; nodep = VN_CAST(nodep->nextp(), Var)) {
-            // Ignored for now: m_randc
+            if (m_randc) {
+                nodep->v3warn(RANDC, "Unsupported: Converting 'randc' to 'rand'");
+                nodep->isRand(true);
+            }
             if (m_rand) nodep->isRand(true);
             if (m_local) nodep->isHideLocal(true);
             if (m_protected) nodep->isHideProtected(true);

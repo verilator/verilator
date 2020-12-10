@@ -12,7 +12,6 @@ scenarios(vlt => 1);
 
 lint(
     fails => 1,
-    verilator_flags2 => ['-Wno-RANDC'],
     expect_filename => $Self->{golden_filename},
     );
 
