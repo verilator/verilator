@@ -1370,12 +1370,6 @@ static inline WDataOutP VL_XOR_W(int words, WDataOutP owp, WDataInP lwp, WDataIn
     for (int i = 0; (i < words); ++i) owp[i] = (lwp[i] ^ rwp[i]);
     return owp;
 }
-// EMIT_RULE: VL_XNOR:  oclean=dirty; obits=lbits; lbits==rbits;
-static inline WDataOutP VL_XNOR_W(int words, WDataOutP owp, WDataInP lwp,
-                                  WDataInP rwp) VL_MT_SAFE {
-    for (int i = 0; (i < words); ++i) owp[i] = (lwp[i] ^ ~rwp[i]);
-    return owp;
-}
 // EMIT_RULE: VL_NOT:  oclean=dirty; obits=lbits;
 static inline WDataOutP VL_NOT_W(int words, WDataOutP owp, WDataInP lwp) VL_MT_SAFE {
     for (int i = 0; i < words; ++i) owp[i] = ~(lwp[i]);

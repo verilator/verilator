@@ -5647,25 +5647,6 @@ public:
     virtual bool sizeMattersLhs() const override { return false; }
     virtual int instrCount() const override { return 1 + V3Number::log2b(width()); }
 };
-class AstRedXnor final : public AstNodeUniop {
-    // AstRedXnors are replaced with AstRedXors in V3Const.
-public:
-    AstRedXnor(FileLine* fl, AstNode* lhsp)
-        : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetBit();
-    }
-    ASTNODE_NODE_FUNCS(RedXnor)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs) override { out.opRedXnor(lhs); }
-    virtual string emitVerilog() override { return "%f(~^ %l)"; }
-    virtual string emitC() override {
-        v3fatalSrc("REDXNOR should have became REDXOR");
-        return "";
-    }
-    virtual bool cleanOut() const override { return false; }
-    virtual bool cleanLhs() const override { return true; }
-    virtual bool sizeMattersLhs() const override { return false; }
-    virtual int instrCount() const override { return 1 + V3Number::log2b(width()); }
-};
 
 class AstLenN final : public AstNodeUniop {
     // Length of a string
@@ -6746,28 +6727,6 @@ public:
     virtual bool cleanRhs() const override { return false; }
     virtual bool sizeMattersLhs() const override { return false; }
     virtual bool sizeMattersRhs() const override { return false; }
-};
-class AstXnor final : public AstNodeBiComAsv {
-public:
-    AstXnor(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
-    }
-    ASTNODE_NODE_FUNCS(Xnor)
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstXnor(this->fileline(), lhsp, rhsp);
-    }
-    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
-        out.opXnor(lhs, rhs);
-    }
-    virtual string emitVerilog() override { return "%k(%l %f^ ~ %r)"; }
-    virtual string emitC() override { return "VL_XNOR_%lq(%lW, %P, %li, %ri)"; }
-    virtual string emitSimpleOperator() override { return "^ ~"; }
-    virtual bool cleanOut() const override { return false; }
-    virtual bool cleanLhs() const override { return false; }
-    virtual bool cleanRhs() const override { return false; }
-    virtual bool sizeMattersLhs() const override { return true; }
-    virtual bool sizeMattersRhs() const override { return true; }
 };
 class AstEq final : public AstNodeBiCom {
 public:

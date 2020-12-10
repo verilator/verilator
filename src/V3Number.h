@@ -326,7 +326,6 @@ public:
     V3Number& opRedOr(const V3Number& lhs);
     V3Number& opRedAnd(const V3Number& lhs);
     V3Number& opRedXor(const V3Number& lhs);
-    V3Number& opRedXnor(const V3Number& lhs);
     V3Number& opCountBits(const V3Number& expr, const V3Number& ctrl1, const V3Number& ctrl2,
                           const V3Number& ctrl3);
     V3Number& opCountOnes(const V3Number& lhs);
@@ -375,7 +374,6 @@ public:
     V3Number& opAnd(const V3Number& lhs, const V3Number& rhs);
     V3Number& opChangeXor(const V3Number& lhs, const V3Number& rhs);
     V3Number& opXor(const V3Number& lhs, const V3Number& rhs);
-    V3Number& opXnor(const V3Number& lhs, const V3Number& rhs);
     V3Number& opOr(const V3Number& lhs, const V3Number& rhs);
     V3Number& opShiftR(const V3Number& lhs, const V3Number& rhs);
     V3Number& opShiftRS(const V3Number& lhs, const V3Number& rhs,  // Arithmetic w/carry

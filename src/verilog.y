@@ -4148,7 +4148,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	'^' ~r~expr	%prec prREDUCTION	{ $$ = new AstRedXor	($1,$2); }
 	|	yP_NAND ~r~expr	%prec prREDUCTION	{ $$ = new AstLogNot($1, new AstRedAnd($1, $2)); }
 	|	yP_NOR  ~r~expr	%prec prREDUCTION	{ $$ = new AstLogNot($1, new AstRedOr($1, $2)); }
-	|	yP_XNOR ~r~expr	%prec prREDUCTION	{ $$ = new AstRedXnor	($1,$2); }
+	|	yP_XNOR ~r~expr	%prec prREDUCTION	{ $$ = new AstLogNot($1, new AstRedXor($1, $2)); }
 	//
 	//			// IEEE: inc_or_dec_expression
 	|	~l~inc_or_dec_expression		{ $<fl>$=$<fl>1; $$ = $1; }
@@ -4189,9 +4189,9 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	~l~expr '&' ~r~expr			{ $$ = new AstAnd	($2,$1,$3); }
 	|	~l~expr '|' ~r~expr			{ $$ = new AstOr	($2,$1,$3); }
 	|	~l~expr '^' ~r~expr			{ $$ = new AstXor	($2,$1,$3); }
-	|	~l~expr yP_XNOR ~r~expr			{ $$ = new AstXnor	($2,$1,$3); }
-	|	~l~expr yP_NOR ~r~expr			{ $$ = new AstNot($2,new AstOr	($2,$1,$3)); }
-	|	~l~expr yP_NAND ~r~expr			{ $$ = new AstNot($2,new AstAnd	($2,$1,$3)); }
+	|	~l~expr yP_XNOR ~r~expr			{ $$ = new AstNot{$2, new AstXor{$2, $1, $3}}; }
+	|	~l~expr yP_NOR ~r~expr			{ $$ = new AstNot{$2, new AstOr{$2, $1, $3}}; }
+	|	~l~expr yP_NAND ~r~expr			{ $$ = new AstNot{$2, new AstAnd{$2, $1, $3}}; }
 	|	~l~expr yP_SLEFT ~r~expr		{ $$ = new AstShiftL	($2,$1,$3); }
 	|	~l~expr yP_SRIGHT ~r~expr		{ $$ = new AstShiftR	($2,$1,$3); }
 	|	~l~expr yP_SSRIGHT ~r~expr		{ $$ = new AstShiftRS	($2,$1,$3); }

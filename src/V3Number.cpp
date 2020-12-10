@@ -1118,26 +1118,6 @@ V3Number& V3Number::opRedXor(const V3Number& lhs) {
     return setSingleBits(outc);
 }
 
-V3Number& V3Number::opRedXnor(const V3Number& lhs) {
-    // op i, 1 bit return
-    NUM_ASSERT_OP_ARGS1(lhs);
-    NUM_ASSERT_LOGIC_ARGS1(lhs);
-    char outc = 1;
-    for (int bit = 0; bit < lhs.width(); bit++) {
-        if (lhs.bitIs1(bit)) {
-            if (outc == 1) {
-                outc = 0;
-            } else if (outc == 0) {
-                outc = 1;
-            }
-        } else if (lhs.bitIs0(bit)) {
-        } else {
-            outc = 'x';
-        }
-    }
-    return setSingleBits(outc);
-}
-
 V3Number& V3Number::opCountBits(const V3Number& expr, const V3Number& ctrl1, const V3Number& ctrl2,
                                 const V3Number& ctrl3) {
     NUM_ASSERT_OP_ARGS4(expr, ctrl1, ctrl2, ctrl3);
@@ -1271,24 +1251,6 @@ V3Number& V3Number::opXor(const V3Number& lhs, const V3Number& rhs) {
         } else if (lhs.bitIs0(bit) && rhs.bitIs1(bit)) {
             setBit(bit, 1);
         } else if (lhs.bitIsXZ(bit) || rhs.bitIsXZ(bit)) {
-            setBit(bit, 'x');
-        }
-        // else zero
-    }
-    return *this;
-}
-
-V3Number& V3Number::opXnor(const V3Number& lhs, const V3Number& rhs) {
-    // i op j, max(L(lhs),L(rhs)) bit return, careful need to X/Z extend.
-    NUM_ASSERT_OP_ARGS2(lhs, rhs);
-    NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
-    setZero();
-    for (int bit = 0; bit < this->width(); bit++) {
-        if (lhs.bitIs1(bit) && rhs.bitIs1(bit)) {
-            setBit(bit, 1);
-        } else if (lhs.bitIs0(bit) && rhs.bitIs0(bit)) {
-            setBit(bit, 1);
-        } else if (lhs.bitIsXZ(bit) && rhs.bitIsXZ(bit)) {
             setBit(bit, 'x');
         }
         // else zero

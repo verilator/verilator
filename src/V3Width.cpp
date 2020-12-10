@@ -254,7 +254,6 @@ private:
     // Widths: 1 bit out, Any width lhs
     virtual void visit(AstRedAnd* nodep) override { visit_red_and_or(nodep); }
     virtual void visit(AstRedOr* nodep) override { visit_red_and_or(nodep); }
-    virtual void visit(AstRedXnor* nodep) override { visit_red_and_or(nodep); }
     virtual void visit(AstRedXor* nodep) override { visit_red_and_or(nodep); }
     virtual void visit(AstOneHot* nodep) override { visit_red_and_or(nodep); }
     virtual void visit(AstOneHot0* nodep) override { visit_red_and_or(nodep); }
@@ -300,7 +299,6 @@ private:
     // Real: Not allowed
     virtual void visit(AstAnd* nodep) override { visit_boolmath_and_or(nodep); }
     virtual void visit(AstOr* nodep) override { visit_boolmath_and_or(nodep); }
-    virtual void visit(AstXnor* nodep) override { visit_boolmath_and_or(nodep); }
     virtual void visit(AstXor* nodep) override { visit_boolmath_and_or(nodep); }
     virtual void visit(AstBufIf1* nodep) override {
         visit_boolmath_and_or(nodep);
