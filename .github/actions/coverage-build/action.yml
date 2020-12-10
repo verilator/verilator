@@ -5,7 +5,7 @@ name: coverage-build-action
 description: "Common steps needed for coverage build jobs"
 
 runs:
-  using: "Composite"
+  using: "composite"
   steps:
   - name: Cache
     uses: actions/cache@v2
