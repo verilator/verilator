@@ -37,11 +37,6 @@
 //======================================================================
 // Internal macros
 
-// Not supported yet
-#define _VL_SVDPI_UNIMP() \
-    VL_FATAL_MT(__FILE__, __LINE__, "", \
-                (std::string("%%Error: Unsupported DPI function: ") + VL_FUNC).c_str())
-
 #define _VL_SVDPI_WARN(...) VL_PRINTF_MT(__VA_ARGS__)
 
 // Function requires a "context" in the import declaration
@@ -258,16 +253,6 @@ static void* _vl_sv_adjusted_datap(const VerilatedDpiOpenVar* varp, int nargs, i
     return datap;
 }
 
-static int _vl_sv_adjusted_bit(const VerilatedDpiOpenVar* varp, int indx) {
-    if (VL_UNLIKELY(indx < varp->low(0) || indx > varp->high(0))) {
-        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function packed index out of bounds; %d "
-                       "outside [%d:%d].\n",
-                       indx, varp->left(0), varp->right(0));
-        return 0;
-    }
-    return indx - varp->low(0);
-}
-
 /// Return pointer to simulator open array element, or nullptr if outside range
 static void* _vl_svGetArrElemPtr(const svOpenArrayHandle h, int nargs, int indx1, int indx2,
                                  int indx3) VL_MT_SAFE {
@@ -299,10 +284,10 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
         for (int i = 0; i < VL_WORDS_I(varp->packed().elements()); ++i) d[i] = wdatap[i];
         return;
     }
-    default:
+    default:  // LCOV_EXCL_START  // Errored earlier
         _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
                        varp->vltype());
-        return;
+        return;  // LCOV_EXCL_STOP
     }
 }
 /// Copy to user logic array from simulator open array
@@ -330,7 +315,7 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
         d[0].aval = lwp[0];
         d[0].bval = 0;
         d[1].aval = lwp[1];
-        d[0].bval = 0;
+        d[1].bval = 0;
         break;
     }
     case VLVT_WDATA: {
@@ -341,10 +326,10 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
         }
         return;
     }
-    default:
+    default:  // LCOV_EXCL_START  // Errored earlier
         _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
                        varp->vltype());
-        return;
+        return;  // LCOV_EXCL_STOP
     }
 }
 
@@ -364,10 +349,10 @@ static void _vl_svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecV
         for (int i = 0; i < VL_WORDS_I(varp->packed().elements()); ++i) wdatap[i] = s[i];
         return;
     }
-    default:
+    default:  // LCOV_EXCL_START  // Errored earlier
         _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
                        varp->vltype());
-        return;
+        return;  // LCOV_EXCL_STOP
     }
 }
 /// Copy to simulator open array from from user logic array
@@ -388,10 +373,10 @@ static void _vl_svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogic
         for (int i = 0; i < VL_WORDS_I(varp->packed().elements()); ++i) wdatap[i] = s[i].aval;
         return;
     }
-    default:
+    default:  // LCOV_EXCL_START  // Errored earlier
         _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
                        varp->vltype());
-        return;
+        return;  // LCOV_EXCL_STOP
     }
 }
 
@@ -400,31 +385,14 @@ static svBit _vl_svGetBitArrElem(const svOpenArrayHandle s, int nargs, int indx1
                                  int indx3, int indx4) VL_MT_SAFE {
     // One extra index supported, as need bit number
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(s);
-    void* datap;
-    int lsb;
-    if (varp->packed().elements()) {
-        datap = _vl_sv_adjusted_datap(varp, nargs - 1, indx1, indx2, indx3);
-        lsb = _vl_sv_adjusted_bit(
-            varp, ((nargs == 1) ? indx1 : (nargs == 2) ? indx2 : (nargs == 3) ? indx3 : indx4));
-    } else {
-        datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
-        lsb = 0;
-    }
+    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return 0;
     switch (varp->vltype()) {
-    case VLVT_UINT8: return (*(reinterpret_cast<CData*>(datap)) >> lsb) & 1;
-    case VLVT_UINT16: return (*(reinterpret_cast<SData*>(datap)) >> lsb) & 1;
-    case VLVT_UINT32: return (*(reinterpret_cast<IData*>(datap)) >> lsb) & 1;
-    case VLVT_UINT64:
-        return (*(reinterpret_cast<QData*>(datap)) >> static_cast<QData>(lsb)) & 1ULL;
-    case VLVT_WDATA: {
-        WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
-        return VL_BITRSHIFT_W(wdatap, lsb) & 1;
-    }
-    default:
+    case VLVT_UINT8: return (*(reinterpret_cast<CData*>(datap))) & 1;
+    default:  // LCOV_EXCL_START  // Errored earlier
         _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
                        varp->vltype());
-        return 0;
+        return 0;  // LCOV_EXCL_STOP
     }
 }
 /// Update simulator open array from bit
@@ -433,27 +401,14 @@ static void _vl_svPutBitArrElem(const svOpenArrayHandle d, svBit value, int narg
     // One extra index supported, as need bit number
     value &= 1;  // Make sure clean
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
-    void* datap;
-    int lsb;
-    if (varp->packed().elements()) {
-        datap = _vl_sv_adjusted_datap(varp, nargs - 1, indx1, indx2, indx3);
-        lsb = _vl_sv_adjusted_bit(
-            varp, ((nargs == 1) ? indx1 : (nargs == 2) ? indx2 : (nargs == 3) ? indx3 : indx4));
-    } else {
-        datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
-        lsb = 0;
-    }
+    void* datap = _vl_sv_adjusted_datap(varp, nargs, indx1, indx2, indx3);
     if (VL_UNLIKELY(!datap)) return;
     switch (varp->vltype()) {
-    case VLVT_UINT8: VL_ASSIGNBIT_II(-1, lsb, *(reinterpret_cast<CData*>(datap)), value); return;
-    case VLVT_UINT16: VL_ASSIGNBIT_II(-1, lsb, *(reinterpret_cast<SData*>(datap)), value); return;
-    case VLVT_UINT32: VL_ASSIGNBIT_II(-1, lsb, *(reinterpret_cast<IData*>(datap)), value); return;
-    case VLVT_UINT64: VL_ASSIGNBIT_QI(-1, lsb, *(reinterpret_cast<QData*>(datap)), value); return;
-    case VLVT_WDATA: VL_ASSIGNBIT_WI(-1, lsb, (reinterpret_cast<WDataOutP>(datap)), value); return;
-    default:
+    case VLVT_UINT8: *(reinterpret_cast<CData*>(datap)) = value; return;
+    default:  // LCOV_EXCL_START  // Errored earlier
         _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
                        varp->vltype());
-        return;
+        return;  // LCOV_EXCL_STOP
     }
 }
 
@@ -643,13 +598,6 @@ svBit svGetBitArrElem(const svOpenArrayHandle s, int indx1, ...) {
         out = _vl_svGetBitArrElem(s, 3, indx1, indx2, indx3, 0);
         break;
     }
-    case 4: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
-        int indx4 = va_arg(ap, int);
-        out = _vl_svGetBitArrElem(s, 4, indx1, indx2, indx3, indx4);
-        break;
-    }
     default: out = _vl_svGetBitArrElem(s, -1, 0, 0, 0, 0); break;  // Will error
     }
     va_end(ap);
@@ -681,13 +629,6 @@ svLogic svGetLogicArrElem(const svOpenArrayHandle s, int indx1, ...) {
         int indx2 = va_arg(ap, int);
         int indx3 = va_arg(ap, int);
         out = _vl_svGetBitArrElem(s, 3, indx1, indx2, indx3, 0);
-        break;
-    }
-    case 4: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
-        int indx4 = va_arg(ap, int);
-        out = _vl_svGetBitArrElem(s, 4, indx1, indx2, indx3, indx4);
         break;
     }
     default: out = _vl_svGetBitArrElem(s, -1, 0, 0, 0, 0); break;  // Will error
@@ -725,13 +666,6 @@ void svPutBitArrElem(const svOpenArrayHandle d, svBit value, int indx1, ...) {
         _vl_svPutBitArrElem(d, value, 3, indx1, indx2, indx3, 0);
         break;
     }
-    case 4: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
-        int indx4 = va_arg(ap, int);
-        _vl_svPutBitArrElem(d, value, 4, indx1, indx2, indx3, indx4);
-        break;
-    }
     default: _vl_svPutBitArrElem(d, value, -1, 0, 0, 0, 0); break;  // Will error
     }
     va_end(ap);
@@ -761,13 +695,6 @@ void svPutLogicArrElem(const svOpenArrayHandle d, svLogic value, int indx1, ...)
         int indx2 = va_arg(ap, int);
         int indx3 = va_arg(ap, int);
         _vl_svPutBitArrElem(d, value, 3, indx1, indx2, indx3, 0);
-        break;
-    }
-    case 4: {
-        int indx2 = va_arg(ap, int);
-        int indx3 = va_arg(ap, int);
-        int indx4 = va_arg(ap, int);
-        _vl_svPutBitArrElem(d, value, 4, indx1, indx2, indx3, indx4);
         break;
     }
     default: _vl_svPutBitArrElem(d, value, -1, 0, 0, 0, 0); break;  // Will error
