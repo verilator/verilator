@@ -23,14 +23,14 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: verilator/verilator/.github/actions/coverage-build
 
   test-dist:
     needs: buildjob
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: verilator/verilator/.github/actions/coverage-build
     - run: bash TESTS=coverage-dist ci/ci-script.bash
 
   test-vlt-0:
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: verilator/verilator/.github/actions/coverage-build
     - run: bash TESTS=coverage-vlt-0 ci/ci-script.bash
 
   test-vlt-1:
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: verilator/verilator/.github/actions/coverage-build
     - run: bash TESTS=coverage-vlt-1 ci/ci-script.bash
 
   test-vlt-2:
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: verilator/verilator/.github/actions/coverage-build
     - run: bash TESTS=coverage-vlt-2 ci/ci-script.bash
 
   test-vlt-3:
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: verilator/verilator/.github/actions/coverage-build
     - run: bash TESTS=coverage-vlt-3 ci/ci-script.bash
 
   test-vltmt-0:
@@ -70,7 +70,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: verilator/verilator/.github/actions/coverage-build
     - run: bash TESTS=coverage-vltmt-0 ci/ci-script.bash
 
   test-vltmt-1:
@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: verilator/verilator/.github/actions/coverage-build
     - run: bash TESTS=coverage-vltmt-1 ci/ci-script.bash
 
   test-vltmt-2:
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: verilator/verilator/.github/actions/coverage-build
     - run: bash TESTS=coverage-vltmt-2 ci/ci-script.bash
 
   test-vltmt-3:
@@ -94,5 +94,5 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: verilator/verilator/.github/actions/coverage-build
     - run: bash TESTS=coverage-vltmt-3 ci/ci-script.bash
