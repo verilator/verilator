@@ -728,20 +728,17 @@ test, run the following command.
 
 === Continuous Integration
 
-Verilator has a https://travis-ci.com/verilator/verilator[Travis CI environment]
-which automatically tests the master branch for test failures on new commits. It
-also runs a daily cron job to validate all of the tests against different OS and
-compiler versions.
+Verilator uses GitHub Actions which automatically tests the master branch
+for test failures on new commits. It also runs a daily cron job to validate
+all of the tests against different OS and compiler versions.
 
-Developers can connect Travis CI to their GitHub account so that the CI
-environment can check their branches too by doing the following:
+Developers can enable Actions on their GitHub repository so that the CI
+environment can check their branches too by enabling the build workflow:
 
-* Go to https://github.com/marketplace/travis-ci and follow the prompts
-
-* Only the Open Source (FREE) version of Travis CI is required
-
-* Under a Travis CI project click More options > Settings in order to set up a
-cron job on a particular branch
+* On GitHub, navigate to the main page of the repository.
+* Under your repository name, click Actions.
+* In the left sidebar, click the workflow you want to enable ("build").
+* Click Enable workflow.
 
 === Fuzzing
 

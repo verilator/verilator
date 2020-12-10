@@ -27,8 +27,8 @@ contributions flow more efficiently.
 * You may attach a patch to the issue, or (preferred) may request a GitHub
   pull request.
 
-** Verilator uses Travis CI to provide continuous integration. You may
-   want to setup Travis CI on your GitHub branch to ensure your changes
+** Verilator uses GitHub Actions to provide continuous integration. You may
+   want to enable Actions on your GitHub branch to ensure your changes
    keep the tests passing.  See link:internals.adoc[docs/internals].
 
 * Your source-code contributions must be certified as open source, under

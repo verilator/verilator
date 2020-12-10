@@ -69,7 +69,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     stat bin/verilator_bin_dbg
     # For some reason, the dbg exe is corrupted by this point ('file' reports
     # it as data rather than a Mach-O). Unclear if this is an OS X issue or
-    # one for Travis. Remove the file and re-link...
+    # CI's. Remove the file and re-link...
     rm bin/verilator_bin_dbg
     "$MAKE" -j "$NPROC" -k
   elif [ "$CI_OS_NAME" = "freebsd" ]; then
