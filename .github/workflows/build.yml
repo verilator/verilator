@@ -11,17 +11,25 @@ on:
   schedule:
   - cron: '0 0 * * 0' # weekly
 
+env:
+  CI_OS_NAME: linux
+  CI_COMMIT: ${{ github.sha }}
+  CCACHE_COMPRESS: 1
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
+
 jobs:
 
-  vlt:
+  Build:
     strategy:
       fail-fast: false
       matrix:
-        include:
+        debug: [ no, yes ]
+        compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
     runs-on: ubuntu-20.04
-    name: Ubuntu 20.04 | ${{ matrix.cc }} | build-test
+    name: Build | ${{ matrix.compiler.cc }} | ${{ matrix.debug }}
     env:
       CI_OS_NAME: linux
       CI_RUNS_ON: ubuntu-20.04
@@ -29,49 +37,84 @@ jobs:
       CCACHE_COMPRESS: 1
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
-      CC: ${{ matrix.cc }}
-      CXX: ${{ matrix.cxx }}
+      CC: ${{ matrix.compiler.cc }}
+      CXX: ${{ matrix.compiler.cxx }}
+      CI_BUILD_STAGE_NAME: build
     steps:
 
-      - name: Checkout
-        uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
 
-      - name: Cache
-        uses: actions/cache@v2
-        env:
-          cache-name: ccache
-        with:
-          path: ${{ github.workspace }}/.ccache
-          key: ubuntu-20.04-${{ matrix.cc }}-${{ env.cache-name }}-${{ github.sha }}
-          restore-keys: |
-            ubuntu-20.04-${{ matrix.cc }}-${{ env.cache-name }}
+    - name: Cache
+      uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: ubuntu-20.04-${{ matrix.compiler.cc }}-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: ubuntu-20.04-${{ matrix.compiler.cc }}-${{ matrix.debug }}-${{ env.cache-name }}
 
-      - name: Install packages for build
-        env:
-          CI_BUILD_STAGE_NAME: build
-        run: bash ci/ci-install.bash
+    - name: Install packages for build
+      run: ./ci/ci-install.bash
 
-      - name: CCACHE maintenance
-        run: mkdir -p $CCACHE_DIR && bash ci/ci-ccache-maint.bash
+    - name: CCACHE maintenance
+      run: mkdir -p $CCACHE_DIR && ./ci/ci-ccache-maint.bash
 
-      - name: Build
-        env:
-          CI_BUILD_STAGE_NAME: build
-        run: bash ci/ci-script.bash
+    - name: Build
+      run: |
+        ./ci/ci-script.bash
 
-      - name: Install packages for tests
-        env:
-          CI_BUILD_STAGE_NAME: test
-        run: bash ci/ci-install.bash
+        # FIXME Should create a real package/tarball
+        touch verilator-${CI_COMMIT}-${{ matrix.debug }}.tgz
 
-      - name: Test
-        env:
-          CI_BUILD_STAGE_NAME: test
-        run: |
-          for item in dist-vlt-0 dist-vlt-1 vltmt-0 vltmt-1; do
-            echo "::group::${item}"
+    - uses: actions/upload-artifact@v2
+      with:
+        path: verilator-${{ env.CI_COMMIT }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz
 
-            TESTS="${item}" bash ci/ci-script.bash
 
-            echo '::endgroup::'
-          done
+  Test:
+    needs: Build
+    strategy:
+      fail-fast: false
+      matrix:
+        debug: [ no, yes ]
+        compiler:
+          - { cc: clang, cxx: clang++ }
+          - { cc: gcc,   cxx: g++     }
+        suite:
+          - dist-vlt-0
+          - dist-vlt-1
+          - vltmt-0
+          - vltmt-1
+    runs-on: ubuntu-20.04
+    name: Test | ${{ matrix.compiler.cc }} | ${{ matrix.debug }} | ${{ matrix.suite }}
+    env:
+      CC: ${{ matrix.compiler.cc }}
+      CXX: ${{ matrix.compiler.cxx }}
+      CI_BUILD_STAGE_NAME: test
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache
+      uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: ubuntu-20.04-${{ matrix.compiler.cc }}-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: ubuntu-20.04-${{ matrix.compiler.cc }}-${{ matrix.debug }}-${{ env.cache-name }}
+
+    - uses: actions/download-artifact@v2
+
+    - name: Install Verilator and test dependencies
+      run: |
+        # FIXME Should install artifact/verilator-${CI_COMMIT}-${{ matrix.debug }}.tgz
+
+        ./ci/ci-install.bash
+
+    - name: Test
+      env:
+        TESTS: ${{ matrix.suite }}
+      run: ./ci/ci-script.bash
