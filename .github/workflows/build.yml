@@ -24,12 +24,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        os: [ 'ubuntu-18.04', 'ubuntu-20.04' ]
         debug: [ no, yes ]
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
-    runs-on: ubuntu-20.04
-    name: Build | ${{ matrix.compiler.cc }} | ${{ matrix.debug }}
+    runs-on: ${{ matrix.os }}
+    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.debug }}
     env:
       CI_OS_NAME: linux
       CI_RUNS_ON: ubuntu-20.04
@@ -40,6 +41,7 @@ jobs:
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
       CI_BUILD_STAGE_NAME: build
+      CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}
     steps:
 
     - name: Checkout
@@ -51,8 +53,8 @@ jobs:
         cache-name: ccache
       with:
         path: ${{ github.workspace }}/.ccache
-        key: ubuntu-20.04-${{ matrix.compiler.cc }}-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: ubuntu-20.04-${{ matrix.compiler.cc }}-${{ matrix.debug }}-${{ env.cache-name }}
+        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: ${{ env.CACHE_KEY }}-${{ env.cache-name }}
 
     - name: Install packages for build
       run: ./ci/ci-install.bash
@@ -76,7 +78,9 @@ jobs:
     needs: Build
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
+        os: [ 'ubuntu-18.04', 'ubuntu-20.04' ]
         debug: [ no, yes ]
         compiler:
           - { cc: clang, cxx: clang++ }
@@ -86,12 +90,13 @@ jobs:
           - dist-vlt-1
           - vltmt-0
           - vltmt-1
-    runs-on: ubuntu-20.04
-    name: Test | ${{ matrix.compiler.cc }} | ${{ matrix.debug }} | ${{ matrix.suite }}
+    runs-on: ${{ matrix.os }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.debug }} | ${{ matrix.suite }}
     env:
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
       CI_BUILD_STAGE_NAME: test
+      CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}
     steps:
 
     - name: Checkout
@@ -103,8 +108,8 @@ jobs:
         cache-name: ccache
       with:
         path: ${{ github.workspace }}/.ccache
-        key: ubuntu-20.04-${{ matrix.compiler.cc }}-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: ubuntu-20.04-${{ matrix.compiler.cc }}-${{ matrix.debug }}-${{ env.cache-name }}
+        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: ${{ env.CACHE_KEY }}-${{ env.cache-name }}
 
     - uses: actions/download-artifact@v2
 
