@@ -63,9 +63,7 @@ jobs:
     - name: Build
       run: |
         ./ci/ci-script.bash
-
-        # FIXME Should create a real package/tarball
-        touch verilator-${CI_COMMIT}-${{ matrix.debug }}.tgz
+        tar cvzf verilator-${CI_COMMIT}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz ./bin
 
     - uses: actions/upload-artifact@v2
       with:
@@ -113,8 +111,7 @@ jobs:
 
     - name: Install Verilator and test dependencies
       run: |
-        # FIXME Should install artifact/verilator-${CI_COMMIT}-${{ matrix.debug }}.tgz
-
+        tar xvzf artifact/verilator-${CI_COMMIT}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz
         ./ci/ci-install.bash
 
     - name: Test
