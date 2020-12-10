@@ -53,8 +53,10 @@
 # ifndef WIFEXITED
 #  ifdef __MINGW32__
 #   define WIFEXITED(w)	(((w) & 0xC0000000) == 0)
+#   define WEXITSTATUS(w)	((w) & ~0xC0000000)
 #  else
 #   define WIFEXITED(w)	(((w) & 0377) == 0)
+#   define WEXITSTATUS(w)	(((w) >> 8) & 0377)
 #  endif
 # endif
 #else
