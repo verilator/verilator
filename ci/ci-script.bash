@@ -57,9 +57,11 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ##############################################################################
   # Run tests
 
+  export VERILATOR_TEST_NO_CONTRIBUTORS=1  # Separate workflow check
+
   if [ "$CI_OS_NAME" = "osx" ]; then
-    export VERILATOR_TEST_NO_GDB=1 # Pain to get GDB to work on OS X
-    export VERILATOR_TEST_NO_GPROF=1 # Apple Clang has no -pg
+    export VERILATOR_TEST_NO_GDB=1  # Pain to get GDB to work on OS X
+    export VERILATOR_TEST_NO_GPROF=1  # Apple Clang has no -pg
     # export PATH="/Applications/gtkwave.app/Contents/Resources/bin:$PATH" # fst2vcd
     file bin/verilator_bin
     file bin/verilator_bin_dbg
