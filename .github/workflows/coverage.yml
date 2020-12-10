@@ -24,14 +24,31 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash
+
 
   test-dist:
     needs: buildjob
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash
     - run: bash TESTS=coverage-dist ci/ci-script.bash
 
   test-vlt-0:
@@ -39,7 +56,15 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash
     - run: bash TESTS=coverage-vlt-0 ci/ci-script.bash
 
   test-vlt-1:
@@ -47,7 +72,15 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash
     - run: bash TESTS=coverage-vlt-1 ci/ci-script.bash
 
   test-vlt-2:
@@ -55,7 +88,15 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash
     - run: bash TESTS=coverage-vlt-2 ci/ci-script.bash
 
   test-vlt-3:
@@ -63,7 +104,15 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash
     - run: bash TESTS=coverage-vlt-3 ci/ci-script.bash
 
   test-vltmt-0:
@@ -71,7 +120,15 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash
     - run: bash TESTS=coverage-vltmt-0 ci/ci-script.bash
 
   test-vltmt-1:
@@ -79,7 +136,15 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash
     - run: bash TESTS=coverage-vltmt-1 ci/ci-script.bash
 
   test-vltmt-2:
@@ -87,7 +152,15 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash
     - run: bash TESTS=coverage-vltmt-2 ci/ci-script.bash
 
   test-vltmt-3:
@@ -95,5 +168,13 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/coverage-build
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash
     - run: bash TESTS=coverage-vltmt-3 ci/ci-script.bash
