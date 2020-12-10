@@ -12,21 +12,16 @@ on:
   - cron: '0 0 * * 0' # weekly
 
 jobs:
+
   vlt:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
-        compiler: [clang, gcc]
         include:
-          - compiler: clang
-            cc: clang
-            cxx: clang++
-          - compiler: gcc
-            cc: gcc
-            cxx: g++
-    runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }}-${{ matrix.compiler }}-build-test
+          - { cc: clang, cxx: clang++ }
+          - { cc: gcc,   cxx: g++     }
+    runs-on: ubuntu-20.04
+    name: Ubuntu 20.04 | ${{ matrix.cc }} | build-test
     env:
       CI_OS_NAME: linux
       CI_COMMIT: ${{ github.sha }}
@@ -36,48 +31,46 @@ jobs:
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
     steps:
+
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Cache
         uses: actions/cache@v2
         env:
           cache-name: ccache
         with:
           path: ${{ github.workspace }}/.ccache
-          key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ env.cache-name }}-${{ github.sha }}
+          key: ubuntu-20.04-${{ matrix.cc }}-${{ env.cache-name }}-${{ github.sha }}
           restore-keys: |
-            ${{ matrix.os }}-${{ matrix.compiler }}-${{ env.cache-name }}
+            ubuntu-20.04-${{ matrix.cc }}-${{ env.cache-name }}
+
       - name: Install packages for build
         env:
           CI_BUILD_STAGE_NAME: build
         run: bash ci/ci-install.bash
+
       - name: CCACHE maintenance
         run: mkdir -p $CCACHE_DIR && bash ci/ci-ccache-maint.bash
+
       - name: Build
         env:
           CI_BUILD_STAGE_NAME: build
         run: bash ci/ci-script.bash
+
       - name: Install packages for tests
         env:
           CI_BUILD_STAGE_NAME: test
         run: bash ci/ci-install.bash
-      - name: Test dist-vlt-0
+
+      - name: Test
         env:
           CI_BUILD_STAGE_NAME: test
-          TESTS: dist-vlt-0
-        run: bash ci/ci-script.bash
-      - name: Test dist-vlt-1
-        env:
-          CI_BUILD_STAGE_NAME: test
-          TESTS: dist-vlt-1
-        run: bash ci/ci-script.bash
-      - name: Test vltmt-0
-        env:
-          CI_BUILD_STAGE_NAME: test
-          TESTS: vltmt-0
-        run: bash ci/ci-script.bash
-      - name: Test vltmt-1
-        env:
-          CI_BUILD_STAGE_NAME: test
-          TESTS: vltmt-1
-        run: bash ci/ci-script.bash
+        run: |
+          for item in dist-vlt-0 dist-vlt-1 vltmt-0 vltmt-1; do
+            echo "::group::${item}"
+
+            TESTS="${item}" bash ci/ci-script.bash
+
+            echo '::endgroup::'
+          done
