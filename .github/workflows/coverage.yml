@@ -40,9 +40,6 @@ jobs:
         CI_BUILD_STAGE_NAME: build
       run: ./ci/ci-install.bash
 
-    - name: CCACHE maintenance
-      run: mkdir -p $CCACHE_DIR && ./ci/ci-ccache-maint.bash
-
     - name: Build Verilator
       run: |
         ./ci/ci-script.bash
