@@ -27,6 +27,7 @@ jobs:
 
   test-dist:
     needs: buildjob
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/coverage-build
@@ -34,6 +35,7 @@ jobs:
 
   test-vlt-0:
     needs: buildjob
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/coverage-build
@@ -41,6 +43,7 @@ jobs:
 
   test-vlt-1:
     needs: buildjob
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/coverage-build
@@ -48,6 +51,7 @@ jobs:
 
   test-vlt-2:
     needs: buildjob
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/coverage-build
@@ -55,6 +59,7 @@ jobs:
 
   test-vlt-3:
     needs: buildjob
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/coverage-build
@@ -62,6 +67,7 @@ jobs:
 
   test-vltmt-0:
     needs: buildjob
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/coverage-build
@@ -69,6 +75,7 @@ jobs:
 
   test-vltmt-1:
     needs: buildjob
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/coverage-build
@@ -76,6 +83,7 @@ jobs:
 
   test-vltmt-2:
     needs: buildjob
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/coverage-build
@@ -83,6 +91,7 @@ jobs:
 
   test-vltmt-3:
     needs: buildjob
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/coverage-build
