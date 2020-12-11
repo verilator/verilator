@@ -72,7 +72,6 @@ jobs:
       max-parallel: 8
       matrix:
         os: [ 'ubuntu-16.04', 'ubuntu-18.04', 'ubuntu-20.04' ]
-        debug: [ opt, dbg ]
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
@@ -82,11 +81,10 @@ jobs:
           - vltmt-0
           - vltmt-1
     runs-on: ${{ matrix.os }}
-    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.debug }} | ${{ matrix.suite }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.suite }}
     env:
       CI_BUILD_STAGE_NAME: test
       CI_RUNS_ON: ${{ matrix.os }}
-      CI_MAKE_SRC_TARGET: ${{ matrix.debug }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
       CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}
@@ -108,7 +106,8 @@ jobs:
 
     - name: Install Verilator and test dependencies
       run: |
-        tar xvzf artifact/verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz
+        tar xvzf artifact/verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-opt.tgz
+        tar xvzf artifact/verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-dbg.tgz
         ./ci/ci-install.bash
 
     - name: Test
