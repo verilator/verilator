@@ -166,8 +166,8 @@ public:
                         sectionr = "";
                     }
                     UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
-                    // These should be static const values, however microsloth VC++ doesn't
-                    // support them.  They also cause problems with GDB under GCC2.95.
+                    // These should be static const values, however older MSVC++ did't
+                    // support them; should be ok now under C++11, need to refactor.
                     if (varp->isWide()) {  // Unsupported for output
                         if (!init) {
                             putsDecoration("// enum WData " + varp->nameProtect() + "  //wide");
