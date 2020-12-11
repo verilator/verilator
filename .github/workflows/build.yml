@@ -108,6 +108,7 @@ jobs:
       run: |
         tar xvzf artifact/verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-opt.tgz
         tar xvzf artifact/verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-dbg.tgz
+        rm -rf artifact
         ./ci/ci-install.bash
 
     - name: Test
