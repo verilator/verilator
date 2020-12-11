@@ -49,7 +49,9 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     sudo apt-get install libfl-dev
     sudo apt-get install libgoogle-perftools-dev
     sudo apt-get install ccache
-    sudo apt-get install libsystemc libsystemc-dev
+    if [ "$CI_RUNS_ON" = "ubuntu-20.04" ]; then
+      sudo apt-get install libsystemc libsystemc-dev
+    fi
     if [ "$COVERAGE" = 1 ]; then
       yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
     fi
@@ -72,7 +74,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   if [ "$CI_OS_NAME" = "linux" ]; then
     sudo apt-get update
     sudo apt-get install gdb gtkwave lcov
-    if [ "$CI_DIST" = "focal" ]; then
+    if [ "$CI_RUNS_ON" = "ubuntu-20.04" ]; then
       sudo apt-get install libsystemc-dev
     fi
     if [ "$M32" = 1 ]; then
@@ -89,7 +91,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     fatal "Unknown os: '$CI_OS_NAME'"
   fi
   # Common installs
-  if [ "$CI_DIST" != "trusty" ]; then
+  if [ "$CI_RUNS_ON" != "ubuntu-14.04" ]; then
     CI_CPAN_REPO=https://cpan.org
   fi
   yes yes | sudo cpan -M $CI_CPAN_REPO -fi Unix::Processors Parallel::Forker

@@ -24,6 +24,7 @@ jobs:
     name: Ubuntu 20.04 | ${{ matrix.cc }} | build-test
     env:
       CI_OS_NAME: linux
+      CI_RUNS_ON: ubuntu-20.04
       CI_COMMIT: ${{ github.sha }}
       CCACHE_COMPRESS: 1
       CCACHE_DIR: ${{ github.workspace }}/.ccache
