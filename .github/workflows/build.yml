@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ 'ubuntu-20.04' ] # 'ubuntu-18.04',
+        os: [ 'ubuntu-16.04', 'ubuntu-18.04', 'ubuntu-20.04' ]
         debug: [ opt, dbg ]
         compiler:
           - { cc: clang, cxx: clang++ }
@@ -33,7 +33,7 @@ jobs:
     name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.debug }}
     env:
       CI_OS_NAME: linux
-      CI_RUNS_ON: ubuntu-20.04
+      CI_RUNS_ON: ${{ matrix.os }}
       CI_COMMIT: ${{ github.sha }}
       CCACHE_COMPRESS: 1
       CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -63,11 +63,11 @@ jobs:
     - name: Build
       run: |
         ./ci/ci-script.bash
-        tar cvzf verilator-${CI_COMMIT}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz ./bin
+        tar cvzf verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz ./bin
 
     - uses: actions/upload-artifact@v2
       with:
-        path: verilator-${{ env.CI_COMMIT }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz
+        path: verilator-${{ matrix.os}}-${{ env.CI_COMMIT }}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz
 
 
   Test:
@@ -76,7 +76,7 @@ jobs:
       fail-fast: false
       max-parallel: 8
       matrix:
-        os: [ 'ubuntu-20.04' ] # 'ubuntu-18.04',
+        os: [ 'ubuntu-16.04', 'ubuntu-18.04', 'ubuntu-20.04' ]
         debug: [ opt, dbg ]
         compiler:
           - { cc: clang, cxx: clang++ }
@@ -93,6 +93,7 @@ jobs:
       CXX: ${{ matrix.compiler.cxx }}
       CI_BUILD_STAGE_NAME: test
       CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}
+      CI_RUNS_ON: ${{ matrix.os }}
     steps:
 
     - name: Checkout
@@ -111,7 +112,7 @@ jobs:
 
     - name: Install Verilator and test dependencies
       run: |
-        tar xvzf artifact/verilator-${CI_COMMIT}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz
+        tar xvzf artifact/verilator-${{ matrix.os}}-${CI_COMMIT}-${{ matrix.compiler.cc }}-${{ matrix.debug }}.tgz
         ./ci/ci-install.bash
 
     - name: Test
