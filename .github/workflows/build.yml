@@ -32,17 +32,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.debug }}
     env:
-      CI_OS_NAME: linux
+      CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ matrix.os }}
-      CI_COMMIT: ${{ github.sha }}
-      CCACHE_COMPRESS: 1
-      CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
+      CI_MAKE_SRC_TARGET: ${{ matrix.debug }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CI_BUILD_STAGE_NAME: build
       CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}
-      CI_MAKE_SRC_TARGET: ${{ matrix.debug }}
     steps:
 
     - name: Checkout
@@ -89,11 +84,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.debug }} | ${{ matrix.suite }}
     env:
+      CI_BUILD_STAGE_NAME: test
+      CI_RUNS_ON: ${{ matrix.os }}
+      CI_MAKE_SRC_TARGET: ${{ matrix.debug }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CI_BUILD_STAGE_NAME: test
       CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}
-      CI_RUNS_ON: ${{ matrix.os }}
     steps:
 
     - name: Checkout
