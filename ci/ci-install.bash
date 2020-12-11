@@ -69,7 +69,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     fatal "Unknown os: '$CI_OS_NAME'"
   fi
 
-  mkdir -p $CCACHE_DIR && ./ci/ci-ccache-maint.bash
+  mkdir -p "$CCACHE_DIR" && ./ci/ci-ccache-maint.bash
 elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ##############################################################################
   # Dependencies of jobs in the 'test' stage, i.e.: packages required to
