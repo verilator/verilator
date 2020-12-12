@@ -2465,7 +2465,8 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			{ // Convert BEGIN(...) to BEGIN(GENFOR(...)), as we need the BEGIN to hide the local genvar
 			  AstBegin* lowerBegp = VN_CAST($9, Begin);
 			  UASSERT_OBJ(!($9 && !lowerBegp), $9, "Child of GENFOR should have been begin");
-			  if (!lowerBegp) lowerBegp = new AstBegin($1, "genblk", nullptr, true, true);  // Empty body
+
+			  if (!lowerBegp) lowerBegp = new AstBegin($1, "", nullptr, true, false);  // Empty body
 			  AstNode* lowerNoBegp = lowerBegp->stmtsp();
 			  if (lowerNoBegp) lowerNoBegp->unlinkFrBackWithNext();
 			  //
@@ -2479,7 +2480,7 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			  }
 			  // Statements are under 'genforp' as cells under this
 			  // for loop won't get an extra layer of hierarchy tacked on
-			  blkp->addGenforp(new AstGenFor($1,initp,$5,$7,lowerNoBegp));
+			  blkp->addGenforp(new AstGenFor($1, initp, $5, $7, lowerNoBegp));
 			  $$ = blkp;
 			  VL_DO_DANGLING(lowerBegp->deleteTree(), lowerBegp);
 			}

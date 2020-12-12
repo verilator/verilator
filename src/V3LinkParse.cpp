@@ -57,6 +57,8 @@ private:
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
     AstNodeDType* m_dtypep = nullptr;  // Current data type
+    int m_genblkAbove = 0;  // Begin block number of if/case/for above
+    int m_genblkNum = 0;  // Begin block number, 0=none seen
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
 
     // METHODS
@@ -495,12 +497,16 @@ private:
         V3Config::applyModule(nodep);
 
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_genblkAbove);
+        VL_RESTORER(m_genblkNum);
         VL_RESTORER(m_lifetime);
         {
             // Module: Create sim table for entire module and iterate
             cleanFileline(nodep);
             //
             m_modp = nodep;
+            m_genblkAbove = 0;
+            m_genblkNum = 0;
             m_valueModp = nodep;
             m_lifetime = nodep->lifetime();
             if (m_lifetime.isNone()) {
@@ -538,13 +544,45 @@ private:
                              || VN_IS(nodep->stmtsp(), GenCase))  // Has an if/case
                          && !nodep->stmtsp()->nextp());  // Has only one item
         // It's not FOR(BEGIN(...)) but we earlier changed it to BEGIN(FOR(...))
-        if (nodep->genforp() && nodep->name() == "") {
-            nodep->name("genblk");
-        } else if (nodep->generate() && nodep->name() == ""
-                   && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
-            nodep->name("genblk");
+        if (nodep->genforp()) {
+            ++m_genblkNum;
+            if (nodep->name() == "") nodep->name("genblk" + cvtToStr(m_genblkNum));
         }
-        iterateChildren(nodep);
+        if (nodep->generate() && nodep->name() == ""
+                   && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
+            nodep->name("genblk" + cvtToStr(m_genblkAbove));
+        }
+        if (nodep->name() != "") {
+            VL_RESTORER(m_genblkAbove);
+            VL_RESTORER(m_genblkNum);
+            m_genblkAbove = 0;
+            m_genblkNum = 0;
+            iterateChildren(nodep);
+        } else {
+            iterateChildren(nodep);
+        }
+    }
+    virtual void visit(AstGenCase* nodep) override {
+        ++m_genblkNum;
+        cleanFileline(nodep);
+        {
+            VL_RESTORER(m_genblkAbove);
+            VL_RESTORER(m_genblkNum);
+            m_genblkAbove = m_genblkNum;
+            m_genblkNum = 0;
+            iterateChildren(nodep);
+        }
+    }
+    virtual void visit(AstGenIf* nodep) override {
+        ++m_genblkNum;
+        cleanFileline(nodep);
+        {
+            VL_RESTORER(m_genblkAbove);
+            VL_RESTORER(m_genblkNum);
+            m_genblkAbove = m_genblkNum;
+            m_genblkNum = 0;
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstCase* nodep) override {
         V3Config::applyCase(nodep);

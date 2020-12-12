@@ -718,7 +718,6 @@ class LinkDotFindVisitor final : public AstNVisitor {
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     bool m_inRecursion = false;  // Inside a recursive module
     int m_paramNum = 0;  // Parameter number, for position based connection
-    int m_blockNum = 0;  // Begin block number, 0=none seen
     bool m_explicitNew = false;  // Hit a "new" function
     int m_modBlockNum = 0;  // Begin block number in module, 0=none seen
     int m_modWithNum = 0;  // With block number, 0=none seen
@@ -783,7 +782,6 @@ class LinkDotFindVisitor final : public AstNVisitor {
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_paramNum);
-        VL_RESTORER(m_blockNum);
         VL_RESTORER(m_modBlockNum);
         VL_RESTORER(m_modWithNum);
         if (doit && nodep->user2()) {
@@ -810,7 +808,6 @@ class LinkDotFindVisitor final : public AstNVisitor {
             }
             //
             m_paramNum = 0;
-            m_blockNum = 0;
             m_modBlockNum = 0;
             m_modWithNum = 0;
             // m_modSymp/m_curSymp for non-packages set by AstCell above this module
@@ -845,7 +842,6 @@ class LinkDotFindVisitor final : public AstNVisitor {
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_paramNum);
-        VL_RESTORER(m_blockNum);
         VL_RESTORER(m_modBlockNum);
         VL_RESTORER(m_modWithNum);
         {
@@ -859,7 +855,6 @@ class LinkDotFindVisitor final : public AstNVisitor {
             UINFO(9, "New module scope " << m_curSymp << endl);
             //
             m_paramNum = 0;
-            m_blockNum = 0;
             m_modBlockNum = 0;
             m_modWithNum = 0;
             m_explicitNew = false;
@@ -937,14 +932,6 @@ class LinkDotFindVisitor final : public AstNVisitor {
     }
     virtual void visit(AstNodeBlock* nodep) override {
         UINFO(5, "   " << nodep << endl);
-        // Rename "genblk"s to include a number
-        if (m_statep->forPrimary() && !nodep->user4SetOnce()) {
-            if (nodep->name() == "genblk") {
-                ++m_blockNum;
-                nodep->name(nodep->name() + cvtToStr(m_blockNum));
-            }
-        }
-        // All blocks are numbered in the standard, IE we start with "genblk1" even if only one.
         if (nodep->name() == "" && nodep->unnamed()) {
             // Unnamed blocks are only important when they contain var
             // decls, so search for them. (Otherwise adding all the
@@ -962,12 +949,10 @@ class LinkDotFindVisitor final : public AstNVisitor {
         if (nodep->name() == "") {
             iterateChildren(nodep);
         } else {
-            VL_RESTORER(m_blockNum);
             VL_RESTORER(m_blockp);
             VL_RESTORER(m_curSymp);
             VSymEnt* const oldCurSymp = m_curSymp;
             {
-                m_blockNum = 0;
                 m_blockp = nodep;
                 m_curSymp
                     = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
