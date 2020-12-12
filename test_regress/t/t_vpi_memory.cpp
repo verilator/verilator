@@ -174,6 +174,9 @@ int _mon_check_memory() {
     CHECK_RESULT_NZ(side_h);
     vpi_get_value(side_h, &value);
     CHECK_RESULT(value.value.integer, 1);
+    // iterator should exhaust after 1 dimension
+    lcl_h = vpi_scan(iter_h);
+    CHECK_RESULT(lcl_h, 0);
 
     // check writing to vpiConstant
     vpi_put_value(side_h, &value, NULL, vpiNoDelay);
