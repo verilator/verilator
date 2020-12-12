@@ -113,14 +113,14 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
             `DRIVE(s65)
             `DRIVE(s129)
             `DRIVE(s4x32)
-            {s6x16up_in[0][0], s6x16up_in[0][1], s6x16up_in[0][2]} = crc[47:0];
-            {s6x16up_in[1][0], s6x16up_in[1][1], s6x16up_in[1][2]} = ~crc[63:16];
-            {s8x16up_in[0][0], s8x16up_in[0][1], s8x16up_in[0][2], s8x16up_in[0][3]} = crc;
-            {s8x16up_in[1][0], s8x16up_in[1][1], s8x16up_in[1][2], s8x16up_in[1][3]} = ~crc;
-            {s8x16up_3d_in[0][0][0], s8x16up_3d_in[0][0][1]} = ~crc[31:0];
-            {s8x16up_3d_in[0][1][0], s8x16up_3d_in[0][1][1]} = ~crc[63:32];
-            {s8x16up_3d_in[1][0][0], s8x16up_3d_in[1][0][1]} = crc[31:0];
-            {s8x16up_3d_in[1][1][0], s8x16up_3d_in[1][1][1]} = crc[63:32];
+            {s6x16up_in[0][0], s6x16up_in[0][1], s6x16up_in[0][2]} <= crc[47:0];
+            {s6x16up_in[1][0], s6x16up_in[1][1], s6x16up_in[1][2]} <= ~crc[63:16];
+            {s8x16up_in[0][0], s8x16up_in[0][1], s8x16up_in[0][2], s8x16up_in[0][3]} <= crc;
+            {s8x16up_in[1][0], s8x16up_in[1][1], s8x16up_in[1][2], s8x16up_in[1][3]} <= ~crc;
+            {s8x16up_3d_in[0][0][0], s8x16up_3d_in[0][0][1]} <= ~crc[31:0];
+            {s8x16up_3d_in[0][1][0], s8x16up_3d_in[0][1][1]} <= ~crc[63:32];
+            {s8x16up_3d_in[1][0][0], s8x16up_3d_in[1][0][1]} <= crc[31:0];
+            {s8x16up_3d_in[1][1][0], s8x16up_3d_in[1][1][1]} <= crc[63:32];
             if (cyc == 0) begin
                accum_in <= x*100;
                accum_bypass <= '0;
