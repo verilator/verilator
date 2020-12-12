@@ -458,6 +458,25 @@ void i_string_3d(CONSTARG char** v) {
     if (!check_3d(v)) stop();
 }
 
+void i_bit1_0d(CONSTARG svBit v) {
+    if (!compare<svScalar>(v, sv_0)) stop();
+}
+void i_bit1_1d(CONSTARG svBit* v) {
+    if (!compare<svScalar>(v[0], sv_1)) stop();
+    if (!compare<svScalar>(v[1], sv_0)) stop();
+}
+void i_bit1_2d(CONSTARG svBit* v) {
+    if (!compare<svScalar>(v[0 * 2 + 1], sv_1)) stop();
+    if (!compare<svScalar>(v[1 * 2 + 1], sv_0)) stop();
+    if (!compare<svScalar>(v[2 * 2 + 1], sv_1)) stop();
+}
+void i_bit1_3d(CONSTARG svBit* v) {
+    if (!compare<svScalar>(v[(0 * 3 + 0) * 2 + 0], sv_0)) stop();
+    if (!compare<svScalar>(v[(1 * 3 + 0) * 2 + 0], sv_1)) stop();
+    if (!compare<svScalar>(v[(2 * 3 + 0) * 2 + 0], sv_0)) stop();
+    if (!compare<svScalar>(v[(3 * 3 + 0) * 2 + 0], sv_1)) stop();
+}
+
 void i_bit7_0d(CONSTARG svBitVecVal* v) {
     if (!check_0d(v, 7)) stop();
 }
@@ -482,6 +501,25 @@ void i_bit121_2d(CONSTARG svBitVecVal* v) {
 }
 void i_bit121_3d(CONSTARG svBitVecVal* v) {
     if (!check_3d(v, 121)) stop();
+}
+
+void i_logic1_0d(CONSTARG svLogic v) {
+    if (!compare<svScalar>(v, sv_0)) stop();
+}
+void i_logic1_1d(CONSTARG svLogic* v) {
+    if (!compare<svScalar>(v[0], sv_1)) stop();
+    if (!compare<svScalar>(v[1], sv_0)) stop();
+}
+void i_logic1_2d(CONSTARG svLogic* v) {
+    if (!compare<svScalar>(v[0 * 2 + 1], sv_1)) stop();
+    if (!compare<svScalar>(v[1 * 2 + 1], sv_0)) stop();
+    if (!compare<svScalar>(v[2 * 2 + 1], sv_1)) stop();
+}
+void i_logic1_3d(CONSTARG svLogic* v) {
+    if (!compare<svScalar>(v[(0 * 3 + 0) * 2 + 0], sv_0)) stop();
+    if (!compare<svScalar>(v[(1 * 3 + 0) * 2 + 0], sv_1)) stop();
+    if (!compare<svScalar>(v[(2 * 3 + 0) * 2 + 0], sv_0)) stop();
+    if (!compare<svScalar>(v[(3 * 3 + 0) * 2 + 0], sv_1)) stop();
 }
 
 void i_logic7_0d(CONSTARG svLogicVecVal* v) {
