@@ -167,7 +167,6 @@ public:
 
 class VerilatedVpioRange final : public VerilatedVpio {
     const VerilatedRange* m_range;
-    vlsint32_t m_iteration = 0;
 
 public:
     explicit VerilatedVpioRange(const VerilatedRange* range)
@@ -179,15 +178,25 @@ public:
     virtual vluint32_t type() const override { return vpiRange; }
     virtual vluint32_t size() const override { return m_range->elements(); }
     virtual const VerilatedRange* rangep() const override { return m_range; }
-    int iteration() const { return m_iteration; }
-    void iterationInc() { ++m_iteration; }
+};
+
+class VerilatedVpioRangeIter final : public VerilatedVpio {
+    // Only supports 1 dimension
+    const VerilatedRange* m_range;
+    bool m_done = false;
+
+public:
+    explicit VerilatedVpioRangeIter(const VerilatedRange* range)
+        : m_range{range} {}
+    virtual ~VerilatedVpioRangeIter() override = default;
+    static VerilatedVpioRangeIter* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioRangeIter*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    virtual vluint32_t type() const override { return vpiIterator; }
     virtual vpiHandle dovpi_scan() override {
-        if (!iteration()) {
-            VerilatedVpioRange* nextp = new VerilatedVpioRange(*this);
-            nextp->iterationInc();
-            return ((nextp)->castVpiHandle());
-        }
-        return nullptr;  // End of list - only one deep
+        if (m_done) return nullptr;
+        m_done = true;
+        return ((new VerilatedVpioRange(m_range))->castVpiHandle());
     }
 };
 
@@ -1249,7 +1258,7 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
                             VerilatedVpiError::strFromVpiMethod(type), vop->fullname(),
                             vop->varp()->dims());
         }
-        return ((new VerilatedVpioRange(vop->rangep()))->castVpiHandle());
+        return ((new VerilatedVpioRangeIter(vop->rangep()))->castVpiHandle());
     }
     case vpiReg: {
         VerilatedVpioScope* vop = VerilatedVpioScope::castp(object);
