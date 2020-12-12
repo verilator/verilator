@@ -693,13 +693,13 @@ public:
 
         if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
-        } else if (AstNodeModule* modp
+        } else if (AstNodeModule* paramedModp
                    = m_hierBlocks.findByParams(srcModp->name(), nodep->paramsp(), m_modp)) {
-            nodep->modp(modp);
-            nodep->modName(modp->name());
-            modp->dead(false);
+            nodep->modp(paramedModp);
+            nodep->modName(paramedModp->name());
+            paramedModp->dead(false);
             // We need to relink the pins to the new module
-            relinkPinsByName(nodep->pinsp(), modp);
+            relinkPinsByName(nodep->pinsp(), paramedModp);
         } else {
             string newname = moduleCalcName(srcModp, nodep->paramsp(), longname);
             const ModInfo* modInfop
@@ -708,7 +708,7 @@ public:
             nodep->modp(modInfop->m_modp);
             nodep->modName(newname);
             // We need to relink the pins to the new module
-            relinkPins(&(modInfop->m_cloneMap), nodep->pinsp());
+            relinkPinsByName(nodep->pinsp(), modInfop->m_modp);
             UINFO(8, "     Done with " << modInfop->m_modp << endl);
         }
 
