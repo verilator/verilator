@@ -88,6 +88,45 @@ public:
 };
 
 //===================================================================
+// Verilog wide-number-in-array container
+// Similar to std::array<WData, N>, but lighter weight, only methods needed
+// by Verilator, to help compile time.
+//
+// This is only used when we need an upper-level container and so can't
+// simply use a C style array (which is just a pointer).
+
+template <std::size_t T_Words> class VlWide final {
+    WData m_storage[T_Words];
+
+public:
+    // cppcheck-suppress uninitVar
+    VlWide() = default;
+    ~VlWide() = default;
+    VlWide(const VlWide&) = default;
+    VlWide(VlWide&&) = default;
+    VlWide& operator=(const VlWide&) = default;
+    VlWide& operator=(VlWide&&) = default;
+    // METHODS
+    const WData& at(size_t index) const { return m_storage[index]; }
+    WData& at(size_t index) { return m_storage[index]; }
+    WData* data() { return &m_storage[0]; }
+    const WData* data() const { return &m_storage[0]; }
+    bool operator<(const VlWide<T_Words>& rhs) const {
+        return VL_LT_W(T_Words, data(), rhs.data());
+    }
+};
+
+// Convert a C array to std::array reference by pointer magic, without copy.
+// Data type (second argument) is so the function template can automatically generate.
+template <std::size_t T_Words> VlWide<T_Words>& VL_CVT_W_A(WDataInP inp, const VlWide<T_Words>&) {
+    return *((VlWide<T_Words>*)inp);
+}
+
+template <std::size_t T_Words> std::string VL_TO_STRING(const VlWide<T_Words>& obj) {
+    return VL_TO_STRING_W(T_Words, obj.data());
+}
+
+//===================================================================
 // Verilog queue and dynamic array container
 // There are no multithreaded locks on this; the base variable must
 // be protected by other means
@@ -442,45 +481,6 @@ public:
 
 template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
     return obj.to_string();
-}
-
-//===================================================================
-// Verilog array container
-// Similar to std::array<WData, N>, but lighter weight, only methods needed
-// by Verilator, to help compile time.
-//
-// This is only used when we need an upper-level container and so can't
-// simply use a C style array (which is just a pointer).
-
-template <std::size_t T_Words> class VlWide final {
-    WData m_storage[T_Words];
-
-public:
-    // cppcheck-suppress uninitVar
-    VlWide() = default;
-    ~VlWide() = default;
-    VlWide(const VlWide&) = default;
-    VlWide(VlWide&&) = default;
-    VlWide& operator=(const VlWide&) = default;
-    VlWide& operator=(VlWide&&) = default;
-    // METHODS
-    const WData& at(size_t index) const { return m_storage[index]; }
-    WData& at(size_t index) { return m_storage[index]; }
-    WData* data() { return &m_storage[0]; }
-    const WData* data() const { return &m_storage[0]; }
-    bool operator<(const VlWide<T_Words>& rhs) const {
-        return VL_LT_W(T_Words, data(), rhs.data());
-    }
-};
-
-// Convert a C array to std::array reference by pointer magic, without copy.
-// Data type (second argument) is so the function template can automatically generate.
-template <std::size_t T_Words> VlWide<T_Words>& VL_CVT_W_A(WDataInP inp, const VlWide<T_Words>&) {
-    return *((VlWide<T_Words>*)inp);
-}
-
-template <std::size_t T_Words> std::string VL_TO_STRING(const VlWide<T_Words>& obj) {
-    return VL_TO_STRING_W(T_Words, obj.data());
 }
 
 //===================================================================
