@@ -11,6 +11,8 @@ module secret #(parameter GATED_CLK = 0)
     output [31:0]             accum_bypass_out,
     input                     s1_in,
     output logic              s1_out,
+    input                     s1up_in[2],
+    output logic              s1up_out[2],
     input [1:0]               s2_in,
     output logic [1:0]        s2_out,
     input [7:0]               s8_in,
@@ -61,6 +63,7 @@ module secret #(parameter GATED_CLK = 0)
    // Test combinatorial paths of different sizes
    always @(*) begin
       s1_out = s1_in;
+      s1up_out = s1up_in;
       s2_out = s2_in;
       s8_out = s8_in;
       s64_out = s64_in;

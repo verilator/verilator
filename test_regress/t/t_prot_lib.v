@@ -41,6 +41,8 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
          logic [31:0] accum_bypass_out_expect;
          logic        s1_in;
          logic        s1_out;
+         logic        s1up_in[2];
+         logic        s1up_out[2];
          logic [1:0]  s2_in;
          logic [1:0]  s2_out;
          logic [7:0]  s8_in;
@@ -74,6 +76,8 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
                    .accum_bypass_out,
                    .s1_in,
                    .s1_out,
+                   .s1up_in,
+                   .s1up_out,
                    .s2_in,
                    .s2_out,
                    .s8_in,
@@ -113,6 +117,7 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
             `DRIVE(s65)
             `DRIVE(s129)
             `DRIVE(s4x32)
+            {s1up_in[1], s1up_in[0]} <= {^crc, ~(^crc)};
             {s6x16up_in[0][0], s6x16up_in[0][1], s6x16up_in[0][2]} <= crc[47:0];
             {s6x16up_in[1][0], s6x16up_in[1][1], s6x16up_in[1][2]} <= ~crc[63:16];
             {s8x16up_in[0][0], s8x16up_in[0][1], s8x16up_in[0][2], s8x16up_in[0][3]} <= crc;
@@ -170,6 +175,7 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
             #1;
             /* verilator lint_on STMTDLY */
             `CHECK(s1)
+            `CHECK(s1up)
             `CHECK(s2)
             `CHECK(s8)
             `CHECK(s33)
