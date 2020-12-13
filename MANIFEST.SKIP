@@ -29,6 +29,7 @@
 /obj_opt/
 /obj_vcs/
 /obj_vlt/
+/obj_vltasan/
 /obj_vltmt/
 INCA_libs/
 /cov_work/
