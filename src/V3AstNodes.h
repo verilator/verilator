@@ -924,7 +924,8 @@ public:
         return keyword() == AstBasicDTypeKwd::BIT && isRanged();
     }
     bool isDpiLogicVec() const {  // DPI uses svLogicVecVal
-        return keyword().isFourstate() && !(keyword() == AstBasicDTypeKwd::LOGIC && !isRanged());
+        return keyword().isFourstate() && !(keyword() == AstBasicDTypeKwd::LOGIC && !isRanged())
+               && !(keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT && width1());
     }
     bool isDpiPrimitive() const {  // DPI uses a primitive type
         return !isDpiBitVec() && !isDpiLogicVec();
