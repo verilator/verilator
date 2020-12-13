@@ -198,15 +198,15 @@ public:
 class VerilatedTimedQueue {
     typedef std::pair<vluint64_t, CData*> TimeEvent;  // time, eventp
 
-    struct CustomCompare {
-        bool operator()(const TimeEvent& lhs, const TimeEvent& rhs) {
+    struct QueueCompare {
+        bool operator()(const TimeEvent& lhs, const TimeEvent& rhs) const {
             return lhs.first > rhs.first;
         }
     };
 
-    typedef std::priority_queue<int, std::vector<TimeEvent>, CustomCompare> TimedQue;
+    typedef std::priority_queue<int, std::vector<TimeEvent>, QueueCompare> TimedQueue;
     VL_MUTABLE VerilatedMutex m_mutex;  // Mutex protecting m_timeq
-    TimedQue m_timeq VL_GUARDED_BY(m_mutex);  // Times, ordered by least at top()
+    TimedQueue m_timeq VL_GUARDED_BY(m_mutex);  // Times, ordered by least at top()
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedTimedQueue);
