@@ -2486,7 +2486,7 @@ public:
     ASTNODE_BASE_FUNCS(NodeUOrStructDType)
     virtual const char* broken() const override;
     virtual void dump(std::ostream& str) const override;
-    virtual bool isCompound() const { return false; }  // Because don't support unpacked
+    virtual bool isCompound() const override { return false; }  // Because don't support unpacked
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     virtual AstBasicDType* basicp() const override {
         return (isFourstate()
