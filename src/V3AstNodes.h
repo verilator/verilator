@@ -407,6 +407,10 @@ public:
     AstVarType varType() const { return m_varType; }  // * = Type of variable
     bool isParam() const { return true; }
     bool isGParam() const { return (varType() == AstVarType::GPARAM); }
+    virtual bool isCompound() const override {
+        v3fatalSrc("call isCompound on subdata type, not reference");
+        return false;
+    }
 };
 
 class AstTypedef final : public AstNode {
@@ -507,6 +511,7 @@ public:
     virtual int widthTotalBytes() const override { return dtypep()->widthTotalBytes(); }
     virtual string name() const override { return m_name; }
     virtual void name(const string& flag) override { m_name = flag; }
+    virtual bool isCompound() const override { return false; }
 };
 
 class AstAssocArrayDType final : public AstNodeDType {
@@ -578,6 +583,7 @@ public:
     virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
+    virtual bool isCompound() const override { return true; }
 };
 
 class AstBracketArrayDType final : public AstNodeDType {
@@ -608,6 +614,7 @@ public:
     virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const override { V3ERROR_NA_RETURN(0); }
     virtual int widthTotalBytes() const override { V3ERROR_NA_RETURN(0); }
+    virtual bool isCompound() const override { return true; }
 };
 
 class AstDynArrayDType final : public AstNodeDType {
@@ -667,6 +674,7 @@ public:
     virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
+    virtual bool isCompound() const override { return true; }
 };
 
 class AstPackArrayDType final : public AstNodeArrayDType {
@@ -693,12 +701,14 @@ public:
     }
     ASTNODE_NODE_FUNCS(PackArrayDType)
     virtual string prettyDTypeName() const override;
+    virtual bool isCompound() const override { return false; }
 };
 
 class AstUnpackArrayDType final : public AstNodeArrayDType {
     // Array data type, ie "some_dtype var_name [2:0]"
     // Children: DTYPE (moved to refDTypep() in V3Width)
     // Children: RANGE (array bounds)
+    bool m_isCompound = false;  // Non-POD subDType, or parent requires compound
 public:
     AstUnpackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep)
         : ASTGEN_SUPER(fl) {
@@ -721,8 +731,14 @@ public:
     }
     ASTNODE_NODE_FUNCS(UnpackArrayDType)
     virtual string prettyDTypeName() const override;
+    virtual bool same(const AstNode* samep) const override {
+        const AstUnpackArrayDType* sp = static_cast<const AstUnpackArrayDType*>(samep);
+        return m_isCompound == sp->m_isCompound;
+    }
     // Outer dimension comes first. The first element is this node.
     std::vector<AstUnpackArrayDType*> unpackDimensions();
+    void isCompound(bool flag) { m_isCompound = flag; }
+    virtual bool isCompound() const override { return m_isCompound; }
 };
 
 class AstUnsizedArrayDType final : public AstNodeDType {
@@ -775,6 +791,7 @@ public:
     virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
+    virtual bool isCompound() const override { return true; }
 };
 
 class AstBasicDType final : public AstNodeDType {
@@ -930,6 +947,7 @@ public:
             rangep(nullptr);
         }
     }
+    virtual bool isCompound() const override { return isString(); }
 };
 
 class AstConstDType final : public AstNodeDType {
@@ -982,6 +1000,10 @@ public:
     virtual AstNodeDType* skipRefToEnump() const override { return subDTypep()->skipRefToEnump(); }
     virtual int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
+    virtual bool isCompound() const override {
+        v3fatalSrc("call isCompound on subdata type, not reference");
+        return false;
+    }
 };
 
 class AstClassRefDType final : public AstNodeDType {
@@ -1033,6 +1055,7 @@ public:
     AstClass* classp() const { return m_classp; }
     void classp(AstClass* nodep) { m_classp = nodep; }
     AstPin* paramsp() const { return VN_CAST(op4p(), Pin); }
+    virtual bool isCompound() const override { return true; }
 };
 
 class AstIfaceRefDType final : public AstNodeDType {
@@ -1088,6 +1111,7 @@ public:
     AstModport* modportp() const { return m_modportp; }
     void modportp(AstModport* modportp) { m_modportp = modportp; }
     bool isModport() { return !m_modportName.empty(); }
+    virtual bool isCompound() const override { return true; }  // But not relevant
 };
 
 class AstQueueDType final : public AstNodeDType {
@@ -1158,6 +1182,7 @@ public:
     virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
+    virtual bool isCompound() const override { return true; }
 };
 
 class AstRefDType final : public AstNodeDType {
@@ -1259,6 +1284,10 @@ public:
     AstNode* typeofp() const { return op2p(); }
     AstNode* classOrPackageOpp() const { return op3p(); }
     AstPin* paramsp() const { return VN_CAST(op4p(), Pin); }
+    virtual bool isCompound() const override {
+        v3fatalSrc("call isCompound on subdata type, not reference");
+        return false;
+    }
 };
 
 class AstStructDType final : public AstNodeUOrStructDType {
@@ -1341,6 +1370,10 @@ public:
     virtual string tag() const override { return m_tag; }
     int lsb() const { return m_lsb; }
     void lsb(int lsb) { m_lsb = lsb; }
+    virtual bool isCompound() const override {
+        v3fatalSrc("call isCompound on subdata type, not reference");
+        return false;
+    }
 };
 
 class AstVoidDType final : public AstNodeDType {
@@ -1368,6 +1401,7 @@ public:
     virtual int widthAlignBytes() const override { return 1; }
     virtual int widthTotalBytes() const override { return 1; }
     virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool isCompound() const override { return false; }
 };
 
 class AstEnumItem final : public AstNode {
@@ -1489,6 +1523,7 @@ public:
         for (AstNode* itemp = itemsp(); itemp; itemp = itemp->nextp()) count++;
         return count;
     }
+    virtual bool isCompound() const override { return false; }
 };
 
 class AstParseTypeDType final : public AstNodeDType {
@@ -1510,6 +1545,10 @@ public:
     virtual AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const override { return 0; }
     virtual int widthTotalBytes() const override { return 0; }
+    virtual bool isCompound() const override {
+        v3fatalSrc("call isCompound on subdata type, not reference");
+        return false;
+    }
 };
 
 //######################################################################

@@ -96,7 +96,7 @@ public:
 // simply use a C style array (which is just a pointer).
 
 template <std::size_t T_Words> class VlWide final {
-    WData m_storage[T_Words];
+    EData m_storage[T_Words];
 
 public:
     // cppcheck-suppress uninitVar
@@ -104,11 +104,17 @@ public:
     ~VlWide() = default;
     VlWide(const VlWide&) = default;
     VlWide(VlWide&&) = default;
+
+    // OPERATOR METHODS
     VlWide& operator=(const VlWide&) = default;
     VlWide& operator=(VlWide&&) = default;
+    const EData& operator[](size_t index) const { return m_storage[index]; };
+    EData& operator[](size_t index) { return m_storage[index]; };
+    operator WDataOutP() { return &m_storage[0]; }
+
     // METHODS
-    const WData& at(size_t index) const { return m_storage[index]; }
-    WData& at(size_t index) { return m_storage[index]; }
+    const EData& at(size_t index) const { return m_storage[index]; }
+    EData& at(size_t index) { return m_storage[index]; }
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
     bool operator<(const VlWide<T_Words>& rhs) const {
@@ -787,6 +793,41 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
         if (addr >= start && addr <= end) wmem.print(addr, true, &(i.second));
     }
 }
+
+//===================================================================
+// Verilog packed array container
+// For when a standard C++[] array is not sufficient, e.g. an
+// array under a queue, or methods operating on the array
+
+template <class T_Value, std::size_t T_Depth> class VlUnpacked final {
+private:
+    // TYPES
+    typedef std::array<T_Value, T_Depth> Array;
+
+public:
+    typedef typename Array::const_iterator const_iterator;
+
+private:
+    // MEMBERS
+    Array m_array;  // State of the assoc array
+
+public:
+    // CONSTRUCTORS
+    VlUnpacked() = default;
+    ~VlUnpacked() = default;
+    VlUnpacked(const VlUnpacked&) = default;
+    VlUnpacked(VlUnpacked&&) = default;
+    VlUnpacked& operator=(const VlUnpacked&) = default;
+    VlUnpacked& operator=(VlUnpacked&&) = default;
+
+    // METHODS
+    // Raw access
+    WData* data() { return &m_array[0]; }
+    const WData* data() const { return &m_array[0]; }
+
+    T_Value& operator[](size_t index) { return m_array[index]; };
+    const T_Value& operator[](size_t index) const { return m_array[index]; };
+};
 
 //===================================================================
 // Verilog class reference container

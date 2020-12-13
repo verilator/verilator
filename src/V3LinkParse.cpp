@@ -549,7 +549,7 @@ private:
             if (nodep->name() == "") nodep->name("genblk" + cvtToStr(m_genblkNum));
         }
         if (nodep->generate() && nodep->name() == ""
-                   && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
+            && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
             nodep->name("genblk" + cvtToStr(m_genblkAbove));
         }
         if (nodep->name() != "") {

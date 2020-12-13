@@ -653,12 +653,16 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
     } else if (const auto* adtypep = VN_CAST_CONST(dtypep, ClassRefDType)) {
         info.m_type = "VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(adtypep) + ">";
     } else if (const auto* adtypep = VN_CAST_CONST(dtypep, UnpackArrayDType)) {
-        if (compound) {
-            v3fatalSrc("Dynamic arrays or queues with unpacked elements are not yet supported");
-        }
+        if (adtypep->isCompound()) compound = true;
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound);
-        info.m_type = sub.m_type;
-        info.m_dims = "[" + cvtToStr(adtypep->declRange().elements()) + "]" + sub.m_dims;
+        if (compound) {
+            info.m_type = "VlUnpacked<" + sub.m_type;
+            info.m_type += ", " + cvtToStr(adtypep->declRange().elements());
+            info.m_type += ">";
+        } else {
+            info.m_type = sub.m_type;
+            info.m_dims = "[" + cvtToStr(adtypep->declRange().elements()) + "]" + sub.m_dims;
+        }
     } else if (const AstBasicDType* bdtypep = dtypep->basicp()) {
         // We don't print msb()/lsb() as multidim packed would require recursion,
         // and may confuse users as C++ data is stored always with bit 0 used
@@ -1387,15 +1391,17 @@ void AstNodeDType::dumpSmall(std::ostream& str) const {
 }
 void AstNodeArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
-    if (VN_IS(this, PackArrayDType)) {
-        str << "p";
+    if (auto* adtypep = VN_CAST_CONST(this, UnpackArrayDType)) {
+        // uc = packed compound object, u = unpacked POD
+        str << (adtypep->isCompound() ? "uc" : "u");
     } else {
-        str << "u";
+        str << "p";
     }
     str << declRange();
 }
 void AstNodeArrayDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
+    if (isCompound()) str << " [COMPOUND]";
     str << " " << declRange();
 }
 string AstPackArrayDType::prettyDTypeName() const {

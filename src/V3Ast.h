@@ -2388,7 +2388,13 @@ public:
     virtual void dump(std::ostream& str) const override;
     virtual void dumpSmall(std::ostream& str) const;
     virtual bool hasDType() const override { return true; }
-    virtual AstBasicDType* basicp() const = 0;  // (Slow) recurse down to find basic data type
+    /// Require VlUnpacked, instead of [] for POD elements.
+    /// A non-POD object is always compound, but some POD elements
+    /// are compound when methods calls operate on object, or when
+    /// under another compound-requiring object e.g. class
+    virtual bool isCompound() const = 0;
+    // (Slow) recurse down to find basic data type
+    virtual AstBasicDType* basicp() const = 0;
     // recurses over typedefs/const/enum to next non-typeref type
     virtual AstNodeDType* skipRefp() const = 0;
     // recurses over typedefs to next non-typeref-or-const type
@@ -2480,6 +2486,7 @@ public:
     ASTNODE_BASE_FUNCS(NodeUOrStructDType)
     virtual const char* broken() const override;
     virtual void dump(std::ostream& str) const override;
+    virtual bool isCompound() const { return false; }  // Because don't support unpacked
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     virtual AstBasicDType* basicp() const override {
         return (isFourstate()

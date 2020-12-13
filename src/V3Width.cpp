@@ -1451,9 +1451,10 @@ private:
         // Cleanup array size
         userIterateAndNext(nodep->rangep(), WidthVP(SELF, BOTH).p());
         nodep->dtypep(nodep);  // The array itself, not subDtype
-        if (VN_IS(nodep, UnpackArrayDType)) {
+        if (auto* adtypep = VN_CAST(nodep, UnpackArrayDType)) {
             // Historically array elements have width of the ref type not the full array
             nodep->widthFromSub(nodep->subDTypep());
+            if (nodep->subDTypep()->skipRefp()->isCompound()) adtypep->isCompound(true);
         } else {
             int width = nodep->subDTypep()->width() * nodep->rangep()->elementsConst();
             nodep->widthForce(width, width);
