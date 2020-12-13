@@ -463,21 +463,22 @@ public:
     }
     virtual string primitive(const AstVar* varp) const {
         string type;
-        if (varp->basicp()->keyword().isDpiUnsignable() && !varp->basicp()->isSigned()) {
-            type = "unsigned ";
-        }
-        type += varp->basicp()->keyword().dpiType();
+        const AstBasicDTypeKwd keyword = varp->basicp()->keyword();
+        if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
+        type += keyword.dpiType();
         return type;
     }
     string convert(const AstVar* varp) const {
         if (varp->isDpiOpenArray()) {
             return openArray(varp);
-        } else if (!varp->basicp()) {
-            return "UNKNOWN";
-        } else if (varp->basicp()->isDpiBitVec() || varp->basicp()->isDpiLogicVec()) {
-            return bitLogicVector(varp, varp->basicp()->isDpiBitVec());
+        } else if (const AstBasicDType* basicp = varp->basicp()) {
+            if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
+                return bitLogicVector(varp, basicp->isDpiBitVec());
+            } else {
+                return primitive(varp);
+            }
         } else {
-            return primitive(varp);
+            return "UNKNOWN";
         }
     }
 };
