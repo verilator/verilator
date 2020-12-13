@@ -377,7 +377,17 @@ int _mon_check_quad() {
     TestVpiHandle vhidx2 = vpi_handle_by_index(vh2, 2);
     CHECK_RESULT_NZ(vhidx2);
     TestVpiHandle vhidx3 = vpi_handle_by_index(vh2, 3);
-    CHECK_RESULT_NZ(vhidx2);
+    CHECK_RESULT_NZ(vhidx3);
+
+    // Memory words should not be indexable
+    TestVpiHandle vhidx3idx0 = vpi_handle_by_index(vhidx3, 0);
+    CHECK_RESULT(vhidx3idx0, 0);
+    TestVpiHandle vhidx2idx2 = vpi_handle_by_index(vhidx2, 2);
+    CHECK_RESULT(vhidx2idx2, 0);
+    TestVpiHandle vhidx3idx3 = vpi_handle_by_index(vhidx3, 3);
+    CHECK_RESULT(vhidx3idx3, 0);
+    TestVpiHandle vhidx2idx61 = vpi_handle_by_index(vhidx2, 61);
+    CHECK_RESULT(vhidx2idx61, 0);
 
     v.format = vpiVectorVal;
     v.value.vector = vv;
