@@ -4183,6 +4183,8 @@ private:
                                    << conDTypep->prettyDTypeNameQ() << " data type.");
                 } else if (nodep->modVarp()->isTristate()) {
                     if (pinwidth != conwidth) {
+                        // Ideally should call pinReconnectSimple which would tolerate this
+                        // then have a conversion warning
                         nodep->v3warn(E_UNSUPPORTED,
                                       "Unsupported: " << ucfirst(nodep->prettyOperatorName())
                                                       << " to inout signal requires " << pinwidth
@@ -4191,7 +4193,14 @@ private:
                                                       << " generates " << conwidth << " bits.");
                         // otherwise would need some mess to force both sides to proper size
                     }
+                } else if (nodep->modVarp()->direction().isWritable()
+                           && ((conDTypep->isDouble() && !modDTypep->isDouble())
+                               || (!conDTypep->isDouble() && modDTypep->isDouble()))) {
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: " << ucfirst(nodep->prettyOperatorName())
+                                                  << " connects real to non-real");
                 }
+
                 // Check if an interface is connected to a non-interface and vice versa
                 if ((VN_IS(modDTypep, IfaceRefDType) && !VN_IS(conDTypep, IfaceRefDType))
                     || (VN_IS(conDTypep, IfaceRefDType) && !VN_IS(modDTypep, IfaceRefDType))) {

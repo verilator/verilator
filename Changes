@@ -13,6 +13,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Report UNUSED on parameters, localparam and genvars (#2627). [Charles Eric LaForest]
 
+****  Add error on real to non-real output pins (#2690). [Peter Monsson]
+
 ****  Fix passing parameter type instantiations by position number.
 
 ****  Fix DPI open array handling issues.
