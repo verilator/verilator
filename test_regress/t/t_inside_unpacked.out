@@ -1,0 +1,9 @@
+%Error: t/t_inside_unpacked.v:17:35: Unsupported: inside (set membership operator) on unpacked array
+                                   : ... In instance t
+   17 |    localparam HIT_INSIDE = HIT_LP inside {CHECKLIST_P};
+      |                                   ^~~~~~
+%Error: t/t_inside_unpacked.v:18:37: Unsupported: inside (set membership operator) on unpacked array
+                                   : ... In instance t
+   18 |    localparam MISS_INSIDE = MISS_LP inside {CHECKLIST_P};
+      |                                     ^~~~~~
+%Error: Exiting due to

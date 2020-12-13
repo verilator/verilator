@@ -270,15 +270,6 @@ private:
         }
         return true;
     }
-    bool expandWide(AstNodeAssign* nodep, AstXnor* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(XNOR) " << nodep << endl);
-        for (int w = 0; w < nodep->widthWords(); w++) {
-            addWordAssign(nodep, w,
-                          new AstXnor(nodep->fileline(), newAstWordSelClone(rhsp->lhsp(), w),
-                                      newAstWordSelClone(rhsp->rhsp(), w)));
-        }
-        return true;
-    }
     //-------- Triops
     bool expandWide(AstNodeAssign* nodep, AstNodeCond* rhsp) {
         UINFO(8, "    Wordize ASSIGN(COND) " << nodep << endl);
@@ -858,8 +849,6 @@ private:
             } else if (AstNot* rhsp = VN_CAST(nodep->rhsp(), Not)) {
                 did = expandWide(nodep, rhsp);
             } else if (AstXor* rhsp = VN_CAST(nodep->rhsp(), Xor)) {
-                did = expandWide(nodep, rhsp);
-            } else if (AstXnor* rhsp = VN_CAST(nodep->rhsp(), Xnor)) {
                 did = expandWide(nodep, rhsp);
             } else if (AstNodeCond* rhsp = VN_CAST(nodep->rhsp(), NodeCond)) {
                 did = expandWide(nodep, rhsp);

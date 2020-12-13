@@ -79,10 +79,10 @@ private:
     virtual void visit(AstCastDynamic* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->lhsp());
             m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->rhsp());
+            iterateAndNextNull(nodep->fromp());
+            m_setRefLvalue = VAccess::WRITE;
+            iterateAndNextNull(nodep->top());
         }
     }
     virtual void visit(AstFOpen* nodep) override {
@@ -249,7 +249,7 @@ private:
     virtual void visit(AstNodePreSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {  // Only set lvalues on the from
-            iterateAndNextNull(nodep->lhsp());
+            iterateAndNextNull(nodep->fromp());
             m_setRefLvalue = VAccess::NOCHANGE;
             iterateAndNextNull(nodep->rhsp());
             iterateAndNextNull(nodep->thsp());

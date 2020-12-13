@@ -57,6 +57,8 @@ private:
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
     AstNodeDType* m_dtypep = nullptr;  // Current data type
+    int m_genblkAbove = 0;  // Begin block number of if/case/for above
+    int m_genblkNum = 0;  // Begin block number, 0=none seen
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
 
     // METHODS
@@ -96,10 +98,11 @@ private:
     void visitIterateNodeDType(AstNodeDType* nodep) {
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
-            AstNodeDType* upperDtypep = m_dtypep;
-            m_dtypep = nodep;
-            iterateChildren(nodep);
-            m_dtypep = upperDtypep;
+            {
+                VL_RESTORER(m_dtypep);
+                m_dtypep = nodep;
+                iterateChildren(nodep);
+            }
         }
     }
 
@@ -125,10 +128,11 @@ private:
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
             UINFO(5, "   " << nodep << endl);
-            AstNodeModule* upperValueModp = m_valueModp;
-            m_valueModp = nullptr;
-            iterateChildren(nodep);
-            m_valueModp = upperValueModp;
+            {
+                VL_RESTORER(m_valueModp);
+                m_valueModp = nullptr;
+                iterateChildren(nodep);
+            }
         }
     }
     virtual void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
@@ -149,16 +153,17 @@ private:
         cleanFileline(nodep);
         iterateChildren(nodep);
         if (nodep->rangep()) {
-            if (!VN_IS(nodep->rangep()->msbp(), Const)  //
-                || !VN_IS(nodep->rangep()->lsbp(), Const)) {
+            if (VL_UNCOVERABLE(!VN_IS(nodep->rangep()->leftp(), Const)  // LCOV_EXCL_START
+                               || !VN_IS(nodep->rangep()->rightp(), Const))) {
+                // We check this rule in the parser, so shouldn't fire
                 nodep->v3error("Enum ranges must be integral, per spec");
-            }
-            int msb = nodep->rangep()->msbConst();
-            int lsb = nodep->rangep()->lsbConst();
-            int increment = (msb > lsb) ? -1 : 1;
+            }  // LCOV_EXCL_STOP
+            int left = nodep->rangep()->leftConst();
+            int right = nodep->rangep()->rightConst();
+            int increment = (left > right) ? -1 : 1;
             int offset_from_init = 0;
             AstNode* addp = nullptr;
-            for (int i = msb; i != (lsb + increment); i += increment, offset_from_init++) {
+            for (int i = left; i != (right + increment); i += increment, offset_from_init++) {
                 string name = nodep->name() + cvtToStr(i);
                 AstNode* valuep = nullptr;
                 if (nodep->valuep()) {
@@ -492,12 +497,16 @@ private:
         V3Config::applyModule(nodep);
 
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_genblkAbove);
+        VL_RESTORER(m_genblkNum);
         VL_RESTORER(m_lifetime);
         {
             // Module: Create sim table for entire module and iterate
             cleanFileline(nodep);
             //
             m_modp = nodep;
+            m_genblkAbove = 0;
+            m_genblkNum = 0;
             m_valueModp = nodep;
             m_lifetime = nodep->lifetime();
             if (m_lifetime.isNone()) {
@@ -510,17 +519,17 @@ private:
     void visitIterateNoValueMod(AstNode* nodep) {
         // Iterate a node which shouldn't have any local variables moved to an Initial
         cleanFileline(nodep);
-        //
-        AstNodeModule* upperValueModp = m_valueModp;
-        m_valueModp = nullptr;
-        iterateChildren(nodep);
-        m_valueModp = upperValueModp;
+        {
+            VL_RESTORER(m_valueModp);
+            m_valueModp = nullptr;
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstNodeProcedure* nodep) override { visitIterateNoValueMod(nodep); }
     virtual void visit(AstAlways* nodep) override {
+        VL_RESTORER(m_inAlways);
         m_inAlways = true;
         visitIterateNoValueMod(nodep);
-        m_inAlways = false;
     }
     virtual void visit(AstCover* nodep) override { visitIterateNoValueMod(nodep); }
     virtual void visit(AstRestrict* nodep) override { visitIterateNoValueMod(nodep); }
@@ -535,13 +544,45 @@ private:
                              || VN_IS(nodep->stmtsp(), GenCase))  // Has an if/case
                          && !nodep->stmtsp()->nextp());  // Has only one item
         // It's not FOR(BEGIN(...)) but we earlier changed it to BEGIN(FOR(...))
-        if (nodep->genforp() && nodep->name() == "") {
-            nodep->name("genblk");
-        } else if (nodep->generate() && nodep->name() == ""
-                   && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
-            nodep->name("genblk");
+        if (nodep->genforp()) {
+            ++m_genblkNum;
+            if (nodep->name() == "") nodep->name("genblk" + cvtToStr(m_genblkNum));
         }
-        iterateChildren(nodep);
+        if (nodep->generate() && nodep->name() == ""
+            && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
+            nodep->name("genblk" + cvtToStr(m_genblkAbove));
+        }
+        if (nodep->name() != "") {
+            VL_RESTORER(m_genblkAbove);
+            VL_RESTORER(m_genblkNum);
+            m_genblkAbove = 0;
+            m_genblkNum = 0;
+            iterateChildren(nodep);
+        } else {
+            iterateChildren(nodep);
+        }
+    }
+    virtual void visit(AstGenCase* nodep) override {
+        ++m_genblkNum;
+        cleanFileline(nodep);
+        {
+            VL_RESTORER(m_genblkAbove);
+            VL_RESTORER(m_genblkNum);
+            m_genblkAbove = m_genblkNum;
+            m_genblkNum = 0;
+            iterateChildren(nodep);
+        }
+    }
+    virtual void visit(AstGenIf* nodep) override {
+        ++m_genblkNum;
+        cleanFileline(nodep);
+        {
+            VL_RESTORER(m_genblkAbove);
+            VL_RESTORER(m_genblkNum);
+            m_genblkAbove = m_genblkNum;
+            m_genblkNum = 0;
+            iterateChildren(nodep);
+        }
     }
     virtual void visit(AstCase* nodep) override {
         V3Config::applyCase(nodep);

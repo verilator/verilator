@@ -6,21 +6,30 @@
 
 class Base;
 endclass
-class C;
+class ExbaseA extends Base;
+endclass
+class ExbaseB extends Base;
 endclass
 
 module t (/*AUTOARG*/);
    int i;
 
    Base b;
-   C c;
+   ExbaseA ba, ba1;
+   ExbaseB bb, bb1;
 
    initial begin
-      b = new;
-      i = $cast(c, b);
-      if (i != 0) $stop;
+      ba = new;
+      b = ba;
+      i = $cast(ba1, b);
+      if (i != 1) $stop;
+      $cast(ba1, b);  // ok at runtime
 
-      $cast(c, b);  // Bad at runtime
+      bb = new;
+      b = bb;
+      i = $cast(ba1, b);
+      if (i != 0) $stop;
+      $cast(ba1, b);
 
       $write("*-* All Finished *-*\n");
       $finish;

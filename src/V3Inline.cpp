@@ -614,7 +614,7 @@ public:
     // CONSTRUCTORS
     explicit InlineVisitor(AstNode* nodep) { iterate(nodep); }
     virtual ~InlineVisitor() override {  //
-        V3Stats::addStat("Optimizations, Inlined cells", m_statCells);
+        V3Stats::addStat("Optimizations, Inlined instances", m_statCells);
     }
 };
 

@@ -1,18 +1,18 @@
 module Vt_debug_emitv;
     input logic clk;
     input logic in;
-     signed int [31:0] [0:2] t.array;
-    logic logic [15:0]  t.pubflat;
-    logic logic [15:0]  t.pubflat_r;
-    int signed int [31:0]  t.fd;
-    int signed int [31:0]  t.i;
-    int signed int [31:0]  t.cyc;
-    int signed int [31:0]  t.fo;
-    int signed int [31:0]  t.sum;
-    string string t.str;
-    int signed int [31:0]  t._Vpast_0_0;
-    int signed int [31:0]  t._Vpast_1_0;
-    int signed int [31:0]  t.unnamedblk3.i;
+    signed int [31:0]  t.array[0:2];
+    logic [15:0]  t.pubflat;
+    logic [15:0]  t.pubflat_r;
+    signed int [31:0]  t.fd;
+    signed int [31:0]  t.i;
+    signed int [31:0]  t.cyc;
+    signed int [31:0]  t.fo;
+    signed int [31:0]  t.sum;
+    string t.str;
+    signed int [31:0]  t._Vpast_0_0;
+    signed int [31:0]  t._Vpast_1_0;
+    signed int [31:0]  t.unnamedblk3.i;
     @(*)@([settle])@([initial])@(posedge clk)@(negedge 
                                                clk)always @(
                                                             *)@(
@@ -78,8 +78,8 @@ module Vt_debug_emitv;
         end
         t.sum = __Vfunc_t.sub.f__3__Vfuncout;
         $display("[%0t] sum = %~", $timet.sum, t.sum);
-        $display("a?= $d%d", ($c(32'sh1) ? $c(32'sh14)
-                               : $c(32'sh1e)));
+        $display("a?= %d", ($c(32'sh1) ? $c(32'sh14)
+                             : $c(32'sh1e)));
         $c(;);
         $display("%d", $c(0));
         $fopen(72'h2f6465762f6e756c6c);
@@ -172,6 +172,7 @@ module Vt_debug_emitv;
                  $time, $time);
         $sscanf(40'h666f6f3d35, "foo=%d", t.i);
         ;
+        $printtimescale;
         if ((32'sh5 != t.i)) begin
             $stop;
         end
@@ -198,12 +199,32 @@ module Vt_debug_emitv;
     always @(negedge clk) begin
         $display("negedge clk, pfr = %x", t.pubflat_r);
     end
-    int signed int [31:0]  __Vtask_t.sub.inc__2__i;
-    int signed int [31:0]  __Vtask_t.sub.inc__2__o;
-    int signed int [31:0]  __Vfunc_t.sub.f__3__Vfuncout;
-    int signed int [31:0]  __Vfunc_t.sub.f__3__v;
-    logic logic [15:0]  __Vdly__t.pubflat_r;
-    int signed int [31:0]  __Vdly__t.cyc;
-    int signed int [31:0]  __Vdly__t._Vpast_0_0;
-    int signed int [31:0]  __Vdly__t._Vpast_1_0;
+    signed int [31:0]  __Vtask_t.sub.inc__2__i;
+    signed int [31:0]  __Vtask_t.sub.inc__2__o;
+    signed int [31:0]  __Vfunc_t.sub.f__3__Vfuncout;
+    signed int [31:0]  __Vfunc_t.sub.f__3__v;
+    logic [15:0]  __Vdly__t.pubflat_r;
+    signed int [31:0]  __Vdly__t.cyc;
+    signed int [31:0]  __Vdly__t._Vpast_0_0;
+    signed int [31:0]  __Vdly__t._Vpast_1_0;
 endmodule
+package Vt_debug_emitv___024unit;
+endpackage
+package Vt_debug_emitv_Pkg;
+endpackage
+class Vt_debug_emitv___024unit__03a__03aCls;
+signed int [31:0]  member;
+
+???? // CFUNC '__VnoInFunc_method'
+$_CSTMT(Vt_debug_emitv* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
+);
+
+???? // CFUNC 'new'
+$_CSTMT(_ctor_var_reset(vlSymsp);
+);
+$_CSTMT(Vt_debug_emitv* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
+);
+$unit::Cls.member = 32'sh1;
+endclass
+/*class*/package Vt_debug_emitv___024unit__03a__03aCls__Vclpkg;
+end/*class*/package

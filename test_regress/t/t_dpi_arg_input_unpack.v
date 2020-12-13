@@ -17,17 +17,22 @@
 `endif
 
 `ifdef MS
+ `define NO_BITS_TO_SCALAR
 `endif
 
 `ifdef VERILATOR
  `define NO_SHORTREAL
  `define NO_UNPACK_STRUCT
- `define NULL 64'd0
 `else
- `define NULL null
 `endif
 
-`define CHECK_VAL(act, exp) if ((act) == (exp)) begin \
+`ifdef NO_BITS_TO_SCALAR
+ `define ARE_SAME(act, exp) ((act) == (exp))
+`else
+ `define ARE_SAME(act, exp) ((act) == (($bits(act))'(exp)))
+`endif
+
+`define CHECK_VAL(act, exp) if (`ARE_SAME(act, exp)) begin \
    if (ENABLE_VERBOSE_MESSAGE)$display(`"act`", ":", (act), " as expected"); \
      end else begin \
         $display("Mismatch %s expected:%d actual:%d at %d", `"act`", \
@@ -47,10 +52,12 @@
 `CHECK_VAL(val[3][0][0], 51)
 
 `define SET_VALUES(val) \
+/* verilator lint_off WIDTH */ \
 val[3][2][1] = 42; \
 val[2][1][0] = 43; val[2][1][1] = 44; \
 val[1][0][1] = 45; val[1][1][1] = 46; val[1][2][1] = 47; \
-val[0][0][0] = 48; val[1][0][0] = 49; val[2][0][0] = 50; val[3][0][0] = 51
+val[0][0][0] = 48; val[1][0][0] = 49; val[2][0][0] = 50; val[3][0][0] = 51 \
+/* verilator lint_on WIDTH */
 
 module t;
 
@@ -82,8 +89,10 @@ module t;
 `endif
    typedef chandle           chandle_array_t[4][3][2];
    typedef string            string_array_t[4][3][2];
+   typedef bit               bit1_array_t[4][3][2];
    typedef bit [6:0]         bit7_array_t[4][3][2];
    typedef bit [120:0]       bit121_array_t[4][3][2];
+   typedef logic             logic1_array_t[4][3][2];
    typedef logic [6:0]       logic7_array_t[4][3][2];
    typedef logic [120:0]     logic121_array_t[4][3][2];
 
@@ -181,6 +190,11 @@ module t;
    import "DPI-C" function void i_string_2d(input string val[3][2]);
    import "DPI-C" function void i_string_3d(input string_array_t val);
 
+   import "DPI-C" function void i_bit1_0d(input bit val);
+   import "DPI-C" function void i_bit1_1d(input bit val[2]);
+   import "DPI-C" function void i_bit1_2d(input bit val[3][2]);
+   import "DPI-C" function void i_bit1_3d(input bit1_array_t val);
+
    import "DPI-C" function void i_bit7_0d(input bit[6:0] val);
    import "DPI-C" function void i_bit7_1d(input bit[6:0] val[2]);
    import "DPI-C" function void i_bit7_2d(input bit[6:0] val[3][2]);
@@ -190,6 +204,11 @@ module t;
    import "DPI-C" function void i_bit121_1d(input bit[120:0] val[2]);
    import "DPI-C" function void i_bit121_2d(input bit[120:0] val[3][2]);
    import "DPI-C" function void i_bit121_3d(input bit121_array_t val);
+
+   import "DPI-C" function void i_logic1_0d(input logic val);
+   import "DPI-C" function void i_logic1_1d(input logic val[2]);
+   import "DPI-C" function void i_logic1_2d(input logic val[3][2]);
+   import "DPI-C" function void i_logic1_3d(input logic1_array_t val);
 
    import "DPI-C" function void i_logic7_0d(input logic[6:0] val);
    import "DPI-C" function void i_logic7_1d(input logic[6:0] val[2]);
@@ -294,6 +313,11 @@ module t;
    export "DPI-C" function e_string_2d;
    export "DPI-C" function e_string_3d;
 
+   export "DPI-C" function e_bit1_0d;
+   export "DPI-C" function e_bit1_1d;
+   export "DPI-C" function e_bit1_2d;
+   export "DPI-C" function e_bit1_3d;
+
    export "DPI-C" function e_bit7_0d;
    export "DPI-C" function e_bit7_1d;
    export "DPI-C" function e_bit7_2d;
@@ -303,6 +327,11 @@ module t;
    export "DPI-C" function e_bit121_1d;
    export "DPI-C" function e_bit121_2d;
    export "DPI-C" function e_bit121_3d;
+
+   export "DPI-C" function e_logic1_0d;
+   export "DPI-C" function e_logic1_1d;
+   export "DPI-C" function e_logic1_2d;
+   export "DPI-C" function e_logic1_3d;
 
    export "DPI-C" function e_logic7_0d;
    export "DPI-C" function e_logic7_1d;
@@ -493,6 +522,11 @@ module t;
       end
    endfunction
 
+   function void e_bit1_0d(input bit val); `CHECK_0D(val); endfunction
+   function void e_bit1_1d(input bit val[2]); `CHECK_1D(val); endfunction
+   function void e_bit1_2d(input bit val[3][2]); `CHECK_2D(val); endfunction
+   function void e_bit1_3d(input bit1_array_t val); `CHECK_3D(val); endfunction
+
    function void e_bit7_0d(input bit[6:0] val); `CHECK_0D(val); endfunction
    function void e_bit7_1d(input bit[6:0] val[2]); `CHECK_1D(val); endfunction
    function void e_bit7_2d(input bit[6:0] val[3][2]); `CHECK_2D(val); endfunction
@@ -502,6 +536,11 @@ module t;
    function void e_bit121_1d(input bit[120:0] val[2]); `CHECK_1D(val); endfunction
    function void e_bit121_2d(input bit[120:0] val[3][2]); `CHECK_2D(val); endfunction
    function void e_bit121_3d(input bit121_array_t val); `CHECK_3D(val); endfunction
+
+   function void e_logic1_0d(input logic val); `CHECK_0D(val); endfunction
+   function void e_logic1_1d(input logic val[2]); `CHECK_1D(val); endfunction
+   function void e_logic1_2d(input logic val[3][2]); `CHECK_2D(val); endfunction
+   function void e_logic1_3d(input logic1_array_t val); `CHECK_3D(val); endfunction
 
    function void e_logic7_0d(input logic[6:0] val); `CHECK_0D(val); endfunction
    function void e_logic7_1d(input logic[6:0] val[2]); `CHECK_1D(val); endfunction
@@ -596,8 +635,10 @@ module t;
 `endif
       chandle_array_t chandle_array;
       string_array_t string_array;
+      bit1_array_t bit1_array;
       bit7_array_t bit7_array;
       bit121_array_t bit121_array;
+      logic1_array_t logic1_array;
       logic7_array_t logic7_array;
       logic121_array_t logic121_array;
       pack_struct_array_t pack_struct_array;
@@ -712,6 +753,13 @@ module t;
       i_string_2d(string_array[1]);
       i_string_3d(string_array);
 
+      `SET_VALUES(bit1_array);
+      i_bit1_0d(bit1_array[3][2][1]);
+      i_bit1_1d(bit1_array[2][1]);
+      i_bit1_2d(bit1_array[1]);
+      i_bit1_3d(bit1_array);
+
+
       `SET_VALUES(bit7_array);
       i_bit7_0d(bit7_array[3][2][1]);
       i_bit7_1d(bit7_array[2][1]);
@@ -723,6 +771,12 @@ module t;
       i_bit121_1d(bit121_array[2][1]);
       i_bit121_2d(bit121_array[1]);
       i_bit121_3d(bit121_array);
+
+      `SET_VALUES(logic1_array);
+      i_logic1_0d(logic1_array[3][2][1]);
+      i_logic1_1d(logic1_array[2][1]);
+      i_logic1_2d(logic1_array[1]);
+      i_logic1_3d(logic1_array);
 
       `SET_VALUES(logic7_array);
       i_logic7_0d(logic7_array[3][2][1]);

@@ -1509,7 +1509,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     m_timeDefaultPrec = prec;
                     m_timeOverridePrec = prec;
                 }
-            } else if (!strcmp(sw, "-top-module") && (i + 1) < argc) {
+            } else if ((!strcmp(sw, "-top-module") || !strcmp(sw, "-top")) && (i + 1) < argc) {
                 shift;
                 m_topModule = argv[i];
             } else if (!strcmp(sw, "-unused-regexp") && (i + 1) < argc) {

@@ -59,7 +59,7 @@ private:
         if (!varp->isTrace()) {
             return "Verilator trace_off";
         } else if (!nodep->isTrace()) {
-            return "Verilator cell trace_off";
+            return "Verilator instance trace_off";
         } else if (!v3Global.opt.traceUnderscore()) {
             const string prettyName = varp->prettyName();
             if (!prettyName.empty() && prettyName[0] == '_') return "Leading underscore";
@@ -99,7 +99,7 @@ private:
                                             // misreflects one element
         VNumRange bitRange;
         if (widthOverride) {
-            bitRange = VNumRange(widthOverride - 1, 0, false);
+            bitRange = VNumRange{widthOverride - 1, 0};
         } else if (const AstBasicDType* const bdtypep = m_traValuep->dtypep()->basicp()) {
             bitRange = bdtypep->nrange();
         }
@@ -238,13 +238,13 @@ private:
             } else {
                 // Unroll now, as have no other method to get right signal names
                 AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
-                for (int i = nodep->lsb(); i <= nodep->msb(); ++i) {
+                for (int i = nodep->lo(); i <= nodep->hi(); ++i) {
                     VL_RESTORER(m_traShowname);
                     VL_RESTORER(m_traValuep);
                     {
                         m_traShowname += string("(") + cvtToStr(i) + string(")");
                         m_traValuep = new AstArraySel(
-                            nodep->fileline(), m_traValuep->cloneTree(true), i - nodep->lsb());
+                            nodep->fileline(), m_traValuep->cloneTree(true), i - nodep->lo());
 
                         m_traValuep->dtypep(subtypep);
                         iterate(subtypep);
@@ -263,14 +263,14 @@ private:
                 addTraceDecl(VNumRange(), nodep->width());
             } else {
                 AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
-                for (int i = nodep->lsb(); i <= nodep->msb(); ++i) {
+                for (int i = nodep->lo(); i <= nodep->hi(); ++i) {
                     VL_RESTORER(m_traShowname);
                     VL_RESTORER(m_traValuep);
                     {
                         m_traShowname += string("(") + cvtToStr(i) + string(")");
-                        m_traValuep = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
-                                                 (i - nodep->lsb()) * subtypep->width(),
-                                                 subtypep->width());
+                        m_traValuep
+                            = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
+                                         (i - nodep->lo()) * subtypep->width(), subtypep->width());
                         m_traValuep->dtypep(subtypep);
                         iterate(subtypep);
                         VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);

@@ -152,7 +152,7 @@ private:
                     int msb = lsb + width - 1;
                     V3Number fieldNum(nump, width);
                     fieldNum.opSel(*nump, msb, lsb);
-                    int arrayElem = arrayp->lsb() + element;
+                    int arrayElem = arrayp->lo() + element;
                     out << arrayElem << " = " << prettyNumber(&fieldNum, childTypep);
                     if (element < arrayElements - 1) out << ", ";
                 }

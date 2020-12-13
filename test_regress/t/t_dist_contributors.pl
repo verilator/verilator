@@ -19,7 +19,9 @@ my $Debug;
 my %Contributors;
 my %Authors;
 
-if (!-r "$root/.git") {
+if ($ENV{VERILATOR_TEST_NO_CONTRIBUTORS}) {
+    skip("Skipping due to VERILATOR_TEST_NO_CONTRIBUTORS");
+} elsif (!-r "$root/.git") {
     skip("Not in a git repository");
 } else {
     check();

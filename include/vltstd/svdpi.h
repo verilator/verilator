@@ -102,7 +102,7 @@ typedef uint32_t svBitVecVal;
  * Because the contents of the unused bits is undetermined,
  * the following macros can be handy.
  */
-#define SV_MASK(N) (~(-1 << (N)))
+#define SV_MASK(N) (~(0xffffffffU << (N)))
 
 #define SV_GET_UNSIGNED_BITS(VALUE, N) \
     ((N) == 32 ? (VALUE) : ((VALUE) & SV_MASK(N)))

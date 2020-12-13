@@ -693,13 +693,13 @@ public:
 
         if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
-        } else if (AstNodeModule* modp
+        } else if (AstNodeModule* paramedModp
                    = m_hierBlocks.findByParams(srcModp->name(), nodep->paramsp(), m_modp)) {
-            nodep->modp(modp);
-            nodep->modName(modp->name());
-            modp->dead(false);
+            nodep->modp(paramedModp);
+            nodep->modName(paramedModp->name());
+            paramedModp->dead(false);
             // We need to relink the pins to the new module
-            relinkPinsByName(nodep->pinsp(), modp);
+            relinkPinsByName(nodep->pinsp(), paramedModp);
         } else {
             string newname = moduleCalcName(srcModp, nodep->paramsp(), longname);
             const ModInfo* modInfop
@@ -708,7 +708,7 @@ public:
             nodep->modp(modInfop->m_modp);
             nodep->modName(newname);
             // We need to relink the pins to the new module
-            relinkPins(&(modInfop->m_cloneMap), nodep->pinsp());
+            relinkPinsByName(nodep->pinsp(), modInfop->m_modp);
             UINFO(8, "     Done with " << modInfop->m_modp << endl);
         }
 
@@ -784,12 +784,10 @@ class ParamVisitor final : public AstNVisitor {
                             string fullName(m_modp->hierName());
                             if (const string* genHierNamep = (string*)cellp->user5p()) {
                                 fullName += *genHierNamep;
-                            }
-                            visitCellDeparam(cellp, fullName);
-                            if (const string* genHierNamep = (string*)cellp->user5p()) {
                                 cellp->user5p(nullptr);
                                 VL_DO_DANGLING(delete genHierNamep, genHierNamep);
                             }
+                            VL_DO_DANGLING(visitCellDeparam(cellp, fullName), cellp);
                         }
                     }
                 }
@@ -804,13 +802,29 @@ class ParamVisitor final : public AstNVisitor {
     virtual void visit(AstNodeModule* nodep) override {
         if (nodep->dead()) {
             UINFO(4, " MOD-dead.  " << nodep << endl);  // Marked by LinkDot
+            return;
         } else if (nodep->recursiveClone()) {
             // Fake, made for recursive elimination
             UINFO(4, " MOD-recursive-dead.  " << nodep << endl);
             nodep->dead(true);  // So Dead checks won't count references to it
-        } else if (m_modp) {
+            return;
+        }
+        //
+        if (!nodep->dead() && VN_IS(nodep, Class)) {
+            for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (AstVar* varp = VN_CAST(stmtp, Var)) {
+                    if (varp->isParam()) {
+                        varp->v3warn(E_UNSUPPORTED, "Unsupported: class parameters");
+                    }
+                }
+            }
+        }
+        //
+        if (m_modp) {
             UINFO(4, " MOD-under-MOD.  " << nodep << endl);
+            iterateChildren(nodep);
         } else if (nodep->level() <= 2  // Haven't added top yet, so level 2 is the top
+                   || VN_IS(nodep, Class)  // Nor moved classes
                    || VN_IS(nodep, Package)) {  // Likewise haven't done wrapTopPackages yet
             // Add request to END of modules left to process
             m_todoModps.insert(make_pair(nodep->level(), nodep));
@@ -828,6 +842,14 @@ class ParamVisitor final : public AstNVisitor {
         string* genHierNamep = new string(m_generateHierName);
         nodep->user5p(genHierNamep);
         m_cellps.push_back(nodep);
+    }
+
+    virtual void visit(AstClassRefDType* nodep) override {
+        if (nodep->paramsp()) {
+            nodep->paramsp()->v3warn(E_UNSUPPORTED, "Unsupported: parameterized classes");
+            pushDeletep(nodep->paramsp()->unlinkFrBackWithNext());
+        }
+        iterateChildren(nodep);
     }
 
     // Make sure all parameters are constantified
@@ -1026,10 +1048,9 @@ class ParamVisitor final : public AstNVisitor {
                 // Note this clears nodep->genforp(), so begin is no longer special
             }
         } else {
-            string rootHierName(m_generateHierName);
+            VL_RESTORER(m_generateHierName);
             m_generateHierName += "." + nodep->prettyName();
             iterateChildren(nodep);
-            m_generateHierName = rootHierName;
         }
     }
     virtual void visit(AstGenFor* nodep) override {  // LCOV_EXCL_LINE

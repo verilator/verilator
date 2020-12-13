@@ -31,6 +31,7 @@ public:
     static void addNewed(AstNode* nodep);
     static void deleted(AstNode* nodep);
     static bool isAllocated(AstNode* nodep);
+    static void selfTest();
 };
 
 #endif  // Guard

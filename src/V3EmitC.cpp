@@ -166,8 +166,8 @@ public:
                         sectionr = "";
                     }
                     UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
-                    // These should be static const values, however microsloth VC++ doesn't
-                    // support them.  They also cause problems with GDB under GCC2.95.
+                    // These should be static const values, however older MSVC++ did't
+                    // support them; should be ok now under C++11, need to refactor.
                     if (varp->isWide()) {  // Unsupported for output
                         if (!init) {
                             putsDecoration("// enum WData " + varp->nameProtect() + "  //wide");
@@ -631,7 +631,7 @@ public:
         putbs(", ");
         // Need real storage width
         puts(cvtToStr(nodep->memp()->dtypep()->subDTypep()->widthMin()));
-        uint32_t array_lsb = 0;
+        uint32_t array_lo = 0;
         {
             const AstVarRef* varrefp = VN_CAST(nodep->memp(), VarRef);
             if (!varrefp) {
@@ -642,9 +642,9 @@ public:
                        = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
                 putbs(", ");
                 puts(cvtToStr(varrefp->varp()->dtypep()->arrayUnpackedElements()));
-                array_lsb = adtypep->lsb();
+                array_lo = adtypep->lo();
                 putbs(", ");
-                puts(cvtToStr(array_lsb));
+                puts(cvtToStr(array_lo));
             } else {
                 nodep->v3error(nodep->verilogKwd()
                                << " loading other than unpacked/associative-array variable");
@@ -658,7 +658,7 @@ public:
         if (nodep->lsbp()) {
             iterateAndNextNull(nodep->lsbp());
         } else {
-            puts(cvtToStr(array_lsb));
+            puts(cvtToStr(array_lo));
         }
         putbs(", ");
         if (nodep->msbp()) {
@@ -710,7 +710,7 @@ public:
         puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
         putbs(",");
         bool memory = false;
-        uint32_t array_lsb = 0;
+        uint32_t array_lo = 0;
         uint32_t array_size = 0;
         {
             const AstVarRef* varrefp = VN_CAST(nodep->memp(), VarRef);
@@ -720,14 +720,14 @@ public:
             } else if (const AstUnpackArrayDType* adtypep
                        = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
                 memory = true;
-                array_lsb = adtypep->lsb();
+                array_lo = adtypep->lo();
                 array_size = adtypep->elementsConst();
             } else {
                 nodep->v3error(nodep->verilogKwd()
                                << " loading other than unpacked-array variable");
             }
         }
-        puts(cvtToStr(array_lsb));
+        puts(cvtToStr(array_lo));
         putbs(",");
         puts(cvtToStr(array_size));
         putbs(", ");
@@ -740,7 +740,7 @@ public:
         if (nodep->startp()) {
             iterateAndNextNull(nodep->startp());
         } else {
-            puts(cvtToStr(array_lsb));
+            puts(cvtToStr(array_lo));
         }
         putbs(", ");
         if (nodep->countp()) {
@@ -817,6 +817,15 @@ public:
             iterateAndNextNull(nodep->elsesp());
         }
         puts("}\n");
+    }
+    virtual void visit(AstExprStmt* nodep) override {
+        // GCC allows compound statements in expressions, but this is not standard.
+        // So we use an immediate-evaluation lambda and comma operator
+        putbs("([&]() {\n");
+        iterateAndNextNull(nodep->stmtsp());
+        puts("}(), ");
+        iterateAndNextNull(nodep->resultp());
+        puts(")");
     }
     virtual void visit(AstStop* nodep) override {
         puts("VL_STOP_MT(");
@@ -1067,6 +1076,13 @@ public:
         }
         emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)", nodep->lhsp(),
                    nodep->rhsp(), nullptr);
+    }
+    virtual void visit(AstCastDynamic* nodep) override {
+        putbs("VL_CAST_DYNAMIC(");
+        iterateAndNextNull(nodep->lhsp());
+        puts(", ");
+        iterateAndNextNull(nodep->rhsp());
+        puts(")");
     }
     virtual void visit(AstCountBits* nodep) override {
         putbs("VL_COUNTBITS_");
@@ -1780,7 +1796,7 @@ class EmitCImp final : EmitCStmts {
             return emitVarResetRecurse(varp, adtypep->subDTypep(), depth + 1,
                                        ".atDefault()" + cvtarray);
         } else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            UASSERT_OBJ(adtypep->msb() >= adtypep->lsb(), varp,
+            UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                         "Should have swapped msb & lsb earlier.");
             string ivar = string("__Vi") + cvtToStr(depth);
             string pre = ("for (int " + ivar + "=" + cvtToStr(0) + "; " + ivar + "<"
@@ -1912,7 +1928,7 @@ void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
         emitDeclArrayBrackets(nodep);
         // If it's a packed struct/array then nodep->width is the whole
         // thing, msb/lsb is just lowest dimension
-        puts("," + cvtToStr(basicp->lsb() + nodep->width() - 1) + "," + cvtToStr(basicp->lsb()));
+        puts("," + cvtToStr(basicp->lo() + nodep->width() - 1) + "," + cvtToStr(basicp->lo()));
         if (nodep->isWide()) puts("," + cvtToStr(nodep->widthWords()));
         puts(");\n");
     } else {
@@ -2591,7 +2607,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                         for (AstUnpackArrayDType* arrayp = VN_CAST(elementp, UnpackArrayDType);
                              arrayp; arrayp = VN_CAST(elementp, UnpackArrayDType)) {
                             int vecnum = vects++;
-                            UASSERT_OBJ(arrayp->msb() >= arrayp->lsb(), varp,
+                            UASSERT_OBJ(arrayp->hi() >= arrayp->lo(), varp,
                                         "Should have swapped msb & lsb earlier.");
                             string ivar = string("__Vi") + cvtToStr(vecnum);
                             puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0));
@@ -2678,11 +2694,11 @@ void EmitCImp::emitSensitives() {
                          arrayp;
                          arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
                         int vecnum = vects++;
-                        UASSERT_OBJ(arrayp->msb() >= arrayp->lsb(), varp,
+                        UASSERT_OBJ(arrayp->hi() >= arrayp->lo(), varp,
                                     "Should have swapped msb & lsb earlier.");
                         string ivar = string("__Vi") + cvtToStr(vecnum);
-                        puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(arrayp->lsb()));
-                        puts("; " + ivar + "<=" + cvtToStr(arrayp->msb()));
+                        puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(arrayp->lo()));
+                        puts("; " + ivar + "<=" + cvtToStr(arrayp->hi()));
                         puts("; ++" + ivar + ") {\n");
                     }
                     puts("sensitive << " + varp->nameProtect());

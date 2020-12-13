@@ -1,9 +1,3 @@
-%Error-UNSUPPORTED: t/t_castdyn_run_bad.v:20:11: Unsupported: $cast. Suggest try static cast.
-                                               : ... In instance t
-   20 |       i = $cast(c, b);
-      |           ^~~~~
-%Error-UNSUPPORTED: t/t_castdyn_run_bad.v:23:7: Unsupported: $cast. Suggest try static cast.
-                                              : ... In instance t
-   23 |       $cast(c, b);   
-      |       ^~~~~
-%Error: Exiting due to
+[0] %Error: t_castdyn_run_bad.v:32: Assertion failed in top.t: 'assert' failed.
+%Error: t/t_castdyn_run_bad.v:32: Verilog $stop
+Aborting...

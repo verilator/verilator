@@ -768,7 +768,7 @@ sub _exit {
     if ($self->ok) {
         $self->oprint("Self PASSED\n");
     } elsif ($self->skips && !$self->errors) {
-        $self->oprint("%Skip: $self->{skips}\n");
+        $self->oprint("-Skip: $self->{skips}\n");
     } elsif ($self->unsupporteds && !$self->errors) {
         $self->oprint("%Unsupported: $self->{unsupporteds}\n");
     } else {

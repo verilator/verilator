@@ -1,0 +1,77 @@
+# DESCRIPTION: Github actions config
+# This name is key to badges in README.adoc, so we use the name build
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # weekly
+
+jobs:
+
+  vlt:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { cc: clang, cxx: clang++ }
+          - { cc: gcc,   cxx: g++     }
+    runs-on: ubuntu-20.04
+    name: Ubuntu 20.04 | ${{ matrix.cc }} | build-test
+    env:
+      CI_OS_NAME: linux
+      CI_RUNS_ON: ubuntu-20.04
+      CI_COMMIT: ${{ github.sha }}
+      CCACHE_COMPRESS: 1
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache
+        uses: actions/cache@v2
+        env:
+          cache-name: ccache
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ubuntu-20.04-${{ matrix.cc }}-${{ env.cache-name }}-${{ github.sha }}
+          restore-keys: |
+            ubuntu-20.04-${{ matrix.cc }}-${{ env.cache-name }}
+
+      - name: Install packages for build
+        env:
+          CI_BUILD_STAGE_NAME: build
+        run: bash ci/ci-install.bash
+
+      - name: CCACHE maintenance
+        run: mkdir -p $CCACHE_DIR && bash ci/ci-ccache-maint.bash
+
+      - name: Build
+        env:
+          CI_BUILD_STAGE_NAME: build
+        run: bash ci/ci-script.bash
+
+      - name: Install packages for tests
+        env:
+          CI_BUILD_STAGE_NAME: test
+        run: bash ci/ci-install.bash
+
+      - name: Test
+        env:
+          CI_BUILD_STAGE_NAME: test
+        run: |
+          for item in dist-vlt-0 dist-vlt-1 vltmt-0 vltmt-1; do
+            echo "::group::${item}"
+
+            TESTS="${item}" bash ci/ci-script.bash
+
+            echo '::endgroup::'
+          done

@@ -509,7 +509,7 @@ private:
         return true;
     }
     bool ifConcatMergeableBiop(const AstNode* nodep) {
-        return (VN_IS(nodep, And) || VN_IS(nodep, Or) || VN_IS(nodep, Xor) || VN_IS(nodep, Xnor));
+        return (VN_IS(nodep, And) || VN_IS(nodep, Or) || VN_IS(nodep, Xor));
     }
     bool ifAdjacentSel(const AstSel* lhsp, const AstSel* rhsp) {
         if (!v3Global.opt.oAssemble()) return false;  // opt disabled
@@ -2248,7 +2248,6 @@ private:
     TREEOP ("AstShiftR{$lhsp.isZero, $rhsp}",   "replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstShiftRS{$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstXor   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
-    TREEOP ("AstXnor  {$lhsp.isZero, $rhsp}",   "AstNot{$rhsp}");
     TREEOP ("AstSub   {$lhsp.isZero, $rhsp}",   "AstNegate{$rhsp}");
     TREEOP ("AstAdd   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
     TREEOP ("AstAnd   {$lhsp, $rhsp.isZero}",   "replaceZeroChkPure(nodep,$lhsp)");
@@ -2262,7 +2261,6 @@ private:
     TREEOP ("AstShiftRS{$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
     TREEOP ("AstSub   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
     TREEOP ("AstXor   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
-    TREEOP ("AstXnor  {$lhsp, $rhsp.isZero}",   "AstNot{$lhsp}");
     // Non-zero on one side or the other
     TREEOP ("AstAnd   {$lhsp.isAllOnes, $rhsp}",        "replaceWRhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isNeqZero, $rhsp}",        "replaceWRhs(nodep)");
@@ -2273,7 +2271,6 @@ private:
     TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, isTPure($lhsp)}",        "replaceWRhs(nodep)");  //->allOnes
     TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, isTPure($lhsp)}",        "replaceNum(nodep,1)");
     TREEOP ("AstXor   {$lhsp.isAllOnes, $rhsp}",        "AstNot{$rhsp}");
-    TREEOP ("AstXnor  {$lhsp.isAllOnes, $rhsp}",        "replaceWRhs(nodep)");
     TREEOP ("AstMul   {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstDiv   {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
@@ -2384,7 +2381,6 @@ private:
     TREEOP ("AstDivS   {operandsSame($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstOr     {operandsSame($lhsp,,$rhsp)}",   "replaceWLhs(nodep)");
     TREEOP ("AstSub    {operandsSame($lhsp,,$rhsp)}",   "replaceZero(nodep)");
-    TREEOP ("AstXnor   {operandsSame($lhsp,,$rhsp)}",   "replaceAllOnes(nodep)");
     TREEOP ("AstXor    {operandsSame($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstEq     {operandsSame($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
     TREEOP ("AstEqD    {operandsSame($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
@@ -2461,8 +2457,6 @@ private:
     TREEOP ("AstAnd {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstOr  {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstXor {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
-    //      "AstXnor{operandShiftSame(nodep)}",   // Cannot ShiftSame as the shifted-in
-    //                                               zeros might create a one
     // Note can't simplify a extend{extends}, extends{extend}, as the sign
     // bits end up in the wrong places
     TREEOPV("AstExtend {$lhsp.castExtend}",  "replaceExtend(nodep, VN_CAST(nodep->lhsp(), Extend)->lhsp())");
@@ -2480,7 +2474,6 @@ private:
     TREEOPV("AstSel{$fromp.castAnd, operandSelBiLower(nodep)}", "DONE");
     TREEOPV("AstSel{$fromp.castOr,  operandSelBiLower(nodep)}", "DONE");
     TREEOPV("AstSel{$fromp.castSub, operandSelBiLower(nodep)}", "DONE");
-    TREEOPV("AstSel{$fromp.castXnor,operandSelBiLower(nodep)}", "DONE");
     TREEOPV("AstSel{$fromp.castXor, operandSelBiLower(nodep)}", "DONE");
     TREEOPV("AstSel{$fromp.castShiftR, operandSelShiftLower(nodep)}",   "DONE");
     TREEOPC("AstSel{$fromp.castConst, $lsbp.castConst, $widthp.castConst, }",   "replaceConst(nodep)");
@@ -2494,9 +2487,6 @@ private:
     TREEOPV("AstSel{$fromp.castAnd,$lhsp.castConst}",   "replaceSelIntoUniop(nodep)");
     TREEOPV("AstSel{$fromp.castOr,$lhsp.castConst}",    "replaceSelIntoUniop(nodep)");
     TREEOPV("AstSel{$fromp.castXor,$lhsp.castConst}",   "replaceSelIntoUniop(nodep)");
-    TREEOPV("AstSel{$fromp.castXnor,$lhsp.castConst}",  "replaceSelIntoUniop(nodep)");
-    // Conversions
-    TREEOPV("AstRedXnor{$lhsp}",                "AstNot{AstRedXor{$lhsp}}");  // Just eliminate XNOR's
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstLogIf{$lhsp.isZero}",  "replaceNum(nodep, 1)");
     TREEOPV("AstLogIf{$lhsp, $rhsp}",  "AstLogOr{AstLogNot{$lhsp},$rhsp}");

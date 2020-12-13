@@ -234,7 +234,6 @@ sub gentree {
   'RANGE'       => sub { t1; local $Avoid_Hex=1; p "[";t2;p ":";t3;p "]"; },
   'REDAND'      => sub { p "&(";p1;p ")"; },
   'REDOR'       => sub { p "|(";p1;p ")"; },
-  'REDXNOR'     => sub { p "~|(";p1;p ")"; },
   'REDXOR'      => sub { p "~^(";p1;p ")"; },
   'REPLICATE'   => sub { p "{";p1;p "{";p2;p "}}"; },
   'SCCTOR'      => sub { p "SCCTOR what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
@@ -263,7 +262,6 @@ sub gentree {
   'VARSCOPE'    => sub { },
   'WHILE'       => sub { t1; p "while (";t2;p ") begin";indentInc;nl;t3;t4;indentDec;p "end";nl; },
   'WORDSEL'     => sub { p1;p "[";p2;p ":";p3;p "]"; },
-  'XNOR'        => sub { p1;p " ~^ ";p2; },
   'XOR'         => sub { p1;p " ^";p2; },
 );
 }

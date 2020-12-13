@@ -95,14 +95,15 @@ AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
         nextp = VN_CAST(nodep->nextp(), NodeRange);
         if (!VN_IS(nodep, Range)) {
             nodep->v3error(
-                "Unsupported or syntax error: Unsized range in cell or other declaration");
+                "Unsupported or syntax error: Unsized range in instance or other declaration");
             nodep->unlinkFrBack();
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
     if (nrangep && nrangep->nextp()) {
         // Not supported by at least 2 of big 3
-        nrangep->nextp()->v3warn(E_UNSUPPORTED, "Unsupported: Multidimensional cells/interfaces.");
+        nrangep->nextp()->v3warn(E_UNSUPPORTED,
+                                 "Unsupported: Multidimensional instances/interfaces.");
         nrangep->nextp()->unlinkFrBackWithNext()->deleteTree();
     }
     return VN_CAST(nrangep, Range);

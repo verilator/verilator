@@ -96,8 +96,6 @@ private:
     virtual void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         if (m_classp && !nodep->isParam()) nodep->varType(AstVarType::MEMBER);
-        if (m_classp && nodep->isParam())
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: class parameter");
         if (m_ftaskp) nodep->funcLocal(true);
         if (nodep->isSigModPublic()) {
             nodep->sigModPublic(false);  // We're done with this attribute
@@ -107,14 +105,23 @@ private:
 
     virtual void visit(AstNodeVarRef* nodep) override {
         // VarRef: Resolve its reference
-        if (nodep->varp()) { nodep->varp()->usedParam(true); }
+        if (nodep->varp()) nodep->varp()->usedParam(true);
         iterateChildren(nodep);
     }
 
     virtual void visit(AstNodeFTask* nodep) override {
         // NodeTask: Remember its name for later resolution
         // Remember the existing symbol table scope
-        if (m_classp) nodep->classMethod(true);
+        if (m_classp) {
+            if (nodep->name() == "pre_randomize" || nodep->name() == "post_randomize") {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << nodep->prettyNameQ());
+            } else if (nodep->name() == "randomize") {
+                nodep->v3error(nodep->prettyNameQ()
+                               << " is a predefined class method; redefinition not allowed (IEEE "
+                                  "1800-2017 18.6.3)");
+            }
+            nodep->classMethod(true);
+        }
         // V3LinkDot moved the isExternDef into the class, the extern proto was
         // checked to exist, and now isn't needed
         nodep->isExternDef(false);
@@ -189,7 +196,7 @@ private:
                     did = true;
                 }
                 if (AstNodePreSel* selp = VN_CAST(nodep->sensp(), NodePreSel)) {
-                    AstNode* fromp = selp->lhsp()->unlinkFrBack();
+                    AstNode* fromp = selp->fromp()->unlinkFrBack();
                     selp->replaceWith(fromp);
                     VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = true;

@@ -71,9 +71,10 @@ private:
     //  AstVarScope::user2p()   -> AstActive*.  Points to activity block of signal
     //                                       (valid when AstVarScope::user1p is valid)
     //  AstVarScope::user4p()   -> AstAlwaysPost*.  Post block for this variable
-    //  AstVarScope::user5()    -> VarUsage. Tracks delayed vs non-delayed usage
+    //  AstVarScope::user5p()   -> AstVarRef*. Last blocking or non-blocking reference
     //  AstVar::user2()         -> bool.  Set true if already made warning
     //  AstVarRef::user2()      -> bool.  Set true if already processed
+    //  AstVarRef::user5()      -> bool.  Set true if was blocking reference
     //  AstAlwaysPost::user2()  -> ActActive*.  Points to activity block of signal
     //                                      (valid when AstAlwaysPost::user4p is valid)
     //  AstAlwaysPost::user4()  -> AstIf*.  Last IF (__Vdlyvset__) created under this AlwaysPost
@@ -85,8 +86,6 @@ private:
     AstUser3InUse m_inuser3;
     AstUser4InUse m_inuser4;
     AstUser5InUse m_inuser5;
-
-    enum VarUsage : uint8_t { VU_NONE = 0, VU_DLY = 1, VU_NONDLY = 2 };
 
     // STATE
     AstActive* m_activep = nullptr;  // Current activate
@@ -104,13 +103,28 @@ private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    void markVarUsage(AstVarScope* nodep, uint32_t flags) {
-        // UINFO(4, " MVU " << flags << " " << nodep << endl);
-        nodep->user5(nodep->user5() | flags);
-        if ((nodep->user5() & VU_DLY) && (nodep->user5() & VU_NONDLY)) {
-            nodep->v3warn(BLKANDNBLK,
-                          "Unsupported: Blocked and non-blocking assignments to same variable: "
-                              << nodep->varp()->prettyNameQ());
+    void markVarUsage(AstNodeVarRef* nodep, bool blocking) {
+        if (blocking) nodep->user5(true);
+        AstVarScope* vscp = nodep->varScopep();
+        // UINFO(4, " MVU " << blocking << " " << nodep << endl);
+        AstNode* lastrefp = vscp->user5p();
+        if (!lastrefp) {
+            vscp->user5p(nodep);
+        } else {
+            bool last_was_blocking = lastrefp->user5();
+            if (last_was_blocking != blocking) {
+                AstNode* nonblockingp = blocking ? nodep : lastrefp;
+                AstNode* blockingp = blocking ? lastrefp : nodep;
+                vscp->v3warn(
+                    BLKANDNBLK,
+                    "Unsupported: Blocked and non-blocking assignments to same variable: "
+                        << vscp->varp()->prettyNameQ() << '\n'
+                        << vscp->warnContextPrimary() << '\n'
+                        << blockingp->warnOther() << "... Location of blocking assignment\n"
+                        << blockingp->warnContextSecondary() << '\n'
+                        << nonblockingp->warnOther() << "... Location of nonblocking assignment\n"
+                        << nonblockingp->warnContextSecondary());
+            }
         }
     }
     AstVarScope* createVarSc(AstVarScope* oldvarscp, const string& name,
@@ -398,9 +412,9 @@ private:
             if (newlhsp) {
                 nodep->lhsp(newlhsp);
             } else {
-                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             }
-            VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+            VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
         } else {
             iterateChildren(nodep);
         }
@@ -412,7 +426,7 @@ private:
         if (!nodep->user2Inc()) {  // Not done yet
             if (m_inDly && nodep->access().isWriteOrRW()) {
                 UINFO(4, "AssignDlyVar: " << nodep << endl);
-                markVarUsage(nodep->varScopep(), VU_DLY);
+                markVarUsage(nodep, true);
                 UASSERT_OBJ(m_activep, nodep, "<= not under sensitivity block");
                 UASSERT_OBJ(!nodep->access().isRW(), nodep, "<= on read+write method");
                 if (!m_activep->hasClocked()) {
@@ -458,12 +472,12 @@ private:
                 AstVarRef* newrefp = new AstVarRef(nodep->fileline(), dlyvscp, VAccess::WRITE);
                 newrefp->user2(true);  // No reason to do it again
                 nodep->replaceWith(newrefp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (!m_inDly && nodep->access().isWriteOrRW()) {
                 // UINFO(9, "NBA " << nodep << endl);
                 if (!m_inInitial) {
                     UINFO(4, "AssignNDlyVar: " << nodep << endl);
-                    markVarUsage(nodep->varScopep(), VU_NONDLY);
+                    markVarUsage(nodep, false);
                 }
             }
         }

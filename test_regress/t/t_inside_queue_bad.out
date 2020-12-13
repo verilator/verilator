@@ -1,0 +1,13 @@
+%Error: t/t_inside_queue_bad.v:15:15: Inside operator not legal on non-unpacked arrays (IEEE 1800-2017 11.4.13)
+                                    : ... In instance t
+   15 |       m = (10 inside {q});
+      |               ^~~~~~
+%Error: t/t_inside_queue_bad.v:16:15: Inside operator not legal on non-unpacked arrays (IEEE 1800-2017 11.4.13)
+                                    : ... In instance t
+   16 |       m = (10 inside {assoc});
+      |               ^~~~~~
+%Error: t/t_inside_queue_bad.v:17:15: Inside operator not legal on non-unpacked arrays (IEEE 1800-2017 11.4.13)
+                                    : ... In instance t
+   17 |       m = (10 inside {dyn});
+      |               ^~~~~~
+%Error: Exiting due to

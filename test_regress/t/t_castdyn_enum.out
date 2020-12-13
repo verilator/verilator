@@ -1,5 +1,0 @@
-%Error-UNSUPPORTED: t/t_castdyn_enum.v:23:11: Unsupported: $cast. Suggest try static cast.
-                                            : ... In instance t
-   23 |       i = $cast(en, cyc);
-      |           ^~~~~
-%Error: Exiting due to

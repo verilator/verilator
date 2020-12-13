@@ -106,7 +106,8 @@ class SliceVisitor final : public AstNVisitor {
                                    ? snodep->declRange().elements() - 1 - offset
                                    : offset));
             newp = new AstArraySel(nodep->fileline(), snodep->fromp()->cloneTree(false), leOffset);
-        } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)) {
+        } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)
+                   || VN_IS(nodep, CMethodHard)) {
             UINFO(9, "  cloneSel(" << elements << "," << offset << ") " << nodep << endl);
             int leOffset = !arrayp->rangep()->littleEndian()
                                ? arrayp->rangep()->elementsConst() - 1 - offset

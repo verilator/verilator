@@ -447,7 +447,8 @@ private:
         FileLine* const flp = m_topScopep->fileline();
         AstNodeDType* const newScalarDtp = new AstBasicDType(flp, VFlagLogicPacked(), 1);
         v3Global.rootp()->typeTablep()->addTypesp(newScalarDtp);
-        AstRange* const newArange = new AstRange(flp, VNumRange(m_activityNumber - 1, 0, false));
+        AstRange* const newArange
+            = new AstRange{flp, VNumRange{static_cast<int>(m_activityNumber) - 1, 0}};
         AstNodeDType* const newArrDtp = new AstUnpackArrayDType(flp, newScalarDtp, newArange);
         v3Global.rootp()->typeTablep()->addTypesp(newArrDtp);
         AstVar* const newvarp

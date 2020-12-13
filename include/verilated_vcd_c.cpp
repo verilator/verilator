@@ -777,6 +777,8 @@ void VerilatedVcd::fullDouble(vluint32_t code, const double newval) {
 #ifdef VERILATED_VCD_TEST
 #include <iostream>
 
+extern void verilated_trace_imp_selftest();
+
 vluint32_t v1, v2, s1, s2[3];
 vluint32_t tri96[3];
 vluint32_t tri96__tri[3];
@@ -843,6 +845,8 @@ void vcdChange(void*, VerilatedVcd* vcdp) {
 
 // clang-format off
 void vcdTestMain(const char* filenamep) {
+    verilated_trace_imp_selftest();
+
     v1 = v2 = s1 = 0;
     s2[0] = s2[1] = s2[2] = 0;
     tri96[2] = tri96[1] = tri96[0] = 0;

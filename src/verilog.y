@@ -2465,7 +2465,8 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			{ // Convert BEGIN(...) to BEGIN(GENFOR(...)), as we need the BEGIN to hide the local genvar
 			  AstBegin* lowerBegp = VN_CAST($9, Begin);
 			  UASSERT_OBJ(!($9 && !lowerBegp), $9, "Child of GENFOR should have been begin");
-			  if (!lowerBegp) lowerBegp = new AstBegin($1, "genblk", nullptr, true, true);  // Empty body
+
+			  if (!lowerBegp) lowerBegp = new AstBegin($1, "", nullptr, true, false);  // Empty body
 			  AstNode* lowerNoBegp = lowerBegp->stmtsp();
 			  if (lowerNoBegp) lowerNoBegp->unlinkFrBackWithNext();
 			  //
@@ -2479,7 +2480,7 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			  }
 			  // Statements are under 'genforp' as cells under this
 			  // for loop won't get an extra layer of hierarchy tacked on
-			  blkp->addGenforp(new AstGenFor($1,initp,$5,$7,lowerNoBegp));
+			  blkp->addGenforp(new AstGenFor($1, initp, $5, $7, lowerNoBegp));
 			  $$ = blkp;
 			  VL_DO_DANGLING(lowerBegp->deleteTree(), lowerBegp);
 			}
@@ -3667,7 +3668,9 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstWriteMem($1, true,  $3, $5, $7, $9); }
 	//
 	|	yD_CAST '(' expr ',' expr ')'
-			{ $$ = new AstAssert($1, new AstCastDynamic($1, $3, $5), nullptr, nullptr, true); }
+			{ FileLine* fl_nowarn = new FileLine($1);
+			  fl_nowarn->warnOff(V3ErrorCode::WIDTH, true);
+			  $$ = new AstAssertIntrinsic(fl_nowarn, new AstCastDynamic(fl_nowarn, $5, $3), nullptr, nullptr, true); }
 	//
 	// Any system function as a task
 	|	system_f_call_or_t			{ $$ = new AstSysFuncAsTask($<fl>1, $1); }
@@ -3677,7 +3680,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 		yaD_PLI systemDpiArgsE			{ $$ = new AstFuncRef($<fl>1, *$1, $2); VN_CAST($$, FuncRef)->pli(true); }
 	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? nullptr : new AstUCFunc($1,$3)); }
-	|	yD_CAST '(' expr ',' expr ')'		{ $$ = new AstCastDynamic($1, $3, $5); }
+	|	yD_CAST '(' expr ',' expr ')'		{ $$ = new AstCastDynamic($1, $5, $3); }
 	|	yD_SYSTEM  '(' expr ')'			{ $$ = new AstSystemF($1,$3); }
 	//
 	|	system_f_call_or_t			{ $$ = $1; }
@@ -4146,7 +4149,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	'^' ~r~expr	%prec prREDUCTION	{ $$ = new AstRedXor	($1,$2); }
 	|	yP_NAND ~r~expr	%prec prREDUCTION	{ $$ = new AstLogNot($1, new AstRedAnd($1, $2)); }
 	|	yP_NOR  ~r~expr	%prec prREDUCTION	{ $$ = new AstLogNot($1, new AstRedOr($1, $2)); }
-	|	yP_XNOR ~r~expr	%prec prREDUCTION	{ $$ = new AstRedXnor	($1,$2); }
+	|	yP_XNOR ~r~expr	%prec prREDUCTION	{ $$ = new AstLogNot($1, new AstRedXor($1, $2)); }
 	//
 	//			// IEEE: inc_or_dec_expression
 	|	~l~inc_or_dec_expression		{ $<fl>$=$<fl>1; $$ = $1; }
@@ -4187,9 +4190,9 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	~l~expr '&' ~r~expr			{ $$ = new AstAnd	($2,$1,$3); }
 	|	~l~expr '|' ~r~expr			{ $$ = new AstOr	($2,$1,$3); }
 	|	~l~expr '^' ~r~expr			{ $$ = new AstXor	($2,$1,$3); }
-	|	~l~expr yP_XNOR ~r~expr			{ $$ = new AstXnor	($2,$1,$3); }
-	|	~l~expr yP_NOR ~r~expr			{ $$ = new AstNot($2,new AstOr	($2,$1,$3)); }
-	|	~l~expr yP_NAND ~r~expr			{ $$ = new AstNot($2,new AstAnd	($2,$1,$3)); }
+	|	~l~expr yP_XNOR ~r~expr			{ $$ = new AstNot{$2, new AstXor{$2, $1, $3}}; }
+	|	~l~expr yP_NOR ~r~expr			{ $$ = new AstNot{$2, new AstOr{$2, $1, $3}}; }
+	|	~l~expr yP_NAND ~r~expr			{ $$ = new AstNot{$2, new AstAnd{$2, $1, $3}}; }
 	|	~l~expr yP_SLEFT ~r~expr		{ $$ = new AstShiftL	($2,$1,$3); }
 	|	~l~expr yP_SRIGHT ~r~expr		{ $$ = new AstShiftR	($2,$1,$3); }
 	|	~l~expr yP_SSRIGHT ~r~expr		{ $$ = new AstShiftRS	($2,$1,$3); }
@@ -4264,7 +4267,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	yCONST__ETC yP_TICK '(' expr ')'	{ $$ = $4; }  // Not linting const presently
 	//			// Spec only allows primary with addition of a type reference
 	//			// We'll be more general, and later assert LHS was a type.
-	|	~l~expr yP_TICK '(' expr ')'		{ $$ = new AstCastParse($2,$4,$1); }
+	|	~l~expr yP_TICK '(' expr ')'		{ $$ = new AstCastParse($2, $4, $1); }
 	//
 	//			// IEEE: assignment_pattern_expression
 	//			// IEEE: streaming_concatenation
@@ -4274,7 +4277,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// Indistinguishable from function_subroutine_call:method_call
 	//
 	|	'$'					{ $$ = new AstUnbounded($<fl>1); }
-	|	yNULL					{ $$ = new AstConst($1, AstConst::StringToParse(), "'0"); }
+	|	yNULL					{ $$ = new AstConst($1, AstConst::Null{}); }
 	//			// IEEE: yTHIS
 	//			// See exprScope
 	//

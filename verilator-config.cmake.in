@@ -129,7 +129,7 @@ function(verilate TARGET)
   endif()
 
   if (VERILATE_TOP_MODULE)
-    list(APPEND VERILATOR_ARGS --top-module ${VERILATE_TOP_MODULE})
+    list(APPEND VERILATOR_ARGS --top ${VERILATE_TOP_MODULE})
   endif()
 
   if (VERILATE_THREADS)

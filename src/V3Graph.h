@@ -145,12 +145,6 @@ public:
     /// Make acyclical (into a tree) by breaking a minimal subset of cutable edges.
     void acyclic(V3EdgeFuncP edgeFuncp);
 
-    /// Delete any nodes with only outputs
-    void deleteCutableOnlyEdges();
-
-    /// Any cutable edges become non-cutable
-    void makeEdgesNonCutable(V3EdgeFuncP edgeFuncp);
-
     /// Remove any redundant edges, weights become MAX of any other weight
     void removeRedundantEdges(V3EdgeFuncP edgeFuncp);
 

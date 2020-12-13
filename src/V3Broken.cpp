@@ -329,3 +329,13 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
 void V3Broken::addNewed(AstNode* nodep) { BrokenTable::addNewed(nodep); }
 void V3Broken::deleted(AstNode* nodep) { BrokenTable::deleted(nodep); }
 bool V3Broken::isAllocated(AstNode* nodep) { return BrokenTable::isAllocated(nodep); }
+void V3Broken::selfTest() {
+    // Warmup addNewed and deleted for coverage, as otherwise only with VL_LEAK_CHECKS
+    FileLine* fl = new FileLine(FileLine::commandLineFilename());
+    auto* newp = new AstBegin(fl, "[EditWrapper]", nullptr);
+#ifndef VL_LEAK_CHECKS
+    addNewed(newp);
+    deleted(newp);
+#endif
+    VL_DO_DANGLING(delete newp, newp);
+}

@@ -1,0 +1,65 @@
+# DESCRIPTION: Github actions config
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: coverage
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # weekly
+
+env:
+  CI_OS_NAME: linux
+  CI_COMMIT: ${{ github.sha }}
+  CCACHE_COMPRESS: 1
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
+  COVERAGE: 1
+  CI_BUILD_STAGE_NAME: test
+
+jobs:
+
+  buildjob:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
+
+
+  test:
+    needs: buildjob
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+        - vlt-
+        - vltmt-
+        num:
+        - 0
+        - 1
+        - 2
+        - 3
+        include:
+        - { test: dist, num: '' }
+    name: test-${{ matrix.test }}${{ matrix.num }}
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          coverage-${{ env.cache-name }}
+    - run: bash -c "CI_BUILD_STAGE_NAME=build ci/ci-install-build.bash"
+    - run: bash -c "TESTS=coverage-${{ matrix.test }}${{ matrix.num }} ci/ci-script.bash"

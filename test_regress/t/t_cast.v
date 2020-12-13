@@ -13,12 +13,18 @@ module t;
       logic [15:0] data;
    } packed_t;
 
+   typedef enum [15:0] {
+      ONE = 1
+   } enum_t;
+
    packed_t pdata;
+   packed_t pdata_reg;
    assign pdata.data = 16'h1234;
    logic [7:0] logic8bit;
    assign logic8bit = $bits(logic8bit)'(pdata >> 8);
 
    mc_t o;
+   enum_t e;
 
    logic [15:0] allones = 16'hffff;
    parameter FOUR = 4;
@@ -54,6 +60,17 @@ module t;
       if ((4-2)'(allones) !== 2'h3) $stop;
       if ((FOUR+2)'(allones) !== 6'h3f) $stop;
       if (50 !== RESULT) $stop;
+
+      e = ONE;
+      if (e != 1) $stop;
+      if (e != ONE) $stop;
+      e = enum_t'(ONE);
+      if (e != ONE) $stop;
+      e = enum_t'(16'h1);
+      if (e != ONE) $stop;
+      pdata_reg.data = 1;
+      e = enum_t'(pdata_reg);
+      if (e != ONE) $stop;
 
       o = tocast_t'(4'b1);
       if (o != 4'b1) $stop;
