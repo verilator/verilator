@@ -2211,12 +2211,21 @@ private:
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();  // Will be unlinking
             AstNode* inewp;
+            AstNodeDType* itemDtp = itemp->dtypep()->skipRefp();
             if (AstInsideRange* irangep = VN_CAST(itemp, InsideRange)) {
                 // Similar logic in V3Case
                 inewp = irangep->newAndFromInside(nodep->exprp(), irangep->lhsp()->unlinkFrBack(),
                                                   irangep->rhsp()->unlinkFrBack());
-            } else if (auto* irangep = VN_CAST(itemp->dtypep(), UnpackArrayDType)) {
-                irangep->v3error("Unsupported: inside on unpacked array");
+            } else if (VN_IS(itemDtp, UnpackArrayDType)) {
+                nodep->v3error("Unsupported: inside (set membership operator) on unpacked array");
+                // Need the AstInside type to persist, then
+                // for parameters, need V3Simulate support.
+                // For non-parameters, need runtime support.
+                continue;
+            } else if (VN_IS(itemDtp, AssocArrayDType) || VN_IS(itemDtp, DynArrayDType)
+                       || VN_IS(itemDtp, QueueDType)) {
+                nodep->v3error(
+                    "Inside operator not legal on non-unpacked arrays (IEEE 1800-2017 11.4.13)");
                 continue;
             } else {
                 inewp = new AstEqWild(itemp->fileline(), nodep->exprp()->cloneTree(true),

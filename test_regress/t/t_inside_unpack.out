@@ -1,4 +1,0 @@
-%Error: t/t_inside_unpack.v:13:31: Unsupported: inside on unpacked array
-   13 |    localparam int CHECKLIST_P [2:0] = '{0, 1, 2};
-      |                               ^
-%Error: Exiting due to
