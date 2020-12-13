@@ -4140,14 +4140,17 @@ private:
             // Very much like like an assignment, but which side is LH/RHS
             // depends on pin being a in/output/inout.
             userIterateAndNext(nodep->exprp(), WidthVP(nodep->modVarp()->dtypep(), PRELIM).p());
-            AstNodeDType* pinDTypep = nodep->modVarp()->dtypep();
+            AstNodeDType* modDTypep = nodep->modVarp()->dtypep();
             AstNodeDType* conDTypep = nodep->exprp()->dtypep();
+            if (!modDTypep) nodep->v3fatalSrc("Unlinked pin data type");
             if (!conDTypep) nodep->v3fatalSrc("Unlinked pin data type");
-            AstNodeDType* subDTypep = pinDTypep;
-            int pinwidth = pinDTypep->width();
+            modDTypep = modDTypep->skipRefp();
+            conDTypep = conDTypep->skipRefp();
+            AstNodeDType* subDTypep = modDTypep;
+            int pinwidth = modDTypep->width();
             int conwidth = conDTypep->width();
-            if (conDTypep == pinDTypep  // If match, we're golden
-                || similarDTypeRecurse(conDTypep, pinDTypep)) {
+            if (conDTypep == modDTypep  // If match, we're golden
+                || similarDTypeRecurse(conDTypep, modDTypep)) {
                 userIterateAndNext(nodep->exprp(), WidthVP(subDTypep, FINAL).p());
             } else if (m_cellp->rangep()) {
                 int numInsts = m_cellp->rangep()->elementsConst();
@@ -4175,7 +4178,7 @@ private:
                     nodep->v3error("Ref connection "
                                    << nodep->modVarp()->prettyNameQ()
                                    << " requires matching types;"
-                                   << " ref requires " << pinDTypep->prettyDTypeNameQ()
+                                   << " ref requires " << modDTypep->prettyDTypeNameQ()
                                    << " data type but connection is "
                                    << conDTypep->prettyDTypeNameQ() << " data type.");
                 } else if (nodep->modVarp()->isTristate()) {
@@ -4190,24 +4193,21 @@ private:
                     }
                 }
                 // Check if an interface is connected to a non-interface and vice versa
-                AstNodeDType* modDTypep = nodep->modVarp()->dtypep();
-                AstNodeDType* exprDTypep = nodep->exprp()->dtypep();
-                if ((VN_IS(modDTypep, IfaceRefDType) && !VN_IS(exprDTypep, IfaceRefDType))
-                    || (VN_IS(exprDTypep, IfaceRefDType) && !VN_IS(modDTypep, IfaceRefDType))) {
+                if ((VN_IS(modDTypep, IfaceRefDType) && !VN_IS(conDTypep, IfaceRefDType))
+                    || (VN_IS(conDTypep, IfaceRefDType) && !VN_IS(modDTypep, IfaceRefDType))) {
                     nodep->v3error("Illegal " << nodep->prettyOperatorName() << ","
                                               << " mismatch between port which is"
                                               << (VN_CAST(modDTypep, IfaceRefDType) ? "" : " not")
                                               << " an interface,"
                                               << " and expression which is"
-                                              << (VN_CAST(exprDTypep, IfaceRefDType) ? "" : " not")
+                                              << (VN_CAST(conDTypep, IfaceRefDType) ? "" : " not")
                                               << " an interface.");
                 }
 
                 // TODO Simple dtype checking, should be a more general check
-                AstNodeArrayDType* exprArrayp = VN_CAST(exprDTypep->skipRefp(), UnpackArrayDType);
-                AstNodeArrayDType* modArrayp = VN_CAST(modDTypep->skipRefp(), UnpackArrayDType);
-                if (exprArrayp && modArrayp
-                    && VN_IS(exprArrayp->subDTypep()->skipRefp(), IfaceRefDType)
+                AstNodeArrayDType* exprArrayp = VN_CAST(conDTypep, UnpackArrayDType);
+                AstNodeArrayDType* modArrayp = VN_CAST(modDTypep, UnpackArrayDType);
+                if (exprArrayp && modArrayp && VN_IS(exprArrayp->subDTypep(), IfaceRefDType)
                     && exprArrayp->declRange().elements() != modArrayp->declRange().elements()) {
                     int exprSize = exprArrayp->declRange().elements();
                     int modSize = modArrayp->declRange().elements();
@@ -4217,8 +4217,8 @@ private:
                                    << modSize << ","
                                    << " and expression which is an interface array of size "
                                    << exprSize << ".");
-                    UINFO(1, "    Related lo: " << modDTypep->skipRefp() << endl);
-                    UINFO(1, "    Related hi: " << exprDTypep->skipRefp() << endl);
+                    UINFO(1, "    Related lo: " << modDTypep << endl);
+                    UINFO(1, "    Related hi: " << conDTypep << endl);
                 } else if ((exprArrayp && !modArrayp) || (!exprArrayp && modArrayp)) {
                     nodep->v3error("Illegal " << nodep->prettyOperatorName() << ","
                                               << " mismatch between port which is"
@@ -4226,8 +4226,8 @@ private:
                                               << " and expression which is"
                                               << (exprArrayp ? "" : " not")
                                               << " an array. (IEEE 1800-2017 7.6)");
-                    UINFO(1, "    Related lo: " << modDTypep->skipRefp() << endl);
-                    UINFO(1, "    Related hi: " << exprDTypep->skipRefp() << endl);
+                    UINFO(1, "    Related lo: " << modDTypep << endl);
+                    UINFO(1, "    Related hi: " << conDTypep << endl);
                 }
                 iterateCheckAssign(nodep, "pin connection", nodep->exprp(), FINAL, subDTypep);
             }
