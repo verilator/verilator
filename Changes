@@ -19,11 +19,13 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix DPI open array handling issues.
 
+****  Fix error when dotted refers to missing module (#2095). [Alexander Grobman]
+
+****  Fix little endian packed array counting (#2499). [phantom-killua]
+
 ****  Fix showing reference locations for BLKANDNBLK (#2170). [Yuri Victorovich]
 
 ****  Fix genblk naming to match IEEE (#2686). [tinshark]
-
-****  Fix error when dotted refers to missing module (#2095). [Alexander Grobman]
 
 
 * Verilator 4.106 2020-12-02

@@ -225,12 +225,10 @@ private:
         } else if (AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
             // SELBIT(array, index) -> SEL(array, index*width-of-subindex, width-of-subindex)
             AstNode* subp = rhsp;
-            if (fromRange.lo() != 0 || fromRange.hi() < 0) {
-                if (fromRange.littleEndian()) {
-                    subp = newSubNeg(fromRange.hi(), subp);
-                } else {
-                    subp = newSubNeg(subp, fromRange.lo());
-                }
+            if (fromRange.littleEndian()) {
+                subp = newSubNeg(fromRange.hi(), subp);
+            } else {
+                subp = newSubNeg(subp, fromRange.lo());
             }
             UASSERT_OBJ(!(!fromRange.elements() || (adtypep->width() % fromRange.elements()) != 0),
                         adtypep,
