@@ -10,336 +10,174 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
-    
-    // DPI EXPORTS
-    // DPI export at t/t_dpi_arg_output_unpack.v:503:18
-    extern void e_bit121_0d(svBitVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:504:18
-    extern void e_bit121_1d(svBitVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:505:18
-    extern void e_bit121_2d(svBitVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:506:18
-    extern void e_bit121_3d(svBitVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:493:18
-    extern void e_bit1_0d(svBit* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:494:18
-    extern void e_bit1_1d(svBit* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:495:18
-    extern void e_bit1_2d(svBit* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:496:18
-    extern void e_bit1_3d(svBitVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:498:18
-    extern void e_bit7_0d(svBitVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:499:18
-    extern void e_bit7_1d(svBitVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:500:18
-    extern void e_bit7_2d(svBitVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:501:18
-    extern void e_bit7_3d(svBitVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:389:18
-    extern void e_byte_0d(char* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:390:18
-    extern void e_byte_1d(char* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:391:18
-    extern void e_byte_2d(char* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:392:18
-    extern void e_byte_3d(char* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:394:18
-    extern void e_byte_unsigned_0d(unsigned char* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:395:18
-    extern void e_byte_unsigned_1d(unsigned char* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:396:18
-    extern void e_byte_unsigned_2d(unsigned char* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:397:18
-    extern void e_byte_unsigned_3d(unsigned char* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:455:18
-    extern void e_chandle_0d(void** val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:458:18
-    extern void e_chandle_1d(void** val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:462:18
-    extern void e_chandle_2d(void** val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:467:18
-    extern void e_chandle_3d(void** val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:409:18
-    extern void e_int_0d(int* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:410:18
-    extern void e_int_1d(int* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:411:18
-    extern void e_int_2d(int* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:412:18
-    extern void e_int_3d(int* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:414:18
-    extern void e_int_unsigned_0d(unsigned int* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:415:18
-    extern void e_int_unsigned_1d(unsigned int* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:416:18
-    extern void e_int_unsigned_2d(unsigned int* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:417:18
-    extern void e_int_unsigned_3d(unsigned int* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:437:18
-    extern void e_integer_0d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:438:18
-    extern void e_integer_1d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:439:18
-    extern void e_integer_2d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:440:18
-    extern void e_integer_3d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:518:18
-    extern void e_logic121_0d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:519:18
-    extern void e_logic121_1d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:520:18
-    extern void e_logic121_2d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:521:18
-    extern void e_logic121_3d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:508:18
-    extern void e_logic1_0d(svLogic* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:509:18
-    extern void e_logic1_1d(svLogic* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:510:18
-    extern void e_logic1_2d(svLogic* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:511:18
-    extern void e_logic1_3d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:513:18
-    extern void e_logic7_0d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:514:18
-    extern void e_logic7_1d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:515:18
-    extern void e_logic7_2d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:516:18
-    extern void e_logic7_3d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:419:18
-    extern void e_longint_0d(long long* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:420:18
-    extern void e_longint_1d(long long* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:421:18
-    extern void e_longint_2d(long long* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:422:18
-    extern void e_longint_3d(long long* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:424:18
-    extern void e_longint_unsigned_0d(unsigned long long* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:425:18
-    extern void e_longint_unsigned_1d(unsigned long long* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:426:18
-    extern void e_longint_unsigned_2d(unsigned long long* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:427:18
-    extern void e_longint_unsigned_3d(unsigned long long* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:523:18
-    extern void e_pack_struct_0d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:524:18
-    extern void e_pack_struct_1d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:525:18
-    extern void e_pack_struct_2d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:526:18
-    extern void e_pack_struct_3d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:443:18
-    extern void e_real_0d(double* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:444:18
-    extern void e_real_1d(double* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:445:18
-    extern void e_real_2d(double* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:446:18
-    extern void e_real_3d(double* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:399:18
-    extern void e_shortint_0d(short* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:400:18
-    extern void e_shortint_1d(short* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:401:18
-    extern void e_shortint_2d(short* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:402:18
-    extern void e_shortint_3d(short* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:404:18
-    extern void e_shortint_unsigned_0d(unsigned short* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:405:18
-    extern void e_shortint_unsigned_1d(unsigned short* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:406:18
-    extern void e_shortint_unsigned_2d(unsigned short* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:407:18
-    extern void e_shortint_unsigned_3d(unsigned short* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:474:18
-    extern void e_string_0d(const char** val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:477:18
-    extern void e_string_1d(const char** val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:481:18
-    extern void e_string_2d(const char** val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:486:18
-    extern void e_string_3d(const char** val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:430:18
-    extern void e_time_0d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:431:18
-    extern void e_time_1d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:432:18
-    extern void e_time_2d(svLogicVecVal* val);
-    // DPI export at t/t_dpi_arg_output_unpack.v:433:18
-    extern void e_time_3d(svLogicVecVal* val);
-    
-    // DPI IMPORTS
-    // DPI import at t/t_dpi_arg_output_unpack.v:553:41
-    extern void check_exports();
-    // DPI import at t/t_dpi_arg_output_unpack.v:129:36
-    extern void* get_non_null();
-    // DPI import at t/t_dpi_arg_output_unpack.v:217:33
-    extern void i_bit121_0d(svBitVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:218:33
-    extern void i_bit121_1d(svBitVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:219:33
-    extern void i_bit121_2d(svBitVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:220:33
-    extern void i_bit121_3d(svBitVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:207:33
-    extern void i_bit1_0d(svBit* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:208:33
-    extern void i_bit1_1d(svBit* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:209:33
-    extern void i_bit1_2d(svBit* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:210:33
-    extern void i_bit1_3d(svBit* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:212:33
-    extern void i_bit7_0d(svBitVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:213:33
-    extern void i_bit7_1d(svBitVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:214:33
-    extern void i_bit7_2d(svBitVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:215:33
-    extern void i_bit7_3d(svBitVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:131:33
-    extern void i_byte_0d(char* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:132:33
-    extern void i_byte_1d(char* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:133:33
-    extern void i_byte_2d(char* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:134:33
-    extern void i_byte_3d(char* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:136:33
-    extern void i_byte_unsigned_0d(unsigned char* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:137:33
-    extern void i_byte_unsigned_1d(unsigned char* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:138:33
-    extern void i_byte_unsigned_2d(unsigned char* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:139:33
-    extern void i_byte_unsigned_3d(unsigned char* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:197:33
-    extern void i_chandle_0d(void** val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:198:33
-    extern void i_chandle_1d(void** val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:199:33
-    extern void i_chandle_2d(void** val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:200:33
-    extern void i_chandle_3d(void** val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:151:33
-    extern void i_int_0d(int* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:152:33
-    extern void i_int_1d(int* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:153:33
-    extern void i_int_2d(int* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:154:33
-    extern void i_int_3d(int* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:156:33
-    extern void i_int_unsigned_0d(unsigned int* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:157:33
-    extern void i_int_unsigned_1d(unsigned int* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:158:33
-    extern void i_int_unsigned_2d(unsigned int* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:159:33
-    extern void i_int_unsigned_3d(unsigned int* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:179:33
-    extern void i_integer_0d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:180:33
-    extern void i_integer_1d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:181:33
-    extern void i_integer_2d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:182:33
-    extern void i_integer_3d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:232:33
-    extern void i_logic121_0d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:233:33
-    extern void i_logic121_1d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:234:33
-    extern void i_logic121_2d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:235:33
-    extern void i_logic121_3d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:222:33
-    extern void i_logic1_0d(svLogic* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:223:33
-    extern void i_logic1_1d(svLogic* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:224:33
-    extern void i_logic1_2d(svLogic* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:225:33
-    extern void i_logic1_3d(svLogic* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:227:33
-    extern void i_logic7_0d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:228:33
-    extern void i_logic7_1d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:229:33
-    extern void i_logic7_2d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:230:33
-    extern void i_logic7_3d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:161:33
-    extern void i_longint_0d(long long* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:162:33
-    extern void i_longint_1d(long long* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:163:33
-    extern void i_longint_2d(long long* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:164:33
-    extern void i_longint_3d(long long* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:166:33
-    extern void i_longint_unsigned_0d(unsigned long long* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:167:33
-    extern void i_longint_unsigned_1d(unsigned long long* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:168:33
-    extern void i_longint_unsigned_2d(unsigned long long* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:169:33
-    extern void i_longint_unsigned_3d(unsigned long long* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:237:33
-    extern void i_pack_struct_0d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:238:33
-    extern void i_pack_struct_1d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:239:33
-    extern void i_pack_struct_2d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:240:33
-    extern void i_pack_struct_3d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:185:33
-    extern void i_real_0d(double* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:186:33
-    extern void i_real_1d(double* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:187:33
-    extern void i_real_2d(double* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:188:33
-    extern void i_real_3d(double* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:141:33
-    extern void i_shortint_0d(short* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:142:33
-    extern void i_shortint_1d(short* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:143:33
-    extern void i_shortint_2d(short* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:144:33
-    extern void i_shortint_3d(short* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:146:33
-    extern void i_shortint_unsigned_0d(unsigned short* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:147:33
-    extern void i_shortint_unsigned_1d(unsigned short* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:148:33
-    extern void i_shortint_unsigned_2d(unsigned short* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:149:33
-    extern void i_shortint_unsigned_3d(unsigned short* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:202:33
-    extern void i_string_0d(const char** val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:203:33
-    extern void i_string_1d(const char** val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:204:33
-    extern void i_string_2d(const char** val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:205:33
-    extern void i_string_3d(const char** val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:172:33
-    extern void i_time_0d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:173:33
-    extern void i_time_1d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:174:33
-    extern void i_time_2d(svLogicVecVal* val);
-    // DPI import at t/t_dpi_arg_output_unpack.v:175:33
-    extern void i_time_3d(svLogicVecVal* val);
-    
+ 
+ 
+ // DPI EXPORTS
+ extern void e_bit121_0d(svBitVecVal* val);
+ extern void e_bit121_1d(svBitVecVal* val);
+ extern void e_bit121_2d(svBitVecVal* val);
+ extern void e_bit121_3d(svBitVecVal* val);
+ extern void e_bit1_0d(svBit* val);
+ extern void e_bit1_1d(svBit* val);
+ extern void e_bit1_2d(svBit* val);
+ extern void e_bit1_3d(svBitVecVal* val);
+ extern void e_bit7_0d(svBitVecVal* val);
+ extern void e_bit7_1d(svBitVecVal* val);
+ extern void e_bit7_2d(svBitVecVal* val);
+ extern void e_bit7_3d(svBitVecVal* val);
+ extern void e_byte_0d(char* val);
+ extern void e_byte_1d(char* val);
+ extern void e_byte_2d(char* val);
+ extern void e_byte_3d(char* val);
+ extern void e_byte_unsigned_0d(unsigned char* val);
+ extern void e_byte_unsigned_1d(unsigned char* val);
+ extern void e_byte_unsigned_2d(unsigned char* val);
+ extern void e_byte_unsigned_3d(unsigned char* val);
+ extern void e_chandle_0d(void** val);
+ extern void e_chandle_1d(void** val);
+ extern void e_chandle_2d(void** val);
+ extern void e_chandle_3d(void** val);
+ extern void e_int_0d(int* val);
+ extern void e_int_1d(int* val);
+ extern void e_int_2d(int* val);
+ extern void e_int_3d(int* val);
+ extern void e_int_unsigned_0d(unsigned int* val);
+ extern void e_int_unsigned_1d(unsigned int* val);
+ extern void e_int_unsigned_2d(unsigned int* val);
+ extern void e_int_unsigned_3d(unsigned int* val);
+ extern void e_integer_0d(svLogicVecVal* val);
+ extern void e_integer_1d(svLogicVecVal* val);
+ extern void e_integer_2d(svLogicVecVal* val);
+ extern void e_integer_3d(svLogicVecVal* val);
+ extern void e_logic121_0d(svLogicVecVal* val);
+ extern void e_logic121_1d(svLogicVecVal* val);
+ extern void e_logic121_2d(svLogicVecVal* val);
+ extern void e_logic121_3d(svLogicVecVal* val);
+ extern void e_logic1_0d(svLogic* val);
+ extern void e_logic1_1d(svLogic* val);
+ extern void e_logic1_2d(svLogic* val);
+ extern void e_logic1_3d(svLogicVecVal* val);
+ extern void e_logic7_0d(svLogicVecVal* val);
+ extern void e_logic7_1d(svLogicVecVal* val);
+ extern void e_logic7_2d(svLogicVecVal* val);
+ extern void e_logic7_3d(svLogicVecVal* val);
+ extern void e_longint_0d(long long* val);
+ extern void e_longint_1d(long long* val);
+ extern void e_longint_2d(long long* val);
+ extern void e_longint_3d(long long* val);
+ extern void e_longint_unsigned_0d(unsigned long long* val);
+ extern void e_longint_unsigned_1d(unsigned long long* val);
+ extern void e_longint_unsigned_2d(unsigned long long* val);
+ extern void e_longint_unsigned_3d(unsigned long long* val);
+ extern void e_pack_struct_0d(svLogicVecVal* val);
+ extern void e_pack_struct_1d(svLogicVecVal* val);
+ extern void e_pack_struct_2d(svLogicVecVal* val);
+ extern void e_pack_struct_3d(svLogicVecVal* val);
+ extern void e_real_0d(double* val);
+ extern void e_real_1d(double* val);
+ extern void e_real_2d(double* val);
+ extern void e_real_3d(double* val);
+ extern void e_shortint_0d(short* val);
+ extern void e_shortint_1d(short* val);
+ extern void e_shortint_2d(short* val);
+ extern void e_shortint_3d(short* val);
+ extern void e_shortint_unsigned_0d(unsigned short* val);
+ extern void e_shortint_unsigned_1d(unsigned short* val);
+ extern void e_shortint_unsigned_2d(unsigned short* val);
+ extern void e_shortint_unsigned_3d(unsigned short* val);
+ extern void e_string_0d(const char** val);
+ extern void e_string_1d(const char** val);
+ extern void e_string_2d(const char** val);
+ extern void e_string_3d(const char** val);
+ extern void e_time_0d(svLogicVecVal* val);
+ extern void e_time_1d(svLogicVecVal* val);
+ extern void e_time_2d(svLogicVecVal* val);
+ extern void e_time_3d(svLogicVecVal* val);
+ 
+ // DPI IMPORTS
+ extern void check_exports();
+ extern void* get_non_null();
+ extern void i_bit121_0d(svBitVecVal* val);
+ extern void i_bit121_1d(svBitVecVal* val);
+ extern void i_bit121_2d(svBitVecVal* val);
+ extern void i_bit121_3d(svBitVecVal* val);
+ extern void i_bit1_0d(svBit* val);
+ extern void i_bit1_1d(svBit* val);
+ extern void i_bit1_2d(svBit* val);
+ extern void i_bit1_3d(svBit* val);
+ extern void i_bit7_0d(svBitVecVal* val);
+ extern void i_bit7_1d(svBitVecVal* val);
+ extern void i_bit7_2d(svBitVecVal* val);
+ extern void i_bit7_3d(svBitVecVal* val);
+ extern void i_byte_0d(char* val);
+ extern void i_byte_1d(char* val);
+ extern void i_byte_2d(char* val);
+ extern void i_byte_3d(char* val);
+ extern void i_byte_unsigned_0d(unsigned char* val);
+ extern void i_byte_unsigned_1d(unsigned char* val);
+ extern void i_byte_unsigned_2d(unsigned char* val);
+ extern void i_byte_unsigned_3d(unsigned char* val);
+ extern void i_chandle_0d(void** val);
+ extern void i_chandle_1d(void** val);
+ extern void i_chandle_2d(void** val);
+ extern void i_chandle_3d(void** val);
+ extern void i_int_0d(int* val);
+ extern void i_int_1d(int* val);
+ extern void i_int_2d(int* val);
+ extern void i_int_3d(int* val);
+ extern void i_int_unsigned_0d(unsigned int* val);
+ extern void i_int_unsigned_1d(unsigned int* val);
+ extern void i_int_unsigned_2d(unsigned int* val);
+ extern void i_int_unsigned_3d(unsigned int* val);
+ extern void i_integer_0d(svLogicVecVal* val);
+ extern void i_integer_1d(svLogicVecVal* val);
+ extern void i_integer_2d(svLogicVecVal* val);
+ extern void i_integer_3d(svLogicVecVal* val);
+ extern void i_logic121_0d(svLogicVecVal* val);
+ extern void i_logic121_1d(svLogicVecVal* val);
+ extern void i_logic121_2d(svLogicVecVal* val);
+ extern void i_logic121_3d(svLogicVecVal* val);
+ extern void i_logic1_0d(svLogic* val);
+ extern void i_logic1_1d(svLogic* val);
+ extern void i_logic1_2d(svLogic* val);
+ extern void i_logic1_3d(svLogic* val);
+ extern void i_logic7_0d(svLogicVecVal* val);
+ extern void i_logic7_1d(svLogicVecVal* val);
+ extern void i_logic7_2d(svLogicVecVal* val);
+ extern void i_logic7_3d(svLogicVecVal* val);
+ extern void i_longint_0d(long long* val);
+ extern void i_longint_1d(long long* val);
+ extern void i_longint_2d(long long* val);
+ extern void i_longint_3d(long long* val);
+ extern void i_longint_unsigned_0d(unsigned long long* val);
+ extern void i_longint_unsigned_1d(unsigned long long* val);
+ extern void i_longint_unsigned_2d(unsigned long long* val);
+ extern void i_longint_unsigned_3d(unsigned long long* val);
+ extern void i_pack_struct_0d(svLogicVecVal* val);
+ extern void i_pack_struct_1d(svLogicVecVal* val);
+ extern void i_pack_struct_2d(svLogicVecVal* val);
+ extern void i_pack_struct_3d(svLogicVecVal* val);
+ extern void i_real_0d(double* val);
+ extern void i_real_1d(double* val);
+ extern void i_real_2d(double* val);
+ extern void i_real_3d(double* val);
+ extern void i_shortint_0d(short* val);
+ extern void i_shortint_1d(short* val);
+ extern void i_shortint_2d(short* val);
+ extern void i_shortint_3d(short* val);
+ extern void i_shortint_unsigned_0d(unsigned short* val);
+ extern void i_shortint_unsigned_1d(unsigned short* val);
+ extern void i_shortint_unsigned_2d(unsigned short* val);
+ extern void i_shortint_unsigned_3d(unsigned short* val);
+ extern void i_string_0d(const char** val);
+ extern void i_string_1d(const char** val);
+ extern void i_string_2d(const char** val);
+ extern void i_string_3d(const char** val);
+ extern void i_time_0d(svLogicVecVal* val);
+ extern void i_time_1d(svLogicVecVal* val);
+ extern void i_time_2d(svLogicVecVal* val);
+ extern void i_time_3d(svLogicVecVal* val);
+ 
 #ifdef __cplusplus
 }
 #endif
