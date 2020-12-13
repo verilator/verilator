@@ -21,7 +21,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix genblk naming to match IEEE (#2686). [tinshark]
 
-****  Fix error when dotted refers to missing module (#2095). [Stefan Wallentowitz]
+****  Fix error when dotted refers to missing module (#2095). [Alexander Grobman]
 
 
 * Verilator 4.106 2020-12-02
