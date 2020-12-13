@@ -225,7 +225,7 @@ public:
         if (VN_IS(nodep, Var)) {
             return "variable";
         } else if (VN_IS(nodep, Cell)) {
-            return "cell";
+            return "instance";
         } else if (VN_IS(nodep, Task)) {
             return "task";
         } else if (VN_IS(nodep, Func)) {
@@ -459,7 +459,7 @@ public:
                     ifacerefp->v3fatalSrc("Unlinked interface");
                 }
             } else if (ifacerefp->ifaceViaCellp()->dead()) {
-                ifacerefp->v3error("Parent cell's interface is not found: "
+                ifacerefp->v3error("Parent instance's interface is not found: "
                                    << AstNode::prettyNameQ(ifacerefp->ifaceName()));
                 continue;
             }
@@ -795,7 +795,7 @@ class LinkDotFindVisitor final : public AstNVisitor {
                               << AstNode::prettyNameQ(nodep->origName()));
         } else if (doit) {
             UINFO(4, "     Link Module: " << nodep << endl);
-            UASSERT_OBJ(!nodep->dead(), nodep, "Module in cell tree mislabeled as dead?");
+            UASSERT_OBJ(!nodep->dead(), nodep, "Module in instance tree mislabeled as dead?");
             VSymEnt* upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
             AstPackage* pkgp = VN_CAST(nodep, Package);
             m_classOrPackagep = pkgp;
@@ -898,8 +898,8 @@ class LinkDotFindVisitor final : public AstNVisitor {
             VSymEnt* okSymp;
             aboveSymp = m_statep->findDotted(nodep->fileline(), aboveSymp, scope, baddot, okSymp);
             UASSERT_OBJ(aboveSymp, nodep,
-                        "Can't find cell insertion point at " << AstNode::prettyNameQ(baddot)
-                                                              << " in: " << nodep->prettyNameQ());
+                        "Can't find instance insertion point at "
+                            << AstNode::prettyNameQ(baddot) << " in: " << nodep->prettyNameQ());
         }
         {
             m_scope = m_scope + "." + nodep->name();
@@ -1399,7 +1399,7 @@ private:
         VSymEnt* foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->path());
         AstCell* cellp = foundp ? VN_CAST(foundp->nodep(), Cell) : nullptr;
         if (!cellp) {
-            nodep->v3error("In defparam, cell " << nodep->path() << " never declared");
+            nodep->v3error("In defparam, instance " << nodep->path() << " never declared");
         } else {
             AstNode* exprp = nodep->rhsp()->unlinkFrBack();
             UINFO(9, "Defparam cell " << nodep->path() << "." << nodep->name() << " attach-to "
@@ -1558,10 +1558,11 @@ class LinkDotScopeVisitor final : public AstNVisitor {
                 VSymEnt* okSymp;
                 VSymEnt* cellSymp = m_statep->findDotted(nodep->fileline(), m_modSymp, ifcellname,
                                                          baddot, okSymp);
-                UASSERT_OBJ(cellSymp, nodep,
-                            "No symbol for interface cell: " << nodep->prettyNameQ(ifcellname));
-                UINFO(5, "       Found interface cell: se" << cvtToHex(cellSymp) << " "
-                                                           << cellSymp->nodep() << endl);
+                UASSERT_OBJ(
+                    cellSymp, nodep,
+                    "No symbol for interface instance: " << nodep->prettyNameQ(ifcellname));
+                UINFO(5, "       Found interface instance: se" << cvtToHex(cellSymp) << " "
+                                                               << cellSymp->nodep() << endl);
                 if (dtypep->modportName() != "") {
                     VSymEnt* mpSymp = m_statep->findDotted(nodep->fileline(), m_modSymp,
                                                            ifcellname, baddot, okSymp);
@@ -2007,7 +2008,7 @@ private:
         checkNoDot(nodep);
         iterateChildren(nodep);
         if (!nodep->modVarp()) {
-            UASSERT_OBJ(m_pinSymp, nodep, "Pin not under cell?");
+            UASSERT_OBJ(m_pinSymp, nodep, "Pin not under instance?");
             VSymEnt* foundp = m_pinSymp->findIdFlat(nodep->name());
             const char* whatp = nodep->param() ? "parameter pin" : "pin";
             if (!foundp) {
@@ -2345,7 +2346,7 @@ private:
                                    << modportp->prettyNameQ());
                 } else {
                     AstCell* cellp = VN_CAST(m_ds.m_dotSymp->nodep(), Cell);
-                    UASSERT_OBJ(cellp, nodep, "Modport not referenced from a cell");
+                    UASSERT_OBJ(cellp, nodep, "Modport not referenced from an instance");
                     VSymEnt* cellEntp = m_statep->getNodeSym(cellp);
                     UASSERT_OBJ(cellEntp, nodep, "No interface sym entry");
                     VSymEnt* parentEntp = cellEntp->parentp();  // Container of the var; probably a
@@ -2751,8 +2752,8 @@ private:
         if (nodep->user3SetOnce()) return;
         if (m_ds.m_dotPos
             == DP_SCOPE) {  // Already under dot, so this is {modulepart} DOT {modulepart}
-            nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed in the cell part of "
-                           "a dotted reference");
+            nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed in the instance "
+                           "part of a dotted reference");
             m_ds.m_dotErr = true;
             return;
         }

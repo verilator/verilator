@@ -1639,8 +1639,8 @@ into Verilator.  (Similar to perl -V.)  See also --getenv.
 =item -v I<filename>
 
 Read the filename as a Verilog library.  Any modules in the file may be
-used to resolve cell instantiations in the top level module, else ignored.
-Note -v is fairly standard across Verilog tools.
+used to resolve instances in the top level module, else ignored.  Note -v
+is fairly standard across Verilog tools.
 
 =item --no-verilate
 
@@ -3104,8 +3104,8 @@ Enable/disable waveform tracing for all future signals declared in the
 specified filename (or wildcard with '*' or '?', or all files if omitted)
 and range of line numbers (or all lines if omitted).
 
-For tracing_off, cells below any module in the files/ranges specified will
-also not be traced.
+For tracing_off, instances below any module in the files/ranges specified
+will also not be traced.
 
 =item clock_enable -module "<modulename>" -var "<signame>"
 
@@ -3777,13 +3777,13 @@ for use by downstream applications.
 =item /*verilator tracing_off*/
 
 Disable waveform tracing for all future signals that are declared in this
-module, or cells below this module.  Often this is placed just after a
-primitive's module statement, so that the entire module and cells below it
-are not traced.
+module, or instances below this module.  Often this is placed just after a
+primitive's module statement, so that the entire module and instances below
+it are not traced.
 
 =item /*verilator tracing_on*/
 
-Re-enable waveform tracing for all future signals or cells that are
+Re-enable waveform tracing for all future signals or instances that are
 declared.
 
 =back
@@ -3837,8 +3837,8 @@ for example a[2].b is acceptable, while a[x].b is generally not.
 
 References into generated and arrayed instances use the instance names
 specified in the Verilog standard; arrayed instances are named
-{cellName}[{instanceNumber}] in Verilog, which becomes
-{cellname}__BRA__{instanceNumber}__KET__ inside the generated C++ code.
+{instanceName}[{instanceNumber}] in Verilog, which becomes
+{instanceName}__BRA__{instanceNumber}__KET__ inside the generated C++ code.
 
 =head2 Latches
 
@@ -4523,9 +4523,9 @@ top module statement is processed.
 Warns that a wire is being implicitly declared (it is a single bit wide
 output from a sub-module.)  While legal in Verilog, implicit declarations
 only work for single bit wide signals (not buses), do not allow using a
-signal before it is implicitly declared by a cell, and can lead to dangling
-nets.  A better option is the /*AUTOWIRE*/ feature of Verilog-Mode for
-Emacs, available from L<https://www.veripool.org/verilog-mode>
+signal before it is implicitly declared by an instance, and can lead to
+dangling nets.  A better option is the /*AUTOWIRE*/ feature of Verilog-Mode
+for Emacs, available from L<https://www.veripool.org/verilog-mode>
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
@@ -4598,10 +4598,10 @@ Warns that a packed vector is declared with little endian bit numbering
 and little numbering is now thus often due to simple oversight instead of
 intent.
 
-Also warns that a cell is declared with little endian range (i.e. [0:7] or
-[7]) and is connected to a N-wide signal. Based on IEEE the bits will
-likely be backwards from what you expect (i.e. cell [0] will connect to
-signal bit [N-1] not bit [0]).
+Also warns that an instance is declared with little endian range
+(i.e. [0:7] or [7]) and is connected to a N-wide signal. Based on IEEE the
+bits will likely be backwards from what you expect (i.e. instance [0] will
+connect to signal bit [N-1] not bit [0]).
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
@@ -4633,10 +4633,10 @@ instantiated by any other module, and both modules were put on the command
 line (not in a library). Three likely cases:
 
 1. A single module is intended to be the top. This warning then occurs
-because some low level cell is being read in, but is not really needed as
-part of the design.  The best solution for this situation is to ensure that
-only the top module is put on the command line without any flags, and all
-remaining library files are read in as libraries with -v, or are
+because some low level instance is being read in, but is not really needed
+as part of the design.  The best solution for this situation is to ensure
+that only the top module is put on the command line without any flags, and
+all remaining library files are read in as libraries with -v, or are
 automatically resolved by having filenames that match the module names.
 
 2. A single module is intended to be the top, the name of it is known, and
@@ -4656,27 +4656,26 @@ identical, e.g. multiple modules with a "clk" input.
 
 =item PINCONNECTEMPTY
 
-Warns that a cell instantiation has a pin which is connected to
-.pin_name(), e.g. not another signal, but with an explicit mention of the
-pin.  It may be desirable to disable PINCONNECTEMPTY, as this indicates
-intention to have a no-connect.
+Warns that an instance has a pin which is connected to .pin_name(),
+e.g. not another signal, but with an explicit mention of the pin.  It may
+be desirable to disable PINCONNECTEMPTY, as this indicates intention to
+have a no-connect.
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item PINMISSING
 
-Warns that a module has a pin which is not mentioned in a cell
-instantiation.  If a pin is not missing it should still be specified on the
-cell declaration with a empty connection, using "(.pin_name())".
+Warns that a module has a pin which is not mentioned in an instance.  If a
+pin is not missing it should still be specified on the instance declaration
+with a empty connection, using "(.pin_name())".
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
 =item PINNOCONNECT
 
-Warns that a cell instantiation has a pin which is not connected to another
-signal.
+Warns that an instance has a pin which is not connected to another signal.
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.
@@ -4919,7 +4918,7 @@ potentially resolving the conflict. If you run with --report-unoptflat
 Verilator will suggest possible candidates for C<split_var>.
 
 The UNOPTFLAT warning may also be due to clock enables, identified from the
-reported path going through a clock gating cell.  To fix these, use the
+reported path going through a clock gating instance.  To fix these, use the
 clock_enable meta comment described above.
 
 The UNOPTFLAT warning may also occur where outputs from a block of logic
@@ -5494,21 +5493,21 @@ by your code or you'll get strange results.
 
 =item Should a module be in Verilog or SystemC?
 
-Sometimes there is a block that just interconnects cells, and have a choice
-as to if you write it in Verilog or SystemC.  Everything else being equal,
-best performance is when Verilator sees all of the design.  So, look at the
-hierarchy of your design, labeling cells as to if they are SystemC or
-Verilog.  Then:
+Sometimes there is a block that just interconnects instances, and have a
+choice as to if you write it in Verilog or SystemC.  Everything else being
+equal, best performance is when Verilator sees all of the design.  So, look
+at the hierarchy of your design, labeling instances as to if they are
+SystemC or Verilog.  Then:
 
-A module with only SystemC cells below must be SystemC.
+A module with only SystemC instances below must be SystemC.
 
-A module with a mix of Verilog and SystemC cells below must be SystemC. (As
-Verilator cannot connect to lower-level SystemC cells.)
+A module with a mix of Verilog and SystemC instances below must be
+SystemC. (As Verilator cannot connect to lower-level SystemC instances.)
 
-A module with only Verilog cells below can be either, but for best
+A module with only Verilog instances below can be either, but for best
 performance should be Verilog.  (The exception is if you have a design that
 is instantiated many times; in this case Verilating one of the lower
-modules and instantiating that Verilated cells multiple times into a
+modules and instantiating that Verilated instances multiple times into a
 SystemC module *may* be faster.)
 
 =back

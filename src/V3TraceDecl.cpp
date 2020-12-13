@@ -59,7 +59,7 @@ private:
         if (!varp->isTrace()) {
             return "Verilator trace_off";
         } else if (!nodep->isTrace()) {
-            return "Verilator cell trace_off";
+            return "Verilator instance trace_off";
         } else if (!v3Global.opt.traceUnderscore()) {
             const string prettyName = varp->prettyName();
             if (!prettyName.empty() && prettyName[0] == '_') return "Leading underscore";

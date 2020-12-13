@@ -2940,7 +2940,7 @@ public:
     AstBind(FileLine* fl, const string& name, AstNode* cellsp)
         : ASTGEN_SUPER(fl)
         , m_name{name} {
-        UASSERT_OBJ(VN_IS(cellsp, Cell), cellsp, "Only cells allowed to be bound");
+        UASSERT_OBJ(VN_IS(cellsp, Cell), cellsp, "Only instances allowed to be bound");
         addNOp1p(cellsp);
     }
     ASTNODE_NODE_FUNCS(Bind)

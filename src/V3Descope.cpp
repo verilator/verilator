@@ -123,7 +123,7 @@ private:
             hierUnprot = v3Global.opt.modPrefix() + "_";  // Prefix before protected part
             return scopep->modp()->name() + "::";
         } else if (relativeRefOk && scopep->aboveScopep() && scopep->aboveScopep() == m_scopep) {
-            // Reference to scope of cell directly under this module, can just "cell->"
+            // Reference to scope of instance directly under this module, can just "cell->"
             string name = scopep->name();
             string::size_type pos;
             if ((pos = name.rfind('.')) != string::npos) name.erase(0, pos + 1);

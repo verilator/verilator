@@ -341,8 +341,8 @@ private:
                 // Arrayed instants: one bit for each of the instants (each
                 // assign is 1 pinwidth wide)
                 if (m_cellRangep->littleEndian()) {
-                    nodep->exprp()->v3warn(LITENDIAN, "Little endian cell range connecting to "
-                                                      "vector: left < right of cell range: ["
+                    nodep->exprp()->v3warn(LITENDIAN, "Little endian instance range connecting to "
+                                                      "vector: left < right of instance range: ["
                                                           << m_cellRangep->leftConst() << ":"
                                                           << m_cellRangep->rightConst() << "]");
                 }
