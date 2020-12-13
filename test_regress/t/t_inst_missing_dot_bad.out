@@ -1,0 +1,7 @@
+%Error: t/t_inst_missing_dot_bad.v:9:22: Dotted reference to cell that refers to missing module: 'missing'
+    9 |       $display("a=", missing.a);
+      |                      ^~~~~~~
+%Error: t/t_inst_missing_dot_bad.v:9:30: Can't find definition of 'a' in dotted variable: 'missing.a'
+    9 |       $display("a=", missing.a);
+      |                              ^
+%Error: Exiting due to

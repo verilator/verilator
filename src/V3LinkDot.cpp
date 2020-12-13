@@ -645,6 +645,10 @@ public:
                     if (AstNodeModule* modp = cellp->modp()) {
                         if (modp->hierBlock()) {
                             refLocationp->v3error("Cannot access inside hierarchical block");
+                        } else if (VN_IS(modp, NotFoundModule)) {
+                            refLocationp->v3error(
+                                "Dotted reference to cell that refers to missing module: "
+                                << modp->prettyNameQ());
                         }
                     }
                 }
