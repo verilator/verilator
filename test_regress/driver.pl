@@ -43,17 +43,16 @@ $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork; die "Quitting...\n"; }
 
 # Map of all scenarios, with the names used to enable them
 our %All_Scenarios
-    = (dist    => [                                       "dist"],
-       atsim   => [          "simulator", "simulator_st", "atsim"],
-       ghdl    => ["linter", "simulator", "simulator_st", "ghdl"],
-       iv      => [          "simulator", "simulator_st", "iv"],
-       ms      => ["linter", "simulator", "simulator_st", "ms"],
-       nc      => ["linter", "simulator", "simulator_st", "nc"],
-       vcs     => ["linter", "simulator", "simulator_st", "vcs"],
-       xsim    => ["linter", "simulator", "simulator_st", "xsim"],
-       vlt     => ["linter", "simulator", "simulator_st", "vlt_all", "vlt"],
-       vltmt   => [          "simulator",                 "vlt_all", "vltmt"],
-       vltasan => ["linter", "simulator", "simulator_st", "vlt_all", "vlt", "asan"],
+    = (dist  => [                                       "dist"],
+       atsim => [          "simulator", "simulator_st", "atsim"],
+       ghdl  => ["linter", "simulator", "simulator_st", "ghdl"],
+       iv    => [          "simulator", "simulator_st", "iv"],
+       ms    => ["linter", "simulator", "simulator_st", "ms"],
+       nc    => ["linter", "simulator", "simulator_st", "nc"],
+       vcs   => ["linter", "simulator", "simulator_st", "vcs"],
+       xsim  => ["linter", "simulator", "simulator_st", "xsim"],
+       vlt   => ["linter", "simulator", "simulator_st", "vlt_all", "vlt"],
+       vltmt => [          "simulator",                 "vlt_all", "vltmt"],
     );
 
 #======================================================================
@@ -70,6 +69,7 @@ our $Vltmt_threads = 3;
 $Debug = 0;
 my $opt_benchmark;
 my @opt_tests;
+my $opt_asan;
 my $opt_dist;
 my $opt_gdb;
 my $opt_rr;
@@ -93,6 +93,7 @@ our @Opt_Driver_Verilator_Flags;
 
 Getopt::Long::config("pass_through");
 if (! GetOptions(
+          "asan!"       => \$opt_asan,
           "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
           "debug"       => \&debug,
           #debugi          see parameter()
@@ -125,7 +126,6 @@ if (! GetOptions(
           "nc!"         => sub { $opt_scenarios{nc} = $_[1]; },
           "vlt!"        => sub { $opt_scenarios{vlt} = $_[1]; },
           "vltmt!"      => sub { $opt_scenarios{vltmt} = $_[1]; },
-          "vltasan!"    => sub { $opt_scenarios{vltasan} = $_[1]; },
           "vcs!"        => sub { $opt_scenarios{vcs} = $_[1]; },
           "xsim!"       => sub { $opt_scenarios{xsim} = $_[1]; },
           "<>"          => \&parameter,
@@ -537,7 +537,6 @@ sub new {
     $self->{scenario} ||= "vcs" if $self->{vcs};
     $self->{scenario} ||= "vlt" if $self->{vlt};
     $self->{scenario} ||= "vltmt" if $self->{vltmt};
-    $self->{scenario} ||= "vltasan" if $self->{vltasan};
     $self->{scenario} ||= "nc" if $self->{nc};
     $self->{scenario} ||= "ms" if $self->{ms};
     $self->{scenario} ||= "iv" if $self->{iv};
@@ -575,7 +574,7 @@ sub new {
         sim_time => 1100,
         benchmark => $opt_benchmark,
         verbose => $opt_verbose,
-        run_env => $self->{vlt} ? 'ASAN_OPTIONS=detect_leaks=0' : '',
+        run_env => '',
         # All compilers
         v_flags => [split(/\s+/,
                           (($self->{xsim} ? " -f input.xsim.vc " :
@@ -655,7 +654,7 @@ sub new {
         %$self};
     bless $self, $class;
 
-    $self->{vlt_all} = $self->{vlt} || $self->{vltmt} || $self->{vltasan};  # Any Verilator scenario
+    $self->{vlt_all} = $self->{vlt} || $self->{vltmt};  # Any Verilator scenario
 
     $self->{VM_PREFIX} ||= "V".$self->{name};
     $self->{stats} ||= "$self->{obj_dir}/V".$self->{name}."__stats.txt";
@@ -881,7 +880,7 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--trace-threads 1" if $param{vltmt} && $checkflags =~ /-trace /;
     unshift @verilator_flags, "--trace-threads 2" if $param{vltmt} && $checkflags =~ /-trace-fst /;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
-    unshift @verilator_flags, "-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address" if $param{vltasan} || $param{vlt};
+    unshift @verilator_flags, "-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address" if $opt_asan;
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
     unshift @verilator_flags, "--exe" if
@@ -2603,6 +2602,12 @@ output.
 
 =over 4
 
+=item --asan
+
+Enable address sanitizer to compile Verilated C++ code.
+It detects misuse of memory such as out-of-bound access, use-after-free,
+and memory leak.
+
 =item --benchmark [<cycles>]
 
 Show execution times of each step.  If an optional number is given,
@@ -2748,10 +2753,6 @@ Run Verilator tests in single-threaded mode.  Default unless another scenario fl
 =item --vltmt
 
 Run Verilator tests in multithreaded mode.
-
-=item --vltasan
-
-Run Verilator tests in single-threaded mode with --sanitize=address option to C++ compiler.
 
 =item --xsim
 
