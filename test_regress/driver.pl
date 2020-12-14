@@ -575,7 +575,7 @@ sub new {
         sim_time => 1100,
         benchmark => $opt_benchmark,
         verbose => $opt_verbose,
-        run_env => '',
+        run_env => $self->{vlt} ? 'ASAN_OPTIONS=detect_leaks=0' : '',
         # All compilers
         v_flags => [split(/\s+/,
                           (($self->{xsim} ? " -f input.xsim.vc " :
