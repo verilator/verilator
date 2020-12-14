@@ -218,21 +218,26 @@ private:
         }
     }
     void walkDupFuncs() {
-        for (V3Hashed::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
-            V3Hash hashval = it->first;
-            AstNode* node1p = it->second;
-            if (!VN_IS(node1p, CFunc)) continue;
-            UASSERT_OBJ(!hashval.isIllegal(), node1p, "Illegal (unhashed) nodes");
-            for (V3Hashed::iterator eqit = it; eqit != m_hashed.end(); ++eqit) {
-                AstNode* node2p = eqit->second;
-                if (!(eqit->first == hashval)) break;
-                if (node1p == node2p) continue;  // Identical iterator
-                if (node1p->user3p() || node2p->user3p()) continue;  // Already merged
-                if (node1p->sameTree(node2p)) {  // walk of tree has same comparison
-                    // Replace AstCCall's that point here
-                    replaceFuncWFunc(VN_CAST(node2p, CFunc), VN_CAST(node1p, CFunc));
-                    // Replacement may promote a slow routine to fast path
-                    if (!VN_CAST(node2p, CFunc)->slow()) VN_CAST(node1p, CFunc)->slow(false);
+        // Do non-slow first as then favors naming functions based on fast name
+        for (int slow = 0; slow < 2; ++slow) {
+            for (V3Hashed::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
+                AstNode* node1p = it->second;
+                AstCFunc* cfunc1p = VN_CAST(node1p, CFunc);
+                if (!cfunc1p) continue;
+                if (cfunc1p->slow() != slow) continue;
+                V3Hash hashval = it->first;
+                UASSERT_OBJ(!hashval.isIllegal(), node1p, "Illegal (unhashed) nodes");
+                for (V3Hashed::iterator eqit = it; eqit != m_hashed.end(); ++eqit) {
+                    AstNode* node2p = eqit->second;
+                    if (!(eqit->first == hashval)) break;
+                    if (node1p == node2p) continue;  // Identical iterator
+                    if (node1p->user3p() || node2p->user3p()) continue;  // Already merged
+                    if (node1p->sameTree(node2p)) {  // walk of tree has same comparison
+                        // Replace AstCCall's that point here
+                        replaceFuncWFunc(VN_CAST(node2p, CFunc), cfunc1p);
+                        // Replacement may promote a slow routine to fast path
+                        if (!VN_CAST(node2p, CFunc)->slow()) cfunc1p->slow(false);
+                    }
                 }
             }
         }
