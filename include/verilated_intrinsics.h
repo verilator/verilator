@@ -24,8 +24,8 @@
 
 // clang-format off
 
-// Use VL_DISABLE_INTRINSICS to disable all intrinsics based optimization
-#if !defined(VL_DISABLE_INTRINSICS) && !defined(VL_PORTABLE_ONLY)
+// Use VL_PORTABLE_ONLY to disable all intrinsics based optimization
+#ifndef VL_PORTABLE_ONLY
 # if defined(__SSE2__) && !defined(VL_DISABLE_SSE2)
 #  define VL_HAVE_SSE2 1
 #  include <emmintrin.h>
