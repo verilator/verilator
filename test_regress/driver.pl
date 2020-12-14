@@ -2730,7 +2730,7 @@ Run simulator-agnostic distribution tests.
 
 Run GHDL simulator tests.
 
-=item --iverilog
+=item --iv
 
 Run Icarus Verilog simulator tests.
 

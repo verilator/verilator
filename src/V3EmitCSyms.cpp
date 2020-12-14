@@ -691,7 +691,6 @@ void EmitCSyms::emitSymImp() {
              ++it) {
             string name = it->second.m_prettyName;
             if (it->first == "TOP") continue;
-            name = name.replace(0, 4, "");  // Remove the "TOP."
             if ((name.find('.') == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
                 puts("__Vhier.add(0, &" + protect("__Vscope_" + it->second.m_symName) + ");\n");
             }

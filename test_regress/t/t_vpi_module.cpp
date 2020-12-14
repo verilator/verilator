@@ -48,6 +48,12 @@ unsigned int main_time = 0;
         return __LINE__; \
     }
 
+#define CHECK_RESULT_Z(got) \
+    if (got) { \
+        printf("%%Error: %s:%d: GOT = !NULL  EXP = NULL\n", FILENM, __LINE__); \
+        return __LINE__; \
+    }
+
 #define CHECK_RESULT_CSTR(got, exp) \
     if (strcmp((got), (exp))) { \
         printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
@@ -55,17 +61,42 @@ unsigned int main_time = 0;
         return __LINE__; \
     }
 
+void modDump(vpiHandle it, int n) {
+    while (vpiHandle hndl = vpi_scan(it)) {
+        char* nm = vpi_get_str(vpiName, hndl);
+        for (int i = 0; i < n; i++)
+            printf("    ");
+        printf("%s\n", nm);
+        vpiHandle subIt = vpi_iterate(vpiModule, hndl);
+        if (subIt)
+            modDump(subIt, n+1);
+    }
+}
+
 extern "C" {
 int mon_check() {
     vpiHandle it = vpi_iterate(vpiModule, NULL);
     CHECK_RESULT_NZ(it);
+    // Uncomment to see what other simulators return
+    //modDump(it, 0);
+    //return 1;
 
     vpiHandle topmod = vpi_scan(it);
     CHECK_RESULT_NZ(topmod);
 
     char* name = vpi_get_str(vpiName, topmod);
     CHECK_RESULT_NZ(name);
+
+    // Icarus reports the top most module as "top"
+    if (strcmp(name, "top") == 0) {
+        it = vpi_iterate(vpiModule, topmod);
+        CHECK_RESULT_NZ(it);
+        topmod = vpi_scan(it);
+        char* name = vpi_get_str(vpiName, topmod);
+        CHECK_RESULT_NZ(name);
+    }
     CHECK_RESULT_CSTR(name, "t");
+    CHECK_RESULT_Z(vpi_scan(it));
 
     it = vpi_iterate(vpiModule, topmod);
     CHECK_RESULT_NZ(it);
@@ -75,6 +106,7 @@ int mon_check() {
 
     name = vpi_get_str(vpiName, mod);
     CHECK_RESULT_CSTR(name, "mod_a");
+    CHECK_RESULT_Z(vpi_scan(it));
 
     it = vpi_iterate(vpiModule, mod);
     CHECK_RESULT_NZ(it);
