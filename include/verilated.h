@@ -363,6 +363,7 @@ public:  // But internals only - called from VerilatedModule's
 class VerilatedHierarchy final {
 public:
     static void add(VerilatedScope* fromp, VerilatedScope* top);
+    static void clear();
 };
 
 //===========================================================================

@@ -687,6 +687,7 @@ void EmitCSyms::emitSymImp() {
 
     if (v3Global.opt.vpi()) {
         puts("\n// Setup scope hierarchy\n");
+        puts("__Vhier.clear();\n");
         for (ScopeNames::const_iterator it = m_scopeNames.begin(); it != m_scopeNames.end();
              ++it) {
             string name = it->second.m_prettyName;

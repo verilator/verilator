@@ -413,6 +413,11 @@ public:  // But only for verilated*.cpp
         const VerilatedLockGuard lock(s_s.v.m_hierMapMutex);
         s_s.v.m_hierMap[fromp].push_back(top);
     }
+    static void hierarchyClear() VL_MT_SAFE {
+        // Slow ok - called at construction for VPI accessible elements
+        const VerilatedLockGuard lock(s_s.v.m_hierMapMutex);
+        s_s.v.m_hierMap.clear();
+    }
     static const VerilatedHierarchyMap* hierarchyMap() VL_MT_SAFE_POSTINIT {
         // Thread save only assuming this is called only after model construction completed
         return &s_s.v.m_hierMap;
