@@ -463,9 +463,7 @@ public:
     }
     virtual string primitive(const AstVar* varp) const {
         string type;
-        AstBasicDTypeKwd keyword = varp->basicp()->keyword();
-        // LOGIC_IMPLICIT should be treated as logic in DPI-C type context.
-        if (varp->basicp()->implicit() && varp->width1()) keyword = AstBasicDTypeKwd::LOGIC;
+        const AstBasicDTypeKwd keyword = varp->basicp()->keyword();
         if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
         type += keyword.dpiType();
         return type;
@@ -474,12 +472,10 @@ public:
         if (varp->isDpiOpenArray()) {
             return openArray(varp);
         } else if (const AstBasicDType* basicp = varp->basicp()) {
-            if (basicp->isDpiPrimitive()) {
-                return primitive(varp);
-            } else {
-                UASSERT_OBJ(basicp->isDpiBitVec() || basicp->isDpiLogicVec(), basicp,
-                            "must be logic or bit");
+            if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
                 return bitLogicVector(varp, basicp->isDpiBitVec());
+            } else {
+                return primitive(varp);
             }
         } else {
             return "UNKNOWN";
