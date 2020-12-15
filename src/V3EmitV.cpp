@@ -563,11 +563,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     }
     virtual void visit(AstBasicDType* nodep) override {
         if (nodep->isSigned()) putfs(nodep, "signed ");
-        if (nodep->keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT) {
-            putfs(nodep, "logic");
-        } else {
-            putfs(nodep, nodep->prettyName());
-        }
+        putfs(nodep, nodep->prettyName());
         if (nodep->rangep()) {
             puts(" ");
             iterateAndNextNull(nodep->rangep());
