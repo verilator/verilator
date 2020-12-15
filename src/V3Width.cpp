@@ -1446,6 +1446,20 @@ private:
     // DTYPES
     virtual void visit(AstNodeArrayDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+
+        if (nodep->subDTypep() == nodep->basicp()) {  // Innermost dimension
+            AstBasicDType* basicp = nodep->basicp();
+            // If basic dtype is LOGIC_IMPLICIT, it is actually 1 bit LOGIC
+            if (basicp->implicit()) {
+                UASSERT_OBJ(basicp->width() <= 1, basicp,
+                            "must be 1 bit but actually " << basicp->width() << " bits");
+                AstBasicDType* newp = new AstBasicDType(
+                    basicp->fileline(), AstBasicDTypeKwd::LOGIC, basicp->numeric());
+                newp->widthForce(1, 1);
+                basicp->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(basicp), basicp);
+            }
+        }
         // Iterate into subDTypep() to resolve that type and update pointer.
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         // Cleanup array size
