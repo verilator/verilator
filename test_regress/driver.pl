@@ -2605,8 +2605,8 @@ output.
 =item --asan
 
 Enable address sanitizer to compile Verilated C++ code.
-It detects misuse of memory such as out-of-bound access, use-after-free,
-and memory leak.
+This may detect misuses of memory, such as out-of-bound accesses, use-after-free,
+and memory leaks.
 
 =item --benchmark [<cycles>]
 
