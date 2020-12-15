@@ -69,6 +69,7 @@ our $Vltmt_threads = 3;
 $Debug = 0;
 my $opt_benchmark;
 my @opt_tests;
+my $opt_asan;
 my $opt_dist;
 my $opt_gdb;
 my $opt_rr;
@@ -92,6 +93,7 @@ our @Opt_Driver_Verilator_Flags;
 
 Getopt::Long::config("pass_through");
 if (! GetOptions(
+          "asan!"       => \$opt_asan,
           "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
           "debug"       => \&debug,
           #debugi          see parameter()
@@ -878,6 +880,7 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--trace-threads 1" if $param{vltmt} && $checkflags =~ /-trace /;
     unshift @verilator_flags, "--trace-threads 2" if $param{vltmt} && $checkflags =~ /-trace-fst /;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
+    unshift @verilator_flags, "-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address" if $opt_asan;
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
     unshift @verilator_flags, "--exe" if
@@ -2598,6 +2601,12 @@ output.
 =head1 DRIVER ARGUMENTS
 
 =over 4
+
+=item --asan
+
+Enable address sanitizer to compile Verilated C++ code.
+This may detect misuses of memory, such as out-of-bound accesses, use-after-free,
+and memory leaks.
 
 =item --benchmark [<cycles>]
 
