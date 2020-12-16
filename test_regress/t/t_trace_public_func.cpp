@@ -6,6 +6,7 @@
 // any use, without warranty, 2008 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+#include <memory>
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 
@@ -26,13 +27,13 @@ double sc_time_stamp() { return (double)main_time; }
 const unsigned long long dt_2 = 3;
 
 int main(int argc, char** argv, char** env) {
-    VM_PREFIX* top = new VM_PREFIX("top");
+    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX("top")};
 
     Verilated::debug(0);
     Verilated::traceEverOn(true);
 
-    VerilatedVcdC* tfp = new VerilatedVcdC;
-    top->trace(tfp, 99);
+    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};
+    top->trace(tfp.get(), 99);
     tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 
     while (main_time <= 20) {
@@ -46,8 +47,8 @@ int main(int argc, char** argv, char** env) {
     }
     tfp->close();
     top->final();
-    VL_DO_DANGLING(delete top, top);
-    VL_DO_DANGLING(delete tfp, tfp);
+    tfp.reset();
+    top.reset();
     printf("*-* All Finished *-*\n");
     return 0;
 }

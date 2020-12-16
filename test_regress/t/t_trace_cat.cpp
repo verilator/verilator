@@ -22,7 +22,7 @@ const char* trace_name() {
 }
 
 int main(int argc, char** argv, char** env) {
-    VM_PREFIX* top = new VM_PREFIX("top");
+    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX("top")};
 
     Verilated::debug(0);
     Verilated::traceEverOn(true);
@@ -58,7 +58,8 @@ int main(int argc, char** argv, char** env) {
     }
     tfp->close();
     top->final();
-    VL_DO_DANGLING(delete top, top);
+    tfp.reset();
+    top.reset();
     printf("*-* All Finished *-*\n");
     return 0;
 }

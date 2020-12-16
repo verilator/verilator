@@ -1686,6 +1686,7 @@ sub _make_main {
     print $fh "// Test defines\n";
     print $fh "#define MAIN_TIME_MULTIPLIER ".($self->{main_time_multiplier} || 1)."\n";
 
+    print $fh "#include <memory>\n";
     print $fh "// OS header\n";
     print $fh "#include \"verilatedos.h\"\n";
 
@@ -1701,7 +1702,7 @@ sub _make_main {
     print $fh "#include \"verilated_vcd_sc.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-sc';
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
 
-    print $fh "$VM_PREFIX* topp;\n";
+    print $fh "std::unique_ptr<$VM_PREFIX> topp;\n";
     if (!$self->sc) {
         if ($self->{vl_time_stamp64}) {
             print $fh "vluint64_t main_time = 0;\n";
@@ -1749,7 +1750,7 @@ sub _make_main {
     print $fh "    Verilated::debug(".($self->{verilated_debug}?1:0).");\n";
     print $fh "    srand48(5);\n";  # Ensure determinism
     print $fh "    Verilated::randReset(".$self->{verilated_randReset}.");\n" if defined $self->{verilated_randReset};
-    print $fh "    topp = new $VM_PREFIX(\"top\");\n";
+    print $fh "    topp.reset(new $VM_PREFIX(\"top\"));\n";
     print $fh "    Verilated::internalsDump()\n;" if $self->{verilated_debug};
 
     my $set;
@@ -1766,10 +1767,10 @@ sub _make_main {
         $fh->print("\n");
         $fh->print("#if VM_TRACE\n");
         $fh->print("    Verilated::traceEverOn(true);\n");
-        $fh->print("    VerilatedFstC* tfp = new VerilatedFstC;\n") if $self->{trace_format} eq 'fst-c';
-        $fh->print("    VerilatedVcdC* tfp = new VerilatedVcdC;\n") if $self->{trace_format} eq 'vcd-c';
-        $fh->print("    VerilatedVcdSc* tfp = new VerilatedVcdSc;\n") if $self->{trace_format} eq 'vcd-sc';
-        $fh->print("    topp->trace(tfp, 99);\n");
+        $fh->print("    std::unique_ptr<VerilatedFstC> tfp{new VerilatedFstC};\n") if $self->{trace_format} eq 'fst-c';
+        $fh->print("    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};\n") if $self->{trace_format} eq 'vcd-c';
+        $fh->print("    std::unique_ptr<VerilatedVcdSc> tfp{new VerilatedVcdSc};\n") if $self->{trace_format} eq 'vcd-sc';
+        $fh->print("    topp->trace(tfp.get(), 99);\n");
         $fh->print("    tfp->open(\"".$self->trace_filename."\");\n");
         if ($self->{trace} && !$self->sc) {
             $fh->print("    if (tfp) tfp->dump(main_time);\n");
@@ -1831,12 +1832,12 @@ sub _make_main {
     if ($self->{trace}) {
         $fh->print("#if VM_TRACE\n");
         $fh->print("    if (tfp) tfp->close();\n");
-        $fh->print("    VL_DO_DANGLING(delete tfp, tfp);\n");
+        $fh->print("    tfp.reset();\n");
         $fh->print("#endif  // VM_TRACE\n");
     }
     $fh->print("\n");
 
-    print $fh "    VL_DO_DANGLING(delete topp, topp);\n";
+    print $fh "    topp.reset();\n";
     print $fh "    exit(0L);\n";
     print $fh "}\n";
     $fh->close();
