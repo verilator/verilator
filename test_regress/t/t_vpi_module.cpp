@@ -64,12 +64,10 @@ unsigned int main_time = 0;
 void modDump(const TestVpiHandle& it, int n) {
     while (TestVpiHandle hndl = vpi_scan(it)) {
         const char* nm = vpi_get_str(vpiName, hndl);
-        for (int i = 0; i < n; i++)
-            printf("    ");
+        for (int i = 0; i < n; i++) printf("    ");
         printf("%s\n", nm);
         TestVpiHandle subIt = vpi_iterate(vpiModule, hndl);
-        if (subIt)
-            modDump(subIt, n+1);
+        if (subIt) modDump(subIt, n + 1);
     }
 }
 
@@ -82,8 +80,8 @@ int mon_check() {
 #endif
     CHECK_RESULT_NZ(root_it);
     // Uncomment to see what other simulators return
-    //modDump(root_it, 0);
-    //return 1;
+    // modDump(root_it, 0);
+    // return 1;
 
     TestVpiHandle topmod = vpi_scan(root_it);
     CHECK_RESULT_NZ(topmod);
