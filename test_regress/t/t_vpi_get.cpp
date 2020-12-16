@@ -206,7 +206,7 @@ int mon_check() {
 #ifdef IS_VPI
 
 static int mon_check_vpi() {
-    vpiHandle href = vpi_handle(vpiSysTfCall, 0);
+    TestVpiHandle href = vpi_handle(vpiSysTfCall, 0);
     s_vpi_value vpi_value;
 
     vpi_value.format = vpiIntVal;

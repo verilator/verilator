@@ -124,7 +124,7 @@ void dpii_v_ushort(unsigned short i, unsigned short* o) { *o = ~i; }
 void dpii_v_longint(long long i, long long* o) { *o = ~i; }
 void dpii_v_ulong(unsigned long long i, unsigned long long* o) { *o = ~i; }
 void dpii_v_chandle(void* i, void** o) { *o = i; }
-void dpii_v_string(const char* i, const char** o) { *o = strdup(i); }  // Leaks
+void dpii_v_string(const char* i, const char** o) { *o = i; }
 void dpii_v_real(double i, double* o) { *o = i + 1.5; }
 void dpii_v_shortreal(float i, float* o) { *o = i + 1.5f; }
 
