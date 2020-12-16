@@ -399,8 +399,8 @@ class Verilated final {
         vluint32_t s_profThreadsWindow = 2;  ///< +prof+threads window size
         // Slow path
         const char* s_profThreadsFilenamep;  ///< +prof+threads filename
-        NonSerialized();
-        ~NonSerialized();
+        void setup();
+        void teardown();
     } s_ns;
 
     // no need to be save-restored (serialized) the
@@ -429,6 +429,8 @@ class Verilated final {
     } t_s;
 
 private:
+    friend struct VerilatedInitializer;
+
     // CONSTRUCTORS
     VL_UNCOPYABLE(Verilated);
 

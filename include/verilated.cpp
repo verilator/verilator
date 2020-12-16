@@ -276,10 +276,10 @@ Verilated::Serialized::Serialized() {
     s_timeprecision = VL_TIME_PRECISION;  // Initial value until overriden by _Vconfigure
 }
 
-Verilated::NonSerialized::NonSerialized() {
+void Verilated::NonSerialized::setup() {
     s_profThreadsFilenamep = strdup("profile_threads.dat");
 }
-Verilated::NonSerialized::~NonSerialized() {
+void Verilated::NonSerialized::teardown() {
     if (s_profThreadsFilenamep) {
         VL_DO_CLEAR(free(const_cast<char*>(s_profThreadsFilenamep)),
                     s_profThreadsFilenamep = nullptr);
