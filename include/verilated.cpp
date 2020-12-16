@@ -80,6 +80,7 @@ struct VerilatedInitializer {
         static bool done = false;
         if (!done) {
             VerilatedImp::setup();
+            Verilated::s_ns.setup();
             done = true;
         }
     }
@@ -87,6 +88,7 @@ struct VerilatedInitializer {
         static bool done = false;
         if (!done) {
             VerilatedImp::teardown();
+            Verilated::s_ns.teardown();
             done = true;
         }
     }
