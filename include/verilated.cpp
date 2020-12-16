@@ -278,9 +278,7 @@ Verilated::Serialized::Serialized() {
     s_timeprecision = VL_TIME_PRECISION;  // Initial value until overriden by _Vconfigure
 }
 
-void Verilated::NonSerialized::setup() {
-    s_profThreadsFilenamep = strdup("profile_threads.dat");
-}
+void Verilated::NonSerialized::setup() { s_profThreadsFilenamep = strdup("profile_threads.dat"); }
 void Verilated::NonSerialized::teardown() {
     if (s_profThreadsFilenamep) {
         VL_DO_CLEAR(free(const_cast<char*>(s_profThreadsFilenamep)),
@@ -2497,12 +2495,8 @@ void Verilated::endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
 // ctor nor dtor of members are not called automatically.
 // VerilatedInitializer::setup() and teardown() guarantees to initialize/destruct just once.
 
-void VerilatedImp::setup() {
-    new (&VerilatedImp::s_s) VerilatedImpData();
-}
-void VerilatedImp::teardown() {
-    VerilatedImp::s_s.~VerilatedImpU();
-}
+void VerilatedImp::setup() { new (&VerilatedImp::s_s) VerilatedImpData(); }
+void VerilatedImp::teardown() { VerilatedImp::s_s.~VerilatedImpU(); }
 
 //===========================================================================
 // VerilatedImp:: Methods
@@ -2793,9 +2787,7 @@ void VerilatedHierarchy::add(VerilatedScope* fromp, VerilatedScope* top) {
     VerilatedImp::hierarchyAdd(fromp, top);
 }
 
-void VerilatedHierarchy::clear() {
-    VerilatedImp::hierarchyClear();
-}
+void VerilatedHierarchy::clear() { VerilatedImp::hierarchyClear(); }
 
 //===========================================================================
 // VerilatedOneThreaded:: Methods
