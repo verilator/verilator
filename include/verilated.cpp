@@ -72,10 +72,27 @@ Verilated::CommandArgValues Verilated::s_args;
 
 VerilatedImp::VerilatedImpU VerilatedImp::s_s;
 
-struct VerilatedImpInitializer {
-    VerilatedImpInitializer() { VerilatedImp::setup(); }
-    ~VerilatedImpInitializer() { VerilatedImp::teardown(); }
-} s_VerilatedImpInitializer;
+// Guarantees to call setup() and teardown() just once.
+struct VerilatedInitializer {
+    VerilatedInitializer() { setup(); }
+    ~VerilatedInitializer() { teardown(); }
+    void setup() {
+        static bool done = false;
+        if (!done) {
+            VerilatedImp::setup();
+            Verilated::s_ns.setup();
+            done = true;
+        }
+    }
+    void teardown() {
+        static bool done = false;
+        if (!done) {
+            VerilatedImp::teardown();
+            Verilated::s_ns.teardown();
+            done = true;
+        }
+    }
+} s_VerilatedInitializer;
 
 //===========================================================================
 // User definable functions
@@ -261,10 +278,10 @@ Verilated::Serialized::Serialized() {
     s_timeprecision = VL_TIME_PRECISION;  // Initial value until overriden by _Vconfigure
 }
 
-Verilated::NonSerialized::NonSerialized() {
+void Verilated::NonSerialized::setup() {
     s_profThreadsFilenamep = strdup("profile_threads.dat");
 }
-Verilated::NonSerialized::~NonSerialized() {
+void Verilated::NonSerialized::teardown() {
     if (s_profThreadsFilenamep) {
         VL_DO_CLEAR(free(const_cast<char*>(s_profThreadsFilenamep)),
                     s_profThreadsFilenamep = nullptr);
@@ -2478,21 +2495,13 @@ void Verilated::endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
 //
 // To avoid the trouble, all member variables are enclosed in VerilatedImpU union.
 // ctor nor dtor of members are not called automatically.
-// VerilatedImp::setup() and teardown() guarantees to initialize/destruct just once.
+// VerilatedInitializer::setup() and teardown() guarantees to initialize/destruct just once.
 
 void VerilatedImp::setup() {
-    static bool done = false;
-    if (!done) {
-        new (&VerilatedImp::s_s) VerilatedImpData();
-        done = true;
-    }
+    new (&VerilatedImp::s_s) VerilatedImpData();
 }
 void VerilatedImp::teardown() {
-    static bool done = false;
-    if (!done) {
-        VerilatedImp::s_s.~VerilatedImpU();
-        done = true;
-    }
+    VerilatedImp::s_s.~VerilatedImpU();
 }
 
 //===========================================================================
