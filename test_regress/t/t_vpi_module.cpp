@@ -48,6 +48,12 @@ unsigned int main_time = 0;
         return __LINE__; \
     }
 
+#define CHECK_RESULT_Z(got) \
+    if (got) { \
+        printf("%%Error: %s:%d: GOT = !NULL  EXP = NULL\n", FILENM, __LINE__); \
+        return __LINE__; \
+    }
+
 #define CHECK_RESULT_CSTR(got, exp) \
     if (strcmp((got), (exp))) { \
         printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
@@ -55,17 +61,45 @@ unsigned int main_time = 0;
         return __LINE__; \
     }
 
+void modDump(const TestVpiHandle& it, int n) {
+    while (TestVpiHandle hndl = vpi_scan(it)) {
+        const char* nm = vpi_get_str(vpiName, hndl);
+        for (int i = 0; i < n; i++) printf("    ");
+        printf("%s\n", nm);
+        TestVpiHandle subIt = vpi_iterate(vpiModule, hndl);
+        if (subIt) modDump(subIt, n + 1);
+    }
+}
+
 extern "C" {
 int mon_check() {
     TestVpiHandle it = vpi_iterate(vpiModule, NULL);
+#ifdef IS_ICARUS
+    // Icarus segfaults when some VPI handles are freed
+    it.nofree();
+#endif
     CHECK_RESULT_NZ(it);
+    // Uncomment to see what other simulators return
+    // modDump(it, 0);
+    // return 1;
 
     TestVpiHandle topmod = vpi_scan(it);
     CHECK_RESULT_NZ(topmod);
 
-    char* name = vpi_get_str(vpiName, topmod);
-    CHECK_RESULT_NZ(name);
-    CHECK_RESULT_CSTR(name, "t");
+    const char* t_name = vpi_get_str(vpiName, topmod);
+    CHECK_RESULT_NZ(t_name);
+
+    // Icarus reports the top most module as "top"
+    if (strcmp(t_name, "top") == 0) {
+        it = vpi_iterate(vpiModule, topmod);
+        CHECK_RESULT_NZ(it);
+        topmod = vpi_scan(it);
+        t_name = vpi_get_str(vpiName, topmod);
+        CHECK_RESULT_NZ(t_name);
+    }
+    CHECK_RESULT_CSTR(t_name, "t");
+    TestVpiHandle topmod_done = (vpi_scan(it));
+    CHECK_RESULT_Z(topmod_done);
 
     TestVpiHandle it2 = vpi_iterate(vpiModule, topmod);
     CHECK_RESULT_NZ(it2);
@@ -73,8 +107,8 @@ int mon_check() {
     TestVpiHandle mod2 = vpi_scan(it2);
     CHECK_RESULT_NZ(mod2);
 
-    name = vpi_get_str(vpiName, mod2);
-    CHECK_RESULT_CSTR(name, "mod_a");
+    const char* mod_a_name = vpi_get_str(vpiName, mod2);
+    CHECK_RESULT_CSTR(mod_a_name, "mod_a");
 
     TestVpiHandle it3 = vpi_iterate(vpiModule, mod2);
     CHECK_RESULT_NZ(it3);
@@ -82,14 +116,14 @@ int mon_check() {
     TestVpiHandle mod3 = vpi_scan(it3);
     CHECK_RESULT_NZ(mod3);
 
-    name = vpi_get_str(vpiName, mod3);
-    if (strcmp(name, "mod_b") == 0) {
+    const char* mod_c_name = vpi_get_str(vpiName, mod3);
+    if (strcmp(mod_c_name, "mod_b") == 0) {
         // Full visibility in other simulators, skip mod_b
         TestVpiHandle mod4 = vpi_scan(it3);
         CHECK_RESULT_NZ(mod4);
-        name = vpi_get_str(vpiName, mod4);
+        mod_c_name = vpi_get_str(vpiName, mod4);
     }
-    CHECK_RESULT_CSTR(name, "mod_c.");
+    CHECK_RESULT_CSTR(mod_c_name, "mod_c.");
 
     return 0;  // Ok
 }

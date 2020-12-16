@@ -1161,7 +1161,7 @@ sub compile {
 
     if ($param{make_pli}) {
         $self->oprint("Compile vpi\n") if $self->{verbose};
-        my @cmd = ($ENV{CXX}, @{$param{pli_flags}}, "-DIS_VPI",
+        my @cmd = ($ENV{CXX}, @{$param{pli_flags}}, "-DIS_VPI", $ENV{CFLAGS},
                    "$self->{t_dir}/$self->{pli_filename}");
 
         $self->_run(logfile=>"$self->{obj_dir}/pli_compile.log",
@@ -2731,7 +2731,7 @@ Run simulator-agnostic distribution tests.
 
 Run GHDL simulator tests.
 
-=item --iverilog
+=item --iv
 
 Run Icarus Verilog simulator tests.
 
