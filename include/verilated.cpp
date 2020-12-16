@@ -2793,10 +2793,6 @@ void VerilatedHierarchy::add(VerilatedScope* fromp, VerilatedScope* top) {
     VerilatedImp::hierarchyAdd(fromp, top);
 }
 
-void VerilatedHierarchy::clear() {
-    VerilatedImp::hierarchyClear();
-}
-
 //===========================================================================
 // VerilatedOneThreaded:: Methods
 
