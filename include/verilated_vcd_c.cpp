@@ -893,6 +893,7 @@ void vcdTestMain(const char* filenamep) {
         }
 # endif
         vcdp->close();
+        VL_DO_CLEAR(delete vcdp, vcdp = nullptr);
     }
 }
 #endif
