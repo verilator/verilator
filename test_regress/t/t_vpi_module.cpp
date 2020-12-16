@@ -57,37 +57,37 @@ unsigned int main_time = 0;
 
 extern "C" {
 int mon_check() {
-    vpiHandle it = vpi_iterate(vpiModule, NULL);
+    TestVpiHandle it = vpi_iterate(vpiModule, NULL);
     CHECK_RESULT_NZ(it);
 
-    vpiHandle topmod = vpi_scan(it);
+    TestVpiHandle topmod = vpi_scan(it);
     CHECK_RESULT_NZ(topmod);
 
     char* name = vpi_get_str(vpiName, topmod);
     CHECK_RESULT_NZ(name);
     CHECK_RESULT_CSTR(name, "t");
 
-    it = vpi_iterate(vpiModule, topmod);
-    CHECK_RESULT_NZ(it);
+    TestVpiHandle it2 = vpi_iterate(vpiModule, topmod);
+    CHECK_RESULT_NZ(it2);
 
-    vpiHandle mod = vpi_scan(it);
-    CHECK_RESULT_NZ(mod);
+    TestVpiHandle mod2 = vpi_scan(it2);
+    CHECK_RESULT_NZ(mod2);
 
-    name = vpi_get_str(vpiName, mod);
+    name = vpi_get_str(vpiName, mod2);
     CHECK_RESULT_CSTR(name, "mod_a");
 
-    it = vpi_iterate(vpiModule, mod);
-    CHECK_RESULT_NZ(it);
+    TestVpiHandle it3 = vpi_iterate(vpiModule, mod2);
+    CHECK_RESULT_NZ(it3);
 
-    mod = vpi_scan(it);
-    CHECK_RESULT_NZ(mod);
+    TestVpiHandle mod3 = vpi_scan(it3);
+    CHECK_RESULT_NZ(mod3);
 
-    name = vpi_get_str(vpiName, mod);
+    name = vpi_get_str(vpiName, mod3);
     if (strcmp(name, "mod_b") == 0) {
         // Full visibility in other simulators, skip mod_b
-        mod = vpi_scan(it);
-        CHECK_RESULT_NZ(mod);
-        name = vpi_get_str(vpiName, mod);
+        TestVpiHandle mod4 = vpi_scan(it3);
+        CHECK_RESULT_NZ(mod4);
+        name = vpi_get_str(vpiName, mod4);
     }
     CHECK_RESULT_CSTR(name, "mod_c.");
 
