@@ -1831,6 +1831,7 @@ sub _make_main {
     if ($self->{trace}) {
         $fh->print("#if VM_TRACE\n");
         $fh->print("    if (tfp) tfp->close();\n");
+        $fh->print("    VL_DO_DANGLING(delete tfp, tfp);\n");
         $fh->print("#endif  // VM_TRACE\n");
     }
     $fh->print("\n");
