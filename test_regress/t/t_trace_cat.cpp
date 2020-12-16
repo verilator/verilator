@@ -6,6 +6,7 @@
 // any use, without warranty, 2008 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+#include <memory>
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 
@@ -26,8 +27,8 @@ int main(int argc, char** argv, char** env) {
     Verilated::debug(0);
     Verilated::traceEverOn(true);
 
-    VerilatedVcdC* tfp = new VerilatedVcdC;
-    top->trace(tfp, 99);
+    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};
+    top->trace(tfp.get(), 99);
 
     tfp->open(trace_name());
 
@@ -45,9 +46,8 @@ int main(int argc, char** argv, char** env) {
             tfp->open(trace_name());
 #elif defined(T_TRACE_CAT_RENEW)
             tfp->close();
-            delete tfp;
-            tfp = new VerilatedVcdC;
-            top->trace(tfp, 99);
+            tfp.reset(new VerilatedVcdC);
+            top->trace(tfp.get(), 99);
             tfp->open(trace_name());
 #else
 #error "Unknown test"
