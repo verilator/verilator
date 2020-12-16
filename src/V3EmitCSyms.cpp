@@ -639,6 +639,10 @@ void EmitCSyms::emitSymImp() {
     puts("\n");
 
     puts("\n// FUNCTIONS\n");
+    puts(symClassName() + "::~" + symClassName() + "()\n");
+    puts("{\n");
+    emitScopeHier(true);
+    puts("}\n\n");
     puts(symClassName() + "::" + symClassName() + "(" + topClassName()
          + "* topp, const char* namep)\n");
     puts("    // Setup locals\n");
@@ -834,10 +838,6 @@ void EmitCSyms::emitSymImp() {
     }
 
     m_ofpBase->puts("}\n");
-    puts(symClassName() + "::~" + symClassName() + "()\n");
-    puts("{\n");
-    emitScopeHier(true);
-    puts("}\n");
     closeSplit();
     VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
 }
