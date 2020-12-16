@@ -76,6 +76,10 @@ void modDump(const TestVpiHandle& it, int n) {
 extern "C" {
 int mon_check() {
     TestVpiHandle root_it = vpi_iterate(vpiModule, NULL);
+#ifdef IS_ICARUS
+    // Icarus segfaults when some VPI handles are freed
+    root_it.nofree();
+#endif
     CHECK_RESULT_NZ(root_it);
     // Uncomment to see what other simulators return
     //modDump(root_it, 0);
@@ -84,29 +88,32 @@ int mon_check() {
     TestVpiHandle topmod = vpi_scan(root_it);
     CHECK_RESULT_NZ(topmod);
 
-    char* name = vpi_get_str(vpiName, topmod);
-    CHECK_RESULT_NZ(name);
+    const char* t_name = vpi_get_str(vpiName, topmod);
+    CHECK_RESULT_NZ(t_name);
 
     // Icarus reports the top most module as "top"
-    if (strcmp(name, "top") == 0) {
+    if (strcmp(t_name, "top") == 0) {
         root_it = vpi_iterate(vpiModule, topmod);
         CHECK_RESULT_NZ(root_it);
         topmod = vpi_scan(root_it);
-        name = vpi_get_str(vpiName, topmod);
-        CHECK_RESULT_NZ(name);
+        t_name = vpi_get_str(vpiName, topmod);
+        CHECK_RESULT_NZ(t_name);
     }
-    CHECK_RESULT_CSTR(name, "t");
+    CHECK_RESULT_CSTR(t_name, "t");
     TestVpiHandle topmod_done = (vpi_scan(root_it));
     CHECK_RESULT_Z(topmod_done);
 
     TestVpiHandle topmod_it = vpi_iterate(vpiModule, topmod);
+#ifdef IS_ICARUS
+    topmod_it.nofree();
+#endif
     CHECK_RESULT_NZ(topmod_it);
 
     TestVpiHandle mod = vpi_scan(topmod_it);
     CHECK_RESULT_NZ(mod);
 
-    name = vpi_get_str(vpiName, mod);
-    CHECK_RESULT_CSTR(name, "mod_a");
+    const char* mod_a_name = vpi_get_str(vpiName, mod);
+    CHECK_RESULT_CSTR(mod_a_name, "mod_a");
     TestVpiHandle t_done = (vpi_scan(topmod_it));
     CHECK_RESULT_Z(t_done);
 
@@ -116,14 +123,14 @@ int mon_check() {
     TestVpiHandle sub_a_mod = vpi_scan(sub_a_it);
     CHECK_RESULT_NZ(sub_a_mod);
 
-    name = vpi_get_str(vpiName, sub_a_mod);
-    if (strcmp(name, "mod_b") == 0) {
+    const char* mod_c_name = vpi_get_str(vpiName, sub_a_mod);
+    if (strcmp(mod_c_name, "mod_b") == 0) {
         // Full visibility in other simulators, skip mod_b
         sub_a_mod = vpi_scan(sub_a_it);
         CHECK_RESULT_NZ(sub_a_mod);
-        name = vpi_get_str(vpiName, sub_a_mod);
+        mod_c_name = vpi_get_str(vpiName, sub_a_mod);
     }
-    CHECK_RESULT_CSTR(name, "mod_c.");
+    CHECK_RESULT_CSTR(mod_c_name, "mod_c.");
 
     return 0;  // Ok
 }
