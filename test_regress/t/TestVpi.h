@@ -27,7 +27,11 @@ public:
         , m_free(true) {}
     ~TestVpiHandle() {
         if (m_handle && m_free) {
-            { vpi_free_object(m_handle); m_handle = NULL; }
+            // Below not VL_DO_DANGLING so is portable
+            {
+                vpi_free_object(m_handle);
+                m_handle = NULL;
+            }
         }
     }
     operator vpiHandle() const { return m_handle; }

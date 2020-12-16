@@ -69,7 +69,6 @@ our $Vltmt_threads = 3;
 $Debug = 0;
 my $opt_benchmark;
 my @opt_tests;
-my $opt_asan;
 my $opt_dist;
 my $opt_gdb;
 my $opt_rr;
@@ -81,6 +80,7 @@ my $opt_optimize;
 my $opt_quiet;
 my $opt_rerun;
 my $opt_rrsim;
+my $opt_sanitize;
 my %opt_scenarios;
 my $opt_site;
 my $opt_stop;
@@ -93,7 +93,6 @@ our @Opt_Driver_Verilator_Flags;
 
 Getopt::Long::config("pass_through");
 if (! GetOptions(
-          "asan!"       => \$opt_asan,
           "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
           "debug"       => \&debug,
           #debugi          see parameter()
@@ -109,6 +108,7 @@ if (! GetOptions(
           "rerun!"      => \$opt_rerun,
           "rr!"         => \$opt_rr,
           "rrsim!"      => \$opt_rrsim,
+          "sanitize!"   => \$opt_sanitize,
           "site!"       => \$opt_site,
           "stop!"       => \$opt_stop,
           "trace!"      => \$opt_trace,
@@ -868,6 +868,7 @@ sub compile_vlt_flags {
                              || (!$self->{sc} && 'vcd-c'));
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
+    $self->{sanitize} = $opt_sanitize unless exists($self->{sanitize});
 
     my @verilator_flags = @{$param{verilator_flags}};
     unshift @verilator_flags, "--gdb" if $opt_gdb;
@@ -880,7 +881,7 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--trace-threads 1" if $param{vltmt} && $checkflags =~ /-trace /;
     unshift @verilator_flags, "--trace-threads 2" if $param{vltmt} && $checkflags =~ /-trace-fst /;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
-    unshift @verilator_flags, "-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address" if $opt_asan;
+    unshift @verilator_flags, "-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address" if $param{sanitize};
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
     unshift @verilator_flags, "--exe" if
@@ -2602,12 +2603,6 @@ output.
 
 =over 4
 
-=item --asan
-
-Enable address sanitizer to compile Verilated C++ code.
-This may detect misuses of memory, such as out-of-bound accesses, use-after-free,
-and memory leaks.
-
 =item --benchmark [<cycles>]
 
 Show execution times of each step.  If an optional number is given,
@@ -2686,6 +2681,12 @@ Same as C<verilator --rr>: Run Verilator and record with rr.
 =item --rrsim
 
 Run Verilator generated executable and record with rr.
+
+=item --sanitize
+
+Enable address sanitizer to compile Verilated C++ code.
+This may detect misuses of memory, such as out-of-bound accesses, use-after-free,
+and memory leaks.
 
 =item --site
 
