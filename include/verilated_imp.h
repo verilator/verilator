@@ -413,7 +413,8 @@ public:  // But only for verilated*.cpp
         const VerilatedLockGuard lock(s_s.v.m_hierMapMutex);
         s_s.v.m_hierMap[fromp].push_back(top);
     }
-    static void hierarchyRemove(const VerilatedScope* fromp, const VerilatedScope* top) VL_MT_SAFE {
+    static void hierarchyRemove(const VerilatedScope* fromp,
+                                const VerilatedScope* top) VL_MT_SAFE {
         // Slow ok - called at destruction for VPI accessible elements
         const VerilatedLockGuard lock(s_s.v.m_hierMapMutex);
         VerilatedHierarchyMap& map = s_s.v.m_hierMap;

@@ -566,7 +566,8 @@ void EmitCSyms::emitScopeHier(bool destroy) {
             string name = it->second.m_prettyName;
             if (it->first == "TOP") continue;
             if ((name.find('.') == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
-                puts("__Vhier." + method + "(0, &" + protect("__Vscope_" + it->second.m_symName) + ");\n");
+                puts("__Vhier." + method + "(0, &" + protect("__Vscope_" + it->second.m_symName)
+                     + ");\n");
             }
         }
 
