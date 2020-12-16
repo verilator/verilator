@@ -40,6 +40,8 @@ module t(/*AUTOARG*/);
          if (v1 != 0 && v1 != 1) $stop;
          v1 = $urandom_range(2, 0);
          if (v1 != 0 && v1 != 1) $stop;
+         v1 = $urandom_range(3);
+         if (v1 != 0 && v1 != 1 && v1 != 2) $stop;
       end
 
       // Seed stability

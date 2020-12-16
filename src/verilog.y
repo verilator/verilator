@@ -3786,6 +3786,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1, $3); }
 	|	yD_URANDOM '(' expr ')'			{ $$ = new AstRand($1, $3, true); }
 	|	yD_URANDOM parenE			{ $$ = new AstRand($1, nullptr, true); }
+	|	yD_URANDOM_RANGE '(' expr ')'		{ $$ = new AstURandomRange($1, $3, new AstConst($1, 0)); }
 	|	yD_URANDOM_RANGE '(' expr ',' expr ')'	{ $$ = new AstURandomRange($1, $3, $5); }
 	|	yD_VALUEPLUSARGS '(' expr ',' expr ')'	{ $$ = new AstValuePlusArgs($1, $3, $5); }
 	;
