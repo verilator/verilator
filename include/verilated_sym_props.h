@@ -75,8 +75,8 @@ class VerilatedVarProps VL_NOT_FINAL {
     const vluint32_t m_magic;  // Magic number
     const VerilatedVarType m_vltype;  // Data type
     const VerilatedVarFlags m_vlflags;  // Direction
-    const int m_pdims;  // Packed dimensions
-    const int m_udims;  // Unpacked dimensions
+    const int m_pdims;  // Packed dimensions, 0 = none
+    const int m_udims;  // Unpacked dimensions, 0 = none
     VerilatedRange m_packed;  // Packed array range
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
     void initUnpacked(const int* ulims) {
