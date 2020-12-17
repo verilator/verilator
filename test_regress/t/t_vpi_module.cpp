@@ -165,6 +165,9 @@ int main(int argc, char** argv, char** env) {
     Verilated::fatalOnVpiError(0);
 
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
+    // Test second construction
+    delete topp;
+    topp = new VM_PREFIX("");
 
 #ifdef VERILATOR
 #ifdef TEST_VERBOSE
