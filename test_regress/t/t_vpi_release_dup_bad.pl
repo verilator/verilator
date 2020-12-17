@@ -17,8 +17,9 @@ compile(
 
 execute(
     fails => 1,
-    expect_filename => $Self->{golden_filename},
     );
+
+file_grep($Self->{run_log_filename}, qr/vpi_release_handle.*called on same object twice/i);
 
 ok(1);
 
