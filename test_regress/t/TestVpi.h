@@ -29,7 +29,7 @@ public:
         if (m_handle && m_free) {
             // Below not VL_DO_DANGLING so is portable
             {
-                vpi_free_object(m_handle);
+                vpi_release_handle(m_handle);
                 m_handle = NULL;
             }
         }
