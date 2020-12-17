@@ -463,7 +463,7 @@ analyzer-include:
 
 CLANGFORMAT = clang-format
 CLANGFORMAT_FLAGS = -i
-CLANGFORMAT_FILES = $(CPPCHECK_CPP) $(CPPCHECK_H) $(CPPCHECK_YL) test_regress/t/*.c*
+CLANGFORMAT_FILES = $(CPPCHECK_CPP) $(CPPCHECK_H) $(CPPCHECK_YL) test_regress/t/*.c* test_regress/t/*.h
 
 clang-format:
 	@$(CLANGFORMAT) --version | egrep 10.0 > /dev/null \
