@@ -12,7 +12,7 @@ package bus_pkg;
 endpackage
 
 interface simple_bus
-  import bus_pkg::*; // Import preceeding parameters.
+  import bus_pkg::*; // Import preceding parameters.
   #(p_width = WIDTH)
    (input logic clk);
 
