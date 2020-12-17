@@ -10,7 +10,6 @@ on:
   workflow_dispatch:
 
 jobs:
-
   format:
     runs-on: ubuntu-20.04
     name: Ubuntu 20.04 | format
