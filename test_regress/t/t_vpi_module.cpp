@@ -74,10 +74,6 @@ void modDump(const TestVpiHandle& it, int n) {
 extern "C" {
 int mon_check() {
     TestVpiHandle it = vpi_iterate(vpiModule, NULL);
-#ifdef IS_ICARUS
-    // Icarus segfaults when some VPI handles are freed
-    it.nofree();
-#endif
     CHECK_RESULT_NZ(it);
     // Uncomment to see what other simulators return
     // modDump(it, 0);
@@ -98,8 +94,9 @@ int mon_check() {
         CHECK_RESULT_NZ(t_name);
     }
     CHECK_RESULT_CSTR(t_name, "t");
-    TestVpiHandle topmod_done = (vpi_scan(it));
-    CHECK_RESULT_Z(topmod_done);
+    TestVpiHandle topmod_done_should_be_0 = (vpi_scan(it));
+    it.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+    CHECK_RESULT_Z(topmod_done_should_be_0);
 
     TestVpiHandle it2 = vpi_iterate(vpiModule, topmod);
     CHECK_RESULT_NZ(it2);

@@ -39,8 +39,9 @@ public:
         m_handle = h;
         return *this;
     }
-    TestVpiHandle& nofree() {
+    // Freed by another action e.g. vpi_scan; so empty and don't free again
+    void freed() {
+        m_handle = NULL;
         m_free = false;
-        return *this;
     }
 };

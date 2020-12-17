@@ -321,21 +321,25 @@ int _mon_check_varlist() {
     CHECK_RESULT_NZ(vh2);
 
     TestVpiHandle vh10 = vpi_iterate(vpiReg, vh2);
-    CHECK_RESULT_NZ(vh10.nofree());
+    CHECK_RESULT_NZ(vh10);
 
-    TestVpiHandle vh11 = vpi_scan(vh10);
-    CHECK_RESULT_NZ(vh11);
-    p = vpi_get_str(vpiFullName, vh11);
-    CHECK_RESULT_CSTR(p, TestSimulator::rooted("sub.subsig1"));
-
-    TestVpiHandle vh12 = vpi_scan(vh10);
-    CHECK_RESULT_NZ(vh12);
-    p = vpi_get_str(vpiFullName, vh12);
-    CHECK_RESULT_CSTR(p, TestSimulator::rooted("sub.subsig2"));
-
-    TestVpiHandle vh13 = vpi_scan(vh10);
-    CHECK_RESULT(vh13, 0);
-
+    {
+        TestVpiHandle vh11 = vpi_scan(vh10);
+        CHECK_RESULT_NZ(vh11);
+        p = vpi_get_str(vpiFullName, vh11);
+        CHECK_RESULT_CSTR(p, TestSimulator::rooted("sub.subsig1"));
+    }
+    {
+        TestVpiHandle vh12 = vpi_scan(vh10);
+        CHECK_RESULT_NZ(vh12);
+        p = vpi_get_str(vpiFullName, vh12);
+        CHECK_RESULT_CSTR(p, TestSimulator::rooted("sub.subsig2"));
+    }
+    {
+        TestVpiHandle vh13 = vpi_scan(vh10);
+        vh10.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+        CHECK_RESULT(vh13, 0);
+    }
     return 0;
 }
 
