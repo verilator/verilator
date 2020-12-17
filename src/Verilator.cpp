@@ -286,16 +286,13 @@ static void process() {
     if (!v3Global.opt.xmlOnly()) {
         // Convert case statements to if() blocks.  Must be after V3Unknown
         // Must be before V3Task so don't need to deal with task in case value compares
-        V3Case::caseAll(
-                        v3Global.rootp());
+        V3Case::caseAll(v3Global.rootp());
     }
 
-    if (!(v3Global.opt.xmlOnly() 
-          && !v3Global.opt.flatten())) {
+    if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Inline all tasks
         V3Task::taskAll(v3Global.rootp());
     }
-                                                                 
 
     if (!v3Global.opt.xmlOnly()) {
         // Add __PVT's
