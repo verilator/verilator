@@ -1403,7 +1403,7 @@ portSig<nodep>:
 
 interface_declaration:		// IEEE: interface_declaration + interface_nonansi_header + interface_ansi_header:
 	//			// timeunits_delcarationE is instead in interface_item
-		intFront parameter_port_listE portsStarE ';'
+		intFront importsAndParametersE portsStarE ';'
 			interface_itemListE yENDINTERFACE endLabelE
 			{ if ($2) $1->addStmtp($2);
 			  if ($3) $1->addStmtp($3);
