@@ -390,4 +390,5 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     logp->close();
 
     cout << "dot -Tpdf -o ~/a.pdf " << filename << endl;
+    cout << "dot -Tx11 " << filename << endl;
 }

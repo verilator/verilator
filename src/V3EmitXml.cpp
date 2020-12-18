@@ -151,6 +151,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
         }
         if (nodep->attrClockEn()) puts(" clock_enable=\"true\"");
         if (nodep->attrIsolateAssign()) puts(" isolate_assignments=\"true\"");
+        if (nodep->isLatched()) puts(" latched=\"true\"");
         if (nodep->isSigPublic()) puts(" public=\"true\"");
         if (nodep->isSigUserRdPublic()) puts(" public_flat_rd=\"true\"");
         if (nodep->isSigUserRWPublic()) puts(" public_flat_rw=\"true\"");
