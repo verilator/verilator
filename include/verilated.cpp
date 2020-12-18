@@ -2740,7 +2740,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, boo
     }
     va_end(ap);
 
-    m_varsp->insert(std::make_pair(namep, var));
+    m_varsp->emplace(namep, var);
 }
 
 // cppcheck-suppress unusedFunction  // Used by applications

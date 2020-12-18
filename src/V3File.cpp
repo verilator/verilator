@@ -580,7 +580,7 @@ protected:
             // Cache small files (only to save space)
             // It's quite common to `include "timescale" thousands of times
             // This isn't so important if it's just an open(), but filtering can be slow
-            m_contentsMap.insert(make_pair(filename, listString(outl)));
+            m_contentsMap.emplace(filename, listString(outl));
         }
         return true;
     }
@@ -980,7 +980,7 @@ public:
             UASSERT(old == it->second,
                     "Passthru request for '" + old + "' after already --protect-ids of it.");
         } else {
-            m_nameMap.insert(make_pair(old, old));
+            m_nameMap.emplace(old, old);
             m_newIdSet.insert(old);
         }
         return old;
@@ -1011,7 +1011,7 @@ public:
                     }
                 }
             }
-            m_nameMap.insert(make_pair(old, out));
+            m_nameMap.emplace(old, out);
             m_newIdSet.insert(out);
             return out;
         }

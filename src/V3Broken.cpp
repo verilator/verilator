@@ -73,7 +73,7 @@ public:
                     "Newing AstNode object that is already allocated");
         if (iter == s_nodes.end()) {
             int flags = FLAG_ALLOCATED;  // This int needed to appease GCC 4.1.2
-            s_nodes.insert(make_pair(nodep, flags));
+            s_nodes.emplace(nodep, flags);
         }
     }
     static void setUnder(const AstNode* nodep, bool flag) {
@@ -105,7 +105,7 @@ public:
         }
         int or_flags = FLAG_IN_TREE | (linkable ? FLAG_LINKABLE : 0);
         if (iter == s_nodes.end()) {
-            s_nodes.insert(make_pair(nodep, or_flags));
+            s_nodes.emplace(nodep, or_flags);
         } else {
             iter->second |= or_flags;
         }

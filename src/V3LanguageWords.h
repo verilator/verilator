@@ -31,7 +31,7 @@ private:
     struct Singleton {
         KeywordMap s_kwdMap;  // List of keywords, and what language applies
         Singleton() { init(); }
-        void addKwd(const string& kwd, const string& why) { s_kwdMap.insert(make_pair(kwd, why)); }
+        void addKwd(const string& kwd, const string& why) { s_kwdMap.emplace(kwd, why); }
         void init();
     };
 

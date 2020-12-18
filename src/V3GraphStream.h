@@ -115,7 +115,7 @@ public:
                         depCount++;
                     }
                     VxHolder newVx(vxp, pos++, depCount);
-                    m_waitingVertices.insert(make_pair(vxp, newVx));
+                    m_waitingVertices.emplace(vxp, newVx);
                 }
             } else {  // REVERSE
                 if (vxp->outEmpty()) {
@@ -127,7 +127,7 @@ public:
                         depCount++;
                     }
                     VxHolder newVx(vxp, pos++, depCount);
-                    m_waitingVertices.insert(make_pair(vxp, newVx));
+                    m_waitingVertices.emplace(vxp, newVx);
                 }
             }
         }

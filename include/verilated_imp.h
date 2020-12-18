@@ -331,7 +331,7 @@ public:
         if (it != s_s.v.m_userMap.end()) {
             it->second = userData;
         } else {
-            s_s.v.m_userMap.insert(it, std::make_pair(std::make_pair(scopep, userKey), userData));
+            s_s.v.m_userMap.emplace(std::make_pair(scopep, userKey), userData);
         }
     }
     static inline void* userFind(const void* scopep, void* userKey) VL_MT_SAFE {
@@ -374,9 +374,7 @@ public:  // But only for verilated*.cpp
         // Slow ok - called once/scope at construction
         const VerilatedLockGuard lock(s_s.v.m_nameMutex);
         const auto it = s_s.v.m_nameMap.find(scopep->name());
-        if (it == s_s.v.m_nameMap.end()) {
-            s_s.v.m_nameMap.insert(it, std::make_pair(scopep->name(), scopep));
-        }
+        if (it == s_s.v.m_nameMap.end()) s_s.v.m_nameMap.emplace(scopep->name(), scopep);
     }
     static inline const VerilatedScope* scopeFind(const char* namep) VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.v.m_nameMutex);
@@ -442,7 +440,7 @@ public:  // But only for verilated*.cpp
         const VerilatedLockGuard lock(s_s.v.m_exportMutex);
         const auto it = s_s.v.m_exportMap.find(namep);
         if (it == s_s.v.m_exportMap.end()) {
-            s_s.v.m_exportMap.insert(it, std::make_pair(namep, s_s.v.m_exportNext++));
+            s_s.v.m_exportMap.emplace(namep, s_s.v.m_exportNext++);
             return s_s.v.m_exportNext++;
         } else {
             return it->second;

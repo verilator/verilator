@@ -167,7 +167,7 @@ private:
     void insertDfaOrigins(DfaVertex* dfaStatep) {
         // Record the NFA states this dfa came from
         uint32_t hash = hashDfaOrigins(dfaStatep);
-        m_hashMap.insert(make_pair(hash, dfaStatep));
+        m_hashMap.emplace(hash, dfaStatep);
     }
 
     DfaVertex* findDfaOrigins(const DfaStates& nfasWithInput) {

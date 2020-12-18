@@ -458,7 +458,7 @@ string V3Options::fileExists(const string& filename) {
     auto diriter = m_impp->m_dirMap.find(dir);
     if (diriter == m_impp->m_dirMap.end()) {
         // Read the listing
-        m_impp->m_dirMap.insert(std::make_pair(dir, std::set<string>()));
+        m_impp->m_dirMap.emplace(dir, std::set<string>());
         diriter = m_impp->m_dirMap.find(dir);
 
         std::set<string>* setp = &(diriter->second);
@@ -1229,7 +1229,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (!strcmp(sw, "-hierarchical-block") && (i + 1) < argc) {
                 shift;
                 V3HierarchicalBlockOption opt(argv[i]);
-                m_hierBlocks.insert(std::make_pair(opt.mangledName(), opt));
+                m_hierBlocks.emplace(opt.mangledName(), opt);
             } else if (!strncmp(sw, "-I", 2)) {
                 addIncDirUser(parseFileArg(optdir, string(sw + strlen("-I"))));
             } else if (!strcmp(sw, "-if-depth") && (i + 1) < argc) {
@@ -1814,7 +1814,7 @@ void V3Options::setDebugSrcLevel(const string& srcfile, int level) {
     if (iter != m_debugSrcs.end()) {
         iter->second = level;
     } else {
-        m_debugSrcs.insert(make_pair(srcfile, level));
+        m_debugSrcs.emplace(srcfile, level);
     }
 }
 
@@ -1835,7 +1835,7 @@ void V3Options::setDumpTreeLevel(const string& srcfile, int level) {
     if (iter != m_dumpTrees.end()) {
         iter->second = level;
     } else {
-        m_dumpTrees.insert(make_pair(srcfile, level));
+        m_dumpTrees.emplace(srcfile, level);
     }
 }
 

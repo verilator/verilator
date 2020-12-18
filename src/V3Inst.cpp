@@ -161,7 +161,7 @@ public:
     // METHODS
     void insert(AstVar* nodep) {
         UINFO(8, "    dmINSERT    " << nodep << endl);
-        m_modVarNameMap.insert(make_pair(nodep->name(), nodep));
+        m_modVarNameMap.emplace(nodep->name(), nodep);
     }
     AstVar* find(const string& name) {
         const auto it = m_modVarNameMap.find(name);

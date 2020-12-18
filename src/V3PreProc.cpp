@@ -344,7 +344,7 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
             }
             undef(name);
         }
-        m_defines.insert(make_pair(name, VDefine(fl, value, params, cmdline)));
+        m_defines.emplace(name, VDefine(fl, value, params, cmdline));
     }
 }
 

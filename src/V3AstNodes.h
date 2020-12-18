@@ -5020,7 +5020,7 @@ public:
             it->second->valuep(newp);
         } else {
             AstInitItem* itemp = new AstInitItem(fileline(), newp);
-            m_map.insert(it, make_pair(index, itemp));
+            m_map.emplace(index, itemp);
             addOp2p(itemp);
         }
         return oldp;

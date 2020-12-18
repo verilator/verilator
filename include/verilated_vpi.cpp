@@ -461,9 +461,7 @@ public:
         }
         s_s.m_cbObjLists[vop->reason()].push_back(vop);
     }
-    static void cbTimedAdd(VerilatedVpioCb* vop) {
-        s_s.m_timedCbs.insert(std::make_pair(vop->time(), vop));
-    }
+    static void cbTimedAdd(VerilatedVpioCb* vop) { s_s.m_timedCbs.emplace(vop->time(), vop); }
     static void cbReasonRemove(VerilatedVpioCb* cbp) {
         VpioCbList& cbObjList = s_s.m_cbObjLists[cbp->reason()];
         // We do not remove it now as we may be iterating the list,

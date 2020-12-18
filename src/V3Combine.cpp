@@ -106,7 +106,7 @@ public:
         }
     }
     // METHODS
-    void addCall(AstCCall* nodep) { m_callMmap.insert(make_pair(nodep->funcp(), nodep)); }
+    void addCall(AstCCall* nodep) { m_callMmap.emplace(nodep->funcp(), nodep); }
     void deleteCall(AstCCall* nodep) {
         std::pair<CallMmap::iterator, CallMmap::iterator> eqrange
             = m_callMmap.equal_range(nodep->funcp());

@@ -304,7 +304,7 @@ public:
         nodep->user1p(symp);
         checkDuplicate(rootEntp(), nodep, nodep->origName());
         rootEntp()->insert(nodep->origName(), symp);
-        if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
+        if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
         return symp;
     }
     VSymEnt* insertCell(VSymEnt* abovep, VSymEnt* modSymp, AstCell* nodep,
@@ -326,11 +326,11 @@ public:
             // have 2 same cells under an if
             modSymp->reinsert(nodep->name(), symp);
         }
-        if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
+        if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
         return symp;
     }
     void insertMap(VSymEnt* symp, const string& scopename) {
-        if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
+        if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
     }
 
     VSymEnt* insertInline(VSymEnt* abovep, VSymEnt* modSymp, AstCellInline* nodep,
@@ -409,9 +409,7 @@ public:
         // Mark the given variable name as being allowed to be implicitly declared
         if (nodep) {
             const auto it = m_implicitNameSet.find(make_pair(nodep, varname));
-            if (it == m_implicitNameSet.end()) {
-                m_implicitNameSet.insert(make_pair(nodep, varname));
-            }
+            if (it == m_implicitNameSet.end()) { m_implicitNameSet.emplace(nodep, varname); }
         }
     }
     bool implicitOk(AstNodeModule* nodep, const string& varname) {
@@ -501,7 +499,7 @@ public:
         UASSERT_OBJ(
             !(VN_IS(rhsp->nodep(), Cell) && !VN_IS(VN_CAST(rhsp->nodep(), Cell)->modp(), Iface)),
             rhsp->nodep(), "Got a non-IFACE alias RHS");
-        m_scopeAliasMap[samn].insert(make_pair(lhsp, rhsp));
+        m_scopeAliasMap[samn].emplace(lhsp, rhsp);
     }
     void computeScopeAliases() {
         UINFO(9, "computeIfaceAliases\n");

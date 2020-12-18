@@ -142,7 +142,7 @@ private:
                       + cvtToStr(nodep->fileline()->lineno()) + "_" + type;
         const auto it = m_varnames.find(name);
         if (it == m_varnames.end()) {
-            m_varnames.insert(make_pair(name, 1));
+            m_varnames.emplace(name, 1);
         } else {
             int suffix = (it->second)++;
             name += "_" + cvtToStr(suffix);

@@ -427,7 +427,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (it == m_lhsmap.end()) {  // Not found
             RefVec* refsp = new RefVec();
             refsp->push_back(nodep);
-            m_lhsmap.insert(make_pair(key, refsp));
+            m_lhsmap.emplace(key, refsp);
         } else {
             it->second->push_back(nodep);
         }

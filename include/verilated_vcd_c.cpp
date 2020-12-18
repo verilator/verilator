@@ -198,7 +198,7 @@ void VerilatedVcd::makeNameMap() {
             std::string newname = std::string("top");
             if (hiername[0] != '\t') newname += ' ';
             newname += hiername;
-            newmapp->insert(std::make_pair(newname, decl));
+            newmapp->emplace(newname, decl);
         }
         deleteNameMap();
         m_namemapp = newmapp;
@@ -511,7 +511,7 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
         decl += buf;
     }
     decl += " $end\n";
-    m_namemapp->insert(std::make_pair(hiername, decl));
+    m_namemapp->emplace(hiername, decl);
 }
 
 void VerilatedVcd::declBit(vluint32_t code, const char* name, bool array, int arraynum) {

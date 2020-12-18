@@ -129,7 +129,7 @@ public:
                 entp->nodep()->v3fatalSrc("Inserting two symbols with same name: " << name);
             }
         } else {
-            m_idNameMap.insert(make_pair(name, entp));
+            m_idNameMap.emplace(name, entp);
         }
     }
     void reinsert(const string& name, VSymEnt* entp) {

@@ -528,7 +528,7 @@ protected:
         int currOrder = 0;  // Existing sequence number of assignment
         for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
             SplitLogicVertex* vvertexp = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
-            rankMap.insert(make_pair(vvertexp->rank(), nextp));
+            rankMap.emplace(vvertexp->rank(), nextp);
             nextp->user4(++currOrder);  // Record current ordering
         }
 

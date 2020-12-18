@@ -150,7 +150,7 @@ private:
                                   VFlagBitPacked(), width);
             }
             addmodp->addStmtp(varp);
-            m_modVarMap.insert(make_pair(make_pair(addmodp, name), varp));
+            m_modVarMap.emplace(make_pair(addmodp, name), varp);
         }
 
         AstVarScope* varscp = new AstVarScope(oldvarscp->fileline(), oldvarscp->scopep(), varp);

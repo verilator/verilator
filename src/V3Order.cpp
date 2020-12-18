@@ -164,7 +164,7 @@ public:
             return iter->second;
         } else {
             OrderMoveDomScope* domScopep = new OrderMoveDomScope(domainp, scopep);
-            s_dsMap.insert(make_pair(key, domScopep));
+            s_dsMap.emplace(key, domScopep);
             return domScopep;
         }
     }

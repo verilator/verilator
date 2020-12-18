@@ -2060,7 +2060,7 @@ private:
                                << otherp->warnOther() << "... Location of original declaration\n"
                                << otherp->warnContextSecondary());
             } else {
-                inits.insert(make_pair(num, itemp));
+                inits.emplace(num, itemp);
             }
             num.opAdd(one, constp->num());
         }
@@ -3371,8 +3371,7 @@ private:
                         patp = nullptr;
                         break;
                     } else {
-                        std::pair<PatMap::iterator, bool> ret
-                            = patmap.insert(make_pair(memp, patp));
+                        std::pair<PatMap::iterator, bool> ret = patmap.emplace(memp, patp);
                         if (!ret.second) {
                             patp->v3error("Assignment pattern contains duplicate entry: "
                                           << VN_CAST(patp->keyp(), Text)->text());
@@ -5836,7 +5835,7 @@ private:
             initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, i));
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.insert(make_pair(make_pair(nodep, attrType), varp));
+        m_tableMap.emplace(make_pair(nodep, attrType), varp);
         return varp;
     }
     uint64_t enumMaxValue(const AstNode* errNodep, const AstEnumDType* adtypep) {
@@ -5936,7 +5935,7 @@ private:
             if (values[i]) initp->addIndexValuep(i, values[i]);
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.insert(make_pair(make_pair(nodep, attrType), varp));
+        m_tableMap.emplace(make_pair(nodep, attrType), varp);
         return varp;
     }
 
@@ -5956,7 +5955,7 @@ private:
             if (patmap.find(element) != patmap.end()) {
                 patp->v3error("Assignment pattern key used multiple times: " << element);
             } else {
-                patmap.insert(make_pair(element, patp));
+                patmap.emplace(element, patp);
             }
             element += range.leftToRightInc();
         }

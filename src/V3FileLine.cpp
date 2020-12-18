@@ -63,7 +63,7 @@ int FileLineSingleton::nameToNumber(const string& filename) {
     int num = m_names.size();
     m_names.push_back(filename);
     m_languages.push_back(V3LangCode::mostRecent());
-    m_namemap.insert(make_pair(filename, num));
+    m_namemap.emplace(filename, num);
     return num;
 }
 

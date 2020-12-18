@@ -172,7 +172,7 @@ class EmitCSyms final : EmitCBaseVisitor {
             const auto scpit = m_vpiScopeCandidates.find(scp);
             if ((scpit != m_vpiScopeCandidates.end())
                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
-                m_scopeNames.insert(make_pair(scpit->second.m_symName, scpit->second));
+                m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
             }
             string::size_type pos = scp.rfind("__DOT__");
             if (pos == string::npos) {
@@ -313,8 +313,8 @@ class EmitCSyms final : EmitCBaseVisitor {
         // <<" ss"<<name<<endl);
         int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
         if (m_scopeNames.find(name) == m_scopeNames.end()) {
-            m_scopeNames.insert(make_pair(
-                name, ScopeData(name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER")));
+            m_scopeNames.emplace(
+                name, ScopeData(name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER"));
         }
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");

@@ -54,7 +54,7 @@ class StatsReport final {
         // * is always first
         for (auto& itr : s_allStats) {
             V3Statistic* repp = &itr;
-            byName.insert(make_pair(repp->name(), repp));
+            byName.emplace(repp->name(), repp);
         }
 
         // Process duplicates
@@ -79,7 +79,7 @@ class StatsReport final {
             const V3Statistic* repp = &itr;
             if (repp->stage() == "*" && repp->printit()) {
                 if (maxWidth < repp->name().length()) maxWidth = repp->name().length();
-                byName.insert(make_pair(repp->name(), repp));
+                byName.emplace(repp->name(), repp);
             }
         }
 
@@ -123,10 +123,10 @@ class StatsReport final {
             if (repp->stage() != "*" && repp->printit()) {
                 if (maxWidth < repp->name().length()) maxWidth = repp->name().length();
                 if (stageInt.find(repp->stage()) == stageInt.end()) {
-                    stageInt.insert(make_pair(repp->stage(), stage++));
+                    stageInt.emplace(repp->stage(), stage++);
                     stages.push_back(repp->stage());
                 }
-                byName.insert(make_pair(repp->name(), repp));
+                byName.emplace(repp->name(), repp);
             }
         }
 

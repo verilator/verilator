@@ -44,15 +44,15 @@ protected:
     friend class VerilatedVarProps;
     friend class VerilatedScope;
     VerilatedRange() = default;
-    VerilatedRange(int left, int right)
-        : m_left{left}
-        , m_right{right} {}
     void init(int left, int right) {
         m_left = left;
         m_right = right;
     }
 
 public:
+    VerilatedRange(int left, int right)
+        : m_left{left}
+        , m_right{right} {}
     ~VerilatedRange() = default;
     int left() const { return m_left; }
     int right() const { return m_right; }
@@ -83,7 +83,7 @@ class VerilatedVarProps VL_NOT_FINAL {
         for (int i = 0; i < m_udims; ++i) {
             const int left = ulims ? ulims[2 * i + 0] : 0;
             const int right = ulims ? ulims[2 * i + 1] : 0;
-            m_unpacked.push_back(VerilatedRange(left, right));
+            m_unpacked.emplace_back(left, right);
         }
     }
     // CONSTRUCTORS

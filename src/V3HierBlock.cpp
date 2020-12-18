@@ -314,7 +314,7 @@ void V3HierBlockPlan::add(const AstNodeModule* modp, const std::vector<AstVar*>&
         V3HierBlock* hblockp = new V3HierBlock(modp, gparams);
         UINFO(3, "Add " << modp->prettyNameQ() << " with " << gparams.size() << " parameters"
                         << std::endl);
-        m_blocks.insert(std::make_pair(modp, hblockp));
+        m_blocks.emplace(modp, hblockp);
     }
 }
 

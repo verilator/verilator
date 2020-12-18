@@ -137,7 +137,7 @@ public:
         for (AstNodeModule* modp = nodep->modulesp(); modp;
              modp = VN_CAST(modp->nextp(), NodeModule)) {
             if (hierOpts.find(modp->prettyName()) != hierOpts.end()) {
-                m_hierBlockMod.insert(std::make_pair(modp->name(), modp));
+                m_hierBlockMod.emplace(modp->name(), modp);
             }
         }
     }
@@ -321,7 +321,7 @@ class ParamProcessor final {
                     // We use all upper case above, so lower here can't conflict
                     newname += "__pi" + cvtToStr(++m_longId);
                 }
-                m_longMap.insert(make_pair(longname, newname));
+                m_longMap.emplace(longname, newname);
             }
         }
         UINFO(4, "Name: " << srcModp->name() << "->" << longname << "->" << newname << endl);
@@ -349,12 +349,12 @@ class ParamProcessor final {
                     AstVar* oldvarp = varp->clonep();
                     // UINFO(8,"Clone list 0x"<<hex<<(uint32_t)oldvarp
                     // <<" -> 0x"<<(uint32_t)varp<<endl);
-                    clonemapp->insert(make_pair(oldvarp, varp));
+                    clonemapp->emplace(oldvarp, varp);
                 }
             } else if (AstParamTypeDType* ptp = VN_CAST(stmtp, ParamTypeDType)) {
                 if (ptp->isGParam()) {
                     AstParamTypeDType* oldptp = ptp->clonep();
-                    clonemapp->insert(make_pair(oldptp, ptp));
+                    clonemapp->emplace(oldptp, ptp);
                 }
             }
         }
@@ -383,7 +383,7 @@ class ParamProcessor final {
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* varp = VN_CAST(stmtp, Var)) {
                 if (varp->isIO() || varp->isGParam() || varp->isIfaceRef()) {
-                    nameToPin.insert(make_pair(varp->name(), varp));
+                    nameToPin.emplace(varp->name(), varp);
                 }
             }
         }
@@ -474,7 +474,7 @@ class ParamProcessor final {
         }
         insertp->addNextHere(newmodp);
 
-        m_modNameMap.insert(make_pair(newmodp->name(), ModInfo(newmodp)));
+        m_modNameMap.emplace(newmodp->name(), ModInfo(newmodp));
         auto iter = m_modNameMap.find(newname);
         CloneMap* clonemapp = &(iter->second.m_cloneMap);
         UINFO(4, "     De-parameterize to new: " << newmodp << endl);
@@ -758,7 +758,7 @@ class ParamVisitor final : public AstNVisitor {
         UASSERT_OBJ(nodep->modp(), nodep, "Not linked?");
         m_processor.cellDeparam(nodep, m_modp, hierName);
         // Remember to process the child module at the end of the module
-        m_todoModps.insert(make_pair(nodep->modp()->level(), nodep->modp()));
+        m_todoModps.emplace(nodep->modp()->level(), nodep->modp());
     }
     void visitModules() {
         // Loop on all modules left to process
@@ -827,7 +827,7 @@ class ParamVisitor final : public AstNVisitor {
                    || VN_IS(nodep, Class)  // Nor moved classes
                    || VN_IS(nodep, Package)) {  // Likewise haven't done wrapTopPackages yet
             // Add request to END of modules left to process
-            m_todoModps.insert(make_pair(nodep->level(), nodep));
+            m_todoModps.emplace(nodep->level(), nodep);
             m_generateHierName = "";
             visitModules();
         } else if (nodep->user5()) {

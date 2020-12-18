@@ -130,7 +130,7 @@ public:
             VlcPoint point(name, pointnum);
             point.countInc(count);
             m_points.push_back(point);
-            m_nameMap.insert(make_pair(point.name(), point.pointNum()));
+            m_nameMap.emplace(point.name(), point.pointNum());
         }
         return pointnum;
     }

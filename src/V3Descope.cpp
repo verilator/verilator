@@ -296,7 +296,7 @@ private:
                 if (nodep->funcPublic()) {
                     // There may be multiple public functions by the same name;
                     // record for later correction or making of shells
-                    m_modFuncs.insert(make_pair(nodep->name(), nodep));
+                    m_modFuncs.emplace(nodep->name(), nodep);
                     nodep->name(m_scopep->nameDotless() + "__" + nodep->name());
                 }
             }

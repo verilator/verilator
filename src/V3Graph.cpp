@@ -330,7 +330,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
         string vertexSubgraph
             = (colorAsSubgraph && vertexp->color()) ? cvtToStr(vertexp->color()) : "";
-        subgraphs.insert(make_pair(vertexSubgraph, vertexp));
+        subgraphs.emplace(vertexSubgraph, vertexp);
     }
 
     // We use a map here, as we don't want to corrupt anything (userp) in the graph,

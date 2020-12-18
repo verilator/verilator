@@ -68,7 +68,7 @@ void AstNodeUOrStructDType::repairMemberCache() {
         if (m_members.find(itemp->name()) != m_members.end()) {
             itemp->v3error("Duplicate declaration of member name: " << itemp->prettyNameQ());
         } else {
-            m_members.insert(make_pair(itemp->name(), itemp));
+            m_members.emplace(itemp->name(), itemp);
         }
     }
 }
@@ -995,7 +995,7 @@ AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
     DetailedMap& mapr = m_detailedMap;
     const auto it = mapr.find(key);
     if (it != mapr.end()) return it->second;
-    mapr.insert(make_pair(key, nodep));
+    mapr.emplace(key, nodep);
     nodep->generic(true);
     // No addTypesp; the upper function that called new() is responsible for adding
     return nodep;
@@ -1168,7 +1168,7 @@ void AstClass::insertCache(AstNode* nodep) {
         if (m_members.find(nodep->name()) != m_members.end()) {
             nodep->v3error("Duplicate declaration of member name: " << nodep->prettyNameQ());
         } else {
-            m_members.insert(make_pair(nodep->name(), nodep));
+            m_members.emplace(nodep->name(), nodep);
         }
     }
 }

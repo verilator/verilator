@@ -363,7 +363,7 @@ private:
                     // make slow routines set all activity flags.
                     actSet.erase(TraceActivityVertex::ACTIVITY_SLOW);
                 }
-                traces.insert(make_pair(actSet, vtxp));
+                traces.emplace(actSet, vtxp);
             }
         }
     }

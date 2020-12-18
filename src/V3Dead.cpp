@@ -285,7 +285,7 @@ private:
             AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
             if (varrefp && !m_sideEffect
                 && varrefp->varScopep()) {  // For simplicity, we only remove post-scoping
-                m_assignMap.insert(make_pair(varrefp->varScopep(), nodep));
+                m_assignMap.emplace(varrefp->varScopep(), nodep);
                 checkAll(varrefp);  // Must track reference to dtype()
                 checkVarRef(varrefp);
             } else {  // Track like any other statement
