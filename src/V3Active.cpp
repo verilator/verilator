@@ -47,24 +47,28 @@
 
 class LatchDetectGraphVertex : public V3GraphVertex {
 public:
-    enum VertexType  { VT_BLOCK, VT_BRANCH, VT_OUTPUT };
+    enum VertexType { VT_BLOCK, VT_BRANCH, VT_OUTPUT };
+
 private:
     VertexType m_type;
-    string     m_name;       // Only used for .dot file generation
-    string typestr() const { //   "
+    string m_name;  // Only used for .dot file generation
+    string typestr() const {  //   "
         switch (m_type) {
-        case VT_BLOCK : return "(||)";
+        case VT_BLOCK: return "(||)";
         case VT_BRANCH: return "(&&)";
         case VT_OUTPUT: return "(out)";
-        default       : return "??";
+        default: return "??";
         }
     }
+
 public:
     LatchDetectGraphVertex(V3Graph* graphp, const string& name, VertexType type = VT_BLOCK)
-        : V3GraphVertex(graphp), m_name(name), m_type(type) { }
-    virtual string name()     const { return m_name + " " + typestr(); }
+        : V3GraphVertex(graphp)
+        , m_name(name)
+        , m_type(type) {}
+    virtual string name() const { return m_name + " " + typestr(); }
     virtual string dotColor() const { return user() ? "green" : "black"; }
-    virtual int    type()     const { return m_type; }
+    virtual int type() const { return m_type; }
 };
 
 //######################################################################
@@ -74,8 +78,8 @@ class LatchDetectGraph : public V3Graph {
 protected:
     typedef std::vector<AstVarRef*> VarRefVec;
 
-    LatchDetectGraphVertex* m_curVertexp;   // Current latch detection graph vertex
-    VarRefVec               m_outputs;      // Vector of lvalues encountered on this pass
+    LatchDetectGraphVertex* m_curVertexp;  // Current latch detection graph vertex
+    VarRefVec m_outputs;  // Vector of lvalues encountered on this pass
 
     VL_DEBUG_FUNC;  // Declare debug()
 
@@ -89,10 +93,10 @@ protected:
     bool latchCheckInternal(LatchDetectGraphVertex* vertexp) {
         bool result = false;
         switch (vertexp->type()) {
-        case LatchDetectGraphVertex::VT_OUTPUT: // Base case
+        case LatchDetectGraphVertex::VT_OUTPUT:  // Base case
             result = vertexp->user();
             break;
-        case LatchDetectGraphVertex::VT_BLOCK: // (OR of potentially many siblings)
+        case LatchDetectGraphVertex::VT_BLOCK:  // (OR of potentially many siblings)
             for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 if (latchCheckInternal((LatchDetectGraphVertex*)edgep->top())) {
                     result = true;
@@ -100,12 +104,11 @@ protected:
                 }
             }
             break;
-        case LatchDetectGraphVertex::VT_BRANCH: // (AND of both sibling)
+        case LatchDetectGraphVertex::VT_BRANCH:  // (AND of both sibling)
             // A BRANCH vertex always has exactly 2 siblings
-            LatchDetectGraphVertex* ifp  =
-                (LatchDetectGraphVertex*)vertexp->outBeginp()->top();
-            LatchDetectGraphVertex* elsp =
-                (LatchDetectGraphVertex*)vertexp->outBeginp()->outNextp()->top();
+            LatchDetectGraphVertex* ifp = (LatchDetectGraphVertex*)vertexp->outBeginp()->top();
+            LatchDetectGraphVertex* elsp
+                = (LatchDetectGraphVertex*)vertexp->outBeginp()->outNextp()->top();
             result = latchCheckInternal(ifp) && latchCheckInternal(elsp);
             break;
         }
@@ -114,7 +117,7 @@ protected:
     }
 
 public:
-    LatchDetectGraph()  { clear(); }
+    LatchDetectGraph() { clear(); }
     ~LatchDetectGraph() { clear(); }
     // ACCESSORS
     LatchDetectGraphVertex* currentp() { return m_curVertexp; }
@@ -135,17 +138,18 @@ public:
     }
     // Add a new control path and connect it to its parent
     LatchDetectGraphVertex* addPathVertex(LatchDetectGraphVertex* parent, const string& name,
-                                            bool branch = false) {
+                                          bool branch = false) {
         m_curVertexp = new LatchDetectGraphVertex(this, name,
-            branch ? LatchDetectGraphVertex::VT_BRANCH : LatchDetectGraphVertex::VT_BLOCK);
+                                                  branch ? LatchDetectGraphVertex::VT_BRANCH
+                                                         : LatchDetectGraphVertex::VT_BLOCK);
         new V3GraphEdge(this, parent, m_curVertexp, 1);
         return m_curVertexp;
     }
     // Add a new output variable vertex and store a pointer to it in the user1 field of the
     // variables AstNode
     LatchDetectGraphVertex* addOutputVertex(AstVarRef* nodep) {
-        LatchDetectGraphVertex *outVertexp = new LatchDetectGraphVertex(this, nodep->name(),
-            LatchDetectGraphVertex::VT_OUTPUT);
+        LatchDetectGraphVertex* outVertexp
+            = new LatchDetectGraphVertex(this, nodep->name(), LatchDetectGraphVertex::VT_OUTPUT);
         nodep->varp()->user1p(outVertexp);
         m_outputs.push_back(nodep);
         return outVertexp;
@@ -153,10 +157,10 @@ public:
     // Connect an output assignment to its parent control block
     void add_assignment(AstVarRef* nodep) {
         LatchDetectGraphVertex* outVertexp;
-        if (!nodep->varp()->user1p()) { // Not seen this output before
-             outVertexp = addOutputVertex(nodep);
-        }
-        else outVertexp = (LatchDetectGraphVertex*)nodep->varp()->user1p();
+        if (!nodep->varp()->user1p()) {  // Not seen this output before
+            outVertexp = addOutputVertex(nodep);
+        } else
+            outVertexp = (LatchDetectGraphVertex*)nodep->varp()->user1p();
 
         new V3GraphEdge(this, m_curVertexp, outVertexp, 1);
     }
@@ -164,23 +168,24 @@ public:
     // paths make an assignment. Detected latches are flagged in the variables AstVar
     void latchCheck(AstNode* nodep, bool latch_expected) {
         bool latch_detected = false;
-        for (VarRefVec::iterator it = m_outputs.begin();it != m_outputs.end(); ++it) {
+        for (VarRefVec::iterator it = m_outputs.begin(); it != m_outputs.end(); ++it) {
             AstVarRef* vrp = *it;
             LatchDetectGraphVertex* vertp = (LatchDetectGraphVertex*)vrp->varp()->user1p();
-            vertp->user(true); // Identify the output vertex we are checking paths _to_
+            vertp->user(true);  // Identify the output vertex we are checking paths _to_
             if (!latchCheckInternal((LatchDetectGraphVertex*)verticesBeginp())) {
                 latch_detected = true;
             }
             if (latch_detected && !latch_expected) {
-                nodep->v3warn(LATCH, "Latch inferred for signal "<< vrp->prettyNameQ()
-                    << " (not all control paths of combinational always assign a value)\n"
-                    << nodep->warnMore()
-                    << "... Suggest use of always_latch for intentional latches");
-                if (debug() >= 9) {
-                    dumpDotFilePrefixed("latch_"+vrp->name());
-                }
+                nodep->v3warn(
+                    LATCH,
+                    "Latch inferred for signal "
+                        << vrp->prettyNameQ()
+                        << " (not all control paths of combinational always assign a value)\n"
+                        << nodep->warnMore()
+                        << "... Suggest use of always_latch for intentional latches");
+                if (debug() >= 9) { dumpDotFilePrefixed("latch_" + vrp->name()); }
             }
-            vertp->user(false); // Clear again (see above)
+            vertp->user(false);  // Clear again (see above)
             vrp->varp()->isLatched(latch_detected);
         }
         // Should _all_ variables assigned in always_latch be latches? Probably, but this only
@@ -189,7 +194,6 @@ public:
             nodep->v3warn(NOLATCH, "No latches detected in always_latch block");
     }
 };
-
 
 //######################################################################
 // Collect existing active names
@@ -286,7 +290,6 @@ public:
     void main(AstScope* nodep) { iterate(nodep); }
 };
 
-
 //######################################################################
 // Latch checking visitor
 
@@ -297,11 +300,11 @@ private:
     //  AstVar::user1p // V2LatchGraphVertex* The vertex handling this node
     AstUser1InUse m_inuser1;
     // STATE
-    LatchDetectGraph m_graph; // Graph used to detect latches in combo always
+    LatchDetectGraph m_graph;  // Graph used to detect latches in combo always
     // VISITORS
     virtual void visit(AstVarRef* nodep) {
-        //if (nodep->lvalue()) {
-        if (nodep->access().isWriteOrRW()) { // Is this a correct replacement of the above?
+        // if (nodep->lvalue()) {
+        if (nodep->access().isWriteOrRW()) {  // Is this a correct replacement of the above?
             m_graph.add_assignment(nodep);
         }
     }
@@ -317,9 +320,8 @@ private:
     // Empty visitors, speed things up
     virtual void visit(AstNodeMath* nodep) {}
     //--------------------
-    virtual void visit(AstNode* nodep) {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     ActiveLatchCheckVisitor(AstNode* nodep, VAlwaysKwd kwd) {
@@ -329,7 +331,6 @@ public:
     }
     virtual ~ActiveLatchCheckVisitor() {}
 };
-
 
 //######################################################################
 // Active AssignDly replacement functions
@@ -353,14 +354,14 @@ private:
                                               << "... Suggest blocking assignments (=)");
             } else if (m_check == CT_LATCH) {
                 // Suppress. Shouldn't matter that the interior of the latch races
-            } else if (!(VN_IS(  nodep->lhsp(), VarRef) &&
-                         VN_CAST(nodep->lhsp(), VarRef)->varp()->isLatched())) {
+            } else if (!(VN_IS(nodep->lhsp(), VarRef)
+                         && VN_CAST(nodep->lhsp(), VarRef)->varp()->isLatched())) {
                 nodep->v3warn(COMBDLY, "Delayed assignments (<=) in non-clocked"
-                          " (non flop or latch) block\n"
-                          << nodep->warnMore()
-                          << "... Suggest blocking assignments (=)");
-                // Conversely, we could also suggest latches use delayed assignments, as recommended
-                // by Cliff Cummings?
+                                       " (non flop or latch) block\n"
+                                           << nodep->warnMore()
+                                           << "... Suggest blocking assignments (=)");
+                // Conversely, we could also suggest latches use delayed assignments, as
+                // recommended by Cliff Cummings?
             }
             AstNode* newp = new AstAssign(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
                                           nodep->rhsp()->unlinkFrBack());
@@ -540,7 +541,7 @@ private:
 
         // Warn and/or convert any delayed assignments
         if (combo && !sequent) {
-            ActiveLatchCheckVisitor latchvisitor (nodep, kwd);
+            ActiveLatchCheckVisitor latchvisitor(nodep, kwd);
             if (kwd == VAlwaysKwd::ALWAYS_LATCH) {
                 ActiveDlyVisitor dlyvisitor(nodep, ActiveDlyVisitor::CT_LATCH);
             } else {
