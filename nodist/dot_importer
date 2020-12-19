@@ -1,164 +1,109 @@
-#!/usr/bin/env perl
-# See copyright, etc in below POD section.
+#!/usr/bin/env python3
 ######################################################################
 
-use warnings;
-use Getopt::Long;
-use IO::File;
-use Pod::Usage;
-use Data::Dumper; $Data::Dumper::Indent=1;
-use strict;
-use vars qw($Debug);
+import argparse
+import re
 
-#======================================================================
+######################################################################
 
-our @Header;
-our %Vertexes;
-our @Edges;
-our %Edges;
+Header = []
+Vertexes = []
+Edges = []
 
-#======================================================================
+#######################################################################
+
+
+def dotread(filename):
+    with open(filename) as fh:
+        header = True
+        vnum = 0
+
+        vertex_re = re.compile(r'^\t([a-zA-Z0-9_]+)\t(.*)$')
+        edge_re = re.compile(
+            r'^\t([a-zA-Z0-9_]+)\s+->\s+([a-zA-Z0-9_]+)\s*(.*)$')
+
+        for line in fh:
+            vertex_match = re.search(vertex_re, line)
+            edge_match = re.search(edge_re, line)
+            if vertex_match:
+                if vertex_match.group(1) != 'nTITLE':
+                    header = False
+                    Vertexes.append({
+                        'num': vnum,
+                        'line': line,
+                        'name': vertex_match.group(1)
+                    })
+                    vnum += 1
+            elif edge_match:
+                fromv = edge_match.group(1)
+                tov = edge_match.group(2)
+                w = re.match(r'weight=(\d+)', line)
+                weight = w.group(1) if w else 1
+                w = re.match(r'style=(\S+)', line)
+                cutable = w.group(1) if w else None
+                edge = {
+                    'num': vnum,
+                    'line': line,
+                    'weight': weight,
+                    'cutable': cutable,
+                    'from': fromv,
+                    'to': tov
+                }
+                vnum += 1
+                Edges.append(edge)
+            elif header:
+                Header.append(line)
+                print("IGNORE: " + line)
+
+
+#######################################################################
+
+
+def cwrite(filename):
+    with open(filename, "w") as fh:
+        fh.write("void V3GraphTestImport::dotImport() {\n")
+        fh.write("    auto* gp = &m_graph;\n")
+        for ver in sorted(Vertexes, key=lambda ver: ver['num']):
+            fh.write(
+                "    auto* %s = new V3GraphTestVertex(gp, \"%s\");  if (%s) {}\n"
+                % (ver['name'], ver['name'], ver['name']))
+        fh.write("\n")
+        for edge in Edges:
+            fh.write("    new V3GraphEdge(gp, %s, %s, %s, %s);\n" %
+                     (edge['from'], edge['to'], edge['weight'],
+                      "true" if edge['cutable'] else "false"))
+        fh.write("}\n")
+
+
+######################################################################
 # main
 
-$Debug = 0;
-my $opt_filename;
-autoflush STDOUT 1;
-autoflush STDERR 1;
-if (! GetOptions(
-          "help"        => \&usage,
-          "debug"       => \&debug,
-          "<>"          => \&parameter,
-    )) {
-    usage();
-}
-
-dotread($opt_filename);
-cwrite("graph_export.cpp");
-
-#----------------------------------------------------------------------
-
-sub usage {
-    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT);
-    exit(1);  # Unreachable
-}
-
-sub debug {
-    $Debug = 1;
-}
-
-sub parameter {
-    my $param = shift;
-    if (!$opt_filename) {
-        $opt_filename = $param;
-    } else {
-        die "%Error: Unknown parameter: $param\n";
-    }
-}
-
-#######################################################################
-
-sub dotread {
-    my $filename = shift;
-
-    my $fh = IO::File->new($filename) or die "%Error: $! $filename,";
-    my $header = 1;
-    my $vnum = 0;
-    while (defined (my $line = $fh->getline)) {
-        if ($line =~ /^\t([a-zA-Z0-9_]+)\t(.*)$/) {
-            next if $1 eq 'nTITLE';
-            $header = 0;
-            $Vertexes{$1} = {num => $vnum++,
-                             line => $line,
-                             name => $1,};
-        }
-        elsif ($line =~ /^\t([a-zA-Z0-9_]+)\s+->\s+([a-zA-Z0-9_]+)\s+(.*)$/) {
-            my $from=$1; my $to=$2;
-            my $weight = 1; $weight = $1 if $line =~ /weight=(\d+)/;
-            my $cutable = undef; $cutable = $1 if $line =~ /style=(\S+)/;
-            my $edge =  {num => $vnum++,
-                         line => $line,
-                         weight => $weight,
-                         cutable => $cutable,
-                         from => $from,
-                         to => $to,};
-            push @Edges, $edge;
-            $Edges{$from}{$to} = $edge;
-        }
-        elsif ($header) {
-            push @Header, $line;
-            print "IGNORE: $line";
-        }
-    }
-}
-
-#######################################################################
-
-sub cwrite {
-    my $filename = shift;
-
-    my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
-    $fh->print("void V3GraphTestImport::dotImport() {\n");
-    $fh->print("    DfaGraph* gp = &m_graph;\n");
-    foreach my $ver (sort {$a->{num} <=> $b->{num}} (values %Vertexes)) {
-        $fh->printf("    V3GraphTestVertex* %s = new V3GraphTestVertex(gp, \"%s\");  if (%s) {}\n",
-                    $ver->{name}, $ver->{name}, $ver->{name});
-    }
-    $fh->print("\n");
-    foreach my $edge (@Edges) {
-        $fh->printf("    new V3GraphEdge(gp, %s, %s, %s, %s);\n",
-                    $edge->{from}, $edge->{to},
-                    $edge->{weight}, $edge->{cutable}?"true":"false");
-    }
-    $fh->print("}\n");
-}
-
-#######################################################################
-__END__
-
-=pod
-
-=head1 NAME
-
-dot_importer - Take graph .dot file and convert into .cpp file
-
-=head1 SYNOPSIS
-
-  dot_importer a.dot
-
-=head1 DESCRIPTION
-
-Dot_importer takes a graphvis .dot file and converts into .cpp file.  This
-.cpp file is then manually included in V3GraphTest.cpp to verify various
-sub-algorithms.
-
-=head1 ARGUMENTS
-
-=over 4
-
-=item --help
-
-Displays this message and program version and exits.
-
-=back
-
-=head1 DISTRIBUTION
-
-Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description=
+    """dot_importer takes a graphvis .dot file and converts into .cpp file.
+This x.cpp file is then manually included in V3GraphTest.cpp to verify
+various xsub-algorithms.""",
+    epilog=
+    """Copyright 2005-2020 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
 
-SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
-=head1 AUTHORS
+parser.add_argument('--debug',
+                    action='store_const',
+                    const=9,
+                    help='enable debug')
+parser.add_argument('filename', help='input .dot filename to process')
 
-Wilson Snyder <wsnyder@wsnyder.org>
-
-=head1 SEE ALSO
-
-=cut
+Args = parser.parse_args()
+dotread(Args.filename)
+cwrite("graph_export.cpp")
 
 ######################################################################
 ### Local Variables:
-### compile-command: "./dot_importer | tee ~/d/a.dot"
+### compile-command: "./dot_importer ../test_regress/obj_vlt/t_EXAMPLE/*orderg_o*.dot && cat graph_export.cpp"
 ### End:
