@@ -35,6 +35,9 @@
 #else
 #include <malloc.h>
 #endif
+#elif defined(_MSC_VER)
+#include <malloc.h>
+#define alloca _alloca
 #endif
 #define wave_alloca alloca
 #endif
