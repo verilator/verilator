@@ -26,8 +26,8 @@
 
 bool got_error = false;
 
-vpiHandle vh_value_cb = 0;
-vpiHandle vh_rw_cb = 0;
+TestVpiHandle vh_value_cb;
+TestVpiHandle vh_rw_cb;
 
 unsigned int last_value_cb_time = 0;
 unsigned int last_rw_cb_time = 0;
@@ -78,6 +78,7 @@ static void reregister_value_cb() {
     if (vh_value_cb) {
         if (verbose) { vpi_printf(const_cast<char*>("- Removing cbValueChange callback\n")); }
         int ret = vpi_remove_cb(vh_value_cb);
+        vh_value_cb.freed();
         CHECK_RESULT(ret, 1);
 
         if (verbose) {
@@ -93,7 +94,7 @@ static void reregister_value_cb() {
     cb_data_testcase.cb_rtn = the_value_callback;
     cb_data_testcase.reason = cbValueChange;
 
-    vpiHandle vh1 = VPI_HANDLE("count");
+    TestVpiHandle vh1 = VPI_HANDLE("count");
     CHECK_RESULT_NZ(vh1);
 
     s_vpi_value v;
@@ -110,6 +111,7 @@ static void reregister_rw_cb() {
     if (vh_rw_cb) {
         if (verbose) { vpi_printf(const_cast<char*>("- Removing cbReadWriteSynch callback\n")); }
         int ret = vpi_remove_cb(vh_rw_cb);
+        vh_rw_cb.freed();
         CHECK_RESULT(ret, 1);
 
         if (verbose) {
@@ -140,8 +142,8 @@ static void register_filler_cb() {
     cb_data_1.cb_rtn = the_filler_callback;
     cb_data_1.reason = cbReadWriteSynch;
 
-    vpiHandle vh1 = vpi_register_cb(&cb_data_1);
-    CHECK_RESULT_NZ(vh1);
+    TestVpiHandle cb_data_1_h = vpi_register_cb(&cb_data_1);
+    CHECK_RESULT_NZ(cb_data_1_h);
 
     if (verbose) {
         vpi_printf(const_cast<char*>("- Registering filler cbValueChange callback\n"));
@@ -151,7 +153,7 @@ static void register_filler_cb() {
     cb_data_2.cb_rtn = the_filler_callback;
     cb_data_2.reason = cbValueChange;
 
-    vpiHandle vh2 = VPI_HANDLE("count");
+    TestVpiHandle vh2 = VPI_HANDLE("count");
     CHECK_RESULT_NZ(vh2);
 
     s_vpi_value v;
@@ -160,8 +162,8 @@ static void register_filler_cb() {
     cb_data_2.obj = vh2;
     cb_data_2.value = &v;
 
-    vpiHandle vh3 = vpi_register_cb(&cb_data_2);
-    CHECK_RESULT_NZ(vh3);
+    TestVpiHandle cb_data_2_h = vpi_register_cb(&cb_data_2);
+    CHECK_RESULT_NZ(cb_data_2_h);
 }
 
 double sc_time_stamp() { return main_time; }

@@ -106,7 +106,7 @@ static int _time_cb1(p_cb_data cb_data) {
     t.low = 1;
     cb_data_n.time = &t;
     cb_data_n.cb_rtn = _time_cb1;
-    vpi_register_cb(&cb_data_n);
+    TestVpiHandle cb_data_n1_h = vpi_register_cb(&cb_data_n);
     return 0;
 }
 
@@ -127,7 +127,7 @@ static int _time_cb2(p_cb_data cb_data) {
     t.low = 1;
     cb_data_n.time = &t;
     cb_data_n.cb_rtn = _time_cb2;
-    vpi_register_cb(&cb_data_n);
+    TestVpiHandle cb_data_n2_h = vpi_register_cb(&cb_data_n);
     return 0;
 }
 
@@ -143,7 +143,7 @@ static int _start_of_sim_cb(p_cb_data cb_data) {
     t1.low = 3;
     cb_data_n1.time = &t1;
     cb_data_n1.cb_rtn = _time_cb1;
-    vpi_register_cb(&cb_data_n1);
+    TestVpiHandle cb_data_n1_h = vpi_register_cb(&cb_data_n1);
 
     cb_data_n2.reason = cbAfterDelay;
     t2.type = vpiSimTime;
@@ -151,7 +151,7 @@ static int _start_of_sim_cb(p_cb_data cb_data) {
     t2.low = 4;
     cb_data_n2.time = &t2;
     cb_data_n2.cb_rtn = _time_cb2;
-    vpi_register_cb(&cb_data_n2);
+    TestVpiHandle cb_data_n2_h = vpi_register_cb(&cb_data_n2);
     callback_count_start_of_sim++;
     return 0;
 }
@@ -177,12 +177,12 @@ void vpi_compat_bootstrap(void) {
     cb_data.reason = cbStartOfSimulation;
     cb_data.time = 0;
     cb_data.cb_rtn = _start_of_sim_cb;
-    vpi_register_cb(&cb_data);
+    TestVpiHandle _start_of_sim_cb_h = vpi_register_cb(&cb_data);
 
     cb_data.reason = cbEndOfSimulation;
     cb_data.time = 0;
     cb_data.cb_rtn = _end_of_sim_cb;
-    vpi_register_cb(&cb_data);
+    TestVpiHandle _end_of_sim_cb_h = vpi_register_cb(&cb_data);
 }
 
 // icarus entry

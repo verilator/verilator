@@ -80,26 +80,32 @@ unsigned int main_time = 0;
 
 #define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
-int _mon_check_range(TestVpiHandle& handle, int size, int left, int right) {
-    TestVpiHandle iter_h, left_h, right_h;
+int _mon_check_range(const TestVpiHandle& handle, int size, int left, int right) {
     s_vpi_value value;
     value.format = vpiIntVal;
     value.value.integer = 0;
     // check size of object
-    int vpisize = vpi_get(vpiSize, handle);
-    CHECK_RESULT(vpisize, size);
-    // check left hand side of range
-    left_h = vpi_handle(vpiLeftRange, handle);
-    CHECK_RESULT_NZ(left_h);
-    vpi_get_value(left_h, &value);
-    CHECK_RESULT(value.value.integer, left);
-    int coherency = value.value.integer;
-    // check right hand side of range
-    right_h = vpi_handle(vpiRightRange, handle);
-    CHECK_RESULT_NZ(right_h);
-    vpi_get_value(right_h, &value);
-    CHECK_RESULT(value.value.integer, right);
-    coherency -= value.value.integer;
+    {
+        int vpisize = vpi_get(vpiSize, handle);
+        CHECK_RESULT(vpisize, size);
+    }
+    int coherency;
+    {
+        // check left hand side of range
+        TestVpiHandle left_h = vpi_handle(vpiLeftRange, handle);
+        CHECK_RESULT_NZ(left_h);
+        vpi_get_value(left_h, &value);
+        CHECK_RESULT(value.value.integer, left);
+        coherency = value.value.integer;
+    }
+    {
+        // check right hand side of range
+        TestVpiHandle right_h = vpi_handle(vpiRightRange, handle);
+        CHECK_RESULT_NZ(right_h);
+        vpi_get_value(right_h, &value);
+        CHECK_RESULT(value.value.integer, right);
+        coherency -= value.value.integer;
+    }
     // calculate size & check
     coherency = abs(coherency) + 1;
     CHECK_RESULT(coherency, size);
@@ -107,40 +113,46 @@ int _mon_check_range(TestVpiHandle& handle, int size, int left, int right) {
 }
 
 int _mon_check_memory() {
-    int cnt;
-    TestVpiHandle mem_h, lcl_h, side_h;
-    vpiHandle iter_h;  // Icarus does not like auto free of iterator handles
     s_vpi_value value;
     value.format = vpiIntVal;
     value.value.integer = 0;
     s_vpi_error_info e;
 
     vpi_printf((PLI_BYTE8*)"Check memory vpi ...\n");
-    mem_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted("mem0"), NULL);
+    TestVpiHandle mem_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted("mem0"), NULL);
     CHECK_RESULT_NZ(mem_h);
-    // check type
-    int vpitype = vpi_get(vpiType, mem_h);
-    CHECK_RESULT(vpitype, vpiMemory);
+    {
+        // check type
+        int vpitype = vpi_get(vpiType, mem_h);
+        CHECK_RESULT(vpitype, vpiMemory);
+    }
     if (int status = _mon_check_range(mem_h, 16, 16, 1)) return status;
     // iterate and store
-    iter_h = vpi_iterate(vpiMemoryWord, mem_h);
-    cnt = 0;
-    while ((lcl_h = vpi_scan(iter_h))) {
-        value.value.integer = ++cnt;
-        vpi_put_value(lcl_h, &value, NULL, vpiNoDelay);
-        // check size and range
-        if (int status = _mon_check_range(lcl_h, 32, 31, 0)) return status;
+    {
+        TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, mem_h);
+        int cnt = 0;
+        while (TestVpiHandle lcl_h = vpi_scan(iter_h)) {
+            value.value.integer = ++cnt;
+            vpi_put_value(lcl_h, &value, NULL, vpiNoDelay);
+            // check size and range
+            if (int status = _mon_check_range(lcl_h, 32, 31, 0)) return status;
+        }
+        iter_h.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+        CHECK_RESULT(cnt, 16);  // should be 16 addresses
     }
-    CHECK_RESULT(cnt, 16);  // should be 16 addresses
-    // iterate and accumulate
-    iter_h = vpi_iterate(vpiMemoryWord, mem_h);
-    cnt = 0;
-    while ((lcl_h = vpi_scan(iter_h))) {
-        ++cnt;
-        vpi_get_value(lcl_h, &value);
-        CHECK_RESULT(value.value.integer, cnt);
+    {
+        // iterate and accumulate
+        TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, mem_h);
+        int cnt = 0;
+        while (TestVpiHandle lcl_h = vpi_scan(iter_h)) {
+            ++cnt;
+            vpi_get_value(lcl_h, &value);
+            CHECK_RESULT(value.value.integer, cnt);
+        }
+        iter_h.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+        CHECK_RESULT(cnt, 16);  // should be 16 addresses
     }
-    CHECK_RESULT(cnt, 16);  // should be 16 addresses
+
     // don't care for non verilator
     // (crashes on Icarus)
     if (TestSimulator::is_icarus()) {
@@ -148,40 +160,49 @@ int _mon_check_memory() {
                    TestSimulator::get_info().product);
         return 0;  // Ok
     }
-    // make sure trying to get properties that don't exist
-    // doesn't crash
-    int should_be_0 = vpi_get(vpiSize, iter_h);
-    CHECK_RESULT(should_be_0, 0);
-    should_be_0 = vpi_get(vpiIndex, iter_h);
-    CHECK_RESULT(should_be_0, 0);
-    vpiHandle should_be_NULL = vpi_handle(vpiLeftRange, iter_h);
-    CHECK_RESULT(should_be_NULL, 0);
-    should_be_NULL = vpi_handle(vpiRightRange, iter_h);
-    CHECK_RESULT(should_be_NULL, 0);
-    should_be_NULL = vpi_handle(vpiScope, iter_h);
-    CHECK_RESULT(should_be_NULL, 0);
-
-    // check vpiRange
-    iter_h = vpi_iterate(vpiRange, mem_h);
-    CHECK_RESULT_NZ(iter_h);
-    lcl_h = vpi_scan(iter_h);
-    CHECK_RESULT_NZ(lcl_h);
-    side_h = vpi_handle(vpiLeftRange, lcl_h);
-    CHECK_RESULT_NZ(side_h);
-    vpi_get_value(side_h, &value);
-    CHECK_RESULT(value.value.integer, 16);
-    side_h = vpi_handle(vpiRightRange, lcl_h);
-    CHECK_RESULT_NZ(side_h);
-    vpi_get_value(side_h, &value);
-    CHECK_RESULT(value.value.integer, 1);
-    // iterator should exhaust after 1 dimension
-    lcl_h = vpi_scan(iter_h);
-    CHECK_RESULT(lcl_h, 0);
-
-    // check writing to vpiConstant
-    vpi_put_value(side_h, &value, NULL, vpiNoDelay);
-    CHECK_RESULT_NZ(vpi_chk_error(&e));
-
+    {
+        // make sure trying to get properties that don't exist
+        // doesn't crash
+        TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, mem_h);
+        int should_be_0 = vpi_get(vpiSize, iter_h);
+        CHECK_RESULT(should_be_0, 0);
+        should_be_0 = vpi_get(vpiIndex, iter_h);
+        CHECK_RESULT(should_be_0, 0);
+        vpiHandle should_be_NULL = vpi_handle(vpiLeftRange, iter_h);
+        CHECK_RESULT(should_be_NULL, 0);
+        should_be_NULL = vpi_handle(vpiRightRange, iter_h);
+        CHECK_RESULT(should_be_NULL, 0);
+        should_be_NULL = vpi_handle(vpiScope, iter_h);
+        CHECK_RESULT(should_be_NULL, 0);
+    }
+    {
+        // check vpiRange
+        TestVpiHandle iter_h = vpi_iterate(vpiRange, mem_h);
+        CHECK_RESULT_NZ(iter_h);
+        TestVpiHandle lcl_h = vpi_scan(iter_h);
+        CHECK_RESULT_NZ(lcl_h);
+        {
+            TestVpiHandle side_h = vpi_handle(vpiLeftRange, lcl_h);
+            CHECK_RESULT_NZ(side_h);
+            vpi_get_value(side_h, &value);
+            CHECK_RESULT(value.value.integer, 16);
+        }
+        {
+            TestVpiHandle side_h = vpi_handle(vpiRightRange, lcl_h);
+            CHECK_RESULT_NZ(side_h);
+            vpi_get_value(side_h, &value);
+            CHECK_RESULT(value.value.integer, 1);
+            // check writing to vpiConstant
+            vpi_put_value(side_h, &value, NULL, vpiNoDelay);
+            CHECK_RESULT_NZ(vpi_chk_error(&e));
+        }
+        {
+            // iterator should exhaust after 1 dimension
+            TestVpiHandle zero_h = vpi_scan(iter_h);
+            iter_h.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+            CHECK_RESULT(zero_h, 0);
+        }
+    }
     return 0;  // Ok
 }
 
