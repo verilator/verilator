@@ -59,9 +59,7 @@ class VerilatedVpio VL_NOT_FINAL {
     // CONSTANTS
     /// Magic value stored in front of object to detect double free etc
     /// Must be odd, as aligned pointer can never be odd
-#ifdef VL_DEBUG
     static constexpr vluint32_t activeMagic() { return 0xfeed100f; }
-#endif
 
     // MEM MANGLEMENT
     static VL_THREAD_LOCAL vluint8_t* t_freeHead;
@@ -80,27 +78,21 @@ public:
         if (VL_LIKELY(t_freeHead)) {
             vluint8_t* newp = t_freeHead;
             t_freeHead = *(reinterpret_cast<vluint8_t**>(newp));
-#ifdef VL_DEBUG
             *(reinterpret_cast<vluint32_t*>(newp)) = activeMagic();
-#endif
             return newp + 8;
         }
         // +8: 8 bytes for next
         vluint8_t* newp = reinterpret_cast<vluint8_t*>(::operator new(chunk + 8));
-#ifdef VL_DEBUG
         *(reinterpret_cast<vluint32_t*>(newp)) = activeMagic();
-#endif
         return newp + 8;
     }
     static void operator delete(void* obj, size_t /*size*/)VL_MT_SAFE {
         vluint8_t* oldp = (static_cast<vluint8_t*>(obj)) - 8;
-#ifdef VL_DEBUG
         if (VL_UNLIKELY(*(reinterpret_cast<vluint32_t*>(oldp)) != activeMagic())) {
             VL_FATAL_MT(__FILE__, __LINE__, "",
                         "vpi_release_handle() called on same object twice, or on non-Verilator "
                         "VPI object");
         }
-#endif
         *(reinterpret_cast<void**>(oldp)) = t_freeHead;
         t_freeHead = oldp;
     }
