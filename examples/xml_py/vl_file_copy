@@ -10,24 +10,29 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 from shutil import copy2
-from pprint import pprint,pformat
+from pprint import pprint, pformat
 
 #######################################################################
 
+
 class VlFileCopy:
-    def __init__(self,
-                 verilator_args,  # presently all verilator options are passed-thru
-                 # ideally this script would check against options mentioned in help
-                 debug=0,
-                 output_dir='copied'):  # directory name we output file uses
+    def __init__(
+            self,
+            verilator_args,  # presently all verilator options are passed-thru
+            # ideally this script would check against options mentioned in help
+        debug=0,
+            output_dir='copied'):  # directory name we output file uses
         self.debug = debug
 
         xml_temp = tempfile.NamedTemporaryFile()
 
-        args = ['--xml-output', xml_temp.name,
-                '--bbox-sys',  # Parse some stuff can't translate
-                '--bbox-unsup',
-                '--prefix vlxml']  # So we know name of .xml output
+        args = [
+            '--xml-output',
+            xml_temp.name,
+            '--bbox-sys',  # Parse some stuff can't translate
+            '--bbox-unsup',
+            '--prefix vlxml'
+        ]  # So we know name of .xml output
         args += verilator_args
         self.run_verilator(args)
         self.tree = ET.parse(xml_temp.name)
@@ -55,16 +60,18 @@ class VlFileCopy:
             print("\t%s " % command)
         status = subprocess.call(command, shell=True)
         if status != 0:
-            raise Exception("Command failed running Verilator with '"+command+"', stopped")
+            raise Exception("Command failed running Verilator with '" +
+                            command + "', stopped")
+
 
 #######################################################################
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         allow_abbrev=False,
         formatter_class=argparse.RawTextHelpFormatter,
         description=
-"""Example of using Verilator XML output to copy a list of files to an
+        """Example of using Verilator XML output to copy a list of files to an
 output directory (-odir, defaults to 'copied'), e.g. to easily create a
 tarball of the design to pass to others.
 
@@ -72,8 +79,7 @@ Example usage:
      vl_file_copy -f input.vc top.v -odir mycopy
      # This will make at least mycopy/top.v
 """,
-        epilog=
-"""All other arguments are pass-thru to Verilator: e.g.:
+        epilog="""All other arguments are pass-thru to Verilator: e.g.:
 
   +define+<var>=<value>      Set preprocessor define
   -F <file>                  Parse options from a file, relatively
@@ -87,26 +93,30 @@ Example usage:
 This file ONLY is placed under the Creative Commons Public Domain, for
 any use, without warranty, 2019 by Wilson Snyder.
 SPDX-License-Identifier: CC0-1.0
-"""
-    )
-    parser.add_argument('-debug', '--debug',
-                        action='store_const', const=9,
+""")
+    parser.add_argument('-debug',
+                        '--debug',
+                        action='store_const',
+                        const=9,
                         help='enable debug')
-    parser.add_argument('-odir', '--odir',
-                        action='store', metavar='directory', required=True,
+    parser.add_argument('-odir',
+                        '--odir',
+                        action='store',
+                        metavar='directory',
+                        required=True,
                         help='target output directory')
     (args, rem) = parser.parse_known_args()
 
-    print("NOTE: vl_file_copy is only an example starting point for writing your own tool.")
+    print(
+        "NOTE: vl_file_copy is only an example starting point for writing your own tool."
+    )
     # That is:
     # 1. We will accept basic patches
     # 2. We are not expecting to make this globally useful. (e.g. we don't cleanup obj_dir)
     # 3. "make install" will not install this.
     # 4. This has not had production-worthy validation.
 
-    fc = VlFileCopy(output_dir = args.odir,
-                    debug = args.debug,
-                    verilator_args = rem)
+    fc = VlFileCopy(output_dir=args.odir, debug=args.debug, verilator_args=rem)
 
 ######################################################################
 ### Local Variables:

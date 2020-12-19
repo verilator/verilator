@@ -82,6 +82,8 @@ config_rev.h:	${srcdir}/config_rev.pl $(GIT_CHANGE_DEP)
 	$(PERL) ${srcdir}/config_rev.pl ${srcdir} >$@
 
 # Human convenience
+format:
+	$(MAKE) -C .. $@
 clang-format:
 	$(MAKE) -C .. $@
 

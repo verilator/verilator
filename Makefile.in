@@ -461,6 +461,8 @@ analyzer-include:
 	-rm -rf examples/*/obj*
 	scan-build $(MAKE) -k examples
 
+format: clang-format yapf
+
 CLANGFORMAT = clang-format
 CLANGFORMAT_FLAGS = -i
 CLANGFORMAT_FILES = $(CPPCHECK_CPP) $(CPPCHECK_H) $(CPPCHECK_YL) test_regress/t/*.c* test_regress/t/*.h
@@ -469,6 +471,17 @@ clang-format:
 	@$(CLANGFORMAT) --version | egrep 10.0 > /dev/null \
 		|| echo "*** You are not using clang-format 10.0, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
+
+YAPF = yapf
+YAPF_FLAGS = -i
+YAPF_FILES = \
+	nodist/fuzzer/actual_fail \
+	nodist/fuzzer/generate_dictionary \
+	examples/xml_py/vl_file_copy \
+	examples/xml_py/vl_hier_graph \
+
+yapf:
+	$(YAPF) $(YAPF_FLAGS) $(YAPF_FILES)
 
 ftp: info
 
