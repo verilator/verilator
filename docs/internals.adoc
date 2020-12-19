@@ -409,8 +409,9 @@ style indentation; the `c-set-style` undoes that.)
 
 * Comment every member variable.
 
-Indentation is automatically maintained with "make clang-format" (using
-clang-format version 10.0.0).  For those manually formatting:
+Indentation is automatically maintained with "make format" using
+clang-format version 10.0.0, and yapf for python, and is automatically
+corrected in the CI actions.  For those manually formatting C++ code:
 
 * Use 4 spaces per level, and no tabs.
 

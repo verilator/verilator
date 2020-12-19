@@ -472,7 +472,7 @@ clang-format:
 		|| echo "*** You are not using clang-format 10.0, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
-YAPF = yapf
+YAPF = yapf3
 YAPF_FLAGS = -i
 YAPF_FILES = \
 	nodist/fuzzer/actual_fail \
