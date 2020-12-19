@@ -1816,11 +1816,10 @@ free(xc->curval_mem);
 free(xc->valpos_mem);
 free(xc->vchg_mem);
 tmpfile_close(&xc->tchn_handle, &xc->tchn_handle_nam);
-fstWriterContext* const parent = xc->xc_parent;
 free(xc);
 
-parent->in_pthread = 0;
-pthread_mutex_unlock(&(parent->mutex));
+xc->xc_parent->in_pthread = 0;
+pthread_mutex_unlock(&(xc->xc_parent->mutex));
 
 return(NULL);
 }
