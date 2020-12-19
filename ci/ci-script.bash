@@ -82,10 +82,10 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   # Run the specified test
   case $TESTS in
     dist-vlt-0)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=0/2
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt --sanitize" DRIVER_HASHSET=--hashset=0/2
       ;;
     dist-vlt-1)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=1/2
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt --sanitize" DRIVER_HASHSET=--hashset=1/2
       ;;
     vltmt-0)
       "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
