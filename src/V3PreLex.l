@@ -55,7 +55,6 @@ void yyourtext(const char* textp, size_t size) {
 // Use this to break between tokens whereever not return'ing a token (e.g. skipping inside lexer)
 #define FL_BRK (LEXP->curFilelinep()->startToken())
 
-// Prevent conflicts from perl version
 static void linenoInc() { LEXP->linenoInc(); }
 static bool pedantic() { return LEXP->m_pedantic; }
 static void yyerror(char* msg) { LEXP->curFilelinep()->v3error(msg); }
