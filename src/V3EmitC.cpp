@@ -576,9 +576,9 @@ public:
         emitIQW(nodep->outp());
         puts("(");
         puts(cvtToStr(nodep->outp()->widthMin()));
-        puts(",");
+        puts(", ");
         emitCvtPackStr(nodep->searchp());
-        puts(",");
+        puts(", ");
         putbs("");
         iterateAndNextNull(nodep->outp());
         puts(")");
