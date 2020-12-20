@@ -34,7 +34,7 @@ class VerilatedVcd;
 // VerilatedFile
 /// File handling routines, which can be overrode for e.g. socket I/O
 
-class VerilatedVcdFile final {
+class VerilatedVcdFile VL_NOT_FINAL {
 private:
     int m_fd = 0;  ///< File descriptor we're writing to
 public:
