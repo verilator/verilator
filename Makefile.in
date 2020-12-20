@@ -477,6 +477,8 @@ YAPF_FLAGS = -i
 YAPF_FILES = \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \
+	nodist/code_coverage \
+	nodist/code_coverage.dat \
 	nodist/dot_importer \
 	nodist/fuzzer/actual_fail \
 	nodist/fuzzer/generate_dictionary \
