@@ -1149,14 +1149,19 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     case 'c': m_oConst = flag; break;
                     case 'd': m_oDedupe = flag; break;
                     case 'e': m_oCase = flag; break;
+                    //    f
                     case 'g': m_oGate = flag; break;
+                    //    h
                     case 'i': m_oInline = flag; break;
+                    //    j
                     case 'k': m_oSubstConst = flag; break;
                     case 'l': m_oLife = flag; break;
                     case 'm': m_oAssemble = flag; break;
+                    //    n o
                     case 'p':
                         m_public = !flag;
                         break;  // With -Op so flag=0, we want public on so few optimizations done
+                    //    q
                     case 'r': m_oReorder = flag; break;
                     case 's': m_oSplit = flag; break;
                     case 't': m_oLifePost = flag; break;

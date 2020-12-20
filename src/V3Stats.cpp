@@ -134,7 +134,7 @@ private:
             // Need to do even if !m_counting because maybe determining upstream if/else
             double ifInstrs = 0.0;
             double elseInstrs = 0.0;
-            if (nodep->branchPred() != VBranchPred::BP_UNLIKELY) {  // Check if
+            if (!nodep->branchPred().unlikely()) {  // Check if
                 VL_RESTORER(m_instrs);
                 VL_RESTORER(m_counting);
                 {
@@ -144,7 +144,7 @@ private:
                     ifInstrs = m_instrs;
                 }
             }
-            if (nodep->branchPred() != VBranchPred::BP_LIKELY) {  // Check else
+            if (!nodep->branchPred().likely()) {  // Check else
                 VL_RESTORER(m_instrs);
                 VL_RESTORER(m_counting);
                 {
