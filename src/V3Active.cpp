@@ -155,7 +155,7 @@ public:
         return outVertexp;
     }
     // Connect an output assignment to its parent control block
-    void add_assignment(AstVarRef* nodep) {
+    void addAssignment(AstVarRef* nodep) {
         LatchDetectGraphVertex* outVertexp;
         if (!nodep->varp()->user1p()) {  // Not seen this output before
             outVertexp = addOutputVertex(nodep);
@@ -303,9 +303,8 @@ private:
     LatchDetectGraph m_graph;  // Graph used to detect latches in combo always
     // VISITORS
     virtual void visit(AstVarRef* nodep) {
-        // if (nodep->lvalue()) {
-        if (nodep->access().isWriteOrRW()) {  // Is this a correct replacement of the above?
-            m_graph.add_assignment(nodep);
+        if (nodep->varp()->isSignal() && nodep->access().isWriteOrRW()) {
+            m_graph.addAssignment(nodep);
         }
     }
     virtual void visit(AstNodeIf* nodep) {
