@@ -51,6 +51,7 @@
 // verilator lint_off MULTIDRIVEN
 // verilator lint_off UNSIGNED
 // verilator lint_off WIDTH
+// verilator lint_off LATCH
 
 // BEGINNING OF MODULE
 `timescale 1 ps / 1 ps

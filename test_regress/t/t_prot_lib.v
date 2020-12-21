@@ -155,7 +155,9 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
          if (GATED_CLK != 0) begin: yes_gated_clock
             logic clk_en_latch /*verilator clock_enable*/;
             /* verilator lint_off COMBDLY */
+            /* verilator lint_off LATCH */
             always_comb if (clk == '0) clk_en_latch <= clk_en;
+            /* verilator lint_on LATCH */
             /* verilator lint_on COMBDLY */
             assign possibly_gated_clk = clk & clk_en_latch;
          end else begin: no_gated_clock
