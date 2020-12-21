@@ -45,7 +45,7 @@
 
 // Extend V3GraphVertex class for use in latch detection graph
 
-class LatchDetectGraphVertex : public V3GraphVertex {
+class LatchDetectGraphVertex final : public V3GraphVertex {
 public:
     enum VertexType  { VT_BLOCK, VT_BRANCH, VT_OUTPUT };
 private:
@@ -70,7 +70,7 @@ public:
 //######################################################################
 // Extend V3Graph class for use as a latch detection graph
 
-class LatchDetectGraph : public V3Graph {
+class LatchDetectGraph final : public V3Graph {
 protected:
     typedef std::vector<AstVarRef*> VarRefVec;
 
