@@ -1949,6 +1949,7 @@ private:
     bool m_noSubst : 1;  // Do not substitute out references
     bool m_overridenParam : 1;  // Overridden parameter by #(...) or defparam
     bool m_trace : 1;  // Trace this variable
+    bool m_fi:1; //fi
     VLifetime m_lifetime;  // Lifetime
     VVarAttrClocker m_attrClocker;
     MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
@@ -1988,6 +1989,7 @@ private:
         m_noSubst = false;
         m_overridenParam = false;
         m_trace = false;
+        m_fi = false; //fi
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
 
@@ -2113,6 +2115,7 @@ public:
     void usedClock(bool flag) { m_usedClock = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
+    void fi(bool flag) { m_fi = flag; } //fi
     void sigPublic(bool flag) { m_sigPublic = flag; }
     void sigModPublic(bool flag) { m_sigModPublic = flag; }
     void sigUserRdPublic(bool flag) {
@@ -2184,6 +2187,7 @@ public:
     bool isUsedClock() const { return m_usedClock; }
     bool isUsedParam() const { return m_usedParam; }
     bool isUsedLoopIdx() const { return m_usedLoopIdx; }
+    bool isFi() const { return m_fi; }//fi
     bool isSc() const { return m_sc; }
     bool isScQuad() const;
     bool isScBv() const;

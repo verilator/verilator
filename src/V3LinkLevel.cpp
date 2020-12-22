@@ -226,6 +226,9 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                                      "Unsupported: ref/const ref as primary input/output: "
                                          << varp->prettyNameQ());
                     }
+                    if (v3Global.opt.fault_injection()) { //fi
+		    varp->fi(true);
+		    }
                     if (varp->isIO() && v3Global.opt.systemC()) {
                         varp->sc(true);
                         // User can see trace one level down from the wrapper
