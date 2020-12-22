@@ -661,9 +661,9 @@ inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
     vluint64_t rnd = vl_rand64();
     if (VL_LIKELY(hi > lo)) {
         // Modulus isn't very fast but it's common that hi-low is power-of-two
-        return (rnd % (hi - lo)) + lo;
+        return (rnd % (hi - lo + 1)) + lo;
     } else {
-        return (rnd % (lo - hi)) + hi;
+        return (rnd % (lo - hi + 1)) + hi;
     }
 }
 
