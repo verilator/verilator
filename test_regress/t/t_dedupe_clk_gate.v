@@ -45,7 +45,7 @@ module clock_gate_latch (gated_clk, clk, clken);
   assign gated_clk = clk & clken_latched ;
 
   wire clkb = ~clk;
-  always @(clkb or clken)
+  always_latch @(clkb or clken)
     if(clkb) clken_latched = clken;
 
 endmodule
