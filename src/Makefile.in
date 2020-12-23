@@ -18,7 +18,7 @@
 #### Start of system configuration section. ####
 
 srcdir = @srcdir@
-PERL = @PERL@
+PYTHON3 = @PYTHON3@
 EXEEXT = @EXEEXT@
 # VPATH only does sources; fix install_test's not creating ../bin
 vpath %.h @srcdir@
@@ -78,8 +78,8 @@ endif
 prefiles::
 prefiles:: config_rev.h
 # This output goes into srcdir if locally configured, as we need to distribute it as part of the kit.
-config_rev.h:	${srcdir}/config_rev.pl $(GIT_CHANGE_DEP)
-	$(PERL) ${srcdir}/config_rev.pl ${srcdir} >$@
+config_rev.h:	${srcdir}/config_rev $(GIT_CHANGE_DEP)
+	$(PYTHON3) ${srcdir}/config_rev ${srcdir} >$@
 
 # Human convenience
 format:
@@ -90,7 +90,7 @@ clang-format:
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
 	-rm -rf obj_* *.log *.dmp *.vpd core
-	-rm -f *.o *.d perlxsi.c *_gen_*
+	-rm -f *.o *.d *_gen_*
 	-rm -f *__gen* obj_*
 	-rm -f .objcache*
 

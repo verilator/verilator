@@ -1435,16 +1435,16 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 shift;
                 parseOptsFile(fl, parseFileArg(optdir, argv[i]), false);
             } else if (!strcmp(sw, "-gdb")) {
-                // Used only in perl shell
+                // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-waiver-output") && (i + 1) < argc) {
                 shift;
                 m_waiverOutput = argv[i];
             } else if (!strcmp(sw, "-rr")) {
-                // Used only in perl shell
+                // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-gdbbt")) {
-                // Used only in perl shell
+                // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-quiet-exit")) {
-                // Used only in perl shell
+                // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-mod-prefix") && (i + 1) < argc) {
                 shift;
                 m_modPrefix = argv[i];

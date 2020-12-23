@@ -429,7 +429,7 @@ CPPCHECK_H = $(wildcard \
 CPPCHECK_YL = $(wildcard \
 	$(srcdir)/src/*.y \
 	$(srcdir)/src/*.l )
-CPPCHECK = src/cppcheck_filtered
+CPPCHECK = src/cppcheck_filtered cppcheck
 CPPCHECK_FLAGS = --enable=all --inline-suppr \
 	--suppress=unusedScopedObject --suppress=cstyleCast --suppress=useInitializationList \
 	--suppress=nullPointerRedundantCheck
@@ -477,6 +477,9 @@ YAPF_FLAGS = -i
 YAPF_FILES = \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \
+	src/config_rev \
+	src/cppcheck_filtered \
+	src/flexfix \
 	nodist/code_coverage \
 	nodist/code_coverage.dat \
 	nodist/dot_importer \

@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python3
 ######################################################################
 #
 # Copyright 2002-2020 by Wilson Snyder. This program is free software; you
@@ -10,32 +10,42 @@
 ######################################################################
 # DESCRIPTION: Edits flex output to get around various broken flex issues.
 
-use warnings;
+import argparse
+import re
+import sys
 
-my $Opt_Prefix = $ARGV[0] or die "%Error: No prefix specified,";
-
-foreach my $line (<STDIN>) {
+for line in sys.stdin:
     # Fix flex 2.6.1 warning
-    $line =~ s/for \( i = 0; i < _yybytes_len; \+\+i \)/for ( i = 0; (yy_size_t)(i) < (yy_size_t)(_yybytes_len); ++i )/g;
+    line = re.sub(
+        r'for \( i = 0; i < _yybytes_len; \+\+i \)',
+        r'for ( i = 0; (yy_size_t)(i) < (yy_size_t)(_yybytes_len); ++i )',
+        line)
     # Fix flex 2.6.0 warning
-    $line =~ s/\(\(int\) \(\(yy_n_chars\) \+ number_to_move\) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size\)/((int) ((yy_n_chars) + number_to_move) > (int) YY_CURRENT_BUFFER_LVALUE->yy_buf_size)/g;
-    $line =~ s/ number_to_move == YY_MORE_ADJ / (int)number_to_move == (int)YY_MORE_ADJ /;
+    line = re.sub(
+        r'\(\(int\) \(\(yy_n_chars\) \+ number_to_move\) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size\)',
+        r'((int) ((yy_n_chars) + number_to_move) > (int) YY_CURRENT_BUFFER_LVALUE->yy_buf_size)',
+        line)
+    line = re.sub(r' number_to_move == YY_MORE_ADJ ',
+                  r' (int)number_to_move == (int)YY_MORE_ADJ ', line)
     # Fix flex 2.5.4 namespace omission
-    $line =~ s/^class istream;/\#include <iostream>\nusing namespace std;\n/;
+    line = re.sub(r'^class istream;',
+                  '\#include <iostream>\nusing namespace std;\n', line)
     # Fix flex 2.5.31 redefinition
-    $line =~ s!(\#define\s+yyFlexLexer\s+yyFlexLexer)!//flexfix: $1!g;
+    line = re.sub(r'(\#define\s+yyFlexLexer\s+yyFlexLexer)', r'//flexfix: \1',
+                  line)
     # Fix flex 2.5.1 yytext_ptr undef
-    $line =~ s!(\#undef\s+yytext_ptr)!//flexfix: $1!g;
+    line = re.sub(r'(\#undef\s+yytext_ptr)', r'//flexfix: \1', line)
     # Fix flex 2.5.4 and GCC 4.1.0 warn_unused_result
-    $line =~ s!\(void\) *fwrite\((.*)\)!if (fwrite($1)) {}!g;
+    line = re.sub(r'\(void\) *fwrite\((.*)\)', r'if (fwrite(\1)) {}', line)
     # Fix flex 2.5.33 and GCC 4.1.2 "warning: comparison between signed and unsigned integer expressions" in YY_INPUT
-    $line =~ s!for \( n = 0; n < max_size && !for ( n = 0; ((size_t)n < (size_t)max_size) && !g;
+    line = re.sub(r'for \( n = 0; n < max_size && ',
+                  r'for ( n = 0; ((size_t)n < (size_t)max_size) && ', line)
     # Fix flex 2.5.4 and GCC 4.0.2 under FLEX_DEBUG
-    $line =~ s!--accepting rule at line %d !--accepting rule at line %ld !g;
+    line = re.sub(r'--accepting rule at line %d ',
+                  r'--accepting rule at line %ld ', line)
     # Fix compiler warning filenames
-    $line =~ s!(#line \d+ ".*)_pretmp!$1!;
+    line = re.sub(r'(#line \d+ ".*)_pretmp', r'\1', line)
     # Fix 'register' storage class specifier is deprecated and incompatible with C++17
-    $line =~ s!register !!g;
+    line = re.sub(r'register ', '', line)
 
-    print "$line";
-}
+    print(line, end='')

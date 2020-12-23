@@ -139,6 +139,11 @@ if test "x$PERL" = "x" ; then
    AC_MSG_ERROR([Cannot find "perl" in your PATH, please install it])
 fi
 
+AC_PATH_PROG(PYTHON3,python3)
+if test "x$PYTHON3" = "x" ; then
+   AC_MSG_ERROR([Cannot find "python3" in your PATH, please install it])
+fi
+
 AC_PATH_PROG(LEX,flex)
 if test "x$LEX" = "x" ; then
    AC_MSG_ERROR([Cannot find "flex" in your PATH, please install it])
