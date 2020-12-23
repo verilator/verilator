@@ -79,13 +79,16 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable
   fi
 
+  # Run sanitize on Ubuntu 20.04 only
+  [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && sanitize='--sanitize' || sanitize=''
+
   # Run the specified test
   case $TESTS in
     dist-vlt-0)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt --sanitize" DRIVER_HASHSET=--hashset=0/2
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=0/2
       ;;
     dist-vlt-1)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt --sanitize" DRIVER_HASHSET=--hashset=1/2
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=1/2
       ;;
     vltmt-0)
       "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
