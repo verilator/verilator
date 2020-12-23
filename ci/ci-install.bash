@@ -17,6 +17,8 @@
 set -e
 set -x
 
+cd $(dirname "$0")/..
+
 fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }
@@ -66,6 +68,8 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
   else
     fatal "Unknown os: '$CI_OS_NAME'"
   fi
+
+  mkdir -p "$CCACHE_DIR" && ./ci/ci-ccache-maint.bash
 elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ##############################################################################
   # Dependencies of jobs in the 'test' stage, i.e.: packages required to
@@ -96,6 +100,9 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   fi
   yes yes | sudo cpan -M $CI_CPAN_REPO -fi Unix::Processors Parallel::Forker
   install-vcddiff
+
+  autoconf
+  ./configure --enable-longtests --enable-ccwarn
 else
   ##############################################################################
   # Unknown build stage
