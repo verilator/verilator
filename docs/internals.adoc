@@ -697,7 +697,7 @@ Verilator problem.
 When enabling the long tests, some additional PERL modules are needed,
 which you can install using cpan.
 
-   cpan install Unix::Processors
+   cpan install Parallel::Forker
 
 There are some traps to avoid when running regression tests
 

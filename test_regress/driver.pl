@@ -249,12 +249,17 @@ sub parameter {
     }
 }
 
+our $_Max_Procs;
 sub max_procs {
-    my $ok = eval "
-        use Unix::Processors;
-        return Unix::Processors->new->max_online;
-    ";
-    return $ok;
+    if (!defined $_Max_Procs) {
+        $_Max_Procs = `python3 -c 'import multiprocessing\nprint(multiprocessing.cpu_count())'`;
+        chomp $_Max_Procs;
+        if ($_Max_Procs < 2) {
+            $_Max_Procs = 2;
+            warn "driver.pl: Python didn't find at least two CPUs\n";
+        }
+    }
+    return $_Max_Procs;
 }
 
 sub calc_threads {

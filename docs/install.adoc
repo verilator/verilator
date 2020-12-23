@@ -100,7 +100,6 @@ Those developing Verilator itself may also want these (see internals.adoc):
 
    sudo apt-get install gdb asciidoctor graphviz cmake clang clang-format gprof lcov
    cpan install Pod::Perldoc
-   cpan install Unix::Processors
    cpan install Parallel::Forker
 
 ==== Install SystemC

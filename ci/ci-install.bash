@@ -55,7 +55,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
       sudo apt-get install libsystemc libsystemc-dev
     fi
     if [ "$COVERAGE" = 1 ]; then
-      yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
+      yes yes | sudo cpan -fi Parallel::Forker
     fi
     if [ "$M32" = 1 ]; then
       sudo apt-get install gcc-multilib g++-multilib
@@ -100,7 +100,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   if [ "$CI_RUNS_ON" != "ubuntu-14.04" ]; then
     CI_CPAN_REPO=https://cpan.org
   fi
-  yes yes | sudo cpan -M $CI_CPAN_REPO -fi Unix::Processors Parallel::Forker
+  yes yes | sudo cpan -M $CI_CPAN_REPO -fi Parallel::Forker
   install-vcddiff
 
   autoconf
