@@ -153,6 +153,7 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	.*attributes */.*attributes  */*/.*attributes \
 	src/.*ignore src/*.in src/*.cpp src/*.[chly] \
 	src/astgen src/bisonpre src/*fix src/cppcheck_filtered \
+	src/config_rev \
 	src/vlcovgen src/mkinstalldirs \
 	src/.gdbinit \
 	src/*.pl src/*.pod \
