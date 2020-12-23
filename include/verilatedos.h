@@ -118,7 +118,7 @@
 # define VL_PREFETCH_RW(p)  ///< Prefetch data with read/write intent
 #endif
 
-#ifdef VL_THREADED
+#if defined(VL_THREADED) && !defined(VL_CPPCHECK)
 # if defined(_MSC_VER) && _MSC_VER >= 1900
 #  define VL_THREAD_LOCAL thread_local
 # elif defined(__GNUC__)
@@ -450,7 +450,7 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #  define NOMINMAX
 #  include "Windows.h"
 #  define VL_CPU_RELAX() YieldProcessor()
-# elif defined(__i386__) || defined(__x86_64__)
+# elif defined(__i386__) || defined(__x86_64__) || defined(VL_CPPCHECK)
 /// For more efficient busy waiting on SMT CPUs, let the processor know
 /// we're just waiting so it can let another thread run
 #  define VL_CPU_RELAX() asm volatile("rep; nop" ::: "memory")
