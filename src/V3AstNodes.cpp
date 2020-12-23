@@ -688,7 +688,7 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
             info.m_type = "QData" + bitvec;
         } else if (dtypep->isWide()) {
             if (compound) {
-                info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + "> ";
+                info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + ">";
             } else {
                 info.m_type += "WData" + bitvec;  // []'s added later
                 info.m_dims = "[" + cvtToStr(dtypep->widthWords()) + "]";
