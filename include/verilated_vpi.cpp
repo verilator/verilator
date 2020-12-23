@@ -272,7 +272,7 @@ public:
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();
     }
-    VerilatedVpioVar(const VerilatedVpioVar* varp) {
+    explicit VerilatedVpioVar(const VerilatedVpioVar* varp) {
         if (varp) {
             m_varp = varp->m_varp;
             m_scopep = varp->m_scopep;

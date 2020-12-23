@@ -2367,7 +2367,7 @@ static void removeCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
     cbs.remove(pair);
 }
-static void runCallbacks(VoidPCbList& cbs) VL_MT_SAFE {
+static void runCallbacks(const VoidPCbList& cbs) VL_MT_SAFE {
     for (const auto& i : cbs) i.first(i.second);
 }
 

@@ -61,7 +61,7 @@ private:
     std::function<void()> m_cb;  ///< Lambda to execute when message received
 public:
     // CONSTRUCTORS
-    VerilatedMsg(const std::function<void()>& cb)
+    explicit VerilatedMsg(const std::function<void()>& cb)
         : m_mtaskId{Verilated::mtaskId()}
         , m_cb{cb} {}
     ~VerilatedMsg() = default;

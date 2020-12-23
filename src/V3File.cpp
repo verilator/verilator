@@ -584,12 +584,12 @@ protected:
         }
         return true;
     }
-    static size_t listSize(StrList& sl) {
+    static size_t listSize(const StrList& sl) {
         size_t out = 0;
         for (const string& i : sl) out += i.length();
         return out;
     }
-    static string listString(StrList& sl) {
+    static string listString(const StrList& sl) {
         string out;
         for (const string& i : sl) out += i;
         return out;

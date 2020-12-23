@@ -52,7 +52,7 @@ template <typename T> class VRestorer {
     const T m_saved;  // Value saved, for later restore
 
 public:
-    VRestorer(T& permr)
+    explicit VRestorer(T& permr)
         : m_ref(permr)
         , m_saved(permr) {}
     ~VRestorer() { m_ref = m_saved; }

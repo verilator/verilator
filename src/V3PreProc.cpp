@@ -1317,7 +1317,6 @@ int V3PreProcImp::getStateToken() {
                 // Convert any newlines to spaces, so we don't get a
                 // multiline "..." without \ escapes.
                 // The spec is silent about this either way; simulators vary
-                string::size_type pos;
                 std::replace(out.begin(), out.end(), '\n', ' ');
                 unputString(string("\"") + out + "\"");
                 statePop();

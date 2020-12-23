@@ -81,9 +81,9 @@ class VerilatedVarProps VL_NOT_FINAL {
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
     void initUnpacked(const int* ulims) {
         for (int i = 0; i < m_udims; ++i) {
-            const int left = ulims ? ulims[2 * i + 0] : 0;
-            const int right = ulims ? ulims[2 * i + 1] : 0;
-            m_unpacked.emplace_back(left, right);
+            const int uleft = ulims ? ulims[2 * i + 0] : 0;
+            const int uright = ulims ? ulims[2 * i + 1] : 0;
+            m_unpacked.emplace_back(uleft, uright);
         }
     }
     // CONSTRUCTORS

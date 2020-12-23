@@ -311,9 +311,6 @@ class EmitMkHierVerilation final {
         }
         of.puts("\n");
     }
-    void emitOpts(V3OutMkFile& of, const V3StringList& opts) const {
-        for (const string& i : opts) { of.puts("\t\t" + i + " \\\n"); }
-    }
     void emitLaunchVerilator(V3OutMkFile& of, const string& argsFile) const {
         of.puts("\t@$(MAKE) -C $(VM_HIER_RUN_DIR) -f " + m_makefile
                 + " hier_launch_verilator \\\n");
@@ -420,5 +417,5 @@ void V3EmitMk::emitmk() {
 
 void V3EmitMk::emitHierVerilation(const V3HierBlockPlan* planp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    EmitMkHierVerilation emitter(planp);
+    EmitMkHierVerilation{planp};
 }

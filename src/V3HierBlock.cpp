@@ -344,7 +344,7 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
     }
 
     std::unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan());
-    { HierBlockUsageCollectVisitor visitor(planp.get(), nodep); }
+    { HierBlockUsageCollectVisitor{planp.get(), nodep}; }
 
     V3Stats::addStat("HierBlock, Hierarchical blocks", planp->m_blocks.size());
 

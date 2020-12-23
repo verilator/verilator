@@ -1283,9 +1283,9 @@ class LinkDotFindVisitor final : public AstNVisitor {
             VL_DO_DANGLING(argp->unlinkFrBackWithNext()->deleteTree(), argp);
         }
         // Type depends on the method used, let V3Width figure it out later
-        const auto indexArgRefp = new AstLambdaArgRef(argFl, name + "__DOT__index", true);
-        const auto valueArgRefp = new AstLambdaArgRef(argFl, name, false);
         if (nodep->exprp()) {  // Else empty expression and pretend no "with"
+            const auto indexArgRefp = new AstLambdaArgRef(argFl, name + "__DOT__index", true);
+            const auto valueArgRefp = new AstLambdaArgRef(argFl, name, false);
             const auto newp = new AstWith(nodep->fileline(), indexArgRefp, valueArgRefp,
                                           nodep->exprp()->unlinkFrBackWithNext());
             funcrefp->addPinsp(newp);
@@ -2087,9 +2087,9 @@ private:
                     } else {
                         auto cextp = VN_CAST(classp->extendsp(), ClassExtends);
                         UASSERT_OBJ(cextp, nodep, "Bad super extends link");
-                        auto classp = cextp->classp();
-                        UASSERT_OBJ(classp, nodep, "Bad superclass");
-                        m_ds.m_dotSymp = m_statep->getNodeSym(classp);
+                        auto sclassp = cextp->classp();
+                        UASSERT_OBJ(sclassp, nodep, "Bad superclass");
+                        m_ds.m_dotSymp = m_statep->getNodeSym(sclassp);
                         UINFO(8, "     super. " << m_ds.ascii() << endl);
                     }
                 }

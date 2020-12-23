@@ -224,6 +224,7 @@ private:
                 AstNode* node1p = it->second;
                 AstCFunc* cfunc1p = VN_CAST(node1p, CFunc);
                 if (!cfunc1p) continue;
+                // cppcheck-suppress compareBoolExpressionWithInt
                 if (cfunc1p->slow() != slow) continue;
                 V3Hash hashval = it->first;
                 UASSERT_OBJ(!hashval.isIllegal(), node1p, "Illegal (unhashed) nodes");

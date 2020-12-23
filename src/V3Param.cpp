@@ -722,7 +722,7 @@ public:
     }
 
     // CONSTRUCTORS
-    ParamProcessor(AstNetlist* nodep)
+    explicit ParamProcessor(AstNetlist* nodep)
         : m_hierBlocks{v3Global.opt.hierBlocks(), nodep} {
         for (AstNodeModule* modp = nodep->modulesp(); modp;
              modp = VN_CAST(modp->nextp(), NodeModule)) {

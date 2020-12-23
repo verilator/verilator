@@ -1976,6 +1976,7 @@ private:
         m_attrSFormat = false;
         m_attrSplitVar = false;
         m_fileDescr = false;
+        m_isRand = false;
         m_isConst = false;
         m_isStatic = false;
         m_isPulldown = false;
@@ -4588,7 +4589,7 @@ public:
 class AstDisableFork final : public AstNodeStmt {
     // A "disable fork" statement
 public:
-    AstDisableFork(FileLine* fl)
+    explicit AstDisableFork(FileLine* fl)
         : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(DisableFork)
 };
@@ -4596,7 +4597,7 @@ public:
 class AstWaitFork final : public AstNodeStmt {
     // A "wait fork" statement
 public:
-    AstWaitFork(FileLine* fl)
+    explicit AstWaitFork(FileLine* fl)
         : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(WaitFork)
 };
@@ -4649,7 +4650,7 @@ class AstJumpBlock final : public AstNodeStmt {
     // Parents:  {statement list}
     // Children: {statement list, with JumpGo and JumpLabel below}
 private:
-    AstJumpLabel* m_labelp;  // [After V3Jump] Pointer to declaration
+    AstJumpLabel* m_labelp = nullptr;  // [After V3Jump] Pointer to declaration
     int m_labelNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
     // After construction must call ->labelp to associate with appropriate label
@@ -4835,7 +4836,7 @@ class AstConsDynArray final : public AstNodeMath {
     // Parents: math
     // Children: expression (elements or other queues)
 public:
-    AstConsDynArray(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
+    explicit AstConsDynArray(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
         : ASTGEN_SUPER(fl) {
         setNOp1p(lhsp);
         setNOp2p(rhsp);
@@ -4857,7 +4858,7 @@ class AstConsQueue final : public AstNodeMath {
     // Parents: math
     // Children: expression (elements or other queues)
 public:
-    AstConsQueue(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
+    explicit AstConsQueue(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
         : ASTGEN_SUPER(fl) {
         setNOp1p(lhsp);
         setNOp2p(rhsp);
@@ -5121,7 +5122,7 @@ class AstPrintTimeScale final : public AstNodeStmt {
     string m_name;  // Parent module name
     VTimescale m_timeunit;  // Parent module time unit
 public:
-    AstPrintTimeScale(FileLine* fl)
+    explicit AstPrintTimeScale(FileLine* fl)
         : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(PrintTimeScale)
     virtual void name(const string& name) override { m_name = name; }

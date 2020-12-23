@@ -516,7 +516,8 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 
     bool binary = (isFourState()
 #ifdef V3NUMBER_ASCII_BINARY
-                   || 1
+                   // cppcheck-suppress konwnConditionTrueFalse
+                   || true
 #endif
     );
     // out<<"-"<<hex<<m_value[0]<<"-";

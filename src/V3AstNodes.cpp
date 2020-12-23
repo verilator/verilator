@@ -727,11 +727,13 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
         } else if (AstBasicDType* adtypep = VN_CAST(dtypep, BasicDType)) {
             // AstBasicDType - nothing below, return null
             if (adtypep->isRanged()) {
+                // cppcheck-suppress unreadVariable  // Cppcheck bug - thinks dim isn't used
                 if ((dim++) == dimension) return adtypep;
             }
             return nullptr;
         } else if (AstNodeUOrStructDType* adtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
             if (adtypep->packed()) {
+                // cppcheck-suppress unreadVariable  // Cppcheck bug - thinks dim isn't used
                 if ((dim++) == dimension) return adtypep;
             }
             return nullptr;

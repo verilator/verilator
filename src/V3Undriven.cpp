@@ -411,8 +411,8 @@ private:
         VL_RESTORER(m_alwaysCombp);
         {
             AstNode::user2ClearTree();
-            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   " << nodep << endl);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
+                UINFO(9, "   " << nodep << endl);
                 m_alwaysCombp = nodep;
             } else {
                 m_alwaysCombp = nullptr;

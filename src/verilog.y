@@ -288,10 +288,7 @@ static void UNSUPREAL(FileLine* fileline) {
 
 //======================================================================
 
-void yyerror(const char* errmsg) {
-    PARSEP->bisonLastFileline()->v3error(errmsg);
-    static const char* const colonmsg = "syntax error, unexpected";
-}
+void yyerror(const char* errmsg) { PARSEP->bisonLastFileline()->v3error(errmsg); }
 
 void yyerrorf(const char* format, ...) {
     const int maxlen = 2000;

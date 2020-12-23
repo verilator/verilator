@@ -130,7 +130,6 @@ string AstNode::encodeName(const string& namein) {
     // Then we also won't need to save the table of hased values
     VName vname{out};
     return vname.hashedName();
-    return out;
 }
 
 string AstNode::encodeNumber(vlsint64_t num) {

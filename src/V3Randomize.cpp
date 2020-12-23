@@ -54,10 +54,10 @@ private:
                 // If member is rand and of class type, mark its class
                 if (VN_IS(memberp, Var) && VN_CAST(memberp, Var)->isRand()) {
                     if (auto* classRefp = VN_CAST(memberp->dtypep(), ClassRefDType)) {
-                        auto* classp = classRefp->classp();
-                        markMembers(classp);
-                        markDerived(classp);
-                        classRefp->classp()->user1(true);
+                        auto* rclassp = classRefp->classp();
+                        markMembers(rclassp);
+                        markDerived(rclassp);
+                        rclassp->user1(true);
                     }
                 }
             }
@@ -158,10 +158,10 @@ private:
                       StructDType)) {
             AstNodeStmt* stmtsp = nullptr;
             offset += memberp ? memberp->lsb() : 0;
-            for (auto* memberp = structDtp->membersp(); memberp;
-                 memberp = VN_CAST(memberp->nextp(), MemberDType)) {
+            for (auto* smemberp = structDtp->membersp(); smemberp;
+                 smemberp = VN_CAST(smemberp->nextp(), MemberDType)) {
                 auto* randp = newRandStmtsp(fl, stmtsp ? varrefp->cloneTree(false) : varrefp,
-                                            offset, memberp);
+                                            offset, smemberp);
                 if (stmtsp) {
                     stmtsp->addNext(randp);
                 } else {
