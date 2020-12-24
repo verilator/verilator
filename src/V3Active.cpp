@@ -50,15 +50,15 @@ public:
     enum VertexType { VT_BLOCK, VT_BRANCH, VT_OUTPUT };
 
 private:
-    string      m_name; // Only used for .dot file generation
-    VertexType  m_type; // Vertex type (BLOCK/BRANCH/OUTPUT)
+    string m_name;  // Only used for .dot file generation
+    VertexType m_type;  // Vertex type (BLOCK/BRANCH/OUTPUT)
 
-    string typestr() const { //   "
+    string typestr() const {  //   "
         switch (m_type) {
-        case VT_BLOCK:  return "(||)";  // basic block node
+        case VT_BLOCK: return "(||)";  // basic block node
         case VT_BRANCH: return "(&&)";  // if/else branch mode
-        case VT_OUTPUT: return "(out)"; // var assignment
-        default:        return "??";    // unknown
+        case VT_OUTPUT: return "(out)";  // var assignment
+        default: return "??";  // unknown
         }
     }
 
