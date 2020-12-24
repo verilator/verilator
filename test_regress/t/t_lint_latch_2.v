@@ -18,4 +18,3 @@ module t (/*AUTOARG*/ i, o);
    end
 
 endmodule
-
