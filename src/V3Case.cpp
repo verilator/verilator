@@ -125,9 +125,9 @@ private:
     AstUser3InUse m_inuser3;
 
     // STATE
-    VDouble0 m_statCaseFast;     // Statistic tracking
-    VDouble0 m_statCaseSlow;     // Statistic tracking
-    AstNode* m_ContainingAlways; // Always in which case is located
+    VDouble0 m_statCaseFast;  // Statistic tracking
+    VDouble0 m_statCaseSlow;  // Statistic tracking
+    AstNode* m_ContainingAlways;  // Always in which case is located
 
     // Per-CASE
     int m_caseWidth = 0;  // Width of valueItems
@@ -488,14 +488,12 @@ private:
     //      following run-time error
     // %Error: Internal Error: t/t_lint_latch_2.v:37:7: ../V3Hashed.cpp:67:
     //    sameHash function undefined (returns 0) for node under CFunc
-    //virtual void visit(AstAlways* nodep) override {  }
+    // virtual void visit(AstAlways* nodep) override {  }
 
     //--------------------
     virtual void visit(AstNode* nodep) override {
-	    if (VN_IS(nodep, Always)) {
-	        m_ContainingAlways = nodep;
-	    }
-	    iterateChildren(nodep);
+        if (VN_IS(nodep, Always)) { m_ContainingAlways = nodep; }
+        iterateChildren(nodep);
     }
 
 public:
