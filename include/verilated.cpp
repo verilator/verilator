@@ -2798,32 +2798,34 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_
 }
 
 void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, bool isParam,
-                               VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE {
+                               VerilatedVarType vltype, int vlflags, int pdims, int udims, ...) VL_MT_UNSAFE {
     // Grab dimensions
     // In the future we may just create a large table at emit time and
     // statically construct from that.
     if (!finalize) return;
 
     if (!m_varsp) m_varsp = new VerilatedVarNameMap();
-    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), dims, isParam);
+    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), pdims, udims, isParam);
 
+    int dims = pdims + udims;
     va_list ap;
-    va_start(ap, dims);
+    if (pdims > 1 || udims > 1) {
+        // We could have a linked list of ranges, but really this whole thing needs
+        // to be generalized to support structs and unions, etc.
+        VL_FATAL_MT(
+            __FILE__, __LINE__, "",
+            (std::string("Unsupported multi-dimensional public varInsert: ") + namep).c_str());
+    }
+    va_start(ap, udims);
     for (int i = 0; i < dims; ++i) {
         int msb = va_arg(ap, int);
         int lsb = va_arg(ap, int);
-        if (i == 0) {
+        if (i < pdims) {
             var.m_packed.m_left = msb;
             var.m_packed.m_right = lsb;
-        } else if (i >= 1 && i <= var.udims()) {
-            var.m_unpacked[i - 1].m_left = msb;
-            var.m_unpacked[i - 1].m_right = lsb;
         } else {
-            // We could have a linked list of ranges, but really this whole thing needs
-            // to be generalized to support structs and unions, etc.
-            VL_FATAL_MT(
-                __FILE__, __LINE__, "",
-                (std::string("Unsupported multi-dimensional public varInsert: ") + namep).c_str());
+            var.m_unpacked[i-pdims].m_left = msb;
+            var.m_unpacked[i-pdims].m_right = lsb;
         }
     }
     va_end(ap);

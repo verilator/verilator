@@ -28,10 +28,19 @@ extern "C" int mon_check();
    reg		onebit		/*verilator public_flat_rw @(posedge clk) */;
    reg [2:1]	twoone		/*verilator public_flat_rw @(posedge clk) */;
    reg [2:1] 	fourthreetwoone[4:3] /*verilator public_flat_rw @(posedge clk) */;
+   reg       	twounpacked[1:0] /*verilator public_flat_rw @(posedge clk) */;
 
    // verilator lint_off LITENDIAN
    reg [0:61] 	quads[2:3]	/*verilator public_flat_rw @(posedge clk) */;
    // verilator lint_on LITENDIAN
+   logic        a/*verilator public_flat_rw @(posedge clk) */;
+   logic [0:0]    a_p0/*verilator public_flat_rw @(posedge clk) */;
+   logic [1:0]    a_p1/*verilator public_flat_rw @(posedge clk) */;
+   logic [0:0][0:0] a_p00/*verilator public_flat_rw @(posedge clk) */;
+   logic        a_u0 [0:0]/*verilator public_flat_rw @(posedge clk) */;
+   logic [0:0]    a_p0u0 [0:0]/*verilator public_flat_rw @(posedge clk) */;
+   logic [0:0]    a_p0u00 [0:0][0:0]/*verilator public_flat_rw @(posedge clk) */;
+   logic [0:0][0:0] a_p00u00 [0:0][0:0]/*verilator public_flat_rw @(posedge clk) */;
 
    reg [31:0] 	   count	/*verilator public_flat_rd */;
    reg [31:0] 	   half_count	/*verilator public_flat_rd */;
@@ -51,6 +60,15 @@ extern "C" int mon_check();
       count = 0;
       onebit = 1'b0;
       fourthreetwoone[3] = 0; // stop icarus optimizing away
+      twounpacked[0] = 0;
+      a = 0;
+      a_p0 = 0;
+      a_p1 = '0;
+      a_p00 = 0;
+      a_u0[0] = 0;
+      a_p0u0[0] = 0;
+      a_p0u00[0][0] = 0;
+      a_p00u00[0][0] = 0;
       text_byte = "B";
       text_half = "Hf";
       text_word = "Word";
@@ -58,6 +76,7 @@ extern "C" int mon_check();
       text = "Verilog Test module";
 `ifdef VERILATOR
       status = $c32("mon_check()");
+`else
 `endif
 `ifdef IVERILOG
       status = $mon_check();
@@ -66,8 +85,8 @@ extern "C" int mon_check();
       status = mon_check();
 `endif
       if (status!=0) begin
-	 $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);
-	 $stop;
+         $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);
+         $stop;
       end
       $write("%%Info: Checking results\n");
       if (onebit != 1'b1) $stop;
@@ -78,16 +97,20 @@ extern "C" int mon_check();
       if (text_word != "Tree") $stop;
       if (text_long != "44Four44") $stop;
       if (text != "lorem ipsum") $stop;
+      if (a_u0[0] != 1'b1) $stop;
+      if (a_p0[0] != 1'b1) $stop;
+      if (a_p1[1] != 1'b1) $stop;
+      if (a_p1    != 2'b10) $stop;
    end
 
    always @(posedge clk) begin
       count <= count + 2;
       if (count[1])
-	half_count <= half_count + 2;
+         half_count <= half_count + 2;
 
       if (count == 1000) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $display("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

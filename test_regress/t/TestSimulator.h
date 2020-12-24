@@ -29,12 +29,16 @@ public:
         vpi_get_vlog_info(&m_info);
         if (0 == strcmp(m_info.product, "Verilator")) {
             m_simulators.verilator = true;
-        } else if (0 == strcmp(m_info.product, "Verilator")) {
+        } else if (0 == strcmp(m_info.product, "Icarus Verilog")) {
             m_simulators.icarus = true;
         } else if (0
                    == strncmp(m_info.product, "Chronologic Simulation VCS",
                               strlen("Chronologic Simulation VCS"))) {
             m_simulators.vcs = true;
+        } else if (0
+                   == strncmp(m_info.product, "ModelSim - INTEL FPGA STARTER EDITION",
+                              strlen("ModelSim - INTEL FPGA STARTER EDITION"))) {
+            m_simulators.mti = true;
         } else {
             printf("%%Warning: %s:%d: Unknown simulator in TestSimulator.h: %s\n", __FILE__,
                    __LINE__, m_info.product);

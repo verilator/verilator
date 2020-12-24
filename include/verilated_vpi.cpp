@@ -283,6 +283,10 @@ class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
 protected:
     void* m_varDatap = nullptr;  // varp()->datap() adjusted for array entries
     vlsint32_t m_index = 0;
+    const VerilatedRange& get_range() const {
+        // Determine number of dimensions and return outermost
+        return (m_varp->udims() > 0) ? m_varp->unpacked() : m_varp->packed();
+    }
 
 public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
@@ -314,7 +318,7 @@ public:
     vluint32_t entSize() const { return m_entSize; }
     vluint32_t index() const { return m_index; }
     virtual vluint32_t type() const override {
-        return (varp()->dims() > 1) ? vpiMemory : vpiReg;  // but might be wire, logic
+        return (varp()->udims() > 0) ? vpiRegArray : vpiReg;  // but might be wire, logic
     }
     void* prevDatap() const { return m_prevDatap; }
     void* varDatap() const { return m_varDatap; }
@@ -326,19 +330,19 @@ public:
     }
 };
 
-class VerilatedVpioMemoryWord final : public VerilatedVpioVar {
+class VerilatedVpioReg final : public VerilatedVpioVar {
 public:
-    VerilatedVpioMemoryWord(const VerilatedVar* varp, const VerilatedScope* scopep,
+    VerilatedVpioReg(const VerilatedVar* varp, const VerilatedScope* scopep,
                             vlsint32_t index, int offset)
         : VerilatedVpioVar{varp, scopep} {
         m_index = index;
         m_varDatap = (static_cast<vluint8_t*>(varp->datap())) + entSize() * offset;
     }
-    virtual ~VerilatedVpioMemoryWord() override = default;
-    static VerilatedVpioMemoryWord* castp(vpiHandle h) {
-        return dynamic_cast<VerilatedVpioMemoryWord*>(reinterpret_cast<VerilatedVpio*>(h));
+    virtual ~VerilatedVpioReg() override = default;
+    static VerilatedVpioReg* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioReg*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    virtual vluint32_t type() const override { return vpiMemoryWord; }
+    virtual vluint32_t type() const override { return vpiReg; }
     virtual vluint32_t size() const override { return varp()->packed().elements(); }
     virtual const VerilatedRange* rangep() const override { return &(varp()->packed()); }
     virtual const char* fullname() const override {
@@ -386,7 +390,7 @@ public:
     }
 };
 
-class VerilatedVpioMemoryWordIter final : public VerilatedVpio {
+class VerilatedVpioRegIter final : public VerilatedVpio {
     const vpiHandle m_handle;
     const VerilatedVar* m_varp;
     vlsint32_t m_iteration;
@@ -394,14 +398,14 @@ class VerilatedVpioMemoryWordIter final : public VerilatedVpio {
     bool m_done = false;
 
 public:
-    VerilatedVpioMemoryWordIter(const vpiHandle handle, const VerilatedVar* varp)
+    VerilatedVpioRegIter(const vpiHandle handle, const VerilatedVar* varp)
         : m_handle{handle}
         , m_varp{varp}
         , m_iteration{varp->unpacked().right()}
         , m_direction{VL_LIKELY(varp->unpacked().left() > varp->unpacked().right()) ? 1 : -1} {}
-    virtual ~VerilatedVpioMemoryWordIter() override = default;
-    static VerilatedVpioMemoryWordIter* castp(vpiHandle h) {
-        return dynamic_cast<VerilatedVpioMemoryWordIter*>(reinterpret_cast<VerilatedVpio*>(h));
+    virtual ~VerilatedVpioRegIter() override = default;
+    static VerilatedVpioRegIter* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioRegIter*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     virtual vluint32_t type() const override { return vpiIterator; }
     void iterationInc() {
@@ -1403,25 +1407,24 @@ vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
     // Used to get array entries
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_index %p %d\n", object, indx););
     VerilatedVpiImp::assertOneCheck();
-    VL_VPI_ERROR_RESET_();
-    // Memory words are not indexable
-    VerilatedVpioMemoryWord* vop = VerilatedVpioMemoryWord::castp(object);
+    VL_VPI_ERROR_RESET();
+    VerilatedVpioReg* vop = VerilatedVpioReg::castp(object);
     if (VL_UNLIKELY(vop)) return nullptr;
     VerilatedVpioVar* varop = VerilatedVpioVar::castp(object);
     if (VL_LIKELY(varop)) {
-        if (varop->varp()->dims() < 2) return nullptr;
+        if (varop->varp()->udims() == 0) return nullptr;
         if (VL_LIKELY(varop->varp()->unpacked().left() >= varop->varp()->unpacked().right())) {
             if (VL_UNLIKELY(indx > varop->varp()->unpacked().left()
                             || indx < varop->varp()->unpacked().right()))
                 return nullptr;
-            return (new VerilatedVpioMemoryWord(varop->varp(), varop->scopep(), indx,
+            return (new VerilatedVpioReg(varop->varp(), varop->scopep(), indx,
                                                 indx - varop->varp()->unpacked().right()))
                 ->castVpiHandle();
         }
         if (VL_UNLIKELY(indx < varop->varp()->unpacked().left()
                         || indx > varop->varp()->unpacked().right()))
             return nullptr;
-        return (new VerilatedVpioMemoryWord(varop->varp(), varop->scopep(), indx,
+        return (new VerilatedVpioReg(varop->varp(), varop->scopep(), indx,
                                             indx - varop->varp()->unpacked().left()))
             ->castVpiHandle();
     }
@@ -1473,7 +1476,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
         return (new VerilatedVpioScope(vop->scopep()))->castVpiHandle();
     }
     case vpiParent: {
-        VerilatedVpioMemoryWord* vop = VerilatedVpioMemoryWord::castp(object);
+        VerilatedVpioReg* vop = VerilatedVpioReg::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
         return (new VerilatedVpioVar(vop->varp(), vop->scopep()))->castVpiHandle();
     }
@@ -1498,19 +1501,19 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
     case vpiMemoryWord: {
         VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
-        if (vop->varp()->dims() < 2) return nullptr;
+        if (vop->varp()->udims() < 1) return nullptr;
         if (vop->varp()->dims() > 2) {
             VL_VPI_WARNING_(__FILE__, __LINE__,
                             "%s: %s, object %s has unsupported number of indices (%d)", __func__,
                             VerilatedVpiError::strFromVpiMethod(type), vop->fullname(),
                             vop->varp()->dims());
         }
-        return (new VerilatedVpioMemoryWordIter(object, vop->varp()))->castVpiHandle();
+        return (new VerilatedVpioRegIter(object, vop->varp()))->castVpiHandle();
     }
     case vpiRange: {
         VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
-        if (vop->varp()->dims() < 2) return nullptr;
+        if (vop->varp()->udims() < 1) return nullptr;
         // Unsupported is multidim list
         if (vop->varp()->dims() > 2) {
             VL_VPI_WARNING_(__FILE__, __LINE__,
@@ -1521,6 +1524,10 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         return ((new VerilatedVpioRangeIter(vop->rangep()))->castVpiHandle());
     }
     case vpiReg: {
+        VerilatedVpioVar* voarp = VerilatedVpioVar::castp(object);
+        if (VL_UNLIKELY(voarp)) {
+           if (voarp->varp()->udims() >= 1) return vpi_iterate(vpiMemoryWord, object);
+        }
         VerilatedVpioScope* vop = VerilatedVpioScope::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
         return ((new VerilatedVpioVarIter(vop->scopep()))->castVpiHandle());
@@ -1580,7 +1587,13 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
     case vpiVector: {
         VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
-        return (property == vpiVector) ^ (vop->varp()->dims() == 0);
+        int pdims = vop->varp()->dims() - vop->varp()->udims();
+        return (property == vpiVector) ^ (pdims == 0);
+    }
+    case vpiArray: {
+        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
+        if (VL_UNLIKELY(!vop)) return 0;
+        return (vop->varp()->udims() > 0);
     }
     case vpiSize: {
         VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);

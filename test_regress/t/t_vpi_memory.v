@@ -32,8 +32,7 @@ extern "C" int mon_check();
    initial begin
 `ifdef VERILATOR
       status = $c32("mon_check()");
-`endif
-`ifdef IVERILOG
+`else
      status = $mon_check();
 `endif
 `ifndef USE_VPI_NOT_DPI

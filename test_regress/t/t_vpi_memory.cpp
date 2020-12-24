@@ -124,7 +124,7 @@ int _mon_check_memory() {
     {
         // check type
         int vpitype = vpi_get(vpiType, mem_h);
-        CHECK_RESULT(vpitype, vpiMemory);
+        CHECK_RESULT(vpitype, TestSimulator::is_icarus() ? vpiMemory: vpiRegArray);
     }
     if (int status = _mon_check_range(mem_h, 16, 16, 1)) return status;
     // iterate and store

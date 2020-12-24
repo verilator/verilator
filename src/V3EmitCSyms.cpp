@@ -835,7 +835,9 @@ void EmitCSyms::emitSymImp() {
             puts(",");
             puts(varp->vlEnumDir());  // VLVD_IN etc
             puts(",");
-            puts(cvtToStr(pdim + udim));
+            puts(cvtToStr(pdim));
+            puts(",");
+            puts(cvtToStr(udim));
             puts(bounds);
             puts(");\n");
             ++m_numStmts;
