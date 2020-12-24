@@ -14,6 +14,8 @@ module t (/*AUTOARG*/ i, o);
      else if (i==2'b01) o = 2'b10;
      else if (i==2'b10) o = 2'b01;
      else if (i==2'b11) o = 2'b00;
+     else               o = 2'b00; // Without this else a latch is (falsely) detected
    end
 
 endmodule
+
