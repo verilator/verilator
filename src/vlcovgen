@@ -53,16 +53,15 @@ def write_keys(filename):
                 deleting = True
                 out.append(line)
                 for keyref in sorted(Items, key=lambda a: a['name']):
-                    out.append(
-                        "#define VL_CIK_%s \"%s\"\n" %
-                                (keyref['name'].upper(), keyref['short']))
+                    out.append("#define VL_CIK_%s \"%s\"\n" %
+                               (keyref['name'].upper(), keyref['short']))
             elif re.search(r'VLCOVGEN_SHORT_AUTO_EDIT_BEGIN', line):
                 deleting = True
                 out.append(line)
                 for keyref in sorted(Items, key=lambda a: a['name']):
                     out.append(
-                            "        if (key == \"%s\") return VL_CIK_%s;\n" %
-                            (keyref['name'], keyref['name'].upper()))
+                        "        if (key == \"%s\") return VL_CIK_%s;\n" %
+                        (keyref['name'], keyref['name'].upper()))
             elif re.search(r'VLCOVGEN_.*AUTO_EDIT_END', line):
                 deleting = False
                 out.append(line)
