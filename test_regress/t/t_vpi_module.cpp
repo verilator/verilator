@@ -54,6 +54,13 @@ unsigned int main_time = 0;
         return __LINE__; \
     }
 
+#define CHECK_RESULT(got, exp) \
+    if ((got) != (exp)) { \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
+                  << "   EXP = " << (exp) << std::endl; \
+        return __LINE__; \
+    }
+
 #define CHECK_RESULT_CSTR(got, exp) \
     if (strcmp((got), (exp))) { \
         printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
@@ -81,6 +88,7 @@ int mon_check() {
 
     TestVpiHandle topmod = vpi_scan(it);
     CHECK_RESULT_NZ(topmod);
+    CHECK_RESULT(vpi_get(vpiType, topmod), vpiModule);
 
     const char* t_name = vpi_get_str(vpiName, topmod);
     CHECK_RESULT_NZ(t_name);
@@ -89,6 +97,7 @@ int mon_check() {
     if (strcmp(t_name, "top") == 0) {
         it = vpi_iterate(vpiModule, topmod);
         CHECK_RESULT_NZ(it);
+        CHECK_RESULT(vpi_get(vpiType, it), vpiModule);
         topmod = vpi_scan(it);
         t_name = vpi_get_str(vpiName, topmod);
         CHECK_RESULT_NZ(t_name);

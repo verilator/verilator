@@ -338,6 +338,7 @@ int _mon_check_varlist() {
 
     TestVpiHandle vh10 = vpi_iterate(vpiReg, vh2);
     CHECK_RESULT_NZ(vh10);
+    CHECK_RESULT(vpi_get(vpiType, vh10), vpiIterator);
 
     {
         TestVpiHandle vh11 = vpi_scan(vh10);
