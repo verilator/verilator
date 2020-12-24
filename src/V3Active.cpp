@@ -304,7 +304,8 @@ private:
     LatchDetectGraph m_graph;  // Graph used to detect latches in combo always
     // VISITORS
     virtual void visit(AstVarRef* nodep) {
-        if (nodep->varp()->isSignal() && nodep->access().isWriteOrRW()) {
+        AstVar* varp = nodep->varp();
+        if (nodep->access().isWriteOrRW() && varp->isSignal() && !varp->isUsedLoopIdx()) {
             m_graph.addAssignment(nodep);
         }
     }
