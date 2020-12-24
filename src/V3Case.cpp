@@ -125,8 +125,9 @@ private:
     AstUser3InUse m_inuser3;
 
     // STATE
-    VDouble0 m_statCaseFast;  // Statistic tracking
-    VDouble0 m_statCaseSlow;  // Statistic tracking
+    VDouble0 m_statCaseFast;     // Statistic tracking
+    VDouble0 m_statCaseSlow;     // Statistic tracking
+    AstNode* m_ContainingAlways; // Always in which case is located
 
     // Per-CASE
     int m_caseWidth = 0;  // Width of valueItems
@@ -475,17 +476,33 @@ private:
             ++m_statCaseFast;
             VL_DO_DANGLING(replaceCaseFast(nodep), nodep);
         } else {
+            if (m_ContainingAlways) {
+                m_ContainingAlways->fileline()->warnOff(V3ErrorCode::LATCH, true);
+            }
             ++m_statCaseSlow;
             VL_DO_DANGLING(replaceCaseComplicated(nodep), nodep);
         }
     }
+
+    // TBD: No idea what is going on here, but declaring an an AstAlways visitor causes the
+    //      following run-time error
+    // %Error: Internal Error: t/t_lint_latch_2.v:37:7: ../V3Hashed.cpp:67:
+    //    sameHash function undefined (returns 0) for node under CFunc
+    //virtual void visit(AstAlways* nodep) override {  }
+
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override {
+	    if (VN_IS(nodep, Always)) {
+	        m_ContainingAlways = nodep;
+	    }
+	    iterateChildren(nodep);
+    }
 
 public:
     // CONSTRUCTORS
     explicit CaseVisitor(AstNetlist* nodep) {
         for (auto& itr : m_valueItem) itr = nullptr;
+        m_ContainingAlways = nullptr;
         iterate(nodep);
     }
     virtual ~CaseVisitor() override {
