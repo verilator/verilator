@@ -29,6 +29,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix vpi_release_handle to be called implicitly per IEEE (#2706).
 
+****  Fix tracing empty sc module (#2729).
+
 
 * Verilator 4.106 2020-12-02
 

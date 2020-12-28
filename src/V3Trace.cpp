@@ -604,7 +604,8 @@ private:
             AstCFunc* topFuncp = nullptr;
             AstCFunc* subFuncp = nullptr;
             int subStmts = 0;
-            const uint32_t maxCodes = (nAllCodes + parallelism - 1) / parallelism;
+            uint32_t maxCodes = (nAllCodes + parallelism - 1) / parallelism;
+            if (maxCodes < 1) maxCodes = 1;
             uint32_t nCodes = 0;
             const ActCodeSet* prevActSet = nullptr;
             AstIf* ifp = nullptr;
