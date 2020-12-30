@@ -20,6 +20,7 @@ compile(
     v_flags2 => ['t/t_hier_block.cpp'],
     verilator_flags2 => ['--stats',
                          '--hierarchical',
+                         '+define+SHOW_TIMESCALE',
                          '+define+USE_VLT', 't/t_hier_block_vlt.vlt',
                          '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"',
                          ($Self->{vltmt} ? ' --threads 6' : '')],
@@ -29,6 +30,7 @@ execute(
     check_finished => 1,
     );
 
+file_grep($Self->{obj_dir} . "/Vsub0/sub0.sv", qr/^\s+timeprecision\s+(\d+)ps;/mi, 1);
 file_grep($Self->{obj_dir} . "/Vsub0/sub0.sv", /^module\s+(\S+)\s+/, "sub0");
 file_grep($Self->{obj_dir} . "/Vsub1/sub1.sv", /^module\s+(\S+)\s+/, "sub1");
 file_grep($Self->{obj_dir} . "/Vsub2/sub2.sv", /^module\s+(\S+)\s+/, "sub2");
