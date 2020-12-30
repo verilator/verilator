@@ -135,20 +135,18 @@ private:
                    "See instructions in your simulator for how"
                    " to use DPI libraries\n");
 
-        bool timescaleShown = false;
-        if (v3Global.opt.hierChild() && !modp->timeunit().isNone()) {
-            // Emit timescale for hierarhical verilation
-            timescaleShown = true;
-            txtp->addText(fl, string("`timescale ") + modp->timeunit().ascii() + "/"
-                                  + v3Global.rootp()->timeprecision().ascii() + "\n\n");
-        }
         // Module declaration
         m_modPortsp = new AstTextBlock(fl, "module " + m_libName + " (\n", false, true);
         txtp->addNodep(m_modPortsp);
         txtp->addText(fl, ");\n\n");
 
         // Timescale
-        if (!timescaleShown) {
+        if (v3Global.opt.hierChild() && v3Global.rootp()->timescaleSpecified()) {
+            // Emit timescale for hierarhical verilation if input HDL specifies timespec
+            txtp->addText(fl, string("timeunit ") + modp->timeunit().ascii() + ";\n");
+            txtp->addText(fl, string("timeprecision ") + +v3Global.rootp()->timeprecision().ascii()
+                                  + ";\n");
+        } else {
             addComment(txtp, fl,
                        "Precision of submodule"
                        " (commented out to avoid requiring timescale on all modules)");
