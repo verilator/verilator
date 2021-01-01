@@ -115,6 +115,8 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
         }
     }
 
+    v3Global.rootp()->timescaleSpecified(modTimedp);  // true if some module specifies timescale
+
     if (v3Global.rootp()->timeprecision().isNone()) {
         v3Global.rootp()->timeprecisionMerge(v3Global.rootp()->fileline(),
                                              VTimescale(VTimescale::TS_DEFAULT));

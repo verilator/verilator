@@ -9,7 +9,7 @@
 `define HIER_BLOCK /*verilator hier_block*/
 `endif
 
-`ifndef PROTLIB_TOP
+`ifdef SHOW_TIMESCALE
 `timescale 1ns/1ps
 `endif
 
