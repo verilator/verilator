@@ -9210,7 +9210,7 @@ private:
     AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
-    bool m_timescaleSpecified = false;  // Whether the input HDL specifies timescale
+    bool m_timescaleSpecified = false;  // Input HDL specified timescale
 public:
     AstNetlist()
         : ASTGEN_SUPER(new FileLine(FileLine::builtInFilename())) {}
