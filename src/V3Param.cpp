@@ -60,7 +60,7 @@
 
 #include <deque>
 #include <map>
-#include <map>
+#include <memory>
 #include <vector>
 
 //######################################################################
@@ -70,8 +70,8 @@ class ParameterizedHierBlocks final {
     typedef std::multimap<string, const V3HierarchicalBlockOption*> HierBlockOptsByOrigName;
     typedef HierBlockOptsByOrigName::const_iterator HierMapIt;
     typedef std::map<const string, AstNodeModule*> HierBlockModMap;
-    typedef std::map<const string, AstConst*> ParamConstMap;
-    typedef std::map<const V3HierarchicalBlockOption*, ParamConstMap> ParamsMap;
+    typedef std::map<const string, std::unique_ptr<AstConst>> ParamConstMap;
+    typedef std::map<const V3HierarchicalBlockOption*, ParamConstMap> HierParamsMap;
 
     // MEMBERS
     // key:Original module name, value:HiearchyBlockOption*
@@ -81,7 +81,7 @@ class ParameterizedHierBlocks final {
     // key:mangled module name, value:AstNodeModule*
     HierBlockModMap m_hierBlockMod;
     // Overridden parameters of the hierarchical block
-    ParamsMap m_params;
+    HierParamsMap m_hierParams;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -124,13 +124,13 @@ public:
             m_hierBlockOptsByOrigName.insert(
                 std::make_pair(hierOpt.second.origName(), &hierOpt.second));
             const V3HierarchicalBlockOption::ParamStrMap& params = hierOpt.second.params();
-            ParamConstMap& consts = m_params[&hierOpt.second];
+            ParamConstMap& consts = m_hierParams[&hierOpt.second];
             for (V3HierarchicalBlockOption::ParamStrMap::const_iterator pIt = params.begin();
                  pIt != params.end(); ++pIt) {
-                AstConst* constp = AstConst::parseParamLiteral(
-                    new FileLine(FileLine::EmptySecret()), pIt->second);
+                std::unique_ptr<AstConst> constp{AstConst::parseParamLiteral(
+                    new FileLine(FileLine::EmptySecret()), pIt->second)};
                 UASSERT(constp, pIt->second << " is not a valid parameter literal");
-                const bool inserted = consts.insert(std::make_pair(pIt->first, constp)).second;
+                const bool inserted = consts.emplace(pIt->first, std::move(constp)).second;
                 UASSERT(inserted, pIt->first << " is already added");
             }
         }
@@ -139,11 +139,6 @@ public:
             if (hierOpts.find(modp->prettyName()) != hierOpts.end()) {
                 m_hierBlockMod.emplace(modp->name(), modp);
             }
-        }
-    }
-    ~ParameterizedHierBlocks() {
-        for (ParamsMap::const_iterator it = m_params.begin(); it != m_params.end(); ++it) {
-            for (const auto& pItr : it->second) { delete pItr.second; }
         }
     }
     AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,
@@ -158,7 +153,7 @@ public:
         for (hierIt = candidates.first; hierIt != candidates.second; ++hierIt) {
             bool found = true;
             size_t paramIdx = 0;
-            const ParamConstMap& params = m_params[hierIt->second];
+            const ParamConstMap& params = m_hierParams[hierIt->second];
             UASSERT(params.size() == hierIt->second->params().size(), "not match");
             for (AstPin* pinp = firstPinp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
                 if (!pinp->exprp()) continue;
@@ -171,12 +166,12 @@ public:
                     const auto pIt = vlstd::as_const(params).find(modvarp->name());
                     UINFO(5, "Comparing " << modvarp->name() << " " << constp << std::endl);
                     if (pIt == params.end() || paramIdx >= params.size()
-                        || !areSame(constp, pIt->second)) {
+                        || !areSame(constp, pIt->second.get())) {
                         found = false;
                         break;
                     }
                     UINFO(5, "Matched " << modvarp->name() << " " << constp << " and "
-                                        << pIt->second << std::endl);
+                                        << pIt->second.get() << std::endl);
                     ++paramIdx;
                 }
             }
