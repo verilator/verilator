@@ -16,12 +16,11 @@
 vluint64_t main_time = 0;
 double sc_time_stamp() { return main_time; }
 
-
-void sim0(Vt_multi_model* top0){
+void sim0(Vt_multi_model* top0) {
 
     // setup remaining parameters
     top0->trace_name = "trace0.vcd";
-    main_time = 0; // !! interferes with the main_time from top1 !!
+    main_time = 0;  // !! interferes with the main_time from top1 !!
 
     // reset
     top0->clk_i = 0;
@@ -36,7 +35,8 @@ void sim0(Vt_multi_model* top0){
     top0->eval();
 
     // simulate until done
-    while (!Verilated::gotFinish()) { // !! will not always work properly due to a race condition with top1 !!
+    while (!Verilated::gotFinish()) {  // !! will not always work properly due to a race condition
+                                       // with top1 !!
 
         // increment time
         main_time++;
@@ -49,11 +49,11 @@ void sim0(Vt_multi_model* top0){
     }
 }
 
-void sim1(Vt_multi_model* top1){
+void sim1(Vt_multi_model* top1) {
 
     // setup remaining parameters
     top1->trace_name = "trace1.vcd";
-    main_time = 0; // !! interferes with the main_time from top0 !!
+    main_time = 0;  // !! interferes with the main_time from top0 !!
 
     // reset
     top1->clk_i = 0;
@@ -68,7 +68,8 @@ void sim1(Vt_multi_model* top1){
     top1->eval();
 
     // simulate until done
-    while (!Verilated::gotFinish()) { // !! will not always work properly due to a race condition with top0 !!
+    while (!Verilated::gotFinish()) {  // !! will not always work properly due to a race condition
+                                       // with top0 !!
 
         // increment time
         main_time++;
@@ -80,7 +81,6 @@ void sim1(Vt_multi_model* top1){
         top1->eval();
     }
 }
-
 
 int main(int argc, char** argv, char** env) {
 
@@ -100,7 +100,7 @@ int main(int argc, char** argv, char** env) {
     t1.join();
 
     // check if both finished
-    if(top0->done_o && top1->done_o) {
+    if (top0->done_o && top1->done_o) {
         std::cout << "*-* All Finished *-*" << std::endl;
     } else {
         std::cout << "Error: Early termination!" << std::endl;
