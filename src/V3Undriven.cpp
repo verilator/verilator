@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -90,14 +90,14 @@ private:
                 int lsb = bit + 1;
                 if (bits != "") bits += ",";
                 if (lsb == msb) {
-                    bits += cvtToStr(lsb + bdtypep->lsb());
+                    bits += cvtToStr(lsb + bdtypep->lo());
                 } else {
                     if (bdtypep->littleEndian()) {
-                        bits += cvtToStr(lsb + bdtypep->lsb()) + ":"
-                                + cvtToStr(msb + bdtypep->lsb());
+                        bits
+                            += cvtToStr(lsb + bdtypep->lo()) + ":" + cvtToStr(msb + bdtypep->lo());
                     } else {
-                        bits += cvtToStr(msb + bdtypep->lsb()) + ":"
-                                + cvtToStr(lsb + bdtypep->lsb());
+                        bits
+                            += cvtToStr(msb + bdtypep->lo()) + ":" + cvtToStr(lsb + bdtypep->lo());
                     }
                 }
                 prev = false;
@@ -149,7 +149,7 @@ public:
     void reportViolations() {
         // Combine bits into overall state
         AstVar* nodep = m_varp;
-        if (!nodep->isParam() && !nodep->isGenVar()) {
+        {
             bool allU = true;
             bool allD = true;
             bool anyU = m_wholeFlags[FLAG_USED];
@@ -168,8 +168,12 @@ public:
                 anyDnotU |= !used && driv;
                 anynotDU |= !used && !driv;
             }
+            if ((nodep->isGenVar() || nodep->isParam()) && nodep->isUsedParam())
+                allD = allU = true;
             if (allU) m_wholeFlags[FLAG_USED] = true;
             if (allD) m_wholeFlags[FLAG_DRIVEN] = true;
+            const char* const what
+                = nodep->isParam() ? "parameter" : nodep->isGenVar() ? "genvar" : "signal";
             // Test results
             if (nodep->isIfaceRef()) {
                 // For interface top level we don't do any tracking
@@ -181,35 +185,39 @@ public:
                 // UNDRIVEN is considered more serious - as is more likely a bug,
                 // thus undriven+unused bits get UNUSED warnings, as they're not as buggy.
                 if (!unusedMatch(nodep)) {
-                    nodep->v3warn(UNUSED,
-                                  "Signal is not driven, nor used: " << nodep->prettyNameQ());
+                    nodep->v3warn(UNUSED, ucfirst(what) << " is not driven, nor used: "
+                                                        << nodep->prettyNameQ());
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);  // Warn only once
                 }
             } else if (allD && !anyU) {
                 if (!unusedMatch(nodep)) {
-                    nodep->v3warn(UNUSED, "Signal is not used: " << nodep->prettyNameQ());
+                    nodep->v3warn(UNUSED, ucfirst(what)
+                                              << " is not used: " << nodep->prettyNameQ());
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);  // Warn only once
                 }
             } else if (!anyD && allU) {
-                nodep->v3warn(UNDRIVEN, "Signal is not driven: " << nodep->prettyNameQ());
+                nodep->v3warn(UNDRIVEN, ucfirst(what)
+                                            << " is not driven: " << nodep->prettyNameQ());
                 nodep->fileline()->modifyWarnOff(V3ErrorCode::UNDRIVEN, true);  // Warn only once
             } else {
                 // Bits have different dispositions
                 bool setU = false;
                 bool setD = false;
                 if (anynotDU && !unusedMatch(nodep)) {
-                    nodep->v3warn(UNUSED, "Bits of signal are not driven, nor used: "
-                                              << nodep->prettyNameQ() << bitNames(BN_BOTH));
+                    nodep->v3warn(UNUSED, "Bits of " << what << " are not driven, nor used: "
+                                                     << nodep->prettyNameQ() << bitNames(BN_BOTH));
                     setU = true;
                 }
                 if (anyDnotU && !unusedMatch(nodep)) {
-                    nodep->v3warn(UNUSED, "Bits of signal are not used: " << nodep->prettyNameQ()
-                                                                          << bitNames(BN_UNUSED));
+                    nodep->v3warn(UNUSED, "Bits of " << what
+                                                     << " are not used: " << nodep->prettyNameQ()
+                                                     << bitNames(BN_UNUSED));
                     setU = true;
                 }
                 if (anyUnotD) {
-                    nodep->v3warn(UNDRIVEN, "Bits of signal are not driven: "
-                                                << nodep->prettyNameQ() << bitNames(BN_UNDRIVEN));
+                    nodep->v3warn(UNDRIVEN,
+                                  "Bits of " << what << " are not driven: " << nodep->prettyNameQ()
+                                             << bitNames(BN_UNDRIVEN));
                     setD = true;
                 }
                 if (setU) {  // Warn only once
@@ -403,8 +411,8 @@ private:
         VL_RESTORER(m_alwaysCombp);
         {
             AstNode::user2ClearTree();
-            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   " << nodep << endl);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
+                UINFO(9, "   " << nodep << endl);
                 m_alwaysCombp = nodep;
             } else {
                 m_alwaysCombp = nullptr;

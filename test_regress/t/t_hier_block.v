@@ -9,7 +9,7 @@
 `define HIER_BLOCK /*verilator hier_block*/
 `endif
 
-`ifndef PROTLIB_TOP
+`ifdef SHOW_TIMESCALE
 `timescale 1ns/1ps
 `endif
 
@@ -215,6 +215,82 @@ module sub4 #(
    reg [7:0] ff;
    always_ff @(posedge clk) ff <= in + 8'(P0);
    assign out = ff;
+
+   logic [127:0] sub5_in[2][3];
+   wire [7:0] sub5_out[2][3];
+   sub5 i_sub5(.clk(clk), .in(sub5_in), .out(sub5_out));
+
+   int count = 0;
+   always @(posedge clk) begin
+      if (!count[0]) begin
+         sub5_in[0][0] <= 128'd0;
+         sub5_in[0][1] <= 128'd1;
+         sub5_in[0][2] <= 128'd2;
+         sub5_in[1][0] <= 128'd3;
+         sub5_in[1][1] <= 128'd4;
+         sub5_in[1][2] <= 128'd5;
+      end else begin
+         sub5_in[0][0] <= 128'd0;
+         sub5_in[0][1] <= 128'd0;
+         sub5_in[0][2] <= 128'd0;
+         sub5_in[1][0] <= 128'd0;
+         sub5_in[1][1] <= 128'd0;
+         sub5_in[1][2] <= 128'd0;
+      end
+   end
+
+   always @(posedge clk) begin
+      count <= count + 1;
+      if (count > 0) begin
+         for (int i = 0; i < 2; ++i) begin
+             for (int j = 0; j < 3; ++j) begin
+                 automatic byte exp = !count[0] ? 8'(3 * (1 - i) + (2- j) + 1) : 8'b0;
+                if (sub5_out[i][j] != exp) begin
+                   $display("in[%d][%d] act:%d exp:%d", i, j, sub5_out[i][j], exp);
+                   $stop;
+                end
+            end
+         end
+      end
+   end
+endmodule
+
+module sub5 (input wire clk, input wire [127:0] in[2][3], output logic [7:0] out[2][3]); `HIER_BLOCK
+
+   int count = 0;
+   always @(posedge clk) begin
+      count <= count + 1;
+      if (count > 0) begin
+         for (int i = 0; i < 2; ++i) begin
+            for (int j = 0; j < 3; ++j) begin
+               automatic bit [127:0] exp = count[0] ? 128'(3 * i + 128'(j)) : 128'd0;
+               if (in[i][j] != exp) begin
+                 $display("in[%d][%d] act:%d exp:%d", i, j, in[i][j], exp);
+                 $stop;
+               end
+            end
+         end
+      end
+   end
+
+   always @(posedge clk) begin
+      if (count[0]) begin
+         out[0][0] <= 8'd6;
+         out[0][1] <= 8'd5;
+         out[0][2] <= 8'd4;
+         out[1][0] <= 8'd3;
+         out[1][1] <= 8'd2;
+         out[1][2] <= 8'd1;
+      end else begin
+         out[0][0] <= 8'd0;
+         out[0][1] <= 8'd0;
+         out[0][2] <= 8'd0;
+         out[1][0] <= 8'd0;
+         out[1][1] <= 8'd0;
+         out[1][2] <= 8'd0;
+      end
+   end
+
 endmodule
 
 module delay #(

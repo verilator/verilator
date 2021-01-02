@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -135,20 +135,18 @@ private:
                    "See instructions in your simulator for how"
                    " to use DPI libraries\n");
 
-        bool timescaleShown = false;
-        if (v3Global.opt.hierChild() && !modp->timeunit().isNone()) {
-            // Emit timescale for hierarhical verilation
-            timescaleShown = true;
-            txtp->addText(fl, string("`timescale ") + modp->timeunit().ascii() + "/"
-                                  + v3Global.rootp()->timeprecision().ascii() + "\n\n");
-        }
         // Module declaration
         m_modPortsp = new AstTextBlock(fl, "module " + m_libName + " (\n", false, true);
         txtp->addNodep(m_modPortsp);
         txtp->addText(fl, ");\n\n");
 
         // Timescale
-        if (!timescaleShown) {
+        if (v3Global.opt.hierChild() && v3Global.rootp()->timescaleSpecified()) {
+            // Emit timescale for hierarhical verilation if input HDL specifies timespec
+            txtp->addText(fl, string("timeunit ") + modp->timeunit().ascii() + ";\n");
+            txtp->addText(fl, string("timeprecision ") + +v3Global.rootp()->timeprecision().ascii()
+                                  + ";\n");
+        } else {
             addComment(txtp, fl,
                        "Precision of submodule"
                        " (commented out to avoid requiring timescale on all modules)");
@@ -388,10 +386,6 @@ private:
 
     virtual void visit(AstVar* nodep) override {
         if (!nodep->isIO()) return;
-        if (VN_IS(nodep->dtypep(), UnpackArrayDType)) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: unpacked arrays with protect-lib on "
-                                             << nodep->prettyNameQ());
-        }
         if (nodep->direction() == VDirection::INPUT) {
             if (nodep->isUsedClock() || nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
                 UASSERT_OBJ(m_hasClk, nodep, "checkIfClockExists() didn't find this clock");
@@ -410,13 +404,7 @@ private:
     virtual void visit(AstNode*) override {}
 
     string cInputConnection(AstVar* varp) {
-        string frstmt;
-        string ket;
-        bool useSetWSvlv = V3Task::dpiToInternalFrStmt(varp, varp->name(), frstmt, ket);
-        if (useSetWSvlv) {
-            return frstmt + ket + " handlep__V->" + varp->name() + ", " + varp->name() + ");\n";
-        }
-        return "handlep__V->" + varp->name() + " = " + frstmt + ket + ";\n";
+        return V3Task::assignDpiToInternal("handlep__V->" + varp->name(), varp);
     }
 
     void handleClock(AstVar* varp) {
@@ -445,6 +433,13 @@ private:
 
     void handleInput(AstVar* varp) { m_modPortsp->addNodep(varp->cloneTree(false)); }
 
+    static void addLocalVariable(AstTextBlock* textp, AstVar* varp, const char* suffix) {
+        AstVar* newVarp
+            = new AstVar(varp->fileline(), AstVarType::VAR, varp->name() + suffix, varp->dtypep());
+        textp->addNodep(newVarp);
+        textp->addText(varp->fileline(), ";\n");
+    }
+
     void handleOutput(AstVar* varp) {
         FileLine* fl = varp->fileline();
         m_modPortsp->addNodep(varp->cloneTree(false));
@@ -455,18 +450,11 @@ private:
             m_seqParamsp->addText(fl, varp->name() + "_tmp__V\n");
         }
 
-        AstNodeDType* comboDtypep = varp->dtypep()->cloneTree(false);
-        m_comboDeclsp->addNodep(comboDtypep);
-        m_comboDeclsp->addText(fl, " " + varp->name() + "_combo__V;\n");
+        addLocalVariable(m_comboDeclsp, varp, "_combo__V");
 
         if (m_hasClk) {
-            AstNodeDType* seqDtypep = varp->dtypep()->cloneTree(false);
-            m_seqDeclsp->addNodep(seqDtypep);
-            m_seqDeclsp->addText(fl, " " + varp->name() + "_seq__V;\n");
-
-            AstNodeDType* tmpDtypep = varp->dtypep()->cloneTree(false);
-            m_tmpDeclsp->addNodep(tmpDtypep);
-            m_tmpDeclsp->addText(fl, " " + varp->name() + "_tmp__V;\n");
+            addLocalVariable(m_seqDeclsp, varp, "_seq__V");
+            addLocalVariable(m_tmpDeclsp, varp, "_tmp__V");
 
             m_nbAssignsp->addText(fl, varp->name() + "_seq__V <= " + varp->name() + "_tmp__V;\n");
             m_seqAssignsp->addText(fl, varp->name() + " = " + varp->name() + "_seq__V;\n");

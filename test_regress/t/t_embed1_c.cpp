@@ -61,7 +61,23 @@ Vt_embed1_child* __get_modelp() {
             vl_fatal(__FILE__, __LINE__, __FILE__, "svPutUserData failed");
         }
     }
-    return (Vt_embed1_child*)(__modelp);
+    return reinterpret_cast<Vt_embed1_child*>(__modelp);
+}
+
+void __delete_modelp() {
+    svScope scope = svGetScope();
+    if (!scope) {
+        vl_fatal(__FILE__, __LINE__, __FILE__, "svGetScope failed");
+        return;
+    }
+    void* __modelp = svGetUserData(scope, &T_Embed_Child_Unique);
+    if (__modelp) {
+        delete reinterpret_cast<Vt_embed1_child*>(__modelp);
+        __modelp = nullptr;
+        if (svPutUserData(scope, &T_Embed_Child_Unique, __modelp)) {
+            vl_fatal(__FILE__, __LINE__, __FILE__, "svPutUserData failed");
+        }
+    }
 }
 
 void t_embed_child_initial() {
@@ -74,6 +90,7 @@ void t_embed_child_final() {
     VL_DEBUG_IF(VL_PRINTF("    t_embed1_child_final\n"););
     Vt_embed1_child* __modelp = __get_modelp();
     __modelp->final();
+    __delete_modelp();
 }
 
 void t_embed_child_eval() {

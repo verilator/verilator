@@ -7,7 +7,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -41,6 +41,7 @@ LINK = @CXX@
 LEX = @LEX@
 LFLAGS = -d
 PERL = @PERL@
+PYTHON3 = @PYTHON3@
 YACC = @YACC@
 OBJCACHE ?= @OBJCACHE@
 
@@ -138,7 +139,7 @@ make_info:
 	@echo "      Compile flags: " $(CXX) ${CFLAGS} ${CXXFLAGS} ${CPPFLAGS}
 
 clean mostlyclean distclean maintainer-clean::
-	-rm -f *.o *.d perlxsi.c *_gen_*
+	-rm -f *.o *.d *_gen_*
 	-rm -f *__gen*
 	-rm -f obj_* .objcache*
 
@@ -228,6 +229,7 @@ RAW_OBJS = \
 	V3PreShell.o \
 	V3Premit.o \
 	V3ProtectLib.o \
+	V3Randomize.o \
 	V3Reloop.o \
 	V3Scope.o \
 	V3Scoreboard.o \
@@ -331,7 +333,7 @@ V3Lexer_pregen.yy.cpp:	verilog.l V3ParseBison.h $(HEADERS)
 	${LEX} ${LFLAGS} -o$@ $<
 
 V3Lexer.yy.cpp:	V3Lexer_pregen.yy.cpp $(FLEXFIX)
-	$(PERL) $(FLEXFIX) V3Lexer <$< >$@
+	$(PYTHON3) $(FLEXFIX) V3Lexer <$< >$@
 
 V3PreLex_pregen.yy.cpp:	V3PreLex.l $(HEADERS)
 	${LEX} --version

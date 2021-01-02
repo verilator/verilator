@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -285,7 +285,7 @@ private:
             AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
             if (varrefp && !m_sideEffect
                 && varrefp->varScopep()) {  // For simplicity, we only remove post-scoping
-                m_assignMap.insert(make_pair(varrefp->varScopep(), nodep));
+                m_assignMap.emplace(varrefp->varScopep(), nodep);
                 checkAll(varrefp);  // Must track reference to dtype()
                 checkVarRef(varrefp);
             } else {  // Track like any other statement
@@ -330,12 +330,6 @@ private:
         if (nodep->isSigPublic()) return false;  // Can't elim publics!
         if (nodep->isIO() || nodep->isClassMember()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;
-        if (nodep->isParam()) {
-            const bool overriddenForHierBlock
-                = m_modp && m_modp->hierBlock() && nodep->overriddenParam();
-            if (!nodep->isTrace() && !overriddenForHierBlock && !v3Global.opt.xmlOnly())
-                return true;
-        }
         return m_elimUserVars;  // Post-Trace can kill most anything
     }
 

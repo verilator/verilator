@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2009-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2009-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -111,7 +111,7 @@ public:
         m_symCurrentp = symp;
     }
     void popScope(AstNode* nodep) {
-        if (symCurrentp()->nodep() != nodep) {
+        if (VL_UNCOVERABLE(symCurrentp()->nodep() != nodep)) {  // LCOV_EXCL_START
             if (debug()) {
                 showUpward();
                 dump(cout, "-mism: ");
@@ -120,19 +120,19 @@ public:
                                                         << " but parser thinks ending "
                                                         << nodep->prettyTypeName());
             return;
-        }
+        }  // LCOV_EXCL_STOP
         m_sympStack.pop_back();
         UASSERT_OBJ(!m_sympStack.empty(), nodep, "symbol stack underflow");
         m_symCurrentp = m_sympStack.back();
     }
-    void showUpward() {
+    void showUpward() {  // LCOV_EXCL_START
         UINFO(1, "ParseSym Stack:\n");
         for (auto it = m_sympStack.rbegin(); it != m_sympStack.rend(); ++it) {
             VSymEnt* symp = *it;
             UINFO(1, "    " << symp->nodep() << endl);
         }
         UINFO(1, "ParseSym Current: " << symCurrentp()->nodep() << endl);
-    }
+    }  // LCOV_EXCL_STOP
     void dump(std::ostream& os, const string& indent = "") { m_syms.dump(os, indent); }
     AstNode* findEntUpward(const string& name) const {
         // Lookup the given string as an identifier, return type of the id, scanning upward

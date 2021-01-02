@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -167,7 +167,7 @@ private:
     void insertDfaOrigins(DfaVertex* dfaStatep) {
         // Record the NFA states this dfa came from
         uint32_t hash = hashDfaOrigins(dfaStatep);
-        m_hashMap.insert(make_pair(hash, dfaStatep));
+        m_hashMap.emplace(hash, dfaStatep);
     }
 
     DfaVertex* findDfaOrigins(const DfaStates& nfasWithInput) {

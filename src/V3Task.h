@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -39,8 +39,7 @@ public:
     static V3TaskConnects taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp);
     static string assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
                                       const string& toSuffix, const string& frPrefix = "");
-    static bool dpiToInternalFrStmt(AstVar* portp, const string& frName, string& frstmt,
-                                    string& ket);
+    static string assignDpiToInternal(const string& lhsName, AstVar* rhsp);
     static const char* dpiTemporaryVarSuffix();
 };
 

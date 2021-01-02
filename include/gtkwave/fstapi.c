@@ -1806,6 +1806,7 @@ xc->already_in_flush = 0;
 static void *fstWriterFlushContextPrivate1(void *ctx)
 {
 struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
+struct fstWriterContext *xc_parent;
 
 pthread_mutex_lock(&(xc->xc_parent->mutex));
 fstWriterFlushContextPrivate2(xc);
@@ -1816,10 +1817,11 @@ free(xc->curval_mem);
 free(xc->valpos_mem);
 free(xc->vchg_mem);
 tmpfile_close(&xc->tchn_handle, &xc->tchn_handle_nam);
+xc_parent = xc->xc_parent;
 free(xc);
 
-xc->xc_parent->in_pthread = 0;
-pthread_mutex_unlock(&(xc->xc_parent->mutex));
+xc_parent->in_pthread = 0;
+pthread_mutex_unlock(&(xc_parent->mutex));
 
 return(NULL);
 }

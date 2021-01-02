@@ -1,6 +1,50 @@
-015: exp=top.t.show0 got=top.t.show0
-019: exp=top.t.genblk1.show1 got=top.t.genblk1.show1
-023: exp=top.t.genblk2.show2 got=top.t.genblk2.show2
-028: exp=top.t.genblk3.genblk1.show3 got=top.t.genblk3.genblk1.show3
-034: exp=top.t.x1.x3.show4 got=top.t.x1.x3.show4
+021: got=top.t.direct_ignored.show1
+023: got=top.t.direct_ignored.genblk1.show2 exp=1 gennum=1 
+
+030: got=top.t.empty_DISAGREE.genblk1.show2 exp=0 gennum=1  <ignored>
+
+037: got=top.t.empty_named_DISAGREE.genblk1.show2 exp=0 gennum=1  <ignored>
+
+043: got=top.t.unnamed_counts.show1
+046: got=top.t.unnamed_counts.genblk1.show2 exp=0 gennum=1  <ignored>
+
+052: got=top.t.named_counts.named.show1
+055: got=top.t.named_counts.genblk1.show2 exp=0 gennum=1  <ignored>
+
+061: got=top.t.if_direct_counts.genblk1.show1
+063: got=top.t.if_direct_counts.genblk2.show2 exp=2 gennum=2 
+
+069: got=top.t.if_begin_counts.genblk1.show1
+071: got=top.t.if_begin_counts.genblk2.show2 exp=2 gennum=2 
+
+076: got=top.t.if_named_counts.named.show1
+078: got=top.t.if_named_counts.named.subnamed.show1s
+082: got=top.t.if_named_counts.genblk2.show2 exp=2 gennum=2 
+
+089: got=top.t.begin_if_counts.genblk1.show1
+092: got=top.t.begin_if_counts.genblk2.show2 exp=2 gennum=2 
+
+099: got=top.t.for_empty_counts.genblk2.show2 exp=0 gennum=2  <ignored>
+
+104: got=top.t.for_direct_counts.genblk1[0].show1
+106: got=top.t.for_direct_counts.genblk2.show2 exp=2 gennum=2 
+
+111: got=top.t.for_named_counts.fornamed[0].show1
+114: got=top.t.for_named_counts.genblk2.show2 exp=2 gennum=2 
+
+119: got=top.t.for_begin_counts.genblk1[0].show1
+122: got=top.t.for_begin_counts.genblk2.show2 exp=2 gennum=2 
+
+132: got=top.t.if_if.genblk1.genblk1.show1
+136: got=top.t.if_if.genblk2.show2 exp=2 gennum=2 
+
+142: got=top.t.case_direct.genblk1.show1
+146: got=top.t.case_direct.genblk2.show2 exp=2 gennum=2 
+
+152: got=top.t.case_begin_counts.genblk1.show1
+156: got=top.t.case_begin_counts.genblk2.show2 exp=2 gennum=2 
+
+162: got=top.t.case_named_counts.subnamed.show1
+166: got=top.t.case_named_counts.genblk2.show2 exp=2 gennum=2 
+
 *-* All Finished *-*

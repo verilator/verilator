@@ -1,6 +1,6 @@
 // DESCRIPTION: Verilator: List of To Do issues.
 //
-// Copyright 2004-2020 by Wilson Snyder. This program is free software; you can
+// Copyright 2004-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -84,7 +84,7 @@
    "if (a) { ... b=2; } else { ... b=2;}" -> "b=2; if ..."
    Careful though, as b could appear in the statement or multiple times in statement
    (Could just require exatly two 'b's in statement)
-** Simplify XOR/XNOR/AND/OR bit selection trees
+** Simplify XOR/AND/OR bit selection trees
    Foo = A[1] ^ A[2] ^ A[3] etc are better as ^ ( A & 32'b...1110 )
 ** Combine variables into wider elements
    Parallel statements on different bits should become single signal

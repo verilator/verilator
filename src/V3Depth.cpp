@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -114,11 +114,12 @@ private:
     virtual void visit(AstNodeTermop* nodep) override {}
     virtual void visit(AstNodeMath* nodep) override {
         // We have some operator defines that use 2 parens, so += 2.
-        m_depth += 2;
-        if (m_depth > m_maxdepth) m_maxdepth = m_depth;
-        iterateChildren(nodep);
-        m_depth -= 2;
-
+        {
+            VL_RESTORER(m_depth);
+            m_depth += 2;
+            if (m_depth > m_maxdepth) m_maxdepth = m_depth;
+            iterateChildren(nodep);
+        }
         if (m_stmtp && (v3Global.opt.compLimitParens() >= 1)  // Else compiler doesn't need it
             && (m_maxdepth - m_depth) > v3Global.opt.compLimitParens()
             && !VN_IS(nodep->backp(), NodeStmt)  // Not much point if we're about to use it

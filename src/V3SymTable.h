@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -129,7 +129,7 @@ public:
                 entp->nodep()->v3fatalSrc("Inserting two symbols with same name: " << name);
             }
         } else {
-            m_idNameMap.insert(make_pair(name, entp));
+            m_idNameMap.emplace(name, entp);
         }
     }
     void reinsert(const string& name, VSymEnt* entp) {
@@ -267,7 +267,7 @@ public:
                 scopes += AstNode::prettyName(it->first);
             }
         }
-        if (scopes == "") scopes = "<no cells found>";
+        if (scopes == "") scopes = "<no instances found>";
         std::cerr << V3Error::warnMore() << "... Known scopes under '" << prettyName
                   << "': " << scopes << endl;
         if (debug()) dump(std::cerr, "       KnownScope: ", 1);

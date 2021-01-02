@@ -32,7 +32,7 @@ const std::vector<CallbackState> cb_states{PRE_REGISTER, ACTIVE, ACTIVE_AGAIN, R
                                            POST_REMOVE};
 
 #define CB_COUNT cbAtEndOfSimTime + 1
-vpiHandle vh_registered_cbs[CB_COUNT] = {0};
+TestVpiHandle vh_registered_cbs[CB_COUNT] = {0};
 
 unsigned int callback_counts[CB_COUNT] = {0};
 unsigned int callback_expected_counts[CB_COUNT] = {0};
@@ -43,7 +43,6 @@ bool callbacks_expected_called[CB_COUNT] = {false};
 std::vector<int>::const_iterator cb_iter;
 std::vector<CallbackState>::const_iterator state_iter;
 
-vpiHandle vh_test_cb = 0;
 unsigned int main_time = 0;
 bool got_error = false;
 
@@ -94,18 +93,17 @@ static int the_callback(p_cb_data cb_data) {
 static int register_cb(const int next_state) {
     int cb = *cb_iter;
     t_cb_data cb_data_testcase;
+    s_vpi_value v;  // Needed in this scope as is in cb_data
     bzero(&cb_data_testcase, sizeof(cb_data_testcase));
     cb_data_testcase.cb_rtn = the_callback;
     cb_data_testcase.reason = cb;
 
+    TestVpiHandle count_h = VPI_HANDLE("count");  // Needed in this scope as is in cb_data
+    CHECK_RESULT_NZ(count_h);
     if (cb == cbValueChange) {
-        vpiHandle vh1 = VPI_HANDLE("count");
-        CHECK_RESULT_NZ(vh1);
-
-        s_vpi_value v;
         v.format = vpiSuppressVal;
 
-        cb_data_testcase.obj = vh1;
+        cb_data_testcase.obj = count_h;
         cb_data_testcase.value = &v;
     }
 
@@ -117,6 +115,7 @@ static int register_cb(const int next_state) {
             vpi_printf(const_cast<char*>("     - Registering callback %s\n"),
                        cb_reason_to_string(cb));
         }
+        vh_registered_cbs[cb].release();
         vh_registered_cbs[cb] = vpi_register_cb(&cb_data_testcase);
         break;
     }
@@ -126,6 +125,7 @@ static int register_cb(const int next_state) {
                        cb_reason_to_string(cb));
         }
         int ret = vpi_remove_cb(vh_registered_cbs[cb]);
+        vh_registered_cbs[cb].freed();
         CHECK_RESULT(ret, 1);
         vh_registered_cbs[cb] = vpi_register_cb(&cb_data_testcase);
         break;
@@ -136,6 +136,7 @@ static int register_cb(const int next_state) {
                        cb_reason_to_string(cb));
         }
         int ret = vpi_remove_cb(vh_registered_cbs[cb]);
+        vh_registered_cbs[cb].freed();
         CHECK_RESULT(ret, 1);
         break;
     }
@@ -215,7 +216,7 @@ static int test_callbacks(p_cb_data cb_data) {
         t1.low = 1;
         cb_data_n.time = &t1;
         cb_data_n.cb_rtn = test_callbacks;
-        vh_test_cb = vpi_register_cb(&cb_data_n);
+        TestVpiHandle vh_test_cb = vpi_register_cb(&cb_data_n);
         CHECK_RESULT_NZ(vh_test_cb);
     }
 
@@ -235,7 +236,7 @@ static int register_test_callback() {
     t1.low = 1;
     cb_data.time = &t1;
     cb_data.cb_rtn = test_callbacks;
-    vh_test_cb = vpi_register_cb(&cb_data);
+    TestVpiHandle vh_test_cb = vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(vh_test_cb);
 
     cb_iter = cbs_to_test.cbegin();
@@ -250,7 +251,6 @@ int main(int argc, char** argv, char** env) {
     double sim_time = 100;
     bool cbs_called;
     Verilated::commandArgs(argc, argv);
-    Verilated::debug(0);
 
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 

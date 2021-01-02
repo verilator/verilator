@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -115,7 +115,7 @@ public:
                         depCount++;
                     }
                     VxHolder newVx(vxp, pos++, depCount);
-                    m_waitingVertices.insert(make_pair(vxp, newVx));
+                    m_waitingVertices.emplace(vxp, newVx);
                 }
             } else {  // REVERSE
                 if (vxp->outEmpty()) {
@@ -127,7 +127,7 @@ public:
                         depCount++;
                     }
                     VxHolder newVx(vxp, pos++, depCount);
-                    m_waitingVertices.insert(make_pair(vxp, newVx));
+                    m_waitingVertices.emplace(vxp, newVx);
                 }
             }
         }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -31,7 +31,7 @@ private:
     struct Singleton {
         KeywordMap s_kwdMap;  // List of keywords, and what language applies
         Singleton() { init(); }
-        void addKwd(const string& kwd, const string& why) { s_kwdMap.insert(make_pair(kwd, why)); }
+        void addKwd(const string& kwd, const string& why) { s_kwdMap.emplace(kwd, why); }
         void init();
     };
 

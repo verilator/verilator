@@ -1,0 +1,98 @@
+# DESCRIPTION: Github actions config
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: coverage
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # weekly
+
+env:
+  CI_OS_NAME: linux
+  CI_COMMIT: ${{ github.sha }}
+  CCACHE_COMPRESS: 1
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
+  COVERAGE: 1
+
+jobs:
+
+
+  Build:
+    runs-on: ubuntu-20.04
+    env:
+      CI_BUILD_STAGE_NAME: build
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: coverage-${{ env.cache-name }}
+
+    - name: Install dependencies for build
+      env:
+        CI_BUILD_STAGE_NAME: build
+      run: ./ci/ci-install.bash
+
+    - name: Build Verilator
+      run: |
+        ./ci/ci-script.bash
+
+        mkdir tarball/
+        cp -vr bin tarball/
+        cp -vr src/obj*/*.gcno tarball/
+        tar cvzf verilator-${CI_COMMIT}.tgz -C ./tarball .
+
+    - uses: actions/upload-artifact@v2
+      with:
+        path: verilator-${{ env.CI_COMMIT }}.tgz
+
+
+  Test:
+    needs: Build
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+        - vlt-
+        - vltmt-
+        num:
+        - 0
+        - 1
+        - 2
+        - 3
+        include:
+        - { test: dist, num: '' }
+    name: test-${{ matrix.test }}${{ matrix.num }}
+    runs-on: ubuntu-20.04
+    env:
+      CI_BUILD_STAGE_NAME: test
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - uses: actions/cache@v2
+      env:
+        cache-name: ccache
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: coverage-${{ env.cache-name }}
+
+    - uses: actions/download-artifact@v2
+
+    - name: Install Verilator and test dependencies
+      run: |
+        tar xvzf artifact/verilator-${CI_COMMIT}.tgz
+        ./ci/ci-install.bash
+
+    - name: Test
+      env:
+        TESTS: coverage-${{ matrix.test }}${{ matrix.num }}
+      run: ./ci/ci-script.bash

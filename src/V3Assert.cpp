@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -86,18 +86,19 @@ private:
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
         return varrefp;
     }
-    AstNode* newIfAssertOn(AstNode* nodep) {
+    AstNode* newIfAssertOn(AstNode* nodep, bool force) {
         // Add a internal if to check assertions are on.
         // Don't make this a AND term, as it's unlikely to need to test this.
         FileLine* fl = nodep->fileline();
-        AstNode* newp
-            = new AstIf(fl,
-                        // If assertions are off, have constant propagation rip them out later
-                        // This allows syntax errors and such to be detected normally.
-                        (v3Global.opt.assertOn()
-                             ? static_cast<AstNode*>(new AstCMath(fl, "Verilated::assertOn()", 1))
-                             : static_cast<AstNode*>(new AstConst(fl, AstConst::BitFalse()))),
-                        nodep, nullptr);
+        AstNode* newp = new AstIf(
+            fl,
+            (force ? new AstConst(fl, AstConst::BitTrue())
+                   :  // If assertions are off, have constant propagation rip them out later
+                 // This allows syntax errors and such to be detected normally.
+                 (v3Global.opt.assertOn()
+                      ? static_cast<AstNode*>(new AstCMath(fl, "Verilated::assertOn()", 1))
+                      : static_cast<AstNode*>(new AstConst(fl, AstConst::BitFalse())))),
+            nodep, nullptr);
         newp->user1(true);  // Don't assert/cover this if
         return newp;
     }
@@ -114,7 +115,7 @@ private:
 
     AstNode* newFireAssert(AstNode* nodep, const string& message) {
         AstNode* bodysp = newFireAssertUnchecked(nodep, message);
-        bodysp = newIfAssertOn(bodysp);
+        bodysp = newIfAssertOn(bodysp, false);
         return bodysp;
     }
 
@@ -154,20 +155,21 @@ private:
             if (bodysp && passsp) bodysp = bodysp->addNext(passsp);
             ifp = new AstIf(nodep->fileline(), propp, bodysp, nullptr);
             bodysp = ifp;
-        } else if (VN_IS(nodep, Assert)) {
+        } else if (VN_IS(nodep, Assert) || VN_IS(nodep, AssertIntrinsic)) {
             if (nodep->immediate()) {
                 ++m_statAsImm;
             } else {
                 ++m_statAsNotImm;
             }
-            if (passsp) passsp = newIfAssertOn(passsp);
-            if (failsp) failsp = newIfAssertOn(failsp);
+            bool force = VN_IS(nodep, AssertIntrinsic);
+            if (passsp) passsp = newIfAssertOn(passsp, force);
+            if (failsp) failsp = newIfAssertOn(failsp, force);
             if (!failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
             ifp = new AstIf(nodep->fileline(), propp, passsp, failsp);
             // It's more LIKELY that we'll take the nullptr if clause
             // than the sim-killing else clause:
             ifp->branchPred(VBranchPred::BP_LIKELY);
-            bodysp = newIfAssertOn(ifp);
+            bodysp = newIfAssertOn(ifp, force);
         } else {
             nodep->v3fatalSrc("Unknown node type");
         }
@@ -414,6 +416,10 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     virtual void visit(AstAssert* nodep) override {
+        iterateChildren(nodep);
+        newPslAssertion(nodep, nodep->failsp());
+    }
+    virtual void visit(AstAssertIntrinsic* nodep) override {
         iterateChildren(nodep);
         newPslAssertion(nodep, nodep->failsp());
     }

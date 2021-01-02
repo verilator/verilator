@@ -62,43 +62,16 @@ extern void dpii_open_int(const svOpenArrayHandle i, const svOpenArrayHandle o);
 extern void dpii_open_integer(const svOpenArrayHandle i, const svOpenArrayHandle o);
 extern void dpii_open_logic(const svOpenArrayHandle i, const svOpenArrayHandle o);
 
+extern void dpii_open_int_u1(int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
+extern void dpii_open_int_u2(int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
+extern void dpii_open_int_u3(int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
+
 extern int dpii_failure();
 }
 #endif
 
-//======================================================================
-
-// Untested:
-// void *svGetArrElemPtr(const svOpenArrayHandle, int indx1, ...);
-// void svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecVal* s, int indx1, ...);
-// void svPutBitArrElem1VecVal(const svOpenArrayHandle d, const svBitVecVal* s, int indx1);
-// void svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogicVecVal* s, int indx1, ...);
-// void svPutLogicArrElem1VecVal(const svOpenArrayHandle d, const svLogicVecVal* s, int indx1);
-// void svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s, int indx1, ...);
-// void svGetBitArrElem1VecVal(svBitVecVal* d, const svOpenArrayHandle s, int indx1);
-// void svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandle s, int indx1, ...);
-// void svGetLogicArrElem1VecVal(svLogicVecVal* d, const svOpenArrayHandle s, int indx1);
-// svBit svGetBitArrElem(const svOpenArrayHandle s, int indx1, ...);
-// svBit svGetBitArrElem1(const svOpenArrayHandle s, int indx1);
-// svLogic svGetLogicArrElem(const svOpenArrayHandle s, int indx1, ...);
-// svLogic svGetLogicArrElem1(const svOpenArrayHandle s, int indx1);
-// void svPutBitArrElem(const svOpenArrayHandle d, svBit value, int indx1, ...);
-// void svPutBitArrElem1(const svOpenArrayHandle d, svBit value, int indx1);
-// void svPutLogicArrElem(const svOpenArrayHandle d, svLogic value, int indx1, ...);
-// void svPutLogicArrElem1(const svOpenArrayHandle d, svLogic value, int indx1);
-
-//======================================================================
-
 int failure = 0;
 int dpii_failure() { return failure; }
-
-// clang-format off
-#ifdef _WIN32
-# define T_PRI64 "I64"
-#else  // Linux or compliant Unix flavors
-# define T_PRI64 "ll"
-#endif
-// clang-format on
 
 #define CHECK_RESULT_HEX(got, exp) \
     do { \
@@ -122,8 +95,8 @@ void dpii_unused(const svOpenArrayHandle u) {}
 
 void _dpii_all(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o) {
 #ifdef TEST_VERBOSE
-    printf("-:%s:%d: For case c=%d p=%d u=%d  data=%p\n",  //
-           __FILE__, __LINE__, c, p, u, svGetArrayPtr(i));
+    fprintf(stderr, "-:%s:%d: For case c=%d p=%d u=%d  data=%p\n",  //
+            __FILE__, __LINE__, c, p, u, svGetArrayPtr(i));
 #endif
     (void)svGetArrayPtr(i);
 #ifndef NC
@@ -260,18 +233,63 @@ void dpii_open_byte(const svOpenArrayHandle i, const svOpenArrayHandle o) {
 #endif
 }
 
-void dpii_open_int(const svOpenArrayHandle i, const svOpenArrayHandle o) {
+void dpii_open_integer(const svOpenArrayHandle i, const svOpenArrayHandle o) {}
+void dpii_open_logic(const svOpenArrayHandle i, const svOpenArrayHandle o) {}
+
+static void _dpii_open_int_ux(int u, const svOpenArrayHandle i, const svOpenArrayHandle o) {
     intptr_t arrPtr = (intptr_t)svGetArrayPtr(i);
     CHECK_RESULT_HEX_NE(arrPtr, 0);  // All the arrays should actually exist
 #ifndef NC
     // NC always returns zero and warns
     int sizeInputOfArray = svSizeOfArray(i);
     CHECK_RESULT_HEX_NE(sizeInputOfArray, 0);  // None of the test cases have zero size
-    CHECK_RESULT_HEX_NE(svDimensions(i), 0);  // All the test cases are unpacked arrays
+    CHECK_RESULT_HEX(svDimensions(i), u);
 #endif
+
+    int dim = svDimensions(i);
+
+    for (int a = svLow(i, 1); a <= svHigh(i, 1); ++a) {
+        if (dim == 1) {
+            intptr_t ip = (intptr_t)svGetArrElemPtr(i, a);
+            intptr_t i2p = (intptr_t)svGetArrElemPtr1(i, a);
+            CHECK_RESULT_HEX(ip, i2p);
+            CHECK_RESULT_HEX_NE(ip, 0);
+            intptr_t op = (intptr_t)svGetArrElemPtr(o, a);
+            CHECK_RESULT_HEX_NE(op, 0);
+            *reinterpret_cast<int*>(op) = ~*reinterpret_cast<int*>(ip);
+        } else {
+            for (int b = svLow(i, 2); b <= svHigh(i, 2); ++b) {
+                if (dim == 2) {
+                    intptr_t ip = (intptr_t)svGetArrElemPtr(i, a, b);
+                    intptr_t i2p = (intptr_t)svGetArrElemPtr2(i, a, b);
+                    CHECK_RESULT_HEX(ip, i2p);
+                    CHECK_RESULT_HEX_NE(ip, 0);
+                    intptr_t op = (intptr_t)svGetArrElemPtr(o, a, b);
+                    CHECK_RESULT_HEX_NE(op, 0);
+                    *reinterpret_cast<int*>(op) = ~*reinterpret_cast<int*>(ip);
+                } else {
+                    for (int c = svLow(i, 3); c <= svHigh(i, 3); ++c) {
+                        if (dim == 3) {
+                            intptr_t ip = (intptr_t)svGetArrElemPtr(i, a, b, c);
+                            intptr_t i2p = (intptr_t)svGetArrElemPtr3(i, a, b, c);
+                            CHECK_RESULT_HEX(ip, i2p);
+                            CHECK_RESULT_HEX_NE(ip, 0);
+                            intptr_t op = (intptr_t)svGetArrElemPtr(o, a, b, c);
+                            CHECK_RESULT_HEX_NE(op, 0);
+                            *reinterpret_cast<int*>(op) = ~*reinterpret_cast<int*>(ip);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
-
-void dpii_open_integer(const svOpenArrayHandle i, const svOpenArrayHandle o) {}
-void dpii_open_logic(const svOpenArrayHandle i, const svOpenArrayHandle o) {}
-
-int dpii_failed() { return failure; }
+void dpii_open_int_u1(int u, const svOpenArrayHandle i, const svOpenArrayHandle o) {
+    _dpii_open_int_ux(u, i, o);
+}
+void dpii_open_int_u2(int u, const svOpenArrayHandle i, const svOpenArrayHandle o) {
+    _dpii_open_int_ux(u, i, o);
+}
+void dpii_open_int_u3(int u, const svOpenArrayHandle i, const svOpenArrayHandle o) {
+    _dpii_open_int_ux(u, i, o);
+}

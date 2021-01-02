@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -171,10 +171,9 @@ private:
     }
     virtual void visit(AstAssign* nodep) override {
         if (m_check == CT_SEQ) {
-            AstNode* las = m_assignp;
+            VL_RESTORER(m_assignp);
             m_assignp = nodep;
             iterateAndNextNull(nodep->lhsp());
-            m_assignp = las;
         }
     }
     virtual void visit(AstVarRef* nodep) override {
@@ -284,7 +283,6 @@ private:
             m_namer.scopep()->addActivep(m_scopeFinalp);
         }
         nodep->unlinkFrBack();
-        m_scopeFinalp->addStmtsp(new AstComment(nodep->fileline(), nodep->typeName(), true));
         m_scopeFinalp->addStmtsp(nodep->bodysp()->unlinkFrBackWithNext());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }

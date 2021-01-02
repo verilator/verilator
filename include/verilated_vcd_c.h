@@ -3,7 +3,7 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,7 +34,7 @@ class VerilatedVcd;
 // VerilatedFile
 /// File handling routines, which can be overrode for e.g. socket I/O
 
-class VerilatedVcdFile final {
+class VerilatedVcdFile VL_NOT_FINAL {
 private:
     int m_fd = 0;  ///< File descriptor we're writing to
 public:

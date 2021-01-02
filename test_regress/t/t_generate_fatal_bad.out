@@ -50,7 +50,7 @@
    13 |    localparam integer BAZ = get_baz(BAR);
       |                             ^~~~~~~
 %Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
-                                      : ... In instance t.genblk1.foo_inst4
+                                      : ... In instance t.genblk4.foo_inst4
         t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
         t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = ?32?h7

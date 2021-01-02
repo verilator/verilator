@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -24,8 +24,8 @@
 
 // clang-format off
 
-// Use VL_DISABLE_INTRINSICS to disable all intrinsics based optimization
-#if !defined(VL_DISABLE_INTRINSICS) && !defined(VL_PORTABLE_ONLY)
+// Use VL_PORTABLE_ONLY to disable all intrinsics based optimization
+#ifndef VL_PORTABLE_ONLY
 # if defined(__SSE2__) && !defined(VL_DISABLE_SSE2)
 #  define VL_HAVE_SSE2 1
 #  include <emmintrin.h>

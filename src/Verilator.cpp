@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -23,6 +23,7 @@
 #include "V3AssertPre.h"
 #include "V3Begin.h"
 #include "V3Branch.h"
+#include "V3Broken.h"
 #include "V3CCtors.h"
 #include "V3CUse.h"
 #include "V3Case.h"
@@ -75,6 +76,7 @@
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3ProtectLib.h"
+#include "V3Randomize.h"
 #include "V3Reloop.h"
 #include "V3Scope.h"
 #include "V3Scoreboard.h"
@@ -178,6 +180,9 @@ static void process() {
     // Coverage insertion
     //    Before we do dead code elimination and inlining, or we'll lose it.
     if (v3Global.opt.coverage()) V3Coverage::coverage(v3Global.rootp());
+
+    // Add randomize() class methods if they are used by the design
+    if (v3Global.useRandomizeMethods()) V3Randomize::randomizeNetlist(v3Global.rootp());
 
     // Push constants, but only true constants preserving liveness
     // so V3Undriven sees variables to be eliminated, ie "if (0 && foo) ..."
@@ -570,6 +575,7 @@ static void verilate(const string& argString) {
         V3TSP::selfTest();
         V3ScoreboardBase::selfTest();
         V3Partition::selfTest();
+        V3Broken::selfTest();
     }
 
     // Read first filename

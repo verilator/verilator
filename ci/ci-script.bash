@@ -57,9 +57,11 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ##############################################################################
   # Run tests
 
+  export VERILATOR_TEST_NO_CONTRIBUTORS=1  # Separate workflow check
+
   if [ "$CI_OS_NAME" = "osx" ]; then
-    export VERILATOR_TEST_NO_GDB=1 # Pain to get GDB to work on OS X
-    export VERILATOR_TEST_NO_GPROF=1 # Apple Clang has no -pg
+    export VERILATOR_TEST_NO_GDB=1  # Pain to get GDB to work on OS X
+    export VERILATOR_TEST_NO_GPROF=1  # Apple Clang has no -pg
     # export PATH="/Applications/gtkwave.app/Contents/Resources/bin:$PATH" # fst2vcd
     file bin/verilator_bin
     file bin/verilator_bin_dbg
@@ -69,7 +71,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     stat bin/verilator_bin_dbg
     # For some reason, the dbg exe is corrupted by this point ('file' reports
     # it as data rather than a Mach-O). Unclear if this is an OS X issue or
-    # one for Travis. Remove the file and re-link...
+    # CI's. Remove the file and re-link...
     rm bin/verilator_bin_dbg
     "$MAKE" -j "$NPROC" -k
   elif [ "$CI_OS_NAME" = "freebsd" ]; then
@@ -77,19 +79,25 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable
   fi
 
+  # Run sanitize on Ubuntu 20.04 only
+  [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && sanitize='--sanitize' || sanitize=''
+
   # Run the specified test
   case $TESTS in
     dist-vlt-0)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=0/2
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=0/2
       ;;
     dist-vlt-1)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=1/2
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=1/2
       ;;
     vltmt-0)
       "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
       ;;
     vltmt-1)
       "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
+      ;;
+    coverage-all)
+      nodist/code_coverage --stages 3-
       ;;
     coverage-dist)
       nodist/code_coverage --stages 3- --scenarios=--dist

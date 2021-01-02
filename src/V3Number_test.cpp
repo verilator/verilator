@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -47,8 +47,6 @@ void test(const string& lhss, const string& op, const string& rhss, const string
         gotnum.opRedAnd(lhnum);
     } else if (op == "redXor") {
         gotnum.opRedXor(lhnum);
-    } else if (op == "redXnor") {
-        gotnum.opRedXnor(lhnum);
     } else if (op == "concat") {
         gotnum.opConcat(lhnum, rhnum);
     } else if (op == "repl") {

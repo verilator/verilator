@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -96,8 +96,8 @@ private:
             } else if (adtypep->isRanged()) {
                 UASSERT_OBJ(
                     !(adtypep->rangep()
-                      && (!VN_IS(adtypep->rangep()->msbp(), Const)
-                          || !VN_IS(adtypep->rangep()->lsbp(), Const))),
+                      && (!VN_IS(adtypep->rangep()->leftp(), Const)
+                          || !VN_IS(adtypep->rangep()->rightp(), Const))),
                     nodep,
                     "Non-constant variable range; errored earlier");  // in constifyParam(bfdtypep)
                 fromRange = adtypep->declRange();
@@ -204,7 +204,7 @@ private:
         UINFO(6, "SELBIT " << nodep << endl);
         if (debug() >= 9) nodep->backp()->dumpTree(cout, "--SELBT0: ");
         // lhsp/rhsp do not need to be constant
-        AstNode* fromp = nodep->lhsp()->unlinkFrBack();
+        AstNode* fromp = nodep->fromp()->unlinkFrBack();
         AstNode* rhsp = nodep->rhsp()->unlinkFrBack();  // bit we're extracting
         if (debug() >= 9) nodep->dumpTree(cout, "--SELBT2: ");
         FromData fromdata = fromDataForArray(nodep, fromp);
@@ -225,12 +225,10 @@ private:
         } else if (AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
             // SELBIT(array, index) -> SEL(array, index*width-of-subindex, width-of-subindex)
             AstNode* subp = rhsp;
-            if (fromRange.lo() != 0 || fromRange.hi() < 0) {
-                if (fromRange.littleEndian()) {
-                    subp = newSubNeg(fromRange.hi(), subp);
-                } else {
-                    subp = newSubNeg(subp, fromRange.lo());
-                }
+            if (fromRange.littleEndian()) {
+                subp = newSubNeg(fromRange.hi(), subp);
+            } else {
+                subp = newSubNeg(subp, fromRange.lo());
             }
             UASSERT_OBJ(!(!fromRange.elements() || (adtypep->width() % fromRange.elements()) != 0),
                         adtypep,
@@ -324,14 +322,14 @@ private:
         UINFO(6, "SELEXTRACT " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "--SELEX0: ");
         // Below 2 lines may change nodep->widthp()
-        V3Const::constifyParamsEdit(nodep->lsbp());  // May relink pointed to node
-        V3Const::constifyParamsEdit(nodep->msbp());  // May relink pointed to node
+        V3Const::constifyParamsEdit(nodep->leftp());  // May relink pointed to node
+        V3Const::constifyParamsEdit(nodep->rightp());  // May relink pointed to node
         // if (debug() >= 9) nodep->dumpTree(cout, "--SELEX3: ");
-        checkConstantOrReplace(nodep->lsbp(),
+        checkConstantOrReplace(nodep->leftp(),
                                "First value of [a:b] isn't a constant, maybe you want +: or -:");
-        checkConstantOrReplace(nodep->msbp(),
+        checkConstantOrReplace(nodep->rightp(),
                                "Second value of [a:b] isn't a constant, maybe you want +: or -:");
-        AstNode* fromp = nodep->lhsp()->unlinkFrBack();
+        AstNode* fromp = nodep->fromp()->unlinkFrBack();
         AstNode* msbp = nodep->rhsp()->unlinkFrBack();
         AstNode* lsbp = nodep->thsp()->unlinkFrBack();
         vlsint32_t msb = VN_CAST(msbp, Const)->toSInt();
@@ -351,9 +349,9 @@ private:
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {  // Slice
-                AstSliceSel* newp = new AstSliceSel(
-                    nodep->fileline(), fromp,
-                    VNumRange(VNumRange::LeftRight(), msb - fromRange.lo(), lsb - fromRange.lo()));
+                AstSliceSel* newp
+                    = new AstSliceSel{nodep->fileline(), fromp,
+                                      VNumRange{msb - fromRange.lo(), lsb - fromRange.lo()}};
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
@@ -474,7 +472,7 @@ private:
         checkConstantOrReplace(nodep->thsp(), "Width of :+ or :- bit extract isn't a constant");
         if (debug() >= 9) nodep->dumpTree(cout, "--SELPM3: ");
         // Now replace it with an AstSel
-        AstNode* fromp = nodep->lhsp()->unlinkFrBack();
+        AstNode* fromp = nodep->fromp()->unlinkFrBack();
         AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
         AstNode* widthp = nodep->thsp()->unlinkFrBack();
         warnTri(rhsp);

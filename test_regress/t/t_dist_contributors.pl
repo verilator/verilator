@@ -16,10 +16,12 @@ scenarios(dist => 1);
 
 my $root = "..";
 my $Debug;
-my %Contributors;
+my %Contributors = ('github action' => 1);
 my %Authors;
 
-if (!-r "$root/.git") {
+if ($ENV{VERILATOR_TEST_NO_CONTRIBUTORS}) {
+    skip("Skipping due to VERILATOR_TEST_NO_CONTRIBUTORS");
+} elsif (!-r "$root/.git") {
     skip("Not in a git repository");
 } else {
     check();

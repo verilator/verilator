@@ -3,7 +3,7 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -198,7 +198,7 @@ void VerilatedVcd::makeNameMap() {
             std::string newname = std::string("top");
             if (hiername[0] != '\t') newname += ' ';
             newname += hiername;
-            newmapp->insert(std::make_pair(newname, decl));
+            newmapp->emplace(newname, decl);
         }
         deleteNameMap();
         m_namemapp = newmapp;
@@ -511,7 +511,7 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
         decl += buf;
     }
     decl += " $end\n";
-    m_namemapp->insert(std::make_pair(hiername, decl));
+    m_namemapp->emplace(hiername, decl);
 }
 
 void VerilatedVcd::declBit(vluint32_t code, const char* name, bool array, int arraynum) {
@@ -777,6 +777,8 @@ void VerilatedVcd::fullDouble(vluint32_t code, const double newval) {
 #ifdef VERILATED_VCD_TEST
 #include <iostream>
 
+extern void verilated_trace_imp_selftest();
+
 vluint32_t v1, v2, s1, s2[3];
 vluint32_t tri96[3];
 vluint32_t tri96__tri[3];
@@ -843,6 +845,8 @@ void vcdChange(void*, VerilatedVcd* vcdp) {
 
 // clang-format off
 void vcdTestMain(const char* filenamep) {
+    verilated_trace_imp_selftest();
+
     v1 = v2 = s1 = 0;
     s2[0] = s2[1] = s2[2] = 0;
     tri96[2] = tri96[1] = tri96[0] = 0;
@@ -889,6 +893,7 @@ void vcdTestMain(const char* filenamep) {
         }
 # endif
         vcdp->close();
+        VL_DO_CLEAR(delete vcdp, vcdp = nullptr);
     }
 }
 #endif

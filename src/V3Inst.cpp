@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -161,7 +161,7 @@ public:
     // METHODS
     void insert(AstVar* nodep) {
         UINFO(8, "    dmINSERT    " << nodep << endl);
-        m_modVarNameMap.insert(make_pair(nodep->name(), nodep));
+        m_modVarNameMap.emplace(nodep->name(), nodep);
     }
     AstVar* find(const string& name) {
         const auto it = m_modVarNameMap.find(name);
@@ -207,7 +207,7 @@ private:
             UINFO(8, "   dv-vec-VAR    " << nodep << endl);
             AstUnpackArrayDType* arrdtype = VN_CAST(nodep->dtypep(), UnpackArrayDType);
             AstNode* prevp = nullptr;
-            for (int i = arrdtype->lsb(); i <= arrdtype->msb(); ++i) {
+            for (int i = arrdtype->lo(); i <= arrdtype->hi(); ++i) {
                 string varNewName = nodep->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 UINFO(8, "VAR name insert " << varNewName << "  " << nodep << endl);
                 if (!m_deModVars.find(varNewName)) {
@@ -255,7 +255,7 @@ private:
             for (int i = 0; i < m_cellRangep->elementsConst(); i++) {
                 m_instSelNum
                     = m_cellRangep->littleEndian() ? (m_cellRangep->elementsConst() - 1 - i) : i;
-                int instNum = m_cellRangep->lsbConst() + i;
+                int instNum = m_cellRangep->loConst() + i;
 
                 AstCell* newp = nodep->cloneTree(false);
                 nodep->addNextHere(newp);
@@ -341,17 +341,17 @@ private:
                 // Arrayed instants: one bit for each of the instants (each
                 // assign is 1 pinwidth wide)
                 if (m_cellRangep->littleEndian()) {
-                    nodep->exprp()->v3warn(
-                        LITENDIAN,
-                        "Little endian cell range connecting to vector: MSB < LSB of cell range: "
-                            << m_cellRangep->lsbConst() << ":" << m_cellRangep->msbConst());
+                    nodep->exprp()->v3warn(LITENDIAN, "Little endian instance range connecting to "
+                                                      "vector: left < right of instance range: ["
+                                                          << m_cellRangep->leftConst() << ":"
+                                                          << m_cellRangep->rightConst() << "]");
                 }
                 AstNode* exprp = nodep->exprp()->unlinkFrBack();
                 bool inputPin = nodep->modVarp()->isNonOutput();
                 if (!inputPin
                     && !VN_IS(exprp, VarRef)
                     // V3Const will collapse the SEL with the one we're about to make
-                    && !VN_IS(exprp, Concat) && !VN_IS(exprp, Sel)) {
+                    && !VN_IS(exprp, Concat) && !VN_IS(exprp, Replicate) && !VN_IS(exprp, Sel)) {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: Per-bit array instantiations "
                                                  "with output connections to non-wires.");
                     // Note spec allows more complicated matches such as slices and such
@@ -396,7 +396,7 @@ private:
             AstNode* prevPinp = nullptr;
             // Clone the var referenced by the pin, and clone each var referenced by the varref
             // Clone pin varp:
-            for (int i = pinArrp->lsb(); i <= pinArrp->msb(); ++i) {
+            for (int i = pinArrp->lo(); i <= pinArrp->hi(); ++i) {
                 string varNewName = pinVarp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 AstVar* varNewp = nullptr;
 
@@ -529,7 +529,7 @@ public:
                    && connectXRefp->varp()->isIfaceRef()) {
         } else if (!alwaysCvt && connBasicp && pinBasicp
                    && connBasicp->width() == pinBasicp->width()
-                   && connBasicp->lsb() == pinBasicp->lsb()
+                   && connBasicp->lo() == pinBasicp->lo()
                    && !connectRefp->varp()
                            ->isSc()  // Need the signal as a 'shell' to convert types
                    && connBasicp->width() == pinVarp->width()) {

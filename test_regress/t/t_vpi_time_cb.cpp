@@ -89,6 +89,10 @@ unsigned int callback_count_start_of_sim = 0;
 
 #ifdef IS_VPI
 
+static int _never_cb(p_cb_data cb_data) {
+    CHECK_RESULT(0, 1);  // Should never get called
+}
+
 static int _time_cb1(p_cb_data cb_data) {
     s_vpi_time t;
     t.type = vpiSimTime;
@@ -99,14 +103,28 @@ static int _time_cb1(p_cb_data cb_data) {
 
     t_cb_data cb_data_n;
     bzero(&cb_data_n, sizeof(cb_data_n));
-
-    cb_data_n.reason = cbAfterDelay;
-    t.type = vpiSimTime;
-    t.high = 0;
-    t.low = 1;
-    cb_data_n.time = &t;
-    cb_data_n.cb_rtn = _time_cb1;
-    vpi_register_cb(&cb_data_n);
+    {
+        cb_data_n.reason = cbAfterDelay;
+        t.type = vpiSimTime;
+        t.high = 0;
+        t.low = 1;
+        cb_data_n.time = &t;
+        cb_data_n.cb_rtn = _time_cb1;
+        TestVpiHandle cb_data_n1_h = vpi_register_cb(&cb_data_n);
+        CHECK_RESULT(vpi_get(vpiType, cb_data_n1_h), vpiCallback);
+    }
+    {
+        // Test cancelling a callback
+        cb_data_n.reason = cbAfterDelay;
+        t.type = vpiSimTime;
+        t.high = 0;
+        t.low = 1;
+        cb_data_n.time = &t;
+        cb_data_n.cb_rtn = _never_cb;
+        TestVpiHandle cb_h = vpi_register_cb(&cb_data_n);
+        vpi_remove_cb(cb_h);
+        cb_h.freed();
+    }
     return 0;
 }
 
@@ -127,7 +145,8 @@ static int _time_cb2(p_cb_data cb_data) {
     t.low = 1;
     cb_data_n.time = &t;
     cb_data_n.cb_rtn = _time_cb2;
-    vpi_register_cb(&cb_data_n);
+    TestVpiHandle cb_data_n2_h = vpi_register_cb(&cb_data_n);
+    CHECK_RESULT(vpi_get(vpiType, cb_data_n2_h), vpiCallback);
     return 0;
 }
 
@@ -143,7 +162,8 @@ static int _start_of_sim_cb(p_cb_data cb_data) {
     t1.low = 3;
     cb_data_n1.time = &t1;
     cb_data_n1.cb_rtn = _time_cb1;
-    vpi_register_cb(&cb_data_n1);
+    TestVpiHandle cb_data_n1_h = vpi_register_cb(&cb_data_n1);
+    CHECK_RESULT(vpi_get(vpiType, cb_data_n1_h), vpiCallback);
 
     cb_data_n2.reason = cbAfterDelay;
     t2.type = vpiSimTime;
@@ -151,7 +171,7 @@ static int _start_of_sim_cb(p_cb_data cb_data) {
     t2.low = 4;
     cb_data_n2.time = &t2;
     cb_data_n2.cb_rtn = _time_cb2;
-    vpi_register_cb(&cb_data_n2);
+    TestVpiHandle cb_data_n2_h = vpi_register_cb(&cb_data_n2);
     callback_count_start_of_sim++;
     return 0;
 }
@@ -172,17 +192,28 @@ void vpi_compat_bootstrap(void) {
     // clang-format on
     t_cb_data cb_data;
     bzero(&cb_data, sizeof(cb_data));
-
-    // VL_PRINTF("register start-of-sim callback\n");
-    cb_data.reason = cbStartOfSimulation;
-    cb_data.time = 0;
-    cb_data.cb_rtn = _start_of_sim_cb;
-    vpi_register_cb(&cb_data);
-
-    cb_data.reason = cbEndOfSimulation;
-    cb_data.time = 0;
-    cb_data.cb_rtn = _end_of_sim_cb;
-    vpi_register_cb(&cb_data);
+    {
+        // VL_PRINTF("register start-of-sim callback\n");
+        cb_data.reason = cbStartOfSimulation;
+        cb_data.time = 0;
+        cb_data.cb_rtn = _start_of_sim_cb;
+        TestVpiHandle _start_of_sim_cb_h = vpi_register_cb(&cb_data);
+    }
+    {
+        cb_data.reason = cbEndOfSimulation;
+        cb_data.time = 0;
+        cb_data.cb_rtn = _end_of_sim_cb;
+        TestVpiHandle _end_of_sim_cb_h = vpi_register_cb(&cb_data);
+    }
+    {
+        // Test cancelling a callback
+        cb_data.reason = cbStartOfSimulation;
+        cb_data.time = 0;
+        cb_data.cb_rtn = _never_cb;
+        TestVpiHandle cb_h = vpi_register_cb(&cb_data);
+        vpi_remove_cb(cb_h);
+        cb_h.freed();
+    }
 }
 
 // icarus entry

@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 ######################################################################
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -409,6 +409,7 @@ arguments.
     --threads-max-mtasks <mtasks>  Tune maximum mtask partitioning
     --timescale <timescale>     Sets default timescale
     --timescale-override <timescale>  Overrides all timescales
+    --top <topname>             Alias of --top-module
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-coverage            Enable tracing of coverage
@@ -1260,8 +1261,8 @@ With -E, show comments in preprocessor output.
 =item --prefix I<topname>
 
 Specifies the name of the top level class and makefile.  Defaults to V
-prepended to the name of the --top-module switch, or V prepended to the
-first Verilog filename passed on the command line.
+prepended to the name of the --top switch, or V prepended to the first
+Verilog filename passed on the command line.
 
 =item --prof-cfuncs
 
@@ -1523,6 +1524,8 @@ sc_set_time_resolution, or the C++ code instantiating the Verilated module.
 As 1fs is the finest time precision it may be desirable to always use a
 precision of 1fs.
 
+=item --top I<topname>
+
 =item --top-module I<topname>
 
 When the input Verilog contains more than one top level module, specifies
@@ -1636,8 +1639,8 @@ into Verilator.  (Similar to perl -V.)  See also --getenv.
 =item -v I<filename>
 
 Read the filename as a Verilog library.  Any modules in the file may be
-used to resolve cell instantiations in the top level module, else ignored.
-Note -v is fairly standard across Verilog tools.
+used to resolve instances in the top level module, else ignored.  Note -v
+is fairly standard across Verilog tools.
 
 =item --no-verilate
 
@@ -1714,7 +1717,7 @@ than using this option.
 
 Disable all lint related warning messages, and all style warnings.  This is
 equivalent to "-Wno-ALWCOMBORDER -Wno-BSSPACE -Wno-CASEINCOMPLETE
--Wno-CASEOVERLAP -Wno-CASEX -Wno-CASEWITHX -Wno-CMPCONST -Wno-COLONPLUS
+-Wno-CASEOVERLAP -Wno-CASEX -Wno-CASTCONST -Wno-CASEWITHX -Wno-CMPCONST -Wno-COLONPLUS
 -Wno-ENDLABEL -Wno-IMPLICIT -Wno-LITENDIAN -Wno-PINCONNECTEMPTY
 -Wno-PINMISSING -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED
 -Wno-WIDTH" plus the list shown for Wno-style.
@@ -1746,7 +1749,7 @@ Enables the specified warning message.
 Enable all lint related warning messages (note by default they are already
 enabled), but do not affect style messages.  This is equivalent to
 "-Wwarn-ALWCOMBORDER -Wwarn-BSSPACE -Wwarn-CASEINCOMPLETE
--Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASEWITHX -Wwarn-CMPCONST
+-Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASTCONST -Wwarn-CASEWITHX -Wwarn-CMPCONST
 -Wwarn-COLONPLUS -Wwarn-ENDLABEL -Wwarn-IMPLICIT -Wwarn-LITENDIAN
 -Wwarn-PINMISSING -Wwarn-REALCVT -Wwarn-UNSIGNED -Wwarn-WIDTH".
 
@@ -3101,8 +3104,8 @@ Enable/disable waveform tracing for all future signals declared in the
 specified filename (or wildcard with '*' or '?', or all files if omitted)
 and range of line numbers (or all lines if omitted).
 
-For tracing_off, cells below any module in the files/ranges specified will
-also not be traced.
+For tracing_off, instances below any module in the files/ranges specified
+will also not be traced.
 
 =item clock_enable -module "<modulename>" -var "<signame>"
 
@@ -3774,13 +3777,13 @@ for use by downstream applications.
 =item /*verilator tracing_off*/
 
 Disable waveform tracing for all future signals that are declared in this
-module, or cells below this module.  Often this is placed just after a
-primitive's module statement, so that the entire module and cells below it
-are not traced.
+module, or instances below this module.  Often this is placed just after a
+primitive's module statement, so that the entire module and instances below
+it are not traced.
 
 =item /*verilator tracing_on*/
 
-Re-enable waveform tracing for all future signals or cells that are
+Re-enable waveform tracing for all future signals or instances that are
 declared.
 
 =back
@@ -3834,8 +3837,8 @@ for example a[2].b is acceptable, while a[x].b is generally not.
 
 References into generated and arrayed instances use the instance names
 specified in the Verilog standard; arrayed instances are named
-{cellName}[{instanceNumber}] in Verilog, which becomes
-{cellname}__BRA__{instanceNumber}__KET__ inside the generated C++ code.
+{instanceName}[{instanceNumber}] in Verilog, which becomes
+{instanceName}__BRA__{instanceNumber}__KET__ inside the generated C++ code.
 
 =head2 Latches
 
@@ -4314,15 +4317,6 @@ not overlap.
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
-=item CASEX
-
-Warns that it is simply better style to use casez, and C<?> in place of
-C<x>'s.  See
-L<http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase_rev1_1.pdf>
-
-Ignoring this warning will only suppress the lint check, it will simulate
-correctly.
-
 =item CASEWITHX
 
 Warns that a case statement contains a constant with a C<x>.  Verilator is
@@ -4332,6 +4326,25 @@ instead intended is to use a casez with C<?>.
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
+
+=item CASEX
+
+Warns that it is simply better style to use casez, and C<?> in place of
+C<x>'s.  See
+L<http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase_rev1_1.pdf>
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
+=item CASTCONST
+
+Warns that a dynamic cast ($cast) is unnecessary as the $cast will always
+succeed or fail.  If it will always fail, the $cast is useless. If it will
+always succeed a static cast may be preferred.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.  On other simulators, not fixing CASTCONST may result in
+decreased performance.
 
 =item CDCRSTLOGIC
 
@@ -4510,9 +4523,9 @@ top module statement is processed.
 Warns that a wire is being implicitly declared (it is a single bit wide
 output from a sub-module.)  While legal in Verilog, implicit declarations
 only work for single bit wide signals (not buses), do not allow using a
-signal before it is implicitly declared by a cell, and can lead to dangling
-nets.  A better option is the /*AUTOWIRE*/ feature of Verilog-Mode for
-Emacs, available from L<https://www.veripool.org/verilog-mode>
+signal before it is implicitly declared by an instance, and can lead to
+dangling nets.  A better option is the /*AUTOWIRE*/ feature of Verilog-Mode
+for Emacs, available from L<https://www.veripool.org/verilog-mode>
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
@@ -4585,10 +4598,10 @@ Warns that a packed vector is declared with little endian bit numbering
 and little numbering is now thus often due to simple oversight instead of
 intent.
 
-Also warns that a cell is declared with little endian range (i.e. [0:7] or
-[7]) and is connected to a N-wide signal. Based on IEEE the bits will
-likely be backwards from what you expect (i.e. cell [0] will connect to
-signal bit [N-1] not bit [0]).
+Also warns that an instance is declared with little endian range
+(i.e. [0:7] or [7]) and is connected to a N-wide signal. Based on IEEE the
+bits will likely be backwards from what you expect (i.e. instance [0] will
+connect to signal bit [N-1] not bit [0]).
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
@@ -4620,18 +4633,18 @@ instantiated by any other module, and both modules were put on the command
 line (not in a library). Three likely cases:
 
 1. A single module is intended to be the top. This warning then occurs
-because some low level cell is being read in, but is not really needed as
-part of the design.  The best solution for this situation is to ensure that
-only the top module is put on the command line without any flags, and all
-remaining library files are read in as libraries with -v, or are
+because some low level instance is being read in, but is not really needed
+as part of the design.  The best solution for this situation is to ensure
+that only the top module is put on the command line without any flags, and
+all remaining library files are read in as libraries with -v, or are
 automatically resolved by having filenames that match the module names.
 
 2. A single module is intended to be the top, the name of it is known, and
 all other modules should be ignored if not part of the design.  The best
-solution is to use the --top-module option to specify the top module's
-name. All other modules that are not part of the design will be for the
-most part ignored (they must be clean in syntax and their contents will be
-removed as part of the Verilog module elaboration process.)
+solution is to use the --top option to specify the top module's name. All
+other modules that are not part of the design will be for the most part
+ignored (they must be clean in syntax and their contents will be removed as
+part of the Verilog module elaboration process.)
 
 3. Multiple modules are intended to be design tops, e.g. when linting a
 library file.  As multiple modules are desired, disable the MULTITOP
@@ -4643,27 +4656,26 @@ identical, e.g. multiple modules with a "clk" input.
 
 =item PINCONNECTEMPTY
 
-Warns that a cell instantiation has a pin which is connected to
-.pin_name(), e.g. not another signal, but with an explicit mention of the
-pin.  It may be desirable to disable PINCONNECTEMPTY, as this indicates
-intention to have a no-connect.
+Warns that an instance has a pin which is connected to .pin_name(),
+e.g. not another signal, but with an explicit mention of the pin.  It may
+be desirable to disable PINCONNECTEMPTY, as this indicates intention to
+have a no-connect.
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item PINMISSING
 
-Warns that a module has a pin which is not mentioned in a cell
-instantiation.  If a pin is not missing it should still be specified on the
-cell declaration with a empty connection, using "(.pin_name())".
+Warns that a module has a pin which is not mentioned in an instance.  If a
+pin is not missing it should still be specified on the instance declaration
+with a empty connection, using "(.pin_name())".
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
 =item PINNOCONNECT
 
-Warns that a cell instantiation has a pin which is not connected to another
-signal.
+Warns that an instance has a pin which is not connected to another signal.
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.
@@ -4678,6 +4690,11 @@ declared before being used.
 
 Error that a procedural assignment is setting a wire. According to IEEE, a
 var/reg must be used as the target of procedural assignments.
+
+=item RANDC
+
+Warns that the 'randc' keyword is currently unsupported, and that it is
+being converted to 'rand'.
 
 =item REALCVT
 
@@ -4782,12 +4799,12 @@ correctly.
 
 =item TASKNSVAR
 
-Error when a call to a task or function has a output from that task tied to
+Error when a call to a task or function has an inout from that task tied to
 a non-simple signal.  Instead connect the task output to a temporary signal
 of the appropriate width, and use that signal to set the appropriate
 expression as the next statement.  For example:
 
-      task foo; output sig; ... endtask
+      task foo(inout sig); ... endtask
       always @* begin
            foo(bus_we_select_from[2]);  // Will get TASKNSVAR error
       end
@@ -4901,7 +4918,7 @@ potentially resolving the conflict. If you run with --report-unoptflat
 Verilator will suggest possible candidates for C<split_var>.
 
 The UNOPTFLAT warning may also be due to clock enables, identified from the
-reported path going through a clock gating cell.  To fix these, use the
+reported path going through a clock gating instance.  To fix these, use the
 clock_enable meta comment described above.
 
 The UNOPTFLAT warning may also occur where outputs from a block of logic
@@ -4960,10 +4977,10 @@ design simulate incorrectly; see the details under --bbox-unsup.
 
 =item UNUSED
 
-Warns that the specified signal is never used/consumed.  Verilator is
-fairly liberal in the usage calculations; making a signal public, a signal
-matching --unused-regexp ("*unused*") or accessing only a single array
-element marks the entire signal as used.
+Warns that the specified signal or parameter is never used/consumed.
+Verilator is fairly liberal in the usage calculations; making a signal
+public, a signal matching --unused-regexp ("*unused*") or accessing only a
+single array element marks the entire signal as used.
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.
@@ -5476,21 +5493,21 @@ by your code or you'll get strange results.
 
 =item Should a module be in Verilog or SystemC?
 
-Sometimes there is a block that just interconnects cells, and have a choice
-as to if you write it in Verilog or SystemC.  Everything else being equal,
-best performance is when Verilator sees all of the design.  So, look at the
-hierarchy of your design, labeling cells as to if they are SystemC or
-Verilog.  Then:
+Sometimes there is a block that just interconnects instances, and have a
+choice as to if you write it in Verilog or SystemC.  Everything else being
+equal, best performance is when Verilator sees all of the design.  So, look
+at the hierarchy of your design, labeling instances as to if they are
+SystemC or Verilog.  Then:
 
-A module with only SystemC cells below must be SystemC.
+A module with only SystemC instances below must be SystemC.
 
-A module with a mix of Verilog and SystemC cells below must be SystemC. (As
-Verilator cannot connect to lower-level SystemC cells.)
+A module with a mix of Verilog and SystemC instances below must be
+SystemC. (As Verilator cannot connect to lower-level SystemC instances.)
 
-A module with only Verilog cells below can be either, but for best
+A module with only Verilog instances below can be either, but for best
 performance should be Verilog.  (The exception is if you have a design that
 is instantiated many times; in this case Verilating one of the lower
-modules and instantiating that Verilated cells multiple times into a
+modules and instantiating that Verilated instances multiple times into a
 SystemC module *may* be faster.)
 
 =back
@@ -5679,7 +5696,7 @@ remain anonymous.
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
+Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
 redistribute it and/or modify the Verilator internals under the terms of
 either the GNU Lesser General Public License Version 3 or the Perl Artistic
 License Version 2.0.

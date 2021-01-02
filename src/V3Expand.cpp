@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -267,15 +267,6 @@ private:
             addWordAssign(nodep, w,
                           new AstXor(nodep->fileline(), newAstWordSelClone(rhsp->lhsp(), w),
                                      newAstWordSelClone(rhsp->rhsp(), w)));
-        }
-        return true;
-    }
-    bool expandWide(AstNodeAssign* nodep, AstXnor* rhsp) {
-        UINFO(8, "    Wordize ASSIGN(XNOR) " << nodep << endl);
-        for (int w = 0; w < nodep->widthWords(); w++) {
-            addWordAssign(nodep, w,
-                          new AstXnor(nodep->fileline(), newAstWordSelClone(rhsp->lhsp(), w),
-                                      newAstWordSelClone(rhsp->rhsp(), w)));
         }
         return true;
     }
@@ -858,8 +849,6 @@ private:
             } else if (AstNot* rhsp = VN_CAST(nodep->rhsp(), Not)) {
                 did = expandWide(nodep, rhsp);
             } else if (AstXor* rhsp = VN_CAST(nodep->rhsp(), Xor)) {
-                did = expandWide(nodep, rhsp);
-            } else if (AstXnor* rhsp = VN_CAST(nodep->rhsp(), Xnor)) {
                 did = expandWide(nodep, rhsp);
             } else if (AstNodeCond* rhsp = VN_CAST(nodep->rhsp(), NodeCond)) {
                 did = expandWide(nodep, rhsp);

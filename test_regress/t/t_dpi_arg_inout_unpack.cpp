@@ -99,6 +99,17 @@ template <typename T> bool compare(const T& act, const T& exp) {
     }
 }
 
+bool compare_scalar(const svScalar v0, sv_longint_unsigned_t val) {
+    const bool act_bit = v0 == sv_1;
+    const bool exp_bit = val & 1;
+    if (act_bit != exp_bit) {
+        std::cout << "Mismatch at bit:" << 0 << " exp:" << exp_bit << " act:" << act_bit;
+        return false;
+    }
+    if (VERBOSE_MESSAGE) { std::cout << "OK " << val << " as expected " << std::endl; }
+    return true;
+}
+
 bool compare(const svLogicVecVal* v0, sv_longint_unsigned_t val, int bitwidth) {
     for (int i = 0; i < bitwidth; ++i) {
         const bool act_bit = svGetBitselLogic(v0, i);
@@ -162,6 +173,39 @@ template <typename T> bool update_3d(T* v) {
     ++v[(1 * 3 + 0) * 2 + 0];
     ++v[(2 * 3 + 0) * 2 + 0];
     ++v[(3 * 3 + 0) * 2 + 0];
+    return true;
+}
+
+bool update_0d_scalar(svScalar* v) {
+    if (!compare_scalar(v[0], sv_0)) return false;
+    v[0] = sv_1;
+    return true;
+}
+bool update_1d_scalar(svScalar* v) {
+    if (!compare_scalar(v[0], sv_1)) return false;
+    v[0] = sv_0;
+    if (!compare_scalar(v[1], sv_0)) return false;
+    v[1] = sv_1;
+    return true;
+}
+bool update_2d_scalar(svScalar* v) {
+    if (!compare_scalar(v[(0 * 2) + 1], sv_1)) return false;
+    v[(0 * 2) + 1] = sv_0;
+    if (!compare_scalar(v[(1 * 2) + 1], sv_0)) return false;
+    v[(1 * 2) + 1] = sv_1;
+    if (!compare_scalar(v[(2 * 2) + 1], sv_1)) return false;
+    v[(2 * 2) + 1] = sv_0;
+    return true;
+}
+bool update_3d_scalar(svScalar* v) {
+    if (!compare_scalar(v[((0 * 3) + 0) * 2 + 0], sv_0)) return false;
+    v[(0 * 3 + 0) * 2 + 0] = sv_1;
+    if (!compare_scalar(v[((1 * 3) + 0) * 2 + 0], sv_1)) return false;
+    v[(1 * 3 + 0) * 2 + 0] = sv_0;
+    if (!compare_scalar(v[((2 * 3) + 0) * 2 + 0], sv_0)) return false;
+    v[(2 * 3 + 0) * 2 + 0] = sv_1;
+    if (!compare_scalar(v[((3 * 3) + 0) * 2 + 0], sv_1)) return false;
+    v[(3 * 3 + 0) * 2 + 0] = sv_0;
     return true;
 }
 
@@ -481,6 +525,11 @@ void i_string_3d(const char** v) {
     v[(3 * 3 + 0) * 2 + 0] = s3;
 }
 
+void i_bit1_0d(svBit* v) { update_0d_scalar(v); }
+void i_bit1_1d(svBit* v) { update_1d_scalar(v); }
+void i_bit1_2d(svBit* v) { update_2d_scalar(v); }
+void i_bit1_3d(svBit* v) { update_3d_scalar(v); }
+
 void i_bit7_0d(svBitVecVal* v) { update_0d(v, 7); }
 void i_bit7_1d(svBitVecVal* v) { update_1d(v, 7); }
 void i_bit7_2d(svBitVecVal* v) { update_2d(v, 7); }
@@ -490,6 +539,11 @@ void i_bit121_0d(svBitVecVal* v) { update_0d(v, 121); }
 void i_bit121_1d(svBitVecVal* v) { update_1d(v, 121); }
 void i_bit121_2d(svBitVecVal* v) { update_2d(v, 121); }
 void i_bit121_3d(svBitVecVal* v) { update_3d(v, 121); }
+
+void i_logic1_0d(svLogic* v) { update_0d_scalar(v); }
+void i_logic1_1d(svLogic* v) { update_1d_scalar(v); }
+void i_logic1_2d(svLogic* v) { update_2d_scalar(v); }
+void i_logic1_3d(svLogic* v) { update_3d_scalar(v); }
 
 void i_logic7_0d(svLogicVecVal* v) { update_0d(v, 7); }
 void i_logic7_1d(svLogicVecVal* v) { update_1d(v, 7); }
