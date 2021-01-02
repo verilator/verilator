@@ -97,6 +97,7 @@ public:
         LITENDIAN,      // Little bit endian vector
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
+        MULTIDRIVERS,   // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
         PINMISSING,     // Cell pin not specified
         PINNOCONNECT,   // Cell pin not connected
@@ -163,7 +164,7 @@ public:
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LITENDIAN", "MODDUP",
-            "MULTIDRIVEN", "MULTITOP",
+            "MULTIDRIVEN", "MULTIDRIVERS", "MULTITOP",
             "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PKGNODECL", "PROCASSWIRE",
             "RANDC", "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",

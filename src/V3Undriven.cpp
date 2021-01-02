@@ -42,8 +42,10 @@ class UndrivenVarEntry final {
     AstVar* m_varp;  // Variable this tracks
     std::vector<bool> m_wholeFlags;  // Used/Driven on whole vector
     std::vector<bool> m_bitFlags;  // Used/Driven on each subbit
+    AstNode* m_assignment = nullptr; // The last assignment node for the whole vector
+    AstNode* m_block = nullptr; // The last block (initial, always, etc.) for the whole vector
 
-    enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAGS_PER_BIT = 2 };
+    enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAG_DRIVEN_NON_Z = 2, FLAGS_PER_BIT = 3 };
 
     VL_DEBUG_FUNC;  // Declare debug()
 
@@ -107,6 +109,10 @@ private:
     }
 
 public:
+    void setBlock(AstNode* block) { m_block = block; }
+    AstNode* getBlock() { return m_block; }
+    void setAssignment(AstNode* assignment) { m_assignment = assignment; }
+    AstNode* getAssignment() { return m_assignment; }
     void usedWhole() {
         UINFO(9, "set u[*] " << m_varp->name() << endl);
         m_wholeFlags[FLAG_USED] = true;
@@ -115,17 +121,53 @@ public:
         UINFO(9, "set d[*] " << m_varp->name() << endl);
         m_wholeFlags[FLAG_DRIVEN] = true;
     }
+    bool isDrivenWhole() {
+        bool result = m_wholeFlags[FLAG_DRIVEN];
+        for (int bit = (m_bitFlags.size() / FLAGS_PER_BIT) - 1; bit >= 0; --bit) {
+            result |= m_bitFlags[bit * FLAGS_PER_BIT + FLAG_DRIVEN];
+        }
+        return result;
+    }
+    void drivenNonZ() { m_wholeFlags[FLAG_DRIVEN_NON_Z] = true; }
+    bool isDrivenNonZ() {
+        bool result = m_wholeFlags[FLAG_DRIVEN_NON_Z];
+        for (int bit = (m_bitFlags.size() / FLAGS_PER_BIT) - 1; bit >= 0; --bit) {
+            result |= m_bitFlags[bit * FLAGS_PER_BIT + FLAG_DRIVEN_NON_Z];
+        }
+        return result;
+    }
     void usedBit(int bit, int width) {
         UINFO(9, "set u[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name() << endl);
         for (int i = 0; i < width; i++) {
             if (bitNumOk(bit + i)) m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_USED] = true;
         }
     }
+    bool isDrivenBit(int bit, int width) {
+        bool result = m_wholeFlags[FLAG_DRIVEN];
+        for (int i = 0; i < width; i++) {
+            if (bitNumOk(bit + i)) result |= m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN];
+        }
+        return result;
+    }
     void drivenBit(int bit, int width) {
         UINFO(9, "set d[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name() << endl);
         for (int i = 0; i < width; i++) {
             if (bitNumOk(bit + i)) m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN] = true;
         }
+    }
+    void drivenBitNonZ(int bit, int width) {
+        for (int i = 0; i < width; i++) {
+            if (bitNumOk(bit + i))
+                m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN_NON_Z] = true;
+        }
+    }
+    bool isDrivenBitNonZ(int bit, int width) {
+        bool result = m_wholeFlags[FLAG_DRIVEN_NON_Z];
+        for (int i = 0; i < width; i++) {
+            if (bitNumOk(bit + i))
+                result |= m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN_NON_Z];
+        }
+        return result;
     }
     bool isUsedNotDrivenBit(int bit, int width) const {
         for (int i = 0; i < width; i++) {
@@ -251,6 +293,9 @@ private:
     bool m_inProcAssign = false;  // In procedural assignment
     AstNodeFTask* m_taskp = nullptr;  // Current task
     AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
+    bool m_hasZ = false;  // Discovered a z in a const or a bufif node in parse tree
+    AstNode* m_context = nullptr; // The current block level context (initial, always, etc.)
+    bool m_sensesp = false; // If the current block has a sense expression
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -281,7 +326,7 @@ private:
             && !m_inBBox  // We may have falsely considered a SysIgnore as a driver
             && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
             && !varp->fileline()->warnIsOff(
-                V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
+                   V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
             nodep->v3warn(ALWCOMBORDER,
                           "Always_comb variable driven after use: " << nodep->prettyNameQ());
             varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER,
@@ -333,7 +378,14 @@ private:
                         UINFO(9, " Select.  Entryp=" << cvtToHex(entryp) << endl);
                         warnAlwCombOrder(varrefp);
                     }
+
+                    if (m_inContAssign && !m_hasZ && entryp->isDrivenBitNonZ(lsb, nodep->width())
+                        && entryp->isDrivenBit(lsb, nodep->width())) {
+                        nodep->v3warn(MULTIDRIVERS,
+                                      "Multiple assignments to wire " << varrefp->prettyNameQ());
+                    }
                     entryp->drivenBit(lsb, nodep->width());
+                    if (m_inContAssign && !m_hasZ) entryp->drivenBitNonZ(lsb, nodep->width());
                 }
                 if (m_inBBox || !varrefp->access().isWriteOrRW())
                     entryp->usedBit(lsb, nodep->width());
@@ -344,6 +396,11 @@ private:
         }
     }
     virtual void visit(AstNodeVarRef* nodep) override {
+        bool ignoreMultDrivers = VN_IS(nodep->backp(), Sel) ||  // Sel was not constant
+                                 VN_IS(nodep->backp(), ArraySel)
+                                 ||  // arrays are not tracked in UndrivenVarEntry
+                                 m_hasZ;  // z's can be multidriven
+
         // Any variable
         if (nodep->access().isWriteOrRW()
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
@@ -354,7 +411,9 @@ private:
                                                << " (IEEE 1800-2017 6.5): "
                                                << nodep->prettyNameQ());
             }
-            if (m_inContAssign && !nodep->varp()->varType().isContAssignable()
+            if (m_inContAssign
+                && !nodep->varp()->varType().isContAssignable()  // TODO: This one is incorrectly
+                                                                 // set for out reg. #1369
                 && !nodep->fileline()->language().systemVerilog()) {
                 nodep->v3warn(CONTASSREG,
                               "Continuous assignment to reg, perhaps intended wire"
@@ -371,7 +430,51 @@ private:
                     UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp) << endl);
                     warnAlwCombOrder(nodep);
                 }
+
+                // TODO: Add this to AstSel when working. Or should I?
+                AstNode* block = entryp->getBlock();
+                AstNode* assignment = entryp->getAssignment();
+                if (m_context && (m_context != block) && entryp->isDrivenNonZ()
+                    && entryp->isDrivenWhole() && !ignoreMultDrivers
+                    && !(VN_IS(block, Initial) && m_sensesp) && !VN_IS(nodep, VarXRef)) {
+		    if (assignment) {
+			nodep->v3warn(MULTIDRIVERS,
+				      "Multiple assignments to " << nodep->prettyNameQ() << endl
+				      << nodep->warnContextPrimary() << endl
+				      << assignment->warnOther()
+				      << "... Location of conflicting assignment.\n"
+				      << assignment->warnContextSecondary());
+		    } else {
+			nodep->v3warn(MULTIDRIVERS,
+				      "Multiple assignments to " << nodep->prettyNameQ());
+		    }
+		}
+                if (m_inContAssign && entryp->isDrivenNonZ() && entryp->isDrivenWhole()
+                    && !ignoreMultDrivers
+                    && !VN_IS(nodep,
+                              VarXRef)) {  // Ignore interface variables
+		    if (assignment) {
+			nodep->v3warn(MULTIDRIVERS,
+				      "Multiple assignments to " << nodep->prettyNameQ() << endl
+				      << nodep->warnContextPrimary() << endl
+				      << assignment->warnOther()
+				      << "... Location of conflicting assignment.\n"
+				      << assignment->warnContextSecondary());
+		    } else {
+			nodep->v3warn(MULTIDRIVERS,
+				      "Multiple assignments to wire " << nodep->prettyNameQ());
+		    }
+                }
                 entryp->drivenWhole();
+                if (m_context && !ignoreMultDrivers) {
+                    entryp->setBlock(m_context);
+                    entryp->setAssignment(nodep);
+                    entryp->drivenNonZ();
+                }
+                if (m_inContAssign && !ignoreMultDrivers) {
+                    entryp->setAssignment(nodep);
+		    entryp->drivenNonZ();
+		}
             }
             if (m_inBBox || nodep->access().isReadOrRW() || fdrv) entryp->usedWhole();
         }
@@ -402,6 +505,7 @@ private:
     }
     virtual void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_inContAssign);
+        VL_RESTORER(m_hasZ);
         {
             m_inContAssign = true;
             iterateChildren(nodep);
@@ -409,6 +513,8 @@ private:
     }
     virtual void visit(AstAlways* nodep) override {
         VL_RESTORER(m_alwaysCombp);
+        VL_RESTORER(m_context);
+        VL_RESTORER(m_sensesp);
         {
             AstNode::user2ClearTree();
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
@@ -417,8 +523,18 @@ private:
             } else {
                 m_alwaysCombp = nullptr;
             }
+            m_context = nodep;
+            m_sensesp = nullptr != nodep->sensesp();
             iterateChildren(nodep);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
+        }
+    }
+
+    virtual void visit(AstInitial* nodep) override {
+        VL_RESTORER(m_context);
+        {
+            m_context = nodep;
+            iterateChildren(nodep);
         }
     }
 
@@ -428,6 +544,11 @@ private:
             m_taskp = nodep;
             iterateChildren(nodep);
         }
+    }
+
+    virtual void visit(AstBufIf1* nodep) override {
+        m_hasZ = true;
+        iterateChildren(nodep);
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os
@@ -441,7 +562,7 @@ private:
     virtual void visit(AstTraceInc*) override {}
 
     // iterate
-    virtual void visit(AstConst* nodep) override {}
+    virtual void visit(AstConst* nodep) override { m_hasZ |= nodep->num().hasZ(); }
     virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
