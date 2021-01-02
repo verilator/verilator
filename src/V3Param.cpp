@@ -85,38 +85,6 @@ class ParameterizedHierBlocks final {
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
-    static bool areSame(AstConst* pinValuep, AstConst* hierOptParamp) {
-        if (pinValuep->isString()) {
-            return pinValuep->num().toString() == hierOptParamp->num().toString();
-        }
-
-        // Bitwidth of hierOptParamp is accurate because V3Width already caluclated in the previous
-        // run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted to
-        // hierOptParamp width.
-        V3Number varNum(pinValuep, hierOptParamp->num().width());
-        if (hierOptParamp->isDouble()) {
-            varNum.isDouble(true);
-            if (pinValuep->isDouble()) {
-                varNum.opAssign(pinValuep->num());
-            } else {  // Cast from integer to real
-                varNum.opIToRD(pinValuep->num());
-            }
-            return v3EpsilonEqual(varNum.toDouble(), hierOptParamp->num().toDouble());
-        } else {  // Now integer type is assumed
-            if (pinValuep->isDouble()) {  // Need to cast to int
-                // Parameter is actually an integral type, but passed value is floating point.
-                // Conversion from real to integer uses rounding in V3Width.cpp
-                varNum.opRToIRoundS(pinValuep->num());
-            } else if (pinValuep->isSigned()) {
-                varNum.opExtendS(pinValuep->num(), pinValuep->num().width());
-            } else {
-                varNum.opAssign(pinValuep->num());
-            }
-            V3Number isEq(pinValuep, 1);
-            isEq.opEq(varNum, hierOptParamp->num());
-            return isEq.isNeqZero();
-        }
-    }
 
 public:
     ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep) {
@@ -187,6 +155,38 @@ public:
         const auto it = vlstd::as_const(m_hierBlockMod).find(hierIt->second->mangledName());
         if (it == m_hierBlockMod.end()) return nullptr;
         return it->second;
+    }
+    static bool areSame(AstConst* pinValuep, AstConst* hierOptParamp) {
+        if (pinValuep->isString()) {
+            return pinValuep->num().toString() == hierOptParamp->num().toString();
+        }
+
+        // Bitwidth of hierOptParamp is accurate because V3Width already caluclated in the previous
+        // run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted to
+        // hierOptParamp width.
+        V3Number varNum(pinValuep, hierOptParamp->num().width());
+        if (hierOptParamp->isDouble()) {
+            varNum.isDouble(true);
+            if (pinValuep->isDouble()) {
+                varNum.opAssign(pinValuep->num());
+            } else {  // Cast from integer to real
+                varNum.opIToRD(pinValuep->num());
+            }
+            return v3EpsilonEqual(varNum.toDouble(), hierOptParamp->num().toDouble());
+        } else {  // Now integer type is assumed
+            if (pinValuep->isDouble()) {  // Need to cast to int
+                // Parameter is actually an integral type, but passed value is floating point.
+                // Conversion from real to integer uses rounding in V3Width.cpp
+                varNum.opRToIRoundS(pinValuep->num());
+            } else if (pinValuep->isSigned()) {
+                varNum.opExtendS(pinValuep->num(), pinValuep->num().width());
+            } else {
+                varNum.opAssign(pinValuep->num());
+            }
+            V3Number isEq(pinValuep, 1);
+            isEq.opEq(varNum, hierOptParamp->num());
+            return isEq.isNeqZero();
+        }
     }
 };
 
