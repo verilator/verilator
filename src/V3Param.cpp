@@ -60,7 +60,7 @@
 
 #include <deque>
 #include <map>
-#include <map>
+#include <memory>
 #include <vector>
 
 //######################################################################
@@ -70,8 +70,8 @@ class ParameterizedHierBlocks final {
     typedef std::multimap<string, const V3HierarchicalBlockOption*> HierBlockOptsByOrigName;
     typedef HierBlockOptsByOrigName::const_iterator HierMapIt;
     typedef std::map<const string, AstNodeModule*> HierBlockModMap;
-    typedef std::map<const string, AstConst*> ParamConstMap;
-    typedef std::map<const V3HierarchicalBlockOption*, ParamConstMap> ParamsMap;
+    typedef std::map<const string, std::unique_ptr<AstConst>> ParamConstMap;
+    typedef std::map<const V3HierarchicalBlockOption*, ParamConstMap> HierParamsMap;
 
     // MEMBERS
     // key:Original module name, value:HiearchyBlockOption*
@@ -81,10 +81,81 @@ class ParameterizedHierBlocks final {
     // key:mangled module name, value:AstNodeModule*
     HierBlockModMap m_hierBlockMod;
     // Overridden parameters of the hierarchical block
-    ParamsMap m_params;
+    HierParamsMap m_hierParams;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
+
+public:
+    ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep) {
+        for (const auto& hierOpt : hierOpts) {
+            m_hierBlockOptsByOrigName.insert(
+                std::make_pair(hierOpt.second.origName(), &hierOpt.second));
+            const V3HierarchicalBlockOption::ParamStrMap& params = hierOpt.second.params();
+            ParamConstMap& consts = m_hierParams[&hierOpt.second];
+            for (V3HierarchicalBlockOption::ParamStrMap::const_iterator pIt = params.begin();
+                 pIt != params.end(); ++pIt) {
+                std::unique_ptr<AstConst> constp{AstConst::parseParamLiteral(
+                    new FileLine(FileLine::EmptySecret()), pIt->second)};
+                UASSERT(constp, pIt->second << " is not a valid parameter literal");
+                const bool inserted = consts.emplace(pIt->first, std::move(constp)).second;
+                UASSERT(inserted, pIt->first << " is already added");
+            }
+        }
+        for (AstNodeModule* modp = nodep->modulesp(); modp;
+             modp = VN_CAST(modp->nextp(), NodeModule)) {
+            if (hierOpts.find(modp->prettyName()) != hierOpts.end()) {
+                m_hierBlockMod.emplace(modp->name(), modp);
+            }
+        }
+    }
+    AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,
+                                const AstNodeModule* modp) {
+        if (m_hierBlockOptsByOrigName.find(origName) == m_hierBlockOptsByOrigName.end()) {
+            return nullptr;
+        }
+        // This module is a hierarchical block. Need to replace it by the protect-lib wrapper.
+        const std::pair<HierMapIt, HierMapIt> candidates
+            = m_hierBlockOptsByOrigName.equal_range(origName);
+        HierMapIt hierIt;
+        for (hierIt = candidates.first; hierIt != candidates.second; ++hierIt) {
+            bool found = true;
+            size_t paramIdx = 0;
+            const ParamConstMap& params = m_hierParams[hierIt->second];
+            UASSERT(params.size() == hierIt->second->params().size(), "not match");
+            for (AstPin* pinp = firstPinp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+                if (!pinp->exprp()) continue;
+                UASSERT_OBJ(!pinp->modPTypep(), pinp,
+                            "module with type parameter must not be a hierarchical block");
+                if (AstVar* modvarp = pinp->modVarp()) {
+                    AstConst* constp = VN_CAST(pinp->exprp(), Const);
+                    UASSERT_OBJ(constp, pinp,
+                                "parameter for a hierarchical block must have been constified");
+                    const auto pIt = vlstd::as_const(params).find(modvarp->name());
+                    UINFO(5, "Comparing " << modvarp->name() << " " << constp << std::endl);
+                    if (pIt == params.end() || paramIdx >= params.size()
+                        || !areSame(constp, pIt->second.get())) {
+                        found = false;
+                        break;
+                    }
+                    UINFO(5, "Matched " << modvarp->name() << " " << constp << " and "
+                                        << pIt->second.get() << std::endl);
+                    ++paramIdx;
+                }
+            }
+            if (found && paramIdx == hierIt->second->params().size()) break;
+        }
+        UASSERT_OBJ(hierIt != candidates.second, firstPinp, "No protect-lib wrapper found");
+        // parameter settings will be removed in the bottom of caller visitCell().
+        const HierBlockModMap::const_iterator modIt
+            = m_hierBlockMod.find(hierIt->second->mangledName());
+        UASSERT_OBJ(modIt != m_hierBlockMod.end(), firstPinp,
+                    hierIt->second->mangledName() << " is not found");
+
+        const auto it = vlstd::as_const(m_hierBlockMod).find(hierIt->second->mangledName());
+        if (it == m_hierBlockMod.end()) return nullptr;
+        return it->second;
+    }
     static bool areSame(AstConst* pinValuep, AstConst* hierOptParamp) {
         if (pinValuep->isString()) {
             return pinValuep->num().toString() == hierOptParamp->num().toString();
@@ -116,82 +187,6 @@ class ParameterizedHierBlocks final {
             isEq.opEq(varNum, hierOptParamp->num());
             return isEq.isNeqZero();
         }
-    }
-
-public:
-    ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep) {
-        for (const auto& hierOpt : hierOpts) {
-            m_hierBlockOptsByOrigName.insert(
-                std::make_pair(hierOpt.second.origName(), &hierOpt.second));
-            const V3HierarchicalBlockOption::ParamStrMap& params = hierOpt.second.params();
-            ParamConstMap& consts = m_params[&hierOpt.second];
-            for (V3HierarchicalBlockOption::ParamStrMap::const_iterator pIt = params.begin();
-                 pIt != params.end(); ++pIt) {
-                AstConst* constp = AstConst::parseParamLiteral(
-                    new FileLine(FileLine::EmptySecret()), pIt->second);
-                UASSERT(constp, pIt->second << " is not a valid parameter literal");
-                const bool inserted = consts.insert(std::make_pair(pIt->first, constp)).second;
-                UASSERT(inserted, pIt->first << " is already added");
-            }
-        }
-        for (AstNodeModule* modp = nodep->modulesp(); modp;
-             modp = VN_CAST(modp->nextp(), NodeModule)) {
-            if (hierOpts.find(modp->prettyName()) != hierOpts.end()) {
-                m_hierBlockMod.emplace(modp->name(), modp);
-            }
-        }
-    }
-    ~ParameterizedHierBlocks() {
-        for (ParamsMap::const_iterator it = m_params.begin(); it != m_params.end(); ++it) {
-            for (const auto& pItr : it->second) { delete pItr.second; }
-        }
-    }
-    AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,
-                                const AstNodeModule* modp) {
-        if (m_hierBlockOptsByOrigName.find(origName) == m_hierBlockOptsByOrigName.end()) {
-            return nullptr;
-        }
-        // This module is a hierarchical block. Need to replace it by the protect-lib wrapper.
-        const std::pair<HierMapIt, HierMapIt> candidates
-            = m_hierBlockOptsByOrigName.equal_range(origName);
-        HierMapIt hierIt;
-        for (hierIt = candidates.first; hierIt != candidates.second; ++hierIt) {
-            bool found = true;
-            size_t paramIdx = 0;
-            const ParamConstMap& params = m_params[hierIt->second];
-            UASSERT(params.size() == hierIt->second->params().size(), "not match");
-            for (AstPin* pinp = firstPinp; pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
-                if (!pinp->exprp()) continue;
-                UASSERT_OBJ(!pinp->modPTypep(), pinp,
-                            "module with type parameter must not be a hierarchical block");
-                if (AstVar* modvarp = pinp->modVarp()) {
-                    AstConst* constp = VN_CAST(pinp->exprp(), Const);
-                    UASSERT_OBJ(constp, pinp,
-                                "parameter for a hierarchical block must have been constified");
-                    const auto pIt = vlstd::as_const(params).find(modvarp->name());
-                    UINFO(5, "Comparing " << modvarp->name() << " " << constp << std::endl);
-                    if (pIt == params.end() || paramIdx >= params.size()
-                        || !areSame(constp, pIt->second)) {
-                        found = false;
-                        break;
-                    }
-                    UINFO(5, "Matched " << modvarp->name() << " " << constp << " and "
-                                        << pIt->second << std::endl);
-                    ++paramIdx;
-                }
-            }
-            if (found && paramIdx == hierIt->second->params().size()) break;
-        }
-        UASSERT_OBJ(hierIt != candidates.second, firstPinp, "No protect-lib wrapper found");
-        // parameter settings will be removed in the bottom of caller visitCell().
-        const HierBlockModMap::const_iterator modIt
-            = m_hierBlockMod.find(hierIt->second->mangledName());
-        UASSERT_OBJ(modIt != m_hierBlockMod.end(), firstPinp,
-                    hierIt->second->mangledName() << " is not found");
-
-        const auto it = vlstd::as_const(m_hierBlockMod).find(hierIt->second->mangledName());
-        if (it == m_hierBlockMod.end()) return nullptr;
-        return it->second;
     }
 };
 
