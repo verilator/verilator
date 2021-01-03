@@ -48,9 +48,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
 
   if [ "$CI_OS_NAME" = "linux" ]; then
     sudo apt-get update
-    sudo apt-get install libfl-dev
-    sudo apt-get install libgoogle-perftools-dev
-    sudo apt-get install ccache
+    sudo apt-get install libfl-dev libgoogle-perftools-dev ccache
     if [ "$CI_RUNS_ON" = "ubuntu-20.04" ]; then
       sudo apt-get install libsystemc libsystemc-dev
     fi
@@ -79,7 +77,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
 
   if [ "$CI_OS_NAME" = "linux" ]; then
     sudo apt-get update
-    sudo apt-get install gdb gtkwave lcov
+    # libfl-dev needed for internal coverage's test runs
+    sudo apt-get install gdb gtkwave lcov libfl-dev ccache
     if [ "$CI_RUNS_ON" = "ubuntu-20.04" ]; then
       sudo apt-get install libsystemc-dev
     fi
