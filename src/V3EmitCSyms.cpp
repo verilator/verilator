@@ -773,9 +773,9 @@ void EmitCSyms::emitSymImp() {
                         = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
                     if (const AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
                         bounds += " ,";
-                        bounds += cvtToStr(adtypep->hi());
+                        bounds += cvtToStr(adtypep->left());
                         bounds += ",";
-                        bounds += cvtToStr(adtypep->lo());
+                        bounds += cvtToStr(adtypep->right());
                         if (VN_IS(dtypep, PackArrayDType)) {
                             pdim++;
                         } else {

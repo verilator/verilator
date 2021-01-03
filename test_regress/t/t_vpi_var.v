@@ -29,7 +29,9 @@ extern "C" int mon_check();
    reg [2:1]	twoone		/*verilator public_flat_rw @(posedge clk) */;
    reg [2:1] 	fourthreetwoone[4:3] /*verilator public_flat_rw @(posedge clk) */;
 
-   reg [61:0] 	quads[3:2]	/*verilator public_flat_rw @(posedge clk) */;
+   // verilator lint_off LITENDIAN
+   reg [0:61] 	quads[2:3]	/*verilator public_flat_rw @(posedge clk) */;
+   // verilator lint_on LITENDIAN
 
    reg [31:0] 	   count	/*verilator public_flat_rd */;
    reg [31:0] 	   half_count	/*verilator public_flat_rd */;

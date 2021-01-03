@@ -327,6 +327,25 @@ int _mon_check_var() {
         CHECK_RESULT_CSTR(p, "vpiConstant");
     }
 
+    TestVpiHandle vh5 = VPI_HANDLE("quads");
+    CHECK_RESULT_NZ(vh5);
+    {
+        TestVpiHandle vh10 = vpi_handle(vpiLeftRange, vh5);
+        CHECK_RESULT_NZ(vh10);
+        vpi_get_value(vh10, &tmpValue);
+        CHECK_RESULT(tmpValue.value.integer, 2);
+        p = vpi_get_str(vpiType, vh10);
+        CHECK_RESULT_CSTR(p, "vpiConstant");
+    }
+    {
+        TestVpiHandle vh10 = vpi_handle(vpiRightRange, vh5);
+        CHECK_RESULT_NZ(vh10);
+        vpi_get_value(vh10, &tmpValue);
+        CHECK_RESULT(tmpValue.value.integer, 3);
+        p = vpi_get_str(vpiType, vh10);
+        CHECK_RESULT_CSTR(p, "vpiConstant");
+    }
+
     return 0;
 }
 
