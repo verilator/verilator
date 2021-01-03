@@ -502,6 +502,7 @@ class ParamProcessor final {
                     // Remove any existing parameter
                     if (modvarp->valuep()) modvarp->valuep()->unlinkFrBack()->deleteTree();
                     // Set this parameter to value requested by cell
+                    UINFO(9, "       set param " << modvarp << " = " << newp << endl);
                     modvarp->valuep(newp->cloneTree(false));
                     modvarp->overriddenParam(true);
                 } else if (AstParamTypeDType* modptp = pinp->modPTypep()) {

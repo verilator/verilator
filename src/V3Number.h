@@ -198,6 +198,7 @@ private:
     void V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl);
     void init(AstNode* nodep, int swidth, bool sized = true) {
         setNames(nodep);
+        // dtype info does NOT from nodep's dtype; nodep only for error reporting
         m_signed = false;
         m_double = false;
         m_isNull = false;
@@ -205,7 +206,7 @@ private:
         m_autoExtend = false;
         m_fromString = false;
         width(swidth, sized);
-        for (int i = 0; i < words(); i++) m_value[i] = m_valueX[i] = 0;
+        for (int i = 0; i < words(); ++i) m_value[i] = m_valueX[i] = 0;
     }
     void setNames(AstNode* nodep);
     static string displayPad(size_t fmtsize, char pad, bool left, const string& in);

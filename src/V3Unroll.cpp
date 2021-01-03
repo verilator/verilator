@@ -230,6 +230,7 @@ private:
             AstConst new_con(clonep->fileline(), *res);
             new_con.dtypeFrom(dtypep);
             outNum = new_con.num();
+            outNum.isSigned(dtypep->isSigned());
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return true;
         }
