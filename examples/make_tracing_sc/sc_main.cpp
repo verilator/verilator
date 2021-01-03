@@ -55,10 +55,10 @@ int sc_main(int argc, char* argv[]) {
     sc_signal<bool> reset_l;
     sc_signal<vluint32_t> in_small;
     sc_signal<vluint64_t> in_quad;
-    sc_signal<sc_bv<70> > in_wide;
+    sc_signal<sc_bv<70>> in_wide;
     sc_signal<vluint32_t> out_small;
     sc_signal<vluint64_t> out_quad;
-    sc_signal<sc_bv<70> > out_wide;
+    sc_signal<sc_bv<70>> out_wide;
 
     // Construct the Verilated model, from inside Vtop.h
     // Using unique_ptr is similar to "Vtop* top = new Vtop" then deleting at end
@@ -134,6 +134,6 @@ int sc_main(int argc, char* argv[]) {
     VerilatedCov::write("logs/coverage.dat");
 #endif
 
-    // Fin
+    // Return good completion status
     return 0;
 }

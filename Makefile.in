@@ -422,6 +422,7 @@ endif
 
 # Use --xml flag to see the cppcheck code to use for suppression
 CPPCHECK_CPP = $(wildcard \
+	$(srcdir)/examples/*/*.cpp \
 	$(srcdir)/include/*.cpp \
 	$(srcdir)/src/*.cpp )
 CPPCHECK_H = $(wildcard \

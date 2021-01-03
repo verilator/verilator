@@ -101,6 +101,6 @@ int main(int argc, char** argv, char** env) {
     VerilatedCov::write("logs/coverage.dat");
 #endif
 
-    // Fin
+    // Return good completion status
     exit(0);
 }
