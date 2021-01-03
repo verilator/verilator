@@ -6,6 +6,9 @@
 // SPDX-License-Identifier: CC0-1.0
 //======================================================================
 
+// For std::unique_ptr
+#include <memory>
+
 // SystemC global header
 #include <systemc.h>
 
@@ -45,8 +48,8 @@ int sc_main(int argc, char* argv[]) {
     ios::sync_with_stdio();
 
     // Define clocks
-    sc_clock clk("clk", 10, SC_NS, 0.5, 3, SC_NS, true);
-    sc_clock fastclk("fastclk", 2, SC_NS, 0.5, 2, SC_NS, true);
+    sc_clock clk{"clk", 10, SC_NS, 0.5, 3, SC_NS, true};
+    sc_clock fastclk{"fastclk", 2, SC_NS, 0.5, 2, SC_NS, true};
 
     // Define interconnect
     sc_signal<bool> reset_l;
@@ -58,7 +61,9 @@ int sc_main(int argc, char* argv[]) {
     sc_signal<sc_bv<70> > out_wide;
 
     // Construct the Verilated model, from inside Vtop.h
-    Vtop* top = new Vtop("top");
+    // Using unique_ptr is similar to "Vtop* top = new Vtop" then deleting at end
+    const std::unique_ptr<Vtop> top{new Vtop{"top"}};
+
     // Attach signals to the model
     top->clk(clk);
     top->fastclk(fastclk);
@@ -128,10 +133,6 @@ int sc_main(int argc, char* argv[]) {
     Verilated::mkdir("logs");
     VerilatedCov::write("logs/coverage.dat");
 #endif
-
-    // Destroy model
-    delete top;
-    top = nullptr;
 
     // Fin
     return 0;
