@@ -112,23 +112,16 @@ public:
             if (hierOpts.find(modp->prettyName()) != hierOpts.end()) {
                 m_hierBlockMod.emplace(modp->name(), modp);
             }
-            auto defParam = m_modParams.find(modp->name());
-            if (defParam != m_modParams.end()) {
+            const auto defParamIt = m_modParams.find(modp->name());
+            if (defParamIt != m_modParams.end()) {
                 // modp is the original of parameterized hierarchical block
                 for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                     if (AstVar* varp = VN_CAST(stmtp, Var)) {
-                        if (varp->isGParam()) defParam->second.emplace(varp->name(), varp);
+                        if (varp->isGParam()) defParamIt->second.emplace(varp->name(), varp);
                     }
                 }
             }
         }
-    }
-    template <class MAP, typename KEY>
-    static const typename MAP::value_type::second_type&
-    findWithCheck(const MAP& container, const KEY& key, const AstNode* obj) {
-        const auto it = container.find(key);
-        UASSERT_OBJ(it != container.end(), obj, key << " is not included");
-        return it->second;
     }
     AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,
                                 const AstNodeModule* modp) {
@@ -138,7 +131,8 @@ public:
         // This module is a hierarchical block. Need to replace it by the protect-lib wrapper.
         const std::pair<HierMapIt, HierMapIt> candidates
             = m_hierBlockOptsByOrigName.equal_range(origName);
-        const GParamsMap& defaultValues = findWithCheck(m_modParams, origName, modp);
+        const auto paramsIt = m_modParams.find(origName);
+        UASSERT_OBJ(paramsIt != m_modParams.end(), modp, origName << " must be registered");
         HierMapIt hierIt;
         for (hierIt = candidates.first; hierIt != candidates.second; ++hierIt) {
             bool found = true;
@@ -153,9 +147,10 @@ public:
                     AstConst* constp = VN_CAST(pinp->exprp(), Const);
                     UASSERT_OBJ(constp, pinp,
                                 "parameter for a hierarchical block must have been constified");
-                    AstConst* defValue = VN_CAST(
-                        findWithCheck(defaultValues, modvarp->name(), modvarp)->valuep(), Const);
-                    if (defValue && areSame(constp, defValue)) {
+                    const auto paramIt = paramsIt->second.find(modvarp->name());
+                    UASSERT_OBJ(paramIt != paramsIt->second.end(), modvarp, "must be registered");
+                    AstConst* defValuep = VN_CAST(paramIt->second->valuep(), Const);
+                    if (defValuep && areSame(constp, defValuep)) {
                         UINFO(5, "Setting default value of " << constp << " to " << modvarp
                                                              << std::endl);
                         continue;  // Skip this parameter because setting the same value
