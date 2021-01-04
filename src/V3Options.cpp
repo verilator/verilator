@@ -985,6 +985,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (!strcmp(sw, "-cc")) {
                 m_outFormatOk = true;
                 m_systemC = false;
+            } else if ( !strcmp (sw, "-fi") ) { //fi
+		m_fault_injection = true;
             } else if (onoff(sw, "-cdc", flag /*ref*/)) {
                 m_cdc = flag;
             } else if (onoff(sw, "-coverage", flag /*ref*/)) {

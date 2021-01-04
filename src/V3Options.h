@@ -320,6 +320,7 @@ private:
     bool m_vpi = false;             // main switch: --vpi
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
     bool m_xmlOnly = false;         // main switch: --xml-only
+    bool m_fault_injection = false; //fi
 
     int         m_buildJobs = 1;    // main switch: -j
     int         m_convergeLimit = 100;  // main switch: --converge-limit
@@ -441,6 +442,7 @@ public:
     void addVFile(const string& filename);
     void addForceInc(const string& filename);
     void notify();
+    bool fault_injection() const { return m_fault_injection; }//fi
 
     // ACCESSORS (options)
     bool preprocOnly() const { return m_preprocOnly; }

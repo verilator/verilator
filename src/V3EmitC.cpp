@@ -12,6 +12,15 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
+
+//
+// Modified Version Copyright 2015-2020 by Infineon Technologies AG. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
+// Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+//
+
 //*************************************************************************
 
 #include "config_build.h"
@@ -30,6 +39,7 @@
 #include <map>
 #include <vector>
 #include <unordered_set>
+#include <deque> //fi
 
 constexpr int VL_VALUE_STRING_MAX_WIDTH = 8192;  // We use a static char array in VL_VALUE_STRING
 
@@ -988,6 +998,12 @@ public:
             putbs("(");
             iterateAndNextNull(nodep->condp());
             putbs(" ? ");
+            //Since there could be a comparison to unsigned int, convert fi_object to IData to fix compiler errors. Is there a better way?
+	    if (v3Global.opt.fault_injection()){//fi
+	    	if (!nodep->isQuad()) {
+            	puts("(IData)");
+            	} 
+	    }
             iterateAndNextNull(nodep->expr1p());
             putbs(" : ");
             iterateAndNextNull(nodep->expr2p());
@@ -1896,6 +1912,17 @@ void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
         puts(nodep->nameProtect());
         emitDeclArrayBrackets(nodep);
         puts(";\n");
+
+    } else if (nodep->isIO() && v3Global.opt.fault_injection() && !nodep->isWide() ) {//fi
+          m_ctorVarsVec.push_back(nodep);
+          if (nodep->isQuad()) puts("fi_object<QData> ");
+          else if (nodep->widthMin() <= 8) puts("fi_object<CData> ");
+          else if (nodep->widthMin() <= 16) puts("fi_object<SData> ");
+          else puts("fi_object<IData> ");
+          puts(nodep->name());
+          puts(";\n");
+  	  emitDeclArrayBrackets(nodep);
+
     } else if (nodep->isIO() && basicp && !basicp->isOpaque()) {
         if (nodep->isInoutish()) {
             puts("VL_INOUT");
@@ -1924,7 +1951,43 @@ void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
         puts("," + cvtToStr(basicp->lo() + nodep->width() - 1) + "," + cvtToStr(basicp->lo()));
         if (nodep->isWide()) puts("," + cvtToStr(nodep->widthWords()));
         puts(");\n");
-    } else {
+    }   else if (v3Global.opt.fault_injection()) {//fi
+
+	std::string av_name = nodep->name();
+	std::string last_char=  nodep->vlArgType(true, false, false, prefixIfImp);
+	std::string av_name_prefix = av_name.substr(0,11);
+	std::string av_name_prefix2 = av_name.substr(0,12);
+	std::string av_name_prefix3 = av_name.substr(0,7);
+	std::string av_name_prefix4 = av_name.substr(0,6);
+    	bool local_variable = (av_name_prefix == "__VinpClk__" ||
+    	av_name_prefix2 == "__Vclklast__" ||
+	av_name_prefix2 == "__Vchglast__" ||
+	av_name == "__Vm_traceActivity" ||
+	av_name_prefix3=="__Vtemp" ||
+	av_name_prefix4=="__Vdly" ||
+	av_name_prefix4=="__Vilp");
+
+    if (v3Global.opt.fault_injection() && !local_variable && !nodep->isWide() && last_char.substr(last_char.length()-1)!="]"  ){ //dummy solution to avoid multidimensional arrays
+	m_ctorVarsVec.push_back(nodep);
+        if (nodep->widthMin() <= 8) {
+            puts("fi_object<CData> ");
+        } else if (nodep->widthMin() <= 16) {
+            puts("fi_object<SData> ");
+        } else if (nodep->isQuad()) {
+            puts("fi_object<QData> ");
+        } else  {
+            puts("fi_object<IData> ");
+        } 
+  	puts( nodep->nameProtect());
+    } else { 
+   	     puts(nodep->vlArgType(true, false, false, prefixIfImp));
+ 	     puts(";\n");
+           }	
+          if (v3Global.opt.fault_injection() && !local_variable && !nodep->isWide()) {
+              puts(";\n");
+              }
+    }
+	else {
         // strings and other fundamental c types
         if (nodep->isFuncLocal() && nodep->isString()) {
             const string name = nodep->name();
@@ -2734,6 +2797,20 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
 }
 
 void EmitCImp::emitWrapEval(AstNodeModule* modp) {
+
+    if (v3Global.opt.fault_injection()){ //fi
+	puts("fi_object_base::ffs_keys_t fi_object_base::ffs_keys;\n");
+	puts("unsigned int fi_object_base::counter = 0;\n");
+	puts("QData fi_object_base::injection_time = 0;\n");
+	puts("QData fi_object_base::release_time = 0;\n");
+	puts("std::string fi_object_base::injection_location = \"\";\n");
+        puts("std::string fi_object_base::fault_type = \"\";\n");
+	puts("unsigned int fi_object_base::mask = 0;\n");
+	puts("bool fi_object_base::bit_vector = {};\n");
+	puts("std::deque<QData> fi_object_base::if_release_time = {0};\n");
+	puts("std::deque<QData> fi_object_base::if_inject_time = {0};\n");
+        }
+
     puts("\nvoid " + prefixNameProtect(modp) + "::eval_step() {\n");
     puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate " + prefixNameProtect(modp)
          + "::eval\\n\"); );\n");
@@ -2990,6 +3067,7 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons, const VarVec& nonanons,
             puts("// Anonymous structures to workaround compiler member-count bugs\n");
         auto it = anons.cbegin();
         for (int l3 = 0; l3 < anonL3s && it != anons.cend(); ++l3) {
+           if (!v3Global.opt.fault_injection()){//fi
             if (anonL3s != 1) puts("struct {\n");
             for (int l2 = 0; l2 < anonL2s && it != anons.cend(); ++l2) {
                 if (anonL2s != 1) puts("struct {\n");
@@ -3007,6 +3085,7 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons, const VarVec& nonanons,
             }
             if (anonL3s != 1) puts("};\n");
         }
+       }
         // Leftovers, just in case off by one error somewhere above
         for (; it != anons.end(); ++it) {
             const AstVar* varp = *it;
@@ -3080,7 +3159,283 @@ void EmitCImp::emitIntTop(AstNodeModule*) {
 
 void EmitCImp::emitInt(AstNodeModule* modp) {
     puts("\n//==========\n\n");
+
+    if (v3Global.opt.fault_injection()) { //fi
+	puts("#include <map>\n");
+	puts("#include <string>\n");
+	puts("#include <fstream>\n");
+	puts("#include <sstream>\n");
+	puts("#include <vector>\n");
+	puts("#include <deque>\n");
+	puts("#include <cstdlib>\n");
+	puts("#include <ctime>\n");
+    	puts("\n");
+    }
     emitModCUse(modp, VUseType::INT_INCLUDE);
+
+    if (v3Global.opt.fault_injection()){ //fi
+puts("\n");
+puts("class fi_object_base {\n");
+puts("public:\n");
+puts("//	typedef std::map<std::string, fi_object_base* > ffs_map_t;\n");
+puts(" 	typedef std::vector<std::string> ffs_keys_t;\n");
+puts("//	typedef std::vector<fi_object_base* > ffs_data_t;\n");
+puts("	\n");
+puts("	void add(std::string name, fi_object_base* fiob) {\n");
+puts("//		this->ffs_map[name] = fiob;\n");
+puts(" 	    	this->ffs_keys.push_back(name);\n");
+puts("//	    	this->ffs_data.push_back(fiob);\n");
+puts("		counter++;\n");
+puts("	}\n");
+puts("	\n");
+puts("	\n");
+puts("	static ffs_keys_t ffs_keys;\n");
+puts("	static unsigned int counter;\n");
+puts("	static QData injection_time;\n");
+puts("	static QData release_time;\n");
+puts("	static std::string injection_location;\n");
+puts("	static std::string fault_type;\n");
+puts("	static unsigned int mask;\n");
+puts("	static bool bit_vector;\n");
+puts("	static std::deque<QData> if_inject_time;\n");
+puts("	static std::deque<QData>  if_release_time;\n");
+puts("};\n");
+puts("\n");
+puts("template <typename T>\n");
+puts("class fi_object : fi_object_base {\n");
+puts("  protected:\n");
+puts("    typedef fi_object<T> this_type;\n");
+puts("  public:\n");
+puts("    fi_object(const char* name) : fi_object_base(), m_value(T()), m_name(name) {\n");
+puts("    	std::string v(name);\n");
+puts("    }\n");
+puts("    \n");
+puts("    virtual ~fi_object() {}\n");
+puts("    \n");
+puts("    \n");
+puts("    template <typename U>\n");
+puts("    inline fi_object& operator=(const U& a){\n");
+puts("	if (m_name == fi_object_base::injection_location){\n");
+puts("		if (fi_object_base::fault_type==\"sa0\"){\n");
+puts("			if (fi_object_base::injection_time!=0 && fi_object_base::release_time!=0 ){\n");
+puts("					static bool runOnce= true;\n");
+puts("				if (VL_TIME_Q()>=fi_object_base::injection_time && VL_TIME_Q()<fi_object_base::release_time){\n");
+puts("                              if (fi_object_base::bit_vector==true)      \n  ");
+puts("                                  m_value=a & fi_object_base::mask; \n ");
+puts("                              else  \n  ");
+puts("					m_value=0;\n");
+puts("					if (runOnce==true){\n");
+puts("						std::cout<< \"Injecting stuck-at-0 fault at signal\" <<m_name<< \" during [\" <<fi_object_base::injection_time<<\",\" <<fi_object_base::release_time<<\"]\" ;\n");
+puts("						runOnce=false;}\n");
+puts("                                   }\n");
+puts("					else\n");
+puts("						m_value=a;\n");
+puts("				 }\n");
+puts("			if(fi_object_base::injection_time!=0 && fi_object_base::release_time==0){ \n"); 
+puts("					static bool runOnce= true;\n");
+puts("				if (VL_TIME_Q()>=fi_object_base::injection_time){\n");
+puts("                              if (fi_object_base::bit_vector==true)    \n    ");
+puts("                                  m_value=a & fi_object_base::mask; \n ");
+puts("                              else   \n ");
+puts("					m_value=0;\n");
+puts("					if (runOnce==true){\n");
+puts("						std::cout<< \"Injecting stuck-at-0 fault at signal \" <<m_name<< \" starting from time :\" << fi_object_base::injection_time;\n");
+puts("					runOnce=false;}\n");
+puts("					}\n");
+puts("					else\n");
+puts("					     m_value=a;\n");
+puts("                            }\n");
+puts("			if(fi_object_base::injection_time==0 && fi_object_base::release_time!=0 ){\n");
+puts("					static bool runOnce= true;\n");
+puts("				if (VL_TIME_Q()<fi_object_base::release_time){\n");
+puts("                              if (fi_object_base::bit_vector==true)     \n   ");
+puts("                                  m_value=a & fi_object_base::mask; \n ");
+puts("                              else   \n ");
+puts("					m_value=0;\n");
+puts("					if (runOnce==true){\n");
+puts("						std::cout<< \"Injecting stuck-at-0 fault at signal \" <<m_name<< \" until time:\" << fi_object_base::release_time-1;\n");
+puts("						runOnce=false;}\n");
+puts("					 }\n");
+puts("					else\n");
+puts("						m_value=a;\n");
+puts("				}\n");
+puts("			if(fi_object_base::injection_time==0 && fi_object_base::release_time==0 ){\n");
+puts("                              if (fi_object_base::bit_vector==true)      \n  ");
+puts("                                  m_value=a & fi_object_base::mask; \n ");
+puts("                              else   \n ");
+puts("				m_value=0;\n");
+puts("				static bool runOnce= true;\n");
+puts("				if (runOnce==true){\n");
+puts("					std::cout<< \"The signal \" <<m_name<< \" is permanently stuck to 0\";\n");
+puts("					runOnce=false;}\n");
+puts("				}\n");
+puts("			}\n");
+puts("		else if (fi_object_base::fault_type==\"sa1\"){\n");
+puts("			if (fi_object_base::injection_time!=0  && fi_object_base::release_time!=0  ){\n");
+puts("					static bool runOnce= true;\n");
+puts("				if (VL_TIME_Q()>=fi_object_base::injection_time && VL_TIME_Q()<fi_object_base::release_time){\n");
+puts("                              if (fi_object_base::bit_vector==true)     \n   ");
+puts("                                  m_value=a | fi_object_base::mask; \n ");
+puts("                              else  \n  ");
+puts("					m_value=1;\n");
+puts("					if (runOnce==true){\n");
+puts("						std::cout<< \"Injecting stuck-at-1 fault at signal \" <<m_name<< \" during [\" <<fi_object_base::injection_time<< \",\" <<fi_object_base::release_time<<\"]\" ;\n");
+puts("						runOnce=false;}\n");
+puts("					}\n");
+puts("					else\n");
+puts("						m_value=a;\n");
+puts("				}\n");
+puts(" 			if(fi_object_base::injection_time!=0 && fi_object_base::release_time==0  ){ \n"); 
+puts("					static bool runOnce= true;\n");
+puts("				if (VL_TIME_Q()>=fi_object_base::injection_time){\n");
+puts("                              if (fi_object_base::bit_vector==true)   \n     ");
+puts("                                  m_value=a | fi_object_base::mask; \n ");
+puts("                              else   \n ");
+puts("					m_value=1;\n");
+puts("					static bool runOnce= true;\n");
+puts("					if (runOnce==true){\n");
+puts("						std::cout<< \"Injecting stuck-at-1 fault at signal \" <<m_name<< \" starting from time :\" << fi_object_base::injection_time;\n");
+puts("						runOnce=false;}\n");
+puts("					}\n");
+puts("					else \n");
+puts("						m_value=a;\n");
+puts("				}\n");
+puts("			if(fi_object_base::injection_time==0 && fi_object_base::release_time!=0  ){\n");
+puts("					static bool runOnce= true;\n");
+puts("				if (VL_TIME_Q()<fi_object_base::release_time){\n");
+puts("                              if (fi_object_base::bit_vector==true)   \n     ");
+puts("                                  m_value=a | fi_object_base::mask; \n ");
+puts("                              else  \n  ");
+puts("					m_value=1;\n");
+puts("					if (runOnce==true){\n");
+puts("						std::cout<< \"Injecting stuck-at-1 fault at signal \" <<m_name<< \" until time: \" << fi_object_base::release_time;\n");
+puts("						runOnce=false;}\n");
+puts("					}\n");
+puts("					else \n");
+puts("						m_value=a;\n");
+puts("				}\n");
+puts("			if(fi_object_base::injection_time==0 && fi_object_base::release_time==0  ) {\n");
+puts("                              if (fi_object_base::bit_vector==true)     \n   ");
+puts("                                  m_value=a | fi_object_base::mask;  \n");
+puts("                              else   \n ");
+puts("				m_value=1;\n");
+puts("				static bool runOnce= true;\n");
+puts("				if (runOnce==true){\n");
+puts("					std::cout<< \"The signal \" <<m_name<< \" is permanently stuck to 1\";\n");
+puts("					runOnce=false;}\n");
+puts("				}\n");
+puts("			}\n");
+puts("		else if (fi_object_base::fault_type==\"bit_flip\"){\n");
+puts("			if (fi_object_base::injection_time){\n");
+puts("				if (VL_TIME_Q()>=fi_object_base::injection_time && VL_TIME_Q()<fi_object_base::release_time) {\n");
+puts("                              if (fi_object_base::bit_vector==true)   \n     ");
+puts("                                  m_value=a ^ fi_object_base::mask;\n  ");
+puts("                              else  { \n  ");
+puts("					 m_value=!a;\n");
+puts("                                    } \n");
+puts("				static bool runOnce= true;\n");
+puts("				if (runOnce==true){\n");		
+puts("					std::cout<<  \"The signal \" <<m_name<< \" is bit flipped \";\n");
+puts("					runOnce=false;}\n");
+puts("				}\n");
+puts("                          else\n");
+puts("                          	m_value=a;\n");
+puts("			}\n");
+puts("			else{\n             ");		
+puts("                  	m_value=a;\n");	
+puts("				static bool runOnce= true;\n");
+puts("				if (runOnce==true){\n");		
+puts("					std::cout<< \"No injection time was specified for bitflip. No fault was injected! \";\n");
+puts("					runOnce=false;}\n");
+puts("				}\n");
+puts("			}\n");
+puts("		else if (fi_object_base::fault_type==\"intermittent_sa1\"){//Find a better way to do the checking: VL_TIME_Q can be 1,2,..\n");//Find a better way to do the checking: VL_TIME_Q can be 1,2,..
+puts("                 if (VL_TIME_Q()>=fi_object_base::if_inject_time[0] && VL_TIME_Q()< fi_object_base::if_release_time[0]){ \n");
+puts("                              if (fi_object_base::bit_vector==true)     \n   ");
+puts("                                  m_value=a | fi_object_base::mask; \n ");
+puts("                              else  \n  ");
+puts("                          m_value=1;\n");
+puts("				static bool runOnce= true;\n");
+puts("				if (runOnce==true){\n");		
+puts("					std::cout<< \"Injecting intermittent fault at signal: \" <<m_name;\n");
+puts("					runOnce=false;}\n");
+puts(             "}\n");
+puts("                 else  {m_value=a;\n");
+puts("if (VL_TIME_Q()== fi_object_base::if_release_time[0]){\n");
+puts("					fi_object_base::if_inject_time.pop_front();\n");
+puts("					fi_object_base::if_release_time.pop_front();}}\n");
+puts("              }\n");
+puts("		else if (fi_object_base::fault_type==\"intermittent_sa0\"){\n");
+puts("                 if (VL_TIME_Q()>=fi_object_base::if_inject_time[0] && VL_TIME_Q()< fi_object_base::if_release_time[0]){\n");
+puts("                              if (fi_object_base::bit_vector==true)      \n  ");
+puts("                                  m_value=a & fi_object_base::mask; \n ");
+puts("                              else  \n  ");
+puts("                          m_value=0;\n");
+puts("				static bool runOnce= true;\n");
+puts("				if (runOnce==true){\n");		
+puts("					std::cout<< \"Injecting intermittent fault at signal: \" <<m_name;\n");
+puts("					runOnce=false;}\n");
+puts(             "}\n");
+puts("                 else  {m_value=a;\n");
+puts("if (VL_TIME_Q()== fi_object_base::if_release_time[0]){\n");
+puts("					fi_object_base::if_inject_time.pop_front();\n");
+puts("					fi_object_base::if_release_time.pop_front();}}\n");
+puts("              }\n");
+puts("		else if (fi_object_base::fault_type==\"intermittent_bf\"){\n");
+puts("                 if (VL_TIME_Q()>=fi_object_base::if_inject_time[0] && VL_TIME_Q()< fi_object_base::if_release_time[0]){\n");
+puts("                              if (fi_object_base::bit_vector==true)   \n     ");
+puts("                                  m_value=a ^ fi_object_base::mask;\n  ");
+puts("                              else  { \n  ");
+puts("					 m_value=!a;}\n");
+puts("				static bool runOnce= true;\n");
+puts("				if (runOnce==true){\n");		
+puts("					std::cout<< \"Injecting intermittent fault at signal: \" <<m_name;\n");
+puts("					runOnce=false;}\n");
+puts(             "}\n");
+puts("                 else  {m_value=a;\n");
+puts("if (VL_TIME_Q()== fi_object_base::if_release_time[0]){\n");
+puts("					fi_object_base::if_inject_time.pop_front();\n");
+puts("					fi_object_base::if_release_time.pop_front();}}\n");
+puts("              }\n");
+puts("		else {\n");
+puts("			m_value=a;\n");
+puts("			static bool runOnce= true;\n");
+puts("			if (runOnce==true){\n");
+puts("				std::cout<< \"Injection type was not specified. No fault was injected! \";\n");
+puts("				runOnce=false;}\n");
+puts("			}\n");
+puts("	}\n");
+puts("	else {\n");
+puts("		m_value=a;\n");
+puts("			}\n");
+puts("	return *this;\n");
+puts("    }\n");
+puts("    \n");
+puts("    virtual std::string name() {\n");
+puts("    	return m_name;\n");
+puts("    }\n");
+puts("    \n");
+puts("    \n");
+puts("    \n");
+puts("    \n");
+puts("    \n");
+puts("    inline operator QData()\n");
+puts("    const{ return m_value; }\n");
+puts("    \n");
+puts("    inline unsigned char c_str()\n");
+puts("    { return static_cast<unsigned char>(m_value); }\n");
+puts("    \n");
+puts("    \n");
+puts("    inline T get_value() { return m_value; }\n");
+puts("    \n");
+puts("    \n");
+puts("  private:\n");
+puts("    T m_value;\n");
+puts("    std::string m_name;\n");
+puts("    std::string m_v;\n");
+puts("};\n");
+puts("\n");
+}
 
     // Declare foreign instances up front to make C++ happy
     puts("class " + symClassName() + ";\n");
