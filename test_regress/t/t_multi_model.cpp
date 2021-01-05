@@ -13,12 +13,12 @@
 
 #include "Vt_multi_model.h"
 
-
 void sim0(Vt_multi_model* top0) {
 
     // setup remaining parameters
     top0->trace_number = 0;
-    top0->main_time = 0; // should be fixed with this PR: !! interferes with the main_time from top1 !!
+    top0->main_time
+        = 0;  // should be fixed with this PR: !! interferes with the main_time from top1 !!
 
     // reset
     top0->clk_i = 0;
@@ -52,7 +52,8 @@ void sim1(Vt_multi_model* top1) {
 
     // setup remaining parameters
     top1->trace_number = 1;
-    top1->main_time = 0; // should be fixed with this PR: !! interferes with the main_time from top0 !!
+    top1->main_time
+        = 0;  // should be fixed with this PR: !! interferes with the main_time from top0 !!
 
     // reset
     top1->clk_i = 0;
