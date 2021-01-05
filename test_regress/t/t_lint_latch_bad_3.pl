@@ -10,8 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(linter => 1);
 
 lint(
-    #verilator_flags2 => ["--debug --dump-tree --debugi-V3Latch 9"],
-    fails => 1
+    fails => 1,
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);
