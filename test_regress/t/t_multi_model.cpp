@@ -20,7 +20,7 @@ void sim0(Vt_multi_model* top0) {
 
     // setup remaining parameters
     top0->trace_name = "logs/trace0.vcd";
-    main_time = 0; // !! interferes with the main_time from top1 !!
+    main_time = 0;  // !! interferes with the main_time from top1 !!
 
     // reset
     top0->clk_i = 0;
@@ -35,7 +35,8 @@ void sim0(Vt_multi_model* top0) {
     top0->eval();
 
     // simulate until done
-    while (!top0->gotFinish()) { // should be fixed with this PR: !! will not always work properly due to a race condition with top1 !!
+    while (!top0->gotFinish()) {  // should be fixed with this PR: !! will not always work properly
+                                  // due to a race condition with top1 !!
 
         // increment time
         main_time++;
@@ -52,7 +53,7 @@ void sim1(Vt_multi_model* top1) {
 
     // setup remaining parameters
     top1->trace_name = "logs/trace1.vcd";
-    main_time = 0; // !! interferes with the main_time from top0 !!
+    main_time = 0;  // !! interferes with the main_time from top0 !!
 
     // reset
     top1->clk_i = 0;
@@ -67,7 +68,8 @@ void sim1(Vt_multi_model* top1) {
     top1->eval();
 
     // simulate until done
-    while (!top1->gotFinish()) { // should be fixed with this PR: !! will not always work properly due to a race condition with top0 !!
+    while (!top1->gotFinish()) {  // should be fixed with this PR: !! will not always work properly
+                                  // due to a race condition with top0 !!
 
         // increment time
         main_time++;
@@ -112,10 +114,10 @@ int main(int argc, char** argv, char** env) {
     top0->final();
     top1->final();
 
-    // add coverage
-    #if VM_COVERAGE
-        VerilatedCov::write("logs/coverage.dat");
-    #endif
+// add coverage
+#if VM_COVERAGE
+    VerilatedCov::write("logs/coverage.dat");
+#endif
 
     // delete models
     delete top0;
