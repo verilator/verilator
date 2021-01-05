@@ -34,6 +34,9 @@ module t(/*AUTOARG*/
    logic                x3;                     // From test of Test.v
    logic                x4;                     // From test of Test.v
    logic                x5;                     // From test of Test.v
+   logic                z1;                     // From test of Test.v
+   logic                z2;                     // From test of Test.v
+   logic                z3;                     // From test of Test.v
    // End of automatics
 
    wire [31:0]          i = crc[31:0];
@@ -55,6 +58,9 @@ module t(/*AUTOARG*/
              .x3                        (x3),
              .x4                        (x4),
              .x5                        (x5),
+             .z1                        (z1),
+             .z2                        (z2),
+             .z3                        (z3),
              // Inputs
              .clk                       (clk),
              .i                         (i[31:0]));
@@ -98,6 +104,9 @@ module t(/*AUTOARG*/
          if (x1 != x3) $stop;
          if (x1 != x4) $stop;
          if (x1 != x5) $stop;
+         if (z1 != '0) $stop;
+         if (z2 != '1) $stop;
+         if (z3 != '0) $stop;
       end
       else begin
          $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
@@ -114,7 +123,7 @@ endmodule
 
 module Test(/*AUTOARG*/
    // Outputs
-   a1, a2, a3, a4, a5, o1, o2, o3, o4, o5, x1, x2, x3, x4, x5,
+   a1, a2, a3, a4, a5, o1, o2, o3, o4, o5, x1, x2, x3, x4, x5, z1, z2, z3,
    // Inputs
    clk, i
    );
@@ -125,6 +134,7 @@ module Test(/*AUTOARG*/
    output logic a1, a2, a3, a4, a5;
    output logic o1, o2, o3, o4, o5;
    output logic x1, x2, x3, x4, x5;
+   output logic z1, z2, z3;
 
    always_ff @(posedge clk) begin
       a1 <= (i[5] & ~i[3] & i[1]);
@@ -144,6 +154,11 @@ module Test(/*AUTOARG*/
       x3 <= ^{i[5], ~i[3], i[1]};
       x4 <= ^((i & 32'b101010) ^ 32'b001000);
       x5 <= ^((i & 32'b001010) ^ 32'b001000) ^ i[5];
+      //
+      // All zero/all one cases
+      z1 <= (i[5] & ~i[3] & ~i[5]);
+      z2 <= (~i[5] | i[3] | i[5]);
+      z3 <= (i[5] ^ ~i[3] ^ ~i[5] ^ i[3]);
    end
 
 endmodule
