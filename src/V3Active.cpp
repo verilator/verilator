@@ -89,7 +89,7 @@ protected:
     // true. Where a BLOCK contains a BRANCH, both the if and else sides of the branch must return
     // true for the BRANCH to evalute to true. A BLOCK however needs only a single one of its
     // siblings to evaluate true in order to evaluate true itself. On output vertex only evaluates
-    // true ifit is the vertex we are analysing on this check
+    // true if it is the vertex we are analyzing on this check
 
     bool latchCheckInternal(LatchDetectGraphVertex* vertexp) {
         bool result = false;
