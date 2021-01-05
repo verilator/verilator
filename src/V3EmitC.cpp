@@ -841,6 +841,7 @@ public:
         puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", \"\");\n");
+        puts("vlTOPp->gotFinish(true);\n");
     }
     virtual void visit(AstPrintTimeScale* nodep) override {
         puts("VL_PRINTTIMESCALE(");
@@ -2830,6 +2831,14 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
                    true);
     puts("}\n");
     splitSizeInc(10);
+
+    // Vmodel::gotFinish
+    puts("\nbool " + prefixNameProtect(modp) + "::gotFinish(){\n");
+    puts("return this->s_gotFinish;\n");
+    puts("}\n");
+    puts("void " + prefixNameProtect(modp) + "::gotFinish(bool flag){\n");
+    puts("this->s_gotFinish = flag;\n");
+    puts("}\n");
 }
 
 //----------------------------------------------------------------------
@@ -3134,6 +3143,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     emitVarList(modp->stmtsp(), EVL_CLASS_SIG, "", section /*ref*/);
 
     section = "\n// LOCAL VARIABLES\n";
+    section += "// simulation state variables\n";
+    section += "bool s_gotFinish;  ///< A $finish statement executed\n";
     if (modp->isTop()) section += "// Internals; generally not touched by application code\n";
     emitVarList(modp->stmtsp(), EVL_CLASS_TEMP, "", section /*ref*/);
 
@@ -3242,6 +3253,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
                  "must call on completion.\n");
         }
         puts("void final();\n");
+        puts("// model local gotFinish methods to indicate that $finish has been called\n");
+        puts("bool gotFinish();\n");
+        puts("void gotFinish(bool flag);\n");
         if (v3Global.opt.inhibitSim()) {
             puts("/// Disable evaluation of module (e.g. turn off)\n");
             puts("void inhibitSim(bool flag) { __Vm_inhibitSim = flag; }\n");

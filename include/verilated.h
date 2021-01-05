@@ -378,7 +378,7 @@ class Verilated final {
         // Fast path
         int s_debug;  ///< See accessors... only when VL_DEBUG set
         bool s_calcUnusedSigs;  ///< Waves file on, need all signals calculated
-        bool s_gotFinish;  ///< A $finish statement executed
+        // moved to the verilated model class: bool s_gotFinish;  ///< A $finish statement executed
         bool s_assertOn;  ///< Assertions are enabled
         bool s_fatalOnVpiError;  ///< Stop on vpi error/unsupported
         // Slow path
@@ -474,9 +474,6 @@ public:
     /// Set number of errors/assertions before stop
     static void errorLimit(int val) VL_MT_SAFE;
     static int errorLimit() VL_MT_SAFE { return s_s.s_errorLimit; }
-    /// Did the simulation $finish?
-    static void gotFinish(bool flag) VL_MT_SAFE;
-    static bool gotFinish() VL_MT_SAFE { return s_s.s_gotFinish; }  ///< Return if got a $finish
     /// Allow traces to at some point be enabled (disables some optimizations)
     static void traceEverOn(bool flag) VL_MT_SAFE {
         if (flag) { calcUnusedSigs(flag); }

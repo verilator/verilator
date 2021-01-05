@@ -104,20 +104,11 @@ void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE
     if (false && hier) {}
     VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
         "- %s:%d: Verilog $finish\n", filename, linenum);
-    if (Verilated::gotFinish()) {
-        VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
-            "- %s:%d: Second verilog $finish, exiting\n", filename, linenum);
-        Verilated::runFlushCallbacks();
-        Verilated::runExitCallbacks();
-        exit(0);
-    }
-    Verilated::gotFinish(true);
 }
 #endif
 
 #ifndef VL_USER_STOP  ///< Define this to override this function
 void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
-    Verilated::gotFinish(true);
     Verilated::runFlushCallbacks();
     vl_fatal(filename, linenum, hier, "Verilog $stop");
 }
@@ -126,7 +117,6 @@ void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
 #ifndef VL_USER_FATAL  ///< Define this to override this function
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
     if (false && hier) {}
-    Verilated::gotFinish(true);
     if (filename && filename[0]) {
         // Not VL_PRINTF_MT, already on main thread
         VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);
@@ -266,7 +256,6 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
 Verilated::Serialized::Serialized() {
     s_debug = 0;
     s_calcUnusedSigs = false;
-    s_gotFinish = false;
     s_assertOn = true;
     s_fatalOnVpiError = true;  // retains old default behaviour
     s_errorCount = 0;
@@ -2269,10 +2258,7 @@ void Verilated::errorLimit(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock(s_mutex);
     s_s.s_errorLimit = val;
 }
-void Verilated::gotFinish(bool flag) VL_MT_SAFE {
-    const VerilatedLockGuard lock(s_mutex);
-    s_s.s_gotFinish = flag;
-}
+
 void Verilated::assertOn(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock(s_mutex);
     s_s.s_assertOn = flag;
