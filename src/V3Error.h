@@ -94,10 +94,12 @@ public:
         INFINITELOOP,   // Infinite loop
         INITIALDLY,     // Initial delayed statement
         INSECURE,       // Insecure options
+        LATCH,          // Latch detected outside of always_latch block
         LITENDIAN,      // Little bit endian vector
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
+        NOLATCH,        // No latch detected in always_latch block
         PINMISSING,     // Cell pin not specified
         PINNOCONNECT,   // Cell pin not connected
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
@@ -162,8 +164,8 @@ public:
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
-            "LITENDIAN", "MODDUP",
-            "MULTIDRIVEN", "MULTITOP",
+            "LATCH", "LITENDIAN", "MODDUP",
+            "MULTIDRIVEN", "MULTITOP","NOLATCH",
             "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PKGNODECL", "PROCASSWIRE",
             "RANDC", "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
@@ -199,8 +201,8 @@ public:
         return (m_e == ALWCOMBORDER || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == ENDLABEL || m_e == IMPLICIT
-                || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT || m_e == UNSIGNED
-                || m_e == WIDTH);
+                || m_e == LATCH || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT
+                || m_e == UNSIGNED || m_e == WIDTH);
     }
     // Warnings that are style only
     bool styleError() const {

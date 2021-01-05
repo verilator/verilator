@@ -11,10 +11,12 @@ module t
 
    integer q;
 
+   // verilator lint_off LATCH
    always @(*)
      if (rst)
        assign q = 0;
      else
        deassign q;
+   // verilator lint_on LATCH
 
 endmodule

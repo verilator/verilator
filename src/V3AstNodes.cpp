@@ -1580,6 +1580,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isPulldown()) str << " [PULLDOWN]";
     if (isUsedClock()) str << " [CLK]";
     if (isSigPublic()) str << " [P]";
+    if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOP]";
     if (attrClockEn()) str << " [aCLKEN]";
     if (attrIsolateAssign()) str << " [aISO]";

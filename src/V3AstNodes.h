@@ -1949,6 +1949,7 @@ private:
     bool m_noSubst : 1;  // Do not substitute out references
     bool m_overridenParam : 1;  // Overridden parameter by #(...) or defparam
     bool m_trace : 1;  // Trace this variable
+    bool m_isLatched : 1;  // Not assigned in all control paths of combo always
     VLifetime m_lifetime;  // Lifetime
     VVarAttrClocker m_attrClocker;
     MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
@@ -1989,6 +1990,7 @@ private:
         m_noSubst = false;
         m_overridenParam = false;
         m_trace = false;
+        m_isLatched = false;
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
 
@@ -2146,6 +2148,7 @@ public:
     void overriddenParam(bool flag) { m_overridenParam = flag; }
     bool overriddenParam() const { return m_overridenParam; }
     void trace(bool flag) { m_trace = flag; }
+    void isLatched(bool flag) { m_isLatched = flag; }
     // METHODS
     virtual void name(const string& name) override { m_name = name; }
     virtual void tag(const string& text) override { m_tag = text; }
@@ -2199,6 +2202,7 @@ public:
     bool isRand() const { return m_isRand; }
     bool isConst() const { return m_isConst; }
     bool isStatic() const { return m_isStatic; }
+    bool isLatched() const { return m_isLatched; }
     bool isFuncLocal() const { return m_funcLocal; }
     bool isFuncReturn() const { return m_funcReturn; }
     bool isPullup() const { return m_isPullup; }
