@@ -138,7 +138,7 @@ public:
         m_outputs.clear();
         // Calling base class clear will unlink & delete all edges & vertices
         V3Graph::clear();
-        m_curVertexp = NULL;
+        m_curVertexp = nullptr;
     }
     // Add a new control path and connect it to its parent
     LatchDetectGraphVertex* addPathVertex(LatchDetectGraphVertex* parent, const string& name,
@@ -172,8 +172,9 @@ public:
     // paths make an assignment. Detected latches are flagged in the variables AstVar
     void latchCheck(AstNode* nodep, bool latch_expected) {
         bool latch_detected = false;
-        for (VarRefVec::iterator it = m_outputs.begin(); it != m_outputs.end(); ++it) {
-            AstVarRef* vrp = *it;
+//        for (VarRefVec::iterator it = m_outputs.begin(); it != m_outputs.end(); ++it) {
+//            AstVarRef* vrp = *it;
+          for (const auto& vrp : m_outputs) {
             LatchDetectGraphVertex* vertp = (LatchDetectGraphVertex*)vrp->varp()->user1p();
             vertp->user(true);  // Identify the output vertex we are checking paths _to_
             if (!latchCheckInternal((LatchDetectGraphVertex*)verticesBeginp())) {
