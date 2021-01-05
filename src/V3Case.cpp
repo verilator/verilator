@@ -476,9 +476,7 @@ private:
             ++m_statCaseFast;
             VL_DO_DANGLING(replaceCaseFast(nodep), nodep);
         } else {
-            ```suggestion
-                // If a case statement is whole, presume that signals involved aren't forming a
-                // latch
+                // If a case statement is whole, presume signals involved aren't forming a latch
                 if (m_alwaysp) m_alwaysp->fileline()
                     ->warnOff(V3ErrorCode::LATCH, true);
             ++m_statCaseSlow;
@@ -487,7 +485,7 @@ private:
     }
     //--------------------
     virtual void visit(AstNode* nodep) override {
-        if (VN_IS(nodep, Always)) { m_ContainingAlways = nodep; }
+        if (VN_IS(nodep, Always)) { m_alwaysp = nodep; }
         iterateChildren(nodep);
     }
 
