@@ -493,7 +493,6 @@ public:
     // CONSTRUCTORS
     explicit CaseVisitor(AstNetlist* nodep) {
         for (auto& itr : m_valueItem) itr = nullptr;
-        m_ContainingAlways = nullptr;
         iterate(nodep);
     }
     virtual ~CaseVisitor() override {
