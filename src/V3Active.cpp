@@ -173,8 +173,6 @@ public:
     // paths make an assignment. Detected latches are flagged in the variables AstVar
     void latchCheck(AstNode* nodep, bool latch_expected) {
         bool latch_detected = false;
-//        for (VarRefVec::iterator it = m_outputs.begin(); it != m_outputs.end(); ++it) {
-//            AstVarRef* vrp = *it;
           for (const auto& vrp : m_outputs) {
             LatchDetectGraphVertex* vertp = (LatchDetectGraphVertex*)vrp->varp()->user1p();
             vertp->user(true);  // Identify the output vertex we are checking paths _to_
