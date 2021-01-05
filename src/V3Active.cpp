@@ -47,7 +47,7 @@
 
 class LatchDetectGraphVertex final : public V3GraphVertex {
 public:
-    enum VertexType { VT_BLOCK, VT_BRANCH, VT_OUTPUT };
+    enum VertexType : uint8_t { VT_BLOCK, VT_BRANCH, VT_OUTPUT };
 
 private:
     string m_name;  // Only used for .dot file generation
