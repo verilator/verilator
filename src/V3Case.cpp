@@ -127,7 +127,7 @@ private:
     // STATE
     VDouble0 m_statCaseFast;  // Statistic tracking
     VDouble0 m_statCaseSlow;  // Statistic tracking
-    AstNode* m_ContainingAlways;  // Always in which case is located
+    AstNode* m_alwaysp = nullptr;  // Always in which case is located
 
     // Per-CASE
     int m_caseWidth = 0;  // Width of valueItems
