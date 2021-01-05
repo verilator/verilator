@@ -13,23 +13,21 @@
 
 #include "Vt_multi_model.h"
 
-vluint64_t main_time = 0;
-double sc_time_stamp() { return main_time; }
 
 void sim0(Vt_multi_model* top0) {
 
     // setup remaining parameters
-    top0->trace_name = "logs/trace0.vcd";
-    main_time = 0; // !! interferes with the main_time from top1 !!
+    top0->trace_number = 0;
+    top0->main_time = 0; // should be fixed with this PR: !! interferes with the main_time from top1 !!
 
     // reset
     top0->clk_i = 0;
     top0->rst_i = 1;
     top0->eval();
-    main_time++;
+    top0->main_time++;
     top0->clk_i = 1;
     top0->eval();
-    main_time++;
+    top0->main_time++;
     top0->rst_i = 0;
     top0->clk_i = 0;
     top0->eval();
@@ -38,7 +36,8 @@ void sim0(Vt_multi_model* top0) {
     while (!top0->gotFinish()) { // should be fixed with this PR: !! will not always work properly due to a race condition with top1 !!
 
         // increment time
-        main_time++;
+        top0->main_time++;
+        std::cout << "[top0] time=" << top0->main_time << std::endl;
 
         // toggle clk_i
         top0->clk_i = !top0->clk_i;
@@ -51,17 +50,17 @@ void sim0(Vt_multi_model* top0) {
 void sim1(Vt_multi_model* top1) {
 
     // setup remaining parameters
-    top1->trace_name = "logs/trace1.vcd";
-    main_time = 0; // !! interferes with the main_time from top0 !!
+    top1->trace_number = 1;
+    top1->main_time = 0; // should be fixed with this PR: !! interferes with the main_time from top0 !!
 
     // reset
     top1->clk_i = 0;
     top1->rst_i = 1;
     top1->eval();
-    main_time++;
+    top1->main_time++;
     top1->clk_i = 1;
     top1->eval();
-    main_time++;
+    top1->main_time++;
     top1->rst_i = 0;
     top1->clk_i = 0;
     top1->eval();
@@ -70,8 +69,8 @@ void sim1(Vt_multi_model* top1) {
     while (!top1->gotFinish()) { // should be fixed with this PR: !! will not always work properly due to a race condition with top0 !!
 
         // increment time
-        main_time++;
-        std::cout << "time=" << main_time << std::endl;
+        top1->main_time++;
+        std::cout << "[top1] time=" << top1->main_time << std::endl;
 
         // toggle clk_i
         top1->clk_i = !top1->clk_i;

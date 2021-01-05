@@ -8,17 +8,18 @@
 //
 
 module top
-( input               clk_i
-, input               rst_i
-, input string        trace_name
-, output logic [31:0] counter
-, output logic        done_o
+( input                   clk_i
+, input                   rst_i
+, input        [31:0]     trace_number
+, output logic [31:0]     counter
+, output logic            done_o
 );
 
    initial begin
-      $dumpfile(trace_name);
+      string number;
+      number.itoa(trace_number);
+      $dumpfile({"trace", number, ".vcd"});
       $dumpvars();
-
    end
 
    always@(posedge clk_i)
