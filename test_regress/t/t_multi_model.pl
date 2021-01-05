@@ -16,7 +16,7 @@ compile(
     make_top_shell => 0,
     make_main => 0,
     verilator_flags2 => ["-threads 1 --exe $Self->{t_dir}/$Self->{name}.cpp --trace -cc"] # link threads library, add custom .cpp code, add tracing support
-);
+); # add: --coverage
 
 execute(
     check_finished => 1,
