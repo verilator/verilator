@@ -84,7 +84,7 @@ protected:
 
     VL_DEBUG_FUNC;  // Declare debug()
 
-    static LatchDetectGraphVertex *castVertexp(V3GraphVertex *vertexp) {
+    static LatchDetectGraphVertex* castVertexp(V3GraphVertex* vertexp) {
         return reinterpret_cast<LatchDetectGraphVertex*>(vertexp);
     }
 
@@ -111,7 +111,7 @@ protected:
             break;
         case LatchDetectGraphVertex::VT_BRANCH:  // (AND of both sibling)
             // A BRANCH vertex always has exactly 2 siblings
-            LatchDetectGraphVertex* ifp  = castVertexp(vertexp->outBeginp()->top());
+            LatchDetectGraphVertex* ifp = castVertexp(vertexp->outBeginp()->top());
             LatchDetectGraphVertex* elsp = castVertexp(vertexp->outBeginp()->outNextp()->top());
             result = latchCheckInternal(ifp) && latchCheckInternal(elsp);
             break;
@@ -129,6 +129,7 @@ public:
     // METHODS
     void begin() {
         // Start a new if/else tracking graph
+        // See NODE STATE comment in ActiveLatchCheckVisitor
         AstNode::user1ClearTree();
         m_curVertexp = new LatchDetectGraphVertex(this, "ROOT");
     }
