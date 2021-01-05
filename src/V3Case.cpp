@@ -483,13 +483,6 @@ private:
             VL_DO_DANGLING(replaceCaseComplicated(nodep), nodep);
         }
     }
-
-    // TBD: No idea what is going on here, but declaring an an AstAlways visitor causes the
-    //      following run-time error
-    // %Error: Internal Error: t/t_lint_latch_2.v:37:7: ../V3Hashed.cpp:67:
-    //    sameHash function undefined (returns 0) for node under CFunc
-    // virtual void visit(AstAlways* nodep) override {  }
-
     //--------------------
     virtual void visit(AstNode* nodep) override {
         if (VN_IS(nodep, Always)) { m_ContainingAlways = nodep; }
