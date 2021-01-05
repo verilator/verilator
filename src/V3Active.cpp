@@ -84,7 +84,7 @@ protected:
 
     VL_DEBUG_FUNC;  // Declare debug()
 
-    static LatchDetectGraphVertex* castVertexp(V3GraphVertex* vertexp) {
+    static LatchDetectGraphVertex* castVertexp(void* vertexp) {
         return reinterpret_cast<LatchDetectGraphVertex*>(vertexp);
     }
 
@@ -165,7 +165,7 @@ public:
         if (!nodep->varp()->user1p()) {  // Not seen this output before
             outVertexp = addOutputVertex(nodep);
         } else
-            outVertexp = (LatchDetectGraphVertex*)nodep->varp()->user1p();
+            outVertexp = castVertexp(nodep->varp()->user1p());
 
         new V3GraphEdge(this, m_curVertexp, outVertexp, 1);
     }
@@ -174,9 +174,9 @@ public:
     void latchCheck(AstNode* nodep, bool latch_expected) {
         bool latch_detected = false;
         for (const auto& vrp : m_outputs) {
-            LatchDetectGraphVertex* vertp = (LatchDetectGraphVertex*)vrp->varp()->user1p();
+            LatchDetectGraphVertex* vertp = castVertexp(vrp->varp()->user1p());
             vertp->user(true);  // Identify the output vertex we are checking paths _to_
-            if (!latchCheckInternal((LatchDetectGraphVertex*)verticesBeginp())) {
+            if (!latchCheckInternal(castVertexp(verticesBeginp()))) {
                 latch_detected = true;
             }
             if (latch_detected && !latch_expected) {
