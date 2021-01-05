@@ -84,6 +84,10 @@ protected:
 
     VL_DEBUG_FUNC;  // Declare debug()
 
+    static LatchDetectGraphVertex *castVertexp(V3GraphVertex *vertexp) {
+        return reinterpret_cast<LatchDetectGraphVertex*>(vertexp);
+    }
+
     // Recursively traverse the graph to determine whether every control 'BLOCK' has an assignment
     // to the output we are currently analysing (the output whose 'user() is set), if so return
     // true. Where a BLOCK contains a BRANCH, both the if and else sides of the branch must return
@@ -99,7 +103,7 @@ protected:
             break;
         case LatchDetectGraphVertex::VT_BLOCK:  // (OR of potentially many siblings)
             for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                if (latchCheckInternal((LatchDetectGraphVertex*)edgep->top())) {
+                if (latchCheckInternal(castVertexp(edgep->top()))) {
                     result = true;
                     break;
                 }
@@ -107,9 +111,8 @@ protected:
             break;
         case LatchDetectGraphVertex::VT_BRANCH:  // (AND of both sibling)
             // A BRANCH vertex always has exactly 2 siblings
-            LatchDetectGraphVertex* ifp = (LatchDetectGraphVertex*)vertexp->outBeginp()->top();
-            LatchDetectGraphVertex* elsp
-                = (LatchDetectGraphVertex*)vertexp->outBeginp()->outNextp()->top();
+            LatchDetectGraphVertex* ifp  = castVertexp(vertexp->outBeginp()->top());
+            LatchDetectGraphVertex* elsp = castVertexp(vertexp->outBeginp()->outNextp()->top());
             result = latchCheckInternal(ifp) && latchCheckInternal(elsp);
             break;
         }
