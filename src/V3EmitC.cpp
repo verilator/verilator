@@ -2834,9 +2834,11 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
 
     // Vmodel::gotFinish
     puts("\nbool " + prefixNameProtect(modp) + "::gotFinish(){\n");
+    puts("const VerilatedLockGuard lock(" + prefixNameProtect(modp) + "::s_mutex);\n");
     puts("return this->s_gotFinish;\n");
     puts("}\n");
     puts("void " + prefixNameProtect(modp) + "::gotFinish(bool flag){\n");
+    puts("const VerilatedLockGuard lock(" + prefixNameProtect(modp) + "::s_mutex);\n");
     puts("this->s_gotFinish = flag;\n");
     puts("}\n");
 }
@@ -3145,6 +3147,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     section = "\n// LOCAL VARIABLES\n";
     section += "// simulation state variables\n";
     section += "bool s_gotFinish;  ///< A $finish statement executed\n";
+    section += "VerilatedMutex s_mutex; // add lock for MT support of in-model variable access.\n";
     if (modp->isTop()) section += "// Internals; generally not touched by application code\n";
     emitVarList(modp->stmtsp(), EVL_CLASS_TEMP, "", section /*ref*/);
 
