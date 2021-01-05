@@ -4591,6 +4591,16 @@ exposed is acceptable.
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
+=item LATCH
+
+Warns that a signal is not assigned in all control paths of a combinational
+always block, resulting in the inference of a latch. For intentional
+latches, consider using the always_latch (SystemVerilog) keyword instead.
+The warning may be disabled with a lint_off pragma around the always block.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
 =item LITENDIAN
 
 Warns that a packed vector is declared with little endian bit numbering
@@ -4653,6 +4663,15 @@ conflicting and identical signal names being made unique by adding a prefix
 based on the top module name followed by __02E (a Verilator-encoded ASCII
 ".').  This renaming is done even if the two modules' signals seem
 identical, e.g. multiple modules with a "clk" input.
+
+=item NOLATCH
+
+Warns that no latch was detected in an always_latch block. The warning may
+be disabled with a lint_off pragma around the always block, but recoding
+using a regular always may be more appropriate.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
 
 =item PINCONNECTEMPTY
 
