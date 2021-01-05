@@ -3148,6 +3148,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     section += "// simulation state variables\n";
     section += "bool s_gotFinish;  ///< A $finish statement executed\n";
     section += "VerilatedMutex s_mutex; // add lock for MT support of in-model variable access.\n";
+    section += "vluint64_t main_time; //simulation cycle counter\n";
     if (modp->isTop()) section += "// Internals; generally not touched by application code\n";
     emitVarList(modp->stmtsp(), EVL_CLASS_TEMP, "", section /*ref*/);
 
@@ -3491,7 +3492,7 @@ class EmitCTrace final : EmitCStmts {
             puts("void " + topClassName() + "::_traceDump() {\n");
             // Caller checked for __Vm_dumperp non-nullptr
             puts("const VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
-            puts("__VlSymsp->__Vm_dumperp->dump(VL_TIME_Q());\n");
+            puts("__VlSymsp->__Vm_dumperp->dump(" + topClassName() + "::main_time);\n");
             puts("}\n");
             splitSizeInc(10);
         }
