@@ -76,6 +76,279 @@ public:
     bool found() const { return m_found; }
 };
 
+class ConstBitOpTreeVisitor final : public AstNVisitor {
+    // TYPES
+
+    // Collect information for each AstVar to transform as below
+    // a[0] & b[0] & a[1] & b[1] -> (2'b11 == (2'b11 & b)) & (2'b11 == (2'b11 & b))
+    class Context final {
+        // MEMBERS
+        AstNode* m_rootp;  // The root op of this optimization pass
+        AstVarRef* m_refp;  // Points the variable that this Context covers
+        std::map<int, bool> m_bitPolarity;  // Coefficient of each bit
+        AstConst* m_resultp = nullptr;  // Optimized result if found
+        bool m_invertResult = false;  // Add Not to the entire tree (only for RedXor)
+    public:
+        // METHODS
+        bool hasConstantResult() const { return m_resultp; }
+        void invertResult() { m_invertResult = !m_invertResult; }
+        void setPolarity(bool compBit, int bit) {
+            UASSERT_OBJ(!m_resultp, m_resultp, "Already exists");
+            const bool inserted = m_bitPolarity.emplace(bit, compBit).second;
+            if (!inserted) {  // Priviously set the bit
+                const bool sameFlag = m_bitPolarity[bit] == compBit;
+                if (isXorish(m_rootp)) {
+                    // ^{x[0], ~x[0], x[2], x[3]} === ~^{x[2], x[3]}
+                    if (!sameFlag) m_invertResult = !m_invertResult;
+                    m_bitPolarity.erase(bit);
+                } else {  // And, Or, RedAnd, RedOr
+                    UASSERT_OBJ(isAndish(m_rootp) || isOrish(m_rootp), m_rootp,
+                                "must be AND or OR");
+                    // Can ignore this nodep as the bit is already registered
+                    if (sameFlag) return;  // a & a == a, b | b == b
+                    // Otherwise result is constant
+                    const uint32_t constVal = isAndish(m_rootp) ? 0 : 1;
+                    m_resultp = new AstConst{m_refp->fileline(), V3Number{m_refp, 1, constVal}};
+                    m_bitPolarity.clear();
+                }
+            }
+        }
+        void setPolarity(const V3Number& compValue, const V3Number& maskValue, bool invert) {
+            for (int i = 0; i < maskValue.width() && !m_resultp; ++i) {
+                if (getBit(maskValue, i)) setPolarity(getBit(compValue, i) ^ invert, i);
+            }
+        }
+        AstNode* getResult() const {
+            if (m_resultp) return m_resultp;
+
+            FileLine* fl = m_refp->fileline();
+            AstVarRef* refp = m_refp->cloneTree(false);
+            const int width = m_refp->varp()->width();
+            AstConst* maskValuep = new AstConst{fl, V3Number{m_rootp, width, 0}};
+            AstConst* compValuep = new AstConst{fl, V3Number{m_rootp, width, 0}};
+            const bool isOr = isOrish(m_rootp);
+            for (auto&& bit : m_bitPolarity) {
+                compValuep->num().setBit(bit.first, bit.second ^ isOr);
+                maskValuep->num().setBit(bit.first, 1);
+            }
+            AstAnd* maskedp = new AstAnd{fl, maskValuep, refp};
+            // Let AstConst be in lhs as it is the common convention.
+            AstNode* resultp;
+            if (isXorish(m_rootp)) {
+                resultp = new AstRedXor{fl, maskedp};
+                if (m_invertResult) resultp = new AstNot{fl, resultp};
+            } else {
+                if (isAndish(m_rootp)) {
+                    resultp = new AstEq{fl, compValuep, maskedp};
+                } else {
+                    UASSERT_OBJ(isOrish(m_rootp), m_rootp, " must be or");
+                    resultp = new AstNeq{fl, compValuep, maskedp};
+                }
+            }
+            return resultp;
+        }
+        bool operator<(const Context& other) const {
+            const AstVar* ap = m_refp->varp();
+            const AstVar* bp = other.m_refp->varp();
+            const int comp = ap->fileline()->operatorCompare(*bp->fileline());
+            if (comp != 0) return comp > 0;
+            const string aname = m_refp->hiernameProtect();
+            const string bname = other.m_refp->hiernameProtect();
+            if (aname != bname) return aname < bname;
+            return ap < bp;
+        }
+
+        // CONSTRUCTORS
+        Context(AstNode* nodep, AstVarRef* refp)
+            : m_rootp(nodep)
+            , m_refp(refp) {}
+    };
+    struct VarRefComparator {
+        bool operator()(const AstVarRef* ap, const AstVarRef* bp) const {
+            if (ap->varp() != bp->varp()) {
+                return ap->varp() < bp->varp();
+            } else if (AstVarScope* scopep = ap->varScopep()) {
+                return scopep < bp->varScopep();
+            } else {
+                return ap->hiernameProtect() < bp->hiernameProtect();
+            }
+        }
+    };
+
+    // MEMBERS
+    bool m_failed = false;  // Quick exit if true
+    bool m_polarity = true;  // When AstNot appears, m_polarity inverts.
+    int m_ops = 0;  // Number of operations such as And, Or, Xor...
+    int m_sels = 0;  // Number of AstSel
+    std::map<const AstVarRef*, Context, VarRefComparator> m_contexts;
+    AstNode* m_rootp;
+
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
+
+    static bool isAndish(const AstNode* nodep) {
+        return VN_IS(nodep, And) || VN_IS(nodep, RedAnd);
+    }
+    static bool isOrish(const AstNode* nodep) { return VN_IS(nodep, Or) || VN_IS(nodep, RedOr); }
+    static bool isXorish(const AstNode* nodep) {
+        return VN_IS(nodep, Xor) || VN_IS(nodep, RedXor);
+    }
+    static bool getBit(const V3Number& num, int bit) { return !num.isBitsZero(bit, bit); }
+    bool setFailed(bool b) {
+        if (b) {
+            // Set breakpoint here
+        }
+        m_failed |= b;
+        return m_failed;
+    }
+    Context& getContext(AstVarRef* refp) {
+        UASSERT_OBJ(refp, m_rootp, "must not nullptr");
+        auto it = m_contexts.find(refp);
+        if (it == m_contexts.end()) it = m_contexts.emplace(refp, Context{m_rootp, refp}).first;
+        return it->second;
+    }
+
+    // VISITORS
+    virtual void visit(AstNode* nodep) override {
+        setFailed(true);  // Hit unexpected op, matching failed
+    }
+    virtual void visit(AstNodeUniop* nodep) override {
+        if (m_failed) return;
+        if (VN_IS(m_rootp, Xor) && VN_IS(nodep, RedXor)) {
+            if (AstAnd* andp = VN_CAST(nodep->lhsp(), And)) {  // ^(mask & v)
+                AstConst* maskp = VN_CAST(andp->lhsp(), Const);
+                if (setFailed(!maskp)) return;
+                AstVarRef* refp = VN_CAST(andp->rhsp(), VarRef);
+                if (setFailed(!refp)) return;
+                Context& context = getContext(refp);
+                context.setPolarity(maskp->num(), maskp->num(), false);
+                if (!m_polarity) context.invertResult();
+                m_ops += 2;  // redXor, And
+                return;
+            }
+        }
+        setFailed(true);
+    }
+    virtual void visit(AstNodeBiop* nodep) override {
+        if (m_failed) return;
+        if (nodep->type() == m_rootp->type()) {  // And, Or, Xor
+            ++m_ops;
+            iterateChildren(nodep);
+            return;
+        } else if ((VN_IS(m_rootp, And) && VN_IS(nodep, Eq))
+                   || (VN_IS(m_rootp, Or) && VN_IS(nodep, Neq))) {
+            if (setFailed(!m_polarity)) return;
+            const bool maskFlip = isOrish(m_rootp);
+            AstConst* compp = VN_CAST(nodep->lhsp(), Const);
+            if (setFailed(!compp)) return;
+            if (AstAnd* andp = VN_CAST(nodep->rhsp(), And)) {  // comp == (mask & v)
+                AstConst* maskp = VN_CAST(andp->lhsp(), Const);
+                AstVarRef* refp = VN_CAST(andp->rhsp(), VarRef);
+                if (setFailed(!maskp || !refp)) return;
+                Context& context = getContext(refp);
+                context.setPolarity(compp->num(), maskp->num(), maskFlip);
+                m_ops += 2;  // Eq, And
+                return;
+            } else if (AstSel* selp = VN_CAST(nodep->rhsp(), Sel)) {  // comp == v[msb:lsb]
+                AstVarRef* refp = VN_CAST(selp->fromp(), VarRef);
+                if (setFailed(!refp || !VN_IS(selp->lsbp(), Const))) return;
+                Context& context = getContext(refp);
+                const int lsb = selp->lsbConst();
+                for (int i = 0; i < selp->width(); ++i) {
+                    const unsigned int valBit = i + lsb;
+                    context.setPolarity(getBit(compp->num(), i) ^ maskFlip, valBit);
+                }
+                ++m_ops;
+                ++m_sels;
+                return;
+            }
+        }
+        setFailed(true);
+    }
+    virtual void visit(AstNot* nodep) override {
+        if (setFailed(!nodep->width1())) return;
+        m_polarity = !m_polarity;
+        iterateChildren(nodep);
+        m_polarity = !m_polarity;
+    }
+    virtual void visit(AstConcat* nodep) override {
+        if (m_failed) return;
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstSel* nodep) override {
+        if (setFailed(nodep->width() != 1 || !VN_IS(nodep->lsbp(), Const))) return;
+
+        AstVarRef* refp = VN_CAST(nodep->fromp(), VarRef);
+        if (setFailed(!refp)) return;
+
+        Context& context = getContext(refp);
+        ++m_sels;
+        if (context.hasConstantResult()) return;  // This bit can be ignored
+
+        const int bit = nodep->lsbConst();
+        if (isXorish(m_rootp)) {
+            context.setPolarity(true, bit);
+            if (!m_polarity) context.invertResult();
+        } else {
+            context.setPolarity(m_polarity, bit);
+        }
+    }
+
+    // CONSTRUCTORS
+    explicit ConstBitOpTreeVisitor(AstNode* nodep)
+        : m_rootp(nodep) {
+        ++m_ops;  // for nodep
+        iterateChildren(nodep);
+        UASSERT_OBJ(m_polarity, nodep, "must be the original polarity");
+    }
+    virtual ~ConstBitOpTreeVisitor() = default;
+
+public:
+    // Transform as below.
+    // v[0] & v[1] => 2'b11 == (2'b11 & v)
+    // v[0] | v[1] => 2'b00 != (2'b11 & v)
+    // v[0] ^ v[1] => ^{2'b11 & v}
+    // (3'b011 == (3'b011 & v)) & v[2]  => 3'b111 == (3'b111 & v)
+    // (3'b000 != (3'b011 & v)) | v[2]  => 3'b000 != (3'b111 & v)
+    // Reduction ops are transformed in the same way.
+    // &{v[0], v[1]} => 2'b11 == (2'b11 & v)
+    static AstNode* simplify(AstNode* nodep) {
+        ConstBitOpTreeVisitor visitor{nodep};
+        if (visitor.m_failed || visitor.m_contexts.empty()) return nullptr;
+
+        // This run did not find better representation.
+        // Two ops for each context. (And and Eq)
+        const int vars = visitor.m_contexts.size();
+        // Expected number of ops after this simplification
+        // (comp0 == (mask0 & var0)) & (comp1 == (mask1 & var1)) & ....
+        //  2 ops per variables, numVars - 1 ops among variables
+        const int expOps = 2 * vars + vars - 1;
+        if (visitor.m_ops + visitor.m_sels <= expOps) return nullptr;  // Unless benefit, return
+
+        // Sort by declared location of AstVar to get deterministic ast tree
+        std::vector<const Context*> contexts;
+        for (auto&& context : visitor.m_contexts) contexts.push_back(&context.second);
+        std::sort(contexts.begin(), contexts.end(),
+                  [](const Context* a, const Context* b) -> bool { return *a < *b; });
+
+        AstNode* resultp = nullptr;
+        for (const Context* context : contexts) {
+            AstNode* partialResultp = context->getResult();
+            if (resultp) {
+                if (isAndish(nodep))
+                    resultp = new AstAnd(nodep->fileline(), resultp, partialResultp);
+                else if (isOrish(nodep))
+                    resultp = new AstOr(nodep->fileline(), resultp, partialResultp);
+                else if (isXorish(nodep))
+                    resultp = new AstXor(nodep->fileline(), resultp, partialResultp);
+            } else {
+                resultp = partialResultp;
+            }
+        }
+        return resultp;
+    }
+};
+
 //######################################################################
 // Const state, as a visitor of each AstNode
 
@@ -241,6 +514,25 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         return true;
+    }
+    bool matchBitOpTree(AstNode* nodep) {
+        AstNode* newNodep = ConstBitOpTreeVisitor::simplify(nodep);
+        if (newNodep) {
+            UINFO(4, "Transformed leaf of bit tree to " << newNodep << std::endl);
+            if (debug() >= 9) {
+                static int c = 0;
+                std::stringstream ss;
+                ss << "Call matchBitOpTree[" << c << "]\n";
+                nodep->dumpTree(ss);
+                ss << "\nResult:\n";
+                newNodep->dumpTree(ss);
+                std::cout << ss.str() << std::endl;
+                ++c;
+            }
+            nodep->replaceWith(newNodep);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
+        return newNodep;
     }
     static bool operandShiftSame(const AstNode* nodep) {
         const AstNodeBiop* np = VN_CAST_CONST(nodep, NodeBiop);
@@ -2446,6 +2738,10 @@ private:
     TREEOPV("AstRedAnd{$lhsp.castExtend, $lhsp->width() > VN_CAST($lhsp,,Extend)->lhsp()->width()}", "replaceZero(nodep)");  // &{0,...} => 0  Prevents compiler limited range error
     TREEOPV("AstRedOr {$lhsp.castExtend}",      "AstRedOr {$lhsp->castExtend()->lhsp()}");
     TREEOPV("AstRedXor{$lhsp.castExtend}",      "AstRedXor{$lhsp->castExtend()->lhsp()}");
+    TREEOP ("AstRedXor{$lhsp.castXor, VN_IS(VN_CAST($lhsp,,Xor)->lhsp(),,Const)}", "AstXor{AstRedXor{$lhsp->castXor()->lhsp()}, AstRedXor{$lhsp->castXor()->rhsp()}}");  // ^{const, b} => (^const)^(^b)
+    TREEOP ("AstRedAnd {$lhsp.castConcat, matchBitOpTree(nodep)}", "DONE");
+    TREEOP ("AstRedOr  {$lhsp.castConcat, matchBitOpTree(nodep)}", "DONE");
+    TREEOP ("AstRedXor {$lhsp.castConcat, matchBitOpTree(nodep)}", "DONE");
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
@@ -2467,6 +2763,9 @@ private:
     TREEOP ("AstAnd {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstOr  {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstXor {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
+    TREEOP ("AstAnd {matchBitOpTree(nodep)}",           "DONE");
+    TREEOP ("AstOr  {matchBitOpTree(nodep)}",           "DONE");
+    TREEOP ("AstXor {matchBitOpTree(nodep)}",           "DONE");
     // Note can't simplify a extend{extends}, extends{extend}, as the sign
     // bits end up in the wrong places
     TREEOPV("AstExtend {$lhsp.castExtend}",  "replaceExtend(nodep, VN_CAST(nodep->lhsp(), Extend)->lhsp())");
