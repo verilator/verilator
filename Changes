@@ -5,15 +5,25 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.107 devel
 
+**    Many VPI changes for IEEE compatibility, which may alter behavior from previous releases.
+
 **    Support randomize() class method and rand (#2607). [Krzysztof Bieganski]
 
 ***   Support $cast and new CASTCONST warning.
 
 ***   Add --top option as alias of --top-module.
 
+***   Add LATCH and NOLATCH warnings (#1609) (#2740). [Julien Margetts]
+
+****  Remove Unix::Processors internal test dependency.
+
 ****  Report UNUSED on parameters, localparam and genvars (#2627). [Charles Eric LaForest]
 
 ****  Add error on real to non-real output pins (#2690). [Peter Monsson]
+
+****  Support package imports before parameters in interfaces (#2714). [James Hanlon]
+
+****  Support --sanitize in internal tests (#2705). [Yutetsu TAKATSUKASA]
 
 ****  Fix passing parameter type instantiations by position number.
 
@@ -27,13 +37,26 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix genblk naming to match IEEE (#2686). [tinshark]
 
+****  Fix VPI memory word indexing (#2695). [Marlon James]
+
 ****  Fix vpiLeftRange on little-endian memories (#2696). [Marlon James]
 
+****  Fix VPI module tree (#2704). [Todd Strader]
+
 ****  Fix vpi_release_handle to be called implicitly per IEEE (#2706).
+
+****  Fix to allow inheriting 'VerilatedVcdFile' class. (#2720) [HyungKi Jeong]
+
+****  Fix $urandom_range maximum value (#2723). [Nandu Raj]
 
 ****  Fix tracing empty sc module (#2729).
 
 ****  Fix generate for unrolling to be signed (#2730). [yanx21]
+
+****  Fix to emit timescale in hierarchical blocks (#2735). [Yutetsu TAKATSUKASA]
+
+****  Fix to ignore coverage on real ports (#2741) (#2745). [Paul Wright]
+
 
 
 * Verilator 4.106 2020-12-02
