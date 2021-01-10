@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
-* Verilator 4.107 devel
+* Verilator 4.108 2021-01-10
 
 **    Many VPI changes for IEEE compatibility, which may alter behavior from previous releases.
 
