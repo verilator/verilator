@@ -6,10 +6,12 @@
 
 module t (/*AUTOARG*/
    // Inputs
-   clk
+   clk,
+   check_real
    );
 
    input clk;
+   input real check_real; // Check issue #2741
 
    typedef struct packed {
       union packed {
