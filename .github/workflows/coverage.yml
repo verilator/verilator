@@ -44,14 +44,11 @@ jobs:
       run: |
         ./ci/ci-script.bash
 
-        mkdir tarball/
-        cp -vr bin tarball/
-        cp -vr src/obj*/*.gcno tarball/
-        tar cvzf verilator-${CI_COMMIT}.tgz -C ./tarball .
+        tar cvzf verilator-${CI_COMMIT}-coverage.tgz bin src/obj*/*.gcno
 
     - uses: actions/upload-artifact@v2
       with:
-        path: verilator-${{ env.CI_COMMIT }}.tgz
+        path: verilator-${{ env.CI_COMMIT }}-coverage.tgz
 
 
   Test:
@@ -89,7 +86,7 @@ jobs:
 
     - name: Install Verilator and test dependencies
       run: |
-        tar xvzf artifact/verilator-${CI_COMMIT}.tgz
+        tar xvzf artifact/verilator-${CI_COMMIT}-coverage.tgz
         ./ci/ci-install.bash
 
     - name: Test
