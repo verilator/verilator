@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -116,6 +116,7 @@ class EmitCSyms final : EmitCBaseVisitor {
     void checkSplit(bool usesVfinal);
     void closeSplit();
     void emitSymImpPreamble();
+    void emitScopeHier(bool destroy);
     void emitSymImp();
     void emitDpiHdr();
     void emitDpiImp();
@@ -171,7 +172,7 @@ class EmitCSyms final : EmitCBaseVisitor {
             const auto scpit = m_vpiScopeCandidates.find(scp);
             if ((scpit != m_vpiScopeCandidates.end())
                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
-                m_scopeNames.insert(make_pair(scpit->second.m_symName, scpit->second));
+                m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
             }
             string::size_type pos = scp.rfind("__DOT__");
             if (pos == string::npos) {
@@ -312,8 +313,8 @@ class EmitCSyms final : EmitCBaseVisitor {
         // <<" ss"<<name<<endl);
         int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
         if (m_scopeNames.find(name) == m_scopeNames.end()) {
-            m_scopeNames.insert(make_pair(
-                name, ScopeData(name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER")));
+            m_scopeNames.emplace(
+                name, ScopeData(name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER"));
         }
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");
@@ -467,7 +468,7 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// CREATORS\n");
     puts(symClassName() + "(" + topClassName() + "* topp, const char* namep);\n");
-    puts(string("~") + symClassName() + "() = default;\n");
+    puts(string("~") + symClassName() + "();\n");
 
     for (const auto& i : m_usesVfinal) {
         puts("void " + symClassName() + "_" + cvtToStr(i.first) + "(");
@@ -555,6 +556,40 @@ void EmitCSyms::emitSymImpPreamble() {
     }
 }
 
+void EmitCSyms::emitScopeHier(bool destroy) {
+    if (v3Global.opt.vpi()) {
+        string verb = destroy ? "Tear down" : "Set up";
+        string method = destroy ? "remove" : "add";
+        puts("\n// " + verb + " scope hierarchy\n");
+        for (ScopeNames::const_iterator it = m_scopeNames.begin(); it != m_scopeNames.end();
+             ++it) {
+            string name = it->second.m_prettyName;
+            if (it->first == "TOP") continue;
+            if ((name.find('.') == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
+                puts("__Vhier." + method + "(0, &" + protect("__Vscope_" + it->second.m_symName)
+                     + ");\n");
+            }
+        }
+
+        for (ScopeNameHierarchy::const_iterator it = m_vpiScopeHierarchy.begin();
+             it != m_vpiScopeHierarchy.end(); ++it) {
+            for (ScopeNameList::const_iterator lit = it->second.begin(); lit != it->second.end();
+                 ++lit) {
+                string fromname = scopeSymString(it->first);
+                string toname = scopeSymString(*lit);
+                const auto from = vlstd::as_const(m_scopeNames).find(fromname);
+                const auto to = vlstd::as_const(m_scopeNames).find(toname);
+                UASSERT(from != m_scopeNames.end(), fromname + " not in m_scopeNames");
+                UASSERT(to != m_scopeNames.end(), toname + " not in m_scopeNames");
+                puts("__Vhier." + method + "(");
+                puts("&" + protect("__Vscope_" + from->second.m_symName) + ", ");
+                puts("&" + protect("__Vscope_" + to->second.m_symName) + ");\n");
+            }
+        }
+        puts("\n");
+    }
+}
+
 void EmitCSyms::emitSymImp() {
     UINFO(6, __FUNCTION__ << ": " << endl);
     string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".cpp";
@@ -604,6 +639,10 @@ void EmitCSyms::emitSymImp() {
     puts("\n");
 
     puts("\n// FUNCTIONS\n");
+    puts(symClassName() + "::~" + symClassName() + "()\n");
+    puts("{\n");
+    emitScopeHier(true);
+    puts("}\n\n");
     puts(symClassName() + "::" + symClassName() + "(" + topClassName()
          + "* topp, const char* namep)\n");
     puts("    // Setup locals\n");
@@ -685,35 +724,7 @@ void EmitCSyms::emitSymImp() {
         }
     }
 
-    if (v3Global.opt.vpi()) {
-        puts("\n// Setup scope hierarchy\n");
-        for (ScopeNames::const_iterator it = m_scopeNames.begin(); it != m_scopeNames.end();
-             ++it) {
-            string name = it->second.m_prettyName;
-            if (it->first == "TOP") continue;
-            name = name.replace(0, 4, "");  // Remove the "TOP."
-            if ((name.find('.') == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
-                puts("__Vhier.add(0, &" + protect("__Vscope_" + it->second.m_symName) + ");\n");
-            }
-        }
-
-        for (ScopeNameHierarchy::const_iterator it = m_vpiScopeHierarchy.begin();
-             it != m_vpiScopeHierarchy.end(); ++it) {
-            for (ScopeNameList::const_iterator lit = it->second.begin(); lit != it->second.end();
-                 ++lit) {
-                string fromname = scopeSymString(it->first);
-                string toname = scopeSymString(*lit);
-                const auto from = vlstd::as_const(m_scopeNames).find(fromname);
-                const auto to = vlstd::as_const(m_scopeNames).find(toname);
-                UASSERT(from != m_scopeNames.end(), fromname + " not in m_scopeNames");
-                UASSERT(to != m_scopeNames.end(), toname + " not in m_scopeNames");
-                puts("__Vhier.add(");
-                puts("&" + protect("__Vscope_" + from->second.m_symName) + ", ");
-                puts("&" + protect("__Vscope_" + to->second.m_symName) + ");\n");
-            }
-        }
-        puts("\n");
-    }
+    emitScopeHier(false);
 
     // Everything past here is in the __Vfinal loop, so start a new split file if needed
     closeSplit();
@@ -752,9 +763,9 @@ void EmitCSyms::emitSymImp() {
                 // Range is always first, it's not in "C" order
                 if (basicp->isRanged()) {
                     bounds += " ,";
-                    bounds += cvtToStr(basicp->msb());
+                    bounds += cvtToStr(basicp->hi());
                     bounds += ",";
-                    bounds += cvtToStr(basicp->lsb());
+                    bounds += cvtToStr(basicp->lo());
                     pdim++;
                 }
                 for (AstNodeDType* dtypep = varp->dtypep(); dtypep;) {
@@ -762,9 +773,9 @@ void EmitCSyms::emitSymImp() {
                         = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
                     if (const AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
                         bounds += " ,";
-                        bounds += cvtToStr(adtypep->msb());
+                        bounds += cvtToStr(adtypep->left());
                         bounds += ",";
-                        bounds += cvtToStr(adtypep->lsb());
+                        bounds += cvtToStr(adtypep->right());
                         if (VN_IS(dtypep, PackArrayDType)) {
                             pdim++;
                         } else {
@@ -861,12 +872,14 @@ void EmitCSyms::emitDpiHdr() {
     for (AstCFunc* nodep : m_dpis) {
         if (nodep->dpiExportWrapper()) {
             if (!firstExp++) puts("\n// DPI EXPORTS\n");
-            puts("// DPI export" + ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
+            putsDecoration("// DPI export" + ifNoProtect(" at " + nodep->fileline()->ascii())
+                           + "\n");
             puts("extern " + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
                  + cFuncArgs(nodep) + ");\n");
         } else if (nodep->dpiImport()) {
             if (!firstImp++) puts("\n// DPI IMPORTS\n");
-            puts("// DPI import" + ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
+            putsDecoration("// DPI import" + ifNoProtect(" at " + nodep->fileline()->ascii())
+                           + "\n");
             puts("extern " + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
                  + cFuncArgs(nodep) + ");\n");
         }

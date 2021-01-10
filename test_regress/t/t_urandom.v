@@ -34,12 +34,17 @@ module t(/*AUTOARG*/);
       if (v1 == v2 && v1 == v3) $stop;  // Possible, but 2^-64
 
       // Range
+      v2 = $urandom_range(v1, v1);
+      if (v1 != v2) $stop;
+
       for (int test = 0; test < 20; ++test) begin
          v1 = 2;
          v1 = $urandom_range(0, v1);
-         if (v1 != 0 && v1 != 1) $stop;
+         if (v1 != 0 && v1 != 1 && v1 != 2) $stop;
          v1 = $urandom_range(2, 0);
-         if (v1 != 0 && v1 != 1) $stop;
+         if (v1 != 0 && v1 != 1 && v1 !=2) $stop;
+         v1 = $urandom_range(3);
+         if (v1 != 0 && v1 != 1 && v1 != 2 && v1 != 3) $stop;
       end
 
       // Seed stability

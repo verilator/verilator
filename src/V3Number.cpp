@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -495,6 +495,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
             out << "'";
             if (bitIs0(0)) {
                 out << '0';
+                if (isNull()) out << "[null]";
             } else if (bitIs1(0)) {
                 out << '1';
             } else if (bitIsZ(0)) {
@@ -515,7 +516,8 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 
     bool binary = (isFourState()
 #ifdef V3NUMBER_ASCII_BINARY
-                   || 1
+                   // cppcheck-suppress konwnConditionTrueFalse
+                   || true
 #endif
     );
     // out<<"-"<<hex<<m_value[0]<<"-";
@@ -529,6 +531,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
         // Always deal with 4 bits at once.  Note no 4-state, it's above.
         out << displayed("%0h");
     }
+    if (isNull() && VL_UNCOVERABLE(!isEqZero())) out << "-%E-null-not-zero";
     return out.str();
 }
 
@@ -1116,26 +1119,6 @@ V3Number& V3Number::opRedXor(const V3Number& lhs) {
     return setSingleBits(outc);
 }
 
-V3Number& V3Number::opRedXnor(const V3Number& lhs) {
-    // op i, 1 bit return
-    NUM_ASSERT_OP_ARGS1(lhs);
-    NUM_ASSERT_LOGIC_ARGS1(lhs);
-    char outc = 1;
-    for (int bit = 0; bit < lhs.width(); bit++) {
-        if (lhs.bitIs1(bit)) {
-            if (outc == 1) {
-                outc = 0;
-            } else if (outc == 0) {
-                outc = 1;
-            }
-        } else if (lhs.bitIs0(bit)) {
-        } else {
-            outc = 'x';
-        }
-    }
-    return setSingleBits(outc);
-}
-
 V3Number& V3Number::opCountBits(const V3Number& expr, const V3Number& ctrl1, const V3Number& ctrl2,
                                 const V3Number& ctrl3) {
     NUM_ASSERT_OP_ARGS4(expr, ctrl1, ctrl2, ctrl3);
@@ -1269,24 +1252,6 @@ V3Number& V3Number::opXor(const V3Number& lhs, const V3Number& rhs) {
         } else if (lhs.bitIs0(bit) && rhs.bitIs1(bit)) {
             setBit(bit, 1);
         } else if (lhs.bitIsXZ(bit) || rhs.bitIsXZ(bit)) {
-            setBit(bit, 'x');
-        }
-        // else zero
-    }
-    return *this;
-}
-
-V3Number& V3Number::opXnor(const V3Number& lhs, const V3Number& rhs) {
-    // i op j, max(L(lhs),L(rhs)) bit return, careful need to X/Z extend.
-    NUM_ASSERT_OP_ARGS2(lhs, rhs);
-    NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
-    setZero();
-    for (int bit = 0; bit < this->width(); bit++) {
-        if (lhs.bitIs1(bit) && rhs.bitIs1(bit)) {
-            setBit(bit, 1);
-        } else if (lhs.bitIs0(bit) && rhs.bitIs0(bit)) {
-            setBit(bit, 1);
-        } else if (lhs.bitIsXZ(bit) && rhs.bitIsXZ(bit)) {
             setBit(bit, 'x');
         }
         // else zero
@@ -1684,34 +1649,6 @@ V3Number& V3Number::opLt(const V3Number& lhs, const V3Number& rhs) { return opGt
 V3Number& V3Number::opLte(const V3Number& lhs, const V3Number& rhs) { return opGte(rhs, lhs); }
 V3Number& V3Number::opLtS(const V3Number& lhs, const V3Number& rhs) { return opGtS(rhs, lhs); }
 V3Number& V3Number::opLteS(const V3Number& lhs, const V3Number& rhs) { return opGteS(rhs, lhs); }
-
-V3Number& V3Number::opRotR(const V3Number& lhs, const V3Number& rhs) {
-    // L(lhs) bit return
-    NUM_ASSERT_OP_ARGS2(lhs, rhs);
-    NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
-    if (rhs.isFourState()) return setAllBitsX();
-    setZero();
-    uint32_t rhsval = rhs.toUInt();
-    for (int bit = 0; bit < this->width(); bit++) {
-        setBit(bit, lhs.bitIs((bit + rhsval) % this->width()));
-    }
-    return *this;
-}
-
-V3Number& V3Number::opRotL(const V3Number& lhs, const V3Number& rhs) {
-    // L(lhs) bit return
-    NUM_ASSERT_OP_ARGS2(lhs, rhs);
-    NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
-    if (rhs.isFourState()) return setAllBitsX();
-    setZero();
-    uint32_t rhsval = rhs.toUInt();
-    for (int bit = 0; bit < this->width(); bit++) {
-        if (bit >= static_cast<int>(rhsval)) {
-            setBit(bit, lhs.bitIs((bit - rhsval) % this->width()));
-        }
-    }
-    return *this;
-}
 
 V3Number& V3Number::opShiftR(const V3Number& lhs, const V3Number& rhs) {
     // L(lhs) bit return

@@ -33,12 +33,13 @@ int sc_main(int argc, char* argv[]) {
 
     // Simulate until $finish
     while (!Verilated::gotFinish()) {
+        // Simulate 1ns
         sc_start(1, SC_NS);
     }
 
     // Final model cleanup
     top->final();
 
-    // Fin
+    // Return good completion status
     return 0;
 }

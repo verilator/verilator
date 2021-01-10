@@ -1,4 +1,4 @@
-%Warning-WIDTH: t/t_lint_width_genfor_bad.v:25:13: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's CONST '?32?h10' generates 32 or 5 bits.
+%Warning-WIDTH: t/t_lint_width_genfor_bad.v:25:13: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's CONST '?32?sh10' generates 32 or 5 bits.
                                                  : ... In instance t
    25 |          rg = g;   
       |             ^

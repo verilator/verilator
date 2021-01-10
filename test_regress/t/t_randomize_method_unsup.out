@@ -1,0 +1,7 @@
+%Error-UNSUPPORTED: t/t_randomize_method_unsup.v:8:18: Unsupported: 'pre_randomize'
+    8 |    function void pre_randomize;
+      |                  ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_randomize_method_unsup.v:11:18: Unsupported: 'post_randomize'
+   11 |    function void post_randomize;
+      |                  ^~~~~~~~~~~~~~
+%Error: Exiting due to

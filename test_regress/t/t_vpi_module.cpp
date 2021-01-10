@@ -48,6 +48,19 @@ unsigned int main_time = 0;
         return __LINE__; \
     }
 
+#define CHECK_RESULT_Z(got) \
+    if (got) { \
+        printf("%%Error: %s:%d: GOT = !NULL  EXP = NULL\n", FILENM, __LINE__); \
+        return __LINE__; \
+    }
+
+#define CHECK_RESULT(got, exp) \
+    if ((got) != (exp)) { \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
+                  << "   EXP = " << (exp) << std::endl; \
+        return __LINE__; \
+    }
+
 #define CHECK_RESULT_CSTR(got, exp) \
     if (strcmp((got), (exp))) { \
         printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
@@ -55,41 +68,68 @@ unsigned int main_time = 0;
         return __LINE__; \
     }
 
+void modDump(const TestVpiHandle& it, int n) {
+    while (TestVpiHandle hndl = vpi_scan(it)) {
+        const char* nm = vpi_get_str(vpiName, hndl);
+        for (int i = 0; i < n; i++) printf("    ");
+        printf("%s\n", nm);
+        TestVpiHandle subIt = vpi_iterate(vpiModule, hndl);
+        if (subIt) modDump(subIt, n + 1);
+    }
+}
+
 extern "C" {
 int mon_check() {
-    vpiHandle it = vpi_iterate(vpiModule, NULL);
+    TestVpiHandle it = vpi_iterate(vpiModule, NULL);
     CHECK_RESULT_NZ(it);
+    // Uncomment to see what other simulators return
+    // modDump(it, 0);
+    // return 1;
 
-    vpiHandle topmod = vpi_scan(it);
+    TestVpiHandle topmod = vpi_scan(it);
     CHECK_RESULT_NZ(topmod);
+    CHECK_RESULT(vpi_get(vpiType, topmod), vpiModule);
 
-    char* name = vpi_get_str(vpiName, topmod);
-    CHECK_RESULT_NZ(name);
-    CHECK_RESULT_CSTR(name, "t");
+    const char* t_name = vpi_get_str(vpiName, topmod);
+    CHECK_RESULT_NZ(t_name);
 
-    it = vpi_iterate(vpiModule, topmod);
-    CHECK_RESULT_NZ(it);
-
-    vpiHandle mod = vpi_scan(it);
-    CHECK_RESULT_NZ(mod);
-
-    name = vpi_get_str(vpiName, mod);
-    CHECK_RESULT_CSTR(name, "mod_a");
-
-    it = vpi_iterate(vpiModule, mod);
-    CHECK_RESULT_NZ(it);
-
-    mod = vpi_scan(it);
-    CHECK_RESULT_NZ(mod);
-
-    name = vpi_get_str(vpiName, mod);
-    if (strcmp(name, "mod_b") == 0) {
-        // Full visibility in other simulators, skip mod_b
-        mod = vpi_scan(it);
-        CHECK_RESULT_NZ(mod);
-        name = vpi_get_str(vpiName, mod);
+    // Icarus reports the top most module as "top"
+    if (strcmp(t_name, "top") == 0) {
+        it = vpi_iterate(vpiModule, topmod);
+        CHECK_RESULT_NZ(it);
+        CHECK_RESULT(vpi_get(vpiType, it), vpiModule);
+        topmod = vpi_scan(it);
+        t_name = vpi_get_str(vpiName, topmod);
+        CHECK_RESULT_NZ(t_name);
     }
-    CHECK_RESULT_CSTR(name, "mod_c.");
+    CHECK_RESULT_CSTR(t_name, "t");
+    TestVpiHandle topmod_done_should_be_0 = (vpi_scan(it));
+    it.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+    CHECK_RESULT_Z(topmod_done_should_be_0);
+
+    TestVpiHandle it2 = vpi_iterate(vpiModule, topmod);
+    CHECK_RESULT_NZ(it2);
+
+    TestVpiHandle mod2 = vpi_scan(it2);
+    CHECK_RESULT_NZ(mod2);
+
+    const char* mod_a_name = vpi_get_str(vpiName, mod2);
+    CHECK_RESULT_CSTR(mod_a_name, "mod_a");
+
+    TestVpiHandle it3 = vpi_iterate(vpiModule, mod2);
+    CHECK_RESULT_NZ(it3);
+
+    TestVpiHandle mod3 = vpi_scan(it3);
+    CHECK_RESULT_NZ(mod3);
+
+    const char* mod_c_name = vpi_get_str(vpiName, mod3);
+    if (strcmp(mod_c_name, "mod_b") == 0) {
+        // Full visibility in other simulators, skip mod_b
+        TestVpiHandle mod4 = vpi_scan(it3);
+        CHECK_RESULT_NZ(mod4);
+        mod_c_name = vpi_get_str(vpiName, mod4);
+    }
+    CHECK_RESULT_CSTR(mod_c_name, "mod_c.");
 
     return 0;  // Ok
 }
@@ -99,7 +139,7 @@ int mon_check() {
 #ifdef IS_VPI
 
 static int mon_check_vpi() {
-    vpiHandle href = vpi_handle(vpiSysTfCall, 0);
+    TestVpiHandle href = vpi_handle(vpiSysTfCall, 0);
     s_vpi_value vpi_value;
 
     vpi_value.format = vpiIntVal;
@@ -134,6 +174,9 @@ int main(int argc, char** argv, char** env) {
     Verilated::fatalOnVpiError(0);
 
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
+    // Test second construction
+    delete topp;
+    topp = new VM_PREFIX("");
 
 #ifdef VERILATOR
 #ifdef TEST_VERBOSE

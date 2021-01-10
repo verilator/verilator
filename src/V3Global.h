@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -52,7 +52,7 @@ template <typename T> class VRestorer {
     const T m_saved;  // Value saved, for later restore
 
 public:
-    VRestorer(T& permr)
+    explicit VRestorer(T& permr)
         : m_ref(permr)
         , m_saved(permr) {}
     ~VRestorer() { m_ref = m_saved; }
@@ -97,10 +97,12 @@ class V3Global final {
     bool m_assertDTypesResolved = false;  // Tree should have dtypep()'s
     bool m_assertScoped = false;  // Tree is scoped
     bool m_constRemoveXs = false;  // Const needs to strip any Xs
-    bool m_needHeavy = false;  // Need verilated_heavy.h include
+    // Experimenting with always requiring heavy, see (#2701)
+    bool m_needHeavy = true;  // Need verilated_heavy.h include
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
     bool m_useParallelBuild = false;  // Use parallel build for model
+    bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
 
     // Memory address to short string mapping (for debug)
     typedef std::unordered_map<const void*, std::string> PtrToIdMap;  // The map type
@@ -158,6 +160,8 @@ public:
     }
     void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useParallelBuild() const { return m_useParallelBuild; }
+    void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }
+    bool useRandomizeMethods() const { return m_useRandomizeMethods; }
     const std::string& ptrToId(const void* p);
 };
 

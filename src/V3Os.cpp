@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -53,8 +53,10 @@
 # ifndef WIFEXITED
 #  ifdef __MINGW32__
 #   define WIFEXITED(w)	(((w) & 0xC0000000) == 0)
+#   define WEXITSTATUS(w)	((w) & ~0xC0000000)
 #  else
 #   define WIFEXITED(w)	(((w) & 0377) == 0)
+#   define WEXITSTATUS(w)	(((w) >> 8) & 0377)
 #  endif
 # endif
 #else

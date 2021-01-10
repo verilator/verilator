@@ -1,7 +1,17 @@
-%Error-UNSUPPORTED: t/t_class_vparam.v:13:40: Unsupported: parameterized packages
-   13 |    pure virtual function void funcname(paramed_class_t #(CTYPE_t) v);
-      |                                        ^~~~~~~~~~~~~~~
-%Error: t/t_class_vparam.v:13:58: Parameter pin not found: '__paramNumber1'
-   13 |    pure virtual function void funcname(paramed_class_t #(CTYPE_t) v);
+%Error-UNSUPPORTED: t/t_class_vparam.v:11:26: Unsupported: parameterized classes
+                                            : ... In instance t
+   11 | typedef paramed_class_t#(real, 1) paramed_class_double_t;
+      |                          ^~~~
+%Error-UNSUPPORTED: t/t_class_vparam.v:13:56: Unsupported: class parameters
+                                            : ... In instance t
+   13 | virtual class vclass #(type CTYPE_t = arg_class_t, int I = 0);
+      |                                                        ^
+%Error-UNSUPPORTED: t/t_class_vparam.v:14:58: Unsupported: parameterized classes
+                                            : ... In instance t
+   14 |    pure virtual function void funcname(paramed_class_t #(CTYPE_t) v);
       |                                                          ^~~~~~~
+%Error-UNSUPPORTED: t/t_class_vparam.v:17:46: Unsupported: class parameters
+                                            : ... In instance t
+   17 | class paramed_class_t #(type TYPE = int, int I = 0);
+      |                                              ^
 %Error: Exiting due to

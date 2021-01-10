@@ -3,7 +3,7 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -47,7 +47,7 @@ static double timescaleToDouble(const char* unitp) {
     unitp = endp;
     for (; *unitp && isspace(*unitp); unitp++) {}
     switch (*unitp) {
-    case 's': value *= 1e1; break;
+    case 's': value *= 1e0; break;
     case 'm': value *= 1e-3; break;
     case 'u': value *= 1e-6; break;
     case 'n': value *= 1e-9; break;
@@ -70,7 +70,7 @@ static std::string doubleToTimescale(double value) {
     else if (value >= 1e-18) { suffixp = "as"; value *= 1e18; }
     // clang-format on
     char valuestr[100];
-    sprintf(valuestr, "%3.0f%s", value, suffixp);
+    sprintf(valuestr, "%0.0f%s", value, suffixp);
     return valuestr;  // Gets converted to string, so no ref to stack
 }
 
@@ -374,10 +374,6 @@ template <> std::string VerilatedTrace<VL_DERIVED_T>::timeResStr() const {
     return doubleToTimescale(m_timeRes);
 }
 
-template <> std::string VerilatedTrace<VL_DERIVED_T>::timeUnitStr() const {
-    return doubleToTimescale(m_timeUnit);
-}
-
 //=========================================================================
 // External interface to client code
 
@@ -642,5 +638,40 @@ static inline void cvtQDataToStr(char* dstp, QData value) {
 }
 
 #define cvtEDataToStr cvtIDataToStr
+
+//=============================================================================
+
+#ifdef VERILATED_VCD_TEST
+
+void verilated_trace_imp_selftest() {
+#define SELF_CHECK(got, exp) \
+    do { \
+        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest\n"); \
+    } while (0)
+
+#define SELF_CHECK_TS(scale) \
+    SELF_CHECK(doubleToTimescale(timescaleToDouble(scale)), std::string{scale});
+    SELF_CHECK_TS("1s");
+    SELF_CHECK_TS("100ms");
+    SELF_CHECK_TS("10ms");
+    SELF_CHECK_TS("1ms");
+    SELF_CHECK_TS("100us");
+    SELF_CHECK_TS("10us");
+    SELF_CHECK_TS("1us");
+    SELF_CHECK_TS("100ns");
+    SELF_CHECK_TS("10ns");
+    SELF_CHECK_TS("1ns");
+    SELF_CHECK_TS("100ps");
+    SELF_CHECK_TS("10ps");
+    SELF_CHECK_TS("1ps");
+    SELF_CHECK_TS("100fs");
+    SELF_CHECK_TS("10fs");
+    SELF_CHECK_TS("1fs");
+    SELF_CHECK_TS("100as");
+    SELF_CHECK_TS("10as");
+    SELF_CHECK_TS("1as");
+}
+
+#endif
 
 #endif  // VL_CPPCHECK

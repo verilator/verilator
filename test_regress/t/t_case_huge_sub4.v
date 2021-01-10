@@ -4,6 +4,8 @@
 // any use, without warranty, 2005 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off LATCH
+
 module t_case_huge_sub4 (/*AUTOARG*/
    // Outputs
    outq,

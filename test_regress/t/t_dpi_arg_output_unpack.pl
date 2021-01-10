@@ -20,7 +20,8 @@ if ($Self->{nc}) {
 
 compile(
     v_flags2 => ["t/t_dpi_arg_output_unpack.cpp"],
-    verilator_flags2 => ["-Wall -Wno-DECLFILENAME"],
+    # --no-decoration so .out file doesn't comment on source lines
+    verilator_flags2 => ["-Wall -Wno-DECLFILENAME --no-decoration"],
     # NC: Gdd the obj_dir to the C include path
     nc_flags2 => ["+ncscargs+-I$Self->{obj_dir}"],
     # ModelSim: Generate DPI header, add obj_dir to the C include path

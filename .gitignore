@@ -15,6 +15,8 @@
 *.tex
 *.pdf
 /Makefile
+/.ccache
+/artifact/
 README
 TAGS
 autom4te.cache

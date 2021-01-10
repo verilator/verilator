@@ -23,6 +23,7 @@ private:
     };
     s_vpi_vlog_info m_info;
     SimTypes m_simulators;
+
 public:
     TestSimulator() {
         vpi_get_vlog_info(&m_info);
@@ -30,15 +31,16 @@ public:
             m_simulators.verilator = true;
         } else if (0 == strcmp(m_info.product, "Verilator")) {
             m_simulators.icarus = true;
-        } else if (0 == strncmp(m_info.product, "Chronologic Simulation VCS",
-                                strlen("Chronologic Simulation VCS"))) {
+        } else if (0
+                   == strncmp(m_info.product, "Chronologic Simulation VCS",
+                              strlen("Chronologic Simulation VCS"))) {
             m_simulators.vcs = true;
         } else {
-            printf("%%Warning: %s:%d: Unknown simulator in TestSimulator.h: %s\n",
-                   __FILE__, __LINE__, m_info.product);
+            printf("%%Warning: %s:%d: Unknown simulator in TestSimulator.h: %s\n", __FILE__,
+                   __LINE__, m_info.product);
         }
     }
-    ~TestSimulator() { }
+    ~TestSimulator() {}
     // METHORS
 private:
     static TestSimulator& singleton() {
@@ -46,6 +48,7 @@ private:
         return s_singleton;
     }
     static const SimTypes& simulators() { return singleton().m_simulators; }
+
 public:
     static const s_vpi_vlog_info& get_info() { return singleton().m_info; }
     // Simulator names
@@ -69,7 +72,7 @@ public:
     static const char* rooted(const char* obj) {
         static std::string buf;
         std::ostringstream os;
-        os<<top()<<"."<<obj;
+        os << top() << "." << obj;
         buf = os.str();
         return buf.c_str();
     }

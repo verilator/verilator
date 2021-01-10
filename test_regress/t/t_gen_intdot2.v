@@ -64,11 +64,8 @@ module Genit (
       else
 	One ifcell1(); // genblk1.ifcell1
    endgenerate
-   // On compliant simulators "Implicit name" not allowed here; IE we can't use "genblk1" etc
-`ifdef verilator
+   // DISAGREEMENT on this naming
    always @ (posedge clk) if (genblk1.ifcell1.one !== 1'b1) $stop;
-//`else // NOT SUPPORTED accoring to spec - generic block references
-`endif
 
    generate
       begin : namedif2
@@ -76,10 +73,8 @@ module Genit (
 	   One ifcell2();   // namedif2.genblk1.ifcell2
       end
    endgenerate
-`ifdef verilator
+   // DISAGREEMENT on this naming
    always @ (posedge clk) if (namedif2.genblk1.ifcell2.one !== 1'b1) $stop;
-//`else // NOT SUPPORTED accoring to spec - generic block references
-`endif
 
    generate
       if (1'b1)
@@ -91,15 +86,15 @@ module Genit (
 
    // CASE
    generate
-      case (1'b1)
-	1'b1 :
-	  One casecell10();	// genblk3.casecell10
-      endcase
+      begin : casecheck
+	 case (1'b1)
+	   1'b1 :
+	     One casecell10();	// genblk4.casecell10
+	 endcase
+      end
    endgenerate
-`ifdef verilator
-   always @ (posedge clk) if (genblk3.casecell10.one !== 1'b1) $stop;
-//`else // NOT SUPPORTED accoring to spec - generic block references
-`endif
+   // DISAGREEMENT on this naming
+   always @ (posedge clk) if (casecheck.genblk1.casecell10.one !== 1'b1) $stop;
 
    generate
       case (1'b1)
@@ -113,16 +108,15 @@ module Genit (
    genvar i;
    genvar j;
 
-   // IF
    generate
-      for (i = 0; i < 2; i = i + 1)
-	One cellfor20 ();	// genblk4[0..1].cellfor20
+      begin : genfor
+	 for (i = 0; i < 2; i = i + 1)
+	   One cellfor20 ();	// genfor.genblk1[0..1].cellfor20
+      end
    endgenerate
-`ifdef verilator
-   always @ (posedge clk) if (genblk4[0].cellfor20.one !== 1'b1) $stop;
-   always @ (posedge clk) if (genblk4[1].cellfor20.one !== 1'b1) $stop;
-//`else // NOT SUPPORTED accoring to spec - generic block references
-`endif
+   // DISAGREEMENT on this naming
+   always @ (posedge clk) if (genfor.genblk1[0].cellfor20.one !== 1'b1) $stop;
+   always @ (posedge clk) if (genfor.genblk1[1].cellfor20.one !== 1'b1) $stop;
 
    // COMBO
    generate

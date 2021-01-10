@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2009-2020 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -61,7 +61,7 @@ private:
     std::function<void()> m_cb;  ///< Lambda to execute when message received
 public:
     // CONSTRUCTORS
-    VerilatedMsg(const std::function<void()>& cb)
+    explicit VerilatedMsg(const std::function<void()>& cb)
         : m_mtaskId{Verilated::mtaskId()}
         , m_cb{cb} {}
     ~VerilatedMsg() = default;
@@ -331,7 +331,7 @@ public:
         if (it != s_s.v.m_userMap.end()) {
             it->second = userData;
         } else {
-            s_s.v.m_userMap.insert(it, std::make_pair(std::make_pair(scopep, userKey), userData));
+            s_s.v.m_userMap.emplace(std::make_pair(scopep, userKey), userData);
         }
     }
     static inline void* userFind(const void* scopep, void* userKey) VL_MT_SAFE {
@@ -374,9 +374,7 @@ public:  // But only for verilated*.cpp
         // Slow ok - called once/scope at construction
         const VerilatedLockGuard lock(s_s.v.m_nameMutex);
         const auto it = s_s.v.m_nameMap.find(scopep->name());
-        if (it == s_s.v.m_nameMap.end()) {
-            s_s.v.m_nameMap.insert(it, std::make_pair(scopep->name(), scopep));
-        }
+        if (it == s_s.v.m_nameMap.end()) s_s.v.m_nameMap.emplace(scopep->name(), scopep);
     }
     static inline const VerilatedScope* scopeFind(const char* namep) VL_MT_SAFE {
         const VerilatedLockGuard lock(s_s.v.m_nameMutex);
@@ -413,6 +411,16 @@ public:  // But only for verilated*.cpp
         const VerilatedLockGuard lock(s_s.v.m_hierMapMutex);
         s_s.v.m_hierMap[fromp].push_back(top);
     }
+    static void hierarchyRemove(const VerilatedScope* fromp,
+                                const VerilatedScope* top) VL_MT_SAFE {
+        // Slow ok - called at destruction for VPI accessible elements
+        const VerilatedLockGuard lock(s_s.v.m_hierMapMutex);
+        VerilatedHierarchyMap& map = s_s.v.m_hierMap;
+        if (map.find(fromp) == map.end()) return;
+        VerilatedScopeVector& scopes = map[fromp];
+        const auto it = find(scopes.begin(), scopes.end(), top);
+        if (it != scopes.end()) scopes.erase(it);
+    }
     static const VerilatedHierarchyMap* hierarchyMap() VL_MT_SAFE_POSTINIT {
         // Thread save only assuming this is called only after model construction completed
         return &s_s.v.m_hierMap;
@@ -432,7 +440,7 @@ public:  // But only for verilated*.cpp
         const VerilatedLockGuard lock(s_s.v.m_exportMutex);
         const auto it = s_s.v.m_exportMap.find(namep);
         if (it == s_s.v.m_exportMap.end()) {
-            s_s.v.m_exportMap.insert(it, std::make_pair(namep, s_s.v.m_exportNext++));
+            s_s.v.m_exportMap.emplace(namep, s_s.v.m_exportNext++);
             return s_s.v.m_exportNext++;
         } else {
             return it->second;

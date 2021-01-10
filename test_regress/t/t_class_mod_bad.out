@@ -1,4 +1,4 @@
-%Error: t/t_class_mod_bad.v:21:7: '::' expected to reference a class/package but referenced MODULE 'M'
+%Error: t/t_class_mod_bad.v:21:7: '::' expected to reference a class/package but referenced 'MODULE 'M''
                                 : ... Suggest '.' instead of '::'
    21 |       M::Cls p;
       |       ^

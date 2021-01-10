@@ -6,7 +6,7 @@ image:https://img.shields.io/badge/License-LGPL%20v3-blue.svg[license LGPLv3,lin
 image:https://img.shields.io/badge/License-Artistic%202.0-0298c3.svg[license Artistic-2.0,link=https://opensource.org/licenses/Artistic-2.0]
 image:https://api.codacy.com/project/badge/Grade/fa78caa433c84a4ab9049c43e9debc6f[Code Quality,link=https://www.codacy.com/gh/verilator/verilator]
 image:https://codecov.io/gh/verilator/verilator/branch/master/graph/badge.svg[Coverage,link=https://codecov.io/gh/verilator/verilator]
-image:https://travis-ci.com/verilator/verilator.svg?branch=master[Build Status (Travis CI),link=https://travis-ci.com/verilator/verilator]
+image:https://github.com/verilator/verilator/workflows/build/badge.svg[Build Status (GitHub),link=https://github.com/verilator/verilator/actions?query=workflow%3Abuild]
 endif::[]
 
 ifdef::env-github[]
@@ -145,7 +145,7 @@ perhaps Icarus may.
 
 == Open License
 
-Verilator is Copyright 2003-2020 by Wilson Snyder.  (Report bugs to
+Verilator is Copyright 2003-2021 by Wilson Snyder.  (Report bugs to
 https://verilator.org/issues[Verilator Issues].)
 
 Verilator is free software; you can redistribute it and/or modify it under

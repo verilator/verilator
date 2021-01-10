@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -94,6 +94,7 @@ private:
     bool m_wremove = true;  // Inside scope, no assignw removal
     bool m_warn = false;  // Output warnings
     bool m_doExpensive = false;  // Enable computationally expensive optimizations
+    bool m_doCpp = false;  // Enable late-stage C++ optimizations
     bool m_doNConst = false;  // Enable non-constant-child simplifications
     bool m_doShort = true;  // Remove expressions that short circuit
     bool m_doV = false;  // Verilog, not C++ conversion
@@ -509,7 +510,7 @@ private:
         return true;
     }
     bool ifConcatMergeableBiop(const AstNode* nodep) {
-        return (VN_IS(nodep, And) || VN_IS(nodep, Or) || VN_IS(nodep, Xor) || VN_IS(nodep, Xnor));
+        return (VN_IS(nodep, And) || VN_IS(nodep, Or) || VN_IS(nodep, Xor));
     }
     bool ifAdjacentSel(const AstSel* lhsp, const AstSel* rhsp) {
         if (!v3Global.opt.oAssemble()) return false;  // opt disabled
@@ -1967,7 +1968,6 @@ private:
     bool stmtDisplayDisplay(AstDisplay* nodep) {
         // DISPLAY(SFORMAT(text1)),DISPLAY(SFORMAT(text2)) -> DISPLAY(SFORMAT(text1+text2))
         if (!m_modp) return false;  // Don't optimize under single statement
-        if (!nodep->backp()) return false;
         AstDisplay* prevp = VN_CAST(nodep->backp(), Display);
         if (!prevp) return false;
         if (!((prevp->displayType() == nodep->displayType())
@@ -1981,12 +1981,21 @@ private:
             return false;
         if (!prevp->fmtp() || prevp->fmtp()->nextp() || !nodep->fmtp() || nodep->fmtp()->nextp())
             return false;
-        // We don't merge scopeNames as might be different scopes (late in process)
-        // We don't merge arguments as might need to later print warnings with right line numbers
         AstSFormatF* pformatp = prevp->fmtp();
-        if (!pformatp || pformatp->exprsp() || pformatp->scopeNamep()) return false;
+        if (!pformatp) return false;
         AstSFormatF* nformatp = nodep->fmtp();
-        if (!nformatp || nformatp->exprsp() || nformatp->scopeNamep()) return false;
+        if (!nformatp) return false;
+        // We don't merge scopeNames as can have only one and might be different scopes (late in
+        // process) Also rare for real code to print %m multiple times in same message
+        if (nformatp->scopeNamep() && pformatp->scopeNamep()) return false;
+        // We don't early merge arguments as might need to later print warnings with
+        // right line numbers, nor scopeNames as might be different scopes (late in process)
+        if (!m_doCpp && pformatp->exprsp()) return false;
+        if (!m_doCpp && nformatp->exprsp()) return false;
+        // Avoid huge merges
+        static constexpr int DISPLAY_MAX_MERGE_LENGTH = 500;
+        if (pformatp->text().length() + nformatp->text().length() > DISPLAY_MAX_MERGE_LENGTH)
+            return false;
         //
         UINFO(9, "DISPLAY(SF({a})) DISPLAY(SF({b})) -> DISPLAY(SF({a}+{b}))" << endl);
         // Convert DT_DISPLAY to DT_WRITE as may allow later optimizations
@@ -1998,9 +2007,10 @@ private:
         // So instead we edit the prev note itself.
         if (prevp->addNewline()) pformatp->text(pformatp->text() + "\n");
         pformatp->text(pformatp->text() + nformatp->text());
-        if (!prevp->addNewline() && nodep->addNewline()) {
-            pformatp->text(pformatp->text() + "\n");
-        }
+        if (!prevp->addNewline() && nodep->addNewline()) pformatp->text(pformatp->text() + "\n");
+        if (nformatp->exprsp()) pformatp->addExprsp(nformatp->exprsp()->unlinkFrBackWithNext());
+        if (nformatp->scopeNamep())
+            pformatp->scopeNamep(nformatp->scopeNamep()->unlinkFrBackWithNext());
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         return true;
     }
@@ -2248,7 +2258,6 @@ private:
     TREEOP ("AstShiftR{$lhsp.isZero, $rhsp}",   "replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstShiftRS{$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstXor   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
-    TREEOP ("AstXnor  {$lhsp.isZero, $rhsp}",   "AstNot{$rhsp}");
     TREEOP ("AstSub   {$lhsp.isZero, $rhsp}",   "AstNegate{$rhsp}");
     TREEOP ("AstAdd   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
     TREEOP ("AstAnd   {$lhsp, $rhsp.isZero}",   "replaceZeroChkPure(nodep,$lhsp)");
@@ -2262,7 +2271,6 @@ private:
     TREEOP ("AstShiftRS{$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
     TREEOP ("AstSub   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
     TREEOP ("AstXor   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
-    TREEOP ("AstXnor  {$lhsp, $rhsp.isZero}",   "AstNot{$lhsp}");
     // Non-zero on one side or the other
     TREEOP ("AstAnd   {$lhsp.isAllOnes, $rhsp}",        "replaceWRhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isNeqZero, $rhsp}",        "replaceWRhs(nodep)");
@@ -2273,7 +2281,6 @@ private:
     TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, isTPure($lhsp)}",        "replaceWRhs(nodep)");  //->allOnes
     TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, isTPure($lhsp)}",        "replaceNum(nodep,1)");
     TREEOP ("AstXor   {$lhsp.isAllOnes, $rhsp}",        "AstNot{$rhsp}");
-    TREEOP ("AstXnor  {$lhsp.isAllOnes, $rhsp}",        "replaceWRhs(nodep)");
     TREEOP ("AstMul   {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstDiv   {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
@@ -2384,7 +2391,6 @@ private:
     TREEOP ("AstDivS   {operandsSame($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstOr     {operandsSame($lhsp,,$rhsp)}",   "replaceWLhs(nodep)");
     TREEOP ("AstSub    {operandsSame($lhsp,,$rhsp)}",   "replaceZero(nodep)");
-    TREEOP ("AstXnor   {operandsSame($lhsp,,$rhsp)}",   "replaceAllOnes(nodep)");
     TREEOP ("AstXor    {operandsSame($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstEq     {operandsSame($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
     TREEOP ("AstEqD    {operandsSame($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
@@ -2461,8 +2467,6 @@ private:
     TREEOP ("AstAnd {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstOr  {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstXor {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
-    //      "AstXnor{operandShiftSame(nodep)}",   // Cannot ShiftSame as the shifted-in
-    //                                               zeros might create a one
     // Note can't simplify a extend{extends}, extends{extend}, as the sign
     // bits end up in the wrong places
     TREEOPV("AstExtend {$lhsp.castExtend}",  "replaceExtend(nodep, VN_CAST(nodep->lhsp(), Extend)->lhsp())");
@@ -2480,7 +2484,6 @@ private:
     TREEOPV("AstSel{$fromp.castAnd, operandSelBiLower(nodep)}", "DONE");
     TREEOPV("AstSel{$fromp.castOr,  operandSelBiLower(nodep)}", "DONE");
     TREEOPV("AstSel{$fromp.castSub, operandSelBiLower(nodep)}", "DONE");
-    TREEOPV("AstSel{$fromp.castXnor,operandSelBiLower(nodep)}", "DONE");
     TREEOPV("AstSel{$fromp.castXor, operandSelBiLower(nodep)}", "DONE");
     TREEOPV("AstSel{$fromp.castShiftR, operandSelShiftLower(nodep)}",   "DONE");
     TREEOPC("AstSel{$fromp.castConst, $lsbp.castConst, $widthp.castConst, }",   "replaceConst(nodep)");
@@ -2494,9 +2497,6 @@ private:
     TREEOPV("AstSel{$fromp.castAnd,$lhsp.castConst}",   "replaceSelIntoUniop(nodep)");
     TREEOPV("AstSel{$fromp.castOr,$lhsp.castConst}",    "replaceSelIntoUniop(nodep)");
     TREEOPV("AstSel{$fromp.castXor,$lhsp.castConst}",   "replaceSelIntoUniop(nodep)");
-    TREEOPV("AstSel{$fromp.castXnor,$lhsp.castConst}",  "replaceSelIntoUniop(nodep)");
-    // Conversions
-    TREEOPV("AstRedXnor{$lhsp}",                "AstNot{AstRedXor{$lhsp}}");  // Just eliminate XNOR's
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstLogIf{$lhsp.isZero}",  "replaceNum(nodep, 1)");
     TREEOPV("AstLogIf{$lhsp, $rhsp}",  "AstLogOr{AstLogNot{$lhsp},$rhsp}");
@@ -2559,7 +2559,7 @@ public:
         case PROC_V_WARN:       m_doV = true;  m_doNConst = true; m_warn = true; break;
         case PROC_V_NOWARN:     m_doV = true;  m_doNConst = true; break;
         case PROC_V_EXPENSIVE:  m_doV = true;  m_doNConst = true; m_doExpensive = true; break;
-        case PROC_CPP:          m_doV = false; m_doNConst = true; break;
+        case PROC_CPP:          m_doV = false; m_doNConst = true; m_doCpp = true; break;
         default:                v3fatalSrc("Bad case"); break;
         }
         // clang-format on

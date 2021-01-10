@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -363,6 +363,7 @@ public:  // But internals only - called from VerilatedModule's
 class VerilatedHierarchy final {
 public:
     static void add(VerilatedScope* fromp, VerilatedScope* top);
+    static void remove(VerilatedScope* fromp, VerilatedScope* top);
 };
 
 //===========================================================================
@@ -399,8 +400,8 @@ class Verilated final {
         vluint32_t s_profThreadsWindow = 2;  ///< +prof+threads window size
         // Slow path
         const char* s_profThreadsFilenamep;  ///< +prof+threads filename
-        NonSerialized();
-        ~NonSerialized();
+        void setup();
+        void teardown();
     } s_ns;
 
     // no need to be save-restored (serialized) the
@@ -429,6 +430,8 @@ class Verilated final {
     } t_s;
 
 private:
+    friend struct VerilatedInitializer;
+
     // CONSTRUCTORS
     VL_UNCOPYABLE(Verilated);
 
@@ -658,9 +661,9 @@ inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
     vluint64_t rnd = vl_rand64();
     if (VL_LIKELY(hi > lo)) {
         // Modulus isn't very fast but it's common that hi-low is power-of-two
-        return (rnd % (hi - lo)) + lo;
+        return (rnd % (hi - lo + 1)) + lo;
     } else {
-        return (rnd % (lo - hi)) + hi;
+        return (rnd % (lo - hi + 1)) + hi;
     }
 }
 
@@ -1368,12 +1371,6 @@ static inline IData VL_CHANGEXOR_W(int words, WDataInP lwp, WDataInP rwp) VL_MT_
 // EMIT_RULE: VL_XOR:  oclean=lclean&&rclean; obits=lbits; lbits==rbits;
 static inline WDataOutP VL_XOR_W(int words, WDataOutP owp, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     for (int i = 0; (i < words); ++i) owp[i] = (lwp[i] ^ rwp[i]);
-    return owp;
-}
-// EMIT_RULE: VL_XNOR:  oclean=dirty; obits=lbits; lbits==rbits;
-static inline WDataOutP VL_XNOR_W(int words, WDataOutP owp, WDataInP lwp,
-                                  WDataInP rwp) VL_MT_SAFE {
-    for (int i = 0; (i < words); ++i) owp[i] = (lwp[i] ^ ~rwp[i]);
     return owp;
 }
 // EMIT_RULE: VL_NOT:  oclean=dirty; obits=lbits;

@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -72,10 +72,27 @@ Verilated::CommandArgValues Verilated::s_args;
 
 VerilatedImp::VerilatedImpU VerilatedImp::s_s;
 
-struct VerilatedImpInitializer {
-    VerilatedImpInitializer() { VerilatedImp::setup(); }
-    ~VerilatedImpInitializer() { VerilatedImp::teardown(); }
-} s_VerilatedImpInitializer;
+// Guarantees to call setup() and teardown() just once.
+struct VerilatedInitializer {
+    VerilatedInitializer() { setup(); }
+    ~VerilatedInitializer() { teardown(); }
+    void setup() {
+        static bool done = false;
+        if (!done) {
+            VerilatedImp::setup();
+            Verilated::s_ns.setup();
+            done = true;
+        }
+    }
+    void teardown() {
+        static bool done = false;
+        if (!done) {
+            VerilatedImp::teardown();
+            Verilated::s_ns.teardown();
+            done = true;
+        }
+    }
+} s_VerilatedInitializer;
 
 //===========================================================================
 // User definable functions
@@ -261,10 +278,8 @@ Verilated::Serialized::Serialized() {
     s_timeprecision = VL_TIME_PRECISION;  // Initial value until overriden by _Vconfigure
 }
 
-Verilated::NonSerialized::NonSerialized() {
-    s_profThreadsFilenamep = strdup("profile_threads.dat");
-}
-Verilated::NonSerialized::~NonSerialized() {
+void Verilated::NonSerialized::setup() { s_profThreadsFilenamep = strdup("profile_threads.dat"); }
+void Verilated::NonSerialized::teardown() {
     if (s_profThreadsFilenamep) {
         VL_DO_CLEAR(free(const_cast<char*>(s_profThreadsFilenamep)),
                     s_profThreadsFilenamep = nullptr);
@@ -2352,7 +2367,7 @@ static void removeCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
     cbs.remove(pair);
 }
-static void runCallbacks(VoidPCbList& cbs) VL_MT_SAFE {
+static void runCallbacks(const VoidPCbList& cbs) VL_MT_SAFE {
     for (const auto& i : cbs) i.first(i.second);
 }
 
@@ -2478,22 +2493,10 @@ void Verilated::endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
 //
 // To avoid the trouble, all member variables are enclosed in VerilatedImpU union.
 // ctor nor dtor of members are not called automatically.
-// VerilatedImp::setup() and teardown() guarantees to initialize/destruct just once.
+// VerilatedInitializer::setup() and teardown() guarantees to initialize/destruct just once.
 
-void VerilatedImp::setup() {
-    static bool done = false;
-    if (!done) {
-        new (&VerilatedImp::s_s) VerilatedImpData();
-        done = true;
-    }
-}
-void VerilatedImp::teardown() {
-    static bool done = false;
-    if (!done) {
-        VerilatedImp::s_s.~VerilatedImpU();
-        done = true;
-    }
-}
+void VerilatedImp::setup() { new (&VerilatedImp::s_s) VerilatedImpData(); }
+void VerilatedImp::teardown() { VerilatedImp::s_s.~VerilatedImpU(); }
 
 //===========================================================================
 // VerilatedImp:: Methods
@@ -2640,7 +2643,7 @@ vluint32_t VerilatedVarProps::entSize() const {
 
 size_t VerilatedVarProps::totalSize() const {
     size_t size = entSize();
-    for (int udim = 0; udim <= udims(); ++udim) size *= m_unpacked[udim].elements();
+    for (int udim = 0; udim < udims(); ++udim) size *= m_unpacked[udim].elements();
     return size;
 }
 
@@ -2737,7 +2740,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, boo
     }
     va_end(ap);
 
-    m_varsp->insert(std::make_pair(namep, var));
+    m_varsp->emplace(namep, var);
 }
 
 // cppcheck-suppress unusedFunction  // Used by applications
@@ -2782,6 +2785,10 @@ void VerilatedScope::scopeDump() const {
 
 void VerilatedHierarchy::add(VerilatedScope* fromp, VerilatedScope* top) {
     VerilatedImp::hierarchyAdd(fromp, top);
+}
+
+void VerilatedHierarchy::remove(VerilatedScope* fromp, VerilatedScope* top) {
+    VerilatedImp::hierarchyRemove(fromp, top);
 }
 
 //===========================================================================

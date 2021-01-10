@@ -112,6 +112,7 @@ module clockgate (clk, sen, ena, gatedclk);
    wire gatedclk = clk & ena_b;
 
    // verilator lint_off COMBDLY
+   // verilator lint_off LATCH
    always @(clk or ena or sen) begin
       if (~clk) begin
         ena_b <= ena | sen;
@@ -120,6 +121,7 @@ module clockgate (clk, sen, ena, gatedclk);
 	 if ((clk^sen)===1'bX) ena_b <= 1'bX;
       end
    end
+   // verilator lint_on LATCH
    // verilator lint_on COMBDLY
 
 endmodule

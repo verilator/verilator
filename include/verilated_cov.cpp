@@ -3,7 +3,7 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -123,8 +123,8 @@ private:
         if (iter != m_valueIndexes.end()) return iter->second;
         m_nextIndex++;
         assert(m_nextIndex > 0);  // Didn't rollover
-        m_valueIndexes.insert(std::make_pair(value, m_nextIndex));
-        m_indexValues.insert(std::make_pair(m_nextIndex, value));
+        m_valueIndexes.emplace(value, m_nextIndex);
+        m_indexValues.emplace(m_nextIndex, value);
         return m_nextIndex;
     }
     static std::string dequote(const std::string& text) VL_PURE {
@@ -390,7 +390,7 @@ public:
                 cit->second.second += itemp->count();
                 cit->second.first = combineHier(oldhier, hier);
             } else {
-                eventCounts.insert(std::make_pair(name, make_pair(hier, itemp->count())));
+                eventCounts.emplace(name, make_pair(hier, itemp->count()));
             }
         }
 

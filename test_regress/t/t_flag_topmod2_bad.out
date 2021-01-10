@@ -1,2 +1,2 @@
-%Error: Specified --top-module 'a' isn't at the top level, it's under another cell 'a_top'
+%Error: Specified --top-module 'a' isn't at the top level, it's under another instance 'a_top'
 %Error: Exiting due to

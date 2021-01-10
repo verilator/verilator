@@ -12,6 +12,7 @@
 #include <cstdio>
 #include "svdpi.h"
 #include "vpi_user.h"
+#include "TestVpi.h"
 
 //======================================================================
 
@@ -53,7 +54,7 @@ void show(vpiHandle obj) {
 void dpii_check() {
     show(0);
 
-    vpiHandle mod = vpi_handle_by_name((PLI_BYTE8*)"top.t", NULL);
+    TestVpiHandle mod = vpi_handle_by_name((PLI_BYTE8*)"top.t", NULL);
     if (!mod) {
         vpi_printf(const_cast<char*>("-- Cannot vpi_find module\n"));
     } else {

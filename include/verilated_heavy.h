@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2010-2020 by Wilson Snyder. This program is free software; you can
+// Copyright 2010-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -86,6 +86,51 @@ public:
     bool isOpen() const { return m_fp != nullptr; }
     void print(QData addr, bool addrstamp, const void* valuep);
 };
+
+//===================================================================
+// Verilog wide-number-in-array container
+// Similar to std::array<WData, N>, but lighter weight, only methods needed
+// by Verilator, to help compile time.
+//
+// This is only used when we need an upper-level container and so can't
+// simply use a C style array (which is just a pointer).
+
+template <std::size_t T_Words> class VlWide final {
+    EData m_storage[T_Words];
+
+public:
+    // cppcheck-suppress uninitVar
+    VlWide() = default;
+    ~VlWide() = default;
+    VlWide(const VlWide&) = default;
+    VlWide(VlWide&&) = default;
+
+    // OPERATOR METHODS
+    VlWide& operator=(const VlWide&) = default;
+    VlWide& operator=(VlWide&&) = default;
+    const EData& operator[](size_t index) const { return m_storage[index]; };
+    EData& operator[](size_t index) { return m_storage[index]; };
+    operator WDataOutP() { return &m_storage[0]; }
+
+    // METHODS
+    const EData& at(size_t index) const { return m_storage[index]; }
+    EData& at(size_t index) { return m_storage[index]; }
+    WData* data() { return &m_storage[0]; }
+    const WData* data() const { return &m_storage[0]; }
+    bool operator<(const VlWide<T_Words>& rhs) const {
+        return VL_LT_W(T_Words, data(), rhs.data());
+    }
+};
+
+// Convert a C array to std::array reference by pointer magic, without copy.
+// Data type (second argument) is so the function template can automatically generate.
+template <std::size_t T_Words> VlWide<T_Words>& VL_CVT_W_A(WDataInP inp, const VlWide<T_Words>&) {
+    return *((VlWide<T_Words>*)inp);
+}
+
+template <std::size_t T_Words> std::string VL_TO_STRING(const VlWide<T_Words>& obj) {
+    return VL_TO_STRING_W(T_Words, obj.data());
+}
 
 //===================================================================
 // Verilog queue and dynamic array container
@@ -445,45 +490,6 @@ template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
 }
 
 //===================================================================
-// Verilog array container
-// Similar to std::array<WData, N>, but lighter weight, only methods needed
-// by Verilator, to help compile time.
-//
-// This is only used when we need an upper-level container and so can't
-// simply use a C style array (which is just a pointer).
-
-template <std::size_t T_Words> class VlWide final {
-    WData m_storage[T_Words];
-
-public:
-    // cppcheck-suppress uninitVar
-    VlWide() = default;
-    ~VlWide() = default;
-    VlWide(const VlWide&) = default;
-    VlWide(VlWide&&) = default;
-    VlWide& operator=(const VlWide&) = default;
-    VlWide& operator=(VlWide&&) = default;
-    // METHODS
-    const WData& at(size_t index) const { return m_storage[index]; }
-    WData& at(size_t index) { return m_storage[index]; }
-    WData* data() { return &m_storage[0]; }
-    const WData* data() const { return &m_storage[0]; }
-    bool operator<(const VlWide<T_Words>& rhs) const {
-        return VL_LT_W(T_Words, data(), rhs.data());
-    }
-};
-
-// Convert a C array to std::array reference by pointer magic, without copy.
-// Data type (second argument) is so the function template can automatically generate.
-template <std::size_t T_Words> VlWide<T_Words>& VL_CVT_W_A(WDataInP inp, const VlWide<T_Words>&) {
-    return *((VlWide<T_Words>*)inp);
-}
-
-template <std::size_t T_Words> std::string VL_TO_STRING(const VlWide<T_Words>& obj) {
-    return VL_TO_STRING_W(T_Words, obj.data());
-}
-
-//===================================================================
 // Verilog associative array container
 // There are no multithreaded locks on this; the base variable must
 // be protected by other means
@@ -560,8 +566,7 @@ public:
     T_Value& at(const T_Key& index) {
         const auto it = m_map.find(index);
         if (it == m_map.end()) {
-            std::pair<typename Map::iterator, bool> pit
-                = m_map.insert(std::make_pair(index, m_defaultValue));
+            std::pair<typename Map::iterator, bool> pit = m_map.emplace(index, m_defaultValue);
             return pit.first->second;
         }
         return it->second;
@@ -789,6 +794,41 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
 }
 
 //===================================================================
+// Verilog packed array container
+// For when a standard C++[] array is not sufficient, e.g. an
+// array under a queue, or methods operating on the array
+
+template <class T_Value, std::size_t T_Depth> class VlUnpacked final {
+private:
+    // TYPES
+    typedef std::array<T_Value, T_Depth> Array;
+
+public:
+    typedef typename Array::const_iterator const_iterator;
+
+private:
+    // MEMBERS
+    Array m_array;  // State of the assoc array
+
+public:
+    // CONSTRUCTORS
+    VlUnpacked() = default;
+    ~VlUnpacked() = default;
+    VlUnpacked(const VlUnpacked&) = default;
+    VlUnpacked(VlUnpacked&&) = default;
+    VlUnpacked& operator=(const VlUnpacked&) = default;
+    VlUnpacked& operator=(VlUnpacked&&) = default;
+
+    // METHODS
+    // Raw access
+    WData* data() { return &m_array[0]; }
+    const WData* data() const { return &m_array[0]; }
+
+    T_Value& operator[](size_t index) { return m_array[index]; };
+    const T_Value& operator[](size_t index) const { return m_array[index]; };
+};
+
+//===================================================================
 // Verilog class reference container
 // There are no multithreaded locks on this; the base variable must
 // be protected by other means
@@ -800,6 +840,17 @@ template <class T>  // T typically of type VlClassRef<x>
 inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {
     if (VL_UNLIKELY(!t)) Verilated::nullPointerError(filename, linenum);
     return t;
+}
+
+template <typename T, typename U>
+static inline bool VL_CAST_DYNAMIC(VlClassRef<T> in, VlClassRef<U>& outr) {
+    VlClassRef<U> casted = std::dynamic_pointer_cast<U>(in);
+    if (VL_LIKELY(casted)) {
+        outr = casted;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 //======================================================================

@@ -180,7 +180,7 @@ int mon_check_props() {
         if (value->children.size) {
             int size = 0;
             TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, h);
-            while (TestVpiHandle word_h = vpi_scan(iter_h.nofree())) {
+            while (TestVpiHandle word_h = vpi_scan(iter_h)) {
                 // check size and range
                 if (int status
                     = _mon_check_props(word_h, value->children.size, value->children.direction,
@@ -188,6 +188,7 @@ int mon_check_props() {
                     return status;
                 size++;
             }
+            iter_h.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
             CHECK_RESULT(size, value->attributes.size);
         }
         value++;
@@ -206,7 +207,7 @@ int mon_check() {
 #ifdef IS_VPI
 
 static int mon_check_vpi() {
-    vpiHandle href = vpi_handle(vpiSysTfCall, 0);
+    TestVpiHandle href = vpi_handle(vpiSysTfCall, 0);
     s_vpi_value vpi_value;
 
     vpi_value.format = vpiIntVal;

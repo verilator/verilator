@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2000-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -344,7 +344,7 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
             }
             undef(name);
         }
-        m_defines.insert(make_pair(name, VDefine(fl, value, params, cmdline)));
+        m_defines.emplace(name, VDefine(fl, value, params, cmdline));
     }
 }
 
@@ -1317,7 +1317,6 @@ int V3PreProcImp::getStateToken() {
                 // Convert any newlines to spaces, so we don't get a
                 // multiline "..." without \ escapes.
                 // The spec is silent about this either way; simulators vary
-                string::size_type pos;
                 std::replace(out.begin(), out.end(), '\n', ' ');
                 unputString(string("\"") + out + "\"");
                 statePop();

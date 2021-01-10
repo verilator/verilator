@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -157,7 +157,7 @@ public:
     bool isReadOnly() const { return m_e == READ; }  // False with READWRITE
     bool isReadOrRW() const { return m_e == READ || m_e == READWRITE; }
     bool isWriteOrRW() const { return m_e == WRITE || m_e == READWRITE; }
-    bool isRW() const { return m_e == READWRITE; }  // False with READWRITE
+    bool isRW() const { return m_e == READWRITE; }
 };
 inline bool operator==(const VAccess& lhs, const VAccess& rhs) { return lhs.m_e == rhs.m_e; }
 inline bool operator==(const VAccess& lhs, VAccess::en rhs) { return lhs.m_e == rhs; }
@@ -380,6 +380,7 @@ public:
         ENUM_NEXT,                      // V3Width processes
         ENUM_PREV,                      // V3Width processes
         ENUM_NAME,                      // V3Width processes
+        ENUM_VALID,                     // V3Width processes
         //
         MEMBER_BASE,                    // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         //
@@ -408,7 +409,7 @@ public:
             "DIM_LOW", "DIM_RIGHT", "DIM_SIZE", "DIM_UNPK_DIMENSIONS",
             "DT_PUBLIC",
             "ENUM_BASE", "ENUM_FIRST", "ENUM_LAST", "ENUM_NUM",
-            "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME",
+            "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
             "MEMBER_BASE",
             "TYPENAME",
             "VAR_BASE", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
@@ -980,61 +981,53 @@ inline std::ostream& operator<<(std::ostream& os, const VParseRefExp& rhs) {
 
 class VNumRange final {
 public:
-    int m_hi = 0;  // HI part, HI always >= LO
-    int m_lo = 0;  // LO
-    union {
-        int mu_flags;
-        struct {
-            bool m_ranged : 1;  // Has a range
-            bool m_littleEndian : 1;  // Bit vector is little endian
-        };
-    };
+    int m_left = 0;
+    int m_right = 0;
+    bool m_ranged = false;  // Has a range
     bool operator==(const VNumRange& rhs) const {
-        return m_hi == rhs.m_hi && m_lo == rhs.m_lo && mu_flags == rhs.mu_flags;
+        return m_left == rhs.m_left && m_right == rhs.m_right && m_ranged == rhs.m_ranged;
     }
     bool operator<(const VNumRange& rhs) const {
-        if ((m_hi < rhs.m_hi)) return true;
-        if (!(m_hi == rhs.m_hi)) return false;  // lhs > rhs
-        if ((m_lo < rhs.m_lo)) return true;
-        if (!(m_lo == rhs.m_lo)) return false;  // lhs > rhs
-        if ((mu_flags < rhs.mu_flags)) return true;
-        if (!(mu_flags == rhs.mu_flags)) return false;  // lhs > rhs
+        if ((m_left < rhs.m_left)) return true;
+        if (!(m_left == rhs.m_left)) return false;  // lhs > rhs
+        if ((m_right < rhs.m_right)) return true;
+        if (!(m_right == rhs.m_right)) return false;  // lhs > rhs
+        if ((m_ranged < rhs.m_ranged)) return true;
+        if (!(m_ranged == rhs.m_ranged)) return false;  // lhs > rhs
         return false;
     }
     //
-    class LeftRight {};
-    VNumRange()
-        : mu_flags{0} {}
-    VNumRange(int hi, int lo, bool littleEndian)
-        : mu_flags{0} {
-        init(hi, lo, littleEndian);
-    }
-    VNumRange(LeftRight, int left, int right)
-        : mu_flags{0} {
-        init((right > left) ? right : left, (right > left) ? left : right, (right > left));
-    }
+    VNumRange() {}
+    VNumRange(int hi, int lo, bool littleEndian) { init(hi, lo, littleEndian); }
+    VNumRange(int left, int right)
+        : m_left{left}
+        , m_right{right}
+        , m_ranged{true} {}
     ~VNumRange() = default;
     // MEMBERS
     void init(int hi, int lo, bool littleEndian) {
-        m_hi = hi;
-        m_lo = lo;
-        mu_flags = 0;
+        if (lo > hi) {
+            int t = hi;
+            hi = lo;
+            lo = t;
+        }
+        m_left = littleEndian ? lo : hi;
+        m_right = littleEndian ? hi : lo;
         m_ranged = true;
-        m_littleEndian = littleEndian;
     }
-    int hi() const { return m_hi; }
-    int lo() const { return m_lo; }
-    int left() const { return littleEndian() ? lo() : hi(); }  // How to show a declaration
-    int right() const { return littleEndian() ? hi() : lo(); }
+    int left() const { return m_left; }
+    int right() const { return m_right; }
+    int hi() const { return m_left > m_right ? m_left : m_right; }  // How to show a declaration
+    int lo() const { return m_left > m_right ? m_right : m_left; }  // How to show a declaration
     int leftToRightInc() const { return littleEndian() ? 1 : -1; }
     int elements() const { return hi() - lo() + 1; }
     bool ranged() const { return m_ranged; }
-    bool littleEndian() const { return m_littleEndian; }
+    bool littleEndian() const { return m_left < m_right; }
     int hiMaxSelect() const {
         return (lo() < 0 ? hi() - lo() : hi());
     }  // Maximum value a [] select may index
     bool representableByWidth() const {  // Could be represented by just width=1, or [width-1:0]
-        return (!m_ranged || (m_lo == 0 && m_hi >= 1 && !m_littleEndian));
+        return (!m_ranged || (m_right == 0 && m_left >= 1));
     }
     void dump(std::ostream& str) const {
         if (ranged()) {
@@ -2151,19 +2144,18 @@ public:
 class AstNodePreSel VL_NOT_FINAL : public AstNode {
     // Something that becomes an AstSel
 public:
-    AstNodePreSel(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths)
+    AstNodePreSel(AstType t, FileLine* fl, AstNode* fromp, AstNode* rhs, AstNode* ths)
         : AstNode{t, fl} {
-        setOp1p(lhs);
+        setOp1p(fromp);
         setOp2p(rhs);
         setNOp3p(ths);
     }
     ASTNODE_BASE_FUNCS(NodePreSel)
-    AstNode* lhsp() const { return op1p(); }
-    AstNode* fromp() const { return lhsp(); }
+    AstNode* fromp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
     AstNode* thsp() const { return op3p(); }
     AstAttrOf* attrp() const { return VN_CAST(op4p(), AttrOf); }
-    void lhsp(AstNode* nodep) { return setOp1p(nodep); }
+    void fromp(AstNode* nodep) { return setOp1p(nodep); }
     void rhsp(AstNode* nodep) { return setOp2p(nodep); }
     void thsp(AstNode* nodep) { return setOp3p(nodep); }
     void attrp(AstAttrOf* nodep) { return setOp4p((AstNode*)nodep); }
@@ -2396,7 +2388,13 @@ public:
     virtual void dump(std::ostream& str) const override;
     virtual void dumpSmall(std::ostream& str) const;
     virtual bool hasDType() const override { return true; }
-    virtual AstBasicDType* basicp() const = 0;  // (Slow) recurse down to find basic data type
+    /// Require VlUnpacked, instead of [] for POD elements.
+    /// A non-POD object is always compound, but some POD elements
+    /// are compound when methods calls operate on object, or when
+    /// under another compound-requiring object e.g. class
+    virtual bool isCompound() const = 0;
+    // (Slow) recurse down to find basic data type
+    virtual AstBasicDType* basicp() const = 0;
     // recurses over typedefs/const/enum to next non-typeref type
     virtual AstNodeDType* skipRefp() const = 0;
     // recurses over typedefs to next non-typeref-or-const type
@@ -2488,14 +2486,14 @@ public:
     ASTNODE_BASE_FUNCS(NodeUOrStructDType)
     virtual const char* broken() const override;
     virtual void dump(std::ostream& str) const override;
+    virtual bool isCompound() const override { return false; }  // Because don't support unpacked
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     virtual AstBasicDType* basicp() const override {
-        return (isFourstate() ? VN_CAST(
-                    findLogicRangeDType(VNumRange(width() - 1, 0, false), width(), numeric()),
-                    BasicDType)
-                              : VN_CAST(findBitRangeDType(VNumRange(width() - 1, 0, false),
-                                                          width(), numeric()),
-                                        BasicDType));
+        return (isFourstate()
+                    ? VN_CAST(findLogicRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
+                              BasicDType)
+                    : VN_CAST(findBitRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
+                              BasicDType));
     }
     virtual AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
@@ -2525,9 +2523,9 @@ public:
         const auto it = m_members.find(name);
         return (it == m_members.end()) ? nullptr : it->second;
     }
-    static int lsb() { return 0; }
-    int msb() const { return dtypep()->width() - 1; }  // Packed classes look like arrays
-    VNumRange declRange() const { return VNumRange(msb(), lsb(), false); }
+    static int lo() { return 0; }
+    int hi() const { return dtypep()->width() - 1; }  // Packed classes look like arrays
+    VNumRange declRange() const { return VNumRange{hi(), lo()}; }
 };
 
 class AstNodeArrayDType VL_NOT_FINAL : public AstNodeDType {
@@ -2553,17 +2551,17 @@ public:
     }
     virtual bool same(const AstNode* samep) const override {
         const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
-        return (msb() == asamep->msb() && subDTypep() == asamep->subDTypep()
+        return (hi() == asamep->hi() && subDTypep() == asamep->subDTypep()
                 && rangenp()->sameTree(asamep->rangenp()));
     }  // HashedDT doesn't recurse, so need to check children
     virtual bool similarDType(AstNodeDType* samep) const override {
         const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
-        return (asamep && type() == samep->type() && msb() == asamep->msb()
+        return (asamep && type() == samep->type() && hi() == asamep->hi()
                 && rangenp()->sameTree(asamep->rangenp())
                 && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     virtual V3Hash sameHash() const override {
-        return V3Hash(V3Hash(m_refDTypep), V3Hash(msb()), V3Hash(lsb()));
+        return V3Hash(V3Hash(m_refDTypep), V3Hash(hi()), V3Hash(lo()));
     }
     virtual AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }
@@ -2587,8 +2585,10 @@ public:
     virtual int widthTotalBytes() const override {
         return elementsConst() * subDTypep()->widthTotalBytes();
     }
-    int msb() const;
-    int lsb() const;
+    int left() const;
+    int right() const;
+    int hi() const;
+    int lo() const;
     int elementsConst() const;
     VNumRange declRange() const;
 };
@@ -3003,12 +3003,12 @@ inline void AstNodeVarRef::varp(AstVar* varp) {
 inline bool AstNodeDType::isFourstate() const { return basicp()->isFourstate(); }
 
 inline void AstNodeArrayDType::rangep(AstRange* nodep) { setOp2p(nodep); }
-inline int AstNodeArrayDType::msb() const { return rangep()->msbConst(); }
-inline int AstNodeArrayDType::lsb() const { return rangep()->lsbConst(); }
+inline int AstNodeArrayDType::left() const { return rangep()->leftConst(); }
+inline int AstNodeArrayDType::right() const { return rangep()->rightConst(); }
+inline int AstNodeArrayDType::hi() const { return rangep()->hiConst(); }
+inline int AstNodeArrayDType::lo() const { return rangep()->loConst(); }
 inline int AstNodeArrayDType::elementsConst() const { return rangep()->elementsConst(); }
-inline VNumRange AstNodeArrayDType::declRange() const {
-    return VNumRange(msb(), lsb(), rangep()->littleEndian());
-}
+inline VNumRange AstNodeArrayDType::declRange() const { return VNumRange{left(), right()}; }
 
 inline const char* AstNodeFTaskRef::broken() const {
     BROKEN_RTN(m_taskp && !m_taskp->brokeExists());

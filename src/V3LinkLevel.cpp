@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -114,6 +114,8 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
             nodep->timeunit(unit);
         }
     }
+
+    v3Global.rootp()->timescaleSpecified(modTimedp);  // true if some module specifies timescale
 
     if (v3Global.rootp()->timeprecision().isNone()) {
         v3Global.rootp()->timeprecisionMerge(v3Global.rootp()->fileline(),

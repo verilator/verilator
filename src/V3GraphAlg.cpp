@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -25,45 +25,6 @@
 #include <vector>
 #include <map>
 #include <list>
-
-//######################################################################
-//######################################################################
-// Algorithms - delete
-
-void V3Graph::deleteCutableOnlyEdges() {
-    // Any vertices with only cutable edges will get deleted
-
-    // Vertex::m_user begin: indicates can be deleted
-    // Pass 1, mark those.  Don't delete now, as we don't want to rip out whole trees
-    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
-        vertexp->user(true);
-        for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            if (!edgep->cutable()) {
-                vertexp->user(false);  // Can't delete it
-                break;
-            }
-        }
-        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            if (!edgep->cutable()) {
-                vertexp->user(false);  // Can't delete it
-                break;
-            }
-        }
-    }
-
-    // Pass 2, delete those marked
-    // Rather than doing a delete() we set the weight to 0 which disconnects the edge.
-    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
-        if (vertexp->user()) {
-            // UINFO(7, "Disconnect " << vertexp->name() << endl);
-            for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                edgep->cut();
-            }
-        }
-    }
-
-    // Vertex::m_user end, now unused
-}
 
 //######################################################################
 //######################################################################
@@ -321,7 +282,7 @@ private:
         if (vertexp->user() == 1) {
             m_graphp->reportLoops(m_edgeFuncp, vertexp);
             m_graphp->loopsMessageCb(vertexp);
-            return;
+            return;  // LCOV_EXCL_LINE  // gcc gprof bug misses this return
         }
         if (vertexp->rank() >= currentRank) return;  // Already processed it
         vertexp->user(1);
@@ -447,21 +408,6 @@ public:
 //! Report the entire connected graph with a loop or loops
 void V3Graph::subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp, V3Graph* loopGraphp) {
     GraphAlgSubtrees(this, loopGraphp, edgeFuncp, vertexp);
-}
-
-//######################################################################
-//######################################################################
-// Algorithms - make non cutable
-
-void V3Graph::makeEdgesNonCutable(V3EdgeFuncP edgeFuncp) {
-    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp = vertexp->verticesNextp()) {
-        // Only need one direction, we'll always see the other at some point...
-        for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            if (edgep->cutable() && edgep->weight() && (edgeFuncp)(edgep)) {
-                edgep->cutable(false);
-            }
-        }
-    }
 }
 
 //######################################################################

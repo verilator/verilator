@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -513,11 +513,11 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     }
     virtual void visit(AstRange* nodep) override {
         puts("[");
-        if (VN_IS(nodep->msbp(), Const) && VN_IS(nodep->lsbp(), Const)) {
+        if (VN_IS(nodep->leftp(), Const) && VN_IS(nodep->rightp(), Const)) {
             // Looks nicer if we print [1:0] rather than [32'sh1:32sh0]
-            puts(cvtToStr(VN_CAST(nodep->leftp(), Const)->toSInt()));
+            puts(cvtToStr(nodep->leftConst()));
             puts(":");
-            puts(cvtToStr(VN_CAST(nodep->rightp(), Const)->toSInt()));
+            puts(cvtToStr(nodep->rightConst()));
             puts("]");
         } else {
             iterateAndNextNull(nodep->leftp());
@@ -570,7 +570,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             puts(" ");
         } else if (nodep->isRanged()) {
             puts(" [");
-            puts(cvtToStr(nodep->msb()));
+            puts(cvtToStr(nodep->hi()));
             puts(":0] ");
         }
     }
@@ -608,6 +608,11 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         puts(")");
     }
     virtual void visit(AstArg* nodep) override { iterateAndNextNull(nodep->exprp()); }
+    virtual void visit(AstPrintTimeScale* nodep) override {
+        puts(nodep->verilogKwd());
+        puts(";\n");
+    }
+
     // Terminals
     virtual void visit(AstVarRef* nodep) override {
         if (nodep->varScopep()) {
@@ -629,11 +634,31 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     virtual void visit(AstTopScope* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstScope* nodep) override { iterateChildren(nodep); }
     virtual void visit(AstVar* nodep) override {
-        putfs(nodep, nodep->verilogKwd());
-        puts(" ");
-        iterate(nodep->dtypep());
-        puts(" ");
-        puts(nodep->prettyName());
+        if (nodep->isIO()) {
+            putfs(nodep, nodep->verilogKwd());
+            puts(" ");
+        }
+        std::vector<const AstUnpackArrayDType*> unpackps;
+        for (AstNodeDType* dtypep = nodep->dtypep(); dtypep;) {
+            dtypep = dtypep->skipRefp();
+            if (AstUnpackArrayDType* unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
+                unpackps.push_back(unpackp);
+                dtypep = unpackp->subDTypep();
+            } else {
+                iterate(dtypep);
+                puts(" ");
+                puts(nodep->prettyName());
+                dtypep = nullptr;
+            }
+        }
+        // If nodep is an unpacked array, append unpacked dimensions
+        for (const auto& unpackp : unpackps) {
+            puts("[");
+            puts(cvtToStr(unpackp->rangep()->leftConst()));
+            puts(":");
+            puts(cvtToStr(unpackp->rangep()->rightConst()));
+            puts("]");
+        }
         if (!m_suppressVarSemi) {
             puts(";\n");
         } else {

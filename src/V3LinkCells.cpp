@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -183,7 +183,7 @@ private:
                     }
                     v3error("Specified --top-module '"
                             << v3Global.opt.topModule()
-                            << "' isn't at the top level, it's under another cell '"
+                            << "' isn't at the top level, it's under another instance '"
                             << (abovep ? abovep->prettyName() : "UNKNOWN") << "'");
                 }
             }
@@ -198,7 +198,7 @@ private:
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
-            UINFO(2, "Link Module: " << nodep << endl);
+            UINFO(4, "Link Module: " << nodep << endl);
             if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
                 && !v3Global.opt.isLibraryFile(nodep->fileline()->filename())
                 && !VN_IS(nodep, NotFoundModule) && !nodep->recursiveClone()
@@ -363,7 +363,7 @@ private:
         for (AstPin *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
             nextp = VN_CAST(pinp->nextp(), Pin);
             if (pinp->dotStar()) {
-                if (pinStar) pinp->v3error("Duplicate .* in a cell");
+                if (pinStar) pinp->v3error("Duplicate .* in an instance");
                 pinStar = true;
                 // Done with this fake pin
                 VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
@@ -383,7 +383,7 @@ private:
             std::unordered_set<string> ports;  // Symbol table of all connected port names
             for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
                 if (pinp->name() == "")
-                    pinp->v3error("Connect by position is illegal in .* connected cells");
+                    pinp->v3error("Connect by position is illegal in .* connected instances");
                 if (!pinp->exprp()) {
                     if (pinp->name().substr(0, 11) == "__pinNumber") {
                         pinp->v3warn(PINNOCONNECT,

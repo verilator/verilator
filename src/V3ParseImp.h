@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2009-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2009-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -50,7 +50,7 @@ struct VMemberQualifiers {
         struct {
             uint32_t m_local : 1;  // Local class item (ignored until warning implemented)
             uint32_t m_protected : 1;  // Protected class item (ignored until warning implemented)
-            uint32_t m_rand : 1;  // Rand property/member qualifier (ignored until supported)
+            uint32_t m_rand : 1;  // Rand property/member qualifier
             uint32_t m_randc : 1;  // Randc property/member qualifier (ignored until supported)
             uint32_t m_virtual : 1;  // Virtual property/method qualifier
             uint32_t m_automatic : 1;  // Automatic property/method qualifier
@@ -83,8 +83,11 @@ struct VMemberQualifiers {
     }
     void applyToNodes(AstVar* nodesp) const {
         for (AstVar* nodep = nodesp; nodep; nodep = VN_CAST(nodep->nextp(), Var)) {
-            // Ignored for now: m_rand
-            // Ignored for now: m_randc
+            if (m_randc) {
+                nodep->v3warn(RANDC, "Unsupported: Converting 'randc' to 'rand'");
+                nodep->isRand(true);
+            }
+            if (m_rand) nodep->isRand(true);
             if (m_local) nodep->isHideLocal(true);
             if (m_protected) nodep->isHideProtected(true);
             if (m_automatic) nodep->lifetime(VLifetime::AUTOMATIC);

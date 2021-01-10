@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -363,7 +363,7 @@ private:
                     // make slow routines set all activity flags.
                     actSet.erase(TraceActivityVertex::ACTIVITY_SLOW);
                 }
-                traces.insert(make_pair(actSet, vtxp));
+                traces.emplace(actSet, vtxp);
             }
         }
     }
@@ -447,7 +447,8 @@ private:
         FileLine* const flp = m_topScopep->fileline();
         AstNodeDType* const newScalarDtp = new AstBasicDType(flp, VFlagLogicPacked(), 1);
         v3Global.rootp()->typeTablep()->addTypesp(newScalarDtp);
-        AstRange* const newArange = new AstRange(flp, VNumRange(m_activityNumber - 1, 0, false));
+        AstRange* const newArange
+            = new AstRange{flp, VNumRange{static_cast<int>(m_activityNumber) - 1, 0}};
         AstNodeDType* const newArrDtp = new AstUnpackArrayDType(flp, newScalarDtp, newArange);
         v3Global.rootp()->typeTablep()->addTypesp(newArrDtp);
         AstVar* const newvarp
@@ -603,7 +604,8 @@ private:
             AstCFunc* topFuncp = nullptr;
             AstCFunc* subFuncp = nullptr;
             int subStmts = 0;
-            const uint32_t maxCodes = (nAllCodes + parallelism - 1) / parallelism;
+            uint32_t maxCodes = (nAllCodes + parallelism - 1) / parallelism;
+            if (maxCodes < 1) maxCodes = 1;
             uint32_t nCodes = 0;
             const ActCodeSet* prevActSet = nullptr;
             AstIf* ifp = nullptr;

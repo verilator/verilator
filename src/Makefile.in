@@ -7,7 +7,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -18,7 +18,7 @@
 #### Start of system configuration section. ####
 
 srcdir = @srcdir@
-PERL = @PERL@
+PYTHON3 = @PYTHON3@
 EXEEXT = @EXEEXT@
 # VPATH only does sources; fix install_test's not creating ../bin
 vpath %.h @srcdir@
@@ -52,8 +52,8 @@ obj_dbg:
 opt: ../bin/verilator_bin
 ifeq ($(VERILATOR_NO_OPT_BUILD),1)	# Faster laptop development... One build
 ../bin/verilator_bin: ../bin/verilator_bin_dbg
-	-rm -rf $@ $@.exe
-	-cp -p $<$(EXEEXT) $@$(EXEEXT)
+	-cp -p $<$(EXEEXT) $@$(EXEEXT).tmp
+	-mv -f $@$(EXEEXT).tmp $@$(EXEEXT)
 else
 ../bin/verilator_bin: obj_opt ../bin prefiles
 	$(MAKE) -C obj_opt -j 1  TGT=../$@ -f ../Makefile_obj serial
@@ -78,17 +78,19 @@ endif
 prefiles::
 prefiles:: config_rev.h
 # This output goes into srcdir if locally configured, as we need to distribute it as part of the kit.
-config_rev.h:	${srcdir}/config_rev.pl $(GIT_CHANGE_DEP)
-	$(PERL) ${srcdir}/config_rev.pl ${srcdir} >$@
+config_rev.h:	${srcdir}/config_rev $(GIT_CHANGE_DEP)
+	$(PYTHON3) ${srcdir}/config_rev ${srcdir} >$@
 
 # Human convenience
+format:
+	$(MAKE) -C .. $@
 clang-format:
 	$(MAKE) -C .. $@
 
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
 	-rm -rf obj_* *.log *.dmp *.vpd core
-	-rm -f *.o *.d perlxsi.c *_gen_*
+	-rm -f *.o *.d *_gen_*
 	-rm -f *__gen* obj_*
 	-rm -f .objcache*
 

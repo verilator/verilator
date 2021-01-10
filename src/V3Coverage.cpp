@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -142,7 +142,7 @@ private:
                       + cvtToStr(nodep->fileline()->lineno()) + "_" + type;
         const auto it = m_varnames.find(name);
         if (it == m_varnames.end()) {
-            m_varnames.insert(make_pair(name, 1));
+            m_varnames.emplace(name, 1);
         } else {
             int suffix = (it->second)++;
             name += "_" + cvtToStr(suffix);
@@ -210,6 +210,7 @@ private:
     // VISITORS - BOTH
     virtual void visit(AstNodeModule* nodep) override {
         AstNodeModule* origModp = m_modp;
+        VL_RESTORER(m_modp);
         VL_RESTORER(m_state);
         {
             createHandle(nodep);
@@ -223,7 +224,6 @@ private:
             }
             iterateChildren(nodep);
         }
-        m_modp = origModp;
     }
 
     virtual void visit(AstNodeProcedure* nodep) override { iterateProcedure(nodep); }
@@ -310,9 +310,9 @@ private:
                           const ToggleEnt& above, AstVar* varp, AstVar* chgVarp) {  // Constant
         if (const AstBasicDType* bdtypep = VN_CAST(dtypep, BasicDType)) {
             if (bdtypep->isRanged()) {
-                for (int index_docs = bdtypep->lsb(); index_docs < bdtypep->msb() + 1;
-                     index_docs++) {
-                    int index_code = index_docs - bdtypep->lsb();
+                for (int index_docs = bdtypep->lo(); index_docs < bdtypep->hi() + 1;
+                     ++index_docs) {
+                    int index_code = index_docs - bdtypep->lo();
                     ToggleEnt newent(above.m_comment + string("[") + cvtToStr(index_docs) + "]",
                                      new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
                                                 index_code, 1),
@@ -325,8 +325,8 @@ private:
                 toggleVarBottom(above, varp);
             }
         } else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            for (int index_docs = adtypep->lsb(); index_docs <= adtypep->msb(); ++index_docs) {
-                int index_code = index_docs - adtypep->lsb();
+            for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
+                int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent(above.m_comment + string("[") + cvtToStr(index_docs) + "]",
                                  new AstArraySel(varp->fileline(),
                                                  above.m_varRefp->cloneTree(true), index_code),
@@ -337,9 +337,9 @@ private:
                 newent.cleanup();
             }
         } else if (AstPackArrayDType* adtypep = VN_CAST(dtypep, PackArrayDType)) {
-            for (int index_docs = adtypep->lsb(); index_docs <= adtypep->msb(); ++index_docs) {
+            for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
                 AstNodeDType* subtypep = adtypep->subDTypep()->skipRefp();
-                int index_code = index_docs - adtypep->lsb();
+                int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent(above.m_comment + string("[") + cvtToStr(index_docs) + "]",
                                  new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
                                             index_code * subtypep->width(), subtypep->width()),

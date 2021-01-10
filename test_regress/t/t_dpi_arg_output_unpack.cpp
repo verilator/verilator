@@ -130,6 +130,26 @@ void set_3d(svLogicVecVal* v, int bitwidth) {
     set_uint(v + ((3 * 3 + 0) * 2 + 0) * unit, 51, bitwidth);
 }
 
+void set_0d_scalar(svScalar* v) { *v = sv_0; }
+
+void set_1d_scalar(svScalar* v) {
+    v[0] = sv_1;
+    v[1] = sv_0;
+}
+
+void set_2d_scalar(svScalar* v) {
+    v[0 * 2 + 1] = sv_1;
+    v[1 * 2 + 1] = sv_0;
+    v[2 * 2 + 1] = sv_1;
+}
+
+void set_3d_scalar(svScalar* v) {
+    v[(0 * 3 + 0) * 2 + 0] = sv_0;
+    v[(1 * 3 + 0) * 2 + 0] = sv_1;
+    v[(2 * 3 + 0) * 2 + 0] = sv_0;
+    v[(3 * 3 + 0) * 2 + 0] = sv_1;
+}
+
 void set_0d(svBitVecVal* v, int bitwidth) { set_uint(v, 42, bitwidth); }
 
 void set_1d(svBitVecVal* v, int bitwidth) {
@@ -343,6 +363,11 @@ void i_string_3d(const char** v) {
     v[(3 * 3 + 0) * 2 + 0] = s3;
 }
 
+void i_bit1_0d(svBit* v) { set_0d_scalar(v); }
+void i_bit1_1d(svBit* v) { set_1d_scalar(v); }
+void i_bit1_2d(svBit* v) { set_2d_scalar(v); }
+void i_bit1_3d(svBit* v) { set_3d_scalar(v); }
+
 void i_bit7_0d(svBitVecVal* v) { set_0d(v, 7); }
 void i_bit7_1d(svBitVecVal* v) { set_1d(v, 7); }
 void i_bit7_2d(svBitVecVal* v) { set_2d(v, 7); }
@@ -352,6 +377,11 @@ void i_bit121_0d(svBitVecVal* v) { set_0d(v, 121); }
 void i_bit121_1d(svBitVecVal* v) { set_1d(v, 121); }
 void i_bit121_2d(svBitVecVal* v) { set_2d(v, 121); }
 void i_bit121_3d(svBitVecVal* v) { set_3d(v, 121); }
+
+void i_logic1_0d(svLogic* v) { set_0d_scalar(v); }
+void i_logic1_1d(svLogic* v) { set_1d_scalar(v); }
+void i_logic1_2d(svLogic* v) { set_2d_scalar(v); }
+void i_logic1_3d(svLogic* v) { set_3d_scalar(v); }
 
 void i_logic7_0d(svLogicVecVal* v) { set_0d(v, 7); }
 void i_logic7_1d(svLogicVecVal* v) { set_1d(v, 7); }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -23,6 +23,12 @@
 #include "V3Error.h"
 
 class AstNetlist;
+
+#define STAT_ADD_UINFO(level, text, value) \
+    do { \
+        UINFO((level), "addStat " << text << " " << value << endl); \
+        V3Stats::addStat(text, value); \
+    } while (0)
 
 //============================================================================
 

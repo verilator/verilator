@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -164,7 +164,7 @@ public:
             return iter->second;
         } else {
             OrderMoveDomScope* domScopep = new OrderMoveDomScope(domainp, scopep);
-            s_dsMap.insert(make_pair(key, domScopep));
+            s_dsMap.emplace(key, domScopep);
             return domScopep;
         }
     }
@@ -184,7 +184,7 @@ inline std::ostream& operator<<(std::ostream& lhs, const OrderMoveDomScope& rhs)
 // Order information stored under each AstNode::user1p()...
 
 // Types of vertex we can create
-enum WhichVertex : uint8_t { WV_STD, WV_PRE, WV_PORD, WV_POST, WV_SETL, WV_MAX };
+enum WhichVertex : uint8_t { WV_STD, WV_PRE, WV_PORD, WV_POST, WV_MAX };
 
 class OrderUser final {
     // Stored in AstVarScope::user1p, a list of all the various vertices
@@ -205,7 +205,6 @@ public:
             case WV_PRE: vertexp = new OrderVarPreVertex(graphp, scopep, varscp); break;
             case WV_PORD: vertexp = new OrderVarPordVertex(graphp, scopep, varscp); break;
             case WV_POST: vertexp = new OrderVarPostVertex(graphp, scopep, varscp); break;
-            case WV_SETL: vertexp = new OrderVarSettleVertex(graphp, scopep, varscp); break;
             default: varscp->v3fatalSrc("Bad case");
             }
             m_vertexp[type] = vertexp;
@@ -1569,8 +1568,6 @@ void OrderVisitor::processEdgeReport() {
                 name += " {POST}";
             } else if (dynamic_cast<OrderVarPordVertex*>(itp)) {
                 name += " {PORD}";
-            } else if (dynamic_cast<OrderVarSettleVertex*>(itp)) {
-                name += " {STL}";
             }
             std::ostringstream os;
             os.setf(std::ios::left);

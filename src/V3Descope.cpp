@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -123,7 +123,7 @@ private:
             hierUnprot = v3Global.opt.modPrefix() + "_";  // Prefix before protected part
             return scopep->modp()->name() + "::";
         } else if (relativeRefOk && scopep->aboveScopep() && scopep->aboveScopep() == m_scopep) {
-            // Reference to scope of cell directly under this module, can just "cell->"
+            // Reference to scope of instance directly under this module, can just "cell->"
             string name = scopep->name();
             string::size_type pos;
             if ((pos = name.rfind('.')) != string::npos) name.erase(0, pos + 1);
@@ -296,7 +296,7 @@ private:
                 if (nodep->funcPublic()) {
                     // There may be multiple public functions by the same name;
                     // record for later correction or making of shells
-                    m_modFuncs.insert(make_pair(nodep->name(), nodep));
+                    m_modFuncs.emplace(nodep->name(), nodep);
                     nodep->name(m_scopep->nameDotless() + "__" + nodep->name());
                 }
             }

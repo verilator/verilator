@@ -37,6 +37,6 @@ int main(int argc, char** argv, char** env) {
     // Destroy model
     delete top;
 
-    // Fin
+    // Return good completion status
     exit(0);
 }

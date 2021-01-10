@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -614,7 +614,7 @@ public:
     // CONSTRUCTORS
     explicit InlineVisitor(AstNode* nodep) { iterate(nodep); }
     virtual ~InlineVisitor() override {  //
-        V3Stats::addStat("Optimizations, Inlined cells", m_statCells);
+        V3Stats::addStat("Optimizations, Inlined instances", m_statCells);
     }
 };
 

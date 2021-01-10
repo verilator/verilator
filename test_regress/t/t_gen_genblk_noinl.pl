@@ -12,6 +12,8 @@ top_filename("t_gen_genblk.v");
 
 scenarios(simulator => 1);
 
+$Self->{sim_time} = 11000;
+
 compile(
     v_flags2 => ["-Oi"],
     );

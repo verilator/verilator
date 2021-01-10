@@ -8,12 +8,13 @@
 
 typedef class paramed_class_t;
 typedef class arg_class_t;
+typedef paramed_class_t#(real, 1) paramed_class_double_t;
 
-virtual class vclass #(type CTYPE_t = arg_class_t);
+virtual class vclass #(type CTYPE_t = arg_class_t, int I = 0);
    pure virtual function void funcname(paramed_class_t #(CTYPE_t) v);
 endclass
 
-class paramed_class_t #(type TYPE=int);
+class paramed_class_t #(type TYPE = int, int I = 0);
 endclass
 
 class arg_class_t;
