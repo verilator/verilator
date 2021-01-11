@@ -310,18 +310,17 @@ def source_globs(*dirs):
 def run(command):
     # run a system command, check errors
     print("\t%s" % command)
-    os.system(command)
     status = subprocess.call(command, shell=True)
     if status < 0:
         raise Exception("%Error: Command failed " + command + ", stopped")
 
 
 def ci_fold_start(action):
-    print("::group::" + action)
+    print("::group::" + action, flush=True)
 
 
 def ci_fold_end():
-    print("::endgroup::\n")
+    print("::endgroup::\n", flush=True)
 
 
 #######################################################################

@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       CI_BUILD_STAGE_NAME: build
+      CI_RUNS_ON: ${{ matrix.os }}
+      CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}-coverage
     steps:
 
     - uses: actions/checkout@v2
@@ -32,7 +34,7 @@ jobs:
         cache-name: ccache
       with:
         path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
         restore-keys: coverage-${{ env.cache-name }}
 
     - name: Install dependencies for build
@@ -70,6 +72,8 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       CI_BUILD_STAGE_NAME: test
+      CI_RUNS_ON: ${{ matrix.os }}
+      CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}-coverage
     steps:
 
     - uses: actions/checkout@v2
@@ -79,7 +83,7 @@ jobs:
         cache-name: ccache
       with:
         path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
         restore-keys: coverage-${{ env.cache-name }}
 
     - uses: actions/download-artifact@v2
