@@ -479,6 +479,7 @@ YAPF_FLAGS = -i
 YAPF_FILES = \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \
+	src/bisonpre \
 	src/config_rev \
 	src/cppcheck_filtered \
 	src/flexfix \
