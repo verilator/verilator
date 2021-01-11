@@ -46,6 +46,7 @@
 #include "V3Stats.h"
 
 #include <map>
+#include <limits>
 #include <set>
 
 //######################################################################
