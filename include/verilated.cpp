@@ -32,6 +32,7 @@
 #include <sstream>
 #include <sys/stat.h>  // mkdir
 #include <list>
+#include <limits>
 #include <utility>
 
 // clang-format off
