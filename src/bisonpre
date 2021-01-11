@@ -209,7 +209,9 @@ def clean_input(filename, outname):
                          ": Move text on rule line to next line: " + line +
                          "\n")
 
-            matcha = re.match(r'^([a-zA-Z0-9_]+)<(\S*)>(.*)$', line, flags=re.DOTALL)
+            matcha = re.match(r'^([a-zA-Z0-9_]+)<(\S*)>(.*)$',
+                              line,
+                              flags=re.DOTALL)
             matchb = re.match(r'^([a-zA-Z0-9_]+):', line)
 
             if re.match(r'^%%', line):
@@ -314,8 +316,10 @@ def clean_input(filename, outname):
         for line in linesin:
             l += 1
             if _enaline(line) and re.search(r'BISONPRE_NOT', line):
-                match = re.search(r'(.*)BISONPRE_NOT\((\S+)\)\s*(\{[^}]+})\s*(.*)$',
-                                  line, flags=re.DOTALL)
+                match = re.search(
+                    r'(.*)BISONPRE_NOT\((\S+)\)\s*(\{[^}]+})\s*(.*)$',
+                    line,
+                    flags=re.DOTALL)
                 if not match:
                     sys.exit("%Error: " + filename + ":" + str(l) +
                              ": Bad form of BISONPRE_NOT: " + line)
@@ -404,7 +408,9 @@ def _bisonpre_copy(text, l, depth):
     while re.search(r'BISONPRE_COPY', text):
         match = re.match(
             # 1                2         3             4            5
-            r'(.*)BISONPRE_COPY(_ONCE)?\((\S+)\s*,\s*\{([^}]*)}\s*\)(.*)', text, flags=re.DOTALL)
+            r'(.*)BISONPRE_COPY(_ONCE)?\((\S+)\s*,\s*\{([^}]*)}\s*\)(.*)',
+            text,
+            flags=re.DOTALL)
         if not match:
             sys.exit("%Error: " + Filename + ":" + str(l) +
                      ": Bad form of BISONPRE_NOT: " + text)
