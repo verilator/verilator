@@ -298,8 +298,8 @@ class EmitMkHierVerilation final {
         of.puts("VM_HIER_RUN_DIR := " + cwd + "\n");
         of.puts("# Common options for hierarchical blocks\n");
         const string fullpath_bin = V3Os::filenameRealPath(v3Global.opt.bin());
-        const string perl_wrapper = V3Os::filenameDir(fullpath_bin) + "/verilator";
-        of.puts("VM_HIER_VERILATOR := " + perl_wrapper + "\n");
+        const string verilator_wrapper = V3Os::filenameDir(fullpath_bin) + "/verilator";
+        of.puts("VM_HIER_VERILATOR := " + verilator_wrapper + "\n");
         of.puts("VM_HIER_INPUT_FILES := \\\n");
         const V3StringList& vFiles = v3Global.opt.vFiles();
         for (const string& i : vFiles) of.puts("\t" + V3Os::filenameRealPath(i) + " \\\n");
