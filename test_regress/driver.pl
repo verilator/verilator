@@ -1385,6 +1385,12 @@ sub errors {
     return $self->{errors};
 }
 
+sub golden_filename {
+    my $self = (ref $_[0]? shift : $Self);
+    $self->{golden_filename} = shift if defined $_[0];
+    return $self->{golden_filename};
+}
+
 sub scenario_off {
     my $self = (ref $_[0]? shift : $Self);
     return $self->{scenario_off};
