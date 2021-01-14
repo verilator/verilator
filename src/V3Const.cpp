@@ -530,23 +530,23 @@ private:
         return true;
     }
     bool matchBitOpTree(AstNode* nodep) {
-        AstNode* newNodep = ConstBitOpTreeVisitor::simplify(nodep);
-        if (newNodep) {
-            UINFO(4, "Transformed leaf of bit tree to " << newNodep << std::endl);
+        AstNode* newp = ConstBitOpTreeVisitor::simplify(nodep);
+        if (newp) {
+            UINFO(4, "Transformed leaf of bit tree to " << newp << std::endl);
             if (debug() >= 9) {
                 static int c = 0;
                 std::stringstream ss;
                 ss << "Call matchBitOpTree[" << c << "]\n";
                 nodep->dumpTree(ss);
                 ss << "\nResult:\n";
-                newNodep->dumpTree(ss);
+                newp->dumpTree(ss);
                 std::cout << ss.str() << std::endl;
                 ++c;
             }
-            nodep->replaceWith(newNodep);
+            nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
-        return newNodep;
+        return newp;
     }
     static bool operandShiftSame(const AstNode* nodep) {
         const AstNodeBiop* np = VN_CAST_CONST(nodep, NodeBiop);
