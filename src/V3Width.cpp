@@ -804,8 +804,8 @@ private:
             }
             // We're extracting, so just make sure the expression is at least wide enough.
             if (nodep->fromp()->width() < width) {
-                nodep->v3error("Extracting " << width << " bits from only "
-                                             << nodep->fromp()->width() << " bit number");
+                nodep->v3warn(SELRANGE, "Extracting " << width << " bits from only "
+                                                      << nodep->fromp()->width() << " bit number");
                 // Extend it.
                 AstNodeDType* subDTypep
                     = nodep->findLogicDType(width, width, nodep->fromp()->dtypep()->numeric());

@@ -369,10 +369,11 @@ private:
                 lsb = x;
             }
             if (lsb > msb) {
-                nodep->v3error("["
-                               << msb << ":" << lsb
-                               << "] Range extract has backward bit ordering, perhaps you wanted ["
-                               << lsb << ":" << msb << "]");
+                nodep->v3warn(
+                    SELRANGE,
+                    "[" << msb << ":" << lsb
+                        << "] Range extract has backward bit ordering, perhaps you wanted [" << lsb
+                        << ":" << msb << "]");
                 int x = msb;
                 msb = lsb;
                 lsb = x;
@@ -398,10 +399,11 @@ private:
                 lsb = x;
             }
             if (lsb > msb) {
-                nodep->v3error("["
-                               << msb << ":" << lsb
-                               << "] Range extract has backward bit ordering, perhaps you wanted ["
-                               << lsb << ":" << msb << "]");
+                nodep->v3warn(
+                    SELRANGE,
+                    "[" << msb << ":" << lsb
+                        << "] Range extract has backward bit ordering, perhaps you wanted [" << lsb
+                        << ":" << msb << "]");
                 int x = msb;
                 msb = lsb;
                 lsb = x;
@@ -419,10 +421,11 @@ private:
         } else if (VN_IS(ddtypep, NodeUOrStructDType)) {
             // Classes aren't little endian
             if (lsb > msb) {
-                nodep->v3error("["
-                               << msb << ":" << lsb
-                               << "] Range extract has backward bit ordering, perhaps you wanted ["
-                               << lsb << ":" << msb << "]");
+                nodep->v3warn(
+                    SELRANGE,
+                    "[" << msb << ":" << lsb
+                        << "] Range extract has backward bit ordering, perhaps you wanted [" << lsb
+                        << ":" << msb << "]");
                 int x = msb;
                 msb = lsb;
                 lsb = x;
