@@ -87,11 +87,9 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         AstVarRef* m_refp;  // Points the variable that this Context covers
         std::map<int, bool> m_bitPolarity;  // Coefficient of each bit
         AstConst* m_resultp = nullptr;  // Optimized result if found
-        bool m_invertResult = false;  // Add Not to the entire tree (only for RedXor)
     public:
         // METHODS
         bool hasConstantResult() const { return m_resultp; }
-        void invertResult() { m_invertResult = !m_invertResult; }
         void setPolarity(bool compBit, int bit) {
             UASSERT_OBJ(!m_resultp, m_resultp, "Already exists");
             const bool inserted = m_bitPolarity.emplace(bit, compBit).second;
@@ -99,7 +97,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 const bool sameFlag = m_bitPolarity[bit] == compBit;
                 if (isXorish(m_rootp)) {
                     // ^{x[0], ~x[0], x[2], x[3]} === ~^{x[2], x[3]}
-                    if (!sameFlag) m_invertResult = !m_invertResult;
+                    UASSERT_OBJ(sameFlag, m_refp, "Only true is set in Xor tree");
                     m_bitPolarity.erase(bit);
                 } else {  // And, Or, RedAnd, RedOr
                     UASSERT_OBJ(isAndish(m_rootp) || isOrish(m_rootp), m_rootp,
@@ -137,7 +135,6 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             AstNode* resultp;
             if (isXorish(m_rootp)) {
                 resultp = new AstRedXor{fl, maskedp};
-                if (m_invertResult) resultp = new AstNot{fl, resultp};
             } else {
                 if (isAndish(m_rootp)) {
                     resultp = new AstEq{fl, compValuep, maskedp};
@@ -178,7 +175,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
 
     // MEMBERS
     bool m_failed = false;  // Quick exit if true
-    bool m_polarity = true;  // When AstNot appears, m_polarity inverts.
+    bool m_polarity = true;  // Flip when Not comes
     int m_ops = 0;  // Number of operations such as And, Or, Xor...
     int m_sels = 0;  // Number of AstSel
     std::map<const AstVarRef*, Context, VarRefComparator> m_contexts;
@@ -222,8 +219,11 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 AstVarRef* refp = VN_CAST(andp->rhsp(), VarRef);
                 if (setFailed(!refp)) return;
                 Context& context = getContext(refp);
-                context.setPolarity(maskp->num(), maskp->num(), false);
-                if (!m_polarity) context.invertResult();
+                const V3Number& maskValue = maskp->num();
+                for (int i = 0; i < maskValue.width(); ++i) {
+                    // Set true, m_treePolarity takes care of the entire parity
+                    if (getBit(maskValue, i)) context.setPolarity(true, i);
+                }
                 m_ops += 2;  // redXor, And
                 return;
             }
@@ -264,13 +264,22 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 return;
             }
         }
-        setFailed(true);
+        setFailed(true);  // Mixture of different ops cannot be optimized
     }
     virtual void visit(AstNot* nodep) override {
         if (setFailed(!nodep->width1())) return;
+        // Not can appear only in front of AstSel.
+        // e.g. "~(a[0] & b[0]) & ~(a[1] & b[1])" cannot be optimized because
+        // abmove logic is equalt to and-or tree below that can not be handled
+        // "(~a[0] | ~b[0]) & (~a[1] | ~b[1])"
+        const bool lhsIsSel = VN_IS(nodep->lhsp(), Sel);
+        const bool lhsIsXor = isXorish(nodep->lhsp());
+        if (setFailed(!lhsIsSel && !lhsIsXor)) return;
+
         m_polarity = !m_polarity;
         iterateChildren(nodep);
-        m_polarity = !m_polarity;
+        // Don't restore m_polarity for Xor as it counts parity of the entire tree
+        if (!isXorish(m_rootp)) m_polarity = !m_polarity;
     }
     virtual void visit(AstConcat* nodep) override {
         if (m_failed) return;
@@ -289,7 +298,6 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         const int bit = nodep->lsbConst();
         if (isXorish(m_rootp)) {
             context.setPolarity(true, bit);
-            if (!m_polarity) context.invertResult();
         } else {
             context.setPolarity(m_polarity, bit);
         }
@@ -300,7 +308,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         : m_rootp(nodep) {
         ++m_ops;  // for nodep
         iterateChildren(nodep);
-        UASSERT_OBJ(m_polarity, nodep, "must be the original polarity");
+        UASSERT_OBJ(isXorish(nodep) || m_polarity, nodep, "must be the original polarity");
     }
     virtual ~ConstBitOpTreeVisitor() = default;
 
@@ -345,6 +353,11 @@ public:
             } else {
                 resultp = partialResultp;
             }
+        }
+        if (!visitor.m_polarity) {
+            UASSERT_OBJ(isXorish(nodep), nodep,
+                        "m_polarity shows the entire poloarity in Xor tree");
+            resultp = new AstNot(resultp->fileline(), resultp);
         }
         return resultp;
     }
