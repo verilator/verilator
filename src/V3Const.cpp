@@ -176,8 +176,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     // MEMBERS
     bool m_failed = false;  // Quick exit if true
     bool m_polarity = true;  // Flip when Not comes
-    int m_ops = 0;  // Number of operations such as And, Or, Xor...
-    int m_sels = 0;  // Number of AstSel
+    int m_ops = 0;  // Number of operations such as And, Or, Xor, Sel...
     std::map<const AstVarRef*, Context, VarRefComparator> m_contexts;
     AstNode* m_rootp;
 
@@ -259,8 +258,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                     const unsigned int valBit = i + lsb;
                     context.setPolarity(getBit(compp->num(), i) ^ maskFlip, valBit);
                 }
-                ++m_ops;
-                ++m_sels;
+                m_ops += 2;  // Eq, Sel
                 return;
             }
         }
@@ -292,7 +290,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         if (setFailed(!refp)) return;
 
         Context& context = getContext(refp);
-        ++m_sels;
+        ++m_ops;
         if (context.hasConstantResult()) return;  // This bit can be ignored
 
         const int bit = nodep->lsbConst();
@@ -332,7 +330,7 @@ public:
         // (comp0 == (mask0 & var0)) & (comp1 == (mask1 & var1)) & ....
         //  2 ops per variables, numVars - 1 ops among variables
         const int expOps = 2 * vars + vars - 1;
-        if (visitor.m_ops + visitor.m_sels <= expOps) return nullptr;  // Unless benefit, return
+        if (visitor.m_ops <= expOps) return nullptr;  // Unless benefit, return
 
         // Sort by declared location of AstVar to get deterministic ast tree
         std::vector<const Context*> contexts;
