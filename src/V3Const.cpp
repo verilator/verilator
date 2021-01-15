@@ -119,7 +119,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             }
         }
         AstNode* getResult() const {
-        // Called only when optimizing
+            // Called only when optimizing
             if (m_resultp) return m_resultp;
 
             FileLine* fl = m_refp->fileline();
