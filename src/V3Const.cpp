@@ -203,7 +203,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         return m_failed;
     }
     Context& getContext(AstVarRef* refp) {
-        UASSERT_OBJ(refp, m_rootp, "must not nullptr");
+        UASSERT_OBJ(refp, m_rootp, "null varref in And/Or/Xor optimization");
         auto it = m_contexts.find(refp);
         if (it == m_contexts.end()) it = m_contexts.emplace(refp, Context{m_rootp, refp}).first;
         return it->second;
