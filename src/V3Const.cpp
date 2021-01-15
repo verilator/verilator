@@ -2763,9 +2763,9 @@ private:
     TREEOP ("AstAnd {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstOr  {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstXor {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
-    TREEOP ("AstAnd {matchBitOpTree(nodep)}",           "DONE");
-    TREEOP ("AstOr  {matchBitOpTree(nodep)}",           "DONE");
-    TREEOP ("AstXor {matchBitOpTree(nodep)}",           "DONE");
+    TREEOPC("AstAnd {matchBitOpTree(nodep)}",           "DONE");
+    TREEOPC("AstOr  {matchBitOpTree(nodep)}",           "DONE");
+    TREEOPC("AstXor {matchBitOpTree(nodep)}",           "DONE");
     // Note can't simplify a extend{extends}, extends{extend}, as the sign
     // bits end up in the wrong places
     TREEOPV("AstExtend {$lhsp.castExtend}",  "replaceExtend(nodep, VN_CAST(nodep->lhsp(), Extend)->lhsp())");
