@@ -486,7 +486,7 @@ sub tree_line {
     $func =~ s!\s*;\s*$!!;
 
     # doflag "S" indicates an op specifying short-circuiting for a type.
-    if ($func =~ /TREEOP(1?)([VCS]?)\s*\(\s*  \"([^\"]*)\"  \s*,\s* \"([^\"]*)\"  \s*\)/sx) {
+    if ($func =~ /TREEOP(1?)([VAS]?)\s*\(\s*  \"([^\"]*)\"  \s*,\s* \"([^\"]*)\"  \s*\)/sx) {
         my $order = $1; my $doflag = $2; my $from = $3; my $to = $4;
         #$self->print("// $from $to\n");
         if (!$self->{did_out_tree}) {
@@ -505,7 +505,7 @@ sub tree_line {
         my $mif;
         if ($doflag eq '') { $mif = "m_doNConst"; }
         elsif ($doflag eq 'V') { $mif = "m_doV"; }
-        elsif ($doflag eq 'C') { $mif = ""; }
+        elsif ($doflag eq 'A') { $mif = ""; }
         elsif ($doflag eq 'S') { $mif = "m_doNConst"; } # Not just for m_doGenerate
         else { die; }
         $subnodes =~ s/,,/__ESCAPEDCOMMA__/g;
