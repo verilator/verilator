@@ -113,7 +113,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         }
         void setPolarity(const V3Number& compValue, const V3Number& maskValue, bool invert) {
             for (int i = 0; i < maskValue.width() && !m_resultp; ++i) {
-                if (getBit(maskValue, i)) setPolarity(getBit(compValue, i) ^ invert, i);
+                if (maskValue.bitIs1(i)) setPolarity(compValue.bitIs1(i) ^ invert, i);
             }
         }
         AstNode* getResult() const {
@@ -190,7 +190,6 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     static bool isXorish(const AstNode* nodep) {
         return VN_IS(nodep, Xor) || VN_IS(nodep, RedXor);
     }
-    static bool getBit(const V3Number& num, int bit) { return !num.isBitsZero(bit, bit); }
     bool setFailed(bool b) {
         if (b) {
             // Set breakpoint here
@@ -221,7 +220,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 const V3Number& maskValue = maskp->num();
                 for (int i = 0; i < maskValue.width(); ++i) {
                     // Set true, m_treePolarity takes care of the entire parity
-                    if (getBit(maskValue, i)) context.setPolarity(true, i);
+                    if (maskValue.bitIs1(i)) context.setPolarity(true, i);
                 }
                 m_ops += 2;  // redXor, And
                 return;
@@ -256,7 +255,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 const int lsb = selp->lsbConst();
                 for (int i = 0; i < selp->width(); ++i) {
                     const unsigned int valBit = i + lsb;
-                    context.setPolarity(getBit(compp->num(), i) ^ maskFlip, valBit);
+                    context.setPolarity(compp->num().bitIs1(i) ^ maskFlip, valBit);
                 }
                 m_ops += 2;  // Eq, Sel
                 return;
