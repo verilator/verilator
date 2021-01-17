@@ -85,20 +85,21 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         // MEMBERS
         AstNode* m_rootp;  // The root op of this optimization pass
         AstVarRef* m_refp;  // Points the variable that this Context covers
-        std::map<int, bool> m_bitPolarity;  // Coefficient of each bit
+        V3Number m_bitPolarity;  // Coefficient of each bit
         AstConst* m_resultp = nullptr;  // Optimized result if found
     public:
         // METHODS
         bool hasConstantResult() const { return m_resultp; }
         void setPolarity(bool compBit, int bit) {
             UASSERT_OBJ(!m_resultp, m_resultp, "Already exists");
-            const bool inserted = m_bitPolarity.emplace(bit, compBit).second;
-            if (!inserted) {  // Priviously set the bit
-                const bool sameFlag = m_bitPolarity[bit] == compBit;
+            if (m_bitPolarity.bitIsX(bit)) {  // The bit is not yet set
+                m_bitPolarity.setBit(bit, compBit);
+            } else {  // Priviously set the bit
+                const bool sameFlag = m_bitPolarity.bitIs1(bit) == compBit;
                 if (isXorish(m_rootp)) {
                     // ^{x[0], ~x[0], x[2], x[3]} === ~^{x[2], x[3]}
                     UASSERT_OBJ(sameFlag, m_refp, "Only true is set in Xor tree");
-                    m_bitPolarity.erase(bit);
+                    m_bitPolarity.setBit(bit, 'x');
                 } else {  // And, Or, RedAnd, RedOr
                     UASSERT_OBJ(isAndish(m_rootp) || isOrish(m_rootp), m_rootp,
                                 "must be AND or OR");
@@ -107,7 +108,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                     // Otherwise result is constant
                     const uint32_t constVal = isAndish(m_rootp) ? 0 : 1;
                     m_resultp = new AstConst{m_refp->fileline(), V3Number{m_refp, 1, constVal}};
-                    m_bitPolarity.clear();
+                    m_bitPolarity.setAllBitsX();  // The variable is not referred anymore
                 }
             }
         }
@@ -124,22 +125,20 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             AstVarRef* refp = m_refp->cloneTree(false);
             const int width = m_refp->varp()->width();
             AstConst* maskValuep = new AstConst{fl, V3Number{m_rootp, width, 0}};
-            AstConst* compValuep = new AstConst{fl, V3Number{m_rootp, width, 0}};
-            const bool isOr = isOrish(m_rootp);
-            for (auto&& bit : m_bitPolarity) {
-                compValuep->num().setBit(bit.first, bit.second ^ isOr);
-                maskValuep->num().setBit(bit.first, 1);
-            }
+            maskValuep->num().opBitsNonX(m_bitPolarity);  // 'x' -> 0, 0->1, 1->1
+            // Let AstConst be in lhs as it is the common convention
             AstAnd* maskedp = new AstAnd{fl, maskValuep, refp};
-            // Let AstConst be in lhs as it is the common convention.
             AstNode* resultp;
             if (isXorish(m_rootp)) {
                 resultp = new AstRedXor{fl, maskedp};
             } else {
+                AstConst* compValuep = maskValuep->cloneTree(false);
+                compValuep->num().opBitsOne(m_bitPolarity);  // 'x'->0, 0->0, 1->1
                 if (isAndish(m_rootp)) {
                     resultp = new AstEq{fl, compValuep, maskedp};
                 } else {
                     UASSERT_OBJ(isOrish(m_rootp), m_rootp, " must be or");
+                    compValuep->num().opXor(V3Number{compValuep->num()}, maskValuep->num());
                     resultp = new AstNeq{fl, compValuep, maskedp};
                 }
             }
@@ -159,7 +158,10 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         // CONSTRUCTORS
         Context(AstNode* nodep, AstVarRef* refp)
             : m_rootp(nodep)
-            , m_refp(refp) {}
+            , m_refp(refp)
+            , m_bitPolarity(refp, refp->width()) {
+            m_bitPolarity.setAllBitsX();
+        }
     };
     struct VarRefComparator {
         bool operator()(const AstVarRef* ap, const AstVarRef* bp) const {
