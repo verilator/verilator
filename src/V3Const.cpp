@@ -187,11 +187,15 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     static bool isXorish(const AstNode* nodep) {
         return VN_IS(nodep, Xor) || VN_IS(nodep, RedXor);
     }
-    bool setFailed(bool b) {
-        if (b) {
-            // Set breakpoint here
+#define CONST_BITOP_RETURN_IF_FAILED(cond, nodep) \
+    if (setFailed(cond, #cond, nodep, __LINE__)) return
+#define CONST_BITOP_SET_FAILED(reason, nodep) setFailed(true, reason, nodep, __LINE__)
+    bool setFailed(bool fail, const char* reason, AstNode* nodep, int line) {
+        if (fail) {
+            UINFO(9, m_rootp << " cannot be optimized. reason:" << reason
+                             << " called from line:" << line << " when checking:" << nodep << std::endl);
         }
-        m_failed |= b;
+        m_failed |= fail;
         return m_failed;
     }
     Context& getContext(AstVarRef* refp) {
@@ -203,16 +207,16 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
 
     // VISITORS
     virtual void visit(AstNode* nodep) override {
-        setFailed(true);  // Hit unexpected op, matching failed
+        setFailed(true, "Hit unexpected op", nodep, __LINE__);
     }
     virtual void visit(AstNodeUniop* nodep) override {
         if (m_failed) return;
         if (VN_IS(m_rootp, Xor) && VN_IS(nodep, RedXor)) {
             if (AstAnd* andp = VN_CAST(nodep->lhsp(), And)) {  // ^(mask & v)
                 AstConst* maskp = VN_CAST(andp->lhsp(), Const);
-                if (setFailed(!maskp)) return;
+                CONST_BITOP_RETURN_IF_FAILED(!maskp, andp);
                 AstVarRef* refp = VN_CAST(andp->rhsp(), VarRef);
-                if (setFailed(!refp)) return;
+                CONST_BITOP_RETURN_IF_FAILED(!refp, andp);
                 Context& context = getContext(refp);
                 const V3Number& maskValue = maskp->num();
                 for (int i = 0; i < maskValue.width(); ++i) {
@@ -223,7 +227,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 return;
             }
         }
-        setFailed(true);
+        CONST_BITOP_SET_FAILED("Hit unexpected op", nodep);
     }
     virtual void visit(AstNodeBiop* nodep) override {
         if (m_failed) return;
@@ -233,14 +237,14 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             return;
         } else if ((VN_IS(m_rootp, And) && VN_IS(nodep, Eq))
                    || (VN_IS(m_rootp, Or) && VN_IS(nodep, Neq))) {
-            if (setFailed(!m_polarity)) return;
+            CONST_BITOP_RETURN_IF_FAILED(!m_polarity, nodep);
             const bool maskFlip = isOrish(m_rootp);
             AstConst* compp = VN_CAST(nodep->lhsp(), Const);
-            if (setFailed(!compp)) return;
+            CONST_BITOP_RETURN_IF_FAILED(!compp, nodep->lhsp());
             if (AstAnd* andp = VN_CAST(nodep->rhsp(), And)) {  // comp == (mask & v)
                 AstConst* maskp = VN_CAST(andp->lhsp(), Const);
                 AstVarRef* refp = VN_CAST(andp->rhsp(), VarRef);
-                if (setFailed(!maskp || !refp)) return;
+                CONST_BITOP_RETURN_IF_FAILED(!maskp || !refp, andp);
                 Context& context = getContext(refp);
                 for (int i = 0; i < maskp->width() && !context.hasConstantResult(); ++i) {
                     if (maskp->num().bitIs0(i)) continue;
@@ -250,7 +254,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 return;
             } else if (AstSel* selp = VN_CAST(nodep->rhsp(), Sel)) {  // comp == v[msb:lsb]
                 AstVarRef* refp = VN_CAST(selp->fromp(), VarRef);
-                if (setFailed(!refp || !VN_IS(selp->lsbp(), Const))) return;
+                CONST_BITOP_RETURN_IF_FAILED(!refp || !VN_IS(selp->lsbp(), Const), selp);
                 Context& context = getContext(refp);
                 const int lsb = selp->lsbConst();
                 for (int i = 0; i < selp->width(); ++i) {
@@ -261,17 +265,17 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 return;
             }
         }
-        setFailed(true);  // Mixture of different ops cannot be optimized
+        CONST_BITOP_SET_FAILED("Mixture of different ops cannot be optimized", nodep);
     }
     virtual void visit(AstNot* nodep) override {
-        if (setFailed(!nodep->width1())) return;
+        CONST_BITOP_RETURN_IF_FAILED(!nodep->width1(), nodep);
         // Not can appear only in front of AstSel.
         // e.g. "~(a[0] & b[0]) & ~(a[1] & b[1])" cannot be optimized because
         // abmove logic is equalt to and-or tree below that can not be handled
         // "(~a[0] | ~b[0]) & (~a[1] | ~b[1])"
         const bool lhsIsSel = VN_IS(nodep->lhsp(), Sel);
         const bool lhsIsXor = isXorish(nodep->lhsp());
-        if (setFailed(!lhsIsSel && !lhsIsXor)) return;
+        CONST_BITOP_RETURN_IF_FAILED(!lhsIsSel && !lhsIsXor, nodep);
 
         m_polarity = !m_polarity;
         iterateChildren(nodep);
@@ -283,10 +287,10 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         iterateChildren(nodep);
     }
     virtual void visit(AstSel* nodep) override {
-        if (setFailed(nodep->width() != 1 || !VN_IS(nodep->lsbp(), Const))) return;
+        CONST_BITOP_RETURN_IF_FAILED(nodep->width() != 1 || !VN_IS(nodep->lsbp(), Const), nodep);
 
         AstVarRef* refp = VN_CAST(nodep->fromp(), VarRef);
-        if (setFailed(!refp)) return;
+        CONST_BITOP_RETURN_IF_FAILED(!refp, nodep->fromp());
 
         Context& context = getContext(refp);
         ++m_ops;
@@ -299,6 +303,8 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             context.setPolarity(m_polarity, bit);
         }
     }
+#undef CONST_BITOP_RETURN_IF_FAILED
+#undef CONST_BITOP_SET_FAILED
 
     // CONSTRUCTORS
     explicit ConstBitOpTreeVisitor(AstNode* nodep)
