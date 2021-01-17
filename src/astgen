@@ -88,7 +88,7 @@ class Cpt:
         # doflag "S" indicates an op specifying short-circuiting for a type.
         match = re.search(
             #       1   2                 3                  4
-            r'TREEOP(1?)([ASV]?)\s*\(\s*\"([^\"]*)\"\s*,\s*\"([^\"]*)\"\s*\)',
+            r'TREEOP(1?)([ACSV]?)\s*\(\s*\"([^\"]*)\"\s*,\s*\"([^\"]*)\"\s*\)',
             func)
         match_skip = re.search(r'TREE_SKIP_VISIT\s*\(\s*\"([^\"]*)\"\s*\)',
                                func)
@@ -115,6 +115,8 @@ class Cpt:
                 mif = "m_doNConst"
             elif doflag == 'A':
                 mif = ""
+            elif doflag == 'C':
+                mif = "m_doCpp"
             elif doflag == 'S':
                 mif = "m_doNConst"  # Not just for m_doGenerate
             elif doflag == 'V':

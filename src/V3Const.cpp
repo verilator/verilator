@@ -2223,6 +2223,7 @@ private:
 
     //    v--- * * This op done on Verilog or C+++ mode, in all non-m_doConst stages
     //    v--- *1* These ops are always first, as we warn before replacing
+    //    v--- *C* This op is a (C)++ op, only in m_doCpp mode
     //    v--- *V* This op is a (V)erilog op, only in m_doV mode
     //    v--- *A* This op works on (A)ll constant children, allowed in m_doConst mode
     //    v--- *S* This op specifies a type should use (S)hort-circuiting of its lhs op
