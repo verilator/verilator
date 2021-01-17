@@ -2754,9 +2754,9 @@ private:
     TREEOPV("AstRedOr {$lhsp.castExtend}",      "AstRedOr {$lhsp->castExtend()->lhsp()}");
     TREEOPV("AstRedXor{$lhsp.castExtend}",      "AstRedXor{$lhsp->castExtend()->lhsp()}");
     TREEOP ("AstRedXor{$lhsp.castXor, VN_IS(VN_CAST($lhsp,,Xor)->lhsp(),,Const)}", "AstXor{AstRedXor{$lhsp->castXor()->lhsp()}, AstRedXor{$lhsp->castXor()->rhsp()}}");  // ^{const, b} => (^const)^(^b)
-    TREEOP ("AstRedAnd {$lhsp.castConcat, matchBitOpTree(nodep)}", "DONE");
-    TREEOP ("AstRedOr  {$lhsp.castConcat, matchBitOpTree(nodep)}", "DONE");
-    TREEOP ("AstRedXor {$lhsp.castConcat, matchBitOpTree(nodep)}", "DONE");
+    TREEOPC("AstRedAnd {$lhsp.castConcat, matchBitOpTree(nodep)}", "DONE");  // Optimize after V3Expand::expandAll()
+    TREEOPC("AstRedOr  {$lhsp.castConcat, matchBitOpTree(nodep)}", "DONE");
+    TREEOPC("AstRedXor {$lhsp.castConcat, matchBitOpTree(nodep)}", "DONE");
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
@@ -2778,7 +2778,7 @@ private:
     TREEOP ("AstAnd {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstOr  {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
     TREEOP ("AstXor {operandShiftSame(nodep)}",         "replaceShiftSame(nodep)");
-    TREEOPC("AstAnd {matchBitOpTree(nodep)}",           "DONE");
+    TREEOPC("AstAnd {matchBitOpTree(nodep)}",           "DONE");  // Optimize after V3Expand::expandAll()
     TREEOPC("AstOr  {matchBitOpTree(nodep)}",           "DONE");
     TREEOPC("AstXor {matchBitOpTree(nodep)}",           "DONE");
     // Note can't simplify a extend{extends}, extends{extend}, as the sign
