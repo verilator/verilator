@@ -31,7 +31,6 @@
 #include "V3Simulate.h"
 
 #include <algorithm>
-#include <map>
 
 //######################################################################
 // Utilities
@@ -139,16 +138,6 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             }
             return resultp;
         }
-        bool operator<(const Context& other) const {
-            const AstVar* ap = m_refp->varp();
-            const AstVar* bp = other.m_refp->varp();
-            const int comp = ap->fileline()->operatorCompare(*bp->fileline());
-            if (comp != 0) return comp > 0;
-            const string aname = m_refp->hiernameProtect();
-            const string bname = other.m_refp->hiernameProtect();
-            if (aname != bname) return aname < bname;
-            return ap < bp;
-        }
 
         // CONSTRUCTORS
         Context(AstNode* nodep, AstVarRef* refp)
@@ -158,24 +147,18 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             m_bitPolarity.setAllBitsX();
         }
     };
-    struct VarRefComparator {
-        bool operator()(const AstVarRef* ap, const AstVarRef* bp) const {
-            if (ap->varp() != bp->varp()) {
-                return ap->varp() < bp->varp();
-            } else if (AstVarScope* scopep = ap->varScopep()) {
-                return scopep < bp->varScopep();
-            } else {
-                return ap->hiernameProtect() < bp->hiernameProtect();
-            }
-        }
-    };
 
     // MEMBERS
     bool m_failed = false;  // Quick exit if true
     bool m_polarity = true;  // Flip when Not comes
     int m_ops = 0;  // Number of operations such as And, Or, Xor, Sel...
-    std::map<const AstVarRef*, Context, VarRefComparator> m_contexts;
+    AstUser4InUse m_inuser4;
+    std::vector<Context*> m_contexts;
     AstNode* m_rootp;
+
+    // NODE STATE
+    // AstVar::user4u         -> pointer to Context if not scoped yet
+    // AstVarScope::user4u    -> pointer to Context if scoped
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -200,9 +183,15 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     }
     Context& getContext(AstVarRef* refp) {
         UASSERT_OBJ(refp, m_rootp, "null varref in And/Or/Xor optimization");
-        auto it = m_contexts.find(refp);
-        if (it == m_contexts.end()) it = m_contexts.emplace(refp, Context{m_rootp, refp}).first;
-        return it->second;
+        AstNode* nodep = refp->varScopep();
+        if (!nodep) nodep = refp->varp();  // When not scoped yet
+        Context* contextp = nodep->user4u().toPtr<Context>();
+        if (!contextp) {
+            contextp = new Context{m_rootp, refp};
+            nodep->user4p(contextp);
+            m_contexts.push_back(contextp);
+        }
+        return *contextp;
     }
 
     // VISITORS
@@ -309,11 +298,16 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     // CONSTRUCTORS
     explicit ConstBitOpTreeVisitor(AstNode* nodep)
         : m_rootp(nodep) {
+        AstNode::user4ClearTree();
         ++m_ops;  // for nodep
         iterateChildren(nodep);
         UASSERT_OBJ(isXorish(nodep) || m_polarity, nodep, "must be the original polarity");
     }
-    virtual ~ConstBitOpTreeVisitor() = default;
+    virtual ~ConstBitOpTreeVisitor() {
+        for (size_t i = 0; i < m_contexts.size(); ++i) {
+            VL_DO_DANGLING(delete m_contexts[i], m_contexts[i]);
+        }
+    }
 
 public:
     // Transform as below.
@@ -332,19 +326,15 @@ public:
         // Two ops for each context. (And and Eq)
         const int vars = visitor.m_contexts.size();
         // Expected number of ops after this simplification
-        // (comp0 == (mask0 & var0)) & (comp1 == (mask1 & var1)) & ....
+        // e.g. (comp0 == (mask0 & var0)) & (comp1 == (mask1 & var1)) & ....
         //  2 ops per variables, numVars - 1 ops among variables
         const int expOps = 2 * vars + vars - 1;
         if (visitor.m_ops <= expOps) return nullptr;  // Unless benefit, return
 
-        // Sort by declared location of AstVar to get deterministic ast tree
-        std::vector<const Context*> contexts;
-        for (auto&& context : visitor.m_contexts) contexts.push_back(&context.second);
-        std::sort(contexts.begin(), contexts.end(),
-                  [](const Context* a, const Context* b) -> bool { return *a < *b; });
-
         AstNode* resultp = nullptr;
-        for (const Context* context : contexts) {
+        // Context in visitor.m_contexts appears in deterministic order,
+        // so the optimized AST is deterministic too.
+        for (const Context* context : visitor.m_contexts) {
             AstNode* partialResultp = context->getResult();
             if (resultp) {
                 if (isAndish(nodep))
