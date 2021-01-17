@@ -112,11 +112,6 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 }
             }
         }
-        void setPolarity(const V3Number& compValue, const V3Number& maskValue, bool invert) {
-            for (int i = 0; i < maskValue.width() && !m_resultp; ++i) {
-                if (maskValue.bitIs1(i)) setPolarity(compValue.bitIs1(i) ^ invert, i);
-            }
-        }
         AstNode* getResult() const {
             // Called only when optimizing
             if (m_resultp) return m_resultp;
@@ -247,7 +242,10 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 AstVarRef* refp = VN_CAST(andp->rhsp(), VarRef);
                 if (setFailed(!maskp || !refp)) return;
                 Context& context = getContext(refp);
-                context.setPolarity(compp->num(), maskp->num(), maskFlip);
+                for (int i = 0; i < maskp->width() && !context.hasConstantResult(); ++i) {
+                    if (maskp->num().bitIs0(i)) continue;
+                    context.setPolarity(compp->num().bitIs1(i) ^ maskFlip, i);
+                }
                 m_ops += 2;  // Eq, And
                 return;
             } else if (AstSel* selp = VN_CAST(nodep->rhsp(), Sel)) {  // comp == v[msb:lsb]
