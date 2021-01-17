@@ -533,12 +533,10 @@ private:
             UINFO(4, "Transformed leaf of bit tree to " << newp << std::endl);
             if (debug() >= 9) {
                 static int c = 0;
-                std::stringstream ss;
-                ss << "Call matchBitOpTree[" << c << "]\n";
-                nodep->dumpTree(ss);
-                ss << "\nResult:\n";
-                newp->dumpTree(ss);
-                std::cout << ss.str() << std::endl;
+                std::cout << "Call matchBitOpTree[" << c << "]\n";
+                nodep->dumpTree(std::cout);
+                std::cout << "\nResult:\n";
+                newp->dumpTree(std::cout);
                 ++c;
             }
             nodep->replaceWith(newp);
