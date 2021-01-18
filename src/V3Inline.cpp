@@ -108,7 +108,9 @@ private:
             // If inlining moves post-scope this can perhaps be relaxed.
             cantInline("modIface", true);
         }
-        if (m_modp->modPublic()) cantInline("modPublic", false);
+        if (m_modp->modPublic() && (m_modp->isTop() || !v3Global.opt.flatten())) {
+            cantInline("modPublic", false);
+        }
 
         iterateChildren(nodep);
         m_modp = nullptr;
@@ -137,7 +139,7 @@ private:
         } else if (nodep->pragType() == AstPragmaType::NO_INLINE_MODULE) {
             if (!m_modp) {
                 nodep->v3error("Inline pragma not under a module");  // LCOV_EXCL_LINE
-            } else {
+            } else if (!v3Global.opt.flatten()) {
                 cantInline("Pragma NO_INLINE_MODULE", false);
             }
             // Remove so don't propagate to upper cell...
