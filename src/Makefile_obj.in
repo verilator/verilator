@@ -288,7 +288,7 @@ V3Number_test: V3Number_test.o
 #### Modules
 
 %__gen.cpp:	%.cpp $(ASTGEN) V3Ast.h V3AstNodes.h
-	$(PERL) $(ASTGEN) -I$(srcdir) $*.cpp
+	$(PYTHON3) $(ASTGEN) -I $(srcdir) $*.cpp
 
 %.o:	%.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
@@ -319,7 +319,7 @@ vlcovgen.d: $(VLCOVGEN) $(srcdir)/../include/verilated_cov_key.h
 	touch $@
 
 V3Ast__gen_classes.h : $(ASTGEN) V3Ast.h V3AstNodes.h
-	$(PERL) $(ASTGEN) -I$(srcdir)  --classes
+	$(PYTHON3) $(ASTGEN) -I $(srcdir)  --classes
 
 V3ParseBison.h: V3ParseBison.c
 
