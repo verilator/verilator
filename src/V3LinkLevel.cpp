@@ -102,8 +102,7 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
 
     for (AstNodeModule* nodep : mods) {
         if (nodep->timeunit().isNone()) {
-            if (modTimedp && !VN_IS(nodep, Iface)
-                && !VN_IS(nodep, Primitive)
+            if (modTimedp && !VN_IS(nodep, Iface) && !VN_IS(nodep, Primitive)
                 && !(VN_IS(nodep, Package) && VN_CAST(nodep, Package)->isDollarUnit())) {
                 nodep->v3warn(TIMESCALEMOD,
                               "Timescale missing on this module as other modules have "
