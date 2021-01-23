@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.109 devel
 
+****  Fix TIMESCALE warnings on primitives (#2763). [Xuanqi]
+
 
 * Verilator 4.108 2021-01-10
 
