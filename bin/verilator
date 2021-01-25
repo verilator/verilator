@@ -2546,6 +2546,27 @@ called from Verilog by querying the scope of that function. See the
 sections on DPI Context Functions and DPI Header Isolation below and the
 comments within the svdpi.h header for more information.
 
+=head2 DPI Imports that access signals
+
+If a DPI import accesses a signal through the VPI Verilator will not be
+able to know what variables are accessed and may schedule the code
+inappropriately.  Ideally pass the values as inputs/outputs so the VPI is
+not required.  Alternatively a workaround is to use a non-inlined task as a
+wrapper:
+
+    logic din;
+
+    // This DPI function will read "din"
+    import "DPI-C" context function void dpi_that_accesses_din();
+
+    always @ (...)
+       dpi_din_args(din);
+
+    task dpi_din_args(input din);
+       /* verilator no_inline_task */
+       dpi_that_accesses_din();
+    endtask
+
 =head2 DPI Display Functions
 
 Verilator allows writing $display like functions using this syntax:
