@@ -81,10 +81,10 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
 
     // Collect information for each AstVar to transform as below
     // a[0] & b[0] & a[1] & b[1] -> (2'b11 == (2'b11 & b)) & (2'b11 == (2'b11 & b))
-    class Context final {
+    class VarInfo final {
         // MEMBERS
         AstNode* m_rootp;  // The root op of this optimization pass
-        AstVarRef* m_refp;  // Points the variable that this Context covers
+        AstVarRef* m_refp;  // Points the variable that this VarInfo covers
         V3Number m_bitPolarity;  // Coefficient of each bit
         AstConst* m_resultp = nullptr;  // Optimized result if found
     public:
@@ -142,7 +142,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         }
 
         // CONSTRUCTORS
-        Context(AstNode* nodep, AstVarRef* refp)
+        VarInfo(AstNode* nodep, AstVarRef* refp)
             : m_rootp(nodep)
             , m_refp(refp)
             , m_bitPolarity(refp, refp->width()) {
@@ -156,12 +156,13 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     bool m_polarity = true;  // Flip when Not comes
     int m_ops = 0;  // Number of operations such as And, Or, Xor, Sel...
     int m_lsb;  // Used bit at the result
+
     AstUser4InUse m_inuser4;
-    std::vector<Context*> m_contexts;
+    std::vector<VarInfo*> m_varInfo;
 
     // NODE STATE
-    // AstVar::user4u         -> pointer to Context if not scoped yet
-    // AstVarScope::user4u    -> pointer to Context if scoped
+    // AstVar::user4u         -> pointer to VarInfo if not scoped yet
+    // AstVarScope::user4u    -> pointer to VarInfo if scoped
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -179,7 +180,8 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     }
 #define CONST_BITOP_RETURN_IF_FAILED(cond, nodep) \
     if (setFailed(cond, #cond, nodep, __LINE__)) return
-#define CONST_BITOP_RETURN_FALSE_IF_FAILED(cond, nodep) CONST_BITOP_RETURN_IF_FAILED(cond, nodep) false
+#define CONST_BITOP_RETURN_FALSE_IF_FAILED(cond, nodep) \
+    CONST_BITOP_RETURN_IF_FAILED(cond, nodep) false
 #define CONST_BITOP_SET_FAILED(reason, nodep) setFailed(true, reason, nodep, __LINE__)
     bool setFailed(bool fail, const char* reason, AstNode* nodep, int line) {
         if (fail && !m_failed) {
@@ -190,17 +192,17 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         m_failed |= fail;
         return m_failed;
     }
-    Context& getContext(AstVarRef* refp) {
+    VarInfo& getVarInfo(AstVarRef* refp) {
         UASSERT_OBJ(refp, m_rootp, "null varref in And/Or/Xor optimization");
         AstNode* nodep = refp->varScopep();
         if (!nodep) nodep = refp->varp();  // When not scoped yet
-        Context* contextp = nodep->user4u().toPtr<Context>();
-        if (!contextp) {
-            contextp = new Context{m_rootp, refp};
-            nodep->user4p(contextp);
-            m_contexts.push_back(contextp);
+        VarInfo* varInfop = nodep->user4u().toPtr<VarInfo>();
+        if (!varInfop) {
+            varInfop = new VarInfo{m_rootp, refp};
+            nodep->user4p(varInfop);
+            m_varInfo.push_back(varInfop);
         }
-        return *contextp;
+        return *varInfop;
     }
     bool parseVarRef(AstAnd* andp, AstVarRef** refpp, AstConst** maskpp, int* lsbp) {
         *refpp = nullptr;
@@ -234,12 +236,13 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 AstVarRef* refp;
                 AstConst* maskp;
                 int lsb;
-                if (!parseVarRef(andp, &refp, &maskp, &lsb)) return; // parseVarRef already sets m_failed
-                Context& context = getContext(refp);
+                if (!parseVarRef(andp, &refp, &maskp, &lsb))
+                    return;  // parseVarRef already sets m_failed
+                VarInfo& varInfo = getVarInfo(refp);
                 const V3Number& maskValue = maskp->num();
                 for (int i = 0; i < maskValue.width(); ++i) {
                     // Set true, m_treePolarity takes care of the entire parity
-                    if (maskValue.bitIs1(i)) context.setPolarity(true, i + lsb);
+                    if (maskValue.bitIs1(i)) varInfo.setPolarity(true, i + lsb);
                 }
                 m_ops += 2;  // redXor, And
                 return;
@@ -284,10 +287,10 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 int lsb;
                 parseVarRef(andp, &refp, &maskp, &lsb);
                 if (!refp || !maskp) return;  // parseVarRef already sets m_failed
-                Context& context = getContext(refp);
-                for (int i = 0; i < maskp->width() && !context.hasConstantResult(); ++i) {
+                VarInfo& varInfo = getVarInfo(refp);
+                for (int i = 0; i < maskp->width() && !varInfo.hasConstantResult(); ++i) {
                     if (maskp->num().bitIs0(i)) continue;
-                    context.setPolarity(compp->num().bitIs1(i) ^ maskFlip, i + lsb);
+                    varInfo.setPolarity(compp->num().bitIs1(i) ^ maskFlip, i + lsb);
                 }
                 m_ops += 2;  // Eq, And
                 return;
@@ -322,9 +325,9 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     }
     // After V3Expand, AstSel does not appear. AstVarRef + ShiftR is used.
     virtual void visit(AstVarRef* nodep) override {
-        Context& context = getContext(nodep);
-        if (context.hasConstantResult()) return;  // This bit can be ignored
-        context.setPolarity(isXorish(m_rootp) || m_polarity, m_lsb);
+        VarInfo& varInfo = getVarInfo(nodep);
+        if (varInfo.hasConstantResult()) return;  // This bit can be ignored
+        varInfo.setPolarity(isXorish(m_rootp) || m_polarity, m_lsb);
     }
 
     // CONSTRUCTORS
@@ -339,8 +342,8 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         UASSERT_OBJ(isXorish(nodep) || m_polarity, nodep, "must be the original polarity");
     }
     virtual ~ConstBitOpTreeVisitor() {
-        for (size_t i = 0; i < m_contexts.size(); ++i) {
-            VL_DO_DANGLING(delete m_contexts[i], m_contexts[i]);
+        for (size_t i = 0; i < m_varInfo.size(); ++i) {
+            VL_DO_DANGLING(delete m_varInfo[i], m_varInfo[i]);
         }
     }
 #undef CONST_BITOP_RETURN_IF_FAILED
@@ -358,11 +361,11 @@ public:
     // &{v[0], v[1]} => 2'b11 == (2'b11 & v)
     static AstNode* simplify(AstNode* nodep, int lsb, int ops, VDouble0& reduction) {
         ConstBitOpTreeVisitor visitor{nodep, lsb, ops};
-        if (visitor.m_failed || visitor.m_contexts.empty()) return nullptr;
+        if (visitor.m_failed || visitor.m_varInfo.empty()) return nullptr;
 
         // This run did not find better representation.
-        // Two ops for each context. (And and Eq)
-        const int vars = visitor.m_contexts.size();
+        // Two ops for each varInfo. (And and Eq)
+        const int vars = visitor.m_varInfo.size();
         // Expected number of ops after this simplification
         // e.g. (comp0 == (mask0 & var0)) & (comp1 == (mask1 & var1)) & ....
         // e.g. redXor(mask1 & var0) ^ redXor(mask1 & var1)
@@ -377,10 +380,10 @@ public:
         reduction += visitor.m_ops - expOps;
 
         AstNode* resultp = nullptr;
-        // Context in visitor.m_contexts appears in deterministic order,
+        // VarInfo in visitor.m_varInfo appears in deterministic order,
         // so the optimized AST is deterministic too.
-        for (const Context* context : visitor.m_contexts) {
-            AstNode* partialResultp = context->getResult();
+        for (const VarInfo* varInfop : visitor.m_varInfo) {
+            AstNode* partialResultp = varInfop->getResult();
             if (resultp) {
                 if (isAndish(nodep))
                     resultp = new AstAnd(nodep->fileline(), resultp, partialResultp);
@@ -395,14 +398,13 @@ public:
         if (isXorish(nodep)) {
             // VL_REDXOR_N functions don't gurantee to return only 0/1
             const int width = resultp->width();
-            resultp = new AstAnd{
-                nodep->fileline(),
-                new AstConst{nodep->fileline(), V3Number{nodep, width, 1}}, resultp};
+            resultp
+                = new AstAnd{nodep->fileline(),
+                             new AstConst{nodep->fileline(), V3Number{nodep, width, 1}}, resultp};
             if (!visitor.m_polarity) {
-                resultp = new AstEq{
-                    nodep->fileline(),
-                    new AstConst{nodep->fileline(), V3Number{nodep, width, 0}},
-                    resultp};
+                resultp = new AstEq{nodep->fileline(),
+                                    new AstConst{nodep->fileline(), V3Number{nodep, width, 0}},
+                                    resultp};
                 resultp->dtypep()->widthForce(1, 1);
             }
         } else {
