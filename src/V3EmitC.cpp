@@ -748,7 +748,7 @@ public:
         } else {
             puts(cvtToStr(array_size));
         }
-        puts(");\n");
+        puts(")");
     }
     virtual void visit(AstSysFuncAsTask* nodep) override {
         if (!nodep->lhsp()->isWide()) puts("(void)");

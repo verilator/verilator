@@ -79,7 +79,8 @@ module t;
 
       clear;
       code = $fread(r_upb, file, 15); `checkd(code, 6);
-      code = $fread(r_ups, file, 15, 2); `checkd(code, 4);
+      // Bug where fread in if() broke.
+      if ($fread(r_ups, file, 15, 2) != 4) $stop;
       dump;
 
       $write("*-* All Finished *-*\n");

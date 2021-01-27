@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix TIMESCALE warnings on primitives (#2763). [Xuanqi]
 
+****  Fix $fread extra semicolon inside statements. [Leendert van Doorn]
+
 
 * Verilator 4.108 2021-01-10
 
