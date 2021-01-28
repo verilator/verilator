@@ -54,7 +54,7 @@ run:
 
 	@echo
 	@echo "-- BUILD -------------------"
-	cmake --build build
+	cmake --build build -j
 
 	@echo
 	@echo "-- RUN ---------------------"

@@ -595,7 +595,7 @@ private:
             }
         } else {
             // MCD Case
-            for (int i = 0; (fdi != 0) && (i < fp.capacity()); ++i, fdi >>= 1) {
+            for (size_t i = 0; (fdi != 0) && (i < fp.capacity()); ++i, fdi >>= 1) {
                 if (fdi & VL_MASK_I(1)) fp.push_back(s_s.v.m_fdps[i]);
             }
         }
