@@ -315,7 +315,7 @@ serial:: V3Ast__gen_classes.h V3ParseBison.c
 serial_vlcov:: vlcovgen.d
 
 vlcovgen.d: $(VLCOVGEN) $(srcdir)/../include/verilated_cov_key.h
-	$(PERL) $(VLCOVGEN) --srcdir $(srcdir)
+	$(PYTHON3) $(VLCOVGEN) --srcdir $(srcdir)
 	touch $@
 
 V3Ast__gen_classes.h : $(ASTGEN) V3Ast.h V3AstNodes.h
