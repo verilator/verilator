@@ -411,6 +411,9 @@ public:
             UASSERT_OBJ(visitor.m_polarity, nodep,
                         "m_polarity shows the entire poloarity in Xor tree");
         }
+        if (resultp->width() != nodep->width()) {
+            resultp = new AstCCast(resultp->fileline(), resultp, nodep);
+        }
         return resultp;
     }
 };
