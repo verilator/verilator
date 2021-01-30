@@ -591,7 +591,6 @@ private:
             // mask & BitOpTree
             if (AstConst* bitMaskp = VN_CAST(andp->lhsp(), Const)) {
                 // And(mask, BinOp())
-                UASSERT_OBJ(bitMaskp, andp, "must be constant one hot");
                 if (bitMaskp->num().countOnes() != 1) return false;  // Mask needs to be one hot
                 int lsb = -1;
                 for (int i = 0; i < bitMaskp->num().width(); ++i) {
@@ -624,6 +623,36 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
         return newp;
+    }
+    bool matchNestedBitMask(AstAnd* nodep) {
+        // Nested bit mask pattern that may appear in C++ e.g. mask0 & (mask1 & ....)
+        vluint64_t mask = -1;  // All bits are 1
+        AstNode* innerNodep = nullptr;
+        int depth = 0;
+        for (AstAnd* andp = nodep; andp; andp = VN_CAST(innerNodep, And)) {
+            AstConst* constp = VN_CAST(andp->lhsp(), Const);
+            if (!constp) break;
+            ++depth;
+            UASSERT_OBJ(constp->width() <= 64, constp,
+                        "This function must be called after V3Expand.");
+            mask &= constp->toUQuad();
+            innerNodep = andp->rhsp();
+            if (AstCCast* ccastp = VN_CAST(innerNodep, CCast)) { innerNodep = ccastp->lhsp(); }
+        }
+        if (depth < 2) return false;
+
+        V3Number maskNumber{nodep->lhsp(), innerNodep->width()};
+        maskNumber.setQuad(mask);
+        innerNodep->unlinkFrBackWithNext();
+        AstNode* newp = new AstAnd(
+            nodep->fileline(), new AstConst{nodep->lhsp()->fileline(), maskNumber}, innerNodep);
+
+        if (innerNodep->width() != nodep->width()) {
+            newp = new AstCCast(newp->fileline(), newp, nodep);
+        }
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        return true;
     }
     static bool operandShiftSame(const AstNode* nodep) {
         const AstNodeBiop* np = VN_CAST_CONST(nodep, NodeBiop);
@@ -2671,6 +2700,7 @@ private:
     TREEOP ("AstDivS  {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
     TREEOPC("AstAnd   {$lhsp.isOne, $rhsp.castEq}", "replaceWRhs(nodep)");
     TREEOPC("AstAnd   {$lhsp.isOne, $rhsp.castNeq}","replaceWRhs(nodep)");
+    TREEOPC("AstAnd   {$lhsp.castConst, matchNestedBitMask(nodep)}", "DONE")  // mask0 & (mask1 & ...)
     TREEOP ("AstMul   {operandIsPowTwo($lhsp), operandsSameSize($lhsp,,$rhsp)}", "replaceMulShift(nodep)");  // a*2^n -> a<<n
     TREEOP ("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}", "replaceDivShift(nodep)");  // a/2^n -> a>>n
     TREEOP ("AstModDiv{$lhsp, operandIsPowTwo($rhsp)}", "replaceModAnd(nodep)");  // a % 2^n -> a&(2^n-1)
