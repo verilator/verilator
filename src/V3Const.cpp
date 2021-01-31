@@ -660,35 +660,33 @@ private:
         }
         return newp;
     }
-    bool matchNestedBitMask(AstAnd* nodep) {
-        // Nested bit mask pattern that may appear in C++ e.g. mask0 & (mask1 & ....)
-        vluint64_t mask = -1;  // All bits are 1
-        AstNode* innerNodep = nullptr;
-        int depth = 0;
-        for (AstAnd* andp = nodep; andp; andp = VN_CAST(innerNodep, And)) {
-            AstConst* constp = VN_CAST(andp->lhsp(), Const);
-            if (!constp) break;
-            ++depth;
-            UASSERT_OBJ(constp->width() <= 64, constp,
-                        "This function must be called after V3Expand.");
-            mask &= constp->toUQuad();
-            innerNodep = andp->rhsp();
-            if (AstCCast* ccastp = VN_CAST(innerNodep, CCast)) { innerNodep = ccastp->lhsp(); }
+    bool matchRedundantClean(AstAnd* andp) {
+        // Remove And with constant one inserted by V3Clean
+        // 1 & (a == b)  -> (IData)(a == b)
+        // When bool is casted to int, the value is either 0 or 1
+        AstConst* constp = VN_CAST(andp->lhsp(), Const);
+        UASSERT_OBJ(constp && constp->isOne(), andp->lhsp(), "TRREEOPC must meet this condition");
+        AstNode* rhsp = andp->rhsp();
+        AstCCast* ccastp = nullptr;
+        auto isEqOrNeq
+            = [](AstNode* nodep) -> bool { return VN_IS(nodep, Eq) || VN_IS(nodep, Neq); };
+        if (isEqOrNeq(rhsp)) {
+            ccastp = new AstCCast{andp->fileline(), rhsp->unlinkFrBack(), andp};
+        } else if (AstCCast* tmpp = VN_CAST(rhsp, CCast)) {
+            if (isEqOrNeq(tmpp->lhsp())) {
+                if (tmpp->width() == andp->width()) {
+                    tmpp->unlinkFrBack();
+                    ccastp = tmpp;
+                } else {
+                    ccastp = new AstCCast{andp->fileline(), tmpp->lhsp()->unlinkFrBack(), andp};
+                }
+            }
         }
-        if (depth < 2) return false;
-
-        V3Number maskNumber{nodep->lhsp(), innerNodep->width()};
-        maskNumber.setQuad(mask);
-        innerNodep->unlinkFrBackWithNext();
-        AstNode* newp = new AstAnd(
-            nodep->fileline(), new AstConst{nodep->lhsp()->fileline(), maskNumber}, innerNodep);
-
-        if (innerNodep->width() != nodep->width()) {
-            newp = new AstCCast(newp->fileline(), newp, nodep);
+        if (ccastp) {
+            andp->replaceWith(ccastp);
+            VL_DO_DANGLING(andp->deleteTree(), andp);
         }
-        nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        return true;
+        return ccastp;
     }
     static bool operandShiftSame(const AstNode* nodep) {
         const AstNodeBiop* np = VN_CAST_CONST(nodep, NodeBiop);
@@ -2734,9 +2732,7 @@ private:
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstDiv   {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
     TREEOP ("AstDivS  {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
-    TREEOPC("AstAnd   {$lhsp.isOne, $rhsp.castEq}", "replaceWRhs(nodep)");
-    TREEOPC("AstAnd   {$lhsp.isOne, $rhsp.castNeq}","replaceWRhs(nodep)");
-    TREEOPC("AstAnd   {$lhsp.castConst, matchNestedBitMask(nodep)}", "DONE")  // mask0 & (mask1 & ...)
+    TREEOPC("AstAnd   {$lhsp.isOne, matchRedundantClean(nodep)}", "DONE")  // 1 & (a == b) -> (IData)(a == b)
     TREEOP ("AstMul   {operandIsPowTwo($lhsp), operandsSameSize($lhsp,,$rhsp)}", "replaceMulShift(nodep)");  // a*2^n -> a<<n
     TREEOP ("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}", "replaceDivShift(nodep)");  // a/2^n -> a>>n
     TREEOP ("AstModDiv{$lhsp, operandIsPowTwo($rhsp)}", "replaceModAnd(nodep)");  // a % 2^n -> a&(2^n-1)
