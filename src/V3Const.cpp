@@ -180,10 +180,9 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         if (AstCCast* ccastp = VN_CAST(nodep, CCast)) { return skipCCast(ccastp->lhsp()); }
         return VN_CAST(nodep, VarRef);
     }
-#define CONST_BITOP_RETURN_IF_FAILED(cond, nodep) \
+#define CONST_BITOP_RETURN_IF(cond, nodep) \
     if (setFailed(cond, #cond, nodep, __LINE__)) return
-#define CONST_BITOP_RETURN_FALSE_IF_FAILED(cond, nodep) \
-    CONST_BITOP_RETURN_IF_FAILED(cond, nodep) false
+#define CONST_BITOP_RETURN_FALSE_IF(cond, nodep) CONST_BITOP_RETURN_IF(cond, nodep) false
 #define CONST_BITOP_SET_FAILED(reason, nodep) setFailed(true, reason, nodep, __LINE__)
 #define CONST_BITOP_QUICK_EXIT \
     if (m_failed || (!m_untouchables.empty() && m_untouchables.back() == m_curOpp)) return
@@ -199,7 +198,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 m_failed = true;
             }
         }
-        return fail;
+        return fail || m_failed;
     }
     VarInfo& getVarInfo(AstVarRef* refp) {
         UASSERT_OBJ(refp, m_rootp, "null varref in And/Or/Xor optimization");
@@ -213,23 +212,22 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         }
         return *varInfop;
     }
-    bool parseVarRef(AstNode* nodep, AstAnd* andp, AstVarRef** refpp, AstConst** maskpp,
-                     int* lsbp) {
+    bool parseVarRef(AstAnd* andp, AstVarRef** refpp, AstConst** maskpp, int* lsbp) {
         *refpp = nullptr;
         *lsbp = 0;
         *maskpp = VN_CAST(andp->lhsp(), Const);
-        CONST_BITOP_RETURN_FALSE_IF_FAILED(!*maskpp, andp->lhsp());
+        CONST_BITOP_RETURN_FALSE_IF(!*maskpp, andp->lhsp());
         if (AstShiftR* shiftrp = VN_CAST(andp->rhsp(), ShiftR)) {
             // comp == (mask & (v >> lsb))
             AstConst* constp = VN_CAST(shiftrp->rhsp(), Const);
-            CONST_BITOP_RETURN_FALSE_IF_FAILED(!constp, shiftrp->rhsp());
+            CONST_BITOP_RETURN_FALSE_IF(!constp, shiftrp->rhsp());
             *lsbp = constp->toSInt();
             *refpp = skipCCast(shiftrp->lhsp());
-            CONST_BITOP_RETURN_FALSE_IF_FAILED(!*refpp, shiftrp->lhsp());
+            CONST_BITOP_RETURN_FALSE_IF(!*refpp, shiftrp->lhsp());
             ++m_ops;  // rshift
         } else {
             *refpp = skipCCast(andp->rhsp());
-            CONST_BITOP_RETURN_FALSE_IF_FAILED(!*refpp, andp->rhsp());
+            CONST_BITOP_RETURN_FALSE_IF(!*refpp, andp->rhsp());
         }
         return true;
     }
@@ -247,7 +245,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
                 AstVarRef* refp;
                 AstConst* maskp;
                 int lsb;
-                if (!parseVarRef(nodep, andp, &refp, &maskp, &lsb)) return;
+                if (!parseVarRef(andp, &refp, &maskp, &lsb)) return;
                 VarInfo& varInfo = getVarInfo(refp);
                 const V3Number& maskValue = maskp->num();
                 for (int i = 0; i < maskValue.width(); ++i) {
@@ -278,9 +276,9 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         } else if (VN_IS(m_rootp, Xor) && VN_IS(nodep, Eq) && isConst(nodep->lhsp(), 0)
                    && VN_IS(nodep->rhsp(), And)) {  // 0 == (1 & RedXor)
             AstAnd* andp = static_cast<AstAnd*>(nodep->rhsp());  // already checked above
-            CONST_BITOP_RETURN_IF_FAILED(!isConst(andp->lhsp(), 1), andp->lhsp());
+            CONST_BITOP_RETURN_IF(!isConst(andp->lhsp(), 1), andp->lhsp());
             AstRedXor* redXorp = VN_CAST(andp->rhsp(), RedXor);
-            CONST_BITOP_RETURN_IF_FAILED(!redXorp, andp->rhsp());
+            CONST_BITOP_RETURN_IF(!redXorp, andp->rhsp());
             m_ops += 2;  // Eq, And
             m_polarity = !m_polarity;
             iterate(redXorp);
@@ -292,15 +290,15 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             return;
         } else if ((VN_IS(m_rootp, And) && VN_IS(nodep, Eq))
                    || (VN_IS(m_rootp, Or) && VN_IS(nodep, Neq))) {
-            CONST_BITOP_RETURN_IF_FAILED(!m_polarity, nodep);
+            CONST_BITOP_RETURN_IF(!m_polarity, nodep);
             const bool maskFlip = isOrish(m_rootp);
             AstConst* compp = VN_CAST(nodep->lhsp(), Const);
-            CONST_BITOP_RETURN_IF_FAILED(!compp, nodep->lhsp());
+            CONST_BITOP_RETURN_IF(!compp, nodep->lhsp());
             if (AstAnd* andp = VN_CAST(nodep->rhsp(), And)) {  // comp == (mask & v)
                 AstVarRef* refp;
                 AstConst* maskp;
                 int lsb;
-                if (!parseVarRef(nodep, andp, &refp, &maskp, &lsb)) return;
+                if (!parseVarRef(andp, &refp, &maskp, &lsb)) return;
                 VarInfo& varInfo = getVarInfo(refp);
                 for (int i = 0; i < maskp->width() && !varInfo.hasConstantResult(); ++i) {
                     if (maskp->num().bitIs0(i)) continue;
@@ -319,8 +317,8 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         const bool lhsIsXor = isXorish(nodep->lhsp());
         const bool lhsIsCCast = VN_IS(nodep->lhsp(), CCast);
         const bool lhsIsShiftR = VN_IS(nodep->lhsp(), ShiftR);
-        CONST_BITOP_RETURN_IF_FAILED(!lhsIsVarRef && !lhsIsXor && !lhsIsCCast && !lhsIsShiftR,
-                                     nodep->lhsp());
+        CONST_BITOP_RETURN_IF(!lhsIsVarRef && !lhsIsXor && !lhsIsCCast && !lhsIsShiftR,
+                              nodep->lhsp());
         ++m_ops;
 
         m_polarity = !m_polarity;
@@ -331,9 +329,9 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     virtual void visit(AstShiftR* nodep) override {
         CONST_BITOP_QUICK_EXIT;
         AstConst* constp = VN_CAST(nodep->rhsp(), Const);
-        CONST_BITOP_RETURN_IF_FAILED(!constp, nodep->rhsp());
+        CONST_BITOP_RETURN_IF(!constp, nodep->rhsp());
         AstVarRef* refp = VN_CAST(nodep->lhsp(), VarRef);
-        CONST_BITOP_RETURN_IF_FAILED(!refp, nodep->lhsp());
+        CONST_BITOP_RETURN_IF(!refp, nodep->lhsp());
         ++m_ops;
         m_lsb += constp->toUInt();
         iterate(refp);
@@ -351,8 +349,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     ConstBitOpTreeVisitor(AstNode* nodep, int lsb, int ops)
         : m_rootp(nodep)
         , m_lsb(lsb) {
-        CONST_BITOP_RETURN_IF_FAILED(!isAndish(nodep) && !isOrish(nodep) && !isXorish(nodep),
-                                     nodep);
+        CONST_BITOP_RETURN_IF(!isAndish(nodep) && !isOrish(nodep) && !isXorish(nodep), nodep);
         AstNode::user4ClearTree();
         m_ops = ops + 1;  // nodep and parent of nodep
         if (AstNodeBiop* biopp = VN_CAST(nodep, NodeBiop)) {
@@ -371,8 +368,8 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             VL_DO_DANGLING(delete m_varInfo[i], m_varInfo[i]);
         }
     }
-#undef CONST_BITOP_RETURN_IF_FAILED
-#undef CONST_BITOP_RETURN_FALSE_IF_FAILED
+#undef CONST_BITOP_RETURN_IF
+#undef CONST_BITOP_RETURN_FALSE_IF
 #undef CONST_BITOP_SET_FAILED
 
     static AstNode* combineTree(AstNode* lhsp, AstNode* rhsp, AstNode* rootp) {
