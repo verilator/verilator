@@ -376,6 +376,7 @@ void VerilatedVcd::dumpHeader() {
         const char* hiername = hiernamestr.c_str();
         const char* lp = lastName;
         const char* np = hiername;
+        const char* sp;
         lastName = hiername;
 
         // Skip common prefix, it must break at a space or tab
@@ -401,13 +402,22 @@ void VerilatedVcd::dumpHeader() {
             if (*np == ' ') np++;
             if (*np == '\t') break;  // tab means signal name starts
             printIndent(1);
-            printStr("$scope module ");
+            // Find character after name end
+            sp = np;
+            while(*sp && *sp != ' ' && *sp != '\t' && *sp != '@') sp++;
+
+            if (*sp == '@') {
+                printStr("$scope struct ");
+            } else {
+               printStr("$scope module "); 
+            }
+
             for (; *np && *np != ' ' && *np != '\t'; np++) {
                 if (*np == '[') {
                     printStr("(");
                 } else if (*np == ']') {
                     printStr(")");
-                } else {
+                } else if (*np != '@'){
                     *m_writep++ = *np;
                 }
             }
