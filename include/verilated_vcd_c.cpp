@@ -376,7 +376,6 @@ void VerilatedVcd::dumpHeader() {
         const char* hiername = hiernamestr.c_str();
         const char* lp = lastName;
         const char* np = hiername;
-        const char* sp;
         lastName = hiername;
 
         // Skip common prefix, it must break at a space or tab
@@ -403,7 +402,7 @@ void VerilatedVcd::dumpHeader() {
             if (*np == '\t') break;  // tab means signal name starts
             printIndent(1);
             // Find character after name end
-            sp = np;
+            const char* sp = np;
             while(*sp && *sp != ' ' && *sp != '\t' && *sp != '@') sp++;
 
             if (*sp == '@') {
