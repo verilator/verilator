@@ -403,9 +403,9 @@ void VerilatedVcd::dumpHeader() {
             printIndent(1);
             // Find character after name end
             const char* sp = np;
-            while(*sp && *sp != ' ' && *sp != '\t' && *sp != '@') sp++;
+            while(*sp && *sp != ' ' && *sp != '\t' && *sp != '\f') sp++;
 
-            if (*sp == '@') {
+            if (*sp == '\f') {
                 printStr("$scope struct ");
             } else {
                printStr("$scope module "); 
@@ -416,7 +416,7 @@ void VerilatedVcd::dumpHeader() {
                     printStr("(");
                 } else if (*np == ']') {
                     printStr(")");
-                } else if (*np != '@'){
+                } else if (*np != '\f'){
                     *m_writep++ = *np;
                 }
             }
