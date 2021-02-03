@@ -408,7 +408,7 @@ void VerilatedVcd::dumpHeader() {
             if (*sp == '\f') {
                 printStr("$scope struct ");
             } else {
-               printStr("$scope module "); 
+               printStr("$scope module ");
             }
 
             for (; *np && *np != ' ' && *np != '\t'; np++) {
