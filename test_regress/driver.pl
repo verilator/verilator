@@ -2238,7 +2238,7 @@ sub _vcd_read {
     my @hier = ($data);
     my $lasthier;
     while (defined(my $line = $fh->getline)) {
-        if ($line =~ /\$scope module\s+(\S+)/) {
+        if ($line =~ /\$scope (module|struct)\s+(\S+)/) {
             $hier[$#hier]->{$1} ||= {};
             push @hier, $hier[$#hier]->{$1};
             $lasthier = $hier[$#hier];
