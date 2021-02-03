@@ -11,7 +11,7 @@
 
 #include "vpi_user.h"
 
-  // Avoid C++11 in this file as not all simulators allow it
+// Avoid C++11 in this file as not all simulators allow it
 
 //======================================================================
 
@@ -21,7 +21,9 @@ class TestVpiHandle {
     bool m_freeit;  // No = as no C++11
 
 public:
-    TestVpiHandle() : m_handle(NULL), m_freeit(true) {}
+    TestVpiHandle()
+        : m_handle(NULL)
+        , m_freeit(true) {}
     TestVpiHandle(vpiHandle h)
         : m_handle(h) {}
     ~TestVpiHandle() { release(); }
