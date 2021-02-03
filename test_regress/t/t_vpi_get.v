@@ -9,7 +9,7 @@
 `ifdef USE_VPI_NOT_DPI
 //We call it via $c so we can verify DPI isn't required - see bug572
 `else
-import "DPI-C" context function integer mon_check();
+import "DPI-C" context function int mon_check();
 `endif
 
 `ifdef VERILATOR_COMMENTS
