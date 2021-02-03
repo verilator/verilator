@@ -21,8 +21,7 @@ compile(
     );
 
 execute(
-    iv_pli => 1,
-    ms_pli => 1,
+    use_libvpi => 1,
     check_finished => 1,
     all_run_flags => ['+PLUS +INT=1234 +STRSTR']
     );

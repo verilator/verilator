@@ -1219,7 +1219,7 @@ sub execute {
                    @{$param{iv_run_flags}},
                    @{$param{all_run_flags}},
                           );
-        if ($param{iv_pli}) {
+        if ($param{use_libvpi}) {
             # don't enter command line on $stop, include vpi
             unshift @cmd, "vvp -n -m $self->{obj_dir}/libvpi.so";
         }
@@ -1233,7 +1233,7 @@ sub execute {
     }
     elsif ($param{ms}) {
         my @pli_opt=();
-        if ($param{ms_pli}) {
+        if ($param{use_libvpi}) {
             unshift @pli_opt, "-pli $self->{obj_dir}/libvpi.so";
         }
         $self->_run(logfile=>"$self->{obj_dir}/ms_sim.log",
