@@ -401,13 +401,22 @@ void VerilatedVcd::dumpHeader() {
             if (*np == ' ') np++;
             if (*np == '\t') break;  // tab means signal name starts
             printIndent(1);
-            printStr("$scope module ");
+            // Find character after name end
+            const char* sp = np;
+            while(*sp && *sp != ' ' && *sp != '\t' && *sp != '\f') sp++;
+
+            if (*sp == '\f') {
+                printStr("$scope struct ");
+            } else {
+               printStr("$scope module ");
+            }
+
             for (; *np && *np != ' ' && *np != '\t'; np++) {
                 if (*np == '[') {
                     printStr("(");
                 } else if (*np == ']') {
                     printStr(")");
-                } else {
+                } else if (*np != '\f'){
                     *m_writep++ = *np;
                 }
             }
