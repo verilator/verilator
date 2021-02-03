@@ -756,7 +756,7 @@ is fairly standard across Verilog tools while -D is similar to GCC.
 
 Select the debug executable of Verilator (if available), and enable more
 internal assertions (equivalent to C<--debug-check>), debugging messages
-(equivalent to C<--debugi 4>), and intermediate form dump files (equivalent
+(equivalent to C<--debugi 3>), and intermediate form dump files (equivalent
 to C<--dump-treei 3>).
 
 =item --debug-check
