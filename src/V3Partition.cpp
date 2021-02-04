@@ -2561,6 +2561,8 @@ void V3Partition::finalize() {
     // "Pack" the mtasks: statically associate each mtask with a thread,
     // and determine the order in which each thread will runs its mtasks.
     PartPackMTasks(execGraphp->mutableDepGraphp()).go();
+
+    execGraphp->dumpDotFilePrefixed("exec_final");
 }
 
 void V3Partition::selfTest() {

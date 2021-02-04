@@ -9156,6 +9156,11 @@ public:
     const V3Graph* depGraphp() const { return m_depGraphp; }
     V3Graph* mutableDepGraphp() { return m_depGraphp; }
     void addMTaskBody(AstMTaskBody* bodyp) { addOp1p(bodyp); }
+
+    // Debugging
+    void dumpDotFile(const string& filename) const;
+    void dumpDotFilePrefixed(const string& nameComment) const;
+    void dumpDotFilePrefixedAlways(const string& nameComment) const;
 };
 
 class AstSplitPlaceholder final : public AstNode {

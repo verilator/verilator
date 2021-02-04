@@ -219,6 +219,96 @@ AstExecGraph::AstExecGraph(FileLine* fileline)
 }
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
 
+void AstExecGraph::dumpDotFilePrefixed(const string& nameComment) const {
+    if (v3Global.opt.dumpTree()) { dumpDotFilePrefixedAlways(nameComment); }
+}
+
+//! Variant of dumpDotFilePrefixed without --dump option check
+void AstExecGraph::dumpDotFilePrefixedAlways(const string& nameComment) const {
+    dumpDotFile(v3Global.debugFilename(nameComment) + ".dot");
+}
+
+void AstExecGraph::dumpDotFile(const string& filename) const {
+    if (!debug()) return;
+
+    // This generates a file used by graphviz, https://www.graphviz.org
+    const std::unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
+    if (logp->fail()) v3fatal("Can't write " << filename);
+
+    // Header
+    *logp << "digraph v3graph {\n";
+    *logp << "\tgraph[layout=\"neato\" labelloc=t labeljust=l label=\"" << filename << "\"]\n";
+    *logp << "\tnode[shape=\"rect\" ratio=\"fill\" fixedsize=true]\n";
+
+    // Thread labels
+    *logp << "\n\t// Threads\n";
+    const int threadBoxWidth = 2;
+    for (int i = 0; i < v3Global.opt.threads(); i++) {
+        *logp << "\tt" << i << " [label=\"Thread " << i << "\" width=" << threadBoxWidth
+              << " pos=\"" << (-threadBoxWidth / 2) << "," << -i
+              << "!\" style=\"filled\" fillcolor=\"grey\"] \n";
+    }
+
+    // MTask nodes
+    *logp << "\n\t// MTasks\n";
+
+    // Scale MTask node width based on the cost of the cheapest MTask
+    const double minWidth = 2.0;
+    uint32_t minCost = UINT32_MAX;
+    for (const V3GraphVertex* vxp = m_depGraphp->verticesBeginp(); vxp;
+         vxp = vxp->verticesNextp()) {
+        if (const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp)) {
+            minCost = mtaskp->cost() < minCost ? mtaskp->cost() : minCost;
+        }
+    }
+
+    // Maintain the x-position of the right-hand side of each mtask node
+    std::map<const V3GraphVertex*, double> mtaskRhsEdge;
+    // Maintain the x-position of the right hand side of each thread row
+    std::map<uint32_t, double> threadRhsEdge;
+
+    for (const V3GraphVertex* vxp = m_depGraphp->verticesBeginp(); vxp;
+         vxp = vxp->verticesNextp()) {
+        if (const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp)) {
+            const double nodeWidth = minWidth * (static_cast<double>(mtaskp->cost()) / minCost);
+            const int y = -mtaskp->thread();
+            double depRhsEdgeX = 0;
+            for (V3GraphEdge* edgep = mtaskp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+                const V3GraphVertex* fromp = edgep->fromp();
+                if (mtaskRhsEdge.count(fromp) != 0) {
+                    depRhsEdgeX = mtaskRhsEdge.at(fromp) > depRhsEdgeX ? mtaskRhsEdge.at(fromp)
+                                                                       : depRhsEdgeX;
+                }
+            }
+            const double curThreadRHS = threadRhsEdge[mtaskp->thread()];
+            depRhsEdgeX = depRhsEdgeX > curThreadRHS ? depRhsEdgeX : curThreadRHS;
+            const double x = nodeWidth / 2.0 + depRhsEdgeX;
+            const double rhsX = x + nodeWidth / 2.0;
+            mtaskRhsEdge[vxp] = rhsX;
+            threadRhsEdge[mtaskp->thread()] = curThreadRHS > rhsX ? curThreadRHS : rhsX;
+
+            *logp << "\t" << vxp->name() << " [label=\"" + vxp->name() + "\""
+                  << " width=" << nodeWidth << " pos=\"" << x << "," << y << "!\"]\n";
+        }
+    }
+
+    // MTask dependency edges
+    *logp << "\n\t// MTask dependencies\n";
+    for (const V3GraphVertex* vxp = m_depGraphp->verticesBeginp(); vxp;
+         vxp = vxp->verticesNextp()) {
+        if (const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp)) {
+            for (V3GraphEdge* edgep = mtaskp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+                const V3GraphVertex* top = edgep->top();
+                *logp << "\t" << vxp->name() << " -> " << top->name() << "\n";
+            }
+        }
+    }
+
+    // Trailer
+    *logp << "}\n";
+    logp->close();
+}
+
 AstNode* AstInsideRange::newAndFromInside(AstNode* exprp, AstNode* lhsp, AstNode* rhsp) {
     AstNode* ap = new AstGte(fileline(), exprp->cloneTree(true), lhsp);
     AstNode* bp = new AstLte(fileline(), exprp->cloneTree(true), rhsp);
