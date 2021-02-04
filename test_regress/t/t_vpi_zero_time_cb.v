@@ -8,14 +8,9 @@
 
 module t (/*AUTOARG*/
    // Inputs
-   input clk
+   clk
    );
-
-`ifndef VERILATOR
-   reg   clk_r = 0;
-   always #10 clk_r = ~clk_r;
-   assign clk = clk_r;
-`endif
+   input clk;
 
    reg [31:0]      count        /*verilator public_flat_rd */;
 

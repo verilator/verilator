@@ -11,7 +11,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    make_top_shell => 0,
     make_main => 0,
     make_pli => 1,
     sim_time => 2100,

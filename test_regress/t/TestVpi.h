@@ -36,7 +36,11 @@ public:
     void release() {
         if (m_handle && m_freeit) {
             // Below not VL_DO_DANGLING so is portable
+#ifdef IVERILOG
+            vpi_free_object(m_handle);
+#else
             vpi_release_handle(m_handle);
+#endif
             m_handle = NULL;
         }
     }

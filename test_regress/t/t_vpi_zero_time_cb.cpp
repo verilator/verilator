@@ -35,9 +35,6 @@
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
-#define TEST_MSG \
-    if (0) printf
-
 unsigned int main_time = 0;
 unsigned int callback_count_zero_time = 0;
 unsigned int callback_count_start_of_sim = 0;
@@ -62,6 +59,10 @@ static int _zero_time_cb(p_cb_data cb_data) {
 }
 
 static int _start_of_sim_cb(p_cb_data cb_data) {
+#ifdef TEST_VERBOSE
+    printf("-_start_of_sim_cb\n");
+#endif
+
     t_cb_data cb_data_n;
     bzero(&cb_data_n, sizeof(cb_data_n));
     s_vpi_time t;
