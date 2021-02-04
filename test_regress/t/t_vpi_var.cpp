@@ -633,6 +633,10 @@ int _mon_check_vlog_info() {
 
 int mon_check() {
     // Callback from initial block in monitor
+#ifdef TEST_VERBOSE
+    printf("-mon_check()\n");
+#endif
+
     if (int status = _mon_check_mcd()) return status;
     if (int status = _mon_check_callbacks()) return status;
     if (int status = _mon_check_value_callbacks()) return status;

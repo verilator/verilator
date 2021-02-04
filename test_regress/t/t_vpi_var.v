@@ -60,10 +60,10 @@ extern "C" int mon_check();
       status = $c32("mon_check()");
 `endif
 `ifdef IVERILOG
-     status = $mon_check();
+      status = $mon_check();
 `endif
 `ifndef USE_VPI_NOT_DPI
-     status = mon_check();
+      status = mon_check();
 `endif
       if (status!=0) begin
 	 $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);

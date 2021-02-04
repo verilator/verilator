@@ -80,6 +80,10 @@ void modDump(const TestVpiHandle& it, int n) {
 
 extern "C" {
 int mon_check() {
+#ifdef TEST_VERBOSE
+    printf("-mon_check()\n");
+#endif
+
     TestVpiHandle it = vpi_iterate(vpiModule, NULL);
     CHECK_RESULT_NZ(it);
     // Uncomment to see what other simulators return
