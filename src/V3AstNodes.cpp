@@ -27,6 +27,7 @@
 
 #include <iomanip>
 #include <vector>
+#include <functional>
 
 //======================================================================
 // Special methods
@@ -266,19 +267,19 @@ void AstExecGraph::dumpDotFile(const string& filename) const {
     std::map<const V3GraphVertex*, double> mtaskRhsEdge;
     // Maintain the x-position of the right hand side of each thread row
     std::map<uint32_t, double> threadRhsEdge;
-
-    for (const V3GraphVertex* vxp = m_depGraphp->verticesBeginp(); vxp;
-         vxp = vxp->verticesNextp()) {
+    std::set<const V3GraphVertex*> loggedTasks;
+    std::function<void(const V3GraphVertex* vxp)> logTask = [&](const V3GraphVertex* vxp) {
         if (const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp)) {
             const double nodeWidth = minWidth * (static_cast<double>(mtaskp->cost()) / minCost);
             const int y = -mtaskp->thread();
             double depRhsEdgeX = 0;
             for (V3GraphEdge* edgep = mtaskp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                 const V3GraphVertex* fromp = edgep->fromp();
-                if (mtaskRhsEdge.count(fromp) != 0) {
-                    depRhsEdgeX = mtaskRhsEdge.at(fromp) > depRhsEdgeX ? mtaskRhsEdge.at(fromp)
-                                                                       : depRhsEdgeX;
+                if (mtaskRhsEdge.count(fromp) == 0) {
+                    logTask(fromp);  // Recurse
                 }
+                depRhsEdgeX
+                    = mtaskRhsEdge.at(fromp) > depRhsEdgeX ? mtaskRhsEdge.at(fromp) : depRhsEdgeX;
             }
             const double curThreadRHS = threadRhsEdge[mtaskp->thread()];
             depRhsEdgeX = depRhsEdgeX > curThreadRHS ? depRhsEdgeX : curThreadRHS;
@@ -289,7 +290,14 @@ void AstExecGraph::dumpDotFile(const string& filename) const {
 
             *logp << "\t" << vxp->name() << " [label=\"" + vxp->name() + "\""
                   << " width=" << nodeWidth << " pos=\"" << x << "," << y << "!\"]\n";
+            loggedTasks.insert(vxp);
         }
+    };
+
+    for (const V3GraphVertex* vxp = m_depGraphp->verticesBeginp(); vxp;
+         vxp = vxp->verticesNextp()) {
+        if (loggedTasks.count(vxp) != 0) { continue; }
+        logTask(vxp);
     }
 
     // MTask dependency edges
