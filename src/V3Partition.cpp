@@ -2021,6 +2021,7 @@ private:
     // TYPES
     struct MTaskState {
         uint32_t completionTime;  // Estimated time this mtask will complete
+        uint32_t startTime;  // Estimated time this mtask will start
     };
     struct MTaskCmp {
         bool operator()(const ExecMTask* ap, ExecMTask* bp) const { return ap->id() < bp->id(); }
@@ -2088,6 +2089,7 @@ public:
     void setCompletionTime(ExecMTask* mtaskp, uint32_t time) {
         MTaskState& state = m_mtaskState[mtaskp];
         state.completionTime = time;
+        state.startTime = state.completionTime - mtaskp->cost();
     }
 
     void go() {
@@ -2181,6 +2183,8 @@ public:
                 bestMtaskp->threadRoot(true);
             }
             bestMtaskp->thread(bestTh);
+            bestMtaskp->startTime(bestTime);
+            bestMtaskp->endTime(bestEndTime);
 
             // Update the thread state
             m_prevMTask[bestTh] = bestMtaskp;

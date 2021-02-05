@@ -61,6 +61,10 @@ private:
     // mtask. In abstract time units.
     uint32_t m_cost = 0;  // Predicted runtime of this mtask, in the same
     // abstract time units as priority().
+    uint32_t m_startTime = 0;  // predicted start time of this mtask, in the same
+    // abstract time units as priority()
+    uint32_t m_endTime = 0;  // predicted end time of this mtask, in the same
+    // abstract time units as priority()
     uint32_t m_thread = 0xffffffff;  // Thread for static (pack_mtasks) scheduling,
     // or 0xffffffff if not yet assigned.
     const ExecMTask* m_packNextp = nullptr;  // Next for static (pack_mtasks) scheduling
@@ -79,6 +83,10 @@ public:
     virtual uint32_t cost() const override { return m_cost; }
     void cost(uint32_t cost) { m_cost = cost; }
     void thread(uint32_t thread) { m_thread = thread; }
+    void startTime(uint32_t startTime) { m_startTime = startTime; }
+    uint32_t startTime() const { return m_startTime; }
+    uint32_t endTime() const { return m_endTime; }
+    void endTime(uint32_t endTime) { m_endTime = endTime; }
     uint32_t thread() const { return m_thread; }
     void packNextp(const ExecMTask* nextp) { m_packNextp = nextp; }
     const ExecMTask* packNextp() const { return m_packNextp; }
