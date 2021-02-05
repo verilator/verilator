@@ -9143,8 +9143,13 @@ class AstExecGraph final : public AstNode {
     // The mtask bodies are also children of this node, so we can visit
     // them without traversing the graph (it's not always needed to
     // traverse the graph.)
+
+    typedef std::vector<const ExecMTask*> ExecGraphCritPath;
+
 private:
     V3Graph* m_depGraphp;  // contains ExecMTask's
+    ExecGraphCritPath m_critPath;
+
 public:
     explicit AstExecGraph(FileLine* fl);
     ASTNODE_NODE_FUNCS_NO_DTOR(ExecGraph)
@@ -9156,6 +9161,9 @@ public:
     const V3Graph* depGraphp() const { return m_depGraphp; }
     V3Graph* mutableDepGraphp() { return m_depGraphp; }
     void addMTaskBody(AstMTaskBody* bodyp) { addOp1p(bodyp); }
+
+    const ExecGraphCritPath& critPath() const { return m_critPath; }
+    void updateCritPath();
 };
 
 class AstSplitPlaceholder final : public AstNode {

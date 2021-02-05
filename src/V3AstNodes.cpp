@@ -219,6 +219,38 @@ AstExecGraph::AstExecGraph(FileLine* fileline)
 }
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
 
+void AstExecGraph::updateCritPath() {
+    m_critPath.clear();
+
+    // Locate last mtask to finish
+    ExecMTask const* critTaskp = nullptr;
+
+    for (const ExecMTask* vxp = static_cast<const ExecMTask*>(m_depGraphp->verticesBeginp()); vxp;
+         vxp = static_cast<const ExecMTask*>(vxp->verticesNextp())) {
+        if (critTaskp == nullptr || vxp->endTime() > critTaskp->endTime()) critTaskp = vxp;
+        // Sanity check
+        UASSERT(vxp->endTime() != 0,
+                __FUNCTION__ << " called before " << vxp->name() << " was scheduled");
+    }
+
+    // Backtrack through the dependencies of the critical mtask to find the dependency closest (ie.
+    // finishes latest in time) to the current critical mtask.
+    while (critTaskp != nullptr) {
+        m_critPath.insert(m_critPath.begin(), critTaskp);
+        uint32_t latestDepFinTime = 0;
+        ExecMTask const* nextCritTask = nullptr;
+        for (V3GraphEdge* edgep = critTaskp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+            ExecMTask* priorp = dynamic_cast<ExecMTask*>(edgep->fromp());
+            if (priorp->endTime() > latestDepFinTime) {
+                nextCritTask = priorp;
+                latestDepFinTime = priorp->endTime();
+            }
+        }
+
+        critTaskp = nextCritTask;
+    }
+}
+
 AstNode* AstInsideRange::newAndFromInside(AstNode* exprp, AstNode* lhsp, AstNode* rhsp) {
     AstNode* ap = new AstGte(fileline(), exprp->cloneTree(true), lhsp);
     AstNode* bp = new AstLte(fileline(), exprp->cloneTree(true), rhsp);

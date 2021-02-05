@@ -2565,6 +2565,10 @@ void V3Partition::finalize() {
     // "Pack" the mtasks: statically associate each mtask with a thread,
     // and determine the order in which each thread will runs its mtasks.
     PartPackMTasks(execGraphp->mutableDepGraphp()).go();
+
+    // With all mtasks scheduled, we now update the critical path
+    // estimate of the AstExecGraph.
+    execGraphp->updateCritPath();
 }
 
 void V3Partition::selfTest() {
