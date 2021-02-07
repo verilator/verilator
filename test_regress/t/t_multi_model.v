@@ -22,8 +22,7 @@ module top
       $dumpvars();
    end
 
-   always@(posedge clk_i)
-   begin
+   always@(posedge clk_i) begin
       if(rst_i)
          counter <= 0;
       else
@@ -39,5 +38,4 @@ module top
    end
 
 endmodule
-
 
