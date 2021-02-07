@@ -2,7 +2,7 @@
 // DESCRIPTION: Verilator: Verilog Multiple Model Test Module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2020 by Andreas Kuster.
+// any use, without warranty, 2020-2021 by Andreas Kuster.
 // SPDX-License-Identifier: CC0-1.0
 //
 
@@ -17,8 +17,7 @@ void sim0(Vt_multi_model* top0) {
 
     // setup remaining parameters
     top0->trace_number = 0;
-    top0->main_time
-        = 0;  // should be fixed with this PR: !! interferes with the main_time from top1 !!
+    top0->main_time = 0;  // should be fixed with this PR: !! interferes with the main_time from top1 !!
 
     // reset
     top0->clk_i = 0;
@@ -33,8 +32,7 @@ void sim0(Vt_multi_model* top0) {
     top0->eval();
 
     // simulate until done
-    while (!top0->gotFinish()) {  // should be fixed with this PR: !! will not always work properly
-                                  // due to a race condition with top1 !!
+    while (!top0->gotFinish()) {  // should be fixed with this PR: !! will not always work properly due to a race condition with top1 !!
 
         // increment time
         top0->main_time++;
@@ -52,8 +50,7 @@ void sim1(Vt_multi_model* top1) {
 
     // setup remaining parameters
     top1->trace_number = 1;
-    top1->main_time
-        = 0;  // should be fixed with this PR: !! interferes with the main_time from top0 !!
+    top1->main_time = 0;  // should be fixed with this PR: !! interferes with the main_time from top0 !!
 
     // reset
     top1->clk_i = 0;
@@ -68,8 +65,7 @@ void sim1(Vt_multi_model* top1) {
     top1->eval();
 
     // simulate until done
-    while (!top1->gotFinish()) {  // should be fixed with this PR: !! will not always work properly
-                                  // due to a race condition with top0 !!
+    while (!top1->gotFinish()) { // should be fixed with this PR: !! will not always work properly due to a race condition with top0 !!
 
         // increment time
         top1->main_time++;
@@ -92,27 +88,27 @@ int main(int argc, char** argv, char** env) {
     Verilated::mkdir("logs");
 
     // instantiate verilated design
-    std::unique_ptr<Vt_multi_model>* top0p{new Vt_multi_model("top0")};
-    std::unique_ptr<Vt_multi_model>* top1p{new Vt_multi_model("top1")};
+    std::unique_ptr<Vt_multi_model> top0p{new Vt_multi_model("top0")};
+    std::unique_ptr<Vt_multi_model> top1p{new Vt_multi_model("top1")};
 
     // create threads
-    std::thread t0(sim0, top0);
-    std::thread t1(sim1, top1);
+    std::thread t0(sim0, top0p.get());
+    std::thread t1(sim1, top1p.get());
 
     // wait to finish
     t0.join();
     t1.join();
 
     // check if both finished
-    if (top0->done_o && top1->done_o) {
+    if (top0p->done_o && top1p->done_o) {
         std::cout << "*-* All Finished *-*" << std::endl;
     } else {
         std::cout << "Error: Early termination!" << std::endl;
     }
 
     // final model cleanup
-    top0->final();
-    top1->final();
+    top0p->final();
+    top1p->final();
 
 // add coverage
 #if VM_COVERAGE
