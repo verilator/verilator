@@ -15,7 +15,8 @@ scenarios(vlt_all => 1);
 compile(
     make_top_shell => 0,
     make_main => 0,
-    verilator_flags2 => ["-threads 1 --exe $Self->{t_dir}/$Self->{name}.cpp --trace --coverage -cc"] # link threads library, add custom .cpp code, add tracing & coverage support
+    # link threads library, add custom .cpp code, add tracing & coverage support
+    verilator_flags2 => ["-threads 1 --exe $Self->{t_dir}/$Self->{name}.cpp --trace --coverage -cc"]
 );
 
 execute(
