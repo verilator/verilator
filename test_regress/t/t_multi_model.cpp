@@ -119,10 +119,6 @@ int main(int argc, char** argv, char** env) {
     VerilatedCov::write("logs/coverage.dat");
 #endif
 
-    // delete models
-    delete top0;
-    delete top1;
-
     // exit successful
     exit(0);
 }
