@@ -3,9 +3,8 @@
 // This model counts from 0 to 10. It is instantiated twice in concurrent threads to check for race conditions/signal interference.
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2020 by Andreas Kuster.
+// any use, without warranty, 2020-2021 by Andreas Kuster.
 // SPDX-License-Identifier: CC0-1.0
-//
 
 module top
 ( input                   clk_i
@@ -31,11 +30,9 @@ module top
 
    assign done_o = (counter >= 10) ? 1'b1:1'b0;
 
-   always@(*)
-   begin
+   always@(*) begin
       if (counter >= 10)
          $finish;
    end
 
 endmodule
-
