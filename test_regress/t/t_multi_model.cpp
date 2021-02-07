@@ -92,8 +92,8 @@ int main(int argc, char** argv, char** env) {
     Verilated::mkdir("logs");
 
     // instantiate verilated design
-    Vt_multi_model* top0 = new Vt_multi_model;
-    Vt_multi_model* top1 = new Vt_multi_model;
+    std::unique_ptr<Vt_multi_model>* top0p{new Vt_multi_model("top0")};
+    std::unique_ptr<Vt_multi_model>* top1p{new Vt_multi_model("top1")};
 
     // create threads
     std::thread t0(sim0, top0);
