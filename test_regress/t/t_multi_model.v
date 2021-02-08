@@ -17,7 +17,7 @@ module top
    initial begin
       string number;
       number.itoa(trace_number);
-      $dumpfile({"trace", number, ".vcd"});
+      $dumpfile({"logs", "/", "trace", number, ".vcd"});
       $dumpvars();
    end
 
