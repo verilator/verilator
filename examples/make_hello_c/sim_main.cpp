@@ -38,5 +38,5 @@ int main(int argc, char** argv, char** env) {
     delete top;
 
     // Return good completion status
-    exit(0);
+    return 0;
 }
