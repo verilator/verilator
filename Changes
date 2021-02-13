@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix $fread extra semicolon inside statements. [Leendert van Doorn]
 
+****  Fix class extends with VM_PARALLEL_BUILDS (#2775). [Iru Cai]
+
 ****  Fix examples not flushing vcd (#2787).  [Richard E George]
 
 
