@@ -7305,7 +7305,9 @@ public:
     }
     virtual string emitVerilog() override { return "%k(%l %f<< %r)"; }
     virtual string emitC() override { return "VL_SHIFTL_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
-    virtual string emitSimpleOperator() override { return "<<"; }
+    virtual string emitSimpleOperator() override {
+        return (rhsp()->isWide() || rhsp()->isQuad()) ? "" : "<<";
+    }
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return false; }
     virtual bool cleanRhs() const override { return true; }
@@ -7327,7 +7329,9 @@ public:
     }
     virtual string emitVerilog() override { return "%k(%l %f>> %r)"; }
     virtual string emitC() override { return "VL_SHIFTR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
-    virtual string emitSimpleOperator() override { return ">>"; }
+    virtual string emitSimpleOperator() override {
+        return (rhsp()->isWide() || rhsp()->isQuad()) ? "" : ">>";
+    }
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool cleanRhs() const override { return true; }
