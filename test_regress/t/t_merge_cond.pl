@@ -23,7 +23,7 @@ if ($Self->{vlt}) {
     file_grep($Self->{stats}, qr/Optimizations, MergeCond merges\s+(\d+)/i,
               10);
     file_grep($Self->{stats}, qr/Optimizations, MergeCond merged items\s+(\d+)/i,
-              548);
+              580);
     file_grep($Self->{stats}, qr/Optimizations, MergeCond longest merge\s+(\d+)/i,
               64);
 }

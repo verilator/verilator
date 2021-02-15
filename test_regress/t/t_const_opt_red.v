@@ -29,6 +29,7 @@ module t(/*AUTOARG*/
    logic                a8;                     // From test of Test.v
    logic                a9;                     // From test of Test.v
    logic                a10;                    // From test of Test.v
+   logic                a11;                    // From test of Test.v
    logic                o1;                     // From test of Test.v
    logic                o2;                     // From test of Test.v
    logic                o3;                     // From test of Test.v
@@ -39,6 +40,7 @@ module t(/*AUTOARG*/
    logic                o8;                     // From test of Test.v
    logic                o9;                     // From test of Test.v
    logic                o10;                    // From test of Test.v
+   logic                o11;                    // From test of Test.v
    logic                x1;                     // From test of Test.v
    logic                x2;                     // From test of Test.v
    logic                x3;                     // From test of Test.v
@@ -47,6 +49,7 @@ module t(/*AUTOARG*/
    logic                x6;                     // From test of Test.v
    logic                x7;                     // From test of Test.v
    logic                x8;                     // From test of Test.v
+   logic                x9;                     // From test of Test.v
    logic                z1;                     // From test of Test.v
    logic                z2;                     // From test of Test.v
    logic                z3;                     // From test of Test.v
@@ -70,6 +73,7 @@ module t(/*AUTOARG*/
              .a8                        (a8),
              .a9                        (a9),
              .a10                       (a10),
+             .a11                       (a11),
              .o1                        (o1),
              .o2                        (o2),
              .o3                        (o3),
@@ -80,6 +84,7 @@ module t(/*AUTOARG*/
              .o8                        (o8),
              .o9                        (o9),
              .o10                       (o10),
+             .o11                       (o11),
              .x1                        (x1),
              .x2                        (x2),
              .x3                        (x3),
@@ -88,6 +93,7 @@ module t(/*AUTOARG*/
              .x6                        (x6),
              .x7                        (x7),
              .x8                        (x8),
+             .x9                        (x9),
              .z1                        (z1),
              .z2                        (z2),
              .z3                        (z3),
@@ -101,18 +107,18 @@ module t(/*AUTOARG*/
 
    // Aggregate outputs into a single result vector
    // verilator lint_off WIDTH
-   wire [63:0] result = {a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,
-                         o1,o2,o3,o4,o5,o6,o7,o8,o9,o10,
-                         x1,x2,x3,x4,x5,x6,x7,x8};
+   wire [63:0] result = {a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,
+                         o1,o2,o3,o4,o5,o6,o7,o8,o9,o10,o11,
+                         x1,x2,x3,x4,x5,x6,x7,x8,x9};
    // verilator lint_on WIDTH
 
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
       $write("[%0t] cyc==%0d crc=%x result=%x\n",$time, cyc, crc, result);
-      $display("a %b %b %b %b %b %b %b %b %b %b", a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
-      $display("o %b %b %b %b %b %b %b %b %b %b", o1, o2, o3, o4, o5, o6, o7, o8, o9, o10);
-      $display("x %b %b %b %b %b %b %b %b", x1, x2, x3, x4, x5, x6, x7, x8);
+      $display("a %b %b %b %b %b %b %b %b %b %b %b", a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11);
+      $display("o %b %b %b %b %b %b %b %b %b %b %b", o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11);
+      $display("x %b %b %b %b %b %b %b %b %b", x1, x2, x3, x4, x5, x6, x7, x8, x9);
 `endif
       cyc <= cyc + 1;
       crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
@@ -156,7 +162,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h5dc396d72d16b76f
+`define EXPECTED_SUM 64'he9b854d521ebb8b6
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
          $finish;
@@ -167,9 +173,9 @@ endmodule
 
 module Test(/*AUTOARG*/
    // Outputs
-   a1, a2, a3, a4, a5, a6, a7, a8, a9, a10,
-   o1, o2, o3, o4, o5, o6, o7, o8, o9, o10,
-   x1, x2, x3, x4, x5, x6, x7, x8,
+   a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11,
+   o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11,
+   x1, x2, x3, x4, x5, x6, x7, x8, x9,
    z1, z2, z3, z4, z5, z6, z7,
    // Inputs
    clk, i
@@ -178,13 +184,13 @@ module Test(/*AUTOARG*/
    input clk;
    input [31:0] i;
 
-   output logic a1, a2, a3, a4, a5, a6, a7, a8, a9, a10;
-   output logic o1, o2, o3, o4, o5, o6, o7, o8, o9, o10;
-   output logic x1, x2, x3, x4, x5, x6, x7, x8;
+   output logic a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11;
+   output logic o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11;
+   output logic x1, x2, x3, x4, x5, x6, x7, x8, x9;
    output logic z1, z2, z3, z4, z5, z6, z7;
 
-   logic [31:0] d;
-   always_ff @(posedge clk) d <= i;
+   logic [127:0] d;
+   always_ff @(posedge clk) d <= {i, ~i, ~i, i};
 
    always_ff @(posedge clk) begin
       a1 <= (i[5] & ~i[3] & i[1]);
@@ -197,6 +203,7 @@ module Test(/*AUTOARG*/
       a8 <= &(~i[5:3]);
       a9 <= ~i[5] & !i[4] & !i[3] && ~i[5] && !i[4];
       a10 <= ~(i[5] & ~d[3]) & (!i[5] & d[1]);  // cannot be optimized
+      a11 <= d[0] & d[33] & d[66] & d[99] & !d[31] & !d[62] & !d[93] & !d[124];
       //
       o1 <= (~i[5] | i[3] | ~i[1]);
       o2 <= (i[5]!=1 | i[3]!=0 | i[1]!=1);
@@ -208,6 +215,7 @@ module Test(/*AUTOARG*/
       o8 <= |(~i[5:3]);
       o9 <= ~i[5] | !i[4] | ~i[3] || !i[5] || ~i[4];
       o10 <= ~(~i[5] | d[3]) | (i[5] | ~d[1]);  // cannot be optimized
+      o11 <= d[0] | d[33] | d[66] | d[99] | !d[31] | !d[62] | !d[93] | !d[124];
       //
       x1 <= (i[5] ^ ~i[3] ^ i[1]);
       x2 <= (i[5]==1 ^ i[3]==0 ^ i[1]==1);
@@ -216,7 +224,8 @@ module Test(/*AUTOARG*/
       x5 <= ^((i & 32'b001010) ^ 32'b001000) ^ i[5];
       x6 <= i[5] ^ ~i[3] ^ i[1] ^ i[3] ^ !i[1] ^ i[3] ^ ~i[1];
       x7 <= i[5] ^ (^((i & 32'b001010) ^ 32'b001000));
-      x8 <= ~(~i[5] ^ d[3]) ^ (i[5] ^ ~d[1]);  // cannot be optimized
+      x8 <= ~(~i[5] ^ d[3]) ^ (i[5] ^ ~d[1]);
+      x9 <= d[0] ^ d[33] ^ d[66] ^ d[99] ^ !d[31] ^ !d[62] ^ !d[93] ^ !d[124];
       //
       // All zero/all one cases
       z1 <= (i[5] & ~i[3] & ~i[5]);
