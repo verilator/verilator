@@ -1136,11 +1136,10 @@ public:
     explicit VNUser(void* p) { m_u.up = p; }
     ~VNUser() = default;
     // Casters
-    template <typename T> T* toPtr() const { return reinterpret_cast<T*>(m_u.up); }
-    WidthVP* c() const { return toPtr<WidthVP>(); }
-    VSymEnt* toSymEnt() const { return toPtr<VSymEnt>(); }
-    AstNode* toNodep() const { return toPtr<AstNode>(); }
-    V3GraphVertex* toGraphVertex() const { return toPtr<V3GraphVertex>(); }
+    WidthVP* c() const { return reinterpret_cast<WidthVP*>(m_u.up); }
+    VSymEnt* toSymEnt() const { return reinterpret_cast<VSymEnt*>(m_u.up); }
+    AstNode* toNodep() const { return reinterpret_cast<AstNode*>(m_u.up); }
+    V3GraphVertex* toGraphVertex() const { return reinterpret_cast<V3GraphVertex*>(m_u.up); }
     int toInt() const { return m_u.ui; }
     static VNUser fromInt(int i) { return VNUser(i); }
 };
