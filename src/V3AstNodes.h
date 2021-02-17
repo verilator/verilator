@@ -4752,9 +4752,9 @@ public:
         addOp2p(varrefp);
     }
     ASTNODE_NODE_FUNCS(TimedEvent)
-    virtual int instrCount() const { return 100; }
-    virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(const AstNode* samep) const { return true; }
+    virtual int instrCount() const override { return 100; }
+    virtual V3Hash sameHash() const override { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const override { return true; }
     AstNode* timep() const { return op1p(); }  // op1 = Time to activate
     AstNode* varrefp() const { return op2p(); }  // op2 = Variable to activate
 };

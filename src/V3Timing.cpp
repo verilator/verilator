@@ -143,7 +143,6 @@ class TimingProcedureVisitor : public AstNVisitor {
     // MEMBERS
     TimingState& m_state;  // State
     bool m_newProc;  // Creating always from an initial block
-    AstNodeProcedure* m_procedurep;  // Current procedure
     AstJumpLabel* m_exitLabelp;  // Label to exit procedure
     typedef std::map<int, AstJumpLabel*> JumpTableMap;
     JumpTableMap m_jumpTable;  // Map of states to jump locations
@@ -275,7 +274,6 @@ public:
     TimingProcedureVisitor(TimingState& stater, AstNodeProcedure* procedurep, bool newProc)
         : m_state(stater)
         , m_newProc(newProc)
-        , m_procedurep(procedurep)
         , m_exitLabelp(nullptr) {
         iterate(procedurep);
     }
