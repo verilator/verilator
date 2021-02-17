@@ -76,7 +76,7 @@ public:
     bool found() const { return m_found; }
 };
 
-// This visitor can be used expanded Ast by V3Expand, such Ast satisfies:
+// This visitor can be used in the post-expanded Ast from V3Expand, where the Ast satisfies:
 // - Constants are 64 bit at most (because words are accessed via AstWordSel)
 // - Variables are scoped.
 class ConstBitOpTreeVisitor final : public AstNVisitor {
