@@ -3043,7 +3043,7 @@ public:
         // clang-format on
     }
     virtual ~ConstVisitor() override {
-        if (m_doCpp && m_statBitOpReduction != 0) {
+        if (m_doCpp) {
             V3Stats::addStat("Optimizations, Const bit op reduction", m_statBitOpReduction);
         }
     }
