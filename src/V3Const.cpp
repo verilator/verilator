@@ -194,7 +194,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         if (fail) {
             UINFO(9, m_rootp << " cannot be optimized. reason:" << reason << " called from line:"
                              << line << " when checking:" << nodep << std::endl);
-            if (debug() >= 9) m_rootp->dumpTree(std::cout << "Root node:\n");
+            // if (debug() >= 9) m_rootp->dumpTree(std::cout << "Root node:\n");
         }
         m_failed |= fail;
         return m_failed;
