@@ -1737,7 +1737,7 @@ sub _make_main {
     if (!$self->sc) {
         if ($self->{vl_time_stamp64}) {
             print $fh "vluint64_t main_time = 0;\n";
-            print $fh "vluint64_t vl_time_stamp() { return main_time; }\n";
+            print $fh "vluint64_t vl_time_stamp64() { return main_time; }\n";
         } else {
             print $fh "double main_time = 0;\n";
             print $fh "double sc_time_stamp() { return main_time; }\n";

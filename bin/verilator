@@ -5250,7 +5250,7 @@ want all data to land in the same output file.
         topp->trace(tfp, 99);  // Trace 99 levels of hierarchy
         tfp->open("obj_dir/t_trace_ena_cc/simx.vcd");
         ...
-        while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+        while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
             main_time += #;
             tfp->dump(main_time);
         }
