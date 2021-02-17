@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -809,8 +809,8 @@ private:
             }
             // We're extracting, so just make sure the expression is at least wide enough.
             if (nodep->fromp()->width() < width) {
-                nodep->v3error("Extracting " << width << " bits from only "
-                                             << nodep->fromp()->width() << " bit number");
+                nodep->v3warn(SELRANGE, "Extracting " << width << " bits from only "
+                                                      << nodep->fromp()->width() << " bit number");
                 // Extend it.
                 AstNodeDType* subDTypep
                     = nodep->findLogicDType(width, width, nodep->fromp()->dtypep()->numeric());
@@ -1451,6 +1451,20 @@ private:
     // DTYPES
     virtual void visit(AstNodeArrayDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+
+        if (nodep->subDTypep() == nodep->basicp()) {  // Innermost dimension
+            AstBasicDType* basicp = nodep->basicp();
+            // If basic dtype is LOGIC_IMPLICIT, it is actually 1 bit LOGIC
+            if (basicp->implicit()) {
+                UASSERT_OBJ(basicp->width() <= 1, basicp,
+                            "must be 1 bit but actually " << basicp->width() << " bits");
+                AstBasicDType* newp = new AstBasicDType(
+                    basicp->fileline(), AstBasicDTypeKwd::LOGIC, basicp->numeric());
+                newp->widthForce(1, 1);
+                basicp->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(basicp), basicp);
+            }
+        }
         // Iterate into subDTypep() to resolve that type and update pointer.
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         // Cleanup array size
@@ -2051,7 +2065,7 @@ private:
                                << otherp->warnOther() << "... Location of original declaration\n"
                                << otherp->warnContextSecondary());
             } else {
-                inits.insert(make_pair(num, itemp));
+                inits.emplace(num, itemp);
             }
             num.opAdd(one, constp->num());
         }
@@ -3362,8 +3376,7 @@ private:
                         patp = nullptr;
                         break;
                     } else {
-                        std::pair<PatMap::iterator, bool> ret
-                            = patmap.insert(make_pair(memp, patp));
+                        std::pair<PatMap::iterator, bool> ret = patmap.emplace(memp, patp);
                         if (!ret.second) {
                             patp->v3error("Assignment pattern contains duplicate entry: "
                                           << VN_CAST(patp->keyp(), Text)->text());
@@ -5827,7 +5840,7 @@ private:
             initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, i));
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.insert(make_pair(make_pair(nodep, attrType), varp));
+        m_tableMap.emplace(make_pair(nodep, attrType), varp);
         return varp;
     }
     uint64_t enumMaxValue(const AstNode* errNodep, const AstEnumDType* adtypep) {
@@ -5927,7 +5940,7 @@ private:
             if (values[i]) initp->addIndexValuep(i, values[i]);
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.insert(make_pair(make_pair(nodep, attrType), varp));
+        m_tableMap.emplace(make_pair(nodep, attrType), varp);
         return varp;
     }
 
@@ -5947,7 +5960,7 @@ private:
             if (patmap.find(element) != patmap.end()) {
                 patp->v3error("Assignment pattern key used multiple times: " << element);
             } else {
-                patmap.insert(make_pair(element, patp));
+                patmap.emplace(element, patp);
             }
             element += range.leftToRightInc();
         }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -300,8 +300,8 @@ class EmitMkHierVerilation final {
         of.puts("VM_HIER_RUN_DIR := " + cwd + "\n");
         of.puts("# Common options for hierarchical blocks\n");
         const string fullpath_bin = V3Os::filenameRealPath(v3Global.opt.bin());
-        const string perl_wrapper = V3Os::filenameDir(fullpath_bin) + "/verilator";
-        of.puts("VM_HIER_VERILATOR := " + perl_wrapper + "\n");
+        const string verilator_wrapper = V3Os::filenameDir(fullpath_bin) + "/verilator";
+        of.puts("VM_HIER_VERILATOR := " + verilator_wrapper + "\n");
         of.puts("VM_HIER_INPUT_FILES := \\\n");
         const V3StringList& vFiles = v3Global.opt.vFiles();
         for (const string& i : vFiles) of.puts("\t" + V3Os::filenameRealPath(i) + " \\\n");
@@ -312,9 +312,6 @@ class EmitMkHierVerilation final {
             of.puts("\t" + V3Os::filenameRealPath(i) + " \\\n");
         }
         of.puts("\n");
-    }
-    void emitOpts(V3OutMkFile& of, const V3StringList& opts) const {
-        for (const string& i : opts) { of.puts("\t\t" + i + " \\\n"); }
     }
     void emitLaunchVerilator(V3OutMkFile& of, const string& argsFile) const {
         of.puts("\t@$(MAKE) -C $(VM_HIER_RUN_DIR) -f " + m_makefile
@@ -422,5 +419,5 @@ void V3EmitMk::emitmk() {
 
 void V3EmitMk::emitHierVerilation(const V3HierBlockPlan* planp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    EmitMkHierVerilation emitter(planp);
+    EmitMkHierVerilation{planp};
 }

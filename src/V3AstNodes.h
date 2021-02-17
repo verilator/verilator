@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1949,6 +1949,7 @@ private:
     bool m_noSubst : 1;  // Do not substitute out references
     bool m_overridenParam : 1;  // Overridden parameter by #(...) or defparam
     bool m_trace : 1;  // Trace this variable
+    bool m_isLatched : 1;  // Not assigned in all control paths of combo always
     VLifetime m_lifetime;  // Lifetime
     VVarAttrClocker m_attrClocker;
     MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
@@ -1976,6 +1977,7 @@ private:
         m_attrSFormat = false;
         m_attrSplitVar = false;
         m_fileDescr = false;
+        m_isRand = false;
         m_isConst = false;
         m_isStatic = false;
         m_isPulldown = false;
@@ -1988,6 +1990,7 @@ private:
         m_noSubst = false;
         m_overridenParam = false;
         m_trace = false;
+        m_isLatched = false;
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
 
@@ -2145,6 +2148,7 @@ public:
     void overriddenParam(bool flag) { m_overridenParam = flag; }
     bool overriddenParam() const { return m_overridenParam; }
     void trace(bool flag) { m_trace = flag; }
+    void isLatched(bool flag) { m_isLatched = flag; }
     // METHODS
     virtual void name(const string& name) override { m_name = name; }
     virtual void tag(const string& text) override { m_tag = text; }
@@ -2166,7 +2170,7 @@ public:
         return ((isIO() || isSignal())
                 && (isIO() || isBitLogic())
                 // Wrapper would otherwise duplicate wrapped module's coverage
-                && !isSc() && !isPrimaryIO() && !isConst());
+                && !isSc() && !isPrimaryIO() && !isConst() && !isDouble() && !isString());
     }
     bool isClassMember() const { return varType() == AstVarType::MEMBER; }
     bool isStatementTemp() const { return (varType() == AstVarType::STMTTEMP); }
@@ -2198,6 +2202,7 @@ public:
     bool isRand() const { return m_isRand; }
     bool isConst() const { return m_isConst; }
     bool isStatic() const { return m_isStatic; }
+    bool isLatched() const { return m_isLatched; }
     bool isFuncLocal() const { return m_funcLocal; }
     bool isFuncReturn() const { return m_funcReturn; }
     bool isPullup() const { return m_isPullup; }
@@ -4588,7 +4593,7 @@ public:
 class AstDisableFork final : public AstNodeStmt {
     // A "disable fork" statement
 public:
-    AstDisableFork(FileLine* fl)
+    explicit AstDisableFork(FileLine* fl)
         : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(DisableFork)
 };
@@ -4596,7 +4601,7 @@ public:
 class AstWaitFork final : public AstNodeStmt {
     // A "wait fork" statement
 public:
-    AstWaitFork(FileLine* fl)
+    explicit AstWaitFork(FileLine* fl)
         : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(WaitFork)
 };
@@ -4649,7 +4654,7 @@ class AstJumpBlock final : public AstNodeStmt {
     // Parents:  {statement list}
     // Children: {statement list, with JumpGo and JumpLabel below}
 private:
-    AstJumpLabel* m_labelp;  // [After V3Jump] Pointer to declaration
+    AstJumpLabel* m_labelp = nullptr;  // [After V3Jump] Pointer to declaration
     int m_labelNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
     // After construction must call ->labelp to associate with appropriate label
@@ -4853,7 +4858,7 @@ class AstConsDynArray final : public AstNodeMath {
     // Parents: math
     // Children: expression (elements or other queues)
 public:
-    AstConsDynArray(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
+    explicit AstConsDynArray(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
         : ASTGEN_SUPER(fl) {
         setNOp1p(lhsp);
         setNOp2p(rhsp);
@@ -4875,7 +4880,7 @@ class AstConsQueue final : public AstNodeMath {
     // Parents: math
     // Children: expression (elements or other queues)
 public:
-    AstConsQueue(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
+    explicit AstConsQueue(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
         : ASTGEN_SUPER(fl) {
         setNOp1p(lhsp);
         setNOp2p(rhsp);
@@ -5038,7 +5043,7 @@ public:
             it->second->valuep(newp);
         } else {
             AstInitItem* itemp = new AstInitItem(fileline(), newp);
-            m_map.insert(it, make_pair(index, itemp));
+            m_map.emplace(index, itemp);
             addOp2p(itemp);
         }
         return oldp;
@@ -5139,7 +5144,7 @@ class AstPrintTimeScale final : public AstNodeStmt {
     string m_name;  // Parent module name
     VTimescale m_timeunit;  // Parent module time unit
 public:
-    AstPrintTimeScale(FileLine* fl)
+    explicit AstPrintTimeScale(FileLine* fl)
         : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(PrintTimeScale)
     virtual void name(const string& name) override { m_name = name; }
@@ -7318,7 +7323,9 @@ public:
     }
     virtual string emitVerilog() override { return "%k(%l %f<< %r)"; }
     virtual string emitC() override { return "VL_SHIFTL_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
-    virtual string emitSimpleOperator() override { return "<<"; }
+    virtual string emitSimpleOperator() override {
+        return (rhsp()->isWide() || rhsp()->isQuad()) ? "" : "<<";
+    }
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return false; }
     virtual bool cleanRhs() const override { return true; }
@@ -7340,7 +7347,9 @@ public:
     }
     virtual string emitVerilog() override { return "%k(%l %f>> %r)"; }
     virtual string emitC() override { return "VL_SHIFTR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
-    virtual string emitSimpleOperator() override { return ">>"; }
+    virtual string emitSimpleOperator() override {
+        return (rhsp()->isWide() || rhsp()->isQuad()) ? "" : ">>";
+    }
     virtual bool cleanOut() const override { return false; }
     virtual bool cleanLhs() const override { return true; }
     virtual bool cleanRhs() const override { return true; }
@@ -9227,6 +9236,7 @@ private:
     AstExecGraph* m_execGraphp = nullptr;  // Execution MTask graph for threads>1 mode
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
+    bool m_timescaleSpecified = false;  // Input HDL specified timescale
 public:
     AstNetlist()
         : ASTGEN_SUPER(new FileLine(FileLine::builtInFilename())) {}
@@ -9278,6 +9288,8 @@ public:
         m_timeprecision = v3Global.opt.timeDefaultPrec();
     }
     void timeprecisionMerge(FileLine*, const VTimescale& value);
+    void timescaleSpecified(bool specified) { m_timescaleSpecified = specified; }
+    bool timescaleSpecified() const { return m_timescaleSpecified; }
 };
 
 //######################################################################

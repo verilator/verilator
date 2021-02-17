@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_trace_complex.v");
-$Self->{golden_filename} = "t/t_trace_complex_fst.out";
+golden_filename("t/t_trace_complex_fst.out");
 
 compile(
     verilator_flags2 => ['--cc --trace-fst --trace-threads 1'],

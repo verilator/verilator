@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Request something should be supported, or a new feature added. (Note our contributor agreement at https://github.com/verilator/verilator/.github/blob/master/CONTRIBUTING.adoc)
+about: Request something should be supported, or a new feature added. (Note our contributor agreement at https://github.com/verilator/verilator/blob/master/docs/CONTRIBUTING.adoc)
 title: ''
 labels: new
 assignees: ''

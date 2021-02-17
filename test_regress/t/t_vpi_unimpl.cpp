@@ -45,6 +45,12 @@ unsigned int callback_count = 0;
         return __LINE__; \
     }
 
+#define CHECK_RESULT_Z(got) \
+    if (got) { \
+        printf("%%Error: %s:%d: GOT = !NULL  EXP = NULL\n", FILENM, __LINE__); \
+        return __LINE__; \
+    }
+
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
@@ -72,6 +78,7 @@ unsigned int callback_count = 0;
 int _mon_check_unimpl(p_cb_data cb_data) {
     static TestVpiHandle cb, clk_h;
     vpiHandle handle;
+    const char* cp = nullptr;
     if (cb_data) {
         // this is the callback
         s_vpi_error_info info;
@@ -151,6 +158,20 @@ int _mon_check_unimpl(p_cb_data cb_data) {
         handle = vpi_register_cb(&cb_data_s);
         CHECK_RESULT(callback_count, 24);
         CHECK_RESULT(handle, 0);
+
+        (void)vpi_get_str(vpiRange, clk_h);  // Bad type
+        CHECK_RESULT(callback_count, 25);
+
+        // Supported but illegal tests:
+        // Various checks that guarded passing NULL handles
+        handle = vpi_scan(NULL);
+        CHECK_RESULT(handle, 0);
+        (void)vpi_get(vpiType, NULL);
+        (void)vpi_get(vpiDirection, NULL);
+        (void)vpi_get(vpiVector, NULL);
+        cp = vpi_get_str(vpiType, NULL);
+        CHECK_RESULT_Z(cp);
+        vpi_release_handle(NULL);
     }
     return 0;  // Ok
 }
@@ -165,7 +186,7 @@ int mon_check() {
 
 double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {
-    double sim_time = 1100;
+    vluint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
     // we're going to be checking for these errors do don't crash out
@@ -191,7 +212,7 @@ int main(int argc, char** argv, char** env) {
     topp->clk = 0;
     main_time += 10;
 
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
         topp->eval();
         // VerilatedVpi::callValueCbs();   // Make sure can link without verilated_vpi.h included

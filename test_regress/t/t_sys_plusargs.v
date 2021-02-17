@@ -89,6 +89,11 @@ module t;
       $display("str='%s'",sv_str);
       if (sv_str != "T=1234") $stop;
 
+      sv_str = "none";
+      if ($value$plusargs("IP%%P%b", p_i)!==1) $stop;
+      $display("str='%s'",sv_str);
+      if (p_i != 'b101) $stop;
+
       sv_in = "INT=%d";
 `ifdef VERILATOR
       if ($c1(0)) sv_in = "NEVER"; // Prevent constant propagation

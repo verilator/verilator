@@ -51,7 +51,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
       stat bin/verilator_bin_dbg
     fi
   else
-    nodist/code_coverage --stages 1-2
+    nodist/code_coverage --stages 0-2
   fi
 elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ##############################################################################
@@ -79,13 +79,16 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable
   fi
 
+  # Run sanitize on Ubuntu 20.04 only
+  [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && sanitize='--sanitize' || sanitize=''
+
   # Run the specified test
   case $TESTS in
     dist-vlt-0)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=0/2
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=0/2
       ;;
     dist-vlt-1)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt" DRIVER_HASHSET=--hashset=1/2
+      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=1/2
       ;;
     vltmt-0)
       "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
@@ -94,34 +97,34 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
       ;;
     coverage-all)
-      nodist/code_coverage --stages 3-
+      nodist/code_coverage --stages 1-
       ;;
     coverage-dist)
-      nodist/code_coverage --stages 3- --scenarios=--dist
+      nodist/code_coverage --stages 1- --scenarios=--dist
       ;;
     coverage-vlt-0)
-      nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=0/4
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=0/4
       ;;
     coverage-vlt-1)
-      nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=1/4
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=1/4
       ;;
     coverage-vlt-2)
-      nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=2/4
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=2/4
       ;;
     coverage-vlt-3)
-      nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=3/4
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=3/4
       ;;
     coverage-vltmt-0)
-      nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=0/4
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=0/4
       ;;
     coverage-vltmt-1)
-      nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=1/4
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=1/4
       ;;
     coverage-vltmt-2)
-      nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=2/4
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=2/4
       ;;
     coverage-vltmt-3)
-      nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=3/4
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=3/4
       ;;
     *)
       fatal "Unknown test: $TESTS"

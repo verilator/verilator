@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -142,7 +142,7 @@ private:
                       + cvtToStr(nodep->fileline()->lineno()) + "_" + type;
         const auto it = m_varnames.find(name);
         if (it == m_varnames.end()) {
-            m_varnames.insert(make_pair(name, 1));
+            m_varnames.emplace(name, 1);
         } else {
             int suffix = (it->second)++;
             name += "_" + cvtToStr(suffix);

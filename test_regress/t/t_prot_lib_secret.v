@@ -11,6 +11,8 @@ module secret #(parameter GATED_CLK = 0)
     output [31:0]             accum_bypass_out,
     input                     s1_in,
     output logic              s1_out,
+    input                     s1up_in[2],
+    output logic              s1up_out[2],
     input [1:0]               s2_in,
     output logic [1:0]        s2_out,
     input [7:0]               s8_in,
@@ -46,7 +48,9 @@ module secret #(parameter GATED_CLK = 0)
       if (GATED_CLK != 0) begin: yes_gated_clock
          logic clk_en_latch /*verilator clock_enable*/;
          /* verilator lint_off COMBDLY */
+         /* verilator lint_off LATCH */
          always_comb if (clk == '0) clk_en_latch <= clk_en;
+         /* verilator lint_on LATCH */
          /* verilator lint_on COMBDLY */
          assign the_clk = clk & clk_en_latch;
       end else begin: no_gated_clock
@@ -61,6 +65,7 @@ module secret #(parameter GATED_CLK = 0)
    // Test combinatorial paths of different sizes
    always @(*) begin
       s1_out = s1_in;
+      s1up_out = s1up_in;
       s2_out = s2_in;
       s8_out = s8_in;
       s64_out = s64_in;

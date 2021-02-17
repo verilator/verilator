@@ -3,7 +3,7 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -198,7 +198,7 @@ void VerilatedVcd::makeNameMap() {
             std::string newname = std::string("top");
             if (hiername[0] != '\t') newname += ' ';
             newname += hiername;
-            newmapp->insert(std::make_pair(newname, decl));
+            newmapp->emplace(newname, decl);
         }
         deleteNameMap();
         m_namemapp = newmapp;
@@ -401,13 +401,22 @@ void VerilatedVcd::dumpHeader() {
             if (*np == ' ') np++;
             if (*np == '\t') break;  // tab means signal name starts
             printIndent(1);
-            printStr("$scope module ");
+            // Find character after name end
+            const char* sp = np;
+            while (*sp && *sp != ' ' && *sp != '\t' && *sp != '\f') sp++;
+
+            if (*sp == '\f') {
+                printStr("$scope struct ");
+            } else {
+                printStr("$scope module ");
+            }
+
             for (; *np && *np != ' ' && *np != '\t'; np++) {
                 if (*np == '[') {
                     printStr("(");
                 } else if (*np == ']') {
                     printStr(")");
-                } else {
+                } else if (*np != '\f') {
                     *m_writep++ = *np;
                 }
             }
@@ -511,7 +520,7 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
         decl += buf;
     }
     decl += " $end\n";
-    m_namemapp->insert(std::make_pair(hiername, decl));
+    m_namemapp->emplace(hiername, decl);
 }
 
 void VerilatedVcd::declBit(vluint32_t code, const char* name, bool array, int arraynum) {
@@ -893,6 +902,7 @@ void vcdTestMain(const char* filenamep) {
         }
 # endif
         vcdp->close();
+        VL_DO_CLEAR(delete vcdp, vcdp = nullptr);
     }
 }
 #endif

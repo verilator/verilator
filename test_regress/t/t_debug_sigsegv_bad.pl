@@ -14,6 +14,7 @@ $ENV{VERILATOR_TEST_NO_GDB} and skip("Skipping due to VERILATOR_TEST_NO_GDB");
 lint(
     v_flags => ["--debug-sigsegv"],
     fails => 1,
+    sanitize => 0,
     expect =>
 '%Error: Verilator internal fault, sorry. Suggest trying --debug --gdbbt
 %Error: Command Failed.*',

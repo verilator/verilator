@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -44,15 +44,15 @@ protected:
     friend class VerilatedVarProps;
     friend class VerilatedScope;
     VerilatedRange() = default;
-    VerilatedRange(int left, int right)
-        : m_left{left}
-        , m_right{right} {}
     void init(int left, int right) {
         m_left = left;
         m_right = right;
     }
 
 public:
+    VerilatedRange(int left, int right)
+        : m_left{left}
+        , m_right{right} {}
     ~VerilatedRange() = default;
     int left() const { return m_left; }
     int right() const { return m_right; }
@@ -75,15 +75,15 @@ class VerilatedVarProps VL_NOT_FINAL {
     const vluint32_t m_magic;  // Magic number
     const VerilatedVarType m_vltype;  // Data type
     const VerilatedVarFlags m_vlflags;  // Direction
-    const int m_pdims;  // Packed dimensions
-    const int m_udims;  // Unpacked dimensions
+    const int m_pdims;  // Packed dimensions, 0 = none
+    const int m_udims;  // Unpacked dimensions, 0 = none
     VerilatedRange m_packed;  // Packed array range
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
     void initUnpacked(const int* ulims) {
         for (int i = 0; i < m_udims; ++i) {
-            const int left = ulims ? ulims[2 * i + 0] : 0;
-            const int right = ulims ? ulims[2 * i + 1] : 0;
-            m_unpacked.push_back(VerilatedRange(left, right));
+            const int uleft = ulims ? ulims[2 * i + 0] : 0;
+            const int uright = ulims ? ulims[2 * i + 1] : 0;
+            m_unpacked.emplace_back(uleft, uright);
         }
     }
     // CONSTRUCTORS

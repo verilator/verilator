@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// Copyright 2001-2020 by Wilson Snyder. This program is free software; you can
+// Copyright 2001-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -53,7 +53,7 @@ public:
     // METHODS
     /// Called by SystemC simulate()
     virtual void cycle(bool delta_cycle) {
-        if (!delta_cycle) { this->dump(sc_time_stamp().to_double()); }
+        if (!delta_cycle) this->dump(sc_time_stamp().to_double());
     }
 
 private:

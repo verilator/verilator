@@ -409,8 +409,9 @@ style indentation; the `c-set-style` undoes that.)
 
 * Comment every member variable.
 
-Indentation is automatically maintained with "make clang-format" (using
-clang-format version 10.0.0).  For those manually formatting:
+Indentation is automatically maintained with "make format" using
+clang-format version 10.0.0, and yapf for python, and is automatically
+corrected in the CI actions.  For those manually formatting C++ code:
 
 * Use 4 spaces per level, and no tabs.
 
@@ -696,7 +697,7 @@ Verilator problem.
 When enabling the long tests, some additional PERL modules are needed,
 which you can install using cpan.
 
-   cpan install Unix::Processors
+   cpan install Parallel::Forker
 
 There are some traps to avoid when running regression tests
 
@@ -1023,7 +1024,7 @@ IEEE 1800-2017 33 Config:: Little/no tool support or industry use.
 
 == Distribution
 
-Copyright 2008-2020 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2008-2021 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0

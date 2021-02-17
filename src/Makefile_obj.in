@@ -7,7 +7,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -41,6 +41,7 @@ LINK = @CXX@
 LEX = @LEX@
 LFLAGS = -d
 PERL = @PERL@
+PYTHON3 = @PYTHON3@
 YACC = @YACC@
 OBJCACHE ?= @OBJCACHE@
 
@@ -138,7 +139,7 @@ make_info:
 	@echo "      Compile flags: " $(CXX) ${CFLAGS} ${CXXFLAGS} ${CPPFLAGS}
 
 clean mostlyclean distclean maintainer-clean::
-	-rm -f *.o *.d perlxsi.c *_gen_*
+	-rm -f *.o *.d *_gen_*
 	-rm -f *__gen*
 	-rm -f obj_* .objcache*
 
@@ -288,7 +289,7 @@ V3Number_test: V3Number_test.o
 #### Modules
 
 %__gen.cpp:	%.cpp $(ASTGEN) V3Ast.h V3AstNodes.h
-	$(PERL) $(ASTGEN) -I$(srcdir) $*.cpp
+	$(PYTHON3) $(ASTGEN) -I $(srcdir) $*.cpp
 
 %.o:	%.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
@@ -315,25 +316,25 @@ serial:: V3Ast__gen_classes.h V3ParseBison.c
 serial_vlcov:: vlcovgen.d
 
 vlcovgen.d: $(VLCOVGEN) $(srcdir)/../include/verilated_cov_key.h
-	$(PERL) $(VLCOVGEN) --srcdir $(srcdir)
+	$(PYTHON3) $(VLCOVGEN) --srcdir $(srcdir)
 	touch $@
 
 V3Ast__gen_classes.h : $(ASTGEN) V3Ast.h V3AstNodes.h
-	$(PERL) $(ASTGEN) -I$(srcdir)  --classes
+	$(PYTHON3) $(ASTGEN) -I $(srcdir)  --classes
 
 V3ParseBison.h: V3ParseBison.c
 
 # Have only one output file in this rule to prevent parallel make issues
 V3ParseBison.c: verilog.y $(BISONPRE)
 	@echo "If you get errors from verilog.y below, try upgrading bison to version 1.875 or newer."
-	$(PERL) $(BISONPRE) --yacc ${YACC} -d -v -o V3ParseBison.c $<
+	$(PYTHON3) $(BISONPRE) --yacc ${YACC} -d -v -o V3ParseBison.c $<
 
 V3Lexer_pregen.yy.cpp:	verilog.l V3ParseBison.h $(HEADERS)
 	${LEX} --version
 	${LEX} ${LFLAGS} -o$@ $<
 
 V3Lexer.yy.cpp:	V3Lexer_pregen.yy.cpp $(FLEXFIX)
-	$(PERL) $(FLEXFIX) V3Lexer <$< >$@
+	$(PYTHON3) $(FLEXFIX) V3Lexer <$< >$@
 
 V3PreLex_pregen.yy.cpp:	V3PreLex.l $(HEADERS)
 	${LEX} --version

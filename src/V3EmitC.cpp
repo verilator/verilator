@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -576,9 +576,9 @@ public:
         emitIQW(nodep->outp());
         puts("(");
         puts(cvtToStr(nodep->outp()->widthMin()));
-        puts(",");
+        puts(", ");
         emitCvtPackStr(nodep->searchp());
-        puts(",");
+        puts(", ");
         putbs("");
         iterateAndNextNull(nodep->outp());
         puts(")");
@@ -748,7 +748,7 @@ public:
         } else {
             puts(cvtToStr(array_size));
         }
-        puts(");\n");
+        puts(")");
     }
     virtual void visit(AstSysFuncAsTask* nodep) override {
         if (!nodep->lhsp()->isWide()) puts("(void)");
@@ -3099,6 +3099,13 @@ void EmitCImp::emitIntTop(AstNodeModule*) {
 
 void EmitCImp::emitInt(AstNodeModule* modp) {
     puts("\n//==========\n\n");
+
+    if (AstClass* classp = VN_CAST(modp, Class)) {
+        if (classp->extendsp())
+            puts("#include \"" + prefixNameProtect(classp->extendsp()->classp()->classOrPackagep())
+                 + ".h\"\n");
+    }
+
     emitModCUse(modp, VUseType::INT_INCLUDE);
 
     // Declare foreign instances up front to make C++ happy

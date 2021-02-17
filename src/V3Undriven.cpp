@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -411,8 +411,8 @@ private:
         VL_RESTORER(m_alwaysCombp);
         {
             AstNode::user2ClearTree();
-            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   " << nodep << endl);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
+                UINFO(9, "   " << nodep << endl);
                 m_alwaysCombp = nodep;
             } else {
                 m_alwaysCombp = nullptr;

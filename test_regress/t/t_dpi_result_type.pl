@@ -19,7 +19,7 @@ if ($Self->{nc}) {
 }
 
 compile(
-    v_flags2 => ["t/t_dpi_result_type.cpp"],
+    v_flags2 => ["t/$Self->{name}.cpp"],
     # --no-decoration so .out file doesn't comment on source lines
     verilator_flags2 => ["-Wall -Wno-DECLFILENAME --no-decoration"],
     # NC: Gdd the obj_dir to the C include path
@@ -30,16 +30,13 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    files_identical(
-        "$Self->{obj_dir}/Vt_dpi_result_type__Dpi.h",
-        "t/t_dpi_result_type__Dpi.out"
-        );
+    files_identical("$Self->{obj_dir}/$Self->{VM_PREFIX}__Dpi.h",
+                    "t/$Self->{name}__Dpi.out");
 }
 
 execute(
     check_finished => 1,
     expect_filename => $Self->{golden_filename},
-    ms_pli => 0
     );
 
 ok(1);

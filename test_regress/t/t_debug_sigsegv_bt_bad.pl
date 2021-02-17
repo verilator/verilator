@@ -13,6 +13,7 @@ $ENV{VERILATOR_TEST_NO_GDB} and skip("Skipping due to VERILATOR_TEST_NO_GDB");
 
 lint(
     verilator_flags2 => ["--lint-only --debug --gdbbt --debug-sigsegv"],
+    sanitize => 0,
     fails => $Self->{vlt_all},
     expect =>
 '.*

@@ -13,7 +13,7 @@
 #include "Vtop.h"
 
 #if VM_TRACE
-# include <verilated_vcd_c.h>
+#include <verilated_vcd_c.h>
 #endif
 
 vluint64_t main_time = 0;
@@ -70,6 +70,7 @@ int main(int argc, char** argv, char** env) {
     delete top;
     top = nullptr;
 
-    // Fin
-    exit(0);
+    // Return good completion status
+    // Don't use exit() or destructor won't get called
+    return 0;
 }

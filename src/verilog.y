@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -288,10 +288,7 @@ static void UNSUPREAL(FileLine* fileline) {
 
 //======================================================================
 
-void yyerror(const char* errmsg) {
-    PARSEP->bisonLastFileline()->v3error(errmsg);
-    static const char* const colonmsg = "syntax error, unexpected";
-}
+void yyerror(const char* errmsg) { PARSEP->bisonLastFileline()->v3error(errmsg); }
 
 void yyerrorf(const char* format, ...) {
     const int maxlen = 2000;
@@ -1403,7 +1400,7 @@ portSig<nodep>:
 
 interface_declaration:		// IEEE: interface_declaration + interface_nonansi_header + interface_ansi_header:
 	//			// timeunits_delcarationE is instead in interface_item
-		intFront parameter_port_listE portsStarE ';'
+		intFront importsAndParametersE portsStarE ';'
 			interface_itemListE yENDINTERFACE endLabelE
 			{ if ($2) $1->addStmtp($2);
 			  if ($3) $1->addStmtp($3);
@@ -3786,6 +3783,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1, $3); }
 	|	yD_URANDOM '(' expr ')'			{ $$ = new AstRand($1, $3, true); }
 	|	yD_URANDOM parenE			{ $$ = new AstRand($1, nullptr, true); }
+	|	yD_URANDOM_RANGE '(' expr ')'		{ $$ = new AstURandomRange($1, $3, new AstConst($1, 0)); }
 	|	yD_URANDOM_RANGE '(' expr ',' expr ')'	{ $$ = new AstURandomRange($1, $3, $5); }
 	|	yD_VALUEPLUSARGS '(' expr ',' expr ')'	{ $$ = new AstValuePlusArgs($1, $3, $5); }
 	;

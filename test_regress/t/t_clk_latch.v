@@ -53,6 +53,7 @@ module t (/*AUTOARG*/
    end
 
    // verilator lint_off COMBDLY
+   // verilator lint_off LATCH
    always @ (`posstyle clk /*AS*/ or data) begin
       if (clk) begin
 	 data_a <= data + 8'd1;

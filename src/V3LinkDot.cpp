@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -304,7 +304,7 @@ public:
         nodep->user1p(symp);
         checkDuplicate(rootEntp(), nodep, nodep->origName());
         rootEntp()->insert(nodep->origName(), symp);
-        if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
+        if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
         return symp;
     }
     VSymEnt* insertCell(VSymEnt* abovep, VSymEnt* modSymp, AstCell* nodep,
@@ -326,11 +326,11 @@ public:
             // have 2 same cells under an if
             modSymp->reinsert(nodep->name(), symp);
         }
-        if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
+        if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
         return symp;
     }
     void insertMap(VSymEnt* symp, const string& scopename) {
-        if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
+        if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
     }
 
     VSymEnt* insertInline(VSymEnt* abovep, VSymEnt* modSymp, AstCellInline* nodep,
@@ -409,9 +409,7 @@ public:
         // Mark the given variable name as being allowed to be implicitly declared
         if (nodep) {
             const auto it = m_implicitNameSet.find(make_pair(nodep, varname));
-            if (it == m_implicitNameSet.end()) {
-                m_implicitNameSet.insert(make_pair(nodep, varname));
-            }
+            if (it == m_implicitNameSet.end()) { m_implicitNameSet.emplace(nodep, varname); }
         }
     }
     bool implicitOk(AstNodeModule* nodep, const string& varname) {
@@ -501,7 +499,7 @@ public:
         UASSERT_OBJ(
             !(VN_IS(rhsp->nodep(), Cell) && !VN_IS(VN_CAST(rhsp->nodep(), Cell)->modp(), Iface)),
             rhsp->nodep(), "Got a non-IFACE alias RHS");
-        m_scopeAliasMap[samn].insert(make_pair(lhsp, rhsp));
+        m_scopeAliasMap[samn].emplace(lhsp, rhsp);
     }
     void computeScopeAliases() {
         UINFO(9, "computeIfaceAliases\n");
@@ -1285,9 +1283,9 @@ class LinkDotFindVisitor final : public AstNVisitor {
             VL_DO_DANGLING(argp->unlinkFrBackWithNext()->deleteTree(), argp);
         }
         // Type depends on the method used, let V3Width figure it out later
-        const auto indexArgRefp = new AstLambdaArgRef(argFl, name + "__DOT__index", true);
-        const auto valueArgRefp = new AstLambdaArgRef(argFl, name, false);
         if (nodep->exprp()) {  // Else empty expression and pretend no "with"
+            const auto indexArgRefp = new AstLambdaArgRef(argFl, name + "__DOT__index", true);
+            const auto valueArgRefp = new AstLambdaArgRef(argFl, name, false);
             const auto newp = new AstWith(nodep->fileline(), indexArgRefp, valueArgRefp,
                                           nodep->exprp()->unlinkFrBackWithNext());
             funcrefp->addPinsp(newp);
@@ -2089,9 +2087,9 @@ private:
                     } else {
                         auto cextp = VN_CAST(classp->extendsp(), ClassExtends);
                         UASSERT_OBJ(cextp, nodep, "Bad super extends link");
-                        auto classp = cextp->classp();
-                        UASSERT_OBJ(classp, nodep, "Bad superclass");
-                        m_ds.m_dotSymp = m_statep->getNodeSym(classp);
+                        auto sclassp = cextp->classp();
+                        UASSERT_OBJ(sclassp, nodep, "Bad superclass");
+                        m_ds.m_dotSymp = m_statep->getNodeSym(sclassp);
                         UINFO(8, "     super. " << m_ds.ascii() << endl);
                     }
                 }

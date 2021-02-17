@@ -11,6 +11,8 @@
 
 #include VM_PREFIX_INCLUDE
 
+double sc_time_stamp() { return 0; }
+
 extern void vcdTestMain(const char* filenamep);
 
 int main(int argc, char** argv, char** env) {

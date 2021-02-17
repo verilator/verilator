@@ -9,7 +9,7 @@
 `define HIER_BLOCK /*verilator hier_block*/
 `endif
 
-`ifndef PROTLIB_TOP
+`ifdef SHOW_TIMESCALE
 `timescale 1ns/1ps
 `endif
 
@@ -291,6 +291,26 @@ module sub5 (input wire clk, input wire [127:0] in[2][3], output logic [7:0] out
       end
    end
 
+   wire [7:0] val0[2];
+   wire [7:0] val1[2];
+   wire [7:0] val2[2];
+   wire [7:0] val3[2];
+   sub6                   i_sub0(.out(val0));
+   sub6 #(.P0(1))         i_sub1(.out(val1));  // Setting the default value
+   sub6 #(.P0(1), .P1(2)) i_sub2(.out(val2));  // Setting the default value
+   sub6 #(.P0(1), .P1(3)) i_sub3(.out(val3));
+
+   always @(posedge clk) begin
+      if (val0[0] != 1 || val0[1] != 2) $stop;
+      if (val1[0] != 1 || val1[1] != 2) $stop;
+      if (val2[0] != 1 || val2[1] != 2) $stop;
+      if (val3[0] != 1 || val3[1] != 3) $stop;
+   end
+endmodule
+
+module sub6 #(parameter P0 = 1, parameter P1 = 2) (output wire [7:0] out[2]); `HIER_BLOCK
+   assign out[0] = 8'(P0);
+   assign out[1] = 8'(P1);
 endmodule
 
 module delay #(

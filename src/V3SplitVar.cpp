@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -873,9 +873,7 @@ class PackedVarRef final {
         // Use raw pointer to dedup
         typedef std::map<AstNode*, size_t, AstNodeComparator> NodeIndices;
         NodeIndices nodes;
-        for (size_t i = 0; i < refs.size(); ++i) {
-            nodes.insert(std::make_pair(refs[i].nodep(), i));
-        }
+        for (size_t i = 0; i < refs.size(); ++i) { nodes.emplace(refs[i].nodep(), i); }
         std::vector<PackedVarRefEntry> vect;
         vect.reserve(nodes.size());
         for (NodeIndices::const_iterator it = nodes.begin(), it_end = nodes.end(); it != it_end;

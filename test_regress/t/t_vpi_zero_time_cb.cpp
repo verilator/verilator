@@ -35,26 +35,11 @@
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
-#define TEST_MSG \
-    if (0) printf
-
 unsigned int main_time = 0;
 unsigned int callback_count_zero_time = 0;
 unsigned int callback_count_start_of_sim = 0;
 
 //======================================================================
-
-#define CHECK_RESULT_VH(got, exp) \
-    if ((got) != (exp)) { \
-        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", __FILE__, __LINE__, (got), (exp)); \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_NZ(got) \
-    if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", __FILE__, __LINE__); \
-        return __LINE__; \
-    }
 
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
@@ -63,22 +48,6 @@ unsigned int callback_count_start_of_sim = 0;
                   << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
-
-#define CHECK_RESULT_HEX(got, exp) \
-    if ((got) != (exp)) { \
-        std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << hex \
-                  << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_CSTR(got, exp) \
-    if (strcmp((got), (exp))) { \
-        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", __FILE__, __LINE__, \
-               (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
 //======================================================================
 
@@ -90,6 +59,10 @@ static int _zero_time_cb(p_cb_data cb_data) {
 }
 
 static int _start_of_sim_cb(p_cb_data cb_data) {
+#ifdef TEST_VERBOSE
+    printf("-_start_of_sim_cb\n");
+#endif
+
     t_cb_data cb_data_n;
     bzero(&cb_data_n, sizeof(cb_data_n));
     s_vpi_time t;
@@ -100,7 +73,7 @@ static int _start_of_sim_cb(p_cb_data cb_data) {
     t.low = 0;
     cb_data_n.time = &t;
     cb_data_n.cb_rtn = _zero_time_cb;
-    vpi_register_cb(&cb_data_n);
+    TestVpiHandle _cb_data_n_h = vpi_register_cb(&cb_data_n);
     callback_count_start_of_sim++;
     return 0;
 }
@@ -127,12 +100,12 @@ void vpi_compat_bootstrap(void) {
     cb_data.reason = cbStartOfSimulation;
     cb_data.time = 0;
     cb_data.cb_rtn = _start_of_sim_cb;
-    vpi_register_cb(&cb_data);
+    TestVpiHandle _start_of_sim_cb_h = vpi_register_cb(&cb_data);
 
     cb_data.reason = cbEndOfSimulation;
     cb_data.time = 0;
     cb_data.cb_rtn = _end_of_sim_cb;
-    vpi_register_cb(&cb_data);
+    TestVpiHandle _end_of_sim_cb_h = vpi_register_cb(&cb_data);
 }
 
 // icarus entry
@@ -143,7 +116,7 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    double sim_time = 1100;
+    vluint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
 
@@ -183,7 +156,7 @@ int main(int argc, char** argv, char** env) {
     topp->clk = 0;
     main_time += 1;
 
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
         topp->eval();
         VerilatedVpi::callValueCbs();

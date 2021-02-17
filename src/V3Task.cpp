@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -912,7 +912,7 @@ private:
         // as it's legal for the user to attach multiple tasks to one dpi cname
         const auto iter = m_dpiNames.find(nodep->cname());
         if (iter == m_dpiNames.end()) {
-            m_dpiNames.insert(make_pair(nodep->cname(), make_pair(nodep, dpiproto)));
+            m_dpiNames.emplace(nodep->cname(), make_pair(nodep, dpiproto));
             return false;
         } else if (iter->second.second != dpiproto) {
             nodep->v3error(

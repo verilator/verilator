@@ -9,7 +9,7 @@
 `ifdef USE_VPI_NOT_DPI
 //We call it via $c so we can verify DPI isn't required - see bug572
 `else
-import "DPI-C" context function integer mon_check();
+import "DPI-C" context function int mon_check();
 `endif
 
 module t (/*AUTOARG*/
@@ -43,10 +43,10 @@ extern "C" int mon_check();
       status = $c32("mon_check()");
 `endif
 `ifdef IVERILOG
-     status = $mon_check();
+      status = $mon_check();
 `endif
 `ifndef USE_VPI_NOT_DPI
-     status = mon_check();
+      status = mon_check();
 `endif
       if (status!=0) begin
          $write("%%Error: t_vpi_module.cpp:%0d: C Test failed\n", status);

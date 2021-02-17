@@ -180,7 +180,7 @@ int mon_check_props() {
         if (value->children.size) {
             int size = 0;
             TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, h);
-            while (TestVpiHandle word_h = vpi_scan(iter_h.nofree())) {
+            while (TestVpiHandle word_h = vpi_scan(iter_h)) {
                 // check size and range
                 if (int status
                     = _mon_check_props(word_h, value->children.size, value->children.direction,
@@ -188,6 +188,7 @@ int mon_check_props() {
                     return status;
                 size++;
             }
+            iter_h.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
             CHECK_RESULT(size, value->attributes.size);
         }
         value++;
@@ -206,7 +207,7 @@ int mon_check() {
 #ifdef IS_VPI
 
 static int mon_check_vpi() {
-    vpiHandle href = vpi_handle(vpiSysTfCall, 0);
+    TestVpiHandle href = vpi_handle(vpiSysTfCall, 0);
     s_vpi_value vpi_value;
 
     vpi_value.format = vpiIntVal;
@@ -233,7 +234,7 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 #else
 double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {
-    double sim_time = 1100;
+    vluint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
 
@@ -257,7 +258,7 @@ int main(int argc, char** argv, char** env) {
     topp->clk = 0;
     main_time += 10;
 
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
         topp->eval();
         VerilatedVpi::callValueCbs();

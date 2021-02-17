@@ -14,7 +14,7 @@ vluint64_t main_time;
 double sc_time_stamp() { return main_time; }
 
 void oneTest(int seed) {
-    double sim_time = 1000;
+    vluint64_t sim_time = 1000;
 
 #ifdef TEST_VERBOSE
     VL_PRINTF("== Seed=%d\n", seed);
@@ -33,7 +33,7 @@ void oneTest(int seed) {
     topp->eval();
 
     // Tick for a little bit
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         topp->clk = 0;
         topp->eval();
 

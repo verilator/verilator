@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -127,6 +127,7 @@ private:
     // STATE
     VDouble0 m_statCaseFast;  // Statistic tracking
     VDouble0 m_statCaseSlow;  // Statistic tracking
+    AstNode* m_alwaysp = nullptr;  // Always in which case is located
 
     // Per-CASE
     int m_caseWidth = 0;  // Width of valueItems
@@ -475,12 +476,17 @@ private:
             ++m_statCaseFast;
             VL_DO_DANGLING(replaceCaseFast(nodep), nodep);
         } else {
+            // If a case statement is whole, presume signals involved aren't forming a latch
+            if (m_alwaysp) m_alwaysp->fileline()->warnOff(V3ErrorCode::LATCH, true);
             ++m_statCaseSlow;
             VL_DO_DANGLING(replaceCaseComplicated(nodep), nodep);
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    virtual void visit(AstNode* nodep) override {
+        if (VN_IS(nodep, Always)) { m_alwaysp = nodep; }
+        iterateChildren(nodep);
+    }
 
 public:
     // CONSTRUCTORS

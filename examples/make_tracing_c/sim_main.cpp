@@ -5,6 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 //======================================================================
 
+// For std::unique_ptr
+#include <memory>
+
 // Include common routines
 #include <verilated.h>
 
@@ -43,7 +46,8 @@ int main(int argc, char** argv, char** env) {
     Verilated::mkdir("logs");
 
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    Vtop* top = new Vtop;  // Or use a const unique_ptr, or the VL_UNIQUE_PTR wrapper
+    // Using unique_ptr is similar to "Vtop* top = new Vtop" then deleting at end
+    const std::unique_ptr<Vtop> top{new Vtop};
 
     // Set some inputs
     top->reset_l = !0;
@@ -97,10 +101,7 @@ int main(int argc, char** argv, char** env) {
     VerilatedCov::write("logs/coverage.dat");
 #endif
 
-    // Destroy model
-    delete top;
-    top = nullptr;
-
-    // Fin
-    exit(0);
+    // Return good completion status
+    // Don't use exit() or destructor won't get called
+    return 0;
 }

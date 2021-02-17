@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -68,7 +68,7 @@ void AstNodeUOrStructDType::repairMemberCache() {
         if (m_members.find(itemp->name()) != m_members.end()) {
             itemp->v3error("Duplicate declaration of member name: " << itemp->prettyNameQ());
         } else {
-            m_members.insert(make_pair(itemp->name(), itemp));
+            m_members.emplace(itemp->name(), itemp);
         }
     }
 }
@@ -688,7 +688,7 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
             info.m_type = "QData" + bitvec;
         } else if (dtypep->isWide()) {
             if (compound) {
-                info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + "> ";
+                info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + ">";
             } else {
                 info.m_type += "WData" + bitvec;  // []'s added later
                 info.m_dims = "[" + cvtToStr(dtypep->widthWords()) + "]";
@@ -727,11 +727,13 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
         } else if (AstBasicDType* adtypep = VN_CAST(dtypep, BasicDType)) {
             // AstBasicDType - nothing below, return null
             if (adtypep->isRanged()) {
+                // cppcheck-suppress unreadVariable  // Cppcheck bug - thinks dim isn't used
                 if ((dim++) == dimension) return adtypep;
             }
             return nullptr;
         } else if (AstNodeUOrStructDType* adtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
             if (adtypep->packed()) {
+                // cppcheck-suppress unreadVariable  // Cppcheck bug - thinks dim isn't used
                 if ((dim++) == dimension) return adtypep;
             }
             return nullptr;
@@ -995,7 +997,7 @@ AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
     DetailedMap& mapr = m_detailedMap;
     const auto it = mapr.find(key);
     if (it != mapr.end()) return it->second;
-    mapr.insert(make_pair(key, nodep));
+    mapr.emplace(key, nodep);
     nodep->generic(true);
     // No addTypesp; the upper function that called new() is responsible for adding
     return nodep;
@@ -1168,7 +1170,7 @@ void AstClass::insertCache(AstNode* nodep) {
         if (m_members.find(nodep->name()) != m_members.end()) {
             nodep->v3error("Duplicate declaration of member name: " << nodep->prettyNameQ());
         } else {
-            m_members.insert(make_pair(nodep->name(), nodep));
+            m_members.emplace(nodep->name(), nodep);
         }
     }
 }
@@ -1578,6 +1580,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isPulldown()) str << " [PULLDOWN]";
     if (isUsedClock()) str << " [CLK]";
     if (isSigPublic()) str << " [P]";
+    if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOP]";
     if (attrClockEn()) str << " [aCLKEN]";
     if (attrIsolateAssign()) str << " [aISO]";

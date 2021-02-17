@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -369,10 +369,11 @@ private:
                 lsb = x;
             }
             if (lsb > msb) {
-                nodep->v3error("["
-                               << msb << ":" << lsb
-                               << "] Range extract has backward bit ordering, perhaps you wanted ["
-                               << lsb << ":" << msb << "]");
+                nodep->v3warn(
+                    SELRANGE,
+                    "[" << msb << ":" << lsb
+                        << "] Range extract has backward bit ordering, perhaps you wanted [" << lsb
+                        << ":" << msb << "]");
                 int x = msb;
                 msb = lsb;
                 lsb = x;
@@ -398,10 +399,11 @@ private:
                 lsb = x;
             }
             if (lsb > msb) {
-                nodep->v3error("["
-                               << msb << ":" << lsb
-                               << "] Range extract has backward bit ordering, perhaps you wanted ["
-                               << lsb << ":" << msb << "]");
+                nodep->v3warn(
+                    SELRANGE,
+                    "[" << msb << ":" << lsb
+                        << "] Range extract has backward bit ordering, perhaps you wanted [" << lsb
+                        << ":" << msb << "]");
                 int x = msb;
                 msb = lsb;
                 lsb = x;
@@ -419,10 +421,11 @@ private:
         } else if (VN_IS(ddtypep, NodeUOrStructDType)) {
             // Classes aren't little endian
             if (lsb > msb) {
-                nodep->v3error("["
-                               << msb << ":" << lsb
-                               << "] Range extract has backward bit ordering, perhaps you wanted ["
-                               << lsb << ":" << msb << "]");
+                nodep->v3warn(
+                    SELRANGE,
+                    "[" << msb << ":" << lsb
+                        << "] Range extract has backward bit ordering, perhaps you wanted [" << lsb
+                        << ":" << msb << "]");
                 int x = msb;
                 msb = lsb;
                 lsb = x;

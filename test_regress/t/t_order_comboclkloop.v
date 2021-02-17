@@ -12,6 +12,7 @@ module t (/*AUTOARG*/
 
    // verilator lint_off BLKANDNBLK
    // verilator lint_off COMBDLY
+   // verilator lint_off LATCH
    // verilator lint_off UNOPT
    // verilator lint_off UNOPTFLAT
    // verilator lint_off MULTIDRIVEN

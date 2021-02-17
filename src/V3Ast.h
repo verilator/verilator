@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -157,7 +157,7 @@ public:
     bool isReadOnly() const { return m_e == READ; }  // False with READWRITE
     bool isReadOrRW() const { return m_e == READ || m_e == READWRITE; }
     bool isWriteOrRW() const { return m_e == WRITE || m_e == READWRITE; }
-    bool isRW() const { return m_e == READWRITE; }  // False with READWRITE
+    bool isRW() const { return m_e == READWRITE; }
 };
 inline bool operator==(const VAccess& lhs, const VAccess& rhs) { return lhs.m_e == rhs.m_e; }
 inline bool operator==(const VAccess& lhs, VAccess::en rhs) { return lhs.m_e == rhs; }
@@ -1922,7 +1922,7 @@ public:
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     // For documentation on emitC format see EmitCStmts::emitOpName
     virtual string emitC() = 0;
-    virtual string emitSimpleOperator() { return ""; }
+    virtual string emitSimpleOperator() { return ""; }  // "" means not ok to use
     virtual bool emitCheckMaxWords() { return false; }  // Check VL_MULS_MAX_WORDS
     virtual bool cleanOut() const = 0;  // True if output has extra upper bits zero
     // Someday we will generically support data types on every math node

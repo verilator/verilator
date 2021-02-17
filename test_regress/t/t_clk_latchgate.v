@@ -111,11 +111,13 @@ module llq (clk, d, q);
    reg [WIDTH-1:0]    qr;
 
    /* verilator lint_off COMBDLY */
+   /* verilator lint_off LATCH */
 
    always @(clk or d)
      if (clk == 1'b0)
        qr <= d;
 
+   /* verilator lint_on LATCH */
    /* verilator lint_on COMBDLY */
 
    assign q = qr;

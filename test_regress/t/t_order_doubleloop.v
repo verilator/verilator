@@ -11,6 +11,7 @@ module t (/*AUTOARG*/
    input clk;
    integer cyc; initial cyc=1;
 
+   // verilator lint_off LATCH
    // verilator lint_off UNOPT
    // verilator lint_off UNOPTFLAT
    // verilator lint_off MULTIDRIVEN

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -102,11 +102,12 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
 
     for (AstNodeModule* nodep : mods) {
         if (nodep->timeunit().isNone()) {
-            if (modTimedp && !VN_IS(nodep, Iface)
+            if (modTimedp && !VN_IS(nodep, Iface) && !VN_IS(nodep, Primitive)
                 && !(VN_IS(nodep, Package) && VN_CAST(nodep, Package)->isDollarUnit())) {
                 nodep->v3warn(TIMESCALEMOD,
                               "Timescale missing on this module as other modules have "
                               "it (IEEE 1800-2017 3.14.2.2)\n"
+                                  << nodep->warnContextPrimary() << '\n'
                                   << modTimedp->warnOther()
                                   << "... Location of module with timescale\n"
                                   << modTimedp->warnContextSecondary());
@@ -114,6 +115,8 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
             nodep->timeunit(unit);
         }
     }
+
+    v3Global.rootp()->timescaleSpecified(modTimedp);  // true if some module specifies timescale
 
     if (v3Global.rootp()->timeprecision().isNone()) {
         v3Global.rootp()->timeprecisionMerge(v3Global.rootp()->fileline(),

@@ -16,7 +16,7 @@ scenarios(dist => 1);
 
 my $root = "..";
 my $Debug;
-my %Contributors;
+my %Contributors = ('github action' => 1);
 my %Authors;
 
 if ($ENV{VERILATOR_TEST_NO_CONTRIBUTORS}) {

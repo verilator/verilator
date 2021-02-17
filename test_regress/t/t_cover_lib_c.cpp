@@ -24,15 +24,6 @@ double sc_time_stamp() { return 0; }
 
 int failure = 0;
 
-#define CHECK_RESULT_HEX(got, exp) \
-    do { \
-        if ((got) != (exp)) { \
-            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": GOT=" << (got) << "   EXP=" << (exp) << std::endl; \
-            failure = __LINE__; \
-        } \
-    } while (0)
-
 //======================================================================
 
 const char* name() { return "main"; }

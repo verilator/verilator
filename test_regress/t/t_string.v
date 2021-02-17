@@ -15,6 +15,10 @@ module t (/*AUTOARG*/
 
    integer 	cyc=0;
 
+   reg [1*8:1] 	vstr1;
+   reg [2*8:1] 	vstr2;
+   reg [6*8:1] 	vstr6;
+
    reg [4*8:1] 	vstr;
    const string s = "a";  // Check static assignment
    string 	s2;
@@ -29,6 +33,15 @@ module t (/*AUTOARG*/
    // a.itoa, a.hextoa, a.octoa, a.bintoa, a.realtoa
 
    initial begin
+      $sformat(vstr1, "%s", s);
+      `checks(vstr1, "a");
+
+      $sformat(vstr2, "=%s", s);
+      `checks(vstr2, "=a");
+
+      $sformat(vstr6, "--a=%s", s);
+      `checks(vstr6, "--a=a");
+
       $sformat(vstr, "s=%s", s);
       `checks(vstr, "s=a");
       `checks(string'(vstr), "s=a");

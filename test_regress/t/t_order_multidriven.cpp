@@ -8,6 +8,8 @@
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 
+double sc_time_stamp() { return 0; }
+
 Vt_order_multidriven* vcore;
 VerilatedVcdC* vcd;
 vluint64_t vtime;

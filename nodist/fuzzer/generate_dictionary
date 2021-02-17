@@ -15,7 +15,8 @@
 from subprocess import getstatusoutput
 from os import system
 
-def take_while(f,a):
+
+def take_while(f, a):
     # any(a) => (a->bool)->[a]->[a]
     # Does the same think as Haskell's takewhile.
     out = []
@@ -26,44 +27,50 @@ def take_while(f,a):
             return out
     return out
 
-def skip_while(f,a):
+
+def skip_while(f, a):
     # any(a) => (a->bool)->[a]->[a]
     # Basically, the opposite thing from skipwhile
     while len(a) and f(a[0]):
         a = a[1:]
     return a
 
+
 def print_lines(a):
     # printable(a) => [a]->void
     for elem in a:
         print(elem)
 
-def write_file(filename,contents):
+
+def write_file(filename, contents):
     # str->str->void
-    f = open(filename,'w')
+    f = open(filename, 'w')
     f.write(contents)
+
 
 def parse_line(s):
     # str->maybe str
-    if len(s)==0: return
-    part = skip_while(lambda x: x!='"',s)
-    if len(part)==0 or part[0]!='"': return None
-    literal_part = take_while(lambda x: x!='"',part[1:])
-    return ''.join(filter(lambda x: x!='\\',literal_part))
+    if len(s) == 0: return
+    part = skip_while(lambda x: x != '"', s)
+    if len(part) == 0 or part[0] != '"': return None
+    literal_part = take_while(lambda x: x != '"', part[1:])
+    return ''.join(filter(lambda x: x != '\\', literal_part))
+
 
 def main():
-    status,output = getstatusoutput('flex -T ../../src/verilog.l')
-    assert status==0
+    status, output = getstatusoutput('flex -T ../../src/verilog.l')
+    assert status == 0
 
     lines = output.splitlines()
-    lines = take_while(lambda x: 'beginning dump of nfa' not in x,lines)
-    tokens = set(filter(lambda x: x,map(parse_line,lines)))
+    lines = take_while(lambda x: 'beginning dump of nfa' not in x, lines)
+    tokens = set(filter(lambda x: x, map(parse_line, lines)))
 
     dirname = 'dictionary'
-    r = system('mkdir -p '+dirname)
-    assert(r==0)
-    for i,token in enumerate(tokens):
-        write_file(dirname+'/'+str(i),token)
+    r = system('mkdir -p ' + dirname)
+    assert (r == 0)
+    for i, token in enumerate(tokens):
+        write_file(dirname + '/' + str(i), token)
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     main()
