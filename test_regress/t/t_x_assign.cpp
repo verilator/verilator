@@ -14,6 +14,8 @@
 #include "verilated.h"
 #include VM_PREFIX_INCLUDE
 
+double sc_time_stamp() { return 0; }
+
 // clang-format off
 #if defined(T_X_ASSIGN_0)
 # define EXPECTED 0

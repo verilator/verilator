@@ -7,6 +7,8 @@
 #include <verilated.h>
 #include "Vt_mem_slot.h"
 
+double sc_time_stamp() { return 0; }
+
 unsigned int Array[3];
 
 unsigned int StepSim(Vt_mem_slot* sim, unsigned int slot, unsigned int bit, unsigned int val,

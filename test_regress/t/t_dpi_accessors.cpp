@@ -26,6 +26,8 @@ using std::hex;
 using std::setfill;
 using std::setw;
 
+double sc_time_stamp() { return 0; }
+
 // Convenience function to check we didn't finish unexpectedly
 static void checkFinish(const char* msg) {
     if (Verilated::gotFinish()) {

@@ -10,6 +10,8 @@
 #include <verilated.h>
 #include "Vt_multitop_sig.h"
 
+double sc_time_stamp() { return 0; }
+
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
