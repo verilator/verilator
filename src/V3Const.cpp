@@ -189,7 +189,9 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
 
 #define CONST_BITOP_RETURN_IF(cond, nodep) \
     if (setFailed(cond, #cond, nodep, __LINE__)) return
+
 #define CONST_BITOP_SET_FAILED(reason, nodep) setFailed(true, reason, nodep, __LINE__)
+
     bool setFailed(bool fail, const char* reason, AstNode* nodep, int line) {
         if (fail) {
             UINFO(9, "cannot optimize "<<m_rootp<<" reason:" << reason << " called from line:"
