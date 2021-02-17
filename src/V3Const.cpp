@@ -228,11 +228,12 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
 
     // Traverse down to see AstConst or AstVarRef
     LeafInfo findLeaf(AstNode* nodep, bool expectConst) {
-        LeafInfo* origp = m_leafp;
         LeafInfo info;
-        m_leafp = &info;
-        iterate(nodep);
-        m_leafp = origp;
+        {
+            VL_RESTORER(m_leafp);
+            m_leafp = &info;
+            iterate(nodep);
+        }
 
         bool ok = !m_failed;
         if (expectConst)
