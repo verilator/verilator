@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.109 devel
 
+****  Support concat selection (#2721).
+
 ****  Fix TIMESCALE warnings on primitives (#2763). [Xuanqi]
 
 ****  Fix $fread extra semicolon inside statements. [Leendert van Doorn]
