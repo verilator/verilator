@@ -128,7 +128,7 @@ template <> void VerilatedTrace<VerilatedFst>::set_time_resolution(const std::st
 /// Also derived for use in SystemC simulations.
 /// Thread safety: Unless otherwise indicated, every function is VL_MT_UNSAFE_ONE
 
-class VerilatedFstC final {
+class VerilatedFstC VL_NOT_FINAL {
     VerilatedFst m_sptrace;  ///< Trace file being created
 
     // CONSTRUCTORS
