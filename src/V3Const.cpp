@@ -2476,6 +2476,7 @@ private:
     TREEOPV("AstRedAnd{$lhsp.castExtend, $lhsp->width() > VN_CAST($lhsp,,Extend)->lhsp()->width()}", "replaceZero(nodep)");  // &{0,...} => 0  Prevents compiler limited range error
     TREEOPV("AstRedOr {$lhsp.castExtend}",      "AstRedOr {$lhsp->castExtend()->lhsp()}");
     TREEOPV("AstRedXor{$lhsp.castExtend}",      "AstRedXor{$lhsp->castExtend()->lhsp()}");
+    TREEOP ("AstRedXor{$lhsp.castXor, VN_IS(VN_CAST($lhsp,,Xor)->lhsp(),,Const)}", "AstXor{AstRedXor{$lhsp->castXor()->lhsp()}, AstRedXor{$lhsp->castXor()->rhsp()}}");  // ^(const ^ a) => (^const)^(^a)
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
