@@ -2835,11 +2835,32 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     // Vmodel::gotFinish
     puts("\nbool " + prefixNameProtect(modp) + "::gotFinish(){\n");
     puts("const VerilatedLockGuard lock(" + prefixNameProtect(modp) + "::s_mutex);\n");
-    puts("return this->s_gotFinish;\n");
+    puts("return this->__VlSymsp->__Vm_simContext->s_gotFinish;\n");
     puts("}\n");
+
     puts("void " + prefixNameProtect(modp) + "::gotFinish(bool flag){\n");
     puts("const VerilatedLockGuard lock(" + prefixNameProtect(modp) + "::s_mutex);\n");
-    puts("this->s_gotFinish = flag;\n");
+    puts("this->__VlSymsp->__Vm_simContext->s_gotFinish = flag;\n");
+    puts("}\n");
+
+    puts("void " + prefixNameProtect(modp) + "::reset_clock(){\n");
+    puts("const VerilatedLockGuard lock(" + prefixNameProtect(modp) + "::s_mutex);\n");
+    puts("this->__VlSymsp->__Vm_simContext->main_time = 0;\n");
+    puts("}\n");
+
+    puts("void " + prefixNameProtect(modp) + "::tick(){\n");
+    puts("const VerilatedLockGuard lock(" + prefixNameProtect(modp) + "::s_mutex);\n");
+    puts("this->__VlSymsp->__Vm_simContext->main_time++;\n");
+    puts("}\n");
+
+    puts("vluint64_t " + prefixNameProtect(modp) + "::main_time(){\n");
+    puts("const VerilatedLockGuard lock(" + prefixNameProtect(modp) + "::s_mutex);\n");
+    puts("return this->__VlSymsp->__Vm_simContext->main_time;\n");
+    puts("}\n");
+
+    puts("void " + prefixNameProtect(modp) + "::init_sim_context(){\n");
+    puts("const VerilatedLockGuard lock(" + prefixNameProtect(modp) + "::s_mutex);\n");
+    puts("this->__VlSymsp->__Vm_simContext = new VerilatedSimulationContext();\n");
     puts("}\n");
 }
 
@@ -3146,9 +3167,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     section = "\n// LOCAL VARIABLES\n";
     section += "// simulation state variables\n";
-    section += "bool s_gotFinish;  ///< A $finish statement executed\n";
     section += "VerilatedMutex s_mutex; // add lock for MT support of in-model variable access.\n";
-    section += "vluint64_t main_time; //simulation cycle counter\n";
     if (modp->isTop()) section += "// Internals; generally not touched by application code\n";
     emitVarList(modp->stmtsp(), EVL_CLASS_TEMP, "", section /*ref*/);
 
@@ -3257,9 +3276,15 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
                  "must call on completion.\n");
         }
         puts("void final();\n");
+        puts("// \n");
+        puts("void init_sim_context();\n");
         puts("// model local gotFinish methods to indicate that $finish has been called\n");
         puts("bool gotFinish();\n");
         puts("void gotFinish(bool flag);\n");
+        puts("// model local cycle time\n");
+        puts("void reset_clock();\n");
+        puts("void tick();\n");
+        puts("vluint64_t main_time();\n");
         if (v3Global.opt.inhibitSim()) {
             puts("/// Disable evaluation of module (e.g. turn off)\n");
             puts("void inhibitSim(bool flag) { __Vm_inhibitSim = flag; }\n");
@@ -3492,7 +3517,11 @@ class EmitCTrace final : EmitCStmts {
             puts("void " + topClassName() + "::_traceDump() {\n");
             // Caller checked for __Vm_dumperp non-nullptr
             puts("const VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
-            puts("__VlSymsp->__Vm_dumperp->dump(" + topClassName() + "::main_time);\n");
+            puts("if(__VlSymsp->__Vm_simContext == NULL){\n");
+            puts("__VlSymsp->__Vm_dumperp->dump(VL_TIME_Q());\n");
+            puts("} else {\n");
+            puts("__VlSymsp->__Vm_dumperp->dump(" + topClassName() + "::main_time());\n");
+            puts("}\n");
             puts("}\n");
             splitSizeInc(10);
         }

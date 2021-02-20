@@ -119,6 +119,21 @@ enum VerilatedVarFlags {
 };
 
 //=========================================================================
+/// Simulation context
+class VerilatedSimulationContext final {
+private:
+public:
+    VerilatedSimulationContext() {
+        main_time = 0;
+        s_gotFinish = false;
+    }
+
+    // accessors
+    vluint64_t main_time;
+    bool s_gotFinish;
+};
+
+//=========================================================================
 /// Mutex and threading support
 
 /// Return current thread ID (or 0), not super fast, cache if needed

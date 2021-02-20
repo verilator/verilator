@@ -431,6 +431,7 @@ void EmitCSyms::emitSymHdr() {
              "///< Used by trace routines when tracing multiple models\n");
     }
     puts("bool __Vm_didInit;\n");
+    puts("VerilatedSimulationContext* __Vm_simContext; // simulation context (time, finished, ..)\n");
 
     puts("\n// SUBCELL STATE\n");
     for (const auto& i : m_scopes) {
@@ -656,6 +657,7 @@ void EmitCSyms::emitSymImp() {
         puts("    , __Vm_baseCode(0)\n");
     }
     puts("    , __Vm_didInit(false)\n");
+    puts("    , __Vm_simContext(nullptr)\n");
     puts("    // Setup submodule names\n");
     char comma = ',';
     for (const auto& i : m_scopes) {
