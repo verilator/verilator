@@ -11,11 +11,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    v_flags2 => ["--vpi t/t_vpi_stop_bad_c.cpp"],
+    v_flags2 => ["t/t_vpi_stop_bad_c.cpp"],
+    verilator_flags2 => ["--vpi"],
     );
 
 execute(
-    fails => 1,
+    fails => $Self->{vlt_all},
     check_finished => 0,
     expect_filename => $Self->{golden_filename},
     );

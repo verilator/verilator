@@ -71,5 +71,6 @@ int main(int argc, char** argv, char** env) {
     top = nullptr;
 
     // Return good completion status
-    exit(0);
+    // Don't use exit() or destructor won't get called
+    return 0;
 }

@@ -33,7 +33,7 @@ vluint64_t main_time = 0;
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    double sim_time = 1100;
+    vluint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
     Verilated::traceEverOn(true);
@@ -70,7 +70,7 @@ int main(int argc, char** argv, char** env) {
         ap->clk = false;
         main_time += 10;
     }
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         ap->clk = !ap->clk;
         bp->clk = ap->clk;
         ap->eval_step();

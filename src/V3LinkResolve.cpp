@@ -235,11 +235,9 @@ private:
                                            fromp->cloneTree(false)));
             } else if (VN_IS(basefromp, Replicate)) {
                 // From {...}[...] syntax in IEEE 2017
-                if (basefromp) { UINFO(1, "    Related node: " << basefromp << endl); }
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Select of concatenation");
-                nodep = nullptr;
+                if (basefromp) UINFO(1, "    Related node: " << basefromp << endl);
             } else {
-                if (basefromp) { UINFO(1, "    Related node: " << basefromp << endl); }
+                if (basefromp) UINFO(1, "    Related node: " << basefromp << endl);
                 nodep->v3fatalSrc("Illegal bit select; no signal/member being extracted from");
             }
         }

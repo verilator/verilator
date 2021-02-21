@@ -248,7 +248,7 @@ static int register_test_callback() {
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    double sim_time = 100;
+    vluint64_t sim_time = 100;
     bool cbs_called;
     Verilated::commandArgs(argc, argv);
 
@@ -262,7 +262,7 @@ int main(int argc, char** argv, char** env) {
     topp->clk = 0;
     main_time += 1;
 
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         if (verbose) {
             VL_PRINTF("-- { Sim Time %d , Callback %s (%d) , Testcase State %d } --\n", main_time,
                       cb_reason_to_string(*cb_iter), *cb_iter, *state_iter);

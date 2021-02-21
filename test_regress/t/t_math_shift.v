@@ -24,30 +24,86 @@ module t (/*AUTOARG*/
    localparam [3:0] PBIG29 = 4'b1 << 33'h100000000;
    // verilator lint_on WIDTH
 
-   reg [31:0]           right;
-   reg [31:0]           left;
+   reg [31:0]           iright;
+   reg signed [31:0]    irights;
+   reg [31:0]           ileft;
    reg [P64-1:0]        qright;
+   reg signed [P64-1:0] qrights;
    reg [P64-1:0]        qleft;
-   reg [31:0]           amt;
+   reg [95:0]           wright;
+   reg signed [95:0]    wrights;
+   reg [95:0]           wleft;
+
+   reg [31:0]           q_iright;
+   reg signed [31:0]    q_irights;
+   reg [31:0]           q_ileft;
+   reg [P64-1:0]        q_qright;
+   reg signed [P64-1:0] q_qrights;
+   reg [P64-1:0]        q_qleft;
+   reg [95:0]           q_wright;
+   reg signed [95:0]    q_wrights;
+   reg [95:0]           q_wleft;
+
+
+   reg [31:0]           w_iright;
+   reg signed [31:0]    w_irights;
+   reg [31:0]           w_ileft;
+   reg [P64-1:0]        w_qright;
+   reg signed [P64-1:0] w_qrights;
+   reg [P64-1:0]        w_qleft;
+   reg [95:0]           w_wright;
+   reg signed [95:0]    w_wrights;
+   reg [95:0]           w_wleft;
+
+   reg [31:0]           iamt;
+   reg [63:0]           qamt;
+   reg [95:0]           wamt;
 
    assign ign = {31'h0, clk} >>> 4'bx;  // bug760
-   assign ign2 = {amt[1:0] >> {22{amt[5:2]}}, amt[1:0] << (0 <<< amt[5:2])}; // bug1174
-   assign ign3 = {amt[1:0] >> {22{amt[5:2]}},
-                  amt[1:0] >> {11{amt[5:2]}},
-                  $signed(amt[1:0]) >>> {22{amt[5:2]}},
-                  $signed(amt[1:0]) >>> {11{amt[5:2]}},
-                  amt[1:0] << {22{amt[5:2]}},
-                  amt[1:0] << {11{amt[5:2]}}};
+   assign ign2 = {iamt[1:0] >> {22{iamt[5:2]}}, iamt[1:0] << (0 <<< iamt[5:2])}; // bug1174
+   assign ign3 = {iamt[1:0] >> {22{iamt[5:2]}},
+                  iamt[1:0] >> {11{iamt[5:2]}},
+                  $signed(iamt[1:0]) >>> {22{iamt[5:2]}},
+                  $signed(iamt[1:0]) >>> {11{iamt[5:2]}},
+                  iamt[1:0] << {22{iamt[5:2]}},
+                  iamt[1:0] << {11{iamt[5:2]}}};
 
-   wire [95:0] wamt = {amt,amt,amt};
-   output wire [95:0] ign4 = wamt >> {11{amt[5:2]}};
-   output wire signed [95:0] ign4s = $signed(wamt) >>> {11{amt[5:2]}};
+   wire [95:0] wamtt = {iamt,iamt,iamt};
+   output wire [95:0] ign4;
+   assign ign4 = wamtt >> {11{iamt[5:2]}};
+   output wire signed [95:0] ign4s;
+   assign ign4s = $signed(wamtt) >>> {11{iamt[5:2]}};
 
    always @* begin
-      right = 32'h819b018a >> amt;
-      left  = 32'h819b018a << amt;
-      qright = 64'hf784bf8f_12734089 >> amt;
-      qleft  = 64'hf784bf8f_12734089 >> amt;
+      iright  = 32'h819b018a >> iamt;
+      irights = 32'sh819b018a >>> signed'(iamt);
+      ileft   = 32'h819b018a << iamt;
+      qright  = 64'hf784bf8f_12734089 >> iamt;
+      qrights = 64'shf784bf8f_12734089 >>> signed'(iamt);
+      qleft   = 64'hf784bf8f_12734089 << iamt;
+      wright  = 96'hf784bf8f_12734089_190abe48 >> iamt;
+      wrights = 96'shf784bf8f_12734089_190abe48 >>> signed'(iamt);
+      wleft   = 96'hf784bf8f_12734089_190abe48 << iamt;
+
+      q_iright  = 32'h819b018a >> qamt;
+      q_irights = 32'sh819b018a >>> signed'(qamt);
+      q_ileft   = 32'h819b018a << qamt;
+      q_qright  = 64'hf784bf8f_12734089 >> qamt;
+      q_qrights = 64'shf784bf8f_12734089 >>> signed'(qamt);
+      q_qleft   = 64'hf784bf8f_12734089 << qamt;
+      q_wright  = 96'hf784bf8f_12734089_190abe48 >> qamt;
+      q_wrights = 96'shf784bf8f_12734089_190abe48 >>> signed'(qamt);
+      q_wleft   = 96'hf784bf8f_12734089_190abe48 << qamt;
+
+      w_iright  = 32'h819b018a >> wamt;
+      w_irights = 32'sh819b018a >>> signed'(wamt);
+      w_ileft   = 32'h819b018a << wamt;
+      w_qright  = 64'hf784bf8f_12734089 >> wamt;
+      w_qrights = 64'shf784bf8f_12734089 >>> signed'(wamt);
+      w_qleft   = 64'hf784bf8f_12734089 << wamt;
+      w_wright  = 96'hf784bf8f_12734089_190abe48 >> wamt;
+      w_wrights = 96'shf784bf8f_12734089_190abe48 >>> signed'(wamt);
+      w_wleft   = 96'hf784bf8f_12734089_190abe48 << wamt;
    end
 
    integer cyc; initial cyc=1;
@@ -55,10 +111,12 @@ module t (/*AUTOARG*/
       if (cyc!=0) begin
          cyc <= cyc + 1;
 `ifdef TEST_VERBOSE
-         $write("%d %x %x %x %x\n", cyc, left, right, qleft, qright);
+         $write("%d %x %x %x %x %x %x\n", cyc, ileft, iright, qleft, qright, wleft, wright);
 `endif
          if (cyc==1) begin
-            amt <= 32'd0;
+            iamt <= 0;
+            qamt <= 0;
+            wamt <= 0;
             if (P64 != 64) $stop;
             if (5'b10110>>2  != 5'b00101) $stop;
             if (5'b10110>>>2 != 5'b00101) $stop;  // Note it cares about sign-ness
@@ -72,56 +130,109 @@ module t (/*AUTOARG*/
             if ((64'sh458c2de282e30f8b >> 68'sh4) !== 64'sh0458c2de282e30f8) $stop;
          end
          if (cyc==2) begin
-            amt <= 32'd28;
-            if (left  != 32'h819b018a) $stop;
-            if (right != 32'h819b018a) $stop;
-            if (qleft  != 64'hf784bf8f_12734089) $stop;
-            if (qright != 64'hf784bf8f_12734089) $stop;
+            iamt <= 28;
+            qamt <= 28;
+            wamt <= 28;
+            if (ileft   != 32'h819b018a) $stop;
+            if (iright  != 32'h819b018a) $stop;
+            if (irights != 32'h819b018a) $stop;
+            if (qleft   != 64'hf784bf8f_12734089) $stop;
+            if (qright  != 64'hf784bf8f_12734089) $stop;
+            if (qrights != 64'hf784bf8f_12734089) $stop;
+            if (wleft   != 96'hf784bf8f12734089190abe48) $stop;
+            if (wright  != 96'hf784bf8f12734089190abe48) $stop;
+            if (wrights != 96'hf784bf8f12734089190abe48) $stop;
          end
          if (cyc==3) begin
-            amt <= 32'd31;
-            if (left  != 32'ha0000000) $stop;
-            if (right != 32'h8) $stop;
-            if (qleft  != 64'h0000000f784bf8f1) $stop;
+            iamt <= 31;
+            qamt <= 31;
+            wamt <= 31;
+            if (ileft  != 32'ha0000000) $stop;
+            if (iright != 32'h8) $stop;
+            if (irights != 32'hfffffff8) $stop;
+            if (qleft  != 64'hf127340890000000) $stop;
             if (qright != 64'h0000000f784bf8f1) $stop;
+            if (qrights != 64'hffffffff784bf8f1) $stop;
+            if (wleft  != 96'hf12734089190abe480000000) $stop;
+            if (wright != 96'h0000000f784bf8f127340891) $stop;
+            if (wrights != 96'hffffffff784bf8f127340891) $stop;
          end
          if (cyc==4) begin
-            amt <= 32'd32;
-            if (left  != 32'h0) $stop;
-            if (right != 32'h1) $stop;
-            if (qleft  != 64'h00000001ef097f1e) $stop;
+            iamt <= 32;
+            qamt <= 32;
+            wamt <= 32;
+            if (ileft  != 32'h0) $stop;
+            if (iright != 32'h1) $stop;
+            if (qleft  != 64'h8939a04480000000) $stop;
             if (qright != 64'h00000001ef097f1e) $stop;
          end
          if (cyc==5) begin
-            amt <= 32'd33;
-            if (left  != 32'h0) $stop;
-            if (right != 32'h0) $stop;
-            if (qleft  != 64'h00000000f784bf8f) $stop;
+            iamt <= 33;
+            qamt <= 33;
+            wamt <= 33;
+            if (ileft  != 32'h0) $stop;
+            if (iright != 32'h0) $stop;
+            if (qleft  != 64'h1273408900000000) $stop;
             if (qright != 64'h00000000f784bf8f) $stop;
          end
          if (cyc==6) begin
-            amt <= 32'd64;
-            if (left  != 32'h0) $stop;
-            if (right != 32'h0) $stop;
-            if (qleft  != 64'h000000007bc25fc7) $stop;
+            iamt <= 64;
+            qamt <= 64;
+            wamt <= 64;
+            if (ileft  != 32'h0) $stop;
+            if (iright != 32'h0) $stop;
+            if (qleft  != 64'h24e6811200000000) $stop;
             if (qright != 64'h000000007bc25fc7) $stop;
          end
          if (cyc==7) begin
-            amt <= 32'd128;
-            if (left  != 32'h0) $stop;
-            if (right != 32'h0) $stop;
+            iamt <= 128;
+            qamt <= 128;
+            wamt <= 128;
+            if (ileft  != 32'h0) $stop;
+            if (iright != 32'h0) $stop;
             if (qleft  != 64'h0) $stop;
             if (qright != 64'h0) $stop;
          end
          if (cyc==8) begin
-            if (left  != 32'h0) $stop;
-            if (right != 32'h0) $stop;
-            if (qleft  != 64'h0) $stop;
-            if (qright != 64'h0) $stop;
+            iamt <= 100;
+            qamt <= {32'h10, 32'h0};
+            wamt <= {32'h10, 64'h0};
+            if (ileft   != '0) $stop;
+            if (iright  != '0) $stop;
+            if (irights != '1) $stop;
+            if (qleft   != '0) $stop;
+            if (qright  != '0) $stop;
+            if (qrights != '1) $stop;
+            if (wleft   != '0) $stop;
+            if (wright  != '0) $stop;
+            if (wrights != '1) $stop;
          end
-         if (cyc==9) begin
+         if (cyc==19) begin
             $write("*-* All Finished *-*\n");
             $finish;
+         end
+
+         // General rule to test all q's
+         if (cyc != 0) begin
+            if (ileft != q_ileft) $stop;
+            if (iright != q_iright) $stop;
+            if (irights != q_irights) $stop;
+            if (qleft != q_qleft) $stop;
+            if (qright != q_qright) $stop;
+            if (qrights != q_qrights) $stop;
+            if (wleft != q_wleft) $stop;
+            if (wright != q_wright) $stop;
+            if (wrights != q_wrights) $stop;
+
+            if (ileft != w_ileft) $stop;
+            if (iright != w_iright) $stop;
+            if (irights != w_irights) $stop;
+            if (qleft != w_qleft) $stop;
+            if (qright != w_qright) $stop;
+            if (qrights != w_qrights) $stop;
+            if (wleft != w_wleft) $stop;
+            if (wright != w_wright) $stop;
+            if (wrights != w_wrights) $stop;
          end
       end
    end

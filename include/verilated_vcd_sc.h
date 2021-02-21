@@ -53,7 +53,7 @@ public:
     // METHODS
     /// Called by SystemC simulate()
     virtual void cycle(bool delta_cycle) {
-        if (!delta_cycle) { this->dump(sc_time_stamp().to_double()); }
+        if (!delta_cycle) this->dump(sc_time_stamp().to_double());
     }
 
 private:

@@ -19,6 +19,9 @@ module t (/*AUTOARG*/
 	      .toggle			(toggle),
 	      .cyc			(cyc[31:0]));
 
+   Sub sub1 (.*);
+   Sub sub2 (.*);
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
@@ -141,4 +144,15 @@ module Test
    counter1 c1 = new();
 `endif
 
+endmodule
+
+module Sub
+  (
+   input clk,
+   input integer cyc
+   );
+
+   // Simple cover, per-instance
+   pi_sub:
+     cover property (@(posedge clk) cyc == 3);
 endmodule

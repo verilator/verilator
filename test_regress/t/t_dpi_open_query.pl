@@ -29,7 +29,6 @@ compile(
 
 execute(
     check_finished => 1,
-    ms_pli => 0
     );
 
 ok(1);

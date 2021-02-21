@@ -169,7 +169,7 @@ static void register_filler_cb() {
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    double sim_time = 100;
+    vluint64_t sim_time = 100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
 
@@ -184,7 +184,7 @@ int main(int argc, char** argv, char** env) {
     topp->eval();
     topp->clk = 0;
 
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
         if (verbose) { VL_PRINTF("Sim Time %d got_error %d\n", main_time, got_error); }
         topp->clk = !topp->clk;

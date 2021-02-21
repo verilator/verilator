@@ -101,6 +101,7 @@ private:
         // BOTHEDGE:  var ^ var_last
         // HIGHEDGE:  var
         // LOWEDGE:  ~var
+        // ANYEDGE:   var ^ var_last
         AstNode* newp = nullptr;
         if (nodep->edgeType() == VEdgeType::ET_ILLEGAL) {
             nodep->v3warn(E_UNSUPPORTED,

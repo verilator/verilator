@@ -2145,6 +2145,12 @@ static inline WDataOutP VL_SHIFTL_WWW(int obits, int lbits, int rbits, WDataOutP
     }
     return VL_SHIFTL_WWI(obits, lbits, 32, owp, lwp, rwp[0]);
 }
+static inline WDataOutP VL_SHIFTL_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp,
+                                      QData rd) VL_MT_SAFE {
+    WData rwp[VL_WQ_WORDS_E];
+    VL_SET_WQ(rwp, rd);
+    return VL_SHIFTL_WWW(obits, lbits, rbits, owp, lwp, rwp);
+}
 static inline IData VL_SHIFTL_IIW(int obits, int, int rbits, IData lhs, WDataInP rwp) VL_MT_SAFE {
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) {
         if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
@@ -2152,6 +2158,11 @@ static inline IData VL_SHIFTL_IIW(int obits, int, int rbits, IData lhs, WDataInP
         }
     }
     return VL_CLEAN_II(obits, obits, lhs << rwp[0]);
+}
+static inline IData VL_SHIFTL_IIQ(int obits, int lbits, int rbits, IData lhs,
+                                  QData rhs) VL_MT_SAFE {
+    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
+    return VL_CLEAN_II(obits, obits, lhs << rhs);
 }
 static inline QData VL_SHIFTL_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp) VL_MT_SAFE {
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) {
@@ -2161,6 +2172,11 @@ static inline QData VL_SHIFTL_QQW(int obits, int, int rbits, QData lhs, WDataInP
     }
     // Above checks rwp[1]==0 so not needed in below shift
     return VL_CLEAN_QQ(obits, obits, lhs << (static_cast<QData>(rwp[0])));
+}
+static inline QData VL_SHIFTL_QQQ(int obits, int lbits, int rbits, QData lhs,
+                                  QData rhs) VL_MT_SAFE {
+    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
+    return VL_CLEAN_QQ(obits, obits, lhs << rhs);
 }
 
 // EMIT_RULE: VL_SHIFTR:  oclean=lclean; rclean==clean;
@@ -2223,6 +2239,14 @@ static inline QData VL_SHIFTR_QQW(int obits, int, int rbits, QData lhs, WDataInP
     // Above checks rwp[1]==0 so not needed in below shift
     return VL_CLEAN_QQ(obits, obits, lhs >> (static_cast<QData>(rwp[0])));
 }
+static inline IData VL_SHIFTR_IIQ(int obits, int, int rbits, IData lhs, QData rhs) VL_MT_SAFE {
+    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
+    return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
+}
+static inline QData VL_SHIFTR_QQQ(int obits, int, int rbits, QData lhs, QData rhs) VL_MT_SAFE {
+    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
+    return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
+}
 
 // EMIT_RULE: VL_SHIFTRS:  oclean=false; lclean=clean, rclean==clean;
 static inline IData VL_SHIFTRS_III(int obits, int lbits, int, IData lhs, IData rhs) VL_PURE {
@@ -2277,7 +2301,7 @@ static inline WDataOutP VL_SHIFTRS_WWW(int obits, int lbits, int rbits, WDataOut
                                        WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     EData overshift = 0;  // Huge shift 1>>32 or more
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) overshift |= rwp[i];
-    if (VL_UNLIKELY(overshift)) {
+    if (VL_UNLIKELY(overshift || rwp[0] >= obits)) {
         int lmsw = VL_WORDS_I(obits) - 1;
         EData sign = VL_SIGNONES_E(lbits, lwp[lmsw]);
         for (int j = 0; j <= lmsw; ++j) owp[j] = sign;
@@ -2296,7 +2320,7 @@ static inline IData VL_SHIFTRS_IIW(int obits, int lbits, int rbits, IData lhs,
                                    WDataInP rwp) VL_MT_SAFE {
     EData overshift = 0;  // Huge shift 1>>32 or more
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) overshift |= rwp[i];
-    if (VL_UNLIKELY(overshift)) {
+    if (VL_UNLIKELY(overshift || rwp[0] >= obits)) {
         IData sign = -(lhs >> (lbits - 1));  // ffff_ffff if negative
         return VL_CLEAN_II(obits, obits, sign);
     }
@@ -2306,13 +2330,14 @@ static inline QData VL_SHIFTRS_QQW(int obits, int lbits, int rbits, QData lhs,
                                    WDataInP rwp) VL_MT_SAFE {
     EData overshift = 0;  // Huge shift 1>>32 or more
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) overshift |= rwp[i];
-    if (VL_UNLIKELY(overshift)) {
+    if (VL_UNLIKELY(overshift || rwp[0] >= obits)) {
         QData sign = -(lhs >> (lbits - 1));  // ffff_ffff if negative
         return VL_CLEAN_QQ(obits, obits, sign);
     }
     return VL_SHIFTRS_QQI(obits, lbits, 32, lhs, rwp[0]);
 }
-static inline IData VL_SHIFTRS_IIQ(int obits, int lbits, int rbits, IData lhs, QData rhs) VL_PURE {
+static inline IData VL_SHIFTRS_IIQ(int obits, int lbits, int rbits, IData lhs,
+                                   QData rhs) VL_MT_SAFE {
     WData rwp[VL_WQ_WORDS_E];
     VL_SET_WQ(rwp, rhs);
     return VL_SHIFTRS_IIW(obits, lbits, rbits, lhs, rwp);

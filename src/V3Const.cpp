@@ -584,6 +584,34 @@ private:
         return (lp && VN_IS(lp->lhsp(), Const) && VN_IS(np->rhsp(), Const)
                 && lp->width() == np->width());
     }
+    bool matchRedundantClean(AstAnd* andp) {
+        // Remove And with constant one inserted by V3Clean
+        // 1 & (a == b)  -> (IData)(a == b)
+        // When bool is casted to int, the value is either 0 or 1
+        AstConst* constp = VN_CAST(andp->lhsp(), Const);
+        UASSERT_OBJ(constp && constp->isOne(), andp->lhsp(), "TRREEOPC must meet this condition");
+        AstNode* rhsp = andp->rhsp();
+        AstCCast* ccastp = nullptr;
+        auto isEqOrNeq
+            = [](AstNode* nodep) -> bool { return VN_IS(nodep, Eq) || VN_IS(nodep, Neq); };
+        if (isEqOrNeq(rhsp)) {
+            ccastp = new AstCCast{andp->fileline(), rhsp->unlinkFrBack(), andp};
+        } else if (AstCCast* tmpp = VN_CAST(rhsp, CCast)) {
+            if (isEqOrNeq(tmpp->lhsp())) {
+                if (tmpp->width() == andp->width()) {
+                    tmpp->unlinkFrBack();
+                    ccastp = tmpp;
+                } else {
+                    ccastp = new AstCCast{andp->fileline(), tmpp->lhsp()->unlinkFrBack(), andp};
+                }
+            }
+        }
+        if (ccastp) {
+            andp->replaceWith(ccastp);
+            VL_DO_DANGLING(andp->deleteTree(), andp);
+        }
+        return ccastp;
+    }
 
     static bool operandAndOrSame(const AstNode* nodep) {
         // OR( AND(VAL,x), AND(VAL,y)) -> AND(VAL,OR(x,y))
@@ -687,34 +715,6 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
         return newp;
-    }
-    bool matchRedundantClean(AstAnd* andp) {
-        // Remove And with constant one inserted by V3Clean
-        // 1 & (a == b)  -> (IData)(a == b)
-        // When bool is casted to int, the value is either 0 or 1
-        AstConst* constp = VN_CAST(andp->lhsp(), Const);
-        UASSERT_OBJ(constp && constp->isOne(), andp->lhsp(), "TRREEOPC must meet this condition");
-        AstNode* rhsp = andp->rhsp();
-        AstCCast* ccastp = nullptr;
-        auto isEqOrNeq
-            = [](AstNode* nodep) -> bool { return VN_IS(nodep, Eq) || VN_IS(nodep, Neq); };
-        if (isEqOrNeq(rhsp)) {
-            ccastp = new AstCCast{andp->fileline(), rhsp->unlinkFrBack(), andp};
-        } else if (AstCCast* tmpp = VN_CAST(rhsp, CCast)) {
-            if (isEqOrNeq(tmpp->lhsp())) {
-                if (tmpp->width() == andp->width()) {
-                    tmpp->unlinkFrBack();
-                    ccastp = tmpp;
-                } else {
-                    ccastp = new AstCCast{andp->fileline(), tmpp->lhsp()->unlinkFrBack(), andp};
-                }
-            }
-        }
-        if (ccastp) {
-            andp->replaceWith(ccastp);
-            VL_DO_DANGLING(andp->deleteTree(), andp);
-        }
-        return ccastp;
     }
     static bool operandShiftSame(const AstNode* nodep) {
         const AstNodeBiop* np = VN_CAST_CONST(nodep, NodeBiop);
@@ -2760,12 +2760,12 @@ private:
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstDiv   {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
     TREEOP ("AstDivS  {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
-    TREEOPC("AstAnd   {$lhsp.isOne, matchRedundantClean(nodep)}", "DONE")  // 1 & (a == b) -> (IData)(a == b)
     TREEOP ("AstMul   {operandIsPowTwo($lhsp), operandsSameSize($lhsp,,$rhsp)}", "replaceMulShift(nodep)");  // a*2^n -> a<<n
     TREEOP ("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}", "replaceDivShift(nodep)");  // a/2^n -> a>>n
     TREEOP ("AstModDiv{$lhsp, operandIsPowTwo($rhsp)}", "replaceModAnd(nodep)");  // a % 2^n -> a&(2^n-1)
     TREEOP ("AstPow   {operandIsTwo($lhsp), $rhsp}",    "replacePowShift(nodep)");  // 2**a == 1<<a
     TREEOP ("AstSub   {$lhsp.castAdd, operandSubAdd(nodep)}", "AstAdd{AstSub{$lhsp->castAdd()->lhsp(),$rhsp}, $lhsp->castAdd()->rhsp()}");  // ((a+x)-y) -> (a+(x-y))
+    TREEOPC("AstAnd   {$lhsp.isOne, matchRedundantClean(nodep)}", "DONE")  // 1 & (a == b) -> (IData)(a == b)
     // Trinary ops
     // Note V3Case::Sel requires Cond to always be conditionally executed in C to prevent core dump!
     TREEOP ("AstNodeCond{$condp.isZero,       $expr1p, $expr2p}", "replaceWChild(nodep,$expr2p)");
@@ -2922,7 +2922,7 @@ private:
     TREEOPV("AstRedAnd{$lhsp.castExtend, $lhsp->width() > VN_CAST($lhsp,,Extend)->lhsp()->width()}", "replaceZero(nodep)");  // &{0,...} => 0  Prevents compiler limited range error
     TREEOPV("AstRedOr {$lhsp.castExtend}",      "AstRedOr {$lhsp->castExtend()->lhsp()}");
     TREEOPV("AstRedXor{$lhsp.castExtend}",      "AstRedXor{$lhsp->castExtend()->lhsp()}");
-    TREEOP ("AstRedXor{$lhsp.castXor, VN_IS(VN_CAST($lhsp,,Xor)->lhsp(),,Const)}", "AstXor{AstRedXor{$lhsp->castXor()->lhsp()}, AstRedXor{$lhsp->castXor()->rhsp()}}");  // ^{const, b} => (^const)^(^b)
+    TREEOP ("AstRedXor{$lhsp.castXor, VN_IS(VN_CAST($lhsp,,Xor)->lhsp(),,Const)}", "AstXor{AstRedXor{$lhsp->castXor()->lhsp()}, AstRedXor{$lhsp->castXor()->rhsp()}}");  // ^(const ^ a) => (^const)^(^a)
     TREEOPC("AstAnd {nodep->widthMin() == 1, $lhsp.castConst, $rhsp.castRedXor, matchBitOpTree(nodep)}", "DONE");
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");

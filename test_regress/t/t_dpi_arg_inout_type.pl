@@ -37,7 +37,6 @@ if ($Self->{vlt_all}) {
 execute(
     check_finished => 1,
     expect_filename => $Self->{golden_filename},
-    ms_pli => 0
     );
 
 ok(1);

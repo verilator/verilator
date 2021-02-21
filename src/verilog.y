@@ -2209,7 +2209,7 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 			  AstNodeDType* dtp = GRAMMARP->createArray(refp, $4, true);
 			  $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
 	//			//
-	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'
+	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ dtypeAttrListE ';'
 			{ $$ = nullptr; BBUNSUP($1, "Unsupported: SystemVerilog 2005 typedef in this context"); }
 	//			// Allow redeclaring same typedef again
 	//			// Alternative is use of idAny below, but this will cause conflicts with ablve

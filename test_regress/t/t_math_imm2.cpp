@@ -6,6 +6,8 @@
 #include <verilated.h>
 #include "Vt_math_imm2.h"
 
+double sc_time_stamp() { return 0; }
+
 QData MaskVal(int lbit, int hbit) {
     QData val;
     for (val = 0; lbit <= hbit; lbit++) val |= (1ULL << lbit);

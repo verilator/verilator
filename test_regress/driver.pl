@@ -598,15 +598,19 @@ sub new {
                       .(($^O eq "darwin" )
                         ? " -Wl,-undefined,dynamic_lookup"
                         : " -export-dynamic")
+                      .($opt_verbose ? " -DTEST_VERBOSE=1":"")
                       ." -o $self->{obj_dir}/libvpi.so"],
+        tool_c_flags => [],
         # ATSIM
         atsim => 0,
+        atsim_define => 'ATSIM',
         atsim_flags => [split(/\s+/,"-c +sv +define+ATSIM"),
                         "+sv_dir+$self->{obj_dir}/.athdl_compile"],
         atsim_flags2 => [],  # Overridden in some sim files
         atsim_run_flags => [],
         # GHDL
         ghdl => 0,
+        ghdl_define => 'GHDL',
         ghdl_work_dir => "$self->{obj_dir}/ghdl_compile",
         ghdl_flags => [($::Debug?"-v":""),
                        "--workdir=$self->{obj_dir}/ghdl_compile", ],
@@ -614,29 +618,34 @@ sub new {
         ghdl_run_flags => [],
         # IV
         iv => 0,
+        iv_define => 'IVERILOG',
         iv_flags => [split(/\s+/,"+define+IVERILOG -g2012 -o $self->{obj_dir}/simiv")],
         iv_flags2 => [],  # Overridden in some sim files
         iv_pli => 0,  # need to use pli
         iv_run_flags => [],
         # VCS
         vcs => 0,
+        vcs_define => 'VCS',
         vcs_flags => [split(/\s+/,"+vcs+lic+wait +cli -debug_access +define+VCS+1 -q -sverilog -CFLAGS '-DVCS' ")],
         vcs_flags2 => [],  # Overridden in some sim files
         vcs_run_flags => [split(/\s+/,"+vcs+lic_wait")],
         # NC
         nc => 0,
+        nc_define => 'NC',
         nc_flags => [split(/\s+/,("+licqueue +nowarn+LIBNOU +define+NC=1 -q +assert +sv -c "
                                   .($opt_trace ? " +access+r":"")))],
         nc_flags2 => [],  # Overridden in some sim files
         nc_run_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
         # ModelSim
         ms => 0,
+        ms_define => 'MS',
         ms_flags => [split(/\s+/, ("-sv -work $self->{obj_dir}/work +define+MS=1 -ccflags \"-DMS=1\""))],
         ms_flags2 => [],  # Overridden in some sim files
         ms_pli => 1,  # need to use pli
         ms_run_flags => [split(/\s+/,"-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
         # XSim
         xsim => 0,
+        xsim_define => 'XSIM',
         xsim_flags => [split(/\s+/,("--nolog --sv --define XSIM --work $self->{name}=$self->{obj_dir}/xsim"))],
         xsim_flags2 => [],  # Overridden in some sim files
         xsim_run_flags => [split(/\s+/,("--nolog --runall --lib $self->{name}=$self->{obj_dir}/xsim"
@@ -645,6 +654,7 @@ sub new {
         # Verilator
         vlt => 0,
         vltmt => 0,
+        verilator_define => 'VERILATOR',
         verilator_flags => ["-cc",
                             "-Mdir $self->{obj_dir}",
                             "-OD",  # As currently disabled unless -O3
@@ -957,6 +967,7 @@ sub compile {
     }
 
     if ($param{atsim}) {
+        $param{tool_define} ||= $param{atsim_define};
         $self->_make_top();
         $self->_run(logfile=>"$self->{obj_dir}/atsim_compile.log",
                     fails=>$param{fails},
@@ -971,6 +982,7 @@ sub compile {
                           ]);
     }
     elsif ($param{ghdl}) {
+        $param{tool_define} ||= $param{ghdl_define};
         mkdir $self->{ghdl_work_dir};
         $self->_make_top();
         $self->_run(logfile=>"$self->{obj_dir}/ghdl_compile.log",
@@ -989,6 +1001,7 @@ sub compile {
                           ]);
     }
     elsif ($param{vcs}) {
+        $param{tool_define} ||= $param{vcs_define};
         $self->_make_top();
         $self->_run(logfile=>"$self->{obj_dir}/vcs_compile.log",
                     fails=>$param{fails},
@@ -1003,6 +1016,7 @@ sub compile {
                           ]);
     }
     elsif ($param{nc}) {
+        $param{tool_define} ||= $param{nc_define};
         $self->_make_top();
         my @more_args;
         if ($self->vhdl) {
@@ -1024,6 +1038,7 @@ sub compile {
                           ]);
     }
     elsif ($param{ms}) {
+        $param{tool_define} ||= $param{ms_define};
         $self->_make_top();
         $self->_run(logfile=>"$self->{obj_dir}/ms_compile.log",
                     fails=>$param{fails},
@@ -1039,6 +1054,7 @@ sub compile {
                           ]);
     }
     elsif ($param{iv}) {
+        $param{tool_define} ||= $param{iv_define};
         $self->_make_top();
         my @cmd = (($ENV{VERILATOR_IVERILOG}||"iverilog"),
                    @{$param{iv_flags}},
@@ -1055,6 +1071,7 @@ sub compile {
                     cmd=>\@cmd);
     }
     elsif ($param{xsim}) {
+        $param{tool_define} ||= $param{xsim_define};
         $self->_make_top();
         $self->_run(logfile=>"$self->{obj_dir}/xsim_compile.log",
                     fails=>$param{fails},
@@ -1069,6 +1086,7 @@ sub compile {
                           ]);
     }
     elsif ($param{vlt_all}) {
+        $param{tool_define} ||= $param{verilator_define};
 
         if ($self->sc && !$self->have_sc) {
             $self->skip("Test requires SystemC; ignore error since not installed\n");
@@ -1166,7 +1184,9 @@ sub compile {
 
     if ($param{make_pli}) {
         $self->oprint("Compile vpi\n") if $self->{verbose};
-        my @cmd = ($ENV{CXX}, @{$param{pli_flags}}, "-DIS_VPI", $ENV{CFLAGS},
+        my @cmd = ($ENV{CXX}, @{$param{pli_flags}},
+                   "-D".$param{tool_define},
+                   "-DIS_VPI", ($ENV{CFLAGS}||''),
                    "$self->{t_dir}/$self->{pli_filename}");
 
         $self->_run(logfile=>"$self->{obj_dir}/pli_compile.log",
@@ -1219,7 +1239,7 @@ sub execute {
                    @{$param{iv_run_flags}},
                    @{$param{all_run_flags}},
                           );
-        if ($param{iv_pli}) {
+        if ($param{use_libvpi}) {
             # don't enter command line on $stop, include vpi
             unshift @cmd, "vvp -n -m $self->{obj_dir}/libvpi.so";
         }
@@ -1233,7 +1253,7 @@ sub execute {
     }
     elsif ($param{ms}) {
         my @pli_opt=();
-        if ($param{ms_pli}) {
+        if ($param{use_libvpi}) {
             unshift @pli_opt, "-pli $self->{obj_dir}/libvpi.so";
         }
         $self->_run(logfile=>"$self->{obj_dir}/ms_sim.log",
@@ -1717,7 +1737,7 @@ sub _make_main {
     if (!$self->sc) {
         if ($self->{vl_time_stamp64}) {
             print $fh "vluint64_t main_time = 0;\n";
-            print $fh "vluint64_t vl_time_stamp() { return main_time; }\n";
+            print $fh "vluint64_t vl_time_stamp64() { return main_time; }\n";
         } else {
             print $fh "double main_time = 0;\n";
             print $fh "double sc_time_stamp() { return main_time; }\n";
@@ -2238,7 +2258,7 @@ sub _vcd_read {
     my @hier = ($data);
     my $lasthier;
     while (defined(my $line = $fh->getline)) {
-        if ($line =~ /\$scope module\s+(\S+)/) {
+        if ($line =~ /\$scope (module|struct)\s+(\S+)/) {
             $hier[$#hier]->{$1} ||= {};
             push @hier, $hier[$#hier]->{$1};
             $lasthier = $hier[$#hier];

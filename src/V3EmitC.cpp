@@ -748,7 +748,7 @@ public:
         } else {
             puts(cvtToStr(array_size));
         }
-        puts(");\n");
+        puts(")");
     }
     virtual void visit(AstSysFuncAsTask* nodep) override {
         if (!nodep->lhsp()->isWide()) puts("(void)");
@@ -3080,6 +3080,13 @@ void EmitCImp::emitIntTop(AstNodeModule*) {
 
 void EmitCImp::emitInt(AstNodeModule* modp) {
     puts("\n//==========\n\n");
+
+    if (AstClass* classp = VN_CAST(modp, Class)) {
+        if (classp->extendsp())
+            puts("#include \"" + prefixNameProtect(classp->extendsp()->classp()->classOrPackagep())
+                 + ".h\"\n");
+    }
+
     emitModCUse(modp, VUseType::INT_INCLUDE);
 
     // Declare foreign instances up front to make C++ happy

@@ -11,6 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
+    make_flags => 'VM_PARALLEL_BUILDS=1',  # bug2775
     );
 
 execute(
