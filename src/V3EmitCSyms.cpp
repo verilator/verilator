@@ -431,7 +431,8 @@ void EmitCSyms::emitSymHdr() {
              "///< Used by trace routines when tracing multiple models\n");
     }
     puts("bool __Vm_didInit;\n");
-    puts("VerilatedSimulationContext* __Vm_simContext; // simulation context (time, finished, ..)\n");
+    puts("VerilatedSimulationContext* __Vm_simContext; // simulation context (time, finished, "
+         "..)\n");
 
     puts("\n// SUBCELL STATE\n");
     for (const auto& i : m_scopes) {
