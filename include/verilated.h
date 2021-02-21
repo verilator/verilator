@@ -272,17 +272,6 @@ public:
 #define VL_MODULE(modname) class modname VL_NOT_FINAL : public VerilatedModule
 // Not class final in VL_MODULE, as users might be abstracting our models (--hierarchical)
 
-/// Constructor, ala SC_CTOR
-#define VL_CTOR(modname) modname(const char* __VCname = "")
-
-/// Constructor declaration for C++, ala SP_CTOR_IMPL
-#define VL_CTOR_IMP(modname) \
-    modname::modname(const char* __VCname) \
-        : VerilatedModule(__VCname)
-
-/// Constructor declaration for SystemC, ala SP_CTOR_IMPL
-#define VL_SC_CTOR_IMP(modname) modname::modname(sc_module_name)
-
 //=========================================================================
 // Functions overridable by user defines
 // (Internals however must use VL_PRINTF_MT, which calls these.)

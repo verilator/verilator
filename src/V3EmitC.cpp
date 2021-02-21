@@ -2427,10 +2427,12 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     if (VN_IS(modp, Class)) {
         modp->v3fatalSrc("constructors should be AstCFuncs instead");
     } else if (optSystemC() && modp->isTop()) {
-        puts("VL_SC_CTOR_IMP(" + prefixNameProtect(modp) + ")");
+        puts(prefixNameProtect(modp) + "::" + prefixNameProtect(modp) + "(sc_module_name)");
     } else {
-        puts("VL_CTOR_IMP(" + prefixNameProtect(modp) + ")");
-        first = false;  // VL_CTOR_IMP includes the first ':'
+        puts(prefixNameProtect(modp) + "::" + prefixNameProtect(modp)
+             + "(const char* __VCname)\n");
+        puts("    : VerilatedModule(__VCname)\n");
+        first = false;  // printed the first ':'
     }
     emitVarCtors(&first);
     if (modp->isTop() && v3Global.opt.mtasks()) emitMTaskVertexCtors(&first);
@@ -3184,7 +3186,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         puts("virtual ~" + prefixNameProtect(modp) + "();\n");
     } else if (optSystemC()) {
         ofp()->putsPrivate(false);  // public:
-        puts("VL_CTOR(" + prefixNameProtect(modp) + ");\n");
+        puts(prefixNameProtect(modp) + "(const char* __VCname = \"\");\n");
         puts("~" + prefixNameProtect(modp) + "();\n");
     } else {
         ofp()->putsPrivate(false);  // public:
