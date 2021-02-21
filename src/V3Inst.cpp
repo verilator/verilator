@@ -396,7 +396,8 @@ private:
             AstNode* prevPinp = nullptr;
             // Clone the var referenced by the pin, and clone each var referenced by the varref
             // Clone pin varp:
-            for (int i = pinArrp->lo(); i <= pinArrp->hi(); ++i) {
+            for (int in = 0; in < pinArrp->elementsConst(); ++in) {
+                int i = pinArrp->left() + in * pinArrp->declRange().leftToRightInc();
                 string varNewName = pinVarp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 AstVar* varNewp = nullptr;
 
@@ -429,16 +430,20 @@ private:
                 newp->modVarp(varNewp);
                 newp->name(newp->name() + "__BRA__" + cvtToStr(i) + "__KET__");
                 // And replace exprp with a new varxref
-                int offset = 0;
                 const AstVarRef* varrefp = VN_CAST(newp->exprp(), VarRef);
+                int offset = 0;
                 if (varrefp) {
                 } else if (AstSliceSel* slicep = VN_CAST(newp->exprp(), SliceSel)) {
                     varrefp = VN_CAST(slicep->fromp(), VarRef);
                     UASSERT(VN_IS(slicep->rhsp(), Const), "Slices should be constant");
                     offset = VN_CAST(slicep->rhsp(), Const)->toSInt();
                 }
-                if (!varrefp) { newp->exprp()->v3error("Unexpected connection to arrayed port"); }
-                string newname = varrefp->name() + "__BRA__" + cvtToStr(i + offset) + "__KET__";
+                int expr_i = i;
+                if (auto* exprArrp = VN_CAST(newp->exprp()->dtypep(), UnpackArrayDType))
+                    expr_i = exprArrp->left()
+                             + (in + offset) * exprArrp->declRange().leftToRightInc();
+                if (!varrefp) newp->exprp()->v3error("Unexpected connection to arrayed port");
+                string newname = varrefp->name() + "__BRA__" + cvtToStr(expr_i) + "__KET__";
                 AstVarXRef* newVarXRefp
                     = new AstVarXRef(nodep->fileline(), newname, "", VAccess::WRITE);
                 newVarXRefp->varp(newp->modVarp());

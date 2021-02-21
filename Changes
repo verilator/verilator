@@ -7,17 +7,19 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support concat selection (#2721).
 
+****  Fix little endian interface pin swizzling (#2475). [Don Owen]
+
 ****  Fix TIMESCALE warnings on primitives (#2763). [Xuanqi]
 
 ****  Fix $fread extra semicolon inside statements. [Leendert van Doorn]
 
 ****  Fix class extends with VM_PARALLEL_BUILDS (#2775). [Iru Cai]
 
-****  Fix shifts by > 32 bit values (#2785).  [qrq992]
+****  Fix shifts by > 32 bit values (#2785). [qrq992]
 
-****  Fix examples not flushing vcd (#2787).  [Richard E George]
+****  Fix examples not flushing vcd (#2787). [Richard E George]
 
-****  Fix little endian packed array pattern assignment (#2795).  [Alex Torregrosa]
+****  Fix little endian packed array pattern assignment (#2795). [Alex Torregrosa]
 
 
 * Verilator 4.108 2021-01-10
