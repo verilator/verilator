@@ -657,7 +657,7 @@ void EmitCSyms::emitSymImp() {
         puts("    , __Vm_baseCode(0)\n");
     }
     puts("    , __Vm_didInit(false)\n");
-    puts("    , __Vm_simContext(nullptr)\n");
+    puts("    , __Vm_simContext(new VerilatedSimulationContext())\n");
     puts("    // Setup submodule names\n");
     char comma = ',';
     for (const auto& i : m_scopes) {

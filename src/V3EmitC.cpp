@@ -2860,7 +2860,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
 
     puts("void " + prefixNameProtect(modp) + "::init_sim_context(){\n");
     puts("const VerilatedLockGuard lock(" + prefixNameProtect(modp) + "::s_mutex);\n");
-    puts("this->__VlSymsp->__Vm_simContext = new VerilatedSimulationContext();\n");
+    puts("this->__VlSymsp->__Vm_simContext->init = true;\n");
     puts("}\n");
 }
 
@@ -3517,7 +3517,7 @@ class EmitCTrace final : EmitCStmts {
             puts("void " + topClassName() + "::_traceDump() {\n");
             // Caller checked for __Vm_dumperp non-nullptr
             puts("const VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
-            puts("if(__VlSymsp->__Vm_simContext == NULL){\n");
+            puts("if(!__VlSymsp->__Vm_simContext->init){\n");
             puts("__VlSymsp->__Vm_dumperp->dump(VL_TIME_Q());\n");
             puts("} else {\n");
             puts("__VlSymsp->__Vm_dumperp->dump(" + topClassName() + "::main_time());\n");

@@ -32,6 +32,7 @@
 #include <sstream>
 #include <sys/stat.h>  // mkdir
 #include <list>
+#include <limits>
 #include <utility>
 
 // clang-format off
@@ -104,11 +105,20 @@ void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE
     if (false && hier) {}
     VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
         "- %s:%d: Verilog $finish\n", filename, linenum);
+    if (Verilated::gotFinish()) {
+        VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
+            "- %s:%d: Second verilog $finish, exiting\n", filename, linenum);
+        //Verilated::runFlushCallbacks();
+        //Verilated::runExitCallbacks();
+        //exit(0);
+    }
+    Verilated::gotFinish(true);
 }
 #endif
 
 #ifndef VL_USER_STOP  ///< Define this to override this function
 void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
+    Verilated::gotFinish(true);
     Verilated::runFlushCallbacks();
     vl_fatal(filename, linenum, hier, "Verilog $stop");
 }
@@ -117,6 +127,7 @@ void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
 #ifndef VL_USER_FATAL  ///< Define this to override this function
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
     if (false && hier) {}
+    Verilated::gotFinish(true);
     if (filename && filename[0]) {
         // Not VL_PRINTF_MT, already on main thread
         VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);
@@ -256,6 +267,7 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
 Verilated::Serialized::Serialized() {
     s_debug = 0;
     s_calcUnusedSigs = false;
+    s_gotFinish = false;
     s_assertOn = true;
     s_fatalOnVpiError = true;  // retains old default behaviour
     s_errorCount = 0;
@@ -450,7 +462,7 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
         vluint64_t qhat = unw64 / static_cast<vluint64_t>(vn[vw - 1]);
         vluint64_t rhat = unw64 - qhat * static_cast<vluint64_t>(vn[vw - 1]);
 
-    again:
+        again:
         if (qhat >= 0x100000000ULL || ((qhat * vn[vw - 2]) > ((rhat << 32ULL) + un[j + vw - 2]))) {
             qhat = qhat - 1;
             rhat = rhat + vn[vw - 1];
@@ -1228,7 +1240,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
             }  // switch
         }
     }
-done:
+    done:
     return got;
 }
 
@@ -1330,8 +1342,6 @@ void VL_FCLOSE_I(IData fdi) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
     VerilatedImp::fdClose(fdi);
 }
-
-void VL_FFLUSH_ALL() VL_MT_SAFE { fflush(stdout); }
 
 void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) VL_MT_SAFE {
     static VL_THREAD_LOCAL std::string t_output;  // static only for speed
@@ -1843,7 +1853,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
         } else if (c == '\t' || c == ' ' || c == '\r' || c == '\f') {
             reading_addr = false;
         }
-        // Skip // comments and detect /* comments
+            // Skip // comments and detect /* comments
         else if (ignore_to_cmt && lastc == '*' && c == '/') {
             ignore_to_cmt = false;
             reading_addr = false;
@@ -1859,7 +1869,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
                 reading_addr = true;
                 m_addr = 0;
             }
-            // Check for hex or binary digits as file format requests
+                // Check for hex or binary digits as file format requests
             else if (isxdigit(c) || (!reading_addr && (c == 'x' || c == 'X'))) {
                 c = tolower(c);
                 int value
@@ -2023,12 +2033,12 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
                   int bits,  // M_Bits of each array row
                   QData depth,  // Number of rows
                   int array_lsb,  // Index of first row. Valid row addresses
-                  //              //  range from array_lsb up to (array_lsb + depth - 1)
+    //              //  range from array_lsb up to (array_lsb + depth - 1)
                   const std::string& filename,  // Input file name
                   void* memp,  // Array state
                   QData start,  // First array row address to read
                   QData end  // Last row address to read
-                  ) VL_MT_SAFE {
+) VL_MT_SAFE {
     if (start < static_cast<QData>(array_lsb)) start = array_lsb;
 
     VlReadMem rmem(hex, bits, filename, start, end);
@@ -2071,12 +2081,12 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
                    int bits,  // Width of each array row
                    QData depth,  // Number of rows
                    int array_lsb,  // Index of first row. Valid row addresses
-                   //              //  range from array_lsb up to (array_lsb + depth - 1)
+    //              //  range from array_lsb up to (array_lsb + depth - 1)
                    const std::string& filename,  // Output file name
                    const void* memp,  // Array state
                    QData start,  // First array row address to write
                    QData end  // Last address to write, or ~0 when not specified
-                   ) VL_MT_SAFE {
+) VL_MT_SAFE {
     QData addr_max = array_lsb + depth - 1;
     if (start < static_cast<QData>(array_lsb)) start = array_lsb;
     if (end > addr_max) end = addr_max;
@@ -2227,7 +2237,7 @@ void Verilated::randSeed(int val) VL_MT_SAFE {
     s_s.s_randSeed = val;
     vluint64_t newEpoch = s_s.s_randSeedEpoch + 1;
     if (VL_UNLIKELY(newEpoch == 0)) newEpoch = 1;
-        // Obververs must see new epoch AFTER seed updated
+    // Obververs must see new epoch AFTER seed updated
 #ifdef VL_THREADED
     std::atomic_signal_fence(std::memory_order_release);
 #endif
@@ -2258,7 +2268,10 @@ void Verilated::errorLimit(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock(s_mutex);
     s_s.s_errorLimit = val;
 }
-
+void Verilated::gotFinish(bool flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock(s_mutex);
+    s_s.s_gotFinish = flag;
+}
 void Verilated::assertOn(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock(s_mutex);
     s_s.s_assertOn = flag;
