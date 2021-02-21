@@ -3427,9 +3427,10 @@ private:
     void patternArray(AstPattern* nodep, AstNodeArrayDType* arrayDtp, AstPatMember* defaultp) {
         VNumRange range = arrayDtp->declRange();
         PatVecMap patmap = patVectorMap(nodep, range);
-        UINFO(9, "ent " << range.hi() << " to " << range.lo() << endl);
+        UINFO(9, "ent " << range.left() << " to " << range.right() << endl);
         AstNode* newp = nullptr;
-        for (int ent = range.hi(); ent >= range.lo(); --ent) {
+        for (int entn = 0, ent = range.left(); entn < range.elements();
+             ++entn, ent += range.leftToRightInc()) {
             AstPatMember* newpatp = nullptr;
             AstPatMember* patp = nullptr;
             const auto it = patmap.find(ent);

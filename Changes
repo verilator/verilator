@@ -17,6 +17,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix examples not flushing vcd (#2787).  [Richard E George]
 
+****  Fix little endian packed array pattern assignment (#2795).  [Alex Torregrosa]
+
 
 * Verilator 4.108 2021-01-10
 
