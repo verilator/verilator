@@ -857,7 +857,6 @@ inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_sta
 # endif
 #endif
 
-#define VL_TIME_I() (static_cast<IData>(vl_time_stamp64()))
 #define VL_TIME_Q() (static_cast<QData>(vl_time_stamp64()))
 #define VL_TIME_D() (static_cast<double>(vl_time_stamp64()))
 
