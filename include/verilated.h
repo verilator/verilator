@@ -564,22 +564,23 @@ public:
     static int dpiLineno() VL_MT_SAFE { return t_s.t_dpiLineno; }
     static int exportFuncNum(const char* namep) VL_MT_SAFE;
 
+    // Internal: Serialization setup
     static constexpr size_t serialized1Size() VL_PURE { return sizeof(s_s); }
     static constexpr void* serialized1Ptr() VL_MT_UNSAFE { return &s_s; }  // For Serialize only
     static size_t serialized2Size() VL_PURE;
     static void* serialized2Ptr() VL_MT_UNSAFE;
 #ifdef VL_THREADED
-    /// Set the mtaskId, called when an mtask starts
+    /// Internal: Set the mtaskId, called when an mtask starts
     static void mtaskId(vluint32_t id) VL_MT_SAFE { t_s.t_mtaskId = id; }
     static vluint32_t mtaskId() VL_MT_SAFE { return t_s.t_mtaskId; }
     static void endOfEvalReqdInc() VL_MT_SAFE { ++t_s.t_endOfEvalReqd; }
     static void endOfEvalReqdDec() VL_MT_SAFE { --t_s.t_endOfEvalReqd; }
 
-    /// Called at end of each thread mtask, before finishing eval
+    /// Internal: Called at end of each thread mtask, before finishing eval
     static void endOfThreadMTask(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
         if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) endOfThreadMTaskGuts(evalMsgQp);
     }
-    /// Called at end of eval loop
+    /// Internal: Called at end of eval loop
     static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
         // It doesn't work to set endOfEvalReqd on the threadpool thread
         // and then check it on the eval thread since it's thread local.

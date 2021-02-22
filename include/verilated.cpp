@@ -2482,12 +2482,12 @@ void Verilated::endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
 // VerilatedImp:: Constructors
 
 // verilated.o may exist both in protect-lib and main module.
-// Both the main module and the protec-lib refer the same instance of
+// Both the main module and the protect-lib refer the same instance of
 // static variables such as Verilated or VerilatedImplData.
 // This is important to share the state such as Verilated::gotFinish.
 // But the sharing may cause double-free error when shutting down because destructors
 // are called twice.
-// 1st time:From protec-lib shared object on the way of unloading after exitting main()
+// 1st time:From protect-lib shared object on the way of unloading after exiting main()
 // 2nd time:From main executable.
 //
 // To avoid the trouble, all member variables are enclosed in VerilatedImpU union.
