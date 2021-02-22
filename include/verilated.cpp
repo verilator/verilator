@@ -1510,19 +1510,19 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi
         IData entry = read_elements + start - array_lsb;
         if (width <= 8) {
             CData* datap = &(reinterpret_cast<CData*>(memp))[entry];
-            if (shift == start_shift) { *datap = 0; }
+            if (shift == start_shift) *datap = 0;
             *datap |= (c << shift) & VL_MASK_I(width);
         } else if (width <= 16) {
             SData* datap = &(reinterpret_cast<SData*>(memp))[entry];
-            if (shift == start_shift) { *datap = 0; }
+            if (shift == start_shift) *datap = 0;
             *datap |= (c << shift) & VL_MASK_I(width);
         } else if (width <= VL_IDATASIZE) {
             IData* datap = &(reinterpret_cast<IData*>(memp))[entry];
-            if (shift == start_shift) { *datap = 0; }
+            if (shift == start_shift) *datap = 0;
             *datap |= (c << shift) & VL_MASK_I(width);
         } else if (width <= VL_QUADSIZE) {
             QData* datap = &(reinterpret_cast<QData*>(memp))[entry];
-            if (shift == start_shift) { *datap = 0; }
+            if (shift == start_shift) *datap = 0;
             *datap |= ((static_cast<QData>(c) << static_cast<QData>(shift)) & VL_MASK_Q(width));
         } else {
             WDataOutP datap = &(reinterpret_cast<WDataOutP>(memp))[entry * VL_WORDS_I(width)];
@@ -1909,19 +1909,19 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
         int value = (c >= 'a' ? (c == 'x' ? VL_RAND_RESET_I(4) : (c - 'a' + 10)) : (c - '0'));
         if (m_bits <= 8) {
             CData* datap = reinterpret_cast<CData*>(valuep);
-            if (!innum) { *datap = 0; }
+            if (!innum) *datap = 0;
             *datap = ((*datap << shift) + value) & VL_MASK_I(m_bits);
         } else if (m_bits <= 16) {
             SData* datap = reinterpret_cast<SData*>(valuep);
-            if (!innum) { *datap = 0; }
+            if (!innum) *datap = 0;
             *datap = ((*datap << shift) + value) & VL_MASK_I(m_bits);
         } else if (m_bits <= VL_IDATASIZE) {
             IData* datap = reinterpret_cast<IData*>(valuep);
-            if (!innum) { *datap = 0; }
+            if (!innum) *datap = 0;
             *datap = ((*datap << shift) + value) & VL_MASK_I(m_bits);
         } else if (m_bits <= VL_QUADSIZE) {
             QData* datap = reinterpret_cast<QData*>(valuep);
-            if (!innum) { *datap = 0; }
+            if (!innum) *datap = 0;
             *datap = ((*datap << static_cast<QData>(shift)) + static_cast<QData>(value))
                      & VL_MASK_Q(m_bits);
         } else {
@@ -2694,7 +2694,7 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_
     if (!finalize) {
         // Need two passes so we know array size to create
         // Alternative is to dynamically stretch the array, which is more code, and slower.
-        if (funcnum >= m_funcnumMax) { m_funcnumMax = funcnum + 1; }
+        if (funcnum >= m_funcnumMax) m_funcnumMax = funcnum + 1;
     } else {
         if (VL_UNCOVERABLE(funcnum >= m_funcnumMax)) {
             VL_FATAL_MT(__FILE__, __LINE__, "",  // LCOV_EXCL_LINE

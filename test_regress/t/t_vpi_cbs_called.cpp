@@ -108,7 +108,7 @@ static int register_cb(const int next_state) {
     }
 
     // State of callback next time through loop
-    if (verbose) { vpi_printf(const_cast<char*>("     Updating callback for next loop:\n")); }
+    if (verbose) vpi_printf(const_cast<char*>("     Updating callback for next loop:\n"));
     switch (next_state) {
     case ACTIVE: {
         if (verbose) {
@@ -141,7 +141,7 @@ static int register_cb(const int next_state) {
         break;
     }
     default:
-        if (verbose) { vpi_printf(const_cast<char*>("     - No change\n")); }
+        if (verbose) vpi_printf(const_cast<char*>("     - No change\n"));
         break;
     }
 
@@ -161,7 +161,7 @@ static int test_callbacks(p_cb_data cb_data) {
     t_cb_data cb_data_testcase;
     bzero(&cb_data_testcase, sizeof(cb_data_testcase));
 
-    if (verbose) { vpi_printf(const_cast<char*>("     Checking callback results\n")); }
+    if (verbose) vpi_printf(const_cast<char*>("     Checking callback results\n"));
 
     // Check results from previous loop
     int cb = *cb_iter;
@@ -192,7 +192,7 @@ static int test_callbacks(p_cb_data cb_data) {
     }
 
     int ret = register_cb(next_state);
-    if (ret) { return ret; }
+    if (ret) return ret;
 
     // Update iterators for next loop
     ++state_iter;
@@ -228,7 +228,7 @@ static int register_test_callback() {
     bzero(&cb_data, sizeof(cb_data));
     s_vpi_time t1;
 
-    if (verbose) { vpi_printf(const_cast<char*>("     Registering test_cbs Timed callback\n")); }
+    if (verbose) vpi_printf(const_cast<char*>("     Registering test_cbs Timed callback\n"));
 
     cb_data.reason = cbAfterDelay;
     t1.type = vpiSimTime;
@@ -254,7 +254,7 @@ int main(int argc, char** argv, char** env) {
 
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 
-    if (verbose) { VL_PRINTF("-- { Sim Time %d } --\n", main_time); }
+    if (verbose) VL_PRINTF("-- { Sim Time %d } --\n", main_time);
 
     register_test_callback();
 
@@ -279,7 +279,7 @@ int main(int argc, char** argv, char** env) {
             } else {
                 cbs_called = VerilatedVpi::callCbs(i);
             }
-            if (verbose) { VL_PRINTF(" - any callbacks called? %s\n", cbs_called ? "YES" : "NO"); }
+            if (verbose) VL_PRINTF(" - any callbacks called? %s\n", cbs_called ? "YES" : "NO");
             callbacks_called[i] = cbs_called;
         }
 
@@ -287,7 +287,7 @@ int main(int argc, char** argv, char** env) {
 
         main_time = VerilatedVpi::cbNextDeadline();
         if (main_time == -1 && !Verilated::gotFinish()) {
-            if (verbose) { VL_PRINTF("-- { Sim Time %d , No more testcases } --\n", main_time); }
+            if (verbose) VL_PRINTF("-- { Sim Time %d , No more testcases } --\n", main_time);
             if (got_error) {
                 vl_stop(__FILE__, __LINE__, "TOP-cpp");
             } else {

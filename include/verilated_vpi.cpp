@@ -742,7 +742,7 @@ PLI_INT32 VerilatedVpioReasonCb::dovpi_remove_cb() {
 
 VerilatedVpiError* VerilatedVpiImp::error_info() VL_MT_UNSAFE_ONE {
     VerilatedVpiImp::assertOneCheck();
-    if (VL_UNLIKELY(!s_s.m_errorInfop)) { s_s.m_errorInfop = new VerilatedVpiError(); }
+    if (VL_UNLIKELY(!s_s.m_errorInfop)) s_s.m_errorInfop = new VerilatedVpiError();
     return s_s.m_errorInfop;
 }
 
@@ -1235,7 +1235,7 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
         if (scopename.find('.') == std::string::npos) {
             // This is a toplevel, hence search in our TOP ports first.
             scopep = Verilated::scopeFind("TOP");
-            if (scopep) { varp = scopep->varFind(baseNamep); }
+            if (scopep) varp = scopep->varFind(baseNamep);
         }
         if (!varp) {
             scopep = Verilated::scopeFind(scopename.c_str());

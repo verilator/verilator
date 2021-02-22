@@ -110,7 +110,7 @@ void test(const string& lhss, const string& op, const string& rhss, const string
 
     V3Number ok(fl, 1);
     ok.opCaseEq(expnum, gotnum);
-    if (ok.toUInt() != 1) { v3fatalSrc("%Error:Test FAILED"); }
+    if (ok.toUInt() != 1) v3fatalSrc("%Error:Test FAILED");
 
     free(l1);
     free(r1);

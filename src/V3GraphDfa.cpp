@@ -445,7 +445,7 @@ private:
         for (V3GraphVertex *nextp, *vertexp = m_graphp->verticesBeginp(); vertexp;
              vertexp = nextp) {
             nextp = vertexp->verticesNextp();
-            if (!vertexp->user()) { VL_DO_DANGLING(vertexp->unlinkDelete(m_graphp), vertexp); }
+            if (!vertexp->user()) VL_DO_DANGLING(vertexp->unlinkDelete(m_graphp), vertexp);
         }
     }
 

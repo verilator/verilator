@@ -58,7 +58,7 @@ class CMakeEmitter final {
     static void cmake_set_raw(std::ofstream& of, const string& name, const string& raw_value,
                               const string& cache_type = "", const string& docstring = "") {
         of << "set(" << name << " " << raw_value;
-        if (!cache_type.empty()) { of << " CACHE " << cache_type << " \"" << docstring << "\""; }
+        if (!cache_type.empty()) of << " CACHE " << cache_type << " \"" << docstring << "\"";
         of << ")\n";
     }
 

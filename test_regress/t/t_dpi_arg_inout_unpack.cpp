@@ -91,7 +91,7 @@ void set_uint(svBitVecVal* v0, sv_longint_unsigned_t val, int bitwidth) {
 
 template <typename T> bool compare(const T& act, const T& exp) {
     if (exp == act) {
-        if (VERBOSE_MESSAGE) { std::cout << "OK Exp:" << exp << " actual:" << act << std::endl; }
+        if (VERBOSE_MESSAGE) std::cout << "OK Exp:" << exp << " actual:" << act << std::endl;
         return true;
     } else {
         std::cout << "NG Exp:" << exp << " actual:" << act << std::endl;
@@ -106,7 +106,7 @@ bool compare_scalar(const svScalar v0, sv_longint_unsigned_t val) {
         std::cout << "Mismatch at bit:" << 0 << " exp:" << exp_bit << " act:" << act_bit;
         return false;
     }
-    if (VERBOSE_MESSAGE) { std::cout << "OK " << val << " as expected " << std::endl; }
+    if (VERBOSE_MESSAGE) std::cout << "OK " << val << " as expected " << std::endl;
     return true;
 }
 

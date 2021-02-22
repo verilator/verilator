@@ -147,7 +147,7 @@ private:
             return condp;
         } else if (AstAnd* const andp = VN_CAST(rhsp, And)) {
             if (AstNodeCond* const condp = VN_CAST(andp->rhsp(), NodeCond)) {
-                if (VN_IS(andp->lhsp(), Const)) { return condp; }
+                if (VN_IS(andp->lhsp(), Const)) return condp;
             }
         }
         return nullptr;
@@ -174,7 +174,9 @@ private:
         } else if (AstNodeCond* const condp = extractCond(rhsp)) {
             AstNode* const resp
                 = condTrue ? condp->expr1p()->unlinkFrBack() : condp->expr2p()->unlinkFrBack();
-            if (condp == rhsp) { return resp; }
+            if (condp == rhsp) {  //
+                return resp;
+            }
             if (AstAnd* const andp = VN_CAST(rhsp, And)) {
                 UASSERT_OBJ(andp->rhsp() == condp, rhsp, "Should not try to fold this");
                 return new AstAnd(andp->fileline(), andp->lhsp()->cloneTree(false), resp);

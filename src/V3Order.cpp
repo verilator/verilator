@@ -487,7 +487,7 @@ public:
         for (V3GraphVertex* itp = m_graphp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (OrderLogicVertex* lvertexp = dynamic_cast<OrderLogicVertex*>(itp)) {
                 T_MoveVertex* moveVxp = m_logic2move[lvertexp];
-                if (moveVxp) { iterate(moveVxp, lvertexp, lvertexp->domainp()); }
+                if (moveVxp) iterate(moveVxp, lvertexp, lvertexp->domainp());
             }
         }
     }
@@ -1661,7 +1661,7 @@ void OrderVisitor::processMovePrepReady() {
     UINFO(5, "  MovePrepReady\n");
     for (OrderMoveVertex* vertexp = m_pomWaiting.begin(); vertexp;) {
         OrderMoveVertex* nextp = vertexp->pomWaitingNextp();
-        if (vertexp->isWait() && vertexp->inEmpty()) { processMoveReadyOne(vertexp); }
+        if (vertexp->isWait() && vertexp->inEmpty()) processMoveReadyOne(vertexp);
         vertexp = nextp;
     }
 }

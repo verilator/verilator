@@ -543,7 +543,7 @@ public:
             // Done. Constant.
         } else {
             // Make a new temp wire
-            // if (1 || debug() >= 9) { pinp->dumpTree(cout, "-in_pin:"); }
+            // if (1 || debug() >= 9) pinp->dumpTree(cout, "-in_pin:");
             V3Inst::checkOutputShort(pinp);
             AstNode* pinexprp = pinp->exprp()->unlinkFrBack();
             string newvarname
@@ -575,8 +575,8 @@ public:
                 pinp->exprp(new AstVarRef(pinexprp->fileline(), newvarp, VAccess::READ));
             }
             if (assignp) cellp->addNextHere(assignp);
-            // if (debug()) { pinp->dumpTree(cout, "-  out:"); }
-            // if (debug()) { assignp->dumpTree(cout, "- aout:"); }
+            // if (debug()) pinp->dumpTree(cout, "-  out:");
+            // if (debug()) assignp->dumpTree(cout, "- aout:");
         }
         return assignp;
     }

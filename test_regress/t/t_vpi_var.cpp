@@ -475,7 +475,7 @@ int _mon_check_string() {
 
         v.format = vpiStringVal;
         vpi_get_value(vh1, &v);
-        if (vpi_chk_error(&e)) { printf("%%vpi_chk_error : %s\n", e.message); }
+        if (vpi_chk_error(&e)) printf("%%vpi_chk_error : %s\n", e.message);
 
         (void)vpi_chk_error(NULL);
 
@@ -568,7 +568,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
                     TEST_MSG("new value\n");
                     for (int j = 0; j < 4; j++) {
                         data[i].value.vector[j].aval = rand_r(&seed);
-                        if (j == (words - 1)) { data[i].value.vector[j].aval &= mask; }
+                        if (j == (words - 1)) data[i].value.vector[j].aval &= mask;
                         TEST_MSG(" %08x\n", data[i].value.vector[j].aval);
                     }
                     v.value.vector = data[i].value.vector;

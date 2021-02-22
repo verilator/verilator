@@ -853,7 +853,7 @@ public:
     // If this is AstVarRef and referred in the sensitivity list of always@,
     // return the sensitivity item
     AstSenItem* backSenItemp() const {
-        if (AstVarRef* refp = VN_CAST(m_nodep, VarRef)) { return VN_CAST(refp->backp(), SenItem); }
+        if (AstVarRef* refp = VN_CAST(m_nodep, VarRef)) return VN_CAST(refp->backp(), SenItem);
         return nullptr;
     }
 };
@@ -971,7 +971,7 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
             nodep->attrSplitVar(false);
         } else {  // Finally find a good candidate
             const bool inserted = m_refs.insert(std::make_pair(nodep, PackedVarRef(nodep))).second;
-            if (inserted) { UINFO(3, nodep->prettyNameQ() << " is added to candidate list.\n"); }
+            if (inserted) UINFO(3, nodep->prettyNameQ() << " is added to candidate list.\n");
         }
     }
     virtual void visit(AstVarRef* nodep) override {

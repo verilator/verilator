@@ -138,7 +138,9 @@ void VerilatedVcd::openNext(bool incFilename) {
                     name[pos - 2] = '0';
                     if ((++(name[pos - 3])) > '9') {
                         name[pos - 3] = '0';
-                        if ((++(name[pos - 4])) > '9') { name[pos - 4] = '0'; }
+                        if ((++(name[pos - 4])) > '9') {  //
+                            name[pos - 4] = '0';
+                        }
                     }
                 }
             }
@@ -164,7 +166,7 @@ void VerilatedVcd::openNext(bool incFilename) {
 }
 
 bool VerilatedVcd::preChangeDump() {
-    if (VL_UNLIKELY(m_rolloverMB && m_wroteBytes > m_rolloverMB)) { openNext(true); }
+    if (VL_UNLIKELY(m_rolloverMB && m_wroteBytes > m_rolloverMB)) openNext(true);
     return isOpen();
 }
 

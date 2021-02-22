@@ -134,7 +134,7 @@ private:
             iterateChildren(nodep);
         }
         m_ftaskp = nullptr;
-        if (nodep->dpiExport()) { nodep->scopeNamep(new AstScopeName(nodep->fileline())); }
+        if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName(nodep->fileline()));
     }
     virtual void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);

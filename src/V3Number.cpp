@@ -401,7 +401,7 @@ V3Number& V3Number::setLongS(vlsint32_t value) {
     return *this;
 }
 V3Number& V3Number::setDouble(double value) {
-    if (VL_UNCOVERABLE(width() != 64)) { v3fatalSrc("Real operation on wrong sized number"); }
+    if (VL_UNCOVERABLE(width() != 64)) v3fatalSrc("Real operation on wrong sized number");
     m_double = true;
     union {
         double d;
@@ -951,10 +951,10 @@ bool V3Number::isAnyZ() const {
 bool V3Number::isLtXZ(const V3Number& rhs) const {
     // Include X/Z in comparisons for sort ordering
     for (int bit = 0; bit < std::max(this->width(), rhs.width()); bit++) {
-        if (this->bitIs1(bit) && rhs.bitIs0(bit)) { return true; }
-        if (rhs.bitIs1(bit) && this->bitIs0(bit)) { return false; }
-        if (this->bitIsXZ(bit)) { return true; }
-        if (rhs.bitIsXZ(bit)) { return false; }
+        if (this->bitIs1(bit) && rhs.bitIs0(bit)) return true;
+        if (rhs.bitIs1(bit) && this->bitIs0(bit)) return false;
+        if (this->bitIsXZ(bit)) return true;
+        if (rhs.bitIsXZ(bit)) return false;
     }
     return false;
 }
@@ -1347,14 +1347,14 @@ V3Number& V3Number::opLogAnd(const V3Number& lhs, const V3Number& rhs) {
             loutc = 1;
             break;
         }
-        if (lhs.bitIsXZ(bit) && loutc == 0) { loutc = 'x'; }
+        if (lhs.bitIsXZ(bit) && loutc == 0) loutc = 'x';
     }
     for (int bit = 0; bit < rhs.width(); bit++) {
         if (rhs.bitIs1(bit)) {
             routc = 1;
             break;
         }
-        if (rhs.bitIsXZ(bit) && routc == 0) { routc = 'x'; }
+        if (rhs.bitIsXZ(bit) && routc == 0) routc = 'x';
     }
     char outc = 'x';
     if (routc == 1 && loutc == 1) outc = 1;
@@ -1528,7 +1528,7 @@ bool V3Number::isCaseEq(const V3Number& rhs) const {
     if (this->width() != rhs.width()) return false;
 
     for (int bit = 0; bit < std::max(this->width(), rhs.width()); bit++) {
-        if (this->bitIs(bit) != rhs.bitIs(bit)) { return false; }
+        if (this->bitIs(bit) != rhs.bitIs(bit)) return false;
     }
     return true;
 }

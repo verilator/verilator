@@ -182,7 +182,7 @@ private:
         }
         // Likewise, all FTask->scope mappings
         for (AstNode* stmtp = nodep->blocksp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstNodeFTask* taskp = VN_CAST(stmtp, NodeFTask)) { taskp->user3p(nodep); }
+            if (AstNodeFTask* taskp = VN_CAST(stmtp, NodeFTask)) taskp->user3p(nodep);
         }
         iterateChildren(nodep);
     }

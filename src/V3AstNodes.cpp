@@ -50,7 +50,7 @@ const char* AstNodeVarRef::broken() const {
 }
 
 void AstNodeVarRef::cloneRelink() {
-    if (m_varp && m_varp->clonep()) { m_varp = m_varp->clonep(); }
+    if (m_varp && m_varp->clonep()) m_varp = m_varp->clonep();
 }
 
 string AstNodeVarRef::hiernameProtect() const {
@@ -99,7 +99,7 @@ void AstNodeCCall::dump(std::ostream& str) const {
     }
 }
 void AstNodeCCall::cloneRelink() {
-    if (m_funcp && m_funcp->clonep()) { m_funcp = m_funcp->clonep(); }
+    if (m_funcp && m_funcp->clonep()) m_funcp = m_funcp->clonep();
 }
 const char* AstNodeCCall::broken() const {
     BROKEN_RTN(m_funcp && !m_funcp->brokeExists());
@@ -1098,7 +1098,7 @@ void AstNode::dump(std::ostream& str) const {
         } else {
             str << " @dt=" << nodeAddr(dtypep()) << "@";
         }
-        if (AstNodeDType* dtp = dtypep()) { dtp->dumpSmall(str); }
+        if (AstNodeDType* dtp = dtypep()) dtp->dumpSmall(str);
     } else {  // V3Broken will throw an error
         if (dtypep()) str << " %Error-dtype-exp=null,got=" << nodeAddr(dtypep());
     }
@@ -1230,9 +1230,9 @@ void AstEnumItemRef::dump(std::ostream& str) const {
 }
 void AstIfaceRefDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (cellName() != "") { str << " cell=" << cellName(); }
-    if (ifaceName() != "") { str << " if=" << ifaceName(); }
-    if (modportName() != "") { str << " mp=" << modportName(); }
+    if (cellName() != "") str << " cell=" << cellName();
+    if (ifaceName() != "") str << " if=" << ifaceName();
+    if (modportName() != "") str << " mp=" << modportName();
     if (cellp()) {
         str << " -> ";
         cellp()->dump(str);
@@ -1388,7 +1388,7 @@ void AstNodeDType::dump(std::ostream& str) const {
 void AstNodeDType::dumpSmall(std::ostream& str) const {
     str << "(" << (generic() ? "G/" : "") << ((isSigned() && !isDouble()) ? "s" : "")
         << (isNosign() ? "n" : "") << (isDouble() ? "d" : "") << (isString() ? "str" : "");
-    if (!isDouble() && !isString()) { str << "w" << (widthSized() ? "" : "u") << width(); }
+    if (!isDouble() && !isString()) str << "w" << (widthSized() ? "" : "u") << width();
     if (!widthSized()) str << "/" << widthMin();
     str << ")";
 }
@@ -1640,7 +1640,7 @@ void AstNodeFTaskRef::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     str << " -> ";
-    if (dotted() != "") { str << ".=" << dotted() << " "; }
+    if (dotted() != "") str << ".=" << dotted() << " ";
     if (taskp()) {
         taskp()->dump(str);
     } else {
@@ -1676,7 +1676,7 @@ void AstCoverDecl::dump(std::ostream& str) const {
         str << " -> ";
         this->dataDeclNullp()->dump(str);
     } else {
-        if (binNum()) { str << " bin" << std::dec << binNum(); }
+        if (binNum()) str << " bin" << std::dec << binNum();
     }
 }
 void AstCoverInc::dump(std::ostream& str) const {

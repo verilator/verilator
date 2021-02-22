@@ -468,7 +468,7 @@ public:
     static bool gotFinish() VL_MT_SAFE { return s_s.s_gotFinish; }  ///< Return if got a $finish
     /// Allow traces to at some point be enabled (disables some optimizations)
     static void traceEverOn(bool flag) VL_MT_SAFE {
-        if (flag) { calcUnusedSigs(flag); }
+        if (flag) calcUnusedSigs(flag);
     }
     /// Enable/disable assertions
     static void assertOn(bool flag) VL_MT_SAFE;
@@ -577,7 +577,7 @@ public:
 
     /// Called at end of each thread mtask, before finishing eval
     static void endOfThreadMTask(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
-        if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) { endOfThreadMTaskGuts(evalMsgQp); }
+        if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) endOfThreadMTaskGuts(evalMsgQp);
     }
     /// Called at end of eval loop
     static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
@@ -1257,7 +1257,7 @@ static inline IData VL_COUNTBITS_W(int lbits, int words, WDataInP lwp, IData ctr
     EData r = 0;
     IData wordLbits = 32;
     for (int i = 0; i < words; ++i) {
-        if (i == words - 1) { wordLbits = lbits % 32; }
+        if (i == words - 1) wordLbits = lbits % 32;
         r += VL_COUNTBITS_E(wordLbits, lwp[i], ctrl0, ctrl1, ctrl2);
     }
     return r;
@@ -1330,7 +1330,7 @@ static inline IData VL_MOSTSETBITP1_W(int words, WDataInP lwp) VL_MT_SAFE {
     for (int i = words - 1; i >= 0; --i) {
         if (VL_UNLIKELY(lwp[i])) {  // Shorter worst case if predict not taken
             for (int bit = VL_EDATASIZE - 1; bit >= 0; --bit) {
-                if (VL_UNLIKELY(VL_BITISSET_E(lwp[i], bit))) { return i * VL_EDATASIZE + bit + 1; }
+                if (VL_UNLIKELY(VL_BITISSET_E(lwp[i], bit))) return i * VL_EDATASIZE + bit + 1;
             }
             // Can't get here - one bit must be set
         }
@@ -1627,8 +1627,8 @@ static inline WDataOutP VL_DIVS_WWW(int lbits, WDataOutP owp, WDataInP lwp,
     WData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
-    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp)); }
-    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp)); }
+    if (lsign) ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp));
+    if (rsign) rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp));
     if ((lsign && !rsign) || (!lsign && rsign)) {
         WData qNoSign[VL_MULS_MAX_WORDS];
         VL_DIV_WWW(lbits, qNoSign, ltup, rtup);
@@ -1649,8 +1649,8 @@ static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp, WDataInP lwp,
     WData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
-    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp)); }
-    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp)); }
+    if (lsign) ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp));
+    if (rsign) rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp));
     if (lsign) {  // Only dividend sign matters for modulus
         WData qNoSign[VL_MULS_MAX_WORDS];
         VL_MODDIV_WWW(lbits, qNoSign, ltup, rtup);

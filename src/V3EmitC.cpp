@@ -1035,8 +1035,8 @@ public:
             emitIQW(nodep);
             puts("OI(");
             puts(cvtToStr(nodep->widthMin()));
-            if (nodep->lhsp()) { puts("," + cvtToStr(nodep->lhsp()->widthMin())); }
-            if (nodep->rhsp()) { puts("," + cvtToStr(nodep->rhsp()->widthMin())); }
+            if (nodep->lhsp()) puts("," + cvtToStr(nodep->lhsp()->widthMin()));
+            if (nodep->rhsp()) puts("," + cvtToStr(nodep->rhsp()->widthMin()));
             puts(",");
             iterateAndNextNull(nodep->lhsp());
             puts(", ");
@@ -2026,7 +2026,7 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp,
                     nextComma = ",";
                 needComma = false;
             }
-            if (pos[1] == ' ') { ++pos; }  // Must do even if no nextComma
+            if (pos[1] == ' ') ++pos;  // Must do even if no nextComma
         } else if (pos[0] == '%') {
             ++pos;
             bool detail = false;
@@ -3877,7 +3877,7 @@ public:
         // Put out the file
         newOutCFile(0);
 
-        if (m_slow) { emitTraceSlow(); }
+        if (m_slow) emitTraceSlow();
 
         iterate(v3Global.rootp());
 

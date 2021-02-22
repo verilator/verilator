@@ -453,7 +453,9 @@ private:
                 nodep->hasIfaceVar(true);
             }
         }
-        if (nodep->modp()) { iterateChildren(nodep); }
+        if (nodep->modp()) {  //
+            iterateChildren(nodep);
+        }
         UINFO(4, " Link Cell done: " << nodep << endl);
     }
 
