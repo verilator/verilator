@@ -76,6 +76,9 @@ int main(int argc, char** argv, char** env) {
     CHECK_RESULT_CSTR(Verilated::productName(), Verilated::productName());
     CHECK_RESULT_CSTR(Verilated::productVersion(), Verilated::productVersion());
 
+    if (Verilated::timeunit()) {}
+    if (Verilated::timeprecision()) {}
+
     VM_PREFIX* topp = new VM_PREFIX();
 
     topp->eval();

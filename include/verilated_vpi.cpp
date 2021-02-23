@@ -2112,10 +2112,12 @@ PLI_INT32 vpi_chk_error(p_vpi_error_info error_info_p) {
     return _error_info_p->level;  // return error severity level
 }
 
+#ifndef VL_NO_LEGACY
 PLI_INT32 vpi_free_object(vpiHandle object) {
     // vpi_free_object is IEEE deprecated, use vpi_release_handle
     return vpi_release_handle(object);
 }
+#endif
 
 PLI_INT32 vpi_release_handle(vpiHandle object) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_release_handle %p\n", object););

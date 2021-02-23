@@ -496,7 +496,9 @@ public:
     static void addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
     static void removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
     static void runFlushCallbacks() VL_MT_SAFE;
+#ifndef VL_NO_LEGACY
     static void flushCall() VL_MT_SAFE { runFlushCallbacks(); }  // Deprecated
+#endif
     /// Callbacks to run prior to termination
     static void addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
     static void removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
