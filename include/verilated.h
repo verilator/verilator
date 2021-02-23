@@ -265,7 +265,6 @@ public:
 #define VL_OUT(name, msb, lsb) IData name  ///< Declare output signal, 17-32 bits
 #define VL_OUTW(name, msb, lsb, words) WData name[words]  ///< Declare output signal, 65+ bits
 
-#define VL_PIN_NOP(instname, pin, port)  ///< Connect a pin, ala SP_PIN
 #define VL_CELL(instname, type)  ///< Declare a cell, ala SP_CELL
 
 /// Declare a module, ala SC_MODULE
@@ -879,10 +878,6 @@ double vl_time_multiplier(int scale);
 # define VL_DEBUG_IF(text) do {} while (false)
 #endif
 
-/// Collect coverage analysis for this line
-#ifndef SP_AUTO_COVER3
-# define SP_AUTO_COVER3(what,file,line)
-#endif
 // clang-format on
 
 //=========================================================================
