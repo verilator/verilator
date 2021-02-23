@@ -298,11 +298,7 @@ private:
                         // Add @ to mark as struct
                         // Since it is not a valid symbol for verilog variable names, no
                         // collision should happen
-                        if (v3Global.opt.traceFormat().fst()) {
-                            m_traShowname += string(" ") + itemp->prettyName();
-                        } else {
-                            m_traShowname += string("\f ") + itemp->prettyName();
-                        }
+                        m_traShowname += string("\x86 ") + itemp->prettyName();
 
                         if (VN_IS(nodep, StructDType)) {
                             m_traValuep

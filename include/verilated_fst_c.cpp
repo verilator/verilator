@@ -135,6 +135,7 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
     std::string symbol_name(tokens.back());
     tokens.pop_back();  // Remove symbol name from hierarchy
     tokens.insert(tokens.begin(), moduleName());  // Add current module to the hierarchy
+    std::string tmpModName;
 
     // Find point where current and new scope diverge
     auto cur_it = m_curScope.begin();
@@ -153,7 +154,17 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
     // Follow the hierarchy of the new variable from the common scope point
     while (new_it != tokens.end()) {
-        fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), nullptr);
+        if(new_it->back() == '\x86') {
+            tmpModName = *new_it;
+            tmpModName.pop_back();
+            fstWriterSetScope(m_fst, FST_ST_VCD_STRUCT, tmpModName.c_str(), nullptr);
+        }
+        else if(new_it->back() == '\x87') {
+            tmpModName = *new_it;
+            tmpModName.pop_back();
+            fstWriterSetScope(m_fst, FST_ST_VCD_INTERFACE, tmpModName.c_str(), nullptr);
+        }
+        else fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), nullptr);
         m_curScope.push_back(*new_it);
         new_it = tokens.erase(new_it);
     }

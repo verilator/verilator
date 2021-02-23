@@ -405,10 +405,12 @@ void VerilatedVcd::dumpHeader() {
             printIndent(1);
             // Find character after name end
             const char* sp = np;
-            while (*sp && *sp != ' ' && *sp != '\t' && *sp != '\f') sp++;
+            while (*sp && *sp != ' ' && *sp != '\t' && !(*sp & '\x80')) sp++;
 
-            if (*sp == '\f') {
+            if (*sp == '\x86') {
                 printStr("$scope struct ");
+            } else if (*sp == '\x87') {
+                printStr("$scope interface ");
             } else {
                 printStr("$scope module ");
             }
@@ -418,7 +420,7 @@ void VerilatedVcd::dumpHeader() {
                     printStr("(");
                 } else if (*np == ']') {
                     printStr(")");
-                } else if (*np != '\f') {
+                } else if (!(*np & '\x80')) {
                     *m_writep++ = *np;
                 }
             }
