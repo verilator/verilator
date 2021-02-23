@@ -23,6 +23,7 @@
 #include "V3Global.h"
 #include "V3LangCode.h"
 
+#include <functional>
 #include <map>
 #include <set>
 #include <string>
@@ -30,6 +31,55 @@
 
 class V3OptionsImp;
 class FileLine;
+
+//######################################################################
+// V3Options entfy class
+
+class V3OptionsEntryIf VL_NOT_FINAL {
+public:
+    enum en : uint8_t {
+        ATTR_NONE = 0,
+        ATTR_DROP_HIER = 1,
+        ATTR_DROP_HIER_NON_TOP = 2
+    };  // Bitmask
+    virtual bool parse(const char*) = 0;
+    virtual en attr() const = 0;
+    virtual bool takesValue() const = 0;
+};
+
+template <typename T> class V3OptionsEntry final : public V3OptionsEntryIf {
+    // TYPES
+    using ParseFn = std::function<bool(V3OptionsEntry<T>&, const char*)>;
+    using CallbackFn = std::function<void(const V3OptionsEntry<T>&, const char*)>;
+    // MEMBERS
+    const string m_name;  // Name of this variable for error message
+    const string m_optString;  // Option string e.g. '-exe'
+    T m_value;
+    en m_attr;
+    ParseFn m_parseFunc;  // Method to convert string to T
+    CallbackFn m_callbackFunc;  // Call this func after m_parseFunc is invoked.
+
+public:
+    V3OptionsEntry(std::map<const string, V3OptionsEntryIf*>& parent, const char* namep,
+                   const char* optStringp, const T& initVal, en attr);
+    virtual bool parse(const char* str) override;
+    virtual en attr() const override { return m_attr; }
+    virtual bool takesValue() const override { return true; }
+    const T& get() const { return m_value; }
+    operator const T&() const { return get(); }
+    void setParse(const ParseFn& fn);
+    void setCallback(const CallbackFn& cb);
+    void set(const T& val) { m_value = val; }
+
+    // Default parse function for m_parseFunc
+    static bool defaultParse(V3OptionsEntry& entry, const char* sw);
+};
+
+template <> bool V3OptionsEntry<bool>::takesValue() const;
+template <> bool V3OptionsEntry<bool>::defaultParse(V3OptionsEntry<bool>& entry, const char* sw);
+template <> bool V3OptionsEntry<int>::defaultParse(V3OptionsEntry<int>& entry, const char* sw);
+template <>
+bool V3OptionsEntry<string>::defaultParse(V3OptionsEntry<string>& entry, const char* sw);
 
 //######################################################################
 
@@ -247,15 +297,25 @@ private:
     DebugSrcMap m_dumpTrees;    // argument: --dump-treei-<srcfile>=<level>
     std::map<const string, string> m_parameters;  // Parameters
     std::map<const string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
+    std::map<const string, V3OptionsEntryIf*> m_options;  // Holds all options that inherit V3OptionsEntryIf
 
-    bool m_preprocOnly = false;     // main switch: -E
-    bool m_makePhony = false;       // main switch: -MP
-    bool m_preprocNoLine = false;   // main switch: -P
+#define V3OPTIONS_DECL_OPTION(type, name, opt, initVal, attr) \
+    V3OptionsEntry<type> m_ ## name{m_options, #name, opt, initVal, attr}
+
+#define V3OPTIONS_DECL_OPTION_ATTR(type, name, opt, initVal, attr) \
+    V3OPTIONS_DECL_OPTION(type, name, opt, initVal, attr)
+
+#define V3OPTIONS_DECL_OPTION_DEFAULT(type, name, opt, initVal) \
+    V3OPTIONS_DECL_OPTION_ATTR(type, name, opt, initVal, V3OptionsEntryIf::ATTR_NONE)
+
+    V3OPTIONS_DECL_OPTION_DEFAULT(bool, preprocOnly, "-E", false);
+    V3OPTIONS_DECL_OPTION_DEFAULT(bool, makePhony, "-MP", false);
+    V3OPTIONS_DECL_OPTION_DEFAULT(bool, preprocNoLine, "-P", false);
     bool m_assert = false;          // main switch: --assert
     bool m_autoflush = false;       // main switch: --autoflush
     bool m_bboxSys = false;         // main switch: --bbox-sys
     bool m_bboxUnsup = false;       // main switch: --bbox-unsup
-    bool m_build = false;           // main switch: --build
+    V3OPTIONS_DECL_OPTION_ATTR(bool, build, "-build", false, V3OptionsEntryIf::ATTR_DROP_HIER);
     bool m_cdc = false;             // main switch: --cdc
     bool m_cmake = false;           // main switch: --make cmake
     bool m_context = true;          // main switch: --Wcontext
@@ -277,7 +337,7 @@ private:
     bool m_dpiHdrOnly = false;      // main switch: --dpi-hdr-only
     bool m_dumpDefines = false;     // main switch: --dump-defines
     bool m_dumpTreeAddrids = false; // main switch: --dump-tree-addrids
-    bool m_exe = false;             // main switch: --exe
+    V3OPTIONS_DECL_OPTION_ATTR(bool, exe, "-exe", false, V3OptionsEntryIf::ATTR_DROP_HIER_NON_TOP);
     bool m_flatten = false;         // main switch: --flatten
     bool m_hierarchical = false;    // main switch: --hierarchical
     bool m_hierChild = false;       // main switch: --hierarchical-child
@@ -324,7 +384,7 @@ private:
     int         m_buildJobs = 1;    // main switch: -j
     int         m_convergeLimit = 100;  // main switch: --converge-limit
     int         m_dumpTree = 0;     // main switch: --dump-tree
-    int         m_gateStmts = 100;    // main switch: --gate-stmts
+    V3OPTIONS_DECL_OPTION_DEFAULT(int, gateStmts, "-gate-stmts", 100);
     int         m_ifDepth = 0;      // main switch: --if-depth
     int         m_inlineMult = 2000;   // main switch: --inline-mult
     VOptionBool m_makeDepend;  // main switch: -MMD
@@ -335,7 +395,7 @@ private:
     int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
     int         m_pinsBv = 65;       // main switch: --pins-bv
     VOptionBool m_skipIdentical;  // main switch: --skip-identical
-    int         m_threads = 0;      // main switch: --threads (0 == --no-threads)
+    V3OPTIONS_DECL_OPTION_ATTR(int, threads, "-threads", 0, V3OptionsEntryIf::ATTR_DROP_HIER);  // 0 == --no-threads
     int         m_threadsMaxMTasks = 0;  // main switch: --threads-max-mtasks
     VTimescale  m_timeDefaultPrec;  // main switch: --timescale
     VTimescale  m_timeDefaultUnit;  // main switch: --timescale
@@ -361,7 +421,7 @@ private:
     string      m_modPrefix;    // main switch: --mod-prefix
     string      m_pipeFilter;   // main switch: --pipe-filter
     string      m_prefix;       // main switch: --prefix
-    string      m_protectKey;   // main switch: --protect-key
+    V3OPTIONS_DECL_OPTION_ATTR(string, protectKey, "-protect-key", "", V3OptionsEntryIf::ATTR_DROP_HIER);
     string      m_protectLib;   // main switch: --protect-lib {lib_name}
     string      m_topModule;    // main switch: --top-module
     string      m_unusedRegexp; // main switch: --unused-regexp
@@ -410,13 +470,18 @@ private:
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
+
+public:
     static bool onoff(const char* sw, const char* arg, bool& flag);
     static bool onoffb(const char* sw, const char* arg, VOptionBool& flagr);
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
+
+private:
+    V3OptionsEntryIf* findOption(const char* sw);
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
-    static int stripOptionsForChildRun(const string& opt, bool forTop);
+    int stripOptionsForChildRun(const string& opt, bool forTop) const;
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(V3Options);
