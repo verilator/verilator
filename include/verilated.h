@@ -364,7 +364,6 @@ class Verilated final {
 
     static struct Serialized {  // All these members serialized/deserialized
         // Fast path
-        int s_debug;  ///< See accessors... only when VL_DEBUG set
         bool s_calcUnusedSigs;  ///< Waves file on, need all signals calculated
         bool s_gotFinish;  ///< A $finish statement executed
         bool s_assertOn;  ///< Assertions are enabled
@@ -384,6 +383,7 @@ class Verilated final {
     static struct NonSerialized {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
+        int s_debug = 0;  ///< See accessors... only when VL_DEBUG set
         vluint64_t s_profThreadsStart = 1;  ///< +prof+threads starting time
         vluint32_t s_profThreadsWindow = 2;  ///< +prof+threads window size
         // Slow path
@@ -426,6 +426,18 @@ private:
 public:
     // METHODS - User called
 
+    /// Enable debug of internal verilated code
+    static void debug(int level) VL_MT_SAFE;
+#ifdef VL_DEBUG
+    /// Return debug level
+    /// When multithreaded this may not immediately react to another thread
+    /// changing the level (no mutex)
+    static inline int debug() VL_MT_SAFE { return s_ns.s_debug; }
+#else
+    /// Return constant 0 debug level, so C++'s optimizer rips up
+    static constexpr int debug() VL_PURE { return 0; }
+#endif
+
     /// Select initial value of otherwise uninitialized signals.
     ////
     /// 0 = Set to zeros
@@ -439,17 +451,6 @@ public:
     /// Random seed extended to 64 bits, and defaulted if user seed==0
     static vluint64_t randSeedDefault64() VL_MT_SAFE;
 
-    /// Enable debug of internal verilated code
-    static void debug(int level) VL_MT_SAFE;
-#ifdef VL_DEBUG
-    /// Return debug level
-    /// When multithreaded this may not immediately react to another thread
-    /// changing the level (no mutex)
-    static inline int debug() VL_MT_SAFE { return s_s.s_debug; }
-#else
-    /// Return constant 0 debug level, so C++'s optimizer rips up
-    static constexpr int debug() VL_PURE { return 0; }
-#endif
     /// Enable calculation of unused signals
     static void calcUnusedSigs(bool flag) VL_MT_SAFE;
     static bool calcUnusedSigs() VL_MT_SAFE {  ///< Return calcUnusedSigs value

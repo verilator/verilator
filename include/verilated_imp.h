@@ -235,7 +235,7 @@ protected:
     VerilatedScopeNameMap m_nameMap VL_GUARDED_BY(m_nameMutex);
 
     VerilatedMutex m_hierMapMutex;  ///< Protect m_hierMap
-    /// Map the represents scope hierarchy
+    /// Map that represents scope hierarchy
     VerilatedHierarchyMap m_hierMap VL_GUARDED_BY(m_hierMapMutex);
 
     // Slow - somewhat static:

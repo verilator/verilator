@@ -265,7 +265,6 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
 // Overall class init
 
 Verilated::Serialized::Serialized() {
-    s_debug = 0;
     s_calcUnusedSigs = false;
     s_gotFinish = false;
     s_assertOn = true;
@@ -2216,7 +2215,7 @@ void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix,
 
 void Verilated::debug(int level) VL_MT_SAFE {
     const VerilatedLockGuard lock(s_mutex);
-    s_s.s_debug = level;
+    s_ns.s_debug = level;
     if (level) {
 #ifdef VL_DEBUG
         VL_DEBUG_IF(VL_DBG_MSGF("- Verilated::debug is on."
