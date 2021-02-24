@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix little endian interface pin swizzling (#2475). [Don Owen]
 
+****  Fix range inheritance on port without data type (#2753). [Embedded Go]
+
 ****  Fix TIMESCALE warnings on primitives (#2763). [Xuanqi]
 
 ****  Fix $fread extra semicolon inside statements. [Leendert van Doorn]
