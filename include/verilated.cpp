@@ -45,18 +45,12 @@
 constexpr unsigned VL_VALUE_STRING_MAX_WIDTH = 8192;
 
 //===========================================================================
-// Static sanity checks (when get C++11 can use static_assert)
+// Static sanity checks
 
-typedef union {
-    // cppcheck-suppress unusedStructMember  // Unused as is assertion
-    char vluint8_incorrect[(sizeof(vluint8_t) == 1) ? 1 : -1];
-    // cppcheck-suppress unusedStructMember  // Unused as is assertion
-    char vluint16_incorrect[(sizeof(vluint16_t) == 2) ? 1 : -1];
-    // cppcheck-suppress unusedStructMember  // Unused as is assertion
-    char vluint32_incorrect[(sizeof(vluint32_t) == 4) ? 1 : -1];
-    // cppcheck-suppress unusedStructMember  // Unused as is assertion
-    char vluint64_incorrect[(sizeof(vluint64_t) == 8) ? 1 : -1];
-} vl_static_checks_t;
+static_assert(sizeof(vluint8_t) == 1, "vluint8_t is missized");
+static_assert(sizeof(vluint16_t) == 2, "vluint8_t is missized");
+static_assert(sizeof(vluint32_t) == 4, "vluint8_t is missized");
+static_assert(sizeof(vluint64_t) == 8, "vluint8_t is missized");
 
 //===========================================================================
 // Global variables
