@@ -14,7 +14,7 @@
 #include "Vt_multi_model__Syms.h"
 #include "Vt_multi_model.h"
 
-double sc_time_stamp() { return 0; }
+double sc_time_stamp() { return 0; } // TODO: we should find a way to remove (or auto-include) this line of code)
 
 void sim0(Vt_multi_model* top0) {
 
