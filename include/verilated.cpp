@@ -321,19 +321,16 @@ vluint64_t vl_rand64() VL_MT_SAFE {
     return result;
 }
 
+#ifndef VL_NO_LEGACY
 // VL_RANDOM_W currently unused as $random always 32 bits, left for backwards compatibility
 // LCOV_EXCL_START
 WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
-    for (int i = 0; i < VL_WORDS_I(obits); ++i) {
-        if (i < (VL_WORDS_I(obits) - 1)) {
-            outwp[i] = vl_rand64();
-        } else {
-            outwp[i] = vl_rand64() & VL_MASK_E(obits);
-        }
-    }
+    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = vl_rand64();
+    outwp[VL_WORDS_I(obits) - 1] = vl_rand64() & VL_MASK_E(obits);
     return outwp;
 }
 // LCOV_EXCL_STOP
+#endif
 
 IData VL_RANDOM_SEEDED_II(int obits, IData seed) VL_MT_SAFE {
     Verilated::randSeed(static_cast<int>(seed));
@@ -359,13 +356,8 @@ QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
     return data;
 }
 WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
-    for (int i = 0; i < VL_WORDS_I(obits); ++i) {
-        if (i < (VL_WORDS_I(obits) - 1)) {
-            outwp[i] = VL_RAND_RESET_I(32);
-        } else {
-            outwp[i] = VL_RAND_RESET_I(32) & VL_MASK_E(obits);
-        }
-    }
+    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = VL_RAND_RESET_I(32);
+    outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_I(32) & VL_MASK_E(obits);
     return outwp;
 }
 
@@ -2114,7 +2106,7 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
 
 // Helper function for conversion of timescale strings
 // Converts (1|10|100)(s|ms|us|ns|ps|fs) to power of then
-int VL_TIME_STR_CONVERT(const char* strp) {
+int VL_TIME_STR_CONVERT(const char* strp) VL_PURE {
     int scale = 0;
     if (!strp) return 0;
     if (*strp++ != '1') return 0;
@@ -2135,14 +2127,14 @@ int VL_TIME_STR_CONVERT(const char* strp) {
     if (*strp) return 0;
     return scale;
 }
-static const char* vl_time_str(int scale) {
+static const char* vl_time_str(int scale) VL_PURE {
     static const char* const names[]
         = {"100s",  "10s",  "1s",  "100ms", "10ms", "1ms", "100us", "10us", "1us",
            "100ns", "10ns", "1ns", "100ps", "10ps", "1ps", "100fs", "10fs", "1fs"};
     if (VL_UNLIKELY(scale > 2 || scale < -15)) scale = 0;
     return names[2 - scale];
 }
-double vl_time_multiplier(int scale) {
+double vl_time_multiplier(int scale) VL_PURE {
     // Return timescale multipler -18 to +18
     // For speed, this does not check for illegal values
     if (scale < 0) {

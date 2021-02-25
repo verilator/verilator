@@ -640,7 +640,9 @@ extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 extern vluint64_t vl_rand64() VL_MT_SAFE;
 inline IData VL_RANDOM_I(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_I(obits); }
 inline QData VL_RANDOM_Q(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_Q(obits); }
+#ifndef VL_NO_LEGACY
 extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);  ///< Randomize a signal
+#endif
 extern IData VL_RANDOM_SEEDED_II(int obits, IData seed) VL_MT_SAFE;
 inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
     vluint64_t rnd = vl_rand64();
@@ -860,8 +862,9 @@ inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_sta
 // Can't use multiply in Q flavor, as might lose precision
 #define VL_TIME_UNITED_Q(scale) (VL_TIME_Q() / static_cast<QData>(scale))
 #define VL_TIME_UNITED_D(scale) (VL_TIME_D() / static_cast<double>(scale))
+
 /// Time imported from units to time precision
-double vl_time_multiplier(int scale);
+double vl_time_multiplier(int scale) VL_PURE;
 
 /// Evaluate expression if debug enabled
 #ifdef VL_DEBUG
