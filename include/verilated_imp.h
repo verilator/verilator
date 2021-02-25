@@ -417,7 +417,7 @@ public:  // But only for verilated*.cpp
         const VerilatedLockGuard lock(s_s.v.m_hierMapMutex);
         VerilatedHierarchyMap& map = s_s.v.m_hierMap;
         if (map.find(fromp) == map.end()) return;
-        VerilatedScopeVector& scopes = map[fromp];
+        auto& scopes = map[fromp];
         const auto it = find(scopes.begin(), scopes.end(), top);
         if (it != scopes.end()) scopes.erase(it);
     }

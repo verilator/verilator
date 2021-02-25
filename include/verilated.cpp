@@ -2465,7 +2465,11 @@ void Verilated::endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAF
     VerilatedThreadMsgQueue::flush(evalMsgQp);
 }
 
-void Verilated::endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
+void Verilated::endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
+    // It doesn't work to set endOfEvalReqd on the threadpool thread
+    // and then check it on the eval thread since it's thread local.
+    // It should be ok to call into endOfEvalGuts, it returns immediately
+    // if there are no transactions.
     VL_DEBUG_IF(VL_DBG_MSGF("End-of-eval cleanup\n"););
     evalMsgQp->process();
 }

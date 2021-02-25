@@ -583,19 +583,12 @@ public:
         if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) endOfThreadMTaskGuts(evalMsgQp);
     }
     /// Internal: Called at end of eval loop
-    static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
-        // It doesn't work to set endOfEvalReqd on the threadpool thread
-        // and then check it on the eval thread since it's thread local.
-        // It should be ok to call into endOfEvalGuts, it returns immediately
-        // if there are no transactions.
-        endOfEvalGuts(evalMsgQp);
-    }
+    static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
 #endif
 
 private:
 #ifdef VL_THREADED
     static void endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
-    static void endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
 #endif
 };
 
