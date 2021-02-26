@@ -498,23 +498,15 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
 // 0: Keep the option including its argument
 // 1: Delete the option which has no argument
 // 2: Delete the option and its argument
-int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) const {
+int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
     if (opt == "Mdir" || opt == "clk" || opt == "f" || opt == "j" || opt == "l2-name"
-        || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib" || opt == "top-module"
-        || opt == "v") {
+        || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib" || opt == "protect-key"
+        || opt == "threads" || opt == "top-module" || opt == "v") {
         return 2;
     }
-    if ((!forTop && (opt == "cc" || opt == "sc")) || opt == "hierarchical"
-        || (opt.length() > 2 && opt.substr(0, 2) == "G=")) {
+    if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
+        || opt == "hierarchical" || (opt.length() > 2 && opt.substr(0, 2) == "G=")) {
         return 1;
-    }
-    auto entry = m_options.find('-' + opt);
-    if (entry != m_options.end()) {
-        const int attr = entry->second->attr();
-        if ((attr & V3OptionsEntryIf::ATTR_DROP_HIER)
-            || (!forTop && (attr & V3OptionsEntryIf::ATTR_DROP_HIER_NON_TOP))) {
-            return entry->second->takesValue() ? 2 : 1;
-        }
     }
     return 0;
 }
@@ -739,10 +731,10 @@ void V3Options::notify() {
     if (m_hierChild && m_hierBlocks.empty()) {
         cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
     }
-    if (m_hierarchical && m_protectLib.empty() && m_protectKey.get().empty()) {
+    if (m_hierarchical && m_protectLib.empty() && m_protectKey.empty()) {
         // Key for hierarchical Verilation is fixed to be ccache friendly when the aim of this run
         // is not to create protec-lib.
-        m_protectKey.set("VL-KEY-HIERARCHICAL");
+        m_protectKey = "VL-KEY-HIERARCHICAL";
     }
 
     if (protectIds()) {
@@ -784,7 +776,7 @@ void V3Options::notify() {
     }
 
     // --trace-threads implies --threads 1 unless explicitly specified
-    if (traceThreads() && !threads()) m_threads.set(1);
+    if (traceThreads() && !threads()) m_threads = 1;
 
     // Default split limits if not specified
     if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
@@ -806,11 +798,11 @@ string V3Options::version() {
 }
 
 string V3Options::protectKeyDefaulted() {
-    if (m_protectKey.get().empty()) {
+    if (m_protectKey.empty()) {
         // Create a key with a human-readable symbol-like name.
         // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
         VHashSha256 digest(V3Os::trueRandom(32));
-        m_protectKey.set("VL-KEY-" + digest.digestSymbol());
+        m_protectKey = "VL-KEY-" + digest.digestSymbol();
     }
     return m_protectKey;
 }
@@ -918,19 +910,6 @@ bool V3Options::suffixed(const string& sw, const char* arg) {
     return (0 == strcmp(sw.c_str() + sw.length() - strlen(arg), arg));
 }
 
-V3OptionsEntryIf* V3Options::findOption(const char* sw) {
-    string opt = sw;
-    if (!strncmp(sw, "-no-", 4))
-        opt = string("-") + (sw + 4);
-    else if (!strncmp(sw, "-no", 3))
-        opt = string("-") + (sw + 3);
-
-    auto it = m_options.find(opt);
-    if (it == m_options.end()) return nullptr;
-    if (it->second->takesValue() && sw != opt) return nullptr;  // Only bool can take -no- flag
-    return it->second;
-}
-
 void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv) {
     // Parse parameters
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
@@ -938,10 +917,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     for (int i = 0; i < argc; ++i) {
         addArg(argv[i]);  // -f's really should be inserted in the middle, but this is for debug
     }
-
-    m_threads.setCallback([fl](const V3OptionsEntry<int>& entry, const char* val) -> void {
-        if (entry.get() < 0) fl->v3fatal("--threads must be >= 0: " << val);
-    });
 #define shift \
     do { ++i; } while (false)
     for (int i = 0; i < argc;) {
@@ -989,9 +964,14 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             if (sw[0] == '-' && sw[1] == '-') ++sw;
             bool hadSwitchPart1 = true;
             // Single switches
-            if (false) {
+            if (!strcmp(sw, "-E")) {
+                m_preprocOnly = true;
             } else if (onoffb(sw, "-MMD", bflag /*ref*/)) {
                 m_makeDepend = bflag;
+            } else if (onoff(sw, "-MP", flag /*ref*/)) {
+                m_makePhony = flag;
+            } else if (!strcmp(sw, "-P")) {
+                m_preprocNoLine = true;
             } else if (onoff(sw, "-assert", flag /*ref*/)) {
                 m_assert = flag;
             } else if (onoff(sw, "-autoflush", flag /*ref*/)) {
@@ -1001,6 +981,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (onoff(sw, "-bbox-unsup", flag /*ref*/)) {
                 FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, true);
                 m_bboxUnsup = flag;
+            } else if (!strcmp(sw, "-build")) {
+                m_build = true;
             } else if (!strcmp(sw, "-cc")) {
                 m_outFormatOk = true;
                 m_systemC = false;
@@ -1052,6 +1034,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 m_dumpTree = flag ? 3 : 0;
             } else if (onoff(sw, "-dump-tree-addrids", flag /*ref*/)) {
                 m_dumpTreeAddrids = flag;
+            } else if (onoff(sw, "-exe", flag /*ref*/)) {
+                m_exe = flag;
             } else if (onoff(sw, "-flatten", flag /*ref*/)) {
                 m_flatten = flag;
             } else if (onoff(sw, "-hierarchical", flag /*ref*/)) {
@@ -1147,14 +1131,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 m_xInitialEdge = flag;
             } else if (onoff(sw, "-xml-only", flag /*ref*/)) {
                 m_xmlOnly = flag;
-            } else if (V3OptionsEntryIf* entryp = findOption(sw)) {
-                bool ok = false;
-                if (entryp->takesValue()) {
-                    if ((i + 1) < argc) ok = entryp->parse(argv[++i]);
-                } else {  // for bool
-                    ok = entryp->parse(sw);
-                }
-                if (!ok) hadSwitchPart1 = false;
             } else {
                 hadSwitchPart1 = false;
             }
@@ -1246,6 +1222,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 addForceInc(parseFileArg(optdir, string(argv[i])));
             } else if (!strncmp(sw, "-G", strlen("-G"))) {
                 addParameter(string(sw + strlen("-G")), false);
+            } else if (!strcmp(sw, "-gate-stmts") && (i + 1) < argc) {
+                shift;
+                m_gateStmts = atoi(argv[i]);
             } else if (!strcmp(sw, "-generate-key")) {
                 cout << protectKeyDefaulted() << endl;
                 exit(0);
@@ -1481,8 +1460,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 shift;
                 m_prefix = argv[i];
                 if (m_modPrefix == "") m_modPrefix = m_prefix;
+            } else if (!strcmp(sw, "-protect-key") && (i + 1) < argc) {
+                shift;
+                m_protectKey = argv[i];
             } else if (!strcmp(sw, "-no-threads")) {
-                m_threads.set(0);
+                m_threads = 0;
+            } else if (!strcmp(sw, "-threads") && (i + 1) < argc) {
+                shift;
+                m_threads = atoi(argv[i]);
+                if (m_threads < 0) fl->v3fatal("--threads must be >= 0: " << argv[i]);
             } else if (!strcmp(sw, "-threads-dpi") && (i + 1) < argc) {
                 shift;
                 if (!strcmp(argv[i], "all")) {
@@ -1897,51 +1883,4 @@ void V3Options::optimize(int level) {
     if (level >= 3) {
         m_inlineMult = -1;  // Maximum inlining
     }
-}
-
-template <typename T>
-V3OptionsEntry<T>::V3OptionsEntry(std::map<const string, V3OptionsEntryIf*>& parent,
-                                  const char* namep, const char* optStringp, const T& initVal,
-                                  en attr)
-    : m_name(namep)
-    , m_optString(optStringp)
-    , m_value(initVal)
-    , m_attr(attr)
-    , m_parseFunc(&defaultParse) {
-    const bool inserted = parent.emplace(optStringp, this).second;
-    UASSERT(inserted, optStringp << " is already registered");
-}
-template <typename T> bool V3OptionsEntry<T>::parse(const char* str) {
-    const bool ok = m_parseFunc(*this, str);
-    if (m_callbackFunc) m_callbackFunc(*this, str);
-    return ok;
-}
-
-template <typename T> void V3OptionsEntry<T>::setCallback(const CallbackFn& cb) {
-    m_callbackFunc = cb;
-}
-
-template <typename T> void V3OptionsEntry<T>::setParse(const ParseFn& fn) { m_parseFunc = fn; }
-
-template <> bool V3OptionsEntry<bool>::defaultParse(V3OptionsEntry<bool>& entry, const char* sw) {
-    bool flag = false;
-    const bool ok = V3Options::onoff(sw, entry.m_optString.c_str(), flag /*ref*/);
-    if (ok) entry.m_value = flag;
-    return ok;
-}
-
-template <> bool V3OptionsEntry<bool>::takesValue() const {
-    return false;  // Only bool doesn't take value
-}
-
-template <>
-bool V3OptionsEntry<int>::defaultParse(V3OptionsEntry<int>& entry, const char* valuep) {
-    entry.m_value = std::atoi(valuep);
-    return true;
-}
-
-template <>
-bool V3OptionsEntry<string>::defaultParse(V3OptionsEntry<string>& entry, const char* valuep) {
-    entry.m_value = valuep;
-    return true;
 }
