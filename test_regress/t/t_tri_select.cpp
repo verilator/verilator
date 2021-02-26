@@ -54,7 +54,7 @@ int main() {
             for (tb->A1 = 0; tb->A1 < 4; tb->A1++) {
                 for (tb->A2 = 0; tb->A2 < 4; tb->A2++) {
                     tb->eval();
-                    if (!check()) { pass = false; }
+                    if (!check()) pass = false;
                 }
             }
         }

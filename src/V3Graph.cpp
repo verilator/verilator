@@ -377,7 +377,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
                       << (edgep->dotLabel() != "" ? edgep->dotLabel() : "") << "\""
                       << " weight=" << edgep->weight() << " color=" << edgep->dotColor();
                 if (edgep->dotStyle() != "") *logp << " style=" << edgep->dotStyle();
-                // if (edgep->cutable()) { *logp<<",constraint=false"; }    // to rank without
+                // if (edgep->cutable()) *logp << ",constraint=false";  // to rank without
                 // following edges
                 *logp << "];\n";
             }

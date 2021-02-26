@@ -235,7 +235,7 @@ protected:
     VerilatedScopeNameMap m_nameMap VL_GUARDED_BY(m_nameMutex);
 
     VerilatedMutex m_hierMapMutex;  ///< Protect m_hierMap
-    /// Map the represents scope hierarchy
+    /// Map that represents scope hierarchy
     VerilatedHierarchyMap m_hierMap VL_GUARDED_BY(m_hierMapMutex);
 
     // Slow - somewhat static:
@@ -417,7 +417,7 @@ public:  // But only for verilated*.cpp
         const VerilatedLockGuard lock(s_s.v.m_hierMapMutex);
         VerilatedHierarchyMap& map = s_s.v.m_hierMap;
         if (map.find(fromp) == map.end()) return;
-        VerilatedScopeVector& scopes = map[fromp];
+        auto& scopes = map[fromp];
         const auto it = find(scopes.begin(), scopes.end(), top);
         if (it != scopes.end()) scopes.erase(it);
     }
@@ -595,7 +595,7 @@ private:
             }
         } else {
             // MCD Case
-            for (int i = 0; (fdi != 0) && (i < fp.capacity()); ++i, fdi >>= 1) {
+            for (size_t i = 0; (fdi != 0) && (i < fp.capacity()); ++i, fdi >>= 1) {
                 if (fdi & VL_MASK_I(1)) fp.push_back(s_s.v.m_fdps[i]);
             }
         }

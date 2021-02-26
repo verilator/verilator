@@ -1706,7 +1706,7 @@ public:
         }
     }
     void dtypeFrom(AstNode* fromp) {
-        if (fromp) { dtypep(fromp->dtypep()); }
+        if (fromp) dtypep(fromp->dtypep());
     }
     void dtypeChgSigned(bool flag = true);
     void dtypeChgWidth(int width, int widthMin);
@@ -1922,7 +1922,7 @@ public:
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     // For documentation on emitC format see EmitCStmts::emitOpName
     virtual string emitC() = 0;
-    virtual string emitSimpleOperator() { return ""; }
+    virtual string emitSimpleOperator() { return ""; }  // "" means not ok to use
     virtual bool emitCheckMaxWords() { return false; }  // Check VL_MULS_MAX_WORDS
     virtual bool cleanOut() const = 0;  // True if output has extra upper bits zero
     // Someday we will generically support data types on every math node
@@ -2547,7 +2547,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
@@ -2614,7 +2614,7 @@ class AstNodeStream VL_NOT_FINAL : public AstNodeBiop {
 public:
     AstNodeStream(AstType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : AstNodeBiop{t, fl, lhsp, rhsp} {
-        if (lhsp->dtypep()) { dtypeSetLogicSized(lhsp->dtypep()->width(), VSigning::UNSIGNED); }
+        if (lhsp->dtypep()) dtypeSetLogicSized(lhsp->dtypep()->width(), VSigning::UNSIGNED);
     }
     ASTNODE_BASE_FUNCS(NodeStream)
 };
@@ -2811,7 +2811,7 @@ public:
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
     virtual const char* broken() const override;
     virtual void cloneRelink() override {
-        if (m_taskp && m_taskp->clonep()) { m_taskp = m_taskp->clonep(); }
+        if (m_taskp && m_taskp->clonep()) m_taskp = m_taskp->clonep();
     }
     virtual void dump(std::ostream& str = std::cout) const override;
     virtual string name() const override { return m_name; }  // * = Var name

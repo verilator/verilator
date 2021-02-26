@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       CI_BUILD_STAGE_NAME: build
+      CI_RUNS_ON: ${{ matrix.os }}
+      CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}-coverage
     steps:
 
     - uses: actions/checkout@v2
@@ -32,7 +34,7 @@ jobs:
         cache-name: ccache
       with:
         path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
         restore-keys: coverage-${{ env.cache-name }}
 
     - name: Install dependencies for build
@@ -44,14 +46,11 @@ jobs:
       run: |
         ./ci/ci-script.bash
 
-        mkdir tarball/
-        cp -vr bin tarball/
-        cp -vr src/obj*/*.gcno tarball/
-        tar cvzf verilator-${CI_COMMIT}.tgz -C ./tarball .
+        tar cvzf verilator-${CI_COMMIT}-coverage.tgz bin src/obj*/*.o src/obj*/*.gcno
 
     - uses: actions/upload-artifact@v2
       with:
-        path: verilator-${{ env.CI_COMMIT }}.tgz
+        path: verilator-${{ env.CI_COMMIT }}-coverage.tgz
 
 
   Test:
@@ -73,6 +72,8 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       CI_BUILD_STAGE_NAME: test
+      CI_RUNS_ON: ${{ matrix.os }}
+      CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}-coverage
     steps:
 
     - uses: actions/checkout@v2
@@ -82,14 +83,15 @@ jobs:
         cache-name: ccache
       with:
         path: ${{ github.workspace }}/.ccache
-        key: coverage-${{ env.cache-name }}-${{ github.sha }}
+        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
         restore-keys: coverage-${{ env.cache-name }}
 
     - uses: actions/download-artifact@v2
 
     - name: Install Verilator and test dependencies
       run: |
-        tar xvzf artifact/verilator-${CI_COMMIT}.tgz
+        tar xvzf artifact/verilator-${CI_COMMIT}-coverage.tgz
+        touch src/obj*/*.o src/obj*/*.gcno
         ./ci/ci-install.bash
 
     - name: Test

@@ -76,7 +76,7 @@ static int the_rw_callback(p_cb_data cb_data) {
 
 static void reregister_value_cb() {
     if (vh_value_cb) {
-        if (verbose) { vpi_printf(const_cast<char*>("- Removing cbValueChange callback\n")); }
+        if (verbose) vpi_printf(const_cast<char*>("- Removing cbValueChange callback\n"));
         int ret = vpi_remove_cb(vh_value_cb);
         vh_value_cb.freed();
         CHECK_RESULT(ret, 1);
@@ -88,7 +88,7 @@ static void reregister_value_cb() {
         CHECK_RESULT_NE(main_time, last_value_cb_time);
         last_value_cb_time = main_time;
     }
-    if (verbose) { vpi_printf(const_cast<char*>("- Registering cbValueChange callback\n")); }
+    if (verbose) vpi_printf(const_cast<char*>("- Registering cbValueChange callback\n"));
     t_cb_data cb_data_testcase;
     bzero(&cb_data_testcase, sizeof(cb_data_testcase));
     cb_data_testcase.cb_rtn = the_value_callback;
@@ -109,7 +109,7 @@ static void reregister_value_cb() {
 
 static void reregister_rw_cb() {
     if (vh_rw_cb) {
-        if (verbose) { vpi_printf(const_cast<char*>("- Removing cbReadWriteSynch callback\n")); }
+        if (verbose) vpi_printf(const_cast<char*>("- Removing cbReadWriteSynch callback\n"));
         int ret = vpi_remove_cb(vh_rw_cb);
         vh_rw_cb.freed();
         CHECK_RESULT(ret, 1);
@@ -121,7 +121,7 @@ static void reregister_rw_cb() {
         CHECK_RESULT_NE(main_time, last_rw_cb_time);
         last_rw_cb_time = main_time;
     }
-    if (verbose) { vpi_printf(const_cast<char*>("- Registering cbReadWriteSynch callback\n")); }
+    if (verbose) vpi_printf(const_cast<char*>("- Registering cbReadWriteSynch callback\n"));
     t_cb_data cb_data_testcase;
     bzero(&cb_data_testcase, sizeof(cb_data_testcase));
     cb_data_testcase.cb_rtn = the_rw_callback;
@@ -169,7 +169,7 @@ static void register_filler_cb() {
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    double sim_time = 100;
+    vluint64_t sim_time = 100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
 
@@ -184,14 +184,14 @@ int main(int argc, char** argv, char** env) {
     topp->eval();
     topp->clk = 0;
 
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
-        if (verbose) { VL_PRINTF("Sim Time %d got_error %d\n", main_time, got_error); }
+        if (verbose) VL_PRINTF("Sim Time %d got_error %d\n", main_time, got_error);
         topp->clk = !topp->clk;
         topp->eval();
         VerilatedVpi::callValueCbs();
         VerilatedVpi::callCbs(cbReadWriteSynch);
-        if (got_error) { vl_stop(__FILE__, __LINE__, "TOP-cpp"); }
+        if (got_error) vl_stop(__FILE__, __LINE__, "TOP-cpp");
     }
 
     if (!Verilated::gotFinish()) {
@@ -200,5 +200,5 @@ int main(int argc, char** argv, char** env) {
     topp->final();
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return 0;
 }

@@ -288,7 +288,7 @@ V3Number_test: V3Number_test.o
 #### Modules
 
 %__gen.cpp:	%.cpp $(ASTGEN) V3Ast.h V3AstNodes.h
-	$(PERL) $(ASTGEN) -I$(srcdir) $*.cpp
+	$(PYTHON3) $(ASTGEN) -I $(srcdir) $*.cpp
 
 %.o:	%.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
@@ -315,18 +315,18 @@ serial:: V3Ast__gen_classes.h V3ParseBison.c
 serial_vlcov:: vlcovgen.d
 
 vlcovgen.d: $(VLCOVGEN) $(srcdir)/../include/verilated_cov_key.h
-	$(PERL) $(VLCOVGEN) --srcdir $(srcdir)
+	$(PYTHON3) $(VLCOVGEN) --srcdir $(srcdir)
 	touch $@
 
 V3Ast__gen_classes.h : $(ASTGEN) V3Ast.h V3AstNodes.h
-	$(PERL) $(ASTGEN) -I$(srcdir)  --classes
+	$(PYTHON3) $(ASTGEN) -I $(srcdir)  --classes
 
 V3ParseBison.h: V3ParseBison.c
 
 # Have only one output file in this rule to prevent parallel make issues
 V3ParseBison.c: verilog.y $(BISONPRE)
 	@echo "If you get errors from verilog.y below, try upgrading bison to version 1.875 or newer."
-	$(PERL) $(BISONPRE) --yacc ${YACC} -d -v -o V3ParseBison.c $<
+	$(PYTHON3) $(BISONPRE) --yacc ${YACC} -d -v -o V3ParseBison.c $<
 
 V3Lexer_pregen.yy.cpp:	verilog.l V3ParseBison.h $(HEADERS)
 	${LEX} --version
@@ -340,7 +340,7 @@ V3PreLex_pregen.yy.cpp:	V3PreLex.l $(HEADERS)
 	${LEX} ${LFLAGS} -o$@ $<
 
 V3PreLex.yy.cpp: V3PreLex_pregen.yy.cpp $(FLEXFIX)
-	$(PERL) $(FLEXFIX) V3PreLex <$< >$@
+	$(PYTHON3) $(FLEXFIX) V3PreLex <$< >$@
 
 .SUFFIXES:
 

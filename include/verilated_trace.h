@@ -74,7 +74,7 @@ public:
     // Non blocking get
     bool tryGet(T& result) {
         const VerilatedLockGuard lockGuard(m_mutex);
-        if (m_queue.empty()) { return false; }
+        if (m_queue.empty()) return false;
         result = m_queue.front();
         m_queue.pop_front();
         return true;
@@ -222,7 +222,7 @@ protected:
     void declCode(vluint32_t code, vluint32_t bits, bool tri);
 
     /// Is this an escape?
-    bool isScopeEscape(char c) { return isspace(c) || c == m_scopeEscape; }
+    bool isScopeEscape(char c) { return c != '\f' && (isspace(c) || c == m_scopeEscape); }
     /// Character that splits scopes.  Note whitespace are ALWAYS escapes.
     char scopeEscape() { return m_scopeEscape; }
 

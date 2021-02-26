@@ -67,5 +67,5 @@ int sc_main(int argc, char** argv) {
 
     VL_DO_DANGLING(delete ap, ap);
     VL_DO_DANGLING(delete bp, bp);
-    exit(0L);
+    return 0;
 }

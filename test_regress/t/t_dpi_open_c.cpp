@@ -161,6 +161,22 @@ void _dpii_all(int c, int p, int u, const svOpenArrayHandle i, const svOpenArray
             CHECK_RESULT_HEX(svSize(i, d), 7);
         }
     }
+#ifdef VERILATOR
+    // Check out-of-bounds read doesn't access bad memory (when sanitizer used)
+    (void)svLeft(i, -1);
+    (void)svRight(i, -1);
+    (void)svLow(i, -1);
+    (void)svHigh(i, -1);
+    (void)svIncrement(i, -1);
+    (void)svSize(i, -1);
+    //
+    (void)svLeft(i, 99);
+    (void)svRight(i, 99);
+    (void)svLow(i, 99);
+    (void)svHigh(i, 99);
+    (void)svIncrement(i, 99);
+    (void)svSize(i, 99);
+#endif
 
     if (c == 2 && p == 1 && u == 3) {
         for (int a = svLow(i, 1); a <= svHigh(i, 1); ++a) {

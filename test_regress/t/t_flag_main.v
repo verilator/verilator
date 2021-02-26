@@ -6,7 +6,7 @@
 
 module t(/*AUTOARG*/);
    initial begin
-      $write("[%0t] Hello", $time);  // Check timestamp works
+      $write("[%0t] Hello\n", $time);  // Check timestamp works
       $write("*-* All Finished *-*\n");
       $finish;
    end

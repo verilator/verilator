@@ -51,7 +51,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
       stat bin/verilator_bin_dbg
     fi
   else
-    nodist/code_coverage --stages 1-2
+    nodist/code_coverage --stages 0-2
   fi
 elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ##############################################################################
@@ -97,34 +97,34 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
       ;;
     coverage-all)
-      nodist/code_coverage --stages 3-
+      nodist/code_coverage --stages 1-
       ;;
     coverage-dist)
-      nodist/code_coverage --stages 3- --scenarios=--dist
+      nodist/code_coverage --stages 1- --scenarios=--dist
       ;;
     coverage-vlt-0)
-      nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=0/4
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=0/4
       ;;
     coverage-vlt-1)
-      nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=1/4
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=1/4
       ;;
     coverage-vlt-2)
-      nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=2/4
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=2/4
       ;;
     coverage-vlt-3)
-      nodist/code_coverage --stages 3- --scenarios=--vlt --hashset=3/4
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=3/4
       ;;
     coverage-vltmt-0)
-      nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=0/4
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=0/4
       ;;
     coverage-vltmt-1)
-      nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=1/4
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=1/4
       ;;
     coverage-vltmt-2)
-      nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=2/4
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=2/4
       ;;
     coverage-vltmt-3)
-      nodist/code_coverage --stages 3- --scenarios=--vltmt --hashset=3/4
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=3/4
       ;;
     *)
       fatal "Unknown test: $TESTS"

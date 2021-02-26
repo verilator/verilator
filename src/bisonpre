@@ -1,601 +1,559 @@
-#!/usr/bin/env perl
-# See copyright, etc in below POD section.
+#!/usr/bin/env python3
 ######################################################################
 
-use warnings;
-use Getopt::Long;
-use IO::File;
-use Pod::Usage;
-use strict;
-use vars qw($Debug $VERSION);
+import argparse
+import os
+import re
+import subprocess
+import sys
+from pprint import pprint, pformat
 
-$VERSION = '3.404';
+######################################################################
 
-our $Self;
 
-#======================================================================
-# main
+def process():
+    unlink_outputs()
 
-our $Opt_Debug;
-our $Opt_Definitions;
-our $Opt_File_Prefix;
-our $Opt_Name_Prefix;
-our $Opt_Output;
-our $Opt_Token_Table;
-our $Opt_Verbose;
-our $Opt_Yacc = "bison";
-our $Opt_Input;
+    bison_version_check()
+    supports_report = Bison_Version >= 2.3
 
-autoflush STDOUT 1;
-autoflush STDERR 1;
-Getopt::Long::config("no_auto_abbrev");
-if (! GetOptions(
-          # Local options
-          "help"                => \&usage,
-          "version"             => sub { print "Version $VERSION\n"; exit(0); },
-          "yacc=s"              => \$Opt_Yacc,
-          # Passed to Bison
-          "t|debug"             => sub { $Opt_Debug = 1; },
-          "b|file-prefix=s"     => \$Opt_File_Prefix,
-          "d"                   => \$Opt_Definitions,
-          "k|token-table"       => \$Opt_Token_Table,
-          "o=s"                 => \$Opt_Output,
-          "p|name-prefix=s"     => \$Opt_Name_Prefix,
-          "v|verbose"           => \$Opt_Verbose,
-          "<>"                  => \&parameter,
-    )) {
-    die "%Error: Bad usage, try 'bisonpre --help'\n";
-}
-
-$Opt_Input or die "bisonpre: %Error: input file not specified\n";
-$Opt_Output or die "bisonpre: %Error: --o option is required\n";
-
-process();
-
-#----------------------------------------------------------------------
-
-sub usage {
-    print "Version $VERSION\n";
-    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT, -noperldoc=>1);
-    exit(1);  # Unreachable
-}
-
-sub parameter {
-    my $param = shift;
-    if (!defined $Opt_Input) {
-        $Opt_Input = $param;
-    } else {
-        die "bisonpre: %Error: Unknown parameter: $param\n";
-    }
-}
-
-#######################################################################
-
-sub process {
-    remove_outputs();
-
-    $Self->{bison_version} = bison_version_check();
-    my $supports_report = ($Self->{bison_version} >= 2.3);
-
-    clean_input($Opt_Input, tmp_prefix().".y");
+    clean_input(Args.input, tmp_prefix() + ".y")
 
     # Run bison
-    my $command = ($Opt_Yacc
-                   .($Opt_Debug?" -t":"")
-                   .($Opt_Definitions?" -d":"")
-                   .($Opt_Token_Table?" -k":"")
-                   .($Opt_Verbose?" -v":"")
-                   .(($Opt_Verbose && $supports_report)?" --report=itemset --report=lookahead":"")
-                   # -p required for GLR parsers; they write to -p basename, not -o
-                   .($Opt_Name_Prefix?" -p $Opt_Name_Prefix":"")
-                   ." -b ".tmp_prefix()
-                   ." -o ".tmp_prefix().".c"
-                   ." ".tmp_prefix().".y" );
+    command = (
+        Args.yacc + (" -t" if Args.debug else "") +
+        (" -d" if Args.definitions else "") +
+        (" -k" if Args.token_table else "") + (" -v" if Args.verbose else "") +
+        (" --report=itemset --report=lookahead" if
+         (Args.verbose and supports_report) else "")
+        # -p required for GLR parsers; they write to -p basename, not -o
+        + ((" -p " + Args.name_prefix) if Args.name_prefix else "") + " -b " +
+        tmp_prefix() + " -o " + tmp_prefix() + ".c" + " " + tmp_prefix() +
+        ".y")
 
-    print "  $command\n";
-    system $command;
-    my $status = $?;
-    if ($status != 0) {
-        remove_outputs();
-        my $v = bison_version_check();
-        die "bisonpre: %Error: $Opt_Yacc version $v run failed due to errors\n";
-    }
+    print("  " + command)
+    status = subprocess.call(command, shell=True)
+    if status != 0:
+        unlink_outputs()
+        sys.exit("bisonpre: %Error: " + Args.yacc + " version " +
+                 Bison_Version + " run failed due to errors\n")
 
-    clean_output(tmp_prefix().".output",output_prefix().".output", 1,0);
-    warning_check(output_prefix().".output");
+    clean_output(tmp_prefix() + ".output",
+                 output_prefix() + ".output", True, False)
+    warning_check(output_prefix() + ".output")
 
-    clean_output(tmp_prefix().".c",     output_prefix().".c", 0,1);
-    clean_output(tmp_prefix().".h",     output_prefix().".h", 0,1);
-    remove_tmp();
-}
+    clean_output(tmp_prefix() + ".c", output_prefix() + ".c", False, True)
+    clean_output(tmp_prefix() + ".h", output_prefix() + ".h", False, True)
+    unlink_tmp()
 
-sub tmp_prefix {
-    return output_prefix()."_pretmp";
-}
 
-sub output_prefix {
-    my $o;
-    if ($Opt_Output) {
-        (my $o = $Opt_Output) =~ s!\.[^.]*$!!;
-        return $o;
-    } else {
-        return $Opt_File_Prefix.".tab";
-    }
-}
+def tmp_prefix():
+    return output_prefix() + "_pretmp"
 
-sub remove_tmp {
-    unlink(tmp_prefix().".c");  # Ok if errors
-    unlink(tmp_prefix().".h");  # Ok if errors
-    unlink(tmp_prefix().".output");  # Ok if errors
-}
 
-sub remove_outputs {
-    remove_tmp();
-    unlink(output_prefix().".c");  # Ok if errors
-    unlink(output_prefix().".h");  # Ok if errors
+def output_prefix():
+    if Args.output:
+        o = re.sub(r'\.[^.]*$', '', Args.output)
+        return o
+    else:
+        return Args.file_prefix + ".tab"
+
+
+def unlink_ok(filename):
+    try:
+        os.unlink(filename)
+    except OSError:
+        pass
+
+
+def unlink_tmp():
+    unlink_ok(tmp_prefix() + ".c")
+    unlink_ok(tmp_prefix() + ".h")
+    unlink_ok(tmp_prefix() + ".output")
+
+
+def unlink_outputs():
+    unlink_tmp()
+    unlink_ok(output_prefix() + ".c")
+    unlink_ok(output_prefix() + ".h")
     # We don't remove .output file, as it's useful for debugging errors
-}
 
-sub bison_version_check {
-    my $v = `$Opt_Yacc --version`;
-    if ($v && $v =~ /([0-9]+\.[0-9]+)/) {
-        my $v = $1;
-        ($v >= 1.875) or die "bisonpre: %Error: '$Opt_Yacc' is version $v; version 1.875 or newer is required\n";
-        return $v;
-    } else {
-        die "bisonpre: %Error: '$Opt_Yacc' is not installed, or not working\n";
-    }
-}
 
-sub clean_output {
-    my $filename = shift;
-    my $outname = shift || $filename;
-    my $is_output = shift;
-    my $is_c = shift;
-    print "  edit $filename $outname\n";
+def bison_version_check():
+    sp = subprocess.Popen(Args.yacc + " --version",
+                          shell=True,
+                          stdout=subprocess.PIPE)
+    out = str(sp.stdout.read())
+    match = re.search(r'([0-9]+\.[0-9]+)', out)
+    if match:
+        v = float(match.group(1))
+        if v < 1.875:
+            sys.exit("bisonpre: %Error: '" + Args.yacc + "' is version " + v +
+                     "; version 1.875 or newer is required\n")
+        global Bison_Version
+        Bison_Version = v
+        return
 
-    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
-    my @lines = $fh->getlines;
-    $fh->close;
+    sys.exit("bisonpre: %Error: '" + Args.yacc +
+             "' is not installed, or not working\n")
 
-    (my $basename = tmp_prefix().".") =~ s!.*/!!;
-    $basename = quotemeta($basename);
-    (my $newbase = $Opt_Input) =~ s!.*/!!;
-    $newbase =~ s/\.y/./;
 
-    if ($is_output) {
-        my %state_line; my $l=0;
-        foreach my $line (@lines) {
-            $l++;
+def clean_output(filename, outname, is_output, is_c):
+    print("  edit " + filename + " " + outname)
+
+    with open(filename) as fh:
+        lines = fh.readlines()
+
+    basename = re.sub(r'.*/', '', tmp_prefix() + ".")
+    basename = re.escape(basename)
+    newbase = re.sub(r'.*/', '', Args.input)
+    newbase = re.sub(r'\.y', '.', newbase)
+
+    if is_output:
+        state_line = {}
+        l = 0
+        for line in lines:
+            l += 1
             # We add a colon so it's easy to search for the definition
-            $state_line{$1} = $l if $line =~ s/^state (\d+)\s*$/state $1:/;
-        }
-        my @out;
-        foreach my $line (@lines) {
-            if ($line =~ /^State (\d+) (conflicts)/) {
-                chomp $line;
-                $line .= " // line $state_line{$1}" if $state_line{$1};
-                $line .= "\n";
-            }
-            push @out, $line;
-        }
-        @lines = @out; @out = ();
-    }
-    if ($is_c) {
-        my %token_values;
-        my $in_en=0;
-        foreach my $line (@lines) {
-            $in_en=1 if $line =~ /enum\s+yytokentype/;
-            $in_en=0 if $line =~ /;/;
-            $token_values{$2} = $1 if $in_en && $line =~ /\b(\S+) = (\d+)/;
-        }
-        my @out;
-        foreach my $line (@lines) {
-            if (_enaline($line) && $line =~ /BISONPRE_TOKEN_NAMES/) {
-                push @out, $line;
-                foreach my $tv (sort keys %token_values) {
-                    push @out, sprintf("\tcase %d: return \"%s\";\n",
-                                       $tv, $token_values{$tv});
-                }
-                next;
-            }
-            push @out, $line;
-        }
-        @lines = @out; @out = ();
-    }
+            match = re.match(r'^state (\d+)\s*', line)
+            if match:
+                state_line[match.group(1)] = l
+        out = []
+        for line in lines:
+            match = re.match(r'^State (\d+) (conflicts)', line)
+            if match:
+                line = line.rstrip()
+                if match.group(1) in state_line:
+                    line += " // line " + state_line[match.group(1)]
+                line += "\n"
+            out.append(line)
+        lines = out
+        out = []
 
-    $fh = IO::File->new(">$outname") or die "%Error: $! writing $outname\n";
-    foreach my $line (@lines) {
-        # Fix filename refs
-        $line =~ s!$basename!$newbase!g;
-        # Fix bison 2.3 and GCC 4.2.1
-        $line =~ s!\(YY_\("!(YY_((char*)"!g;
-        # Fix bison 2.3 glr-parser warning about yyerrorloc.YYTYPE::yydummy uninit
-        $line =~ s!(YYLTYPE yyerrloc;)!$1 yyerrloc.yydummy=0;/*bisonpre*/!g;
-        # Fix bison 3.6.1 unexpected nested-comment
-        $line =~ s!/\* "/\*.*\*/"  \*/!!g;
-        $fh->write($line);
-    }
-    $fh->close;
-}
+    if is_c:
+        token_values = {}
+        for line in lines:
+            if re.search(r'enum\s+yytokentype',
+                         line) and not re.search(r';', line):
+                match = re.search(r'\b(\S+) = (\d+)', line)
+                if match:
+                    token_values[match.group(2)] = match.group(1)
+        out = []
+        for line in lines:
+            if _enaline(line) and re.search(r'BISONPRE_TOKEN_NAMES', line):
+                out.append(line)
+                for tv in sorted(token_values.keys()):
+                    out.append("\tcase %d: return \"%s\";\n" %
+                               (tv, token_values[tv]))
+                continue
+            out.append(line)
+        lines = out
+        out = []
 
-sub warning_check {
-    my $filename = shift;
+    with open(outname, "w") as fh:
+        for line in lines:
+            # Fix filename refs
+            line = re.sub(basename, newbase, line)
+            # Fix bison 2.3 and GCC 4.2.1
+            line = re.sub(r'\(YY_\("', '(YY_((char*)"', line)
+            # Fix bison 2.3 glr-parser warning about yyerrorloc.YYTYPE::yydummy uninit
+            line = re.sub(r'(YYLTYPE yyerrloc;)',
+                          r'\1 yyerrloc.yydummy=0;/*bisonpre*/', line)
+            # Fix bison 3.6.1 unexpected nested-comment
+            line = re.sub(r'/\* "/\*.*\*/"  \*/', '', line)
+            fh.write(line)
 
-    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
-    while (defined(my $line = $fh->getline)) {
-        if ($line =~ /(conflicts|warning:|^useless)/i) {
-            die "%Error: $filename:$.: $line\n";
-        }
-    }
-    $fh->close;
-}
 
-#######################################################################
+def warning_check(filename):
+    with open(filename) as fh:
+        linenum = 0
+        for line in fh:
+            linenum += 1
+            if re.search(r'(conflicts|warning:|^useless)',
+                         line,
+                         flags=re.IGNORECASE):
+                sys.exit("%Error: " + filename + ":" + linenum + ": " + line +
+                         "\n")
 
-sub clean_input {
-    my $filename = shift;
-    my $outname = shift || $filename;  # Can == filename if desired
-    print "  edit $filename $outname\n";
 
-    $Self->{filename} = $filename;
-    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
-    my @lines = $fh->getlines;
-    $fh->close;
+######################################################################
+
+
+def clean_input(filename, outname):
+    print("  edit " + filename + " " + outname)
+
+    global Filename
+    Filename = filename
+
+    with open(filename) as fh:
+        lines = fh.readlines()
 
     # Find "%tokens<type>:"
     # Find "rule<type>:" and replace with just "rule:"
-    my %types;
-    my %rules;  $Self->{rules} = \%rules;
-    my %tokens;
-    my $last_rule;
-    my $section = 1;
-    {
-        my @linesin = @lines;  @lines=();  my $l=0;
-        foreach my $line (@linesin) {
-            $l++;
-            #  ^/ to prevent comments from matching
-            $line =~ m!^[a-zA-Z0-9_<>]+:[^/]*[a-zA-Z]! and die "%Error: $filename:$l: Move text on rule line to next line: $line\n";
-            if ($line =~ /^%%/) {
-                $section++;
-                if ($section==2) { $last_rule = undef; }
-            }
-            elsif ($line =~ s/^([a-zA-Z0-9_]+)<(\S*)>:/$1:/) {
-                !$rules{$1}{name} or die "%Error: $filename:$l: Redeclaring '$1': $line\n";
-                $types{$2}{$1} = 1;
-                $rules{$1}{name} = $1;
-                $rules{$1}{type} = $2;
-                !$last_rule or die "%Error: $filename:$l: Unterminated previous rule\n";
-                $last_rule = $1;
-            } elsif ($line =~ /^([a-zA-Z0-9_]+):/) {
-                !$rules{$1}{name} or die "%Error: $filename:$l: Redeclaring '$1': $line\n";
-                $rules{$1}{name} = $1;
-                $rules{$1}{type} = "";
-                !$last_rule or die "%Error: $filename:$l: Unterminated previous rule\n";
-                $last_rule = $1;
-            }
-            push @lines, $line;
-            # Now clean the line and extract some more info
-            (my $cline = $line) =~ s/\/\/.*$/\n/;
-            (my $rline = $line) =~ s/\/\/.*$/\n/;
-            if ($cline =~ /^\s*;/) {
-                $last_rule or die "%Error: $filename:$l: Stray semicolon\n";
-                $last_rule = undef;
-            } elsif ($last_rule) {
-                $rules{$last_rule}{rules_and_productions} .= $cline;
-            }
-            if ($cline =~ /^%token\s*<(\S+)>\s*(\S+)/) {
-                !$tokens{$2} or die "%Error: $filename:$l: Redeclaring '$2': $line\n";
-                $tokens{$2} = $1;
-            }
-            foreach my $tok (split /[^a-zA-Z0-9_]+/, $cline) {
-                if ($last_rule && $tok=~/^[a-zA-Z]/) {
-                    #print "TT $last_rule $tok\n";
-                    $rules{$last_rule}{subrules}{$tok} = 1;
-                    $rules{$tok}{parentrules}{$last_rule} = 1;
-                }
-            }
-        }
-    }
+    global Rules
+    Rules = {}
 
-    #use Data::Dumper; print Dumper(\%rules);
+    types = {}
+    tokens = {}
+    last_rule = None
+    section = 1
+    if True:
+        linesin = lines
+        lines = []
+        l = 0
+        for line in linesin:
+            l += 1
+            #  ^/ to prevent comments from matching
+            if re.match(r'^[a-zA-Z0-9_<>]+:[^/]*[a-zA-Z]', line):
+                sys.exit("%Error: " + filename + ":" + str(l) +
+                         ": Move text on rule line to next line: " + line +
+                         "\n")
+
+            matcha = re.match(r'^([a-zA-Z0-9_]+)<(\S*)>(.*)$',
+                              line,
+                              flags=re.DOTALL)
+            matchb = re.match(r'^([a-zA-Z0-9_]+):', line)
+
+            if re.match(r'^%%', line):
+                section += 1
+                if section == 2:
+                    last_rule = None
+            elif matcha:
+                name = matcha.group(1)
+                dtype = matcha.group(2)
+                line = name + matcha.group(3)
+                if name in Rules:
+                    sys.exit("%Error: " + filename + ":" + str(l) +
+                             ": Redeclaring '" + name + "': " + line)
+                if dtype not in types:
+                    types[dtype] = {}
+                types[dtype][name] = 1
+                Rules[name] = {
+                    'name': name,
+                    'type': dtype,
+                    'rules_and_productions': "",
+                    'subrules': {}
+                }
+                if last_rule:
+                    sys.exit("%Error: " + filename + ":" + str(l) +
+                             ": Unterminated previous rule\n")
+                last_rule = name
+            elif matchb:
+                name = matchb.group(1)
+                if name != 'public' and name != 'private':
+                    if name in Rules:
+                        sys.exit("%Error: " + filename + ":" + str(l) +
+                                 ": Redeclaring '" + name + "': " + line)
+                    Rules[name] = {
+                        'name': name,
+                        'type': "",
+                        'rules_and_productions': "",
+                        'subrules': {}
+                    }
+                    if last_rule:
+                        sys.exit("%Error: " + filename + ":" + str(l) +
+                                 ": Unterminated previous rule\n")
+                    last_rule = name
+
+            lines.append(line)
+            # Now clean the line and extract some more info
+            cline = re.sub(r'//.*$', '\n', line)
+            rline = re.sub(r'//.*$', '\n', line)
+            if re.match(r'^\s*;', cline):
+                if not last_rule:
+                    sys.exit("%Error: " + filename + ":" + str(l) +
+                             ": Stray semicolon\n")
+                last_rule = None
+            elif last_rule:
+                Rules[last_rule]['rules_and_productions'] += cline
+
+            match = re.match(r'^%token\s*<(\S+)>\s*(\S+)', cline)
+            if match:
+                dtype = match.group(1)
+                tok = match.group(2)
+                if tok in tokens:
+                    sys.exit("%Error: " + filename + ":" + str(l) +
+                             ": Redeclaring '" + tok + "': " + line)
+                tokens[tok] = dtype
+
+            for tok in re.split(r'[^a-zA-Z0-9_]+', cline):
+                if last_rule and re.match(r'^[a-zA-Z]', tok):
+                    # print("TT "+last_rule+" "+tok+"\n")
+                    Rules[last_rule]['subrules'][tok] = 1
+
+    #pprint(Rules)
 
     # Replace BISONPRE_VERSION(ver,,...) with expanded list
-    {
-        my @linesin = @lines;  @lines=();  my $l=0;
-        foreach my $line (@linesin) {
-            $l++;
-            if (_enaline($line) && $line =~ /BISONPRE_VERSION/) {
-                #                            1         3             4
-                ($line =~ /BISONPRE_VERSION\((\S+)\s*,\s*((\S+)\s*,)?\s*([^\),]+)\)\s*$/)
-                    or die "%Error: $filename:$l: Bad form of BISONPRE_VERSION: $line\n";
-                my $ver=$1;  my $ver_max=$3;  my $cmd=$4;
-                if ($Self->{bison_version} >= $1
-                    && (!$ver_max || $Self->{bison_version} <= $ver_max)) {
-                    $line = $cmd."\n";
-                } else {
-                    $line = "//NOP: $line";
-                }
-            }
-            push @lines, $line;
-        }
-    }
+    if True:
+        linesin = lines
+        lines = []
+        l = 0
+        for line in linesin:
+            l += 1
+            if _enaline(line) and re.search(r'BISONPRE_VERSION', line):
+                #                       1           2 3            4
+                match = re.search(
+                    r'BISONPRE_VERSION\((\S+)\s*,\s*((\S+)\s*,)?\s*([^\),]+)\)\s*$',
+                    line)
+                if not match:
+                    sys.exit("%Error: " + filename + ":" + str(l) +
+                             ": Bad form of BISONPRE_VERSION: " + line)
+                ver = match.group(1)
+                ver_max = match.group(3)
+                cmd = match.group(4)
+                if Bison_Version >= float(ver) and (
+                        not ver_max or Bison_Version <= float(ver_max)):
+                    line = cmd + "\n"
+                else:
+                    line = "//NOP: " + line
+            lines.append(line)
 
     # Replace BISONPRE_NOT(type,...) with expanded list
-    {
-        my @linesin = @lines;  @lines=();  my $l=0;
-        foreach my $line (@linesin) {
-            $l++;
-            if (_enaline($line) && $line =~ /BISONPRE_NOT/) {
-                ($line =~ s/BISONPRE_NOT\((\S+)\)\s*(\{[^}]+})\s*$//)
-                    or die "%Error: $filename:$l: Bad form of BISONPRE_NOT: $line\n";
-                my $endtok = $1;  my $action = $2;
-                my @endtoks = split(/,/, $endtok);
-                map { $tokens{$_} or die "%Error: $filename:$l: Can't find definition for token: $_\n"
-                } @endtoks;
+    if True:
+        linesin = lines
+        lines = []
+        l = 0
+        for line in linesin:
+            l += 1
+            if _enaline(line) and re.search(r'BISONPRE_NOT', line):
+                match = re.search(
+                    r'(.*)BISONPRE_NOT\((\S+)\)\s*(\{[^}]+})\s*(.*)$',
+                    line,
+                    flags=re.DOTALL)
+                if not match:
+                    sys.exit("%Error: " + filename + ":" + str(l) +
+                             ": Bad form of BISONPRE_NOT: " + line)
+                line = match.group(1) + match.group(4)
+                endtok = match.group(2)
+                action = match.group(3)
+                endtoks = endtok.split(',')
+                for etok in endtoks:
+                    if not etok in tokens:
+                        sys.exit("%Error: " + filename + ":" + str(l) +
+                                 ": Can't find definition for token: " + etok +
+                                 "\n")
                 # Push it all onto one line to avoid error messages changing
-                my $bar = "";
-              tok:
-                foreach my $tok (sort keys %tokens) {
-                    foreach (@endtoks) {
-                        next tok if $tok eq $_;
-                    }
-                    if ($endtok ne $tok) {
-                        $line .= "\t$bar $tok $action";
-                        $bar = "|";
-                    }
-                }
-                $line .= "\n";
-            }
-            push @lines, $line;
-        }
-    }
+                bar = ""
+                for tok in sorted(tokens.keys()):
+                    hit = False
+                    for etok in endtoks:
+                        if tok == etok:
+                            hit = True
+                            break
+                    if not hit and endtok != tok:
+                        line += "\t" + bar + " " + tok + " " + action
+                        bar = "|"
+                line += "\n"
+            lines.append(line)
 
     # Replace BISONPRE_COPY(type,{code})
-    {
-        my @linesin = @lines;  @lines=();  my $l=0;
-        foreach my $line (@linesin) {
-            $l++;
-            if (_enaline($line) && $line =~ /BISONPRE_COPY/) {
-                $line = _bisonpre_copy($line,$l,0);
-            }
-            push @lines, $line;
-        }
-    }
+    if True:
+        linesin = lines
+        lines = []
+        l = 0
+        for line in linesin:
+            l += 1
+            if _enaline(line) and re.search(r'BISONPRE_COPY', line):
+                line = _bisonpre_copy(line, l, 0)
+            lines.append(line)
 
     # Replace ~[x]~  - must be after BISONPRE_COPY expansion
-    {
-        my @linesin = @lines;  @lines=();  my $l=0;
-        foreach my $line (@linesin) {
-            $l++;
-            $line =~ s/~[a-zA-Z0-9_]+~//g;
-            push @lines, $line;
-        }
-    }
+    if True:
+        linesin = lines
+        lines = []
+        l = 0
+        for line in linesin:
+            l += 1
+            line = re.sub(r'~[a-zA-Z0-9_]+~', '', line)
+            lines.append(line)
 
     # Find "BISONPRE_TYPES"
-    {
-        my @linesin = @lines;  @lines=();  my $l=0;
-        my $needmore = 0;
-        foreach my $line (@linesin) {
-            $l++;
-            if (_enaline($line) && $line =~ m!//BISONPRE_TYPES!) {
-                push @lines, $line;
-                foreach my $type (sort keys %types) {
-                    next if !$type;
-                    my $line = "%type<$type>\t";
-                    foreach my $rule (sort keys %{$types{$type}}) {
-                        $line.=" ".$rule;
-                    }
-                    $line .= "\n";
-                    push @lines, $line;
-                    $needmore++
-                }
-            } elsif ($needmore) {
+    if True:
+        linesin = lines
+        lines = []
+        l = 0
+        needmore = 0
+        for line in linesin:
+            l += 1
+            if _enaline(line) and re.search(r'//BISONPRE_TYPES', line):
+                lines.append(line)
+                for type in sorted(types.keys()):
+                    if not type:
+                        continue
+                    line = "%type<" + type + ">\t"
+                    for rule in sorted(types[type].keys()):
+                        line += " " + rule
+                    line += "\n"
+                    lines.append(line)
+                    needmore += 1
+            elif needmore > 0:
                 # Bison doesn't have a #line directive, so we need somewhere to insert into
-                $line =~ s!^\s*//.*$!!;
-                ($line =~ m/^\s*$/)
-                    or die "%Error: $filename:$l: Need $needmore more blank lines to keep line numbers are constant\n";
-                $needmore--;
-            } else {
-                push @lines, $line;
-            }
-        }
-    }
+                line = re.sub(r'^\s*//.*$', '', line)
+                if not re.match(r'^\s*$', line):
+                    sys.exit(
+                        "%Error: " + filename + ":" + str(l) + ": Need " +
+                        needmore +
+                        " more blank lines to keep line numbers are constant\n"
+                    )
+                needmore -= 1
+            else:
+                lines.append(line)
 
-    $fh = IO::File->new(">$outname") or die "%Error: $! writing $outname\n";
-    foreach my $line (@lines) {
-        $fh->write($line);
-    }
-    $fh->close;
-}
+    with open(outname, "w") as fh:
+        for line in lines:
+            fh.write(line)
 
-sub _bisonpre_copy {
-    my $text = shift;
-    my $l  = shift;
-    my $depth = shift;
-    while ($text =~ /BISONPRE_COPY/) {
-        ($text =~ s/BISONPRE_COPY(_ONCE)?\((\S+)\s*,\s*\{([^}]*)}\s*\)/{HERE}/)
-            or die "%Error: $Self->{filename}:$l: Bad form of BISONPRE_NOT: $text\n";
-        my $once = $1; my $rule = $2;  my $code = $3;
-        $Self->{rules}{$rule} or die "%Error: $Self->{filename}:$l: Can't find definition for rule: $rule\n";
-        if ($depth > 0 && $once) {
+
+def _bisonpre_copy(text, l, depth):
+    while re.search(r'BISONPRE_COPY', text):
+        match = re.match(
+            # 1                2         3             4            5
+            r'(.*)BISONPRE_COPY(_ONCE)?\((\S+)\s*,\s*\{([^}]*)}\s*\)(.*)',
+            text,
+            flags=re.DOTALL)
+        if not match:
+            sys.exit("%Error: " + Filename + ":" + str(l) +
+                     ": Bad form of BISONPRE_NOT: " + text)
+        text = match.group(1) + '{HERE}' + match.group(5)
+        once = match.group(2)
+        rule = match.group(3)
+        code = match.group(4)
+        if not rule in Rules:
+            sys.exit("%Error: " + Filename + ":" + str(l) +
+                     ": Can't find definition for rule: " + rule)
+        if depth > 0 and once:
             # _ONCE means don't inherit
-            $text =~ s/\|[ \t]+{HERE}//;        # Don't OR in nothing
-            $text =~ s/{HERE}//;
-        } else {
+            text = re.sub(r'\|[ \t]+{HERE}', '', text)  # Don't OR in nothing
+            text = re.sub(r'{HERE}', '', text)
+        else:
             # Push it all onto one line to avoid error messages changing
-            my $insert = $Self->{rules}{$rule}{rules_and_productions};
-            $insert =~ s/^\S+://g;      # Strip rule name
+            insert = Rules[rule]['rules_and_productions']
+            insert = re.sub(r'^\S+:', '', insert)  # Strip rule name
             # Recurse so BISONPRE under B
-            #print "COPY $l code $code\n";
-            #print "COPY $l in   $insert\n";
-            $_=$insert; eval("$code; \$_;");  $insert = $_;
-            #print "COPY $l out  $insert\n";
-            while ($insert =~ s/[ \t\n]+\n/\n/go) {}
-            while ($insert =~ s/\n/ /go) {}   # Optional - preserve line numbering
-            $text =~ s/{HERE}/$insert/;
-        }
-        $depth++;
-    }
-    return $text;
-}
+            #print "COPY $l code $code\n"
+            #print "COPY $l in   $insert\n"
+            for op in code.split(';'):
+                if re.match(r'^\s*$', op):
+                    continue
+                match = re.match(r'^\s*s/(.*?)/(.*?)/g\s*$', op)
+                if not match:
+                    sys.exit("%Error: " + Filename + ":" + str(l) +
+                             ": Didn't understand replacement: " + op)
+                left = match.group(1)
+                right = match.group(2)
+                insert = re.sub(left, right, insert)
 
-sub _enaline {
-    my $line = shift;
-    return 0 if $line =~ m!//UN!;
-    return 1;
-}
-
-#######################################################################
-__END__
-
-=pod
-
-=head1 NAME
-
-bisonpre - Bison wrapper with pre and post processing
-
-=head1 SYNOPSIS
-
-  bisonpre --yacc bison --debug --verbose --defines X.h -k $< -pX -o X.c
+            #print "COPY $l out  $insert\n"
+            insert = re.sub(r'[ \t\n]+\n', "\n", insert)
+            insert = re.sub(r'\n', " ",
+                            insert)  # Optional - preserve line numbering
+            text = re.sub(r'{HERE}', insert, text)
+        depth += 1
+    return text
 
 
-=head1 DESCRIPTION
+def _enaline(line):
+    return not re.search(r'//UN', line)
 
-Bisonpre is a wrapper for the Bison YACC replacement.  Input to Bison is
+
+######################################################################
+# main
+
+parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description=
+    """Bisonpre is a wrapper for the Bison YACC replacement.  Input to Bison is
 preprocessed with substitution as described below under EXTENSIONS.  Output
 from Bison is checked for additional errors, and corrected to work around
-various compile warnings.
+various compile warnings.""",
+    epilog="""
+BISON GRAMMAR EXTENSIONS
 
-=head1 EXTENSIONS
+  //BISONPRE_TYPES
 
-=over 4
+    This is expanded into %type declarations.
 
-=item //BISONPRE_TYPES
+  ~[a-z]+~
 
-This is expanded into %type declarations.
+    Any text matching ~[a-z]+~ is removed.  This allows optional text to be
+    used only when the rule containing the ~~ is used in a BISONPRE_COPY.
 
-=item ~[a-z]+~
+  rule_label<type>:
 
-Any text matching ~[a-z]+~ is removed.  This allows optional text to be
-used only when the rule containing the ~~ is used in a BISONPRE_COPY.
+    This allows the label declaring a rule to also specify the type of the
+    rule.  The type will be inserted where /*BISONPRE_TYPES*/ is
+    encountered.
 
-=item rule_label<type>:
+  BISONPRE_COPY(rule, {code})
 
-This allows the label declaring a rule to also specify the type of the
-rule.  The type will be inserted where /*BISONPRE_TYPES*/ is encountered.
+    Copy the rules and productions from the specified rule, filter through
+    the Python code provided in the {} and insert here into the output
+    file.
 
-=item BISONPRE_COPY(rule, {code})
+  BISONPRE_COPY_ONCE(rule, {code})
 
-Copy the rules and productions from the specified rule, filter through the
-Perl code provided in the {} and insert here into the output file.
+    As with BISONPRE_COPY, but if called from underneath another
+    BISONPRE_COPY rule, ignore it.
 
-=item BISONPRE_COPY_ONCE(rule, {code})
+  BISONPRE_NOT(token[, token...])
 
-As with BISONPRE_COPY, but if called from underneath another BISONPRE_COPY
-rule, ignore it.
+    Create a rule that matches every token except for those specified.
 
-=item BISONPRE_NOT(token[, token...])
+  BISONPRE_VERSION(ver, cmd)
 
-Create a rule that matches every token except for those specified.
+    If the bison version is >= the specified version, include the given
+    command.
 
-=item BISONPRE_VERSION(ver, cmd)
-
-If the bison version is >= the specified version, include the given command.
-
-=back
-
-=head1 ARGUMENTS
-
-=over 4
-
-=item -b file-prefix
-=item --file-prefix=file-prefix
-
-Passed to bison.
-
-Specify a prefix to use for all bison output file names.  The names are
-chosen as if the input file were named file-prefix.c.
-
-=item -d
-
-Passed to bison.
-
-Write an extra output file containing macro definitions for the token type
-names defined in the grammar and the semantic value type YYSTYPE, as well
-as a few extern variable declarations.  If the parser output file is named
-name.c then this file is named name.h.  This output file is essential if
-you wish to put the definition of yylex in a separate source file, because
-yylex needs to be able to refer to token type codes and the variable
-yylval.
-
-=item --help
-
-Displays this message and program version and exits.
-
-=item -k
-=item --token-table
-
-Passed to bison.
-
-This switch causes the name.tab.c output to include a list of token names
-in order by their token numbers; this is defined in the array yytname.
-Also generated are #defines for YYNTOKENS, YYNNTS, YYNRULES, and YYNSTATES.
-
-=item -t
-=item --debug
-
-Passed to bison.
-
-In the parser file, define the macro YYDEBUG to 1 if it is not already
-defined, so that the debugging facilities are compiled.
-
-=item -v
-=item --verbose
-
-Passed to bison.
-
-Write an extra output file containing verbose descriptions of the parser
-states and what is done for each type of look-ahead token in that state.
-This file also describes all the conflicts, both those resolved by operator
-precedence and the unresolved ones.  The file's name is made by removing
-.tab.c or .c from the parser output file name, and adding .output instead.
-Therefore, if the input file is foo.y, then the parser file is called
-foo.tab.c by default.  As a consequence, the verbose output file is called
-foo.output.
-
-=item --version
-
-Print the version number and exit.
-
-=item --yacc
-
-Specify the name of the bison executable, defaults to "bison."
-
-=back
-
-=head1 DISTRIBUTION
-
-This is part of the L<https://www.veripool.org/> free Verilog EDA software
-tool suite.  The latest version is available from CPAN and from
-L<https://www.veripool.org/>.
-
-Copyright 2008-2021 by Wilson Snyder. This program is free software; you
+Copyright 2002-2021 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
-Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
+Lesser General Public License Version 3 or the Perl Artistic License
+Version 2.0.
 
-SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
-=head1 AUTHORS
+# Local options
+parser.add_argument('--yacc',
+                    action='store',
+                    default='bison',
+                    help='name of the bison executable, defaults to "bison"')
 
-Wilson Snyder <wsnyder@wsnyder.org>
+# Arguments passed through to bison
+parser.add_argument('-b',
+                    '--file-prefix',
+                    action='store',
+                    help='Passed to bison.')
+parser.add_argument('-d',
+                    '--definitions',
+                    action='store_true',
+                    help='Passed to bison.')
+parser.add_argument('-k',
+                    '--token-table',
+                    action='store_true',
+                    help='Passed to bison.')
+parser.add_argument('-o',
+                    '--output',
+                    action='store',
+                    required=True,
+                    help='Passed to bison. Sets output file name')
+parser.add_argument('-p',
+                    '--name-prefix',
+                    action='store',
+                    help='Passed to bison.')
+parser.add_argument('-t',
+                    '--debug',
+                    action='store_true',
+                    help='Passed to bison.')
+parser.add_argument('-v',
+                    '--verbose',
+                    action='store_true',
+                    help='Passed to bison.')
 
-=head1 SEE ALSO
+parser.add_argument('input', help='Passed to bison. Input grammar file.')
 
-C<bison>
+Args = parser.parse_args()
 
-=cut
+process()
 
 ######################################################################
 ### Local Variables:

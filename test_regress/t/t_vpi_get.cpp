@@ -123,7 +123,7 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
         int vpidir = vpi_get(vpiDirection, handle);
         // Don't check port directions in verilator
         // see #681
-        if (!TestSimulator::is_verilator()) { CHECK_RESULT(vpidir, direction); }
+        if (!TestSimulator::is_verilator()) CHECK_RESULT(vpidir, direction);
     }
 
     // check type of object
@@ -234,7 +234,7 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 #else
 double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {
-    double sim_time = 1100;
+    vluint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
 
@@ -258,7 +258,7 @@ int main(int argc, char** argv, char** env) {
     topp->clk = 0;
     main_time += 10;
 
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
         topp->eval();
         VerilatedVpi::callValueCbs();
@@ -278,7 +278,7 @@ int main(int argc, char** argv, char** env) {
 #endif
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return 0;
 }
 
 #endif

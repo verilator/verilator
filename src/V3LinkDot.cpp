@@ -369,7 +369,7 @@ public:
         symp->classOrPackagep(classOrPackagep);
         symp->fallbackp(abovep);
         nodep->user1p(symp);
-        if (name != "") { checkDuplicate(abovep, nodep, name); }
+        if (name != "") checkDuplicate(abovep, nodep, name);
         // Duplicates are possible, as until resolve generates might have 2 same cells under an if
         abovep->reinsert(name, symp);
         return symp;
@@ -409,7 +409,7 @@ public:
         // Mark the given variable name as being allowed to be implicitly declared
         if (nodep) {
             const auto it = m_implicitNameSet.find(make_pair(nodep, varname));
-            if (it == m_implicitNameSet.end()) { m_implicitNameSet.emplace(nodep, varname); }
+            if (it == m_implicitNameSet.end()) m_implicitNameSet.emplace(nodep, varname);
         }
     }
     bool implicitOk(AstNodeModule* nodep, const string& varname) {
@@ -2107,7 +2107,7 @@ private:
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
                 m_ds.m_unlinkedScopep = nodep->lhsp();
             }
-            if (VN_IS(nodep->lhsp(), LambdaArgRef)) { m_ds.m_unlinkedScopep = nodep->lhsp(); }
+            if (VN_IS(nodep->lhsp(), LambdaArgRef)) m_ds.m_unlinkedScopep = nodep->lhsp();
             if (!m_ds.m_dotErr) {  // Once something wrong, give up
                 // Top 'final' dot RHS is final RHS, else it's a
                 // DOT(DOT(x,*here*),real-rhs) which we consider a RHS
@@ -2152,7 +2152,7 @@ private:
         // Generally resolved during Primay, but might be at param time under AstUnlinkedRef
         UASSERT_OBJ(m_statep->forPrimary() || m_statep->forPrearray(), nodep,
                     "ParseRefs should no longer exist");
-        if (nodep->name() == "super") { nodep->v3warn(E_UNSUPPORTED, "Unsupported: super"); }
+        if (nodep->name() == "super") nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
         DotStates lastStates = m_ds;
         bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         if (start) {

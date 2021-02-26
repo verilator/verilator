@@ -26,10 +26,15 @@ def test():
         sys.exit("%Error: Run code_coverage from the top of the verilator kit")
     exec(open("./nodist/code_coverage.dat").read())
 
+    if Args.stage_enabled[0]:
+        ci_fold_start("distclean")
+        print("Stage 0: distclean")
+        run("make distclean || true")
+        ci_fold_end()
+
     if Args.stage_enabled[1]:
         ci_fold_start("configure")
         print("Stage 1: configure (coverage on)")
-        run("make distclean || true")
         run("autoconf")
         # Exceptions can pollute the branch coverage data
         run("./configure --enable-longtests CXX='g++ --coverage -fno-exceptions -DVL_GCOV'"
@@ -87,8 +92,8 @@ def test():
                 if re.search(regexp, dat):
                     # Remove .gcda/.gcno for files we don't care about before we slowly
                     # read them
-                    os.unlink(dat)
-                    os.unlink(gcno)
+                    unlink_ok(dat)
+                    unlink_ok(gcno)
                     del dats[dat]
                     break
 
@@ -305,18 +310,24 @@ def source_globs(*dirs):
 def run(command):
     # run a system command, check errors
     print("\t%s" % command)
-    os.system(command)
     status = subprocess.call(command, shell=True)
     if status < 0:
         raise Exception("%Error: Command failed " + command + ", stopped")
 
 
+def unlink_ok(filename):
+    try:
+        os.unlink(filename)
+    except OSError:
+        pass
+
+
 def ci_fold_start(action):
-    print("::group::" + action)
+    print("::group::" + action, flush=True)
 
 
 def ci_fold_end():
-    print("::endgroup::\n")
+    print("::endgroup::\n", flush=True)
 
 
 #######################################################################
@@ -387,7 +398,7 @@ if True:
             start = int(match_from.group(1))
         else:
             os.exit("%Error: --stages not understood: " + Args.stages)
-    for n in range(1, 100):
+    for n in range(0, 100):
         Args.stage_enabled[n] = False
     for n in range(start, end + 1):
         Args.stage_enabled[n] = True

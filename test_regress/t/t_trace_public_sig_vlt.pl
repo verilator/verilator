@@ -11,6 +11,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt_all => 1);
 
 top_filename("t/t_trace_public.v");
+golden_filename("t/t_trace_public.out");
+
 my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 
 compile(
@@ -27,8 +29,7 @@ execute(
     check_finished => 1,
     );
 
-vcd_identical("$Self->{obj_dir}/simx.vcd",
-              "t/t_trace_public.out");
+vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
 
 # vcd_identical doesn't detect "$var a.b;" vs "$scope module a; $var b;"
 file_grep("$Self->{obj_dir}/simx.vcd", qr/module glbl/i);

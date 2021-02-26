@@ -43,7 +43,7 @@ int main() {
         for (tb->A = 0; tb->A < 2; tb->A++) {
             for (tb->B = 0; tb->B < 2; tb->B++) {
                 tb->eval();
-                if (!check()) { pass = false; }
+                if (!check()) pass = false;
             }
         }
     }

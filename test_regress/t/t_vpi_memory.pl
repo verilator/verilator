@@ -23,7 +23,7 @@ compile(
     );
 
 execute(
-    iv_pli => 1,
+    use_libvpi => 1,
     check_finished => 1
     );
 

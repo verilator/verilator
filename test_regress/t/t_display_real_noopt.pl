@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_display_real.v");
-$Self->{golden_filename} = "t/t_display_real.out";  # Match unopt version
+golden_filename("t/t_display_real.out");
 
 compile(
     verilator_flags2 => ["-O0"],

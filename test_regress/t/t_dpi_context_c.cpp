@@ -55,7 +55,7 @@ int dpic_line() {
 
 #ifdef VERILATOR
     static int didDump = 0;
-    if (didDump++ == 0) { Verilated::scopesDump(); }
+    if (didDump++ == 0) Verilated::scopesDump();
 #endif
 
     const char* scopenamep = svGetNameFromScope(scope);

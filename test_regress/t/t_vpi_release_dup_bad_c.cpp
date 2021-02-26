@@ -23,6 +23,11 @@ void dpii_check() {
     // Verilated::scopesDump();
     mod = vpi_handle_by_name((PLI_BYTE8*)"top.t", NULL);
     if (!mod) vpi_printf(const_cast<char*>("-- Cannot vpi_find module\n"));
+#ifdef VL_NO_LEGACY
+    vpi_release_handle(mod);
+    vpi_release_handle(mod);
+#else
     vpi_free_object(mod);  // using vpi_free_object instead of vpi_release_handle for coverage
     vpi_free_object(mod);  // error: double free
+#endif
 }

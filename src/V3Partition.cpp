@@ -749,8 +749,8 @@ public:
                 || LogicMTask::pathExistsFrom(m_bp, m_ap, nullptr));
     }
     bool operator<(const SiblingMC& other) const {
-        if (m_ap->id() < other.m_ap->id()) { return true; }
-        if (m_ap->id() > other.m_ap->id()) { return false; }
+        if (m_ap->id() < other.m_ap->id()) return true;
+        if (m_ap->id() > other.m_ap->id()) return false;
         return m_bp->id() < other.m_bp->id();
     }
 };
@@ -1245,7 +1245,7 @@ private:
         for (SibpSet::iterator it = m_mtask2sibs[mtaskp].begin(); it != m_mtask2sibs[mtaskp].end();
              ++it) {
             const SiblingMC* pairp = *it;
-            if (!pairp->removedFromSb()) { m_sb.removeElem(pairp); }
+            if (!pairp->removedFromSb()) m_sb.removeElem(pairp);
             LogicMTask* otherp = (pairp->bp() == mtaskp) ? pairp->ap() : pairp->bp();
             size_t erased = m_mtask2sibs[otherp].erase(pairp);
             UASSERT_OBJ(erased > 0, otherp, "Expected existing mtask");
@@ -1409,7 +1409,7 @@ private:
             return 1 + edgeScore(edgep);
         }
         const SiblingMC* sibsp = dynamic_cast<const SiblingMC*>(pairp);
-        if (sibsp) { return siblingScore(sibsp); }
+        if (sibsp) return siblingScore(sibsp);
         v3fatalSrc("Failed to cast pairp to either MTaskEdge or SiblingMC in mergeCandidateScore");
         return 0;
     }
@@ -1472,10 +1472,10 @@ private:
         const LogicMTask* bp = *reinterpret_cast<const LogicMTask* const*>(vbp);
         uint32_t aCp = ap->critPathCost(*wp) + ap->stepCost();
         uint32_t bCp = bp->critPathCost(*wp) + bp->stepCost();
-        if (aCp < bCp) { return -1; }
-        if (aCp > bCp) { return 1; }
-        if (ap->id() < bp->id()) { return -1; }
-        if (ap->id() > bp->id()) { return 1; }
+        if (aCp < bCp) return -1;
+        if (aCp > bCp) return 1;
+        if (ap->id() < bp->id()) return -1;
+        if (ap->id() > bp->id()) return 1;
         return 0;
     }
 
@@ -1534,7 +1534,7 @@ private:
         for (unsigned i = 0; i < chain_len; ++i) {
             LogicMTask* mtp = new LogicMTask(&mtasks, nullptr);
             mtp->setCost(1);
-            if (lastp) { new MTaskEdge(&mtasks, lastp, mtp, 1); }
+            if (lastp) new MTaskEdge(&mtasks, lastp, mtp, 1);
             lastp = mtp;
         }
         partInitCriticalPaths(&mtasks);
@@ -1802,7 +1802,7 @@ private:
                  ++it) {
                 LogicMTask* mtaskp = *it;
                 if (mergedp) {
-                    if (mergedp->cost() < mtaskp->cost()) { mergedp = mtaskp; }
+                    if (mergedp->cost() < mtaskp->cost()) mergedp = mtaskp;
                 } else {
                     mergedp = mtaskp;
                 }
@@ -1983,7 +1983,7 @@ public:
             for (V3GraphVertex* vxp = m_mtasksp->verticesBeginp(); vxp;
                  vxp = vxp->verticesNextp()) {
                 LogicMTask* mtaskp = dynamic_cast<LogicMTask*>(vxp);
-                if (hasDpiHazard(mtaskp)) { tasksByRank[vxp->rank()].insert(mtaskp); }
+                if (hasDpiHazard(mtaskp)) tasksByRank[vxp->rank()].insert(mtaskp);
             }
             mergeSameRankTasks(&tasksByRank);
         }
@@ -2415,7 +2415,7 @@ void V3Partition::go(V3Graph* mtasksp) {
     mtasksp->orderPreRanked();
 
     int targetParFactor = v3Global.opt.threads();
-    if (targetParFactor < 2) { v3fatalSrc("We should not reach V3Partition when --threads <= 1"); }
+    if (targetParFactor < 2) v3fatalSrc("We should not reach V3Partition when --threads <= 1");
 
     // Set cpLimit to roughly totalGraphCost / nThreads
     //

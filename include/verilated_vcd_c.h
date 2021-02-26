@@ -84,7 +84,7 @@ private:
     inline void bufferCheck() {
         // Flush the write buffer if there's not enough space left for new information
         // We only call this once per vector, so we need enough slop for a very wide "b###" line
-        if (VL_UNLIKELY(m_writep > m_wrFlushp)) { bufferFlush(); }
+        if (VL_UNLIKELY(m_writep > m_wrFlushp)) bufferFlush();
     }
     void closePrev();
     void closeErr();

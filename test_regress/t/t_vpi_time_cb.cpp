@@ -35,27 +35,12 @@
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
-#define TEST_MSG \
-    if (0) printf
-
 unsigned int main_time = 0;
 unsigned int callback_count_time1 = 3;
 unsigned int callback_count_time2 = 4;
 unsigned int callback_count_start_of_sim = 0;
 
 //======================================================================
-
-#define CHECK_RESULT_VH(got, exp) \
-    if ((got) != (exp)) { \
-        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", __FILE__, __LINE__, (got), (exp)); \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_NZ(got) \
-    if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", __FILE__, __LINE__); \
-        return __LINE__; \
-    }
 
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
@@ -64,26 +49,6 @@ unsigned int callback_count_start_of_sim = 0;
                   << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
-
-#define CHECK_RESULT_HEX(got, exp) \
-    if ((got) != (exp)) { \
-        std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << hex \
-                  << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_CSTR(got, exp) \
-    if (strcmp((got), (exp))) { \
-        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", __FILE__, __LINE__, \
-               (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
-
-// We cannot replace those with VL_STRINGIFY, not available when PLI is build
-#define STRINGIFY(x) STRINGIFY2(x)
-#define STRINGIFY2(x) #x
 
 //======================================================================
 
@@ -151,6 +116,10 @@ static int _time_cb2(p_cb_data cb_data) {
 }
 
 static int _start_of_sim_cb(p_cb_data cb_data) {
+#ifdef TEST_VERBOSE
+    printf("-_start_of_sim_cb\n");
+#endif
+
     t_cb_data cb_data_n1, cb_data_n2;
     bzero(&cb_data_n1, sizeof(cb_data_n1));
     bzero(&cb_data_n2, sizeof(cb_data_n2));
@@ -224,7 +193,7 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv, char** env) {
-    double sim_time = 1100;
+    vluint64_t sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
 
@@ -243,12 +212,12 @@ int main(int argc, char** argv, char** env) {
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     topp->trace(tfp, 99);
-    tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 #endif
 
     // Load and initialize the PLI application
     {
-        const char* filenamep = STRINGIFY(TEST_OBJ_DIR) "/libvpi.so";
+        const char* filenamep = VL_STRINGIFY(TEST_OBJ_DIR) "/libvpi.so";
         void* lib = dlopen(filenamep, RTLD_LAZY);
         void* bootstrap = dlsym(lib, "vpi_compat_bootstrap");
         if (!bootstrap) {
@@ -264,7 +233,7 @@ int main(int argc, char** argv, char** env) {
     topp->clk = 0;
     main_time += 1;
 
-    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
         topp->eval();
         VerilatedVpi::callValueCbs();
@@ -289,7 +258,7 @@ int main(int argc, char** argv, char** env) {
 #endif
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return 0;
 }
 
 #endif

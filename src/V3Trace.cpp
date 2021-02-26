@@ -46,6 +46,7 @@
 #include "V3Stats.h"
 
 #include <map>
+#include <limits>
 #include <set>
 
 //######################################################################
@@ -299,7 +300,7 @@ private:
             nextp = itp->verticesNextp();
             if (TraceActivityVertex* const vtxp = dynamic_cast<TraceActivityVertex*>(itp)) {
                 // Leave in the always vertex for later use.
-                if (vtxp != m_alwaysVtxp && !vtxp->outBeginp()) { vtxp->unlinkDelete(&m_graph); }
+                if (vtxp != m_alwaysVtxp && !vtxp->outBeginp()) vtxp->unlinkDelete(&m_graph);
             }
         }
     }
@@ -645,7 +646,7 @@ private:
                         }
                     }
                     ifp = new AstIf(flp, condp, nullptr, nullptr);
-                    if (!always) { ifp->branchPred(VBranchPred::BP_UNLIKELY); }
+                    if (!always) ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     subFuncp->addStmtsp(ifp);
                     subStmts += EmitCBaseCounterVisitor(ifp).count();
                     prevActSet = &actSet;
