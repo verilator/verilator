@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
-* Verilator 4.109 devel
+* Verilator 4.110 2021-02-25
 
 ***   Optimize bit operations and others (#2186) (#2632) (#2633) (#2751) (#2800) [Yutetsu TAKATSUKASA]
 
