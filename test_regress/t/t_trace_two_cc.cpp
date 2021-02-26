@@ -94,5 +94,5 @@ int main(int argc, char** argv, char** env) {
 
     VL_DO_DANGLING(delete ap, ap);
     VL_DO_DANGLING(delete bp, bp);
-    exit(0L);
+    return 0;
 }

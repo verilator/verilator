@@ -144,5 +144,5 @@ int main(int argc, char** argv, char** env) {
     topp->final();
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return 0;
 }

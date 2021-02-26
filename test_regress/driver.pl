@@ -1845,7 +1845,7 @@ sub _make_main {
             $fh->print("        if (sc_time_stamp() == save_time && save_time) {\n");
             $fh->print("            save_model(\"$self->{obj_dir}/saved.vltsv\");\n");
             $fh->print("            printf(\"Exiting after save_model\\n\");\n");
-            $fh->print("            exit(0);\n");
+            $fh->print("            return 0;\n");
             $fh->print("        }\n");
         }
         _print_advance_time($self, $fh, 1, $action);
@@ -1870,7 +1870,7 @@ sub _make_main {
     $fh->print("\n");
 
     print $fh "    topp.reset();\n";
-    print $fh "    exit(0L);\n";
+    print $fh "    return 0;\n";
     print $fh "}\n";
     $fh->close();
 }
