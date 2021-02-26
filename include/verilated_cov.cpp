@@ -298,7 +298,7 @@ public:
         // Keys -> strings
         std::string keys[MAX_KEYS];
         for (int i = 0; i < MAX_KEYS; ++i) {
-            if (ckeyps[i] && ckeyps[i][0]) { keys[i] = ckeyps[i]; }
+            if (ckeyps[i] && ckeyps[i][0]) keys[i] = ckeyps[i];
         }
         // Ignore empty keys
         for (int i = 0; i < MAX_KEYS; ++i) {

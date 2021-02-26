@@ -1104,7 +1104,7 @@ void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) con
         os << indent << "     ";
         dumpPtrs(os);
     }
-    if (s_debugFileline >= 9) { os << fileline()->warnContextSecondary(); }
+    if (s_debugFileline >= 9) os << fileline()->warnContextSecondary();
     if (maxDepth == 1) {
         if (op1p() || op2p() || op3p() || op4p()) os << indent << "1: ...(maxDepth)\n";
     } else {

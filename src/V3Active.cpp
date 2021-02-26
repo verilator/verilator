@@ -176,7 +176,7 @@ public:
         for (const auto& vrp : m_outputs) {
             LatchDetectGraphVertex* vertp = castVertexp(vrp->varp()->user1p());
             vertp->user(true);  // Identify the output vertex we are checking paths _to_
-            if (!latchCheckInternal(castVertexp(verticesBeginp()))) { latch_detected = true; }
+            if (!latchCheckInternal(castVertexp(verticesBeginp()))) latch_detected = true;
             if (latch_detected && !latch_expected) {
                 nodep->v3warn(
                     LATCH,
@@ -185,7 +185,7 @@ public:
                         << " (not all control paths of combinational always assign a value)\n"
                         << nodep->warnMore()
                         << "... Suggest use of always_latch for intentional latches");
-                if (debug() >= 9) { dumpDotFilePrefixed("latch_" + vrp->name()); }
+                if (debug() >= 9) dumpDotFilePrefixed("latch_" + vrp->name());
             }
             vertp->user(false);  // Clear again (see above)
             vrp->varp()->isLatched(latch_detected);

@@ -61,7 +61,7 @@ public:
     T* resolve(const string& name) {
         // Lookup if it was resolved before, typically not
         auto it = m_mapResolved.find(name);
-        if (VL_UNLIKELY(it != m_mapResolved.end())) { return &it->second; }
+        if (VL_UNLIKELY(it != m_mapResolved.end())) return &it->second;
 
         T* newp = nullptr;
         // Cannot be resolved, create if matched

@@ -67,6 +67,12 @@ bool verbose = false;
         return __LINE__; \
     }
 
+#define CHECK_RESULT_Z(got) \
+    if ((got)) { \
+        printf("%%Error: %s:%d: GOT = !NULL  EXP = NULL\n", FILENM, __LINE__); \
+        return __LINE__; \
+    }
+
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
@@ -475,7 +481,7 @@ int _mon_check_string() {
 
         v.format = vpiStringVal;
         vpi_get_value(vh1, &v);
-        if (vpi_chk_error(&e)) { printf("%%vpi_chk_error : %s\n", e.message); }
+        if (vpi_chk_error(&e)) printf("%%vpi_chk_error : %s\n", e.message);
 
         (void)vpi_chk_error(NULL);
 
@@ -568,7 +574,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
                     TEST_MSG("new value\n");
                     for (int j = 0; j < 4; j++) {
                         data[i].value.vector[j].aval = rand_r(&seed);
-                        if (j == (words - 1)) { data[i].value.vector[j].aval &= mask; }
+                        if (j == (words - 1)) data[i].value.vector[j].aval &= mask;
                         TEST_MSG(" %08x\n", data[i].value.vector[j].aval);
                     }
                     v.value.vector = data[i].value.vector;
@@ -624,6 +630,7 @@ int _mon_check_vlog_info() {
     CHECK_RESULT_CSTR(vlog_info.argv[1], "+PLUS");
     CHECK_RESULT_CSTR(vlog_info.argv[2], "+INT=1234");
     CHECK_RESULT_CSTR(vlog_info.argv[3], "+STRSTR");
+    CHECK_RESULT_Z(vlog_info.argv[4]);
     if (TestSimulator::is_verilator()) {
         CHECK_RESULT_CSTR(vlog_info.product, "Verilator");
         CHECK_RESULT(strlen(vlog_info.version) > 0, 1);
@@ -734,7 +741,7 @@ int main(int argc, char** argv, char** env) {
 #endif
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return 0;
 }
 
 #endif

@@ -219,7 +219,7 @@ void VlcTop::annotateCalc() {
                     for (int lni = start; start && lni <= end; ++lni) {
                         source.incCount(lni, point.column(), point.count(), ok);
                     }
-                    if (!*covp) { break; }
+                    if (!*covp) break;
                     start = 0;  // Prep for next
                     end = 0;
                     range = false;

@@ -27,6 +27,21 @@ module t (/*AUTOARG*/
    // Aggregate outputs into a single result vector
    wire [63:0] result = {51'h0, out4, out3, out2, out1};
 
+   initial begin
+      if ({16'h1234}[0] != 1'b0) $stop;
+      if ({16'h1234}[2] != 1'b1) $stop;
+      if ({16'h1234}[11:4] != 8'h23) $stop;
+      if ({16'h1234}[4+:8] != 8'h23) $stop;
+      if ({16'h1234}[11-:8] != 8'h23) $stop;
+      if ({8'h12, 8'h34}[0] != 1'b0) $stop;
+      if ({8'h12, 8'h34}[2] != 1'b1) $stop;
+      if ({8'h12, 8'h34}[11:4] != 8'h23) $stop;
+      if ({8'h12, 8'h34}[4+:8] != 8'h23) $stop;
+      if ({8'h12, 8'h34}[11-:8] != 8'h23) $stop;
+      $write("*-* All Finished *-*\n");
+      $finish;
+   end
+
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE

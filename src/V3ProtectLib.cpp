@@ -205,7 +205,7 @@ private:
         m_tmpDeclsp = new AstTextBlock(fl);
         txtp->addNodep(m_tmpDeclsp);
         txtp->addText(fl, "\ntime last_combo_seqnum__V;\n");
-        if (m_hasClk) { txtp->addText(fl, "time last_seq_seqnum__V;\n\n"); }
+        if (m_hasClk) txtp->addText(fl, "time last_seq_seqnum__V;\n\n");
 
         // CPP hash value
         addComment(txtp, fl, "Hash value to make sure this file and the corresponding");
@@ -425,7 +425,7 @@ private:
         m_comboPortsp->addNodep(varp->cloneTree(false));
         m_comboParamsp->addText(fl, varp->name() + "\n");
         m_comboIgnorePortsp->addNodep(varp->cloneTree(false));
-        if (m_hasClk) { m_comboIgnoreParamsp->addText(fl, varp->name() + "\n"); }
+        if (m_hasClk) m_comboIgnoreParamsp->addText(fl, varp->name() + "\n");
         m_cComboParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
         m_cComboInsp->addText(fl, cInputConnection(varp));
         m_cIgnoreParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");

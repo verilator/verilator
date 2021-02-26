@@ -44,5 +44,5 @@ int main(int argc, char* argv[]) {
         CHECK_RESULT_HEX(os.isOpen(), false);
     }
 
-    exit(0);
+    return 0;
 }

@@ -2674,7 +2674,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       "r_" + nodep->name(), withp);
             newp->dtypeFrom(adtypep->subDTypep());
-            if (!nodep->firstAbovep()) { newp->makeStatement(); }
+            if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique"
                    || nodep->name() == "unique_index") {
             methodOkArguments(nodep, 0, 0);
@@ -2767,7 +2767,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       "r_" + nodep->name(), withp);
             newp->dtypeFrom(adtypep->subDTypep());
-            if (!nodep->firstAbovep()) { newp->makeStatement(); }
+            if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "reverse" || nodep->name() == "shuffle"
                    || nodep->name() == "sort" || nodep->name() == "rsort") {
             AstWith* withp = nullptr;
@@ -2881,7 +2881,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), nullptr);
             newp->dtypeFrom(adtypep->subDTypep());
-            if (!nodep->firstAbovep()) { newp->makeStatement(); }
+            if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "push_back" || nodep->name() == "push_front") {
             methodOkArguments(nodep, 1, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
@@ -2899,7 +2899,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       "r_" + nodep->name(), withp);
             newp->dtypeFrom(adtypep->subDTypep());
-            if (!nodep->firstAbovep()) { newp->makeStatement(); }
+            if (!nodep->firstAbovep()) newp->makeStatement();
         } else if (nodep->name() == "reverse" || nodep->name() == "shuffle"
                    || nodep->name() == "sort" || nodep->name() == "rsort") {
             AstWith* withp = nullptr;
@@ -3432,9 +3432,10 @@ private:
     void patternArray(AstPattern* nodep, AstNodeArrayDType* arrayDtp, AstPatMember* defaultp) {
         VNumRange range = arrayDtp->declRange();
         PatVecMap patmap = patVectorMap(nodep, range);
-        UINFO(9, "ent " << range.hi() << " to " << range.lo() << endl);
+        UINFO(9, "ent " << range.left() << " to " << range.right() << endl);
         AstNode* newp = nullptr;
-        for (int ent = range.hi(); ent >= range.lo(); --ent) {
+        for (int entn = 0, ent = range.left(); entn < range.elements();
+             ++entn, ent += range.leftToRightInc()) {
             AstPatMember* newpatp = nullptr;
             AstPatMember* patp = nullptr;
             const auto it = patmap.find(ent);
@@ -5597,7 +5598,7 @@ private:
     AstNodeBiop* replaceWithDVersion(AstNodeBiop* nodep) {
         // Given a signed/unsigned node type, create the opposite type
         // Return new node or nullptr if nothing
-        if (nodep->doubleFlavor()) { return nullptr; }
+        if (nodep->doubleFlavor()) return nullptr;
         FileLine* fl = nodep->fileline();
         AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
         AstNode* rhsp = nodep->rhsp()->unlinkFrBack();

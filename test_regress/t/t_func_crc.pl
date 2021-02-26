@@ -11,12 +11,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    verilator_flags2 => ["--compiler msvc"],  # We have deep expressions we want to test
+    verilator_flags2 => ["--compiler msvc", "--stats"],  # We have deep expressions we want to test
     );
 
 execute(
     check_finished => 1,
     );
+
+if ($Self->{vlt}) {
+    file_grep($Self->{stats}, qr/Optimizations, Const bit op reduction\s+(\d+)/i, 3888);
+}
 
 ok(1);
 1;

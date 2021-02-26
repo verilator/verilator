@@ -463,7 +463,7 @@ analyzer-include:
 	-rm -rf examples/*/obj*
 	scan-build $(MAKE) -k examples
 
-format: clang-format yapf
+format: clang-format yapf format-pl-exec
 
 CLANGFORMAT = clang-format
 CLANGFORMAT_FLAGS = -i
@@ -494,6 +494,10 @@ YAPF_FILES = \
 
 yapf:
 	$(YAPF) $(YAPF_FLAGS) $(YAPF_FILES)
+
+format-pl-exec:
+	-chmod a+x test_regress/t/*.pl
+
 
 ftp: info
 

@@ -264,7 +264,7 @@ private:
     virtual void visit(AstNode* nodep) override {
         // *** Special iterator
         if (!m_isSimple) return;  // Fastpath
-        if (++m_ops > v3Global.opt.gateStmts()) { clearSimple("--gate-stmts exceeded"); }
+        if (++m_ops > v3Global.opt.gateStmts()) clearSimple("--gate-stmts exceeded");
         if (!(m_dedupe ? nodep->isGateDedupable() : nodep->isGateOptimizable())  //
             || !nodep->isPure() || nodep->isBrancher()) {
             UINFO(5, "Non optimizable type: " << nodep << endl);
@@ -282,7 +282,7 @@ public:
         // Iterate
         iterate(nodep);
         // Check results
-        if (!m_substTreep) { clearSimple("No assignment found\n"); }
+        if (!m_substTreep) clearSimple("No assignment found\n");
         for (GateVarRefList::const_iterator it = m_rhsVarRefs.begin(); it != m_rhsVarRefs.end();
              ++it) {
             if (m_lhsVarRef && m_lhsVarRef->varScopep() == (*it)->varScopep()) {

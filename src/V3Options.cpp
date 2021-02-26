@@ -1377,7 +1377,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 string msg = sw + strlen("-Werror-");
                 V3ErrorCode code(msg.c_str());
                 if (code == V3ErrorCode::EC_ERROR) {
-                    if (!isFuture(msg)) { fl->v3fatal("Unknown warning specified: " << sw); }
+                    if (!isFuture(msg)) fl->v3fatal("Unknown warning specified: " << sw);
                 } else {
                     V3Error::pretendError(code, true);
                 }
@@ -1410,7 +1410,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     string msg = sw + strlen("-Wwarn-");
                     V3ErrorCode code(msg.c_str());
                     if (code == V3ErrorCode::EC_ERROR) {
-                        if (!isFuture(msg)) { fl->v3fatal("Unknown warning specified: " << sw); }
+                        if (!isFuture(msg)) fl->v3fatal("Unknown warning specified: " << sw);
                     } else {
                         FileLine::globalWarnOff(code, false);
                         V3Error::pretendError(code, false);

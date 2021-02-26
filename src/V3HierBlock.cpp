@@ -224,7 +224,7 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     for (const auto& hierblockp : m_children) *of << hierblockp->hierBlockArgs().front() << "\n";
     // Hierarchical blocks should not use multi-threading,
     // but needs to be thread safe when top is multi-threaded.
-    if (v3Global.opt.threads() > 0) { *of << "--threads 1\n"; }
+    if (v3Global.opt.threads() > 0) *of << "--threads 1\n";
     *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
 }
 

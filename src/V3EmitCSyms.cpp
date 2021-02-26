@@ -332,7 +332,7 @@ class EmitCSyms final : EmitCBaseVisitor {
     virtual void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildren(nodep);
-        if (nodep->isSigUserRdPublic()) { m_modVars.emplace_back(make_pair(m_modp, nodep)); }
+        if (nodep->isSigUserRdPublic()) m_modVars.emplace_back(make_pair(m_modp, nodep));
     }
     virtual void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
@@ -620,7 +620,7 @@ void EmitCSyms::emitSymImp() {
                  + "& os) {\n");
             puts("// LOCAL STATE\n");
             // __Vm_namep presumably already correct
-            if (v3Global.opt.trace()) { puts("os" + op + "__Vm_activity;\n"); }
+            if (v3Global.opt.trace()) puts("os" + op + "__Vm_activity;\n");
             puts("os" + op + "__Vm_didInit;\n");
             puts("// SUBCELL STATE\n");
             for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end();

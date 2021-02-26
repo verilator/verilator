@@ -1380,9 +1380,9 @@ portDirNetE:			// IEEE: part of port, optional net type and/or direction
 		/* empty */				{ }
 	//			// Per spec, if direction given default the nettype.
 	//			// The higher level rule may override this VARDTYPE with one later in the parse.
-	|	port_direction					{ VARDECL(PORT); VARDTYPE_NDECL(nullptr/*default_nettype*/); }
-	|	port_direction { VARDECL(PORT); } net_type	{ VARDTYPE_NDECL(nullptr/*default_nettype*/); }  // net_type calls VARDECL
-	|	net_type					{ } // net_type calls VARDECL
+	|	port_direction					{ VARDECL(PORT); VARDTYPE_NDECL(nullptr); }
+	|	port_direction { VARDECL(PORT); } net_type	{ VARDTYPE_NDECL(nullptr); }  // net_type calls VARDECL
+	|	net_type					{ VARDTYPE_NDECL(nullptr); } // net_type calls VARDECL
 	;
 
 port_declNetE:			// IEEE: part of port_declaration, optional net type
@@ -2209,7 +2209,7 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 			  AstNodeDType* dtp = GRAMMARP->createArray(refp, $4, true);
 			  $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
 	//			//
-	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'
+	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ dtypeAttrListE ';'
 			{ $$ = nullptr; BBUNSUP($1, "Unsupported: SystemVerilog 2005 typedef in this context"); }
 	//			// Allow redeclaring same typedef again
 	//			// Alternative is use of idAny below, but this will cause conflicts with ablve

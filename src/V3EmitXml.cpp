@@ -55,7 +55,7 @@ class EmitXmlFileVisitor final : public AstNVisitor {
 
     // XML methods
     void outputId(AstNode* nodep) {
-        if (!nodep->user1()) { nodep->user1(++m_id); }
+        if (!nodep->user1()) nodep->user1(++m_id);
         puts("\"" + cvtToStr(nodep->user1()) + "\"");
     }
     void outputTag(AstNode* nodep, const string& tagin) {
@@ -336,7 +336,7 @@ private:
         }
     }
     virtual void visit(AstCell* nodep) override {
-        if (nodep->modp()->dead()) { return; }
+        if (nodep->modp()->dead()) return;
         if (!m_hasChildren) m_os << ">\n";
         m_os << "<cell " << nodep->fileline()->xml() << " "
              << nodep->fileline()->xmlDetailedLocation() << " name=\"" << nodep->name() << "\""

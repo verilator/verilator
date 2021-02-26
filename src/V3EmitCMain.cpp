@@ -55,8 +55,6 @@ private:
 
         puts("\n//======================\n\n");
 
-        puts(topClassName() + "* topp;\n");
-        puts("\n");
         puts("// Requires -DVL_TIME_STAMP64\n");
         v3Global.opt.addCFlags("-DVL_TIME_STAMP64");
         puts("vluint64_t main_time = 0;\n");
@@ -67,10 +65,15 @@ private:
         puts("// Setup defaults and parse command line\n");
         puts("Verilated::debug(0);\n");
         puts("Verilated::commandArgs(argc, argv);\n");
+        puts("\n");
+
         puts("// Construct the Verilated model, from Vtop.h generated from Verilating\n");
-        puts("topp = new " + topClassName() + "(\"top\");\n");
+        puts("const std::unique_ptr<" + topClassName() + "> topp{new " + topClassName() + "};\n");
+        puts("\n");
+
         puts("// Evaluate initials\n");
         puts("topp->eval();  // Evaluate\n");
+        puts("\n");
 
         puts("// Simulate until $finish\n");
         puts("while (!Verilated::gotFinish()");
@@ -94,8 +97,7 @@ private:
 
         puts("// Final model cleanup\n");
         puts("topp->final();\n");
-        puts("VL_DO_DANGLING(delete topp, topp);\n");
-        puts("exit(0);\n");
+        puts("return 0;\n");
         puts("}\n");
     }
 };

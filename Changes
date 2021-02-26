@@ -2,18 +2,38 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
+* Verilator 4.111 devel
 
-* Verilator 4.109 devel
+
+* Verilator 4.110 2021-02-25
+
+***   Optimize bit operations and others (#2186) (#2632) (#2633) (#2751) (#2800) [Yutetsu TAKATSUKASA]
+
+****  Support concat selection (#2721).
+
+****  Support struct scopes when dumping structs to VCD (#2776) [Alex Torregrosa]
+
+****  Generate SELRANGE for potentially unreachable code (#2625) (#2754) [Pierre-Henri Horrein]
+
+****  For --flatten, override inlining of public and no_inline modules (#2761) [James Hanlon]
+
+****  Fix little endian interface pin swizzling (#2475). [Don Owen]
+
+****  Fix range inheritance on port without data type (#2753). [Embedded Go]
 
 ****  Fix TIMESCALE warnings on primitives (#2763). [Xuanqi]
+
+****  Fix to exclude strings from toggle coverage (#2766) (#2767) [Paul Wright]
 
 ****  Fix $fread extra semicolon inside statements. [Leendert van Doorn]
 
 ****  Fix class extends with VM_PARALLEL_BUILDS (#2775). [Iru Cai]
 
-****  Fix shifts by > 32 bit values (#2785).  [qrq992]
+****  Fix shifts by > 32 bit values (#2785). [qrq992]
 
-****  Fix examples not flushing vcd (#2787).  [Richard E George]
+****  Fix examples not flushing vcd (#2787). [Richard E George]
+
+****  Fix little endian packed array pattern assignment (#2795). [Alex Torregrosa]
 
 
 * Verilator 4.108 2021-01-10

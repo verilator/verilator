@@ -148,7 +148,7 @@ private:
         AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
         AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
 
-        if (m_disablep) { lhsp = new AstAnd(fl, new AstNot(fl, m_disablep), lhsp); }
+        if (m_disablep) lhsp = new AstAnd(fl, new AstNot(fl, m_disablep), lhsp);
 
         AstNode* past = new AstPast(fl, lhsp, nullptr);
         past->dtypeFrom(lhsp);

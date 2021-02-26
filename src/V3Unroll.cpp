@@ -365,10 +365,10 @@ private:
         } else {
             nodep->unlinkFrBack();
         }
-        if (bodysp) { VL_DO_DANGLING(pushDeletep(bodysp), bodysp); }
-        if (precondsp) { VL_DO_DANGLING(pushDeletep(precondsp), precondsp); }
-        if (initp) { VL_DO_DANGLING(pushDeletep(initp), initp); }
-        if (incp && !incp->backp()) { VL_DO_DANGLING(pushDeletep(incp), incp); }
+        if (bodysp) VL_DO_DANGLING(pushDeletep(bodysp), bodysp);
+        if (precondsp) VL_DO_DANGLING(pushDeletep(precondsp), precondsp);
+        if (initp) VL_DO_DANGLING(pushDeletep(initp), initp);
+        if (incp && !incp->backp()) VL_DO_DANGLING(pushDeletep(incp), incp);
         if (debug() >= 9 && newbodysp) newbodysp->dumpTree(cout, "-  _new: ");
         return true;
     }
@@ -385,7 +385,7 @@ private:
             // Grab initial value
             AstNode* initp = nullptr;  // Should be statement before the while.
             if (nodep->backp()->nextp() == nodep) initp = nodep->backp();
-            if (initp) { VL_DO_DANGLING(V3Const::constifyEdit(initp), initp); }
+            if (initp) VL_DO_DANGLING(V3Const::constifyEdit(initp), initp);
             if (nodep->backp()->nextp() == nodep) initp = nodep->backp();
             // Grab assignment
             AstNode* incp = nullptr;  // Should be last statement

@@ -338,7 +338,7 @@ void FileLine::modifyStateInherit(const FileLine* fromp) {
     // Any warnings that are off in "from", become off in "this".
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
         V3ErrorCode code = V3ErrorCode(codei);
-        if (fromp->warnIsOff(code)) { warnOff(code, true); }
+        if (fromp->warnIsOff(code)) warnOff(code, true);
     }
 }
 
@@ -358,7 +358,7 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
     } else if (!V3Error::errorContexted()) {
         nsstr << warnContextPrimary();
     }
-    if (!m_waive) { V3Waiver::addEntry(V3Error::errorCode(), filename(), sstr.str()); }
+    if (!m_waive) V3Waiver::addEntry(V3Error::errorCode(), filename(), sstr.str());
     V3Error::v3errorEnd(nsstr, lstr.str());
 }
 

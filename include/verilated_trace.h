@@ -74,7 +74,7 @@ public:
     // Non blocking get
     bool tryGet(T& result) {
         const VerilatedLockGuard lockGuard(m_mutex);
-        if (m_queue.empty()) { return false; }
+        if (m_queue.empty()) return false;
         result = m_queue.front();
         m_queue.pop_front();
         return true;

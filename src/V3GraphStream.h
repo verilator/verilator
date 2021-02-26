@@ -175,7 +175,7 @@ public:
             // Wrap curIt. Expect to wrap, and make another pass, to find
             // newly-ready elements that could have appeared ahead of the
             // m_last iterator
-            if (curIt == m_readyVertices.end()) { curIt = m_readyVertices.begin(); }
+            if (curIt == m_readyVertices.end()) curIt = m_readyVertices.begin();
         }
 
         if (curIt != m_readyVertices.end()) {

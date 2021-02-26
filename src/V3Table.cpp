@@ -135,7 +135,9 @@ private:
         if (m_totalBytes > TABLE_TOTAL_BYTES) {
             chkvis.clearOptimizable(nodep, "Table out of memory");
         }
-        if (!m_outWidth || !m_inWidth) { chkvis.clearOptimizable(nodep, "Table has no outputs"); }
+        if (!m_outWidth || !m_inWidth) {  //
+            chkvis.clearOptimizable(nodep, "Table has no outputs");
+        }
         UINFO(4, "  Test: Opt=" << (chkvis.optimizable() ? "OK" : "NO")
                                 << ", Instrs=" << chkvis.instrCount()
                                 << " Data=" << chkvis.dataCount() << " inw=" << m_inWidth

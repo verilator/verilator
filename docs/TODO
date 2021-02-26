@@ -96,8 +96,6 @@
    Don't merge if any combining would form circ logic (out goes back to in)
 ** Multiple assignments each bit can become single assign with concat
    Make sure a SEL of a CONCAT can get the single bit back.
-** Usually blocks/values
-   Enable only after certain time, so VL_TIME_I(32) > 0x1e gets eliminated out
 ** Better ordering of a<=b, b<=c, put all refs to 'b' next to each other to optimize caching
 ** I-cache packing improvements (what/how?)
 ** Data cache organization (order of vars in class)

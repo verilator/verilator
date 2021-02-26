@@ -270,23 +270,11 @@ public:
 #define VL_OUT(name, msb, lsb) IData name  ///< Declare output signal, 17-32 bits
 #define VL_OUTW(name, msb, lsb, words) WData name[words]  ///< Declare output signal, 65+ bits
 
-#define VL_PIN_NOP(instname, pin, port)  ///< Connect a pin, ala SP_PIN
 #define VL_CELL(instname, type)  ///< Declare a cell, ala SP_CELL
 
 /// Declare a module, ala SC_MODULE
 #define VL_MODULE(modname) class modname VL_NOT_FINAL : public VerilatedModule
 // Not class final in VL_MODULE, as users might be abstracting our models (--hierarchical)
-
-/// Constructor, ala SC_CTOR
-#define VL_CTOR(modname) modname(const char* __VCname = "")
-
-/// Constructor declaration for C++, ala SP_CTOR_IMPL
-#define VL_CTOR_IMP(modname) \
-    modname::modname(const char* __VCname) \
-        : VerilatedModule(__VCname)
-
-/// Constructor declaration for SystemC, ala SP_CTOR_IMPL
-#define VL_SC_CTOR_IMP(modname) modname::modname(sc_module_name)
 
 //=========================================================================
 // Functions overridable by user defines
@@ -384,7 +372,6 @@ class Verilated final {
 
     static struct Serialized {  // All these members serialized/deserialized
         // Fast path
-        int s_debug;  ///< See accessors... only when VL_DEBUG set
         bool s_calcUnusedSigs;  ///< Waves file on, need all signals calculated
         bool s_gotFinish;  ///< A $finish statement executed
         bool s_assertOn;  ///< Assertions are enabled
@@ -404,6 +391,7 @@ class Verilated final {
     static struct NonSerialized {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
+        int s_debug = 0;  ///< See accessors... only when VL_DEBUG set
         vluint64_t s_profThreadsStart = 1;  ///< +prof+threads starting time
         vluint32_t s_profThreadsWindow = 2;  ///< +prof+threads window size
         // Slow path
@@ -446,6 +434,18 @@ private:
 public:
     // METHODS - User called
 
+    /// Enable debug of internal verilated code
+    static void debug(int level) VL_MT_SAFE;
+#ifdef VL_DEBUG
+    /// Return debug level
+    /// When multithreaded this may not immediately react to another thread
+    /// changing the level (no mutex)
+    static inline int debug() VL_MT_SAFE { return s_ns.s_debug; }
+#else
+    /// Return constant 0 debug level, so C++'s optimizer rips up
+    static constexpr int debug() VL_PURE { return 0; }
+#endif
+
     /// Select initial value of otherwise uninitialized signals.
     ////
     /// 0 = Set to zeros
@@ -459,17 +459,6 @@ public:
     /// Random seed extended to 64 bits, and defaulted if user seed==0
     static vluint64_t randSeedDefault64() VL_MT_SAFE;
 
-    /// Enable debug of internal verilated code
-    static void debug(int level) VL_MT_SAFE;
-#ifdef VL_DEBUG
-    /// Return debug level
-    /// When multithreaded this may not immediately react to another thread
-    /// changing the level (no mutex)
-    static inline int debug() VL_MT_SAFE { return s_s.s_debug; }
-#else
-    /// Return constant 0 debug level, so C++'s optimizer rips up
-    static constexpr int debug() VL_PURE { return 0; }
-#endif
     /// Enable calculation of unused signals
     static void calcUnusedSigs(bool flag) VL_MT_SAFE;
     static bool calcUnusedSigs() VL_MT_SAFE {  ///< Return calcUnusedSigs value
@@ -487,7 +476,7 @@ public:
     static bool gotFinish() VL_MT_SAFE { return s_s.s_gotFinish; }  ///< Return if got a $finish
     /// Allow traces to at some point be enabled (disables some optimizations)
     static void traceEverOn(bool flag) VL_MT_SAFE {
-        if (flag) { calcUnusedSigs(flag); }
+        if (flag) calcUnusedSigs(flag);
     }
     /// Enable/disable assertions
     static void assertOn(bool flag) VL_MT_SAFE;
@@ -515,7 +504,9 @@ public:
     static void addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
     static void removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
     static void runFlushCallbacks() VL_MT_SAFE;
+#ifndef VL_NO_LEGACY
     static void flushCall() VL_MT_SAFE { runFlushCallbacks(); }  // Deprecated
+#endif
     /// Callbacks to run prior to termination
     static void addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
     static void removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
@@ -584,29 +575,24 @@ public:
     static int dpiLineno() VL_MT_SAFE { return t_s.t_dpiLineno; }
     static int exportFuncNum(const char* namep) VL_MT_SAFE;
 
+    // Internal: Serialization setup
     static constexpr size_t serialized1Size() VL_PURE { return sizeof(s_s); }
     static constexpr void* serialized1Ptr() VL_MT_UNSAFE { return &s_s; }  // For Serialize only
     static size_t serialized2Size() VL_PURE;
     static void* serialized2Ptr() VL_MT_UNSAFE;
 #ifdef VL_THREADED
-    /// Set the mtaskId, called when an mtask starts
+    /// Internal: Set the mtaskId, called when an mtask starts
     static void mtaskId(vluint32_t id) VL_MT_SAFE { t_s.t_mtaskId = id; }
     static vluint32_t mtaskId() VL_MT_SAFE { return t_s.t_mtaskId; }
     static void endOfEvalReqdInc() VL_MT_SAFE { ++t_s.t_endOfEvalReqd; }
     static void endOfEvalReqdDec() VL_MT_SAFE { --t_s.t_endOfEvalReqd; }
 
-    /// Called at end of each thread mtask, before finishing eval
+    /// Internal: Called at end of each thread mtask, before finishing eval
     static void endOfThreadMTask(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
-        if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) { endOfThreadMTaskGuts(evalMsgQp); }
+        if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) endOfThreadMTaskGuts(evalMsgQp);
     }
-    /// Called at end of eval loop
-    static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
-        // It doesn't work to set endOfEvalReqd on the threadpool thread
-        // and then check it on the eval thread since it's thread local.
-        // It should be ok to call into endOfEvalGuts, it returns immediately
-        // if there are no transactions.
-        endOfEvalGuts(evalMsgQp);
-    }
+    /// Internal: Called at end of eval loop
+    static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
 #endif
 
 #ifdef VL_TIMING
@@ -620,7 +606,6 @@ public:
 private:
 #ifdef VL_THREADED
     static void endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
-    static void endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
 #endif
 };
 
@@ -672,7 +657,9 @@ extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 extern vluint64_t vl_rand64() VL_MT_SAFE;
 inline IData VL_RANDOM_I(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_I(obits); }
 inline QData VL_RANDOM_Q(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_Q(obits); }
+#ifndef VL_NO_LEGACY
 extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);  ///< Randomize a signal
+#endif
 extern IData VL_RANDOM_SEEDED_II(int obits, IData seed) VL_MT_SAFE;
 inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
     vluint64_t rnd = vl_rand64();
@@ -884,7 +871,6 @@ inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_sta
 # endif
 #endif
 
-#define VL_TIME_I() (static_cast<IData>(vl_time_stamp64()))
 #define VL_TIME_Q() (static_cast<QData>(vl_time_stamp64()))
 #define VL_TIME_D() (static_cast<double>(vl_time_stamp64()))
 
@@ -893,8 +879,9 @@ inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_sta
 // Can't use multiply in Q flavor, as might lose precision
 #define VL_TIME_UNITED_Q(scale) (VL_TIME_Q() / static_cast<QData>(scale))
 #define VL_TIME_UNITED_D(scale) (VL_TIME_D() / static_cast<double>(scale))
+
 /// Time imported from units to time precision
-double vl_time_multiplier(int scale);
+double vl_time_multiplier(int scale) VL_PURE;
 
 /// Evaluate expression if debug enabled
 #ifdef VL_DEBUG
@@ -907,10 +894,6 @@ double vl_time_multiplier(int scale);
 # define VL_DEBUG_IF(text) do {} while (false)
 #endif
 
-/// Collect coverage analysis for this line
-#ifndef SP_AUTO_COVER3
-# define SP_AUTO_COVER3(what,file,line)
-#endif
 // clang-format on
 
 //=========================================================================
@@ -1285,7 +1268,7 @@ static inline IData VL_COUNTBITS_W(int lbits, int words, WDataInP lwp, IData ctr
     EData r = 0;
     IData wordLbits = 32;
     for (int i = 0; i < words; ++i) {
-        if (i == words - 1) { wordLbits = lbits % 32; }
+        if (i == words - 1) wordLbits = lbits % 32;
         r += VL_COUNTBITS_E(wordLbits, lwp[i], ctrl0, ctrl1, ctrl2);
     }
     return r;
@@ -1358,7 +1341,7 @@ static inline IData VL_MOSTSETBITP1_W(int words, WDataInP lwp) VL_MT_SAFE {
     for (int i = words - 1; i >= 0; --i) {
         if (VL_UNLIKELY(lwp[i])) {  // Shorter worst case if predict not taken
             for (int bit = VL_EDATASIZE - 1; bit >= 0; --bit) {
-                if (VL_UNLIKELY(VL_BITISSET_E(lwp[i], bit))) { return i * VL_EDATASIZE + bit + 1; }
+                if (VL_UNLIKELY(VL_BITISSET_E(lwp[i], bit))) return i * VL_EDATASIZE + bit + 1;
             }
             // Can't get here - one bit must be set
         }
@@ -1655,8 +1638,8 @@ static inline WDataOutP VL_DIVS_WWW(int lbits, WDataOutP owp, WDataInP lwp,
     WData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
-    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp)); }
-    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp)); }
+    if (lsign) ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp));
+    if (rsign) rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp));
     if ((lsign && !rsign) || (!lsign && rsign)) {
         WData qNoSign[VL_MULS_MAX_WORDS];
         VL_DIV_WWW(lbits, qNoSign, ltup, rtup);
@@ -1677,8 +1660,8 @@ static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp, WDataInP lwp,
     WData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
-    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp)); }
-    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp)); }
+    if (lsign) ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp));
+    if (rsign) rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp));
     if (lsign) {  // Only dividend sign matters for modulus
         WData qNoSign[VL_MULS_MAX_WORDS];
         VL_MODDIV_WWW(lbits, qNoSign, ltup, rtup);

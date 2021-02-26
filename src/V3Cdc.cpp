@@ -599,7 +599,7 @@ private:
             }
         }
         // If multiple domains need to do complicated optimizations
-        if (senedited) { senoutp = VN_CAST(V3Const::constifyExpensiveEdit(senoutp), SenTree); }
+        if (senedited) senoutp = VN_CAST(V3Const::constifyExpensiveEdit(senoutp), SenTree);
         if (traceDests) {
             vertexp->dstDomainSet(true);  // Note it's set - domainp may be null, so can't use that
             vertexp->dstDomainp(senoutp);
