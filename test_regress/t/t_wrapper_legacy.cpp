@@ -34,10 +34,10 @@ bool got_error = false;
 
 vluint64_t main_time = 0;
 
-#ifdef T_VERILATED_LEGACY_TIME64
+#ifdef T_WRAPPER_LEGACY_TIME64
 vluint64_t vl_time_stamp64() { return main_time; }
 #endif
-#ifdef T_VERILATED_LEGACY
+#ifdef T_WRAPPER_LEGACY
 double sc_time_stamp() { return main_time; }
 #endif
 

@@ -10,12 +10,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt_all => 1);
 
-top_filename("t/t_verilated_legacy.v");
+top_filename("t/t_wrapper_legacy.v");
 
 compile(
     make_top_shell => 0,
     make_main => 0,
-    verilator_flags2 => ["--exe $Self->{t_dir}/t_verilated_legacy.cpp"],
+    verilator_flags2 => ["--exe $Self->{t_dir}/t_wrapper_legacy.cpp"],
     make_flags => 'CPPFLAGS_ADD=-DVL_TIME_STAMP64',
     );
 
