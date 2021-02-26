@@ -693,7 +693,7 @@ public:
         iterateAndNextNull(nodep->offset());
         puts(",");
         iterateAndNextNull(nodep->operation());
-        puts(")==-1?-1:0)");
+        puts(") == -1 ? -1 : 0)");
     }
     virtual void visit(AstFTell* nodep) override {
         puts("VL_FTELL_I(");
@@ -703,7 +703,7 @@ public:
     virtual void visit(AstFRewind* nodep) override {
         puts("(VL_FSEEK_I(");
         iterateAndNextNull(nodep->filep());
-        puts(", 0, 0)==-1?-1:0)");
+        puts(", 0, 0) == -1 ? -1 : 0)");
     }
     virtual void visit(AstFRead* nodep) override {
         puts("VL_FREAD_I(");
