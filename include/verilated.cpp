@@ -2339,8 +2339,12 @@ const char* Verilated::catName(const char* n1, const char* n2, const char* delim
 // Keeping these out of class Verilated to avoid having to include <list>
 // in verilated.h (for compilation speed)
 typedef std::list<std::pair<Verilated::VoidPCb, void*>> VoidPCbList;
-static VoidPCbList s_flushCbs;
-static VoidPCbList s_exitCbs;
+static struct {
+    VerilatedMutex s_flushMutex;
+    VoidPCbList s_flushCbs VL_GUARDED_BY(s_flushMutex);
+    VerilatedMutex s_exitMutex;
+    VoidPCbList s_exitCbs VL_GUARDED_BY(s_exitMutex);
+} VlCbStatic;
 
 static void addCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
@@ -2356,16 +2360,25 @@ static void runCallbacks(const VoidPCbList& cbs) VL_MT_SAFE {
 }
 
 void Verilated::addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock(s_mutex);
-    addCb(cb, datap, s_flushCbs);
+    const VerilatedLockGuard lock(VlCbStatic.s_flushMutex);
+    addCb(cb, datap, VlCbStatic.s_flushCbs);
 }
 void Verilated::removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock(s_mutex);
-    removeCb(cb, datap, s_flushCbs);
+    const VerilatedLockGuard lock(VlCbStatic.s_flushMutex);
+    removeCb(cb, datap, VlCbStatic.s_flushCbs);
 }
 void Verilated::runFlushCallbacks() VL_MT_SAFE {
-    const VerilatedLockGuard lock(s_mutex);
-    runCallbacks(s_flushCbs);
+    // Flush routines may call flush, so avoid mutex deadlock
+#ifdef VL_THREADED
+    static std::atomic<int> s_recursing;
+#else
+    int s_recursing = 0;
+#endif
+    if (!s_recursing++) {
+        const VerilatedLockGuard lock(VlCbStatic.s_flushMutex);
+        runCallbacks(VlCbStatic.s_flushCbs);
+    }
+    --s_recursing;
     fflush(stderr);
     fflush(stdout);
     // When running internal code coverage (gcc --coverage, as opposed to
@@ -2375,16 +2388,24 @@ void Verilated::runFlushCallbacks() VL_MT_SAFE {
 }
 
 void Verilated::addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock(s_mutex);
-    addCb(cb, datap, s_exitCbs);
+    const VerilatedLockGuard lock(VlCbStatic.s_exitMutex);
+    addCb(cb, datap, VlCbStatic.s_exitCbs);
 }
 void Verilated::removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock(s_mutex);
-    removeCb(cb, datap, s_exitCbs);
+    const VerilatedLockGuard lock(VlCbStatic.s_exitMutex);
+    removeCb(cb, datap, VlCbStatic.s_exitCbs);
 }
 void Verilated::runExitCallbacks() VL_MT_SAFE {
-    const VerilatedLockGuard lock(s_mutex);
-    runCallbacks(s_exitCbs);
+#ifdef VL_THREADED
+    static std::atomic<int> s_recursing;
+#else
+    int s_recursing = 0;
+#endif
+    if (!s_recursing++) {
+        const VerilatedLockGuard lock(VlCbStatic.s_exitMutex);
+        runCallbacks(VlCbStatic.s_exitCbs);
+    }
+    --s_recursing;
 }
 
 const char* Verilated::productName() VL_PURE { return VERILATOR_PRODUCT; }
