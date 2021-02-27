@@ -25,6 +25,7 @@
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3PreShell.h"
+#include "V3String.h"
 
 // clang-format off
 #include <sys/types.h>
@@ -36,6 +37,7 @@
 #include <cctype>
 #include <dirent.h>
 #include <fcntl.h>
+#include <functional>
 #include <list>
 #include <map>
 #include <memory>
@@ -102,6 +104,223 @@ public:
     }
     V3OptionsImp() = default;
     ~V3OptionsImp() = default;
+};
+
+//######################################################################
+// V3 OptionParser
+
+class V3OptionsParser final {
+public:
+    // TYPES
+    using CallbackFn = std::function<void(const char*, const char*)>;
+    enum enType : uint8_t {  // Type of target variable
+        TYPE_BOOL,  // bool
+        TYPE_BOOLOPT,  // VOptionBool
+        TYPE_INT,  // int
+        TYPE_STRING,  // string
+        TYPE_CB  // CallbackFn
+    };
+    enum enAction : uint8_t {
+        ACT_SET,  // '-opt' for bool-ish, '-opt val' for int and string
+        ACT_ONOFF,  // '-opt' or '-no-opt' for bool-ish type
+        ACT_CB_CALL,  // '-opt' for callback
+        ACT_CB_ONOFF,  // '-opt' or '-no-opt' for callback
+        ACT_CB_VAL,  // '-opt val' for callback
+        ACT_CB_PARTIAL_MATCH,  // '-opt-abc' for callback
+        ACT_CB_PARTIAL_MATCH_VAL  // '-opt-abc val' for callback
+    };
+    template <enAction ACT> struct ActionBase VL_NOT_FINAL {
+        static constexpr enAction m_act = ACT;
+    };
+    // Function selectors for AppendHelper
+    using ActSet = ActionBase<ACT_SET>;
+    using ActOnOff = ActionBase<ACT_ONOFF>;
+    using ActCbCall = ActionBase<ACT_CB_CALL>;
+    using ActCbOnOff = ActionBase<ACT_CB_ONOFF>;
+    using ActCbVal = ActionBase<ACT_CB_VAL>;
+    using ActCbPartialMatch = ActionBase<ACT_CB_PARTIAL_MATCH>;
+    using ActCbPartialMatchVal = ActionBase<ACT_CB_PARTIAL_MATCH_VAL>;
+
+    // Entry for each option
+    struct Entry final {
+        enType m_type;
+        enAction m_act;  // Action to do
+        union Val {
+            bool* m_boolp;
+            VOptionBool* m_boolOptp;
+            int* m_intp;
+            string* m_strp;
+            Val(bool* boolp)
+                : m_boolp(boolp) {}
+            Val(VOptionBool* boolp)
+                : m_boolOptp(boolp) {}
+            Val(int* intp)
+                : m_intp(intp) {}
+            Val(string* strp)
+                : m_strp(strp) {}
+        } m_val;  // Pointer to the target variable when m_type is not TYPE_CB
+        CallbackFn m_cb;
+        string m_opt;  // Option string such as '-opt', '+opt'
+        void parse(const char* optp, const char* valp) {
+            if (m_type == TYPE_CB) {
+                m_cb(optp, valp);
+            } else if (m_act == ACT_ONOFF) {
+                UASSERT(m_type == TYPE_BOOL || m_type == TYPE_BOOLOPT,
+                        m_type << " is not bool-ish");
+                const bool on = !hasPrefixNo(optp);
+                if (m_type == TYPE_BOOL) {
+                    *m_val.m_boolp = on;
+                } else {
+                    m_val.m_boolOptp->setTrueOrFalse(on);
+                }
+            } else {
+                UASSERT(m_act == ACT_SET, m_act << " is not ACT_SET");
+                switch (m_type) {
+                case TYPE_BOOL: *m_val.m_boolp = true; break;
+                case TYPE_BOOLOPT: m_val.m_boolOptp->setTrueOrFalse(true); break;
+                case TYPE_INT: *m_val.m_intp = std::atoi(valp); break;
+                case TYPE_STRING: *m_val.m_strp = valp; break;
+                default: UASSERT(false, m_type << " is unexpected");
+                }
+            }
+        }
+    };
+    // Functor to register options to V3OptionsParser
+    struct AppendHelper final {
+        V3OptionsParser& m_parser;
+        // OnOff bool-ish
+        void operator()(const char* optp, ActOnOff act, bool* valp) const {
+            m_parser.emplaceToList({TYPE_BOOL, act.m_act, valp, {}, optp});
+        }
+        void operator()(const char* optp, ActOnOff act, VOptionBool* valp) const {
+            m_parser.emplaceToList({TYPE_BOOLOPT, act.m_act, valp, {}, optp});
+        }
+        // Set bool-ish
+        void operator()(const char* optp, ActSet act, bool* valp) const {
+            m_parser.emplaceToList({TYPE_BOOL, act.m_act, valp, {}, optp});
+        }
+        void operator()(const char* optp, ActSet act, VOptionBool* valp) const {
+            m_parser.emplaceToList({TYPE_BOOLOPT, act.m_act, valp, {}, optp});
+        }
+        // Set int
+        void operator()(const char* optp, ActSet act, int* valp) const {
+            m_parser.emplaceToList({TYPE_INT, act.m_act, valp, {}, optp});
+        }
+        // Set const char*
+        void operator()(const char* optp, ActSet act, string* valp) const {
+            m_parser.emplaceToList({TYPE_STRING, act.m_act, valp, {}, optp});
+        }
+
+        // Callback:just call
+        void operator()(const char* optp, ActCbCall act, std::function<void()> cb) const {
+            auto wrap = [cb](const char*, const char*) { cb(); };
+            m_parser.emplaceToList({TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, optp});
+        }
+        // Callback:OnOff(bool)
+        void operator()(const char* optp, ActCbOnOff act, std::function<void(bool)> cb) const {
+            auto wrap = [cb](const char* optp, const char*) { cb(!hasPrefixNo(optp)); };
+            m_parser.emplaceToList({TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, optp});
+        }
+        // Callback:set(int)
+        void operator()(const char* optp, ActCbVal act, std::function<void(int)> cb) const {
+            auto wrap = [cb](const char*, const char* valp) { cb(std::atoi(valp)); };
+            m_parser.emplaceToList({TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, optp});
+        }
+        void operator()(const char* optp, ActCbVal act,
+                        std::pair<V3Options*, void (V3Options::*)(int)> fp) const {
+            auto wrap = [fp](int val) { (fp.first->*fp.second)(val); };
+            (*this)(optp, act, wrap);
+        }
+
+        // Callback:set(const char*)
+        void operator()(const char* optp, ActCbVal act,
+                        std::function<void(const char*)> cb) const {
+            auto wrap = [cb](const char*, const char* valp) { cb(valp); };
+            m_parser.emplaceToList({TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, optp});
+        }
+        void operator()(const char* optp, ActCbVal act,
+                        std::pair<V3Options*, void (V3Options::*)(const string&)> fp) const {
+            auto wrap = [fp](const char*, const char* valp) { (fp.first->*fp.second)(valp); };
+            m_parser.emplaceToList({TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, optp});
+        }
+        // Callback:partial match wihtout value
+        void operator()(const char* prefixp, ActCbPartialMatch act,
+                        std::function<void(const char*)> cb) const {
+            const int prefixLen = std::strlen(prefixp);
+            auto wrap = [cb, prefixLen](const char* optp, const char*) { cb(optp + prefixLen); };
+            m_parser.emplaceToList(
+                {TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, prefixp});
+        }
+        // Callback:partial match with value
+        void operator()(const char* prefixp, ActCbPartialMatchVal act,
+                        std::function<void(const char*, const char*)> cb) const {
+            const int prefixLen = std::strlen(prefixp);
+            auto wrap = [cb, prefixLen](const char* optp, const char* valp) {
+                cb(optp + prefixLen, valp);
+            };
+            m_parser.emplaceToList(
+                {TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, prefixp});
+        }
+    };
+
+private:
+    std::map<const string, Entry> m_options;
+    VSpellCheck m_spellCheck;
+    Entry* find(const char* optp) {
+        auto it = m_options.find(optp);
+        if (it != m_options.end()) return &it->second;
+        for (auto&& entryPair : m_options) {
+            Entry& entry = entryPair.second;
+            if (entry.m_act == ACT_ONOFF || entry.m_act == ACT_CB_ONOFF) {  // Allow -no
+                const char* const nop = std::strncmp(optp, "-no", 3) ? nullptr : (optp + 3);
+                if (nop && (entry.m_opt == nop || entry.m_opt == (string{"-"} + nop))) {
+                    return &entry;
+                }
+            } else if (entry.m_act == ACT_CB_PARTIAL_MATCH
+                       || entry.m_act == ACT_CB_PARTIAL_MATCH_VAL) {
+                if (!std::strncmp(optp, entry.m_opt.c_str(), entry.m_opt.length())) {
+                    return &entry;
+                }
+            }
+        }
+        return nullptr;
+    }
+    void emplaceToList(const Entry& e) {
+        const string& opt = e.m_opt;
+        UASSERT(opt.size() >= 2, opt << " is too short");
+        UASSERT(opt[0] == '-' || opt[0] == '+', opt << " does not start with either '-' nor '+'");
+        UASSERT(!(opt[0] == '-' && opt[1] == '-'), "Option must have single '-', but " << opt);
+        m_spellCheck.pushCandidate(e.m_opt);
+        const bool inserted = m_options.emplace(e.m_opt, e).second;
+        UASSERT(inserted, e.m_opt << " is already registered");
+    }
+    static bool hasPrefixNo(const char* strp) {
+        UASSERT(strp[0] == '-', strp << " does not start with '-'");
+        if (strp[1] == '-') ++strp;
+        return std::strncmp(strp, "-no", 3) == 0;
+    }
+
+public:
+    // METHODS
+    // Returns how many args are consumed. 0 means not match
+    int parse(int idx, int argc, char* argv[]) {
+        const char* optp = argv[idx];
+        if (optp[0] == '-' && optp[1] == '-') ++optp;
+        Entry* entryp = find(optp);
+        if (!entryp) return 0;
+        if (entryp->m_type == TYPE_BOOL || entryp->m_type == TYPE_BOOLOPT
+            || entryp->m_act == ACT_CB_CALL || entryp->m_act == ACT_CB_ONOFF
+            || entryp->m_act == ACT_CB_PARTIAL_MATCH) {
+            entryp->parse(optp, nullptr);
+            return 1;
+        } else if (idx + 1 < argc) {
+            entryp->parse(optp, argv[idx + 1]);
+            return 2;
+        }
+        return 0;
+    }
+    // Find the most similar option
+    string getSuggestion(const char* str) const { return m_spellCheck.bestCandidateMsg(str); }
 };
 
 //######################################################################
@@ -877,34 +1096,6 @@ void V3Options::parseOpts(FileLine* fl, int argc, char** argv) {
 
 //======================================================================
 
-bool V3Options::onoff(const char* sw, const char* arg, bool& flag) {
-    // if sw==arg, then return true (found it), and flag=true
-    // if sw=="-no-arg", then return true (found it), and flag=false
-    // if sw=="-noarg", then return true (found it), and flag=false
-    // else return false
-    if (arg[0] != '-') v3fatalSrc("OnOff switches must have leading dash");
-    if (0 == strcmp(sw, arg)) {
-        flag = true;
-        return true;
-    } else if (0 == strncmp(sw, "-no", 3) && (0 == strcmp(sw + 3, arg + 1))) {
-        flag = false;
-        return true;
-    } else if (0 == strncmp(sw, "-no-", 4) && (0 == strcmp(sw + 4, arg + 1))) {
-        flag = false;
-        return true;
-    }
-    return false;
-}
-bool V3Options::onoffb(const char* sw, const char* arg, VOptionBool& flagr) {
-    bool flag;
-    if (onoff(sw, arg, flag /*ref*/)) {
-        flagr.setTrueOrFalse(flag);
-        return true;
-    } else {
-        return false;
-    }
-}
-
 bool V3Options::suffixed(const string& sw, const char* arg) {
     if (strlen(arg) > sw.length()) return false;
     return (0 == strcmp(sw.c_str() + sw.length() - strlen(arg), arg));
@@ -917,639 +1108,544 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     for (int i = 0; i < argc; ++i) {
         addArg(argv[i]);  // -f's really should be inserted in the middle, but this is for debug
     }
-#define shift \
-    do { ++i; } while (false)
+
+    V3OptionsParser parser;
+    const auto Set = V3OptionsParser::ActSet{};
+    const auto OnOff = V3OptionsParser::ActOnOff{};
+    const auto CbCall = V3OptionsParser::ActCbCall{};
+    const auto CbOnOff = V3OptionsParser::ActCbOnOff{};
+    const auto CbVal = V3OptionsParser::ActCbVal{};
+    const auto CbPartialMatch = V3OptionsParser::ActCbPartialMatch{};
+    const auto CbPartialMatchVal = V3OptionsParser::ActCbPartialMatchVal{};
+    V3OptionsParser::AppendHelper DECL_OPTION{parser};
+    // Usage
+    // DECL_OPTION("-option", action, pointer_or_lambda);
+    // action: one of Set, OnOff, CbCall, CbOnOff, CbVal, CbPartialMatch, and CbPartialMatchVal
+    //   Set              : Set value to a variable, pointer_or_lambda must be a pointer to the
+    //   variable.
+    //                      true is set to bool-ish variable when '-opt' is passed to verilator.
+    //                      val is set to int and string variable when '-opt val' is passed.
+    //   OnOff            : Set value to a bool-ish variable, pointer_or_lambda must be a pointer
+    //                      to bool or VOptionBool.
+    //                      true is set if "-opt" is passed to verilator while false is set if
+    //                      "-no-opt" is given.
+    //   CbCall           : Call lambda or function that does not take argument.
+    //   CbOnOff          : Call lambda or function that takes bool argument.
+    //                      Supports "-opt" and "-no-opt" style options.
+    //   CbVal            : Call lambda or function that takes int or const char*.
+    //                      "-opt val" is passed to verilator, val is passed to the lambda.
+    //                      If a function to be called is a member of V3Options that only takes
+    //                      bool/const string&, {this, &V3Options::memberFunc} can be passed
+    //                      instead of lambda as a syntax sugar.
+    //   CbPartialMatch   : Call lambda or function that takes remaining string.
+    //                      e.g. DECL_OPTION("-opt-", CbPartialMatch, [](const char*optp) { cout <<
+    //                      optp << endl; }); and "-opt-ABC" is passed, "ABC" will be emit to
+    //                      stdout.
+    //   CbPartialMatchVal: Call lambda or function that takes remaining string and value.
+    //                      e.g. DECL_OPTION("-opt-", CbPartialMatchVal, [](const char*optp, const
+    //                      char*valp) {
+    //                               cout << optp << ":" << valp << endl; });
+    //                      and "-opt-ABC VAL" is passed, "ABC:VAL" will be emit to stdout.
+    //
+    // DECL_OPTION is not C-macro to get correct line coverage even when lambda is passed.
+    // (If DECL_OPTION is a macro, then lambda would be collapsed into a single line).
+
+    // Plus options
+    DECL_OPTION("+define+", CbPartialMatch, [this](const char* optp) { addDefine(optp, true); });
+    DECL_OPTION("+libext+", CbPartialMatch, [this](const char* optp) {
+        string exts = optp;
+        string::size_type pos;
+        while ((pos = exts.find('+')) != string::npos) {
+            addLibExtV(exts.substr(0, pos));
+            exts = exts.substr(pos + 1);
+        }
+        addLibExtV(exts);
+    });
+    DECL_OPTION("+librescan", CbCall, []() {});  // NOP
+    DECL_OPTION("+notimingchecks", CbCall, []() {});  // NOP
+    DECL_OPTION("+incdir+", CbPartialMatch,
+                [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
+    DECL_OPTION("+systemverilogext+", CbPartialMatch,
+                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2017); });
+    DECL_OPTION("+verilog1995ext+", CbPartialMatch,
+                [this](const char* optp) { addLangExt(optp, V3LangCode::L1364_1995); });
+    DECL_OPTION("+verilog2001ext+", CbPartialMatch,
+                [this](const char* optp) { addLangExt(optp, V3LangCode::L1364_2001); });
+    DECL_OPTION("+1364-1995ext+", CbPartialMatch,
+                [this](const char* optp) { addLangExt(optp, V3LangCode::L1364_1995); });
+    DECL_OPTION("+1364-2001ext+", CbPartialMatch,
+                [this](const char* optp) { addLangExt(optp, V3LangCode::L1364_2001); });
+    DECL_OPTION("+1364-2005ext+", CbPartialMatch,
+                [this](const char* optp) { addLangExt(optp, V3LangCode::L1364_2005); });
+    DECL_OPTION("+1800-2005ext+", CbPartialMatch,
+                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2005); });
+    DECL_OPTION("+1800-2009ext+", CbPartialMatch,
+                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2009); });
+    DECL_OPTION("+1800-2012ext+", CbPartialMatch,
+                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2012); });
+    DECL_OPTION("+1800-2017ext+", CbPartialMatch,
+                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2017); });
+
+    // Minus options
+    DECL_OPTION("-E", Set, &m_preprocOnly);
+    DECL_OPTION("-MMD", OnOff, &m_makeDepend);
+    DECL_OPTION("-MP", OnOff, &m_makePhony);
+    DECL_OPTION("-P", Set, &m_preprocNoLine);
+    DECL_OPTION("-assert", OnOff, &m_assert);
+    DECL_OPTION("-autoflush", OnOff, &m_autoflush);
+    DECL_OPTION("-bbox-sys", OnOff, &m_bboxSys);
+    DECL_OPTION("-bbox-unsup", CbOnOff, [this](bool flag) {
+        m_bboxUnsup = flag;
+        FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, true);
+    });
+    DECL_OPTION("-build", Set, &m_build);
+    DECL_OPTION("-cc", CbCall, [this]() {
+        m_outFormatOk = true;
+        m_systemC = false;
+    });
+    DECL_OPTION("-cdc", OnOff, &m_cdc);
+    DECL_OPTION("-coverage", CbOnOff, [this](bool flag) { coverage(flag); });
+    DECL_OPTION("-coverage-line", OnOff, &m_coverageLine);
+    DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
+    DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
+    DECL_OPTION("-coverage-user", OnOff, &m_coverageUser);
+    DECL_OPTION("-debug-abort", CbCall,
+                V3Error::vlAbort);  // Undocumented, see also --debug-sigsegv
+    DECL_OPTION("-debug-check", OnOff, &m_debugCheck);
+    DECL_OPTION("-debug-collision", OnOff, &m_debugCollision);  // Undocumented
+    DECL_OPTION("-debug-emitv", OnOff, &m_debugEmitV);  // Undocumented
+    DECL_OPTION("-debug-exit-parse", OnOff, &m_debugExitParse);  // Undocumented
+    DECL_OPTION("-debug-exit-uvm", OnOff, &m_debugExitUvm);  // Undocumented
+    DECL_OPTION("-debug-leak", OnOff, &m_debugLeak);
+    DECL_OPTION("-debug-nondeterminism", OnOff, &m_debugNondeterminism);
+    DECL_OPTION("-debug-partition", OnOff, &m_debugPartition);  // Undocumented
+    DECL_OPTION("-debug-protect", OnOff, &m_debugProtect);  // Undocumented
+    DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest);  // Undocumented
+    DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv);  // Undocumented, see also --debug-abort
+    DECL_OPTION("-debug-fatalsrc", CbCall, []() {
+        v3fatalSrc("--debug-fatal-src");
+    });  // Undocumented, see also --debug-abort
+
+    DECL_OPTION("-decoration", OnOff, &m_decoration);
+    DECL_OPTION("-dpi-hdr-only", OnOff, &m_dpiHdrOnly);
+    DECL_OPTION("-dump-defines", OnOff, &m_dumpDefines);
+    DECL_OPTION("-dump-tree", CbOnOff,
+                [this](bool flag) { m_dumpTree = flag ? 3 : 0; });  // Also see --dump-treei
+    DECL_OPTION("-dump-tree-addrids", OnOff, &m_dumpTreeAddrids);
+    DECL_OPTION("-exe", OnOff, &m_exe);
+    DECL_OPTION("-flatten", OnOff, &m_flatten);
+    DECL_OPTION("-hierarchical", OnOff, &m_hierarchical);
+    DECL_OPTION("-hierarchical-child", OnOff, &m_hierChild);
+    DECL_OPTION("-ignc", OnOff, &m_ignc);
+    DECL_OPTION("-inhibit-sim", CbOnOff, [this, fl](bool flag) {
+        fl->v3warn(DEPRECATED, "-inhibit-sim option is deprecated");
+        m_inhibitSim = flag;
+    });
+    DECL_OPTION("-lint-only", OnOff, &m_lintOnly);
+    DECL_OPTION("-main", OnOff, &m_main);  // Undocumented future
+    DECL_OPTION("-no-pins64", CbCall, [this]() { m_pinsBv = 33; });
+    DECL_OPTION("-order-clock-delay", OnOff, &m_orderClockDly);
+    DECL_OPTION("-pvalue+", CbPartialMatch,
+                [this](const char* varp) { addParameter(varp, false); });
+    DECL_OPTION("-pins64", CbCall, [this]() { m_pinsBv = 65; });
+    DECL_OPTION("-pins-sc-uint", CbOnOff, [this](bool flag) {
+        m_pinsScUint = flag;
+        if (!m_pinsScBigUint) m_pinsBv = 65;
+    });
+    DECL_OPTION("-pins-sc-biguint", CbOnOff, [this](bool flag) {
+        m_pinsScBigUint = flag;
+        m_pinsBv = 513;
+    });
+    DECL_OPTION("-pins-uint8", OnOff, &m_pinsUint8);
+    DECL_OPTION("-pp-comments", OnOff, &m_ppComments);
+    DECL_OPTION("-private", CbCall, [this]() { m_public = false; });
+    DECL_OPTION("-prof-cfuncs", OnOff, &m_profCFuncs);
+    DECL_OPTION("-profile-cfuncs", OnOff, &m_profCFuncs);  // Undocumented, renamed
+    DECL_OPTION("-prof-threads", OnOff, &m_profThreads);
+    DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
+    DECL_OPTION("-public", OnOff, &m_public);
+    DECL_OPTION("-public-flat-rw", CbOnOff, [this](bool flag) {
+        m_publicFlatRW = flag;
+        v3Global.dpi(true);
+    });
+    DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
+    DECL_OPTION("-relative-cfuncs", OnOff, &m_relativeCFuncs);
+    DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
+    DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
+    DECL_OPTION("-savable", OnOff, &m_savable);
+    DECL_OPTION("-sc", CbCall, [this]() {
+        m_outFormatOk = true;
+        m_systemC = true;
+    });
+    DECL_OPTION("-skip-identical", OnOff, &m_skipIdentical);
+    DECL_OPTION("-stats", OnOff, &m_stats);
+    DECL_OPTION("-stats-vars", CbOnOff, [this](bool flag) {
+        m_statsVars = flag;
+        m_stats |= flag;
+    });
+    DECL_OPTION("-structs-unpacked", OnOff, &m_structsPacked);
+    DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2017; });
+    DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen);  // Undocumented, debug
+    DECL_OPTION("-trace", OnOff, &m_trace);
+    DECL_OPTION("-trace-coverage", OnOff, &m_traceCoverage);
+    DECL_OPTION("-trace-params", OnOff, &m_traceParams);
+    DECL_OPTION("-trace-structs", OnOff, &m_traceStructs);
+    DECL_OPTION("-trace-underscore", OnOff, &m_traceUnderscore);
+    DECL_OPTION("-underline-zero", OnOff, &m_underlineZero);  // Deprecated
+    DECL_OPTION("-verilate", OnOff, &m_verilate);
+    DECL_OPTION("-vpi", OnOff, &m_vpi);
+    DECL_OPTION("-Wpedantic", OnOff, &m_pedantic);
+    DECL_OPTION("-x-initial-edge", OnOff, &m_xInitialEdge);
+    DECL_OPTION("-xml-only", OnOff, &m_xmlOnly);
+
+    DECL_OPTION("-CFLAGS", CbVal, {this, &V3Options::addCFlags});
+    DECL_OPTION("-comp-limit-blocks", Set, &m_compLimitBlocks);  // Undocumented
+    DECL_OPTION("-comp-limit-members", Set,
+                &m_compLimitMembers);  // Undocumented Ideally power-of-two so structs stay aligned
+    DECL_OPTION("-comp-limit-parens", Set, &m_compLimitParens);  // Undocumented
+    DECL_OPTION("-comp-limit-syms", CbVal,
+                [](int val) { VName::maxLength(val); });  // Undocumented
+    DECL_OPTION("-converge-limit", Set, &m_convergeLimit);
+    DECL_OPTION("-debug", CbCall, [this]() { setDebugMode(3); });
+    DECL_OPTION("-debugi", CbVal, {this, &V3Options::setDebugMode});
+    DECL_OPTION("-D", CbPartialMatch, [this](const char* valp) { addDefine(valp, false); });
+    DECL_OPTION("-debugi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
+        setDebugSrcLevel(optp, std::atoi(valp));
+    });
+    DECL_OPTION("-dump-treei", Set, &m_dumpTree);
+    DECL_OPTION("-dump-treei-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
+        setDumpTreeLevel(optp, std::atoi(valp));
+    });
+    DECL_OPTION("-error-limit", CbVal, static_cast<void (*)(int)>(&V3Error::errorLimit));
+    DECL_OPTION("-FI", CbVal,
+                [this, &optdir](const char* valp) { addForceInc(parseFileArg(optdir, valp)); });
+    DECL_OPTION("-generate-key", CbCall, [this]() {
+        cout << protectKeyDefaulted() << endl;
+        exit(0);
+    });
+    DECL_OPTION("-getenv", CbVal, [](const char* valp) {
+        cout << V3Options::getenvBuiltins(valp) << endl;
+        exit(0);
+    });
+    DECL_OPTION("-hierarchical-block", CbVal, [this](const char* valp) {
+        V3HierarchicalBlockOption opt(valp);
+        m_hierBlocks.emplace(opt.mangledName(), opt);
+    });
+    DECL_OPTION("-G", CbPartialMatch, [this](const char* optp) { addParameter(optp, false); });
+    DECL_OPTION("-gate-stmts", Set, &m_gateStmts);
+    DECL_OPTION("-I", CbPartialMatch,
+                [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
+    DECL_OPTION("-if-depth", Set, &m_ifDepth);
+    DECL_OPTION("-inline-mult", Set, &m_inlineMult);
+    DECL_OPTION("-LDFLAGS", CbVal, {this, &V3Options::addLdLibs});
+    DECL_OPTION("-l2-name", Set, &m_l2Name);
+    DECL_OPTION("-l2name", CbCall, [this]() { m_l2Name = "v"; });  // Historical and undocumented
+    DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
+        if (!strcmp(valp, "cmake")) {
+            m_cmake = true;
+        } else if (!strcmp(valp, "gmake")) {
+            m_gmake = true;
+        } else {
+            fl->v3fatal("Unknown --make system specified: '" << valp << "'");
+        }
+    });
+    DECL_OPTION("-MAKEFLAGS", CbVal, {this, &V3Options::addMakeFlags});
+    DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
+    DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; });  // Historical and undocumented
+    auto setLang = [this, fl](const char* valp) {
+        V3LangCode optval = V3LangCode(valp);
+        if (optval.legal()) {
+            m_defaultLanguage = optval;
+        } else {
+            fl->v3fatal("Unknown language specified: " << valp);
+        }
+    };
+    DECL_OPTION("-language", CbVal, setLang);
+    DECL_OPTION("-default-language", CbVal, setLang);
+    DECL_OPTION("-Mdir", CbVal, [this](const char* valp) {
+        m_makeDir = valp;
+        addIncDirFallback(m_makeDir);  // Need to find generated files there too
+    });
+    DECL_OPTION("-O", CbPartialMatch, [this](const char* optp) {
+        // Optimization
+        for (const char* cp = optp; *cp; ++cp) {
+            const bool flag = isupper(*cp);
+            switch (tolower(*cp)) {
+            case '0': optimize(0); break;  // 0=all off
+            case '1': optimize(1); break;  // 1=all on
+            case '2': optimize(2); break;  // 2=not used
+            case '3': optimize(3); break;  // 3=high
+            case 'a': m_oTable = flag; break;
+            case 'b': m_oCombine = flag; break;
+            case 'c': m_oConst = flag; break;
+            case 'd': m_oDedupe = flag; break;
+            case 'e': m_oCase = flag; break;
+            //    f
+            case 'g': m_oGate = flag; break;
+            //    h
+            case 'i': m_oInline = flag; break;
+            //    j
+            case 'k': m_oSubstConst = flag; break;
+            case 'l': m_oLife = flag; break;
+            case 'm': m_oAssemble = flag; break;
+            //    n o
+            case 'p':
+                m_public = !flag;
+                break;  // With -Op so flag=0, we want public on so few optimizations done
+            //    q
+            case 'r': m_oReorder = flag; break;
+            case 's': m_oSplit = flag; break;
+            case 't': m_oLifePost = flag; break;
+            case 'u': m_oSubst = flag; break;
+            case 'v': m_oReloop = flag; break;
+            case 'w': m_oMergeCond = flag; break;
+            case 'x': m_oExpand = flag; break;
+            case 'y': m_oAcycSimp = flag; break;
+            case 'z': m_oLocalize = flag; break;
+            default: break;  // No error, just ignore
+            }
+        }
+    });
+
+    DECL_OPTION("-o", Set, &m_exeName);
+    DECL_OPTION("-output-split", Set, &m_outputSplit);
+    DECL_OPTION("-output-split-cfuncs", CbVal, [this, fl](const char* valp) {
+        m_outputSplitCFuncs = std::atoi(valp);
+        if (m_outputSplitCFuncs < 0) {
+            fl->v3error("--output-split-cfuncs must be >= 0: " << valp);
+        }
+    });
+    DECL_OPTION("-output-split-ctrace", CbVal, [this, fl](const char* valp) {
+        m_outputSplitCTrace = std::atoi(valp);
+        if (m_outputSplitCTrace < 0) {
+            fl->v3error("--output-split-ctrace must be >= 0: " << valp);
+        }
+    });
+    DECL_OPTION("-protect-lib", CbVal, [this](const char* valp) {
+        m_protectLib = valp;
+        m_protectIds = true;
+    });
+    DECL_OPTION("-trace-fst", CbCall, [this]() {
+        m_trace = true;
+        m_traceFormat = TraceFormat::FST;
+        addLdLibs("-lz");
+    });
+    DECL_OPTION("-trace-fst-thread", CbCall, [this, fl]() {
+        m_trace = true;
+        m_traceFormat = TraceFormat::FST;
+        addLdLibs("-lz");
+        fl->v3warn(DEPRECATED, "Option --trace-fst-thread is deprecated. "
+                               "Use --trace-fst with --trace-threads > 0.");
+        if (m_traceThreads == 0) m_traceThreads = 1;
+    });
+    DECL_OPTION("-trace-threads", CbVal, [this, fl](const char* valp) {
+        m_trace = true;
+        m_traceThreads = std::atoi(valp);
+        if (m_traceThreads < 0) fl->v3fatal("--trace-threads must be >= 0: " << valp);
+    });
+    DECL_OPTION("-trace-depth", Set, &m_traceDepth);
+    DECL_OPTION("-trace-max-array", Set, &m_traceMaxArray);
+    DECL_OPTION("-trace-max-width", Set, &m_traceMaxWidth);
+    DECL_OPTION("-U", CbPartialMatch, &V3PreShell::undef);
+    DECL_OPTION("-unroll-count", Set, &m_unrollCount);  // Undocumented optimization tweak
+    DECL_OPTION("-unroll-stmts", Set, &m_unrollStmts);  // Undocumented optimization tweak
+    DECL_OPTION("-v", CbVal, [this, &optdir](const char* valp) {
+        V3Options::addLibraryFile(parseFileArg(optdir, valp));
+    });
+    DECL_OPTION("-clk", CbVal, {this, &V3Options::addClocker});
+    DECL_OPTION("-no-clk", CbVal, {this, &V3Options::addNoClocker});
+    DECL_OPTION("-V", CbCall, [this]() {
+        showVersion(true);
+        exit(0);
+    });
+    DECL_OPTION("-version", CbCall, [this]() {
+        showVersion(false);
+        exit(0);
+    });
+    DECL_OPTION("-Wall", CbCall, []() {
+        FileLine::globalWarnLintOff(false);
+        FileLine::globalWarnStyleOff(false);
+    });
+    DECL_OPTION("-Werror-", CbPartialMatch, [this, fl](const char* optp) {
+        V3ErrorCode code(optp);
+        if (code == V3ErrorCode::EC_ERROR) {
+            if (!isFuture(optp)) fl->v3fatal("Unknown warning specified: -Werror-" << optp);
+        } else {
+            V3Error::pretendError(code, true);
+        }
+    });
+    DECL_OPTION("-Wfuture-", CbPartialMatch, [this](const char* optp) {
+        // Note it may not be a future option, but one that is currently implemented.
+        addFuture(optp);
+    });
+    DECL_OPTION("-Wno-", CbPartialMatch, [this, fl](const char* optp) {
+        if (!strcmp(optp, "context")) {
+            m_context = false;
+        } else if (!strcmp(optp, "fatal")) {
+            V3Error::warnFatal(false);
+        } else if (!strcmp(optp, "lint")) {
+            FileLine::globalWarnLintOff(true);
+            FileLine::globalWarnStyleOff(true);
+        } else if (!strcmp(optp, "style")) {
+            FileLine::globalWarnStyleOff(true);
+        } else {
+            if (!(FileLine::globalWarnOff(optp, true))) {
+                fl->v3fatal("Unknown warning specified: -Wno-" << optp);
+            }
+        }
+    });
+    DECL_OPTION("-Wwarn-", CbPartialMatch, [this, fl](const char* optp) {
+        if (!strcmp(optp, "lint")) {
+            FileLine::globalWarnLintOff(false);
+        } else if (!strcmp(optp, "style")) {
+            FileLine::globalWarnStyleOff(false);
+        } else {
+            V3ErrorCode code(optp);
+            if (code == V3ErrorCode::EC_ERROR) {
+                if (!isFuture(optp)) fl->v3fatal("Unknown warning specified: -Wwarn-" << optp);
+            } else {
+                FileLine::globalWarnOff(code, false);
+                V3Error::pretendError(code, false);
+            }
+        }
+    });
+    DECL_OPTION("-bin", Set, &m_bin);
+    DECL_OPTION("-compiler", CbVal, [this, fl](const char* valp) {
+        if (!strcmp(valp, "clang")) {
+            m_compLimitBlocks = 80;  // limit unknown
+            m_compLimitMembers = 64;  // soft limit, has slowdown bug as of clang++ 3.8
+            m_compLimitParens = 80;  // limit unknown
+        } else if (!strcmp(valp, "gcc")) {
+            m_compLimitBlocks = 0;  // Bug free
+            m_compLimitMembers = 64;  // soft limit, has slowdown bug as of g++ 7.1
+            m_compLimitParens = 0;  // Bug free
+        } else if (!strcmp(valp, "msvc")) {
+            m_compLimitBlocks = 80;  // 128, but allow some room
+            m_compLimitMembers = 0;  // probably ok, and AFAIK doesn't support anon structs
+            m_compLimitParens = 80;  // 128, but allow some room
+        } else {
+            fl->v3fatal("Unknown setting for --compiler: " << valp);
+        }
+    });
+    DECL_OPTION("-F", CbVal, [this, fl, &optdir](const char* valp) {
+        parseOptsFile(fl, parseFileArg(optdir, valp), true);
+    });
+    DECL_OPTION("-f", CbVal, [this, fl, &optdir](const char* valp) {
+        parseOptsFile(fl, parseFileArg(optdir, valp), false);
+    });
+    DECL_OPTION("-gdb", CbCall, []() {});  // Processed only in bin/verilator shell
+    DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
+    DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
+    DECL_OPTION("-gdbbt", CbCall, []() {});  // Processed only in bin/verilator shell
+    DECL_OPTION("-mod-prefix", Set, &m_modPrefix);
+    DECL_OPTION("-pins-bv", CbVal, [this, fl](const char* valp) {
+        m_pinsBv = std::atoi(valp);
+        if (m_pinsBv > 65) fl->v3fatal("--pins-bv maximum is 65: " << valp);
+    });
+    DECL_OPTION("-pipe-filter", Set, &m_pipeFilter);
+    DECL_OPTION("-prefix", CbVal, [this](const char* valp) {
+        m_prefix = valp;
+        if (m_modPrefix == "") m_modPrefix = m_prefix;
+    });
+    DECL_OPTION("-protect-key", Set, &m_protectKey);
+    DECL_OPTION("-no-threads", CbCall, [this]() { m_threads = 0; });
+    DECL_OPTION("-threads", CbVal, [this, fl](const char* valp) {
+        m_threads = std::atoi(valp);
+        if (m_threads < 0) fl->v3fatal("--threads must be >= 0: " << valp);
+    });
+    DECL_OPTION("-threads-dpi", CbVal, [this, fl](const char* valp) {
+        if (!strcmp(valp, "all")) {
+            m_threadsDpiPure = true;
+            m_threadsDpiUnpure = true;
+        } else if (!strcmp(valp, "none")) {
+            m_threadsDpiPure = false;
+            m_threadsDpiUnpure = false;
+        } else if (!strcmp(valp, "pure")) {
+            m_threadsDpiPure = true;
+            m_threadsDpiUnpure = false;
+        } else {
+            fl->v3fatal("Unknown setting for --threads-dpi: " << valp);
+        }
+    });
+    DECL_OPTION("-threads-max-mtasks", CbVal, [this, fl](const char* valp) {
+        m_threadsMaxMTasks = std::atoi(valp);
+        if (m_threadsMaxMTasks < 1) fl->v3fatal("--threads-max-mtasks must be >= 1: " << valp);
+    });
+    DECL_OPTION("-timescale", CbVal, [this, fl](const char* valp) {
+        VTimescale unit;
+        VTimescale prec;
+        VTimescale::parseSlashed(fl, valp, unit /*ref*/, prec /*ref*/);
+        if (!unit.isNone() && timeOverrideUnit().isNone()) m_timeDefaultUnit = unit;
+        if (!prec.isNone() && timeOverridePrec().isNone()) m_timeDefaultPrec = prec;
+    });
+    DECL_OPTION("-timescale-override", CbVal, [this, fl](const char* valp) {
+        VTimescale unit;
+        VTimescale prec;
+        VTimescale::parseSlashed(fl, valp, unit /*ref*/, prec /*ref*/, true);
+        if (!unit.isNone()) {
+            m_timeDefaultUnit = unit;
+            m_timeOverrideUnit = unit;
+        }
+        if (!prec.isNone()) {
+            m_timeDefaultPrec = prec;
+            m_timeOverridePrec = prec;
+        }
+    });
+    DECL_OPTION("-top-module", Set, &m_topModule);
+    DECL_OPTION("-top", Set, &m_topModule);
+    DECL_OPTION("-unused-regexp", Set, &m_unusedRegexp);
+    DECL_OPTION("-x-assign", CbVal, [this, fl](const char* valp) {
+        if (!strcmp(valp, "0")) {
+            m_xAssign = "0";
+        } else if (!strcmp(valp, "1")) {
+            m_xAssign = "1";
+        } else if (!strcmp(valp, "fast")) {
+            m_xAssign = "fast";
+        } else if (!strcmp(valp, "unique")) {
+            m_xAssign = "unique";
+        } else {
+            fl->v3fatal("Unknown setting for --x-assign: " << valp);
+        }
+    });
+    DECL_OPTION("-x-initial", CbVal, [this, fl](const char* valp) {
+        if (!strcmp(valp, "0")) {
+            m_xInitial = "0";
+        } else if (!strcmp(valp, "fast")) {
+            m_xInitial = "fast";
+        } else if (!strcmp(valp, "unique")) {
+            m_xInitial = "unique";
+        } else {
+            fl->v3fatal("Unknown setting for --x-initial: " << valp);
+        }
+    });
+    DECL_OPTION("-xml-output", CbVal, [this](const char* valp) {
+        m_xmlOutput = valp;
+        m_xmlOnly = true;
+    });
+    DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
+        addIncDirUser(parseFileArg(optdir, string(valp)));
+    });
+
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i] << endl);
-        // + options
-        if (argv[i][0] == '+') {
-            char* sw = argv[i];
-            if (!strncmp(sw, "+define+", 8)) {
-                addDefine(string(sw + strlen("+define+")), true);
-            } else if (!strncmp(sw, "+incdir+", 8)) {
-                addIncDirUser(parseFileArg(optdir, string(sw + strlen("+incdir+"))));
-            } else if (parseLangExt(sw, "+systemverilogext+", V3LangCode::L1800_2017)
-                       || parseLangExt(sw, "+verilog1995ext+", V3LangCode::L1364_1995)
-                       || parseLangExt(sw, "+verilog2001ext+", V3LangCode::L1364_2001)
-                       || parseLangExt(sw, "+1364-1995ext+", V3LangCode::L1364_1995)
-                       || parseLangExt(sw, "+1364-2001ext+", V3LangCode::L1364_2001)
-                       || parseLangExt(sw, "+1364-2005ext+", V3LangCode::L1364_2005)
-                       || parseLangExt(sw, "+1800-2005ext+", V3LangCode::L1800_2005)
-                       || parseLangExt(sw, "+1800-2009ext+", V3LangCode::L1800_2009)
-                       || parseLangExt(sw, "+1800-2012ext+", V3LangCode::L1800_2012)
-                       || parseLangExt(sw, "+1800-2017ext+", V3LangCode::L1800_2017)) {
-                // Nothing to do here - all done in the test
-
-            } else if (!strncmp(sw, "+libext+", 8)) {
-                string exts = string(sw + strlen("+libext+"));
-                string::size_type pos;
-                while ((pos = exts.find('+')) != string::npos) {
-                    addLibExtV(exts.substr(0, pos));
-                    exts = exts.substr(pos + 1);
+        if (!strcmp(argv[i], "-j") || !strcmp(argv[i], "--j")) {  // Allow gnu -- switches
+            ++i;
+            m_buildJobs = 0;  // Unlimited parallelism
+            if (i < argc && isdigit(argv[i][0])) {
+                m_buildJobs = atoi(argv[i]);
+                if (m_buildJobs <= 0) {
+                    fl->v3error("-j accepts positive integer, but " << argv[i] << " is passed");
                 }
-                addLibExtV(exts);
-            } else if (!strcmp(sw, "+librescan")) {  // NOP
-            } else if (!strcmp(sw, "+notimingchecks")) {  // NOP
+                ++i;
+            }
+        } else if (argv[i][0] == '-' || argv[i][0] == '+') {
+            if (const int consumed = parser.parse(i, argc, argv)) {
+                i += consumed;
             } else {
-                fl->v3fatal("Invalid option: " << argv[i]);
+                fl->v3fatal("Invalid option: " << argv[i] << parser.getSuggestion(argv[i]));
+                ++i;
             }
-            shift;
-        }
-        // - options
-        else if (argv[i][0] == '-') {
-            const char* sw = argv[i];
-            bool flag = true;
-            VOptionBool bflag;
-            // Allow gnu -- switches
-            if (sw[0] == '-' && sw[1] == '-') ++sw;
-            bool hadSwitchPart1 = true;
-            // Single switches
-            if (!strcmp(sw, "-E")) {
-                m_preprocOnly = true;
-            } else if (onoffb(sw, "-MMD", bflag /*ref*/)) {
-                m_makeDepend = bflag;
-            } else if (onoff(sw, "-MP", flag /*ref*/)) {
-                m_makePhony = flag;
-            } else if (!strcmp(sw, "-P")) {
-                m_preprocNoLine = true;
-            } else if (onoff(sw, "-assert", flag /*ref*/)) {
-                m_assert = flag;
-            } else if (onoff(sw, "-autoflush", flag /*ref*/)) {
-                m_autoflush = flag;
-            } else if (onoff(sw, "-bbox-sys", flag /*ref*/)) {
-                m_bboxSys = flag;
-            } else if (onoff(sw, "-bbox-unsup", flag /*ref*/)) {
-                FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, true);
-                m_bboxUnsup = flag;
-            } else if (!strcmp(sw, "-build")) {
-                m_build = true;
-            } else if (!strcmp(sw, "-cc")) {
-                m_outFormatOk = true;
-                m_systemC = false;
-            } else if (onoff(sw, "-cdc", flag /*ref*/)) {
-                m_cdc = flag;
-            } else if (onoff(sw, "-coverage", flag /*ref*/)) {
-                coverage(flag);
-            } else if (onoff(sw, "-coverage-line", flag /*ref*/)) {
-                m_coverageLine = flag;
-            } else if (onoff(sw, "-coverage-toggle", flag /*ref*/)) {
-                m_coverageToggle = flag;
-            } else if (onoff(sw, "-coverage-underscore", flag /*ref*/)) {
-                m_coverageUnderscore = flag;
-            } else if (onoff(sw, "-coverage-user", flag /*ref*/)) {
-                m_coverageUser = flag;
-            } else if (!strcmp(sw, "-debug-abort")) {  // Undocumented, see also --debug-sigsegv
-                V3Error::vlAbort();
-            } else if (onoff(sw, "-debug-check", flag /*ref*/)) {
-                m_debugCheck = flag;
-            } else if (onoff(sw, "-debug-collision", flag /*ref*/)) {  // Undocumented
-                m_debugCollision = flag;
-            } else if (onoff(sw, "-debug-emitv", flag /*ref*/)) {  // Undocumented
-                m_debugEmitV = flag;
-            } else if (onoff(sw, "-debug-exit-parse", flag /*ref*/)) {  // Undocumented
-                m_debugExitParse = flag;
-            } else if (onoff(sw, "-debug-exit-uvm", flag /*ref*/)) {  // Undocumented
-                m_debugExitUvm = flag;
-            } else if (onoff(sw, "-debug-leak", flag /*ref*/)) {
-                m_debugLeak = flag;
-            } else if (onoff(sw, "-debug-nondeterminism", flag /*ref*/)) {
-                m_debugNondeterminism = flag;
-            } else if (onoff(sw, "-debug-partition", flag /*ref*/)) {  // Undocumented
-                m_debugPartition = flag;
-            } else if (onoff(sw, "-debug-protect", flag /*ref*/)) {  // Undocumented
-                m_debugProtect = flag;
-            } else if (onoff(sw, "-debug-self-test", flag /*ref*/)) {  // Undocumented
-                m_debugSelfTest = flag;
-            } else if (!strcmp(sw, "-debug-sigsegv")) {  // Undocumented, see also --debug-abort
-                throwSigsegv();
-            } else if (!strcmp(sw, "-debug-fatalsrc")) {  // Undocumented, see also --debug-abort
-                v3fatalSrc("--debug-fatal-src");
-            } else if (onoff(sw, "-decoration", flag /*ref*/)) {
-                m_decoration = flag;
-            } else if (onoff(sw, "-dpi-hdr-only", flag /*ref*/)) {
-                m_dpiHdrOnly = flag;
-            } else if (onoff(sw, "-dump-defines", flag /*ref*/)) {
-                m_dumpDefines = flag;
-            } else if (onoff(sw, "-dump-tree", flag /*ref*/)) {  // Also see --dump-treei
-                m_dumpTree = flag ? 3 : 0;
-            } else if (onoff(sw, "-dump-tree-addrids", flag /*ref*/)) {
-                m_dumpTreeAddrids = flag;
-            } else if (onoff(sw, "-exe", flag /*ref*/)) {
-                m_exe = flag;
-            } else if (onoff(sw, "-flatten", flag /*ref*/)) {
-                m_flatten = flag;
-            } else if (onoff(sw, "-hierarchical", flag /*ref*/)) {
-                m_hierarchical = flag;
-            } else if (onoff(sw, "-hierarchical-child", flag /*ref*/)) {
-                m_hierChild = flag;
-            } else if (onoff(sw, "-ignc", flag /*ref*/)) {
-                m_ignc = flag;
-            } else if (onoff(sw, "-inhibit-sim", flag /*ref*/)) {
-                fl->v3warn(DEPRECATED, "-inhibit-sim option is deprecated");
-                m_inhibitSim = flag;
-            } else if (onoff(sw, "-lint-only", flag /*ref*/)) {
-                m_lintOnly = flag;
-            } else if (onoff(sw, "-main", flag /*ref*/)) {  // Undocumented future
-                m_main = flag;
-            } else if (!strcmp(sw, "-no-pins64")) {
-                m_pinsBv = 33;
-            } else if (onoff(sw, "-order-clock-delay", flag /*ref*/)) {
-                m_orderClockDly = flag;
-            } else if (!strcmp(sw, "-pins64")) {
-                m_pinsBv = 65;
-            } else if (onoff(sw, "-pins-sc-uint", flag /*ref*/)) {
-                m_pinsScUint = flag;
-                if (!m_pinsScBigUint) m_pinsBv = 65;
-            } else if (onoff(sw, "-pins-sc-biguint", flag /*ref*/)) {
-                m_pinsScBigUint = flag;
-                m_pinsBv = 513;
-            } else if (onoff(sw, "-pins-uint8", flag /*ref*/)) {
-                m_pinsUint8 = flag;
-            } else if (onoff(sw, "-pp-comments", flag /*ref*/)) {
-                m_ppComments = flag;
-            } else if (!strcmp(sw, "-private")) {
-                m_public = false;
-            } else if (onoff(sw, "-prof-cfuncs", flag /*ref*/)) {
-                m_profCFuncs = flag;
-            } else if (onoff(sw, "-profile-cfuncs", flag /*ref*/)) {  // Undocumented, renamed
-                m_profCFuncs = flag;
-            } else if (onoff(sw, "-prof-threads", flag /*ref*/)) {
-                m_profThreads = flag;
-            } else if (onoff(sw, "-protect-ids", flag /*ref*/)) {
-                m_protectIds = flag;
-            } else if (onoff(sw, "-public", flag /*ref*/)) {
-                m_public = flag;
-            } else if (onoff(sw, "-public-flat-rw", flag /*ref*/)) {
-                m_publicFlatRW = flag;
-                v3Global.dpi(true);
-            } else if (!strncmp(sw, "-pvalue+", strlen("-pvalue+"))) {
-                addParameter(string(sw + strlen("-pvalue+")), false);
-            } else if (onoff(sw, "-quiet-exit", flag /*ref*/)) {
-                m_quietExit = flag;
-            } else if (onoff(sw, "-relative-cfuncs", flag /*ref*/)) {
-                m_relativeCFuncs = flag;
-            } else if (onoff(sw, "-relative-includes", flag /*ref*/)) {
-                m_relativeIncludes = flag;
-            } else if (onoff(sw, "-report-unoptflat", flag /*ref*/)) {
-                m_reportUnoptflat = flag;
-            } else if (onoff(sw, "-savable", flag /*ref*/)) {
-                m_savable = flag;
-            } else if (!strcmp(sw, "-sc")) {
-                m_outFormatOk = true;
-                m_systemC = true;
-            } else if (onoffb(sw, "-skip-identical", bflag /*ref*/)) {
-                m_skipIdentical = bflag;
-            } else if (onoff(sw, "-stats", flag /*ref*/)) {
-                m_stats = flag;
-            } else if (onoff(sw, "-stats-vars", flag /*ref*/)) {
-                m_statsVars = flag;
-                m_stats |= flag;
-            } else if (onoff(sw, "-structs-unpacked", flag /*ref*/)) {
-                m_structsPacked = flag;
-            } else if (!strcmp(sw, "-sv")) {
-                m_defaultLanguage = V3LangCode::L1800_2017;
-            } else if (onoff(sw, "-threads-coarsen", flag /*ref*/)) {  // Undocumented, debug
-                m_threadsCoarsen = flag;
-            } else if (onoff(sw, "-trace", flag /*ref*/)) {
-                m_trace = flag;
-            } else if (onoff(sw, "-trace-coverage", flag /*ref*/)) {
-                m_traceCoverage = flag;
-            } else if (onoff(sw, "-trace-params", flag /*ref*/)) {
-                m_traceParams = flag;
-            } else if (onoff(sw, "-trace-structs", flag /*ref*/)) {
-                m_traceStructs = flag;
-            } else if (onoff(sw, "-trace-underscore", flag /*ref*/)) {
-                m_traceUnderscore = flag;
-            } else if (onoff(sw, "-underline-zero", flag /*ref*/)) {  // Deprecated
-                m_underlineZero = flag;
-            } else if (onoff(sw, "-verilate", flag /*ref*/)) {
-                m_verilate = flag;
-            } else if (onoff(sw, "-vpi", flag /*ref*/)) {
-                m_vpi = flag;
-            } else if (onoff(sw, "-Wpedantic", flag /*ref*/)) {
-                m_pedantic = flag;
-            } else if (onoff(sw, "-x-initial-edge", flag /*ref*/)) {
-                m_xInitialEdge = flag;
-            } else if (onoff(sw, "-xml-only", flag /*ref*/)) {
-                m_xmlOnly = flag;
-            } else {
-                hadSwitchPart1 = false;
-            }
-
-            if (hadSwitchPart1) {
-            } else if (!strncmp(sw, "-O", 2)) {
-                // Optimization
-                for (const char* cp = sw + strlen("-O"); *cp; ++cp) {
-                    flag = isupper(*cp);
-                    switch (tolower(*cp)) {
-                    case '0': optimize(0); break;  // 0=all off
-                    case '1': optimize(1); break;  // 1=all on
-                    case '2': optimize(2); break;  // 2=not used
-                    case '3': optimize(3); break;  // 3=high
-                    case 'a': m_oTable = flag; break;
-                    case 'b': m_oCombine = flag; break;
-                    case 'c': m_oConst = flag; break;
-                    case 'd': m_oDedupe = flag; break;
-                    case 'e': m_oCase = flag; break;
-                    //    f
-                    case 'g': m_oGate = flag; break;
-                    //    h
-                    case 'i': m_oInline = flag; break;
-                    //    j
-                    case 'k': m_oSubstConst = flag; break;
-                    case 'l': m_oLife = flag; break;
-                    case 'm': m_oAssemble = flag; break;
-                    //    n o
-                    case 'p':
-                        m_public = !flag;
-                        break;  // With -Op so flag=0, we want public on so few optimizations done
-                    //    q
-                    case 'r': m_oReorder = flag; break;
-                    case 's': m_oSplit = flag; break;
-                    case 't': m_oLifePost = flag; break;
-                    case 'u': m_oSubst = flag; break;
-                    case 'v': m_oReloop = flag; break;
-                    case 'w': m_oMergeCond = flag; break;
-                    case 'x': m_oExpand = flag; break;
-                    case 'y': m_oAcycSimp = flag; break;
-                    case 'z': m_oLocalize = flag; break;
-                    default: break;  // No error, just ignore
-                    }
-                }
-            }
-            // Parameterized switches
-            else if (!strcmp(sw, "-CFLAGS") && (i + 1) < argc) {
-                shift;
-                addCFlags(argv[i]);
-            } else if (!strcmp(sw, "-comp-limit-blocks") && (i + 1) < argc) {  // Undocumented
-                shift;
-                m_compLimitBlocks = atoi(argv[i]);
-            } else if (!strcmp(sw, "-comp-limit-members") && (i + 1) < argc) {  // Undocumented
-                shift;
-                m_compLimitMembers
-                    = atoi(argv[i]);  // Ideally power-of-two so structs stay aligned
-            } else if (!strcmp(sw, "-comp-limit-parens") && (i + 1) < argc) {  // Undocumented
-                shift;
-                m_compLimitParens = atoi(argv[i]);
-            } else if (!strcmp(sw, "-comp-limit-syms") && (i + 1) < argc) {  // Undocumented
-                shift;
-                VName::maxLength(atoi(argv[i]));
-            } else if (!strcmp(sw, "-converge-limit") && (i + 1) < argc) {
-                shift;
-                m_convergeLimit = atoi(argv[i]);
-            } else if (!strncmp(sw, "-D", 2)) {
-                addDefine(string(sw + strlen("-D")), false);
-            } else if (!strcmp(sw, "-debug")) {
-                setDebugMode(3);
-            } else if (!strcmp(sw, "-debugi") && (i + 1) < argc) {
-                shift;
-                setDebugMode(atoi(argv[i]));
-            } else if (!strncmp(sw, "-debugi-", strlen("-debugi-"))) {
-                const char* src = sw + strlen("-debugi-");
-                shift;
-                setDebugSrcLevel(src, atoi(argv[i]));
-            } else if (!strcmp(sw, "-dump-treei") && (i + 1) < argc) {
-                shift;
-                m_dumpTree = atoi(argv[i]);
-            } else if (!strncmp(sw, "-dump-treei-", strlen("-dump-treei-"))) {
-                const char* src = sw + strlen("-dump-treei-");
-                shift;
-                setDumpTreeLevel(src, atoi(argv[i]));
-            } else if (!strcmp(sw, "-error-limit") && (i + 1) < argc) {
-                shift;
-                V3Error::errorLimit(atoi(argv[i]));
-            } else if (!strcmp(sw, "-FI") && (i + 1) < argc) {
-                shift;
-                addForceInc(parseFileArg(optdir, string(argv[i])));
-            } else if (!strncmp(sw, "-G", strlen("-G"))) {
-                addParameter(string(sw + strlen("-G")), false);
-            } else if (!strcmp(sw, "-gate-stmts") && (i + 1) < argc) {
-                shift;
-                m_gateStmts = atoi(argv[i]);
-            } else if (!strcmp(sw, "-generate-key")) {
-                cout << protectKeyDefaulted() << endl;
-                exit(0);
-            } else if (!strcmp(sw, "-getenv") && (i + 1) < argc) {
-                shift;
-                cout << V3Options::getenvBuiltins(argv[i]) << endl;
-                exit(0);
-            } else if (!strcmp(sw, "-hierarchical-block") && (i + 1) < argc) {
-                shift;
-                V3HierarchicalBlockOption opt(argv[i]);
-                m_hierBlocks.emplace(opt.mangledName(), opt);
-            } else if (!strncmp(sw, "-I", 2)) {
-                addIncDirUser(parseFileArg(optdir, string(sw + strlen("-I"))));
-            } else if (!strcmp(sw, "-if-depth") && (i + 1) < argc) {
-                shift;
-                m_ifDepth = atoi(argv[i]);
-            } else if (!strcmp(sw, "-inline-mult") && (i + 1) < argc) {
-                shift;
-                m_inlineMult = atoi(argv[i]);
-            } else if (!strcmp(sw, "-j")) {
-                if ((i + 1) >= argc || !isdigit(argv[i + 1][0])) {  // No value is given
-                    m_buildJobs = 0;  // Unlimited parallelism
-                } else {
-                    shift;
-                    m_buildJobs = atoi(argv[i]);
-                    if (m_buildJobs <= 0) {
-                        fl->v3error("-j accepts positive integer, but " << argv[i]
-                                                                        << " is passed");
-                    }
-                }
-            } else if (!strcmp(sw, "-LDFLAGS") && (i + 1) < argc) {
-                shift;
-                addLdLibs(argv[i]);
-            } else if (!strcmp(sw, "-l2-name") && (i + 1) < argc) {
-                shift;
-                m_l2Name = argv[i];
-            } else if (!strcmp(sw, "-l2name")) {  // Historical and undocumented
-                m_l2Name = "v";
-            } else if (!strcmp(sw, "-make")) {
-                shift;
-                if (!strcmp(argv[i], "cmake")) {
-                    m_cmake = true;
-                } else if (!strcmp(argv[i], "gmake")) {
-                    m_gmake = true;
-                } else {
-                    fl->v3fatal("Unknown --make system specified: '" << argv[i] << "'");
-                }
-            } else if (!strcmp(sw, "-MAKEFLAGS") && (i + 1) < argc) {
-                shift;
-                addMakeFlags(argv[i]);
-            } else if (!strcmp(sw, "-max-num-width")) {
-                shift;
-                m_maxNumWidth = atoi(argv[i]);
-            } else if (!strcmp(sw, "-no-l2name")) {  // Historical and undocumented
-                m_l2Name = "";
-            } else if ((!strcmp(sw, "-language") && (i + 1) < argc)
-                       || (!strcmp(sw, "-default-language") && (i + 1) < argc)) {
-                shift;
-                V3LangCode optval = V3LangCode(argv[i]);
-                if (optval.legal()) {
-                    m_defaultLanguage = optval;
-                } else {
-                    fl->v3fatal("Unknown language specified: " << argv[i]);
-                }
-            } else if (!strcmp(sw, "-Mdir") && (i + 1) < argc) {
-                shift;
-                m_makeDir = argv[i];
-                addIncDirFallback(m_makeDir);  // Need to find generated files there too
-            } else if (!strcmp(sw, "-o") && (i + 1) < argc) {
-                shift;
-                m_exeName = argv[i];
-            } else if (!strcmp(sw, "-output-split") && (i + 1) < argc) {
-                shift;
-                m_outputSplit = atoi(argv[i]);
-            } else if (!strcmp(sw, "-output-split-cfuncs") && (i + 1) < argc) {
-                shift;
-                m_outputSplitCFuncs = atoi(argv[i]);
-                if (m_outputSplitCFuncs < 0) {
-                    fl->v3error("--output-split-cfuncs must be >= 0: " << argv[i]);
-                }
-            } else if (!strcmp(sw, "-output-split-ctrace")) {
-                shift;
-                m_outputSplitCTrace = atoi(argv[i]);
-                if (m_outputSplitCTrace < 0) {
-                    fl->v3error("--output-split-ctrace must be >= 0: " << argv[i]);
-                }
-            } else if (!strcmp(sw, "-protect-lib") && (i + 1) < argc) {
-                shift;
-                m_protectLib = argv[i];
-                m_protectIds = true;
-            } else if (!strcmp(sw, "-trace-fst")) {
-                m_trace = true;
-                m_traceFormat = TraceFormat::FST;
-                addLdLibs("-lz");
-            } else if (!strcmp(sw, "-trace-fst-thread")) {
-                m_trace = true;
-                m_traceFormat = TraceFormat::FST;
-                addLdLibs("-lz");
-                fl->v3warn(DEPRECATED, "Option --trace-fst-thread is deprecated. "
-                                       "Use --trace-fst with --trace-threads > 0.");
-                if (m_traceThreads == 0) m_traceThreads = 1;
-            } else if (!strcmp(sw, "-trace-threads")) {
-                shift;
-                m_trace = true;
-                m_traceThreads = atoi(argv[i]);
-                if (m_traceThreads < 0) fl->v3fatal("--trace-threads must be >= 0: " << argv[i]);
-            } else if (!strcmp(sw, "-trace-depth") && (i + 1) < argc) {
-                shift;
-                m_traceDepth = atoi(argv[i]);
-            } else if (!strcmp(sw, "-trace-max-array") && (i + 1) < argc) {
-                shift;
-                m_traceMaxArray = atoi(argv[i]);
-            } else if (!strcmp(sw, "-trace-max-width") && (i + 1) < argc) {
-                shift;
-                m_traceMaxWidth = atoi(argv[i]);
-            } else if (!strncmp(sw, "-U", 2)) {
-                V3PreShell::undef(string(sw + strlen("-U")));
-            } else if (!strcmp(sw, "-unroll-count")) {  // Undocumented optimization tweak
-                shift;
-                m_unrollCount = atoi(argv[i]);
-            } else if (!strcmp(sw, "-unroll-stmts")) {  // Undocumented optimization tweak
-                shift;
-                m_unrollStmts = atoi(argv[i]);
-            } else if (!strcmp(sw, "-v") && (i + 1) < argc) {
-                shift;
-                V3Options::addLibraryFile(parseFileArg(optdir, argv[i]));
-            } else if (!strcmp(sw, "-clk") && (i + 1) < argc) {
-                shift;
-                V3Options::addClocker(argv[i]);
-            } else if (!strcmp(sw, "-no-clk") && (i + 1) < argc) {
-                shift;
-                V3Options::addNoClocker(argv[i]);
-            } else if (!strcmp(sw, "-V")) {
-                showVersion(true);
-                exit(0);
-            } else if (!strcmp(sw, "-version")) {
-                showVersion(false);
-                exit(0);
-            } else if (!strcmp(sw, "-Wall")) {
-                FileLine::globalWarnLintOff(false);
-                FileLine::globalWarnStyleOff(false);
-            } else if (!strncmp(sw, "-Werror-", strlen("-Werror-"))) {
-                string msg = sw + strlen("-Werror-");
-                V3ErrorCode code(msg.c_str());
-                if (code == V3ErrorCode::EC_ERROR) {
-                    if (!isFuture(msg)) fl->v3fatal("Unknown warning specified: " << sw);
-                } else {
-                    V3Error::pretendError(code, true);
-                }
-            } else if (!strncmp(sw, "-Wfuture-", strlen("-Wfuture-"))) {
-                string msg = sw + strlen("-Wfuture-");
-                // Note it may not be a future option, but one that is currently implemented.
-                addFuture(msg);
-            } else if (!strncmp(sw, "-Wno-", 5)) {
-                if (!strcmp(sw, "-Wno-context")) {
-                    m_context = false;
-                } else if (!strcmp(sw, "-Wno-fatal")) {
-                    V3Error::warnFatal(false);
-                } else if (!strcmp(sw, "-Wno-lint")) {
-                    FileLine::globalWarnLintOff(true);
-                    FileLine::globalWarnStyleOff(true);
-                } else if (!strcmp(sw, "-Wno-style")) {
-                    FileLine::globalWarnStyleOff(true);
-                } else {
-                    string msg = sw + strlen("-Wno-");
-                    if (!(FileLine::globalWarnOff(msg, true))) {
-                        fl->v3fatal("Unknown warning specified: " << sw);
-                    }
-                }
-            } else if (!strncmp(sw, "-Wwarn-", 5)) {
-                if (!strcmp(sw, "-Wwarn-lint")) {
-                    FileLine::globalWarnLintOff(false);
-                } else if (!strcmp(sw, "-Wwarn-style")) {
-                    FileLine::globalWarnStyleOff(false);
-                } else {
-                    string msg = sw + strlen("-Wwarn-");
-                    V3ErrorCode code(msg.c_str());
-                    if (code == V3ErrorCode::EC_ERROR) {
-                        if (!isFuture(msg)) fl->v3fatal("Unknown warning specified: " << sw);
-                    } else {
-                        FileLine::globalWarnOff(code, false);
-                        V3Error::pretendError(code, false);
-                    }
-                }
-            } else if (!strcmp(sw, "-bin") && (i + 1) < argc) {
-                shift;
-                m_bin = argv[i];
-            } else if (!strcmp(sw, "-compiler") && (i + 1) < argc) {
-                shift;
-                if (!strcmp(argv[i], "clang")) {
-                    m_compLimitBlocks = 80;  // limit unknown
-                    m_compLimitMembers = 64;  // soft limit, has slowdown bug as of clang++ 3.8
-                    m_compLimitParens = 80;  // limit unknown
-                } else if (!strcmp(argv[i], "gcc")) {
-                    m_compLimitBlocks = 0;  // Bug free
-                    m_compLimitMembers = 64;  // soft limit, has slowdown bug as of g++ 7.1
-                    m_compLimitParens = 0;  // Bug free
-                } else if (!strcmp(argv[i], "msvc")) {
-                    m_compLimitBlocks = 80;  // 128, but allow some room
-                    m_compLimitMembers = 0;  // probably ok, and AFAIK doesn't support anon structs
-                    m_compLimitParens = 80;  // 128, but allow some room
-                } else {
-                    fl->v3fatal("Unknown setting for --compiler: " << argv[i]);
-                }
-            } else if (!strcmp(sw, "-F") && (i + 1) < argc) {
-                shift;
-                parseOptsFile(fl, parseFileArg(optdir, argv[i]), true);
-            } else if (!strcmp(sw, "-f") && (i + 1) < argc) {
-                shift;
-                parseOptsFile(fl, parseFileArg(optdir, argv[i]), false);
-            } else if (!strcmp(sw, "-gdb")) {
-                // Processed only in bin/verilator shell
-            } else if (!strcmp(sw, "-waiver-output") && (i + 1) < argc) {
-                shift;
-                m_waiverOutput = argv[i];
-            } else if (!strcmp(sw, "-rr")) {
-                // Processed only in bin/verilator shell
-            } else if (!strcmp(sw, "-gdbbt")) {
-                // Processed only in bin/verilator shell
-            } else if (!strcmp(sw, "-mod-prefix") && (i + 1) < argc) {
-                shift;
-                m_modPrefix = argv[i];
-            } else if (!strcmp(sw, "-pins-bv") && (i + 1) < argc) {
-                shift;
-                m_pinsBv = atoi(argv[i]);
-                if (m_pinsBv > 65) fl->v3fatal("--pins-bv maximum is 65: " << argv[i]);
-            } else if (!strcmp(sw, "-pipe-filter") && (i + 1) < argc) {
-                shift;
-                m_pipeFilter = argv[i];
-            } else if (!strcmp(sw, "-prefix") && (i + 1) < argc) {
-                shift;
-                m_prefix = argv[i];
-                if (m_modPrefix == "") m_modPrefix = m_prefix;
-            } else if (!strcmp(sw, "-protect-key") && (i + 1) < argc) {
-                shift;
-                m_protectKey = argv[i];
-            } else if (!strcmp(sw, "-no-threads")) {
-                m_threads = 0;
-            } else if (!strcmp(sw, "-threads") && (i + 1) < argc) {
-                shift;
-                m_threads = atoi(argv[i]);
-                if (m_threads < 0) fl->v3fatal("--threads must be >= 0: " << argv[i]);
-            } else if (!strcmp(sw, "-threads-dpi") && (i + 1) < argc) {
-                shift;
-                if (!strcmp(argv[i], "all")) {
-                    m_threadsDpiPure = true;
-                    m_threadsDpiUnpure = true;
-                } else if (!strcmp(argv[i], "none")) {
-                    m_threadsDpiPure = false;
-                    m_threadsDpiUnpure = false;
-                } else if (!strcmp(argv[i], "pure")) {
-                    m_threadsDpiPure = true;
-                    m_threadsDpiUnpure = false;
-                } else {
-                    fl->v3fatal("Unknown setting for --threads-dpi: " << argv[i]);
-                }
-            } else if (!strcmp(sw, "-threads-max-mtasks")) {
-                shift;
-                m_threadsMaxMTasks = atoi(argv[i]);
-                if (m_threadsMaxMTasks < 1)
-                    fl->v3fatal("--threads-max-mtasks must be >= 1: " << argv[i]);
-            } else if (!strcmp(sw, "-timescale") && (i + 1) < argc) {
-                shift;
-                VTimescale unit;
-                VTimescale prec;
-                VTimescale::parseSlashed(fl, argv[i], unit /*ref*/, prec /*ref*/);
-                if (!unit.isNone() && timeOverrideUnit().isNone()) m_timeDefaultUnit = unit;
-                if (!prec.isNone() && timeOverridePrec().isNone()) m_timeDefaultPrec = prec;
-            } else if (!strcmp(sw, "-timescale-override") && (i + 1) < argc) {
-                shift;
-                VTimescale unit;
-                VTimescale prec;
-                VTimescale::parseSlashed(fl, argv[i], unit /*ref*/, prec /*ref*/, true);
-                if (!unit.isNone()) {
-                    m_timeDefaultUnit = unit;
-                    m_timeOverrideUnit = unit;
-                }
-                if (!prec.isNone()) {
-                    m_timeDefaultPrec = prec;
-                    m_timeOverridePrec = prec;
-                }
-            } else if ((!strcmp(sw, "-top-module") || !strcmp(sw, "-top")) && (i + 1) < argc) {
-                shift;
-                m_topModule = argv[i];
-            } else if (!strcmp(sw, "-unused-regexp") && (i + 1) < argc) {
-                shift;
-                m_unusedRegexp = argv[i];
-            } else if (!strcmp(sw, "-x-assign") && (i + 1) < argc) {
-                shift;
-                if (!strcmp(argv[i], "0")) {
-                    m_xAssign = "0";
-                } else if (!strcmp(argv[i], "1")) {
-                    m_xAssign = "1";
-                } else if (!strcmp(argv[i], "fast")) {
-                    m_xAssign = "fast";
-                } else if (!strcmp(argv[i], "unique")) {
-                    m_xAssign = "unique";
-                } else {
-                    fl->v3fatal("Unknown setting for --x-assign: " << argv[i]);
-                }
-            } else if (!strcmp(sw, "-x-initial") && (i + 1) < argc) {
-                shift;
-                if (!strcmp(argv[i], "0")) {
-                    m_xInitial = "0";
-                } else if (!strcmp(argv[i], "fast")) {
-                    m_xInitial = "fast";
-                } else if (!strcmp(argv[i], "unique")) {
-                    m_xInitial = "unique";
-                } else {
-                    fl->v3fatal("Unknown setting for --x-initial: " << argv[i]);
-                }
-            } else if (!strcmp(sw, "-xml-output") && (i + 1) < argc) {
-                shift;
-                m_xmlOutput = argv[i];
-                m_xmlOnly = true;
-            } else if (!strcmp(sw, "-y") && (i + 1) < argc) {
-                shift;
-                addIncDirUser(parseFileArg(optdir, string(argv[i])));
-            } else {
-                fl->v3fatal("Invalid option: " << argv[i]);
-            }
-            shift;
-        }  // - options
-        else {
+        } else {
             // Filename
             string filename = parseFileArg(optdir, argv[i]);
             if (suffixed(filename, ".cpp")  //
@@ -1565,10 +1661,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else {
                 V3Options::addVFile(filename);
             }
-            shift;
+            ++i;
         }
     }
-#undef shift
 }
 
 //======================================================================
