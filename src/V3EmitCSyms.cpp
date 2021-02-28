@@ -467,7 +467,8 @@ void EmitCSyms::emitSymHdr() {
     }
 
     puts("\n// CREATORS\n");
-    puts(symClassName() + "(" + topClassName() + "* topp, const char* namep);\n");
+    puts(symClassName() + "(VerilatedContext* contextp, " + topClassName()
+         + "* topp, const char* namep);\n");
     puts(string("~") + symClassName() + "();\n");
 
     for (const auto& i : m_usesVfinal) {
@@ -643,10 +644,11 @@ void EmitCSyms::emitSymImp() {
     puts("{\n");
     emitScopeHier(true);
     puts("}\n\n");
-    puts(symClassName() + "::" + symClassName() + "(" + topClassName()
+    puts(symClassName() + "::" + symClassName() + "(VerilatedContext* contextp, " + topClassName()
          + "* topp, const char* namep)\n");
     puts("    // Setup locals\n");
-    puts("    : __Vm_namep(namep)\n");  // No leak, as gets destroyed when the top is destroyed
+    puts("    : VerilatedSyms{contextp}\n");
+    puts("    , __Vm_namep(namep)\n");  // No leak, as gets destroyed when the top is destroyed
     if (v3Global.needTraceDumper()) {
         puts("    , __Vm_dumping(false)\n");
         puts("    , __Vm_dumperp(nullptr)\n");

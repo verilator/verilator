@@ -189,7 +189,7 @@ private:
     VerilatedMutex m_mutex;
     std::condition_variable_any m_cv;
     // Only notify the condition_variable if the worker is waiting
-    bool m_waiting VL_GUARDED_BY(m_mutex);
+    bool m_waiting VL_GUARDED_BY(m_mutex) = false;
 
     // Why a vector? We expect the pending list to be very short, typically
     // 0 or 1 or 2, so popping from the front shouldn't be
@@ -203,12 +203,13 @@ private:
     bool m_profiling;  // Is profiling enabled?
     std::atomic<bool> m_exiting;  // Worker thread should exit
     std::thread m_cthread;  // Underlying C++ thread record
+    VerilatedContext* m_contextp;  // Context for spawned thread
 
     VL_UNCOPYABLE(VlWorkerThread);
 
 public:
     // CONSTRUCTORS
-    explicit VlWorkerThread(VlThreadPool* poolp, bool profiling);
+    explicit VlWorkerThread(VlThreadPool* poolp, VerilatedContext* contextp, bool profiling);
     ~VlWorkerThread();
 
     // METHODS
@@ -271,7 +272,7 @@ public:
     // Construct a thread pool with 'nThreads' dedicated threads. The thread
     // pool will create these threads and make them available to execute tasks
     // via this->workerp(index)->addTask(...)
-    VlThreadPool(int nThreads, bool profiling);
+    VlThreadPool(VerilatedContext* contextp, int nThreads, bool profiling);
     ~VlThreadPool();
 
     // METHODS

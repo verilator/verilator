@@ -16,9 +16,12 @@
 ///
 //=============================================================================
 
+#define _VERILATED_SAVE_CPP_
+
 #include "verilatedos.h"
 #include "verilated.h"
 #include "verilated_save.h"
+#include "verilated_imp.h"
 
 #include <cerrno>
 #include <fcntl.h>
@@ -43,7 +46,7 @@
 
 // CONSTANTS
 /// Value of first bytes of each file (must be multiple of 8 bytes)
-static const char* const VLTSAVE_HEADER_STR = "verilatorsave01\n";
+static const char* const VLTSAVE_HEADER_STR = "verilatorsave02\n";
 /// Value of last bytes of each file (must be multiple of 8 bytes)
 static const char* const VLTSAVE_TRAILER_STR = "vltsaved";
 
@@ -77,11 +80,6 @@ void VerilatedSerialize::header() VL_MT_UNSAFE_ONE {
     VerilatedSerialize& os = *this;  // So can cut and paste standard << code below
     assert((strlen(VLTSAVE_HEADER_STR) & 7) == 0);  // Keep aligned
     os.write(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR));
-
-    // Verilated doesn't do it itself, as if we're not using save/restore
-    // it doesn't need to compile this stuff in
-    os.write(Verilated::serialized1Ptr(), Verilated::serialized1Size());
-    os.write(Verilated::serialized2Ptr(), Verilated::serialized2Size());
 }
 
 void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
@@ -95,8 +93,6 @@ void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         // Die before we close() as close would infinite loop
     }
-    os.read(Verilated::serialized1Ptr(), Verilated::serialized1Size());
-    os.read(Verilated::serialized2Ptr(), Verilated::serialized2Size());
 }
 
 void VerilatedSerialize::trailer() VL_MT_UNSAFE_ONE {
@@ -249,3 +245,16 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
 
 //=============================================================================
 // Serialization of types
+
+VerilatedSerialize& operator<<(VerilatedSerialize& os, VerilatedContext* rhsp) {
+    os.write(rhsp->serialized1Ptr(), rhsp->serialized1Size());
+    os << rhsp->impp()->timeFormatSuffix();
+    return os;
+}
+VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VerilatedContext* rhsp) {
+    os.read(rhsp->serialized1Ptr(), rhsp->serialized1Size());
+    std::string s;
+    os >> s;
+    rhsp->impp()->timeFormatSuffix(s);
+    return os;
+}

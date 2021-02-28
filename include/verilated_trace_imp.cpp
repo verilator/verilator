@@ -292,8 +292,8 @@ VerilatedTrace<VL_DERIVED_T>::VerilatedTrace()
 , m_numTraceBuffers { 0 }
 #endif
 {
-    set_time_unit(Verilated::timeunitString());
-    set_time_resolution(Verilated::timeprecisionString());
+    set_time_unit(Verilated::threadContextp()->timeunitString());
+    set_time_resolution(Verilated::threadContextp()->timeprecisionString());
 }
 
 template <> VerilatedTrace<VL_DERIVED_T>::~VerilatedTrace() {

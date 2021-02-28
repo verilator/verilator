@@ -14,13 +14,6 @@
 // Include model header, generated from Verilating "top.v"
 #include "Vtop.h"
 
-// Current simulation time (64-bit unsigned)
-vluint64_t main_time = 0;
-// Called by $time in Verilog
-double sc_time_stamp() {
-    return main_time;  // Note does conversion to real, to match SystemC
-}
-
 int main(int argc, char** argv, char** env) {
     // This is a more complicated example, please also see the simpler examples/make_hello_c.
 
@@ -60,7 +53,7 @@ int main(int argc, char** argv, char** env) {
 
     // Simulate until $finish
     while (!Verilated::gotFinish()) {
-        main_time++;  // Time passes...
+        Verilated::timeInc(1);  // 1 cycle passes...
 
         // Toggle a fast (time/2 period) clock
         top->clk = !top->clk;
@@ -70,7 +63,7 @@ int main(int argc, char** argv, char** env) {
         // this only on a negedge of clk, because we know
         // reset is not sampled there.
         if (!top->clk) {
-            if (main_time > 1 && main_time < 10) {
+            if (Verilated::time() > 1 && Verilated::time() < 10) {
                 top->reset_l = !1;  // Assert reset
             } else {
                 top->reset_l = !0;  // Deassert reset
@@ -88,8 +81,8 @@ int main(int argc, char** argv, char** env) {
         // Read outputs
         VL_PRINTF("[%" VL_PRI64 "d] clk=%x rstl=%x iquad=%" VL_PRI64 "x"
                   " -> oquad=%" VL_PRI64 "x owide=%x_%08x_%08x\n",
-                  main_time, top->clk, top->reset_l, top->in_quad, top->out_quad, top->out_wide[2],
-                  top->out_wide[1], top->out_wide[0]);
+                  Verilated::time(), top->clk, top->reset_l, top->in_quad, top->out_quad,
+                  top->out_wide[2], top->out_wide[1], top->out_wide[0]);
     }
 
     // Final model cleanup

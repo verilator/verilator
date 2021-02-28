@@ -96,7 +96,8 @@ private:
                    :  // If assertions are off, have constant propagation rip them out later
                  // This allows syntax errors and such to be detected normally.
                  (v3Global.opt.assertOn()
-                      ? static_cast<AstNode*>(new AstCMath(fl, "Verilated::assertOn()", 1))
+                      ? static_cast<AstNode*>(
+                          new AstCMath(fl, "vlSymsp->__Vm_contextp->assertOn()", 1))
                       : static_cast<AstNode*>(new AstConst(fl, AstConst::BitFalse())))),
             nodep, nullptr);
         newp->user1(true);  // Don't assert/cover this if
