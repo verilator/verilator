@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.111 devel
 
+****  --inhibit-sim is planned for deprecation, file a bug if this is still being used.
+
 
 * Verilator 4.110 2021-02-25
 

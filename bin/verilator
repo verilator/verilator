@@ -5127,6 +5127,10 @@ Verilator currently requires C++11 or newer compilers.  Verilator will
 require C++14 or newer compilers for both compiling Verilator and compiling
 Verilated models no sooner than January 2022.
 
+=item --inhibit-sim
+
+The --inhibit-sim option is planned for removal no sooner than July 2021.
+
 =item Configuration File -msg
 
 The -msg argument to lint_off has been replaced with -rule.  -msg is
