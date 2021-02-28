@@ -11,7 +11,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <verilated.h>
-#include "Vt_leak.h"
+#include VM_PREFIX_INCLUDE
 
 unsigned int main_time = 0;
 double sc_time_stamp() { return main_time; }
@@ -45,7 +45,7 @@ long long get_memory_usage() {
 }
 
 void make_and_destroy() {
-    Vt_leak* topp = new Vt_leak;
+    VM_PREFIX* topp = new VM_PREFIX;
 
     Verilated::debug(0);
     Verilated::gotFinish(0);

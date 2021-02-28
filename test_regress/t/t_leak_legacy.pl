@@ -16,11 +16,13 @@ if ($Self->{vltmt} && exists $ENV{TRAVIS_DIST} &&
 
 scenarios(vlt_all => 1);
 
+top_filename("t/t_leak.v");
+
 compile(
     make_top_shell => 0,
     make_main => 0,
-    verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"],
-    make_flags => 'CPPFLAGS_ADD=-DVL_NO_LEGACY',
+    verilator_flags2 => ["--exe $Self->{t_dir}/t_leak.cpp"],
+    make_flags => 'CPPFLAGS_ADD=-UVL_NO_LEGACY',
     );
 
 execute(
