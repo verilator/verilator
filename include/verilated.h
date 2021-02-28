@@ -431,18 +431,26 @@ public:
     int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
 
     // Time handling
-    /// Get current simulation time.
-    /// * If using SystemC, do not call SimulationContext::time(value) nor
-    /// addTime(value) and time comes from the SystemC kernel-defined
-    /// sc_time_stamp64().
-    /// * Else, if SimulationContext::time(value) or addTime(value) is ever
-    /// called with non-zero, then time will come via the context.  This
-    /// allows multiple contexts to exist and have different simulation
-    /// times. This must not be used with SystemC.
-    /// * Else, if VL_TIME_STAMP64 is defined, time comes from the
-    /// legacy vl_time_stamp64() which must be defined by the _user_.
-    /// * Else, time comes from the legacy sc_time_stamp() which must be
-    /// defined by the _user_.
+    /// How Verilator runtime gets the current simulation time:
+    ///
+    /// * If using SystemC, time comes from the SystemC kernel-defined
+    /// sc_time_stamp64(). User's wrapper must not call
+    /// SimulationContext::time(value) nor timeInc(value).
+    ///
+    /// * Else, if SimulationContext::time(value) or
+    /// SimulationContext::timeInc(value) is ever called with non-zero,
+    /// then time will come via the context.  This allows multiple contexts
+    /// to exist and have different simulation times. This must not be used
+    /// with SystemC.  Note Verilated::time(value) and
+    /// Verilated::timeInc(value) call into SimulationContext::time and
+    /// timeInc, operating on the thread's context.
+    ///
+    /// * Else, if VL_TIME_STAMP64 is defined, time comes from the legacy
+    /// 'vluint64_t vl_time_stamp64()' which must a function be defined by
+    /// the user's wrapper.
+    ///
+    /// * Else, time comes from the legacy 'double sc_time_stamp()' which
+    /// must be a function defined by the user's wrapper.
     vluint64_t time() const VL_MT_SAFE;
     /// Set current simulation time. See time() for side effect details
     void time(vluint64_t value) VL_MT_SAFE { m_s.m_time = value; }
