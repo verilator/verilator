@@ -1747,75 +1747,98 @@ QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp, bool lsig
 
 // INTERNAL: Stuff LHS bit 0++ into OUTPUT at specified offset
 // ld may be "dirty", output is clean
-static inline void _VL_INSERT_II(int, CData& lhsr, IData ld, int hbit, int lbit) VL_PURE {
+static inline void _VL_INSERT_II(int, CData& lhsr, IData ld, int hbit, int lbit,
+                                 int rbits) VL_PURE {
+    IData cleanmask = VL_MASK_I(rbits);
     IData insmask = (VL_MASK_I(hbit - lbit + 1)) << lbit;
-    lhsr = (lhsr & ~insmask) | ((ld << lbit) & insmask);
+    lhsr = (lhsr & ~insmask) | ((ld << lbit) & (insmask & cleanmask));
 }
-static inline void _VL_INSERT_II(int, SData& lhsr, IData ld, int hbit, int lbit) VL_PURE {
+static inline void _VL_INSERT_II(int, SData& lhsr, IData ld, int hbit, int lbit,
+                                 int rbits) VL_PURE {
+    IData cleanmask = VL_MASK_I(rbits);
     IData insmask = (VL_MASK_I(hbit - lbit + 1)) << lbit;
-    lhsr = (lhsr & ~insmask) | ((ld << lbit) & insmask);
+    lhsr = (lhsr & ~insmask) | ((ld << lbit) & (insmask & cleanmask));
 }
-static inline void _VL_INSERT_II(int, IData& lhsr, IData ld, int hbit, int lbit) VL_PURE {
+static inline void _VL_INSERT_II(int, IData& lhsr, IData ld, int hbit, int lbit,
+                                 int rbits) VL_PURE {
+    IData cleanmask = VL_MASK_I(rbits);
     IData insmask = (VL_MASK_I(hbit - lbit + 1)) << lbit;
-    lhsr = (lhsr & ~insmask) | ((ld << lbit) & insmask);
+    lhsr = (lhsr & ~insmask) | ((ld << lbit) & (insmask & cleanmask));
 }
-static inline void _VL_INSERT_QQ(int, QData& lhsr, QData ld, int hbit, int lbit) VL_PURE {
+static inline void _VL_INSERT_QQ(int, QData& lhsr, QData ld, int hbit, int lbit,
+                                 int rbits) VL_PURE {
+    QData cleanmask = VL_MASK_Q(rbits);
     QData insmask = (VL_MASK_Q(hbit - lbit + 1)) << lbit;
-    lhsr = (lhsr & ~insmask) | ((ld << lbit) & insmask);
+    lhsr = (lhsr & ~insmask) | ((ld << lbit) & (insmask & cleanmask));
 }
-static inline void _VL_INSERT_WI(int, WDataOutP owp, IData ld, int hbit, int lbit) VL_MT_SAFE {
+static inline void _VL_INSERT_WI(int, WDataOutP owp, IData ld, int hbit, int lbit,
+                                 int rbits = 0) VL_MT_SAFE {
     int hoffset = VL_BITBIT_E(hbit);
     int loffset = VL_BITBIT_E(lbit);
+    int roffset = VL_BITBIT_E(rbits);
+    int hword = VL_BITWORD_E(hbit);
+    int lword = VL_BITWORD_E(lbit);
+    int rword = VL_BITWORD_E(rbits);
+    EData cleanmask = hword == rword ? VL_MASK_E(roffset) : VL_MASK_E(0);
+
     if (hoffset == VL_SIZEBITS_E && loffset == 0) {
         // Fast and common case, word based insertion
-        owp[VL_BITWORD_E(lbit)] = ld;
+        owp[VL_BITWORD_E(lbit)] = ld & cleanmask;
     } else {
-        int hword = VL_BITWORD_E(hbit);
-        int lword = VL_BITWORD_E(lbit);
         EData lde = static_cast<EData>(ld);
         if (hword == lword) {  // know < EData bits because above checks it
+            // Assignment is contained within one word of destination
             EData insmask = (VL_MASK_E(hoffset - loffset + 1)) << loffset;
-            owp[lword] = (owp[lword] & ~insmask) | ((lde << loffset) & insmask);
+            owp[lword] = (owp[lword] & ~insmask) | ((lde << loffset) & (insmask & cleanmask));
         } else {
+            // Assignment crosses a word boundary in destination
             EData hinsmask = (VL_MASK_E(hoffset - 0 + 1)) << 0;
             EData linsmask = (VL_MASK_E((VL_EDATASIZE - 1) - loffset + 1)) << loffset;
             int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword
             owp[lword] = (owp[lword] & ~linsmask) | ((lde << loffset) & linsmask);
-            owp[hword] = (owp[hword] & ~hinsmask) | ((lde >> nbitsonright) & hinsmask);
+            owp[hword]
+                = (owp[hword] & ~hinsmask) | ((lde >> nbitsonright) & (hinsmask & cleanmask));
         }
     }
 }
 
 // INTERNAL: Stuff large LHS bit 0++ into OUTPUT at specified offset
 // lwp may be "dirty"
-static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int lbit) VL_MT_SAFE {
-    int hoffset = hbit & VL_SIZEBITS_E;
-    int loffset = lbit & VL_SIZEBITS_E;
+static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int lbit,
+                                 int rbits = 0) VL_MT_SAFE {
+    int hoffset = VL_BITBIT_E(hbit);
+    int loffset = VL_BITBIT_E(lbit);
+    int roffset = VL_BITBIT_E(rbits);
     int lword = VL_BITWORD_E(lbit);
+    int hword = VL_BITWORD_E(hbit);
+    int rword = VL_BITWORD_E(rbits);
     int words = VL_WORDS_I(hbit - lbit + 1);
+    // Cleaning mask, only applied to top word of the assignment.  Is a no-op
+    // if we don't assign to the top word of the destination.
+    EData cleanmask = hword == rword ? VL_MASK_E(roffset) : VL_MASK_E(0);
+
     if (hoffset == VL_SIZEBITS_E && loffset == 0) {
         // Fast and common case, word based insertion
-        for (int i = 0; i < words; ++i) owp[lword + i] = lwp[i];
+        for (int i = 0; i < (words - 1); ++i) owp[lword + i] = lwp[i];
+        owp[hword] = lwp[words - 1] & cleanmask;
     } else if (loffset == 0) {
         // Non-32bit, but nicely aligned, so stuff all but the last word
         for (int i = 0; i < (words - 1); ++i) owp[lword + i] = lwp[i];
         // Know it's not a full word as above fast case handled it
         EData hinsmask = (VL_MASK_E(hoffset - 0 + 1));
-        owp[lword + words - 1]
-            = (owp[words + lword - 1] & ~hinsmask) | (lwp[words - 1] & hinsmask);
+        owp[hword] = (owp[hword] & ~hinsmask) | (lwp[words - 1] & (hinsmask & cleanmask));
     } else {
         EData hinsmask = (VL_MASK_E(hoffset - 0 + 1)) << 0;
         EData linsmask = (VL_MASK_E((VL_EDATASIZE - 1) - loffset + 1)) << loffset;
         int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword (know loffset!=0)
         // Middle words
-        int hword = VL_BITWORD_E(hbit);
         for (int i = 0; i < words; ++i) {
             {  // Lower word
                 int oword = lword + i;
                 EData d = lwp[i] << loffset;
                 EData od = (owp[oword] & ~linsmask) | (d & linsmask);
                 if (oword == hword) {
-                    owp[oword] = (owp[oword] & ~hinsmask) | (od & hinsmask);
+                    owp[oword] = (owp[oword] & ~hinsmask) | (od & (hinsmask & cleanmask));
                 } else {
                     owp[oword] = od;
                 }
@@ -1826,7 +1849,7 @@ static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int
                     EData d = lwp[i] >> nbitsonright;
                     EData od = (d & ~linsmask) | (owp[oword] & linsmask);
                     if (oword == hword) {
-                        owp[oword] = (owp[oword] & ~hinsmask) | (od & hinsmask);
+                        owp[oword] = (owp[oword] & ~hinsmask) | (od & (hinsmask & cleanmask));
                     } else {
                         owp[oword] = od;
                     }
@@ -1836,11 +1859,11 @@ static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int
     }
 }
 
-static inline void _VL_INSERT_WQ(int obits, WDataOutP owp, QData ld, int hbit,
-                                 int lbit) VL_MT_SAFE {
+static inline void _VL_INSERT_WQ(int obits, WDataOutP owp, QData ld, int hbit, int lbit,
+                                 int rbits = 0) VL_MT_SAFE {
     WData lwp[VL_WQ_WORDS_E];
     VL_SET_WQ(lwp, ld);
-    _VL_INSERT_WW(obits, owp, lwp, hbit, lbit);
+    _VL_INSERT_WW(obits, owp, lwp, hbit, lbit, rbits);
 }
 
 // EMIT_RULE: VL_REPLICATE:  oclean=clean>width32, dirty<=width32; lclean=clean; rclean==clean;
@@ -2468,34 +2491,43 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
 // Range assignments
 
 // EMIT_RULE: VL_ASSIGNRANGE:  rclean=dirty;
-static inline void VL_ASSIGNSEL_IIII(int obits, int lsb, CData& lhsr, IData rhs) VL_PURE {
-    _VL_INSERT_II(obits, lhsr, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, CData& lhsr,
+                                     IData rhs) VL_PURE {
+    _VL_INSERT_II(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_IIII(int obits, int lsb, SData& lhsr, IData rhs) VL_PURE {
-    _VL_INSERT_II(obits, lhsr, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, SData& lhsr,
+                                     IData rhs) VL_PURE {
+    _VL_INSERT_II(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_IIII(int obits, int lsb, IData& lhsr, IData rhs) VL_PURE {
-    _VL_INSERT_II(obits, lhsr, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, IData& lhsr,
+                                     IData rhs) VL_PURE {
+    _VL_INSERT_II(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_QIII(int obits, int lsb, QData& lhsr, IData rhs) VL_PURE {
-    _VL_INSERT_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_QIII(int rbits, int obits, int lsb, QData& lhsr,
+                                     IData rhs) VL_PURE {
+    _VL_INSERT_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_QQII(int obits, int lsb, QData& lhsr, QData rhs) VL_PURE {
-    _VL_INSERT_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_QQII(int rbits, int obits, int lsb, QData& lhsr,
+                                     QData rhs) VL_PURE {
+    _VL_INSERT_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_QIIQ(int obits, int lsb, QData& lhsr, QData rhs) VL_PURE {
-    _VL_INSERT_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_QIIQ(int rbits, int obits, int lsb, QData& lhsr,
+                                     QData rhs) VL_PURE {
+    _VL_INSERT_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
 // static inline void VL_ASSIGNSEL_IIIW(int obits, int lsb, IData& lhsr, WDataInP rwp) VL_MT_SAFE {
 // Illegal, as lhs width >= rhs width
-static inline void VL_ASSIGNSEL_WIII(int obits, int lsb, WDataOutP owp, IData rhs) VL_MT_SAFE {
-    _VL_INSERT_WI(obits, owp, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_WIII(int rbits, int obits, int lsb, WDataOutP owp,
+                                     IData rhs) VL_MT_SAFE {
+    _VL_INSERT_WI(obits, owp, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_WIIQ(int obits, int lsb, WDataOutP owp, QData rhs) VL_MT_SAFE {
-    _VL_INSERT_WQ(obits, owp, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_WIIQ(int rbits, int obits, int lsb, WDataOutP owp,
+                                     QData rhs) VL_MT_SAFE {
+    _VL_INSERT_WQ(obits, owp, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_WIIW(int obits, int lsb, WDataOutP owp, WDataInP rwp) VL_MT_SAFE {
-    _VL_INSERT_WW(obits, owp, rwp, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_WIIW(int rbits, int obits, int lsb, WDataOutP owp,
+                                     WDataInP rwp) VL_MT_SAFE {
+    _VL_INSERT_WW(obits, owp, rwp, lsb + obits - 1, lsb, rbits);
 }
 
 //======================================================================

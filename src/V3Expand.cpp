@@ -488,9 +488,21 @@ private:
                                                           maskold.edataWord(w)),
                                              oldvalp);
                         }
-                        addWordAssign(nodep, w, destp,
-                                      new AstOr(lhsp->fileline(), oldvalp,
-                                                newWordGrabShift(lhsp->fileline(), w, rhsp, lsb)));
+
+                        // Appropriate word of new value to insert:
+                        AstNode* newp = newWordGrabShift(lhsp->fileline(), w, rhsp, lsb);
+
+                        // Apply cleaning at the top word of the destination
+                        // (no cleaning to do if dst's width is a whole number
+                        // of words).
+                        if (w == destp->widthWords() - 1 && VL_BITBIT_E(destp->widthMin()) != 0) {
+                            V3Number cleanmask(nodep, VL_EDATASIZE);
+                            cleanmask.setMask(VL_BITBIT_E(destp->widthMin()));
+                            newp = new AstAnd(lhsp->fileline(), newp,
+                                              new AstConst(lhsp->fileline(), cleanmask));
+                        }
+
+                        addWordAssign(nodep, w, destp, new AstOr(lhsp->fileline(), oldvalp, newp));
                     }
                 }
                 VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
@@ -506,15 +518,22 @@ private:
                     oldvalp = new AstAnd(lhsp->fileline(), new AstConst(lhsp->fileline(), maskold),
                                          oldvalp);
                 }
-                AstNode* newp = new AstOr(lhsp->fileline(), oldvalp,
-                                          new AstShiftL(lhsp->fileline(), rhsp,
-                                                        new AstConst(lhsp->fileline(), lsb),
-                                                        destp->width()));
+
+                // The bit-select can refer to bits outside the width of nodep
+                // which we aren't allowed to assign to.  This is a mask of the
+                // valid range of nodep which we apply to the new shifted RHS.
+                V3Number cleanmask(nodep, destp->widthMin());
+                cleanmask.setMask(destp->widthMin());
+                AstNode* shifted = new AstShiftL(
+                    lhsp->fileline(), rhsp, new AstConst(lhsp->fileline(), lsb), destp->width());
+                AstNode* cleaned = new AstAnd(lhsp->fileline(), shifted,
+                                              new AstConst(lhsp->fileline(), cleanmask));
+                AstNode* newp = new AstOr(lhsp->fileline(), oldvalp, cleaned);
                 newp = new AstAssign(nodep->fileline(), destp, newp);
                 insertBefore(nodep, newp);
             }
             return true;
-        } else {  // non-const RHS
+        } else {  // non-const select offset
             if (destwide && lhsp->widthConst() == 1) {
                 UINFO(8, "    ASSIGNSEL(varlsb,wide,1bit) " << nodep << endl);
                 AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
@@ -579,11 +598,21 @@ private:
                                                  lhsp->lsbp()->cloneTree(true), destp->width())),
                         oldvalp);
                 }
-                AstNode* newp
-                    = new AstOr(lhsp->fileline(), oldvalp,
-                                new AstShiftL(lhsp->fileline(), rhsp,
-                                              lhsp->lsbp()->cloneTree(true), destp->width()));
-                newp = new AstAssign(nodep->fileline(), destp, newp);
+                AstNode* newp = new AstShiftL(lhsp->fileline(), rhsp,
+                                              lhsp->lsbp()->cloneTree(true), destp->width());
+                // Apply cleaning to the new value being inserted.  Mask is
+                // slightly wider than necessary to avoid an AND with all ones
+                // being optimized out.  No need to clean if destp is
+                // quad-sized as there are no extra bits to contaminate
+                if (destp->widthMin() != 64) {
+                    V3Number cleanmask(nodep, destp->widthMin() + 1);
+                    cleanmask.setMask(destp->widthMin());
+                    newp = new AstAnd(lhsp->fileline(), newp,
+                                      new AstConst(lhsp->fileline(), cleanmask));
+                }
+
+                newp = new AstAssign(nodep->fileline(), destp,
+                                     new AstOr(lhsp->fileline(), oldvalp, newp));
                 // newp->dumpTree(cout, "-  new: ");
                 insertBefore(nodep, newp);
                 return true;
