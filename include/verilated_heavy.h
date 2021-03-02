@@ -956,10 +956,4 @@ extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
 
 extern IData VL_FGETS_NI(std::string& dest, IData fpi);
 
-//======================================================================
-// Dumping
-
-extern const char* vl_dumpctl_filenamep(bool setit = false,
-                                        const std::string& filename = "") VL_MT_SAFE;
-
 #endif  // Guard
