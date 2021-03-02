@@ -588,6 +588,8 @@ public:
 class Verilated final {
     // MEMBERS
     // Slow path variables
+//FIXME
+    // Internal note: Globals must be POD, see verilated.cpp top.
     static VerilatedMutex s_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
 
     // Internal Note: There should be no Serialized state in Verilated::,
@@ -598,6 +600,8 @@ class Verilated final {
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
         int s_debug = 0;  ///< See accessors... only when VL_DEBUG set
+//FIXME
+    // Internal note: Globals must be POD, see verilated.cpp top.
     } s_ns;
 
     // Not covered by mutex, as per-thread
@@ -615,6 +619,8 @@ class Verilated final {
 
         ThreadLocal() = default;
         ~ThreadLocal() = default;
+//FIXME
+    // Internal note: Globals must be POD, see verilated.cpp top.
     } t_s;
 
     static VerilatedContext* s_lastContextp;  ///< Last context constructed/attached

@@ -18,6 +18,26 @@
 /// Code available from: https://verilator.org
 ///
 //=========================================================================
+// Internal note:
+//
+// verilated.o may exist both in protect-lib (incrementally linked .a/.so)
+// and the main module.  Both refer the same instance of static
+// variables/VL_THREAD_LOCAL in verilated.o such as Verilated, or
+// VerilatedImpData.  This is important to share that state, but the
+// sharing may cause a double-free error when shutting down because the
+// loader will insert a constructor/destructor at each reference to
+// verilated.o, resulting in at runtime constructors/destructors being
+// called multiple times.
+//
+// To avoid the trouble:
+//   * Statics declared inside functions. The compiler will wrap
+//     the construction in must-be-one-time checks.
+//   * Or, use only POD types that are multi-constructor safe.
+//   * Or, the static should be of a union, which will avoid compiler
+//     construction.
+//   * Or, code is not linked in protected library. e.g. the VPI
+//     and DPI libraries are not needed there.
+//=========================================================================
 
 #define _VERILATED_CPP_
 
@@ -54,17 +74,23 @@ static_assert(sizeof(vluint64_t) == 8, "vluint8_t is missized");
 
 //===========================================================================
 // Global variables
-
-// Internal: Be careful, otherwise static globals may be
-// constructed/destructed multiple times; see comments in verilated.cpp.
+// Internal note: Globals must be POD or unions, see verilated.cpp top.
 
 // Slow path variables
+//FIXME
+    // Internal note: Globals must be POD, see verilated.cpp top.
 VerilatedMutex Verilated::s_mutex;
 
 // Keep below together in one cache line
+//FIXME
+    // Internal note: Globals must be POD, see verilated.cpp top.
 Verilated::NonSerialized Verilated::s_ns;
+//FIXME
+    // Internal note: Globals must be POD, see verilated.cpp top.
 VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
 
+//FIXME
+    // Internal note: Globals must be POD, see verilated.cpp top.
 VerilatedImp::VerilatedImpU VerilatedImp::s_s;
 
 // Guarantees to call setup() and teardown() just once.
@@ -88,6 +114,10 @@ struct VerilatedInitializer {
         }
     }
 } s_VerilatedInitializer;
+
+//FIXME
+    // Internal note: Globals must be POD, see verilated.cpp top.
+VerilatedContextImp::Statics VerilatedContextImp::s_si;
 
 //===========================================================================
 // User definable functions
@@ -2172,8 +2202,6 @@ void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix, int
 //======================================================================
 // VerilatedContext:: Methods
 
-VerilatedContextImp::Statics VerilatedContextImp::s_si;
-
 VerilatedContext::VerilatedContext()
     : m_impdatap{new VerilatedContextImpData} {
     Verilated::lastContextp(this);
@@ -2661,18 +2689,6 @@ void Verilated::endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
 
 //===========================================================================
 // VerilatedImp:: Constructors
-
-// verilated.o may exist both in protect-lib (incrementally linked .a/.so)
-// and the main module.  Both refer the same instance of static variables
-// in verilated.o such as Verilated, or VerilatedImpData.  This is
-// important to share that state, but the sharing may cause a double-free
-// error when shutting down because the loader will insert a
-// constructor/destructor at each reference to verilated.o, resulting in at
-// runtime constructors/destructors being called multiple times.
-//
-// To avoid the trouble, all member variables are enclosed in VerilatedImpU union.
-// ctor nor dtor of members are not called automatically.
-// VerilatedInitializer::setup() and teardown() guarantees to initialize/destruct just once.
 
 void VerilatedImp::setup() { new (&VerilatedImp::s_s) VerilatedImpData(); }
 void VerilatedImp::teardown() { VerilatedImp::s_s.~VerilatedImpU(); }
