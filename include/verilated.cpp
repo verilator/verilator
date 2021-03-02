@@ -55,6 +55,9 @@ static_assert(sizeof(vluint64_t) == 8, "vluint8_t is missized");
 //===========================================================================
 // Global variables
 
+// Internal: Be careful, otherwise static globals may be
+// constructed/destructed multiple times; see comments in verilated.cpp.
+
 // Slow path variables
 VerilatedMutex Verilated::s_mutex;
 
