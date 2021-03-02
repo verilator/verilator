@@ -248,11 +248,11 @@ public:  // But only for verilated*.cpp
     int timeFormatWidth() const VL_MT_SAFE { return m_s.m_timeFormatWidth; }
     void timeFormatWidth(int value) VL_MT_SAFE { m_s.m_timeFormatWidth = value; }
     std::string timeFormatSuffix() VL_MT_SAFE {
-        const VerilatedLockGuard lock(m_timeFMutex);
+        const VerilatedLockGuard lock(m_timeDumpMutex);
         return m_timeFormatSuffix;
     }
     void timeFormatSuffix(const std::string& value) VL_MT_SAFE {
-        const VerilatedLockGuard lock(m_timeFMutex);
+        const VerilatedLockGuard lock(m_timeDumpMutex);
         m_timeFormatSuffix = value;
     }
 
