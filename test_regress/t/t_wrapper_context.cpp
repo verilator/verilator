@@ -16,7 +16,20 @@
 double sc_time_stamp() { return 0; }
 
 VerilatedMutex outputMutex;
-void sim(Vt_wrapper_context* topp) {
+
+#ifdef T_WRAPPER_CONTEXT
+#elif defined(T_WRAPPER_CONTEXT_SEQ)
+VerilatedMutex sequentialMutex;
+#else
+#error "Unexpected test name"
+#endif
+
+void sim(VM_PREFIX* topp) {
+#ifdef T_WRAPPER_CONTEXT_SEQ
+    // Run each sim sequentially
+    const VerilatedLockGuard seqLock(sequentialMutex);
+#endif
+    
     VerilatedContext* contextp = topp->contextp();
     // This test created a thread, so need to associate VerilatedContext with it
     Verilated::threadContextp(contextp);
@@ -70,8 +83,8 @@ int main(int argc, char** argv, char** env) {
     context1p->traceEverOn(true);
 
     // instantiate verilated design
-    std::unique_ptr<Vt_wrapper_context> top0p{new Vt_wrapper_context{context0p.get(), "top0"}};
-    std::unique_ptr<Vt_wrapper_context> top1p{new Vt_wrapper_context{context1p.get(), "top1"}};
+    std::unique_ptr<VM_PREFIX> top0p{new VM_PREFIX{context0p.get(), "top0"}};
+    std::unique_ptr<VM_PREFIX> top1p{new VM_PREFIX{context1p.get(), "top1"}};
 
     top0p->trace_number = 0;
     top0p->trace_number = 1;
