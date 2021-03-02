@@ -332,8 +332,9 @@ protected:
         ~Serialized() = default;
     } m_s;
 
-    VerilatedMutex m_timeFMutex;  // Protect m_serf
-    std::string m_timeFormatSuffix VL_GUARDED_BY(m_timeFMutex);  // $timeformat printf format
+    mutable VerilatedMutex m_timeDumpMutex;  // Protect misc slow strings
+    std::string m_timeFormatSuffix VL_GUARDED_BY(m_timeDumpMutex);  // $timeformat printf format
+    std::string m_dumpfile VL_GUARDED_BY(m_timeDumpMutex);  // $dumpfile setting
 
     struct NonSerialized {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
@@ -490,6 +491,10 @@ public:  // But for internal use only
     const VerilatedContextImp* impp() const {
         return reinterpret_cast<const VerilatedContextImp*>(this);
     }
+
+    // Internal: $dumpfile
+    void dumpfile(const std::string& flag) VL_MT_SAFE;
+    std::string dumpfile() const VL_MT_SAFE;
 
     // Internal: --prof-threads related settings
     void profThreadsStart(vluint64_t flag) VL_MT_SAFE;
