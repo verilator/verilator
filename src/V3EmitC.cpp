@@ -306,6 +306,7 @@ public:
                 puts("II");
                 emitIQW(nodep->rhsp());
                 puts("(");
+                puts(cvtToStr(selp->fromp()->widthMin()) + ",");
                 puts(cvtToStr(nodep->widthMin()) + ",");
                 iterateAndNextNull(selp->lsbp());
                 puts(", ");
