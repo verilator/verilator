@@ -3528,7 +3528,8 @@ class EmitCTrace final : EmitCStmts {
             puts("if (VL_UNLIKELY(!__VlSymsp->__Vm_dumperp)) {\n");
             puts("__VlSymsp->__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
             puts("trace(__VlSymsp->__Vm_dumperp, 0, 0);\n");
-            puts("__VlSymsp->__Vm_dumperp->open(__VlSymsp->__Vm_contextp->dumpfile().c_str());\n");
+            puts("std::string dumpfile = __VlSymsp->__Vm_contextp->dumpfile();\n");
+            puts("__VlSymsp->__Vm_dumperp->open(dumpfile.c_str());\n");
             puts("__VlSymsp->__Vm_dumperp->changeThread();\n");
             puts("__VlSymsp->__Vm_dumping = true;\n");
             puts("}\n");
