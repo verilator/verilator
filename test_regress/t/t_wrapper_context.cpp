@@ -29,7 +29,7 @@ void sim(VM_PREFIX* topp) {
     // Run each sim sequentially
     const VerilatedLockGuard seqLock(sequentialMutex);
 #endif
-    
+
     VerilatedContext* contextp = topp->contextp();
     // This test created a thread, so need to associate VerilatedContext with it
     Verilated::threadContextp(contextp);
