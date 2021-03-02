@@ -513,7 +513,7 @@ public:
     virtual void visit(AstDumpCtl* nodep) override {
         switch (nodep->ctlType()) {
         case VDumpCtlType::FILE:
-            puts("vl_dumpctl_filenamep(true, ");
+            puts("vlSymsp->__Vm_contextp->dumpfile(");
             emitCvtPackStr(nodep->exprp());
             puts(");\n");
             break;
@@ -3527,9 +3527,8 @@ class EmitCTrace final : EmitCStmts {
             puts("const VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
             puts("if (VL_UNLIKELY(!__VlSymsp->__Vm_dumperp)) {\n");
             puts("__VlSymsp->__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
-            puts("const char* cp = vl_dumpctl_filenamep();\n");
             puts("trace(__VlSymsp->__Vm_dumperp, 0, 0);\n");
-            puts("__VlSymsp->__Vm_dumperp->open(vl_dumpctl_filenamep());\n");
+            puts("__VlSymsp->__Vm_dumperp->open(vlSymsp->__Vm_contextp->dumpfile());\n");
             puts("__VlSymsp->__Vm_dumperp->changeThread();\n");
             puts("__VlSymsp->__Vm_dumping = true;\n");
             puts("}\n");
