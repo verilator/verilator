@@ -2185,6 +2185,10 @@ void VerilatedContext::dumpfile(const std::string& flag) VL_MT_SAFE {
 }
 std::string VerilatedContext::dumpfile() const VL_MT_SAFE {
     const VerilatedLockGuard lock(m_timeDumpMutex);
+    if (VL_UNLIKELY(m_dumpfile.empty())) {
+        VL_PRINTF_MT("%%Warning: $dumpvar ignored as not proceeded by $dumpfile\n");
+        return "";
+    }
     return m_dumpfile;
 }
 void VerilatedContext::errorCount(int val) VL_MT_SAFE {
