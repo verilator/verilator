@@ -18,6 +18,26 @@
 /// Code available from: https://verilator.org
 ///
 //=========================================================================
+// Internal note:
+//
+// verilated.o may exist both in protect-lib (incrementally linked .a/.so)
+// and the main module.  Both refer the same instance of static
+// variables/VL_THREAD_LOCAL in verilated.o such as Verilated, or
+// VerilatedImpData.  This is important to share that state, but the
+// sharing may cause a double-free error when shutting down because the
+// loader will insert a constructor/destructor at each reference to
+// verilated.o, resulting in at runtime constructors/destructors being
+// called multiple times.
+//
+// To avoid the trouble:
+//   * Statics declared inside functions. The compiler will wrap
+//     the construction in must-be-one-time checks.
+//   * Or, use only POD types that are multi-constructor safe.
+//   * Or, the static should be of a union, which will avoid compiler
+//     construction.
+//   * Or, code is not linked in protected library. e.g. the VPI
+//     and DPI libraries are not needed there.
+//=========================================================================
 
 #define _VERILATED_CPP_
 
@@ -2651,19 +2671,6 @@ void Verilated::endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
 
 //===========================================================================
 // VerilatedImp:: Constructors
-
-// verilated.o may exist both in protect-lib and main module.
-// Both the main module and the protect-lib refer the same instance of
-// static variables such as Verilated or VerilatedImplData.
-// This is important to share that state, but the sharing may cause a
-// double-free error when shutting down because destructors are called
-// twice.
-// 1st time:From protect-lib shared object on the way of unloading after exiting main()
-// 2nd time:From main executable.
-//
-// To avoid the trouble, all member variables are enclosed in VerilatedImpU union.
-// ctor nor dtor of members are not called automatically.
-// VerilatedInitializer::setup() and teardown() guarantees to initialize/destruct just once.
 
 void VerilatedImp::setup() { new (&VerilatedImp::s_s) VerilatedImpData(); }
 void VerilatedImp::teardown() { VerilatedImp::s_s.~VerilatedImpU(); }
