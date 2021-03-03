@@ -504,9 +504,11 @@ void VerilatedCovContext::_insertp(A(0), A(1), K(2), int val2, K(3), int val3, K
 //=============================================================================
 // VerilatedCov
 
+#ifndef VL_NO_LEGACY
 VerilatedCovContext* VerilatedCov::threadCovp() VL_MT_SAFE {
     return Verilated::threadContextp()->coveragep();
 }
+#endif
 
 //=============================================================================
 // VerilatedContext
@@ -515,7 +517,8 @@ VerilatedCovContext* VerilatedCov::threadCovp() VL_MT_SAFE {
 // else have linker throw error, which is better than runtime nullptr-dereference
 
 VerilatedCovContext* VerilatedContext::coveragep() const VL_MT_SAFE {
-    return m_coveragep.get();
+    //FIXME can move to header?
+    return m_coveragep;
 }
 
 #endif
