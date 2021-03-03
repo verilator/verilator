@@ -89,6 +89,7 @@ typedef WData* WDataOutP;  ///< Array output from a function
 
 class VerilatedContextImp;
 class VerilatedContextImpData;
+class VerilatedCovContext;
 class VerilatedEvalMsgQueue;
 class VerilatedScopeNameMap;
 class VerilatedVar;
@@ -356,6 +357,8 @@ protected:
 
     // Implementation details
     std::unique_ptr<VerilatedContextImpData> m_impdatap;
+    // Coverage access
+    std::unique_ptr<VerilatedCovContext> m_coveragep;
 
     // File I/O
     // Not serialized
@@ -396,6 +399,8 @@ public:
     void commandArgsAdd(int argc, const char** argv) VL_MT_SAFE;
     /// Match plusargs with a given prefix. Returns static char* valid only for a single call
     const char* commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE;
+    /// Return VerilatedCovContext, allocate if needed
+    VerilatedCovContext* coveragep() const VL_MT_SAFE;
     /// Set debug level
     /// Debug is currently global, but for forward compatibility have a per-context method
     static void debug(int val) VL_MT_SAFE;
