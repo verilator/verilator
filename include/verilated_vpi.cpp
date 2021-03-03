@@ -62,6 +62,7 @@ class VerilatedVpio VL_NOT_FINAL {
     static constexpr vluint32_t activeMagic() { return 0xfeed100f; }
 
     // MEM MANGLEMENT
+    // Internal note: Globals must be POD, see verilated.cpp top.
     static VL_THREAD_LOCAL vluint8_t* t_freeHead;
 
 public:
@@ -510,6 +511,7 @@ class VerilatedVpiImp final {
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
     vluint64_t m_nextCallbackId = 1;  // Id to identify callback
 
+    // Internal note: Global not in protect-lib, see verilated.cpp top.
     static VerilatedVpiImp s_s;  // Singleton
 
 public:
@@ -640,9 +642,18 @@ public:
     static VerilatedVpiError* error_info() VL_MT_UNSAFE_ONE;  // getter for vpi error info
 };
 
-class VerilatedVpiError final {
-    //// Container for vpi error info
+//======================================================================
+// Statics
+// Internal note: Globals must be POD or not linked, see verilated.cpp top.
 
+VerilatedVpiImp VerilatedVpiImp::s_s;  // Singleton
+VL_THREAD_LOCAL vluint8_t* VerilatedVpio::t_freeHead = nullptr;
+
+//======================================================================
+// VerilatedVpiError
+/// Internal container for vpi error info
+
+class VerilatedVpiError final {
     t_vpi_error_info m_errorInfo;
     bool m_flag = false;
     char m_buff[VL_VPI_LINE_SIZE];
@@ -707,11 +718,6 @@ public:
     static const char* strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_MT_SAFE;
     static const char* strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE;
 };
-
-//======================================================================
-
-VerilatedVpiImp VerilatedVpiImp::s_s;  // Singleton
-VL_THREAD_LOCAL vluint8_t* VerilatedVpio::t_freeHead = nullptr;
 
 //======================================================================
 // VerilatedVpi implementation
