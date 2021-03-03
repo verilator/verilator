@@ -88,17 +88,8 @@ template <class T> std::string vlCovCvtToStr(const T& t) VL_PURE {
 ///  Verilator coverage per-context structure
 /// All public methods in this class are thread safe.
 
-class VerilatedCovContext VL_NOT_FINAL {
+class VerilatedCovContext VL_NOT_FINAL : public VerilatedVirtualBase {
     VL_UNCOPYABLE(VerilatedCovContext);
-
-  public:
-    // CONSTRUCTORS
-    // Internal: must be default, as otherwise called twice due to
-    // VerilatedCovImp upcasting;
-    VerilatedCovContext() = default;
-    ~VerilatedCovContext() = default;
-    static void* operator new(size_t size);
-    static void operator delete(void* obj, size_t size);
 
 public:
     // METHODS
@@ -144,8 +135,14 @@ public:  // But Internal use only
 #undef A
 #undef D
 
-  protected:
+protected:
     friend class VerilatedCovImp;
+    // CONSTRUCTORS
+    // Internal: Only made as part of VerilatedCovImp
+    VerilatedCovContext() {}
+    virtual ~VerilatedCovContext() = 0;
+
+    // METHODS
     // Internal: access to implementation class
     VerilatedCovImp* impp() { return reinterpret_cast<VerilatedCovImp*>(this); }
 };

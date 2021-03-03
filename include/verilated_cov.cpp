@@ -107,13 +107,14 @@ private:
     const char* m_insertFilenamep VL_GUARDED_BY(m_mutex) = nullptr;  ///< Filename about to insert
     int m_insertLineno VL_GUARDED_BY(m_mutex) = 0;  ///< Line number about to insert
 
+public:
     // CONSTRUCTORS
     VerilatedCovImp() = default;
     VL_UNCOPYABLE(VerilatedCovImp);
 
 protected:
     friend class VerilatedCovContext;
-    ~VerilatedCovImp() { clearGuts(); }
+    virtual ~VerilatedCovImp() { clearGuts(); }
     static VerilatedCovImp& imp() VL_MT_SAFE {
         static VerilatedCovImp s_singleton;
         return s_singleton;
@@ -411,31 +412,6 @@ public:
 //=============================================================================
 // VerilatedCovContext
 
-void* VerilatedCovContext::operator new(size_t size) {
-    // Upcast "new VerilatedCovContext" into "new VerilatedCovImp"
-    static_assert(sizeof(VerilatedCovContext) == 1, "VerilatedCovImp must not have members");
-    // or will get into infinite loop
-    static_assert(sizeof(VerilatedCovImp) != 1, "VerilatedCovImp must have members");
-    // as the VerilatedCovContext() constructor/destructor is called twice
-    if (size == sizeof(VerilatedCovContext)) {
-        return new VerilatedCovImp;
-    } else if (size == sizeof(VerilatedCovImp)) {
-        return ::operator new(size);
-    } else {
-        assert(0);
-    }
-}
-void VerilatedCovContext::operator delete(void* objp, size_t size) {
-    // Upcast "delete VerilatedCovContext" into "delete VerilatedCovImp"
-    if (size == sizeof(VerilatedCovContext)) {
-        delete reinterpret_cast<VerilatedCovImp*>(objp);
-    } else if (size == sizeof(VerilatedCovImp)) {
-        return ::operator delete(objp, size);
-    } else {
-        assert(0);
-    }
-}
-
 void VerilatedCovContext::clear() VL_MT_SAFE { impp()->clear(); }
 void VerilatedCovContext::clearNonMatch(const char* matchp) VL_MT_SAFE {
     impp()->clearNonMatch(matchp);
@@ -516,9 +492,15 @@ VerilatedCovContext* VerilatedCov::threadCovp() VL_MT_SAFE {
 #ifdef VM_COVERAGE
 // else have linker throw error, which is better than runtime nullptr-dereference
 
-VerilatedCovContext* VerilatedContext::coveragep() const VL_MT_SAFE {
-    //FIXME can move to header?
-    return m_coveragep;
+VerilatedCovContext* VerilatedContext::coveragep() VL_MT_SAFE {
+    static VerilatedMutex s_mutex;
+    if (VL_UNLIKELY(!m_coveragep)) {
+        const VerilatedLockGuard lock(s_mutex);
+        if (VL_LIKELY(!m_coveragep)) {  // Not redundant, prevents race
+            m_coveragep.reset(new VerilatedCovImp);
+        }
+    }
+    return reinterpret_cast<VerilatedCovContext*>(m_coveragep.get());
 }
 
 #endif

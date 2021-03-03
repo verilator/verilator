@@ -291,6 +291,15 @@ public:
 // clang-format on
 
 //===========================================================================
+// Internal: Base class to allow virtual destruction
+
+class VerilatedVirtualBase VL_NOT_FINAL {
+public:
+    VerilatedVirtualBase() = default;
+    virtual ~VerilatedVirtualBase() = default;
+};
+
+//===========================================================================
 /// Verilator simulation context
 ///
 /// The VerilatedContext contains the information common across all models
@@ -358,7 +367,7 @@ protected:
     // Implementation details
     std::unique_ptr<VerilatedContextImpData> m_impdatap;
     // Coverage access
-    VerilatedCovContext* m_coveragep = nullptr;
+    std::unique_ptr<VerilatedVirtualBase> m_coveragep;  // Pointer for coveragep()
 
     // File I/O
     // Not serialized
@@ -400,7 +409,7 @@ public:
     /// Match plusargs with a given prefix. Returns static char* valid only for a single call
     const char* commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE;
     /// Return VerilatedCovContext, allocate if needed
-    VerilatedCovContext* coveragep() const VL_MT_SAFE;
+    VerilatedCovContext* coveragep() VL_MT_SAFE;
     /// Set debug level
     /// Debug is currently global, but for forward compatibility have a per-context method
     static void debug(int val) VL_MT_SAFE;
