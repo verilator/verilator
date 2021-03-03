@@ -474,8 +474,10 @@ sub sprint_summary {
     my $delta = time() - $::Start;
     my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
     my $pct = int(100*($self->{left_cnt} / ($self->{all_cnt} + 0.001)) + 0.999);
-    my $eta = ($self->{all_cnt}
-               * ($delta / (($self->{all_cnt} - $self->{left_cnt})+0.001))) - $delta;
+    # Fudge of 120% works out about right so ETA correctly predicts completion time
+    my $eta = 1.2 * (($self->{all_cnt}
+                      * ($delta / (($self->{all_cnt} - $self->{left_cnt})+0.001)))
+                     - $delta);
     $eta = 0 if $delta < 10;
     my $out = "";
     $out .= "Left $leftmsg  " if $self->{left_cnt};
