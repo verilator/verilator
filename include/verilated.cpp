@@ -2176,13 +2176,12 @@ void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix, int
 VerilatedContextImp::Statics VerilatedContextImp::s_si;
 
 VerilatedContext::VerilatedContext()
-    : m_impdatap {
-    new VerilatedContextImpData
-}
+    : m_impdatap{new VerilatedContextImpData} {
 #ifdef VM_COVERAGE
-, m_coveragep { new VerilatedCovContext }
+    // m_coveragep is not a smart pointer so that we don't need VerilatedCovContext
+    // implemented unless using VM_COVERAGE
+    m_coveragep = new VerilatedCovContext;
 #endif
-{
     Verilated::lastContextp(this);
     Verilated::threadContextp(this);
     m_ns.m_profThreadsFilename = "profile_threads.dat";
@@ -2193,7 +2192,13 @@ VerilatedContext::VerilatedContext()
 }
 
 // Must declare here not in interface, as otherwise forward declarations not known
-VerilatedContext::~VerilatedContext() {}
+VerilatedContext::~VerilatedContext() {
+#ifdef VM_COVERAGE
+    // m_coveragep is not a smart pointer so that we don't need VerilatedCovContext
+    // implemented unless using VM_COVERAGE
+    if (m_coveragep) VL_DO_DANGLING(delete m_coveragep, m_coveragep);
+#endif
+}
 
 VerilatedContext::Serialized::Serialized() {
     m_timeunit = VL_TIME_UNIT;  // Initial value until overriden by _Vconfigure

@@ -358,7 +358,7 @@ protected:
     // Implementation details
     std::unique_ptr<VerilatedContextImpData> m_impdatap;
     // Coverage access
-    std::unique_ptr<VerilatedCovContext> m_coveragep;
+    VerilatedCovContext* m_coveragep = nullptr;
 
     // File I/O
     // Not serialized
