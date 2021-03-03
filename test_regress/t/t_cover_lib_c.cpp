@@ -18,9 +18,16 @@
 
 #include VM_PREFIX_INCLUDE
 
-double sc_time_stamp() { return 0; }
+#define CHECK_RESULT_CSTR(got, exp) \
+    if (strcmp((got), (exp))) { \
+        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", __FILE__, __LINE__, \
+               (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
+        ++failure; \
+    }
 
 //======================================================================
+
+double sc_time_stamp() { return 0; }
 
 int failure = 0;
 
@@ -32,6 +39,8 @@ int main() {
     vluint32_t covers[1];
     vluint64_t coverw[2];
 
+    //
+
     VL_COVER_INSERT(&covers[0], "comment", "kept_one");
     VL_COVER_INSERT(&coverw[0], "comment", "kept_two");
     VL_COVER_INSERT(&coverw[1], "comment", "lost_three");
@@ -40,6 +49,7 @@ int main() {
     coverw[0] = 210;
     coverw[1] = 220;
 
+    CHECK_RESULT_CSTR(VerilatedCov::defaultFilename(), "coverage.dat");
     VerilatedCov::write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage1.dat");
     VerilatedCov::clearNonMatch("kept_");
     VerilatedCov::write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage2.dat");
