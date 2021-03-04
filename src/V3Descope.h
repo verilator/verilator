@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3DESCOPE_H_
-#define _V3DESCOPE_H_ 1
+#ifndef VERILATOR_V3DESCOPE_H_
+#define VERILATOR_V3DESCOPE_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

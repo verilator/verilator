@@ -16,7 +16,7 @@
 ///
 //=============================================================================
 
-#define _VERILATED_SAVE_CPP_
+#define VERILATOR_VERILATED_SAVE_CPP_
 
 #include "verilatedos.h"
 #include "verilated.h"

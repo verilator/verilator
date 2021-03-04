@@ -21,7 +21,7 @@
 ///
 //=========================================================================
 
-#define _VERILATED_VPI_CPP_
+#define VERILATOR_VERILATED_VPI_CPP_
 
 #include "verilated.h"
 #include "verilated_vpi.h"

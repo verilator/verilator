@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _VLCBUCKET_H_
-#define _VLCBUCKET_H_ 1
+#ifndef VERILATOR_VLCBUCKET_H_
+#define VERILATOR_VLCBUCKET_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

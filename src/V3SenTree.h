@@ -16,8 +16,8 @@
 // AstSenTree related utilities.
 //*************************************************************************
 
-#ifndef _V3SENTREE_H_
-#define _V3SENTREE_H_
+#ifndef VERILATOR_V3SENTREE_H_
+#define VERILATOR_V3SENTREE_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

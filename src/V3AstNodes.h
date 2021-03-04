@@ -14,10 +14,10 @@
 //
 //*************************************************************************
 
-#ifndef _V3ASTNODES_H_
-#define _V3ASTNODES_H_ 1
+#ifndef VERILATOR_V3ASTNODES_H_
+#define VERILATOR_V3ASTNODES_H_
 
-#ifndef _V3AST_H_
+#ifndef VERILATOR_V3AST_H_
 #error "Use V3Ast.h as the include"
 #endif
 

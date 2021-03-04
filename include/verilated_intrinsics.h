@@ -19,8 +19,8 @@
 ///
 //*************************************************************************
 
-#ifndef _VERILATED_INTRINSICS_H_
-#define _VERILATED_INTRINSICS_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_INTRINSICS_H_
+#define VERILATOR_VERILATED_INTRINSICS_H_  ///< Header Guard
 
 // clang-format off
 

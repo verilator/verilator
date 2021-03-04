@@ -19,7 +19,7 @@
 ///
 //=========================================================================
 
-#define _VERILATED_DPI_CPP_
+#define VERILATOR_VERILATED_DPI_CPP_
 
 #include "verilatedos.h"
 #include "verilated_dpi.h"

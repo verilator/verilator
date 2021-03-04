@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3PARTITION_H_
-#define _V3PARTITION_H_
+#ifndef VERILATOR_V3PARTITION_H_
+#define VERILATOR_V3PARTITION_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

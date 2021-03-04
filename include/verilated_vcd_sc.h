@@ -17,8 +17,8 @@
 //=============================================================================
 // SPDIFF_OFF
 
-#ifndef _VERILATED_VCD_SC_H_
-#define _VERILATED_VCD_SC_H_ 1
+#ifndef VERILATOR_VERILATED_VCD_SC_H_
+#define VERILATOR_VERILATED_VCD_SC_H_
 
 #include "verilatedos.h"
 #include "verilated_sc.h"

@@ -39,7 +39,7 @@
 //     and DPI libraries are not needed there.
 //=========================================================================
 
-#define _VERILATED_CPP_
+#define VERILATOR_VERILATED_CPP_
 
 #include "verilatedos.h"
 #include "verilated_imp.h"
