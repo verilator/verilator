@@ -56,10 +56,12 @@ void sim(VM_PREFIX* topp) {
 
         {
             const VerilatedLockGuard lock(outputMutex);
+#ifdef TEST_VERBOSE
             // std::endl needed to flush output before mutex release
             std::cout << "{top" << topp->trace_number
                       << ", ctx=" << reinterpret_cast<void*>(contextp) << "} [" << contextp->time()
                       << "]" << std::endl;
+#endif
         }
 
         // toggle clk_i

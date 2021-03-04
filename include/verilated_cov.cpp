@@ -491,9 +491,6 @@ VerilatedCovContext* VerilatedCov::threadCovp() VL_MT_SAFE {
 //=============================================================================
 // VerilatedContext
 
-#ifdef VM_COVERAGE
-// else have linker throw error, which is better than runtime nullptr-dereference
-
 VerilatedCovContext* VerilatedContext::coveragep() VL_MT_SAFE {
     static VerilatedMutex s_mutex;
     if (VL_UNLIKELY(!m_coveragep)) {
@@ -504,5 +501,3 @@ VerilatedCovContext* VerilatedContext::coveragep() VL_MT_SAFE {
     }
     return reinterpret_cast<VerilatedCovContext*>(m_coveragep.get());
 }
-
-#endif
