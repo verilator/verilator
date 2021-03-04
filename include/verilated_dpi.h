@@ -39,7 +39,7 @@ static inline void VL_SET_W_SVBV(int obits, WDataOutP owp, const svBitVecVal* lw
     owp[words - 1] = lwp[words - 1] & VL_MASK_I(obits);
 }
 static inline QData VL_SET_Q_SVBV(const svBitVecVal* lwp) VL_MT_SAFE {
-    return _VL_SET_QII(lwp[1], lwp[0]);
+    return VL_SET_QII(lwp[1], lwp[0]);
 }
 static inline IData VL_SET_I_SVBV(const svBitVecVal* lwp) VL_MT_SAFE { return lwp[0]; }
 
@@ -62,7 +62,7 @@ static inline void VL_SET_W_SVLV(int obits, WDataOutP owp, const svLogicVecVal* 
     owp[words - 1] = lwp[words - 1].aval & VL_MASK_I(obits);
 }
 static inline QData VL_SET_Q_SVLV(const svLogicVecVal* lwp) VL_MT_SAFE {
-    return _VL_SET_QII(lwp[1].aval, lwp[0].aval);
+    return VL_SET_QII(lwp[1].aval, lwp[0].aval);
 }
 static inline IData VL_SET_I_SVLV(const svLogicVecVal* lwp) VL_MT_SAFE { return lwp[0].aval; }
 
