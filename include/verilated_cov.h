@@ -140,7 +140,7 @@ protected:
     // CONSTRUCTORS
     // Internal: Only made as part of VerilatedCovImp
     VerilatedCovContext() {}
-    virtual ~VerilatedCovContext() = 0;
+    virtual ~VerilatedCovContext() {}
 
     // METHODS
     // Internal: access to implementation class
