@@ -2492,8 +2492,8 @@ const VerilatedScopeNameMap* VerilatedContext::scopeNameMap() VL_MT_SAFE {
 // VerilatedSyms:: Methods
 
 VerilatedSyms::VerilatedSyms(VerilatedContext* contextp)
-    : __Vm_contextp(contextp ? contextp : Verilated::threadContextp()) {
-    Verilated::threadContextp(__Vm_contextp);
+    : _vm_contextp__(contextp ? contextp : Verilated::threadContextp()) {
+    Verilated::threadContextp(_vm_contextp__);
 #ifdef VL_THREADED
     __Vm_evalMsgQp = new VerilatedEvalMsgQueue;
 #endif

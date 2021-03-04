@@ -97,7 +97,7 @@ private:
                  // This allows syntax errors and such to be detected normally.
                  (v3Global.opt.assertOn()
                       ? static_cast<AstNode*>(
-                          new AstCMath(fl, "vlSymsp->__Vm_contextp->assertOn()", 1))
+                          new AstCMath(fl, "vlSymsp->_vm_contextp__->assertOn()", 1))
                       : static_cast<AstNode*>(new AstConst(fl, AstConst::BitFalse())))),
             nodep, nullptr);
         newp->user1(true);  // Don't assert/cover this if
