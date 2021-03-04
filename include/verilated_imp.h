@@ -216,7 +216,7 @@ class VerilatedContextImp final : VerilatedContext {
 
     // MEMBERS - non-static not allowed, use only VerilatedContext
     // Select initial value of otherwise uninitialized signals.
-//FIXME
+//FIXME VerilatedContextImp::Statics
     // Internal note: Globals must be POD, see verilated.cpp top.
 
     static struct Statics {
@@ -433,7 +433,7 @@ protected:
         VerilatedImpU() {}  // Can't be = default;
         ~VerilatedImpU() {}  // Can't be = default;
     };
-//FIXME
+//FIXME VerilatedImpU (VerilatedImpData)
     // Internal note: Globals must be POD, see verilated.cpp top.
     static VerilatedImpU s_s;  ///< Static Singleton; One and only static this
 

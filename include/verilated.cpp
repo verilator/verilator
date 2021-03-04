@@ -80,19 +80,19 @@ static_assert(sizeof(vluint64_t) == 8, "vluint8_t is missized");
 // Internal note: Globals must be POD or unions, see verilated.cpp top.
 
 // Slow path variables
-//FIXME
+//FIXME VerilatedMutex Verilated::s_mutex;
     // Internal note: Globals must be POD, see verilated.cpp top.
 VerilatedMutex Verilated::s_mutex;
 
 // Keep below together in one cache line
-//FIXME
+//FIXME Verilated::NonSerialized Verilated::s_ns;
     // Internal note: Globals must be POD, see verilated.cpp top.
 Verilated::NonSerialized Verilated::s_ns;
-//FIXME
+//FIXME VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
     // Internal note: Globals must be POD, see verilated.cpp top.
 VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
 
-//FIXME
+//FIXME VerilatedImp::VerilatedImpU VerilatedImp::s_s;
     // Internal note: Globals must be POD, see verilated.cpp top.
 VerilatedImp::VerilatedImpU VerilatedImp::s_s;
 
@@ -104,7 +104,7 @@ struct VerilatedInitializer {
         static bool done = false;
         if (!done) {
             VerilatedImp::setup();
-            // FIXME            Verilated::s_ns.setup();
+            // FIXME... Verilated::s_ns.setup();
             done = true;
         }
     }
@@ -112,13 +112,13 @@ struct VerilatedInitializer {
         static bool done = false;
         if (!done) {
             VerilatedImp::teardown();
-            // FIXME            Verilated::s_ns.teardown();
+            // FIXME... Verilated::s_ns.teardown();
             done = true;
         }
     }
 } s_VerilatedInitializer;
 
-//FIXME
+//FIXME VerilatedContextImp::Statics VerilatedContextImp::s_si
     // Internal note: Globals must be POD, see verilated.cpp top.
 VerilatedContextImp::Statics VerilatedContextImp::s_si;
 
