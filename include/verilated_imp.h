@@ -222,7 +222,7 @@ class VerilatedContextImp final : VerilatedContext {
     static struct Statics {
         VerilatedMutex s_randMutex;  // Mutex protecting s_randSeedEpoch
         // Number incrementing on each reseed, 0=illegal
-        int s_randSeedEpoch = 1;  // Reads ok, wish was a VL_WRITE_GUARDED_BY(s_randMutex)
+        int s_randSeedEpoch = 1;  // Reads ok, wish had a VL_WRITE_GUARDED_BY(s_randMutex)
     } s_si;
 
 private:
