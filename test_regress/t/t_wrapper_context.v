@@ -21,8 +21,8 @@ module top
       number.itoa(trace_number);
       filename = {"logs", "/", "trace", number, ".vcd"};
       $display("Writing dumpfile '%s'", filename);
-//FIXME      $dumpfile(filename);
-//FIXME      $dumpvars();
+      $dumpfile(filename);
+      $dumpvars();
    end
 
    always@(posedge clk_i) begin
