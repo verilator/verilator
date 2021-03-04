@@ -26,10 +26,10 @@
 #include <map>
 
 //=============================================================================
-// VerilatedCovImpBase
-/// Implementation base class for constants
+// VerilatedCovConst
+// Implementation constants
 
-struct VerilatedCovImpBase VL_NOT_FINAL {
+struct VerilatedCovConst VL_NOT_FINAL {
     // TYPES
     enum { MAX_KEYS = 33 };  /// Maximum user arguments + filename+lineno
     enum { KEY_UNDEF = 0 };  /// Magic key # for unspecified values
@@ -39,16 +39,16 @@ struct VerilatedCovImpBase VL_NOT_FINAL {
 // VerilatedCovImpItem
 /// Implementation class for a VerilatedCov item
 
-class VerilatedCovImpItem VL_NOT_FINAL : VerilatedCovImpBase {
+class VerilatedCovImpItem VL_NOT_FINAL {
 public:  // But only local to this file
     // MEMBERS
-    int m_keys[MAX_KEYS];  ///< Key
-    int m_vals[MAX_KEYS];  ///< Value for specified key
+    int m_keys[VerilatedCovConst::MAX_KEYS];  ///< Key
+    int m_vals[VerilatedCovConst::MAX_KEYS];  ///< Value for specified key
     // CONSTRUCTORS
     // Derived classes should call zero() in their constructor
     VerilatedCovImpItem() {
-        for (int i = 0; i < MAX_KEYS; ++i) {
-            m_keys[i] = KEY_UNDEF;
+        for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
+            m_keys[i] = VerilatedCovConst::KEY_UNDEF;
             m_vals[i] = 0;
         }
     }
@@ -89,7 +89,7 @@ public:
 /// unique number.  Thus we can greatly reduce the storage requirements for
 /// otherwise identical keys.
 
-class VerilatedCovImp final : public VerilatedCovContext, VerilatedCovImpBase {
+class VerilatedCovImp final : public VerilatedCovContext {
 private:
     // TYPES
     typedef std::map<const std::string, int> ValueIndexMap;
@@ -101,7 +101,8 @@ private:
     ValueIndexMap m_valueIndexes VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for values
     IndexValueMap m_indexValues VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for keys
     ItemList m_items VL_GUARDED_BY(m_mutex);  ///< List of all items
-    int m_nextIndex VL_GUARDED_BY(m_mutex) = (KEY_UNDEF + 1);  ///< Next insert value
+    int m_nextIndex VL_GUARDED_BY(m_mutex)
+        = (VerilatedCovConst::KEY_UNDEF + 1);  ///< Next insert value
 
     VerilatedCovImpItem* m_insertp VL_GUARDED_BY(m_mutex) = nullptr;  ///< Item about to insert
     const char* m_insertFilenamep VL_GUARDED_BY(m_mutex) = nullptr;  ///< Filename about to insert
@@ -207,8 +208,8 @@ private:
     }
     bool itemMatchesString(VerilatedCovImpItem* itemp, const std::string& match)
         VL_REQUIRES(m_mutex) {
-        for (int i = 0; i < MAX_KEYS; ++i) {
-            if (itemp->m_keys[i] != KEY_UNDEF) {
+        for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
+            if (itemp->m_keys[i] != VerilatedCovConst::KEY_UNDEF) {
                 // We don't compare keys, only values
                 std::string val = m_indexValues[itemp->m_vals[i]];
                 if (std::string::npos != val.find(match)) {  // Found
@@ -239,7 +240,7 @@ private:
         m_items.clear();
         m_indexValues.clear();
         m_valueIndexes.clear();
-        m_nextIndex = KEY_UNDEF + 1;
+        m_nextIndex = VerilatedCovConst::KEY_UNDEF + 1;
     }
 
 public:
@@ -281,7 +282,8 @@ public:
         m_insertFilenamep = filenamep;
         m_insertLineno = lineno;
     }
-    void insertp(const char* ckeyps[MAX_KEYS], const char* valps[MAX_KEYS]) VL_EXCLUDES(m_mutex) {
+    void insertp(const char* ckeyps[VerilatedCovConst::MAX_KEYS],
+                 const char* valps[VerilatedCovConst::MAX_KEYS]) VL_EXCLUDES(m_mutex) {
         const VerilatedLockGuard lock(m_mutex);
         assert(m_insertp);
         // First two key/vals are filename
@@ -300,14 +302,14 @@ public:
         valps[2] = page_default.c_str();
 
         // Keys -> strings
-        std::string keys[MAX_KEYS];
-        for (int i = 0; i < MAX_KEYS; ++i) {
+        std::string keys[VerilatedCovConst::MAX_KEYS];
+        for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
             if (ckeyps[i] && ckeyps[i][0]) keys[i] = ckeyps[i];
         }
         // Ignore empty keys
-        for (int i = 0; i < MAX_KEYS; ++i) {
+        for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
             if (!keys[i].empty()) {
-                for (int j = i + 1; j < MAX_KEYS; ++j) {
+                for (int j = i + 1; j < VerilatedCovConst::MAX_KEYS; ++j) {
                     if (keys[i] == keys[j]) {  // Duplicate key.  Keep the last one
                         keys[i] = "";
                         break;
@@ -317,7 +319,7 @@ public:
         }
         // Insert the values
         int addKeynum = 0;
-        for (int i = 0; i < MAX_KEYS; ++i) {
+        for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
             const std::string key = keys[i];
             if (!keys[i].empty()) {
                 const std::string val = valps[i];
@@ -362,8 +364,8 @@ public:
             std::string hier;
             bool per_instance = false;
 
-            for (int i = 0; i < MAX_KEYS; ++i) {
-                if (itemp->m_keys[i] != KEY_UNDEF) {
+            for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
+                if (itemp->m_keys[i] != VerilatedCovConst::KEY_UNDEF) {
                     std::string key = VerilatedCovKey::shortKey(m_indexValues[itemp->m_keys[i]]);
                     std::string val = m_indexValues[itemp->m_vals[i]];
                     if (key == VL_CIK_PER_INSTANCE) {
@@ -436,12 +438,12 @@ void VerilatedCovContext::_insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7
                                    A(10), A(11), A(12), A(13), A(14), A(15), A(16), A(17), A(18),
                                    A(19), A(20), A(21), A(22), A(23), A(24), A(25), A(26), A(27),
                                    A(28), A(29)) VL_MT_SAFE {
-    const char* keyps[VerilatedCovImpBase::MAX_KEYS]
+    const char* keyps[VerilatedCovConst::MAX_KEYS]
         = {nullptr, nullptr, nullptr,  // filename,lineno,page
            key0,    key1,    key2,    key3,  key4,  key5,  key6,  key7,  key8,  key9,
            key10,   key11,   key12,   key13, key14, key15, key16, key17, key18, key19,
            key20,   key21,   key22,   key23, key24, key25, key26, key27, key28, key29};
-    const char* valps[VerilatedCovImpBase::MAX_KEYS]
+    const char* valps[VerilatedCovConst::MAX_KEYS]
         = {nullptr, nullptr, nullptr,  // filename,lineno,page
            valp0,   valp1,   valp2,   valp3,  valp4,  valp5,  valp6,  valp7,  valp8,  valp9,
            valp10,  valp11,  valp12,  valp13, valp14, valp15, valp16, valp17, valp18, valp19,
