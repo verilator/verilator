@@ -924,8 +924,9 @@ void EmitCSyms::emitDpiImp() {
 
     for (AstCFunc* nodep : m_dpis) {
         if (nodep->dpiExportWrapper()) {
-            puts("#ifndef _VL_DPIDECL_" + nodep->name() + "\n");
-            puts("#define _VL_DPIDECL_" + nodep->name() + "\n");
+            // Prevent multi-definition if used by multiple models
+            puts("#ifndef VL_DPIDECL_" + nodep->name() + "_\n");
+            puts("#define VL_DPIDECL_" + nodep->name() + "_\n");
             puts(nodep->rtnTypeVoid() + " " + nodep->name() + "(" + cFuncArgs(nodep) + ") {\n");
             puts("// DPI export" + ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
             puts("return " + topClassName() + "::" + nodep->name() + "(");

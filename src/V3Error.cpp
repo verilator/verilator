@@ -16,7 +16,7 @@
 
 // clang-format off
 #include "V3Error.h"
-#ifndef _V3ERROR_NO_GLOBAL_
+#ifndef V3ERROR_NO_GLOBAL_
 # include "V3Ast.h"
 # include "V3Global.h"
 # include "V3Stats.h"
@@ -174,7 +174,7 @@ void V3Error::vlAbort() {
 // Global Functions
 
 void V3Error::suppressThisWarning() {
-#ifndef _V3ERROR_NO_GLOBAL_
+#ifndef V3ERROR_NO_GLOBAL_
     V3Stats::addStatSum(string("Warnings, Suppressed ") + s_errorCode.ascii(), 1);
 #endif
     s_errorSuppressed = true;
@@ -215,7 +215,7 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
     }
     // Output
     if (
-#ifndef _V3ERROR_NO_GLOBAL_
+#ifndef V3ERROR_NO_GLOBAL_
         !(v3Global.opt.quietExit() && s_errorCode == V3ErrorCode::EC_FATALEXIT)
 #else
         true
@@ -265,7 +265,7 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
                         << endl;
                     s_tellManual = 2;
                 }
-#ifndef _V3ERROR_NO_GLOBAL_
+#ifndef V3ERROR_NO_GLOBAL_
                 if (debug()) {
                     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree", 990));
                     if (s_errorExitCb) s_errorExitCb();
