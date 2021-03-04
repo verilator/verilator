@@ -388,6 +388,7 @@ protected:
 
 class VerilatedImpData final {
     // Whole class is internal use only - Global information shared between verilated*.cpp files.
+    // All only medium-speed, so use singleton function
 protected:
     friend class Verilated;
     friend class VerilatedImp;
@@ -397,8 +398,6 @@ protected:
     typedef std::map<const char*, int, VerilatedCStrCmp> ExportNameMap;
 
     // MEMBERS
-//FIXME all of these effectively static as VerilatedImpData is static, could use function singleton?
-
     // Nothing below here is save-restored; users expected to re-register appropriately
 
     VerilatedMutex m_userMapMutex;  ///< Protect m_userMap
@@ -416,11 +415,10 @@ protected:
     // Used by exportInsert, exportFind, exportName.
     // Export numbers same across all contexts as just a string-to-number conversion
     ExportNameMap m_exportMap VL_GUARDED_BY(m_exportMutex);
-    int m_exportNext VL_GUARDED_BY(m_exportMutex);  ///< Next export funcnum
+    int m_exportNext VL_GUARDED_BY(m_exportMutex) = 0;  ///< Next export funcnum
 
     // CONSTRUCTORS
-    VerilatedImpData()
-        : m_exportNext{0} {}
+    VerilatedImpData() = default;
 };
 
 class VerilatedImp final {
@@ -429,14 +427,10 @@ protected:
     friend class Verilated;
 
     // MEMBERS
-    union VerilatedImpU {  ///< Enclose in an union to call ctor/dtor manually
-        VerilatedImpData v;
-        VerilatedImpU() {}  // Can't be = default;
-        ~VerilatedImpU() {}  // Can't be = default;
-    };
-//FIXME VerilatedImpU (VerilatedImpData)
-    // Internal note: Globals may multi-construct, see verilated.cpp top.
-    static VerilatedImpU s_s;  ///< Static Singleton; One and only static this
+    static VerilatedImpData& s() {  // Singleton
+        static VerilatedImpData s_s;
+        return s_s;
+    }
 
 public:  // But only for verilated*.cpp
     // CONSTRUCTORS
@@ -459,18 +453,18 @@ public:
     // per map overhead * N scopes would take much more space and cache thrashing.
     // As scopep's are pointers, this implicitly handles multiple Context's
     static inline void userInsert(const void* scopep, void* userKey, void* userData) VL_MT_SAFE {
-        const VerilatedLockGuard lock(s_s.v.m_userMapMutex);
-        const auto it = s_s.v.m_userMap.find(std::make_pair(scopep, userKey));
-        if (it != s_s.v.m_userMap.end()) {
+        const VerilatedLockGuard lock(s().m_userMapMutex);
+        const auto it = s().m_userMap.find(std::make_pair(scopep, userKey));
+        if (it != s().m_userMap.end()) {
             it->second = userData;
         } else {
-            s_s.v.m_userMap.emplace(std::make_pair(scopep, userKey), userData);
+            s().m_userMap.emplace(std::make_pair(scopep, userKey), userData);
         }
     }
     static inline void* userFind(const void* scopep, void* userKey) VL_MT_SAFE {
-        const VerilatedLockGuard lock(s_s.v.m_userMapMutex);
-        const auto& it = vlstd::as_const(s_s.v.m_userMap).find(std::make_pair(scopep, userKey));
-        if (VL_UNLIKELY(it == s_s.v.m_userMap.end())) return nullptr;
+        const VerilatedLockGuard lock(s().m_userMapMutex);
+        const auto& it = vlstd::as_const(s().m_userMap).find(std::make_pair(scopep, userKey));
+        if (VL_UNLIKELY(it == s().m_userMap.end())) return nullptr;
         return it->second;
     }
 
@@ -478,10 +472,10 @@ public:  // But only for verilated.cpp
     /// Symbol table destruction cleans up the entries for each scope.
     static void userEraseScope(const VerilatedScope* scopep) VL_MT_SAFE {
         // Slow ok - called once/scope on destruction, so we simply iterate.
-        const VerilatedLockGuard lock(s_s.v.m_userMapMutex);
-        for (auto it = s_s.v.m_userMap.begin(); it != s_s.v.m_userMap.end();) {
+        const VerilatedLockGuard lock(s().m_userMapMutex);
+        for (auto it = s().m_userMap.begin(); it != s().m_userMap.end();) {
             if (it->first.first == scopep) {
-                s_s.v.m_userMap.erase(it++);
+                s().m_userMap.erase(it++);
             } else {
                 ++it;
             }
@@ -489,9 +483,9 @@ public:  // But only for verilated.cpp
     }
     static void userDump() VL_MT_SAFE {
         const VerilatedLockGuard lock(
-            s_s.v.m_userMapMutex);  // Avoid it changing in middle of dump
+            s().m_userMapMutex);  // Avoid it changing in middle of dump
         bool first = true;
-        for (const auto& i : s_s.v.m_userMap) {
+        for (const auto& i : s().m_userMap) {
             if (first) {
                 VL_PRINTF_MT("  userDump:\n");
                 first = false;
@@ -505,14 +499,14 @@ public:  // But only for verilated*.cpp
     // METHODS - hierarchy
     static void hierarchyAdd(const VerilatedScope* fromp, const VerilatedScope* top) VL_MT_SAFE {
         // Slow ok - called at construction for VPI accessible elements
-        const VerilatedLockGuard lock(s_s.v.m_hierMapMutex);
-        s_s.v.m_hierMap[fromp].push_back(top);
+        const VerilatedLockGuard lock(s().m_hierMapMutex);
+        s().m_hierMap[fromp].push_back(top);
     }
     static void hierarchyRemove(const VerilatedScope* fromp,
                                 const VerilatedScope* top) VL_MT_SAFE {
         // Slow ok - called at destruction for VPI accessible elements
-        const VerilatedLockGuard lock(s_s.v.m_hierMapMutex);
-        VerilatedHierarchyMap& map = s_s.v.m_hierMap;
+        const VerilatedLockGuard lock(s().m_hierMapMutex);
+        VerilatedHierarchyMap& map = s().m_hierMap;
         if (map.find(fromp) == map.end()) return;
         auto& scopes = map[fromp];
         const auto it = find(scopes.begin(), scopes.end(), top);
@@ -520,7 +514,7 @@ public:  // But only for verilated*.cpp
     }
     static const VerilatedHierarchyMap* hierarchyMap() VL_MT_SAFE_POSTINIT {
         // Thread save only assuming this is called only after model construction completed
-        return &s_s.v.m_hierMap;
+        return &s().m_hierMap;
     }
 
 public:  // But only for verilated*.cpp
@@ -534,19 +528,19 @@ public:  // But only for verilated*.cpp
     // miss at the cost of a multiply, and all lookups move to slowpath.
     static int exportInsert(const char* namep) VL_MT_SAFE {
         // Slow ok - called once/function at creation
-        const VerilatedLockGuard lock(s_s.v.m_exportMutex);
-        const auto it = s_s.v.m_exportMap.find(namep);
-        if (it == s_s.v.m_exportMap.end()) {
-            s_s.v.m_exportMap.emplace(namep, s_s.v.m_exportNext++);
-            return s_s.v.m_exportNext++;
+        const VerilatedLockGuard lock(s().m_exportMutex);
+        const auto it = s().m_exportMap.find(namep);
+        if (it == s().m_exportMap.end()) {
+            s().m_exportMap.emplace(namep, s().m_exportNext++);
+            return s().m_exportNext++;
         } else {
             return it->second;
         }
     }
     static int exportFind(const char* namep) VL_MT_SAFE {
-        const VerilatedLockGuard lock(s_s.v.m_exportMutex);
-        const auto& it = s_s.v.m_exportMap.find(namep);
-        if (VL_LIKELY(it != s_s.v.m_exportMap.end())) return it->second;
+        const VerilatedLockGuard lock(s().m_exportMutex);
+        const auto& it = s().m_exportMap.find(namep);
+        if (VL_LIKELY(it != s().m_exportMap.end())) return it->second;
         std::string msg = (std::string("%Error: Testbench C called ") + namep
                            + " but no such DPI export function name exists in ANY model");
         VL_FATAL_MT("unknown", 0, "", msg.c_str());
@@ -554,16 +548,16 @@ public:  // But only for verilated*.cpp
     }
     static const char* exportName(int funcnum) VL_MT_SAFE {
         // Slowpath; find name for given export; errors only so no map to reverse-map it
-        const VerilatedLockGuard lock(s_s.v.m_exportMutex);
-        for (const auto& i : s_s.v.m_exportMap) {
+        const VerilatedLockGuard lock(s().m_exportMutex);
+        for (const auto& i : s().m_exportMap) {
             if (i.second == funcnum) return i.first;
         }
         return "*UNKNOWN*";
     }
     static void exportsDump() VL_MT_SAFE {
-        const VerilatedLockGuard lock(s_s.v.m_exportMutex);
+        const VerilatedLockGuard lock(s().m_exportMutex);
         bool first = true;
-        for (const auto& i : s_s.v.m_exportMap) {
+        for (const auto& i : s().m_exportMap) {
             if (first) {
                 VL_PRINTF_MT("  exportDump:\n");
                 first = false;

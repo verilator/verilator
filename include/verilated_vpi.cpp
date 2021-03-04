@@ -505,6 +505,7 @@ class VerilatedVpiImp final {
     typedef std::list<VerilatedVpiCbHolder> VpioCbList;
     typedef std::map<std::pair<QData, vluint64_t>, VerilatedVpiCbHolder> VpioTimedCbs;
 
+    // All only medium-speed, so use singleton function
     VpioCbList m_cbObjLists[CB_ENUM_MAX_VALUE];  // Callbacks for each supported reason
     VpioTimedCbs m_timedCbs;  // Time based callbacks
     VerilatedVpiError* m_errorInfop = nullptr;  // Container for vpi error info
