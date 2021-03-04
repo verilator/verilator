@@ -10,6 +10,7 @@
 #include <thread>
 
 #include <verilated.h>
+#include <verilated_cov.h>
 
 #include VM_PREFIX_INCLUDE
 
@@ -55,10 +56,12 @@ void sim(VM_PREFIX* topp) {
 
         {
             const VerilatedLockGuard lock(outputMutex);
+#ifdef TEST_VERBOSE
             // std::endl needed to flush output before mutex release
             std::cout << "{top" << topp->trace_number
                       << ", ctx=" << reinterpret_cast<void*>(contextp) << "} [" << contextp->time()
                       << "]" << std::endl;
+#endif
         }
 
         // toggle clk_i
@@ -67,13 +70,13 @@ void sim(VM_PREFIX* topp) {
         // evaluate model
         topp->eval();
     }
+
+    std::string filename
+        = std::string(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage_") + topp->name() + ".dat";
+    contextp->coveragep()->write(filename.c_str());
 }
 
 int main(int argc, char** argv, char** env) {
-
-    // create log directory
-    Verilated::mkdir("logs");
-
     // Create contexts
     std::unique_ptr<VerilatedContext> context0p{new VerilatedContext};
     std::unique_ptr<VerilatedContext> context1p{new VerilatedContext};
