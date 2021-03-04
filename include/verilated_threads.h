@@ -16,8 +16,8 @@
 ///
 //=============================================================================
 
-#ifndef _VERILATED_THREADS_H_
-#define _VERILATED_THREADS_H_
+#ifndef VERILATOR_VERILATED_THREADS_H_
+#define VERILATOR_VERILATED_THREADS_H_
 
 #include "verilatedos.h"
 #include "verilated.h"  // for VerilatedMutex and clang annotations

@@ -20,8 +20,8 @@
 ///
 //*************************************************************************
 
-#ifndef _VERILATED_H_
-#define _VERILATED_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_H_
+#define VERILATOR_VERILATED_H_  ///< Header Guard
 
 // clang-format off
 #include "verilatedos.h"
@@ -536,7 +536,7 @@ class VerilatedSyms VL_NOT_FINAL {
 public:  // But for internal use only
     // MEMBERS
     // Keep first so is at zero offset for fastest code
-    VerilatedContext* const __Vm_contextp;  // Context for current model
+    VerilatedContext* const _vm_contextp__;  // Context for current model
 #ifdef VL_THREADED
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
 #endif

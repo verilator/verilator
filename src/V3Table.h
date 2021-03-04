@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3TABLE_H_
-#define _V3TABLE_H_ 1
+#ifndef VERILATOR_V3TABLE_H_
+#define VERILATOR_V3TABLE_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

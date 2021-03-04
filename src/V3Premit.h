@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3PREMIT_H_
-#define _V3PREMIT_H_ 1
+#ifndef VERILATOR_V3PREMIT_H_
+#define VERILATOR_V3PREMIT_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

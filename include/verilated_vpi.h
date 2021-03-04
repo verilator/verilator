@@ -19,8 +19,8 @@
 ///
 //=========================================================================
 
-#ifndef _VERILATED_VPI_H_
-#define _VERILATED_VPI_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_VPI_H_
+#define VERILATOR_VERILATED_VPI_H_  ///< Header Guard
 
 #include "verilatedos.h"
 #include "verilated.h"

@@ -514,7 +514,7 @@ public:
     virtual void visit(AstDumpCtl* nodep) override {
         switch (nodep->ctlType()) {
         case VDumpCtlType::FILE:
-            puts("vlSymsp->__Vm_contextp->dumpfile(");
+            puts("vlSymsp->_vm_contextp__->dumpfile(");
             emitCvtPackStr(nodep->exprp());
             puts(");\n");
             break;
@@ -848,7 +848,7 @@ public:
         putsQuoted(protect(nodep->name()));
         puts(", ");
         putsQuoted(nodep->timeunit().ascii());
-        puts(", vlSymsp->__Vm_contextp);\n");
+        puts(", vlSymsp->_vm_contextp__);\n");
     }
     virtual void visit(AstRand* nodep) override {
         emitOpName(nodep, nodep->emitC(), nodep->seedp(), nullptr, nullptr);
@@ -876,7 +876,7 @@ public:
         emitCvtPackStr(nodep->suffixp());
         puts(", ");
         iterateAndNextNull(nodep->widthp());
-        puts(", vlSymsp->__Vm_contextp);\n");
+        puts(", vlSymsp->_vm_contextp__);\n");
     }
     virtual void visit(AstNodeSimpleText* nodep) override {
         if (nodep->tracking() || m_trackText) {
@@ -2432,13 +2432,13 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
         puts(prefixNameProtect(modp) + "::" + prefixNameProtect(modp) + "(sc_module_name)");
     } else if (modp->isTop()) {
         puts(prefixNameProtect(modp) + "::" + prefixNameProtect(modp)
-             + "(VerilatedContext* __Vcontextp, const char* __VCname)\n");
-        puts("    : VerilatedModule{__VCname}\n");
+             + "(VerilatedContext* _vcontextp__, const char* _vcname__)\n");
+        puts("    : VerilatedModule{_vcname__}\n");
         first = false;  // printed the first ':'
     } else {
         puts(prefixNameProtect(modp) + "::" + prefixNameProtect(modp)
-             + "(const char* __VCname)\n");
-        puts("    : VerilatedModule(__VCname)\n");
+             + "(const char* _vcname__)\n");
+        puts("    : VerilatedModule(_vcname__)\n");
     }
     emitVarCtors(&first);
     if (modp->isTop() && v3Global.opt.mtasks()) emitMTaskVertexCtors(&first);
@@ -2478,7 +2478,7 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
              // Note we create N-1 threads in the thread pool. The thread
              // that calls eval() becomes the final Nth thread for the
              // duration of the eval call.
-             + string("vlSymsp->__Vm_contextp, ") + cvtToStr(v3Global.opt.threads() - 1) + ", "
+             + string("vlSymsp->_vm_contextp__, ") + cvtToStr(v3Global.opt.threads() - 1) + ", "
              + cvtToStr(v3Global.opt.profThreads()) + ");\n");
 
         if (v3Global.opt.profThreads()) {
@@ -2498,11 +2498,11 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
     puts("if (false && this->__VlSymsp) {}  // Prevent unused\n");
     if (v3Global.opt.coverage()) { puts(protect("_configure_coverage") + "(vlSymsp, first);\n"); }
     if (modp->isTop() && !v3Global.rootp()->timeunit().isNone()) {
-        puts("vlSymsp->__Vm_contextp->timeunit("
+        puts("vlSymsp->_vm_contextp__->timeunit("
              + cvtToStr(v3Global.rootp()->timeunit().powerOfTen()) + ");\n");
     }
     if (modp->isTop() && !v3Global.rootp()->timeprecision().isNone()) {
-        puts("vlSymsp->__Vm_contextp->timeprecision("
+        puts("vlSymsp->_vm_contextp__->timeprecision("
              + cvtToStr(v3Global.rootp()->timeprecision().powerOfTen()) + ");\n");
     }
     puts("}\n");
@@ -2530,7 +2530,7 @@ void EmitCImp::emitCoverageImp(AstNodeModule*) {
         // Used for second++ instantiation of identical bin
         puts("if (!enable) count32p = &fake_zero_count;\n");
         puts("*count32p = 0;\n");
-        puts("VL_COVER_INSERT(__VlSymsp->__Vm_contextp->coveragep(), count32p,");
+        puts("VL_COVER_INSERT(__VlSymsp->_vm_contextp__->coveragep(), count32p,");
         puts("  \"filename\",filenamep,");
         puts("  \"lineno\",lineno,");
         puts("  \"column\",column,\n");
@@ -2597,7 +2597,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
             // If multiple models save the same context we'll save it multiple
             // times, but is harmless, and doing it otherwise would break
             // backwards compatibility.
-            puts("os " + op + " __VlSymsp->__Vm_contextp;\n");
+            puts("os " + op + " __VlSymsp->_vm_contextp__;\n");
 
             // Save all members
             if (v3Global.opt.inhibitSim()) puts("os" + op + "__Vm_inhibitSim;\n");
@@ -2673,9 +2673,9 @@ void EmitCImp::emitTextSection(AstType type) {
 void EmitCImp::emitCellCtors(AstNodeModule* modp) {
     if (modp->isTop()) {
         // Must be before other constructors, as __vlCoverInsert calls it
-        // Note __Vcontextp may be nullptr, VerilatedSyms::VerilatedSyms cleans it up
+        // Note _vcontextp__ may be nullptr, VerilatedSyms::VerilatedSyms cleans it up
         puts(EmitCBaseVisitor::symClassVar() + " = __VlSymsp = new " + symClassName() + "("
-             + (optSystemC() ? "nullptr" : "__Vcontextp") + ", this, name());\n");
+             + (optSystemC() ? "nullptr" : "_vcontextp__") + ", this, name());\n");
         puts(EmitCBaseVisitor::symTopAssign() + "\n");
     }
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
@@ -2750,7 +2750,7 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
 
 void EmitCImp::emitWrapFast(AstNodeModule* modp) {
     puts("\nVerilatedContext* " + prefixNameProtect(modp) + "::contextp() {\n");
-    puts("return __VlSymsp->__Vm_contextp;\n");
+    puts("return __VlSymsp->_vm_contextp__;\n");
     puts("}\n");
 }
 
@@ -2777,10 +2777,10 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     }
 
     if (v3Global.opt.mtasks() && v3Global.opt.profThreads()) {
-        puts("if (VL_UNLIKELY((vlSymsp->__Vm_contextp->profThreadsStart() != "
+        puts("if (VL_UNLIKELY((vlSymsp->_vm_contextp__->profThreadsStart() != "
              "__Vm_profile_time_finished)\n");
-        puts(" && (VL_TIME_Q() > vlSymsp->__Vm_contextp->profThreadsStart())\n");
-        puts(" && (vlSymsp->__Vm_contextp->profThreadsWindow() >= 1))) {\n");
+        puts(" && (VL_TIME_Q() > vlSymsp->_vm_contextp__->profThreadsStart())\n");
+        puts(" && (vlSymsp->_vm_contextp__->profThreadsWindow() >= 1))) {\n");
         // Within a profile (either starting, middle, or end)
         puts("if (vlTOPp->__Vm_profile_window_ct == 0) {\n");  // Opening file?
         // Start profile on this cycle. We'll capture a window worth, then
@@ -2789,12 +2789,12 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
         // by the time we hit the second window, we hope.
         puts("vlTOPp->__Vm_profile_cycle_start = VL_RDTSC_Q();\n");
         // "* 2" as first half is warmup, second half is collection
-        puts("vlTOPp->__Vm_profile_window_ct = vlSymsp->__Vm_contextp->profThreadsWindow() * 2 + "
+        puts("vlTOPp->__Vm_profile_window_ct = vlSymsp->_vm_contextp__->profThreadsWindow() * 2 + "
              "1;\n");
         puts("}\n");
         puts("--vlTOPp->__Vm_profile_window_ct;\n");
         puts("if (vlTOPp->__Vm_profile_window_ct == "
-             "(vlSymsp->__Vm_contextp->profThreadsWindow())) {\n");
+             "(vlSymsp->_vm_contextp__->profThreadsWindow())) {\n");
         // This barrier record in every threads' profile demarcates the
         // cache-warm-up cycles before the barrier from the actual profile
         // cycles afterward.
@@ -2805,12 +2805,12 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
         puts("else if (vlTOPp->__Vm_profile_window_ct == 0) {\n");
         // Ending file.
         puts("vluint64_t elapsed = VL_RDTSC_Q() - vlTOPp->__Vm_profile_cycle_start;\n");
-        puts("vlTOPp->__Vm_threadPoolp->profileDump(vlSymsp->__Vm_contextp->profThreadsFilename()."
+        puts("vlTOPp->__Vm_threadPoolp->profileDump(vlSymsp->_vm_contextp__->profThreadsFilename()."
              "c_str(), elapsed);\n");
         // This turns off the test to enter the profiling code, but still
         // allows the user to collect another profile by changing
         // profThreadsStart
-        puts("__Vm_profile_time_finished = vlSymsp->__Vm_contextp->profThreadsStart();\n");
+        puts("__Vm_profile_time_finished = vlSymsp->_vm_contextp__->profThreadsStart();\n");
         puts("vlTOPp->__Vm_profile_cycle_start = 0;\n");
         puts("}\n");
         puts("}\n");
@@ -3529,7 +3529,7 @@ class EmitCTrace final : EmitCStmts {
             puts("if (VL_UNLIKELY(!__VlSymsp->__Vm_dumperp)) {\n");
             puts("__VlSymsp->__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
             puts("trace(__VlSymsp->__Vm_dumperp, 0, 0);\n");
-            puts("std::string dumpfile = __VlSymsp->__Vm_contextp->dumpfile();\n");
+            puts("std::string dumpfile = __VlSymsp->_vm_contextp__->dumpfile();\n");
             puts("__VlSymsp->__Vm_dumperp->open(dumpfile.c_str());\n");
             puts("__VlSymsp->__Vm_dumperp->changeThread();\n");
             puts("__VlSymsp->__Vm_dumping = true;\n");
@@ -3558,7 +3558,7 @@ class EmitCTrace final : EmitCStmts {
              + v3Global.opt.traceClassBase() + "* tracep, uint32_t code) {\n");
         putsDecoration("// Callback from tracep->open()\n");
         puts(symClassVar() + " = static_cast<" + symClassName() + "*>(userp);\n");
-        puts("if (!vlSymsp->__Vm_contextp->calcUnusedSigs()) {\n");
+        puts("if (!vlSymsp->_vm_contextp__->calcUnusedSigs()) {\n");
         puts("VL_FATAL_MT(__FILE__, __LINE__, __FILE__,\n");
         puts("            \"Turning on wave traces requires Verilated::traceEverOn(true) call "
              "before time 0.\");\n");
