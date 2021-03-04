@@ -43,6 +43,9 @@
 
 #include "verilatedos.h"
 #include "verilated_imp.h"
+#ifdef VM_COVERAGE
+#include "verilated_cov.h"
+#endif
 
 #include "verilated_config.h"
 

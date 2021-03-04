@@ -2530,7 +2530,7 @@ void EmitCImp::emitCoverageImp(AstNodeModule*) {
         // Used for second++ instantiation of identical bin
         puts("if (!enable) count32p = &fake_zero_count;\n");
         puts("*count32p = 0;\n");
-        puts("VL_COVER_INSERT(count32p,");
+        puts("VL_COVER_INSERT(__VlSymsp->__Vm_contextp->coveragep(), count32p,");
         puts("  \"filename\",filenamep,");
         puts("  \"lineno\",lineno,");
         puts("  \"column\",column,\n");
