@@ -619,13 +619,10 @@ class Verilated final {
     // instead serialized state should all be in VerilatedContext:: as by
     // definition it needs to vary per-simulation
 
-    static struct NonSerialized {  // Non-serialized information
-        // These are reloaded from on command-line settings, so do not need to persist
-        // Fast path
-        int s_debug = 0;  ///< See accessors... only when VL_DEBUG set
-//FIXME Verilated::NonSerialized (s_debug)
+    // Debug is reloaded from on command-line settings, so do not need to persist
+    // Fast path
     // Internal note: Globals must be POD, see verilated.cpp top.
-    } s_ns;
+    static int s_debug;  ///< See accessors... only when VL_DEBUG set
 
     // Not covered by mutex, as per-thread
     static VL_THREAD_LOCAL struct ThreadLocal {
@@ -662,7 +659,7 @@ public:
     /// Return debug level
     /// When multithreaded this may not immediately react to another thread
     /// changing the level (no mutex)
-    static inline int debug() VL_MT_SAFE { return s_ns.s_debug; }
+    static inline int debug() VL_MT_SAFE { return s_debug; }
 #else
     /// Return constant 0 debug level, so C++'s optimizer rips up
     static constexpr int debug() VL_PURE { return 0; }

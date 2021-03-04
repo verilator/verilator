@@ -79,15 +79,11 @@ static_assert(sizeof(vluint64_t) == 8, "vluint8_t is missized");
 // Global variables
 // Internal note: Globals must be POD or unions, see verilated.cpp top.
 
-// Slow path variables
-//FIXME VerilatedMutex Verilated::s_mutex;
-    // Internal note: Globals must be POD, see verilated.cpp top.
-VerilatedMutex Verilated::s_mutex;
+// Fast path, keep together
+int Verilated::s_debug = 0;
+VerilatedContext* Verilated::s_lastContextp = nullptr;
 
 // Keep below together in one cache line
-//FIXME Verilated::NonSerialized Verilated::s_ns;
-    // Internal note: Globals must be POD, see verilated.cpp top.
-Verilated::NonSerialized Verilated::s_ns;
 //FIXME VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
     // Internal note: Globals must be POD, see verilated.cpp top.
 VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
@@ -95,6 +91,11 @@ VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
 //FIXME VerilatedImp::VerilatedImpU VerilatedImp::s_s;
     // Internal note: Globals must be POD, see verilated.cpp top.
 VerilatedImp::VerilatedImpU VerilatedImp::s_s;
+
+// Slow path variables
+//FIXME VerilatedMutex Verilated::s_mutex;
+    // Internal note: Globals must be POD, see verilated.cpp top.
+VerilatedMutex Verilated::s_mutex;
 
 // Guarantees to call setup() and teardown() just once.
 struct VerilatedInitializer {
@@ -2522,11 +2523,9 @@ VerilatedSyms::~VerilatedSyms() {
 //===========================================================================
 // Verilated:: Methods
 
-VerilatedContext* Verilated::s_lastContextp = nullptr;
-
 void Verilated::debug(int level) VL_MT_SAFE {
     const VerilatedLockGuard lock(s_mutex);
-    s_ns.s_debug = level;
+    s_debug = level;
     if (level) {
 #ifdef VL_DEBUG
         VL_DEBUG_IF(VL_DBG_MSGF("- Verilated::debug is on."
