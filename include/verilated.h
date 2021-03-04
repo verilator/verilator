@@ -615,14 +615,18 @@ class Verilated final {
     // instead serialized state should all be in VerilatedContext:: as by
     // definition it needs to vary per-simulation
 
-    // Debug is reloaded from on command-line settings, so do not need to persist
     // Internal note: Globals may multi-construct, see verilated.cpp top.
+
+    // Debug is reloaded from on command-line settings, so do not need to persist
     static int s_debug;  ///< See accessors... only when VL_DEBUG set
 
     static VerilatedContext* s_lastContextp;  ///< Last context constructed/attached
 
     // Not covered by mutex, as per-thread
     static VL_THREAD_LOCAL struct ThreadLocal {
+        // No non-POD objects here due to this:
+        // Internal note: Globals may multi-construct, see verilated.cpp top.
+
         // Fast path
         VerilatedContext* t_contextp = nullptr;  // Thread's context
 #ifdef VL_THREADED
@@ -636,9 +640,7 @@ class Verilated final {
 
         ThreadLocal() = default;
         ~ThreadLocal() = default;
-//FIXME Verilated::ThreadLocal (context etc)
     } t_s;
-    // Internal note: Globals may multi-construct, see verilated.cpp top.
 
     friend struct VerilatedInitializer;
 

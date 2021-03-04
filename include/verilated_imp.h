@@ -440,8 +440,6 @@ public:  // But only for verilated*.cpp
     // CONSTRUCTORS
     VerilatedImp() = default;
     ~VerilatedImp() = default;
-    static void setup();
-    static void teardown();
 
 private:
     VL_UNCOPYABLE(VerilatedImp);

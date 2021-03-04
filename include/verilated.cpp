@@ -84,31 +84,8 @@ int Verilated::s_debug = 0;
 VerilatedContext* Verilated::s_lastContextp = nullptr;
 
 // Keep below together in one cache line
-// FIXME VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
 // Internal note: Globals may multi-construct, see verilated.cpp top.
 VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
-
-// Guarantees to call setup() and teardown() just once.
-struct VerilatedInitializer {
-    VerilatedInitializer() { setup(); }
-    ~VerilatedInitializer() { teardown(); }
-    void setup() {
-        static bool done = false;
-        if (!done) {
-            VerilatedImp::setup();
-            // FIXME... Verilated::s_ns.setup();
-            done = true;
-        }
-    }
-    void teardown() {
-        static bool done = false;
-        if (!done) {
-            VerilatedImp::teardown();
-            // FIXME... Verilated::s_ns.teardown();
-            done = true;
-        }
-    }
-} s_VerilatedInitializer;
 
 //===========================================================================
 // User definable functions
@@ -2667,13 +2644,6 @@ void Verilated::endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
     evalMsgQp->process();
 }
 #endif
-
-//===========================================================================
-// VerilatedImp:: Constructors
-
-// FIXME remoge
-void VerilatedImp::setup() {}
-void VerilatedImp::teardown() {}
 
 //===========================================================================
 // VerilatedImp:: Methods
