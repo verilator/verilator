@@ -19,8 +19,8 @@
 ///
 //*************************************************************************
 
-#ifndef _VERILATED_SC_H_
-#define _VERILATED_SC_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_SC_H_
+#define VERILATOR_VERILATED_SC_H_  ///< Header Guard
 
 #include "verilatedos.h"
 

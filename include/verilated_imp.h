@@ -16,11 +16,11 @@
 ///
 //=========================================================================
 
-#ifndef _VERILATED_IMP_H_
-#define _VERILATED_IMP_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_IMP_H_
+#define VERILATOR_VERILATED_IMP_H_  ///< Header Guard
 
 // clang-format off
-#if !defined(_VERILATED_CPP_) && !defined(_VERILATED_DPI_CPP_) && !defined(_VERILATED_VPI_CPP_)
+#if !defined(VERILATOR_VERILATED_CPP_) && !defined(VERILATOR_VERILATED_DPI_CPP_) && !defined(VERILATOR_VERILATED_VPI_CPP_)
 # error "verilated_imp.h only to be included by verilated*.cpp internals"
 #endif
 

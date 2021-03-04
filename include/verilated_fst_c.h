@@ -17,8 +17,8 @@
 //=============================================================================
 // SPDIFF_OFF
 
-#ifndef _VERILATED_FST_C_H_
-#define _VERILATED_FST_C_H_ 1
+#ifndef VERILATOR_VERILATED_FST_C_H_
+#define VERILATOR_VERILATED_FST_C_H_
 
 #include "verilated.h"
 #include "verilated_trace.h"

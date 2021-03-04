@@ -23,8 +23,8 @@
 ///
 //*************************************************************************
 
-#ifndef _VERILATED_SYMS_H_
-#define _VERILATED_SYMS_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_SYMS_H_
+#define VERILATOR_VERILATED_SYMS_H_  ///< Header Guard
 
 #include "verilatedos.h"
 #include "verilated_heavy.h"

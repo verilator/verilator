@@ -17,8 +17,8 @@
 //=============================================================================
 // SPDIFF_OFF
 
-#ifndef _VERILATED_TRACE_H_
-#define _VERILATED_TRACE_H_ 1
+#ifndef VERILATOR_VERILATED_TRACE_H_
+#define VERILATOR_VERILATED_TRACE_H_
 
 // clang-format off
 

@@ -938,7 +938,7 @@ void V3OutFile::putsForceIncs() {
 void V3OutCFile::putsGuard() {
     UASSERT(!m_guard, "Already called putsGuard in emit file");
     m_guard = true;
-    string var = VString::upcase(string("_") + V3Os::filenameNonDir(filename()) + "_");
+    string var = VString::upcase(string("VERILATED_") + V3Os::filenameNonDir(filename()) + "_");
     for (char& c : var) {
         if (!isalnum(c)) c = '_';
     }

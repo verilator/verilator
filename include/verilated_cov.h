@@ -16,8 +16,8 @@
 ///
 //=============================================================================
 
-#ifndef _VERILATED_COV_H_
-#define _VERILATED_COV_H_ 1
+#ifndef VERILATOR_VERILATED_COV_H_
+#define VERILATOR_VERILATED_COV_H_
 
 #include "verilatedos.h"
 

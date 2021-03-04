@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3GLOBAL_H_
-#define _V3GLOBAL_H_ 1
+#ifndef VERILATOR_V3GLOBAL_H_
+#define VERILATOR_V3GLOBAL_H_
 
 // clang-format off
 #include "config_build.h"

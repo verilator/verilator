@@ -22,8 +22,8 @@
 ///
 //*************************************************************************
 
-#ifndef _VERILATEDOS_H_
-#define _VERILATEDOS_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATEDOS_H_
+#define VERILATOR_VERILATEDOS_H_  ///< Header Guard
 
 // Current clang-format versions botch #ifdef inclusion, so
 // clang-format off

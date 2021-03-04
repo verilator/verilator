@@ -15,8 +15,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3GRAPHSTREAM_H_
-#define _V3GRAPHSTREAM_H_
+#ifndef VERILATOR_V3GRAPHSTREAM_H_
+#define VERILATOR_V3GRAPHSTREAM_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

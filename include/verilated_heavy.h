@@ -21,8 +21,8 @@
 ///
 //*************************************************************************
 
-#ifndef _VERILATED_HEAVY_H_
-#define _VERILATED_HEAVY_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_HEAVY_H_
+#define VERILATOR_VERILATED_HEAVY_H_  ///< Header Guard
 
 #include "verilated.h"
 

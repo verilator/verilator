@@ -20,8 +20,8 @@
 ///
 //*************************************************************************
 
-#ifndef _VERILATED_H_
-#define _VERILATED_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_H_
+#define VERILATOR_VERILATED_H_  ///< Header Guard
 
 // clang-format off
 #include "verilatedos.h"
