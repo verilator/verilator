@@ -409,6 +409,7 @@ public:
     /// Match plusargs with a given prefix. Returns static char* valid only for a single call
     const char* commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE;
     /// Return VerilatedCovContext, allocate if needed
+    /// Note if get unresolved reference then likely forgot to link verilated_cov.cpp
     VerilatedCovContext* coveragep() VL_MT_SAFE;
     /// Set debug level
     /// Debug is currently global, but for forward compatibility have a per-context method

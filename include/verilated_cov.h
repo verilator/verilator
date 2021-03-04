@@ -20,6 +20,7 @@
 #define _VERILATED_COV_H_ 1
 
 #include "verilatedos.h"
+#include "verilated.h"
 
 #include <iostream>
 #include <sstream>
