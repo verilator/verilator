@@ -613,7 +613,7 @@ class Verilated final {
     // Slow path variables
 //FIXME Verilated::VerilatedMutex s_mutex
     // Internal note: Globals may multi-construct, see verilated.cpp top.
-    static VerilatedMutex s_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
+    static VerilatedMutex s_mutex;  ///< Mutex for t_s members, when VL_THREADED
 
     // Internal Note: There should be no Serialized state in Verilated::,
     // instead serialized state should all be in VerilatedContext:: as by

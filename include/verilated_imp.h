@@ -216,9 +216,9 @@ class VerilatedContextImp final : VerilatedContext {
 
     // MEMBERS - non-static not allowed, use only VerilatedContext
     // Select initial value of otherwise uninitialized signals.
-//FIXME VerilatedContextImp::Statics
     // Internal note: Globals may multi-construct, see verilated.cpp top.
 
+//FIXME VerilatedContextImp::Statics
     static struct Statics {
         VerilatedMutex s_randMutex;  // Mutex protecting s_randSeedEpoch
         // Number incrementing on each reseed, 0=illegal
@@ -397,6 +397,7 @@ protected:
     typedef std::map<const char*, int, VerilatedCStrCmp> ExportNameMap;
 
     // MEMBERS
+//FIXME all of these effectively static as VerilatedImpData is static, could use function singleton?
 
     // Nothing below here is save-restored; users expected to re-register appropriately
 
