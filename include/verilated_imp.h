@@ -484,8 +484,7 @@ public:  // But only for verilated.cpp
         }
     }
     static void userDump() VL_MT_SAFE {
-        const VerilatedLockGuard lock(
-            s().m_userMapMutex);  // Avoid it changing in middle of dump
+        const VerilatedLockGuard lock(s().m_userMapMutex);  // Avoid it changing in middle of dump
         bool first = true;
         for (const auto& i : s().m_userMap) {
             if (first) {
