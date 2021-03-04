@@ -2805,8 +2805,9 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
         puts("else if (vlTOPp->__Vm_profile_window_ct == 0) {\n");
         // Ending file.
         puts("vluint64_t elapsed = VL_RDTSC_Q() - vlTOPp->__Vm_profile_cycle_start;\n");
-        puts("vlTOPp->__Vm_threadPoolp->profileDump(vlSymsp->_vm_contextp__->profThreadsFilename()."
-             "c_str(), elapsed);\n");
+        puts(
+            "vlTOPp->__Vm_threadPoolp->profileDump(vlSymsp->_vm_contextp__->profThreadsFilename()."
+            "c_str(), elapsed);\n");
         // This turns off the test to enter the profiling code, but still
         // allows the user to collect another profile by changing
         // profThreadsStart

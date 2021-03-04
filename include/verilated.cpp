@@ -15,6 +15,9 @@
 ///     This file must be compiled and linked against all objects
 ///     created from Verilator.
 ///
+///     Those macro/function/variable starting or ending in _ are internal,
+///     however many of the other function/macros here are also internal.
+///
 /// Code available from: https://verilator.org
 ///
 //=========================================================================
@@ -373,7 +376,7 @@ WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
 //===========================================================================
 // Debug
 
-void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp) VL_MT_SAFE {
+void _vl_debug_print_w(int lbits, WDataInP iwp) VL_MT_SAFE {
     VL_PRINTF_MT("  Data: w%d: ", lbits);
     for (int i = VL_WORDS_I(lbits) - 1; i >= 0; --i) VL_PRINTF_MT("%08x ", iwp[i]);
     VL_PRINTF_MT("\n");
@@ -608,7 +611,7 @@ double VL_ISTOR_D_W(int lbits, WDataInP lwp) VL_PURE {
     if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_D_W(lbits, lwp);
     vluint32_t pos[VL_MULS_MAX_WORDS + 1];  // Fixed size, as MSVC++ doesn't allow [words] here
     VL_NEGATE_W(VL_WORDS_I(lbits), pos, lwp);
-    _VL_CLEAN_INPLACE_W(lbits, pos);
+    _vl_clean_inplace_w(lbits, pos);
     return -VL_ITOR_D_W(lbits, pos);
 }
 
@@ -680,7 +683,7 @@ std::string _vl_vsformat_time(char* tmp, double ld, bool left, size_t width) {
 }
 
 // Do a va_arg returning a quad, assuming input argument is anything less than wide
-#define _VL_VA_ARG_Q(ap, bits) (((bits) <= VL_IDATASIZE) ? va_arg(ap, IData) : va_arg(ap, QData))
+#define VL_VA_ARG_Q_(ap, bits) (((bits) <= VL_IDATASIZE) ? va_arg(ap, IData) : va_arg(ap, QData))
 
 void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SAFE {
     // Format a Verilog $write style format into the output list
@@ -783,7 +786,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 WData qlwp[VL_WQ_WORDS_E];
                 WDataInP lwp = nullptr;
                 if (lbits <= VL_QUADSIZE) {
-                    ld = _VL_VA_ARG_Q(ap, lbits);
+                    ld = VL_VA_ARG_Q_(ap, lbits);
                     VL_SET_WQ(qlwp, ld);
                     lwp = qlwp;
                 } else {
@@ -1241,7 +1244,7 @@ FILE* VL_CVT_I_FP(IData lhs) VL_MT_SAFE {
     return Verilated::threadContextp()->impp()->fdToFp(lhs);
 }
 
-void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) VL_MT_SAFE {
+void _vl_vint_to_string(int obits, char* destoutp, WDataInP sourcep) VL_MT_SAFE {
     // See also VL_DATA_TO_STRING_NW
     int lsb = obits - 1;
     bool start = true;
@@ -1260,7 +1263,7 @@ void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) VL_MT_SAFE 
     }
 }
 
-void _VL_STRING_TO_VINT(int obits, void* destp, size_t srclen, const char* srcp) VL_MT_SAFE {
+void _vl_string_to_vint(int obits, void* destp, size_t srclen, const char* srcp) VL_MT_SAFE {
     // Convert C string to Verilog format
     size_t bytes = VL_BYTES_I(obits);
     char* op = reinterpret_cast<char*>(destp);
@@ -1299,7 +1302,7 @@ IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
         VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: fgets buffer overrun");  // LCOV_EXCL_LINE
     }
 
-    _VL_STRING_TO_VINT(obits, destp, got, str.data());
+    _vl_string_to_vint(obits, destp, got, str.data());
     return got;
 }
 
@@ -1340,7 +1343,7 @@ void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) VL_MT_SAFE 
     _vl_vsformat(t_output, formatp, ap);
     va_end(ap);
 
-    _VL_STRING_TO_VINT(obits, &destr, t_output.length(), t_output.c_str());
+    _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
 }
 
 void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) VL_MT_SAFE {
@@ -1351,7 +1354,7 @@ void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) VL_MT_SAFE 
     _vl_vsformat(t_output, formatp, ap);
     va_end(ap);
 
-    _VL_STRING_TO_VINT(obits, &destr, t_output.length(), t_output.c_str());
+    _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
 }
 
 void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) VL_MT_SAFE {
@@ -1362,7 +1365,7 @@ void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) VL_MT_SAFE 
     _vl_vsformat(t_output, formatp, ap);
     va_end(ap);
 
-    _VL_STRING_TO_VINT(obits, &destr, t_output.length(), t_output.c_str());
+    _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
 }
 
 void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) VL_MT_SAFE {
@@ -1373,7 +1376,7 @@ void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) VL_MT_SAFE 
     _vl_vsformat(t_output, formatp, ap);
     va_end(ap);
 
-    _VL_STRING_TO_VINT(obits, &destr, t_output.length(), t_output.c_str());
+    _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
 }
 
 void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) VL_MT_SAFE {
@@ -1384,7 +1387,7 @@ void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) VL_MT_SAFE {
     _vl_vsformat(t_output, formatp, ap);
     va_end(ap);
 
-    _VL_STRING_TO_VINT(obits, destp, t_output.length(), t_output.c_str());
+    _vl_string_to_vint(obits, destp, t_output.length(), t_output.c_str());
 }
 
 void VL_SFORMAT_X(int obits_ignored, std::string& output, const char* formatp, ...) VL_MT_SAFE {
@@ -1537,7 +1540,7 @@ IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
 }
 IData VL_SYSTEM_IW(int lhswords, WDataInP lhsp) VL_MT_SAFE {
     char filenamez[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
-    _VL_VINT_TO_STRING(lhswords * VL_EDATASIZE, filenamez, lhsp);
+    _vl_vint_to_string(lhswords * VL_EDATASIZE, filenamez, lhsp);
     int code = system(filenamez);  // Yes, system() is threadsafe
     return code >> 8;  // Want exit status
 }
@@ -1616,7 +1619,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
     default:  // Other simulators simply return 0 in these cases and don't error out
         return 0;
     }
-    _VL_CLEAN_INPLACE_W(rbits, rwp);
+    _vl_clean_inplace_w(rbits, rwp);
     return 1;
 }
 IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE {
@@ -1680,7 +1683,7 @@ std::string VL_TOUPPER_NN(const std::string& ld) VL_MT_SAFE {
 }
 
 std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE {
-    // See also _VL_VINT_TO_STRING
+    // See also _vl_vint_to_string
     char destout[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
     int obits = lwords * VL_EDATASIZE;
     int lsb = obits - 1;
@@ -1897,7 +1900,7 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
         } else {
             WDataOutP datap = reinterpret_cast<WDataOutP>(valuep);
             if (!innum) VL_ZERO_RESET_W(m_bits, datap);
-            _VL_SHIFTL_INPLACE_W(m_bits, datap, static_cast<IData>(shift));
+            _vl_shiftl_inplace_w(m_bits, datap, static_cast<IData>(shift));
             datap[0] |= value;
         }
         innum = true;
