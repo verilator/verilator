@@ -217,7 +217,7 @@ class VerilatedContextImp final : VerilatedContext {
     // MEMBERS - non-static not allowed, use only VerilatedContext
     // Select initial value of otherwise uninitialized signals.
 //FIXME VerilatedContextImp::Statics
-    // Internal note: Globals must be POD, see verilated.cpp top.
+    // Internal note: Globals may multi-construct, see verilated.cpp top.
 
     static struct Statics {
         VerilatedMutex s_randMutex;  // Mutex protecting s_randSeedEpoch
@@ -434,7 +434,7 @@ protected:
         ~VerilatedImpU() {}  // Can't be = default;
     };
 //FIXME VerilatedImpU (VerilatedImpData)
-    // Internal note: Globals must be POD, see verilated.cpp top.
+    // Internal note: Globals may multi-construct, see verilated.cpp top.
     static VerilatedImpU s_s;  ///< Static Singleton; One and only static this
 
 public:  // But only for verilated*.cpp

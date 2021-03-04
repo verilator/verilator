@@ -77,7 +77,7 @@ static_assert(sizeof(vluint64_t) == 8, "vluint8_t is missized");
 
 //===========================================================================
 // Global variables
-// Internal note: Globals must be POD or unions, see verilated.cpp top.
+// Internal note: Globals may multi-construct, see verilated.cpp top.
 
 // Fast path, keep together
 int Verilated::s_debug = 0;
@@ -85,16 +85,16 @@ VerilatedContext* Verilated::s_lastContextp = nullptr;
 
 // Keep below together in one cache line
 //FIXME VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
-    // Internal note: Globals must be POD, see verilated.cpp top.
+    // Internal note: Globals may multi-construct, see verilated.cpp top.
 VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
 
 //FIXME VerilatedImp::VerilatedImpU VerilatedImp::s_s;
-    // Internal note: Globals must be POD, see verilated.cpp top.
+    // Internal note: Globals may multi-construct, see verilated.cpp top.
 VerilatedImp::VerilatedImpU VerilatedImp::s_s;
 
 // Slow path variables
 //FIXME VerilatedMutex Verilated::s_mutex;
-    // Internal note: Globals must be POD, see verilated.cpp top.
+    // Internal note: Globals may multi-construct, see verilated.cpp top.
 VerilatedMutex Verilated::s_mutex;
 
 // Guarantees to call setup() and teardown() just once.
@@ -120,7 +120,7 @@ struct VerilatedInitializer {
 } s_VerilatedInitializer;
 
 //FIXME VerilatedContextImp::Statics VerilatedContextImp::s_si
-    // Internal note: Globals must be POD, see verilated.cpp top.
+    // Internal note: Globals may multi-construct, see verilated.cpp top.
 VerilatedContextImp::Statics VerilatedContextImp::s_si;
 
 //===========================================================================

@@ -62,7 +62,7 @@ class VerilatedVpio VL_NOT_FINAL {
     static constexpr vluint32_t activeMagic() { return 0xfeed100f; }
 
     // MEM MANGLEMENT
-    // Internal note: Globals must be POD, see verilated.cpp top.
+    // Internal note: Globals may multi-construct, see verilated.cpp top.
     static VL_THREAD_LOCAL vluint8_t* t_freeHead;
 
 public:
@@ -646,7 +646,7 @@ public:
 
 //======================================================================
 // Statics
-// Internal note: Globals must be POD or not linked, see verilated.cpp top.
+// Internal note: Globals may multi-construct, see verilated.cpp top.
 
 VL_THREAD_LOCAL vluint8_t* VerilatedVpio::t_freeHead = nullptr;
 
