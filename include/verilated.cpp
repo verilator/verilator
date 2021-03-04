@@ -92,11 +92,6 @@ VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
     // Internal note: Globals may multi-construct, see verilated.cpp top.
 VerilatedImp::VerilatedImpU VerilatedImp::s_s;
 
-// Slow path variables
-//FIXME VerilatedMutex Verilated::s_mutex;
-    // Internal note: Globals may multi-construct, see verilated.cpp top.
-VerilatedMutex Verilated::s_mutex;
-
 // Guarantees to call setup() and teardown() just once.
 struct VerilatedInitializer {
     VerilatedInitializer() { setup(); }
@@ -2524,7 +2519,6 @@ VerilatedSyms::~VerilatedSyms() {
 // Verilated:: Methods
 
 void Verilated::debug(int level) VL_MT_SAFE {
-    const VerilatedLockGuard lock(s_mutex);
     s_debug = level;
     if (level) {
 #ifdef VL_DEBUG
