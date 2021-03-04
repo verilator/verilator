@@ -110,10 +110,6 @@ struct VerilatedInitializer {
     }
 } s_VerilatedInitializer;
 
-// FIXME VerilatedContextImp::Statics VerilatedContextImp::s_si
-// Internal note: Globals may multi-construct, see verilated.cpp top.
-VerilatedContextImp::Statics VerilatedContextImp::s_si;
-
 //===========================================================================
 // User definable functions
 // Note a TODO is a future version of the API will pass a structure so that
@@ -2437,14 +2433,14 @@ bool VerilatedContextImp::commandArgVlValue(const std::string& arg, const std::s
 void VerilatedContext::randSeed(int val) VL_MT_SAFE {
     // As we have per-thread state, the epoch must be static,
     // and so the rand seed's mutex must also be static
-    const VerilatedLockGuard lock(VerilatedContextImp::s_si.s_randMutex);
+    const VerilatedLockGuard lock(VerilatedContextImp::s().s_randMutex);
     m_s.m_randSeed = val;
-    vluint64_t newEpoch = VerilatedContextImp::s_si.s_randSeedEpoch + 1;
+    vluint64_t newEpoch = VerilatedContextImp::s().s_randSeedEpoch + 1;
     // Obververs must see new epoch AFTER seed updated
 #ifdef VL_THREADED
     std::atomic_signal_fence(std::memory_order_release);
 #endif
-    VerilatedContextImp::s_si.s_randSeedEpoch = newEpoch;
+    VerilatedContextImp::s().s_randSeedEpoch = newEpoch;
 }
 vluint64_t VerilatedContextImp::randSeedDefault64() const VL_MT_SAFE {
     if (randSeed() != 0) {

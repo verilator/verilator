@@ -218,12 +218,16 @@ class VerilatedContextImp final : VerilatedContext {
     // Select initial value of otherwise uninitialized signals.
     // Internal note: Globals may multi-construct, see verilated.cpp top.
 
-//FIXME VerilatedContextImp::Statics
-    static struct Statics {
+    // Medium speed, so uses singleton accessing
+    struct Statics {
         VerilatedMutex s_randMutex;  // Mutex protecting s_randSeedEpoch
         // Number incrementing on each reseed, 0=illegal
         int s_randSeedEpoch = 1;  // Reads ok, wish had a VL_WRITE_GUARDED_BY(s_randMutex)
-    } s_si;
+    };
+    static Statics& s() {
+        static Statics s_s;
+        return s_s;
+    }
 
 private:
     // CONSTRUCTORS - no data can live here, use only VerilatedContext
@@ -235,7 +239,7 @@ public:  // But only for verilated*.cpp
 
     // Random seed handling
     vluint64_t randSeedDefault64() const VL_MT_SAFE;
-    static vluint32_t randSeedEpoch() VL_MT_SAFE { return s_si.s_randSeedEpoch; }
+    static vluint32_t randSeedEpoch() VL_MT_SAFE { return s().s_randSeedEpoch; }
 
     // METHODS - timeformat
     int timeFormatUnits() VL_MT_SAFE {
