@@ -620,9 +620,10 @@ class Verilated final {
     // definition it needs to vary per-simulation
 
     // Debug is reloaded from on command-line settings, so do not need to persist
-    // Fast path
     // Internal note: Globals may multi-construct, see verilated.cpp top.
     static int s_debug;  ///< See accessors... only when VL_DEBUG set
+
+    static VerilatedContext* s_lastContextp;  ///< Last context constructed/attached
 
     // Not covered by mutex, as per-thread
     static VL_THREAD_LOCAL struct ThreadLocal {
@@ -630,8 +631,8 @@ class Verilated final {
         VerilatedContext* t_contextp = nullptr;  // Thread's context
 #ifdef VL_THREADED
         vluint32_t t_mtaskId = 0;  // mtask# executing on this thread
-        vluint32_t t_endOfEvalReqd
-            = 0;  // Messages maybe pending on thread, needs endOf-eval calls
+        // Messages maybe pending on thread, needs end-of-eval calls
+        vluint32_t t_endOfEvalReqd = 0;
 #endif
         const VerilatedScope* t_dpiScopep = nullptr;  ///< DPI context scope
         const char* t_dpiFilename = nullptr;  ///< DPI context filename
@@ -642,8 +643,6 @@ class Verilated final {
 //FIXME Verilated::ThreadLocal (context etc)
     } t_s;
     // Internal note: Globals may multi-construct, see verilated.cpp top.
-
-    static VerilatedContext* s_lastContextp;  ///< Last context constructed/attached
 
     friend struct VerilatedInitializer;
 
