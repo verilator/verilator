@@ -35,9 +35,10 @@
 // To avoid the trouble:
 //   * Statics declared inside functions. The compiler will wrap
 //     the construction in must-be-one-time checks.
-//   * Or, use only POD types that are multi-constructor safe.
+//   * Or, use only C++20 constinit types. (TODO: Make a VL_CONSTINIT).
+//   * Or, use types that are multi-constructor safe.
 //   * Or, the static should be of a union, which will avoid compiler
-//     construction.
+//     construction, and appropriately check for duplicate construction.
 //   * Or, code is not linked in protected library. e.g. the VPI
 //     and DPI libraries are not needed there.
 //=========================================================================

@@ -62,7 +62,7 @@ class VerilatedVpio VL_NOT_FINAL {
     static constexpr vluint32_t activeMagic() { return 0xfeed100f; }
 
     // MEM MANGLEMENT
-    // Internal note: Globals must be POD, see verilated.cpp top.
+    // Internal note: Globals may multi-construct, see verilated.cpp top.
     static VL_THREAD_LOCAL vluint8_t* t_freeHead;
 
 public:
@@ -505,18 +505,21 @@ class VerilatedVpiImp final {
     typedef std::list<VerilatedVpiCbHolder> VpioCbList;
     typedef std::map<std::pair<QData, vluint64_t>, VerilatedVpiCbHolder> VpioTimedCbs;
 
+    // All only medium-speed, so use singleton function
     VpioCbList m_cbObjLists[CB_ENUM_MAX_VALUE];  // Callbacks for each supported reason
     VpioTimedCbs m_timedCbs;  // Time based callbacks
     VerilatedVpiError* m_errorInfop = nullptr;  // Container for vpi error info
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
     vluint64_t m_nextCallbackId = 1;  // Id to identify callback
 
-    // Internal note: Global not in protect-lib, see verilated.cpp top.
-    static VerilatedVpiImp s_s;  // Singleton
+    static VerilatedVpiImp& s() {  // Singleton
+        static VerilatedVpiImp s_s;
+        return s_s;
+    }
 
 public:
-    static void assertOneCheck() { s_s.m_assertOne.check(); }
-    static vluint64_t nextCallbackId() { return ++s_s.m_nextCallbackId; }
+    static void assertOneCheck() { s().m_assertOne.check(); }
+    static vluint64_t nextCallbackId() { return ++s().m_nextCallbackId; }
 
     static void cbReasonAdd(vluint64_t id, const s_cb_data* cb_data_p) {
         // The passed cb_data_p was property of the user, so need to recreate
@@ -527,20 +530,20 @@ public:
                                     cb_data_p->reason, id, cb_data_p->obj););
         VerilatedVpioVar* varop = nullptr;
         if (cb_data_p->reason == cbValueChange) varop = VerilatedVpioVar::castp(cb_data_p->obj);
-        s_s.m_cbObjLists[cb_data_p->reason].emplace_back(id, cb_data_p, varop);
+        s().m_cbObjLists[cb_data_p->reason].emplace_back(id, cb_data_p, varop);
     }
     static void cbTimedAdd(vluint64_t id, const s_cb_data* cb_data_p, QData time) {
         // The passed cb_data_p was property of the user, so need to recreate
         VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d id=%" VL_PRI64
                                     "d delay=%" VL_PRI64 "u\n",
                                     cb_data_p->reason, id, time););
-        s_s.m_timedCbs.emplace(std::piecewise_construct,
+        s().m_timedCbs.emplace(std::piecewise_construct,
                                std::forward_as_tuple(std::make_pair(time, id)),
                                std::forward_as_tuple(id, cb_data_p, nullptr));
     }
     static void cbReasonRemove(vluint64_t id, vluint32_t reason) {
         // Id might no longer exist, if already removed due to call after event, or teardown
-        VpioCbList& cbObjList = s_s.m_cbObjLists[reason];
+        VpioCbList& cbObjList = s().m_cbObjLists[reason];
         // We do not remove it now as we may be iterating the list,
         // instead set to nullptr and will cleanup later
         for (auto& ir : cbObjList) {
@@ -549,13 +552,13 @@ public:
     }
     static void cbTimedRemove(vluint64_t id, QData time) {
         // Id might no longer exist, if already removed due to call after event, or teardown
-        const auto it = s_s.m_timedCbs.find(std::make_pair(time, id));
-        if (VL_LIKELY(it != s_s.m_timedCbs.end())) it->second.invalidate();
+        const auto it = s().m_timedCbs.find(std::make_pair(time, id));
+        if (VL_LIKELY(it != s().m_timedCbs.end())) it->second.invalidate();
     }
     static void callTimedCbs() VL_MT_UNSAFE_ONE {
         assertOneCheck();
         QData time = VL_TIME_Q();
-        for (auto it = s_s.m_timedCbs.begin(); it != s_s.m_timedCbs.end();) {
+        for (auto it = s().m_timedCbs.begin(); it != s().m_timedCbs.end();) {
             if (VL_UNLIKELY(it->first.first <= time)) {
                 VerilatedVpiCbHolder& ho = it->second;
                 const auto last_it = it;
@@ -566,19 +569,19 @@ public:
                     ho.invalidate();  // Timed callbacks are one-shot
                     (ho.cb_rtnp())(ho.cb_datap());
                 }
-                s_s.m_timedCbs.erase(last_it);
+                s().m_timedCbs.erase(last_it);
             } else {
                 ++it;
             }
         }
     }
     static QData cbNextDeadline() {
-        const auto it = s_s.m_timedCbs.cbegin();
-        if (VL_LIKELY(it != s_s.m_timedCbs.cend())) return it->first.first;
+        const auto it = s().m_timedCbs.cbegin();
+        if (VL_LIKELY(it != s().m_timedCbs.cend())) return it->first.first;
         return ~0ULL;  // maxquad
     }
     static bool callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE {
-        VpioCbList& cbObjList = s_s.m_cbObjLists[reason];
+        VpioCbList& cbObjList = s().m_cbObjLists[reason];
         bool called = false;
         if (cbObjList.empty()) return called;
         const auto last = std::prev(cbObjList.end());  // prevent looping over newly added elements
@@ -602,7 +605,7 @@ public:
     }
     static bool callValueCbs() VL_MT_UNSAFE_ONE {
         assertOneCheck();
-        VpioCbList& cbObjList = s_s.m_cbObjLists[cbValueChange];
+        VpioCbList& cbObjList = s().m_cbObjLists[cbValueChange];
         bool called = false;
         typedef std::unordered_set<VerilatedVpioVar*> VpioVarSet;
         VpioVarSet update;  // set of objects to update after callbacks
@@ -644,9 +647,8 @@ public:
 
 //======================================================================
 // Statics
-// Internal note: Globals must be POD or not linked, see verilated.cpp top.
+// Internal note: Globals may multi-construct, see verilated.cpp top.
 
-VerilatedVpiImp VerilatedVpiImp::s_s;  // Singleton
 VL_THREAD_LOCAL vluint8_t* VerilatedVpio::t_freeHead = nullptr;
 
 //======================================================================
@@ -748,8 +750,8 @@ PLI_INT32 VerilatedVpioReasonCb::dovpi_remove_cb() {
 
 VerilatedVpiError* VerilatedVpiImp::error_info() VL_MT_UNSAFE_ONE {
     VerilatedVpiImp::assertOneCheck();
-    if (VL_UNLIKELY(!s_s.m_errorInfop)) s_s.m_errorInfop = new VerilatedVpiError();
-    return s_s.m_errorInfop;
+    if (VL_UNLIKELY(!s().m_errorInfop)) s().m_errorInfop = new VerilatedVpiError();
+    return s().m_errorInfop;
 }
 
 //======================================================================
