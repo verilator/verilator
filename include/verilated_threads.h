@@ -189,7 +189,7 @@ private:
     VerilatedMutex m_mutex;
     std::condition_variable_any m_cv;
     // Only notify the condition_variable if the worker is waiting
-    bool m_waiting VL_GUARDED_BY(m_mutex);
+    bool m_waiting VL_GUARDED_BY(m_mutex) = false;
 
     // Why a vector? We expect the pending list to be very short, typically
     // 0 or 1 or 2, so popping from the front shouldn't be
@@ -262,6 +262,7 @@ class VlThreadPool final {
     // corrupting the profiling data. It's super cheap to append
     // a VlProfileRec struct on the end of a pre-allocated vector;
     // this is the only cost we pay in real-time during a profiling cycle.
+    // Internal note: Globals may multi-construct, see verilated.cpp top.
     static VL_THREAD_LOCAL ProfileTrace* t_profilep;
     ProfileSet m_allProfiles VL_GUARDED_BY(m_mutex);
     VerilatedMutex m_mutex;

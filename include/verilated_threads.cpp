@@ -19,6 +19,11 @@
 
 #include <cstdio>
 
+//=============================================================================
+// Globals
+
+// Internal note: Globals may multi-construct, see verilated.cpp top.
+
 std::atomic<vluint64_t> VlMTaskVertex::s_yields;
 
 VL_THREAD_LOCAL VlThreadPool::ProfileTrace* VlThreadPool::t_profilep = nullptr;

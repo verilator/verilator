@@ -39,7 +39,9 @@
 # define VL_ATTR_PRINTF(fmtArgNum) __attribute__((format(printf, (fmtArgNum), (fmtArgNum) + 1)))
 # define VL_ATTR_PURE __attribute__((pure))
 # define VL_ATTR_UNUSED __attribute__((unused))
-# define VL_ATTR_WEAK __attribute__((weak))
+# if !defined(_WIN32) && !defined(__MINGW32__)
+#  define VL_ATTR_WEAK __attribute__((weak))
+# endif
 # define VL_FUNC __func__
 # if defined(__clang__) && defined(VL_THREADED)
 #  define VL_ACQUIRE(...) __attribute__((acquire_capability(__VA_ARGS__)))
