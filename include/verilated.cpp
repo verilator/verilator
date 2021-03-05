@@ -78,37 +78,15 @@ static_assert(sizeof(vluint64_t) == 8, "vluint8_t is missized");
 
 //===========================================================================
 // Global variables
+// Internal note: Globals may multi-construct, see verilated.cpp top.
 
-// Slow path variables
-VerilatedMutex Verilated::s_mutex;
+// Fast path, keep together
+int Verilated::s_debug = 0;
+VerilatedContext* Verilated::s_lastContextp = nullptr;
 
 // Keep below together in one cache line
-Verilated::NonSerialized Verilated::s_ns;
+// Internal note: Globals may multi-construct, see verilated.cpp top.
 VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
-
-VerilatedImp::VerilatedImpU VerilatedImp::s_s;
-
-// Guarantees to call setup() and teardown() just once.
-struct VerilatedInitializer {
-    VerilatedInitializer() { setup(); }
-    ~VerilatedInitializer() { teardown(); }
-    void setup() {
-        static bool done = false;
-        if (!done) {
-            VerilatedImp::setup();
-            // FIXME            Verilated::s_ns.setup();
-            done = true;
-        }
-    }
-    void teardown() {
-        static bool done = false;
-        if (!done) {
-            VerilatedImp::teardown();
-            // FIXME            Verilated::s_ns.teardown();
-            done = true;
-        }
-    }
-} s_VerilatedInitializer;
 
 //===========================================================================
 // User definable functions
@@ -2174,8 +2152,6 @@ void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix, int
 //======================================================================
 // VerilatedContext:: Methods
 
-VerilatedContextImp::Statics VerilatedContextImp::s_si;
-
 VerilatedContext::VerilatedContext()
     : m_impdatap{new VerilatedContextImpData} {
     Verilated::lastContextp(this);
@@ -2435,14 +2411,14 @@ bool VerilatedContextImp::commandArgVlValue(const std::string& arg, const std::s
 void VerilatedContext::randSeed(int val) VL_MT_SAFE {
     // As we have per-thread state, the epoch must be static,
     // and so the rand seed's mutex must also be static
-    const VerilatedLockGuard lock(VerilatedContextImp::s_si.s_randMutex);
+    const VerilatedLockGuard lock(VerilatedContextImp::s().s_randMutex);
     m_s.m_randSeed = val;
-    vluint64_t newEpoch = VerilatedContextImp::s_si.s_randSeedEpoch + 1;
+    vluint64_t newEpoch = VerilatedContextImp::s().s_randSeedEpoch + 1;
     // Obververs must see new epoch AFTER seed updated
 #ifdef VL_THREADED
     std::atomic_signal_fence(std::memory_order_release);
 #endif
-    VerilatedContextImp::s_si.s_randSeedEpoch = newEpoch;
+    VerilatedContextImp::s().s_randSeedEpoch = newEpoch;
 }
 vluint64_t VerilatedContextImp::randSeedDefault64() const VL_MT_SAFE {
     if (randSeed() != 0) {
@@ -2512,11 +2488,8 @@ VerilatedSyms::~VerilatedSyms() {
 //===========================================================================
 // Verilated:: Methods
 
-VerilatedContext* Verilated::s_lastContextp = nullptr;
-
 void Verilated::debug(int level) VL_MT_SAFE {
-    const VerilatedLockGuard lock(s_mutex);
-    s_ns.s_debug = level;
+    s_debug = level;
     if (level) {
 #ifdef VL_DEBUG
         VL_DEBUG_IF(VL_DBG_MSGF("- Verilated::debug is on."
@@ -2672,12 +2645,6 @@ void Verilated::endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
     evalMsgQp->process();
 }
 #endif
-
-//===========================================================================
-// VerilatedImp:: Constructors
-
-void VerilatedImp::setup() { new (&VerilatedImp::s_s) VerilatedImpData(); }
-void VerilatedImp::teardown() { VerilatedImp::s_s.~VerilatedImpU(); }
 
 //===========================================================================
 // VerilatedImp:: Methods

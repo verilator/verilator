@@ -610,27 +610,29 @@ public:
 
 class Verilated final {
     // MEMBERS
-    // Slow path variables
-    static VerilatedMutex s_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
 
     // Internal Note: There should be no Serialized state in Verilated::,
     // instead serialized state should all be in VerilatedContext:: as by
     // definition it needs to vary per-simulation
 
-    static struct NonSerialized {  // Non-serialized information
-        // These are reloaded from on command-line settings, so do not need to persist
-        // Fast path
-        int s_debug = 0;  ///< See accessors... only when VL_DEBUG set
-    } s_ns;
+    // Internal note: Globals may multi-construct, see verilated.cpp top.
+
+    // Debug is reloaded from on command-line settings, so do not need to persist
+    static int s_debug;  ///< See accessors... only when VL_DEBUG set
+
+    static VerilatedContext* s_lastContextp;  ///< Last context constructed/attached
 
     // Not covered by mutex, as per-thread
     static VL_THREAD_LOCAL struct ThreadLocal {
+        // No non-POD objects here due to this:
+        // Internal note: Globals may multi-construct, see verilated.cpp top.
+
         // Fast path
         VerilatedContext* t_contextp = nullptr;  // Thread's context
 #ifdef VL_THREADED
         vluint32_t t_mtaskId = 0;  // mtask# executing on this thread
-        vluint32_t t_endOfEvalReqd
-            = 0;  // Messages maybe pending on thread, needs endOf-eval calls
+        // Messages maybe pending on thread, needs end-of-eval calls
+        vluint32_t t_endOfEvalReqd = 0;
 #endif
         const VerilatedScope* t_dpiScopep = nullptr;  ///< DPI context scope
         const char* t_dpiFilename = nullptr;  ///< DPI context filename
@@ -639,8 +641,6 @@ class Verilated final {
         ThreadLocal() = default;
         ~ThreadLocal() = default;
     } t_s;
-
-    static VerilatedContext* s_lastContextp;  ///< Last context constructed/attached
 
     friend struct VerilatedInitializer;
 
@@ -656,7 +656,7 @@ public:
     /// Return debug level
     /// When multithreaded this may not immediately react to another thread
     /// changing the level (no mutex)
-    static inline int debug() VL_MT_SAFE { return s_ns.s_debug; }
+    static inline int debug() VL_MT_SAFE { return s_debug; }
 #else
     /// Return constant 0 debug level, so C++'s optimizer rips up
     static constexpr int debug() VL_PURE { return 0; }
