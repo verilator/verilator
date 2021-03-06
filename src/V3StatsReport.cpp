@@ -208,9 +208,7 @@ void V3Stats::statsStage(const string& name) {
     static double lastWallTime = -1;
     static int fileNumber = 0;
 
-    char digits[100];
-    sprintf(digits, "%03d", ++fileNumber);
-    const string digitName = string(digits) + "_" + name;
+    const string digitName = V3Global::digitsFilename(++fileNumber) + "_" + name;
 
     double wallTime = V3Os::timeUsecs() / 1.0e6;
     if (lastWallTime < 0) lastWallTime = wallTime;

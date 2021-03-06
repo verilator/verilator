@@ -165,11 +165,8 @@ string FileLine::xmlDetailedLocation() const {
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
-    char numbuf[20];
-    sprintf(numbuf, "%d", lastLineno());
-    char levelbuf[20];
-    sprintf(levelbuf, "%d", enterExit);
-    return (string("`line ") + numbuf + " \"" + filename() + "\" " + levelbuf + "\n");
+    return std::string("`line ") + cvtToStr(lastLineno()) + " \"" + filename() + "\" "
+           + cvtToStr(enterExit) + "\n";
 }
 
 void FileLine::lineDirective(const char* textp, int& enterExitRef) {

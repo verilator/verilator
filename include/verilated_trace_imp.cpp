@@ -70,7 +70,7 @@ static std::string doubleToTimescale(double value) {
     else if (value >= 1e-18) { suffixp = "as"; value *= 1e18; }
     // clang-format on
     char valuestr[100];
-    sprintf(valuestr, "%0.0f%s", value, suffixp);
+    VL_SNPRINTF(valuestr, 100, "%0.0f%s", value, suffixp);
     return valuestr;  // Gets converted to string, so no ref to stack
 }
 

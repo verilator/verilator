@@ -481,12 +481,18 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #endif
 
 //=========================================================================
-// String related OS-specific functions
+// String/time related OS-specific functions
 
 #ifdef _MSC_VER
 # define VL_STRCASECMP _stricmp
 #else
 # define VL_STRCASECMP strcasecmp
+#endif
+
+#ifdef _MSC_VER
+# define VL_LOCALTIME_R(timep, tmp) localtime_c((tmp), (timep))
+#else
+# define VL_LOCALTIME_R(timep, tmp) localtime_r((timep), (tmp))
 #endif
 
 //=========================================================================

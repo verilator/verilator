@@ -134,7 +134,7 @@ private:
         for (const char* pos = text.c_str(); *pos; ++pos) {
             if (!isprint(*pos) || *pos == '%' || *pos == '"') {
                 char hex[10];
-                sprintf(hex, "%%%02X", pos[0]);
+                VL_SNPRINTF(hex, 10, "%%%02X", pos[0]);
                 rtn += hex;
             } else {
                 rtn += *pos;

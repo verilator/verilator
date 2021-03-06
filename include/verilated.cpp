@@ -688,10 +688,11 @@ std::string _vl_vsformat_time(char* tmp, double ld, bool left, size_t width) {
     QData fraction = static_cast<QData>(scaled) % fracDiv;
     int digits = 0;
     if (!fracDigits) {
-        digits = sprintf(tmp, "%" VL_PRI64 "u%s", whole, suffix.c_str());
+        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "u%s", whole,
+                             suffix.c_str());
     } else {
-        digits = sprintf(tmp, "%" VL_PRI64 "u.%0*" VL_PRI64 "u%s", whole, fracDigits, fraction,
-                         suffix.c_str());
+        digits = VL_SNPRINTF(tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "u.%0*" VL_PRI64 "u%s",
+                             whole, fracDigits, fraction, suffix.c_str());
     }
     int needmore = width - digits;
     std::string padding;
@@ -791,7 +792,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     output += _vl_vsformat_time(t_tmp, d, left, width);
                 } else {
                     std::string fmts(pctp, pos - pctp + 1);
-                    sprintf(t_tmp, fmts.c_str(), d);
+                    VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, fmts.c_str(), d);
                     output += t_tmp;
                 }
                 break;
@@ -836,8 +837,9 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     int digits = 0;
                     std::string append;
                     if (lbits <= VL_QUADSIZE) {
-                        digits = sprintf(t_tmp, "%" VL_PRI64 "d",
-                                         static_cast<vlsint64_t>(VL_EXTENDS_QQ(lbits, lbits, ld)));
+                        digits = VL_SNPRINTF(
+                            t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "d",
+                            static_cast<vlsint64_t>(VL_EXTENDS_QQ(lbits, lbits, ld)));
                         append = t_tmp;
                     } else {
                         if (VL_SIGN_E(lbits, lwp[VL_WORDS_I(lbits) - 1])) {
@@ -865,7 +867,8 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     int digits = 0;
                     std::string append;
                     if (lbits <= VL_QUADSIZE) {
-                        digits = sprintf(t_tmp, "%" VL_PRI64 "u", ld);
+                        digits
+                            = VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" VL_PRI64 "u", ld);
                         append = t_tmp;
                     } else {
                         append = VL_DECIMAL_NW(lbits, lwp);
@@ -1671,9 +1674,11 @@ const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
     const std::string& match = VerilatedImp::argPlusMatch(prefixp);
     static VL_THREAD_LOCAL char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match.empty()) return nullptr;
-    t_outstr[0] = '\0';
-    strncat(t_outstr, match.c_str() + strlen(prefixp) + 1,  // +1 to skip the "+"
-            VL_VALUE_STRING_MAX_WIDTH - 1);
+    char* dp = t_outstr;
+    for (const char* sp = match.c_str() + strlen(prefixp) + 1;  // +1 to skip the "+"
+         *sp && (dp - t_outstr) < (VL_VALUE_STRING_MAX_WIDTH - 2);)
+        *dp++ = *sp++;
+    *dp++ = '\0';
     return t_outstr;
 }
 
@@ -2346,14 +2351,16 @@ const char* Verilated::catName(const char* n1, const char* n2, const char* delim
     static VL_THREAD_LOCAL char* t_strp = nullptr;
     static VL_THREAD_LOCAL size_t t_len = 0;
     size_t newlen = strlen(n1) + strlen(n2) + strlen(delimiter) + 1;
-    if (!t_strp || newlen > t_len) {
+    if (VL_UNLIKELY(!t_strp || newlen > t_len)) {
         if (t_strp) delete[] t_strp;
         t_strp = new char[newlen];
         t_len = newlen;
     }
-    strcpy(t_strp, n1);
-    if (*n1) strcat(t_strp, delimiter);
-    strcat(t_strp, n2);
+    char* dp = t_strp;
+    for (const char* sp = n1; *sp;) *dp++ = *sp++;
+    for (const char* sp = delimiter; *sp;) *dp++ = *sp++;
+    for (const char* sp = n2; *sp;) *dp++ = *sp++;
+    *dp++ = '\0';
     return t_strp;
 }
 
@@ -2396,7 +2403,7 @@ void Verilated::runFlushCallbacks() VL_MT_SAFE {
 #ifdef VL_THREADED
     static std::atomic<int> s_recursing;
 #else
-    int s_recursing = 0;
+    static int s_recursing = 0;
 #endif
     if (!s_recursing++) {
         const VerilatedLockGuard lock(VlCbStatic.s_flushMutex);
@@ -2423,7 +2430,7 @@ void Verilated::runExitCallbacks() VL_MT_SAFE {
 #ifdef VL_THREADED
     static std::atomic<int> s_recursing;
 #else
-    int s_recursing = 0;
+    static int s_recursing = 0;
 #endif
     if (!s_recursing++) {
         const VerilatedLockGuard lock(VlCbStatic.s_exitMutex);
@@ -2446,8 +2453,10 @@ const char* Verilated::commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE {
     const std::string& match = VerilatedImp::argPlusMatch(prefixp);
     static VL_THREAD_LOCAL char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match.empty()) return "";
-    t_outstr[0] = '\0';
-    strncat(t_outstr, match.c_str(), VL_VALUE_STRING_MAX_WIDTH - 1);
+    char* dp = t_outstr;
+    for (const char* sp = match.c_str(); *sp && (dp - t_outstr) < (VL_VALUE_STRING_MAX_WIDTH - 2);)
+        *dp++ = *sp++;
+    *dp++ = '\0';
     return t_outstr;
 }
 
@@ -2712,11 +2721,15 @@ void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const 
     m_symsp = symsp;
     m_type = type;
     m_timeunit = timeunit;
-    char* namep = new char[strlen(prefixp) + strlen(suffixp) + 2];
-    strcpy(namep, prefixp);
-    if (*prefixp && *suffixp) strcat(namep, ".");
-    strcat(namep, suffixp);
-    m_namep = namep;
+    {
+        char* namep = new char[strlen(prefixp) + strlen(suffixp) + 2];
+        char* dp = namep;
+        for (const char* sp = prefixp; *sp;) *dp++ = *sp++;
+        if (*prefixp && *suffixp) *dp++ = '.';
+        for (const char* sp = suffixp; *sp;) *dp++ = *sp++;
+        *dp++ = '\0';
+        m_namep = namep;
+    }
     m_identifierp = identifier;
     VerilatedImp::scopeInsert(this);
 }

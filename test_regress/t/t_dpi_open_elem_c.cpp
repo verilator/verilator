@@ -83,7 +83,6 @@ static void _dpii_bit_elem_ux(int p, int u, const svOpenArrayHandle i, const svO
 #ifndef NC
     // NC always returns zero and warns
     CHECK_RESULT_HEX(dim, u);
-    // svSizeOfArray(i) undeterministic as not in C representation
 #endif
 
     for (int a = svLow(i, 1); a <= svHigh(i, 1); ++a) {
@@ -135,13 +134,14 @@ void dpii_bit_elem_p0_u3(int p, int u, const svOpenArrayHandle i, const svOpenAr
 
 static void _dpii_logic_elem_ux(int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o,
                                 const svOpenArrayHandle q) {
-    int sizeInputOfArray = svSizeOfArray(i);
     int dim = svDimensions(i);
 #ifndef NC
     // NC always returns zero and warns
     CHECK_RESULT_HEX(dim, u);
-    // svSizeOfArray(i) undeterministic as not in C representation
 #endif
+    int sizeInputOfArray = svSizeOfArray(i);
+    // svSizeOfArray(i) undeterministic as not in C representation
+    if (sizeInputOfArray) {}
 
     for (int a = svLow(i, 1); a <= svHigh(i, 1); ++a) {
         if (dim == 1) {
