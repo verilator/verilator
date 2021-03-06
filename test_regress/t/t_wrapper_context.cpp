@@ -36,17 +36,18 @@ void sim(VM_PREFIX* topp) {
     Verilated::threadContextp(contextp);
 
     // reset
-    topp->clk_i = 0;
-    topp->rst_i = 1;
+    topp->clk = 0;
+    topp->rst = 1;
+    topp->stop = (topp->trace_number == 0);
     topp->eval();
 
     contextp->timeInc(1);
-    topp->clk_i = 1;
+    topp->clk = 1;
     topp->eval();
 
     contextp->timeInc(1);
-    topp->rst_i = 0;
-    topp->clk_i = 0;
+    topp->rst = 0;
+    topp->clk = 0;
     topp->eval();
 
     // simulate until done
@@ -64,8 +65,8 @@ void sim(VM_PREFIX* topp) {
 #endif
         }
 
-        // toggle clk_i
-        topp->clk_i = !topp->clk_i;
+        // toggle clk
+        topp->clk = !topp->clk;
 
         // evaluate model
         topp->eval();
@@ -81,7 +82,9 @@ int main(int argc, char** argv, char** env) {
     std::unique_ptr<VerilatedContext> context0p{new VerilatedContext};
     std::unique_ptr<VerilatedContext> context1p{new VerilatedContext};
 
-    // enable tracing
+    // configuration
+    context0p->fatalOnStop(false);
+    context1p->fatalOnStop(false);
     context0p->traceEverOn(true);
     context1p->traceEverOn(true);
 

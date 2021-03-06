@@ -111,9 +111,20 @@ void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE
 
 #ifndef VL_USER_STOP  ///< Define this to override this function
 void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
+    const char* const msg = "Verilog $stop";
     Verilated::threadContextp()->gotFinish(true);
-    Verilated::runFlushCallbacks();
-    vl_fatal(filename, linenum, hier, "Verilog $stop");
+    Verilated::threadContextp()->gotStop(true);
+    if (Verilated::threadContextp()->fatalOnStop()) {
+        vl_fatal(filename, linenum, hier, msg);
+    } else {
+        if (filename && filename[0]) {
+            // Not VL_PRINTF_MT, already on main thread
+            VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);
+        } else {
+            VL_PRINTF("%%Error: %s\n", msg);
+        }
+        Verilated::runFlushCallbacks();
+    }
 }
 #endif
 
@@ -121,6 +132,7 @@ void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
     if (false && hier) {}
     Verilated::threadContextp()->gotFinish(true);
+    Verilated::threadContextp()->gotStop(true);
     if (filename && filename[0]) {
         // Not VL_PRINTF_MT, already on main thread
         VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);
@@ -2203,6 +2215,10 @@ void VerilatedContext::errorLimit(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);
     m_s.m_errorLimit = val;
 }
+void VerilatedContext::fatalOnStop(bool flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock(m_mutex);
+    m_s.m_fatalOnStop = flag;
+}
 void VerilatedContext::fatalOnVpiError(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);
     m_s.m_fatalOnVpiError = flag;
@@ -2210,6 +2226,10 @@ void VerilatedContext::fatalOnVpiError(bool flag) VL_MT_SAFE {
 void VerilatedContext::gotFinish(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);
     m_s.m_gotFinish = flag;
+}
+void VerilatedContext::gotStop(bool flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock(m_mutex);
+    m_s.m_gotStop = flag;
 }
 void VerilatedContext::profThreadsStart(vluint64_t flag) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);

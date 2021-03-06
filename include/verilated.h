@@ -326,8 +326,10 @@ protected:
         // Fast path
         bool m_assertOn = true;  // Assertions are enabled
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
-        bool m_fatalOnVpiError = true;  // Stop on vpi error/unsupported
-        bool m_gotFinish = false;  // A $finish statement executed
+        bool m_fatalOnStop = true;  // Fatal on $stop
+        bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
+        bool m_gotFinish = false;  // A $finish or $stop statement executed
+        bool m_gotStop = false;  // A $finish statement executed
         vluint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
         // Slow path
         vlsint8_t m_timeunit;  // Time unit as 0..15
@@ -429,14 +431,22 @@ public:
     void errorLimit(int val) VL_MT_SAFE;
     /// Return number of errors/assertions before stop
     int errorLimit() const VL_MT_SAFE { return m_s.m_errorLimit; }
+    /// Set to throw fatal error on $stop
+    void fatalOnStop(bool flag) VL_MT_SAFE;
+    /// Return if to throw fatal error on $stop
+    bool fatalOnStop() const VL_MT_SAFE { return m_s.m_fatalOnStop; }
     /// Set to throw fatal error on VPI errors
     void fatalOnVpiError(bool flag) VL_MT_SAFE;
     /// Return if to throw fatal error on VPI errors
     bool fatalOnVpiError() const VL_MT_SAFE { return m_s.m_fatalOnVpiError; }
-    /// Set if got a $finish
+    /// Set if got a $finish or $stop
     void gotFinish(bool flag) VL_MT_SAFE;
-    /// Return if got a $finish
+    /// Return if got a $finish or $stop
     bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish; }
+    /// Set if got a $stop
+    void gotStop(bool flag) VL_MT_SAFE;
+    /// Return if got a $stop
+    bool gotStop() const VL_MT_SAFE { return m_s.m_gotStop; }
     /// Select initial value of otherwise uninitialized signals.
     /// 0 = Set to zeros
     /// 1 = Set all bits to one
@@ -718,6 +728,11 @@ public:
     /// Call VerilatedContext::errorLimit using current thread's VerilatedContext
     static void errorLimit(int val) VL_MT_SAFE { Verilated::threadContextp()->errorLimit(val); }
     static int errorLimit() VL_MT_SAFE { return Verilated::threadContextp()->errorLimit(); }
+    /// Call VerilatedContext::fatalOnStop using current thread's VerilatedContext
+    static void fatalOnStop(bool flag) VL_MT_SAFE {
+        Verilated::threadContextp()->fatalOnStop(flag);
+    }
+    static bool fatalOnStop() VL_MT_SAFE { return Verilated::threadContextp()->fatalOnStop(); }
     /// Call VerilatedContext::fatalOnVpiError using current thread's VerilatedContext
     static void fatalOnVpiError(bool flag) VL_MT_SAFE {
         Verilated::threadContextp()->fatalOnVpiError(flag);
@@ -728,6 +743,9 @@ public:
     /// Call VerilatedContext::gotFinish using current thread's VerilatedContext
     static void gotFinish(bool flag) VL_MT_SAFE { Verilated::threadContextp()->gotFinish(flag); }
     static bool gotFinish() VL_MT_SAFE { return Verilated::threadContextp()->gotFinish(); }
+    /// Call VerilatedContext::gotStop using current thread's VerilatedContext
+    static void gotStop(bool flag) VL_MT_SAFE { Verilated::threadContextp()->gotStop(flag); }
+    static bool gotStop() VL_MT_SAFE { return Verilated::threadContextp()->gotStop(); }
     /// Call VerilatedContext::randReset using current thread's VerilatedContext
     static void randReset(int val) VL_MT_SAFE { Verilated::threadContextp()->randReset(val); }
     static int randReset() VL_MT_SAFE { return Verilated::threadContextp()->randReset(); }

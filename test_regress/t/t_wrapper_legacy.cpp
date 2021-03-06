@@ -59,11 +59,20 @@ int main(int argc, char** argv, char** env) {
     CHECK_RESULT(Verilated::debug(), 9);
     Verilated::debug(0);
 
+    Verilated::fatalOnStop(true);
+    CHECK_RESULT(Verilated::fatalOnStop(), true);
+
+    Verilated::fatalOnVpiError(true);
+    CHECK_RESULT(Verilated::fatalOnVpiError(), true);
+
     Verilated::fatalOnVpiError(true);
     CHECK_RESULT(Verilated::fatalOnVpiError(), true);
 
     Verilated::gotFinish(false);
     CHECK_RESULT(Verilated::gotFinish(), false);  // Commonly used
+
+    Verilated::gotStop(false);
+    CHECK_RESULT(Verilated::gotStop(), false);
 
     Verilated::mkdir(VL_STRINGIFY(TEST_OBJ_DIR) "/mkdired");
 
