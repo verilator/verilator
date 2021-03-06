@@ -245,12 +245,12 @@ private:
 
 public:
     // PUBLIC METHODS
-    void clear() VL_EXCLUDES(m_mutex) {
+    void clear() VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
         clearGuts();
     }
-    void clearNonMatch(const char* matchp) VL_EXCLUDES(m_mutex) {
+    void clearNonMatch(const char* matchp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
         if (matchp && matchp[0]) {
@@ -265,25 +265,25 @@ public:
             m_items = newlist;
         }
     }
-    void zero() VL_EXCLUDES(m_mutex) {
+    void zero() VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
         for (const auto& itemp : m_items) itemp->zero();
     }
 
     // We assume there's always call to i/f/p in that order
-    void inserti(VerilatedCovImpItem* itemp) VL_EXCLUDES(m_mutex) {
+    void inserti(VerilatedCovImpItem* itemp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         const VerilatedLockGuard lock(m_mutex);
         assert(!m_insertp);
         m_insertp = itemp;
     }
-    void insertf(const char* filenamep, int lineno) VL_EXCLUDES(m_mutex) {
+    void insertf(const char* filenamep, int lineno) VL_MT_SAFE_EXCLUDES(m_mutex) {
         const VerilatedLockGuard lock(m_mutex);
         m_insertFilenamep = filenamep;
         m_insertLineno = lineno;
     }
     void insertp(const char* ckeyps[VerilatedCovConst::MAX_KEYS],
-                 const char* valps[VerilatedCovConst::MAX_KEYS]) VL_EXCLUDES(m_mutex) {
+                 const char* valps[VerilatedCovConst::MAX_KEYS]) VL_MT_SAFE_EXCLUDES(m_mutex) {
         const VerilatedLockGuard lock(m_mutex);
         assert(m_insertp);
         // First two key/vals are filename
@@ -340,7 +340,7 @@ public:
         m_insertp = nullptr;
     }
 
-    void write(const char* filename) VL_EXCLUDES(m_mutex) {
+    void write(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
 #ifndef VM_COVERAGE
