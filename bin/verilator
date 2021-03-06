@@ -5421,10 +5421,14 @@ controlled by --assert are disabled.
 
 =item Why do I get "undefined reference to `sc_time_stamp()'"?
 
-In C++ (non SystemC) code you need to define this function so that the
-simulator knows the current time.  See the "CONNECTING TO C++" examples.
+In 4.112 and later, using the timeInc function is recommended instead.  See
+the "CONNECTING TO C++" examples.  Some linkers (MSVC++) still require
+sc_time_stamp() to be defined, either define this with ("double
+sc_time_stamp() { return 0; }") or compile the Verilated code with
+-DVL_TIME_CONTEXT.
 
-FIXME mention cygwin, VL_TIME_CONTEXT, make documentation be multiple-versioned.
+Prior to Verilator 4.112, the sc_time_stamp function needs to be defined in
+C++ (non SystemC) to return the current simulation time.
 
 =item Why do I get "undefined reference to `VL_RAND_RESET_I' or `Verilated::...'"?
 
