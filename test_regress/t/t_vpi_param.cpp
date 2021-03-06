@@ -112,7 +112,7 @@ int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verb
     }
 
     // values
-    if (verbose) { vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str()); }
+    if (verbose) vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str());
     value.value.integer = exp_value;
     vpi_put_value(param_h, &value, NULL, vpiNoDelay);
     CHECK_RESULT_NZ(vpi_chk_error(&e));
@@ -120,7 +120,7 @@ int check_param_int(std::string name, PLI_INT32 format, int exp_value, bool verb
         vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
     }
 
-    if (verbose) { vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str()); }
+    if (verbose) vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str());
     vpi_get_value(param_h, &value);
     CHECK_RESULT_NZ(!vpi_chk_error(&e));
     if (verbose && vpi_chk_error(&e)) {
@@ -166,7 +166,7 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
     }
 
     // values
-    if (verbose) { vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str()); }
+    if (verbose) vpi_printf((PLI_BYTE8*)"  Try writing value to %s ...\n", name.c_str());
     value.value.str = (PLI_BYTE8*)exp_value.c_str();
     vpi_put_value(param_h, &value, NULL, vpiNoDelay);
     CHECK_RESULT_NZ(vpi_chk_error(&e));
@@ -174,7 +174,7 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
         vpi_printf((PLI_BYTE8*)"    vpi_chk_error: %s\n", e.message);
     }
 
-    if (verbose) { vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str()); }
+    if (verbose) vpi_printf((PLI_BYTE8*)"  Try reading value of %s ...\n", name.c_str());
     vpi_get_value(param_h, &value);
     CHECK_RESULT_NZ(!vpi_chk_error(&e));
     if (verbose && vpi_chk_error(&e)) {
@@ -288,7 +288,7 @@ int main(int argc, char** argv, char** env) {
 #endif
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return 0;
 }
 
 #endif

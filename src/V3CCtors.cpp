@@ -81,7 +81,7 @@ public:
         m_tlFuncp->isStatic(false);
         m_tlFuncp->slow(!VN_IS(m_modp, Class));  // Only classes construct on fast path
         m_tlFuncp->argTypes(m_argsp);
-        if (stmt != "") { m_tlFuncp->addStmtsp(new AstCStmt(nodep->fileline(), stmt)); }
+        if (stmt != "") m_tlFuncp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
         m_funcp = m_tlFuncp;
         m_modp->addStmtp(m_tlFuncp);
     }

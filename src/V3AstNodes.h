@@ -14,10 +14,10 @@
 //
 //*************************************************************************
 
-#ifndef _V3ASTNODES_H_
-#define _V3ASTNODES_H_ 1
+#ifndef VERILATOR_V3ASTNODES_H_
+#define VERILATOR_V3ASTNODES_H_
 
-#ifndef _V3AST_H_
+#ifndef VERILATOR_V3AST_H_
 #error "Use V3Ast.h as the include"
 #endif
 
@@ -539,8 +539,8 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
-        if (m_keyDTypep && m_keyDTypep->clonep()) { m_keyDTypep = m_keyDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
+        if (m_keyDTypep && m_keyDTypep->clonep()) m_keyDTypep = m_keyDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
@@ -641,7 +641,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
@@ -760,7 +760,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
@@ -971,7 +971,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstConstDType* sp = static_cast<const AstConstDType*>(samep);
@@ -1140,7 +1140,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstQueueDType* asamep = static_cast<const AstQueueDType*>(samep);
@@ -1217,8 +1217,8 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_typedefp && m_typedefp->clonep()) { m_typedefp = m_typedefp->clonep(); }
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_typedefp && m_typedefp->clonep()) m_typedefp = m_typedefp->clonep();
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstRefDType* asamep = static_cast<const AstRefDType*>(samep);
@@ -1486,7 +1486,7 @@ public:
         return nullptr;
     }
     virtual void cloneRelink() override {
-        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     virtual bool same(const AstNode* samep) const override {
         const AstEnumDType* sp = static_cast<const AstEnumDType*>(samep);
@@ -2047,7 +2047,7 @@ public:
         , m_origName{name} {
         init();
         combineType(type);
-        if (examplep->childDTypep()) { childDTypep(examplep->childDTypep()->cloneTree(true)); }
+        if (examplep->childDTypep()) childDTypep(examplep->childDTypep()->cloneTree(true));
         dtypeFrom(examplep);
         m_declKwd = examplep->declKwd();
     }
@@ -2677,7 +2677,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(MemberSel)
     virtual void cloneRelink() override {
-        if (m_varp && m_varp->clonep()) { m_varp = m_varp->clonep(); }
+        if (m_varp && m_varp->clonep()) m_varp = m_varp->clonep();
     }
     virtual const char* broken() const override {
         BROKEN_RTN(m_varp && !m_varp->brokeExists());
@@ -7294,7 +7294,7 @@ class AstShiftL final : public AstNodeBiop {
 public:
     AstShiftL(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth = 0)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::UNSIGNED); }
+        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(ShiftL)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7318,7 +7318,7 @@ class AstShiftR final : public AstNodeBiop {
 public:
     AstShiftR(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth = 0)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::UNSIGNED); }
+        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(ShiftR)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -7346,7 +7346,7 @@ public:
     AstShiftRS(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth = 0)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
         // Important that widthMin be correct, as opExtend requires it after V3Expand
-        if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::SIGNED); }
+        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::SIGNED);
     }
     ASTNODE_NODE_FUNCS(ShiftRS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
@@ -9048,7 +9048,7 @@ public:
         , m_cleanOut{cleanOut}
         , m_pure{true} {
         addNOp1p(new AstText(fl, textStmt, true));
-        if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::UNSIGNED); }
+        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(CMath)
     virtual bool isGateOptimizable() const override { return m_pure; }

@@ -332,7 +332,7 @@ class EmitCSyms final : EmitCBaseVisitor {
     virtual void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildren(nodep);
-        if (nodep->isSigUserRdPublic()) { m_modVars.emplace_back(make_pair(m_modp, nodep)); }
+        if (nodep->isSigUserRdPublic()) m_modVars.emplace_back(make_pair(m_modp, nodep));
     }
     virtual void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
@@ -620,7 +620,7 @@ void EmitCSyms::emitSymImp() {
                  + "& os) {\n");
             puts("// LOCAL STATE\n");
             // __Vm_namep presumably already correct
-            if (v3Global.opt.trace()) { puts("os" + op + "__Vm_activity;\n"); }
+            if (v3Global.opt.trace()) puts("os" + op + "__Vm_activity;\n");
             puts("os" + op + "__Vm_didInit;\n");
             puts("// SUBCELL STATE\n");
             for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end();
@@ -922,8 +922,9 @@ void EmitCSyms::emitDpiImp() {
 
     for (AstCFunc* nodep : m_dpis) {
         if (nodep->dpiExportWrapper()) {
-            puts("#ifndef _VL_DPIDECL_" + nodep->name() + "\n");
-            puts("#define _VL_DPIDECL_" + nodep->name() + "\n");
+            // Prevent multi-definition if used by multiple models
+            puts("#ifndef VL_DPIDECL_" + nodep->name() + "_\n");
+            puts("#define VL_DPIDECL_" + nodep->name() + "_\n");
             puts(nodep->rtnTypeVoid() + " " + nodep->name() + "(" + cFuncArgs(nodep) + ") {\n");
             puts("// DPI export" + ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
             puts("return " + topClassName() + "::" + nodep->name() + "(");

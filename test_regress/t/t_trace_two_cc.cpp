@@ -90,9 +90,10 @@ int main(int argc, char** argv, char** env) {
 
 #ifdef TEST_HDR_TRACE
     if (tfp) tfp->close();
+    VL_DO_DANGLING(delete tfp, tfp);
 #endif
 
     VL_DO_DANGLING(delete ap, ap);
     VL_DO_DANGLING(delete bp, bp);
-    exit(0L);
+    return 0;
 }

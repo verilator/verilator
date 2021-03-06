@@ -101,10 +101,10 @@ public:
                     // have them.
                 } else if (support == 2 && !slow) {
                     putMakeClassEntry(of, "verilated.cpp");
-                    if (v3Global.dpi()) { putMakeClassEntry(of, "verilated_dpi.cpp"); }
-                    if (v3Global.opt.vpi()) { putMakeClassEntry(of, "verilated_vpi.cpp"); }
-                    if (v3Global.opt.savable()) { putMakeClassEntry(of, "verilated_save.cpp"); }
-                    if (v3Global.opt.coverage()) { putMakeClassEntry(of, "verilated_cov.cpp"); }
+                    if (v3Global.dpi()) putMakeClassEntry(of, "verilated_dpi.cpp");
+                    if (v3Global.opt.vpi()) putMakeClassEntry(of, "verilated_vpi.cpp");
+                    if (v3Global.opt.savable()) putMakeClassEntry(of, "verilated_save.cpp");
+                    if (v3Global.opt.coverage()) putMakeClassEntry(of, "verilated_cov.cpp");
                     if (v3Global.opt.trace()) {
                         putMakeClassEntry(of, v3Global.opt.traceSourceBase() + "_c.cpp");
                         if (v3Global.opt.systemC()) {
@@ -117,7 +117,7 @@ public:
                             }
                         }
                     }
-                    if (v3Global.opt.mtasks()) { putMakeClassEntry(of, "verilated_threads.cpp"); }
+                    if (v3Global.opt.mtasks()) putMakeClassEntry(of, "verilated_threads.cpp");
                 } else if (support == 2 && slow) {
                 } else {
                     for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;

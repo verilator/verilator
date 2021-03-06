@@ -1972,7 +1972,7 @@ We'll compile this example into C++.
           Vour* top = new Vour;
           while (!Verilated::gotFinish()) { top->eval(); }
           delete top;
-          exit(0);
+          return 0;
       }
     EOF
 
@@ -2043,7 +2043,7 @@ This is an example similar to the above, but using SystemC.
           top->clk(clk);
           while (!Verilated::gotFinish()) { sc_start(1, SC_NS); }
           delete top;
-          exit(0);
+          return 0;
       }
     EOF
 
@@ -2704,7 +2704,7 @@ accesses the above signal "readme" would be:
               read_and_check();
           }
           delete top;
-          exit(0);
+          return 0;
       }
     EOF
 
@@ -5126,6 +5126,10 @@ The following deprecated items are scheduled for future removal:
 Verilator currently requires C++11 or newer compilers.  Verilator will
 require C++14 or newer compilers for both compiling Verilator and compiling
 Verilated models no sooner than January 2022.
+
+=item --inhibit-sim
+
+The --inhibit-sim option is planned for removal no sooner than July 2021.
 
 =item Configuration File -msg
 

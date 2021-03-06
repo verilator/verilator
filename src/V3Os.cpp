@@ -271,7 +271,7 @@ string V3Os::trueRandom(size_t size) {
 #if defined(_WIN32) || defined(__MINGW32__)
     NTSTATUS hr = BCryptGenRandom(nullptr, reinterpret_cast<BYTE*>(data), size,
                                   BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-    if (!BCRYPT_SUCCESS(hr)) { v3fatal("Could not acquire random data."); }
+    if (!BCRYPT_SUCCESS(hr)) v3fatal("Could not acquire random data.");
 #else
     std::ifstream is("/dev/urandom", std::ios::in | std::ios::binary);
     // This read uses the size of the buffer.

@@ -21,8 +21,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3SCOREBOARD_H_
-#define _V3SCOREBOARD_H_
+#ifndef VERILATOR_V3SCOREBOARD_H_
+#define VERILATOR_V3SCOREBOARD_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

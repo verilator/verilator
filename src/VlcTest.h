@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _VLCTEST_H_
-#define _VLCTEST_H_ 1
+#ifndef VERILATOR_VLCTEST_H_
+#define VERILATOR_VLCTEST_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

@@ -306,6 +306,7 @@ public:
                 puts("II");
                 emitIQW(nodep->rhsp());
                 puts("(");
+                puts(cvtToStr(selp->fromp()->widthMin()) + ",");
                 puts(cvtToStr(nodep->widthMin()) + ",");
                 iterateAndNextNull(selp->lsbp());
                 puts(", ");
@@ -693,7 +694,7 @@ public:
         iterateAndNextNull(nodep->offset());
         puts(",");
         iterateAndNextNull(nodep->operation());
-        puts(")==-1?-1:0)");
+        puts(") == -1 ? -1 : 0)");
     }
     virtual void visit(AstFTell* nodep) override {
         puts("VL_FTELL_I(");
@@ -703,7 +704,7 @@ public:
     virtual void visit(AstFRewind* nodep) override {
         puts("(VL_FSEEK_I(");
         iterateAndNextNull(nodep->filep());
-        puts(", 0, 0)==-1?-1:0)");
+        puts(", 0, 0) == -1 ? -1 : 0)");
     }
     virtual void visit(AstFRead* nodep) override {
         puts("VL_FREAD_I(");
@@ -1035,8 +1036,8 @@ public:
             emitIQW(nodep);
             puts("OI(");
             puts(cvtToStr(nodep->widthMin()));
-            if (nodep->lhsp()) { puts("," + cvtToStr(nodep->lhsp()->widthMin())); }
-            if (nodep->rhsp()) { puts("," + cvtToStr(nodep->rhsp()->widthMin())); }
+            if (nodep->lhsp()) puts("," + cvtToStr(nodep->lhsp()->widthMin()));
+            if (nodep->rhsp()) puts("," + cvtToStr(nodep->rhsp()->widthMin()));
             puts(",");
             iterateAndNextNull(nodep->lhsp());
             puts(", ");
@@ -2026,7 +2027,7 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp,
                     nextComma = ",";
                 needComma = false;
             }
-            if (pos[1] == ' ') { ++pos; }  // Must do even if no nextComma
+            if (pos[1] == ' ') ++pos;  // Must do even if no nextComma
         } else if (pos[0] == '%') {
             ++pos;
             bool detail = false;
@@ -2427,10 +2428,12 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     if (VN_IS(modp, Class)) {
         modp->v3fatalSrc("constructors should be AstCFuncs instead");
     } else if (optSystemC() && modp->isTop()) {
-        puts("VL_SC_CTOR_IMP(" + prefixNameProtect(modp) + ")");
+        puts(prefixNameProtect(modp) + "::" + prefixNameProtect(modp) + "(sc_module_name)");
     } else {
-        puts("VL_CTOR_IMP(" + prefixNameProtect(modp) + ")");
-        first = false;  // VL_CTOR_IMP includes the first ':'
+        puts(prefixNameProtect(modp) + "::" + prefixNameProtect(modp)
+             + "(const char* __VCname)\n");
+        puts("    : VerilatedModule(__VCname)\n");
+        first = false;  // printed the first ':'
     }
     emitVarCtors(&first);
     if (modp->isTop() && v3Global.opt.mtasks()) emitMTaskVertexCtors(&first);
@@ -3184,7 +3187,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         puts("virtual ~" + prefixNameProtect(modp) + "();\n");
     } else if (optSystemC()) {
         ofp()->putsPrivate(false);  // public:
-        puts("VL_CTOR(" + prefixNameProtect(modp) + ");\n");
+        puts(prefixNameProtect(modp) + "(const char* __VCname = \"\");\n");
         puts("~" + prefixNameProtect(modp) + "();\n");
     } else {
         ofp()->putsPrivate(false);  // public:
@@ -3875,7 +3878,7 @@ public:
         // Put out the file
         newOutCFile(0);
 
-        if (m_slow) { emitTraceSlow(); }
+        if (m_slow) emitTraceSlow();
 
         iterate(v3Global.rootp());
 

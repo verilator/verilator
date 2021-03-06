@@ -54,6 +54,6 @@ int main(int argc, char* argv[]) {
         exit(10);
     } else {
         printf("*-* All Finished *-*\n");
-        exit(0);
+        return 0;
     }
 }

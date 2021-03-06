@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 # -*- Python -*- See copyright, etc below
+# pylint: disable=C0103,C0114,C0115,C0115,C0116,R0914
 ######################################################################
 
 import argparse
 import os
-import re
 import subprocess
-import sys
 import tempfile
 import xml.etree.ElementTree as ET
-from shutil import copy2
-from pprint import pprint, pformat
+# from pprint import pprint, pformat
 
 #######################################################################
 
@@ -28,15 +26,15 @@ class VlHierGraph:
 
         xml_temp = tempfile.NamedTemporaryFile()
 
-        args = [
+        vargs = [
             '--xml-output',
             xml_temp.name,
             '--bbox-sys',  # Parse some stuff can't translate
             '--bbox-unsup',
             '--prefix vlxml'
         ]  # So we know name of .xml output
-        args += verilator_args
-        self.run_verilator(args)
+        vargs += verilator_args
+        self.run_verilator(vargs)
         self.tree = ET.parse(xml_temp.name)
 
         with open(output_filename, "w") as fh:
@@ -70,18 +68,18 @@ class VlHierGraph:
             fh.write("}\n")
 
     def name_to_vertex_number(self, name):
-        if not name in self.name_to_number:
+        if name not in self.name_to_number:
             self.next_vertex_number += 1
             self.name_to_number[name] = self.next_vertex_number
         return self.name_to_number[name]
 
-    def run_verilator(self, args):
+    def run_verilator(self, vargs):
         """Run Verilator command, check errors"""
         if os.getenv("VERILATOR_ROOT"):
             command = os.getenv("VERILATOR_ROOT") + "/bin/verilator"
         else:
             command = "verilator"
-        command += ' ' + ' '.join(args)
+        command += ' ' + ' '.join(vargs)
         if self.debug:
             print("\t%s " % command)
         status = subprocess.call(command, shell=True)
@@ -146,6 +144,6 @@ SPDX-License-Identifier: CC0-1.0
                      verilator_args=rem)
 
 ######################################################################
-### Local Variables:
-### compile-command: "./vl_hier_graph -h ; VERILATOR_ROOT=$V4 ./vl_hier_graph +define+thru top.v"
-### End:
+# Local Variables:
+# compile-command: "./vl_hier_graph -h ; VERILATOR_ROOT=$V4 ./vl_hier_graph +define+thru top.v"
+# End:

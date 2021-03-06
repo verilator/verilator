@@ -271,7 +271,9 @@ private:
         }
         for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp;
              vertexp = vertexp->verticesNextp()) {
-            if (!vertexp->user()) { vertexIterate(vertexp, 1); }
+            if (!vertexp->user()) {  //
+                vertexIterate(vertexp, 1);
+            }
         }
     }
 

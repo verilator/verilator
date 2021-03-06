@@ -182,7 +182,7 @@ private:
         }
         // Likewise, all FTask->scope mappings
         for (AstNode* stmtp = nodep->blocksp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstNodeFTask* taskp = VN_CAST(stmtp, NodeFTask)) { taskp->user3p(nodep); }
+            if (AstNodeFTask* taskp = VN_CAST(stmtp, NodeFTask)) taskp->user3p(nodep);
         }
         iterateChildren(nodep);
     }
@@ -786,8 +786,8 @@ private:
             // Static doesn't need save-restore as if below will re-fill proper value
             stmt += "static int __Vfuncnum = -1;\n";
             // First time init (faster than what the compiler does if we did a singleton
-            stmt += "if (VL_UNLIKELY(__Vfuncnum==-1)) { __Vfuncnum = Verilated::exportFuncNum(\""
-                    + nodep->cname() + "\"); }\n";
+            stmt += "if (VL_UNLIKELY(__Vfuncnum == -1)) __Vfuncnum = Verilated::exportFuncNum(\""
+                    + nodep->cname() + "\");\n";
             // If the find fails, it will throw an error
             stmt += "const VerilatedScope* __Vscopep = Verilated::dpiScope();\n";
             // If dpiScope is fails and is null; the exportFind function throws and error

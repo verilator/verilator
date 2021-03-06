@@ -2215,8 +2215,8 @@ private:
                 if (lhsp->varrefp()->name() < rhsp->varrefp()->name()) return true;
                 if (lhsp->varrefp()->name() > rhsp->varrefp()->name()) return false;
                 // But might be same name with different scopes
-                if (lhsp->varrefp()->varScopep() < rhsp->varrefp()->varScopep()) { return true; }
-                if (lhsp->varrefp()->varScopep() > rhsp->varrefp()->varScopep()) { return false; }
+                if (lhsp->varrefp()->varScopep() < rhsp->varrefp()->varScopep()) return true;
+                if (lhsp->varrefp()->varScopep() > rhsp->varrefp()->varScopep()) return false;
                 // Or rarely, different data types
                 if (lhsp->varrefp()->dtypep() < rhsp->varrefp()->dtypep()) return true;
                 if (lhsp->varrefp()->dtypep() > rhsp->varrefp()->dtypep()) return false;
@@ -2602,7 +2602,7 @@ private:
     // Ignored, can eliminate early
     virtual void visit(AstSysIgnore* nodep) override {
         iterateChildren(nodep);
-        if (m_doNConst) { VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep); }
+        if (m_doNConst) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     // Simplify

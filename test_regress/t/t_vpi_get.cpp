@@ -123,7 +123,7 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
         int vpidir = vpi_get(vpiDirection, handle);
         // Don't check port directions in verilator
         // see #681
-        if (!TestSimulator::is_verilator()) { CHECK_RESULT(vpidir, direction); }
+        if (!TestSimulator::is_verilator()) CHECK_RESULT(vpidir, direction);
     }
 
     // check type of object
@@ -278,7 +278,7 @@ int main(int argc, char** argv, char** env) {
 #endif
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return 0;
 }
 
 #endif

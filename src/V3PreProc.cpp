@@ -953,7 +953,7 @@ int V3PreProcImp::getStateToken() {
 
         // Most states emit white space and comments between tokens. (Unless collecting a string)
         if (tok == VP_WHITE && state() != ps_STRIFY) return tok;
-        if (tok == VP_BACKQUOTE && state() != ps_STRIFY) { tok = VP_TEXT; }
+        if (tok == VP_BACKQUOTE && state() != ps_STRIFY) tok = VP_TEXT;
         if (tok == VP_COMMENT) {
             if (!m_off) {
                 if (m_lexp->m_keepComments == KEEPCMT_SUB) {

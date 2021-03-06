@@ -320,7 +320,7 @@ void V3File::createMakeDir() {
     if (!created) {
         created = true;
         V3Os::createDir(v3Global.opt.makeDir());
-        if (v3Global.opt.hierTop()) { V3Os::createDir(v3Global.opt.hierTopDataDir()); }
+        if (v3Global.opt.hierTop()) V3Os::createDir(v3Global.opt.hierTopDataDir());
     }
 }
 
@@ -787,11 +787,11 @@ void V3OutFormatter::puts(const char* strg) {
             wordstart = false;
             break;
         case 'e':
-            if (wordstart && m_lang == LA_VERILOG && tokenEnd(cp)) { indentDec(); }
+            if (wordstart && m_lang == LA_VERILOG && tokenEnd(cp)) indentDec();
             wordstart = false;
             break;
         case 'm':
-            if (wordstart && m_lang == LA_VERILOG && tokenStart(cp, "module")) { indentInc(); }
+            if (wordstart && m_lang == LA_VERILOG && tokenStart(cp, "module")) indentInc();
             wordstart = false;
             break;
         default: wordstart = false; break;
@@ -938,7 +938,7 @@ void V3OutFile::putsForceIncs() {
 void V3OutCFile::putsGuard() {
     UASSERT(!m_guard, "Already called putsGuard in emit file");
     m_guard = true;
-    string var = VString::upcase(string("_") + V3Os::filenameNonDir(filename()) + "_");
+    string var = VString::upcase(string("VERILATED_") + V3Os::filenameNonDir(filename()) + "_");
     for (char& c : var) {
         if (!isalnum(c)) c = '_';
     }

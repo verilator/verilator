@@ -60,7 +60,7 @@ private:
         int instances = 0;
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (VN_IS(stmtp, Scope)) {
-                if (++instances > 1) { return false; }
+                if (++instances > 1) return false;
             }
         }
         return (instances == 1);

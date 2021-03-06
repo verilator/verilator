@@ -44,7 +44,7 @@ int main() {
     for (tb->SEL = 0; tb->SEL < 2; tb->SEL++) {
         for (tb->A = 0; tb->A < 4; tb->A++) {
             tb->eval();
-            if (!check()) { pass = false; }
+            if (!check()) pass = false;
         }
     }
 

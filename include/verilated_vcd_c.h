@@ -17,8 +17,8 @@
 //=============================================================================
 // SPDIFF_OFF
 
-#ifndef _VERILATED_VCD_C_H_
-#define _VERILATED_VCD_C_H_ 1
+#ifndef VERILATOR_VERILATED_VCD_C_H_
+#define VERILATOR_VERILATED_VCD_C_H_
 
 #include "verilated.h"
 #include "verilated_trace.h"
@@ -84,7 +84,7 @@ private:
     inline void bufferCheck() {
         // Flush the write buffer if there's not enough space left for new information
         // We only call this once per vector, so we need enough slop for a very wide "b###" line
-        if (VL_UNLIKELY(m_writep > m_wrFlushp)) { bufferFlush(); }
+        if (VL_UNLIKELY(m_writep > m_wrFlushp)) bufferFlush();
     }
     void closePrev();
     void closeErr();

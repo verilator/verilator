@@ -16,11 +16,11 @@
 ///
 //=========================================================================
 
-#ifndef _VERILATED_IMP_H_
-#define _VERILATED_IMP_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_IMP_H_
+#define VERILATOR_VERILATED_IMP_H_  ///< Header Guard
 
 // clang-format off
-#if !defined(_VERILATED_CPP_) && !defined(_VERILATED_DPI_CPP_) && !defined(_VERILATED_VPI_CPP_)
+#if !defined(VERILATOR_VERILATED_CPP_) && !defined(VERILATOR_VERILATED_DPI_CPP_) && !defined(VERILATOR_VERILATED_VPI_CPP_)
 # error "verilated_imp.h only to be included by verilated*.cpp internals"
 #endif
 
@@ -235,7 +235,7 @@ protected:
     VerilatedScopeNameMap m_nameMap VL_GUARDED_BY(m_nameMutex);
 
     VerilatedMutex m_hierMapMutex;  ///< Protect m_hierMap
-    /// Map the represents scope hierarchy
+    /// Map that represents scope hierarchy
     VerilatedHierarchyMap m_hierMap VL_GUARDED_BY(m_hierMapMutex);
 
     // Slow - somewhat static:
@@ -417,7 +417,7 @@ public:  // But only for verilated*.cpp
         const VerilatedLockGuard lock(s_s.v.m_hierMapMutex);
         VerilatedHierarchyMap& map = s_s.v.m_hierMap;
         if (map.find(fromp) == map.end()) return;
-        VerilatedScopeVector& scopes = map[fromp];
+        auto& scopes = map[fromp];
         const auto it = find(scopes.begin(), scopes.end(), top);
         if (it != scopes.end()) scopes.erase(it);
     }

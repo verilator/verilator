@@ -313,7 +313,7 @@ private:
             nodep->replaceWith(fromp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
-        if (!rhsp->backp()) { VL_DO_DANGLING(pushDeletep(rhsp), rhsp); }
+        if (!rhsp->backp()) VL_DO_DANGLING(pushDeletep(rhsp), rhsp);
     }
     virtual void visit(AstSelExtract* nodep) override {
         // Select of a range specified part of an array, i.e. "array[2:3]"
@@ -458,9 +458,9 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         // delete whatever we didn't use in reconstruction
-        if (!fromp->backp()) { VL_DO_DANGLING(pushDeletep(fromp), fromp); }
-        if (!msbp->backp()) { VL_DO_DANGLING(pushDeletep(msbp), msbp); }
-        if (!lsbp->backp()) { VL_DO_DANGLING(pushDeletep(lsbp), lsbp); }
+        if (!fromp->backp()) VL_DO_DANGLING(pushDeletep(fromp), fromp);
+        if (!msbp->backp()) VL_DO_DANGLING(pushDeletep(msbp), msbp);
+        if (!lsbp->backp()) VL_DO_DANGLING(pushDeletep(lsbp), lsbp);
     }
 
     void replaceSelPlusMinus(AstNodePreSel* nodep) {
@@ -563,9 +563,9 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         // delete whatever we didn't use in reconstruction
-        if (!fromp->backp()) { VL_DO_DANGLING(pushDeletep(fromp), fromp); }
-        if (!rhsp->backp()) { VL_DO_DANGLING(pushDeletep(rhsp), rhsp); }
-        if (!widthp->backp()) { VL_DO_DANGLING(pushDeletep(widthp), widthp); }
+        if (!fromp->backp()) VL_DO_DANGLING(pushDeletep(fromp), fromp);
+        if (!rhsp->backp()) VL_DO_DANGLING(pushDeletep(rhsp), rhsp);
+        if (!widthp->backp()) VL_DO_DANGLING(pushDeletep(widthp), widthp);
     }
     virtual void visit(AstSelPlus* nodep) override { replaceSelPlusMinus(nodep); }
     virtual void visit(AstSelMinus* nodep) override { replaceSelPlusMinus(nodep); }

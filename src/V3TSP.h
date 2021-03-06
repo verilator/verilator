@@ -15,8 +15,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3TSP_H_
-#define _V3TSP_H_ 1
+#ifndef VERILATOR_V3TSP_H_
+#define VERILATOR_V3TSP_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

@@ -379,7 +379,7 @@ public:
             for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 degree++;
             }
-            if (degree & 1) { result.push_back(tspvp->key()); }
+            if (degree & 1) result.push_back(tspvp->key());
         }
         return result;
     }
@@ -402,7 +402,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
     // Make this TSP implementation work for graphs of size 0 or 1
     // which, unfortunately, is a special case as the following
     // code assumes >= 2 nodes.
-    if (states.empty()) { return; }
+    if (states.empty()) return;
     if (states.size() == 1) {
         resultp->push_back(*(states.begin()));
         return;
@@ -482,7 +482,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
         while (i != max_cost_idx) {
             new_result.push_back((*resultp)[i]);
             i++;
-            if (i >= resultp->size()) { i = 0; }
+            if (i >= resultp->size()) i = 0;
         }
         new_result.push_back((*resultp)[i]);
 

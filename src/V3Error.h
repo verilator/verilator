@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3ERROR_H_
-#define _V3ERROR_H_ 1
+#ifndef VERILATOR_V3ERROR_H_
+#define VERILATOR_V3ERROR_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -364,12 +364,12 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 // Assertion without object, generally UOBJASSERT preferred
 #define UASSERT(condition, stmsg) \
     do { \
-        if (VL_UNCOVERABLE(!(condition))) { v3fatalSrc(stmsg); } \
+        if (VL_UNCOVERABLE(!(condition))) v3fatalSrc(stmsg); \
     } while (false)
 // Assertion with object
 #define UASSERT_OBJ(condition, obj, stmsg) \
     do { \
-        if (VL_UNCOVERABLE(!(condition))) { (obj)->v3fatalSrc(stmsg); } \
+        if (VL_UNCOVERABLE(!(condition))) (obj)->v3fatalSrc(stmsg); \
     } while (false)
 // For use in V3Ast static functions only
 #define UASSERT_STATIC(condition, stmsg) \

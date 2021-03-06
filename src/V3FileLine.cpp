@@ -21,7 +21,7 @@
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3String.h"
-#ifndef _V3ERROR_NO_GLOBAL_
+#ifndef V3ERROR_NO_GLOBAL_
 # include "V3Global.h"
 # include "V3Config.h"
 # include "V3File.h"
@@ -240,7 +240,7 @@ FileLine* FileLine::copyOrSameFileLine() {
     // Return this, or a copy of this
     // There are often more than one token per line, thus we use the
     // same pointer as long as we're on the same line, file & warn state.
-#ifndef _V3ERROR_NO_GLOBAL_
+#ifndef V3ERROR_NO_GLOBAL_
     V3Config::applyIgnores(this);  // Toggle warnings based on global config file
 #endif
     static FileLine* lastNewp = nullptr;
@@ -338,7 +338,7 @@ void FileLine::modifyStateInherit(const FileLine* fromp) {
     // Any warnings that are off in "from", become off in "this".
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
         V3ErrorCode code = V3ErrorCode(codei);
-        if (fromp->warnIsOff(code)) { warnOff(code, true); }
+        if (fromp->warnIsOff(code)) warnOff(code, true);
     }
 }
 
@@ -358,7 +358,7 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
     } else if (!V3Error::errorContexted()) {
         nsstr << warnContextPrimary();
     }
-    if (!m_waive) { V3Waiver::addEntry(V3Error::errorCode(), filename(), sstr.str()); }
+    if (!m_waive) V3Waiver::addEntry(V3Error::errorCode(), filename(), sstr.str());
     V3Error::v3errorEnd(nsstr, lstr.str());
 }
 

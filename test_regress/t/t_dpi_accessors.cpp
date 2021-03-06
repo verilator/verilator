@@ -56,7 +56,7 @@ static void logRegHex(int clk, const char* desc, int bitWidth, int val, const ch
 
 // Convenience function to check we got an expected result. Silent on success.
 static void checkResult(bool p, const char* msg_fail) {
-    if (!p) { vl_fatal(__FILE__, __LINE__, "dut", msg_fail); }
+    if (!p) vl_fatal(__FILE__, __LINE__, "dut", msg_fail);
 }
 
 // Main function instantiates the model and steps through the test.

@@ -474,8 +474,10 @@ sub sprint_summary {
     my $delta = time() - $::Start;
     my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
     my $pct = int(100*($self->{left_cnt} / ($self->{all_cnt} + 0.001)) + 0.999);
-    my $eta = ($self->{all_cnt}
-               * ($delta / (($self->{all_cnt} - $self->{left_cnt})+0.001))) - $delta;
+    # Fudge of 120% works out about right so ETA correctly predicts completion time
+    my $eta = 1.2 * (($self->{all_cnt}
+                      * ($delta / (($self->{all_cnt} - $self->{left_cnt})+0.001)))
+                     - $delta);
     $eta = 0 if $delta < 10;
     my $out = "";
     $out .= "Left $leftmsg  " if $self->{left_cnt};
@@ -896,6 +898,7 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--trace-threads 1" if $param{vltmt} && $checkflags =~ /-trace /;
     unshift @verilator_flags, "--trace-threads 2" if $param{vltmt} && $checkflags =~ /-trace-fst /;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
+    unshift @verilator_flags, "-CFLAGS -ggdb -LDFLAGS -ggdb" if $opt_gdbsim;
     unshift @verilator_flags, "-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address" if $param{sanitize};
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
@@ -1844,7 +1847,7 @@ sub _make_main {
             $fh->print("        if (sc_time_stamp() == save_time && save_time) {\n");
             $fh->print("            save_model(\"$self->{obj_dir}/saved.vltsv\");\n");
             $fh->print("            printf(\"Exiting after save_model\\n\");\n");
-            $fh->print("            exit(0);\n");
+            $fh->print("            return 0;\n");
             $fh->print("        }\n");
         }
         _print_advance_time($self, $fh, 1, $action);
@@ -1869,7 +1872,7 @@ sub _make_main {
     $fh->print("\n");
 
     print $fh "    topp.reset();\n";
-    print $fh "    exit(0L);\n";
+    print $fh "    return 0;\n";
     print $fh "}\n";
     $fh->close();
 }

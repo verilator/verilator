@@ -484,7 +484,7 @@ private:
     }
     //--------------------
     virtual void visit(AstNode* nodep) override {
-        if (VN_IS(nodep, Always)) { m_alwaysp = nodep; }
+        if (VN_IS(nodep, Always)) m_alwaysp = nodep;
         iterateChildren(nodep);
     }
 

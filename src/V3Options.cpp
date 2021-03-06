@@ -1045,6 +1045,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (onoff(sw, "-ignc", flag /*ref*/)) {
                 m_ignc = flag;
             } else if (onoff(sw, "-inhibit-sim", flag /*ref*/)) {
+                fl->v3warn(DEPRECATED, "-inhibit-sim option is deprecated");
                 m_inhibitSim = flag;
             } else if (onoff(sw, "-lint-only", flag /*ref*/)) {
                 m_lintOnly = flag;
@@ -1370,7 +1371,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 string msg = sw + strlen("-Werror-");
                 V3ErrorCode code(msg.c_str());
                 if (code == V3ErrorCode::EC_ERROR) {
-                    if (!isFuture(msg)) { fl->v3fatal("Unknown warning specified: " << sw); }
+                    if (!isFuture(msg)) fl->v3fatal("Unknown warning specified: " << sw);
                 } else {
                     V3Error::pretendError(code, true);
                 }
@@ -1403,7 +1404,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     string msg = sw + strlen("-Wwarn-");
                     V3ErrorCode code(msg.c_str());
                     if (code == V3ErrorCode::EC_ERROR) {
-                        if (!isFuture(msg)) { fl->v3fatal("Unknown warning specified: " << sw); }
+                        if (!isFuture(msg)) fl->v3fatal("Unknown warning specified: " << sw);
                     } else {
                         FileLine::globalWarnOff(code, false);
                         V3Error::pretendError(code, false);
@@ -1443,8 +1444,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (!strcmp(sw, "-rr")) {
                 // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-gdbbt")) {
-                // Processed only in bin/verilator shell
-            } else if (!strcmp(sw, "-quiet-exit")) {
                 // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-mod-prefix") && (i + 1) < argc) {
                 shift;

@@ -178,7 +178,7 @@ void V3ParseImp::lexErrorPreprocDirective(FileLine* fl, const char* textp) {
 string V3ParseImp::lexParseTag(const char* textp) {
     string tmp = textp + strlen("/*verilator tag ");
     string::size_type pos;
-    if ((pos = tmp.rfind("*/")) != string::npos) { tmp.erase(pos); }
+    if ((pos = tmp.rfind("*/")) != string::npos) tmp.erase(pos);
     return tmp;
 }
 
@@ -468,7 +468,7 @@ void V3ParseImp::tokenPipeline() {
                 V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
                 {
                     size_t depth = tokenPipeScanParam(0);
-                    if (tokenPeekp(depth)->token == yP_COLONCOLON) { token = yaID__CC; }
+                    if (tokenPeekp(depth)->token == yP_COLONCOLON) token = yaID__CC;
                 }
                 yylval = curValue;
             }

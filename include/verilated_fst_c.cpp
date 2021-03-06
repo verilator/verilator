@@ -94,7 +94,7 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     m_code2symbol.clear();
 
     // Allocate string buffer for arrays
-    if (!m_strbuf) { m_strbuf = new char[maxBits() + 32]; }
+    if (!m_strbuf) m_strbuf = new char[maxBits() + 32];
 }
 
 void VerilatedFst::close() {

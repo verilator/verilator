@@ -24,8 +24,8 @@
 ///
 //*************************************************************************
 
-#ifndef _VERILATED_SYM_PROPS_H_
-#define _VERILATED_SYM_PROPS_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_SYM_PROPS_H_
+#define VERILATOR_VERILATED_SYM_PROPS_H_  ///< Header Guard
 
 #include "verilatedos.h"
 
