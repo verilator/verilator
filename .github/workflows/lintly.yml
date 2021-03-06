@@ -20,6 +20,6 @@ jobs:
       - name: Install dependencies
         run: pip install flake8 lintly
       - name: Lint with flake8
-        run: flake8 | lintly
+        run: flake8 --extended-exclude=fastcov.py | lintly
         env:
           LINTLY_API_KEY: ${{ secrets.GITHUB_TOKEN }}
