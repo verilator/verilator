@@ -20,29 +20,38 @@ int main(int argc, char** argv, char** env) {
     // Prevent unused variable warnings
     if (false && argc && argv && env) {}
 
-    // Set debug level, 0 is off, 9 is highest presently used
-    // May be overridden by commandArgs
-    Verilated::debug(0);
-
-    // Randomization reset policy
-    // May be overridden by commandArgs
-    Verilated::randReset(2);
-
-    // Verilator must compute traced signals
-    Verilated::traceEverOn(true);
-
-    // Pass arguments so Verilated code can see them, e.g. $value$plusargs
-    // This needs to be called before you create any model
-    Verilated::commandArgs(argc, argv);
-
     // Create logs/ directory in case we have traces to put under it
     Verilated::mkdir("logs");
 
-    // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    // Using unique_ptr is similar to "Vtop* top = new Vtop" then deleting at end
-    const std::unique_ptr<Vtop> top{new Vtop};
+    // Construct context to hold simulation time, etc.
+    // Multiple modules (made later below with Vtop) may share the same
+    // context to share time, or modules may have different contexts if
+    // they are decoupled.
+    // Using unique_ptr is similar to
+    // "VerilatedContext* contextp = new VerilatedContext" then deleting at end.
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
-    // Set some inputs
+    // Set debug level, 0 is off, 9 is highest presently used
+    // May be overridden by commandArgs argument parsing
+    contextp->debug(0);
+
+    // Randomization reset policy
+    // May be overridden by commandArgs argument parsing
+    contextp->randReset(2);
+
+    // Verilator must compute traced signals
+    contextp->traceEverOn(true);
+
+    // Pass arguments so Verilated code can see them, e.g. $value$plusargs
+    // This needs to be called before you create any model
+    contextp->commandArgs(argc, argv);
+
+    // Construct the Verilated model, from Vtop.h generated from Verilating "top.v".
+    // Using unique_ptr is similar to "Vtop* top = new Vtop" then deleting at end.
+    // "TOP" will be the hierarchical name of the module.
+    const std::unique_ptr<Vtop> top{new Vtop{contextp.get(), "TOP"}};
+
+    // Set Vtop's input signals
     top->reset_l = !0;
     top->clk = 0;
     top->in_small = 1;
@@ -52,8 +61,8 @@ int main(int argc, char** argv, char** env) {
     top->in_wide[2] = 0x3;
 
     // Simulate until $finish
-    while (!Verilated::gotFinish()) {
-        Verilated::timeInc(1);  // 1 cycle passes...
+    while (!contextp->gotFinish()) {
+        contextp->timeInc(1);  // 1 timeprecision period passes...
 
         // Toggle a fast (time/2 period) clock
         top->clk = !top->clk;
@@ -63,7 +72,7 @@ int main(int argc, char** argv, char** env) {
         // this only on a negedge of clk, because we know
         // reset is not sampled there.
         if (!top->clk) {
-            if (Verilated::time() > 1 && Verilated::time() < 10) {
+            if (contextp->time() > 1 && contextp->time() < 10) {
                 top->reset_l = !1;  // Assert reset
             } else {
                 top->reset_l = !0;  // Deassert reset
@@ -81,17 +90,17 @@ int main(int argc, char** argv, char** env) {
         // Read outputs
         VL_PRINTF("[%" VL_PRI64 "d] clk=%x rstl=%x iquad=%" VL_PRI64 "x"
                   " -> oquad=%" VL_PRI64 "x owide=%x_%08x_%08x\n",
-                  Verilated::time(), top->clk, top->reset_l, top->in_quad, top->out_quad,
+                  contextp->time(), top->clk, top->reset_l, top->in_quad, top->out_quad,
                   top->out_wide[2], top->out_wide[1], top->out_wide[0]);
     }
 
     // Final model cleanup
     top->final();
 
-    //  Coverage analysis (since test passed)
+    // Coverage analysis (calling write only after the test is known to pass)
 #if VM_COVERAGE
     Verilated::mkdir("logs");
-    VerilatedCov::write("logs/coverage.dat");
+    contextp->coveragep()->write("logs/coverage.dat");
 #endif
 
     // Return good completion status

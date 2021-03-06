@@ -29,20 +29,25 @@ int sc_main(int argc, char* argv[]) {
     // Prevent unused variable warnings
     if (false && argc && argv) {}
 
+    // Create logs/ directory in case we have traces to put under it
+    Verilated::mkdir("logs");
+
     // Set debug level, 0 is off, 9 is highest presently used
-    // May be overridden by commandArgs
+    // May be overridden by commandArgs argument parsing
     Verilated::debug(0);
 
     // Randomization reset policy
-    // May be overridden by commandArgs
+    // May be overridden by commandArgs argument parsing
     Verilated::randReset(2);
+
+#if VM_TRACE
+    // Before any evaluation, need to know to calculate those signals only used for tracing
+    Verilated::traceEverOn(true);
+#endif
 
     // Pass arguments so Verilated code can see them, e.g. $value$plusargs
     // This needs to be called before you create any model
     Verilated::commandArgs(argc, argv);
-
-    // Create logs/ directory in case we have traces to put under it
-    Verilated::mkdir("logs");
 
     // General logfile
     ios::sync_with_stdio();
@@ -64,7 +69,7 @@ int sc_main(int argc, char* argv[]) {
     // Using unique_ptr is similar to "Vtop* top = new Vtop" then deleting at end
     const std::unique_ptr<Vtop> top{new Vtop{"top"}};
 
-    // Attach signals to the model
+    // Attach Vtop's signals to this upper model
     top->clk(clk);
     top->fastclk(fastclk);
     top->reset_l(reset_l);
@@ -74,11 +79,6 @@ int sc_main(int argc, char* argv[]) {
     top->out_small(out_small);
     top->out_quad(out_quad);
     top->out_wide(out_wide);
-
-#if VM_TRACE
-    // Before any evaluation, need to know to calculate those signals only used for tracing
-    Verilated::traceEverOn(true);
-#endif
 
     // You must do one evaluation before enabling waves, in order to allow
     // SystemC to interconnect everything for testing.
@@ -128,7 +128,7 @@ int sc_main(int argc, char* argv[]) {
     }
 #endif
 
-    //  Coverage analysis (since test passed)
+    // Coverage analysis (calling write only after the test is known to pass)
 #if VM_COVERAGE
     Verilated::mkdir("logs");
     VerilatedCov::write("logs/coverage.dat");
