@@ -1445,8 +1445,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-gdbbt")) {
                 // Processed only in bin/verilator shell
-            } else if (!strcmp(sw, "-quiet-exit")) {
-                // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-mod-prefix") && (i + 1) < argc) {
                 shift;
                 m_modPrefix = argv[i];
