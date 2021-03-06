@@ -6,11 +6,10 @@ import argparse
 import os
 import re
 import subprocess
-import sys
 import tempfile
 import xml.etree.ElementTree as ET
 from shutil import copy2
-from pprint import pprint, pformat
+# from pprint import pprint, pformat
 
 #######################################################################
 
@@ -22,6 +21,7 @@ class VlFileCopy:
         # ideally this script would check against options mentioned in help
         debug=0,
         output_dir='copied'):  # directory name we output file uses
+
         self.debug = debug
 
         xml_temp = tempfile.NamedTemporaryFile()
@@ -119,6 +119,6 @@ SPDX-License-Identifier: CC0-1.0
     fc = VlFileCopy(output_dir=args.odir, debug=args.debug, verilator_args=rem)
 
 ######################################################################
-### Local Variables:
-### compile-command: "./vl_file_copy -h ; VERILATOR_ROOT=$V4 ./vl_file_copy +define+thru top.v"
-### End:
+# Local Variables:
+# compile-command: "./vl_file_copy -h ; VERILATOR_ROOT=$V4 ./vl_file_copy +define+thru top.v"
+# End:

@@ -104,6 +104,6 @@ dotread(Args.filename)
 cwrite("graph_export.cpp")
 
 ######################################################################
-### Local Variables:
-### compile-command: "./dot_importer ../test_regress/obj_vlt/t_EXAMPLE/*orderg_o*.dot && cat graph_export.cpp"
-### End:
+# Local Variables:
+# compile-command: "./dot_importer ../test_regress/obj_vlt/t_EXAMPLE/*orderg_o*.dot && cat graph_export.cpp"
+# End:

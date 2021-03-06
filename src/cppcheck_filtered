@@ -139,10 +139,10 @@ def _suppress(filename, linenum, id):
         return False
 
     with open(filename) as fh:
-        l = 0
+        lineno = 0
         for line in fh:
-            l += 1
-            if (l + 1 == linenum):
+            lineno += 1
+            if (lineno + 1 == linenum):
                 match = re.search(r'cppcheck-suppress((\s+\S+)+)', line)
                 if match:
                     for supid in match.group(1).split():
@@ -178,6 +178,6 @@ Args, cppcheck_args = parser.parse_known_args()
 process(cppcheck_args)
 
 ######################################################################
-### Local Variables:
-### compile-command: "cd .. ; src/cppcheck_filtered cppcheck --xml --enable=all src/V3Width.cpp"
-### End:
+# Local Variables:
+# compile-command: "cd .. ; src/cppcheck_filtered cppcheck --xml --enable=all src/V3Width.cpp"
+# End:

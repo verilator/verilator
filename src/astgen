@@ -5,7 +5,7 @@ import argparse
 import glob
 import re
 import sys
-#from pprint import pprint, pformat
+# from pprint import pprint, pformat
 
 Types = []
 Classes = {}
@@ -98,7 +98,7 @@ class Cpt:
             doflag = match.group(2)
             fromn = match.group(3)
             to = match.group(4)
-            #self.print("// $fromn $to\n")
+            # self.print("// $fromn $to\n")
             if not self.did_out_tree:
                 self.did_out_tree = True
                 self.output_func(lambda self: self.tree_match_base())
@@ -206,8 +206,6 @@ class Cpt:
             outl = re.sub(r'\$([a-zA-Z0-9]+)', r'nodep->\1()', func)
             out += outl + ";"
         elif re.match(r'^\s*Ast([a-zA-Z0-9]+)\s*\{\s*(.*)\s*\}$', func):
-            nargs = 0
-            argnums = []  # Number for each argument name
             aref = None
             # Recursive array with structure to form
             astack = []
@@ -300,7 +298,7 @@ class Cpt:
             bases = subclasses_of(typen)
             bases.append(typen)
             for base in bases:
-                if not base in self.treeop:
+                if base not in self.treeop:
                     continue
                 for typefunc in self.treeop[base]:
                     lines = [
@@ -365,7 +363,7 @@ def read_types(filename):
                 match = re.search(r':\s*public\s+(\S+)', line)
                 if match:
                     inh = match.group(1)
-                #print("class "+classn+" : "+inh)
+                # print("class "+classn+" : "+inh)
                 if classn == "AstNode":
                     inh = ""
                 if re.search(r'Ast', inh) or classn == "AstNode":
@@ -425,7 +423,7 @@ def subclasses_of(typen):
     cllist = []
     subclass = Classes[typen]
     while True:
-        if not subclass in Classes:
+        if subclass not in Classes:
             break
         cllist.append(subclass)
         subclass = Classes[subclass]
@@ -448,7 +446,7 @@ def children_of(typen):
     return cllist
 
 
-#---------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 
 def write_report(filename):
@@ -715,6 +713,6 @@ for cpt in Args.infiles:
                   out_filename=cpt + "__gen.cpp")
 
 ######################################################################
-### Local Variables:
-### compile-command: "cd obj_dbg && ../astgen -I.. V3Const.cpp"
-### End:
+# Local Variables:
+# compile-command: "cd obj_dbg && ../astgen -I.. V3Const.cpp"
+# End:

@@ -6,6 +6,7 @@ import multiprocessing
 import os
 import shutil
 import subprocess
+import sys
 
 ######################################################################
 
@@ -135,6 +136,6 @@ Args = parser.parse_args()
 test()
 
 ######################################################################
-### Local Variables:
-### compile-command: "cd .. ; nodist/install_test"
-### End:
+# Local Variables:
+# compile-command: "cd .. ; nodist/install_test"
+# End:

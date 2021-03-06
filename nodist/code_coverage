@@ -7,6 +7,7 @@ import multiprocessing
 import os
 import re
 import subprocess
+import sys
 
 RealPath = os.path.dirname(os.path.realpath(__file__))
 Exclude_Branch_Regexps = []
@@ -223,7 +224,7 @@ def clone_sources(cc_dir):
                             if done:
                                 break
                             if re.search(regexp, line):
-                                #print("%s:%d: %s" % (infile, lineno, line)
+                                # print("%s:%d: %s" % (infile, lineno, line)
                                 line += "  //code_coverage: // LCOV_EXCL_LINE LCOV_EXCL_BR_LINE"
                                 excluded_lines += 1
                                 excluded_br_lines += 1
@@ -233,7 +234,7 @@ def clone_sources(cc_dir):
                             if done:
                                 break
                             if re.search(regexp, line):
-                                #print("%s:%d: %s" % (infile, lineno, line)
+                                # print("%s:%d: %s" % (infile, lineno, line)
                                 line += "  //code_coverage: // LCOV_EXCL_BR_LINE"
                                 excluded_br_lines += 1
                                 done = True
@@ -256,7 +257,7 @@ def cleanup_abs_paths_info(cc_dir, infile, outfile):
                               count=1)
                 line = re.sub(cc_dir + '/', '', line, count=1)
                 line = re.sub(r'obj_dbg/verilog.y$', 'verilog.y', line)
-                #print("Remaining SF: "+line)
+                # print("Remaining SF: "+line)
             lines.append(line)
 
     with open(outfile, "w") as ofh:
@@ -406,6 +407,6 @@ if True:
 test()
 
 ######################################################################
-### Local Variables:
-### compile-command: "cd .. ; nodist/code_coverage "
-### End:
+# Local Variables:
+# compile-command: "cd .. ; nodist/code_coverage "
+# End:

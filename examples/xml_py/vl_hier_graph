@@ -4,13 +4,10 @@
 
 import argparse
 import os
-import re
 import subprocess
-import sys
 import tempfile
 import xml.etree.ElementTree as ET
-from shutil import copy2
-from pprint import pprint, pformat
+# from pprint import pprint, pformat
 
 #######################################################################
 
@@ -70,7 +67,7 @@ class VlHierGraph:
             fh.write("}\n")
 
     def name_to_vertex_number(self, name):
-        if not name in self.name_to_number:
+        if name not in self.name_to_number:
             self.next_vertex_number += 1
             self.name_to_number[name] = self.next_vertex_number
         return self.name_to_number[name]
@@ -146,6 +143,6 @@ SPDX-License-Identifier: CC0-1.0
                      verilator_args=rem)
 
 ######################################################################
-### Local Variables:
-### compile-command: "./vl_hier_graph -h ; VERILATOR_ROOT=$V4 ./vl_hier_graph +define+thru top.v"
-### End:
+# Local Variables:
+# compile-command: "./vl_hier_graph -h ; VERILATOR_ROOT=$V4 ./vl_hier_graph +define+thru top.v"
+# End:

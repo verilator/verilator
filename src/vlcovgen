@@ -3,9 +3,8 @@
 
 import argparse
 import re
-import os
 import sys
-from pprint import pprint
+# from pprint import pprint
 
 Items = []
 
@@ -105,6 +104,6 @@ lint()
 write_keys(Args.srcdir + "/../include/verilated_cov_key.h")
 
 ######################################################################
-### Local Variables:
-### compile-command: "./vlcovgen --srcdir ."
-### End:
+# Local Variables:
+# compile-command: "./vlcovgen --srcdir ."
+# End:

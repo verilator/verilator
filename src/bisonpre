@@ -6,7 +6,7 @@ import os
 import re
 import subprocess
 import sys
-from pprint import pprint, pformat
+# from pprint import pprint, pformat
 
 ######################################################################
 
@@ -111,13 +111,13 @@ def clean_output(filename, outname, is_output, is_c):
 
     if is_output:
         state_line = {}
-        l = 0
+        lineno = 0
         for line in lines:
-            l += 1
+            lineno += 1
             # We add a colon so it's easy to search for the definition
             match = re.match(r'^state (\d+)\s*', line)
             if match:
-                state_line[match.group(1)] = l
+                state_line[match.group(1)] = lineno
         out = []
         for line in lines:
             match = re.match(r'^State (\d+) (conflicts)', line)
@@ -200,12 +200,12 @@ def clean_input(filename, outname):
     if True:
         linesin = lines
         lines = []
-        l = 0
+        lineno = 0
         for line in linesin:
-            l += 1
+            lineno += 1
             #  ^/ to prevent comments from matching
             if re.match(r'^[a-zA-Z0-9_<>]+:[^/]*[a-zA-Z]', line):
-                sys.exit("%Error: " + filename + ":" + str(l) +
+                sys.exit("%Error: " + filename + ":" + str(lineno) +
                          ": Move text on rule line to next line: " + line +
                          "\n")
 
@@ -223,7 +223,7 @@ def clean_input(filename, outname):
                 dtype = matcha.group(2)
                 line = name + matcha.group(3)
                 if name in Rules:
-                    sys.exit("%Error: " + filename + ":" + str(l) +
+                    sys.exit("%Error: " + filename + ":" + str(lineno) +
                              ": Redeclaring '" + name + "': " + line)
                 if dtype not in types:
                     types[dtype] = {}
@@ -235,14 +235,14 @@ def clean_input(filename, outname):
                     'subrules': {}
                 }
                 if last_rule:
-                    sys.exit("%Error: " + filename + ":" + str(l) +
+                    sys.exit("%Error: " + filename + ":" + str(lineno) +
                              ": Unterminated previous rule\n")
                 last_rule = name
             elif matchb:
                 name = matchb.group(1)
                 if name != 'public' and name != 'private':
                     if name in Rules:
-                        sys.exit("%Error: " + filename + ":" + str(l) +
+                        sys.exit("%Error: " + filename + ":" + str(lineno) +
                                  ": Redeclaring '" + name + "': " + line)
                     Rules[name] = {
                         'name': name,
@@ -251,17 +251,16 @@ def clean_input(filename, outname):
                         'subrules': {}
                     }
                     if last_rule:
-                        sys.exit("%Error: " + filename + ":" + str(l) +
+                        sys.exit("%Error: " + filename + ":" + str(lineno) +
                                  ": Unterminated previous rule\n")
                     last_rule = name
 
             lines.append(line)
             # Now clean the line and extract some more info
             cline = re.sub(r'//.*$', '\n', line)
-            rline = re.sub(r'//.*$', '\n', line)
             if re.match(r'^\s*;', cline):
                 if not last_rule:
-                    sys.exit("%Error: " + filename + ":" + str(l) +
+                    sys.exit("%Error: " + filename + ":" + str(lineno) +
                              ": Stray semicolon\n")
                 last_rule = None
             elif last_rule:
@@ -272,7 +271,7 @@ def clean_input(filename, outname):
                 dtype = match.group(1)
                 tok = match.group(2)
                 if tok in tokens:
-                    sys.exit("%Error: " + filename + ":" + str(l) +
+                    sys.exit("%Error: " + filename + ":" + str(lineno) +
                              ": Redeclaring '" + tok + "': " + line)
                 tokens[tok] = dtype
 
@@ -281,22 +280,22 @@ def clean_input(filename, outname):
                     # print("TT "+last_rule+" "+tok+"\n")
                     Rules[last_rule]['subrules'][tok] = 1
 
-    #pprint(Rules)
+    # pprint(Rules)
 
     # Replace BISONPRE_VERSION(ver,,...) with expanded list
     if True:
         linesin = lines
         lines = []
-        l = 0
+        lineno = 0
         for line in linesin:
-            l += 1
+            lineno += 1
             if _enaline(line) and re.search(r'BISONPRE_VERSION', line):
                 #                       1           2 3            4
                 match = re.search(
                     r'BISONPRE_VERSION\((\S+)\s*,\s*((\S+)\s*,)?\s*([^\),]+)\)\s*$',
                     line)
                 if not match:
-                    sys.exit("%Error: " + filename + ":" + str(l) +
+                    sys.exit("%Error: " + filename + ":" + str(lineno) +
                              ": Bad form of BISONPRE_VERSION: " + line)
                 ver = match.group(1)
                 ver_max = match.group(3)
@@ -312,24 +311,24 @@ def clean_input(filename, outname):
     if True:
         linesin = lines
         lines = []
-        l = 0
+        lineno = 0
         for line in linesin:
-            l += 1
+            lineno += 1
             if _enaline(line) and re.search(r'BISONPRE_NOT', line):
                 match = re.search(
                     r'(.*)BISONPRE_NOT\((\S+)\)\s*(\{[^}]+})\s*(.*)$',
                     line,
                     flags=re.DOTALL)
                 if not match:
-                    sys.exit("%Error: " + filename + ":" + str(l) +
+                    sys.exit("%Error: " + filename + ":" + str(lineno) +
                              ": Bad form of BISONPRE_NOT: " + line)
                 line = match.group(1) + match.group(4)
                 endtok = match.group(2)
                 action = match.group(3)
                 endtoks = endtok.split(',')
                 for etok in endtoks:
-                    if not etok in tokens:
-                        sys.exit("%Error: " + filename + ":" + str(l) +
+                    if etok not in tokens:
+                        sys.exit("%Error: " + filename + ":" + str(lineno) +
                                  ": Can't find definition for token: " + etok +
                                  "\n")
                 # Push it all onto one line to avoid error messages changing
@@ -350,20 +349,20 @@ def clean_input(filename, outname):
     if True:
         linesin = lines
         lines = []
-        l = 0
+        lineno = 0
         for line in linesin:
-            l += 1
+            lineno += 1
             if _enaline(line) and re.search(r'BISONPRE_COPY', line):
-                line = _bisonpre_copy(line, l, 0)
+                line = _bisonpre_copy(line, lineno, 0)
             lines.append(line)
 
     # Replace ~[x]~  - must be after BISONPRE_COPY expansion
     if True:
         linesin = lines
         lines = []
-        l = 0
+        lineno = 0
         for line in linesin:
-            l += 1
+            lineno += 1
             line = re.sub(r'~[a-zA-Z0-9_]+~', '', line)
             lines.append(line)
 
@@ -371,10 +370,10 @@ def clean_input(filename, outname):
     if True:
         linesin = lines
         lines = []
-        l = 0
+        lineno = 0
         needmore = 0
         for line in linesin:
-            l += 1
+            lineno += 1
             if _enaline(line) and re.search(r'//BISONPRE_TYPES', line):
                 lines.append(line)
                 for type in sorted(types.keys()):
@@ -391,7 +390,7 @@ def clean_input(filename, outname):
                 line = re.sub(r'^\s*//.*$', '', line)
                 if not re.match(r'^\s*$', line):
                     sys.exit(
-                        "%Error: " + filename + ":" + str(l) + ": Need " +
+                        "%Error: " + filename + ":" + str(lineno) + ": Need " +
                         needmore +
                         " more blank lines to keep line numbers are constant\n"
                     )
@@ -404,7 +403,7 @@ def clean_input(filename, outname):
             fh.write(line)
 
 
-def _bisonpre_copy(text, l, depth):
+def _bisonpre_copy(text, lineno, depth):
     while re.search(r'BISONPRE_COPY', text):
         match = re.match(
             # 1                2         3             4            5
@@ -412,14 +411,14 @@ def _bisonpre_copy(text, l, depth):
             text,
             flags=re.DOTALL)
         if not match:
-            sys.exit("%Error: " + Filename + ":" + str(l) +
+            sys.exit("%Error: " + Filename + ":" + str(lineno) +
                      ": Bad form of BISONPRE_NOT: " + text)
         text = match.group(1) + '{HERE}' + match.group(5)
         once = match.group(2)
         rule = match.group(3)
         code = match.group(4)
-        if not rule in Rules:
-            sys.exit("%Error: " + Filename + ":" + str(l) +
+        if rule not in Rules:
+            sys.exit("%Error: " + Filename + ":" + str(lineno) +
                      ": Can't find definition for rule: " + rule)
         if depth > 0 and once:
             # _ONCE means don't inherit
@@ -430,20 +429,17 @@ def _bisonpre_copy(text, l, depth):
             insert = Rules[rule]['rules_and_productions']
             insert = re.sub(r'^\S+:', '', insert)  # Strip rule name
             # Recurse so BISONPRE under B
-            #print "COPY $l code $code\n"
-            #print "COPY $l in   $insert\n"
             for op in code.split(';'):
                 if re.match(r'^\s*$', op):
                     continue
                 match = re.match(r'^\s*s/(.*?)/(.*?)/g\s*$', op)
                 if not match:
-                    sys.exit("%Error: " + Filename + ":" + str(l) +
+                    sys.exit("%Error: " + Filename + ":" + str(lineno) +
                              ": Didn't understand replacement: " + op)
                 left = match.group(1)
                 right = match.group(2)
                 insert = re.sub(left, right, insert)
 
-            #print "COPY $l out  $insert\n"
             insert = re.sub(r'[ \t\n]+\n', "\n", insert)
             insert = re.sub(r'\n', " ",
                             insert)  # Optional - preserve line numbering
@@ -556,6 +552,6 @@ Args = parser.parse_args()
 process()
 
 ######################################################################
-### Local Variables:
-### compile-command: "./bisonpre "
-### End:
+# Local Variables:
+# compile-command: "./bisonpre "
+# End:
