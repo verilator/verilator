@@ -252,18 +252,18 @@ public:  // But only for verilated*.cpp
     void timeFormatPrecision(int value) VL_MT_SAFE { m_s.m_timeFormatPrecision = value; }
     int timeFormatWidth() const VL_MT_SAFE { return m_s.m_timeFormatWidth; }
     void timeFormatWidth(int value) VL_MT_SAFE { m_s.m_timeFormatWidth = value; }
-    std::string timeFormatSuffix() VL_MT_SAFE {
+    std::string timeFormatSuffix() VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
         const VerilatedLockGuard lock(m_timeDumpMutex);
         return m_timeFormatSuffix;
     }
-    void timeFormatSuffix(const std::string& value) VL_MT_SAFE {
+    void timeFormatSuffix(const std::string& value) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
         const VerilatedLockGuard lock(m_timeDumpMutex);
         m_timeFormatSuffix = value;
     }
 
     // METHODS - arguments
-    std::string argPlusMatch(const char* prefixp) VL_EXCLUDES(m_argMutex);
-    std::pair<int, char**> argc_argv();
+    std::string argPlusMatch(const char* prefixp) VL_MT_SAFE_EXCLUDES(m_argMutex);
+    std::pair<int, char**> argc_argv() VL_MT_SAFE_EXCLUDES(m_argMutex);
 
 public:  // But only for verilated*.cpp
     // METHODS - scope name
@@ -272,7 +272,7 @@ public:  // But only for verilated*.cpp
 
 public:  // But only for verilated*.cpp
     // METHODS - file IO
-    IData fdNewMcd(const char* filenamep) VL_MT_SAFE {
+    IData fdNewMcd(const char* filenamep) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
         if (m_fdFreeMct.empty()) return 0;
         IData idx = m_fdFreeMct.back();
@@ -281,7 +281,7 @@ public:  // But only for verilated*.cpp
         if (VL_UNLIKELY(!m_fdps[idx])) return 0;
         return (1 << idx);
     }
-    IData fdNew(const char* filenamep, const char* modep) VL_MT_SAFE {
+    IData fdNew(const char* filenamep, const char* modep) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         FILE* fp = fopen(filenamep, modep);
         if (VL_UNLIKELY(!fp)) return 0;
         // Bit 31 indicates it's a descriptor not a MCD
@@ -302,25 +302,25 @@ public:  // But only for verilated*.cpp
         m_fdps[idx] = fp;
         return (idx | (1UL << 31));  // bit 31 indicates not MCD
     }
-    void fdFlush(IData fdi) VL_MT_SAFE {
+    void fdFlush(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
         const VerilatedFpList fdlist = fdToFpList(fdi);
         for (const auto& i : fdlist) fflush(i);
     }
-    IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE {
+    IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
         const VerilatedFpList fdlist = fdToFpList(fdi);
         if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
         return static_cast<IData>(
             fseek(*fdlist.begin(), static_cast<long>(offset), static_cast<int>(origin)));
     }
-    IData fdTell(IData fdi) VL_MT_SAFE {
+    IData fdTell(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
         const VerilatedFpList fdlist = fdToFpList(fdi);
         if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
         return static_cast<IData>(ftell(*fdlist.begin()));
     }
-    void fdWrite(IData fdi, const std::string& output) VL_MT_SAFE {
+    void fdWrite(IData fdi, const std::string& output) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
         const VerilatedFpList fdlist = fdToFpList(fdi);
         for (const auto& i : fdlist) {
@@ -328,7 +328,7 @@ public:  // But only for verilated*.cpp
             (void)fwrite(output.c_str(), 1, output.size(), i);
         }
     }
-    void fdClose(IData fdi) VL_MT_SAFE {
+    void fdClose(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
         if ((fdi & (1 << 31)) != 0) {
             // Non-MCD case
@@ -349,7 +349,7 @@ public:  // But only for verilated*.cpp
             }
         }
     }
-    inline FILE* fdToFp(IData fdi) VL_MT_SAFE {
+    inline FILE* fdToFp(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
         const VerilatedFpList fdlist = fdToFpList(fdi);
         if (VL_UNLIKELY(fdlist.size() != 1)) return nullptr;
@@ -384,7 +384,7 @@ protected:
     void commandArgsAddGuts(int argc, const char** argv);
     void commandArgVl(const std::string& arg);
     bool commandArgVlValue(const std::string& arg, const std::string& prefix, std::string& valuer);
-    void commandArgDump() const VL_MT_SAFE;
+    void commandArgDump() const VL_MT_SAFE_EXCLUDES(m_argMutex);
 };
 
 //======================================================================

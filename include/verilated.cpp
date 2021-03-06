@@ -2196,11 +2196,11 @@ void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);
     m_s.m_calcUnusedSigs = flag;
 }
-void VerilatedContext::dumpfile(const std::string& flag) VL_MT_SAFE {
+void VerilatedContext::dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
     const VerilatedLockGuard lock(m_timeDumpMutex);
     m_dumpfile = flag;
 }
-std::string VerilatedContext::dumpfile() const VL_MT_SAFE {
+std::string VerilatedContext::dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
     const VerilatedLockGuard lock(m_timeDumpMutex);
     if (VL_UNLIKELY(m_dumpfile.empty())) {
         VL_PRINTF_MT("%%Warning: $dumpvar ignored as not proceeded by $dumpfile\n");
@@ -2298,16 +2298,18 @@ const char* VerilatedContext::timeprecisionString() const VL_MT_SAFE {
     return vl_time_str(timeprecision());
 }
 
-void VerilatedContext::commandArgs(int argc, const char** argv) VL_EXCLUDES(m_argMutex) {
+void VerilatedContext::commandArgs(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const VerilatedLockGuard lock(m_argMutex);
     m_args.m_argVec.clear();  // Empty first, then add
     impp()->commandArgsAddGuts(argc, argv);
 }
-void VerilatedContext::commandArgsAdd(int argc, const char** argv) VL_EXCLUDES(m_argMutex) {
+void VerilatedContext::commandArgsAdd(int argc, const char** argv)
+    VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const VerilatedLockGuard lock(m_argMutex);
     impp()->commandArgsAddGuts(argc, argv);
 }
-const char* VerilatedContext::commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE {
+const char* VerilatedContext::commandArgsPlusMatch(const char* prefixp)
+    VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const std::string& match = impp()->argPlusMatch(prefixp);
     static VL_THREAD_LOCAL char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match.empty()) return "";
@@ -2337,13 +2339,14 @@ void VerilatedContextImp::commandArgsAddGuts(int argc, const char** argv) VL_REQ
     }
     m_args.m_argVecLoaded = true;  // Can't just test later for empty vector, no arguments is ok
 }
-void VerilatedContextImp::commandArgDump() const {
+void VerilatedContextImp::commandArgDump() const VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const VerilatedLockGuard lock(m_argMutex);
     VL_PRINTF_MT("  Argv:");
     for (const auto& i : m_args.m_argVec) VL_PRINTF_MT(" %s", i.c_str());
     VL_PRINTF_MT("\n");
 }
-std::string VerilatedContextImp::argPlusMatch(const char* prefixp) {
+std::string VerilatedContextImp::argPlusMatch(const char* prefixp)
+    VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const VerilatedLockGuard lock(m_argMutex);
     // Note prefixp does not include the leading "+"
     size_t len = strlen(prefixp);
@@ -2362,7 +2365,7 @@ std::string VerilatedContextImp::argPlusMatch(const char* prefixp) {
 }
 // Return string representing current argv
 // Only used by VPI so uses static storage, only supports most recent called context
-std::pair<int, char**> VerilatedContextImp::argc_argv() {
+std::pair<int, char**> VerilatedContextImp::argc_argv() VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const VerilatedLockGuard lock(m_argMutex);
     static bool s_loaded = false;
     static int s_argc = 0;

@@ -405,14 +405,14 @@ public:
     /// Record command-line arguments, for retrieval by $test$plusargs/$value$plusargs,
     /// and for parsing +verilator+ run-time arguments.
     /// This should be called before the first model is created.
-    void commandArgs(int argc, const char** argv) VL_MT_SAFE;
+    void commandArgs(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex);
     void commandArgs(int argc, char** argv) VL_MT_SAFE {
         commandArgs(argc, const_cast<const char**>(argv));
     }
     /// Add a command-line argument to existing arguments
-    void commandArgsAdd(int argc, const char** argv) VL_MT_SAFE;
+    void commandArgsAdd(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex);
     /// Match plusargs with a given prefix. Returns static char* valid only for a single call
-    const char* commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE;
+    const char* commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE_EXCLUDES(m_argMutex);
     /// Return VerilatedCovContext, allocate if needed
     /// Note if get unresolved reference then likely forgot to link verilated_cov.cpp
     VerilatedCovContext* coveragep() VL_MT_SAFE;
@@ -521,8 +521,8 @@ public:  // But for internal use only
     }
 
     // Internal: $dumpfile
-    void dumpfile(const std::string& flag) VL_MT_SAFE;
-    std::string dumpfile() const VL_MT_SAFE;
+    void dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
+    std::string dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
 
     // Internal: --prof-threads related settings
     void profThreadsStart(vluint64_t flag) VL_MT_SAFE;
