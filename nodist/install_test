@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0115,C0116,R0801,R0915
 ######################################################################
 
 import argparse
@@ -52,43 +53,43 @@ def test():
     # run a test using just the path
     if Args.stage <= 2:
         print("== stage 2")
-        dir = testdirp
-        run("/bin/rm -rf   " + dir)
-        run("/bin/mkdir -p " + dir)
+        odir = testdirp
+        run("/bin/rm -rf   " + odir)
+        run("/bin/mkdir -p " + odir)
         path = prefix + "/bin" + ":" + prefix + "/share/bin"
-        write_verilog(dir)
-        run("cd " + dir + " && PATH=" + path +
+        write_verilog(odir)
+        run("cd " + odir + " && PATH=" + path +
             ":$PATH verilator --cc top.v --exe sim_main.cpp")
-        run("cd " + dir + "/obj_dir && PATH=" + path +
+        run("cd " + odir + "/obj_dir && PATH=" + path +
             ":$PATH make -f Vtop.mk")
-        run("cd " + dir + " && PATH=" + path + ":$PATH obj_dir/Vtop")
+        run("cd " + odir + " && PATH=" + path + ":$PATH obj_dir/Vtop")
 
     # run a test using exact path to binary
     if Args.stage <= 3:
         print("== stage 3")
-        dir = testdirn
-        run("/bin/rm -rf   " + dir)
-        run("/bin/mkdir -p " + dir)
-        write_verilog(dir)
+        odir = testdirn
+        run("/bin/rm -rf   " + odir)
+        run("/bin/mkdir -p " + odir)
+        write_verilog(odir)
         bin1 = prefix + "/bin"
-        run("cd " + dir + " && " + bin1 +
+        run("cd " + odir + " && " + bin1 +
             "/verilator --cc top.v --exe sim_main.cpp")
-        run("cd " + dir + "/obj_dir && make -f Vtop.mk")
-        run("cd " + dir + "/obj_dir && ./Vtop")
+        run("cd " + odir + "/obj_dir && make -f Vtop.mk")
+        run("cd " + odir + "/obj_dir && ./Vtop")
 
     if Args.stage <= 9:
         print("*-* All Finished *-*")
 
 
-def write_verilog(dir):
-    shutil.copy2("examples/make_hello_c/top.v", dir + "/top.v")
-    shutil.copy2("examples/make_hello_c/sim_main.cpp", dir + "/sim_main.cpp")
+def write_verilog(odir):
+    shutil.copy2("examples/make_hello_c/top.v", odir + "/top.v")
+    shutil.copy2("examples/make_hello_c/sim_main.cpp", odir + "/sim_main.cpp")
 
 
 def cleanenv():
     for var in os.environ:
-        if (var == "VERILATOR_ROOT" or var == "VERILATOR_INCLUDE"
-                or var == "VERILATOR_NO_OPT_BUILD"):
+        if var in ('VERILATOR_ROOT', 'VERILATOR_INCLUDE',
+                   'VERILATOR_NO_OPT_BUILD'):
             print("unset %s # Was '%s'" % (var, os.environ[var]))
             del os.environ[var]
 

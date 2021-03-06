@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0115,C0116,R0912,R0914,R0915,R1702,W0125
 ######################################################################
 
 import argparse
@@ -55,8 +56,7 @@ def output_prefix():
     if Args.output:
         o = re.sub(r'\.[^.]*$', '', Args.output)
         return o
-    else:
-        return Args.file_prefix + ".tab"
+    return Args.file_prefix + ".tab"
 
 
 def unlink_ok(filename):
@@ -90,7 +90,7 @@ def bison_version_check():
         if v < 1.875:
             sys.exit("bisonpre: %Error: '" + Args.yacc + "' is version " + v +
                      "; version 1.875 or newer is required\n")
-        global Bison_Version
+        global Bison_Version  # pylint: disable=global-variable-undefined
         Bison_Version = v
         return
 
@@ -182,7 +182,7 @@ def warning_check(filename):
 def clean_input(filename, outname):
     print("  edit " + filename + " " + outname)
 
-    global Filename
+    global Filename  # pylint: disable=global-variable-undefined
     Filename = filename
 
     with open(filename) as fh:
@@ -190,7 +190,7 @@ def clean_input(filename, outname):
 
     # Find "%tokens<type>:"
     # Find "rule<type>:" and replace with just "rule:"
-    global Rules
+    global Rules  # pylint: disable=global-variable-undefined
     Rules = {}
 
     types = {}
@@ -240,7 +240,7 @@ def clean_input(filename, outname):
                 last_rule = name
             elif matchb:
                 name = matchb.group(1)
-                if name != 'public' and name != 'private':
+                if name not in ('public', 'private'):
                     if name in Rules:
                         sys.exit("%Error: " + filename + ":" + str(lineno) +
                                  ": Redeclaring '" + name + "': " + line)
@@ -332,7 +332,7 @@ def clean_input(filename, outname):
                                  ": Can't find definition for token: " + etok +
                                  "\n")
                 # Push it all onto one line to avoid error messages changing
-                bar = ""
+                pipe = ""
                 for tok in sorted(tokens.keys()):
                     hit = False
                     for etok in endtoks:
@@ -340,8 +340,8 @@ def clean_input(filename, outname):
                             hit = True
                             break
                     if not hit and endtok != tok:
-                        line += "\t" + bar + " " + tok + " " + action
-                        bar = "|"
+                        line += "\t" + pipe + " " + tok + " " + action
+                        pipe = "|"
                 line += "\n"
             lines.append(line)
 
@@ -376,11 +376,11 @@ def clean_input(filename, outname):
             lineno += 1
             if _enaline(line) and re.search(r'//BISONPRE_TYPES', line):
                 lines.append(line)
-                for type in sorted(types.keys()):
-                    if not type:
+                for typen in sorted(types.keys()):
+                    if not typen:
                         continue
-                    line = "%type<" + type + ">\t"
-                    for rule in sorted(types[type].keys()):
+                    line = "%type<" + typen + ">\t"
+                    for rule in sorted(types[typen].keys()):
                         line += " " + rule
                     line += "\n"
                     lines.append(line)

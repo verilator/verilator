@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0115,C0116,R0912,R0914,R0915,W0125,W0621,exec-used
 ######################################################################
 
 import argparse
@@ -398,7 +399,7 @@ if True:
         elif match_from:
             start = int(match_from.group(1))
         else:
-            os.exit("%Error: --stages not understood: " + Args.stages)
+            sys.exit("%Error: --stages not understood: " + Args.stages)
     for n in range(0, 100):
         Args.stage_enabled[n] = False
     for n in range(start, end + 1):

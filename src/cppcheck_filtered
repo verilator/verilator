@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0115,C0116,R0911,R0912,R0915,W0621
 ######################################################################
 
 import argparse
@@ -88,8 +89,8 @@ def process(cppcheck_args):
             file = match.group(1)
             linenum = match.group(2)
             match = re.search(r' id="([^"]+)"', last_error)
-            id = match.group(1) if match else '?'
-            if _suppress(file, linenum, id):
+            eid = match.group(1) if match else '?'
+            if _suppress(file, linenum, eid):
                 suppress = True
             if file == "*":
                 suppress = True
@@ -109,9 +110,9 @@ def process(cppcheck_args):
 ######################################################################
 
 
-def _suppress(filename, linenum, id):
+def _suppress(filename, linenum, eid):
     if Args.debug:
-        print("-Suppression search %s %s %s" % (filename, linenum, id))
+        print("-Suppression search %s %s %s" % (filename, linenum, eid))
 
     if filename == "*":
         return False
@@ -120,17 +121,17 @@ def _suppress(filename, linenum, id):
     filename = re.sub(r'^\.\./(.*)', r'src/\1', filename)
 
     # Specific suppressions
-    if id == 'missingInclude' and re.search(r'systemc.h', filename):
+    if eid == 'missingInclude' and re.search(r'systemc.h', filename):
         return True
-    if id == 'missingInclude' and re.search(r'svdpi.h', filename):
+    if eid == 'missingInclude' and re.search(r'svdpi.h', filename):
         return True
-    if id == 'unusedFunction' and re.search(r'verilated_dpi.cpp', filename):
+    if eid == 'unusedFunction' and re.search(r'verilated_dpi.cpp', filename):
         return True
-    if id == 'unusedFunction' and re.search(r'verilated_vpi.cpp', filename):
+    if eid == 'unusedFunction' and re.search(r'verilated_vpi.cpp', filename):
         return True
-    if id == 'unreachableCode' and re.search(r'V3ParseBison.c', filename):
+    if eid == 'unreachableCode' and re.search(r'V3ParseBison.c', filename):
         return True
-    if id == 'variableScope' and re.search(r'fstapi.c', filename):
+    if eid == 'variableScope' and re.search(r'fstapi.c', filename):
         return True
 
     if not os.path.exists(filename):
@@ -142,12 +143,12 @@ def _suppress(filename, linenum, id):
         lineno = 0
         for line in fh:
             lineno += 1
-            if (lineno + 1 == linenum):
+            if lineno + 1 == linenum:
                 match = re.search(r'cppcheck-suppress((\s+\S+)+)', line)
                 if match:
                     for supid in match.group(1).split():
-                        if (supid == id or
-                            (id in SuppressMap and supid == SuppressMap[id])):
+                        if (supid == eid or (eid in SuppressMap
+                                             and supid == SuppressMap[eid])):
                             return True
         return False
 

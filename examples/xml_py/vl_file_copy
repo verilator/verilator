@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- Python -*- See copyright, etc below
+# pylint: disable=C0114,C0115,R0903
 ######################################################################
 
 import argparse
@@ -26,15 +27,15 @@ class VlFileCopy:
 
         xml_temp = tempfile.NamedTemporaryFile()
 
-        args = [
+        vargs = [
             '--xml-output',
             xml_temp.name,
             '--bbox-sys',  # Parse some stuff can't translate
             '--bbox-unsup',
             '--prefix vlxml'
         ]  # So we know name of .xml output
-        args += verilator_args
-        self.run_verilator(args)
+        vargs += verilator_args
+        self.run_verilator(vargs)
         self.tree = ET.parse(xml_temp.name)
 
         os.makedirs(output_dir, 0o777, True)
@@ -49,13 +50,13 @@ class VlFileCopy:
                     print("\tcp %s %s" % (filename, output_dir))
                 copy2(filename, output_dir)
 
-    def run_verilator(self, args):
+    def run_verilator(self, vargs):
         """Run Verilator command, check errors"""
         if os.getenv("VERILATOR_ROOT"):
             command = os.getenv("VERILATOR_ROOT") + "/bin/verilator"
         else:
             command = "verilator"
-        command += ' ' + ' '.join(args)
+        command += ' ' + ' '.join(vargs)
         if self.debug:
             print("\t%s " % command)
         status = subprocess.call(command, shell=True)
