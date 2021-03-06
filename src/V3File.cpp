@@ -873,9 +873,7 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
             } else if (isprint(c)) {
                 out += c;
             } else {
-                char decimal[10];
-                sprintf(decimal, "&#%u;", (unsigned char)c);
-                out += decimal;
+                out += string("&#") + cvtToStr((unsigned int)(c & 0xff)) + ";";
             }
         }
     } else {
@@ -893,9 +891,8 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
                 out += c;
             } else {
                 // This will also cover \a etc
-                // Can't use %03o as messes up when signed
-                char octal[10];
-                sprintf(octal, "\\%o%o%o", (c >> 6) & 3, (c >> 3) & 7, c & 7);
+                string octal = string("\\") + cvtToStr((c >> 6) & 3) + cvtToStr((c >> 3) & 7)
+                               + cvtToStr(c & 7);
                 out += octal;
             }
         }
@@ -907,10 +904,11 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
 // Simple wrappers
 
 void V3OutFormatter::printf(const char* fmt...) {
-    char sbuff[5000];
+    constexpr size_t bufsize = 5000;
+    char sbuff[bufsize];
     va_list ap;
     va_start(ap, fmt);
-    vsprintf(sbuff, fmt, ap);
+    VL_VSNPRINTF(sbuff, bufsize, fmt, ap);
     va_end(ap);
     this->puts(sbuff);
 }

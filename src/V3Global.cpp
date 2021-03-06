@@ -80,6 +80,18 @@ void V3Global::readFiles() {
     }
 }
 
+string V3Global::debugFilename(const string& nameComment, int newNumber) {
+    ++m_debugFileNumber;
+    if (newNumber) m_debugFileNumber = newNumber;
+    return opt.hierTopDataDir() + "/" + opt.prefix() + "_" + digitsFilename(m_debugFileNumber)
+           + "_" + nameComment;
+}
+string V3Global::digitsFilename(int number) {
+    std::stringstream ss;
+    ss << std::setfill('0') << std::setw(3) << number;
+    return ss.str();
+}
+
 void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool doDump) {
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename(stagename + ".tree", newNumber), false,
                                    doDump);

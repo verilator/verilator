@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=C0114,C0301
 ######################################################################
 #
 # Copyright 2002-2021 by Wilson Snyder. This program is free software; you
@@ -10,7 +11,6 @@
 ######################################################################
 # DESCRIPTION: Edits flex output to get around various broken flex issues.
 
-import argparse
 import re
 import sys
 
@@ -29,7 +29,7 @@ for line in sys.stdin:
                   r' (int)number_to_move == (int)YY_MORE_ADJ ', line)
     # Fix flex 2.5.4 namespace omission
     line = re.sub(r'^class istream;',
-                  '\#include <iostream>\nusing namespace std;\n', line)
+                  '#include <iostream>\nusing namespace std;\n', line)
     # Fix flex 2.5.31 redefinition
     line = re.sub(r'(\#define\s+yyFlexLexer\s+yyFlexLexer)', r'//flexfix: \1',
                   line)
