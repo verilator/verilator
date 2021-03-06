@@ -114,7 +114,7 @@ void VlThreadPool::tearDownProfilingClientThread() {
     t_profilep = nullptr;
 }
 
-void VlThreadPool::setupProfilingClientThread() {
+void VlThreadPool::setupProfilingClientThread() VL_MT_SAFE_EXCLUDES(m_mutex) {
     assert(!t_profilep);
     t_profilep = new ProfileTrace;
     // Reserve some space in the thread-local profiling buffer;
@@ -126,7 +126,7 @@ void VlThreadPool::setupProfilingClientThread() {
     }
 }
 
-void VlThreadPool::profileAppendAll(const VlProfileRec& rec) {
+void VlThreadPool::profileAppendAll(const VlProfileRec& rec) VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lk(m_mutex);
     for (const auto& profilep : m_allProfiles) {
         // Every thread's profile trace gets a copy of rec.
@@ -134,7 +134,8 @@ void VlThreadPool::profileAppendAll(const VlProfileRec& rec) {
     }
 }
 
-void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
+void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
+    VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lk(m_mutex);
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+threads writing to '%s'\n", filenamep););
 

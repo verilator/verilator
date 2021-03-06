@@ -212,7 +212,7 @@ public:
     ~VlWorkerThread();
 
     // METHODS
-    inline void dequeWork(ExecRec* workp) {
+    inline void dequeWork(ExecRec* workp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Spin for a while, waiting for new data
         for (int i = 0; i < VL_LOCK_SPINS; ++i) {
             if (VL_LIKELY(m_ready_size.load(std::memory_order_relaxed))) {  //
@@ -233,7 +233,8 @@ public:
         m_ready_size.fetch_sub(1, std::memory_order_relaxed);
     }
     inline void wakeUp() { addTask(nullptr, false, nullptr); }
-    inline void addTask(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym) {
+    inline void addTask(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym)
+        VL_MT_SAFE_EXCLUDES(m_mutex) {
         bool notify;
         {
             const VerilatedLockGuard lk(m_mutex);
@@ -286,11 +287,11 @@ public:
         t_profilep->emplace_back();
         return &(t_profilep->back());
     }
-    void profileAppendAll(const VlProfileRec& rec);
-    void profileDump(const char* filenamep, vluint64_t ticksElapsed);
+    void profileAppendAll(const VlProfileRec& rec) VL_MT_SAFE_EXCLUDES(m_mutex);
+    void profileDump(const char* filenamep, vluint64_t ticksElapsed) VL_MT_SAFE_EXCLUDES(m_mutex);
     // In profiling mode, each executing thread must call
     // this once to setup profiling state:
-    void setupProfilingClientThread();
+    void setupProfilingClientThread() VL_MT_SAFE_EXCLUDES(m_mutex);
     void tearDownProfilingClientThread();
 
 private:

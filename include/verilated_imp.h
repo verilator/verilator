@@ -99,13 +99,13 @@ private:
 public:
     // METHODS
     //// Add message to queue (called by producer)
-    void post(const VerilatedMsg& msg) VL_EXCLUDES(m_mutex) {
+    void post(const VerilatedMsg& msg) VL_MT_SAFE_EXCLUDES(m_mutex) {
         const VerilatedLockGuard lock(m_mutex);
         m_queue.insert(msg);  // Pass by value to copy the message into queue
         ++m_depth;
     }
     /// Service queue until completion (called by consumer)
-    void process() VL_EXCLUDES(m_mutex) {
+    void process() VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Tracking m_depth is redundant to e.g. getting the mutex and looking at queue size,
         // but on the reader side it's 4x faster to test an atomic then getting a mutex
         while (m_depth) {
