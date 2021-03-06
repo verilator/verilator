@@ -83,8 +83,8 @@ int main(int argc, char** argv, char** env) {
     std::unique_ptr<VerilatedContext> context1p{new VerilatedContext};
 
     // configuration
-    context0p->fatalOnStop(false);
-    context1p->fatalOnStop(false);
+    context0p->fatalOnError(false);
+    context1p->fatalOnError(false);
     context0p->traceEverOn(true);
     context1p->traceEverOn(true);
 
