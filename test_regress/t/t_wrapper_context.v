@@ -8,35 +8,45 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module top
-  ( input                   clk_i,
-    input                   rst_i,
-    input        [31:0]     trace_number,
-    output logic [31:0]     counter,
-    output logic            done_o
-    );
+  (
+   input             clk,
+   input             rst,
+   input [31:0]      trace_number,
+   input             stop,
+   output bit [31:0] counter,
+   output bit        done_o
+   );
 
    initial begin
       string number;
       string filename;
       number.itoa(trace_number);
       filename = {"logs", "/", "trace", number, ".vcd"};
-      $display("Writing dumpfile '%s'", filename);
-      $dumpfile(filename);
-      $dumpvars();
+      // FIXME $display("Writing dumpfile '%s'", filename);
+      // FIXME $dumpfile(filename);
+      // FIXME $dumpvars();
    end
 
-   always@(posedge clk_i) begin
-      if (rst_i)
+   always@(posedge clk) begin
+      if (rst)
         counter <= 0;
       else
         counter <= counter + 1;
    end
-
-   assign done_o = (counter >= 10) ? 1'b1:1'b0;
-
    always_comb begin
-      if (counter >= 10)
-        $finish;
+      done_o = '0;
+      if (stop) begin
+         if (counter >= 5 && stop) begin
+            done_o = '1;
+            $stop;
+         end
+      end
+      else begin
+         if (counter >= 10) begin
+            done_o = '1;
+            $finish;
+         end
+      end
    end
 
 endmodule

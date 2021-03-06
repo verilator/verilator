@@ -59,8 +59,14 @@ int main(int argc, char** argv, char** env) {
     CHECK_RESULT(Verilated::debug(), 9);
     Verilated::debug(0);
 
+    Verilated::fatalOnError(true);
+    CHECK_RESULT(Verilated::fatalOnError(), true);
+
     Verilated::fatalOnVpiError(true);
     CHECK_RESULT(Verilated::fatalOnVpiError(), true);
+
+    Verilated::gotError(false);
+    CHECK_RESULT(Verilated::gotError(), false);
 
     Verilated::gotFinish(false);
     CHECK_RESULT(Verilated::gotFinish(), false);  // Commonly used

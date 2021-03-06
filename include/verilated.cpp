@@ -111,15 +111,27 @@ void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE
 
 #ifndef VL_USER_STOP  ///< Define this to override this function
 void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
+    const char* const msg = "Verilog $stop";
+    Verilated::threadContextp()->gotError(true);
     Verilated::threadContextp()->gotFinish(true);
-    Verilated::runFlushCallbacks();
-    vl_fatal(filename, linenum, hier, "Verilog $stop");
+    if (Verilated::threadContextp()->fatalOnError()) {
+        vl_fatal(filename, linenum, hier, msg);
+    } else {
+        if (filename && filename[0]) {
+            // Not VL_PRINTF_MT, already on main thread
+            VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);
+        } else {
+            VL_PRINTF("%%Error: %s\n", msg);
+        }
+        Verilated::runFlushCallbacks();
+    }
 }
 #endif
 
 #ifndef VL_USER_FATAL  ///< Define this to override this function
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
     if (false && hier) {}
+    Verilated::threadContextp()->gotError(true);
     Verilated::threadContextp()->gotFinish(true);
     if (filename && filename[0]) {
         // Not VL_PRINTF_MT, already on main thread
@@ -2203,9 +2215,17 @@ void VerilatedContext::errorLimit(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);
     m_s.m_errorLimit = val;
 }
+void VerilatedContext::fatalOnError(bool flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock(m_mutex);
+    m_s.m_fatalOnError = flag;
+}
 void VerilatedContext::fatalOnVpiError(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);
     m_s.m_fatalOnVpiError = flag;
+}
+void VerilatedContext::gotError(bool flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock(m_mutex);
+    m_s.m_gotError = flag;
 }
 void VerilatedContext::gotFinish(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);
