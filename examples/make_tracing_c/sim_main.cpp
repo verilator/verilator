@@ -23,10 +23,11 @@ int main(int argc, char** argv, char** env) {
     // Create logs/ directory in case we have traces to put under it
     Verilated::mkdir("logs");
 
-    // Construct context to hold simulation time, etc.
+    // Construct a VerilatedContext to hold simulation time, etc.
     // Multiple modules (made later below with Vtop) may share the same
     // context to share time, or modules may have different contexts if
-    // they are decoupled.
+    // they should be independent from each other.
+
     // Using unique_ptr is similar to
     // "VerilatedContext* contextp = new VerilatedContext" then deleting at end.
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
@@ -62,7 +63,18 @@ int main(int argc, char** argv, char** env) {
 
     // Simulate until $finish
     while (!contextp->gotFinish()) {
+        // Historical note, older versions of Verilator used
+        // Verilated::gotFinish() below in place of contextp->gotFinish().
+        // Most of the contextp-> calls can use Verilated:: calls instead;
+        // the Verilated:: versions simply assume there's a single context
+        // being used (per thread).  It's faster and clearer to use the
+        // newer contextp-> versions.
+
         contextp->timeInc(1);  // 1 timeprecision period passes...
+        // Historical note, older versions of Verilator required a
+        // sc_time_stamp() function instead of using timeInc.  Once
+        // timeInc() is called (with non-zero), the Verilated libraries
+        // assume the new API, and sc_time_stamp() will no longer work.
 
         // Toggle a fast (time/2 period) clock
         top->clk = !top->clk;
@@ -84,7 +96,7 @@ int main(int argc, char** argv, char** env) {
         // Evaluate model
         // (If you have multiple models being simulated in the same
         // timestep then instead of eval(), call eval_step() on each, then
-        // eval_end_step() on each.)
+        // eval_end_step() on each. See the manual.)
         top->eval();
 
         // Read outputs
