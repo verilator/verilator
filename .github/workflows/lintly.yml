@@ -1,9 +1,8 @@
 name: lintly
 
+# lintly does not support other than pull request
 on:
-  push:
   pull_request_target:
-  workflow_dispatch:
 
 jobs:
   lintly:
