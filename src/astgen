@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0115,C0116,C0123,C0301,R0902,R0913,R0914,R0912,R0915,W0621
 ######################################################################
 
 import argparse
 import glob
 import re
 import sys
-#from pprint import pprint, pformat
+# from pprint import pprint, pformat
 
 Types = []
 Classes = {}
@@ -17,10 +18,13 @@ Stages = {}
 class Cpt:
     def __init__(self):
         self.did_out_tree = False
-        self.out_lines = []
+        self.in_filename = ""
+        self.in_linenum = 1
+        self.out_filename = ""
         self.out_linenum = 1
-        self.treeop = {}
+        self.out_lines = []
         self.tree_skip_visit = {}
+        self.treeop = {}
         self._exec_nsyms = 0
         self._exec_syms = {}
 
@@ -98,7 +102,7 @@ class Cpt:
             doflag = match.group(2)
             fromn = match.group(3)
             to = match.group(4)
-            #self.print("// $fromn $to\n")
+            # self.print("// $fromn $to\n")
             if not self.did_out_tree:
                 self.did_out_tree = True
                 self.output_func(lambda self: self.tree_match_base())
@@ -169,9 +173,9 @@ class Cpt:
             self.error("Unknown astgen op: " + func)
 
     @staticmethod
-    def add_nodep(str):
-        str = re.sub(r'\$([a-zA-Z0-9]+)', r'nodep->\1()', str)
-        return str
+    def add_nodep(strg):
+        strg = re.sub(r'\$([a-zA-Z0-9]+)', r'nodep->\1()', strg)
+        return strg
 
     def _exec_syms_recurse(self, aref):
         for sym in aref:
@@ -206,8 +210,6 @@ class Cpt:
             outl = re.sub(r'\$([a-zA-Z0-9]+)', r'nodep->\1()', func)
             out += outl + ";"
         elif re.match(r'^\s*Ast([a-zA-Z0-9]+)\s*\{\s*(.*)\s*\}$', func):
-            nargs = 0
-            argnums = []  # Number for each argument name
             aref = None
             # Recursive array with structure to form
             astack = []
@@ -215,9 +217,9 @@ class Cpt:
             argtext = func + "\000"  # EOF character
             for tok in argtext:
                 if tok == "\000":
-                    None
+                    None  # pylint: disable=pointless-statement
                 elif re.match(r'\s+', tok):
-                    None
+                    None  # pylint: disable=pointless-statement
                 elif tok == "{":
                     newref = [forming]
                     if not aref:
@@ -260,7 +262,7 @@ class Cpt:
         elif func == "NEVER":
             out += "nodep->v3fatalSrc(\"Executing transform that was NEVERed\");"
         elif func == "DONE":
-            None
+            None  # pylint: disable=pointless-statement
         else:
             self.error("Unknown execution function format: " + func + "\n")
         return out
@@ -300,14 +302,14 @@ class Cpt:
             bases = subclasses_of(typen)
             bases.append(typen)
             for base in bases:
-                if not base in self.treeop:
+                if base not in self.treeop:
                     continue
                 for typefunc in self.treeop[base]:
                     lines = [
                         "        if (" + typefunc['match_func'] +
                         "(nodep)) return;\n"
                     ]
-                    if (typefunc['short_circuit']):  # short-circuit match fn
+                    if typefunc['short_circuit']:  # short-circuit match fn
                         out_for_type_sc.extend(lines)
                     else:  # Standard match fn
                         if typefunc[
@@ -365,7 +367,7 @@ def read_types(filename):
                 match = re.search(r':\s*public\s+(\S+)', line)
                 if match:
                     inh = match.group(1)
-                #print("class "+classn+" : "+inh)
+                # print("class "+classn+" : "+inh)
                 if classn == "AstNode":
                     inh = ""
                 if re.search(r'Ast', inh) or classn == "AstNode":
@@ -425,7 +427,7 @@ def subclasses_of(typen):
     cllist = []
     subclass = Classes[typen]
     while True:
-        if not subclass in Classes:
+        if subclass not in Classes:
             break
         cllist.append(subclass)
         subclass = Classes[subclass]
@@ -448,7 +450,7 @@ def children_of(typen):
     return cllist
 
 
-#---------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 
 def write_report(filename):
@@ -473,7 +475,7 @@ def write_report(filename):
                 if subclass != 'Node':
                     fh.write("Ast%-12s " % subclass)
             fh.write("\n")
-            if ("Ast" + typen) in ClassRefs:
+            if ("Ast" + typen) in ClassRefs:  # pylint: disable=superfluous-parens
                 refs = ClassRefs["Ast" + typen]
                 fh.write("    newed:  ")
                 for stage in sorted(refs['newed'].keys(),
@@ -715,6 +717,6 @@ for cpt in Args.infiles:
                   out_filename=cpt + "__gen.cpp")
 
 ######################################################################
-### Local Variables:
-### compile-command: "cd obj_dbg && ../astgen -I.. V3Const.cpp"
-### End:
+# Local Variables:
+# compile-command: "cd obj_dbg && ../astgen -I.. V3Const.cpp"
+# End:

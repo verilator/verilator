@@ -696,7 +696,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     case 'g':
     case '^': {  // Realtime
         char tmp[MAX_SPRINTF_DOUBLE_SIZE];
-        sprintf(tmp, vformat.c_str(), toDouble());
+        VL_SNPRINTF(tmp, MAX_SPRINTF_DOUBLE_SIZE, vformat.c_str(), toDouble());
         return tmp;
     }
     // 'l'   // Library - converted to text by V3LinkResolve

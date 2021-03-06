@@ -336,8 +336,8 @@ public:
     virtual const VerilatedRange* rangep() const override { return &(varp()->packed()); }
     virtual const char* fullname() const override {
         static VL_THREAD_LOCAL std::string t_out;
-        char num[20];
-        sprintf(num, "%d", m_index);
+        char num[25];
+        VL_SNPRINTF(num, 25, "%d", m_index);
         t_out = std::string(scopep()->name()) + "." + name() + "[" + num + "]";
         return t_out.c_str();
     }
