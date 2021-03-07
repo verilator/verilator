@@ -1134,7 +1134,8 @@ extern vluint64_t vl_time_stamp64() VL_ATTR_WEAK;
 // VL_TIME_CONTEXT.
 extern double sc_time_stamp() VL_ATTR_WEAK;  // Verilator 4.032 and newer
 inline vluint64_t vl_time_stamp64() {
-    return VL_LIKELY(sc_time_stamp) ? static_cast<vluint64_t>(sc_time_stamp()) : 0;
+    // clang9.0.1 requires & although we really do want the weak symbol value
+    return VL_LIKELY(&sc_time_stamp) ? static_cast<vluint64_t>(sc_time_stamp()) : 0;
 }
 #  endif
 # endif
@@ -1145,6 +1146,7 @@ inline vluint64_t VerilatedContext::time() const VL_MT_SAFE {
     if (VL_LIKELY(m_s.m_time)) return m_s.m_time;
 #if defined(SYSTEMC_VERSION) || (!defined(VL_TIME_CONTEXT) && !defined(VL_NO_LEGACY))
     // Zero time could mean really at zero, or using callback
+    // clang9.0.1 requires & although we really do want the weak symbol value
     if (VL_LIKELY(vl_time_stamp64)) {  // else is weak symbol that is not defined
         return vl_time_stamp64();
     }
