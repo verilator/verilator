@@ -2,8 +2,7 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
-* Verilator 4.111 devel
-      (Next release version number will be 4.200)
+* Verilator 4.199 devel
 
 **    Add simulation context (VerilatedContext) to allow multiple fully independent
       models to be in the same process.  Please see the updated examples.
@@ -12,6 +11,10 @@ The contributors that suggested a given feature are shown in []. Thanks!
       These now are recommended in place of the legacy sc_time_stamp().
 
 ****  --inhibit-sim is planned for deprecation, file a bug if this is still being used.
+
+****  Fix range inheritance on port without data type (#2753). [Embedded Go]
+
+****  Fix slice-assign overflow (#2803) (#2811). [David Turner]
 
 
 * Verilator 4.110 2021-02-25
