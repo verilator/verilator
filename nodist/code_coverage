@@ -38,9 +38,17 @@ def test():
         ci_fold_start("configure")
         print("Stage 1: configure (coverage on)")
         run("autoconf")
-        # Exceptions can pollute the branch coverage data
-        run("./configure --enable-longtests CXX='g++ --coverage -fno-exceptions -DVL_GCOV'"
-            )
+        cxx_flags = (
+            "--coverage"
+            # Otherwise inline may not show as uncovered
+            + " -fkeep-inline-functions"
+            # Otherwise static may not show as uncovered
+            + " -fkeep-static-functions"
+            # Exceptions can pollute the branch coverage data
+            + " -fno-exceptions"
+            # Define-out some impossible stuff
+            + " -DVL_GCOV")
+        run("./configure --enable-longtests CXX='g++ " + cxx_flags + "'")
         ci_fold_end()
 
     if Args.stage_enabled[2]:
@@ -125,8 +133,8 @@ def test():
         # Must run in root directory to find all files
         os.makedirs(cc_dir, exist_ok=True)
         run(RealPath + "/fastcov.py -b -c src/obj_dbg -X --lcov" +
-            " --exclude /usr --exclude test_regress" + " -o " + cc_dir +
-            "/app_total.info")
+            #            " --exclude /usr --exclude test_regress" + " -o " + cc_dir +
+            " -o " + cc_dir + "/app_total.info")
         ci_fold_end()
 
     if Args.stage_enabled[6]:
