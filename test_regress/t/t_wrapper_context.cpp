@@ -21,6 +21,7 @@ VerilatedMutex outputMutex;
 #ifdef T_WRAPPER_CONTEXT
 #elif defined(T_WRAPPER_CONTEXT_SEQ)
 VerilatedMutex sequentialMutex;
+#elif defined(T_WRAPPER_CONTEXT_FST)
 #else
 #error "Unexpected test name"
 #endif
@@ -95,6 +96,8 @@ int main(int argc, char** argv, char** env) {
     top0p->trace_number = 0;
     top0p->trace_number = 1;
 
+    std::cout << "Below '%Error: ... Verilog $stop' is expected as part of the test\n";
+
     // create threads
     std::thread t0(sim, top0p.get());
     std::thread t1(sim, top1p.get());
@@ -104,10 +107,12 @@ int main(int argc, char** argv, char** env) {
     t1.join();
 
     // check if both finished
+    bool pass = true;
     if (top0p->done_o && top1p->done_o) {
         std::cout << "*-* All Finished *-*" << std::endl;
     } else {
         std::cout << "Error: Early termination!" << std::endl;
+        pass = false;
     }
 
     // final model cleanup
@@ -115,5 +120,5 @@ int main(int argc, char** argv, char** env) {
     top1p->final();
 
     // exit successful
-    return 0;
+    return pass ? 0 : 10;
 }

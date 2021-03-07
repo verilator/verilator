@@ -233,12 +233,10 @@ public:
             }
         }
     }
-    void changeThread() { m_threadid = 0; }  // Allow intentional change-of-thread
     static void fatal_different() VL_MT_SAFE;
 #else  // !VL_THREADED || !VL_DEBUG
 public:
     void check() {}
-    void changeThread() {}
 #endif
 };
 

@@ -7,6 +7,8 @@
 // any use, without warranty, 2020-2021 by Andreas Kuster.
 // SPDX-License-Identifier: CC0-1.0
 
+`define STRINGIFY(x) `"x`"
+
 module top
   (
    input             clk,
@@ -21,10 +23,10 @@ module top
       string number;
       string filename;
       number.itoa(trace_number);
-      filename = {"logs", "/", "trace", number, ".vcd"};
-      // FIXME $display("Writing dumpfile '%s'", filename);
-      // FIXME $dumpfile(filename);
-      // FIXME $dumpvars();
+      filename = {`STRINGIFY(`TEST_OBJ_DIR), "/trace", number, ".vcd"};
+      $display("Writing dumpfile '%s'", filename);
+      $dumpfile(filename);
+      $dumpvars();
    end
 
    always@(posedge clk) begin

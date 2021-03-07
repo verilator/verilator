@@ -26,7 +26,7 @@ int main(int argc, char** argv, char** env) {
     contextp->commandArgs(argc, argv);
 
     // Construct the Verilated model, including the secret module
-    Vtop* top = new Vtop(contextp);
+    Vtop* top = new Vtop{contextp};
 
 #if VM_TRACE
     // When tracing, the contents of the secret module will not be seen

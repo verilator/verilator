@@ -10,24 +10,20 @@ if (!$::Driver) { use strict; use FindBin; exec("$FindBin::Bin/bootstrap.pl", @A
 
 scenarios(vlt_all => 1);
 
+top_filename("t/t_wrapper_context.v");
+
 compile(
     make_top_shell => 0,
     make_main => 0,
     # link threads library, add custom .cpp code, add tracing & coverage support
-    verilator_flags2 => ["-threads 1 --exe $Self->{t_dir}/$Self->{name}.cpp",
-                         "--trace --coverage -cc"],
+    verilator_flags2 => ["-threads 1 --exe $Self->{t_dir}/t_wrapper_context.cpp",
+                         "--trace-fst --coverage -cc"],
     make_flags => 'CPPFLAGS_ADD=-DVL_NO_LEGACY',
     );
 
 execute(
     check_finished => 1,
     );
-
-files_identical_sorted("$Self->{obj_dir}/coverage_top0.dat", "t/t_wrapper_context_top0.out");
-files_identical_sorted("$Self->{obj_dir}/coverage_top1.dat", "t/t_wrapper_context_top1.out");
-
-vcd_identical("$Self->{obj_dir}/trace0.vcd", "t/t_wrapper_context_trace0.out");
-vcd_identical("$Self->{obj_dir}/trace1.vcd", "t/t_wrapper_context_trace1.out");
 
 ok(1);
 1;

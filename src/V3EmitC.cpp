@@ -2750,7 +2750,7 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
 
 void EmitCImp::emitWrapFast(AstNodeModule* modp) {
     puts("\nVerilatedContext* " + prefixNameProtect(modp) + "::contextp() {\n");
-    puts("return __VlSymsp->_vm_contextp__;\n");
+    puts(/**/ "return __VlSymsp->_vm_contextp__;\n");
     puts("}\n");
 }
 
@@ -3532,7 +3532,6 @@ class EmitCTrace final : EmitCStmts {
             puts("trace(__VlSymsp->__Vm_dumperp, 0, 0);\n");
             puts("std::string dumpfile = __VlSymsp->_vm_contextp__->dumpfile();\n");
             puts("__VlSymsp->__Vm_dumperp->open(dumpfile.c_str());\n");
-            puts("__VlSymsp->__Vm_dumperp->changeThread();\n");
             puts("__VlSymsp->__Vm_dumping = true;\n");
             puts("}\n");
             puts("}\n");

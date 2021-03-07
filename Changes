@@ -3,6 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.111 devel
+      (Next release version number will be 4.200)
 
 **    Add simulation context (VerilatedContext) to allow multiple fully independent
       models to be in the same process.  Please see the updated examples.
