@@ -63,18 +63,18 @@ int main(int argc, char** argv, char** env) {
 
     // Simulate until $finish
     while (!contextp->gotFinish()) {
-        // Historical note, older versions of Verilator used
-        // Verilated::gotFinish() below in place of contextp->gotFinish().
+        // Historical note, before Verilator 4.200 Verilated::gotFinish()
+        // was used above in place of contextp->gotFinish().
         // Most of the contextp-> calls can use Verilated:: calls instead;
         // the Verilated:: versions simply assume there's a single context
         // being used (per thread).  It's faster and clearer to use the
         // newer contextp-> versions.
 
         contextp->timeInc(1);  // 1 timeprecision period passes...
-        // Historical note, older versions of Verilator required a
-        // sc_time_stamp() function instead of using timeInc.  Once
-        // timeInc() is called (with non-zero), the Verilated libraries
-        // assume the new API, and sc_time_stamp() will no longer work.
+        // Historical note, before Verilator 4.200 a sc_time_stamp()
+        // function was required instead of using timeInc.  Once timeInc()
+        // is called (with non-zero), the Verilated libraries assume the
+        // new API, and sc_time_stamp() will no longer work.
 
         // Toggle a fast (time/2 period) clock
         top->clk = !top->clk;
