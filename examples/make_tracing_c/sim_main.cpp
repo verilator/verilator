@@ -27,12 +27,15 @@ int main(int argc, char** argv, char** env) {
     // Prevent unused variable warnings
     if (false && argc && argv && env) {}
 
+    // Create logs/ directory in case we have traces to put under it
+    Verilated::mkdir("logs");
+
     // Set debug level, 0 is off, 9 is highest presently used
-    // May be overridden by commandArgs
+    // May be overridden by commandArgs argument parsing
     Verilated::debug(0);
 
     // Randomization reset policy
-    // May be overridden by commandArgs
+    // May be overridden by commandArgs argument parsing
     Verilated::randReset(2);
 
     // Verilator must compute traced signals
@@ -42,14 +45,12 @@ int main(int argc, char** argv, char** env) {
     // This needs to be called before you create any model
     Verilated::commandArgs(argc, argv);
 
-    // Create logs/ directory in case we have traces to put under it
-    Verilated::mkdir("logs");
-
-    // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    // Using unique_ptr is similar to "Vtop* top = new Vtop" then deleting at end
+    // Construct the Verilated model, from Vtop.h generated from Verilating "top.v".
+    // Using unique_ptr is similar to "Vtop* top = new Vtop" then deleting at end.
+    // "TOP" will be the hierarchical name of the module.
     const std::unique_ptr<Vtop> top{new Vtop};
 
-    // Set some inputs
+    // Set Vtop's input signals
     top->reset_l = !0;
     top->clk = 0;
     top->in_small = 1;
@@ -82,7 +83,7 @@ int main(int argc, char** argv, char** env) {
         // Evaluate model
         // (If you have multiple models being simulated in the same
         // timestep then instead of eval(), call eval_step() on each, then
-        // eval_end_step() on each.)
+        // eval_end_step() on each. See the manual.)
         top->eval();
 
         // Read outputs
@@ -95,7 +96,7 @@ int main(int argc, char** argv, char** env) {
     // Final model cleanup
     top->final();
 
-    //  Coverage analysis (since test passed)
+    // Coverage analysis (calling write only after the test is known to pass)
 #if VM_COVERAGE
     Verilated::mkdir("logs");
     VerilatedCov::write("logs/coverage.dat");

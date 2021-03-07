@@ -15,7 +15,6 @@
 /// \brief Implementation of tracing functionality common to all trace formats
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 // clang-format off
 

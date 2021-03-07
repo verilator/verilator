@@ -12,10 +12,9 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Tracing functionality common to all formats
+/// \brief Internal tracing functionality common to all formats
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 #ifndef VERILATOR_VERILATED_TRACE_H_
 #define VERILATOR_VERILATED_TRACE_H_
@@ -221,9 +220,9 @@ protected:
 
     void declCode(vluint32_t code, vluint32_t bits, bool tri);
 
-    /// Is this an escape?
+    // Is this an escape?
     bool isScopeEscape(char c) { return c != '\f' && (isspace(c) || c == m_scopeEscape); }
-    /// Character that splits scopes.  Note whitespace are ALWAYS escapes.
+    // Character that splits scopes.  Note whitespace are ALWAYS escapes.
     char scopeEscape() { return m_scopeEscape; }
 
     void close();

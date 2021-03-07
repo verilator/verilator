@@ -15,7 +15,6 @@
 /// \brief C++ Tracing in VCD Format
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 #ifndef VERILATOR_VERILATED_VCD_C_H_
 #define VERILATOR_VERILATED_VCD_C_H_
@@ -29,7 +28,6 @@
 
 class VerilatedVcd;
 
-// SPDIFF_ON
 //=============================================================================
 // VerilatedFile
 /// File handling routines, which can be overrode for e.g. socket I/O
@@ -48,8 +46,8 @@ public:
 
 //=============================================================================
 // VerilatedVcd
-/// Base class to create a Verilator VCD dump
-/// This is an internally used class - see VerilatedVcdC for what to call from applications
+// Base class to create a Verilator VCD dump
+// This is an internally used class - see VerilatedVcdC for what to call from applications
 
 class VerilatedVcd VL_NOT_FINAL : public VerilatedTrace<VerilatedVcd> {
 private:
@@ -136,19 +134,19 @@ public:
     ~VerilatedVcd();
 
     // ACCESSORS
-    /// Set size in megabytes after which new file should be created
+    // Set size in megabytes after which new file should be created
     void rolloverMB(vluint64_t rolloverMB) { m_rolloverMB = rolloverMB; }
 
     // METHODS
-    /// Open the file; call isOpen() to see if errors
+    // Open the file; call isOpen() to see if errors
     void open(const char* filename) VL_MT_UNSAFE_ONE;
-    /// Open next data-only file
+    // Open next data-only file
     void openNext(bool incFilename) VL_MT_UNSAFE_ONE;
-    /// Close the file
+    // Close the file
     void close() VL_MT_UNSAFE_ONE;
-    /// Flush any remaining data to this file
+    // Flush any remaining data to this file
     void flush() VL_MT_UNSAFE_ONE;
-    /// Is file open?
+    // Return if file is open
     bool isOpen() const { return m_isOpen; }
 
     //=========================================================================
@@ -211,8 +209,8 @@ public:
         chgDouble(oldp - this->oldp(0), newval);
     }
 
-    /// Inside dumping routines, dump one signal, faster when not inlined
-    /// due to code size reduction.
+    // Inside dumping routines, dump one signal, faster when not inlined
+    // due to code size reduction.
     void fullBit(vluint32_t code, const vluint32_t newval);
     void fullBus(vluint32_t code, const vluint32_t newval, int bits);
     void fullQuad(vluint32_t code, const vluint64_t newval, int bits);
@@ -225,8 +223,8 @@ public:
                       int bits);
     void fullDouble(vluint32_t code, const double newval);
 
-    /// Inside dumping routines, dump one signal if it has changed.
-    /// We do want to inline these to avoid calls when the value did not change.
+    // Inside dumping routines, dump one signal if it has changed.
+    // We do want to inline these to avoid calls when the value did not change.
     inline void chgBit(vluint32_t code, const vluint32_t newval) {
         vluint32_t diff = oldp(code)[0] ^ newval;
         if (VL_UNLIKELY(diff)) fullBit(code, newval);
@@ -336,17 +334,19 @@ class VerilatedVcdC VL_NOT_FINAL {
     VL_UNCOPYABLE(VerilatedVcdC);
 
 public:
+    /// Construct the dump. Optional argument is a preconstructed file.
     explicit VerilatedVcdC(VerilatedVcdFile* filep = nullptr)
         : m_sptrace{filep} {}
+    /// Destruct, flush, and close the dump
     ~VerilatedVcdC() { close(); }
     /// Routines can only be called from one thread; allow next call from different thread
     void changeThread() { spTrace()->changeThread(); }
 
 public:
-    // ACCESSORS
-    /// Is file open?
+    // METHODS - User called
+
+    /// Return if file is open
     bool isOpen() const { return m_sptrace.isOpen(); }
-    // METHODS
     /// Open a new VCD file
     /// This includes a complete header dump each time it is called,
     /// just as if this object was deleted and reconstructed.
@@ -368,16 +368,22 @@ public:
     void dump(double timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
     void dump(vluint32_t timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
     void dump(int timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
-    /// Set time units (s/ms, defaults to ns)
-    /// For Verilated models, these propage from the Verilated default --timeunit
+
+    // METHODS - Internal/backward compatible
+    // \protectedsection
+
+    // Set time units (s/ms, defaults to ns)
+    // Users should not need to call this, as for Verilated models, these
+    // propage from the Verilated default timeunit
     void set_time_unit(const char* unit) { m_sptrace.set_time_unit(unit); }
     void set_time_unit(const std::string& unit) { m_sptrace.set_time_unit(unit); }
-    /// Set time resolution (s/ms, defaults to ns)
-    /// For Verilated models, these propage from the Verilated default --timeunit
+    // Set time resolution (s/ms, defaults to ns)
+    // Users should not need to call this, as for Verilated models, these
+    // propage from the Verilated default timeprecision
     void set_time_resolution(const char* unit) { m_sptrace.set_time_resolution(unit); }
     void set_time_resolution(const std::string& unit) { m_sptrace.set_time_resolution(unit); }
 
-    /// Internal class access
+    // Internal class access
     inline VerilatedVcd* spTrace() { return &m_sptrace; }
 
 #ifdef VL_TRACE_VCD_OLD_API
@@ -385,7 +391,8 @@ public:
     // Note: These are only for testing for backward compatibility with foreign
     // code and is not used by Verilator. Do not use these as there is no
     // guarantee of functionality.
-    /// Use evcd format
+
+    // Use evcd format
     void evcd(bool flag) VL_MT_UNSAFE_ONE { m_sptrace.evcd(flag); }
 #endif
 };

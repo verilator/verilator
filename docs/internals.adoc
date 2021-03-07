@@ -395,23 +395,19 @@ but is maintained to build successfully with C++14/C++17/C++20.
 We will work with contributors to fix up indentation style issues, but it
 is appreciated if you could match our style:
 
-* All files should contain the magic header to ensure standard indentation:
-+
-   // -*- mode: C++; c-file-style: "cc-mode" -*-
-+
-This sets indentation to the `cc-mode` defaults.  (Verilator predates a
-CC-mode change of several years ago which overrides the defaults with GNU
-style indentation; the `c-set-style` undoes that.)
-
 * Use "mixedCapsSymbols" instead of "underlined_symbols".
 
 * Uas a "p" suffix on variables that are pointers, e.g. "nodep".
 
 * Comment every member variable.
 
-Indentation is automatically maintained with "make format" using
-clang-format version 10.0.0, and yapf for python, and is automatically
-corrected in the CI actions.  For those manually formatting C++ code:
+* In the include directory, use /// to document functions the user calls.
+(This convention has not been applied retroactively.)
+
+C++ and Python indentation is automatically maintained with "make format"
+using clang-format version 10.0.0, and yapf for python, and is
+automatically corrected in the CI actions.  For those manually formatting
+C++ code:
 
 * Use 4 spaces per level, and no tabs.
 
