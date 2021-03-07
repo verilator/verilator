@@ -1147,7 +1147,7 @@ inline vluint64_t VerilatedContext::time() const VL_MT_SAFE {
 #if defined(SYSTEMC_VERSION) || (!defined(VL_TIME_CONTEXT) && !defined(VL_NO_LEGACY))
     // Zero time could mean really at zero, or using callback
     // clang9.0.1 requires & although we really do want the weak symbol value
-    if (VL_LIKELY(vl_time_stamp64)) {  // else is weak symbol that is not defined
+    if (VL_LIKELY(&vl_time_stamp64)) {  // else is weak symbol that is not defined
         return vl_time_stamp64();
     }
 #endif
