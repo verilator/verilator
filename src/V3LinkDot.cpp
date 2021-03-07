@@ -2452,8 +2452,9 @@ private:
                 // Generally set by parse, but might be an import
                 nodep->classOrPackagep(foundp->classOrPackagep());
             }
-            if (!nodep->varp()) {
-                nodep->v3error("Can't find definition of signal, again: " << nodep->prettyNameQ());
+            if (VL_UNCOVERABLE(!nodep->varp())) {
+                nodep->v3error("Can't find definition of signal, again: "  // LCOV_EXCL_LINE
+                               << nodep->prettyNameQ());
             }
         }
     }

@@ -703,14 +703,14 @@ private:
         }
         if (newp) {
             UINFO(4, "Transformed leaf of bit tree to " << newp << std::endl);
-            if (debug() >= 9) {
+            if (debug() >= 9) {  // LCOV_EXCL_START
                 static int c = 0;
                 std::cout << "Call matchBitOpTree[" << c << "]\n";
                 nodep->dumpTree(std::cout);
                 std::cout << "\nResult:\n";
                 newp->dumpTree(std::cout);
                 ++c;
-            }
+            }  // LCOV_EXCL_STOP
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }

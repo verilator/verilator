@@ -61,7 +61,7 @@ public:
     virtual void insertUnreadback(const string& text) = 0;
 
     int debug() const { return m_debug; }
-    void debug(int level) { m_debug = level; }
+    void debug(int level);
 
     FileLine* fileline();  ///< File/Line number for last getline call
 

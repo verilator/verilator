@@ -81,8 +81,8 @@ int main(int argc, char** argv, char** env) {
     CHECK_RESULT_CSTR(Verilated::productName(), Verilated::productName());
     CHECK_RESULT_CSTR(Verilated::productVersion(), Verilated::productVersion());
 
-    if (Verilated::timeunit()) {}
-    if (Verilated::timeprecision()) {}
+    CHECK_RESULT(Verilated::timeunit(), 12);
+    CHECK_RESULT(Verilated::timeprecision(), 12);
 
     VM_PREFIX* topp = new VM_PREFIX();
 
