@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3GRAPHPATHCHECKER_H_
-#define _V3GRAPHPATHCHECKER_H_
+#ifndef VERILATOR_V3GRAPHPATHCHECKER_H_
+#define VERILATOR_V3GRAPHPATHCHECKER_H_
 
 #include "V3Error.h"
 #include "V3Graph.h"

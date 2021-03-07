@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _VLCOPTIONS_H_
-#define _VLCOPTIONS_H_ 1
+#ifndef VERILATOR_VLCOPTIONS_H_
+#define VERILATOR_VLCOPTIONS_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

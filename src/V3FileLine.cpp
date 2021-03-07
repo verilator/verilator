@@ -21,7 +21,7 @@
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3String.h"
-#ifndef _V3ERROR_NO_GLOBAL_
+#ifndef V3ERROR_NO_GLOBAL_
 # include "V3Global.h"
 # include "V3Config.h"
 # include "V3File.h"
@@ -165,11 +165,8 @@ string FileLine::xmlDetailedLocation() const {
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
-    char numbuf[20];
-    sprintf(numbuf, "%d", lastLineno());
-    char levelbuf[20];
-    sprintf(levelbuf, "%d", enterExit);
-    return (string("`line ") + numbuf + " \"" + filename() + "\" " + levelbuf + "\n");
+    return std::string("`line ") + cvtToStr(lastLineno()) + " \"" + filename() + "\" "
+           + cvtToStr(enterExit) + "\n";
 }
 
 void FileLine::lineDirective(const char* textp, int& enterExitRef) {
@@ -240,7 +237,7 @@ FileLine* FileLine::copyOrSameFileLine() {
     // Return this, or a copy of this
     // There are often more than one token per line, thus we use the
     // same pointer as long as we're on the same line, file & warn state.
-#ifndef _V3ERROR_NO_GLOBAL_
+#ifndef V3ERROR_NO_GLOBAL_
     V3Config::applyIgnores(this);  // Toggle warnings based on global config file
 #endif
     static FileLine* lastNewp = nullptr;

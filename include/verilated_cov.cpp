@@ -26,10 +26,10 @@
 #include <map>
 
 //=============================================================================
-// VerilatedCovImpBase
-/// Implementation base class for constants
+// VerilatedCovConst
+// Implementation constants
 
-struct VerilatedCovImpBase VL_NOT_FINAL {
+struct VerilatedCovConst VL_NOT_FINAL {
     // TYPES
     enum { MAX_KEYS = 33 };  /// Maximum user arguments + filename+lineno
     enum { KEY_UNDEF = 0 };  /// Magic key # for unspecified values
@@ -39,16 +39,16 @@ struct VerilatedCovImpBase VL_NOT_FINAL {
 // VerilatedCovImpItem
 /// Implementation class for a VerilatedCov item
 
-class VerilatedCovImpItem VL_NOT_FINAL : VerilatedCovImpBase {
+class VerilatedCovImpItem VL_NOT_FINAL {
 public:  // But only local to this file
     // MEMBERS
-    int m_keys[MAX_KEYS];  ///< Key
-    int m_vals[MAX_KEYS];  ///< Value for specified key
+    int m_keys[VerilatedCovConst::MAX_KEYS];  ///< Key
+    int m_vals[VerilatedCovConst::MAX_KEYS];  ///< Value for specified key
     // CONSTRUCTORS
     // Derived classes should call zero() in their constructor
     VerilatedCovImpItem() {
-        for (int i = 0; i < MAX_KEYS; ++i) {
-            m_keys[i] = KEY_UNDEF;
+        for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
+            m_keys[i] = VerilatedCovConst::KEY_UNDEF;
             m_vals[i] = 0;
         }
     }
@@ -83,11 +83,13 @@ public:
 
 //=============================================================================
 // VerilatedCovImp
-/// Implementation class for VerilatedCov.  See that class for public method information.
-/// All value and keys are indexed into a unique number.  Thus we can greatly reduce
-/// the storage requirements for otherwise identical keys.
+///
+/// Implementation class for VerilatedCovContext.  See that class for
+/// public method information.  All value and keys are indexed into a
+/// unique number.  Thus we can greatly reduce the storage requirements for
+/// otherwise identical keys.
 
-class VerilatedCovImp final : VerilatedCovImpBase {
+class VerilatedCovImp final : public VerilatedCovContext {
 private:
     // TYPES
     typedef std::map<const std::string, int> ValueIndexMap;
@@ -99,18 +101,21 @@ private:
     ValueIndexMap m_valueIndexes VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for values
     IndexValueMap m_indexValues VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for keys
     ItemList m_items VL_GUARDED_BY(m_mutex);  ///< List of all items
-    int m_nextIndex VL_GUARDED_BY(m_mutex) = (KEY_UNDEF + 1);  ///< Next insert value
+    int m_nextIndex VL_GUARDED_BY(m_mutex)
+        = (VerilatedCovConst::KEY_UNDEF + 1);  ///< Next insert value
 
     VerilatedCovImpItem* m_insertp VL_GUARDED_BY(m_mutex) = nullptr;  ///< Item about to insert
     const char* m_insertFilenamep VL_GUARDED_BY(m_mutex) = nullptr;  ///< Filename about to insert
     int m_insertLineno VL_GUARDED_BY(m_mutex) = 0;  ///< Line number about to insert
 
+public:
     // CONSTRUCTORS
     VerilatedCovImp() = default;
     VL_UNCOPYABLE(VerilatedCovImp);
 
-public:
-    ~VerilatedCovImp() { clearGuts(); }
+protected:
+    friend class VerilatedCovContext;
+    virtual ~VerilatedCovImp() override { clearGuts(); }
     static VerilatedCovImp& imp() VL_MT_SAFE {
         static VerilatedCovImp s_singleton;
         return s_singleton;
@@ -133,7 +138,7 @@ private:
         for (const char* pos = text.c_str(); *pos; ++pos) {
             if (!isprint(*pos) || *pos == '%' || *pos == '"') {
                 char hex[10];
-                sprintf(hex, "%%%02X", pos[0]);
+                VL_SNPRINTF(hex, 10, "%%%02X", pos[0]);
                 rtn += hex;
             } else {
                 rtn += *pos;
@@ -203,8 +208,8 @@ private:
     }
     bool itemMatchesString(VerilatedCovImpItem* itemp, const std::string& match)
         VL_REQUIRES(m_mutex) {
-        for (int i = 0; i < MAX_KEYS; ++i) {
-            if (itemp->m_keys[i] != KEY_UNDEF) {
+        for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
+            if (itemp->m_keys[i] != VerilatedCovConst::KEY_UNDEF) {
                 // We don't compare keys, only values
                 std::string val = m_indexValues[itemp->m_vals[i]];
                 if (std::string::npos != val.find(match)) {  // Found
@@ -235,17 +240,17 @@ private:
         m_items.clear();
         m_indexValues.clear();
         m_valueIndexes.clear();
-        m_nextIndex = KEY_UNDEF + 1;
+        m_nextIndex = VerilatedCovConst::KEY_UNDEF + 1;
     }
 
 public:
     // PUBLIC METHODS
-    void clear() VL_EXCLUDES(m_mutex) {
+    void clear() VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
         clearGuts();
     }
-    void clearNonMatch(const char* matchp) VL_EXCLUDES(m_mutex) {
+    void clearNonMatch(const char* matchp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
         if (matchp && matchp[0]) {
@@ -260,24 +265,25 @@ public:
             m_items = newlist;
         }
     }
-    void zero() VL_EXCLUDES(m_mutex) {
+    void zero() VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
         for (const auto& itemp : m_items) itemp->zero();
     }
 
     // We assume there's always call to i/f/p in that order
-    void inserti(VerilatedCovImpItem* itemp) VL_EXCLUDES(m_mutex) {
+    void inserti(VerilatedCovImpItem* itemp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         const VerilatedLockGuard lock(m_mutex);
         assert(!m_insertp);
         m_insertp = itemp;
     }
-    void insertf(const char* filenamep, int lineno) VL_EXCLUDES(m_mutex) {
+    void insertf(const char* filenamep, int lineno) VL_MT_SAFE_EXCLUDES(m_mutex) {
         const VerilatedLockGuard lock(m_mutex);
         m_insertFilenamep = filenamep;
         m_insertLineno = lineno;
     }
-    void insertp(const char* ckeyps[MAX_KEYS], const char* valps[MAX_KEYS]) VL_EXCLUDES(m_mutex) {
+    void insertp(const char* ckeyps[VerilatedCovConst::MAX_KEYS],
+                 const char* valps[VerilatedCovConst::MAX_KEYS]) VL_MT_SAFE_EXCLUDES(m_mutex) {
         const VerilatedLockGuard lock(m_mutex);
         assert(m_insertp);
         // First two key/vals are filename
@@ -296,14 +302,14 @@ public:
         valps[2] = page_default.c_str();
 
         // Keys -> strings
-        std::string keys[MAX_KEYS];
-        for (int i = 0; i < MAX_KEYS; ++i) {
+        std::string keys[VerilatedCovConst::MAX_KEYS];
+        for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
             if (ckeyps[i] && ckeyps[i][0]) keys[i] = ckeyps[i];
         }
         // Ignore empty keys
-        for (int i = 0; i < MAX_KEYS; ++i) {
+        for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
             if (!keys[i].empty()) {
-                for (int j = i + 1; j < MAX_KEYS; ++j) {
+                for (int j = i + 1; j < VerilatedCovConst::MAX_KEYS; ++j) {
                     if (keys[i] == keys[j]) {  // Duplicate key.  Keep the last one
                         keys[i] = "";
                         break;
@@ -313,7 +319,7 @@ public:
         }
         // Insert the values
         int addKeynum = 0;
-        for (int i = 0; i < MAX_KEYS; ++i) {
+        for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
             const std::string key = keys[i];
             if (!keys[i].empty()) {
                 const std::string val = valps[i];
@@ -334,7 +340,7 @@ public:
         m_insertp = nullptr;
     }
 
-    void write(const char* filename) VL_EXCLUDES(m_mutex) {
+    void write(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
 #ifndef VM_COVERAGE
@@ -358,8 +364,8 @@ public:
             std::string hier;
             bool per_instance = false;
 
-            for (int i = 0; i < MAX_KEYS; ++i) {
-                if (itemp->m_keys[i] != KEY_UNDEF) {
+            for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
+                if (itemp->m_keys[i] != VerilatedCovConst::KEY_UNDEF) {
                     std::string key = VerilatedCovKey::shortKey(m_indexValues[itemp->m_keys[i]]);
                     std::string val = m_indexValues[itemp->m_vals[i]];
                     if (key == VL_CIK_PER_INSTANCE) {
@@ -406,64 +412,62 @@ public:
 };
 
 //=============================================================================
-// VerilatedCov
+// VerilatedCovContext
 
-void VerilatedCov::clear() VL_MT_SAFE { VerilatedCovImp::imp().clear(); }
-void VerilatedCov::clearNonMatch(const char* matchp) VL_MT_SAFE {
-    VerilatedCovImp::imp().clearNonMatch(matchp);
+void VerilatedCovContext::clear() VL_MT_SAFE { impp()->clear(); }
+void VerilatedCovContext::clearNonMatch(const char* matchp) VL_MT_SAFE {
+    impp()->clearNonMatch(matchp);
 }
-void VerilatedCov::zero() VL_MT_SAFE { VerilatedCovImp::imp().zero(); }
-void VerilatedCov::write(const char* filenamep) VL_MT_SAFE {
-    VerilatedCovImp::imp().write(filenamep);
+void VerilatedCovContext::zero() VL_MT_SAFE { impp()->zero(); }
+void VerilatedCovContext::write(const char* filenamep) VL_MT_SAFE { impp()->write(filenamep); }
+void VerilatedCovContext::_inserti(vluint32_t* itemp) VL_MT_SAFE {
+    impp()->inserti(new VerilatedCoverItemSpec<vluint32_t>(itemp));
 }
-void VerilatedCov::_inserti(vluint32_t* itemp) VL_MT_SAFE {
-    VerilatedCovImp::imp().inserti(new VerilatedCoverItemSpec<vluint32_t>(itemp));
+void VerilatedCovContext::_inserti(vluint64_t* itemp) VL_MT_SAFE {
+    impp()->inserti(new VerilatedCoverItemSpec<vluint64_t>(itemp));
 }
-void VerilatedCov::_inserti(vluint64_t* itemp) VL_MT_SAFE {
-    VerilatedCovImp::imp().inserti(new VerilatedCoverItemSpec<vluint64_t>(itemp));
-}
-void VerilatedCov::_insertf(const char* filename, int lineno) VL_MT_SAFE {
-    VerilatedCovImp::imp().insertf(filename, lineno);
+void VerilatedCovContext::_insertf(const char* filename, int lineno) VL_MT_SAFE {
+    impp()->insertf(filename, lineno);
 }
 
 #define K(n) const char* key##n
 #define A(n) const char *key##n, const char *valp##n  // Argument list
 #define C(n) key##n, valp##n  // Calling argument list
 #define N(n) "", ""  // Null argument list
-void VerilatedCov::_insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9), A(10),
-                            A(11), A(12), A(13), A(14), A(15), A(16), A(17), A(18), A(19), A(20),
-                            A(21), A(22), A(23), A(24), A(25), A(26), A(27), A(28),
-                            A(29)) VL_MT_SAFE {
-    const char* keyps[VerilatedCovImpBase::MAX_KEYS]
+void VerilatedCovContext::_insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9),
+                                   A(10), A(11), A(12), A(13), A(14), A(15), A(16), A(17), A(18),
+                                   A(19), A(20), A(21), A(22), A(23), A(24), A(25), A(26), A(27),
+                                   A(28), A(29)) VL_MT_SAFE {
+    const char* keyps[VerilatedCovConst::MAX_KEYS]
         = {nullptr, nullptr, nullptr,  // filename,lineno,page
            key0,    key1,    key2,    key3,  key4,  key5,  key6,  key7,  key8,  key9,
            key10,   key11,   key12,   key13, key14, key15, key16, key17, key18, key19,
            key20,   key21,   key22,   key23, key24, key25, key26, key27, key28, key29};
-    const char* valps[VerilatedCovImpBase::MAX_KEYS]
+    const char* valps[VerilatedCovConst::MAX_KEYS]
         = {nullptr, nullptr, nullptr,  // filename,lineno,page
            valp0,   valp1,   valp2,   valp3,  valp4,  valp5,  valp6,  valp7,  valp8,  valp9,
            valp10,  valp11,  valp12,  valp13, valp14, valp15, valp16, valp17, valp18, valp19,
            valp20,  valp21,  valp22,  valp23, valp24, valp25, valp26, valp27, valp28, valp29};
-    VerilatedCovImp::imp().insertp(keyps, valps);
+    impp()->insertp(keyps, valps);
 }
 
 // And versions with fewer arguments  (oh for a language with named parameters!)
-void VerilatedCov::_insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8),
-                            A(9)) VL_MT_SAFE {
+void VerilatedCovContext::_insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8),
+                                   A(9)) VL_MT_SAFE {
     _insertp(C(0), C(1), C(2), C(3), C(4), C(5), C(6), C(7), C(8), C(9), N(10), N(11), N(12),
              N(13), N(14), N(15), N(16), N(17), N(18), N(19), N(20), N(21), N(22), N(23), N(24),
              N(25), N(26), N(27), N(28), N(29));
 }
-void VerilatedCov::_insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9), A(10),
-                            A(11), A(12), A(13), A(14), A(15), A(16), A(17), A(18),
-                            A(19)) VL_MT_SAFE {
+void VerilatedCovContext::_insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9),
+                                   A(10), A(11), A(12), A(13), A(14), A(15), A(16), A(17), A(18),
+                                   A(19)) VL_MT_SAFE {
     _insertp(C(0), C(1), C(2), C(3), C(4), C(5), C(6), C(7), C(8), C(9), C(10), C(11), C(12),
              C(13), C(14), C(15), C(16), C(17), C(18), C(19), N(20), N(21), N(22), N(23), N(24),
              N(25), N(26), N(27), N(28), N(29));
 }
 // Backward compatibility for Verilator
-void VerilatedCov::_insertp(A(0), A(1), K(2), int val2, K(3), int val3, K(4),
-                            const std::string& val4, A(5), A(6), A(7)) VL_MT_SAFE {
+void VerilatedCovContext::_insertp(A(0), A(1), K(2), int val2, K(3), int val3, K(4),
+                                   const std::string& val4, A(5), A(6), A(7)) VL_MT_SAFE {
     std::string val2str = vlCovCvtToStr(val2);
     std::string val3str = vlCovCvtToStr(val3);
     _insertp(C(0), C(1), key2, val2str.c_str(), key3, val3str.c_str(), key4, val4.c_str(), C(5),
@@ -474,3 +478,26 @@ void VerilatedCov::_insertp(A(0), A(1), K(2), int val2, K(3), int val3, K(4),
 #undef C
 #undef N
 #undef K
+
+//=============================================================================
+// VerilatedCov
+
+#ifndef VL_NO_LEGACY
+VerilatedCovContext* VerilatedCov::threadCovp() VL_MT_SAFE {
+    return Verilated::threadContextp()->coveragep();
+}
+#endif
+
+//=============================================================================
+// VerilatedContext
+
+VerilatedCovContext* VerilatedContext::coveragep() VL_MT_SAFE {
+    static VerilatedMutex s_mutex;
+    if (VL_UNLIKELY(!m_coveragep)) {
+        const VerilatedLockGuard lock(s_mutex);
+        if (VL_LIKELY(!m_coveragep)) {  // Not redundant, prevents race
+            m_coveragep.reset(new VerilatedCovImp);
+        }
+    }
+    return reinterpret_cast<VerilatedCovContext*>(m_coveragep.get());
+}

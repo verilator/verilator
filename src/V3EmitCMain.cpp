@@ -45,6 +45,9 @@ private:
         V3OutCFile cf(filename);
         m_ofp = &cf;
 
+        // Not defining main_time/vl_time_stamp, so
+        v3Global.opt.addCFlags("-DVL_TIME_CONTEXT");  // On MSVC++ anyways
+
         // Heavly commented output, as users are likely to look at or copy this code
         ofp()->putsHeader();
         puts("// DESCRIPTION: main() calling loop, created with Verilator --main\n");
@@ -55,20 +58,16 @@ private:
 
         puts("\n//======================\n\n");
 
-        puts("// Requires -DVL_TIME_STAMP64\n");
-        v3Global.opt.addCFlags("-DVL_TIME_STAMP64");
-        puts("vluint64_t main_time = 0;\n");
-        puts("vluint64_t vl_time_stamp64() { return main_time; }\n");
-        puts("\n");
-
         puts("int main(int argc, char** argv, char**) {\n");
-        puts("// Setup defaults and parse command line\n");
+        puts("// Setup context, defaults, and parse command line\n");
         puts("Verilated::debug(0);\n");
-        puts("Verilated::commandArgs(argc, argv);\n");
+        puts("const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};\n");
+        puts("contextp->commandArgs(argc, argv);\n");
         puts("\n");
 
         puts("// Construct the Verilated model, from Vtop.h generated from Verilating\n");
-        puts("const std::unique_ptr<" + topClassName() + "> topp{new " + topClassName() + "};\n");
+        puts("const std::unique_ptr<" + topClassName() + "> topp{new " + topClassName()
+             + "{contextp.get()}};\n");
         puts("\n");
 
         puts("// Evaluate initials\n");
@@ -76,21 +75,21 @@ private:
         puts("\n");
 
         puts("// Simulate until $finish\n");
-        puts("while (!Verilated::gotFinish()");
+        puts("while (!contextp->gotFinish()");
         if (v3Global.opt.timing()) puts(" || topp->timeSlotsEmpty()");
         puts(") {\n");
         puts(/**/ "// Evaluate model\n");
         puts(/**/ "topp->eval();\n");
         puts(/**/ "// Advance time\n");
         if (v3Global.opt.timing()) {
-            puts(/**/ "main_time = topp->timeSlotsEarliestTime();\n");
+            puts(/**/ "contextp->time(topp->timeSlotsEarliestTime());\n");
         } else {
-            puts(/**/ "++main_time;\n");
+            puts(/**/ "contextp->timeInc(1);\n");
         }
         puts("}\n");
         puts("\n");
 
-        puts("if (!Verilated::gotFinish()) {\n");
+        puts("if (!contextp->gotFinish()) {\n");
         puts(/**/ "VL_DEBUG_IF(VL_PRINTF(\"+ Exiting without $finish; no events left\\n\"););\n");
         puts("}\n");
         puts("\n");

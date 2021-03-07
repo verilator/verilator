@@ -24,7 +24,7 @@
 #include "verilatedos.h"
 
 // Cheat for speed and compile .cpp files into one object
-#define _V3ERROR_NO_GLOBAL_ 1
+#define V3ERROR_NO_GLOBAL_
 #include "V3Error.cpp"
 #include "V3String.cpp"
 #include "V3Os.cpp"

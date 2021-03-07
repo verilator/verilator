@@ -18,8 +18,8 @@
 // It is not intended for user applications.
 //*************************************************************************
 
-#ifndef _VPRELEX_H_  // Guard
-#define _VPRELEX_H_ 1
+#ifndef VERILATOR_VPRELEX_H_  // Guard
+#define VERILATOR_VPRELEX_H_
 
 #include "V3Error.h"
 #include "V3FileLine.h"

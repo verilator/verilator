@@ -467,7 +467,8 @@ void EmitCSyms::emitSymHdr() {
     }
 
     puts("\n// CREATORS\n");
-    puts(symClassName() + "(" + topClassName() + "* topp, const char* namep);\n");
+    puts(symClassName() + "(VerilatedContext* contextp, " + topClassName()
+         + "* topp, const char* namep);\n");
     puts(string("~") + symClassName() + "();\n");
 
     for (const auto& i : m_usesVfinal) {
@@ -643,10 +644,11 @@ void EmitCSyms::emitSymImp() {
     puts("{\n");
     emitScopeHier(true);
     puts("}\n\n");
-    puts(symClassName() + "::" + symClassName() + "(" + topClassName()
+    puts(symClassName() + "::" + symClassName() + "(VerilatedContext* contextp, " + topClassName()
          + "* topp, const char* namep)\n");
     puts("    // Setup locals\n");
-    puts("    : __Vm_namep(namep)\n");  // No leak, as gets destroyed when the top is destroyed
+    puts("    : VerilatedSyms{contextp}\n");
+    puts("    , __Vm_namep(namep)\n");  // No leak, as gets destroyed when the top is destroyed
     if (v3Global.needTraceDumper()) {
         puts("    , __Vm_dumping(false)\n");
         puts("    , __Vm_dumperp(nullptr)\n");
@@ -922,8 +924,9 @@ void EmitCSyms::emitDpiImp() {
 
     for (AstCFunc* nodep : m_dpis) {
         if (nodep->dpiExportWrapper()) {
-            puts("#ifndef _VL_DPIDECL_" + nodep->name() + "\n");
-            puts("#define _VL_DPIDECL_" + nodep->name() + "\n");
+            // Prevent multi-definition if used by multiple models
+            puts("#ifndef VL_DPIDECL_" + nodep->name() + "_\n");
+            puts("#define VL_DPIDECL_" + nodep->name() + "_\n");
             puts(nodep->rtnTypeVoid() + " " + nodep->name() + "(" + cFuncArgs(nodep) + ") {\n");
             puts("// DPI export" + ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
             puts("return " + topClassName() + "::" + nodep->name() + "(");

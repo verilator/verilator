@@ -16,8 +16,8 @@
 ///
 //=============================================================================
 
-#ifndef _VERILATED_SAVE_C_H_
-#define _VERILATED_SAVE_C_H_ 1
+#ifndef VERILATOR_VERILATED_SAVE_C_H_
+#define VERILATOR_VERILATED_SAVE_C_H_
 
 #include "verilatedos.h"
 #include "verilated_heavy.h"
@@ -236,7 +236,7 @@ inline VerilatedSerialize& operator<<(VerilatedSerialize& os, float& rhs) {
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, float& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, std::string& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const std::string& rhs) {
     vluint32_t len = rhs.length();
     os << len;
     return os.write(rhs.data(), len);
@@ -247,6 +247,9 @@ inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, std::string& r
     rhs.resize(len);
     return os.read((void*)rhs.data(), len);
 }
+VerilatedSerialize& operator<<(VerilatedSerialize& os, VerilatedContext* rhsp);
+VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VerilatedContext* rhsp);
+
 template <class T_Key, class T_Value>
 VerilatedSerialize& operator<<(VerilatedSerialize& os, VlAssocArray<T_Key, T_Value>& rhs) {
     os << rhs.atDefault();

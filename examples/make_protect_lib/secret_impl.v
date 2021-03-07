@@ -17,7 +17,7 @@ module secret_impl
    logic [31:0]        accum_q = 0;
    logic [31:0]        secret_value = 9;
 
-   initial $display("%m: initialized");
+   initial $display("[%0t] %m: initialized", $time);
 
    always @(posedge clk) begin
       accum_q <= accum_q + a;

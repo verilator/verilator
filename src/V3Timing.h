@@ -25,7 +25,7 @@
 
 //============================================================================
 
-class V3Timing {
+class V3Timing final {
 public:
     static void timingAll(AstNetlist* nodep);
 };

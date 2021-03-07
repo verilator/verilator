@@ -1050,6 +1050,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (onoff(sw, "-ignc", flag /*ref*/)) {
                 m_ignc = flag;
             } else if (onoff(sw, "-inhibit-sim", flag /*ref*/)) {
+                fl->v3warn(DEPRECATED, "-inhibit-sim option is deprecated");
                 m_inhibitSim = flag;
             } else if (onoff(sw, "-lint-only", flag /*ref*/)) {
                 m_lintOnly = flag;
@@ -1450,8 +1451,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (!strcmp(sw, "-rr")) {
                 // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-gdbbt")) {
-                // Processed only in bin/verilator shell
-            } else if (!strcmp(sw, "-quiet-exit")) {
                 // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-mod-prefix") && (i + 1) < argc) {
                 shift;

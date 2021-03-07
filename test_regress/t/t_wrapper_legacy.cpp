@@ -33,11 +33,10 @@ bool got_error = false;
     }
 
 vluint64_t main_time = 0;
-
-#ifdef T_WRAPPER_LEGACY_TIME64
-vluint64_t vl_time_stamp64() { return main_time; }
-#endif
 #ifdef T_WRAPPER_LEGACY
+#elif defined(T_WRAPPER_LEGACY_TIME64)
+vluint64_t vl_time_stamp64() { return main_time; }
+#elif defined(T_WRAPPER_LEGACY_TIMED)
 double sc_time_stamp() { return main_time; }
 #endif
 
@@ -60,8 +59,14 @@ int main(int argc, char** argv, char** env) {
     CHECK_RESULT(Verilated::debug(), 9);
     Verilated::debug(0);
 
+    Verilated::fatalOnError(true);
+    CHECK_RESULT(Verilated::fatalOnError(), true);
+
     Verilated::fatalOnVpiError(true);
     CHECK_RESULT(Verilated::fatalOnVpiError(), true);
+
+    Verilated::gotError(false);
+    CHECK_RESULT(Verilated::gotError(), false);
 
     Verilated::gotFinish(false);
     CHECK_RESULT(Verilated::gotFinish(), false);  // Commonly used
@@ -87,10 +92,24 @@ int main(int argc, char** argv, char** env) {
     VL_PRINTF("Starting\n");
 
     vluint64_t sim_time = 100;
-    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
+    while (
+#ifdef T_WRAPPER_LEGACY
+        Verilated::time()
+#else
+        vl_time_stamp64()
+#endif
+            < sim_time
+        && !Verilated::gotFinish()) {
         CHECK_RESULT(VL_TIME_Q(), main_time);
         CHECK_RESULT(VL_TIME_D(), main_time);
+
         main_time += 1;
+#ifdef T_WRAPPER_LEGACY
+        Verilated::timeInc(1);
+        // Check reading and writing of time
+        Verilated::time(Verilated::time());
+#endif
+
         topp->clk = !topp->clk;
         topp->eval();
     }

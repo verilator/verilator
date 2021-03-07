@@ -107,9 +107,13 @@ void dpii_int_u3(const svOpenArrayHandle i) {
     CHECK_RESULT_HEX_NE(ip, 0);
     // Out of bounds
     ip = (intptr_t)svGetArrElemPtr3(i, 1, 2, 30);
+    CHECK_RESULT_HEX(ip, 0);
     ip = (intptr_t)svGetArrElemPtr3(i, 1, 20, 3);
+    CHECK_RESULT_HEX(ip, 0);
     ip = (intptr_t)svGetArrElemPtr3(i, 10, 2, 3);
+    CHECK_RESULT_HEX(ip, 0);
     ip = (intptr_t)svGetArrElemPtr1(i, 30);
+    CHECK_RESULT_HEX(ip, 0);
 }
 
 void dpii_real_u1(const svOpenArrayHandle i) {

@@ -81,7 +81,7 @@
 //######################################################################
 
 // FIXME needed?
-class TimingState {
+class TimingState final {
     // NODE STATE
     // AstDelay::user1  -> int, state assignment
     AstUser1InUse m_inuser1;
@@ -128,8 +128,8 @@ public:
     string fsmName() const { return "__vProc" + cvtToStr(m_procNum) + "Fsm"; }
 
     // CONSTRUCTORS
-    TimingState() {}
-    ~TimingState() {}
+    TimingState() = default;
+    ~TimingState() = default;
     void initProcedure() {
         m_eventVarScp = nullptr;
         m_fsmVarScp = nullptr;
@@ -139,7 +139,7 @@ public:
 //######################################################################
 // Visit a procedure being rebuilt
 
-class TimingProcedureVisitor : public AstNVisitor {
+class TimingProcedureVisitor final : public AstNVisitor {
     // MEMBERS
     TimingState& m_state;  // State
     bool m_newProc;  // Creating always from an initial block
@@ -282,7 +282,7 @@ public:
 
 //######################################################################
 
-class TimingVisitor : public AstNVisitor {
+class TimingVisitor final : public AstNVisitor {
 private:
     // STATE
     TimingState m_state;  // State information

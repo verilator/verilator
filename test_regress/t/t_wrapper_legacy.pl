@@ -14,6 +14,7 @@ compile(
     make_top_shell => 0,
     make_main => 0,
     verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"],
+    make_flags => 'CPPFLAGS_ADD=-DVL_TIME_CONTEXT',
     );
 
 execute(

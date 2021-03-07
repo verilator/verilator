@@ -125,8 +125,8 @@ bom             [\357\273\277]
                           rtnfile += '"'; yytext = (char*)rtnfile.c_str(); yyleng = rtnfile.length();
                           return VP_STRING; }
 <INITIAL,STRIFY>"`__LINE__"     { FL_FWDC;
-                          static char buf[10];
-                          sprintf(buf, "%d", LEXP->curFilelinep()->lastLineno());
+                          static char buf[25];
+                          VL_SNPRINTF(buf, 25, "%d", LEXP->curFilelinep()->lastLineno());
                           yytext = buf; yyleng = strlen(yytext);
                           return VP_TEXT; }
 

@@ -27,7 +27,7 @@ execute(
 # Break the header
 file_sed("$Self->{obj_dir}/saved.vltsv",
          "$Self->{obj_dir}/saved.vltsv",
-         sub { s/verilatorsave01/verilatorsavBAD/g; });
+         sub { s/verilatorsave/verilatorsavBAD/g; });
 
 execute(
     all_run_flags => ['+save_restore=1'],
