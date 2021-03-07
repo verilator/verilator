@@ -128,7 +128,7 @@ enum VerilatedVarFlags {
 };
 
 //=========================================================================
-/// Mutex and threading support
+// Mutex and threading support
 
 /// Return current thread ID (or 0), not super fast, cache if needed
 extern vluint32_t VL_THREAD_ID() VL_MT_SAFE;
@@ -141,7 +141,9 @@ extern vluint32_t VL_THREAD_ID() VL_MT_SAFE;
 class VL_CAPABILITY("mutex") VerilatedMutex final {
 private:
     std::mutex m_mutex;  // Mutex
+
 public:
+    /// Construct mutex (without locking it)
     VerilatedMutex() = default;
     ~VerilatedMutex() = default;
     const VerilatedMutex& operator!() const { return *this; }  // For -fthread_safety
@@ -171,25 +173,29 @@ private:
     VerilatedMutex& m_mutexr;
 
 public:
+    /// Construct and hold given mutex lock until destruction or unlock()
     explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr)
         : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
         m_mutexr.lock();
     }
+    /// Destruct and unlock the mutex
     ~VerilatedLockGuard() VL_RELEASE() { m_mutexr.unlock(); }
+    /// Unlock the mutex
     void lock() VL_ACQUIRE() { m_mutexr.lock(); }
+    /// Lock the mutex
     void unlock() VL_RELEASE() { m_mutexr.unlock(); }
 };
 
 #else  // !VL_THREADED
 
-/// Empty non-threaded mutex to avoid #ifdefs in consuming code
+// Empty non-threaded mutex to avoid #ifdefs in consuming code
 class VerilatedMutex final {
 public:
     void lock() {}
     void unlock() {}
 };
 
-/// Empty non-threaded lock guard to avoid #ifdefs in consuming code
+// Empty non-threaded lock guard to avoid #ifdefs in consuming code
 class VerilatedLockGuard final {
     VL_UNCOPYABLE(VerilatedLockGuard);
 
@@ -202,20 +208,22 @@ public:
 
 #endif  // VL_THREADED
 
-/// Remember the calling thread at construction time, and make sure later calls use same thread
+// Internals: Remember the calling thread at construction time, and make
+// sure later calls use same thread
+
 class VerilatedAssertOneThread final {
     // MEMBERS
 #if defined(VL_THREADED) && defined(VL_DEBUG)
     vluint32_t m_threadid;  /// Thread that is legal
 public:
     // CONSTRUCTORS
-    /// The constructor establishes the thread id for all later calls.
-    /// If necessary, a different class could be made that inits it otherwise.
+    // The constructor establishes the thread id for all later calls.
+    // If necessary, a different class could be made that inits it otherwise.
     VerilatedAssertOneThread()
         : m_threadid{VL_THREAD_ID()} {}
     ~VerilatedAssertOneThread() { check(); }
     // METHODS
-    /// Check that the current thread ID is the same as the construction thread ID
+    // Check that the current thread ID is the same as the construction thread ID
     void check() VL_MT_UNSAFE_ONE {
         if (VL_UNCOVERABLE(m_threadid != VL_THREAD_ID())) {
             if (m_threadid == 0) {
@@ -837,18 +845,18 @@ public:
     static int exportFuncNum(const char* namep) VL_MT_SAFE;
 
 #ifdef VL_THREADED
-    /// Internal: Set the mtaskId, called when an mtask starts
+    // Internal: Set the mtaskId, called when an mtask starts
     // Per thread, so no need to be in VerilatedContext
     static void mtaskId(vluint32_t id) VL_MT_SAFE { t_s.t_mtaskId = id; }
     static vluint32_t mtaskId() VL_MT_SAFE { return t_s.t_mtaskId; }
     static void endOfEvalReqdInc() VL_MT_SAFE { ++t_s.t_endOfEvalReqd; }
     static void endOfEvalReqdDec() VL_MT_SAFE { --t_s.t_endOfEvalReqd; }
 
-    /// Internal: Called at end of each thread mtask, before finishing eval
+    // Internal: Called at end of each thread mtask, before finishing eval
     static void endOfThreadMTask(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
         if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) endOfThreadMTaskGuts(evalMsgQp);
     }
-    /// Internal: Called at end of eval loop
+    // Internal: Called at end of eval loop
     static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
 #endif
 

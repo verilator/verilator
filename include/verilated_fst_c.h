@@ -15,7 +15,6 @@
 /// \brief C++ Tracing in FST Format
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 #ifndef VERILATOR_VERILATED_FST_C_H_
 #define VERILATOR_VERILATED_FST_C_H_
@@ -32,8 +31,8 @@
 
 //=============================================================================
 // VerilatedFst
-/// Base class to create a Verilator FST dump
-/// This is an internally used class - see VerilatedFstC for what to call from applications
+// Base class to create a Verilator FST dump
+// This is an internally used class - see VerilatedFstC for what to call from applications
 
 class VerilatedFst final : public VerilatedTrace<VerilatedFst> {
 private:
@@ -86,23 +85,23 @@ public:
     explicit VerilatedFst(void* fst = nullptr);
     ~VerilatedFst();
 
-    /// Open the file; call isOpen() to see if errors
+    // Open the file; call isOpen() to see if errors
     void open(const char* filename) VL_MT_UNSAFE;
-    /// Close the file
+    // Close the file
     void close() VL_MT_UNSAFE;
-    /// Flush any remaining data to this file
+    // Flush any remaining data to this file
     void flush() VL_MT_UNSAFE;
-    /// Is file open?
+    // Return if file is open
     bool isOpen() const { return m_fst != nullptr; }
 
     //=========================================================================
     // Internal interface to Verilator generated code
 
-    /// Inside dumping routines, declare a data type
+    // Inside dumping routines, declare a data type
     void declDTypeEnum(int dtypenum, const char* name, vluint32_t elements,
                        unsigned int minValbits, const char** itemNamesp, const char** itemValuesp);
 
-    /// Inside dumping routines, declare a signal
+    // Inside dumping routines, declare a signal
     void declBit(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                  fstVarType vartype, bool array, int arraynum);
     void declBus(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
@@ -135,16 +134,18 @@ class VerilatedFstC final {
     VL_UNCOPYABLE(VerilatedFstC);
 
 public:
+    /// Construct the dump. Optional argument is ignored.
     explicit VerilatedFstC(void* filep = nullptr)
         : m_sptrace{filep} {}
+    /// Destruct, flush, and close the dump
     ~VerilatedFstC() { close(); }
     /// Routines can only be called from one thread; allow next call from different thread
     void changeThread() { spTrace()->changeThread(); }
 
-    // ACCESSORS
-    /// Is file open?
+    // METHODS - User called
+
+    /// Return if file is open
     bool isOpen() const { return m_sptrace.isOpen(); }
-    // METHODS
     /// Open a new FST file
     void open(const char* filename) VL_MT_UNSAFE_ONE { m_sptrace.open(filename); }
     /// Close dump
@@ -158,16 +159,22 @@ public:
     void dump(double timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
     void dump(vluint32_t timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
     void dump(int timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
-    /// Set time units (s/ms, defaults to ns)
-    /// For Verilated models, these propage from the Verilated default --timeunit
+
+    // METHODS - Internal/backward compatible
+    // \protectedsection
+
+    // Set time units (s/ms, defaults to ns)
+    // Users should not need to call this, as for Verilated models, these
+    // propage from the Verilated default timeunit
     void set_time_unit(const char* unitp) { m_sptrace.set_time_unit(unitp); }
     void set_time_unit(const std::string& unit) { m_sptrace.set_time_unit(unit); }
-    /// Set time resolution (s/ms, defaults to ns)
-    /// For Verilated models, these propage from the Verilated default --timeunit
+    // Set time resolution (s/ms, defaults to ns)
+    // Users should not need to call this, as for Verilated models, these
+    // propage from the Verilated default timeprecision
     void set_time_resolution(const char* unitp) { m_sptrace.set_time_resolution(unitp); }
     void set_time_resolution(const std::string& unit) { m_sptrace.set_time_resolution(unit); }
 
-    /// Internal class access
+    // Internal class access
     inline VerilatedFst* spTrace() { return &m_sptrace; };
 };
 

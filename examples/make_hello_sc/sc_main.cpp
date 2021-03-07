@@ -26,7 +26,7 @@ int sc_main(int argc, char* argv[]) {
     if (false && argc && argv) {}
 
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    Vtop* top = new Vtop("top");
+    Vtop* top = new Vtop{"top"};
 
     // Initialize SC model
     sc_start(1, SC_NS);

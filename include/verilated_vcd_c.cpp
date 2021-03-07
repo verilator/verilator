@@ -15,7 +15,6 @@
 /// \brief C++ Tracing in VCD Format
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 // clang-format off
 
@@ -33,8 +32,6 @@
 #else
 # include <unistd.h>
 #endif
-
-// SPDIFF_ON
 
 #ifndef O_LARGEFILE  // For example on WIN32
 # define O_LARGEFILE 0
