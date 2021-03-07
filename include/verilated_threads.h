@@ -203,12 +203,13 @@ private:
     bool m_profiling;  // Is profiling enabled?
     std::atomic<bool> m_exiting;  // Worker thread should exit
     std::thread m_cthread;  // Underlying C++ thread record
+    VerilatedContext* m_contextp;  // Context for spawned thread
 
     VL_UNCOPYABLE(VlWorkerThread);
 
 public:
     // CONSTRUCTORS
-    explicit VlWorkerThread(VlThreadPool* poolp, bool profiling);
+    explicit VlWorkerThread(VlThreadPool* poolp, VerilatedContext* contextp, bool profiling);
     ~VlWorkerThread();
 
     // METHODS
@@ -273,7 +274,7 @@ public:
     // Construct a thread pool with 'nThreads' dedicated threads. The thread
     // pool will create these threads and make them available to execute tasks
     // via this->workerp(index)->addTask(...)
-    VlThreadPool(int nThreads, bool profiling);
+    VlThreadPool(VerilatedContext* contextp, int nThreads, bool profiling);
     ~VlThreadPool();
 
     // METHODS

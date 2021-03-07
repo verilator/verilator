@@ -1953,7 +1953,8 @@ Displays program version and exits.
 
 =head1 EXAMPLE C++ EXECUTION
 
-We'll compile this example into C++.
+We'll compile this example into C++.  For an extended and commented version
+of what this C++ code is doing, see examples/make_tracing_c/sim_main.cpp.
 
     mkdir test_our
     cd test_our
@@ -1968,21 +1969,24 @@ We'll compile this example into C++.
       #include "Vour.h"
       #include "verilated.h"
       int main(int argc, char** argv, char** env) {
-          Verilated::commandArgs(argc, argv);
-          Vour* top = new Vour;
-          while (!Verilated::gotFinish()) { top->eval(); }
+          VerilatedContext* contextp = new VerilatedContext;
+          contextp->commandArgs(argc, argv);
+          Vour* top = new Vour{contextp};
+          while (!contextp->gotFinish()) { top->eval(); }
           delete top;
+          delete contextp;
           return 0;
       }
     EOF
 
-See the README in the source kit for various ways to install or point to
-Verilator binaries.  In brief, if you installed Verilator using the package
-manager of your operating system, or did a "make install" to place
-Verilator into your default path, you do not need anything special in your
-environment, and should not have VERILATOR_ROOT set.  However, if you
-installed Verilator from sources and want to run Verilator out of where you
-compiled Verilator, you need to point to the kit:
+Next we need Verilator installed.  See the README in the source kit for
+various ways to install or point to Verilator binaries.  In brief, if you
+installed Verilator using the package manager of your operating system, or
+did a "make install" to place Verilator into your default path, you do not
+need anything special in your environment, and should not have
+VERILATOR_ROOT set.  However, if you installed Verilator from sources and
+want to run Verilator out of where you compiled Verilator, you need to
+point to the kit:
 
     # See above; don't do this if using an OS-distributed Verilator
     export VERILATOR_ROOT=/path/to/where/verilator/was/installed
@@ -2100,15 +2104,15 @@ When using SystemC, evaluation of the Verilated model is managed by the SystemC
 kernel, and for the most part can be ignored.  When using C++, the user
 must call eval(), or eval_step() and eval_end_step().
 
-1. When there is a single design instantiated at the C++ level that needs to
-evaluate, just call designp->eval().
+1. When there is a single design instantiated at the C++ level that needs
+to evaluate within a given context, just call designp->eval().
 
-2. When there are multiple designs instantiated at the C++ level that
-need to evaluate, call first_designp->eval_step() then ->eval_step() on all
-other designs.  Then call ->eval_end_step() on the first design then all
-other designs.  If there is only a single design, you would call
-eval_step() then eval_end_step(); in fact eval() described above is just a
-wrapper which calls these two functions.
+2. When there are multiple designs instantiated at the C++ level that need
+to evaluate within a context, call first_designp->eval_step() then
+->eval_step() on all other designs.  Then call ->eval_end_step() on the
+first design then all other designs.  If there is only a single design, you
+would call eval_step() then eval_end_step(); in fact eval() described above
+is just a wrapper which calls these two functions.
 
 When eval() is called Verilator looks for changes in clock signals and
 evaluates related sequential always blocks, such as computing always_ff @
@@ -5417,8 +5421,14 @@ controlled by --assert are disabled.
 
 =item Why do I get "undefined reference to `sc_time_stamp()'"?
 
-In C++ (non SystemC) code you need to define this function so that the
-simulator knows the current time.  See the "CONNECTING TO C++" examples.
+In 4.112 and later, using the timeInc function is recommended instead.  See
+the "CONNECTING TO C++" examples.  Some linkers (MSVC++) still require
+sc_time_stamp() to be defined, either define this with ("double
+sc_time_stamp() { return 0; }") or compile the Verilated code with
+-DVL_TIME_CONTEXT.
+
+Prior to Verilator 4.112, the sc_time_stamp function needs to be defined in
+C++ (non SystemC) to return the current simulation time.
 
 =item Why do I get "undefined reference to `VL_RAND_RESET_I' or `Verilated::...'"?
 

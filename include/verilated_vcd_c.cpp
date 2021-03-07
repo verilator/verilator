@@ -97,14 +97,14 @@ VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep) {
     m_suffixesp = nullptr;
 }
 
-void VerilatedVcd::open(const char* filename) {
-    m_assertOne.check();
+void VerilatedVcd::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock(m_mutex);
     if (isOpen()) return;
 
     // Set member variables
     m_filename = filename;  // "" is ok, as someone may overload open
 
-    openNext(m_rolloverMB != 0);
+    openNextImp(m_rolloverMB != 0);
     if (!isOpen()) return;
 
     dumpHeader();
@@ -113,13 +113,17 @@ void VerilatedVcd::open(const char* filename) {
     m_suffixesp = &m_suffixes[0];  // Note: C++11 m_suffixes.data();
 
     // When using rollover, the first chunk contains the header only.
-    if (m_rolloverMB) openNext(true);
+    if (m_rolloverMB) openNextImp(true);
 }
 
-void VerilatedVcd::openNext(bool incFilename) {
+void VerilatedVcd::openNext(bool incFilename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     // Open next filename in concat sequence, mangle filename if
     // incFilename is true.
-    m_assertOne.check();
+    const VerilatedLockGuard lock(m_mutex);
+    openNextImp(incFilename);
+}
+
+void VerilatedVcd::openNextImp(bool incFilename) {
     closePrev();  // Close existing
     if (incFilename) {
         // Find _0000.{ext} in filename
@@ -163,7 +167,7 @@ void VerilatedVcd::openNext(bool incFilename) {
 }
 
 bool VerilatedVcd::preChangeDump() {
-    if (VL_UNLIKELY(m_rolloverMB && m_wroteBytes > m_rolloverMB)) openNext(true);
+    if (VL_UNLIKELY(m_rolloverMB && m_wroteBytes > m_rolloverMB)) openNextImp(true);
     return isOpen();
 }
 
@@ -219,7 +223,7 @@ void VerilatedVcd::closePrev() {
     // This function is on the flush() call path
     if (!isOpen()) return;
 
-    VerilatedTrace<VerilatedVcd>::flush();
+    VerilatedTrace<VerilatedVcd>::flushBase();
     bufferFlush();
     m_isOpen = false;
     m_filep->close();
@@ -236,9 +240,9 @@ void VerilatedVcd::closeErr() {
     m_filep->close();  // May get error, just ignore it
 }
 
-void VerilatedVcd::close() {
+void VerilatedVcd::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     // This function is on the flush() call path
-    m_assertOne.check();
+    const VerilatedLockGuard lock(m_mutex);
     if (!isOpen()) return;
     if (m_evcd) {
         printStr("$vcdclose ");
@@ -248,11 +252,12 @@ void VerilatedVcd::close() {
     closePrev();
     // closePrev() called VerilatedTrace<VerilatedVcd>::flush(), so we just
     // need to shut down the tracing thread here.
-    VerilatedTrace<VerilatedVcd>::close();
+    VerilatedTrace<VerilatedVcd>::closeBase();
 }
 
-void VerilatedVcd::flush() {
-    VerilatedTrace<VerilatedVcd>::flush();
+void VerilatedVcd::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock(m_mutex);
+    VerilatedTrace<VerilatedVcd>::flushBase();
     bufferFlush();
 }
 
@@ -290,7 +295,6 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
     // We add output data to m_writep.
     // When it gets nearly full we dump it using this routine which calls write()
     // This is much faster than using buffered I/O
-    m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
     char* wp = m_wrBufp;
     while (true) {

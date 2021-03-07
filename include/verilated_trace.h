@@ -151,7 +151,8 @@ private:
     double m_timeRes;  ///< Time resolution (ns/ms etc)
     double m_timeUnit;  ///< Time units (ns/ms etc)
 
-    void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord& cbRec);
+    void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord& cbRec)
+        VL_MT_SAFE_EXCLUDES(m_mutex);
 
     // Equivalent to 'this' but is of the sub-type 'T_Derived*'. Use 'self()->'
     // to access duck-typed functions to avoid a virtual function call.
@@ -203,7 +204,7 @@ protected:
     //=========================================================================
     // Internals available to format specific implementations
 
-    VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
+    VerilatedMutex m_mutex;  // Ensure dump() etc only called from single thread
 
     vluint32_t nextCode() const { return m_nextCode; }
     vluint32_t numSignals() const { return m_numSignals; }
@@ -225,8 +226,8 @@ protected:
     // Character that splits scopes.  Note whitespace are ALWAYS escapes.
     char scopeEscape() { return m_scopeEscape; }
 
-    void close();
-    void flush();
+    void closeBase();
+    void flushBase();
 
     //=========================================================================
     // Virtual functions to be provided by the format specific implementation
@@ -247,30 +248,24 @@ public:
     ~VerilatedTrace();
 
     // Set time units (s/ms, defaults to ns)
-    void set_time_unit(const char* unitp);
-    void set_time_unit(const std::string& unit);
+    void set_time_unit(const char* unitp) VL_MT_SAFE;
+    void set_time_unit(const std::string& unit) VL_MT_SAFE;
     // Set time resolution (s/ms, defaults to ns)
-    void set_time_resolution(const char* unitp);
-    void set_time_resolution(const std::string& unit);
+    void set_time_resolution(const char* unitp) VL_MT_SAFE;
+    void set_time_resolution(const std::string& unit) VL_MT_SAFE;
 
     // Call
-    void dump(vluint64_t timeui);
+    void dump(vluint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex);
 
     //=========================================================================
     // Non-hot path internal interface to Verilator generated code
 
-    void addInitCb(initCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
-    void addFullCb(dumpCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
-    void addChgCb(dumpCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
-    void addCleanupCb(dumpCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
+    void addInitCb(initCb_t cb, void* userp) VL_MT_SAFE;
+    void addFullCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
+    void addChgCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
+    void addCleanupCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
 
-    void changeThread() { m_assertOne.changeThread(); }
-
-    void module(const std::string& name) VL_MT_UNSAFE_ONE {
-        m_assertOne.check();
-        m_moduleName = name;
-    }
-
+    void module(const std::string& name) VL_MT_UNSAFE;
     void scopeEscape(char flag) { m_scopeEscape = flag; }
 
     //=========================================================================

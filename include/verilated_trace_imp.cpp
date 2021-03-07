@@ -236,7 +236,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::shutdownWorker() {
 //=============================================================================
 // Life cycle
 
-template <> void VerilatedTrace<VL_DERIVED_T>::close() {
+template <> void VerilatedTrace<VL_DERIVED_T>::closeBase() {
 #ifdef VL_TRACE_THREADED
     shutdownWorker();
     while (m_numTraceBuffers) {
@@ -246,7 +246,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::close() {
 #endif
 }
 
-template <> void VerilatedTrace<VL_DERIVED_T>::flush() {
+template <> void VerilatedTrace<VL_DERIVED_T>::flushBase() {
 #ifdef VL_TRACE_THREADED
     // Hand an empty buffer to the worker thread
     vluint32_t* const bufferp = getTraceBuffer();
@@ -262,12 +262,12 @@ template <> void VerilatedTrace<VL_DERIVED_T>::flush() {
 // Callbacks to run on global events
 
 template <> void VerilatedTrace<VL_DERIVED_T>::onFlush(void* selfp) {
-    // Note this calls 'flush' on the derived class
+    // This calls 'flush' on the derived classo (which must then get any mutex)
     reinterpret_cast<VL_DERIVED_T*>(selfp)->flush();
 }
 
 template <> void VerilatedTrace<VL_DERIVED_T>::onExit(void* selfp) {
-    // Note this calls 'close' on the derived class
+    // This calls 'close' on the derived class (which must then get any mutex)
     reinterpret_cast<VL_DERIVED_T*>(selfp)->close();
 }
 
@@ -291,8 +291,8 @@ VerilatedTrace<VL_DERIVED_T>::VerilatedTrace()
 , m_numTraceBuffers { 0 }
 #endif
 {
-    set_time_unit(Verilated::timeunitString());
-    set_time_resolution(Verilated::timeprecisionString());
+    set_time_unit(Verilated::threadContextp()->timeunitString());
+    set_time_resolution(Verilated::threadContextp()->timeprecisionString());
 }
 
 template <> VerilatedTrace<VL_DERIVED_T>::~VerilatedTrace() {
@@ -300,7 +300,7 @@ template <> VerilatedTrace<VL_DERIVED_T>::~VerilatedTrace() {
     Verilated::removeFlushCb(VerilatedTrace<VL_DERIVED_T>::onFlush, this);
     Verilated::removeExitCb(VerilatedTrace<VL_DERIVED_T>::onExit, this);
 #ifdef VL_TRACE_THREADED
-    close();
+    closeBase();
 #endif
 }
 
@@ -308,8 +308,6 @@ template <> VerilatedTrace<VL_DERIVED_T>::~VerilatedTrace() {
 // Internals available to format specific implementations
 
 template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
-    m_assertOne.check();
-
     // Note: It is possible to re-open a trace file (VCD in particular),
     // so we must reset the next code here, but it must have the same number
     // of codes on re-open
@@ -376,24 +374,26 @@ template <> std::string VerilatedTrace<VL_DERIVED_T>::timeResStr() const {
 //=========================================================================
 // External interface to client code
 
-template <> void VerilatedTrace<VL_DERIVED_T>::set_time_unit(const char* unitp) {
+template <> void VerilatedTrace<VL_DERIVED_T>::set_time_unit(const char* unitp) VL_MT_SAFE {
     m_timeUnit = timescaleToDouble(unitp);
 }
-
-template <> void VerilatedTrace<VL_DERIVED_T>::set_time_unit(const std::string& unit) {
+template <> void VerilatedTrace<VL_DERIVED_T>::set_time_unit(const std::string& unit) VL_MT_SAFE {
     set_time_unit(unit.c_str());
 }
-
-template <> void VerilatedTrace<VL_DERIVED_T>::set_time_resolution(const char* unitp) {
+template <> void VerilatedTrace<VL_DERIVED_T>::set_time_resolution(const char* unitp) VL_MT_SAFE {
     m_timeRes = timescaleToDouble(unitp);
 }
-
-template <> void VerilatedTrace<VL_DERIVED_T>::set_time_resolution(const std::string& unit) {
+template <>
+void VerilatedTrace<VL_DERIVED_T>::set_time_resolution(const std::string& unit) VL_MT_SAFE {
     set_time_resolution(unit.c_str());
 }
 
-template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
-    m_assertOne.check();
+template <>
+void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    // Not really VL_MT_SAFE but more VL_MT_UNSAFE_ONE.
+    // This does get the mutex, but if multiple threads are trying to dump
+    // chances are the data being dumped will have other problems
+    const VerilatedLockGuard lock(m_mutex);
     if (VL_UNCOVERABLE(m_timeLastDump && timeui <= m_timeLastDump)) {  // LCOV_EXCL_START
         VL_PRINTF_MT("%%Warning: previous dump at t=%" VL_PRI64 "u, requesting t=%" VL_PRI64
                      "u, dump call ignored\n",
@@ -426,7 +426,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
         m_traceBufferWritep += 3;
     } else {
         // Update time point
-        flush();
+        flushBase();
         emitTimeChange(timeui);
     }
 #else
@@ -472,8 +472,9 @@ template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
 
 template <>
 void VerilatedTrace<VL_DERIVED_T>::addCallbackRecord(std::vector<CallbackRecord>& cbVec,
-                                                     CallbackRecord& cbRec) {
-    m_assertOne.check();
+                                                     CallbackRecord& cbRec)
+    VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock(m_mutex);
     if (VL_UNCOVERABLE(timeLastDump() != 0)) {  // LCOV_EXCL_START
         std::string msg = (std::string("Internal: ") + __FILE__ + "::" + __FUNCTION__
                            + " called with already open file");
@@ -482,21 +483,25 @@ void VerilatedTrace<VL_DERIVED_T>::addCallbackRecord(std::vector<CallbackRecord>
     cbVec.push_back(cbRec);
 }
 
-template <> void VerilatedTrace<VL_DERIVED_T>::addInitCb(initCb_t cb, void* userp) {
+template <> void VerilatedTrace<VL_DERIVED_T>::addInitCb(initCb_t cb, void* userp) VL_MT_SAFE {
     CallbackRecord cbr(cb, userp);
     addCallbackRecord(m_initCbs, cbr);
 }
-template <> void VerilatedTrace<VL_DERIVED_T>::addFullCb(dumpCb_t cb, void* userp) {
+template <> void VerilatedTrace<VL_DERIVED_T>::addFullCb(dumpCb_t cb, void* userp) VL_MT_SAFE {
     CallbackRecord cbr(cb, userp);
     addCallbackRecord(m_fullCbs, cbr);
 }
-template <> void VerilatedTrace<VL_DERIVED_T>::addChgCb(dumpCb_t cb, void* userp) {
+template <> void VerilatedTrace<VL_DERIVED_T>::addChgCb(dumpCb_t cb, void* userp) VL_MT_SAFE {
     CallbackRecord cbr(cb, userp);
     addCallbackRecord(m_chgCbs, cbr);
 }
-template <> void VerilatedTrace<VL_DERIVED_T>::addCleanupCb(dumpCb_t cb, void* userp) {
+template <> void VerilatedTrace<VL_DERIVED_T>::addCleanupCb(dumpCb_t cb, void* userp) VL_MT_SAFE {
     CallbackRecord cbr(cb, userp);
     addCallbackRecord(m_cleanupCbs, cbr);
+}
+template <> void VerilatedTrace<VL_DERIVED_T>::module(const std::string& name) VL_MT_UNSAFE {
+    // Called via callbacks way above in call stack, which already hold m_mutex
+    m_moduleName = name;
 }
 
 //=========================================================================

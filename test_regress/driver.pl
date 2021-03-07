@@ -1737,15 +1737,6 @@ sub _make_main {
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
 
     print $fh "std::unique_ptr<$VM_PREFIX> topp;\n";
-    if (!$self->sc) {
-        if ($self->{vl_time_stamp64}) {
-            print $fh "vluint64_t main_time = 0;\n";
-            print $fh "vluint64_t vl_time_stamp64() { return main_time; }\n";
-        } else {
-            print $fh "double main_time = 0;\n";
-            print $fh "double sc_time_stamp() { return main_time; }\n";
-        }
-    }
 
     if ($self->{savable}) {
         $fh->print("\n");
@@ -1753,7 +1744,6 @@ sub _make_main {
         $fh->print("    VL_PRINTF(\"Saving model to '%s'\\n\", filenamep);\n");
         $fh->print("    VerilatedSave os;\n");
         $fh->print("    os.open(filenamep);\n");
-        $fh->print("    os << main_time;\n");
         $fh->print("    os << *topp;\n");
         $fh->print("    os.close();\n");
         $fh->print("}\n");
@@ -1762,7 +1752,6 @@ sub _make_main {
         $fh->print("    VL_PRINTF(\"Restoring model from '%s'\\n\", filenamep);\n");
         $fh->print("    VerilatedRestore os;\n");
         $fh->print("    os.open(filenamep);\n");
-        $fh->print("    os >> main_time;\n");
         $fh->print("    os >> *topp;\n");
         $fh->print("    os.close();\n");
         $fh->print("}\n");
@@ -1778,14 +1767,16 @@ sub _make_main {
         print $fh "    sc_time sim_time($self->{sim_time}, $Self->{sc_time_resolution});\n";
     } else {
         print $fh "int main(int argc, char** argv, char** env) {\n";
-        print $fh "    double sim_time = $self->{sim_time};\n";
+        print $fh "    vluint64_t sim_time = $self->{sim_time};\n";
     }
-    print $fh "    Verilated::commandArgs(argc, argv);\n";
-    print $fh "    Verilated::debug(".($self->{verilated_debug}?1:0).");\n";
+
+    print $fh "    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};\n";
+    print $fh "    contextp->commandArgs(argc, argv);\n";
+    print $fh "    contextp->debug(".($self->{verilated_debug}?1:0).");\n";
     print $fh "    srand48(5);\n";  # Ensure determinism
-    print $fh "    Verilated::randReset(".$self->{verilated_randReset}.");\n" if defined $self->{verilated_randReset};
+    print $fh "    contextp->randReset(".$self->{verilated_randReset}.");\n" if defined $self->{verilated_randReset};
     print $fh "    topp.reset(new $VM_PREFIX(\"top\"));\n";
-    print $fh "    Verilated::internalsDump()\n;" if $self->{verilated_debug};
+    print $fh "    contextp->internalsDump()\n;" if $self->{verilated_debug};
 
     my $set;
     if ($self->sc) {
@@ -1800,22 +1791,22 @@ sub _make_main {
     if ($self->{trace}) {
         $fh->print("\n");
         $fh->print("#if VM_TRACE\n");
-        $fh->print("    Verilated::traceEverOn(true);\n");
+        $fh->print("    contextp->traceEverOn(true);\n");
         $fh->print("    std::unique_ptr<VerilatedFstC> tfp{new VerilatedFstC};\n") if $self->{trace_format} eq 'fst-c';
         $fh->print("    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};\n") if $self->{trace_format} eq 'vcd-c';
         $fh->print("    std::unique_ptr<VerilatedVcdSc> tfp{new VerilatedVcdSc};\n") if $self->{trace_format} eq 'vcd-sc';
         $fh->print("    topp->trace(tfp.get(), 99);\n");
         $fh->print("    tfp->open(\"".$self->trace_filename."\");\n");
         if ($self->{trace} && !$self->sc) {
-            $fh->print("    if (tfp) tfp->dump(main_time);\n");
+            $fh->print("    if (tfp) tfp->dump(contextp->time());\n");
         }
         $fh->print("#endif\n");
     }
 
     if ($self->{savable}) {
-        $fh->print("    const char* save_time_strp  = Verilated::commandArgsPlusMatch(\"save_time=\");\n");
+        $fh->print("    const char* save_time_strp = contextp->commandArgsPlusMatch(\"save_time=\");\n");
         $fh->print("    unsigned int save_time = !save_time_strp[0] ? 0 : atoi(save_time_strp+strlen(\"+save_time=\"));\n");
-        $fh->print("    const char* save_restore_strp = Verilated::commandArgsPlusMatch(\"save_restore=\");\n");
+        $fh->print("    const char* save_restore_strp = contextp->commandArgsPlusMatch(\"save_restore=\");\n");
         $fh->print("    unsigned int save_restore = !save_restore_strp[0] ? 0 : 1;\n");
     }
 
@@ -1831,8 +1822,11 @@ sub _make_main {
     _print_advance_time($self, $fh, 10);
     print $fh "    }\n";
 
-    print $fh "    while ((sc_time_stamp() < sim_time * MAIN_TIME_MULTIPLIER)\n";
-    print $fh "           && !Verilated::gotFinish()) {\n";
+    my $time = $self->sc ? "sc_time_stamp()" : "contextp->time()";
+
+    print $fh "    while ((${time} < sim_time * MAIN_TIME_MULTIPLIER)\n";
+    print $fh "           && !contextp->gotFinish()) {\n";
+
     for (my $i=0; $i<5; $i++) {
         my $action = 0;
         if ($self->{inputs}{fastclk}) {
@@ -1844,7 +1838,7 @@ sub _make_main {
             $action = 1;
         }
         if ($self->{savable}) {
-            $fh->print("        if (sc_time_stamp() == save_time && save_time) {\n");
+            $fh->print("        if (save_time && ${time} == save_time) {\n");
             $fh->print("            save_model(\"$self->{obj_dir}/saved.vltsv\");\n");
             $fh->print("            printf(\"Exiting after save_model\\n\");\n");
             $fh->print("            return 0;\n");
@@ -1853,7 +1847,7 @@ sub _make_main {
         _print_advance_time($self, $fh, 1, $action);
     }
     print $fh "    }\n";
-    print $fh "    if (!Verilated::gotFinish()) {\n";
+    print $fh "    if (!contextp->gotFinish()) {\n";
     print $fh '        vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");',"\n";
     print $fh "    }\n";
     print $fh "    topp->final();\n";
@@ -1894,11 +1888,11 @@ sub _print_advance_time {
             print $fh "        ${set}eval();\n";
             if ($self->{trace} && !$self->sc) {
                 $fh->print("#if VM_TRACE\n");
-                $fh->print("        if (tfp) tfp->dump(main_time);\n");
+                $fh->print("        if (tfp) tfp->dump(contextp->time());\n");
                 $fh->print("#endif  // VM_TRACE\n");
             }
         }
-        print $fh "        main_time += ${time} * MAIN_TIME_MULTIPLIER;\n";
+        print $fh "        contextp->timeInc(${time} * MAIN_TIME_MULTIPLIER);\n";
     }
 }
 
@@ -2601,7 +2595,7 @@ can be used:
 This can be particularly useful if checking that the Verilator model has
 not unexpectedly terminated.
 
-  if (Verilated::gotFinish()) {
+  if (contextp->gotFinish()) {
       vl_fatal(__FILE__, __LINE__, "dut", "<error message goes here>");
       exit(1);
   }

@@ -900,8 +900,8 @@ extern IData VL_SSCANF_INX(int lbits, const std::string& ld, const char* formatp
 extern void VL_SFORMAT_X(int obits_ignored, std::string& output, const char* formatp,
                          ...) VL_MT_SAFE;
 extern std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE;
-extern void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix,
-                               int width) VL_MT_SAFE;
+extern void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix, int width,
+                               VerilatedContext* contextp) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {
     WData rwp[2];  // WData must always be at least 2
@@ -955,11 +955,5 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
 
 extern IData VL_FGETS_NI(std::string& dest, IData fpi);
-
-//======================================================================
-// Dumping
-
-extern const char* vl_dumpctl_filenamep(bool setit = false,
-                                        const std::string& filename = "") VL_MT_SAFE;
 
 #endif  // Guard
