@@ -352,7 +352,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
 
 template <>
 void VerilatedTrace<VL_DERIVED_T>::declCode(vluint32_t code, vluint32_t bits, bool tri) {
-    if (!code) {
+    if (VL_UNCOVERABLE(!code)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: internal trace problem, code 0 is illegal");
     }
     // Note: The tri-state flag is not used by Verilator, but is here for
@@ -655,6 +655,8 @@ void verilated_trace_imp_selftest() {
 
 #define SELF_CHECK_TS(scale) \
     SELF_CHECK(doubleToTimescale(timescaleToDouble(scale)), std::string{scale});
+    SELF_CHECK_TS("100s");
+    SELF_CHECK_TS("10s");
     SELF_CHECK_TS("1s");
     SELF_CHECK_TS("100ms");
     SELF_CHECK_TS("10ms");

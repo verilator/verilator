@@ -49,6 +49,10 @@ int main(int argc, char** argv, char** env) {
     Verilated::commandArgs(argc, argv);  // Commonly used
     CHECK_RESULT_CSTR(Verilated::commandArgsPlusMatch("not-matching"), "");
 
+    const char* argadd[] = {"+testingPlusAdd+2", nullptr};
+    Verilated::commandArgsAdd(1, argadd);
+    CHECK_RESULT_CSTR(Verilated::commandArgsPlusMatch("testingPlusAdd"), "+testingPlusAdd+2");
+
     Verilated::assertOn(true);
     CHECK_RESULT(Verilated::assertOn(), true);
 
@@ -58,6 +62,9 @@ int main(int argc, char** argv, char** env) {
     Verilated::debug(9);  // Commonly used
     CHECK_RESULT(Verilated::debug(), 9);
     Verilated::debug(0);
+
+    Verilated::errorLimit(2);
+    CHECK_RESULT(Verilated::errorLimit(), 2);
 
     Verilated::fatalOnError(true);
     CHECK_RESULT(Verilated::fatalOnError(), true);
@@ -75,6 +82,9 @@ int main(int argc, char** argv, char** env) {
 
     Verilated::randReset(0);
     CHECK_RESULT(Verilated::randReset(), 0);
+
+    Verilated::randSeed(1234);
+    CHECK_RESULT(Verilated::randSeed(), 1234);
 
     Verilated::traceEverOn(true);  // Commonly used
 

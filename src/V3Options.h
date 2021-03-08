@@ -37,7 +37,7 @@ class VOptionBool final {
     // Class to track options that are either not specified (and default
     // true/false), versus user setting the option to true or false
 public:
-    enum en : uint8_t { OPT_DEFAULT_FALSE = 0, OPT_DEFAULT_TRUE, OPT_TRUE, OPT_FALSE, _ENUM_END };
+    enum en : uint8_t { OPT_DEFAULT_FALSE = 0, OPT_DEFAULT_TRUE, OPT_TRUE, OPT_FALSE };
     enum en m_e;
     inline VOptionBool()
         : m_e{OPT_DEFAULT_FALSE} {}
@@ -49,23 +49,15 @@ public:
     operator en() const { return m_e; }
     bool isDefault() const { return m_e == OPT_DEFAULT_FALSE || m_e == OPT_DEFAULT_TRUE; }
     bool isTrue() const { return m_e == OPT_TRUE || m_e == OPT_DEFAULT_TRUE; }
-    bool isFalse() const { return m_e == OPT_FALSE || m_e == OPT_DEFAULT_FALSE; }
     bool isSetTrue() const { return m_e == OPT_TRUE; }
     bool isSetFalse() const { return m_e == OPT_FALSE; }
     void setTrueOrFalse(bool flag) { m_e = flag ? OPT_TRUE : OPT_FALSE; }
-    const char* ascii() const {
-        static const char* const names[] = {"DEFAULT_FALSE", "DEFAULT_TRUE", "TRUE", "FALSE"};
-        return names[m_e];
-    }
 };
 inline bool operator==(const VOptionBool& lhs, const VOptionBool& rhs) {
     return lhs.m_e == rhs.m_e;
 }
 inline bool operator==(const VOptionBool& lhs, VOptionBool::en rhs) { return lhs.m_e == rhs; }
 inline bool operator==(VOptionBool::en lhs, const VOptionBool& rhs) { return lhs == rhs.m_e; }
-inline std::ostream& operator<<(std::ostream& os, const VOptionBool& rhs) {
-    return os << rhs.ascii();
-}
 
 //######################################################################
 
@@ -97,43 +89,11 @@ public:
     VTimescale(const string& value, bool& badr);
     VTimescale(double value, bool& badr) {
         badr = false;
-        if (value == 10e2) {
-            m_e = TS_100S;
-        } else if (value == 1e1) {
-            m_e = TS_10S;
-        } else if (value == 1e0) {
-            m_e = TS_1S;
-        } else if (value == 1e-1) {
-            m_e = TS_100MS;
-        } else if (value == 1e-2) {
-            m_e = TS_10MS;
-        } else if (value == 1e-3) {
-            m_e = TS_1MS;
-        } else if (value == 1e-4) {
-            m_e = TS_100US;
-        } else if (value == 1e-5) {
-            m_e = TS_10US;
-        } else if (value == 1e-6) {
-            m_e = TS_1US;
-        } else if (value == 1e-7) {
-            m_e = TS_100NS;
-        } else if (value == 1e-8) {
-            m_e = TS_10NS;
-        } else if (value == 1e-9) {
-            m_e = TS_1NS;
-        } else if (value == 1e-10) {
-            m_e = TS_100PS;
-        } else if (value == 1e-11) {
-            m_e = TS_10PS;
-        } else if (value == 1e-12) {
-            m_e = TS_1PS;
-        } else if (value == 1e-13) {
-            m_e = TS_100FS;
-        } else if (value == 1e-14) {
-            m_e = TS_10FS;
-        } else if (value == 1e-15) {
-            m_e = TS_1FS;
-        } else {
+        for (int i = TS_100S; i < _ENUM_END; ++i) {
+            m_e = static_cast<en>(i);
+            if (multiplier() == value) break;
+        }
+        if (multiplier() != value) {
             m_e = NONE;
             badr = true;
         }
@@ -450,7 +410,6 @@ public:
     string bin() const { return m_bin; }
     string flags() const { return m_flags; }
     bool systemC() const { return m_systemC; }
-    bool usingSystemCLibs() const { return !lintOnly() && systemC(); }
     bool savable() const { return m_savable; }
     bool stats() const { return m_stats; }
     bool statsVars() const { return m_statsVars; }
@@ -562,7 +521,6 @@ public:
     string modPrefix() const { return m_modPrefix; }
     string pipeFilter() const { return m_pipeFilter; }
     string prefix() const { return m_prefix; }
-    string protectKey() const { return m_protectKey; }
     string protectKeyDefaulted();  // Set default key if not set by user
     string protectLib() const { return m_protectLib; }
     string protectLibName(bool shared) {
@@ -589,7 +547,6 @@ public:
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
     const V3StringList& forceIncs() const { return m_forceIncs; }
-    const V3LangCode& defaultLanguage() const { return m_defaultLanguage; }
 
     bool hasParameter(const string& name);
     string parameter(const string& name);

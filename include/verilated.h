@@ -191,8 +191,8 @@ public:
 // Empty non-threaded mutex to avoid #ifdefs in consuming code
 class VerilatedMutex final {
 public:
-    void lock() {}
-    void unlock() {}
+    void lock() {}  // LCOV_EXCL_LINE
+    void unlock() {}  // LCOV_EXCL_LINE
 };
 
 // Empty non-threaded lock guard to avoid #ifdefs in consuming code
@@ -202,8 +202,8 @@ class VerilatedLockGuard final {
 public:
     explicit VerilatedLockGuard(VerilatedMutex&) {}
     ~VerilatedLockGuard() = default;
-    void lock() {}
-    void unlock() {}
+    void lock() {}  // LCOV_EXCL_LINE
+    void unlock() {}  // LCOV_EXCL_LINE
 };
 
 #endif  // VL_THREADED

@@ -225,7 +225,7 @@ void FileLine::forwardToken(const char* textp, size_t size, bool trackLines) {
         if (*sp == '\n') {
             if (trackLines) linenoInc();
             m_lastColumn = 1;
-        } else if (*sp == '\r') {
+        } else if (VL_UNCOVERABLE(*sp == '\r')) {  // Generally stripped by preproc
         } else {  // Tabs are considered one column; hence column means number of chars
             ++m_lastColumn;
         }

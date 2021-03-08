@@ -16,8 +16,9 @@ module t;
   `endif
  `endif
 `endif
-      $system("exit 0");
-      $system("echo hello");
+      $system("ls");  // IData
+      $system("exit 0");  // QData
+      $system("echo hello");  // WDATA
 `ifndef VCS
       i = $system("exit 0");
       if (i!==0) $stop;

@@ -879,6 +879,10 @@ void vcdTestMain(const char* filenamep) {
     {
         VerilatedVcdC* vcdp = new VerilatedVcdC;
         vcdp->evcd(true);
+        vcdp->set_time_unit("1ms");
+        vcdp->set_time_unit(std::string("1ms"));
+        vcdp->set_time_resolution("1ns");
+        vcdp->set_time_resolution(std::string("1ns"));
         vcdp->spTrace()->addInitCb(&vcdInit, 0);
         vcdp->spTrace()->addFullCb(&vcdFull, 0);
         vcdp->spTrace()->addChgCb(&vcdChange, 0);
