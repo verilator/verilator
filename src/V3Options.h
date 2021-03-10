@@ -341,6 +341,7 @@ private:
     bool        m_oCase;        // main switch: -Oe: case tree conversion
     bool        m_oCombine;     // main switch: -Ob: common icode packing
     bool        m_oConst;       // main switch: -Oc: constant folding
+    bool        m_oConstBitOpTree;  // main switch: -Oo: constant bit op tree
     bool        m_oDedupe;      // main switch: -Od: logic deduplication
     bool        m_oExpand;      // main switch: -Ox: expansion of C macros
     bool        m_oGate;        // main switch: -Og: gate wire elimination
@@ -563,6 +564,7 @@ public:
     bool oCase() const { return m_oCase; }
     bool oCombine() const { return m_oCombine; }
     bool oConst() const { return m_oConst; }
+    bool oConstBitOpTree() const { return m_oConstBitOpTree; }
     bool oDedupe() const { return m_oDedupe; }
     bool oExpand() const { return m_oExpand; }
     bool oGate() const { return m_oGate; }

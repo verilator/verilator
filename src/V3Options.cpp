@@ -1159,7 +1159,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     case 'k': m_oSubstConst = flag; break;
                     case 'l': m_oLife = flag; break;
                     case 'm': m_oAssemble = flag; break;
-                    //    n o
+                    //    n
+                    case 'o': m_oConstBitOpTree = flag; break;  // Can remove ~2022-01 when stable
                     case 'p':
                         m_public = !flag;
                         break;  // With -Op so flag=0, we want public on so few optimizations done
@@ -1864,6 +1865,7 @@ void V3Options::optimize(int level) {
     m_oCase = flag;
     m_oCombine = flag;
     m_oConst = flag;
+    m_oConstBitOpTree = flag;
     m_oDedupe = flag;
     m_oExpand = flag;
     m_oGate = flag;

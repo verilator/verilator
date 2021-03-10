@@ -687,6 +687,7 @@ private:
         return true;
     }
     bool matchBitOpTree(AstNode* nodep) {
+        if (!v3Global.opt.oConstBitOpTree()) return false;
         AstNode* newp = nullptr;
         bool tried = false;
         if (AstAnd* andp = VN_CAST(nodep, And)) {  // 1 & BitOpTree
