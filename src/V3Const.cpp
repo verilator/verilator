@@ -687,6 +687,10 @@ private:
         return true;
     }
     bool matchBitOpTree(AstNode* nodep) {
+#if 1
+        // Until Issue 2829 is fixed, this optimization is disabled.
+        return false;
+#else
         AstNode* newp = nullptr;
         bool tried = false;
         if (AstAnd* andp = VN_CAST(nodep, And)) {  // 1 & BitOpTree
@@ -715,6 +719,7 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
         return newp;
+#endif
     }
     static bool operandShiftSame(const AstNode* nodep) {
         const AstNodeBiop* np = VN_CAST_CONST(nodep, NodeBiop);
