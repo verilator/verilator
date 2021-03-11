@@ -70,7 +70,7 @@ public:
 
 class VerilatedVarProps VL_NOT_FINAL {
     // TYPES
-    enum { MAGIC = 0xddc4f829 };
+    static constexpr vluint32_t MAGIC = 0xddc4f829UL;
     // MEMBERS
     const vluint32_t m_magic;  // Magic number
     const VerilatedVarType m_vltype;  // Data type
