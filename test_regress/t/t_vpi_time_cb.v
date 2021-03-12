@@ -6,6 +6,9 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+import "DPI-C" function void dpii_init();
+import "DPI-C" function void dpii_final();
+
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -19,15 +22,18 @@ module t (/*AUTOARG*/
    // Test loop
    initial begin
       count = 0;
+      dpii_init();
    end
 
    always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-      $display("[%0t] clk", $time);
+      $display("[%0t] clk @ count %0d", $time, count);
 `endif
       count <= count + 2;
-      if (count == 1000) begin
+      if (count == 200) begin
+         $display("Final section");
          // See C++ code: $write("*-* All Finished *-*\n");
+         dpii_final();
          $finish;
       end
    end

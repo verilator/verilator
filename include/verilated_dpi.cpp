@@ -19,7 +19,7 @@
 ///
 //=========================================================================
 
-#define _VERILATED_DPI_CPP_
+#define VERILATOR_VERILATED_DPI_CPP_
 
 #include "verilatedos.h"
 #include "verilated_dpi.h"
@@ -37,11 +37,11 @@
 //======================================================================
 // Internal macros
 
-#define _VL_SVDPI_WARN(...) VL_PRINTF_MT(__VA_ARGS__)
+#define VL_SVDPI_WARN_(...) VL_PRINTF_MT(__VA_ARGS__)
 
 // Function requires a "context" in the import declaration
-#define _VL_SVDPI_CONTEXT_WARN() \
-    _VL_SVDPI_WARN("%%Warning: DPI C Function called by Verilog DPI import with missing " \
+#define VL_SVDPI_CONTEXT_WARN_() \
+    VL_SVDPI_WARN_("%%Warning: DPI C Function called by Verilog DPI import with missing " \
                    "'context' keyword.\n")
 
 //======================================================================
@@ -120,7 +120,7 @@ void svGetPartselLogic(svLogicVecVal* dp, const svLogicVecVal* sp, int lsb, int 
     dp[VL_WORDS_I(width) - 1].bval &= VL_MASK_I(width);
 }
 void svPutPartselBit(svBitVecVal* dp, const svBitVecVal s, int lbit, int width) {
-    // See also _VL_INSERT_WI
+    // See also _vl_insert_WI
     int hbit = lbit + width - 1;
     int hoffset = VL_BITBIT_I(hbit);
     int loffset = VL_BITBIT_I(lbit);
@@ -218,7 +218,7 @@ static void* _vl_sv_adjusted_datap(const VerilatedDpiOpenVar* varp, int nargs, i
                                    int indx2, int indx3) {
     void* datap = varp->datap();
     if (VL_UNLIKELY(nargs != varp->udims())) {
-        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function called on"
+        VL_SVDPI_WARN_("%%Warning: DPI svOpenArrayHandle function called on"
                        " %d dimensional array using %d dimensional function.\n",
                        varp->udims(), nargs);
         return nullptr;
@@ -226,7 +226,7 @@ static void* _vl_sv_adjusted_datap(const VerilatedDpiOpenVar* varp, int nargs, i
     if (nargs >= 1) {
         datap = varp->datapAdjustIndex(datap, 1, indx1);
         if (VL_UNLIKELY(!datap)) {
-            _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function index 1 "
+            VL_SVDPI_WARN_("%%Warning: DPI svOpenArrayHandle function index 1 "
                            "out of bounds; %d outside [%d:%d].\n",
                            indx1, varp->left(1), varp->right(1));
             return nullptr;
@@ -235,7 +235,7 @@ static void* _vl_sv_adjusted_datap(const VerilatedDpiOpenVar* varp, int nargs, i
     if (nargs >= 2) {
         datap = varp->datapAdjustIndex(datap, 2, indx2);
         if (VL_UNLIKELY(!datap)) {
-            _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function index 2 "
+            VL_SVDPI_WARN_("%%Warning: DPI svOpenArrayHandle function index 2 "
                            "out of bounds; %d outside [%d:%d].\n",
                            indx2, varp->left(2), varp->right(2));
             return nullptr;
@@ -244,7 +244,7 @@ static void* _vl_sv_adjusted_datap(const VerilatedDpiOpenVar* varp, int nargs, i
     if (nargs >= 3) {
         datap = varp->datapAdjustIndex(datap, 3, indx3);
         if (VL_UNLIKELY(!datap)) {
-            _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function index 3 "
+            VL_SVDPI_WARN_("%%Warning: DPI svOpenArrayHandle function index 3 "
                            "out of bounds; %d outside [%d:%d].\n",
                            indx1, varp->left(3), varp->right(3));
             return nullptr;
@@ -285,7 +285,7 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
         return;
     }
     default:  // LCOV_EXCL_START  // Errored earlier
-        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
+        VL_SVDPI_WARN_("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
                        varp->vltype());
         return;  // LCOV_EXCL_STOP
     }
@@ -327,7 +327,7 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
         return;
     }
     default:  // LCOV_EXCL_START  // Errored earlier
-        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
+        VL_SVDPI_WARN_("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
                        varp->vltype());
         return;  // LCOV_EXCL_STOP
     }
@@ -343,14 +343,14 @@ static void _vl_svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecV
     case VLVT_UINT8: *(reinterpret_cast<CData*>(datap)) = s[0]; return;
     case VLVT_UINT16: *(reinterpret_cast<SData*>(datap)) = s[0]; return;
     case VLVT_UINT32: *(reinterpret_cast<IData*>(datap)) = s[0]; return;
-    case VLVT_UINT64: *(reinterpret_cast<QData*>(datap)) = _VL_SET_QII(s[1], s[0]); break;
+    case VLVT_UINT64: *(reinterpret_cast<QData*>(datap)) = VL_SET_QII(s[1], s[0]); break;
     case VLVT_WDATA: {
         WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->packed().elements()); ++i) wdatap[i] = s[i];
         return;
     }
     default:  // LCOV_EXCL_START  // Errored earlier
-        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
+        VL_SVDPI_WARN_("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
                        varp->vltype());
         return;  // LCOV_EXCL_STOP
     }
@@ -365,16 +365,14 @@ static void _vl_svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogic
     case VLVT_UINT8: *(reinterpret_cast<CData*>(datap)) = s[0].aval; return;
     case VLVT_UINT16: *(reinterpret_cast<SData*>(datap)) = s[0].aval; return;
     case VLVT_UINT32: *(reinterpret_cast<IData*>(datap)) = s[0].aval; return;
-    case VLVT_UINT64:
-        *(reinterpret_cast<QData*>(datap)) = _VL_SET_QII(s[1].aval, s[0].aval);
-        break;
+    case VLVT_UINT64: *(reinterpret_cast<QData*>(datap)) = VL_SET_QII(s[1].aval, s[0].aval); break;
     case VLVT_WDATA: {
         WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->packed().elements()); ++i) wdatap[i] = s[i].aval;
         return;
     }
     default:  // LCOV_EXCL_START  // Errored earlier
-        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
+        VL_SVDPI_WARN_("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
                        varp->vltype());
         return;  // LCOV_EXCL_STOP
     }
@@ -390,7 +388,7 @@ static svBit _vl_svGetBitArrElem(const svOpenArrayHandle s, int nargs, int indx1
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8: return (*(reinterpret_cast<CData*>(datap))) & 1;
     default:  // LCOV_EXCL_START  // Errored earlier
-        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
+        VL_SVDPI_WARN_("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
                        varp->vltype());
         return 0;  // LCOV_EXCL_STOP
     }
@@ -406,7 +404,7 @@ static void _vl_svPutBitArrElem(const svOpenArrayHandle d, svBit value, int narg
     switch (varp->vltype()) {  // LCOV_EXCL_BR_LINE
     case VLVT_UINT8: *(reinterpret_cast<CData*>(datap)) = value; return;
     default:  // LCOV_EXCL_START  // Errored earlier
-        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
+        VL_SVDPI_WARN_("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
                        varp->vltype());
         return;  // LCOV_EXCL_STOP
     }
@@ -720,7 +718,7 @@ void svPutLogicArrElem3(const svOpenArrayHandle d, svLogic value, int indx1, int
 
 svScope svGetScope() {
     if (VL_UNLIKELY(!Verilated::dpiInContext())) {
-        _VL_SVDPI_CONTEXT_WARN();
+        VL_SVDPI_CONTEXT_WARN_();
         return nullptr;
     }
     // NOLINTNEXTLINE(google-readability-casting)
@@ -742,7 +740,7 @@ const char* svGetNameFromScope(const svScope scope) {
 
 svScope svGetScopeFromName(const char* scopeName) {
     // NOLINTNEXTLINE(google-readability-casting)
-    return (svScope)(VerilatedImp::scopeFind(scopeName));
+    return (svScope)(Verilated::threadContextp()->scopeFind(scopeName));
 }
 
 int svPutUserData(const svScope scope, void* userKey, void* userData) {
@@ -756,7 +754,7 @@ void* svGetUserData(const svScope scope, void* userKey) {
 
 int svGetCallerInfo(const char** fileNamepp, int* lineNumberp) {
     if (VL_UNLIKELY(!Verilated::dpiInContext())) {
-        _VL_SVDPI_CONTEXT_WARN();
+        VL_SVDPI_CONTEXT_WARN_();
         return false;
     }
     if (VL_LIKELY(fileNamepp)) *fileNamepp = Verilated::dpiFilenamep();  // thread local

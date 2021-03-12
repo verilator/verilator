@@ -14,6 +14,8 @@
 #include <iostream>
 #include "svdpi.h"
 
+#include "TestCheck.h"
+
 //======================================================================
 
 // clang-format off
@@ -40,34 +42,25 @@ extern void dpii_open_i(const svOpenArrayHandle i, const svOpenArrayHandle o);
 
 //======================================================================
 
-int failure = 0;
-int dpii_failure() { return failure; }
-
-#define CHECK_RESULT_HEX(got, exp) \
-    do { \
-        if ((got) != (exp)) { \
-            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": GOT=" << (got) << "   EXP=" << (exp) << std::endl; \
-            failure = __LINE__; \
-        } \
-    } while (0)
+int errors = 0;
+int dpii_failure() { return errors; }
 
 //======================================================================
 
 void dpii_open_i(const svOpenArrayHandle i, const svOpenArrayHandle o) {
     // Illegal in VCS:
-    // CHECK_RESULT_HEX(svLeft(i, 0), 2);
-    // CHECK_RESULT_HEX(svRight(i, 0), 0);
-    // CHECK_RESULT_HEX(svLow(i, 0), 0);
-    // CHECK_RESULT_HEX(svHigh(i, 0), 2);
+    // TEST_CHECK_HEX_EQ(svLeft(i, 0), 2);
+    // TEST_CHECK_HEX_EQ(svRight(i, 0), 0);
+    // TEST_CHECK_HEX_EQ(svLow(i, 0), 0);
+    // TEST_CHECK_HEX_EQ(svHigh(i, 0), 2);
     //
-    CHECK_RESULT_HEX(svDimensions(i), 1);
-    CHECK_RESULT_HEX(svLeft(i, 1), 2);
-    CHECK_RESULT_HEX(svRight(i, 1), 0);
-    CHECK_RESULT_HEX(svLow(i, 1), 0);
-    CHECK_RESULT_HEX(svHigh(i, 1), 2);
-    // CHECK_RESULT_HEX(svIncrement(i, 1), 0);
-    CHECK_RESULT_HEX(svSize(i, 1), 3);
+    TEST_CHECK_HEX_EQ(svDimensions(i), 1);
+    TEST_CHECK_HEX_EQ(svLeft(i, 1), 2);
+    TEST_CHECK_HEX_EQ(svRight(i, 1), 0);
+    TEST_CHECK_HEX_EQ(svLow(i, 1), 0);
+    TEST_CHECK_HEX_EQ(svHigh(i, 1), 2);
+    // TEST_CHECK_HEX_EQ(svIncrement(i, 1), 0);
+    TEST_CHECK_HEX_EQ(svSize(i, 1), 3);
     for (int a = 0; a < 3; ++a) {
         svBitVecVal vec[1];
         svGetBitArrElemVecVal(vec, i, a);

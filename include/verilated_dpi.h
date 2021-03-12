@@ -20,8 +20,8 @@
 ///
 //*************************************************************************
 
-#ifndef _VERILATED_DPI_H_
-#define _VERILATED_DPI_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_DPI_H_
+#define VERILATOR_VERILATED_DPI_H_  ///< Header Guard
 
 #include "verilatedos.h"
 #include "verilated.h"  // Also presumably included by caller
@@ -32,18 +32,18 @@
 //===================================================================
 // SETTING OPERATORS
 
-/// Convert svBitVecVal to Verilator internal data
+// Convert svBitVecVal to Verilator internal data
 static inline void VL_SET_W_SVBV(int obits, WDataOutP owp, const svBitVecVal* lwp) VL_MT_SAFE {
     int words = VL_WORDS_I(obits);
     for (int i = 0; i < words - 1; ++i) owp[i] = lwp[i];
     owp[words - 1] = lwp[words - 1] & VL_MASK_I(obits);
 }
 static inline QData VL_SET_Q_SVBV(const svBitVecVal* lwp) VL_MT_SAFE {
-    return _VL_SET_QII(lwp[1], lwp[0]);
+    return VL_SET_QII(lwp[1], lwp[0]);
 }
 static inline IData VL_SET_I_SVBV(const svBitVecVal* lwp) VL_MT_SAFE { return lwp[0]; }
 
-/// Convert Verilator internal data to svBitVecVal
+// Convert Verilator internal data to svBitVecVal
 static inline void VL_SET_SVBV_W(int obits, svBitVecVal* owp, WDataInP lwp) VL_MT_SAFE {
     int words = VL_WORDS_I(obits);
     for (int i = 0; i < words - 1; ++i) owp[i] = lwp[i];
@@ -54,20 +54,20 @@ static inline void VL_SET_SVBV_Q(int, svBitVecVal* owp, QData ld) VL_MT_SAFE {
     VL_SET_WQ(owp, ld);
 }
 
-/// Convert svLogicVecVal to Verilator internal data
-/// Note these functions ignore X/Z in svLogicVecVal
+// Convert svLogicVecVal to Verilator internal data
+// Note these functions ignore X/Z in svLogicVecVal
 static inline void VL_SET_W_SVLV(int obits, WDataOutP owp, const svLogicVecVal* lwp) VL_MT_SAFE {
     int words = VL_WORDS_I(obits);
     for (int i = 0; i < words - 1; ++i) owp[i] = lwp[i].aval;
     owp[words - 1] = lwp[words - 1].aval & VL_MASK_I(obits);
 }
 static inline QData VL_SET_Q_SVLV(const svLogicVecVal* lwp) VL_MT_SAFE {
-    return _VL_SET_QII(lwp[1].aval, lwp[0].aval);
+    return VL_SET_QII(lwp[1].aval, lwp[0].aval);
 }
 static inline IData VL_SET_I_SVLV(const svLogicVecVal* lwp) VL_MT_SAFE { return lwp[0].aval; }
 
-/// Convert Verilator internal data to svLogicVecVal
-/// Note these functions never create X/Z in svLogicVecVal
+// Convert Verilator internal data to svLogicVecVal
+// Note these functions never create X/Z in svLogicVecVal
 static inline void VL_SET_SVLV_W(int obits, svLogicVecVal* owp, WDataInP lwp) VL_MT_SAFE {
     int words = VL_WORDS_I(obits);
     for (int i = 0; i < words; ++i) owp[i].bval = 0;

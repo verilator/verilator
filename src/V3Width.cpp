@@ -77,7 +77,7 @@
 #include <algorithm>
 
 // More code; this file was getting too large; see actions there
-#define _V3WIDTH_CPP_
+#define VERILATOR_V3WIDTH_CPP_
 #include "V3WidthCommit.h"
 
 //######################################################################

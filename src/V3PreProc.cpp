@@ -272,7 +272,7 @@ public:
         m_lexp->m_keepComments = keepComments();
         m_lexp->m_keepWhitespace = keepWhitespace();
         m_lexp->m_pedantic = pedantic();
-        m_lexp->debug(debug() >= 5 ? debug() : 0);  // See also V3PreProc::debug() method
+        debug(debug());  // Set lexer debug via V3PreProc::debug() method
     }
     ~V3PreProcImp() override {
         if (m_lexp) VL_DO_CLEAR(delete m_lexp, m_lexp = nullptr);
@@ -485,6 +485,12 @@ void V3PreProcImp::comment(const string& text) {
 
 //*************************************************************************
 // VPreProc Methods.
+
+void V3PreProc::debug(int level) {
+    m_debug = level;
+    V3PreProcImp* idatap = static_cast<V3PreProcImp*>(this);
+    if (idatap->m_lexp) idatap->m_lexp->debug(debug() >= 5 ? debug() : 0);
+}
 
 FileLine* V3PreProc::fileline() {
     V3PreProcImp* idatap = static_cast<V3PreProcImp*>(this);

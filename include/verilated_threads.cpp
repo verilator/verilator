@@ -19,6 +19,11 @@
 
 #include <cstdio>
 
+//=============================================================================
+// Globals
+
+// Internal note: Globals may multi-construct, see verilated.cpp top.
+
 std::atomic<vluint64_t> VlMTaskVertex::s_yields;
 
 VL_THREAD_LOCAL VlThreadPool::ProfileTrace* VlThreadPool::t_profilep = nullptr;
@@ -35,12 +40,12 @@ VlMTaskVertex::VlMTaskVertex(vluint32_t upstreamDepCount)
 //=============================================================================
 // VlWorkerThread
 
-VlWorkerThread::VlWorkerThread(VlThreadPool* poolp, bool profiling)
-    : m_waiting{false}
-    , m_poolp{poolp}
+VlWorkerThread::VlWorkerThread(VlThreadPool* poolp, VerilatedContext* contextp, bool profiling)
+    : m_poolp{poolp}
     , m_profiling{profiling}  // Must init this last -- after setting up fields that it might read:
     , m_exiting{false}
-    , m_cthread{startWorker, this} {}
+    , m_cthread{startWorker, this}
+    , m_contextp{contextp} {}
 
 VlWorkerThread::~VlWorkerThread() {
     m_exiting.store(true, std::memory_order_release);
@@ -70,12 +75,15 @@ void VlWorkerThread::workerLoop() {
     if (VL_UNLIKELY(m_profiling)) m_poolp->tearDownProfilingClientThread();
 }
 
-void VlWorkerThread::startWorker(VlWorkerThread* workerp) { workerp->workerLoop(); }
+void VlWorkerThread::startWorker(VlWorkerThread* workerp) {
+    Verilated::threadContextp(workerp->m_contextp);
+    workerp->workerLoop();
+}
 
 //=============================================================================
 // VlThreadPool
 
-VlThreadPool::VlThreadPool(int nThreads, bool profiling)
+VlThreadPool::VlThreadPool(VerilatedContext* contextp, int nThreads, bool profiling)
     : m_profiling{profiling} {
     // --threads N passes nThreads=N-1, as the "main" threads counts as 1
     unsigned cpus = std::thread::hardware_concurrency();
@@ -89,7 +97,7 @@ VlThreadPool::VlThreadPool(int nThreads, bool profiling)
     }
     // Create'em
     for (int i = 0; i < nThreads; ++i) {
-        m_workers.push_back(new VlWorkerThread(this, profiling));
+        m_workers.push_back(new VlWorkerThread(this, contextp, profiling));
     }
     // Set up a profile buffer for the current thread too -- on the
     // assumption that it's the same thread that calls eval and may be
@@ -109,7 +117,7 @@ void VlThreadPool::tearDownProfilingClientThread() {
     t_profilep = nullptr;
 }
 
-void VlThreadPool::setupProfilingClientThread() {
+void VlThreadPool::setupProfilingClientThread() VL_MT_SAFE_EXCLUDES(m_mutex) {
     assert(!t_profilep);
     t_profilep = new ProfileTrace;
     // Reserve some space in the thread-local profiling buffer;
@@ -121,7 +129,7 @@ void VlThreadPool::setupProfilingClientThread() {
     }
 }
 
-void VlThreadPool::profileAppendAll(const VlProfileRec& rec) {
+void VlThreadPool::profileAppendAll(const VlProfileRec& rec) VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lk(m_mutex);
     for (const auto& profilep : m_allProfiles) {
         // Every thread's profile trace gets a copy of rec.
@@ -129,7 +137,8 @@ void VlThreadPool::profileAppendAll(const VlProfileRec& rec) {
     }
 }
 
-void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
+void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
+    VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lk(m_mutex);
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+threads writing to '%s'\n", filenamep););
 
@@ -145,8 +154,9 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
     fprintf(fp, "VLPROFTHREAD 1.0 # Verilator thread profile dump version 1.0\n");
     fprintf(fp, "VLPROF arg --threads %" VL_PRI64 "u\n", vluint64_t(m_workers.size() + 1));
     fprintf(fp, "VLPROF arg +verilator+prof+threads+start+%" VL_PRI64 "u\n",
-            Verilated::profThreadsStart());
-    fprintf(fp, "VLPROF arg +verilator+prof+threads+window+%u\n", Verilated::profThreadsWindow());
+            Verilated::threadContextp()->profThreadsStart());
+    fprintf(fp, "VLPROF arg +verilator+prof+threads+window+%u\n",
+            Verilated::threadContextp()->profThreadsWindow());
     fprintf(fp, "VLPROF stat yields %" VL_PRI64 "u\n", VlMTaskVertex::yields());
 
     vluint32_t thread_id = 0;

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0116,eval-used
 ######################################################################
 
 import argparse
 import re
-import os
 import sys
-from pprint import pprint
+# from pprint import pprint
 
 Items = []
 
@@ -65,9 +65,7 @@ def write_keys(filename):
             elif re.search(r'VLCOVGEN_.*AUTO_EDIT_END', line):
                 deleting = False
                 out.append(line)
-            elif deleting:
-                None
-            else:
+            elif not deleting:
                 out.append(line)
 
     ok = "".join(out) == "".join(orig)
@@ -105,6 +103,6 @@ lint()
 write_keys(Args.srcdir + "/../include/verilated_cov_key.h")
 
 ######################################################################
-### Local Variables:
-### compile-command: "./vlcovgen --srcdir ."
-### End:
+# Local Variables:
+# compile-command: "./vlcovgen --srcdir ."
+# End:

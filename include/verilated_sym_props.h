@@ -24,8 +24,8 @@
 ///
 //*************************************************************************
 
-#ifndef _VERILATED_SYM_PROPS_H_
-#define _VERILATED_SYM_PROPS_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_SYM_PROPS_H_
+#define VERILATOR_VERILATED_SYM_PROPS_H_  ///< Header Guard
 
 #include "verilatedos.h"
 
@@ -70,7 +70,7 @@ public:
 
 class VerilatedVarProps VL_NOT_FINAL {
     // TYPES
-    enum { MAGIC = 0xddc4f829 };
+    static constexpr vluint32_t MAGIC = 0xddc4f829UL;
     // MEMBERS
     const vluint32_t m_magic;  // Magic number
     const VerilatedVarType m_vltype;  // Data type

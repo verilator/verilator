@@ -1045,6 +1045,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (onoff(sw, "-ignc", flag /*ref*/)) {
                 m_ignc = flag;
             } else if (onoff(sw, "-inhibit-sim", flag /*ref*/)) {
+                fl->v3warn(DEPRECATED, "-inhibit-sim option is deprecated");
                 m_inhibitSim = flag;
             } else if (onoff(sw, "-lint-only", flag /*ref*/)) {
                 m_lintOnly = flag;
@@ -1158,7 +1159,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     case 'k': m_oSubstConst = flag; break;
                     case 'l': m_oLife = flag; break;
                     case 'm': m_oAssemble = flag; break;
-                    //    n o
+                    //    n
+                    case 'o': m_oConstBitOpTree = flag; break;  // Can remove ~2022-01 when stable
                     case 'p':
                         m_public = !flag;
                         break;  // With -Op so flag=0, we want public on so few optimizations done
@@ -1443,8 +1445,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (!strcmp(sw, "-rr")) {
                 // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-gdbbt")) {
-                // Processed only in bin/verilator shell
-            } else if (!strcmp(sw, "-quiet-exit")) {
                 // Processed only in bin/verilator shell
             } else if (!strcmp(sw, "-mod-prefix") && (i + 1) < argc) {
                 shift;
@@ -1865,6 +1865,7 @@ void V3Options::optimize(int level) {
     m_oCase = flag;
     m_oCombine = flag;
     m_oConst = flag;
+    m_oConstBitOpTree = flag;
     m_oDedupe = flag;
     m_oExpand = flag;
     m_oGate = flag;

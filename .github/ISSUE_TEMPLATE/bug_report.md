@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Something isn't working as expected, and it isn't "Unsupported." (Note our contributor agreement at https://github.com/verilator/verilator/blob/master/docs/CONTRIBUTING.adoc)
+about: Something isn't working as expected, and it isn't "Unsupported." (Note our contributor agreement at https://github.com/verilator/verilator/blob/master/docs/CONTRIBUTING.rst)
 title: ''
 labels: new
 assignees: ''

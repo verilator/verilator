@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0115,C0116,C0301
 ######################################################################
 
 import argparse
@@ -104,6 +105,6 @@ dotread(Args.filename)
 cwrite("graph_export.cpp")
 
 ######################################################################
-### Local Variables:
-### compile-command: "./dot_importer ../test_regress/obj_vlt/t_EXAMPLE/*orderg_o*.dot && cat graph_export.cpp"
-### End:
+# Local Variables:
+# compile-command: "./dot_importer ../test_regress/obj_vlt/t_EXAMPLE/*orderg_o*.dot && cat graph_export.cpp"
+# End:

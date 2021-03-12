@@ -18,8 +18,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3HIERBLOCK_H_
-#define _V3HIERBLOCK_H_ 1
+#ifndef VERILATOR_V3HIERBLOCK_H_
+#define VERILATOR_V3HIERBLOCK_H_
 
 #include "verilatedos.h"
 

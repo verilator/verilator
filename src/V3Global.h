@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3GLOBAL_H_
-#define _V3GLOBAL_H_ 1
+#ifndef VERILATOR_V3GLOBAL_H_
+#define VERILATOR_V3GLOBAL_H_
 
 // clang-format off
 #include "config_build.h"
@@ -140,13 +140,8 @@ public:
     void widthMinUsage(const VWidthMinUsage& flag) { m_widthMinUsage = flag; }
     bool constRemoveXs() const { return m_constRemoveXs; }
     void constRemoveXs(bool flag) { m_constRemoveXs = flag; }
-    string debugFilename(const string& nameComment, int newNumber = 0) {
-        ++m_debugFileNumber;
-        if (newNumber) m_debugFileNumber = newNumber;
-        char digits[100];
-        sprintf(digits, "%03d", m_debugFileNumber);
-        return opt.hierTopDataDir() + "/" + opt.prefix() + "_" + digits + "_" + nameComment;
-    }
+    string debugFilename(const string& nameComment, int newNumber = 0);
+    static string digitsFilename(int number);
     bool needHeavy() const { return m_needHeavy; }
     void needHeavy(bool flag) { m_needHeavy = flag; }
     bool needTraceDumper() const { return m_needTraceDumper; }

@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3WAIVER_H_
-#define _V3WAIVER_H_ 1
+#ifndef VERILATOR_V3WAIVER_H_
+#define VERILATOR_V3WAIVER_H_
 
 #include "V3Error.h"
 

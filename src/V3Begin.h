@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3BEGIN_H_
-#define _V3BEGIN_H_ 1
+#ifndef VERILATOR_V3BEGIN_H_
+#define VERILATOR_V3BEGIN_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

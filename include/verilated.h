@@ -16,12 +16,15 @@
 ///     all C++ files it generates.  It contains standard macros and
 ///     classes required by the Verilated code.
 ///
+///     Those macro/function/variable starting or ending in _ are internal,
+///     however many of the other function/macros here are also internal.
+///
 /// Code available from: https://verilator.org
 ///
 //*************************************************************************
 
-#ifndef _VERILATED_H_
-#define _VERILATED_H_ 1  ///< Header Guard
+#ifndef VERILATOR_VERILATED_H_
+#define VERILATOR_VERILATED_H_  ///< Header Guard
 
 // clang-format off
 #include "verilatedos.h"
@@ -35,6 +38,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <string>
+#include <vector>
 // <iostream> avoided to reduce compile time
 // <map> avoided and instead in verilated_heavy.h to reduce compile time
 // <string> avoided and instead in verilated_heavy.h to reduce compile time
@@ -84,6 +90,9 @@ typedef EData        WData;     ///< Verilated pack data, >64 bits, as an array
 typedef const WData* WDataInP;  ///< Array input to a function
 typedef WData* WDataOutP;  ///< Array output from a function
 
+class VerilatedContextImp;
+class VerilatedContextImpData;
+class VerilatedCovContext;
 class VerilatedEvalMsgQueue;
 class VerilatedScopeNameMap;
 class VerilatedVar;
@@ -119,7 +128,7 @@ enum VerilatedVarFlags {
 };
 
 //=========================================================================
-/// Mutex and threading support
+// Mutex and threading support
 
 /// Return current thread ID (or 0), not super fast, cache if needed
 extern vluint32_t VL_THREAD_ID() VL_MT_SAFE;
@@ -132,7 +141,9 @@ extern vluint32_t VL_THREAD_ID() VL_MT_SAFE;
 class VL_CAPABILITY("mutex") VerilatedMutex final {
 private:
     std::mutex m_mutex;  // Mutex
+
 public:
+    /// Construct mutex (without locking it)
     VerilatedMutex() = default;
     ~VerilatedMutex() = default;
     const VerilatedMutex& operator!() const { return *this; }  // For -fthread_safety
@@ -162,51 +173,57 @@ private:
     VerilatedMutex& m_mutexr;
 
 public:
+    /// Construct and hold given mutex lock until destruction or unlock()
     explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr)
         : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
         m_mutexr.lock();
     }
+    /// Destruct and unlock the mutex
     ~VerilatedLockGuard() VL_RELEASE() { m_mutexr.unlock(); }
+    /// Unlock the mutex
     void lock() VL_ACQUIRE() { m_mutexr.lock(); }
+    /// Lock the mutex
     void unlock() VL_RELEASE() { m_mutexr.unlock(); }
 };
 
 #else  // !VL_THREADED
 
-/// Empty non-threaded mutex to avoid #ifdefs in consuming code
+// Empty non-threaded mutex to avoid #ifdefs in consuming code
 class VerilatedMutex final {
 public:
-    void lock() {}
-    void unlock() {}
+    void lock() {}  // LCOV_EXCL_LINE
+    void unlock() {}  // LCOV_EXCL_LINE
 };
 
-/// Empty non-threaded lock guard to avoid #ifdefs in consuming code
+// Empty non-threaded lock guard to avoid #ifdefs in consuming code
 class VerilatedLockGuard final {
     VL_UNCOPYABLE(VerilatedLockGuard);
 
 public:
     explicit VerilatedLockGuard(VerilatedMutex&) {}
     ~VerilatedLockGuard() = default;
-    void lock() {}
-    void unlock() {}
+    void lock() {}  // LCOV_EXCL_LINE
+    void unlock() {}  // LCOV_EXCL_LINE
 };
 
 #endif  // VL_THREADED
 
-/// Remember the calling thread at construction time, and make sure later calls use same thread
+// Internals: Remember the calling thread at construction time, and make
+// sure later calls use same thread
+
 class VerilatedAssertOneThread final {
     // MEMBERS
 #if defined(VL_THREADED) && defined(VL_DEBUG)
     vluint32_t m_threadid;  /// Thread that is legal
 public:
     // CONSTRUCTORS
-    /// The constructor establishes the thread id for all later calls.
-    /// If necessary, a different class could be made that inits it otherwise.
+    // The constructor establishes the thread id for all later calls.
+    // If necessary, a different class could be made that inits it otherwise.
     VerilatedAssertOneThread()
         : m_threadid{VL_THREAD_ID()} {}
     ~VerilatedAssertOneThread() { check(); }
     // METHODS
-    /// Check that the current thread ID is the same as the construction thread ID
+    // Check that the current thread ID is the same as the construction thread ID
     void check() VL_MT_UNSAFE_ONE {
         if (VL_UNCOVERABLE(m_threadid != VL_THREAD_ID())) {
             if (m_threadid == 0) {
@@ -216,12 +233,10 @@ public:
             }
         }
     }
-    void changeThread() { m_threadid = 0; }  // Allow intentional change-of-thread
     static void fatal_different() VL_MT_SAFE;
 #else  // !VL_THREADED || !VL_DEBUG
 public:
     void check() {}
-    void changeThread() {}
 #endif
 };
 
@@ -285,20 +300,272 @@ public:
 // clang-format on
 
 //===========================================================================
+// Internal: Base class to allow virtual destruction
+
+class VerilatedVirtualBase VL_NOT_FINAL {
+public:
+    VerilatedVirtualBase() = default;
+    virtual ~VerilatedVirtualBase() = default;
+};
+
+//===========================================================================
+/// Verilator simulation context
+///
+/// The VerilatedContext contains the information common across all models
+/// that are interconnected, for example this contains the simulation time
+/// and if $finish was executed.
+///
+/// VerilatedContexts maybe created by the user wrapper code and passed
+/// when a model is created.  If this is not done, then Verilator will use
+/// the Verilated::defaultContextp()'s global context.
+
+class VerilatedContext VL_NOT_FINAL {
+    friend class VerilatedContextImp;
+
+protected:
+    // MEMBERS
+    // Slow path variables
+    mutable VerilatedMutex m_mutex;  // Mutex for most s_s/s_ns members, when VL_THREADED
+
+    struct Serialized {  // All these members serialized/deserialized
+        // No std::strings or pointers or will serialize badly!
+        // Fast path
+        bool m_assertOn = true;  // Assertions are enabled
+        bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
+        bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
+        bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
+        bool m_gotError = false;  // A $finish statement executed
+        bool m_gotFinish = false;  // A $finish or $stop statement executed
+        vluint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
+        // Slow path
+        vlsint8_t m_timeunit;  // Time unit as 0..15
+        vlsint8_t m_timeprecision;  // Time precision as 0..15
+        int m_errorCount = 0;  // Number of errors
+        int m_errorLimit = 1;  // Stop on error number
+        int m_randReset = 0;  // Random reset: 0=all 0s, 1=all 1s, 2=random
+        int m_randSeed = 0;  // Random seed: 0=random
+        enum { UNITS_NONE = 99 };  // Default based on precision
+        int m_timeFormatUnits = UNITS_NONE;  // $timeformat units
+        int m_timeFormatPrecision = 0;  // $timeformat number of decimal places
+        int m_timeFormatWidth = 20;  // $timeformat character width
+        // CONSTRUCTORS
+        Serialized();
+        ~Serialized() = default;
+    } m_s;
+
+    mutable VerilatedMutex m_timeDumpMutex;  // Protect misc slow strings
+    std::string m_timeFormatSuffix VL_GUARDED_BY(m_timeDumpMutex);  // $timeformat printf format
+    std::string m_dumpfile VL_GUARDED_BY(m_timeDumpMutex);  // $dumpfile setting
+
+    struct NonSerialized {  // Non-serialized information
+        // These are reloaded from on command-line settings, so do not need to persist
+        // Fast path
+        vluint64_t m_profThreadsStart = 1;  // +prof+threads starting time
+        vluint32_t m_profThreadsWindow = 2;  // +prof+threads window size
+        // Slow path
+        std::string m_profThreadsFilename;  // +prof+threads filename
+    } m_ns;
+
+    mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
+    // no need to be save-restored (serialized) the
+    // assumption is that the restore is allowed to pass different arguments
+    struct NonSerializedCommandArgs {
+        // Medium speed
+        bool m_argVecLoaded = false;  // Ever loaded argument list
+        std::vector<std::string> m_argVec;  // Aargument list
+    } m_args VL_GUARDED_BY(m_argMutex);
+
+    // Implementation details
+    std::unique_ptr<VerilatedContextImpData> m_impdatap;
+    // Coverage access
+    std::unique_ptr<VerilatedVirtualBase> m_coveragep;  // Pointer for coveragep()
+
+    // File I/O
+    // Not serialized
+    mutable VerilatedMutex m_fdMutex;  // Protect m_fdps, m_fdFree
+    std::vector<FILE*> m_fdps VL_GUARDED_BY(m_fdMutex);  // File descriptors
+    // List of free descriptors (SLOW - FOPEN/CLOSE only)
+    std::vector<IData> m_fdFree VL_GUARDED_BY(m_fdMutex);
+    // List of free descriptors in the MCT region [4, 32)
+    std::vector<IData> m_fdFreeMct VL_GUARDED_BY(m_fdMutex);
+
+private:
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(VerilatedContext);
+
+public:
+    /// Construct context. Also sets Verilated::threadContextp to the created context.
+    VerilatedContext();
+    ~VerilatedContext();
+
+    // METHODS - User called
+
+    /// Enable assertions
+    void assertOn(bool flag) VL_MT_SAFE;
+    /// Return if assertions enabled
+    bool assertOn() const VL_MT_SAFE { return m_s.m_assertOn; }
+    /// Enable calculation of unused signals (for traces)
+    void calcUnusedSigs(bool flag) VL_MT_SAFE;
+    /// Return if calculating of unused signals (for traces)
+    bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
+    /// Record command-line arguments, for retrieval by $test$plusargs/$value$plusargs,
+    /// and for parsing +verilator+ run-time arguments.
+    /// This should be called before the first model is created.
+    void commandArgs(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex);
+    void commandArgs(int argc, char** argv) VL_MT_SAFE {
+        commandArgs(argc, const_cast<const char**>(argv));
+    }
+    /// Add a command-line argument to existing arguments
+    void commandArgsAdd(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex);
+    /// Match plusargs with a given prefix. Returns static char* valid only for a single call
+    const char* commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE_EXCLUDES(m_argMutex);
+    /// Return VerilatedCovContext, allocate if needed
+    /// Note if get unresolved reference then likely forgot to link verilated_cov.cpp
+    VerilatedCovContext* coveragep() VL_MT_SAFE;
+    /// Set debug level
+    /// Debug is currently global, but for forward compatibility have a per-context method
+    static void debug(int val) VL_MT_SAFE;
+    /// Return debug level
+    static int debug() VL_MT_SAFE;
+    /// Set current number of errors/assertions
+    void errorCount(int val) VL_MT_SAFE;
+    /// Increment current number of errors/assertions
+    void errorCountInc() VL_MT_SAFE;
+    /// Return current number of errors/assertions
+    int errorCount() const VL_MT_SAFE { return m_s.m_errorCount; }
+    /// Set number of errors/assertions before stop
+    void errorLimit(int val) VL_MT_SAFE;
+    /// Return number of errors/assertions before stop
+    int errorLimit() const VL_MT_SAFE { return m_s.m_errorLimit; }
+    /// Set to throw fatal error on $stop/non-fatal ettot
+    void fatalOnError(bool flag) VL_MT_SAFE;
+    /// Return if to throw fatal error on $stop/non-fatal
+    bool fatalOnError() const VL_MT_SAFE { return m_s.m_fatalOnError; }
+    /// Set to throw fatal error on VPI errors
+    void fatalOnVpiError(bool flag) VL_MT_SAFE;
+    /// Return if to throw fatal error on VPI errors
+    bool fatalOnVpiError() const VL_MT_SAFE { return m_s.m_fatalOnVpiError; }
+    /// Set if got a $stop or non-fatal error
+    void gotError(bool flag) VL_MT_SAFE;
+    /// Return if got a $stop or non-fatal error
+    bool gotError() const VL_MT_SAFE { return m_s.m_gotError; }
+    /// Set if got a $finish or $stop/error
+    void gotFinish(bool flag) VL_MT_SAFE;
+    /// Return if got a $finish or $stop/error
+    bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish; }
+    /// Select initial value of otherwise uninitialized signals.
+    /// 0 = Set to zeros
+    /// 1 = Set all bits to one
+    /// 2 = Randomize all bits
+    void randReset(int val) VL_MT_SAFE;
+    /// Return randReset value
+    int randReset() VL_MT_SAFE { return m_s.m_randReset; }
+    /// Return default random seed
+    void randSeed(int val) VL_MT_SAFE;
+    /// Set default random seed, 0 = seed it automatically
+    int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
+
+    // Time handling
+    /// How Verilator runtime gets the current simulation time:
+    ///
+    /// * If using SystemC, time comes from the SystemC kernel-defined
+    /// sc_time_stamp64(). User's wrapper must not call
+    /// SimulationContext::time(value) nor timeInc(value).
+    ///
+    /// * Else, if SimulationContext::time(value) or
+    /// SimulationContext::timeInc(value) is ever called with non-zero,
+    /// then time will come via the context.  This allows multiple contexts
+    /// to exist and have different simulation times. This must not be used
+    /// with SystemC.  Note Verilated::time(value) and
+    /// Verilated::timeInc(value) call into SimulationContext::time and
+    /// timeInc, operating on the thread's context.
+    ///
+    /// * Else, if VL_TIME_STAMP64 is defined, time comes from the legacy
+    /// 'vluint64_t vl_time_stamp64()' which must a function be defined by
+    /// the user's wrapper.
+    ///
+    /// * Else, time comes from the legacy 'double sc_time_stamp()' which
+    /// must be a function defined by the user's wrapper.
+    vluint64_t time() const VL_MT_SAFE;
+    /// Set current simulation time. See time() for side effect details
+    void time(vluint64_t value) VL_MT_SAFE { m_s.m_time = value; }
+    /// Advance current simulation time. See time() for side effect details
+    void timeInc(vluint64_t add) VL_MT_UNSAFE { m_s.m_time += add; }
+    /// Return time units as power-of-ten
+    int timeunit() const VL_MT_SAFE { return -m_s.m_timeunit; }
+    /// Set time units as power-of-ten
+    void timeunit(int value) VL_MT_SAFE;
+    /// Return time units as IEEE-standard text
+    const char* timeunitString() const VL_MT_SAFE;
+    /// Get time precision as power-of-ten
+    int timeprecision() const VL_MT_SAFE { return -m_s.m_timeprecision; }
+    /// Return time precision as power-of-ten
+    void timeprecision(int value) VL_MT_SAFE;
+    /// Get time precision as IEEE-standard text
+    const char* timeprecisionString() const VL_MT_SAFE;
+
+    /// Allow traces to at some point be enabled (disables some optimizations)
+    void traceEverOn(bool flag) VL_MT_SAFE {
+        if (flag) calcUnusedSigs(true);
+    }
+
+    /// For debugging, print much of the Verilator internal state.
+    /// The output of this function may change in future
+    /// releases - contact the authors before production use.
+    void internalsDump() const VL_MT_SAFE;
+
+    /// For debugging, print text list of all scope names with
+    /// dpiImport/Export context.  This function may change in future
+    /// releases - contact the authors before production use.
+    void scopesDump() const VL_MT_SAFE;
+
+public:  // But for internal use only
+    // Internal: access to implementation class
+    VerilatedContextImp* impp() { return reinterpret_cast<VerilatedContextImp*>(this); }
+    const VerilatedContextImp* impp() const {
+        return reinterpret_cast<const VerilatedContextImp*>(this);
+    }
+
+    // Internal: $dumpfile
+    void dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
+    std::string dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
+
+    // Internal: --prof-threads related settings
+    void profThreadsStart(vluint64_t flag) VL_MT_SAFE;
+    vluint64_t profThreadsStart() const VL_MT_SAFE { return m_ns.m_profThreadsStart; }
+    void profThreadsWindow(vluint64_t flag) VL_MT_SAFE;
+    vluint32_t profThreadsWindow() const VL_MT_SAFE { return m_ns.m_profThreadsWindow; }
+    void profThreadsFilename(const std::string& flag) VL_MT_SAFE;
+    std::string profThreadsFilename() const VL_MT_SAFE;
+
+    // Internal: Find scope
+    const VerilatedScope* scopeFind(const char* namep) const VL_MT_SAFE;
+    const VerilatedScopeNameMap* scopeNameMap() VL_MT_SAFE;
+
+    // Internal: Serialization setup
+    static constexpr size_t serialized1Size() VL_PURE { return sizeof(m_s); }
+    void* serialized1Ptr() VL_MT_UNSAFE { return &m_s; }
+};
+
+//===========================================================================
 /// Verilator symbol table base class
+/// Used for internal VPI implementation, and introspection into scopes
 
 class VerilatedSyms VL_NOT_FINAL {
 public:  // But for internal use only
+    // MEMBERS
+    // Keep first so is at zero offset for fastest code
+    VerilatedContext* const _vm_contextp__;  // Context for current model
 #ifdef VL_THREADED
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
 #endif
-    VerilatedSyms();
+    explicit VerilatedSyms(VerilatedContext* contextp);  // Pass null for default context
     ~VerilatedSyms();
 };
 
 //===========================================================================
-/// Verilator global class information class
-/// This class is initialized by main thread only. Reading post-init is thread safe.
+/// Verilator scope information class
+/// Used for internal VPI implementation, and introspection into scopes
 
 class VerilatedScope final {
 public:
@@ -359,55 +626,29 @@ public:
 
 class Verilated final {
     // MEMBERS
-    // Slow path variables
-    static VerilatedMutex s_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
 
-    static struct Serialized {  // All these members serialized/deserialized
-        // Fast path
-        bool s_calcUnusedSigs;  ///< Waves file on, need all signals calculated
-        bool s_gotFinish;  ///< A $finish statement executed
-        bool s_assertOn;  ///< Assertions are enabled
-        bool s_fatalOnVpiError;  ///< Stop on vpi error/unsupported
-        // Slow path
-        vlsint8_t s_timeunit;  ///< Time unit as 0..15
-        vlsint8_t s_timeprecision;  ///< Time precision as 0..15
-        int s_errorCount;  ///< Number of errors
-        int s_errorLimit;  ///< Stop on error number
-        int s_randReset;  ///< Random reset: 0=all 0s, 1=all 1s, 2=random
-        int s_randSeed;  ///< Random seed: 0=random
-        int s_randSeedEpoch;  ///< Number incrementing on each reseed, 0=illegal
-        Serialized();
-        ~Serialized() = default;
-    } s_s;
+    // Internal Note: There should be no Serialized state in Verilated::,
+    // instead serialized state should all be in VerilatedContext:: as by
+    // definition it needs to vary per-simulation
 
-    static struct NonSerialized {  // Non-serialized information
-        // These are reloaded from on command-line settings, so do not need to persist
-        // Fast path
-        int s_debug = 0;  ///< See accessors... only when VL_DEBUG set
-        vluint64_t s_profThreadsStart = 1;  ///< +prof+threads starting time
-        vluint32_t s_profThreadsWindow = 2;  ///< +prof+threads window size
-        // Slow path
-        const char* s_profThreadsFilenamep;  ///< +prof+threads filename
-        void setup();
-        void teardown();
-    } s_ns;
+    // Internal note: Globals may multi-construct, see verilated.cpp top.
 
-    // no need to be save-restored (serialized) the
-    // assumption is that the restore is allowed to pass different arguments
-    static struct CommandArgValues {
-        VerilatedMutex m_argMutex;  ///< Mutex for s_args members, when VL_THREADED
-        int argc = 0;
-        const char** argv = nullptr;
-        CommandArgValues() = default;
-        ~CommandArgValues() = default;
-    } s_args;
+    // Debug is reloaded from on command-line settings, so do not need to persist
+    static int s_debug;  ///< See accessors... only when VL_DEBUG set
+
+    static VerilatedContext* s_lastContextp;  ///< Last context constructed/attached
 
     // Not covered by mutex, as per-thread
     static VL_THREAD_LOCAL struct ThreadLocal {
+        // No non-POD objects here due to this:
+        // Internal note: Globals may multi-construct, see verilated.cpp top.
+
+        // Fast path
+        VerilatedContext* t_contextp = nullptr;  // Thread's context
 #ifdef VL_THREADED
-        vluint32_t t_mtaskId = 0;  ///< Current mtask# executing on this thread
-        vluint32_t t_endOfEvalReqd
-            = 0;  ///< Messages may be pending, thread needs endOf-eval calls
+        vluint32_t t_mtaskId = 0;  // mtask# executing on this thread
+        // Messages maybe pending on thread, needs end-of-eval calls
+        vluint32_t t_endOfEvalReqd = 0;
 #endif
         const VerilatedScope* t_dpiScopep = nullptr;  ///< DPI context scope
         const char* t_dpiFilename = nullptr;  ///< DPI context filename
@@ -417,7 +658,6 @@ class Verilated final {
         ~ThreadLocal() = default;
     } t_s;
 
-private:
     friend struct VerilatedInitializer;
 
     // CONSTRUCTORS
@@ -432,110 +672,150 @@ public:
     /// Return debug level
     /// When multithreaded this may not immediately react to another thread
     /// changing the level (no mutex)
-    static inline int debug() VL_MT_SAFE { return s_ns.s_debug; }
+    static inline int debug() VL_MT_SAFE { return s_debug; }
 #else
     /// Return constant 0 debug level, so C++'s optimizer rips up
     static constexpr int debug() VL_PURE { return 0; }
 #endif
 
-    /// Select initial value of otherwise uninitialized signals.
-    ////
-    /// 0 = Set to zeros
-    /// 1 = Set all bits to one
-    /// 2 = Randomize all bits
-    static void randReset(int val) VL_MT_SAFE;
-    static int randReset() VL_MT_SAFE { return s_s.s_randReset; }  ///< Return randReset value
-    static void randSeed(int val) VL_MT_SAFE;
-    static int randSeed() VL_MT_SAFE { return s_s.s_randSeed; }  ///< Return randSeed value
-    static vluint32_t randSeedEpoch() VL_MT_SAFE { return s_s.s_randSeedEpoch; }
-    /// Random seed extended to 64 bits, and defaulted if user seed==0
-    static vluint64_t randSeedDefault64() VL_MT_SAFE;
+    /// Set the last VerilatedContext accessed
+    /// Generally threadContextp(value) should be called instead
+    static void lastContextp(VerilatedContext* contextp) VL_MT_SAFE { s_lastContextp = contextp; }
+    /// Return the last VerilatedContext accessed
+    /// Generally threadContextp() should be called instead
+    static VerilatedContext* lastContextp() VL_MT_SAFE {
+        if (!s_lastContextp) lastContextp(defaultContextp());
+        return s_lastContextp;
+    }
+    /// Set the VerilatedContext used by the current thread
 
-    /// Enable calculation of unused signals
-    static void calcUnusedSigs(bool flag) VL_MT_SAFE;
-    static bool calcUnusedSigs() VL_MT_SAFE {  ///< Return calcUnusedSigs value
-        return s_s.s_calcUnusedSigs;
+    /// If using multiple contexts, and threads are created by the user's
+    /// wrapper (not Verilator itself) then this must be called to set the
+    /// context that applies to each thread
+    static void threadContextp(VerilatedContext* contextp) VL_MT_SAFE {
+        t_s.t_contextp = contextp;
+        lastContextp(contextp);
     }
-    /// Current number of errors/assertions
-    static void errorCount(int val) VL_MT_SAFE;
-    static void errorCountInc() VL_MT_SAFE;
-    static int errorCount() VL_MT_SAFE { return s_s.s_errorCount; }
-    /// Set number of errors/assertions before stop
-    static void errorLimit(int val) VL_MT_SAFE;
-    static int errorLimit() VL_MT_SAFE { return s_s.s_errorLimit; }
-    /// Did the simulation $finish?
-    static void gotFinish(bool flag) VL_MT_SAFE;
-    static bool gotFinish() VL_MT_SAFE { return s_s.s_gotFinish; }  ///< Return if got a $finish
-    /// Allow traces to at some point be enabled (disables some optimizations)
+    /// Return the VerilatedContext for the current thread
+    static VerilatedContext* threadContextp() {
+        if (VL_UNLIKELY(!t_s.t_contextp)) t_s.t_contextp = lastContextp();
+        return t_s.t_contextp;
+    }
+    /// Return the global VerilatedContext, used if none created by user
+    static VerilatedContext* defaultContextp() VL_MT_SAFE {
+        static VerilatedContext s_s;
+        return &s_s;
+    }
+
+#ifndef VL_NO_LEGACY
+    /// Call VerilatedContext::assertOn using current thread's VerilatedContext
+    static void assertOn(bool flag) VL_MT_SAFE { Verilated::threadContextp()->assertOn(flag); }
+    static bool assertOn() VL_MT_SAFE { return Verilated::threadContextp()->assertOn(); }
+    /// Call VerilatedContext::calcUnusedSigs using current thread's VerilatedContext
+    static void calcUnusedSigs(bool flag) VL_MT_SAFE {
+        Verilated::threadContextp()->calcUnusedSigs(flag);
+    }
+    static bool calcUnusedSigs() VL_MT_SAFE {
+        return Verilated::threadContextp()->calcUnusedSigs();
+    }
+    /// Call VerilatedContext::commandArgs using current thread's VerilatedContext
+    static void commandArgs(int argc, const char** argv) VL_MT_SAFE {
+        Verilated::threadContextp()->commandArgs(argc, argv);
+    }
+    static void commandArgs(int argc, char** argv) VL_MT_SAFE {
+        commandArgs(argc, const_cast<const char**>(argv));
+    }
+    static void commandArgsAdd(int argc, const char** argv) {
+        Verilated::threadContextp()->commandArgsAdd(argc, argv);
+    }
+    static const char* commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE {
+        return Verilated::threadContextp()->commandArgsPlusMatch(prefixp);
+    }
+    /// Call VerilatedContext::errorLimit using current thread's VerilatedContext
+    static void errorLimit(int val) VL_MT_SAFE { Verilated::threadContextp()->errorLimit(val); }
+    static int errorLimit() VL_MT_SAFE { return Verilated::threadContextp()->errorLimit(); }
+    /// Call VerilatedContext::fatalOnError using current thread's VerilatedContext
+    static void fatalOnError(bool flag) VL_MT_SAFE {
+        Verilated::threadContextp()->fatalOnError(flag);
+    }
+    static bool fatalOnError() VL_MT_SAFE { return Verilated::threadContextp()->fatalOnError(); }
+    /// Call VerilatedContext::fatalOnVpiError using current thread's VerilatedContext
+    static void fatalOnVpiError(bool flag) VL_MT_SAFE {
+        Verilated::threadContextp()->fatalOnVpiError(flag);
+    }
+    static bool fatalOnVpiError() VL_MT_SAFE {
+        return Verilated::threadContextp()->fatalOnVpiError();
+    }
+    /// Call VerilatedContext::gotError using current thread's VerilatedContext
+    static void gotError(bool flag) VL_MT_SAFE { Verilated::threadContextp()->gotError(flag); }
+    static bool gotError() VL_MT_SAFE { return Verilated::threadContextp()->gotError(); }
+    /// Call VerilatedContext::gotFinish using current thread's VerilatedContext
+    static void gotFinish(bool flag) VL_MT_SAFE { Verilated::threadContextp()->gotFinish(flag); }
+    static bool gotFinish() VL_MT_SAFE { return Verilated::threadContextp()->gotFinish(); }
+    /// Call VerilatedContext::randReset using current thread's VerilatedContext
+    static void randReset(int val) VL_MT_SAFE { Verilated::threadContextp()->randReset(val); }
+    static int randReset() VL_MT_SAFE { return Verilated::threadContextp()->randReset(); }
+    /// Call VerilatedContext::randSeed using current thread's VerilatedContext
+    static void randSeed(int val) VL_MT_SAFE { Verilated::threadContextp()->randSeed(val); }
+    static int randSeed() VL_MT_SAFE { return Verilated::threadContextp()->randSeed(); }
+    /// Call VerilatedContext::time using current thread's VerilatedContext
+    static void time(vluint64_t val) VL_MT_SAFE { Verilated::threadContextp()->time(val); }
+    static vluint64_t time() VL_MT_SAFE { return Verilated::threadContextp()->time(); }
+    static void timeInc(vluint64_t add) VL_MT_UNSAFE { Verilated::threadContextp()->timeInc(add); }
+    static int timeunit() VL_MT_SAFE { return Verilated::threadContextp()->timeunit(); }
+    static int timeprecision() VL_MT_SAFE { return Verilated::threadContextp()->timeprecision(); }
+    /// Call VerilatedContext::tracesEverOn using current thread's VerilatedContext
     static void traceEverOn(bool flag) VL_MT_SAFE {
-        if (flag) calcUnusedSigs(flag);
+        Verilated::threadContextp()->traceEverOn(flag);
     }
-    /// Enable/disable assertions
-    static void assertOn(bool flag) VL_MT_SAFE;
-    static bool assertOn() VL_MT_SAFE { return s_s.s_assertOn; }
-    /// Enable/disable vpi fatal
-    static void fatalOnVpiError(bool flag) VL_MT_SAFE;
-    static bool fatalOnVpiError() VL_MT_SAFE { return s_s.s_fatalOnVpiError; }
-    /// Time handling
-    static int timeunit() VL_MT_SAFE { return -s_s.s_timeunit; }
-    static const char* timeunitString() VL_MT_SAFE;
-    static void timeunit(int value) VL_MT_SAFE;
-    static int timeprecision() VL_MT_SAFE { return -s_s.s_timeprecision; }
-    static const char* timeprecisionString() VL_MT_SAFE;
-    static void timeprecision(int value) VL_MT_SAFE;
-    /// --prof-threads related settings
-    static void profThreadsStart(vluint64_t flag) VL_MT_SAFE;
-    static vluint64_t profThreadsStart() VL_MT_SAFE { return s_ns.s_profThreadsStart; }
-    static void profThreadsWindow(vluint64_t flag) VL_MT_SAFE;
-    static vluint32_t profThreadsWindow() VL_MT_SAFE { return s_ns.s_profThreadsWindow; }
-    static void profThreadsFilenamep(const char* flagp) VL_MT_SAFE;
-    static const char* profThreadsFilenamep() VL_MT_SAFE { return s_ns.s_profThreadsFilenamep; }
+#endif
 
     typedef void (*VoidPCb)(void*);  // Callback type for below
-    /// Callbacks to run on global flush
+    /// Add callback to run on global flush
     static void addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    /// Remove callback to run on global flush
     static void removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    /// Run flush callbacks registered with addFlushCb
     static void runFlushCallbacks() VL_MT_SAFE;
 #ifndef VL_NO_LEGACY
     static void flushCall() VL_MT_SAFE { runFlushCallbacks(); }  // Deprecated
 #endif
-    /// Callbacks to run prior to termination
+    /// Add callback to run prior to exit termination
     static void addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    /// Remove callback to run prior to exit termination
     static void removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE;
+    /// Run exit callbacks registered with addExitCb
     static void runExitCallbacks() VL_MT_SAFE;
 
-    /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs,
-    /// and for parsing +verilator+ run-time arguments.
-    /// This should be called before the first model is created.
-    static void commandArgs(int argc, const char** argv) VL_MT_SAFE;
-    static void commandArgs(int argc, char** argv) VL_MT_SAFE {
-        commandArgs(argc, const_cast<const char**>(argv));
-    }
-    static void commandArgsAdd(int argc, const char** argv);
-    static CommandArgValues* getCommandArgs() VL_MT_SAFE { return &s_args; }
-    /// Match plusargs with a given prefix. Returns static char* valid only for a single call
-    static const char* commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE;
-
-    /// Produce name & version for (at least) VPI
+    /// Return product name for (at least) VPI
     static const char* productName() VL_PURE;
+    /// Return product version for (at least) VPI
     static const char* productVersion() VL_PURE;
 
-    /// Convenience OS utilities
+    /// Call OS to make a directory
     static void mkdir(const char* dirname) VL_MT_UNSAFE;
 
     /// When multithreaded, quiesce the model to prepare for trace/saves/coverage
     /// This may only be called when no locks are held.
     static void quiesce() VL_MT_SAFE;
 
+#ifndef VL_NO_LEGACY
     /// For debugging, print much of the Verilator internal state.
     /// The output of this function may change in future
     /// releases - contact the authors before production use.
-    static void internalsDump() VL_MT_SAFE;
-
+    static void internalsDump() VL_MT_SAFE { Verilated::threadContextp()->internalsDump(); }
     /// For debugging, print text list of all scope names with
     /// dpiImport/Export context.  This function may change in future
     /// releases - contact the authors before production use.
-    static void scopesDump() VL_MT_SAFE;
+    static void scopesDump() VL_MT_SAFE { Verilated::threadContextp()->scopesDump(); }
+    // Internal: Find scope
+    static const VerilatedScope* scopeFind(const char* namep) VL_MT_SAFE {
+        return Verilated::threadContextp()->scopeFind(namep);
+    }
+    static const VerilatedScopeNameMap* scopeNameMap() VL_MT_SAFE {
+        return Verilated::threadContextp()->scopeNameMap();
+    }
+#endif
 
 public:
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
@@ -546,10 +826,6 @@ public:
     // Internal: Throw signal assertion
     static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;
     static void overWidthError(const char* signame) VL_ATTR_NORETURN VL_MT_SAFE;
-
-    // Internal: Find scope
-    static const VerilatedScope* scopeFind(const char* namep) VL_MT_SAFE;
-    static const VerilatedScopeNameMap* scopeNameMap() VL_MT_SAFE;
 
     // Internal: Get and set DPI context
     static const VerilatedScope* dpiScope() VL_MT_SAFE { return t_s.t_dpiScopep; }
@@ -566,23 +842,19 @@ public:
     static int dpiLineno() VL_MT_SAFE { return t_s.t_dpiLineno; }
     static int exportFuncNum(const char* namep) VL_MT_SAFE;
 
-    // Internal: Serialization setup
-    static constexpr size_t serialized1Size() VL_PURE { return sizeof(s_s); }
-    static constexpr void* serialized1Ptr() VL_MT_UNSAFE { return &s_s; }  // For Serialize only
-    static size_t serialized2Size() VL_PURE;
-    static void* serialized2Ptr() VL_MT_UNSAFE;
 #ifdef VL_THREADED
-    /// Internal: Set the mtaskId, called when an mtask starts
+    // Internal: Set the mtaskId, called when an mtask starts
+    // Per thread, so no need to be in VerilatedContext
     static void mtaskId(vluint32_t id) VL_MT_SAFE { t_s.t_mtaskId = id; }
     static vluint32_t mtaskId() VL_MT_SAFE { return t_s.t_mtaskId; }
     static void endOfEvalReqdInc() VL_MT_SAFE { ++t_s.t_endOfEvalReqd; }
     static void endOfEvalReqdDec() VL_MT_SAFE { --t_s.t_endOfEvalReqd; }
 
-    /// Internal: Called at end of each thread mtask, before finishing eval
+    // Internal: Called at end of each thread mtask, before finishing eval
     static void endOfThreadMTask(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
         if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) endOfThreadMTaskGuts(evalMsgQp);
     }
-    /// Internal: Called at end of eval loop
+    // Internal: Called at end of eval loop
     static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
 #endif
 
@@ -591,6 +863,9 @@ private:
     static void endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
 #endif
 };
+
+inline void VerilatedContext::debug(int val) VL_MT_SAFE { Verilated::debug(val); }
+inline int VerilatedContext::debug() VL_MT_SAFE { return Verilated::debug(); }
 
 //=========================================================================
 // Extern functions -- User may override -- See verilated.cpp
@@ -601,7 +876,7 @@ private:
 /// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
 extern void vl_finish(const char* filename, int linenum, const char* hier);
 
-/// Routine to call for $stop
+/// Routine to call for $stop and non-fatal error
 /// User code may wish to replace this function, to do so, define VL_USER_STOP.
 /// This code does not have to be thread safe.
 /// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
@@ -670,7 +945,8 @@ inline QData VL_RDTSC_Q() {
 }
 #endif
 
-extern void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp) VL_MT_SAFE;
+extern void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
+                              const VerilatedContext* contextp) VL_MT_SAFE;
 
 /// Math
 extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
@@ -736,7 +1012,7 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 #define VL_SET_QW(lwp) \
     ((static_cast<QData>((lwp)[0])) \
      | (static_cast<QData>((lwp)[1]) << (static_cast<QData>(VL_EDATASIZE))))
-#define _VL_SET_QII(ld, rd) ((static_cast<QData>(ld) << 32ULL) | static_cast<QData>(rd))
+#define VL_SET_QII(ld, rd) ((static_cast<QData>(ld) << 32ULL) | static_cast<QData>(rd))
 
 /// Return FILE* from IData
 extern FILE* VL_CVT_I_FP(IData lhs) VL_MT_SAFE;
@@ -816,7 +1092,7 @@ static inline QData VL_EXTENDSIGN_Q(int lbits, QData lhs) VL_PURE {
 }
 
 // Debugging prints
-extern void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp);
+extern void _vl_debug_print_w(int lbits, WDataInP iwp);
 
 //=========================================================================
 // Pli macros
@@ -846,16 +1122,40 @@ extern int VL_TIME_STR_CONVERT(const char* strp) VL_PURE;
 // Already defined: extern sc_time sc_time_stamp();
 inline vluint64_t vl_time_stamp64() { return sc_time_stamp().value(); }
 #else  // Non-SystemC
-# ifdef VL_TIME_STAMP64
-extern vluint64_t vl_time_stamp64();
-# else
-extern double sc_time_stamp();  // Verilator 4.032 and newer
-inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_stamp()); }
+# if !defined(VL_TIME_CONTEXT) && !defined(VL_NO_LEGACY)
+#  ifdef VL_TIME_STAMP64
+// vl_time_stamp64() may be optionally defined by the user to return time.
+// On MSVC++ weak symbols are not supported so must be declared, or define
+// VL_TIME_CONTEXT.
+extern vluint64_t vl_time_stamp64() VL_ATTR_WEAK;
+#  else
+// sc_time_stamp() may be optionally defined by the user to return time.
+// On MSVC++ weak symbols are not supported so must be declared, or define
+// VL_TIME_CONTEXT.
+extern double sc_time_stamp() VL_ATTR_WEAK;  // Verilator 4.032 and newer
+inline vluint64_t vl_time_stamp64() {
+    // clang9.0.1 requires & although we really do want the weak symbol value
+    return VL_LIKELY(&sc_time_stamp) ? static_cast<vluint64_t>(sc_time_stamp()) : 0;
+}
+#  endif
 # endif
 #endif
 
-#define VL_TIME_Q() (static_cast<QData>(vl_time_stamp64()))
-#define VL_TIME_D() (static_cast<double>(vl_time_stamp64()))
+inline vluint64_t VerilatedContext::time() const VL_MT_SAFE {
+    // When using non-default context, fastest path is return time
+    if (VL_LIKELY(m_s.m_time)) return m_s.m_time;
+#if defined(SYSTEMC_VERSION) || (!defined(VL_TIME_CONTEXT) && !defined(VL_NO_LEGACY))
+    // Zero time could mean really at zero, or using callback
+    // clang9.0.1 requires & although we really do want the weak symbol value
+    if (VL_LIKELY(&vl_time_stamp64)) {  // else is weak symbol that is not defined
+        return vl_time_stamp64();
+    }
+#endif
+    return 0;
+}
+
+#define VL_TIME_Q() (Verilated::threadContextp()->time())
+#define VL_TIME_D() (static_cast<double>(VL_TIME_Q()))
 
 /// Time scaled from 1-per-precision into a module's time units ("Unit"-ed, not "United")
 // Optimized assuming scale is always constant.
@@ -898,7 +1198,7 @@ double vl_time_multiplier(int scale) VL_PURE;
 
 // EMIT_RULE: VL_ASSIGNCLEAN:  oclean=clean; obits==lbits;
 #define VL_ASSIGNCLEAN_W(obits, owp, lwp) VL_CLEAN_WW((obits), (obits), (owp), (lwp))
-static inline WDataOutP _VL_CLEAN_INPLACE_W(int obits, WDataOutP owp) VL_MT_SAFE {
+static inline WDataOutP _vl_clean_inplace_w(int obits, WDataOutP owp) VL_MT_SAFE {
     int words = VL_WORDS_I(obits);
     owp[words - 1] &= VL_MASK_E(obits);
     return owp;
@@ -1372,10 +1672,10 @@ static inline WDataOutP VL_NOT_W(int words, WDataOutP owp, WDataInP lwp) VL_MT_S
 // EMIT_RULE: VL_GTE: oclean=clean; lclean==clean; rclean==clean; obits=1; lbits==rbits;
 // EMIT_RULE: VL_LTE: oclean=clean; lclean==clean; rclean==clean; obits=1; lbits==rbits;
 #define VL_NEQ_W(words, lwp, rwp) (!VL_EQ_W(words, lwp, rwp))
-#define VL_LT_W(words, lwp, rwp) (_VL_CMP_W(words, lwp, rwp) < 0)
-#define VL_LTE_W(words, lwp, rwp) (_VL_CMP_W(words, lwp, rwp) <= 0)
-#define VL_GT_W(words, lwp, rwp) (_VL_CMP_W(words, lwp, rwp) > 0)
-#define VL_GTE_W(words, lwp, rwp) (_VL_CMP_W(words, lwp, rwp) >= 0)
+#define VL_LT_W(words, lwp, rwp) (_vl_cmp_w(words, lwp, rwp) < 0)
+#define VL_LTE_W(words, lwp, rwp) (_vl_cmp_w(words, lwp, rwp) <= 0)
+#define VL_GT_W(words, lwp, rwp) (_vl_cmp_w(words, lwp, rwp) > 0)
+#define VL_GTE_W(words, lwp, rwp) (_vl_cmp_w(words, lwp, rwp) >= 0)
 
 // Output clean, <lhs> AND <rhs> MUST BE CLEAN
 static inline IData VL_EQ_W(int words, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
@@ -1385,7 +1685,7 @@ static inline IData VL_EQ_W(int words, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
 }
 
 // Internal usage
-static inline int _VL_CMP_W(int words, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
+static inline int _vl_cmp_w(int words, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     for (int i = words - 1; i >= 0; --i) {
         if (lwp[i] > rwp[i]) return 1;
         if (lwp[i] < rwp[i]) return -1;
@@ -1393,10 +1693,10 @@ static inline int _VL_CMP_W(int words, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     return 0;  // ==
 }
 
-#define VL_LTS_IWW(obits, lbits, rbbits, lwp, rwp) (_VL_CMPS_W(lbits, lwp, rwp) < 0)
-#define VL_LTES_IWW(obits, lbits, rbits, lwp, rwp) (_VL_CMPS_W(lbits, lwp, rwp) <= 0)
-#define VL_GTS_IWW(obits, lbits, rbits, lwp, rwp) (_VL_CMPS_W(lbits, lwp, rwp) > 0)
-#define VL_GTES_IWW(obits, lbits, rbits, lwp, rwp) (_VL_CMPS_W(lbits, lwp, rwp) >= 0)
+#define VL_LTS_IWW(obits, lbits, rbbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) < 0)
+#define VL_LTES_IWW(obits, lbits, rbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) <= 0)
+#define VL_GTS_IWW(obits, lbits, rbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) > 0)
+#define VL_GTES_IWW(obits, lbits, rbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) >= 0)
 
 static inline IData VL_GTS_III(int, int lbits, int, IData lhs, IData rhs) VL_PURE {
     // For lbits==32, this becomes just a single instruction, otherwise ~5.
@@ -1444,7 +1744,7 @@ static inline IData VL_LTES_IQQ(int, int lbits, int, QData lhs, QData rhs) VL_PU
     return lhs_signed <= rhs_signed;
 }
 
-static inline int _VL_CMPS_W(int lbits, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
+static inline int _vl_cmps_w(int lbits, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     int words = VL_WORDS_I(lbits);
     int i = words - 1;
     // We need to flip sense if negative comparison
@@ -1621,12 +1921,12 @@ static inline WDataOutP VL_DIVS_WWW(int lbits, WDataOutP owp, WDataInP lwp,
     WData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
-    if (lsign) ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp));
-    if (rsign) rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp));
+    if (lsign) ltup = _vl_clean_inplace_w(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp));
+    if (rsign) rtup = _vl_clean_inplace_w(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp));
     if ((lsign && !rsign) || (!lsign && rsign)) {
         WData qNoSign[VL_MULS_MAX_WORDS];
         VL_DIV_WWW(lbits, qNoSign, ltup, rtup);
-        _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), owp, qNoSign));
+        _vl_clean_inplace_w(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), owp, qNoSign));
         return owp;
     } else {
         return VL_DIV_WWW(lbits, owp, ltup, rtup);
@@ -1643,12 +1943,12 @@ static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp, WDataInP lwp,
     WData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
-    if (lsign) ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp));
-    if (rsign) rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp));
+    if (lsign) ltup = _vl_clean_inplace_w(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp));
+    if (rsign) rtup = _vl_clean_inplace_w(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp));
     if (lsign) {  // Only dividend sign matters for modulus
         WData qNoSign[VL_MULS_MAX_WORDS];
         VL_MODDIV_WWW(lbits, qNoSign, ltup, rtup);
-        _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), owp, qNoSign));
+        _vl_clean_inplace_w(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), owp, qNoSign));
         return owp;
     } else {
         return VL_MODDIV_WWW(lbits, owp, ltup, rtup);
@@ -1747,75 +2047,98 @@ QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp, bool lsig
 
 // INTERNAL: Stuff LHS bit 0++ into OUTPUT at specified offset
 // ld may be "dirty", output is clean
-static inline void _VL_INSERT_II(int, CData& lhsr, IData ld, int hbit, int lbit) VL_PURE {
+static inline void _vl_insert_II(int, CData& lhsr, IData ld, int hbit, int lbit,
+                                 int rbits) VL_PURE {
+    IData cleanmask = VL_MASK_I(rbits);
     IData insmask = (VL_MASK_I(hbit - lbit + 1)) << lbit;
-    lhsr = (lhsr & ~insmask) | ((ld << lbit) & insmask);
+    lhsr = (lhsr & ~insmask) | ((ld << lbit) & (insmask & cleanmask));
 }
-static inline void _VL_INSERT_II(int, SData& lhsr, IData ld, int hbit, int lbit) VL_PURE {
+static inline void _vl_insert_II(int, SData& lhsr, IData ld, int hbit, int lbit,
+                                 int rbits) VL_PURE {
+    IData cleanmask = VL_MASK_I(rbits);
     IData insmask = (VL_MASK_I(hbit - lbit + 1)) << lbit;
-    lhsr = (lhsr & ~insmask) | ((ld << lbit) & insmask);
+    lhsr = (lhsr & ~insmask) | ((ld << lbit) & (insmask & cleanmask));
 }
-static inline void _VL_INSERT_II(int, IData& lhsr, IData ld, int hbit, int lbit) VL_PURE {
+static inline void _vl_insert_II(int, IData& lhsr, IData ld, int hbit, int lbit,
+                                 int rbits) VL_PURE {
+    IData cleanmask = VL_MASK_I(rbits);
     IData insmask = (VL_MASK_I(hbit - lbit + 1)) << lbit;
-    lhsr = (lhsr & ~insmask) | ((ld << lbit) & insmask);
+    lhsr = (lhsr & ~insmask) | ((ld << lbit) & (insmask & cleanmask));
 }
-static inline void _VL_INSERT_QQ(int, QData& lhsr, QData ld, int hbit, int lbit) VL_PURE {
+static inline void _vl_insert_QQ(int, QData& lhsr, QData ld, int hbit, int lbit,
+                                 int rbits) VL_PURE {
+    QData cleanmask = VL_MASK_Q(rbits);
     QData insmask = (VL_MASK_Q(hbit - lbit + 1)) << lbit;
-    lhsr = (lhsr & ~insmask) | ((ld << lbit) & insmask);
+    lhsr = (lhsr & ~insmask) | ((ld << lbit) & (insmask & cleanmask));
 }
-static inline void _VL_INSERT_WI(int, WDataOutP owp, IData ld, int hbit, int lbit) VL_MT_SAFE {
+static inline void _vl_insert_WI(int, WDataOutP owp, IData ld, int hbit, int lbit,
+                                 int rbits = 0) VL_MT_SAFE {
     int hoffset = VL_BITBIT_E(hbit);
     int loffset = VL_BITBIT_E(lbit);
+    int roffset = VL_BITBIT_E(rbits);
+    int hword = VL_BITWORD_E(hbit);
+    int lword = VL_BITWORD_E(lbit);
+    int rword = VL_BITWORD_E(rbits);
+    EData cleanmask = hword == rword ? VL_MASK_E(roffset) : VL_MASK_E(0);
+
     if (hoffset == VL_SIZEBITS_E && loffset == 0) {
         // Fast and common case, word based insertion
-        owp[VL_BITWORD_E(lbit)] = ld;
+        owp[VL_BITWORD_E(lbit)] = ld & cleanmask;
     } else {
-        int hword = VL_BITWORD_E(hbit);
-        int lword = VL_BITWORD_E(lbit);
         EData lde = static_cast<EData>(ld);
         if (hword == lword) {  // know < EData bits because above checks it
+            // Assignment is contained within one word of destination
             EData insmask = (VL_MASK_E(hoffset - loffset + 1)) << loffset;
-            owp[lword] = (owp[lword] & ~insmask) | ((lde << loffset) & insmask);
+            owp[lword] = (owp[lword] & ~insmask) | ((lde << loffset) & (insmask & cleanmask));
         } else {
+            // Assignment crosses a word boundary in destination
             EData hinsmask = (VL_MASK_E(hoffset - 0 + 1)) << 0;
             EData linsmask = (VL_MASK_E((VL_EDATASIZE - 1) - loffset + 1)) << loffset;
             int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword
             owp[lword] = (owp[lword] & ~linsmask) | ((lde << loffset) & linsmask);
-            owp[hword] = (owp[hword] & ~hinsmask) | ((lde >> nbitsonright) & hinsmask);
+            owp[hword]
+                = (owp[hword] & ~hinsmask) | ((lde >> nbitsonright) & (hinsmask & cleanmask));
         }
     }
 }
 
 // INTERNAL: Stuff large LHS bit 0++ into OUTPUT at specified offset
 // lwp may be "dirty"
-static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int lbit) VL_MT_SAFE {
-    int hoffset = hbit & VL_SIZEBITS_E;
-    int loffset = lbit & VL_SIZEBITS_E;
+static inline void _vl_insert_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int lbit,
+                                 int rbits = 0) VL_MT_SAFE {
+    int hoffset = VL_BITBIT_E(hbit);
+    int loffset = VL_BITBIT_E(lbit);
+    int roffset = VL_BITBIT_E(rbits);
     int lword = VL_BITWORD_E(lbit);
+    int hword = VL_BITWORD_E(hbit);
+    int rword = VL_BITWORD_E(rbits);
     int words = VL_WORDS_I(hbit - lbit + 1);
+    // Cleaning mask, only applied to top word of the assignment.  Is a no-op
+    // if we don't assign to the top word of the destination.
+    EData cleanmask = hword == rword ? VL_MASK_E(roffset) : VL_MASK_E(0);
+
     if (hoffset == VL_SIZEBITS_E && loffset == 0) {
         // Fast and common case, word based insertion
-        for (int i = 0; i < words; ++i) owp[lword + i] = lwp[i];
+        for (int i = 0; i < (words - 1); ++i) owp[lword + i] = lwp[i];
+        owp[hword] = lwp[words - 1] & cleanmask;
     } else if (loffset == 0) {
         // Non-32bit, but nicely aligned, so stuff all but the last word
         for (int i = 0; i < (words - 1); ++i) owp[lword + i] = lwp[i];
         // Know it's not a full word as above fast case handled it
         EData hinsmask = (VL_MASK_E(hoffset - 0 + 1));
-        owp[lword + words - 1]
-            = (owp[words + lword - 1] & ~hinsmask) | (lwp[words - 1] & hinsmask);
+        owp[hword] = (owp[hword] & ~hinsmask) | (lwp[words - 1] & (hinsmask & cleanmask));
     } else {
         EData hinsmask = (VL_MASK_E(hoffset - 0 + 1)) << 0;
         EData linsmask = (VL_MASK_E((VL_EDATASIZE - 1) - loffset + 1)) << loffset;
         int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword (know loffset!=0)
         // Middle words
-        int hword = VL_BITWORD_E(hbit);
         for (int i = 0; i < words; ++i) {
             {  // Lower word
                 int oword = lword + i;
                 EData d = lwp[i] << loffset;
                 EData od = (owp[oword] & ~linsmask) | (d & linsmask);
                 if (oword == hword) {
-                    owp[oword] = (owp[oword] & ~hinsmask) | (od & hinsmask);
+                    owp[oword] = (owp[oword] & ~hinsmask) | (od & (hinsmask & cleanmask));
                 } else {
                     owp[oword] = od;
                 }
@@ -1826,7 +2149,7 @@ static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int
                     EData d = lwp[i] >> nbitsonright;
                     EData od = (d & ~linsmask) | (owp[oword] & linsmask);
                     if (oword == hword) {
-                        owp[oword] = (owp[oword] & ~hinsmask) | (od & hinsmask);
+                        owp[oword] = (owp[oword] & ~hinsmask) | (od & (hinsmask & cleanmask));
                     } else {
                         owp[oword] = od;
                     }
@@ -1836,11 +2159,11 @@ static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int
     }
 }
 
-static inline void _VL_INSERT_WQ(int obits, WDataOutP owp, QData ld, int hbit,
-                                 int lbit) VL_MT_SAFE {
+static inline void _vl_insert_WQ(int obits, WDataOutP owp, QData ld, int hbit, int lbit,
+                                 int rbits = 0) VL_MT_SAFE {
     WData lwp[VL_WQ_WORDS_E];
     VL_SET_WQ(lwp, ld);
-    _VL_INSERT_WW(obits, owp, lwp, hbit, lbit);
+    _vl_insert_WW(obits, owp, lwp, hbit, lbit, rbits);
 }
 
 // EMIT_RULE: VL_REPLICATE:  oclean=clean>width32, dirty<=width32; lclean=clean; rclean==clean;
@@ -1868,7 +2191,7 @@ static inline WDataOutP VL_REPLICATE_WII(int obits, int lbits, int, WDataOutP ow
                                          IData rep) VL_MT_SAFE {
     owp[0] = ld;
     for (unsigned i = 1; i < rep; ++i) {
-        _VL_INSERT_WI(obits, owp, ld, i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WI(obits, owp, ld, i * lbits + lbits - 1, i * lbits);
     }
     return owp;
 }
@@ -1876,7 +2199,7 @@ static inline WDataOutP VL_REPLICATE_WQI(int obits, int lbits, int, WDataOutP ow
                                          IData rep) VL_MT_SAFE {
     VL_SET_WQ(owp, ld);
     for (unsigned i = 1; i < rep; ++i) {
-        _VL_INSERT_WQ(obits, owp, ld, i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WQ(obits, owp, ld, i * lbits + lbits - 1, i * lbits);
     }
     return owp;
 }
@@ -1884,7 +2207,7 @@ static inline WDataOutP VL_REPLICATE_WWI(int obits, int lbits, int, WDataOutP ow
                                          IData rep) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(lbits); ++i) owp[i] = lwp[i];
     for (unsigned i = 1; i < rep; ++i) {
-        _VL_INSERT_WW(obits, owp, lwp, i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WW(obits, owp, lwp, i * lbits + lbits - 1, i * lbits);
     }
     return owp;
 }
@@ -2024,63 +2347,63 @@ static inline WDataOutP VL_CONCAT_WII(int obits, int lbits, int rbits, WDataOutP
                                       IData rd) VL_MT_SAFE {
     owp[0] = rd;
     for (int i = 1; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _VL_INSERT_WI(obits, owp, ld, rbits + lbits - 1, rbits);
+    _vl_insert_WI(obits, owp, ld, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WWI(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp,
                                       IData rd) VL_MT_SAFE {
     owp[0] = rd;
     for (int i = 1; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _VL_INSERT_WW(obits, owp, lwp, rbits + lbits - 1, rbits);
+    _vl_insert_WW(obits, owp, lwp, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WIW(int obits, int lbits, int rbits, WDataOutP owp, IData ld,
                                       WDataInP rwp) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(rbits); ++i) owp[i] = rwp[i];
     for (int i = VL_WORDS_I(rbits); i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _VL_INSERT_WI(obits, owp, ld, rbits + lbits - 1, rbits);
+    _vl_insert_WI(obits, owp, ld, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WIQ(int obits, int lbits, int rbits, WDataOutP owp, IData ld,
                                       QData rd) VL_MT_SAFE {
     VL_SET_WQ(owp, rd);
     for (int i = VL_WQ_WORDS_E; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _VL_INSERT_WI(obits, owp, ld, rbits + lbits - 1, rbits);
+    _vl_insert_WI(obits, owp, ld, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WQI(int obits, int lbits, int rbits, WDataOutP owp, QData ld,
                                       IData rd) VL_MT_SAFE {
     owp[0] = rd;
     for (int i = 1; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _VL_INSERT_WQ(obits, owp, ld, rbits + lbits - 1, rbits);
+    _vl_insert_WQ(obits, owp, ld, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WQQ(int obits, int lbits, int rbits, WDataOutP owp, QData ld,
                                       QData rd) VL_MT_SAFE {
     VL_SET_WQ(owp, rd);
     for (int i = VL_WQ_WORDS_E; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _VL_INSERT_WQ(obits, owp, ld, rbits + lbits - 1, rbits);
+    _vl_insert_WQ(obits, owp, ld, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp,
                                       QData rd) VL_MT_SAFE {
     VL_SET_WQ(owp, rd);
     for (int i = VL_WQ_WORDS_E; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _VL_INSERT_WW(obits, owp, lwp, rbits + lbits - 1, rbits);
+    _vl_insert_WW(obits, owp, lwp, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WQW(int obits, int lbits, int rbits, WDataOutP owp, QData ld,
                                       WDataInP rwp) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(rbits); ++i) owp[i] = rwp[i];
     for (int i = VL_WORDS_I(rbits); i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _VL_INSERT_WQ(obits, owp, ld, rbits + lbits - 1, rbits);
+    _vl_insert_WQ(obits, owp, ld, rbits + lbits - 1, rbits);
     return owp;
 }
 static inline WDataOutP VL_CONCAT_WWW(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp,
                                       WDataInP rwp) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(rbits); ++i) owp[i] = rwp[i];
     for (int i = VL_WORDS_I(rbits); i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    _VL_INSERT_WW(obits, owp, lwp, rbits + lbits - 1, rbits);
+    _vl_insert_WW(obits, owp, lwp, rbits + lbits - 1, rbits);
     return owp;
 }
 
@@ -2089,7 +2412,7 @@ static inline WDataOutP VL_CONCAT_WWW(int obits, int lbits, int rbits, WDataOutP
 
 // Static shift, used by internal functions
 // The output is the same as the input - it overlaps!
-static inline void _VL_SHIFTL_INPLACE_W(int obits, WDataOutP iowp,
+static inline void _vl_shiftl_inplace_w(int obits, WDataOutP iowp,
                                         IData rd /*1 or 4*/) VL_MT_SAFE {
     int words = VL_WORDS_I(obits);
     EData linsmask = VL_MASK_E(rd);
@@ -2115,7 +2438,7 @@ static inline WDataOutP VL_SHIFTL_WWI(int obits, int, int, WDataOutP owp, WDataI
         for (int i = word_shift; i < VL_WORDS_I(obits); ++i) owp[i] = lwp[i - word_shift];
     } else {
         for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-        _VL_INSERT_WW(obits, owp, lwp, obits - 1, rd);
+        _vl_insert_WW(obits, owp, lwp, obits - 1, rd);
     }
     return owp;
 }
@@ -2404,7 +2727,7 @@ static inline WDataOutP VL_SEL_WWII(int obits, int lbits, int, int, WDataOutP ow
         // Just a word extract
         for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = lwp[i + word_shift];
     } else {
-        // Not a _VL_INSERT because the bits come from any bit number and goto bit 0
+        // Not a _vl_insert because the bits come from any bit number and goto bit 0
         int loffset = lsb & VL_SIZEBITS_E;
         int nbitsfromlow = VL_EDATASIZE - loffset;  // bits that end up in lword (know loffset!=0)
         // Middle words
@@ -2458,7 +2781,7 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
     if (lsb < 0) {
         VL_SET_WQ(owp, mantissa >> -lsb);
     } else if (lsb < obits) {
-        _VL_INSERT_WQ(obits, owp, mantissa, lsb + 52, lsb);
+        _vl_insert_WQ(obits, owp, mantissa, lsb + 52, lsb);
     }
     if (lhs < 0) VL_NEGATE_INPLACE_W(VL_WORDS_I(obits), owp);
     return owp;
@@ -2468,34 +2791,43 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
 // Range assignments
 
 // EMIT_RULE: VL_ASSIGNRANGE:  rclean=dirty;
-static inline void VL_ASSIGNSEL_IIII(int obits, int lsb, CData& lhsr, IData rhs) VL_PURE {
-    _VL_INSERT_II(obits, lhsr, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, CData& lhsr,
+                                     IData rhs) VL_PURE {
+    _vl_insert_II(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_IIII(int obits, int lsb, SData& lhsr, IData rhs) VL_PURE {
-    _VL_INSERT_II(obits, lhsr, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, SData& lhsr,
+                                     IData rhs) VL_PURE {
+    _vl_insert_II(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_IIII(int obits, int lsb, IData& lhsr, IData rhs) VL_PURE {
-    _VL_INSERT_II(obits, lhsr, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_IIII(int rbits, int obits, int lsb, IData& lhsr,
+                                     IData rhs) VL_PURE {
+    _vl_insert_II(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_QIII(int obits, int lsb, QData& lhsr, IData rhs) VL_PURE {
-    _VL_INSERT_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_QIII(int rbits, int obits, int lsb, QData& lhsr,
+                                     IData rhs) VL_PURE {
+    _vl_insert_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_QQII(int obits, int lsb, QData& lhsr, QData rhs) VL_PURE {
-    _VL_INSERT_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_QQII(int rbits, int obits, int lsb, QData& lhsr,
+                                     QData rhs) VL_PURE {
+    _vl_insert_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_QIIQ(int obits, int lsb, QData& lhsr, QData rhs) VL_PURE {
-    _VL_INSERT_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_QIIQ(int rbits, int obits, int lsb, QData& lhsr,
+                                     QData rhs) VL_PURE {
+    _vl_insert_QQ(obits, lhsr, rhs, lsb + obits - 1, lsb, rbits);
 }
 // static inline void VL_ASSIGNSEL_IIIW(int obits, int lsb, IData& lhsr, WDataInP rwp) VL_MT_SAFE {
 // Illegal, as lhs width >= rhs width
-static inline void VL_ASSIGNSEL_WIII(int obits, int lsb, WDataOutP owp, IData rhs) VL_MT_SAFE {
-    _VL_INSERT_WI(obits, owp, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_WIII(int rbits, int obits, int lsb, WDataOutP owp,
+                                     IData rhs) VL_MT_SAFE {
+    _vl_insert_WI(obits, owp, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_WIIQ(int obits, int lsb, WDataOutP owp, QData rhs) VL_MT_SAFE {
-    _VL_INSERT_WQ(obits, owp, rhs, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_WIIQ(int rbits, int obits, int lsb, WDataOutP owp,
+                                     QData rhs) VL_MT_SAFE {
+    _vl_insert_WQ(obits, owp, rhs, lsb + obits - 1, lsb, rbits);
 }
-static inline void VL_ASSIGNSEL_WIIW(int obits, int lsb, WDataOutP owp, WDataInP rwp) VL_MT_SAFE {
-    _VL_INSERT_WW(obits, owp, rwp, lsb + obits - 1, lsb);
+static inline void VL_ASSIGNSEL_WIIW(int rbits, int obits, int lsb, WDataOutP owp,
+                                     WDataInP rwp) VL_MT_SAFE {
+    _vl_insert_WW(obits, owp, rwp, lsb + obits - 1, lsb, rbits);
 }
 
 //======================================================================
@@ -2517,81 +2849,81 @@ static inline WDataOutP VL_COND_WIWW(int obits, int, int, int, WDataOutP owp, in
 // hence all upper words must be zeroed.
 // If changing the number of functions here, also change EMITCINLINES_NUM_CONSTW
 
-#define _END(obits, wordsSet) \
+#define VL_C_END_(obits, wordsSet) \
     for (int i = (wordsSet); i < VL_WORDS_I(obits); ++i) o[i] = 0; \
     return o
 
 // clang-format off
 static inline WDataOutP VL_CONST_W_1X(int obits, WDataOutP o, EData d0) VL_MT_SAFE {
     o[0] = d0;
-    _END(obits, 1);
+    VL_C_END_(obits, 1);
 }
 static inline WDataOutP VL_CONST_W_2X(int obits, WDataOutP o, EData d1, EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;
-    _END(obits, 2);
+    VL_C_END_(obits, 2);
 }
 static inline WDataOutP VL_CONST_W_3X(int obits, WDataOutP o, EData d2, EData d1,
                                       EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;  o[2] = d2;
-    _END(obits,3);
+    VL_C_END_(obits,3);
 }
 static inline WDataOutP VL_CONST_W_4X(int obits, WDataOutP o,
                                       EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    _END(obits,4);
+    VL_C_END_(obits,4);
 }
 static inline WDataOutP VL_CONST_W_5X(int obits, WDataOutP o,
                                       EData d4,
                                       EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;
-    _END(obits,5);
+    VL_C_END_(obits,5);
 }
 static inline WDataOutP VL_CONST_W_6X(int obits, WDataOutP o,
                                       EData d5, EData d4,
                                       EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;
-    _END(obits,6);
+    VL_C_END_(obits,6);
 }
 static inline WDataOutP VL_CONST_W_7X(int obits, WDataOutP o,
                                       EData d6, EData d5, EData d4,
                                       EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;  o[6] = d6;
-    _END(obits,7);
+    VL_C_END_(obits,7);
 }
 static inline WDataOutP VL_CONST_W_8X(int obits, WDataOutP o,
                                       EData d7, EData d6, EData d5, EData d4,
                                       EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;  o[6] = d6;  o[7] = d7;
-    _END(obits,8);
+    VL_C_END_(obits,8);
 }
 //
 static inline WDataOutP VL_CONSTHI_W_1X(int obits, int lsb, WDataOutP obase,
                                         EData d0) VL_MT_SAFE {
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;
-    _END(obits, VL_WORDS_I(lsb) + 1);
+    VL_C_END_(obits, VL_WORDS_I(lsb) + 1);
 }
 static inline WDataOutP VL_CONSTHI_W_2X(int obits, int lsb, WDataOutP obase,
                                         EData d1, EData d0) VL_MT_SAFE {
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;
-    _END(obits, VL_WORDS_I(lsb) + 2);
+    VL_C_END_(obits, VL_WORDS_I(lsb) + 2);
 }
 static inline WDataOutP VL_CONSTHI_W_3X(int obits, int lsb, WDataOutP obase,
                                         EData d2, EData d1, EData d0) VL_MT_SAFE {
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;
-    _END(obits, VL_WORDS_I(lsb) + 3);
+    VL_C_END_(obits, VL_WORDS_I(lsb) + 3);
 }
 static inline WDataOutP VL_CONSTHI_W_4X(int obits, int lsb, WDataOutP obase,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    _END(obits, VL_WORDS_I(lsb) + 4);
+    VL_C_END_(obits, VL_WORDS_I(lsb) + 4);
 }
 static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP obase,
                                         EData d4,
@@ -2599,7 +2931,7 @@ static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP obase,
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;
-    _END(obits, VL_WORDS_I(lsb) + 5);
+    VL_C_END_(obits, VL_WORDS_I(lsb) + 5);
 }
 static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP obase,
                                         EData d5, EData d4,
@@ -2607,7 +2939,7 @@ static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP obase,
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;
-    _END(obits, VL_WORDS_I(lsb) + 6);
+    VL_C_END_(obits, VL_WORDS_I(lsb) + 6);
 }
 static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP obase,
                                         EData d6, EData d5, EData d4,
@@ -2615,7 +2947,7 @@ static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP obase,
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;  o[6] = d6;
-    _END(obits, VL_WORDS_I(lsb) + 7);
+    VL_C_END_(obits, VL_WORDS_I(lsb) + 7);
 }
 static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP obase,
                                         EData d7, EData d6, EData d5, EData d4,
@@ -2623,10 +2955,10 @@ static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP obase,
     WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
     o[4] = d4;  o[5] = d5;  o[6] = d6;  o[7] = d7;
-    _END(obits, VL_WORDS_I(lsb) + 8);
+    VL_C_END_(obits, VL_WORDS_I(lsb) + 8);
 }
 
-#undef _END
+#undef VL_C_END_
 
 // Partial constant, lower words of vector wider than 8*32, starting at bit number lsb
 static inline void VL_CONSTLO_W_8X(int lsb, WDataOutP obase,

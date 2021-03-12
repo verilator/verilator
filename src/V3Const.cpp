@@ -104,6 +104,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
     public:
         // METHODS
         bool hasConstantResult() const { return m_constResult >= 0; }
+        bool sameVarAs(const AstNodeVarRef* otherp) const { return m_refp->sameGateTree(otherp); }
         void setPolarity(bool compBit, int bit) {
             UASSERT_OBJ(!hasConstantResult(), m_refp, "Already has result of " << m_constResult);
             if (m_bitPolarity.bitIsX(bit)) {  // The bit is not yet set
@@ -222,6 +223,9 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         if (!varInfop) {
             varInfop = new VarInfo{this, ref.m_refp};
             m_varInfos[idx] = varInfop;
+        } else {
+            if (!varInfop->sameVarAs(ref.m_refp))
+                CONST_BITOP_SET_FAILED("different var (scope?)", ref.m_refp);
         }
         return *varInfop;
     }
@@ -687,6 +691,8 @@ private:
         return true;
     }
     bool matchBitOpTree(AstNode* nodep) {
+        if (!v3Global.opt.oConstBitOpTree()) return false;
+
         AstNode* newp = nullptr;
         bool tried = false;
         if (AstAnd* andp = VN_CAST(nodep, And)) {  // 1 & BitOpTree
@@ -703,14 +709,14 @@ private:
         }
         if (newp) {
             UINFO(4, "Transformed leaf of bit tree to " << newp << std::endl);
-            if (debug() >= 9) {
+            if (debug() >= 9) {  // LCOV_EXCL_START
                 static int c = 0;
                 std::cout << "Call matchBitOpTree[" << c << "]\n";
                 nodep->dumpTree(std::cout);
                 std::cout << "\nResult:\n";
                 newp->dumpTree(std::cout);
                 ++c;
-            }
+            }  // LCOV_EXCL_STOP
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }

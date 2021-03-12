@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3ASTCONSTONLY_H_
-#define _V3ASTCONSTONLY_H_ 1
+#ifndef VERILATOR_V3ASTCONSTONLY_H_
+#define VERILATOR_V3ASTCONSTONLY_H_
 
 // Include only in visitors that do not not edit nodes, so should use constant iterators
 #define iterateAndNext error_use_iterateAndNextConst
