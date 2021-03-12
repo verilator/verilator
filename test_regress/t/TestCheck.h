@@ -15,21 +15,55 @@
 extern int errors;
 
 #ifdef TEST_VERBOSE
-static bool verbose = true;
+static const bool verbose = true;
 #else
-static bool verbose = false;
+static const bool verbose = false;
 #endif
 
 //======================================================================
 
 // Use cout to avoid issues with %d/%lx etc
 #define TEST_CHECK(got, exp, test) \
-    if (!(test)) { \
-        std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
-                  << "   EXP = " << (exp) << std::endl; \
-        ++errors; \
-    }
+    do { \
+        if (!(test)) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ \
+                      << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
+            ++errors; \
+        } \
+    } while (0)
+
 #define TEST_CHECK_EQ(got, exp) TEST_CHECK(got, exp, ((got) == (exp)));
+#define TEST_CHECK_NE(got, exp) TEST_CHECK(got, exp, ((got) != (exp)));
+#define TEST_CHECK_CSTR(got, exp) TEST_CHECK(got, exp, 0 == strcmp((got), (exp)));
+
+#define TEST_CHECK_HEX_EQ(got, exp) \
+    do { \
+        if ((got) != (exp)) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
+                      << ": GOT=" << (got) << "   EXP=" << (exp) << std::endl; \
+            ++errors; \
+        } \
+    } while (0)
+
+#define TEST_CHECK_HEX_NE(got, exp) \
+    do { \
+        if ((got) == (exp)) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
+                      << ": GOT=" << (got) << "   EXP!=" << (exp) << std::endl; \
+            ++errors; \
+        } \
+    } while (0)
+
+#define TEST_CHECK_NZ(got) \
+    do { \
+        if (!(got)) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
+                      << ": GOT= NULL   EXP!=NULL" << std::endl; \
+            ++errors; \
+        } \
+    } while (0)
+
+//======================================================================
 
 #define TEST_VERBOSE_PRINTF(format, ...) \
     do { \

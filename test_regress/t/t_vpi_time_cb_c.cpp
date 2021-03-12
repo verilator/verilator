@@ -41,7 +41,7 @@ static int _time_cb1(p_cb_data cb_data) {
     TEST_VERBOSE_PRINTF("time_cb1: %d\n", t.low);
     ++callback_count1;
     if (callback_time1) TEST_CHECK_EQ(callback_time1, t.low);
-    callback_time1 = t.low + 1;   // Next call
+    callback_time1 = t.low + 1;  // Next call
 
     t_cb_data cb_data_n;
     bzero(&cb_data_n, sizeof(cb_data_n));
@@ -123,10 +123,8 @@ extern "C" void dpii_final() {
     TEST_VERBOSE_PRINTF("-dpii_final()\n");
 
     // Allow some slop as cb might be before/after this call
-    TEST_CHECK(callback_count1, 1010,
-               (callback_count1 >= 1000 && callback_count1 <= 1020));
-    TEST_CHECK(callback_count2, 1010,
-               (callback_count2 >= 1000 && callback_count2 <= 1020));
+    TEST_CHECK(callback_count1, 1010, (callback_count1 >= 1000 && callback_count1 <= 1020));
+    TEST_CHECK(callback_count2, 1010, (callback_count2 >= 1000 && callback_count2 <= 1020));
 
     if (errors) {
         vpi_control(vpiStop);

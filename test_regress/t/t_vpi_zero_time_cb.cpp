@@ -32,22 +32,14 @@
 #include <cstring>
 #include <iostream>
 
+#include "TestCheck.h"
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
+int errors = 0;
 unsigned int main_time = 0;
 unsigned int callback_count_zero_time = 0;
 unsigned int callback_count_start_of_sim = 0;
-
-//======================================================================
-
-// Use cout to avoid issues with %d/%lx etc
-#define CHECK_RESULT(got, exp) \
-    if ((got) != (exp)) { \
-        std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
-                  << "   EXP = " << (exp) << std::endl; \
-        return __LINE__; \
-    }
 
 //======================================================================
 
@@ -79,9 +71,9 @@ static int _start_of_sim_cb(p_cb_data cb_data) {
 }
 
 static int _end_of_sim_cb(p_cb_data cb_data) {
-    CHECK_RESULT(callback_count_start_of_sim, 1);
-    CHECK_RESULT(callback_count_zero_time, 1);
-    fprintf(stdout, "*-* All Finished *-*\n");
+    TEST_CHECK_EQ(callback_count_start_of_sim, 1);
+    TEST_CHECK_EQ(callback_count_zero_time, 1);
+    if (!errors) fprintf(stdout, "*-* All Finished *-*\n");
     return 0;
 }
 
