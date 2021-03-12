@@ -681,9 +681,9 @@ bool GateVisitor::elimLogicOkOutputs(GateLogicVertex* consumeVertexp,
     // Return true if can optimize
     // Return false if the consuming logic has an output signal that the
     // replacement logic has as an input
-    typedef std::unordered_set<AstVarScope*> VarScopeSet;
+
     // Use map to find duplicates between two lists
-    VarScopeSet varscopes;
+    std::unordered_set<AstVarScope*> varscopes;
     // Replacement logic usually has shorter input list, so faster to build list based on it
     const GateVarRefList& rhsVarRefs = okVisitor.rhsVarRefs();
     for (GateVarRefList::const_iterator it = rhsVarRefs.begin(); it != rhsVarRefs.end(); ++it) {
@@ -901,10 +901,6 @@ void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode*
 // Auxiliary hash class for GateDedupeVarVisitor
 
 class GateDedupeHash final : public V3HashedUserSame {
-public:
-    // TYPES
-    typedef std::unordered_set<AstNode*> NodeSet;
-
 private:
     // NODE STATE
     // Ast*::user2p     -> parent AstNodeAssign* for this rhsp
@@ -919,7 +915,7 @@ private:
     AstUser5InUse m_inuser5;
 
     V3Hashed m_hashed;  // Hash, contains rhs of assigns
-    NodeSet m_nodeDeleteds;  // Any node in this hash was deleted
+    std::unordered_set<AstNode*> m_nodeDeleteds;  // Any node in this hash was deleted
 
     VL_DEBUG_FUNC;  // Declare debug()
 

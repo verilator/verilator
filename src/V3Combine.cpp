@@ -79,7 +79,7 @@ public:
             UINFO(4, "   Remove " << oldfuncp << endl);
         }
         // Note: m_callMmap modified in loop, so not using equal_range.
-        for (CallMmap::iterator it = m_callMmap.find(oldfuncp); it != m_callMmap.end();
+        for (auto it = m_callMmap.find(oldfuncp); it != m_callMmap.end();
              it = m_callMmap.find(oldfuncp)) {
             AstCCall* callp = it->second;
             if (!callp->user3()) {  // !already done
@@ -173,7 +173,7 @@ private:
     // AstUser4InUse     part of V3Hashed
 
     // STATE
-    typedef enum : uint8_t { STATE_IDLE, STATE_HASH, STATE_DUP } CombineState;
+    enum CombineState : uint8_t { STATE_IDLE, STATE_HASH, STATE_DUP };
     VDouble0 m_statCombs;  // Statistic tracking
     CombineState m_state = STATE_IDLE;  // Major state
     AstNodeModule* m_modp = nullptr;  // Current module

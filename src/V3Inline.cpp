@@ -264,14 +264,12 @@ public:
 
 class InlineRelinkVisitor final : public AstNVisitor {
 private:
-    typedef std::unordered_set<string> StringSet;
-
     // NODE STATE
     //  Input:
     //   See InlineVisitor
 
     // STATE
-    StringSet m_renamedInterfaces;  // Name of renamed interface variables
+    std::unordered_set<std::string> m_renamedInterfaces;  // Name of renamed interface variables
     AstNodeModule* m_modp;  // Current module
     AstCell* m_cellp;  // Cell being cloned
 

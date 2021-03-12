@@ -74,8 +74,7 @@ public:
     typedef TspVertexTmpl<T_Key> Vertex;
 
     // MEMBERS
-    typedef std::unordered_map<T_Key, Vertex*> VMap;
-    VMap m_vertices;  // T_Key to Vertex lookup map
+    std::unordered_map<T_Key, Vertex*> m_vertices;  // T_Key to Vertex lookup map
 
     // CONSTRUCTORS
     TspGraphTmpl()

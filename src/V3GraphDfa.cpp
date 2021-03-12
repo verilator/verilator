@@ -177,7 +177,7 @@ private:
         uint32_t hash = hashDfaOrigins(nfasWithInput);
 
         const auto eqrange = m_hashMap.equal_range(hash);
-        for (HashMap::iterator it = eqrange.first; it != eqrange.second; ++it) {
+        for (auto it = eqrange.first; it != eqrange.second; ++it) {
             DfaVertex* testp = it->second;
             if (compareDfaOrigins(nfasWithInput, testp)) {
                 UINFO(9, "              DFA match for set: " << testp << endl);

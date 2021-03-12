@@ -77,14 +77,14 @@ public:
                     char fmtLetter);
 
     void emitVarDecl(const AstVar* nodep, const string& prefixIfImp);
-    typedef enum : uint8_t {
+    enum EisWhich : uint8_t {
         EVL_CLASS_IO,
         EVL_CLASS_SIG,
         EVL_CLASS_TEMP,
         EVL_CLASS_PAR,
         EVL_CLASS_ALL,
         EVL_FUNC_ALL
-    } EisWhich;
+    };
     void emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp, string& sectionr);
     static void emitVarSort(const VarSortMap& vmap, VarVec* sortedp);
     void emitSortedVarList(const VarVec& anons, const VarVec& nonanons, const string& prefixIfImp);
@@ -221,8 +221,7 @@ public:
         }
     };
     void emitIntFuncDecls(AstNodeModule* modp, bool methodFuncs) {
-        typedef std::vector<const AstCFunc*> FuncVec;
-        FuncVec funcsp;
+        std::vector<const AstCFunc*> funcsp;
 
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {

@@ -252,7 +252,6 @@ public:
 class VlThreadPool final {
     // TYPES
     typedef std::vector<VlProfileRec> ProfileTrace;
-    typedef std::set<ProfileTrace*> ProfileSet;
 
     // MEMBERS
     std::vector<VlWorkerThread*> m_workers;  // our workers
@@ -266,7 +265,7 @@ class VlThreadPool final {
     // this is the only cost we pay in real-time during a profiling cycle.
     // Internal note: Globals may multi-construct, see verilated.cpp top.
     static VL_THREAD_LOCAL ProfileTrace* t_profilep;
-    ProfileSet m_allProfiles VL_GUARDED_BY(m_mutex);
+    std::set<ProfileTrace*> m_allProfiles VL_GUARDED_BY(m_mutex);
     VerilatedMutex m_mutex;
 
 public:

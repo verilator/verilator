@@ -40,7 +40,7 @@ private:
     VSymGraph m_syms;  // Graph of symbol tree
     VSymEnt* m_symTableNextId = nullptr;  // Symbol table for next lexer lookup (parser use only)
     VSymEnt* m_symCurrentp;  // Active symbol table for additions/lookups
-    SymStack m_sympStack;  // Stack of upper nodes with pending symbol tables
+    std::vector<VSymEnt*> m_sympStack;  // Stack of upper nodes with pending symbol tables
 
 public:
     // CONSTRUCTORS

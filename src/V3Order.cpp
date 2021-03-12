@@ -422,9 +422,6 @@ template <class T_MoveVertex> class ProcessMoveBuildGraph {
 
     // TYPES
     typedef std::pair<const V3GraphVertex*, const AstSenTree*> VxDomPair;
-    // Maps an (original graph vertex, domain) pair to a T_MoveVertex
-    // Not std::unordered_map, because std::pair doesn't provide std::hash
-    typedef std::map<VxDomPair, T_MoveVertex*> Var2Move;
     typedef std::unordered_map<const OrderLogicVertex*, T_MoveVertex*> Logic2Move;
 
 public:
@@ -446,7 +443,9 @@ private:
     V3Graph* m_outGraphp;  // Output graph of T_MoveVertex's
     MoveVertexMaker* m_vxMakerp;  // Factory class for T_MoveVertex's
     Logic2Move m_logic2move;  // Map Logic to Vertex
-    Var2Move m_var2move;  // Map Vars to Vertex
+    // Maps an (original graph vertex, domain) pair to a T_MoveVertex
+    // Not std::unordered_map, because std::pair doesn't provide std::hash
+    std::map<VxDomPair, T_MoveVertex*> m_var2move;
 
 public:
     // CONSTRUCTORS
@@ -752,14 +751,13 @@ private:
 
     // processMTask* routines schedule threaded execution
     struct MTaskState {
-        typedef std::list<const OrderLogicVertex*> Logics;
         AstMTaskBody* m_mtaskBodyp = nullptr;
-        Logics m_logics;
+        std::list<const OrderLogicVertex*> m_logics;
         ExecMTask* m_execMTaskp = nullptr;
         MTaskState() = default;
     };
     void processMTasks();
-    typedef enum : uint8_t { LOGIC_INITIAL, LOGIC_SETTLE } InitialLogicE;
+    enum InitialLogicE : uint8_t { LOGIC_INITIAL, LOGIC_SETTLE };
     void processMTasksInitial(InitialLogicE logic_type);
 
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep,

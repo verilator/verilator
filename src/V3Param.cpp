@@ -72,8 +72,6 @@ class ParameterizedHierBlocks final {
     typedef std::map<const string, AstNodeModule*> HierBlockModMap;
     typedef std::map<const string, std::unique_ptr<AstConst>> ParamConstMap;
     typedef std::map<const string, AstVar*> GParamsMap;  // key:parameter name value:parameter
-    typedef std::map<const V3HierarchicalBlockOption*, ParamConstMap> HierParamsMap;
-    typedef std::map<const string, GParamsMap> ModParamsMap;  // key:module name
 
     // MEMBERS
     // key:Original module name, value:HiearchyBlockOption*
@@ -83,8 +81,9 @@ class ParameterizedHierBlocks final {
     // key:mangled module name, value:AstNodeModule*
     HierBlockModMap m_hierBlockMod;
     // Overridden parameters of the hierarchical block
-    HierParamsMap m_hierParams;
-    ModParamsMap m_modParams;  // Parameter variables of hierarchical blocks
+    std::map<const V3HierarchicalBlockOption*, ParamConstMap> m_hierParams;
+    std::map<const std::string, GParamsMap>
+        m_modParams;  // Parameter variables of hierarchical blocks
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -243,11 +242,10 @@ class ParamProcessor final {
         explicit ModInfo(AstNodeModule* modp)
             : m_modp{modp} {}
     };
-    typedef std::map<const string, ModInfo> ModNameMap;
-    ModNameMap m_modNameMap;  // Hash of created module flavors by name
+    std::map<const std::string, ModInfo> m_modNameMap;  // Hash of created module flavors by name
 
-    typedef std::map<const string, string> LongMap;
-    LongMap m_longMap;  // Hash of very long names to unique identity number
+    std::map<const std::string, std::string>
+        m_longMap;  // Hash of very long names to unique identity number
     int m_longId = 0;
 
     // All module names that are loaded from source code
@@ -255,8 +253,7 @@ class ParamProcessor final {
     V3StringSet m_allModuleNames;
 
     typedef std::pair<int, string> ValueMapValue;
-    typedef std::map<const V3Hash, ValueMapValue> ValueMap;
-    ValueMap m_valueMap;  // Hash of node hash to (param value, name)
+    std::map<const V3Hash, ValueMapValue> m_valueMap;  // Hash of node hash to (param value, name)
     int m_nextValue = 1;  // Next value to use in m_valueMap
 
     AstNodeModule* m_modp = nullptr;  // Current module being processed
@@ -821,8 +818,7 @@ class ParamVisitor final : public AstNVisitor {
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
     std::deque<AstCell*> m_cellps;  // Cells left to process (in this module)
 
-    typedef std::multimap<int, AstNodeModule*> LevelModMap;
-    LevelModMap m_todoModps;  // Modules left to process
+    std::multimap<int, AstNodeModule*> m_todoModps;  // Modules left to process
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

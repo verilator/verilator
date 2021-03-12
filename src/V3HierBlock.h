@@ -42,7 +42,6 @@ class V3HierBlock final {
 public:
     typedef std::vector<AstVar*> GParams;
     typedef std::unordered_set<V3HierBlock*> HierBlockSet;
-    typedef std::unordered_set<const AstNodeModule*> NodeModuleSet;
 
 private:
     // TYPES

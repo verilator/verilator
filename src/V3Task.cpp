@@ -105,7 +105,6 @@ private:
     // TYPES
     typedef std::map<std::pair<AstScope*, AstVar*>, AstVarScope*> VarToScopeMap;
     typedef std::unordered_map<const AstNodeFTask*, AstClass*> FuncToClassMap;
-    typedef std::vector<AstInitial*> Initials;
     // MEMBERS
     VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
     FuncToClassMap m_funcToClassMap;  // Map for ctor func -> class
@@ -114,7 +113,7 @@ private:
     AstClass* m_classp = nullptr;  // Current class
     V3Graph m_callGraph;  // Task call graph
     TaskBaseVertex* m_curVxp;  // Current vertex we're adding to
-    Initials m_initialps;  // Initial blocks to move
+    std::vector<AstInitial*> m_initialps;  // Initial blocks to move
 
 public:
     // METHODS
@@ -1470,8 +1469,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     // Missing pin/expr?  We return (pinvar, nullptr)
     // Extra   pin/expr?  We clean it up
 
-    typedef std::map<const string, int> NameToIndex;
-    NameToIndex nameToIndex;
+    std::map<const std::string, int> nameToIndex;
     V3TaskConnects tconnects;
     UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");
 

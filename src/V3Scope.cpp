@@ -45,10 +45,8 @@ private:
     AstUser2InUse m_inuser2;
 
     // TYPES
-    typedef std::unordered_map<AstNodeModule*, AstScope*> PackageScopeMap;
     // These cannot be unordered unless make a specialized hashing pair (gcc-8)
     typedef std::map<std::pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
-    typedef std::set<std::pair<AstVarRef*, AstScope*>> VarRefScopeSet;
 
     // STATE, inside processing a single module
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -57,9 +55,10 @@ private:
     AstCell* m_aboveCellp = nullptr;  // Cell that instantiates this module
     AstScope* m_aboveScopep = nullptr;  // Scope that instantiates this scope
 
-    PackageScopeMap m_packageScopes;  // Scopes for each package
+    std::unordered_map<AstNodeModule*, AstScope*> m_packageScopes;  // Scopes for each package
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
-    VarRefScopeSet m_varRefScopes;  // Varrefs-in-scopes needing fixup when done
+    std::set<std::pair<AstVarRef*, AstScope*>>
+        m_varRefScopes;  // Varrefs-in-scopes needing fixup when done
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

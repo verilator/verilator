@@ -97,8 +97,7 @@ private:
     typedef std::map<const std::pair<AstNodeModule*, string>, AstVar*> VarMap;
     VarMap m_modVarMap;  // Table of new var names created under module
     VDouble0 m_statSharedSet;  // Statistic tracking
-    typedef std::unordered_map<const AstVarScope*, int> ScopeVecMap;
-    ScopeVecMap m_scopeVecMap;  // Next var number for each scope
+    std::unordered_map<const AstVarScope*, int> m_scopeVecMap;  // Next var number for each scope
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

@@ -194,9 +194,8 @@ class VSpellCheck final {
     static constexpr unsigned LENGTH_LIMIT = 100;  // Maximum string length to search
     // TYPES
     typedef unsigned int EditDistance;
-    typedef std::vector<string> Candidates;
     // MEMBERS
-    Candidates m_candidates;  // Strings we try to match
+    std::vector<std::string> m_candidates;  // Strings we try to match
 public:
     // CONSTRUCTORS
     VSpellCheck() = default;

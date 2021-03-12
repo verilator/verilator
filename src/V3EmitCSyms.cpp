@@ -71,8 +71,6 @@ class EmitCSyms final : EmitCBaseVisitor {
             , m_modp{modp}
             , m_scopep{scopep} {}
     };
-    typedef std::map<const string, ScopeFuncData> ScopeFuncs;
-    typedef std::map<const string, ScopeVarData> ScopeVars;
     typedef std::map<const string, ScopeData> ScopeNames;
     typedef std::pair<AstScope*, AstNodeModule*> ScopeModPair;
     typedef std::pair<AstNodeModule*, AstVar*> ModVarPair;
@@ -100,8 +98,8 @@ class EmitCSyms final : EmitCBaseVisitor {
     std::vector<AstCFunc*> m_dpis;  // DPI functions
     std::vector<ModVarPair> m_modVars;  // Each public {mod,var}
     ScopeNames m_scopeNames;  // Each unique AstScopeName
-    ScopeFuncs m_scopeFuncs;  // Each {scope,dpi-export-func}
-    ScopeVars m_scopeVars;  // Each {scope,public-var}
+    std::map<const std::string, ScopeFuncData> m_scopeFuncs;  // Each {scope,dpi-export-func}
+    std::map<const std::string, ScopeVarData> m_scopeVars;  // Each {scope,public-var}
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
     ScopeNameHierarchy m_vpiScopeHierarchy;  // The actual hierarchy of scopes
     int m_coverBins = 0;  // Coverage bin number
@@ -572,8 +570,7 @@ void EmitCSyms::emitScopeHier(bool destroy) {
             }
         }
 
-        for (ScopeNameHierarchy::const_iterator it = m_vpiScopeHierarchy.begin();
-             it != m_vpiScopeHierarchy.end(); ++it) {
+        for (auto it = m_vpiScopeHierarchy.cbegin(); it != m_vpiScopeHierarchy.cend(); ++it) {
             for (ScopeNameList::const_iterator lit = it->second.begin(); lit != it->second.end();
                  ++lit) {
                 string fromname = scopeSymString(it->first);
@@ -734,7 +731,7 @@ void EmitCSyms::emitSymImp() {
     if (v3Global.dpi()) {
         m_ofpBase->puts("// Setup export functions\n");
         m_ofpBase->puts("for (int __Vfinal=0; __Vfinal<2; __Vfinal++) {\n");
-        for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
+        for (auto it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
             AstScopeName* scopep = it->second.m_scopep;
             AstCFunc* funcp = it->second.m_cfuncp;
             AstNodeModule* modp = it->second.m_modp;
@@ -752,7 +749,7 @@ void EmitCSyms::emitSymImp() {
         }
         // It would be less code if each module inserted its own variables.
         // Someday.  For now public isn't common.
-        for (ScopeVars::iterator it = m_scopeVars.begin(); it != m_scopeVars.end(); ++it) {
+        for (auto it = m_scopeVars.begin(); it != m_scopeVars.end(); ++it) {
             checkSplit(true);
             AstNodeModule* modp = it->second.m_modp;
             AstScope* scopep = it->second.m_scopep;

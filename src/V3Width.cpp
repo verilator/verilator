@@ -200,7 +200,6 @@ private:
     // TYPES
     typedef std::map<std::pair<const AstNodeDType*, AstAttrType>, AstVar*> TableMap;
     typedef std::map<int, AstPatMember*> PatVecMap;
-    typedef std::map<const AstNodeDType*, AstQueueDType*> DTypeQMap;
 
     // STATE
     WidthVP* m_vup = nullptr;  // Current node state
@@ -214,7 +213,8 @@ private:
     bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables = 0;  // Number of created data type tables
     TableMap m_tableMap;  // Created tables so can remove duplicates
-    DTypeQMap m_queueDTypeIndexed;  // Queues with given index type
+    std::map<const AstNodeDType*, AstQueueDType*>
+        m_queueDTypeIndexed;  // Queues with given index type
 
     // ENUMS
     enum ExtendRule : uint8_t {
@@ -3336,7 +3336,7 @@ private:
         // which member each AstPatMember corresponds to before we can
         // determine the dtypep for that PatMember's value, and then
         // width the initial value appropriately.
-        typedef std::map<const AstMemberDType*, AstPatMember*> PatMap;
+        using PatMap = std::map<const AstMemberDType*, AstPatMember*>;
         PatMap patmap;
         {
             AstMemberDType* memp = vdtypep->membersp();

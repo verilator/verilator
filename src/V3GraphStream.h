@@ -81,12 +81,11 @@ private:
     };
 
     typedef std::set<VxHolder, VxHolderCmp&> ReadyVertices;
-    typedef std::map<const V3GraphVertex*, VxHolder> WaitingVertices;
 
     // MEMBERS
     VxHolderCmp m_vxHolderCmp;  // Vertext comparison functor
     ReadyVertices m_readyVertices;  // List of ready vertices
-    WaitingVertices m_waitingVertices;  // List of waiting vertices
+    std::map<const V3GraphVertex*, VxHolder> m_waitingVertices;  // List of waiting vertices
     typename ReadyVertices::iterator m_last;  // Previously returned element
     GraphWay m_way;  // FORWARD or REVERSE order of traversal
 

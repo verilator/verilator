@@ -43,12 +43,9 @@ private:
     //=========================================================================
     // FST specific internals
 
-    typedef std::map<vluint32_t, fstHandle> Code2SymbolType;
-    typedef std::map<int, fstEnumHandle> Local2FstDtype;
-
     void* m_fst;
-    Code2SymbolType m_code2symbol;
-    Local2FstDtype m_local2fstdtype;
+    std::map<vluint32_t, fstHandle> m_code2symbol;
+    std::map<int, fstEnumHandle> m_local2fstdtype;
     std::list<std::string> m_curScope;
     fstHandle* m_symbolp = nullptr;  ///< same as m_code2symbol, but as an array
     char* m_strbuf = nullptr;  ///< String buffer long enough to hold maxBits() chars

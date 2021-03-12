@@ -166,8 +166,7 @@ private:
     vluint64_t m_generation = 0;  // Mark each vertex with this number;
     //                        // confirm we only process each vertex once.
     bool m_slowAsserts;  // Enable nontrivial asserts
-    typedef SortByValueMap<V3GraphVertex*, uint32_t> PropCpPendSet;
-    PropCpPendSet m_pending;  // Pending rescores
+    SortByValueMap<V3GraphVertex*, uint32_t> m_pending;  // Pending rescores
 
 public:
     // CONSTRUCTORS
@@ -2040,8 +2039,7 @@ private:
     ReadyMTasks m_ready;  // MTasks ready to be assigned next; all their
     //                    // dependencies are already assigned.
 
-    typedef std::vector<ExecMTask*> MTaskVec;
-    MTaskVec m_prevMTask;  // Previous mtask scheduled to each thread.
+    std::vector<ExecMTask*> m_prevMTask;  // Previous mtask scheduled to each thread.
     std::vector<uint32_t> m_busyUntil;  // Time each thread is occupied until
 
 public:
@@ -2458,7 +2456,7 @@ void V3Partition::go(V3Graph* mtasksp) {
             sorted.insert(mtaskp);
         }
         uint32_t nextId = 1;
-        for (SortedMTaskSet::iterator it = sorted.begin(); it != sorted.end(); ++it) {
+        for (auto it = sorted.begin(); it != sorted.end(); ++it) {
             // We shouldn't perturb the sort order of the set, despite
             // changing the IDs, they should all just remain in the same
             // relative order. Confirm that:

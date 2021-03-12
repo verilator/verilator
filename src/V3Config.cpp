@@ -154,13 +154,10 @@ typedef V3ConfigWildcardResolver<V3ConfigFTask> V3ConfigFTaskResolver;
 // Modules have tasks, variables, named blocks and properties
 
 class V3ConfigModule final {
-    typedef std::unordered_set<string> StringSet;
-    typedef std::set<AstPragmaType> PragmaSet;
-
     V3ConfigFTaskResolver m_tasks;  // Functions/tasks in module
     V3ConfigVarResolver m_vars;  // Variables in module
-    StringSet m_coverageOffBlocks;  // List of block names for coverage_off
-    PragmaSet m_modPragmas;  // List of Pragmas for modules
+    std::unordered_set<std::string> m_coverageOffBlocks;  // List of block names for coverage_off
+    std::set<AstPragmaType> m_modPragmas;  // List of Pragmas for modules
     bool m_inline = false;  // Whether to force the inline
     bool m_inlineValue = false;  // The inline value (on/off)
 
@@ -175,8 +172,7 @@ public:
             m_inline = m.m_inline;
             m_inlineValue = m.m_inlineValue;
         }
-        for (PragmaSet::const_iterator it = m.m_modPragmas.begin(); it != m.m_modPragmas.end();
-             ++it) {
+        for (auto it = m.m_modPragmas.cbegin(); it != m.m_modPragmas.cend(); ++it) {
             m_modPragmas.insert(*it);
         }
     }
@@ -198,7 +194,7 @@ public:
             AstNode* nodep = new AstPragma(modp->fileline(), type);
             modp->addStmtp(nodep);
         }
-        for (PragmaSet::const_iterator it = m_modPragmas.begin(); it != m_modPragmas.end(); ++it) {
+        for (auto it = m_modPragmas.cbegin(); it != m_modPragmas.cend(); ++it) {
             AstNode* nodep = new AstPragma(modp->fileline(), *it);
             modp->addStmtp(nodep);
         }

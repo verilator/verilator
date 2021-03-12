@@ -77,10 +77,8 @@ public:
 
 class LatchDetectGraph final : public V3Graph {
 protected:
-    typedef std::vector<AstVarRef*> VarRefVec;
-
     LatchDetectGraphVertex* m_curVertexp;  // Current latch detection graph vertex
-    VarRefVec m_outputs;  // Vector of lvalues encountered on this pass
+    std::vector<AstVarRef*> m_outputs;  // Vector of lvalues encountered on this pass
 
     VL_DEBUG_FUNC;  // Declare debug()
 

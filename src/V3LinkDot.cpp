@@ -140,10 +140,7 @@ public:
 
 private:
     // TYPES
-    typedef std::multimap<string, VSymEnt*> NameScopeSymMap;
     typedef std::unordered_map<VSymEnt*, VSymEnt*> ScopeAliasMap;
-    typedef std::set<std::pair<AstNodeModule*, string>> ImplicitNameSet;
-    typedef std::vector<VSymEnt*> IfaceVarSyms;
     typedef std::vector<std::pair<AstIface*, VSymEnt*>> IfaceModSyms;
 
     static LinkDotState* s_errorThisp;  // Last self, for error reporting only
@@ -151,10 +148,12 @@ private:
     // MEMBERS
     VSymGraph m_syms;  // Symbol table
     VSymEnt* m_dunitEntp;  // $unit entry
-    NameScopeSymMap m_nameScopeSymMap;  // Map of scope referenced by non-pretty textual name
-    ImplicitNameSet m_implicitNameSet;  // For [module][signalname] if we can implicitly create it
+    std::multimap<std::string, VSymEnt*>
+        m_nameScopeSymMap;  // Map of scope referenced by non-pretty textual name
+    std::set<std::pair<AstNodeModule*, std::string>>
+        m_implicitNameSet;  // For [module][signalname] if we can implicitly create it
     std::array<ScopeAliasMap, SAMN__MAX> m_scopeAliasMap;  // Map of <lhs,rhs> aliases
-    IfaceVarSyms m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
+    std::vector<VSymEnt*> m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
     IfaceModSyms m_ifaceModSyms;  // List of AstIface+Symbols to be processed
     bool m_forPrimary;  // First link
     bool m_forPrearray;  // Compress cell__[array] refs

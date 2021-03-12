@@ -607,8 +607,7 @@ public:
         assertOneCheck();
         VpioCbList& cbObjList = s().m_cbObjLists[cbValueChange];
         bool called = false;
-        typedef std::unordered_set<VerilatedVpioVar*> VpioVarSet;
-        VpioVarSet update;  // set of objects to update after callbacks
+        std::unordered_set<VerilatedVpioVar*> update;  // set of objects to update after callbacks
         if (cbObjList.empty()) return called;
         const auto last = std::prev(cbObjList.end());  // prevent looping over newly added elements
         for (auto it = cbObjList.begin(); true;) {

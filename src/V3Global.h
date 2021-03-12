@@ -105,8 +105,8 @@ class V3Global final {
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
 
     // Memory address to short string mapping (for debug)
-    typedef std::unordered_map<const void*, std::string> PtrToIdMap;  // The map type
-    PtrToIdMap m_ptrToId;  // The actual 'address' <=> 'short string' bijection
+    std::unordered_map<const void*, std::string>
+        m_ptrToId;  // The actual 'address' <=> 'short string' bijection
 
 public:
     // Options

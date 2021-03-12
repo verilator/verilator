@@ -45,12 +45,11 @@ private:
 
     // TYPES
     typedef std::map<const std::pair<void*, string>, AstTypedef*> ImplTypedefMap;
-    typedef std::unordered_set<FileLine*> FileLineSet;
 
     // STATE
     AstVar* m_varp = nullptr;  // Variable we're under
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
-    FileLineSet m_filelines;  // Filelines that have been seen
+    std::unordered_set<FileLine*> m_filelines;  // Filelines that have been seen
     bool m_inAlways = false;  // Inside an always
     AstNodeModule* m_valueModp
         = nullptr;  // If set, move AstVar->valuep() initial values to this module

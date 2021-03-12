@@ -37,8 +37,7 @@ private:
     AstScope* m_classScopep = nullptr;  // Package moving scopes into
     AstScope* m_packageScopep = nullptr;  // Class package scope
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
-    typedef std::vector<std::pair<AstNode*, AstScope*>> MoveVector;
-    MoveVector m_moves;
+    std::vector<std::pair<AstNode*, AstScope*>> m_moves;
 
     // NODE STATE
     //  AstClass::user1()       -> bool.  True if iterated already
