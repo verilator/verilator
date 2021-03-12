@@ -2,6 +2,9 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
+* Verilator 4.201 devel
+
+
 * Verilator 4.200 2021-03-12
 
 **    Add simulation context (VerilatedContext) to allow multiple fully independent
