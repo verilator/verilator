@@ -171,7 +171,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
     UASSERT_OBJ(newmodp && newmodp->isTop(), rootp, "No TOP module found to insert under");
 
     // Find all duplicate signal names (if multitop)
-    typedef std::unordered_set<std::string> NameSet;
+    using NameSet = std::unordered_set<std::string>;
     NameSet ioNames;
     NameSet dupNames;
     // For all modules, skipping over new top

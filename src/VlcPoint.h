@@ -93,15 +93,15 @@ public:
 class VlcPoints final {
 private:
     // MEMBERS
-    typedef std::map<const string, vluint64_t> NameMap;  // Sorted by name (ordered)
+    using NameMap = std::map<const std::string, vluint64_t>;  // Sorted by name (ordered)
     NameMap m_nameMap;  //< Name to point-number
     std::vector<VlcPoint> m_points;  //< List of all points
     vluint64_t m_numPoints = 0;  //< Total unique points
 
 public:
     // ITERATORS
-    typedef NameMap ByName;
-    typedef ByName::iterator iterator;
+    using ByName = NameMap;
+    using iterator = ByName::iterator;
     ByName::iterator begin() { return m_nameMap.begin(); }
     ByName::iterator end() { return m_nameMap.end(); }
 

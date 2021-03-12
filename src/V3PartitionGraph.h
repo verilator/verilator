@@ -40,7 +40,7 @@ public:
 class AbstractLogicMTask VL_NOT_FINAL : public AbstractMTask {
 public:
     // TYPES
-    typedef std::list<MTaskMoveVertex*> VxList;
+    using VxList = std::list<MTaskMoveVertex*>;
     // CONSTRUCTORS
     AbstractLogicMTask(V3Graph* graphp)
         : AbstractMTask{graphp} {}

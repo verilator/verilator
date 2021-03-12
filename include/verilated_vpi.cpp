@@ -456,7 +456,7 @@ public:
 
 //======================================================================
 
-typedef PLI_INT32 (*VerilatedPliCb)(struct t_cb_data*);
+using VerilatedPliCb = PLI_INT32 (*)(struct t_cb_data*);
 
 class VerilatedVpiCbHolder final {
     // Holds information needed to call a callback
@@ -502,8 +502,8 @@ class VerilatedVpiError;
 
 class VerilatedVpiImp final {
     enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime + 1 };  // Maxium callback reason
-    typedef std::list<VerilatedVpiCbHolder> VpioCbList;
-    typedef std::map<std::pair<QData, vluint64_t>, VerilatedVpiCbHolder> VpioTimedCbs;
+    using VpioCbList = std::list<VerilatedVpiCbHolder>;
+    using VpioTimedCbs = std::map<std::pair<QData, vluint64_t>, VerilatedVpiCbHolder>;
 
     // All only medium-speed, so use singleton function
     VpioCbList m_cbObjLists[CB_ENUM_MAX_VALUE];  // Callbacks for each supported reason
@@ -607,8 +607,7 @@ public:
         assertOneCheck();
         VpioCbList& cbObjList = s().m_cbObjLists[cbValueChange];
         bool called = false;
-        typedef std::unordered_set<VerilatedVpioVar*> VpioVarSet;
-        VpioVarSet update;  // set of objects to update after callbacks
+        std::unordered_set<VerilatedVpioVar*> update;  // set of objects to update after callbacks
         if (cbObjList.empty()) return called;
         const auto last = std::prev(cbObjList.end());  // prevent looping over newly added elements
         for (auto it = cbObjList.begin(); true;) {

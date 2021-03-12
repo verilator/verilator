@@ -76,7 +76,7 @@ private:
     std::vector<char> m_suffixes;  ///< VCD line end string codes + metadata
     const char* m_suffixesp;  ///< Pointer to first element of above
 
-    typedef std::map<const std::string, const std::string> NameMap;
+    using NameMap = std::map<const std::string, const std::string>;
     NameMap* m_namemapp = nullptr;  ///< List of names for the header
 
     void bufferResize(vluint64_t minsize);

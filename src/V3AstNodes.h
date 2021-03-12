@@ -296,7 +296,7 @@ public:
 
 class AstClass final : public AstNodeModule {
     // TYPES
-    typedef std::map<const string, AstNode*> MemberNameMap;
+    using MemberNameMap = std::map<const std::string, AstNode*>;
     // MEMBERS
     MemberNameMap m_members;  // Members or method children
     AstClassPackage* m_classOrPackagep = nullptr;  // Class package this is under
@@ -4998,7 +4998,7 @@ class AstInitArray final : public AstNode {
     // Parents: ASTVAR::init()
     // Children: AstInitItem
 public:
-    typedef std::map<uint32_t, AstInitItem*> KeyItemMap;
+    using KeyItemMap = std::map<uint32_t, AstInitItem*>;
 
 private:
     KeyItemMap m_map;  // Node value for each array index
@@ -9198,7 +9198,7 @@ class AstTypeTable final : public AstNode {
     AstQueueDType* m_queueIndexp = nullptr;
     AstBasicDType* m_basicps[AstBasicDTypeKwd::_ENUM_MAX];
     //
-    typedef std::map<VBasicTypeKey, AstBasicDType*> DetailedMap;
+    using DetailedMap = std::map<VBasicTypeKey, AstBasicDType*>;
     DetailedMap m_detailedMap;
 
 public:

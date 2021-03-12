@@ -124,7 +124,7 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	Changes \
 	LICENSE \
 	MANIFEST.SKIP \
-	README.adoc \
+	README.rst \
 	verilator-config.cmake.in \
 	verilator-config-version.cmake.in \
 	bin/verilator \
@@ -134,16 +134,16 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
 	docs/.gitignore \
-	docs/CONTRIBUTING.adoc \
+	docs/CONTRIBUTING.rst \
 	docs/CONTRIBUTORS \
 	docs/Makefile.in \
 	docs/TODO \
 	docs/doxygen-mainpage \
 	docs/doxygen.config \
-	docs/install.adoc \
-	docs/internals.adoc \
+	docs/install.rst \
+	docs/internals.rst \
 	docs/verilator_logo.png \
-	docs/xml.adoc \
+	docs/xml.rst \
 	install-sh configure *.pod \
 	include/*.[chv]* \
 	include/*.in \

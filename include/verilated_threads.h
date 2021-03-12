@@ -47,9 +47,9 @@
 // VlMTaskVertex and VlThreadpool will work with multiple symbol table types.
 // Since the type is opaque to VlMTaskVertex and VlThreadPool, represent it
 // as a void* here.
-typedef void* VlThrSymTab;
+using VlThrSymTab = void*;
 
-typedef void (*VlExecFnp)(bool, VlThrSymTab);
+using VlExecFnp = void (*)(bool, VlThrSymTab);
 
 /// Track dependencies for a single MTask.
 class VlMTaskVertex final {
@@ -251,8 +251,7 @@ public:
 
 class VlThreadPool final {
     // TYPES
-    typedef std::vector<VlProfileRec> ProfileTrace;
-    typedef std::set<ProfileTrace*> ProfileSet;
+    using ProfileTrace = std::vector<VlProfileRec>;
 
     // MEMBERS
     std::vector<VlWorkerThread*> m_workers;  // our workers
@@ -266,7 +265,7 @@ class VlThreadPool final {
     // this is the only cost we pay in real-time during a profiling cycle.
     // Internal note: Globals may multi-construct, see verilated.cpp top.
     static VL_THREAD_LOCAL ProfileTrace* t_profilep;
-    ProfileSet m_allProfiles VL_GUARDED_BY(m_mutex);
+    std::set<ProfileTrace*> m_allProfiles VL_GUARDED_BY(m_mutex);
     VerilatedMutex m_mutex;
 
 public:

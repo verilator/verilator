@@ -94,11 +94,10 @@ private:
     bool m_inDly = false;  // True in delayed assignments
     bool m_inLoop = false;  // True in for loops
     bool m_inInitial = false;  // True in initial blocks
-    typedef std::map<const std::pair<AstNodeModule*, string>, AstVar*> VarMap;
+    using VarMap = std::map<const std::pair<AstNodeModule*, std::string>, AstVar*>;
     VarMap m_modVarMap;  // Table of new var names created under module
     VDouble0 m_statSharedSet;  // Statistic tracking
-    typedef std::unordered_map<const AstVarScope*, int> ScopeVecMap;
-    ScopeVecMap m_scopeVecMap;  // Next var number for each scope
+    std::unordered_map<const AstVarScope*, int> m_scopeVecMap;  // Next var number for each scope
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -134,7 +133,7 @@ private:
         AstVar* varp;
         AstNodeModule* addmodp = oldvarscp->scopep()->modp();
         // We need a new AstVar, but only one for all scopes, to match the new AstVarScope
-        const auto it = m_modVarMap.find(make_pair(addmodp, name));
+        const auto it = m_modVarMap.find(std::make_pair(addmodp, name));
         if (it != m_modVarMap.end()) {
             // Created module's AstVar earlier under some other scope
             varp = it->second;
@@ -150,7 +149,7 @@ private:
                                   VFlagBitPacked(), width);
             }
             addmodp->addStmtp(varp);
-            m_modVarMap.emplace(make_pair(addmodp, name), varp);
+            m_modVarMap.emplace(std::make_pair(addmodp, name), varp);
         }
 
         AstVarScope* varscp = new AstVarScope(oldvarscp->fileline(), oldvarscp->scopep(), varp);

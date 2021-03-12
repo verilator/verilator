@@ -79,7 +79,7 @@ class VInFilterImp;
 class VInFilter final {
 public:
     // TYPES
-    typedef std::list<string> StrList;
+    using StrList = std::list<std::string>;
 
 private:
     VInFilterImp* m_impp;

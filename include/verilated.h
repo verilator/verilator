@@ -194,8 +194,8 @@ public:
 // Empty non-threaded mutex to avoid #ifdefs in consuming code
 class VerilatedMutex final {
 public:
-    void lock() {}
-    void unlock() {}
+    void lock() {}  // LCOV_EXCL_LINE
+    void unlock() {}  // LCOV_EXCL_LINE
 };
 
 // Empty non-threaded lock guard to avoid #ifdefs in consuming code
@@ -205,8 +205,8 @@ class VerilatedLockGuard final {
 public:
     explicit VerilatedLockGuard(VerilatedMutex&) {}
     ~VerilatedLockGuard() = default;
-    void lock() {}
-    void unlock() {}
+    void lock() {}  // LCOV_EXCL_LINE
+    void unlock() {}  // LCOV_EXCL_LINE
 };
 
 #endif  // VL_THREADED
@@ -575,10 +575,10 @@ public:  // But for internal use only
 
 class VerilatedScope final {
 public:
-    typedef enum : vluint8_t {
+    enum Type : vluint8_t {
         SCOPE_MODULE,
         SCOPE_OTHER
-    } Type;  // Type of a scope, currently module is only interesting
+    };  // Type of a scope, currently module is only interesting
 private:
     // Fastpath:
     VerilatedSyms* m_symsp = nullptr;  ///< Symbol table

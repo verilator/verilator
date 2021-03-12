@@ -784,7 +784,7 @@ std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) {
         }
         break;
     }
-    return make_pair(packed, unpacked);
+    return std::make_pair(packed, unpacked);
 }
 
 int AstNodeDType::widthPow2() const {

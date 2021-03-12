@@ -40,9 +40,7 @@
 class CoverageVisitor final : public AstNVisitor {
 private:
     // TYPES
-    typedef std::unordered_map<string, int> VarNameMap;
-    typedef std::set<int> LinenoSet;
-    typedef std::unordered_map<int, LinenoSet> HandleLines;
+    using LinenoSet = std::set<int>;
 
     struct ToggleEnt {
         string m_comment;  // Comment for coverage dump
@@ -81,9 +79,10 @@ private:
     CheckState m_state;  // State save-restored on each new coverage scope/block
     AstNodeModule* m_modp = nullptr;  // Current module to add statement to
     bool m_inToggleOff = false;  // In function/task etc
-    VarNameMap m_varnames;  // Uniquification of inserted variable names
+    std::unordered_map<std::string, int> m_varnames;  // Uniquification of inserted variable names
     string m_beginHier;  // AstBegin hier name for user coverage points
-    HandleLines m_handleLines;  // All line numbers for a given m_stateHandle
+    std::unordered_map<int, LinenoSet>
+        m_handleLines;  // All line numbers for a given m_stateHandle
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

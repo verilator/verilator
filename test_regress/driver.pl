@@ -1011,6 +1011,7 @@ sub compile {
                     cmd=>[($ENV{VERILATOR_VCS}||"vcs"),
                           @{$param{vcs_flags}},
                           @{$param{vcs_flags2}},
+                          ($opt_verbose ? " -CFLAGS -DTEST_VERBOSE=1":""),
                           @{$param{v_flags}},
                           @{$param{v_flags2}},
                           $param{top_filename},
@@ -1159,7 +1160,7 @@ sub compile {
                         entering => "$self->{obj_dir}",
                         cmd => [$ENV{MAKE},
                                 "-C ".$self->{obj_dir},
-                                "-f ".$::RealBin."/Makefile_obj",
+                                "-f ".$FindBin::RealBin."/Makefile_obj",
                                 ($self->{verbose} ? "" : "--no-print-directory"),
                                 "VM_PREFIX=$self->{VM_PREFIX}",
                                 "TEST_OBJ_DIR=$self->{obj_dir}",
@@ -1332,6 +1333,7 @@ sub execute {
                     %param,
                     expect=>$param{expect},  # backward compatible name
                     expect_filename=>$param{expect_filename},  # backward compatible name
+                    verilator_run => 1,
                     );
     }
     else {
@@ -1547,22 +1549,27 @@ sub _run {
                  #entering =>  # Print entering directory information
                  #verilator_run =>  # Move gcov data to parallel area
                  @_);
+
     my $command = join(' ',@{$param{cmd}});
     $command = "time $command" if $opt_benchmark && $command !~ /^cd /;
-    print "\t$command";
-    print "   > $param{logfile}" if $param{logfile};
-    print "\n";
 
     if ($param{verilator_run}) {
         # Gcov fails when parallel jobs write same data file,
-        # so we make sure output dir is unique across all running jobs.
-        # We can't just put each one in obj_dir as it uses too much disk.
+        # so we make sure .gcda output dir is unique across all running jobs.
+        # We can't just put each one in a unique obj_dir as it uses too much disk.
+        # Must use absolute path as some execute()s have different PWD
         $ENV{GCOV_PREFIX_STRIP} = 99;
-        $ENV{GCOV_PREFIX} = "$self->{t_dir}/obj_dist/gcov_$self->{running_id}";
+        $ENV{GCOV_PREFIX} = File::Spec->rel2abs("$FindBin::RealBin/obj_dist/gcov_$self->{running_id}");
+        mkdir $ENV{GCOV_PREFIX};
+        print "export GCOV_PREFIX_STRIP=99 GCOV_PREFIX=$ENV{GCOV_PREFIX}\n" if $self->{verbose};
     } else {
         delete $ENV{GCOV_PREFIX_STRIP};
         delete $ENV{GCOV_PREFIX};
     }
+
+    print "\t$command";
+    print "   > $param{logfile}" if $param{logfile};
+    print "\n";
 
     # Execute command redirecting output, keeping order between stderr and stdout.
     # Must do low-level IO so GCC interaction works (can't be line-based)

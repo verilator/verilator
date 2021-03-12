@@ -61,7 +61,7 @@ public:
     std::string filename() const { return m_filename; }
     virtual void close() VL_MT_UNSAFE_ONE { flush(); }
     virtual void flush() VL_MT_UNSAFE_ONE {}
-    inline VerilatedSerialize& write(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
+    VerilatedSerialize& write(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
         const vluint8_t* __restrict dp = (const vluint8_t* __restrict)datap;
         while (size) {
             bufferCheck();
@@ -122,7 +122,7 @@ public:
     std::string filename() const { return m_filename; }
     virtual void close() VL_MT_UNSAFE_ONE { flush(); }
     virtual void flush() VL_MT_UNSAFE_ONE {}
-    inline VerilatedDeserialize& read(void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
+    VerilatedDeserialize& read(void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
         vluint8_t* __restrict dp = static_cast<vluint8_t* __restrict>(datap);
         while (size) {
             bufferCheck();

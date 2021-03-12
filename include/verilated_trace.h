@@ -114,8 +114,8 @@ public:
     //=========================================================================
     // Generic tracing internals
 
-    typedef void (*initCb_t)(void*, T_Derived*, uint32_t);  // Type of init callbacks
-    typedef void (*dumpCb_t)(void*, T_Derived*);  // Type of all but init callbacks
+    using initCb_t = void (*)(void*, T_Derived*, vluint32_t);  // Type of init callbacks
+    using dumpCb_t = void (*)(void*, T_Derived*);  // Type of all but init callbacks
 
 private:
     struct CallbackRecord {

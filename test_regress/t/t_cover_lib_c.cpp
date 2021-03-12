@@ -14,22 +14,17 @@
 #include <iostream>
 #include "svdpi.h"
 
+#include "TestCheck.h"
+
 #include "verilated_cov.h"
 
 #include VM_PREFIX_INCLUDE
-
-#define CHECK_RESULT_CSTR(got, exp) \
-    if (strcmp((got), (exp))) { \
-        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", __FILE__, __LINE__, \
-               (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
-        ++failure; \
-    }
 
 //======================================================================
 
 double sc_time_stamp() { return 0; }
 
-int failure = 0;
+int errors = 0;
 
 //======================================================================
 
@@ -50,7 +45,7 @@ int main() {
     coverw[1] = 220;
 
 #ifdef T_COVER_LIB
-    CHECK_RESULT_CSTR(covContextp->defaultFilename(), "coverage.dat");
+    TEST_CHECK_CSTR(covContextp->defaultFilename(), "coverage.dat");
     covContextp->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage1.dat");
     covContextp->clearNonMatch("kept_");
     covContextp->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage2.dat");
@@ -59,7 +54,7 @@ int main() {
     covContextp->clear();
     covContextp->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
 #elif defined(T_COVER_LIB_LEGACY)
-    CHECK_RESULT_CSTR(VerilatedCov::defaultFilename(), "coverage.dat");
+    TEST_CHECK_CSTR(VerilatedCov::defaultFilename(), "coverage.dat");
     VerilatedCov::write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage1.dat");
     VerilatedCov::clearNonMatch("kept_");
     VerilatedCov::write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage2.dat");
@@ -72,5 +67,5 @@ int main() {
 #endif
 
     printf("*-* All Finished *-*\n");
-    return (failure ? 10 : 0);
+    return (errors ? 10 : 0);
 }

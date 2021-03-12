@@ -2,16 +2,30 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
-* Verilator 4.111 devel
-      (Next release version number will be 4.200)
+* Verilator 4.201 devel
+
+
+* Verilator 4.200 2021-03-12
 
 **    Add simulation context (VerilatedContext) to allow multiple fully independent
-      models to be in the same process.  Please see the updated examples.
+      models to be in the same process. Please see the updated examples. (#2660)
 
 **    Add context->time() and context->timeInc() API calls, to set simulation time.
       These now are recommended in place of the legacy sc_time_stamp().
 
+****  Converted Asciidoc documentation into reStructuredText (RST) format.
+
 ****  --inhibit-sim is planned for deprecation, file a bug if this is still being used.
+
+****  Fix range inheritance on port without data type (#2753). [Embedded Go]
+
+****  Fix slice-assign overflow (#2803) (#2811). [David Turner]
+
+****  Fix interface array connection ordering broken in v4.110 (#2827). [Don Owen]
+
+****  Fix or-reduction on different scopes broken in 4.110 (#2828). [Yinan Xu]
+
+****  Fix MSVC++ compile error. (#2831) (#2833) [Drew Taussig]
 
 
 * Verilator 4.110 2021-02-25

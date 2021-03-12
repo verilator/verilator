@@ -80,7 +80,7 @@ public:
 /// This assumes no thread starts pushing the next tick until the previous has drained.
 /// If more aggressiveness is needed, a double-buffered scheme might work well.
 class VerilatedEvalMsgQueue final {
-    typedef std::multiset<VerilatedMsg, VerilatedMsg::Cmp> VerilatedThreadQueue;
+    using VerilatedThreadQueue = std::multiset<VerilatedMsg, VerilatedMsg::Cmp>;
 
     std::atomic<vluint64_t> m_depth;  ///< Current depth of queue (see comments below)
 
@@ -180,7 +180,7 @@ class VerilatedFpList final {
     std::size_t m_sz = 0;
 
 public:
-    typedef FILE* const* const_iterator;
+    using const_iterator = FILE* const*;
     explicit VerilatedFpList() {}
     const_iterator begin() const { return m_fp; }
     const_iterator end() const { return m_fp + m_sz; }
@@ -450,8 +450,8 @@ protected:
     friend class VerilatedImp;
 
     // TYPES
-    typedef std::map<std::pair<const void*, void*>, void*> UserMap;
-    typedef std::map<const char*, int, VerilatedCStrCmp> ExportNameMap;
+    using UserMap = std::map<std::pair<const void*, void*>, void*>;
+    using ExportNameMap = std::map<const char*, int, VerilatedCStrCmp>;
 
     // MEMBERS
     // Nothing below here is save-restored; users expected to re-register appropriately

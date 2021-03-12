@@ -50,8 +50,8 @@ class V3Hashed final : public VHashedBase {
 
     // TYPES
 public:
-    typedef std::multimap<V3Hash, AstNode*> HashMmap;
-    typedef HashMmap::iterator iterator;
+    using HashMmap = std::multimap<V3Hash, AstNode*>;
+    using iterator = HashMmap::iterator;
 
 private:
     // MEMBERS

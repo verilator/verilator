@@ -11,33 +11,6 @@ interface intf ();
    integer index;
 endinterface
 
-module sub
-  (
-   input logic clk,
-   input int cyc,
-   intf alh[1:2],
-   intf ahl[2:1],
-   intf blh[1:2],
-   intf bhl[2:1]
-   );
-
-   always @(posedge clk) begin
-      if (cyc == 5) begin
-         `checkh(alh[1].index, 2);
-         `checkh(alh[2].index, 1);
-         `checkh(ahl[1].index, 1);
-         `checkh(ahl[2].index, 2);
-         `checkh(blh[1].index, 1);
-         `checkh(blh[2].index, 2);
-         `checkh(bhl[1].index, 2);
-         `checkh(bhl[2].index, 1);
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
-
-endmodule
-
 module t
   (
    clk
@@ -64,14 +37,41 @@ module t
    always @(posedge clk) begin
       cyc <= cyc + 1;
       if (cyc == 1) begin
-         ifa1_intf[1].index = 1;
-         ifa1_intf[2].index = 2;
-         ifa2_intf[1].index = 1;
-         ifa2_intf[2].index = 2;
-         ifb1_intf[1].index = 1;
-         ifb1_intf[2].index = 2;
-         ifb2_intf[1].index = 1;
-         ifb2_intf[2].index = 2;
+         ifa1_intf[1].index = 'h101;
+         ifa1_intf[2].index = 'h102;
+         ifa2_intf[1].index = 'h201;
+         ifa2_intf[2].index = 'h202;
+         ifb1_intf[1].index = 'h301;
+         ifb1_intf[2].index = 'h302;
+         ifb2_intf[1].index = 'h401;
+         ifb2_intf[2].index = 'h402;
+      end
+   end
+
+endmodule
+
+module sub
+  (
+   input logic clk,
+   input int cyc,
+   intf alh[1:2],
+   intf ahl[2:1],
+   intf blh[1:2],
+   intf bhl[2:1]
+   );
+
+   always @(posedge clk) begin
+      if (cyc == 5) begin
+         `checkh(alh[1].index, 'h102);
+         `checkh(alh[2].index, 'h101);
+         `checkh(ahl[1].index, 'h201);
+         `checkh(ahl[2].index, 'h202);
+         `checkh(blh[1].index, 'h301);
+         `checkh(blh[2].index, 'h302);
+         `checkh(bhl[1].index, 'h402);
+         `checkh(bhl[2].index, 'h401);
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

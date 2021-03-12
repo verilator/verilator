@@ -49,7 +49,7 @@ extern std::string VL_TO_STRING_W(int words, WDataInP obj);
 
 class VlURNG final {
 public:
-    typedef size_t result_type;
+    using result_type = size_t;
     static constexpr size_t min() { return 0; }
     static constexpr size_t max() { return 1ULL << 31; }
     size_t operator()() { return VL_MASK_I(31) & VL_RANDOM_I(32); }
@@ -142,10 +142,10 @@ template <std::size_t T_Words> std::string VL_TO_STRING(const VlWide<T_Words>& o
 template <class T_Value, size_t T_MaxSize = 0> class VlQueue final {
 private:
     // TYPES
-    typedef std::deque<T_Value> Deque;
+    using Deque = std::deque<T_Value>;
 
 public:
-    typedef typename Deque::const_iterator const_iterator;
+    using const_iterator = typename Deque::const_iterator;
 
 private:
     // MEMBERS
@@ -497,10 +497,10 @@ template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
 template <class T_Key, class T_Value> class VlAssocArray final {
 private:
     // TYPES
-    typedef std::map<T_Key, T_Value> Map;
+    using Map = std::map<T_Key, T_Value>;
 
 public:
-    typedef typename Map::const_iterator const_iterator;
+    using const_iterator = typename Map::const_iterator;
 
 private:
     // MEMBERS
@@ -801,10 +801,10 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
 template <class T_Value, std::size_t T_Depth> class VlUnpacked final {
 private:
     // TYPES
-    typedef std::array<T_Value, T_Depth> Array;
+    using Array = std::array<T_Value, T_Depth>;
 
 public:
-    typedef typename Array::const_iterator const_iterator;
+    using const_iterator = typename Array::const_iterator;
 
 private:
     // MEMBERS
