@@ -32,7 +32,7 @@
 
 class StatsReport final {
     // TYPES
-    typedef std::vector<V3Statistic> StatColl;
+    using StatColl = std::vector<V3Statistic>;
 
     // STATE
     std::ofstream& os;  ///< Output stream

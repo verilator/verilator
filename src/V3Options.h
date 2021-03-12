@@ -152,8 +152,8 @@ inline bool operator==(const TraceFormat& lhs, const TraceFormat& rhs) {
 inline bool operator==(const TraceFormat& lhs, TraceFormat::en rhs) { return lhs.m_e == rhs; }
 inline bool operator==(TraceFormat::en lhs, const TraceFormat& rhs) { return lhs == rhs.m_e; }
 
-typedef std::vector<string> V3StringList;
-typedef std::set<string> V3StringSet;
+using V3StringList = std::vector<std::string>;
+using V3StringSet = std::set<std::string>;
 
 //######################################################################
 
@@ -161,7 +161,7 @@ typedef std::set<string> V3StringSet;
 class V3HierarchicalBlockOption final {
 public:
     // key:parameter name, value:value (as string)
-    typedef std::map<const string, string> ParamStrMap;
+    using ParamStrMap = std::map<const std::string, std::string>;
 
 private:
     string m_origName;  // module name
@@ -178,7 +178,7 @@ public:
     const ParamStrMap params() const { return m_parameters; }
 };
 
-typedef std::map<const string, V3HierarchicalBlockOption> V3HierBlockOptSet;
+using V3HierBlockOptSet = std::map<const std::string, V3HierarchicalBlockOption>;
 
 //######################################################################
 // V3Options - Command line options
@@ -187,7 +187,7 @@ class V3Options final {
 public:
 private:
     // TYPES
-    typedef std::map<const string, int> DebugSrcMap;
+    using DebugSrcMap = std::map<const std::string, int>;
 
     // MEMBERS (general options)
     V3OptionsImp* m_impp;  // Slow hidden options

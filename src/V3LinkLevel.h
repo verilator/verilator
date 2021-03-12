@@ -27,7 +27,7 @@
 
 class V3LinkLevel final {
 private:
-    typedef std::vector<AstNodeModule*> ModVec;
+    using ModVec = std::vector<AstNodeModule*>;
 
     static void timescaling(const ModVec& mods);
     static void wrapTopCell(AstNetlist* rootp);

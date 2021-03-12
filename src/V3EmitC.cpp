@@ -41,8 +41,8 @@ constexpr int EMITC_NUM_CONSTW
 
 class EmitCStmts VL_NOT_FINAL : public EmitCBaseVisitor {
 private:
-    typedef std::vector<const AstVar*> VarVec;
-    typedef std::map<int, VarVec> VarSortMap;  // Map size class to VarVec
+    using VarVec = std::vector<const AstVar*>;
+    using VarSortMap = std::map<int, VarVec>;  // Map size class to VarVec
 
     bool m_suppressSemi;
     AstVarRef* m_wideTempRefp;  // Variable that _WW macros should be setting
@@ -2957,7 +2957,7 @@ void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
     }
 
     // MacroTask mode.  Sort by MTask-affinity group first, size second.
-    typedef std::map<const MTaskIdSet, VarSortMap> MTaskVarSortMap;
+    using MTaskVarSortMap = std::map<const MTaskIdSet, VarSortMap>;
     MTaskVarSortMap m2v;
     for (VarSortMap::const_iterator it = vmap.begin(); it != vmap.end(); ++it) {
         int size_class = it->first;

@@ -32,7 +32,7 @@
 
 class V3ParseSym final {
     // TYPES
-    typedef std::vector<VSymEnt*> SymStack;
+    using SymStack = std::vector<VSymEnt*>;
 
 private:
     // MEMBERS

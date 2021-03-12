@@ -60,8 +60,8 @@ public:
     ~SimStackNode() = default;
 };
 
-typedef std::deque<AstConst*> ConstDeque;
-typedef std::unordered_map<const AstNodeDType*, ConstDeque> ConstPile;
+using ConstDeque = std::deque<AstConst*>;
+using ConstPile = std::unordered_map<const AstNodeDType*, ConstDeque>;
 
 class SimulateVisitor VL_NOT_FINAL : public AstNVisitor {
     // Simulate a node tree, returning value of variables

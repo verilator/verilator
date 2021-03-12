@@ -615,8 +615,8 @@ private:
     VL_UNCOPYABLE(ReorderVisitor);
 };
 
-typedef std::unordered_set<uint32_t> ColorSet;
-typedef std::vector<AstAlways*> AlwaysVec;
+using ColorSet = std::unordered_set<uint32_t>;
+using AlwaysVec = std::vector<AstAlways*>;
 
 class IfColorVisitor final : public AstNVisitor {
     // MEMBERS
@@ -752,7 +752,7 @@ protected:
 
     virtual void visit(AstNodeIf* nodep) override {
         const ColorSet& colors = m_ifColorp->colors(nodep);
-        typedef std::unordered_map<uint32_t, AstNodeIf*> CloneMap;
+        using CloneMap = std::unordered_map<uint32_t, AstNodeIf*>;
         CloneMap clones;
 
         for (unsigned int color : colors) {

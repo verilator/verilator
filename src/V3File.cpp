@@ -328,7 +328,7 @@ void V3File::createMakeDir() {
 // VInFilterImp
 
 class VInFilterImp final {
-    typedef VInFilter::StrList StrList;
+    using StrList = VInFilter::StrList;
 
     std::map<const std::string, std::string> m_contentsMap;  // Cache of file contents
     bool m_readEof = false;  // Received EOF on read

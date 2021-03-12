@@ -79,7 +79,7 @@ private:
     AstUser1InUse m_inuser1;
 
     // TYPES
-    typedef std::multimap<AstVarScope*, AstNodeAssign*> AssignMap;
+    using AssignMap = std::multimap<AstVarScope*, AstNodeAssign*>;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module

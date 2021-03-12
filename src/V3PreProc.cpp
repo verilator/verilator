@@ -108,8 +108,8 @@ public:
 class V3PreProcImp final : public V3PreProc {
 public:
     // TYPES
-    typedef std::map<const string, VDefine> DefinesMap;
-    typedef VInFilter::StrList StrList;
+    using DefinesMap = std::map<const std::string, VDefine>;
+    using StrList = VInFilter::StrList;
 
     // debug() -> see V3PreShellImp::debug; use --debugi-V3PreShell
 

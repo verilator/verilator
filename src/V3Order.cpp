@@ -136,8 +136,8 @@ private:
     const AstSenTree* m_domainp;  // Domain all vertices belong to
     const AstScope* m_scopep;  // Scope all vertices belong to
 
-    typedef std::pair<const AstSenTree*, const AstScope*> DomScopeKey;
-    typedef std::map<DomScopeKey, OrderMoveDomScope*> DomScopeMap;
+    using DomScopeKey = std::pair<const AstSenTree*, const AstScope*>;
+    using DomScopeMap = std::map<DomScopeKey, OrderMoveDomScope*>;
     static DomScopeMap s_dsMap;  // Structure registered for each dom/scope pairing
 
 public:
@@ -421,8 +421,8 @@ template <class T_MoveVertex> class ProcessMoveBuildGraph {
     //   works the same way for both cases.
 
     // TYPES
-    typedef std::pair<const V3GraphVertex*, const AstSenTree*> VxDomPair;
-    typedef std::unordered_map<const OrderLogicVertex*, T_MoveVertex*> Logic2Move;
+    using VxDomPair = std::pair<const V3GraphVertex*, const AstSenTree*>;
+    using Logic2Move = std::unordered_map<const OrderLogicVertex*, T_MoveVertex*>;
 
 public:
     class MoveVertexMaker VL_NOT_FINAL {
@@ -729,7 +729,7 @@ private:
 
     void process();
     void processCircular();
-    typedef std::deque<OrderEitherVertex*> VertexVec;
+    using VertexVec = std::deque<OrderEitherVertex*>;
     void processInputs();
     void processInputsInIterate(OrderEitherVertex* vertexp, VertexVec& todoVec);
     void processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec& todoVec);

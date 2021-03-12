@@ -44,7 +44,7 @@ private:
     AstUser2InUse m_inuser2;
 
     // TYPES
-    typedef std::map<const std::pair<void*, string>, AstTypedef*> ImplTypedefMap;
+    using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;
 
     // STATE
     AstVar* m_varp = nullptr;  // Variable we're under

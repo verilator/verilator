@@ -103,8 +103,8 @@ private:
     AstUser4InUse m_inuser4;
 
     // TYPES
-    typedef std::map<std::pair<AstScope*, AstVar*>, AstVarScope*> VarToScopeMap;
-    typedef std::unordered_map<const AstNodeFTask*, AstClass*> FuncToClassMap;
+    using VarToScopeMap = std::map<std::pair<AstScope*, AstVar*>, AstVarScope*>;
+    using FuncToClassMap = std::unordered_map<const AstNodeFTask*, AstClass*>;
     // MEMBERS
     VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
     FuncToClassMap m_funcToClassMap;  // Map for ctor func -> class
@@ -385,7 +385,7 @@ private:
         IM_AFTER,  // Pointing at last inserted stmt, insert after
         IM_WHILE_PRECOND  // Pointing to for loop, add to body end
     };
-    typedef std::map<const string, std::pair<AstNodeFTask*, string>> DpiNames;
+    using DpiNames = std::map<const string, std::pair<AstNodeFTask*, std::string>>;
 
     // STATE
     TaskStateVisitor* m_statep;  // Common state between visitors

@@ -67,11 +67,11 @@
 // Hierarchical block and parameter db (modules without parameter is also handled)
 
 class ParameterizedHierBlocks final {
-    typedef std::multimap<string, const V3HierarchicalBlockOption*> HierBlockOptsByOrigName;
-    typedef HierBlockOptsByOrigName::const_iterator HierMapIt;
-    typedef std::map<const string, AstNodeModule*> HierBlockModMap;
-    typedef std::map<const string, std::unique_ptr<AstConst>> ParamConstMap;
-    typedef std::map<const string, AstVar*> GParamsMap;  // key:parameter name value:parameter
+    using HierBlockOptsByOrigName = std::multimap<std::string, const V3HierarchicalBlockOption*>;
+    using HierMapIt = HierBlockOptsByOrigName::const_iterator;
+    using HierBlockModMap = std::map<const std::string, AstNodeModule*>;
+    using ParamConstMap = std::map<const std::string, std::unique_ptr<AstConst>>;
+    using GParamsMap = std::map<const std::string, AstVar*>;  // key:parameter name value:parameter
 
     // MEMBERS
     // key:Original module name, value:HiearchyBlockOption*
@@ -232,10 +232,10 @@ class ParamProcessor final {
 
     // TYPES
     // Note may have duplicate entries
-    typedef std::deque<std::pair<AstIfaceRefDType*, AstIfaceRefDType*>> IfaceRefRefs;
+    using IfaceRefRefs = std::deque<std::pair<AstIfaceRefDType*, AstIfaceRefDType*>>;
 
     // STATE
-    typedef std::unordered_map<const AstNode*, AstNode*> CloneMap;
+    using CloneMap = std::unordered_map<const AstNode*, AstNode*>;
     struct ModInfo {
         AstNodeModule* m_modp;  // Module with specified name
         CloneMap m_cloneMap;  // Map of old-varp -> new cloned varp
@@ -252,7 +252,7 @@ class ParamProcessor final {
     // Generated modules by this visitor is not included
     V3StringSet m_allModuleNames;
 
-    typedef std::pair<int, string> ValueMapValue;
+    using ValueMapValue = std::pair<int, std::string>;
     std::map<const V3Hash, ValueMapValue> m_valueMap;  // Hash of node hash to (param value, name)
     int m_nextValue = 1;  // Next value to use in m_valueMap
 
@@ -261,7 +261,7 @@ class ParamProcessor final {
     // Database to get protect-lib wrapper that matches parameters in hierarchical Verilation
     ParameterizedHierBlocks m_hierBlocks;
     // Default parameter values key:parameter name, value:default value (can be nullptr)
-    typedef std::map<string, AstConst*> DefaultValueMap;
+    using DefaultValueMap = std::map<std::string, AstConst*>;
     // Default parameter values of hierarchical blocks
     std::map<AstNodeModule*, DefaultValueMap> m_defaultParameterValues;
 

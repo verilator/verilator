@@ -211,7 +211,7 @@ private:
     AstActive* m_cActivep = nullptr;  // For current scope, the SActive(combo) we're building
 
     SenTreeSet m_activeSens;  // Sen lists for each active we've made
-    typedef std::unordered_map<AstSenTree*, AstActive*> ActiveMap;
+    using ActiveMap = std::unordered_map<AstSenTree*, AstActive*>;
     ActiveMap m_activeMap;  // Map sentree to active, for folding.
 
     // METHODS

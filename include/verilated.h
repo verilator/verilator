@@ -569,10 +569,10 @@ public:  // But for internal use only
 
 class VerilatedScope final {
 public:
-    typedef enum : vluint8_t {
+    enum Type : vluint8_t {
         SCOPE_MODULE,
         SCOPE_OTHER
-    } Type;  // Type of a scope, currently module is only interesting
+    };  // Type of a scope, currently module is only interesting
 private:
     // Fastpath:
     VerilatedSyms* m_symsp = nullptr;  ///< Symbol table

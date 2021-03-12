@@ -226,8 +226,8 @@ inline std::ostream& operator<<(std::ostream& os, const V3ErrorCode& rhs) {
 class V3Error final {
     // Base class for any object that wants debugging and error reporting
 
-    typedef std::set<string> MessagesSet;
-    typedef void (*ErrorExitCb)(void);
+    using MessagesSet = std::set<std::string>;
+    using ErrorExitCb = void (*)(void);
 
 private:
     static bool s_describedWarnings;  // Told user how to disable warns

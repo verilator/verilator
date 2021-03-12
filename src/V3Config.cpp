@@ -33,7 +33,7 @@
 // cache of resolved entities. Entities stored in this container need an update
 // function that takes a reference of this type to join multiple entities into one.
 template <typename T> class V3ConfigWildcardResolver {
-    typedef std::map<const string, T> Map;
+    using Map = std::map<const std::string, T>;
 
     Map m_mapWildcard;  // Wildcard strings to entities
     Map m_mapResolved;  // Resolved strings to converged entities
@@ -111,7 +111,7 @@ public:
     }
 };
 
-typedef V3ConfigWildcardResolver<V3ConfigVar> V3ConfigVarResolver;
+using V3ConfigVarResolver = V3ConfigWildcardResolver<V3ConfigVar>;
 
 //######################################################################
 // Function or task: Have variables and properties
@@ -148,7 +148,7 @@ public:
     }
 };
 
-typedef V3ConfigWildcardResolver<V3ConfigFTask> V3ConfigFTaskResolver;
+using V3ConfigFTaskResolver = V3ConfigWildcardResolver<V3ConfigFTask>;
 
 //######################################################################
 // Modules have tasks, variables, named blocks and properties
@@ -212,7 +212,7 @@ public:
     }
 };
 
-typedef V3ConfigWildcardResolver<V3ConfigModule> V3ConfigModuleResolver;
+using V3ConfigModuleResolver = V3ConfigWildcardResolver<V3ConfigModule>;
 
 //######################################################################
 // Files have:
@@ -246,14 +246,14 @@ std::ostream& operator<<(std::ostream& os, const V3ConfigIgnoresLine& rhs) {
 
 // Some attributes are attached to entities of the occur on a fileline
 // and multiple attributes can be attached to a line
-typedef std::bitset<AstPragmaType::ENUM_SIZE> V3ConfigLineAttribute;
+using V3ConfigLineAttribute = std::bitset<AstPragmaType::ENUM_SIZE>;
 
 // File entity
 class V3ConfigFile final {
-    typedef std::map<int, V3ConfigLineAttribute> LineAttrMap;  // Map line->bitset of attributes
-    typedef std::multiset<V3ConfigIgnoresLine> IgnLines;  // list of {line,code,on}
-    typedef std::pair<V3ErrorCode, string> WaiverSetting;  // Waive code if string matches
-    typedef std::vector<WaiverSetting> Waivers;  // List of {code,wildcard string}
+    using LineAttrMap = std::map<int, V3ConfigLineAttribute>;  // Map line->bitset of attributes
+    using IgnLines = std::multiset<V3ConfigIgnoresLine>;  // list of {line,code,on}
+    using WaiverSetting = std::pair<V3ErrorCode, std::string>;  // Waive code if string matches
+    using Waivers = std::vector<WaiverSetting>;  // List of {code,wildcard string}
 
     LineAttrMap m_lineAttrs;  // Atributes to line mapping
     IgnLines m_ignLines;  // Ignore line settings
@@ -338,7 +338,7 @@ public:
     }
 };
 
-typedef V3ConfigWildcardResolver<V3ConfigFile> V3ConfigFileResolver;
+using V3ConfigFileResolver = V3ConfigWildcardResolver<V3ConfigFile>;
 
 //######################################################################
 // Resolve modules and files in the design

@@ -37,7 +37,7 @@
 #include <map>
 #include <unordered_set>
 
-typedef std::list<AstNodeVarRef*> GateVarRefList;
+using GateVarRefList = std::list<AstNodeVarRef*>;
 
 constexpr int GATE_DEDUP_MAX_DEPTH = 20;
 

@@ -117,7 +117,7 @@ class TristateGraph final {
 
     // TYPES
 public:
-    typedef std::vector<AstVar*> VarVec;
+    using VarVec = std::vector<AstVar*>;
 
 private:
     // MEMBERS
@@ -328,8 +328,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstUser5InUse m_inuser5;
 
     // TYPES
-    typedef std::vector<AstVarRef*> RefVec;
-    typedef std::unordered_map<AstVar*, RefVec*> VarMap;
+    using RefVec = std::vector<AstVarRef*>;
+    using VarMap = std::unordered_map<AstVar*, RefVec*>;
     enum : uint8_t {
         U2_GRAPHING = 1,  // bit[0] if did m_graphing visit
         U2_NONGRAPH = 2,  // bit[1] if did !m_graphing visit

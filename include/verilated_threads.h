@@ -47,9 +47,9 @@
 // VlMTaskVertex and VlThreadpool will work with multiple symbol table types.
 // Since the type is opaque to VlMTaskVertex and VlThreadPool, represent it
 // as a void* here.
-typedef void* VlThrSymTab;
+using VlThrSymTab = void*;
 
-typedef void (*VlExecFnp)(bool, VlThrSymTab);
+using VlExecFnp = void (*)(bool, VlThrSymTab);
 
 /// Track dependencies for a single MTask.
 class VlMTaskVertex final {
@@ -251,7 +251,7 @@ public:
 
 class VlThreadPool final {
     // TYPES
-    typedef std::vector<VlProfileRec> ProfileTrace;
+    using ProfileTrace = std::vector<VlProfileRec>;
 
     // MEMBERS
     std::vector<VlWorkerThread*> m_workers;  // our workers

@@ -94,7 +94,7 @@ private:
     bool m_inDly = false;  // True in delayed assignments
     bool m_inLoop = false;  // True in for loops
     bool m_inInitial = false;  // True in initial blocks
-    typedef std::map<const std::pair<AstNodeModule*, string>, AstVar*> VarMap;
+    using VarMap = std::map<const std::pair<AstNodeModule*, std::string>, AstVar*>;
     VarMap m_modVarMap;  // Table of new var names created under module
     VDouble0 m_statSharedSet;  // Statistic tracking
     std::unordered_map<const AstVarScope*, int> m_scopeVecMap;  // Next var number for each scope

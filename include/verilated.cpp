@@ -2556,7 +2556,7 @@ const char* Verilated::catName(const char* n1, const char* n2, const char* delim
 
 // Keeping these out of class Verilated to avoid having to include <list>
 // in verilated.h (for compilation speed)
-typedef std::list<std::pair<Verilated::VoidPCb, void*>> VoidPCbList;
+using VoidPCbList = std::list<std::pair<Verilated::VoidPCb, void*>>;
 static struct {
     VerilatedMutex s_flushMutex;
     VoidPCbList s_flushCbs VL_GUARDED_BY(s_flushMutex);

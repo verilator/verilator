@@ -69,12 +69,12 @@ private:
     AstNodeModule* m_modp = nullptr;  // Current module
     VDouble0 m_statUnsup;  // Statistic tracking
 
-    typedef std::vector<AstNodeModule*> ModVec;
+    using ModVec = std::vector<AstNodeModule*>;
     ModVec m_allMods;  // All modules, in top-down order.
 
     // Within the context of a given module, LocalInstanceMap maps
     // from child modules to the count of each child's local instantiations.
-    typedef std::unordered_map<AstNodeModule*, int> LocalInstanceMap;
+    using LocalInstanceMap = std::unordered_map<AstNodeModule*, int>;
 
     // We keep a LocalInstanceMap for each module in the design
     std::unordered_map<AstNodeModule*, LocalInstanceMap> m_instances;

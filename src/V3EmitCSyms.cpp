@@ -71,11 +71,11 @@ class EmitCSyms final : EmitCBaseVisitor {
             , m_modp{modp}
             , m_scopep{scopep} {}
     };
-    typedef std::map<const string, ScopeData> ScopeNames;
-    typedef std::pair<AstScope*, AstNodeModule*> ScopeModPair;
-    typedef std::pair<AstNodeModule*, AstVar*> ModVarPair;
-    typedef std::vector<string> ScopeNameList;
-    typedef std::map<const string, ScopeNameList> ScopeNameHierarchy;
+    using ScopeNames = std::map<const std::string, ScopeData>;
+    using ScopeModPair = std::pair<AstScope*, AstNodeModule*>;
+    using ModVarPair = std::pair<AstNodeModule*, AstVar*>;
+    using ScopeNameList = std::vector<std::string>;
+    using ScopeNameHierarchy = std::map<const std::string, ScopeNameList>;
     struct CmpName {
         bool operator()(const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
             return lhsp.first->name() < rhsp.first->name();
@@ -401,7 +401,7 @@ void EmitCSyms::emitSymHdr() {
             AstCFunc* funcp = itr.second.m_cfuncp;
             if (funcp->dpiExport()) {
                 string cbtype = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
-                types["typedef void (*" + cbtype + ") (" + cFuncArgs(funcp) + ");\n"] = 1;
+                types["using " + cbtype + " = void (*) (" + cFuncArgs(funcp) + ");\n"] = 1;
             }
         }
         for (const auto& i : types) puts(i.first);

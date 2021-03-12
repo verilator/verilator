@@ -24,7 +24,7 @@
 
 class V3Waiver final {
     // TYPES
-    typedef std::vector<std::string> WaiverList;
+    using WaiverList = std::vector<std::string>;
     static WaiverList s_waiverList;
 
 public:

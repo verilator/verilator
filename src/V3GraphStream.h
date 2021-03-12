@@ -80,7 +80,7 @@ private:
         VL_UNCOPYABLE(VxHolderCmp);
     };
 
-    typedef std::set<VxHolder, VxHolderCmp&> ReadyVertices;
+    using ReadyVertices = std::set<VxHolder, VxHolderCmp&>;
 
     // MEMBERS
     VxHolderCmp m_vxHolderCmp;  // Vertext comparison functor
@@ -227,6 +227,6 @@ private:
 // GraphStreamUnordered is GraphStream using a plain pointer compare to
 // break ties in the graph order. This WILL return nodes in
 // nondeterministic order.
-typedef GraphStream<std::less<const V3GraphVertex*>> GraphStreamUnordered;
+using GraphStreamUnordered = GraphStream<std::less<const V3GraphVertex*>>;
 
 #endif  // Guard

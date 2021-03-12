@@ -40,7 +40,7 @@
 class CoverageVisitor final : public AstNVisitor {
 private:
     // TYPES
-    typedef std::set<int> LinenoSet;
+    using LinenoSet = std::set<int>;
 
     struct ToggleEnt {
         string m_comment;  // Comment for coverage dump

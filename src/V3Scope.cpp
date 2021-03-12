@@ -46,7 +46,7 @@ private:
 
     // TYPES
     // These cannot be unordered unless make a specialized hashing pair (gcc-8)
-    typedef std::map<std::pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
+    using VarScopeMap = std::map<std::pair<AstVar*, AstScope*>, AstVarScope*>;
 
     // STATE, inside processing a single module
     AstNodeModule* m_modp = nullptr;  // Current module

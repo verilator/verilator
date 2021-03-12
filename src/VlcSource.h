@@ -60,8 +60,8 @@ public:
 class VlcSource final {
 public:
     // TYPES
-    typedef std::map<int, VlcSourceCount> ColumnMap;  // Map of {column}
-    typedef std::map<int, ColumnMap> LinenoMap;  // Map of {lineno}{column}
+    using ColumnMap = std::map<int, VlcSourceCount>;  // Map of {column}
+    using LinenoMap = std::map<int, ColumnMap>;  // Map of {lineno}{column}
 
 private:
     // MEMBERS
@@ -101,7 +101,7 @@ public:
 class VlcSources final {
 public:
     // TYPES
-    typedef std::map<const string, VlcSource> NameMap;
+    using NameMap = std::map<const std::string, VlcSource>;
 
 private:
     // MEMBERS
@@ -109,7 +109,7 @@ private:
 
 public:
     // ITERATORS
-    typedef NameMap::iterator iterator;
+    using iterator = NameMap::iterator;
     NameMap::iterator begin() { return m_sources.begin(); }
     NameMap::iterator end() { return m_sources.end(); }
 

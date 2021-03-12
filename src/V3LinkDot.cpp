@@ -140,8 +140,8 @@ public:
 
 private:
     // TYPES
-    typedef std::unordered_map<VSymEnt*, VSymEnt*> ScopeAliasMap;
-    typedef std::vector<std::pair<AstIface*, VSymEnt*>> IfaceModSyms;
+    using ScopeAliasMap = std::unordered_map<VSymEnt*, VSymEnt*>;
+    using IfaceModSyms = std::vector<std::pair<AstIface*, VSymEnt*>>;
 
     static LinkDotState* s_errorThisp;  // Last self, for error reporting only
 

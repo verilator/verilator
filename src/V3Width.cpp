@@ -198,8 +198,8 @@ public:
 class WidthVisitor final : public AstNVisitor {
 private:
     // TYPES
-    typedef std::map<std::pair<const AstNodeDType*, AstAttrType>, AstVar*> TableMap;
-    typedef std::map<int, AstPatMember*> PatVecMap;
+    using TableMap = std::map<std::pair<const AstNodeDType*, AstAttrType>, AstVar*>;
+    using PatVecMap = std::map<int, AstPatMember*>;
 
     // STATE
     WidthVP* m_vup = nullptr;  // Current node state

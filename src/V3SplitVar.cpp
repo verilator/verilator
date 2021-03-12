@@ -285,9 +285,9 @@ public:
 
 class UnpackRefMap final {
 public:
-    typedef std::map<AstVar*, std::set<UnpackRef>, AstNodeComparator> MapType;
-    typedef MapType::iterator MapIt;
-    typedef MapType::value_type::second_type::iterator SetIt;
+    using MapType = std::map<AstVar*, std::set<UnpackRef>, AstNodeComparator>;
+    using MapIt = MapType::iterator;
+    using SetIt = MapType::value_type::second_type::iterator;
 
 private:
     MapType m_map;
@@ -379,10 +379,10 @@ public:
     }
 };
 
-typedef std::map<AstNodeModule*, RefsInModule, AstNodeComparator> SplitVarRefsMap;
+using SplitVarRefsMap = std::map<AstNodeModule*, RefsInModule, AstNodeComparator>;
 
 class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
-    typedef std::set<AstVar*, AstNodeComparator> VarSet;
+    using VarSet = std::set<AstVar*, AstNodeComparator>;
     VarSet m_foundTargetVar;
     UnpackRefMap m_refs;
     AstNodeModule* m_modp = nullptr;
@@ -879,8 +879,8 @@ class PackedVarRef final {
     }
 
 public:
-    typedef std::vector<PackedVarRefEntry>::iterator iterator;
-    typedef std::vector<PackedVarRefEntry>::const_iterator const_iterator;
+    using iterator = std::vector<PackedVarRefEntry>::iterator;
+    using const_iterator = std::vector<PackedVarRefEntry>::const_iterator;
     std::vector<PackedVarRefEntry>& lhs() {
         UASSERT(m_dedupDone, "cannot read before dedup()");
         return m_lhs;

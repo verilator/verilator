@@ -92,9 +92,9 @@ public:
 class VerilatedCovImp final : public VerilatedCovContext {
 private:
     // TYPES
-    typedef std::map<const std::string, int> ValueIndexMap;
-    typedef std::map<int, std::string> IndexValueMap;
-    typedef std::deque<VerilatedCovImpItem*> ItemList;
+    using ValueIndexMap = std::map<const std::string, int>;
+    using IndexValueMap = std::map<int, std::string>;
+    using ItemList = std::deque<VerilatedCovImpItem*>;
 
     // MEMBERS
     VerilatedMutex m_mutex;  ///< Protects all members
@@ -357,8 +357,7 @@ public:
         os << "# SystemC::Coverage-3\n";
 
         // Build list of events; totalize if collapsing hierarchy
-        typedef std::map<const std::string, std::pair<std::string, vluint64_t>> EventMap;
-        EventMap eventCounts;
+        std::map<const std::string, std::pair<std::string, vluint64_t>> eventCounts;
         for (const auto& itemp : m_items) {
             std::string name;
             std::string hier;
