@@ -20,10 +20,7 @@
 
 #include "TestCheck.h"
 
-#include <dlfcn.h>
 #include <iostream>
-
-bool errors = false;
 
 unsigned int main_time = 0;
 
@@ -52,31 +49,20 @@ int main(int argc, char** argv, char** env) {
     tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 #endif
 
-    // Load and initialize the PLI application
-    {
-        const char* filenamep = VL_STRINGIFY(TEST_OBJ_DIR) "/libvpi.so";
-        void* lib = dlopen(filenamep, RTLD_LAZY);
-        void* bootstrap = dlsym(lib, "vpi_compat_bootstrap");
-        if (!bootstrap) {
-            std::string msg = std::string("%Error: Could not dlopen ") + filenamep;
-            vl_fatal(__FILE__, __LINE__, "main", msg.c_str());
-        }
-        ((void (*)(void))bootstrap)();
-    }
-
     VerilatedVpi::callCbs(cbStartOfSimulation);
 
     topp->eval();
     topp->clk = 0;
-    main_time += 1;
 
     while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
         topp->eval();
         VerilatedVpi::callValueCbs();
         VerilatedVpi::callTimedCbs();
-        TEST_CHECK(VerilatedVpi::cbNextDeadline(), main_time + 1);
-        topp->clk = !topp->clk;
+        if (main_time > 20) {  // Else haven't registered callbacks
+            TEST_CHECK_EQ(VerilatedVpi::cbNextDeadline(), main_time + 1);
+        }
+        if ((main_time % 5) == 0) topp->clk = !topp->clk;
         // mon_do();
 #if VM_TRACE
         if (tfp) tfp->dump(main_time);

@@ -1011,6 +1011,7 @@ sub compile {
                     cmd=>[($ENV{VERILATOR_VCS}||"vcs"),
                           @{$param{vcs_flags}},
                           @{$param{vcs_flags2}},
+                          ($opt_verbose ? " -CFLAGS -DTEST_VERBOSE=1":""),
                           @{$param{v_flags}},
                           @{$param{v_flags2}},
                           $param{top_filename},

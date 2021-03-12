@@ -12,7 +12,7 @@
 #ifndef TEST_CHECK_H_
 #define TEST_CHECK_H_
 
-extern bool errors;
+extern int errors;
 
 #ifdef TEST_VERBOSE
 static bool verbose = true;
@@ -23,12 +23,13 @@ static bool verbose = false;
 //======================================================================
 
 // Use cout to avoid issues with %d/%lx etc
-#define TEST_CHECK(got, exp) \
-    if ((got) != (exp)) { \
+#define TEST_CHECK(got, exp, test) \
+    if (!(test)) { \
         std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
                   << "   EXP = " << (exp) << std::endl; \
-        errors = true; \
+        ++errors; \
     }
+#define TEST_CHECK_EQ(got, exp) TEST_CHECK(got, exp, ((got) == (exp)));
 
 #define TEST_VERBOSE_PRINTF(format, ...) \
     do { \

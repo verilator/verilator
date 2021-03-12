@@ -10,19 +10,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-$Self->{pli_filename} = "t_vpi_time_cb_c.cpp";
-
 compile(
     make_top_shell => 0,
     make_main => 0,
-    make_pli => 1,
     sim_time => 2100,
+    v_flags2 => ["t/t_vpi_time_cb_c.cpp"],
     iv_flags2 => ["-g2005-sv -DWAVES -DIVERILOG"],
-    verilator_flags2 => ["-CFLAGS '-DVL_DEBUG -ggdb' --exe --vpi --no-l2name $Self->{t_dir}/t_vpi_time_cb.cpp -LDFLAGS '-ldl -rdynamic'"],
+    verilator_flags2 => ["-CFLAGS '-DVL_DEBUG -ggdb' --exe --vpi --no-l2name $Self->{t_dir}/t_vpi_time_cb.cpp"],
     );
 
 execute(
-    use_libvpi => 1,
     check_finished => 1,
     );
 
