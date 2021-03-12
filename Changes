@@ -2,7 +2,7 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
-* Verilator 4.199 devel
+* Verilator 4.200 2021-03-12
 
 **    Add simulation context (VerilatedContext) to allow multiple fully independent
       models to be in the same process.  Please see the updated examples.
@@ -21,6 +21,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix interface array connection ordering broken in v4.110 (#2827). [Don Owen]
 
 ****  Fix or-reduction on different scopes broken in 4.110 (#2828). [Yinan Xu]
+
+****  Fix MSVC++ compile error. (#2831) (#2833) [Drew Taussig]
 
 
 * Verilator 4.110 2021-02-25
