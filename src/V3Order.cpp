@@ -158,7 +158,7 @@ public:
     }
     V3List<OrderMoveVertex*>& readyVertices() { return m_readyVertices; }
     static OrderMoveDomScope* findCreate(const AstSenTree* domainp, const AstScope* scopep) {
-        const DomScopeKey key = make_pair(domainp, scopep);
+        const DomScopeKey key = std::make_pair(domainp, scopep);
         const auto iter = s_dsMap.find(key);
         if (iter != s_dsMap.end()) {
             return iter->second;

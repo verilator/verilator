@@ -217,12 +217,12 @@ class EmitCSyms final : EmitCBaseVisitor {
                     // UINFO(9," scnameins sp "<<scpName<<" sp "<<scpPretty<<" ss "<<scpSym<<endl);
                     if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
-                        m_scopeNames.insert(
-                            make_pair(scpSym, ScopeData(scpSym, scpPretty, 0, "SCOPE_OTHER")));
+                        m_scopeNames.insert(std::make_pair(
+                            scpSym, ScopeData(scpSym, scpPretty, 0, "SCOPE_OTHER")));
                     }
                     m_scopeVars.insert(
-                        make_pair(scpSym + " " + varp->name(),
-                                  ScopeVarData(scpSym, varBasePretty, varp, modp, scopep)));
+                        std::make_pair(scpSym + " " + varp->name(),
+                                       ScopeVarData(scpSym, varBasePretty, varp, modp, scopep)));
                 }
             }
         }
@@ -288,21 +288,21 @@ class EmitCSyms final : EmitCBaseVisitor {
             string name_dedot = AstNode::dedotName(name);
             int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
-                make_pair(name, ScopeData(scopeSymString(name), name_dedot, timeunit, type)));
+                std::make_pair(name, ScopeData(scopeSymString(name), name_dedot, timeunit, type)));
         }
     }
     virtual void visit(AstScope* nodep) override {
         if (VN_IS(m_modp, Class)) return;  // The ClassPackage is what is visible
         nameCheck(nodep);
 
-        m_scopes.emplace_back(make_pair(nodep, m_modp));
+        m_scopes.emplace_back(std::make_pair(nodep, m_modp));
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
             string name_dedot = AstNode::dedotName(nodep->shortName());
             int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
-                make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_dedot,
-                                                   timeunit, "SCOPE_MODULE")));
+                std::make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_dedot,
+                                                        timeunit, "SCOPE_MODULE")));
         }
     }
     virtual void visit(AstScopeName* nodep) override {
@@ -316,21 +316,21 @@ class EmitCSyms final : EmitCBaseVisitor {
         }
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");
-            m_scopeFuncs.insert(
-                make_pair(name + " " + m_cfuncp->name(), ScopeFuncData(nodep, m_cfuncp, m_modp)));
+            m_scopeFuncs.insert(std::make_pair(name + " " + m_cfuncp->name(),
+                                               ScopeFuncData(nodep, m_cfuncp, m_modp)));
         } else {
             if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
                 m_scopeNames.insert(
-                    make_pair(nodep->scopeDpiName(),
-                              ScopeData(nodep->scopeDpiName(), nodep->scopePrettyDpiName(),
-                                        timeunit, "SCOPE_OTHER")));
+                    std::make_pair(nodep->scopeDpiName(),
+                                   ScopeData(nodep->scopeDpiName(), nodep->scopePrettyDpiName(),
+                                             timeunit, "SCOPE_OTHER")));
             }
         }
     }
     virtual void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildren(nodep);
-        if (nodep->isSigUserRdPublic()) m_modVars.emplace_back(make_pair(m_modp, nodep));
+        if (nodep->isSigUserRdPublic()) m_modVars.emplace_back(std::make_pair(m_modp, nodep));
     }
     virtual void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use

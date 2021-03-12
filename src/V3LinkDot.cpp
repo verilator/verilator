@@ -407,18 +407,19 @@ public:
     void implicitOkAdd(AstNodeModule* nodep, const string& varname) {
         // Mark the given variable name as being allowed to be implicitly declared
         if (nodep) {
-            const auto it = m_implicitNameSet.find(make_pair(nodep, varname));
+            const auto it = m_implicitNameSet.find(std::make_pair(nodep, varname));
             if (it == m_implicitNameSet.end()) m_implicitNameSet.emplace(nodep, varname);
         }
     }
     bool implicitOk(AstNodeModule* nodep, const string& varname) {
         return nodep
-               && (m_implicitNameSet.find(make_pair(nodep, varname)) != m_implicitNameSet.end());
+               && (m_implicitNameSet.find(std::make_pair(nodep, varname))
+                   != m_implicitNameSet.end());
     }
 
     // Track and later recurse interface modules
     void insertIfaceModSym(AstIface* nodep, VSymEnt* symp) {
-        m_ifaceModSyms.push_back(make_pair(nodep, symp));
+        m_ifaceModSyms.push_back(std::make_pair(nodep, symp));
     }
     void computeIfaceModSyms();
 

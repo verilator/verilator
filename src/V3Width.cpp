@@ -5814,7 +5814,7 @@ private:
     }
     AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        const auto pos = m_tableMap.find(make_pair(nodep, attrType));
+        const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
         if (pos != m_tableMap.end()) return pos->second;
         AstNodeArrayDType* vardtypep
             = new AstUnpackArrayDType(nodep->fileline(), nodep->findSigned32DType(),
@@ -5836,7 +5836,7 @@ private:
             initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, i));
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.emplace(make_pair(nodep, attrType), varp);
+        m_tableMap.emplace(std::make_pair(nodep, attrType), varp);
         return varp;
     }
     uint64_t enumMaxValue(const AstNode* errNodep, const AstEnumDType* adtypep) {
@@ -5861,7 +5861,7 @@ private:
     }
     AstVar* enumVarp(AstEnumDType* nodep, AstAttrType attrType, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        const auto pos = m_tableMap.find(make_pair(nodep, attrType));
+        const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
         if (pos != m_tableMap.end()) return pos->second;
         UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " max=" << msbdim << " for "
                                             << nodep << endl);
@@ -5936,7 +5936,7 @@ private:
             if (values[i]) initp->addIndexValuep(i, values[i]);
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.emplace(make_pair(nodep, attrType), varp);
+        m_tableMap.emplace(std::make_pair(nodep, attrType), varp);
         return varp;
     }
 

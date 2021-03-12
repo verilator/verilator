@@ -70,7 +70,6 @@
 using string = std::string;
 using std::cout;
 using std::endl;
-using std::make_pair;
 
 //**********************************************************************
 //**** Configure-discovered library options

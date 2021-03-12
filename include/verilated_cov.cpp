@@ -395,7 +395,7 @@ public:
                 cit->second.second += itemp->count();
                 cit->second.first = combineHier(oldhier, hier);
             } else {
-                eventCounts.emplace(name, make_pair(hier, itemp->count()));
+                eventCounts.emplace(name, std::make_pair(hier, itemp->count()));
             }
         }
 

@@ -123,7 +123,7 @@ public:
         return scopep;
     }
     AstVarScope* findVarScope(AstScope* scopep, AstVar* nodep) {
-        const auto iter = m_varToScopeMap.find(make_pair(scopep, nodep));
+        const auto iter = m_varToScopeMap.find(std::make_pair(scopep, nodep));
         UASSERT_OBJ(iter != m_varToScopeMap.end(), nodep, "No scope for var");
         return iter->second;
     }
@@ -911,7 +911,7 @@ private:
         // as it's legal for the user to attach multiple tasks to one dpi cname
         const auto iter = m_dpiNames.find(nodep->cname());
         if (iter == m_dpiNames.end()) {
-            m_dpiNames.emplace(nodep->cname(), make_pair(nodep, dpiproto));
+            m_dpiNames.emplace(nodep->cname(), std::make_pair(nodep, dpiproto));
             return false;
         } else if (iter->second.second != dpiproto) {
             nodep->v3error(
@@ -1479,9 +1479,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp = stmtp->nextp()) {
         if (AstVar* portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO()) {
-                tconnects.push_back(make_pair(portp, static_cast<AstArg*>(nullptr)));
+                tconnects.push_back(std::make_pair(portp, static_cast<AstArg*>(nullptr)));
                 nameToIndex.insert(
-                    make_pair(portp->name(), tpinnum));  // For name based connections
+                    std::make_pair(portp->name(), tpinnum));  // For name based connections
                 tpinnum++;
                 if (portp->attrSFormat()) {
                     sformatp = portp;
@@ -1521,7 +1521,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
         } else {  // By pin number
             if (ppinnum >= tpinnum) {
                 if (sformatp) {
-                    tconnects.push_back(make_pair(sformatp, static_cast<AstArg*>(nullptr)));
+                    tconnects.push_back(std::make_pair(sformatp, static_cast<AstArg*>(nullptr)));
                     tconnects[ppinnum].second = argp;
                     tpinnum++;
                 } else {

@@ -72,7 +72,7 @@ private:
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
             }
-            const auto it3 = m_varScopes.find(make_pair(nodep->varp(), scopep));
+            const auto it3 = m_varScopes.find(std::make_pair(nodep->varp(), scopep));
             UASSERT_OBJ(it3 != m_varScopes.end(), nodep, "Can't locate varref scope");
             AstVarScope* varscp = it3->second;
             nodep->varScopep(varscp);
@@ -271,7 +271,7 @@ private:
                 nodep->attrClocker(VVarAttrClocker::CLOCKER_NO);
             }
             UASSERT_OBJ(m_scopep, nodep, "No scope for var");
-            m_varScopes.emplace(make_pair(nodep, m_scopep), varscp);
+            m_varScopes.emplace(std::make_pair(nodep, m_scopep), varscp);
             m_scopep->addVarp(varscp);
         }
     }

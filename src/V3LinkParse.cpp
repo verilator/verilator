@@ -363,7 +363,7 @@ private:
         // a new type won't change every verilated module.
         AstTypedef* defp = nullptr;
         ImplTypedefMap::iterator it
-            = m_implTypedef.find(make_pair(nodep->containerp(), nodep->name()));
+            = m_implTypedef.find(std::make_pair(nodep->containerp(), nodep->name()));
         if (it != m_implTypedef.end()) {
             defp = it->second;
         } else {
@@ -387,7 +387,7 @@ private:
                 defp = new AstTypedef(nodep->fileline(), nodep->name(), nullptr, VFlagChildDType(),
                                       dtypep);
                 m_implTypedef.insert(
-                    make_pair(make_pair(nodep->containerp(), defp->name()), defp));
+                    std::make_pair(std::make_pair(nodep->containerp(), defp->name()), defp));
                 backp->addNextHere(defp);
             }
         }

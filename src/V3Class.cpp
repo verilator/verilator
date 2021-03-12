@@ -100,7 +100,7 @@ private:
         // Don't move now, or wouldn't keep interating the class
         // TODO move class statics too
         if (m_packageScopep && m_ftaskp && m_ftaskp->lifetime().isStatic()) {
-            m_moves.push_back(make_pair(nodep, m_packageScopep));
+            m_moves.push_back(std::make_pair(nodep, m_packageScopep));
         }
     }
 
@@ -115,7 +115,7 @@ private:
             m_ftaskp = nodep;
             iterateChildren(nodep);
             if (m_packageScopep && nodep->lifetime().isStatic()) {
-                m_moves.push_back(make_pair(nodep, m_packageScopep));
+                m_moves.push_back(std::make_pair(nodep, m_packageScopep));
             }
         }
     }
@@ -125,7 +125,7 @@ private:
         // Don't move now, or wouldn't keep interating the class
         // TODO move function statics only
         // if (m_classScopep) {
-        //    m_moves.push_back(make_pair(nodep, m_classScopep));
+        //    m_moves.push_back(std::make_pair(nodep, m_classScopep));
         //}
     }
 
