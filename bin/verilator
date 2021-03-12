@@ -2127,7 +2127,7 @@ or all inputs go directly to always_ff statements, as is typical, then you
 can change non-clock inputs on the negative edge of the input clock, which
 will be faster as there will be fewer eval() calls.
 
-For more information on evaluation, see docs/internals.adoc in the
+For more information on evaluation, see docs/internals.rst in the
 distribution.
 
 
@@ -5766,7 +5766,7 @@ L<verilator_coverage>, L<verilator_gantt>, L<verilator_profcfunc>, L<make>,
 
 L<verilator --help> which is the source for this document,
 
-and docs/internals.adoc in the distribution.
+and docs/internals.rst in the distribution.
 
 =cut
 

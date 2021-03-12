@@ -19,8 +19,8 @@
 
 #### Start of system configuration section. ####
 
-ASCIIDOCTOR = asciidoctor
 DOXYGEN = doxygen
+RST2HTML = rst2html
 
 #### End of system configuration section. ####
 ######################################################################
@@ -30,8 +30,8 @@ DOXYGEN = doxygen
 default:
 	@echo "error: make not supported here, run 'make docs' from Verilator top-level"
 
-%.html: %.adoc
-	$(ASCIIDOCTOR) $< -n -o $@
+%.html: %.rst
+	$(RST2HTML) $< $@
 
 clean mostlyclean distclean maintainer-clean::
 	rm -f $(SCRIPTS) *.tmp

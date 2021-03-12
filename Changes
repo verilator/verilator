@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 **    Add context->time() and context->timeInc() API calls, to set simulation time.
       These now are recommended in place of the legacy sc_time_stamp().
 
+****  Converted Asciidoc documentation into reStructuredText (RST) format.
+
 ****  --inhibit-sim is planned for deprecation, file a bug if this is still being used.
 
 ****  Fix range inheritance on port without data type (#2753). [Embedded Go]
