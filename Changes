@@ -16,6 +16,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix slice-assign overflow (#2803) (#2811). [David Turner]
 
+****  Fix interface array connection ordering broken in v4.110 (#2827). [Don Owen]
+
 ****  Fix or-reduction on different scopes broken in 4.110 (#2828). [Yinan Xu]
 
 
