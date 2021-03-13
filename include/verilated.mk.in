@@ -201,8 +201,6 @@ else
   VK_OBJS += $(VK_FAST_OBJS) $(VK_SLOW_OBJS)
 endif
 
-fred.a: foo1.a foo2.a out.o
-
 # When archiving just objects (.o), use single $(AR) run
 #   1. Make .tmp file with list of objects so don't exceed commend line
 # When merging objects (.o) and archives (.a) additionally:
