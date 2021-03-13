@@ -111,6 +111,7 @@ public:
     const EData& operator[](size_t index) const { return m_storage[index]; };
     EData& operator[](size_t index) { return m_storage[index]; };
     operator WDataOutP() { return &m_storage[0]; }
+    operator WDataInP() const { return &m_storage[0]; }
 
     // METHODS
     const EData& at(size_t index) const { return m_storage[index]; }
@@ -808,7 +809,7 @@ public:
 
 private:
     // MEMBERS
-    Array m_array;  // State of the assoc array
+    Array m_array;  // Contents of the packed array
 
 public:
     // CONSTRUCTORS
