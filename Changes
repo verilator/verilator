@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.201 devel
 
+****  Verilated signals now use VlWide and VlPacked in place of C arrays.
+
 
 * Verilator 4.200 2021-03-12
 

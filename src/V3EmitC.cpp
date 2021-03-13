@@ -104,6 +104,12 @@ public:
              : (nodep->isScQuad() ? "SQ" : "SI"));
         // clang-format on
     }
+    void emitDatap(AstNode* nodep) {
+        // When passing to a function with va_args the compiler doesn't
+        // know need a pointer so when wide, need to look inside VlWide
+        if (nodep->isWide()) puts(".data()");
+    }
+
     void emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, AstNode* rhsp,
                     AstNode* thsp);
     void emitDeclArrayBrackets(const AstVar* nodep) {
@@ -376,9 +382,6 @@ public:
             iterateAndNextNull(nodep->bitp());
         }
         puts(")");
-        if (nodep->dtypep()->isWide()) {
-            puts(".data()");  // Access returned std::array as C array
-        }
     }
     virtual void visit(AstNodeCCall* nodep) override {
         if (AstCMethodCall* ccallp = VN_CAST(nodep, CMethodCall)) {
@@ -415,12 +418,6 @@ public:
             comma = true;
         }
         puts(")");
-        // if there is a return value that is wide convert to array
-        if (nodep->dtypep()->isWide()
-            && (VN_IS(nodep->fromp()->dtypep(), QueueDType)
-                || VN_IS(nodep->fromp()->dtypep(), DynArrayDType))) {
-            puts(".data()");  // Access returned std::array as C array
-        }
         // Some are statements some are math.
         if (nodep->isStatement()) puts(";\n");
         UASSERT_OBJ(!nodep->isStatement() || VN_IS(nodep->dtypep(), VoidDType), nodep,
@@ -653,7 +650,12 @@ public:
         putbs(", ");
         emitCvtPackStr(nodep->filenamep());
         putbs(", ");
-        iterateAndNextNull(nodep->memp());
+        {
+            const bool need_ptr = !VN_IS(nodep->memp()->dtypep(), AssocArrayDType);
+            if (need_ptr) puts(" &(");
+            iterateAndNextNull(nodep->memp());
+            if (need_ptr) puts(")");
+        }
         putbs(", ");
         if (nodep->lsbp()) {
             iterateAndNextNull(nodep->lsbp());
@@ -709,7 +711,6 @@ public:
         puts("VL_FREAD_I(");
         puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
         putbs(",");
-        bool memory = false;
         uint32_t array_lo = 0;
         uint32_t array_size = 0;
         {
@@ -719,7 +720,6 @@ public:
             } else if (VN_CAST(varrefp->varp()->dtypeSkipRefp(), BasicDType)) {
             } else if (const AstUnpackArrayDType* adtypep
                        = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
-                memory = true;
                 array_lo = adtypep->lo();
                 array_size = adtypep->elementsConst();
             } else {
@@ -731,9 +731,9 @@ public:
         putbs(",");
         puts(cvtToStr(array_size));
         putbs(", ");
-        if (!memory) puts("&(");
+        puts("&(");
         iterateAndNextNull(nodep->memp());
-        if (!memory) puts(")");
+        puts(")");
         putbs(", ");
         iterateAndNextNull(nodep->filep());
         putbs(", ");
@@ -2193,17 +2193,11 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
                 if (func != "") {
                     puts(func);
                 } else if (argp) {
-                    if (isScan) {
-                        puts("&(");
-                    } else if (fmt == '@') {
-                        puts("&(");
-                    }
+                    bool addrof = isScan || (fmt == '@');
+                    if (addrof) puts("&(");
                     iterate(argp);
-                    if (isScan) {
-                        puts(")");
-                    } else if (fmt == '@') {
-                        puts(")");
-                    }
+                    if (!addrof) emitDatap(argp);
+                    if (addrof) puts(")");
                 }
                 ofp()->indentDec();
             }
