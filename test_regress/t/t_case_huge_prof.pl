@@ -34,6 +34,8 @@ sub dotest {
         check_finished => 1,
         );
 
+    sleep 4;  # Disk flush wait
+
     my $gmon_path;
     $gmon_path = $_ foreach (glob "$Self->{obj_dir}/gmon.out.*");
     $gmon_path or error("Profiler did not create a gmon.out");
