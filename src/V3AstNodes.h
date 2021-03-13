@@ -1595,8 +1595,8 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
     virtual int instrCount() const override { return widthInstrs(); }
     // Special operators
-    static AstNode*
-    baseFromp(AstNode* nodep);  ///< What is the base variable (or const) this dereferences?
+    // Return base var (or const) nodep dereferences
+    static AstNode* baseFromp(AstNode* nodep, bool overMembers);
 };
 
 class AstAssocSel final : public AstNodeSel {

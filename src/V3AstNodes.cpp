@@ -788,7 +788,7 @@ int AstNodeDType::widthPow2() const {
 }
 
 /// What is the base variable (or const) this dereferences?
-AstNode* AstArraySel::baseFromp(AstNode* nodep) {
+AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
     // Else AstArraySel etc; search for the base
     while (nodep) {
         if (VN_IS(nodep, ArraySel)) {
@@ -796,6 +796,9 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep) {
             continue;
         } else if (VN_IS(nodep, Sel)) {
             nodep = VN_CAST(nodep, Sel)->fromp();
+            continue;
+        } else if (overMembers && VN_IS(nodep, MemberSel)) {
+            nodep = VN_CAST(nodep, MemberSel)->fromp();
             continue;
         }
         // AstNodeSelPre stashes the associated variable under an ATTROF

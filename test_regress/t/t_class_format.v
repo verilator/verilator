@@ -23,6 +23,11 @@ module t (/*AUTOARG*/);
       c = new;
       c.b = '1;
       c.i = 42;
+
+      c.carray4[0] = 16'h11;
+      c.carray4[1] = 16'h22;
+      c.carray4[2] = 16'h33;
+      c.carray4[3] = 16'h44;
       $display("'%p'", c);
 
       $write("*-* All Finished *-*\n");
