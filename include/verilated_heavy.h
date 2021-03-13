@@ -827,7 +827,23 @@ public:
 
     T_Value& operator[](size_t index) { return m_array[index]; };
     const T_Value& operator[](size_t index) const { return m_array[index]; };
+
+    // Dumping. Verilog: str = $sformatf("%p", assoc)
+    std::string to_string() const {
+        std::string out = "'{";
+        std::string comma;
+        for (int i = 0; i < T_Depth; ++i) {
+            out += comma + VL_TO_STRING(m_array[i]);
+            comma = ", ";
+        }
+        return out + "} ";
+    }
 };
+
+template <class T_Value, std::size_t T_Depth>
+std::string VL_TO_STRING(const VlUnpacked<T_Value, T_Depth>& obj) {
+    return obj.to_string();
+}
 
 //===================================================================
 // Verilog class reference container
