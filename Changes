@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix class unpacked-array compile error (#2774). [Iru Cai]
 
+****  Fix exceeding command-line ar limit (#2834). [Yinan Xu]
+
 
 * Verilator 4.200 2021-03-12
 

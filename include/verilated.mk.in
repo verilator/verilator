@@ -201,26 +201,30 @@ else
   VK_OBJS += $(VK_FAST_OBJS) $(VK_SLOW_OBJS)
 endif
 
-# When archiving just objects (.o), single $(AR) run is enough.
-# When merging objects (.o) and archives (.a), the following steps are taken.
+fred.a: foo1.a foo2.a out.o
+
+# When archiving just objects (.o), use single $(AR) run
+#   1. Make .tmp file with list of objects so don't exceed commend line
+# When merging objects (.o) and archives (.a) additionally:
 #   1. Extract object files from .a
 #   2. Create a new archive from extracted .o and given .o
 %.a:
-	@echo "Archive $(AR) -cr $@ $^"
-	@if test $(words $(filter %.a,$^)) -eq 0; then \
-		$(AR) -cr $@ $^; \
-		$(RANLIB) $@; \
+	$(info Archive $(AR) -rcs $@ $^)
+	$(file >$@.tmp)
+	$(foreach L, $(filter-out %.a,$^), $(file >>$@.tmp, $L))
+	if test $(words $(filter %.a,$^)) -eq 0; then \
+		$(AR) -rcs $@ @$@.tmp; \
 	else \
-		$(RM) -rf $*__tmpdir; \
+		$(RM) -rf $@.tmpdir; \
 		for archive in $(filter %.a,$^); do \
-			mkdir -p $*__tmpdir/$$(basename $${archive}); \
-			cd $*__tmpdir/$$(basename $${archive}); \
+			mkdir -p $@.tmpdir/$$(basename $${archive}); \
+			cd $@.tmpdir/$$(basename $${archive}); \
 			$(AR) -x ../../$${archive}; \
 			cd ../..; \
 		done; \
-		$(AR) -cr $@ $(filter %.o,$^) $*__tmpdir/*/*.o; \
-		$(RM) -rf $*__tmpdir; \
-	fi
+		$(AR) -rcs $@ @$@.tmp $@.tmpdir/*/*.o; \
+	fi \
+	; $(RM) -rf $@.tmp $@.tmpdir
 
 $(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
 
