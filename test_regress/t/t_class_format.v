@@ -30,6 +30,9 @@ module t (/*AUTOARG*/);
       c.carray4[3] = 16'h44;
       $display("'%p'", c);
 
+      c.carray4 = '{16'h911, 16'h922, 16'h933, 16'h944};
+      $display("'%p'", c);
+
       $write("*-* All Finished *-*\n");
       $finish;
    end
