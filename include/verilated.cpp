@@ -2202,11 +2202,15 @@ void VerilatedContext::dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_t
 }
 std::string VerilatedContext::dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
     const VerilatedLockGuard lock(m_timeDumpMutex);
-    if (VL_UNLIKELY(m_dumpfile.empty())) {
+    return m_dumpfile;
+}
+std::string VerilatedContext::dumpfileCheck() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
+    const std::string out = dumpfile();
+    if (VL_UNLIKELY(out.empty())) {
         VL_PRINTF_MT("%%Warning: $dumpvar ignored as not proceeded by $dumpfile\n");
         return "";
     }
-    return m_dumpfile;
+    return out;
 }
 void VerilatedContext::errorCount(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock(m_mutex);

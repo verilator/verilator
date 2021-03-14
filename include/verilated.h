@@ -529,6 +529,7 @@ public:  // But for internal use only
     // Internal: $dumpfile
     void dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
     std::string dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
+    std::string dumpfileCheck() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
 
     // Internal: --prof-threads related settings
     void profThreadsStart(vluint64_t flag) VL_MT_SAFE;
