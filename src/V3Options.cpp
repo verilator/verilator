@@ -289,7 +289,7 @@ private:
     void emplaceToList(const Entry& e) {
         const string& opt = e.m_opt;
         UASSERT(opt.size() >= 2, opt << " is too short");
-        UASSERT(opt[0] == '-' || opt[0] == '+', opt << " does not start with either '-' nor '+'");
+        UASSERT(opt[0] == '-' || opt[0] == '+', opt << " does not start with either '-' or '+'");
         UASSERT(!(opt[0] == '-' && opt[1] == '-'), "Option must have single '-', but " << opt);
         m_spellCheck.pushCandidate(e.m_opt);
         const bool inserted = m_options.emplace(e.m_opt, e).second;
