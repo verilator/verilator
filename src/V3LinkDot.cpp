@@ -1392,7 +1392,9 @@ private:
     }
     virtual void visit(AstDefParam* nodep) override {
         iterateChildren(nodep);
-        nodep->v3warn(DEFPARAM, "Suggest replace defparam assignment with Verilog 2001 #(."
+        nodep->v3warn(DEFPARAM, "defparam is deprecated (IEEE 1800-2017 C.4.1)\n"
+                                    << nodep->warnMore()
+                                    << "... Suggest use instantiation with #(."
                                     << nodep->prettyName() << "(...etc...))");
         VSymEnt* foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->path());
         AstCell* cellp = foundp ? VN_CAST(foundp->nodep(), Cell) : nullptr;
