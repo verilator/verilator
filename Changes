@@ -11,6 +11,7 @@ Verilator 4.201 devel
 
 **Minor:**
 
+* Add EOFNEWLINE warning when missing a newline at EOF.
 * Verilated signals now use VlWide and VlPacked in place of C arrays.
 * Fix class unpacked-array compile error (#2774). [Iru Cai]
 * Fix exceeding command-line ar limit (#2834). [Yinan Xu]

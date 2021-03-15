@@ -1730,8 +1730,9 @@ received from third parties.
 
 Disable all code style related warning messages (note by default they are
 already disabled).  This is equivalent to "-Wno-DECLFILENAME -Wno-DEFPARAM
--Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY -Wno-PINNOCONNECT
--Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNUSED -Wno-VARHIDDEN".
+-Wno-EOFNEWLINE -Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY
+-Wno-PINNOCONNECT -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNUSED
+-Wno-VARHIDDEN".
 
 =item -Wpedantic
 
@@ -1756,9 +1757,9 @@ enabled), but do not affect style messages.  This is equivalent to
 =item -Wwarn-style
 
 Enable all code style related warning messages.  This is equivalent to
-"-Wwarn ASSIGNDLY -Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-INCABSPATH
--Wwarn-PINNOCONNECT -Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN -Wwarn-UNUSED
--Wwarn-VARHIDDEN".
+"-Wwarn ASSIGNDLY -Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-EOFNEWLINE
+-Wwarn-INCABSPATH -Wwarn-PINNOCONNECT -Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN
+-Wwarn-UNUSED -Wwarn-VARHIDDEN".
 
 =item --x-assign 0
 
@@ -4499,6 +4500,15 @@ Warns that a label attached to a "end"-something statement does not match
 the label attached to the block start.
 
 Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
+=item EOFNEWLINE
+
+Warns that a file does not end in a newline.  POSIX defines that a line
+must end in newline, as otherwise for example 'cat' of the file may produce
+undesirable results.
+
+Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item GENCLK
