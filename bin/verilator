@@ -2033,7 +2033,7 @@ This is an example similar to the above, but using SystemC.
     cat >our.v <<'EOF'
       module our (clk);
          input clk;  // Clock is required to get initial activation
-         always @ (posedge clk)
+         always @(posedge clk)
             begin $display("Hello World"); $finish; end
       endmodule
     EOF
@@ -2410,7 +2410,7 @@ example:
         // allow modulus.  This is in units of the timeprecision
         // used in Verilog (or from --timescale-override)
 
-        double sc_time_stamp () {       // Called by $time in Verilog
+        double sc_time_stamp() {        // Called by $time in Verilog
             return main_time;           // converts to double, to match
                                         // what SystemC does
         }
@@ -2484,7 +2484,7 @@ Verilog, put in our.v:
 Then after Verilating, Verilator will create a file Vour__Dpi.h with the
 prototype to call this function:
 
-    extern int add (int a, int b);
+    extern int add(int a, int b);
 
 From the sc_main.cpp file (or another .cpp file passed to the Verilator
 command line, or the link), you'd then:
@@ -2563,7 +2563,7 @@ wrapper:
     // This DPI function will read "din"
     import "DPI-C" context function void dpi_that_accesses_din();
 
-    always @ (...)
+    always @(...)
        dpi_din_args(din);
 
     task dpi_din_args(input din);
@@ -3488,7 +3488,7 @@ analysis.) For example:
 
    reg enable_r /*verilator clock_enable*/;
    wire gated_clk = clk & enable_r;
-   always_ff @ (posedge clk)
+   always_ff @(posedge clk)
       enable_r <= enable_early;
 
 The clock_enable attribute will cause the clock gate to be ignored in the
@@ -3562,7 +3562,7 @@ IE, with the following
 
     reg splitme /* verilator isolate_assignments*/;
     // Note the placement of the semicolon above
-    always @* begin
+    always_comb begin
       if (....) begin
          splitme = ....;
          other assignments
@@ -3575,13 +3575,13 @@ two blocks:
 It would then internally break it into (sort of):
 
     // All assignments excluding those to splitme
-    always @* begin
+    always_comb begin
       if (....) begin
          other assignments
       end
     end
     // All assignments to splitme
-    always @* begin
+    always_comb begin
       if (....) begin
          splitme = ....;
       end
@@ -3825,7 +3825,7 @@ Verilator supports the Synthesis subset with other verification constructs
 being added over time. Verilator also simulates events as Synopsys's Design
 Compiler would; namely given a block of the form:
 
-        always @ (x)   y = x & z;
+        always @(x)   y = x & z;
 
 This will recompute y when there is even a potential for change in x or a
 change in z, that is when the flops computing x or z evaluate (which is
@@ -4256,15 +4256,15 @@ Generally, this is caused by a register driven by both combo logic and a
 flop:
 
       logic [1:0] foo;
-      always @ (posedge clk)  foo[0] <= ...
-      always @* foo[1] = ...
+      always @(posedge clk)  foo[0] <= ...
+      always_comb foo[1] = ...
 
 Simply use a different register for the flop:
 
       logic [1:0] foo;
-      always @ (posedge clk)  foo_flopped[0] <= ...
-      always @* foo[0] = foo_flopped[0];
-      always @* foo[1] = ...
+      always @(posedge clk)  foo_flopped[0] <= ...
+      always_comb foo[0] = foo_flopped[0];
+      always_comb foo[1] = ...
 
 Or, this may also avoid the error:
 
@@ -4279,7 +4279,7 @@ reasonable to do this if the generated signal is used ONLY later in the
 same block, however this style is generally discouraged as it is error
 prone.
 
-      always @ (posedge clk)  foo = ...
+      always @(posedge clk)  foo = ...
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.
@@ -4292,7 +4292,7 @@ were used, the simulator would have to copy large arrays every cycle.  (In
 smaller loops, loop unrolling allows the delayed assignment to work, though
 it's a bit slower than a non-delayed assignment.)  Here's an example
 
-        always @ (posedge clk)
+        always @(posedge clk)
             if (~reset_l) begin
                 for (i=0; i<`ARRAY_SIZE; i++) begin
                     array[i] = 0;  // Non-delayed for verilator
