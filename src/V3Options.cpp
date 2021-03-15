@@ -142,7 +142,8 @@ public:
     using ActCbPartialMatchVal = ActionBase<ACT_CB_PARTIAL_MATCH_VAL>;
 
     // Entry for each option
-    struct Entry final {
+    class Entry final {
+    public:
         enType m_type;
         enAction m_act;  // Action to do
         union Val {
