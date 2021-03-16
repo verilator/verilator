@@ -112,190 +112,73 @@ public:
 class V3OptionsParser final {
 public:
     // TYPES
-    using CallbackFn = std::function<void(const char*, const char*)>;
-    enum enType : uint8_t {  // Type of target variable
-        TYPE_BOOL,  // bool
-        TYPE_BOOLOPT,  // VOptionBool
-        TYPE_INT,  // int
-        TYPE_STRING,  // string
-        TYPE_CB  // CallbackFn
-    };
-    enum enAction : uint8_t {
-        ACT_SET,  // '-opt' for bool-ish, '-opt val' for int and string
-        ACT_ONOFF,  // '-opt' or '-no-opt' for bool-ish type
-        ACT_CB_CALL,  // '-opt' for callback
-        ACT_CB_ONOFF,  // '-opt' or '-no-opt' for callback
-        ACT_CB_VAL,  // '-opt val' for callback
-        ACT_CB_PARTIAL_MATCH,  // '-opt-abc' for callback
-        ACT_CB_PARTIAL_MATCH_VAL  // '-opt-abc val' for callback
-    };
-    template <enAction ACT> struct ActionBase VL_NOT_FINAL {
-        static constexpr enAction m_act = ACT;
-    };
-    // Function selectors for AppendHelper
-    using ActSet = ActionBase<ACT_SET>;
-    using ActOnOff = ActionBase<ACT_ONOFF>;
-    using ActCbCall = ActionBase<ACT_CB_CALL>;
-    using ActCbOnOff = ActionBase<ACT_CB_ONOFF>;
-    using ActCbVal = ActionBase<ACT_CB_VAL>;
-    using ActCbPartialMatch = ActionBase<ACT_CB_PARTIAL_MATCH>;
-    using ActCbPartialMatchVal = ActionBase<ACT_CB_PARTIAL_MATCH_VAL>;
-
-    // Entry for each option
-    class Entry final {
+    class ActionIfs VL_NOT_FINAL {
     public:
-        enType m_type;
-        enAction m_act;  // Action to do
-        union Val {
-            bool* m_boolp;
-            VOptionBool* m_boolOptp;
-            int* m_intp;
-            string* m_strp;
-            Val(bool* boolp)
-                : m_boolp(boolp) {}
-            Val(VOptionBool* boolp)
-                : m_boolOptp(boolp) {}
-            Val(int* intp)
-                : m_intp(intp) {}
-            Val(string* strp)
-                : m_strp(strp) {}
-        } m_val;  // Pointer to the target variable when m_type is not TYPE_CB
-        CallbackFn m_cb;
-        string m_opt;  // Option string such as '-opt', '+opt'
-        void parse(const char* optp, const char* valp) {
-            if (m_type == TYPE_CB) {
-                m_cb(optp, valp);
-            } else if (m_act == ACT_ONOFF) {
-                UASSERT(m_type == TYPE_BOOL || m_type == TYPE_BOOLOPT,
-                        m_type << " is not bool-ish");
-                const bool on = !hasPrefixNo(optp);
-                if (m_type == TYPE_BOOL) {
-                    *m_val.m_boolp = on;
-                } else {
-                    m_val.m_boolOptp->setTrueOrFalse(on);
-                }
-            } else {
-                UASSERT(m_act == ACT_SET, m_act << " is not ACT_SET");
-                switch (m_type) {
-                case TYPE_BOOL: *m_val.m_boolp = true; break;
-                case TYPE_BOOLOPT: m_val.m_boolOptp->setTrueOrFalse(true); break;
-                case TYPE_INT: *m_val.m_intp = std::atoi(valp); break;
-                case TYPE_STRING: *m_val.m_strp = valp; break;
-                default: UASSERT(false, m_type << " is unexpected");
-                }
-            }
-        }
+        virtual ~ActionIfs() = default;
+        // Set a value or run callback
+        virtual void exec(const char* optp, const char* valp) = 0;
+        virtual bool isValueNeeded() const = 0;  // Need val of "-opt val"
+        virtual bool isOnOffAllowed() const = 0;  // true if "-no-opt" is allowd
+        virtual bool isPartialMatchAllowed() const = 0;  // true if "-Wno-" matches "-Wno-fatal"
     };
+    enum class en {  // Setting for isOnOffAllowed() and isPartialMatchAllowed()
+        NONE,  // "-opt"
+        ONOFF,  // "-opt" and "-no-opt"
+        VALUE  // "-opt val"
+    };
+    // Base class of actual action classes
+    template <en MODE, bool ALLOW_PARTIAL_MATCH = false>
+    class ActionBase VL_NOT_FINAL : public ActionIfs {
+    public:
+        virtual bool isValueNeeded() const override final { return MODE == en::VALUE; }
+        virtual bool isOnOffAllowed() const override final { return MODE == en::ONOFF; }
+        virtual bool isPartialMatchAllowed() const override final { return ALLOW_PARTIAL_MATCH; }
+    };
+    // Actual action classes
+    template <typename T> class ActionSet;  // "-opt" for bool-ish, "-opt val" for int and string
+    template <typename BOOL> class ActionOnOff;  // "-opt" and "-no-opt" for bool-ish
+    class ActionCbCall;  // Callback without argument for "-opt"
+    class ActionCbOnOff;  // Callback for "-opt" and "-no-opt"
+    template <class T> class ActionCbVal;  // Callback for "-opt val"
+    class ActionCbPartialMatch;  // Callback "-O3" for "-O"
+    class ActionCbPartialMatchVal;  // Callback "-debugi-V3Options 3" for "-debugi-"
+
     // Functor to register options to V3OptionsParser
-    struct AppendHelper final {
-        V3OptionsParser& m_parser;
-        // OnOff bool-ish
-        void operator()(const char* optp, ActOnOff act, bool* valp) const {
-            m_parser.emplaceToList({TYPE_BOOL, act.m_act, valp, {}, optp});
-        }
-        void operator()(const char* optp, ActOnOff act, VOptionBool* valp) const {
-            m_parser.emplaceToList({TYPE_BOOLOPT, act.m_act, valp, {}, optp});
-        }
-        // Set bool-ish
-        void operator()(const char* optp, ActSet act, bool* valp) const {
-            m_parser.emplaceToList({TYPE_BOOL, act.m_act, valp, {}, optp});
-        }
-        void operator()(const char* optp, ActSet act, VOptionBool* valp) const {
-            m_parser.emplaceToList({TYPE_BOOLOPT, act.m_act, valp, {}, optp});
-        }
-        // Set int
-        void operator()(const char* optp, ActSet act, int* valp) const {
-            m_parser.emplaceToList({TYPE_INT, act.m_act, valp, {}, optp});
-        }
-        // Set const char*
-        void operator()(const char* optp, ActSet act, string* valp) const {
-            m_parser.emplaceToList({TYPE_STRING, act.m_act, valp, {}, optp});
-        }
-
-        // Callback:just call
-        void operator()(const char* optp, ActCbCall act, std::function<void()> cb) const {
-            auto wrap = [cb](const char*, const char*) { cb(); };
-            m_parser.emplaceToList({TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, optp});
-        }
-        // Callback:OnOff(bool)
-        void operator()(const char* optp, ActCbOnOff act, std::function<void(bool)> cb) const {
-            auto wrap = [cb](const char* optp, const char*) { cb(!hasPrefixNo(optp)); };
-            m_parser.emplaceToList({TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, optp});
-        }
-        // Callback:set(int)
-        void operator()(const char* optp, ActCbVal act, std::function<void(int)> cb) const {
-            auto wrap = [cb](const char*, const char* valp) { cb(std::atoi(valp)); };
-            m_parser.emplaceToList({TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, optp});
-        }
-        void operator()(const char* optp, ActCbVal act,
-                        std::pair<V3Options*, void (V3Options::*)(int)> fp) const {
-            auto wrap = [fp](int val) { (fp.first->*fp.second)(val); };
-            (*this)(optp, act, wrap);
-        }
-
-        // Callback:set(const char*)
-        void operator()(const char* optp, ActCbVal act,
-                        std::function<void(const char*)> cb) const {
-            auto wrap = [cb](const char*, const char* valp) { cb(valp); };
-            m_parser.emplaceToList({TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, optp});
-        }
-        void operator()(const char* optp, ActCbVal act,
-                        std::pair<V3Options*, void (V3Options::*)(const string&)> fp) const {
-            auto wrap = [fp](const char*, const char* valp) { (fp.first->*fp.second)(valp); };
-            m_parser.emplaceToList({TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, optp});
-        }
-        // Callback:partial match wihtout value
-        void operator()(const char* prefixp, ActCbPartialMatch act,
-                        std::function<void(const char*)> cb) const {
-            const int prefixLen = std::strlen(prefixp);
-            auto wrap = [cb, prefixLen](const char* optp, const char*) { cb(optp + prefixLen); };
-            m_parser.emplaceToList(
-                {TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, prefixp});
-        }
-        // Callback:partial match with value
-        void operator()(const char* prefixp, ActCbPartialMatchVal act,
-                        std::function<void(const char*, const char*)> cb) const {
-            const int prefixLen = std::strlen(prefixp);
-            auto wrap = [cb, prefixLen](const char* optp, const char* valp) {
-                cb(optp + prefixLen, valp);
-            };
-            m_parser.emplaceToList(
-                {TYPE_CB, act.m_act, static_cast<bool*>(nullptr), wrap, prefixp});
-        }
-    };
+    struct AppendHelper;
 
 private:
-    std::map<const string, Entry> m_options;
-    VSpellCheck m_spellCheck;
-    Entry* find(const char* optp) {
+    // MEMBERS
+    std::map<const string, std::unique_ptr<ActionIfs>> m_options;  // All actions for option
+    VSpellCheck m_spellCheck;  // Suggests closest option when not found
+
+    // METHODS
+    ActionIfs* find(const char* optp) {
         auto it = m_options.find(optp);
-        if (it != m_options.end()) return &it->second;
-        for (auto&& entryPair : m_options) {
-            Entry& entry = entryPair.second;
-            if (entry.m_act == ACT_ONOFF || entry.m_act == ACT_CB_ONOFF) {  // Allow -no
+        if (it != m_options.end()) return it->second.get();
+        for (auto&& act : m_options) {
+            if (act.second->isOnOffAllowed()) {  // Find starts with "-no"
                 const char* const nop = std::strncmp(optp, "-no", 3) ? nullptr : (optp + 3);
-                if (nop && (entry.m_opt == nop || entry.m_opt == (string{"-"} + nop))) {
-                    return &entry;
+                if (nop && (act.first == nop || act.first == (string{"-"} + nop))) {
+                    return act.second.get();
                 }
-            } else if (entry.m_act == ACT_CB_PARTIAL_MATCH
-                       || entry.m_act == ACT_CB_PARTIAL_MATCH_VAL) {
-                if (!std::strncmp(optp, entry.m_opt.c_str(), entry.m_opt.length())) {
-                    return &entry;
+            } else if (act.second->isPartialMatchAllowed()) {
+                if (!std::strncmp(optp, act.first.c_str(), act.first.length())) {
+                    return act.second.get();
                 }
             }
         }
         return nullptr;
     }
-    void emplaceToList(const Entry& e) {
-        const string& opt = e.m_opt;
+    template <class ACT, class ARG> void add(const std::string& opt, ARG arg) {
+        std::unique_ptr<ACT> act{new ACT{std::move(arg)}};
         UASSERT(opt.size() >= 2, opt << " is too short");
         UASSERT(opt[0] == '-' || opt[0] == '+', opt << " does not start with either '-' or '+'");
         UASSERT(!(opt[0] == '-' && opt[1] == '-'), "Option must have single '-', but " << opt);
-        m_spellCheck.pushCandidate(e.m_opt);
-        const bool inserted = m_options.emplace(e.m_opt, e).second;
-        UASSERT(inserted, e.m_opt << " is already registered");
+        m_spellCheck.pushCandidate(opt);
+        const bool inserted = m_options.emplace(opt, std::move(act)).second;
+        UASSERT(inserted, opt << " is already registered");
     }
-    static bool hasPrefixNo(const char* strp) {
+    static bool hasPrefixNo(const char* strp) {  // Returns true if strp starts with "-no"
         UASSERT(strp[0] == '-', strp << " does not start with '-'");
         if (strp[1] == '-') ++strp;
         return std::strncmp(strp, "-no", 3) == 0;
@@ -307,21 +190,121 @@ public:
     int parse(int idx, int argc, char* argv[]) {
         const char* optp = argv[idx];
         if (optp[0] == '-' && optp[1] == '-') ++optp;
-        Entry* entryp = find(optp);
-        if (!entryp) return 0;
-        if (entryp->m_type == TYPE_BOOL || entryp->m_type == TYPE_BOOLOPT
-            || entryp->m_act == ACT_CB_CALL || entryp->m_act == ACT_CB_ONOFF
-            || entryp->m_act == ACT_CB_PARTIAL_MATCH) {
-            entryp->parse(optp, nullptr);
+        ActionIfs* actp = find(optp);
+        if (!actp) return 0;
+        if (!actp->isValueNeeded()) {
+            actp->exec(optp, nullptr);
             return 1;
         } else if (idx + 1 < argc) {
-            entryp->parse(optp, argv[idx + 1]);
+            actp->exec(optp, argv[idx + 1]);
             return 2;
         }
         return 0;
     }
     // Find the most similar option
     string getSuggestion(const char* str) const { return m_spellCheck.bestCandidateMsg(str); }
+};
+
+#define V3OPTIONS_DEF_ACT_CLASS(className, type, body, enType) \
+    template <> class V3OptionsParser::className<type> final : public ActionBase<enType> { \
+        type* m_valp; /* Pointer to a option variable*/ \
+\
+    public: \
+        explicit className(type* valp) \
+            : m_valp(valp) {} \
+        virtual void exec(const char* optp, const char* argp) override { body; } \
+    }
+
+V3OPTIONS_DEF_ACT_CLASS(ActionSet, bool, *m_valp = true, en::NONE);
+V3OPTIONS_DEF_ACT_CLASS(ActionSet, VOptionBool, m_valp->setTrueOrFalse(true), en::NONE);
+V3OPTIONS_DEF_ACT_CLASS(ActionSet, int, *m_valp = std::atoi(argp), en::VALUE);
+V3OPTIONS_DEF_ACT_CLASS(ActionSet, string, *m_valp = argp, en::VALUE);
+
+V3OPTIONS_DEF_ACT_CLASS(ActionOnOff, bool, *m_valp = !hasPrefixNo(optp), en::ONOFF);
+V3OPTIONS_DEF_ACT_CLASS(ActionOnOff, VOptionBool, m_valp->setTrueOrFalse(!hasPrefixNo(optp)),
+                        en::ONOFF);
+
+#undef V3OPTIONS_DEF_ACT_CLASS
+
+#define V3OPTIONS_DEF_ACT_CB_CLASS(className, funcType, body, ...) \
+    class V3OptionsParser::className final : public ActionBase<__VA_ARGS__> { \
+        std::function<funcType> m_cb; /* Callback function */ \
+\
+    public: \
+        using CbType = std::function<funcType>; \
+        explicit className(CbType cb) \
+            : m_cb(std::move(cb)) {} \
+        virtual void exec(const char* optp, const char* argp) override { body; } \
+    }
+
+V3OPTIONS_DEF_ACT_CB_CLASS(ActionCbCall, void(void), m_cb(), en::NONE);
+V3OPTIONS_DEF_ACT_CB_CLASS(ActionCbOnOff, void(bool), m_cb(!hasPrefixNo(optp)), en::ONOFF);
+template <>
+V3OPTIONS_DEF_ACT_CB_CLASS(ActionCbVal<int>, void(int), m_cb(std::atoi(argp)), en::VALUE);
+template <>
+V3OPTIONS_DEF_ACT_CB_CLASS(ActionCbVal<const char*>, void(const char*), m_cb(argp), en::VALUE);
+V3OPTIONS_DEF_ACT_CB_CLASS(ActionCbPartialMatch, void(const char*), m_cb(optp), en::NONE, true);
+V3OPTIONS_DEF_ACT_CB_CLASS(ActionCbPartialMatchVal, void(const char*, const char*),
+                           m_cb(optp, argp), en::VALUE, true);
+
+#undef V3OPTIONS_DEF_ACT_CB_CLASS
+
+// A helper class to register options
+struct V3OptionsParser::AppendHelper final {
+    V3OptionsParser& m_parser;  // The actual option registory
+
+    // TYPES
+    // Tag to specify which operator() to call
+    struct Set {};  // For ActionSet
+    struct OnOff {};  // For ActionOnOff
+    struct CbCall {};  // For ActionCbCall
+    struct CbOnOff {};  // For ActionOnOff
+    struct CbVal {};  // For ActionCbVal
+    struct CbPartialMatch {};  // For ActionCbPartialMatch
+    struct CbPartialMatchVal {};  // For ActionCbPartialMatchVal
+
+    // METHODS
+
+#define V3OPTIONS_DEF_OP(actKind, argType, actType) \
+    void operator()(const char* optp, actKind, argType arg) const { \
+        m_parser.add<actType>(optp, arg); \
+    }
+    V3OPTIONS_DEF_OP(Set, bool*, ActionSet<bool>)
+    V3OPTIONS_DEF_OP(Set, VOptionBool*, ActionSet<VOptionBool>)
+    V3OPTIONS_DEF_OP(Set, int*, ActionSet<int>)
+    V3OPTIONS_DEF_OP(Set, string*, ActionSet<string>)
+    V3OPTIONS_DEF_OP(OnOff, bool*, ActionOnOff<bool>)
+    V3OPTIONS_DEF_OP(OnOff, VOptionBool*, ActionOnOff<VOptionBool>)
+    V3OPTIONS_DEF_OP(CbCall, ActionCbCall::CbType, ActionCbCall)
+    V3OPTIONS_DEF_OP(CbOnOff, ActionCbOnOff::CbType, ActionCbOnOff)
+    V3OPTIONS_DEF_OP(CbVal, ActionCbVal<int>::CbType, ActionCbVal<int>)
+    V3OPTIONS_DEF_OP(CbVal, ActionCbVal<const char*>::CbType, ActionCbVal<const char*>)
+#undef V3OPTIONS_DEF_OP
+
+    // Syntax sugar to register a member function of V3Options directry
+    void operator()(const char* optp, CbVal,
+                    std::pair<V3Options*, void (V3Options::*)(int)> arg) const {
+        auto cb = [arg](int v) { (arg.first->*arg.second)(v); };
+        m_parser.add<ActionCbVal<int>>(optp, cb);
+    }
+    void operator()(const char* optp, CbVal,
+                    std::pair<V3Options*, void (V3Options::*)(const string&)> arg) const {
+        auto cb = [arg](const string& v) { (arg.first->*arg.second)(v); };
+        m_parser.add<ActionCbVal<const char*>>(optp, cb);
+    }
+    // Callback of partial match expects prefix to be removed, so wrap the given callback
+    void operator()(const char* optp, CbPartialMatch, ActionCbPartialMatch::CbType cb) const {
+        const size_t prefixLen = std::strlen(optp);
+        auto wrap = [prefixLen, cb](const char* optp) { cb(optp + prefixLen); };
+        m_parser.add<ActionCbPartialMatch>(optp, std::move(wrap));
+    }
+    void operator()(const char* optp, CbPartialMatchVal,
+                    ActionCbPartialMatchVal::CbType cb) const {
+        const size_t prefixLen = std::strlen(optp);
+        auto wrap
+            = [prefixLen, cb](const char* optp, const char* argp) { cb(optp + prefixLen, argp); };
+        m_parser.add<ActionCbPartialMatchVal>(optp, std::move(wrap));
+    }
 };
 
 //######################################################################
@@ -1111,13 +1094,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     }
 
     V3OptionsParser parser;
-    const auto Set = V3OptionsParser::ActSet{};
-    const auto OnOff = V3OptionsParser::ActOnOff{};
-    const auto CbCall = V3OptionsParser::ActCbCall{};
-    const auto CbOnOff = V3OptionsParser::ActCbOnOff{};
-    const auto CbVal = V3OptionsParser::ActCbVal{};
-    const auto CbPartialMatch = V3OptionsParser::ActCbPartialMatch{};
-    const auto CbPartialMatchVal = V3OptionsParser::ActCbPartialMatchVal{};
+    const auto Set = V3OptionsParser::AppendHelper::Set{};
+    const auto OnOff = V3OptionsParser::AppendHelper::OnOff{};
+    const auto CbCall = V3OptionsParser::AppendHelper::CbCall{};
+    const auto CbOnOff = V3OptionsParser::AppendHelper::CbOnOff{};
+    const auto CbVal = V3OptionsParser::AppendHelper::CbVal{};
+    const auto CbPartialMatch = V3OptionsParser::AppendHelper::CbPartialMatch{};
+    const auto CbPartialMatchVal = V3OptionsParser::AppendHelper::CbPartialMatchVal{};
     V3OptionsParser::AppendHelper DECL_OPTION{parser};
     // Usage
     // DECL_OPTION("-option", action, pointer_or_lambda);
