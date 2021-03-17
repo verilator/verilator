@@ -2880,6 +2880,7 @@ public:
     virtual void dump(std::ostream& str) const override;
     virtual bool maybePointedTo() const override { return true; }
     virtual string name() const override { return m_name; }
+    virtual bool timescaleMatters() const = 0;
     AstNode* stmtsp() const { return op2p(); }  // op2 = List of statements
     AstActive* activesp() const { return VN_CAST(op3p(), Active); }  // op3 = List of i/sblocks
     // METHODS

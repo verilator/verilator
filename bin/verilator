@@ -1509,8 +1509,8 @@ good value.
 =item --timescale I<timeunit>/I<timeprecision>
 
 Sets default timescale, timeunit and timeprecision for when `timescale does
-not occur in sources.  Default is "1ps/1ps" (to match SystemC).  This is
-overridden by C<--timescale-override>.
+not occur before a given module.  Default is "1ps/1ps" (to match SystemC).
+This is overridden by C<--timescale-override>.
 
 =item --timescale-override I<timeunit>/I<timeprecision>
 

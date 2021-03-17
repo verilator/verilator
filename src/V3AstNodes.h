@@ -290,6 +290,7 @@ public:
     ASTNODE_NODE_FUNCS(ClassPackage)
     virtual string verilogKwd() const override { return "/*class*/package"; }
     virtual const char* broken() const override;
+    virtual bool timescaleMatters() const override { return false; }
     AstClass* classp() const { return m_classp; }
     void classp(AstClass* classp) { m_classp = classp; }
 };
@@ -317,6 +318,7 @@ public:
         BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
         return nullptr;
     }
+    virtual bool timescaleMatters() const override { return false; }
     // op1/op2/op3 in AstNodeModule
     AstClassPackage* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstClassPackage* classpackagep) { m_classOrPackagep = classpackagep; }
@@ -2559,6 +2561,7 @@ public:
         , m_isProgram{program} {}
     ASTNODE_NODE_FUNCS(Module)
     virtual string verilogKwd() const override { return m_isProgram ? "program" : "module"; }
+    virtual bool timescaleMatters() const override { return true; }
 };
 
 class AstNotFoundModule final : public AstNodeModule {
@@ -2568,6 +2571,7 @@ public:
         : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(NotFoundModule)
     virtual string verilogKwd() const override { return "/*not-found-*/ module"; }
+    virtual bool timescaleMatters() const override { return false; }
 };
 
 class AstPackage final : public AstNodeModule {
@@ -2577,6 +2581,7 @@ public:
         : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(Package)
     virtual string verilogKwd() const override { return "package"; }
+    virtual bool timescaleMatters() const override { return !isDollarUnit(); }
     static string dollarUnitName() { return AstNode::encodeName("$unit"); }
     bool isDollarUnit() const { return name() == dollarUnitName(); }
 };
@@ -2588,6 +2593,7 @@ public:
         : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(Primitive)
     virtual string verilogKwd() const override { return "primitive"; }
+    virtual bool timescaleMatters() const override { return false; }
 };
 
 class AstPackageExportStarStar final : public AstNode {
@@ -2653,6 +2659,9 @@ public:
     AstIface(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(Iface)
+    // Interfaces have `timescale applicability but lots of code seems to
+    // get false warnings if we enable this
+    virtual bool timescaleMatters() const override { return false; }
 };
 
 class AstMemberSel final : public AstNodeMath {
