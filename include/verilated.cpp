@@ -2403,6 +2403,8 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             VL_PRINTF_MT("For help, please see 'verilator --help'\n");
             VL_FATAL_MT("COMMAND_LINE", 0, "",
                         "Exiting due to command line argument (not an error)");
+        } else if (arg == "+verilator+noassert") {
+            assertOn(false);
         } else if (commandArgVlValue(arg, "+verilator+prof+threads+start+", value /*ref*/)) {
             profThreadsStart(atoll(value.c_str()));
         } else if (commandArgVlValue(arg, "+verilator+prof+threads+window+", value /*ref*/)) {
@@ -2413,8 +2415,6 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             randReset(atoi(value.c_str()));
         } else if (commandArgVlValue(arg, "+verilator+seed+", value /*ref*/)) {
             randSeed(atoi(value.c_str()));
-        } else if (arg == "+verilator+noassert") {
-            assertOn(false);
         } else if (arg == "+verilator+V") {
             VerilatedImp::versionDump();  // Someday more info too
             VL_FATAL_MT("COMMAND_LINE", 0, "",

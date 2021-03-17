@@ -1853,7 +1853,7 @@ class EmitCImp final : EmitCStmts {
     void emitTextSection(AstType type);
     // High level
     void emitImpTop(AstNodeModule* modp);
-    void emitImp(AstNodeModule* modp);
+    void emitImp(AstNodeModule* fileModp, AstNodeModule* modp);
     void emitSettleLoop(const std::string& eval_call, bool initial);
     void emitWrapEval(AstNodeModule* modp);
     void emitWrapFast(AstNodeModule* modp);
@@ -3351,7 +3351,7 @@ void EmitCImp::emitImpTop(AstNodeModule* fileModp) {
     emitTextSection(AstType::atScImpHdr);
 }
 
-void EmitCImp::emitImp(AstNodeModule* modp) {
+void EmitCImp::emitImp(AstNodeModule* fileModp, AstNodeModule* modp) {
     puts("\n//==========\n");
     if (m_slow) {
         string section;
@@ -3374,7 +3374,7 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
     // Blocks
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
-            maybeSplit(modp);
+            maybeSplit(fileModp);
             mainDoFunc(funcp);
         }
     }
@@ -3427,14 +3427,14 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
 
     m_ofp = newOutCFile(fileModp, !m_fast, true /*source*/);
     emitImpTop(fileModp);
-    emitImp(modp);
+    emitImp(fileModp, modp);
 
     if (AstClassPackage* packagep = VN_CAST(modp, ClassPackage)) {
         // Put the non-static class implementation in same C++ files as
         // often optimizations are possible when both are seen by the
         // compiler together
         m_modp = packagep->classp();
-        emitImp(packagep->classp());
+        emitImp(fileModp, packagep->classp());
         m_modp = modp;
     }
 
@@ -3447,7 +3447,7 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow) {
              vxp = vxp->verticesNextp()) {
             const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp);
             if (mtaskp->threadRoot()) {
-                maybeSplit(modp);
+                maybeSplit(fileModp);
                 // Only define one function for all the mtasks packed on
                 // a given thread. We'll name this function after the
                 // root mtask though it contains multiple mtasks' worth
