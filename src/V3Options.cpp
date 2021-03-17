@@ -1088,6 +1088,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 m_quietExit = flag;
             } else if (onoff(sw, "-relative-cfuncs", flag /*ref*/)) {
                 m_relativeCFuncs = flag;
+                if (!m_relativeCFuncs)
+                    fl->v3warn(DEPRECATED,
+                               "Deprecated --no-relative-cfuncs, unnecessary with C++11.");
             } else if (onoff(sw, "-relative-includes", flag /*ref*/)) {
                 m_relativeIncludes = flag;
             } else if (onoff(sw, "-report-unoptflat", flag /*ref*/)) {

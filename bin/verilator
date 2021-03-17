@@ -5142,6 +5142,11 @@ Verilator currently requires C++11 or newer compilers.  Verilator will
 require C++14 or newer compilers for both compiling Verilator and compiling
 Verilated models no sooner than January 2022.
 
+=item --no-relative-cfuncs
+
+The --no-relative-cfuncs option is not be required by any C++11 compliant
+compiler and is planned for removal no sooner than July 2021.
+
 =item --inhibit-sim
 
 The --inhibit-sim option is planned for removal no sooner than July 2021.
