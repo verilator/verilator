@@ -1,6 +1,8 @@
-*******************************
+.. for github, vim: syntax=reStructuredText
+
+===============================
 Revision History and Change Log
-*******************************
+===============================
 
 The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
