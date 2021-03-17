@@ -19,6 +19,7 @@ Verilator 4.201 devel
 * Fix class unpacked-array compile error (#2774). [Iru Cai]
 * Fix exceeding command-line ar limit (#2834). [Yinan Xu]
 * Fix false $dumpfile warning on model save (#2834). [Yinan Xu]
+* Fix --timescale-override not suppressing TIMESCALEMOD (#2838). [Kaleb Barrett]
 
 
 Verilator 4.200 2021-03-12

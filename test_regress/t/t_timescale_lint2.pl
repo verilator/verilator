@@ -13,9 +13,7 @@ scenarios(linter => 1);
 top_filename("t/t_timescale_lint.v");
 
 lint(
-    verilator_flags2 => ["--lint-only"],
-    fails => 1,
-    expect_filename => $Self->{golden_filename},
+    verilator_flags2 => ["--lint-only --timescale 1ns/1ns"],
     );
 
 ok(1);
