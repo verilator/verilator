@@ -106,7 +106,7 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
                 && !(VN_IS(nodep, Package) && VN_CAST(nodep, Package)->isDollarUnit())) {
                 nodep->v3warn(TIMESCALEMOD,
                               "Timescale missing on this module as other modules have "
-                              "it (IEEE 1800-2017 3.14.2.2)\n"
+                              "it (IEEE 1800-2017 3.14.2.3)\n"
                                   << nodep->warnContextPrimary() << '\n'
                                   << modTimedp->warnOther()
                                   << "... Location of module with timescale\n"

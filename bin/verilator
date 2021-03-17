@@ -4885,16 +4885,18 @@ correctly.
 
 =item TIMESCALEMOD
 
-Error that `timescale is used in some but not all modules.
-Recommend using --timescale argument, or in front of all modules use:
+Warns that `timescale is used in some but not all modules.  Recommend using
+--timescale argument, or in front of all modules use:
 
    `include "timescale.vh"
 
 Then in that file set the timescale.
 
-This is an error due to IEEE specifications, but it may be disabled similar
-to warnings.  Ignoring this error may result in a module having an
-unexpected timescale.
+It may be disabled similar to other warnings.  Ignoring this warning may
+result in a module having an unexpected timescale.
+
+IEEE recommends this be an error, for that behavior use
+-Werror-TIMESCALEMOD.
 
 =item UNDRIVEN
 
