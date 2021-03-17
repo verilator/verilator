@@ -115,11 +115,13 @@ public:
     class ActionIfs VL_NOT_FINAL {
     public:
         virtual ~ActionIfs() = default;
-        // Set a value or run callback
-        virtual void exec(const char* optp, const char* valp) = 0;
         virtual bool isValueNeeded() const = 0;  // Need val of "-opt val"
         virtual bool isOnOffAllowed() const = 0;  // true if "-no-opt" is allowd
         virtual bool isPartialMatchAllowed() const = 0;  // true if "-Wno-" matches "-Wno-fatal"
+        virtual bool isUndocumented() const = 0;  // Will not be suggested in typo
+        // Set a value or run callback
+        virtual void exec(const char* optp, const char* valp) = 0;
+        virtual void undocumented() = 0;
     };
     enum class en {  // Setting for isOnOffAllowed() and isPartialMatchAllowed()
         NONE,  // "-opt"
@@ -129,10 +131,13 @@ public:
     // Base class of actual action classes
     template <en MODE, bool ALLOW_PARTIAL_MATCH = false>
     class ActionBase VL_NOT_FINAL : public ActionIfs {
+        bool m_undocumented = false;  // This option is not documented
     public:
         virtual bool isValueNeeded() const override final { return MODE == en::VALUE; }
         virtual bool isOnOffAllowed() const override final { return MODE == en::ONOFF; }
         virtual bool isPartialMatchAllowed() const override final { return ALLOW_PARTIAL_MATCH; }
+        virtual bool isUndocumented() const override { return m_undocumented; }
+        virtual void undocumented() override { m_undocumented = true; }
     };
     // Actual action classes
     template <typename T> class ActionSet;  // "-opt" for bool-ish, "-opt val" for int and string
@@ -169,14 +174,15 @@ private:
         }
         return nullptr;
     }
-    template <class ACT, class ARG> void add(const std::string& opt, ARG arg) {
+    template <class ACT, class ARG> ActionIfs& add(const std::string& opt, ARG arg) {
         std::unique_ptr<ACT> act{new ACT{std::move(arg)}};
         UASSERT(opt.size() >= 2, opt << " is too short");
         UASSERT(opt[0] == '-' || opt[0] == '+', opt << " does not start with either '-' or '+'");
         UASSERT(!(opt[0] == '-' && opt[1] == '-'), "Option must have single '-', but " << opt);
         m_spellCheck.pushCandidate(opt);
-        const bool inserted = m_options.emplace(opt, std::move(act)).second;
-        UASSERT(inserted, opt << " is already registered");
+        const auto insertedResult = m_options.emplace(opt, std::move(act));
+        UASSERT(insertedResult.second, opt << " is already registered");
+        return *insertedResult.first->second;
     }
     static bool hasPrefixNo(const char* strp) {  // Returns true if strp starts with "-no"
         UASSERT(strp[0] == '-', strp << " does not start with '-'");
@@ -202,7 +208,13 @@ public:
         return 0;
     }
     // Find the most similar option
-    string getSuggestion(const char* str) const { return m_spellCheck.bestCandidateMsg(str); }
+    string getSuggestion(const char* str) const {
+        const string key = m_spellCheck.bestCandidate(str);
+        auto it = m_options.find(key);
+        UASSERT(it != m_options.end(), key << " must found");
+        if (it->second->isUndocumented()) return "";
+        return m_spellCheck.bestCandidateMsg(str);
+    }
 };
 
 #define V3OPTIONS_DEF_ACT_CLASS(className, type, body, enType) \
@@ -266,8 +278,8 @@ struct V3OptionsParser::AppendHelper final {
     // METHODS
 
 #define V3OPTIONS_DEF_OP(actKind, argType, actType) \
-    void operator()(const char* optp, actKind, argType arg) const { \
-        m_parser.add<actType>(optp, arg); \
+    ActionIfs& operator()(const char* optp, actKind, argType arg) const { \
+        return m_parser.add<actType>(optp, arg); \
     }
     V3OPTIONS_DEF_OP(Set, bool*, ActionSet<bool>)
     V3OPTIONS_DEF_OP(Set, VOptionBool*, ActionSet<VOptionBool>)
@@ -282,28 +294,29 @@ struct V3OptionsParser::AppendHelper final {
 #undef V3OPTIONS_DEF_OP
 
     // Syntax sugar to register a member function of V3Options directry
-    void operator()(const char* optp, CbVal,
-                    std::pair<V3Options*, void (V3Options::*)(int)> arg) const {
+    ActionIfs& operator()(const char* optp, CbVal,
+                          std::pair<V3Options*, void (V3Options::*)(int)> arg) const {
         auto cb = [arg](int v) { (arg.first->*arg.second)(v); };
-        m_parser.add<ActionCbVal<int>>(optp, cb);
+        return m_parser.add<ActionCbVal<int>>(optp, cb);
     }
-    void operator()(const char* optp, CbVal,
-                    std::pair<V3Options*, void (V3Options::*)(const string&)> arg) const {
+    ActionIfs& operator()(const char* optp, CbVal,
+                          std::pair<V3Options*, void (V3Options::*)(const string&)> arg) const {
         auto cb = [arg](const string& v) { (arg.first->*arg.second)(v); };
-        m_parser.add<ActionCbVal<const char*>>(optp, cb);
+        return m_parser.add<ActionCbVal<const char*>>(optp, cb);
     }
     // Callback of partial match expects prefix to be removed, so wrap the given callback
-    void operator()(const char* optp, CbPartialMatch, ActionCbPartialMatch::CbType cb) const {
+    ActionIfs& operator()(const char* optp, CbPartialMatch,
+                          ActionCbPartialMatch::CbType cb) const {
         const size_t prefixLen = std::strlen(optp);
         auto wrap = [prefixLen, cb](const char* optp) { cb(optp + prefixLen); };
-        m_parser.add<ActionCbPartialMatch>(optp, std::move(wrap));
+        return m_parser.add<ActionCbPartialMatch>(optp, std::move(wrap));
     }
-    void operator()(const char* optp, CbPartialMatchVal,
-                    ActionCbPartialMatchVal::CbType cb) const {
+    ActionIfs& operator()(const char* optp, CbPartialMatchVal,
+                          ActionCbPartialMatchVal::CbType cb) const {
         const size_t prefixLen = std::strlen(optp);
         auto wrap
             = [prefixLen, cb](const char* optp, const char* argp) { cb(optp + prefixLen, argp); };
-        m_parser.add<ActionCbPartialMatchVal>(optp, std::move(wrap));
+        return m_parser.add<ActionCbPartialMatchVal>(optp, std::move(wrap));
     }
 };
 
@@ -1194,21 +1207,22 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
     DECL_OPTION("-coverage-user", OnOff, &m_coverageUser);
     DECL_OPTION("-debug-abort", CbCall,
-                V3Error::vlAbort);  // Undocumented, see also --debug-sigsegv
+                V3Error::vlAbort)
+        .undocumented();  // See also --debug-sigsegv
     DECL_OPTION("-debug-check", OnOff, &m_debugCheck);
-    DECL_OPTION("-debug-collision", OnOff, &m_debugCollision);  // Undocumented
-    DECL_OPTION("-debug-emitv", OnOff, &m_debugEmitV);  // Undocumented
-    DECL_OPTION("-debug-exit-parse", OnOff, &m_debugExitParse);  // Undocumented
-    DECL_OPTION("-debug-exit-uvm", OnOff, &m_debugExitUvm);  // Undocumented
+    DECL_OPTION("-debug-collision", OnOff, &m_debugCollision).undocumented();
+    DECL_OPTION("-debug-emitv", OnOff, &m_debugEmitV).undocumented();
+    DECL_OPTION("-debug-exit-parse", OnOff, &m_debugExitParse).undocumented();
+    DECL_OPTION("-debug-exit-uvm", OnOff, &m_debugExitUvm).undocumented();
     DECL_OPTION("-debug-leak", OnOff, &m_debugLeak);
     DECL_OPTION("-debug-nondeterminism", OnOff, &m_debugNondeterminism);
-    DECL_OPTION("-debug-partition", OnOff, &m_debugPartition);  // Undocumented
-    DECL_OPTION("-debug-protect", OnOff, &m_debugProtect);  // Undocumented
-    DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest);  // Undocumented
-    DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv);  // Undocumented, see also --debug-abort
+    DECL_OPTION("-debug-partition", OnOff, &m_debugPartition).undocumented();
+    DECL_OPTION("-debug-protect", OnOff, &m_debugProtect).undocumented();
+    DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest).undocumented();
+    DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
     DECL_OPTION("-debug-fatalsrc", CbCall, []() {
         v3fatalSrc("--debug-fatal-src");
-    });  // Undocumented, see also --debug-abort
+    }).undocumented();  // See also --debug-abort
 
     DECL_OPTION("-decoration", OnOff, &m_decoration);
     DECL_OPTION("-dpi-hdr-only", OnOff, &m_dpiHdrOnly);
@@ -1226,7 +1240,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_inhibitSim = flag;
     });
     DECL_OPTION("-lint-only", OnOff, &m_lintOnly);
-    DECL_OPTION("-main", OnOff, &m_main);  // Undocumented future
+    DECL_OPTION("-main", OnOff, &m_main).undocumented();  // Future
     DECL_OPTION("-no-pins64", CbCall, [this]() { m_pinsBv = 33; });
     DECL_OPTION("-order-clock-delay", OnOff, &m_orderClockDly);
     DECL_OPTION("-pvalue+", CbPartialMatch,
@@ -1244,7 +1258,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-pp-comments", OnOff, &m_ppComments);
     DECL_OPTION("-private", CbCall, [this]() { m_public = false; });
     DECL_OPTION("-prof-cfuncs", OnOff, &m_profCFuncs);
-    DECL_OPTION("-profile-cfuncs", OnOff, &m_profCFuncs);  // Undocumented, renamed
+    DECL_OPTION("-profile-cfuncs", OnOff, &m_profCFuncs).undocumented();  // Renamed
     DECL_OPTION("-prof-threads", OnOff, &m_profThreads);
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-public", OnOff, &m_public);
@@ -1273,7 +1287,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-structs-unpacked", OnOff, &m_structsPacked);
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2017; });
-    DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen);  // Undocumented, debug
+    DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen).undocumented();  // Debug
     DECL_OPTION("-trace", OnOff, &m_trace);
     DECL_OPTION("-trace-coverage", OnOff, &m_traceCoverage);
     DECL_OPTION("-trace-params", OnOff, &m_traceParams);
@@ -1287,12 +1301,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-xml-only", OnOff, &m_xmlOnly);
 
     DECL_OPTION("-CFLAGS", CbVal, {this, &V3Options::addCFlags});
-    DECL_OPTION("-comp-limit-blocks", Set, &m_compLimitBlocks);  // Undocumented
+    DECL_OPTION("-comp-limit-blocks", Set, &m_compLimitBlocks).undocumented();
     DECL_OPTION("-comp-limit-members", Set,
-                &m_compLimitMembers);  // Undocumented Ideally power-of-two so structs stay aligned
-    DECL_OPTION("-comp-limit-parens", Set, &m_compLimitParens);  // Undocumented
-    DECL_OPTION("-comp-limit-syms", CbVal,
-                [](int val) { VName::maxLength(val); });  // Undocumented
+                &m_compLimitMembers)
+        .undocumented();  // Ideally power-of-two so structs stay aligned
+    DECL_OPTION("-comp-limit-parens", Set, &m_compLimitParens).undocumented();
+    DECL_OPTION("-comp-limit-syms", CbVal, [](int val) { VName::maxLength(val); }).undocumented();
     DECL_OPTION("-converge-limit", Set, &m_convergeLimit);
     DECL_OPTION("-debug", CbCall, [this]() { setDebugMode(3); });
     DECL_OPTION("-debugi", CbVal, {this, &V3Options::setDebugMode});
@@ -1327,7 +1341,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-inline-mult", Set, &m_inlineMult);
     DECL_OPTION("-LDFLAGS", CbVal, {this, &V3Options::addLdLibs});
     DECL_OPTION("-l2-name", Set, &m_l2Name);
-    DECL_OPTION("-l2name", CbCall, [this]() { m_l2Name = "v"; });  // Historical and undocumented
+    DECL_OPTION("-l2name", CbCall, [this]() { m_l2Name = "v"; }).undocumented();  // Historical
     DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
         if (!strcmp(valp, "cmake")) {
             m_cmake = true;
@@ -1339,7 +1353,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-MAKEFLAGS", CbVal, {this, &V3Options::addMakeFlags});
     DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
-    DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; });  // Historical and undocumented
+    DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
     auto setLang = [this, fl](const char* valp) {
         V3LangCode optval = V3LangCode(valp);
         if (optval.legal()) {
@@ -1436,8 +1450,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-trace-max-array", Set, &m_traceMaxArray);
     DECL_OPTION("-trace-max-width", Set, &m_traceMaxWidth);
     DECL_OPTION("-U", CbPartialMatch, &V3PreShell::undef);
-    DECL_OPTION("-unroll-count", Set, &m_unrollCount);  // Undocumented optimization tweak
-    DECL_OPTION("-unroll-stmts", Set, &m_unrollStmts);  // Undocumented optimization tweak
+    DECL_OPTION("-unroll-count", Set, &m_unrollCount).undocumented();  // Optimization tweak
+    DECL_OPTION("-unroll-stmts", Set, &m_unrollStmts).undocumented();  // Optimization tweak
     DECL_OPTION("-v", CbVal, [this, &optdir](const char* valp) {
         V3Options::addLibraryFile(parseFileArg(optdir, valp));
     });
