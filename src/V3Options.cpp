@@ -210,11 +210,13 @@ public:
     // Find the most similar option
     string getSuggestion(const char* str) const {
         const string key = m_spellCheck.bestCandidate(str);
-        auto it = m_options.find(key);
-        UASSERT(it != m_options.end(), key << " must found");
-        if (it->second->isUndocumented()) return "";
+        if (key.empty()) return key;
+        ActionIfs* actp = const_cast<V3OptionsParser&>(*this).find(key.c_str());
+        UASSERT(actp, key << " must found");
+        if (actp->isUndocumented()) return "";
         return m_spellCheck.bestCandidateMsg(str);
     }
+    void addSuggestionCandidate(const string& s) { m_spellCheck.pushCandidate(s); }
 };
 
 #define V3OPTIONS_DEF_ACT_CLASS(className, type, body, enType) \
@@ -1485,7 +1487,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         // Note it may not be a future option, but one that is currently implemented.
         addFuture(optp);
     });
-    DECL_OPTION("-Wno-", CbPartialMatch, [this, fl](const char* optp) {
+    DECL_OPTION("-Wno-", CbPartialMatch, [this, fl, &parser](const char* optp) {
         if (!strcmp(optp, "context")) {
             m_context = false;
         } else if (!strcmp(optp, "fatal")) {
@@ -1496,12 +1498,22 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         } else if (!strcmp(optp, "style")) {
             FileLine::globalWarnStyleOff(true);
         } else {
-            if (!(FileLine::globalWarnOff(optp, true))) {
-                fl->v3fatal("Unknown warning specified: -Wno-" << optp);
+            if (!FileLine::globalWarnOff(optp, true)) {
+                const string fullopt = string{"-Wno-"} + optp;
+                fl->v3fatal("Unknown warning specified: "
+                            << fullopt << parser.getSuggestion(fullopt.c_str()));
             }
         }
     });
-    DECL_OPTION("-Wwarn-", CbPartialMatch, [this, fl](const char* optp) {
+    for (int i = V3ErrorCode::EC_FIRST_WARN; i < V3ErrorCode::_ENUM_MAX; ++i) {
+        for (const string prefix : {"-Wno-", "-Wwarn-"})
+            parser.addSuggestionCandidate(prefix + V3ErrorCode{i}.ascii());
+    }
+    for (const string s : {"fatal", "lint", "style"}) {
+        parser.addSuggestionCandidate("-Wno-" + s);
+    }
+    for (const string s : {"lint", "style"}) { parser.addSuggestionCandidate("-Wwarn-" + s); }
+    DECL_OPTION("-Wwarn-", CbPartialMatch, [this, fl, &parser](const char* optp) {
         if (!strcmp(optp, "lint")) {
             FileLine::globalWarnLintOff(false);
         } else if (!strcmp(optp, "style")) {
@@ -1509,7 +1521,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         } else {
             V3ErrorCode code(optp);
             if (code == V3ErrorCode::EC_ERROR) {
-                if (!isFuture(optp)) fl->v3fatal("Unknown warning specified: -Wwarn-" << optp);
+                if (!isFuture(optp)) {
+                    const string fullopt = string{"-Wwarn-"} + optp;
+                    fl->v3fatal("Unknown warning specified: "
+                                << fullopt << parser.getSuggestion(fullopt.c_str()));
+                }
             } else {
                 FileLine::globalWarnOff(code, false);
                 V3Error::pretendError(code, false);
