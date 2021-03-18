@@ -716,6 +716,14 @@ sub error {
     $self->{errors} ||= $msg;
 }
 
+sub error_keep_going {
+    my $self = (ref $_[0] ? shift : $Self);
+    my $msg = join('',@_);
+    # Called from tests as: error_keep_going("Reason message"[, ...]);
+    warn "%Warning: $self->{scenario}/$self->{name}: ".$msg."\n";
+    $self->{errors_keep_going} ||= $msg;
+}
+
 sub skip {
     my $self = (ref $_[0] ? shift : $Self);
     my $msg = join('',@_);
@@ -1396,7 +1404,7 @@ sub inline_checks {
 sub ok {
     my $self = (ref $_[0]? shift : $Self);
     $self->{ok} = $_[0] if defined $_[0];
-    $self->{ok} = 0 if $self->{errors} || $self->{skips} || $self->unsupporteds;
+    $self->{ok} = 0 if $self->{errors} || $self->{errors_keep_going} || $self->{skips} || $self->unsupporteds;
     return $self->{ok};
 }
 
@@ -2143,7 +2151,7 @@ sub files_identical {
         for (my $l=0; $l<=$nl; ++$l) {
             if (($l1[$l]||"") ne ($l2[$l]||"")) {
                 next try if $moretry;
-                $self->error("Line ".($l+1)." miscompares; $fn1 != $fn2");
+                $self->error_keep_going("Line ".($l+1)." miscompares; $fn1 != $fn2");
                 warn("F1: ".($l1[$l]||"*EOF*\n")
                      ."F2: ".($l2[$l]||"*EOF*\n"));
                 if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
