@@ -335,12 +335,15 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
             if (!(defValue(name) == value
                   && defParams(name) == params)) {  // Duplicate defs are OK
                 fl->v3warn(REDEFMACRO, "Redefining existing define: '"
-                                           << name << "', with different value: " << value
-                                           << (params == "" ? "" : " ") << params);
-                defFileline(name)->v3warn(REDEFMACRO, "Previous definition is here, with value: "
-                                                          << defValue(name)
-                                                          << (defParams(name).empty() ? "" : " ")
-                                                          << defParams(name));
+                                           << name << "', with different value: '" << value
+                                           << (params == "" ? "" : " ") << params << "'\n"
+                                           << fl->warnContextPrimary() << '\n'
+                                           << defFileline(name)->warnOther()
+                                           << "... Location of previous definition, with value: '"
+                                           << defValue(name)
+                                           << (defParams(name).empty() ? "" : " ")
+                                           << defParams(name) << "'\n"
+                                           << defFileline(name)->warnContextSecondary());
             }
             undef(name);
         }
