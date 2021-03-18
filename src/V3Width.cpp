@@ -3938,11 +3938,13 @@ private:
         userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         if (!m_paramsOnly) {
             V3Const::constifyParamsEdit(nodep->fmtp());  // fmtp may change
+            string text = nodep->fmtp()->text();
+            if (text.empty()) text = "Elaboration system task message (IEEE 1800-2017 20.11)";
             switch (nodep->displayType()) {
-            case AstDisplayType::DT_INFO: nodep->v3warn(USERINFO, nodep->fmtp()->text()); break;
-            case AstDisplayType::DT_ERROR: nodep->v3warn(USERERROR, nodep->fmtp()->text()); break;
-            case AstDisplayType::DT_WARNING: nodep->v3warn(USERWARN, nodep->fmtp()->text()); break;
-            case AstDisplayType::DT_FATAL: nodep->v3warn(USERFATAL, nodep->fmtp()->text()); break;
+            case AstDisplayType::DT_INFO: nodep->v3warn(USERINFO, text); break;
+            case AstDisplayType::DT_ERROR: nodep->v3warn(USERERROR, text); break;
+            case AstDisplayType::DT_WARNING: nodep->v3warn(USERWARN, text); break;
+            case AstDisplayType::DT_FATAL: nodep->v3warn(USERFATAL, text); break;
             default: UASSERT_OBJ(false, nodep, "Unexpected elaboration display type");
             }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
