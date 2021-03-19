@@ -1152,6 +1152,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     // Plus options
     DECL_OPTION("+define+", CbPartialMatch, [this](const char* optp) { addDefine(optp, true); });
+    DECL_OPTION("+incdir+", CbPartialMatch,
+                [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
     DECL_OPTION("+libext+", CbPartialMatch, [this](const char* optp) {
         string exts = optp;
         string::size_type pos;
@@ -1163,8 +1165,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("+librescan", CbCall, []() {});  // NOP
     DECL_OPTION("+notimingchecks", CbCall, []() {});  // NOP
-    DECL_OPTION("+incdir+", CbPartialMatch,
-                [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
     DECL_OPTION("+systemverilogext+", CbPartialMatch,
                 [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2017); });
     DECL_OPTION("+verilog1995ext+", CbPartialMatch,
@@ -1187,28 +1187,61 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2017); });
 
     // Minus options
-    DECL_OPTION("-E", Set, &m_preprocOnly);
-    DECL_OPTION("-MMD", OnOff, &m_makeDepend);
-    DECL_OPTION("-MP", OnOff, &m_makePhony);
-    DECL_OPTION("-P", Set, &m_preprocNoLine);
     DECL_OPTION("-assert", OnOff, &m_assert);
     DECL_OPTION("-autoflush", OnOff, &m_autoflush);
+
     DECL_OPTION("-bbox-sys", OnOff, &m_bboxSys);
     DECL_OPTION("-bbox-unsup", CbOnOff, [this](bool flag) {
         m_bboxUnsup = flag;
         FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, true);
     });
+    DECL_OPTION("-bin", Set, &m_bin);
     DECL_OPTION("-build", Set, &m_build);
+
+    DECL_OPTION("-CFLAGS", CbVal, {this, &V3Options::addCFlags});
     DECL_OPTION("-cc", CbCall, [this]() {
         m_outFormatOk = true;
         m_systemC = false;
     });
     DECL_OPTION("-cdc", OnOff, &m_cdc);
+    DECL_OPTION("-clk", CbVal, {this, &V3Options::addClocker});
+    DECL_OPTION("-no-clk", CbVal, {this, &V3Options::addNoClocker});
+    DECL_OPTION("-comp-limit-blocks", Set, &m_compLimitBlocks).undocumented();
+    DECL_OPTION("-comp-limit-members", Set,
+                &m_compLimitMembers)
+        .undocumented();  // Ideally power-of-two so structs stay aligned
+    DECL_OPTION("-comp-limit-parens", Set, &m_compLimitParens).undocumented();
+    DECL_OPTION("-comp-limit-syms", CbVal, [](int val) { VName::maxLength(val); }).undocumented();
+    DECL_OPTION("-compiler", CbVal, [this, fl](const char* valp) {
+        if (!strcmp(valp, "clang")) {
+            m_compLimitBlocks = 80;  // limit unknown
+            m_compLimitMembers = 64;  // soft limit, has slowdown bug as of clang++ 3.8
+            m_compLimitParens = 80;  // limit unknown
+        } else if (!strcmp(valp, "gcc")) {
+            m_compLimitBlocks = 0;  // Bug free
+            m_compLimitMembers = 64;  // soft limit, has slowdown bug as of g++ 7.1
+            m_compLimitParens = 0;  // Bug free
+        } else if (!strcmp(valp, "msvc")) {
+            m_compLimitBlocks = 80;  // 128, but allow some room
+            m_compLimitMembers = 0;  // probably ok, and AFAIK doesn't support anon structs
+            m_compLimitParens = 80;  // 128, but allow some room
+        } else {
+            fl->v3fatal("Unknown setting for --compiler: " << valp);
+        }
+    });
     DECL_OPTION("-coverage", CbOnOff, [this](bool flag) { coverage(flag); });
+    DECL_OPTION("-converge-limit", Set, &m_convergeLimit);
     DECL_OPTION("-coverage-line", OnOff, &m_coverageLine);
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
     DECL_OPTION("-coverage-user", OnOff, &m_coverageUser);
+
+    DECL_OPTION("-D", CbPartialMatch, [this](const char* valp) { addDefine(valp, false); });
+    DECL_OPTION("-debug", CbCall, [this]() { setDebugMode(3); });
+    DECL_OPTION("-debugi", CbVal, {this, &V3Options::setDebugMode});
+    DECL_OPTION("-debugi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
+        setDebugSrcLevel(optp, std::atoi(valp));
+    });
     DECL_OPTION("-debug-abort", CbCall,
                 V3Error::vlAbort)
         .undocumented();  // See also --debug-sigsegv
@@ -1217,113 +1250,44 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-debug-emitv", OnOff, &m_debugEmitV).undocumented();
     DECL_OPTION("-debug-exit-parse", OnOff, &m_debugExitParse).undocumented();
     DECL_OPTION("-debug-exit-uvm", OnOff, &m_debugExitUvm).undocumented();
+    DECL_OPTION("-debug-fatalsrc", CbCall, []() {
+        v3fatalSrc("--debug-fatal-src");
+    }).undocumented();  // See also --debug-abort
     DECL_OPTION("-debug-leak", OnOff, &m_debugLeak);
     DECL_OPTION("-debug-nondeterminism", OnOff, &m_debugNondeterminism);
     DECL_OPTION("-debug-partition", OnOff, &m_debugPartition).undocumented();
     DECL_OPTION("-debug-protect", OnOff, &m_debugProtect).undocumented();
     DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest).undocumented();
     DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
-    DECL_OPTION("-debug-fatalsrc", CbCall, []() {
-        v3fatalSrc("--debug-fatal-src");
-    }).undocumented();  // See also --debug-abort
-
     DECL_OPTION("-decoration", OnOff, &m_decoration);
     DECL_OPTION("-dpi-hdr-only", OnOff, &m_dpiHdrOnly);
     DECL_OPTION("-dump-defines", OnOff, &m_dumpDefines);
     DECL_OPTION("-dump-tree", CbOnOff,
                 [this](bool flag) { m_dumpTree = flag ? 3 : 0; });  // Also see --dump-treei
     DECL_OPTION("-dump-tree-addrids", OnOff, &m_dumpTreeAddrids);
-    DECL_OPTION("-exe", OnOff, &m_exe);
-    DECL_OPTION("-flatten", OnOff, &m_flatten);
-    DECL_OPTION("-hierarchical", OnOff, &m_hierarchical);
-    DECL_OPTION("-hierarchical-child", OnOff, &m_hierChild);
-    DECL_OPTION("-ignc", OnOff, &m_ignc);
-    DECL_OPTION("-inhibit-sim", CbOnOff, [this, fl](bool flag) {
-        fl->v3warn(DEPRECATED, "-inhibit-sim option is deprecated");
-        m_inhibitSim = flag;
-    });
-    DECL_OPTION("-lint-only", OnOff, &m_lintOnly);
-    DECL_OPTION("-main", OnOff, &m_main).undocumented();  // Future
-    DECL_OPTION("-no-pins64", CbCall, [this]() { m_pinsBv = 33; });
-    DECL_OPTION("-order-clock-delay", OnOff, &m_orderClockDly);
-    DECL_OPTION("-pvalue+", CbPartialMatch,
-                [this](const char* varp) { addParameter(varp, false); });
-    DECL_OPTION("-pins64", CbCall, [this]() { m_pinsBv = 65; });
-    DECL_OPTION("-pins-sc-uint", CbOnOff, [this](bool flag) {
-        m_pinsScUint = flag;
-        if (!m_pinsScBigUint) m_pinsBv = 65;
-    });
-    DECL_OPTION("-pins-sc-biguint", CbOnOff, [this](bool flag) {
-        m_pinsScBigUint = flag;
-        m_pinsBv = 513;
-    });
-    DECL_OPTION("-pins-uint8", OnOff, &m_pinsUint8);
-    DECL_OPTION("-pp-comments", OnOff, &m_ppComments);
-    DECL_OPTION("-private", CbCall, [this]() { m_public = false; });
-    DECL_OPTION("-prof-cfuncs", OnOff, &m_profCFuncs);
-    DECL_OPTION("-profile-cfuncs", OnOff, &m_profCFuncs).undocumented();  // Renamed
-    DECL_OPTION("-prof-threads", OnOff, &m_profThreads);
-    DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
-    DECL_OPTION("-public", OnOff, &m_public);
-    DECL_OPTION("-public-flat-rw", CbOnOff, [this](bool flag) {
-        m_publicFlatRW = flag;
-        v3Global.dpi(true);
-    });
-    DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
-    DECL_OPTION("-relative-cfuncs", CbOnOff, [this, fl](bool flag) {
-        m_relativeCFuncs = flag;
-        if (!m_relativeCFuncs)
-            fl->v3warn(DEPRECATED, "Deprecated --no-relative-cfuncs, unnecessary with C++11.");
-    });
-    DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
-    DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
-    DECL_OPTION("-savable", OnOff, &m_savable);
-    DECL_OPTION("-sc", CbCall, [this]() {
-        m_outFormatOk = true;
-        m_systemC = true;
-    });
-    DECL_OPTION("-skip-identical", OnOff, &m_skipIdentical);
-    DECL_OPTION("-stats", OnOff, &m_stats);
-    DECL_OPTION("-stats-vars", CbOnOff, [this](bool flag) {
-        m_statsVars = flag;
-        m_stats |= flag;
-    });
-    DECL_OPTION("-structs-unpacked", OnOff, &m_structsPacked);
-    DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2017; });
-    DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen).undocumented();  // Debug
-    DECL_OPTION("-trace", OnOff, &m_trace);
-    DECL_OPTION("-trace-coverage", OnOff, &m_traceCoverage);
-    DECL_OPTION("-trace-params", OnOff, &m_traceParams);
-    DECL_OPTION("-trace-structs", OnOff, &m_traceStructs);
-    DECL_OPTION("-trace-underscore", OnOff, &m_traceUnderscore);
-    DECL_OPTION("-underline-zero", OnOff, &m_underlineZero);  // Deprecated
-    DECL_OPTION("-verilate", OnOff, &m_verilate);
-    DECL_OPTION("-vpi", OnOff, &m_vpi);
-    DECL_OPTION("-Wpedantic", OnOff, &m_pedantic);
-    DECL_OPTION("-x-initial-edge", OnOff, &m_xInitialEdge);
-    DECL_OPTION("-xml-only", OnOff, &m_xmlOnly);
-
-    DECL_OPTION("-CFLAGS", CbVal, {this, &V3Options::addCFlags});
-    DECL_OPTION("-comp-limit-blocks", Set, &m_compLimitBlocks).undocumented();
-    DECL_OPTION("-comp-limit-members", Set,
-                &m_compLimitMembers)
-        .undocumented();  // Ideally power-of-two so structs stay aligned
-    DECL_OPTION("-comp-limit-parens", Set, &m_compLimitParens).undocumented();
-    DECL_OPTION("-comp-limit-syms", CbVal, [](int val) { VName::maxLength(val); }).undocumented();
-    DECL_OPTION("-converge-limit", Set, &m_convergeLimit);
-    DECL_OPTION("-debug", CbCall, [this]() { setDebugMode(3); });
-    DECL_OPTION("-debugi", CbVal, {this, &V3Options::setDebugMode});
-    DECL_OPTION("-D", CbPartialMatch, [this](const char* valp) { addDefine(valp, false); });
-    DECL_OPTION("-debugi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
-        setDebugSrcLevel(optp, std::atoi(valp));
-    });
     DECL_OPTION("-dump-treei", Set, &m_dumpTree);
     DECL_OPTION("-dump-treei-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         setDumpTreeLevel(optp, std::atoi(valp));
     });
+
+    DECL_OPTION("-E", Set, &m_preprocOnly);
     DECL_OPTION("-error-limit", CbVal, static_cast<void (*)(int)>(&V3Error::errorLimit));
+    DECL_OPTION("-exe", OnOff, &m_exe);
+
+    DECL_OPTION("-F", CbVal, [this, fl, &optdir](const char* valp) {
+        parseOptsFile(fl, parseFileArg(optdir, valp), true);
+    });
     DECL_OPTION("-FI", CbVal,
                 [this, &optdir](const char* valp) { addForceInc(parseFileArg(optdir, valp)); });
+    DECL_OPTION("-f", CbVal, [this, fl, &optdir](const char* valp) {
+        parseOptsFile(fl, parseFileArg(optdir, valp), false);
+    });
+    DECL_OPTION("-flatten", OnOff, &m_flatten);
+
+    DECL_OPTION("-G", CbPartialMatch, [this](const char* optp) { addParameter(optp, false); });
+    DECL_OPTION("-gate-stmts", Set, &m_gateStmts);
+    DECL_OPTION("-gdb", CbCall, []() {});  // Processed only in bin/verilator shell
+    DECL_OPTION("-gdbbt", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-generate-key", CbCall, [this]() {
         cout << protectKeyDefaulted() << endl;
         exit(0);
@@ -1332,31 +1296,25 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         cout << V3Options::getenvBuiltins(valp) << endl;
         exit(0);
     });
+
+    DECL_OPTION("-hierarchical", OnOff, &m_hierarchical);
     DECL_OPTION("-hierarchical-block", CbVal, [this](const char* valp) {
         V3HierarchicalBlockOption opt(valp);
         m_hierBlocks.emplace(opt.mangledName(), opt);
     });
-    DECL_OPTION("-G", CbPartialMatch, [this](const char* optp) { addParameter(optp, false); });
-    DECL_OPTION("-gate-stmts", Set, &m_gateStmts);
+    DECL_OPTION("-hierarchical-child", OnOff, &m_hierChild);
+
     DECL_OPTION("-I", CbPartialMatch,
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
     DECL_OPTION("-if-depth", Set, &m_ifDepth);
-    DECL_OPTION("-inline-mult", Set, &m_inlineMult);
-    DECL_OPTION("-LDFLAGS", CbVal, {this, &V3Options::addLdLibs});
-    DECL_OPTION("-l2-name", Set, &m_l2Name);
-    DECL_OPTION("-l2name", CbCall, [this]() { m_l2Name = "v"; }).undocumented();  // Historical
-    DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
-        if (!strcmp(valp, "cmake")) {
-            m_cmake = true;
-        } else if (!strcmp(valp, "gmake")) {
-            m_gmake = true;
-        } else {
-            fl->v3fatal("Unknown --make system specified: '" << valp << "'");
-        }
+    DECL_OPTION("-ignc", OnOff, &m_ignc);
+    DECL_OPTION("-inhibit-sim", CbOnOff, [this, fl](bool flag) {
+        fl->v3warn(DEPRECATED, "-inhibit-sim option is deprecated");
+        m_inhibitSim = flag;
     });
-    DECL_OPTION("-MAKEFLAGS", CbVal, {this, &V3Options::addMakeFlags});
-    DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
-    DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
+    DECL_OPTION("-inline-mult", Set, &m_inlineMult);
+
+    DECL_OPTION("-LDFLAGS", CbVal, {this, &V3Options::addLdLibs});
     auto setLang = [this, fl](const char* valp) {
         V3LangCode optval = V3LangCode(valp);
         if (optval.legal()) {
@@ -1369,12 +1327,33 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             fl->v3fatal("Unknown language specified: " << valp << spell.bestCandidateMsg(valp));
         }
     };
-    DECL_OPTION("-language", CbVal, setLang);
     DECL_OPTION("-default-language", CbVal, setLang);
+    DECL_OPTION("-language", CbVal, setLang);
+    DECL_OPTION("-lint-only", OnOff, &m_lintOnly);
+    DECL_OPTION("-l2-name", Set, &m_l2Name);
+    DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
+    DECL_OPTION("-l2name", CbCall, [this]() { m_l2Name = "v"; }).undocumented();  // Historical
+
+    DECL_OPTION("-MAKEFLAGS", CbVal, {this, &V3Options::addMakeFlags});
+    DECL_OPTION("-MMD", OnOff, &m_makeDepend);
+    DECL_OPTION("-MP", OnOff, &m_makePhony);
     DECL_OPTION("-Mdir", CbVal, [this](const char* valp) {
         m_makeDir = valp;
         addIncDirFallback(m_makeDir);  // Need to find generated files there too
     });
+    DECL_OPTION("-main", OnOff, &m_main).undocumented();  // Future
+    DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
+        if (!strcmp(valp, "cmake")) {
+            m_cmake = true;
+        } else if (!strcmp(valp, "gmake")) {
+            m_gmake = true;
+        } else {
+            fl->v3fatal("Unknown --make system specified: '" << valp << "'");
+        }
+    });
+    DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
+    DECL_OPTION("-mod-prefix", Set, &m_modPrefix);
+
     DECL_OPTION("-O", CbPartialMatch, [this](const char* optp) {
         // Optimization
         for (const char* cp = optp; *cp; ++cp) {
@@ -1416,8 +1395,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             }
         }
     });
-
     DECL_OPTION("-o", Set, &m_exeName);
+    DECL_OPTION("-order-clock-delay", OnOff, &m_orderClockDly);
     DECL_OPTION("-output-split", Set, &m_outputSplit);
     DECL_OPTION("-output-split-cfuncs", CbVal, [this, fl](const char* valp) {
         m_outputSplitCFuncs = std::atoi(valp);
@@ -1431,10 +1410,121 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             fl->v3error("--output-split-ctrace must be >= 0: " << valp);
         }
     });
+
+    DECL_OPTION("-P", Set, &m_preprocNoLine);
+    DECL_OPTION("-pvalue+", CbPartialMatch,
+                [this](const char* varp) { addParameter(varp, false); });
+    DECL_OPTION("-pins64", CbCall, [this]() { m_pinsBv = 65; });
+    DECL_OPTION("-no-pins64", CbCall, [this]() { m_pinsBv = 33; });
+    DECL_OPTION("-pins-bv", CbVal, [this, fl](const char* valp) {
+        m_pinsBv = std::atoi(valp);
+        if (m_pinsBv > 65) fl->v3fatal("--pins-bv maximum is 65: " << valp);
+    });
+    DECL_OPTION("-pins-sc-uint", CbOnOff, [this](bool flag) {
+        m_pinsScUint = flag;
+        if (!m_pinsScBigUint) m_pinsBv = 65;
+    });
+    DECL_OPTION("-pins-sc-biguint", CbOnOff, [this](bool flag) {
+        m_pinsScBigUint = flag;
+        m_pinsBv = 513;
+    });
+    DECL_OPTION("-pins-uint8", OnOff, &m_pinsUint8);
+    DECL_OPTION("-pipe-filter", Set, &m_pipeFilter);
+    DECL_OPTION("-pp-comments", OnOff, &m_ppComments);
+    DECL_OPTION("-prefix", CbVal, [this](const char* valp) {
+        m_prefix = valp;
+        if (m_modPrefix == "") m_modPrefix = m_prefix;
+    });
+    DECL_OPTION("-private", CbCall, [this]() { m_public = false; });
+    DECL_OPTION("-prof-cfuncs", OnOff, &m_profCFuncs);
+    DECL_OPTION("-profile-cfuncs", OnOff, &m_profCFuncs).undocumented();  // Renamed
+    DECL_OPTION("-prof-threads", OnOff, &m_profThreads);
+    DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
+    DECL_OPTION("-protect-key", Set, &m_protectKey);
     DECL_OPTION("-protect-lib", CbVal, [this](const char* valp) {
         m_protectLib = valp;
         m_protectIds = true;
     });
+    DECL_OPTION("-public", OnOff, &m_public);
+    DECL_OPTION("-public-flat-rw", CbOnOff, [this](bool flag) {
+        m_publicFlatRW = flag;
+        v3Global.dpi(true);
+    });
+
+    DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
+
+    DECL_OPTION("-relative-cfuncs", CbOnOff, [this, fl](bool flag) {
+        m_relativeCFuncs = flag;
+        if (!m_relativeCFuncs)
+            fl->v3warn(DEPRECATED, "Deprecated --no-relative-cfuncs, unnecessary with C++11.");
+    });
+    DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
+    DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
+    DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
+
+    DECL_OPTION("-savable", OnOff, &m_savable);
+    DECL_OPTION("-sc", CbCall, [this]() {
+        m_outFormatOk = true;
+        m_systemC = true;
+    });
+    DECL_OPTION("-skip-identical", OnOff, &m_skipIdentical);
+    DECL_OPTION("-stats", OnOff, &m_stats);
+    DECL_OPTION("-stats-vars", CbOnOff, [this](bool flag) {
+        m_statsVars = flag;
+        m_stats |= flag;
+    });
+    DECL_OPTION("-structs-unpacked", OnOff, &m_structsPacked);
+    DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2017; });
+
+    DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen).undocumented();  // Debug
+    DECL_OPTION("-no-threads", CbCall, [this]() { m_threads = 0; });
+    DECL_OPTION("-threads", CbVal, [this, fl](const char* valp) {
+        m_threads = std::atoi(valp);
+        if (m_threads < 0) fl->v3fatal("--threads must be >= 0: " << valp);
+    });
+    DECL_OPTION("-threads-dpi", CbVal, [this, fl](const char* valp) {
+        if (!strcmp(valp, "all")) {
+            m_threadsDpiPure = true;
+            m_threadsDpiUnpure = true;
+        } else if (!strcmp(valp, "none")) {
+            m_threadsDpiPure = false;
+            m_threadsDpiUnpure = false;
+        } else if (!strcmp(valp, "pure")) {
+            m_threadsDpiPure = true;
+            m_threadsDpiUnpure = false;
+        } else {
+            fl->v3fatal("Unknown setting for --threads-dpi: " << valp);
+        }
+    });
+    DECL_OPTION("-threads-max-mtasks", CbVal, [this, fl](const char* valp) {
+        m_threadsMaxMTasks = std::atoi(valp);
+        if (m_threadsMaxMTasks < 1) fl->v3fatal("--threads-max-mtasks must be >= 1: " << valp);
+    });
+    DECL_OPTION("-timescale", CbVal, [this, fl](const char* valp) {
+        VTimescale unit;
+        VTimescale prec;
+        VTimescale::parseSlashed(fl, valp, unit /*ref*/, prec /*ref*/);
+        if (!unit.isNone() && timeOverrideUnit().isNone()) m_timeDefaultUnit = unit;
+        if (!prec.isNone() && timeOverridePrec().isNone()) m_timeDefaultPrec = prec;
+    });
+    DECL_OPTION("-timescale-override", CbVal, [this, fl](const char* valp) {
+        VTimescale unit;
+        VTimescale prec;
+        VTimescale::parseSlashed(fl, valp, unit /*ref*/, prec /*ref*/, true);
+        if (!unit.isNone()) {
+            m_timeDefaultUnit = unit;
+            m_timeOverrideUnit = unit;
+        }
+        if (!prec.isNone()) {
+            m_timeDefaultPrec = prec;
+            m_timeOverridePrec = prec;
+        }
+    });
+    DECL_OPTION("-top-module", Set, &m_topModule);
+    DECL_OPTION("-top", Set, &m_topModule);
+    DECL_OPTION("-trace", OnOff, &m_trace);
+    DECL_OPTION("-trace-coverage", OnOff, &m_traceCoverage);
+    DECL_OPTION("-trace-depth", Set, &m_traceDepth);
     DECL_OPTION("-trace-fst", CbCall, [this]() {
         m_trace = true;
         m_traceFormat = TraceFormat::FST;
@@ -1448,30 +1538,38 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                                "Use --trace-fst with --trace-threads > 0.");
         if (m_traceThreads == 0) m_traceThreads = 1;
     });
+    DECL_OPTION("-trace-max-array", Set, &m_traceMaxArray);
+    DECL_OPTION("-trace-max-width", Set, &m_traceMaxWidth);
+    DECL_OPTION("-trace-params", OnOff, &m_traceParams);
+    DECL_OPTION("-trace-structs", OnOff, &m_traceStructs);
     DECL_OPTION("-trace-threads", CbVal, [this, fl](const char* valp) {
         m_trace = true;
         m_traceThreads = std::atoi(valp);
         if (m_traceThreads < 0) fl->v3fatal("--trace-threads must be >= 0: " << valp);
     });
-    DECL_OPTION("-trace-depth", Set, &m_traceDepth);
-    DECL_OPTION("-trace-max-array", Set, &m_traceMaxArray);
-    DECL_OPTION("-trace-max-width", Set, &m_traceMaxWidth);
+    DECL_OPTION("-trace-underscore", OnOff, &m_traceUnderscore);
+
     DECL_OPTION("-U", CbPartialMatch, &V3PreShell::undef);
+    DECL_OPTION("-underline-zero", OnOff, &m_underlineZero);  // Deprecated
     DECL_OPTION("-unroll-count", Set, &m_unrollCount).undocumented();  // Optimization tweak
     DECL_OPTION("-unroll-stmts", Set, &m_unrollStmts).undocumented();  // Optimization tweak
-    DECL_OPTION("-v", CbVal, [this, &optdir](const char* valp) {
-        V3Options::addLibraryFile(parseFileArg(optdir, valp));
-    });
-    DECL_OPTION("-clk", CbVal, {this, &V3Options::addClocker});
-    DECL_OPTION("-no-clk", CbVal, {this, &V3Options::addNoClocker});
+    DECL_OPTION("-unused-regexp", Set, &m_unusedRegexp);
+
     DECL_OPTION("-V", CbCall, [this]() {
         showVersion(true);
         exit(0);
     });
+    DECL_OPTION("-v", CbVal, [this, &optdir](const char* valp) {
+        V3Options::addLibraryFile(parseFileArg(optdir, valp));
+    });
+    DECL_OPTION("-verilate", OnOff, &m_verilate);
     DECL_OPTION("-version", CbCall, [this]() {
         showVersion(false);
         exit(0);
     });
+    DECL_OPTION("-vpi", OnOff, &m_vpi);
+
+    DECL_OPTION("-Wpedantic", OnOff, &m_pedantic);
     DECL_OPTION("-Wall", CbCall, []() {
         FileLine::globalWarnLintOff(false);
         FileLine::globalWarnStyleOff(false);
@@ -1533,91 +1631,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             }
         }
     });
-    DECL_OPTION("-bin", Set, &m_bin);
-    DECL_OPTION("-compiler", CbVal, [this, fl](const char* valp) {
-        if (!strcmp(valp, "clang")) {
-            m_compLimitBlocks = 80;  // limit unknown
-            m_compLimitMembers = 64;  // soft limit, has slowdown bug as of clang++ 3.8
-            m_compLimitParens = 80;  // limit unknown
-        } else if (!strcmp(valp, "gcc")) {
-            m_compLimitBlocks = 0;  // Bug free
-            m_compLimitMembers = 64;  // soft limit, has slowdown bug as of g++ 7.1
-            m_compLimitParens = 0;  // Bug free
-        } else if (!strcmp(valp, "msvc")) {
-            m_compLimitBlocks = 80;  // 128, but allow some room
-            m_compLimitMembers = 0;  // probably ok, and AFAIK doesn't support anon structs
-            m_compLimitParens = 80;  // 128, but allow some room
-        } else {
-            fl->v3fatal("Unknown setting for --compiler: " << valp);
-        }
-    });
-    DECL_OPTION("-F", CbVal, [this, fl, &optdir](const char* valp) {
-        parseOptsFile(fl, parseFileArg(optdir, valp), true);
-    });
-    DECL_OPTION("-f", CbVal, [this, fl, &optdir](const char* valp) {
-        parseOptsFile(fl, parseFileArg(optdir, valp), false);
-    });
-    DECL_OPTION("-gdb", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
-    DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
-    DECL_OPTION("-gdbbt", CbCall, []() {});  // Processed only in bin/verilator shell
-    DECL_OPTION("-mod-prefix", Set, &m_modPrefix);
-    DECL_OPTION("-pins-bv", CbVal, [this, fl](const char* valp) {
-        m_pinsBv = std::atoi(valp);
-        if (m_pinsBv > 65) fl->v3fatal("--pins-bv maximum is 65: " << valp);
-    });
-    DECL_OPTION("-pipe-filter", Set, &m_pipeFilter);
-    DECL_OPTION("-prefix", CbVal, [this](const char* valp) {
-        m_prefix = valp;
-        if (m_modPrefix == "") m_modPrefix = m_prefix;
-    });
-    DECL_OPTION("-protect-key", Set, &m_protectKey);
-    DECL_OPTION("-no-threads", CbCall, [this]() { m_threads = 0; });
-    DECL_OPTION("-threads", CbVal, [this, fl](const char* valp) {
-        m_threads = std::atoi(valp);
-        if (m_threads < 0) fl->v3fatal("--threads must be >= 0: " << valp);
-    });
-    DECL_OPTION("-threads-dpi", CbVal, [this, fl](const char* valp) {
-        if (!strcmp(valp, "all")) {
-            m_threadsDpiPure = true;
-            m_threadsDpiUnpure = true;
-        } else if (!strcmp(valp, "none")) {
-            m_threadsDpiPure = false;
-            m_threadsDpiUnpure = false;
-        } else if (!strcmp(valp, "pure")) {
-            m_threadsDpiPure = true;
-            m_threadsDpiUnpure = false;
-        } else {
-            fl->v3fatal("Unknown setting for --threads-dpi: " << valp);
-        }
-    });
-    DECL_OPTION("-threads-max-mtasks", CbVal, [this, fl](const char* valp) {
-        m_threadsMaxMTasks = std::atoi(valp);
-        if (m_threadsMaxMTasks < 1) fl->v3fatal("--threads-max-mtasks must be >= 1: " << valp);
-    });
-    DECL_OPTION("-timescale", CbVal, [this, fl](const char* valp) {
-        VTimescale unit;
-        VTimescale prec;
-        VTimescale::parseSlashed(fl, valp, unit /*ref*/, prec /*ref*/);
-        if (!unit.isNone() && timeOverrideUnit().isNone()) m_timeDefaultUnit = unit;
-        if (!prec.isNone() && timeOverridePrec().isNone()) m_timeDefaultPrec = prec;
-    });
-    DECL_OPTION("-timescale-override", CbVal, [this, fl](const char* valp) {
-        VTimescale unit;
-        VTimescale prec;
-        VTimescale::parseSlashed(fl, valp, unit /*ref*/, prec /*ref*/, true);
-        if (!unit.isNone()) {
-            m_timeDefaultUnit = unit;
-            m_timeOverrideUnit = unit;
-        }
-        if (!prec.isNone()) {
-            m_timeDefaultPrec = prec;
-            m_timeOverridePrec = prec;
-        }
-    });
-    DECL_OPTION("-top-module", Set, &m_topModule);
-    DECL_OPTION("-top", Set, &m_topModule);
-    DECL_OPTION("-unused-regexp", Set, &m_unusedRegexp);
+
     DECL_OPTION("-x-assign", CbVal, [this, fl](const char* valp) {
         if (!strcmp(valp, "0")) {
             m_xAssign = "0";
@@ -1642,10 +1657,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             fl->v3fatal("Unknown setting for --x-initial: " << valp);
         }
     });
+    DECL_OPTION("-x-initial-edge", OnOff, &m_xInitialEdge);
+    DECL_OPTION("-xml-only", OnOff, &m_xmlOnly);
     DECL_OPTION("-xml-output", CbVal, [this](const char* valp) {
         m_xmlOutput = valp;
         m_xmlOnly = true;
     });
+
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
         addIncDirUser(parseFileArg(optdir, string(valp)));
     });
