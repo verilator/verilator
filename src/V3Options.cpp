@@ -180,6 +180,7 @@ private:
         UASSERT(opt[0] == '-' || opt[0] == '+', opt << " does not start with either '-' or '+'");
         UASSERT(!(opt[0] == '-' && opt[1] == '-'), "Option must have single '-', but " << opt);
         m_spellCheck.pushCandidate(opt);
+        if (act->isOnOffAllowed()) m_spellCheck.pushCandidate("-no" + opt);
         const auto insertedResult = m_options.emplace(opt, std::move(act));
         UASSERT(insertedResult.second, opt << " is already registered");
         return *insertedResult.first->second;
