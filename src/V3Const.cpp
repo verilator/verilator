@@ -2114,7 +2114,7 @@ private:
                         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
                         did = true;
                     }
-                } else if (m_params && VN_IS(valuep, InitArray) && VN_IS(nodep->backp(), Pin)) {
+                } else if (m_params && VN_IS(valuep, InitArray)) {
                     // Allow parameters to pass arrays
                     // Earlier recursion of InitArray made sure each array value is constant
                     // This exception is fairly fragile, i.e. doesn't
@@ -2156,7 +2156,7 @@ private:
             }
         }
         if (!did && m_required) {
-            nodep->v3error("Expecting expression to be constant, but variable isn't const: "
+            nodep->v3error("Expecting expression to be constant, but enum value isn't const: "
                            << nodep->itemp()->prettyNameQ());
         }
     }

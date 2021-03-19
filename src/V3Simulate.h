@@ -191,8 +191,9 @@ public:
                     AstVar* portp = conIt->first;
                     AstNode* pinp = conIt->second->exprp();
                     AstNodeDType* dtypep = pinp->dtypep();
-                    stack << "\n           " << portp->prettyName() << " = "
-                          << prettyNumber(&fetchConst(pinp)->num(), dtypep);
+                    if (AstConst* valp = fetchConstNull(pinp))
+                        stack << "\n           " << portp->prettyName() << " = "
+                              << prettyNumber(&valp->num(), dtypep);
                 }
             }
             m_whyNotOptimizable += stack.str();
