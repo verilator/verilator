@@ -9,7 +9,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 scenarios(vlt_all => 1);
-top_filename("t/t_case_huge.v");
 
 if ($ENV{VERILATOR_TEST_NO_GPROF}) {
     skip("Skipping due to VERILATOR_TEST_NO_GPROF");
@@ -23,9 +22,6 @@ sub dotest {
     compile(
         verilator_flags2 => ["--stats --prof-cfuncs -CFLAGS '-pg' -LDFLAGS '-pg'"],
         );
-
-    file_grep($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/i, 10);
-    file_grep($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 10);
 
     unlink $_ foreach (glob "$Self->{obj_dir}/gmon.out.*");
     setenv('GMON_OUT_PREFIX', "$Self->{obj_dir}/gmon.out");
@@ -46,6 +42,8 @@ sub dotest {
         check_finished => 0);
 
     file_grep("$Self->{obj_dir}/cfuncs.out", qr/Overall summary by/);
+    file_grep("$Self->{obj_dir}/cfuncs.out", qr/VLib + VL_POWSS_QQQ/);
+    file_grep("$Self->{obj_dir}/cfuncs.out", qr/VBlock + t_prof:/);
 }
 
 1;

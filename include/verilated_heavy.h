@@ -49,7 +49,7 @@ extern std::string VL_TO_STRING_W(int words, WDataInP obj);
 
 class VlURNG final {
 public:
-    typedef size_t result_type;
+    using result_type = size_t;
     static constexpr size_t min() { return 0; }
     static constexpr size_t max() { return 1ULL << 31; }
     size_t operator()() { return VL_MASK_I(31) & VL_RANDOM_I(32); }
@@ -111,6 +111,7 @@ public:
     const EData& operator[](size_t index) const { return m_storage[index]; };
     EData& operator[](size_t index) { return m_storage[index]; };
     operator WDataOutP() { return &m_storage[0]; }
+    operator WDataInP() const { return &m_storage[0]; }
 
     // METHODS
     const EData& at(size_t index) const { return m_storage[index]; }
@@ -142,10 +143,10 @@ template <std::size_t T_Words> std::string VL_TO_STRING(const VlWide<T_Words>& o
 template <class T_Value, size_t T_MaxSize = 0> class VlQueue final {
 private:
     // TYPES
-    typedef std::deque<T_Value> Deque;
+    using Deque = std::deque<T_Value>;
 
 public:
-    typedef typename Deque::const_iterator const_iterator;
+    using const_iterator = typename Deque::const_iterator;
 
 private:
     // MEMBERS
@@ -497,10 +498,10 @@ template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
 template <class T_Key, class T_Value> class VlAssocArray final {
 private:
     // TYPES
-    typedef std::map<T_Key, T_Value> Map;
+    using Map = std::map<T_Key, T_Value>;
 
 public:
-    typedef typename Map::const_iterator const_iterator;
+    using const_iterator = typename Map::const_iterator;
 
 private:
     // MEMBERS
@@ -801,14 +802,14 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
 template <class T_Value, std::size_t T_Depth> class VlUnpacked final {
 private:
     // TYPES
-    typedef std::array<T_Value, T_Depth> Array;
+    using Array = std::array<T_Value, T_Depth>;
 
 public:
-    typedef typename Array::const_iterator const_iterator;
+    using const_iterator = typename Array::const_iterator;
 
 private:
     // MEMBERS
-    Array m_array;  // State of the assoc array
+    Array m_array;  // Contents of the packed array
 
 public:
     // CONSTRUCTORS
@@ -826,7 +827,23 @@ public:
 
     T_Value& operator[](size_t index) { return m_array[index]; };
     const T_Value& operator[](size_t index) const { return m_array[index]; };
+
+    // Dumping. Verilog: str = $sformatf("%p", assoc)
+    std::string to_string() const {
+        std::string out = "'{";
+        std::string comma;
+        for (int i = 0; i < T_Depth; ++i) {
+            out += comma + VL_TO_STRING(m_array[i]);
+            comma = ", ";
+        }
+        return out + "} ";
+    }
 };
+
+template <class T_Value, std::size_t T_Depth>
+std::string VL_TO_STRING(const VlUnpacked<T_Value, T_Depth>& obj) {
+    return obj.to_string();
+}
 
 //===================================================================
 // Verilog class reference container
@@ -900,8 +917,8 @@ extern IData VL_SSCANF_INX(int lbits, const std::string& ld, const char* formatp
 extern void VL_SFORMAT_X(int obits_ignored, std::string& output, const char* formatp,
                          ...) VL_MT_SAFE;
 extern std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE;
-extern void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix,
-                               int width) VL_MT_SAFE;
+extern void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix, int width,
+                               VerilatedContext* contextp) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {
     WData rwp[2];  // WData must always be at least 2
@@ -955,11 +972,5 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
 
 extern IData VL_FGETS_NI(std::string& dest, IData fpi);
-
-//======================================================================
-// Dumping
-
-extern const char* vl_dumpctl_filenamep(bool setit = false,
-                                        const std::string& filename = "") VL_MT_SAFE;
 
 #endif  // Guard

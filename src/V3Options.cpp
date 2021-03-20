@@ -56,7 +56,7 @@
 class V3OptionsImp final {
 public:
     // TYPES
-    typedef std::map<const string, std::set<string>> DirMap;  // Directory listing
+    using DirMap = std::map<const string, std::set<std::string>>;  // Directory listing
 
     // STATE
     std::list<string> m_allArgs;  // List of every argument encountered
@@ -1270,7 +1270,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         v3Global.dpi(true);
     });
     DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
-    DECL_OPTION("-relative-cfuncs", OnOff, &m_relativeCFuncs);
+    DECL_OPTION("-relative-cfuncs", CbOnOff, [this, fl](bool flag) {
+        m_relativeCFuncs = flag;
+        if (!m_relativeCFuncs)
+            fl->v3warn(DEPRECATED, "Deprecated --no-relative-cfuncs, unnecessary with C++11.");
+    });
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
     DECL_OPTION("-savable", OnOff, &m_savable);
@@ -1389,7 +1393,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             case 'k': m_oSubstConst = flag; break;
             case 'l': m_oLife = flag; break;
             case 'm': m_oAssemble = flag; break;
-            //    n o
+            //    n
+            case 'o': m_oConstBitOpTree = flag; break;  // Can remove ~2022-01 when stable
             case 'p':
                 m_public = !flag;
                 break;  // With -Op so flag=0, we want public on so few optimizations done
@@ -1960,6 +1965,7 @@ void V3Options::optimize(int level) {
     m_oCase = flag;
     m_oCombine = flag;
     m_oConst = flag;
+    m_oConstBitOpTree = flag;
     m_oDedupe = flag;
     m_oExpand = flag;
     m_oGate = flag;

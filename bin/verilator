@@ -1509,8 +1509,8 @@ good value.
 =item --timescale I<timeunit>/I<timeprecision>
 
 Sets default timescale, timeunit and timeprecision for when `timescale does
-not occur in sources.  Default is "1ps/1ps" (to match SystemC).  This is
-overridden by C<--timescale-override>.
+not occur before a given module.  Default is "1ps/1ps" (to match SystemC).
+This is overridden by C<--timescale-override>.
 
 =item --timescale-override I<timeunit>/I<timeprecision>
 
@@ -1730,8 +1730,9 @@ received from third parties.
 
 Disable all code style related warning messages (note by default they are
 already disabled).  This is equivalent to "-Wno-DECLFILENAME -Wno-DEFPARAM
--Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY -Wno-PINNOCONNECT
--Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNUSED -Wno-VARHIDDEN".
+-Wno-EOFNEWLINE -Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY
+-Wno-PINNOCONNECT -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNUSED
+-Wno-VARHIDDEN".
 
 =item -Wpedantic
 
@@ -1756,9 +1757,9 @@ enabled), but do not affect style messages.  This is equivalent to
 =item -Wwarn-style
 
 Enable all code style related warning messages.  This is equivalent to
-"-Wwarn ASSIGNDLY -Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-INCABSPATH
--Wwarn-PINNOCONNECT -Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN -Wwarn-UNUSED
--Wwarn-VARHIDDEN".
+"-Wwarn ASSIGNDLY -Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-EOFNEWLINE
+-Wwarn-INCABSPATH -Wwarn-PINNOCONNECT -Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN
+-Wwarn-UNUSED -Wwarn-VARHIDDEN".
 
 =item --x-assign 0
 
@@ -1953,7 +1954,8 @@ Displays program version and exits.
 
 =head1 EXAMPLE C++ EXECUTION
 
-We'll compile this example into C++.
+We'll compile this example into C++.  For an extended and commented version
+of what this C++ code is doing, see examples/make_tracing_c/sim_main.cpp.
 
     mkdir test_our
     cd test_our
@@ -1968,21 +1970,24 @@ We'll compile this example into C++.
       #include "Vour.h"
       #include "verilated.h"
       int main(int argc, char** argv, char** env) {
-          Verilated::commandArgs(argc, argv);
-          Vour* top = new Vour;
-          while (!Verilated::gotFinish()) { top->eval(); }
+          VerilatedContext* contextp = new VerilatedContext;
+          contextp->commandArgs(argc, argv);
+          Vour* top = new Vour{contextp};
+          while (!contextp->gotFinish()) { top->eval(); }
           delete top;
+          delete contextp;
           return 0;
       }
     EOF
 
-See the README in the source kit for various ways to install or point to
-Verilator binaries.  In brief, if you installed Verilator using the package
-manager of your operating system, or did a "make install" to place
-Verilator into your default path, you do not need anything special in your
-environment, and should not have VERILATOR_ROOT set.  However, if you
-installed Verilator from sources and want to run Verilator out of where you
-compiled Verilator, you need to point to the kit:
+Next we need Verilator installed.  See the README in the source kit for
+various ways to install or point to Verilator binaries.  In brief, if you
+installed Verilator using the package manager of your operating system, or
+did a "make install" to place Verilator into your default path, you do not
+need anything special in your environment, and should not have
+VERILATOR_ROOT set.  However, if you installed Verilator from sources and
+want to run Verilator out of where you compiled Verilator, you need to
+point to the kit:
 
     # See above; don't do this if using an OS-distributed Verilator
     export VERILATOR_ROOT=/path/to/where/verilator/was/installed
@@ -2028,7 +2033,7 @@ This is an example similar to the above, but using SystemC.
     cat >our.v <<'EOF'
       module our (clk);
          input clk;  // Clock is required to get initial activation
-         always @ (posedge clk)
+         always @(posedge clk)
             begin $display("Hello World"); $finish; end
       endmodule
     EOF
@@ -2037,9 +2042,8 @@ This is an example similar to the above, but using SystemC.
       #include "Vour.h"
       int sc_main(int argc, char** argv) {
           Verilated::commandArgs(argc, argv);
-          sc_clock clk("clk", 10, SC_NS, 0.5, 3, SC_NS, true);
-          Vour* top;
-          top = new Vour("top");
+          sc_clock clk{"clk", 10, SC_NS, 0.5, 3, SC_NS, true};
+          Vour* top = new Vour{"top"};
           top->clk(clk);
           while (!Verilated::gotFinish()) { sc_start(1, SC_NS); }
           delete top;
@@ -2101,15 +2105,15 @@ When using SystemC, evaluation of the Verilated model is managed by the SystemC
 kernel, and for the most part can be ignored.  When using C++, the user
 must call eval(), or eval_step() and eval_end_step().
 
-1. When there is a single design instantiated at the C++ level that needs to
-evaluate, just call designp->eval().
+1. When there is a single design instantiated at the C++ level that needs
+to evaluate within a given context, just call designp->eval().
 
-2. When there are multiple designs instantiated at the C++ level that
-need to evaluate, call first_designp->eval_step() then ->eval_step() on all
-other designs.  Then call ->eval_end_step() on the first design then all
-other designs.  If there is only a single design, you would call
-eval_step() then eval_end_step(); in fact eval() described above is just a
-wrapper which calls these two functions.
+2. When there are multiple designs instantiated at the C++ level that need
+to evaluate within a context, call first_designp->eval_step() then
+->eval_step() on all other designs.  Then call ->eval_end_step() on the
+first design then all other designs.  If there is only a single design, you
+would call eval_step() then eval_end_step(); in fact eval() described above
+is just a wrapper which calls these two functions.
 
 When eval() is called Verilator looks for changes in clock signals and
 evaluates related sequential always blocks, such as computing always_ff @
@@ -2124,7 +2128,7 @@ or all inputs go directly to always_ff statements, as is typical, then you
 can change non-clock inputs on the negative edge of the input clock, which
 will be faster as there will be fewer eval() calls.
 
-For more information on evaluation, see docs/internals.adoc in the
+For more information on evaluation, see docs/internals.rst in the
 distribution.
 
 
@@ -2406,7 +2410,7 @@ example:
         // allow modulus.  This is in units of the timeprecision
         // used in Verilog (or from --timescale-override)
 
-        double sc_time_stamp () {       // Called by $time in Verilog
+        double sc_time_stamp() {        // Called by $time in Verilog
             return main_time;           // converts to double, to match
                                         // what SystemC does
         }
@@ -2480,7 +2484,7 @@ Verilog, put in our.v:
 Then after Verilating, Verilator will create a file Vour__Dpi.h with the
 prototype to call this function:
 
-    extern int add (int a, int b);
+    extern int add(int a, int b);
 
 From the sc_main.cpp file (or another .cpp file passed to the Verilator
 command line, or the link), you'd then:
@@ -2559,7 +2563,7 @@ wrapper:
     // This DPI function will read "din"
     import "DPI-C" context function void dpi_that_accesses_din();
 
-    always @ (...)
+    always @(...)
        dpi_din_args(din);
 
     task dpi_din_args(input din);
@@ -3484,7 +3488,7 @@ analysis.) For example:
 
    reg enable_r /*verilator clock_enable*/;
    wire gated_clk = clk & enable_r;
-   always_ff @ (posedge clk)
+   always_ff @(posedge clk)
       enable_r <= enable_early;
 
 The clock_enable attribute will cause the clock gate to be ignored in the
@@ -3558,7 +3562,7 @@ IE, with the following
 
     reg splitme /* verilator isolate_assignments*/;
     // Note the placement of the semicolon above
-    always @* begin
+    always_comb begin
       if (....) begin
          splitme = ....;
          other assignments
@@ -3571,13 +3575,13 @@ two blocks:
 It would then internally break it into (sort of):
 
     // All assignments excluding those to splitme
-    always @* begin
+    always_comb begin
       if (....) begin
          other assignments
       end
     end
     // All assignments to splitme
-    always @* begin
+    always_comb begin
       if (....) begin
          splitme = ....;
       end
@@ -3821,7 +3825,7 @@ Verilator supports the Synthesis subset with other verification constructs
 being added over time. Verilator also simulates events as Synopsys's Design
 Compiler would; namely given a block of the form:
 
-        always @ (x)   y = x & z;
+        always @(x)   y = x & z;
 
 This will recompute y when there is even a potential for change in x or a
 change in z, that is when the flops computing x or z evaluate (which is
@@ -4252,15 +4256,15 @@ Generally, this is caused by a register driven by both combo logic and a
 flop:
 
       logic [1:0] foo;
-      always @ (posedge clk)  foo[0] <= ...
-      always @* foo[1] = ...
+      always @(posedge clk)  foo[0] <= ...
+      always_comb foo[1] = ...
 
 Simply use a different register for the flop:
 
       logic [1:0] foo;
-      always @ (posedge clk)  foo_flopped[0] <= ...
-      always @* foo[0] = foo_flopped[0];
-      always @* foo[1] = ...
+      always @(posedge clk)  foo_flopped[0] <= ...
+      always_comb foo[0] = foo_flopped[0];
+      always_comb foo[1] = ...
 
 Or, this may also avoid the error:
 
@@ -4275,7 +4279,7 @@ reasonable to do this if the generated signal is used ONLY later in the
 same block, however this style is generally discouraged as it is error
 prone.
 
-      always @ (posedge clk)  foo = ...
+      always @(posedge clk)  foo = ...
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.
@@ -4288,7 +4292,7 @@ were used, the simulator would have to copy large arrays every cycle.  (In
 smaller loops, loop unrolling allows the delayed assignment to work, though
 it's a bit slower than a non-delayed assignment.)  Here's an example
 
-        always @ (posedge clk)
+        always @(posedge clk)
             if (~reset_l) begin
                 for (i=0; i<`ARRAY_SIZE; i++) begin
                     array[i] = 0;  // Non-delayed for verilator
@@ -4496,6 +4500,15 @@ Warns that a label attached to a "end"-something statement does not match
 the label attached to the block start.
 
 Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
+=item EOFNEWLINE
+
+Warns that a file does not end in a newline.  POSIX defines that a line
+must end in newline, as otherwise for example 'cat' of the file may produce
+undesirable results.
+
+Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item GENCLK
@@ -4872,16 +4885,18 @@ correctly.
 
 =item TIMESCALEMOD
 
-Error that `timescale is used in some but not all modules.
-Recommend using --timescale argument, or in front of all modules use:
+Warns that `timescale is used in some but not all modules.  Recommend using
+--timescale argument, or in front of all modules use:
 
    `include "timescale.vh"
 
 Then in that file set the timescale.
 
-This is an error due to IEEE specifications, but it may be disabled similar
-to warnings.  Ignoring this error may result in a module having an
-unexpected timescale.
+It may be disabled similar to other warnings.  Ignoring this warning may
+result in a module having an unexpected timescale.
+
+IEEE recommends this be an error, for that behavior use
+-Werror-TIMESCALEMOD.
 
 =item UNDRIVEN
 
@@ -5126,6 +5141,11 @@ The following deprecated items are scheduled for future removal:
 Verilator currently requires C++11 or newer compilers.  Verilator will
 require C++14 or newer compilers for both compiling Verilator and compiling
 Verilated models no sooner than January 2022.
+
+=item --no-relative-cfuncs
+
+The --no-relative-cfuncs option is not be required by any C++11 compliant
+compiler and is planned for removal no sooner than July 2021.
 
 =item --inhibit-sim
 
@@ -5418,8 +5438,14 @@ controlled by --assert are disabled.
 
 =item Why do I get "undefined reference to `sc_time_stamp()'"?
 
-In C++ (non SystemC) code you need to define this function so that the
-simulator knows the current time.  See the "CONNECTING TO C++" examples.
+In 4.200 and later, using the timeInc function is recommended instead.  See
+the "CONNECTING TO C++" examples.  Some linkers (MSVC++) still require
+sc_time_stamp() to be defined, either define this with ("double
+sc_time_stamp() { return 0; }") or compile the Verilated code with
+-DVL_TIME_CONTEXT.
+
+Prior to Verilator 4.200, the sc_time_stamp function needs to be defined in
+C++ (non SystemC) to return the current simulation time.
 
 =item Why do I get "undefined reference to `VL_RAND_RESET_I' or `Verilated::...'"?
 
@@ -5662,75 +5688,82 @@ Hewson, Iztok Jeras, Wim Michiels, Alex Solomatnikov, Sebastien Van
 Cauwenberghe, Gene Weber, and Clifford Wolf.
 
 Some of the people who have provided ideas, and feedback for Verilator
-include: David Addison, Tariq B. Ahmad, Nikana Anastasiadis, Hans Van
-Antwerpen, Vasu Arasanipalai, Jens Arm, Sharad Bagri, Matthew Ballance,
-Andrew Bardsley, Matthew Barr, Geoff Barrett, Julius Baxter, Jeremy
-Bennett, Michael Berman, Victor Besyakov, Moinak Bhattacharyya, David
-Binderman, Piotr Binkowski, Johan Bjork, David Black, Tymoteusz Blazejczyk,
-Daniel Bone, Gregg Bouchard, Christopher Boumenot, Nick Bowler, Byron
-Bradley, Bryan Brady, Maarten De Braekeleer, Charlie Brej, J Briquet, Lane
-Brooks, John Brownlee, Jeff Bush, Lawrence Butcher, Tony Bybell, Ted
-Campbell, Chris Candler, Lauren Carlson, Donal Casey, Sebastien Van
-Cauwenberghe, Alex Chadwick, Terry Chen, Yi-Chung Chen, Enzo Chi, Robert
-A. Clark, Allan Cochrane, John Coiner, Gianfranco Costamagna, Sean Cross,
-George Cuan, Joe DErrico, Lukasz Dalek, Laurens van Dam, Gunter
-Dannoritzer, Ashutosh Das, Bernard Deadman, John Demme, Mike Denio, John
-Deroo, Philip Derrick, John Dickol, Ruben Diez, Danny Ding, Jacko Dirks,
-Ivan Djordjevic, Jonathon Donaldson, Leendert van Doorn, Sebastian
-Dressler, Alex Duller, Jeff Dutton, Tomas Dzetkulic, Usuario Eda, Charles
-Eddleston, Chandan Egbert, Joe Eiler, Ahmed El-Mahmoudy, Trevor Elbourne,
-Mats Engstrom, Robert Farrell, Eugen Fekete, Fabrizio Ferrandi, Udi
-Finkelstein, Brian Flachs, Andrea Foletto, Bob Fredieu, Duane Galbi,
-Benjamin Gartner, Christian Gelinek, Peter Gerst, Glen Gibb, Michael
-Gielda, Shankar Giri, Dan Gisselquist, Petr Gladkikh, Sam Gladstone, Amir
-Gonnen, Chitlesh Goorah, Kai Gossner, Sergi Granell, Al Grant, Alexander
-Grobman, Xuan Guo, Driss Hafdi, Neil Hamilton, James Hanlon, Oyvind Harboe,
-Jannis Harder, Junji Hashimoto, Thomas Hawkins, Mitch Hayenga, Robert
-Henry, Stephen Henry, David Hewson, Jamey Hicks, Joel Holdsworth, Andrew
-Holme, Hiroki Honda, Alex Hornung, David Horton, Peter Horvath, Jae
-Hossell, Alan Hunter, James Hutchinson, Jamie Iles, Ben Jackson, Shareef
-Jalloq, Krzysztof Jankowski, HyungKi Jeong, Iztok Jeras, James Johnson,
-Christophe Joly, Franck Jullien, James Jung, Mike Kagen, Arthur Kahlich,
-Kaalia Kahn, Guy-Armand Kamendje, Vasu Kandadi, Kanad Kanhere, Patricio
-Kaplan, Pieter Kapsenberg, Ralf Karge, Dan Katz, Sol Katzman, Ian Kennedy,
-Jonathan Kimmitt, Olof Kindgren, Kevin Kiningham, Dan Kirkham, Sobhan Klnv,
-Gernot Koch, Soon Koh, Nathan Kohagen, Steve Kolecki, Brett Koonce, Will
-Korteland, Wojciech Koszek, Varun Koyyalagunta, David Kravitz, Roland
-Kruse, Sergey Kvachonok, Charles Eric LaForest, Ed Lander, Steve Lang,
-Stephane Laurent, Walter Lavino, Christian Leber, Larry Lee, Igor Lesik,
-John Li, Eivind Liland, Yu Sheng Lin, Charlie Lind, Andrew Ling, Jiuyang
-Liu, Paul Liu, Derek Lockhart, Jake Longo, Geza Lore, Arthur Low, Stefan
-Ludwig, Dan Lussier, Fred Ma, Duraid Madina, Affe Mao, Julien Margetts,
-Mark Marshall, Alfonso Martinez, Yves Mathieu, Patrick Maupin, Jason
-McMullan, Elliot Mednick, Wim Michiels, Miodrag Milanovic, Wai Sum Mong,
-Peter Monsson, Sean Moore, Dennis Muhlestein, John Murphy, Matt Myers,
-Nathan Myers, Richard Myers, Dimitris Nalbantis, Peter Nelson, Bob Newgard,
-Cong Van Nguyen, Paul Nitza, Yossi Nivin, Pete Nixon, Lisa Noack, Mark
-Nodine, Kuba Ober, Andreas Olofsson, Aleksander Osman, James Pallister,
-Vassilis Papaefstathiou, Brad Parker, Dan Petrisko, Maciej Piechotka, David
-Pierce, Dominic Plunkett, David Poole, Mike Popoloski, Roman Popov, Rich
-Porter, Niranjan Prabhu, Usha Priyadharshini, Mark Jackson Pulver, Prateek
-Puri, Marshal Qiao, Danilo Ramos, Chris Randall, Anton Rapp, Josh Redford,
-Odd Magne Reitan, Frederic Requin, Frederick Requin, Dustin Richmond,
-Alberto Del Rio, Eric Rippey, Oleg Rodionov, Ludwig Rogiers, Paul Rolfe,
-Arjen Roodselaar, Tobias Rosenkranz, Huang Rui, Jan Egil Ruud, Denis
-Rystsov, John Sanguinetti, Galen Seitz, Salman Sheikh, Hao Shi, Mike
-Shinkarovsky, Rafael Shirakawa, Jeffrey Short, Anderson Ignacio Da Silva,
-Rodney Sinclair, Steven Slatter, Brian Small, Garrett Smith, Tim Snyder,
-Maciej Sobkowski, Stan Sokorac, Alex Solomatnikov, Wei Song, Art Stamness,
-David Stanford, John Stevenson, Pete Stevenson, Patrick Stewart, Rob
-Stoddard, Todd Strader, John Stroebel, Sven Stucki, Howard Su, Emerson
-Suguimoto, Gene Sullivan, Qingyao Sun, Renga Sundararajan, Rupert
-Swarbrick, Yutetsu Takatsukasa, Peter Tengstrand, Wesley Terpstra, Rui
-Terra, Stefan Thiede, Gary Thomas, Ian Thompson, Kevin Thompson, Mike
-Thyer, Hans Tichelaar, Viktor Tomov, Steve Tong, Michael Tresidder, Neil
-Turton, Srini Vemuri, Yuri Victorovich, Bogdan Vukobratovic, Holger
-Waechtler, Philipp Wagner, Stefan Wallentowitz, Shawn Wang, Paul Wasson,
-Greg Waters, Thomas Watts, Eugene Weber, David Welch, Thomas J Whatson,
-Marco Widmer, Leon Wildman, Daniel Wilkerson, Gerald Williams, Trevor
-Williams, Jan Van Winkel, Jeff Winston, Joshua Wise, Clifford Wolf, Tobias
-Wolfel, Johan Wouters, Junyi Xi, Ding Xiaoliang, Jie Xu, Mandy Xu,
-Takatsukasa Y, Luke Yang, and Amir Yazdanbakhsh.
+include: David Addison, Nikana Anastasiadis, Vasu Arasanipalai, Jens Arm,
+Tariq B. Ahmad, Sharad Bagri, Matthew Ballance, Andrew Bardsley, Matthew
+Barr, Geoff Barrett, Kaleb Barrett, Julius Baxter, Jeremy Bennett, Michael
+Berman, Jean Berniolles, Victor Besyakov, Moinak Bhattacharyya, Krzysztof
+Bieganski, David Binderman, Piotr Binkowski, Johan Bjork, David Black,
+Tymoteusz Blazejczyk, Daniel Bone, Morten Borup Petersen, Gregg Bouchard,
+Christopher Boumenot, Nick Bowler, Byron Bradley, Bryan Brady, Charlie
+Brej, J Briquet, Lane Brooks, John Brownlee, Jeff Bush, Lawrence Butcher,
+Tony Bybell, Iru Cai, Ted Campbell, Chris Candler, Lauren Carlson, Donal
+Casey, Alex Chadwick, Terry Chen, Yi-Chung Chen, Enzo Chi, Robert A. Clark,
+Ryan Clarke, Allan Cochrane, John Coiner, Gianfranco Costamagna, Sean
+Cross, George Cuan, Joe DErrico, Lukasz Dalek, Gunter Dannoritzer, Ashutosh
+Das, Maarten De Braekeleer, Bernard Deadman, Alberto Del Rio, John Demme,
+Mike Denio, John Deroo, Philip Derrick, John Dickol, Ruben Diez, Danny
+Ding, Jacko Dirks, Ivan Djordjevic, Jonathon Donaldson, Sebastian Dressler,
+Alex Duller, Jeff Dutton, Tomas Dzetkulic, Richard E George, Edgar
+E. Iglesias, Usuario Eda, Charles Eddleston, Chandan Egbert, Jan Egil Ruud,
+Joe Eiler, Ahmed El-Mahmoudy, Trevor Elbourne, Mats Engstrom, Charles Eric
+LaForest, Robert Farrell, Eugen Fekete, Fabrizio Ferrandi, Udi Finkelstein,
+Brian Flachs, Andrea Foletto, Bob Fredieu, Duane Galbi, Benjamin Gartner,
+Christian Gelinek, Peter Gerst, Glen Gibb, Michael Gielda, Barbara Gigerl,
+Shankar Giri, Dan Gisselquist, Petr Gladkikh, Sam Gladstone, Andrew
+Goessling, Amir Gonnen, Chitlesh Goorah, Tomasz Gorochowik, Kai Gossner,
+Sergi Granell, Al Grant, Alexander Grobman, Xuan Guo, Driss Hafdi, Neil
+Hamilton, James Hanlon, Oyvind Harboe, Jannis Harder, Junji Hashimoto,
+Thomas Hawkins, Mitch Hayenga, Harald Heckmann, Robert Henry, Stephen
+Henry, David Hewson, Jamey Hicks, Joel Holdsworth, Andrew Holme, Hiroki
+Honda, Alex Hornung, Pierre-Henri Horrein, David Horton, Peter Horvath, Jae
+Hossell, Kuoping Hsu, Alan Hunter, James Hutchinson, Anderson Ignacio da
+Silva, Jamie Iles, Thomas J Whatson, Ben Jackson, Mark Jackson Pulver,
+Shareef Jalloq, Marlon James, Krzysztof Jankowski, HyungKi Jeong, Iztok
+Jeras, James Johnson, Christophe Joly, Franck Jullien, James Jung, Mike
+Kagen, Arthur Kahlich, Kaalia Kahn, Guy-Armand Kamendje, Vasu Kandadi,
+Kanad Kanhere, Patricio Kaplan, Pieter Kapsenberg, Rafal Kapuscik, Ralf
+Karge, Dan Katz, Sol Katzman, Ian Kennedy, Michael Killough, Jonathan
+Kimmitt, Olof Kindgren, Kevin Kiningham, Dan Kirkham, Sobhan Klnv, Gernot
+Koch, Jack Koenig, Soon Koh, Nathan Kohagen, Steve Kolecki, Brett Koonce,
+Will Korteland, Wojciech Koszek, Varun Koyyalagunta, Markus Krause, David
+Kravitz, Roland Kruse, Andreas Kuster, Sergey Kvachonok, Ed Lander, Steve
+Lang, Stephane Laurent, Walter Lavino, Christian Leber, Larry Lee, Igor
+Lesik, John Li, Eivind Liland, Charlie Lind, Andrew Ling, Jiuyang Liu, Paul
+Liu, Derek Lockhart, Jake Longo, Geza Lore, Arthur Low, Stefan Ludwig, Dan
+Lussier, Fred Ma, Duraid Madina, Odd Magne Reitan, Affe Mao, Julien
+Margetts, Mark Marshall, Alfonso Martinez, Unai Martinez-Corral, Yves
+Mathieu, Patrick Maupin, Conor McCullough, Jason McMullan, Elliot Mednick,
+Wim Michiels, Miodrag Milanovic, Peter Monsson, Sean Moore, Dennis
+Muhlestein, John Murphy, Matt Myers, Nathan Myers, Richard Myers, Dimitris
+Nalbantis, Peter Nelson, Bob Newgard, Paul Nitza, Yossi Nivin, Pete Nixon,
+Lisa Noack, Mark Nodine, Kuba Ober, Andreas Olofsson, Baltazar Ortiz,
+Aleksander Osman, Don Owen, James Pallister, Vassilis Papaefstathiou, Brad
+Parker, Dan Petrisko, Maciej Piechotka, David Pierce, Cody Piersall,
+Dominic Plunkett, David Poole, Mike Popoloski, Roman Popov, Rich Porter,
+Niranjan Prabhu, Usha Priyadharshini, Prateek Puri, Marshal Qiao, Nandu
+Raj, Danilo Ramos, Chris Randall, Anton Rapp, Josh Redford, Frederic
+Requin, Dustin Richmond, Samuel Riedel, Eric Rippey, Oleg Rodionov, Ludwig
+Rogiers, Paul Rolfe, Arjen Roodselaar, Tobias Rosenkranz, Huang Rui, Denis
+Rystsov, John Sanguinetti, Galen Seitz, Joseph Shaker, Salman Sheikh, Yu
+Sheng Lin, Hao Shi, Mike Shinkarovsky, Rafael Shirakawa, Jeffrey Short, Fan
+Shupei, Rodney Sinclair, Steven Slatter, Brian Small, Garrett Smith, Tim
+Snyder, Wilson Snyder, Maciej Sobkowski, Stan Sokorac, Alex Solomatnikov,
+Wei Song, Art Stamness, David Stanford, John Stevenson, Pete Stevenson,
+Patrick Stewart, Rob Stoddard, Todd Strader, John Stroebel, Sven Stucki,
+Howard Su, Emerson Suguimoto, Gene Sullivan, Wai Sum Mong, Qingyao Sun,
+Renga Sundararajan, Rupert Swarbrick, Yutetsu Takatsukasa, Thierry Tambe,
+Drew Taussig, Peter Tengstrand, Wesley Terpstra, Rui Terra, Stefan Thiede,
+Gary Thomas, Ian Thompson, Kevin Thompson, Mike Thyer, Hans Tichelaar,
+Viktor Tomov, Steve Tong, Alex Torregrosa, Michael Tresidder, David Turner,
+Neil Turton, Cong Van Nguyen, Hans Van Antwerpen, Jan Van Winkel, Sebastien
+Van Cauwenberghe, Laurens van Dam, Leendert van Doorn, Srini Vemuri, Yuri
+Victorovich, Bogdan Vukobratovic, Holger Waechtler, Philipp Wagner, Stefan
+Wallentowitz, Shawn Wang, Paul Wasson, Greg Waters, Thomas Watts, Eugene
+Weber, David Welch, Martin Whitaker, Marco Widmer, Leon Wildman, Daniel
+Wilkerson, Gerald Williams, Trevor Williams, Jeff Winston, Joshua Wise,
+Clifford Wolf, Tobias Wolfel, Johan Wouters, Paul Wright, Junyi Xi, Ding
+Xiaoliang, Jie Xu, Mandy Xu, Yinan Xu, Luke Yang, Amir Yazdanbakhsh, and
+Keyi Zhang.
 
 Thanks to them, and all those we've missed including above, or wished to
 remain anonymous.
@@ -5757,7 +5790,7 @@ L<verilator_coverage>, L<verilator_gantt>, L<verilator_profcfunc>, L<make>,
 
 L<verilator --help> which is the source for this document,
 
-and docs/internals.adoc in the distribution.
+and docs/internals.rst in the distribution.
 
 =cut
 

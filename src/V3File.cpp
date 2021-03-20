@@ -328,10 +328,9 @@ void V3File::createMakeDir() {
 // VInFilterImp
 
 class VInFilterImp final {
-    typedef std::map<const string, string> FileContentsMap;
-    typedef VInFilter::StrList StrList;
+    using StrList = VInFilter::StrList;
 
-    FileContentsMap m_contentsMap;  // Cache of file contents
+    std::map<const std::string, std::string> m_contentsMap;  // Cache of file contents
     bool m_readEof = false;  // Received EOF on read
 #ifdef INFILTER_PIPE
     pid_t m_pid = 0;  // fork() process id
@@ -873,9 +872,7 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
             } else if (isprint(c)) {
                 out += c;
             } else {
-                char decimal[10];
-                sprintf(decimal, "&#%u;", (unsigned char)c);
-                out += decimal;
+                out += string("&#") + cvtToStr((unsigned int)(c & 0xff)) + ";";
             }
         }
     } else {
@@ -893,9 +890,8 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
                 out += c;
             } else {
                 // This will also cover \a etc
-                // Can't use %03o as messes up when signed
-                char octal[10];
-                sprintf(octal, "\\%o%o%o", (c >> 6) & 3, (c >> 3) & 7, c & 7);
+                string octal = string("\\") + cvtToStr((c >> 6) & 3) + cvtToStr((c >> 3) & 7)
+                               + cvtToStr(c & 7);
                 out += octal;
             }
         }
@@ -907,10 +903,11 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
 // Simple wrappers
 
 void V3OutFormatter::printf(const char* fmt...) {
-    char sbuff[5000];
+    constexpr size_t bufsize = 5000;
+    char sbuff[bufsize];
     va_list ap;
     va_start(ap, fmt);
-    vsprintf(sbuff, fmt, ap);
+    VL_VSNPRINTF(sbuff, bufsize, fmt, ap);
     va_end(ap);
     this->puts(sbuff);
 }
@@ -951,10 +948,8 @@ void V3OutCFile::putsGuard() {
 
 class VIdProtectImp final {
     // MEMBERS
-    typedef std::map<const string, string> IdMap;
-    IdMap m_nameMap;  // Map of old name into new name
-    typedef std::unordered_set<std::string> IdSet;
-    IdSet m_newIdSet;  // Which new names exist
+    std::map<const std::string, std::string> m_nameMap;  // Map of old name into new name
+    std::unordered_set<std::string> m_newIdSet;  // Which new names exist
 protected:
     // CONSTRUCTORS
     friend class VIdProtect;

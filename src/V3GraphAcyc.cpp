@@ -56,7 +56,7 @@ public:
 class GraphAcycEdge final : public V3GraphEdge {
     // userp() is always used to point to the head original graph edge
 private:
-    typedef std::list<V3GraphEdge*> OrigEdgeList;  // List of orig edges, see also GraphAcyc's decl
+    using OrigEdgeList = std::list<V3GraphEdge*>;  // List of orig edges, see also GraphAcyc's decl
     V3GraphEdge* origEdgep() const {
         OrigEdgeList* oEListp = static_cast<OrigEdgeList*>(userp());
         if (!oEListp) v3fatalSrc("No original edge associated with acyc edge " << this);
@@ -89,8 +89,8 @@ struct GraphAcycEdgeCmp {
 // CLASSES
 class GraphAcyc final {
 private:
-    typedef std::list<V3GraphEdge*>
-        OrigEdgeList;  // List of orig edges, see also GraphAcycEdge's decl
+    using OrigEdgeList
+        = std::list<V3GraphEdge*>;  // List of orig edges, see also GraphAcycEdge's decl
     // GRAPH USERS
     //  origGraph
     //    GraphVertex::user()   GraphAycVerted* New graph node

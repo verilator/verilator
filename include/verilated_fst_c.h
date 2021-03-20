@@ -32,8 +32,8 @@
 
 //=============================================================================
 // VerilatedFst
-/// Base class to create a Verilator FST dump
-/// This is an internally used class - see VerilatedFstC for what to call from applications
+// Base class to create a Verilator FST dump
+// This is an internally used class - see VerilatedFstC for what to call from applications
 
 class VerilatedFst final : public VerilatedTrace<VerilatedFst> {
 private:
@@ -43,12 +43,9 @@ private:
     //=========================================================================
     // FST specific internals
 
-    typedef std::map<vluint32_t, fstHandle> Code2SymbolType;
-    typedef std::map<int, fstEnumHandle> Local2FstDtype;
-
     void* m_fst;
-    Code2SymbolType m_code2symbol;
-    Local2FstDtype m_local2fstdtype;
+    std::map<vluint32_t, fstHandle> m_code2symbol;
+    std::map<int, fstEnumHandle> m_local2fstdtype;
     std::list<std::string> m_curScope;
     fstHandle* m_symbolp = nullptr;  ///< same as m_code2symbol, but as an array
     char* m_strbuf = nullptr;  ///< String buffer long enough to hold maxBits() chars
@@ -82,27 +79,28 @@ protected:
 public:
     //=========================================================================
     // External interface to client code
+    // (All must be threadsafe)
 
     explicit VerilatedFst(void* fst = nullptr);
     ~VerilatedFst();
 
-    /// Open the file; call isOpen() to see if errors
-    void open(const char* filename) VL_MT_UNSAFE;
-    /// Close the file
-    void close() VL_MT_UNSAFE;
-    /// Flush any remaining data to this file
-    void flush() VL_MT_UNSAFE;
-    /// Is file open?
-    bool isOpen() const { return m_fst != nullptr; }
+    // Open the file; call isOpen() to see if errors
+    void open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex);
+    // Close the file
+    void close() VL_MT_SAFE_EXCLUDES(m_mutex);
+    // Flush any remaining data to this file
+    void flush() VL_MT_SAFE_EXCLUDES(m_mutex);
+    // Return if file is open
+    bool isOpen() const VL_MT_SAFE { return m_fst != nullptr; }
 
     //=========================================================================
     // Internal interface to Verilator generated code
 
-    /// Inside dumping routines, declare a data type
+    // Inside dumping routines, declare a data type
     void declDTypeEnum(int dtypenum, const char* name, vluint32_t elements,
                        unsigned int minValbits, const char** itemNamesp, const char** itemValuesp);
 
-    /// Inside dumping routines, declare a signal
+    // Inside dumping routines, declare a signal
     void declBit(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                  fstVarType vartype, bool array, int arraynum);
     void declBus(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
@@ -126,7 +124,6 @@ template <> void VerilatedTrace<VerilatedFst>::set_time_resolution(const std::st
 // VerilatedFstC
 /// Create a FST dump file in C standalone (no SystemC) simulations.
 /// Also derived for use in SystemC simulations.
-/// Thread safety: Unless otherwise indicated, every function is VL_MT_UNSAFE_ONE
 
 class VerilatedFstC final {
     VerilatedFst m_sptrace;  ///< Trace file being created
@@ -135,22 +132,22 @@ class VerilatedFstC final {
     VL_UNCOPYABLE(VerilatedFstC);
 
 public:
+    /// Construct the dump. Optional argument is ignored.
     explicit VerilatedFstC(void* filep = nullptr)
         : m_sptrace{filep} {}
+    /// Destruct, flush, and close the dump
     ~VerilatedFstC() { close(); }
-    /// Routines can only be called from one thread; allow next call from different thread
-    void changeThread() { spTrace()->changeThread(); }
 
-    // ACCESSORS
-    /// Is file open?
-    bool isOpen() const { return m_sptrace.isOpen(); }
-    // METHODS
+    // METHODS - User called
+
+    /// Return if file is open
+    bool isOpen() const VL_MT_SAFE { return m_sptrace.isOpen(); }
     /// Open a new FST file
-    void open(const char* filename) VL_MT_UNSAFE_ONE { m_sptrace.open(filename); }
+    void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
     /// Close dump
-    void close() VL_MT_UNSAFE_ONE { m_sptrace.close(); }
+    void close() VL_MT_SAFE { m_sptrace.close(); }
     /// Flush dump
-    void flush() VL_MT_UNSAFE_ONE { m_sptrace.flush(); }
+    void flush() VL_MT_SAFE { m_sptrace.flush(); }
     /// Write one cycle of dump data
     void dump(vluint64_t timeui) { m_sptrace.dump(timeui); }
     /// Write one cycle of dump data - backward compatible and to reduce
@@ -158,16 +155,26 @@ public:
     void dump(double timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
     void dump(vluint32_t timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
     void dump(int timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
-    /// Set time units (s/ms, defaults to ns)
-    /// For Verilated models, these propage from the Verilated default --timeunit
-    void set_time_unit(const char* unitp) { m_sptrace.set_time_unit(unitp); }
-    void set_time_unit(const std::string& unit) { m_sptrace.set_time_unit(unit); }
-    /// Set time resolution (s/ms, defaults to ns)
-    /// For Verilated models, these propage from the Verilated default --timeunit
-    void set_time_resolution(const char* unitp) { m_sptrace.set_time_resolution(unitp); }
-    void set_time_resolution(const std::string& unit) { m_sptrace.set_time_resolution(unit); }
 
-    /// Internal class access
+    // METHODS - Internal/backward compatible
+    // \protectedsection
+
+    // Set time units (s/ms, defaults to ns)
+    // Users should not need to call this, as for Verilated models, these
+    // propage from the Verilated default timeunit
+    void set_time_unit(const char* unitp) VL_MT_SAFE { m_sptrace.set_time_unit(unitp); }
+    void set_time_unit(const std::string& unit) VL_MT_SAFE { m_sptrace.set_time_unit(unit); }
+    // Set time resolution (s/ms, defaults to ns)
+    // Users should not need to call this, as for Verilated models, these
+    // propage from the Verilated default timeprecision
+    void set_time_resolution(const char* unitp) VL_MT_SAFE {
+        m_sptrace.set_time_resolution(unitp);
+    }
+    void set_time_resolution(const std::string& unit) VL_MT_SAFE {
+        m_sptrace.set_time_resolution(unit);
+    }
+
+    // Internal class access
     inline VerilatedFst* spTrace() { return &m_sptrace; };
 };
 

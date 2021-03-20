@@ -198,9 +198,8 @@ public:
 class WidthVisitor final : public AstNVisitor {
 private:
     // TYPES
-    typedef std::map<std::pair<const AstNodeDType*, AstAttrType>, AstVar*> TableMap;
-    typedef std::map<int, AstPatMember*> PatVecMap;
-    typedef std::map<const AstNodeDType*, AstQueueDType*> DTypeQMap;
+    using TableMap = std::map<std::pair<const AstNodeDType*, AstAttrType>, AstVar*>;
+    using PatVecMap = std::map<int, AstPatMember*>;
 
     // STATE
     WidthVP* m_vup = nullptr;  // Current node state
@@ -214,7 +213,8 @@ private:
     bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables = 0;  // Number of created data type tables
     TableMap m_tableMap;  // Created tables so can remove duplicates
-    DTypeQMap m_queueDTypeIndexed;  // Queues with given index type
+    std::map<const AstNodeDType*, AstQueueDType*>
+        m_queueDTypeIndexed;  // Queues with given index type
 
     // ENUMS
     enum ExtendRule : uint8_t {
@@ -3336,7 +3336,7 @@ private:
         // which member each AstPatMember corresponds to before we can
         // determine the dtypep for that PatMember's value, and then
         // width the initial value appropriately.
-        typedef std::map<const AstMemberDType*, AstPatMember*> PatMap;
+        using PatMap = std::map<const AstMemberDType*, AstPatMember*>;
         PatMap patmap;
         {
             AstMemberDType* memp = vdtypep->membersp();
@@ -3938,11 +3938,13 @@ private:
         userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         if (!m_paramsOnly) {
             V3Const::constifyParamsEdit(nodep->fmtp());  // fmtp may change
+            string text = nodep->fmtp()->text();
+            if (text.empty()) text = "Elaboration system task message (IEEE 1800-2017 20.11)";
             switch (nodep->displayType()) {
-            case AstDisplayType::DT_INFO: nodep->v3warn(USERINFO, nodep->fmtp()->text()); break;
-            case AstDisplayType::DT_ERROR: nodep->v3warn(USERERROR, nodep->fmtp()->text()); break;
-            case AstDisplayType::DT_WARNING: nodep->v3warn(USERWARN, nodep->fmtp()->text()); break;
-            case AstDisplayType::DT_FATAL: nodep->v3warn(USERFATAL, nodep->fmtp()->text()); break;
+            case AstDisplayType::DT_INFO: nodep->v3warn(USERINFO, text); break;
+            case AstDisplayType::DT_ERROR: nodep->v3warn(USERERROR, text); break;
+            case AstDisplayType::DT_WARNING: nodep->v3warn(USERWARN, text); break;
+            case AstDisplayType::DT_FATAL: nodep->v3warn(USERFATAL, text); break;
             default: UASSERT_OBJ(false, nodep, "Unexpected elaboration display type");
             }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -5814,7 +5816,7 @@ private:
     }
     AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        const auto pos = m_tableMap.find(make_pair(nodep, attrType));
+        const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
         if (pos != m_tableMap.end()) return pos->second;
         AstNodeArrayDType* vardtypep
             = new AstUnpackArrayDType(nodep->fileline(), nodep->findSigned32DType(),
@@ -5836,7 +5838,7 @@ private:
             initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, i));
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.emplace(make_pair(nodep, attrType), varp);
+        m_tableMap.emplace(std::make_pair(nodep, attrType), varp);
         return varp;
     }
     uint64_t enumMaxValue(const AstNode* errNodep, const AstEnumDType* adtypep) {
@@ -5861,7 +5863,7 @@ private:
     }
     AstVar* enumVarp(AstEnumDType* nodep, AstAttrType attrType, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        const auto pos = m_tableMap.find(make_pair(nodep, attrType));
+        const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
         if (pos != m_tableMap.end()) return pos->second;
         UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " max=" << msbdim << " for "
                                             << nodep << endl);
@@ -5936,7 +5938,7 @@ private:
             if (values[i]) initp->addIndexValuep(i, values[i]);
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.emplace(make_pair(nodep, attrType), varp);
+        m_tableMap.emplace(std::make_pair(nodep, attrType), varp);
         return varp;
     }
 

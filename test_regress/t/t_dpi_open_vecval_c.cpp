@@ -14,6 +14,8 @@
 #include <iostream>
 #include "svdpi.h"
 
+#include "TestCheck.h"
+
 //======================================================================
 
 // clang-format off
@@ -39,26 +41,8 @@ extern int dpii_failure();
 }
 #endif
 
-int failure = 0;
-int dpii_failure() { return failure; }
-
-#define CHECK_RESULT_HEX(got, exp) \
-    do { \
-        if ((got) != (exp)) { \
-            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": GOT=" << (got) << "   EXP=" << (exp) << std::endl; \
-            failure = __LINE__; \
-        } \
-    } while (0)
-
-#define CHECK_RESULT_HEX_NE(got, exp) \
-    do { \
-        if ((got) == (exp)) { \
-            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": GOT=" << (got) << "   EXP!=" << (exp) << std::endl; \
-            failure = __LINE__; \
-        } \
-    } while (0)
+int errors = 0;
+int dpii_failure() { return errors; }
 
 static void _invert(int bits, svBitVecVal o[], const svBitVecVal i[]) {
     for (int w = 0; w < SV_PACKED_DATA_NELEMS(bits); ++w) o[w] = ~i[w];
@@ -102,7 +86,7 @@ static void _dpii_bit_vecval_ux(int bits, int p, int u, const svOpenArrayHandle 
     int dim = svDimensions(i);
 #ifndef NC
     // NC always returns zero and warns
-    CHECK_RESULT_HEX(dim, u);
+    TEST_CHECK_HEX_EQ(dim, u);
 #endif
 
     svBitVecVal vv[SV_PACKED_DATA_NELEMS(bits)];
@@ -113,7 +97,7 @@ static void _dpii_bit_vecval_ux(int bits, int p, int u, const svOpenArrayHandle 
         if (dim == 1) {
             svGetBitArrElemVecVal(vv, i, a);
             svGetBitArrElem1VecVal(vv2, i, a);
-            CHECK_RESULT_HEX(_same(bits, vv, vv2), true);
+            TEST_CHECK_HEX_EQ(_same(bits, vv, vv2), true);
             _invert(bits, vo, vv);
             svPutBitArrElemVecVal(o, vo, a);
             svPutBitArrElem1VecVal(q, vo, a);
@@ -122,7 +106,7 @@ static void _dpii_bit_vecval_ux(int bits, int p, int u, const svOpenArrayHandle 
                 if (dim == 2) {
                     svGetBitArrElemVecVal(vv, i, a, b);
                     svGetBitArrElem2VecVal(vv2, i, a, b);
-                    CHECK_RESULT_HEX(_same(bits, vv, vv2), true);
+                    TEST_CHECK_HEX_EQ(_same(bits, vv, vv2), true);
                     _invert(bits, vo, vv);
                     svPutBitArrElemVecVal(o, vo, a, b);
                     svPutBitArrElem2VecVal(q, vo, a, b);
@@ -131,7 +115,7 @@ static void _dpii_bit_vecval_ux(int bits, int p, int u, const svOpenArrayHandle 
                         if (dim == 3) {
                             svGetBitArrElemVecVal(vv, i, a, b, c);
                             svGetBitArrElem3VecVal(vv2, i, a, b, c);
-                            CHECK_RESULT_HEX(_same(bits, vv, vv2), true);
+                            TEST_CHECK_HEX_EQ(_same(bits, vv, vv2), true);
                             _invert(bits, vo, vv);
                             svPutBitArrElemVecVal(o, vo, a, b, c);
                             svPutBitArrElem3VecVal(q, vo, a, b, c);
@@ -173,7 +157,7 @@ static void _dpii_logic_vecval_ux(int bits, int p, int u, const svOpenArrayHandl
     int dim = svDimensions(i);
 #ifndef NC
     // NC always returns zero and warns
-    CHECK_RESULT_HEX(dim, u);
+    TEST_CHECK_HEX_EQ(dim, u);
 #endif
 
     svLogicVecVal vv[SV_PACKED_DATA_NELEMS(bits)];
@@ -184,7 +168,7 @@ static void _dpii_logic_vecval_ux(int bits, int p, int u, const svOpenArrayHandl
         if (dim == 1) {
             svGetLogicArrElemVecVal(vv, i, a);
             svGetLogicArrElem1VecVal(vv2, i, a);
-            CHECK_RESULT_HEX(_same(bits, vv, vv2), true);
+            TEST_CHECK_HEX_EQ(_same(bits, vv, vv2), true);
             _invert(bits, vo, vv);
             svPutLogicArrElemVecVal(o, vo, a);
             svPutLogicArrElem1VecVal(q, vo, a);
@@ -193,7 +177,7 @@ static void _dpii_logic_vecval_ux(int bits, int p, int u, const svOpenArrayHandl
                 if (dim == 2) {
                     svGetLogicArrElemVecVal(vv, i, a, b);
                     svGetLogicArrElem2VecVal(vv2, i, a, b);
-                    CHECK_RESULT_HEX(_same(bits, vv, vv2), true);
+                    TEST_CHECK_HEX_EQ(_same(bits, vv, vv2), true);
                     _invert(bits, vo, vv);
                     svPutLogicArrElemVecVal(o, vo, a, b);
                     svPutLogicArrElem2VecVal(q, vo, a, b);
@@ -202,7 +186,7 @@ static void _dpii_logic_vecval_ux(int bits, int p, int u, const svOpenArrayHandl
                         if (dim == 3) {
                             svGetLogicArrElemVecVal(vv, i, a, b, c);
                             svGetLogicArrElem3VecVal(vv2, i, a, b, c);
-                            CHECK_RESULT_HEX(_same(bits, vv, vv2), true);
+                            TEST_CHECK_HEX_EQ(_same(bits, vv, vv2), true);
                             _invert(bits, vo, vv);
                             svPutLogicArrElemVecVal(o, vo, a, b, c);
                             svPutLogicArrElem3VecVal(q, vo, a, b, c);

@@ -15,7 +15,6 @@
 /// This class is not threadsafe, as the SystemC kernel is not threadsafe.
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 #ifndef VERILATOR_VERILATED_VCD_SC_H_
 #define VERILATOR_VERILATED_VCD_SC_H_
@@ -24,18 +23,18 @@
 #include "verilated_sc.h"
 #include "verilated_vcd_c.h"
 
-// SPDIFF_ON
 //=============================================================================
 // VerilatedVcdSc
 ///
-/// This class is passed to the SystemC simulation kernel, just like a
-/// documented SystemC trace format.
+/// This class creates a Verilator-friendly VCD trace format with the
+/// SystemC simulation kernel, just like a SystemC-documented trace format.
 
 class VerilatedVcdSc final : sc_trace_file, public VerilatedVcdC {
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcdSc);
 
 public:
+    /// Construct a SC trace object, and register with the SystemC kernel
     VerilatedVcdSc() {
         sc_get_curr_simcontext()->add_trace_file(this);
         // We want to avoid a depreciated warning, but still be back compatible.
@@ -48,16 +47,17 @@ public:
         }
         spTrace()->set_time_resolution(sc_get_time_resolution().to_string());
     }
+    /// Destruct, flush, and close the dump
     virtual ~VerilatedVcdSc() { close(); }
 
-    // METHODS
-    /// Called by SystemC simulate()
+    // METHODS - for SC kernel
+    // Called by SystemC simulate()
     virtual void cycle(bool delta_cycle) {
         if (!delta_cycle) this->dump(sc_time_stamp().to_double());
     }
 
 private:
-    /// Fake outs for linker
+    // METHODS - Fake outs for linker
 
 #ifdef NC_SYSTEMC
     // Cadence Incisive has these as abstract functions so we must create them

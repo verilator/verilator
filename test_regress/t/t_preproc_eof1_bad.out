@@ -1,0 +1,2 @@
+%Error: t/t_preproc_eof1_bad.v:9:1: EOF in '/* ... */' block comment
+%Error: Exiting due to

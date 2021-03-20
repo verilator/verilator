@@ -12,20 +12,12 @@
 #include <verilated_save.h>
 #include VM_PREFIX_INCLUDE
 
-//======================================================================
-
-#define CHECK_RESULT_HEX(got, exp) \
-    do { \
-        if ((got) != (exp)) { \
-            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": GOT=" << (got) << "   EXP=" << (exp) << std::endl; \
-            exit(10); \
-        } \
-    } while (0)
+#include "TestCheck.h"
 
 //======================================================================
 
 unsigned int main_time = 0;
+int errors = 0;
 
 double sc_time_stamp() { return main_time; }
 
@@ -36,13 +28,13 @@ int main(int argc, char* argv[]) {
     {
         VerilatedSave os;
         os.open("/No_such_file_as_this");
-        CHECK_RESULT_HEX(os.isOpen(), false);
+        TEST_CHECK_EQ(os.isOpen(), false);
     }
     {
         VerilatedRestore os;
         os.open("/No_such_file_as_this");
-        CHECK_RESULT_HEX(os.isOpen(), false);
+        TEST_CHECK_EQ(os.isOpen(), false);
     }
 
-    return 0;
+    return errors ? 10 : 0;
 }

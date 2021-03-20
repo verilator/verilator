@@ -36,12 +36,12 @@ class VSymEnt;
 //######################################################################
 // Symbol table
 
-typedef std::unordered_set<const VSymEnt*> VSymConstMap;
+using VSymConstMap = std::unordered_set<const VSymEnt*>;
 
 class VSymEnt final {
     // Symbol table that can have a "superior" table for resolving upper references
     // MEMBERS
-    typedef std::multimap<string, VSymEnt*> IdNameMap;
+    using IdNameMap = std::multimap<std::string, VSymEnt*>;
     IdNameMap m_idNameMap;  // Hash of variables by name
     AstNode* m_nodep;  // Node that entry belongs to
     VSymEnt* m_fallbackp;  // Table "above" this one in name scope, for fallback resolution
@@ -60,7 +60,7 @@ class VSymEnt final {
     static constexpr int debug() { return 0; }  // NOT runtime, too hot of a function
 #endif
 public:
-    typedef IdNameMap::const_iterator const_iterator;
+    using const_iterator = IdNameMap::const_iterator;
     const_iterator begin() const { return m_idNameMap.begin(); }
     const_iterator end() const { return m_idNameMap.end(); }
 
@@ -280,7 +280,7 @@ public:
 class VSymGraph final {
     // Collection of symbol tables
     // TYPES
-    typedef std::vector<VSymEnt*> SymStack;
+    using SymStack = std::vector<VSymEnt*>;
 
     // MEMBERS
     VSymEnt* m_symRootp;  // Root symbol table

@@ -38,10 +38,8 @@ class FileLine;
 //! This singleton class contains tables of data that are unchanging in each
 //! source file (each with its own unique filename number).
 class FileLineSingleton final {
-    // TYPES
-    typedef std::map<const string, int> FileNameNumMap;
     // MEMBERS
-    FileNameNumMap m_namemap;  // filenameno for each filename
+    std::map<const std::string, int> m_namemap;  // filenameno for each filename
     std::deque<string> m_names;  // filename text for each filenameno
     std::deque<V3LangCode> m_languages;  // language for each filenameno
     // CONSTRUCTORS
@@ -150,10 +148,18 @@ public:
 #endif
     // METHODS
     void newContent();
+    void contentLineno(int num) {
+        lineno(num);
+        m_contentLineno = num;
+    }
     void lineno(int num) {
         m_firstLineno = num;
         m_lastLineno = num;
         m_firstColumn = m_lastColumn = 1;
+    }
+    void column(int firstColumn, int lastColumn) {
+        m_firstColumn = firstColumn;
+        m_lastColumn = lastColumn;
     }
     void language(V3LangCode lang) { singleton().numberToLang(filenameno(), lang); }
     void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }

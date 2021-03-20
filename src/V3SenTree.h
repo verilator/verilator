@@ -48,7 +48,7 @@ private:
     };
 
     // MEMBERS
-    typedef std::unordered_set<AstSenTree*, HashSenTree, EqSenTree> Set;
+    using Set = std::unordered_set<AstSenTree*, HashSenTree, EqSenTree>;
     Set m_trees;  // Set of sensitive blocks, for folding.
 
 public:

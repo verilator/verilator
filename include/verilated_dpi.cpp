@@ -740,7 +740,7 @@ const char* svGetNameFromScope(const svScope scope) {
 
 svScope svGetScopeFromName(const char* scopeName) {
     // NOLINTNEXTLINE(google-readability-casting)
-    return (svScope)(VerilatedImp::scopeFind(scopeName));
+    return (svScope)(Verilated::threadContextp()->scopeFind(scopeName));
 }
 
 int svPutUserData(const svScope scope, void* userKey, void* userData) {

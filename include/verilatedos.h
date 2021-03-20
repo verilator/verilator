@@ -148,6 +148,7 @@
 #define VL_MT_SAFE  ///< Comment tag that function is threadsafe when VL_THREADED
 #define VL_MT_SAFE_POSTINIT  ///< Comment tag that function is threadsafe when VL_THREADED, only
                              ///< during normal operation (post-init)
+#define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)  ///< Threadsafe and uses given mutex
 #define VL_MT_UNSAFE  ///< Comment tag that function is not threadsafe when VL_THREADED
 #define VL_MT_UNSAFE_ONE  ///< Comment tag that function is not threadsafe when VL_THREADED,
                           ///< protected to make sure single-caller
@@ -481,12 +482,18 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #endif
 
 //=========================================================================
-// String related OS-specific functions
+// String/time related OS-specific functions
 
 #ifdef _MSC_VER
 # define VL_STRCASECMP _stricmp
 #else
 # define VL_STRCASECMP strcasecmp
+#endif
+
+#ifdef _MSC_VER
+# define VL_LOCALTIME_R(timep, tmp) localtime_c((tmp), (timep))
+#else
+# define VL_LOCALTIME_R(timep, tmp) localtime_r((timep), (tmp))
 #endif
 
 //=========================================================================

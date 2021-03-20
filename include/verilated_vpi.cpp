@@ -336,8 +336,8 @@ public:
     virtual const VerilatedRange* rangep() const override { return &(varp()->packed()); }
     virtual const char* fullname() const override {
         static VL_THREAD_LOCAL std::string t_out;
-        char num[20];
-        sprintf(num, "%d", m_index);
+        char num[25];
+        VL_SNPRINTF(num, 25, "%d", m_index);
         t_out = std::string(scopep()->name()) + "." + name() + "[" + num + "]";
         return t_out.c_str();
     }
@@ -456,7 +456,7 @@ public:
 
 //======================================================================
 
-typedef PLI_INT32 (*VerilatedPliCb)(struct t_cb_data*);
+using VerilatedPliCb = PLI_INT32 (*)(struct t_cb_data*);
 
 class VerilatedVpiCbHolder final {
     // Holds information needed to call a callback
@@ -502,8 +502,8 @@ class VerilatedVpiError;
 
 class VerilatedVpiImp final {
     enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime + 1 };  // Maxium callback reason
-    typedef std::list<VerilatedVpiCbHolder> VpioCbList;
-    typedef std::map<std::pair<QData, vluint64_t>, VerilatedVpiCbHolder> VpioTimedCbs;
+    using VpioCbList = std::list<VerilatedVpiCbHolder>;
+    using VpioTimedCbs = std::map<std::pair<QData, vluint64_t>, VerilatedVpiCbHolder>;
 
     // All only medium-speed, so use singleton function
     VpioCbList m_cbObjLists[CB_ENUM_MAX_VALUE];  // Callbacks for each supported reason
@@ -607,8 +607,7 @@ public:
         assertOneCheck();
         VpioCbList& cbObjList = s().m_cbObjLists[cbValueChange];
         bool called = false;
-        typedef std::unordered_set<VerilatedVpioVar*> VpioVarSet;
-        VpioVarSet update;  // set of objects to update after callbacks
+        std::unordered_set<VerilatedVpioVar*> update;  // set of objects to update after callbacks
         if (cbObjList.empty()) return called;
         const auto last = std::prev(cbObjList.end());  // prevent looping over newly added elements
         for (auto it = cbObjList.begin(); true;) {
@@ -667,7 +666,7 @@ class VerilatedVpiError final {
         do_callbacks();
     }
     void do_callbacks() {
-        if (getError()->level >= vpiError && Verilated::fatalOnVpiError()) {
+        if (getError()->level >= vpiError && Verilated::threadContextp()->fatalOnVpiError()) {
             // Stop on vpi error/unsupported
             vpi_unsupported();
         }
@@ -1224,7 +1223,7 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     }
     {
         // This doesn't yet follow the hierarchy in the proper way
-        scopep = Verilated::scopeFind(namep);
+        scopep = Verilated::threadContextp()->scopeFind(namep);
         if (scopep) {  // Whole thing found as a scope
             if (scopep->type() == VerilatedScope::SCOPE_MODULE) {
                 return (new VerilatedVpioModule(scopep))->castVpiHandle();
@@ -1242,11 +1241,11 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
 
         if (scopename.find('.') == std::string::npos) {
             // This is a toplevel, hence search in our TOP ports first.
-            scopep = Verilated::scopeFind("TOP");
+            scopep = Verilated::threadContextp()->scopeFind("TOP");
             if (scopep) varp = scopep->varFind(baseNamep);
         }
         if (!varp) {
-            scopep = Verilated::scopeFind(scopename.c_str());
+            scopep = Verilated::threadContextp()->scopeFind(scopename.c_str());
             if (!scopep) return nullptr;
             varp = scopep->varFind(baseNamep);
         }
@@ -1418,11 +1417,12 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
     VL_VPI_ERROR_RESET_();
     switch (property) {
     case vpiTimePrecision: {
-        return Verilated::timeprecision();
+        return Verilated::threadContextp()->timeprecision();
     }
     case vpiTimeUnit: {
         VerilatedVpioScope* vop = VerilatedVpioScope::castp(object);
-        if (!vop) return Verilated::timeunit();  // Null asks for global, not unlikely
+        if (!vop)
+            return Verilated::threadContextp()->timeunit();  // Null asks for global, not unlikely
         return vop->scopep()->timeunit();
     }
     case vpiType: {
@@ -2022,7 +2022,8 @@ void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
     } else if (time_p->type == vpiScaledRealTime) {
         double dtime = VL_TIME_D();
         if (VerilatedVpioScope* vop = VerilatedVpioScope::castp(object)) {
-            int scalePow10 = Verilated::timeprecision() - vop->scopep()->timeunit();
+            int scalePow10
+                = Verilated::threadContextp()->timeprecision() - vop->scopep()->timeunit();
             double scale = vl_time_multiplier(scalePow10);  // e.g. 0.0001
             dtime *= scale;
         }
@@ -2140,8 +2141,9 @@ PLI_INT32 vpi_release_handle(vpiHandle object) {
 PLI_INT32 vpi_get_vlog_info(p_vpi_vlog_info vlog_info_p) VL_MT_SAFE {
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
-    vlog_info_p->argc = Verilated::getCommandArgs()->argc;
-    vlog_info_p->argv = const_cast<PLI_BYTE8**>(Verilated::getCommandArgs()->argv);
+    auto argc_argv = Verilated::threadContextp()->impp()->argc_argv();
+    vlog_info_p->argc = argc_argv.first;
+    vlog_info_p->argv = argc_argv.second;
     vlog_info_p->product = const_cast<PLI_BYTE8*>(Verilated::productName());
     vlog_info_p->version = const_cast<PLI_BYTE8*>(Verilated::productVersion());
     return 1;

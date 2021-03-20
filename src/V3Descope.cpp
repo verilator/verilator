@@ -42,7 +42,7 @@ private:
     AstUser1InUse m_inuser1;
 
     // TYPES
-    typedef std::multimap<string, AstCFunc*> FuncMmap;
+    using FuncMmap = std::multimap<std::string, AstCFunc*>;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module

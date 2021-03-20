@@ -40,14 +40,13 @@ class AstVar;
 
 class V3HierBlock final {
 public:
-    typedef std::vector<AstVar*> GParams;
-    typedef std::unordered_set<V3HierBlock*> HierBlockSet;
-    typedef std::unordered_set<const AstNodeModule*> NodeModuleSet;
+    using GParams = std::vector<AstVar*>;
+    using HierBlockSet = std::unordered_set<V3HierBlock*>;
 
 private:
     // TYPES
     // Parameter name, stringified value
-    typedef std::vector<std::pair<string, string>> StrGParams;
+    using StrGParams = std::vector<std::pair<std::string, std::string>>;
 
     // MEMBERS
     const AstNodeModule* m_modp;  // Hierarchical block module
@@ -97,16 +96,16 @@ public:
 
 // Holds relashonship between AstNodeModule and V3HierBlock
 class V3HierBlockPlan final {
-    typedef std::unordered_map<const AstNodeModule*, V3HierBlock*> HierMap;
+    using HierMap = std::unordered_map<const AstNodeModule*, V3HierBlock*>;
     HierMap m_blocks;
 
     V3HierBlockPlan() = default;
     VL_UNCOPYABLE(V3HierBlockPlan);
 
 public:
-    typedef HierMap::iterator iterator;
-    typedef HierMap::const_iterator const_iterator;
-    typedef std::vector<const V3HierBlock*> HierVector;
+    using iterator = HierMap::iterator;
+    using const_iterator = HierMap::const_iterator;
+    using HierVector = std::vector<const V3HierBlock*>;
     VL_DEBUG_FUNC;  // Declare debug()
 
     bool isHierBlock(const AstNodeModule* modp) const;

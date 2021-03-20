@@ -82,6 +82,7 @@ public:
         DECLFILENAME,   // Declaration doesn't match filename
         DEPRECATED,     // Feature will be deprecated
         ENDLABEL,       // End lable name mismatch
+        EOFNEWLINE,     // End-of-file missing newline
         GENCLK,         // Generated Clock
         HIERBLOCK,      // Ignored hierarchical block setting
         IFDEPTH,        // If statements too deep
@@ -160,7 +161,7 @@ public:
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
             "DEFPARAM", "DECLFILENAME", "DEPRECATED",
-            "ENDLABEL", "GENCLK", "HIERBLOCK",
+            "ENDLABEL", "EOFNEWLINE", "GENCLK", "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
@@ -189,8 +190,7 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const {
         return (m_e == ASSIGNIN || m_e == BLKANDNBLK || m_e == BLKLOOPINIT || m_e == CONTASSREG
-                || m_e == IMPURE || m_e == PKGNODECL || m_e == PROCASSWIRE  //
-                || m_e == TIMESCALEMOD);  // Says IEEE
+                || m_e == IMPURE || m_e == PKGNODECL || m_e == PROCASSWIRE);  // Says IEEE
     }
     // Warnings to mention manual
     bool mentionManual() const {
@@ -207,9 +207,10 @@ public:
     // Warnings that are style only
     bool styleError() const {
         return (m_e == ASSIGNDLY  // More than style, but for backward compatibility
-                || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == IMPORTSTAR
-                || m_e == INCABSPATH || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT
-                || m_e == SYNCASYNCNET || m_e == UNDRIVEN || m_e == UNUSED || m_e == VARHIDDEN);
+                || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == EOFNEWLINE
+                || m_e == IMPORTSTAR || m_e == INCABSPATH || m_e == PINCONNECTEMPTY
+                || m_e == PINNOCONNECT || m_e == SYNCASYNCNET || m_e == UNDRIVEN || m_e == UNUSED
+                || m_e == VARHIDDEN);
     }
 };
 inline bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {
@@ -226,8 +227,8 @@ inline std::ostream& operator<<(std::ostream& os, const V3ErrorCode& rhs) {
 class V3Error final {
     // Base class for any object that wants debugging and error reporting
 
-    typedef std::set<string> MessagesSet;
-    typedef void (*ErrorExitCb)(void);
+    using MessagesSet = std::set<std::string>;
+    using ErrorExitCb = void (*)(void);
 
 private:
     static bool s_describedWarnings;  // Told user how to disable warns

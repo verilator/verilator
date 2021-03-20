@@ -71,7 +71,7 @@ int FileLineSingleton::nameToNumber(const string& filename) {
 //! Experimental. Updated to also put out the language.
 void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
     os << "<files>\n";
-    for (FileNameNumMap::const_iterator it = m_namemap.begin(); it != m_namemap.end(); ++it) {
+    for (auto it = m_namemap.cbegin(); it != m_namemap.cend(); ++it) {
         os << "<file id=\"" << filenameLetters(it->second) << "\" filename=\""
            << V3OutFormatter::quoteNameControls(it->first, V3OutFormatter::LA_XML)
            << "\" language=\"" << numberToLang(it->second).ascii() << "\"/>\n";
@@ -165,11 +165,8 @@ string FileLine::xmlDetailedLocation() const {
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
-    char numbuf[20];
-    sprintf(numbuf, "%d", lastLineno());
-    char levelbuf[20];
-    sprintf(levelbuf, "%d", enterExit);
-    return (string("`line ") + numbuf + " \"" + filename() + "\" " + levelbuf + "\n");
+    return std::string("`line ") + cvtToStr(lastLineno()) + " \"" + filename() + "\" "
+           + cvtToStr(enterExit) + "\n";
 }
 
 void FileLine::lineDirective(const char* textp, int& enterExitRef) {
@@ -228,7 +225,7 @@ void FileLine::forwardToken(const char* textp, size_t size, bool trackLines) {
         if (*sp == '\n') {
             if (trackLines) linenoInc();
             m_lastColumn = 1;
-        } else if (*sp == '\r') {
+        } else if (VL_UNCOVERABLE(*sp == '\r')) {  // Generally stripped by preproc
         } else {  // Tabs are considered one column; hence column means number of chars
             ++m_lastColumn;
         }
@@ -430,8 +427,7 @@ string FileLine::warnContext(bool secondary) const {
 }
 
 #ifdef VL_LEAK_CHECKS
-typedef std::unordered_set<FileLine*> FileLineCheckSet;
-FileLineCheckSet fileLineLeakChecks;
+std::unordered_set<FileLine*> fileLineLeakChecks;
 
 void* FileLine::operator new(size_t size) {
     FileLine* objp = static_cast<FileLine*>(::operator new(size));

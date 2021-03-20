@@ -60,8 +60,8 @@ public:
     ~SimStackNode() = default;
 };
 
-typedef std::deque<AstConst*> ConstDeque;
-typedef std::unordered_map<const AstNodeDType*, ConstDeque> ConstPile;
+using ConstDeque = std::deque<AstConst*>;
+using ConstPile = std::unordered_map<const AstNodeDType*, ConstDeque>;
 
 class SimulateVisitor VL_NOT_FINAL : public AstNVisitor {
     // Simulate a node tree, returning value of variables
@@ -191,8 +191,9 @@ public:
                     AstVar* portp = conIt->first;
                     AstNode* pinp = conIt->second->exprp();
                     AstNodeDType* dtypep = pinp->dtypep();
-                    stack << "\n           " << portp->prettyName() << " = "
-                          << prettyNumber(&fetchConst(pinp)->num(), dtypep);
+                    if (AstConst* valp = fetchConstNull(pinp))
+                        stack << "\n           " << portp->prettyName() << " = "
+                              << prettyNumber(&valp->num(), dtypep);
                 }
             }
             m_whyNotOptimizable += stack.str();

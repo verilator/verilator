@@ -42,7 +42,7 @@ class VFlagBitPacked {};
 class VFlagChildDType {};  // Used by parser.y to select constructor that sets childDType
 
 // Used as key for another map, needs operator<, hence not an unordered_set
-typedef std::set<int> MTaskIdSet;  // Set of mtaskIds for Var sorting
+using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
 
 //######################################################################
 
@@ -2468,7 +2468,7 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     // A struct or union; common handling
 private:
     // TYPES
-    typedef std::map<const string, AstMemberDType*> MemberNameMap;
+    using MemberNameMap = std::map<const std::string, AstMemberDType*>;
     // MEMBERS
     string m_name;  // Name from upper typedef, if any
     bool m_packed;
@@ -2880,6 +2880,7 @@ public:
     virtual void dump(std::ostream& str) const override;
     virtual bool maybePointedTo() const override { return true; }
     virtual string name() const override { return m_name; }
+    virtual bool timescaleMatters() const = 0;
     AstNode* stmtsp() const { return op2p(); }  // op2 = List of statements
     AstActive* activesp() const { return VN_CAST(op3p(), Active); }  // op3 = List of i/sblocks
     // METHODS

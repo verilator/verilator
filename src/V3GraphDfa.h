@@ -108,7 +108,7 @@ public:
 //============================================================================
 /// Abstract type indicating a specific "input" to the NFA
 /// DFA assumes each .toInt() is unique
-typedef VNUser DfaInput;
+using DfaInput = VNUser;
 
 //============================================================================
 // Edge types

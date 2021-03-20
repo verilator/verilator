@@ -7,10 +7,18 @@
 `timescale 1ns/1ns
 module t;
    p p ();
+
+   // Also check not-found modules
+   localparam NOT = 0;
+   if (NOT) begin
+      NotFound not_found(.*);
+   end
+
    initial begin
       $write("*-* All Finished *-*\n");
       $finish;
    end
+
 endmodule
 
 `timescale 1ns/1ns

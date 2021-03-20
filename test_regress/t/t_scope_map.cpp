@@ -14,16 +14,15 @@
 
 #include "Vt_scope_map.h"
 
-unsigned long long main_time = 0;
-double sc_time_stamp() { return (double)main_time; }
-
 const unsigned long long dt_2 = 3;
 
 int main(int argc, char** argv, char** env) {
-    Vt_scope_map* top = new Vt_scope_map("top");
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
-    Verilated::debug(0);
-    Verilated::traceEverOn(true);
+    Vt_scope_map* top = new Vt_scope_map{contextp.get(), "top"};
+
+    contextp->debug(0);
+    contextp->traceEverOn(true);
 
     VerilatedVcdC* tfp = new VerilatedVcdC;
     top->trace(tfp, 99);
@@ -31,10 +30,10 @@ int main(int argc, char** argv, char** env) {
 
     top->CLK = 0;
     top->eval();
-    tfp->dump((unsigned int)(main_time));
-    ++main_time;
+    tfp->dump(contextp->time());
+    contextp->timeInc(1);
 
-    const VerilatedScopeNameMap* scopeMapp = Verilated::scopeNameMap();
+    const VerilatedScopeNameMap* scopeMapp = contextp->scopeNameMap();
     for (VerilatedScopeNameMap::const_iterator it = scopeMapp->begin(); it != scopeMapp->end();
          ++it) {
 #ifdef TEST_VERBOSE
@@ -106,14 +105,14 @@ int main(int argc, char** argv, char** env) {
 
     top->CLK = 0;
     top->eval();
-    tfp->dump((unsigned int)(main_time));
-    ++main_time;
+    tfp->dump(contextp->time());
+    contextp->timeInc(1);
 
     // Posedge on clock, expect all the public bits to flip
     top->CLK = 1;
     top->eval();
-    tfp->dump((unsigned int)(main_time));
-    ++main_time;
+    tfp->dump(contextp->time());
+    contextp->timeInc(1);
 
     for (VerilatedScopeNameMap::const_iterator it = scopeMapp->begin(); it != scopeMapp->end();
          ++it) {
@@ -153,8 +152,8 @@ int main(int argc, char** argv, char** env) {
 
     top->CLK = 0;
     top->eval();
-    tfp->dump((unsigned int)(main_time));
-    ++main_time;
+    tfp->dump(contextp->time());
+    contextp->timeInc(1);
 
     tfp->close();
     top->final();

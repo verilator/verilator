@@ -61,7 +61,7 @@ public:
     std::string filename() const { return m_filename; }
     virtual void close() VL_MT_UNSAFE_ONE { flush(); }
     virtual void flush() VL_MT_UNSAFE_ONE {}
-    inline VerilatedSerialize& write(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
+    VerilatedSerialize& write(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
         const vluint8_t* __restrict dp = (const vluint8_t* __restrict)datap;
         while (size) {
             bufferCheck();
@@ -122,7 +122,7 @@ public:
     std::string filename() const { return m_filename; }
     virtual void close() VL_MT_UNSAFE_ONE { flush(); }
     virtual void flush() VL_MT_UNSAFE_ONE {}
-    inline VerilatedDeserialize& read(void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
+    VerilatedDeserialize& read(void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
         vluint8_t* __restrict dp = static_cast<vluint8_t* __restrict>(datap);
         while (size) {
             bufferCheck();
@@ -236,7 +236,7 @@ inline VerilatedSerialize& operator<<(VerilatedSerialize& os, float& rhs) {
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, float& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize& operator<<(VerilatedSerialize& os, std::string& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, const std::string& rhs) {
     vluint32_t len = rhs.length();
     os << len;
     return os.write(rhs.data(), len);
@@ -247,6 +247,9 @@ inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, std::string& r
     rhs.resize(len);
     return os.read((void*)rhs.data(), len);
 }
+VerilatedSerialize& operator<<(VerilatedSerialize& os, VerilatedContext* rhsp);
+VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VerilatedContext* rhsp);
+
 template <class T_Key, class T_Value>
 VerilatedSerialize& operator<<(VerilatedSerialize& os, VlAssocArray<T_Key, T_Value>& rhs) {
     os << rhs.atDefault();

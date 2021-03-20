@@ -14,6 +14,8 @@
 #include <iostream>
 #include "svdpi.h"
 
+#include "TestCheck.h"
+
 //======================================================================
 
 // clang-format off
@@ -70,26 +72,8 @@ extern int dpii_failure();
 }
 #endif
 
-int failure = 0;
-int dpii_failure() { return failure; }
-
-#define CHECK_RESULT_HEX(got, exp) \
-    do { \
-        if ((got) != (exp)) { \
-            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": GOT=" << (got) << "   EXP=" << (exp) << std::endl; \
-            failure = __LINE__; \
-        } \
-    } while (0)
-
-#define CHECK_RESULT_HEX_NE(got, exp) \
-    do { \
-        if ((got) == (exp)) { \
-            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": GOT=" << (got) << "   EXP!=" << (exp) << std::endl; \
-            failure = __LINE__; \
-        } \
-    } while (0)
+int errors = 0;
+int dpii_failure() { return errors; }
 
 void dpii_unused(const svOpenArrayHandle u) {}
 
@@ -107,58 +91,58 @@ void _dpii_all(int c, int p, int u, const svOpenArrayHandle i, const svOpenArray
     if (p) {
         int d = 0;
         if (c == 0 || c == 1) {
-            CHECK_RESULT_HEX(svLeft(i, d), 1);
-            CHECK_RESULT_HEX(svRight(i, d), -1);
-            CHECK_RESULT_HEX(svLow(i, d), -1);
-            CHECK_RESULT_HEX(svHigh(i, d), 1);
-            // CHECK_RESULT_HEX(svIncrement(i, d), 0);
-            CHECK_RESULT_HEX(svSize(i, d), 3);
+            TEST_CHECK_HEX_EQ(svLeft(i, d), 1);
+            TEST_CHECK_HEX_EQ(svRight(i, d), -1);
+            TEST_CHECK_HEX_EQ(svLow(i, d), -1);
+            TEST_CHECK_HEX_EQ(svHigh(i, d), 1);
+            // TEST_CHECK_HEX_EQ(svIncrement(i, d), 0);
+            TEST_CHECK_HEX_EQ(svSize(i, d), 3);
         } else if (c == 2) {
-            CHECK_RESULT_HEX(svLeft(i, d), 95);
-            CHECK_RESULT_HEX(svRight(i, d), 1);
-            CHECK_RESULT_HEX(svLow(i, d), 1);
-            CHECK_RESULT_HEX(svHigh(i, d), 95);
-            // CHECK_RESULT_HEX(svIncrement(i, d), 0);
-            CHECK_RESULT_HEX(svSize(i, d), 95);
+            TEST_CHECK_HEX_EQ(svLeft(i, d), 95);
+            TEST_CHECK_HEX_EQ(svRight(i, d), 1);
+            TEST_CHECK_HEX_EQ(svLow(i, d), 1);
+            TEST_CHECK_HEX_EQ(svHigh(i, d), 95);
+            // TEST_CHECK_HEX_EQ(svIncrement(i, d), 0);
+            TEST_CHECK_HEX_EQ(svSize(i, d), 95);
         } else {
-            CHECK_RESULT_HEX(0, 1);
+            TEST_CHECK_HEX_EQ(0, 1);
         }
     }
 #endif
     if (u >= 1) {
         int d = 1;
         if (c == 0) {
-            CHECK_RESULT_HEX(svLeft(i, d), -2);
-            CHECK_RESULT_HEX(svRight(i, d), 2);
-            CHECK_RESULT_HEX(svLow(i, d), -2);
-            CHECK_RESULT_HEX(svHigh(i, d), 2);
-            // CHECK_RESULT_HEX(svIncrement(i, d), 0);
-            CHECK_RESULT_HEX(svSize(i, d), 5);
+            TEST_CHECK_HEX_EQ(svLeft(i, d), -2);
+            TEST_CHECK_HEX_EQ(svRight(i, d), 2);
+            TEST_CHECK_HEX_EQ(svLow(i, d), -2);
+            TEST_CHECK_HEX_EQ(svHigh(i, d), 2);
+            // TEST_CHECK_HEX_EQ(svIncrement(i, d), 0);
+            TEST_CHECK_HEX_EQ(svSize(i, d), 5);
         } else if (c == 1) {
-            CHECK_RESULT_HEX(svLeft(i, d), 2);
-            CHECK_RESULT_HEX(svRight(i, d), -2);
-            CHECK_RESULT_HEX(svLow(i, d), -2);
-            CHECK_RESULT_HEX(svHigh(i, d), 2);
-            // CHECK_RESULT_HEX(svIncrement(i, d), 0);
-            CHECK_RESULT_HEX(svSize(i, d), 5);
+            TEST_CHECK_HEX_EQ(svLeft(i, d), 2);
+            TEST_CHECK_HEX_EQ(svRight(i, d), -2);
+            TEST_CHECK_HEX_EQ(svLow(i, d), -2);
+            TEST_CHECK_HEX_EQ(svHigh(i, d), 2);
+            // TEST_CHECK_HEX_EQ(svIncrement(i, d), 0);
+            TEST_CHECK_HEX_EQ(svSize(i, d), 5);
         }
     }
     if (u >= 2) {
         int d = 2;
         if (c == 0) {
-            CHECK_RESULT_HEX(svLeft(i, d), -3);
-            CHECK_RESULT_HEX(svRight(i, d), 3);
-            CHECK_RESULT_HEX(svLow(i, d), -3);
-            CHECK_RESULT_HEX(svHigh(i, d), 3);
-            // CHECK_RESULT_HEX(svIncrement(i, d), 0);
-            CHECK_RESULT_HEX(svSize(i, d), 7);
+            TEST_CHECK_HEX_EQ(svLeft(i, d), -3);
+            TEST_CHECK_HEX_EQ(svRight(i, d), 3);
+            TEST_CHECK_HEX_EQ(svLow(i, d), -3);
+            TEST_CHECK_HEX_EQ(svHigh(i, d), 3);
+            // TEST_CHECK_HEX_EQ(svIncrement(i, d), 0);
+            TEST_CHECK_HEX_EQ(svSize(i, d), 7);
         } else if (c == 1) {
-            CHECK_RESULT_HEX(svLeft(i, d), 3);
-            CHECK_RESULT_HEX(svRight(i, d), -3);
-            CHECK_RESULT_HEX(svLow(i, d), -3);
-            CHECK_RESULT_HEX(svHigh(i, d), 3);
-            // CHECK_RESULT_HEX(svIncrement(i, d), 0);
-            CHECK_RESULT_HEX(svSize(i, d), 7);
+            TEST_CHECK_HEX_EQ(svLeft(i, d), 3);
+            TEST_CHECK_HEX_EQ(svRight(i, d), -3);
+            TEST_CHECK_HEX_EQ(svLow(i, d), -3);
+            TEST_CHECK_HEX_EQ(svHigh(i, d), 3);
+            // TEST_CHECK_HEX_EQ(svIncrement(i, d), 0);
+            TEST_CHECK_HEX_EQ(svSize(i, d), 7);
         }
     }
 #ifdef VERILATOR
@@ -240,12 +224,12 @@ void dpii_open_bit(const svOpenArrayHandle i, const svOpenArrayHandle o) {}
 
 void dpii_open_byte(const svOpenArrayHandle i, const svOpenArrayHandle o) {
     intptr_t arrPtr = (intptr_t)svGetArrayPtr(i);
-    CHECK_RESULT_HEX_NE(arrPtr, 0);  // All the arrays should actually exist
+    TEST_CHECK_HEX_NE(arrPtr, 0);  // All the arrays should actually exist
 #ifndef NC
     // NC always returns zero and warns
     int sizeInputOfArray = svSizeOfArray(i);
-    CHECK_RESULT_HEX_NE(sizeInputOfArray, 0);  // None of the test cases have zero size
-    CHECK_RESULT_HEX_NE(svDimensions(i), 0);  // All the test cases are unpacked arrays
+    TEST_CHECK_HEX_NE(sizeInputOfArray, 0);  // None of the test cases have zero size
+    TEST_CHECK_HEX_NE(svDimensions(i), 0);  // All the test cases are unpacked arrays
 #endif
 }
 
@@ -254,12 +238,12 @@ void dpii_open_logic(const svOpenArrayHandle i, const svOpenArrayHandle o) {}
 
 static void _dpii_open_int_ux(int u, const svOpenArrayHandle i, const svOpenArrayHandle o) {
     intptr_t arrPtr = (intptr_t)svGetArrayPtr(i);
-    CHECK_RESULT_HEX_NE(arrPtr, 0);  // All the arrays should actually exist
+    TEST_CHECK_HEX_NE(arrPtr, 0);  // All the arrays should actually exist
 #ifndef NC
     // NC always returns zero and warns
     int sizeInputOfArray = svSizeOfArray(i);
-    CHECK_RESULT_HEX_NE(sizeInputOfArray, 0);  // None of the test cases have zero size
-    CHECK_RESULT_HEX(svDimensions(i), u);
+    TEST_CHECK_HEX_NE(sizeInputOfArray, 0);  // None of the test cases have zero size
+    TEST_CHECK_HEX_EQ(svDimensions(i), u);
 #endif
 
     int dim = svDimensions(i);
@@ -268,30 +252,30 @@ static void _dpii_open_int_ux(int u, const svOpenArrayHandle i, const svOpenArra
         if (dim == 1) {
             intptr_t ip = (intptr_t)svGetArrElemPtr(i, a);
             intptr_t i2p = (intptr_t)svGetArrElemPtr1(i, a);
-            CHECK_RESULT_HEX(ip, i2p);
-            CHECK_RESULT_HEX_NE(ip, 0);
+            TEST_CHECK_HEX_EQ(ip, i2p);
+            TEST_CHECK_HEX_NE(ip, 0);
             intptr_t op = (intptr_t)svGetArrElemPtr(o, a);
-            CHECK_RESULT_HEX_NE(op, 0);
+            TEST_CHECK_HEX_NE(op, 0);
             *reinterpret_cast<int*>(op) = ~*reinterpret_cast<int*>(ip);
         } else {
             for (int b = svLow(i, 2); b <= svHigh(i, 2); ++b) {
                 if (dim == 2) {
                     intptr_t ip = (intptr_t)svGetArrElemPtr(i, a, b);
                     intptr_t i2p = (intptr_t)svGetArrElemPtr2(i, a, b);
-                    CHECK_RESULT_HEX(ip, i2p);
-                    CHECK_RESULT_HEX_NE(ip, 0);
+                    TEST_CHECK_HEX_EQ(ip, i2p);
+                    TEST_CHECK_HEX_NE(ip, 0);
                     intptr_t op = (intptr_t)svGetArrElemPtr(o, a, b);
-                    CHECK_RESULT_HEX_NE(op, 0);
+                    TEST_CHECK_HEX_NE(op, 0);
                     *reinterpret_cast<int*>(op) = ~*reinterpret_cast<int*>(ip);
                 } else {
                     for (int c = svLow(i, 3); c <= svHigh(i, 3); ++c) {
                         if (dim == 3) {
                             intptr_t ip = (intptr_t)svGetArrElemPtr(i, a, b, c);
                             intptr_t i2p = (intptr_t)svGetArrElemPtr3(i, a, b, c);
-                            CHECK_RESULT_HEX(ip, i2p);
-                            CHECK_RESULT_HEX_NE(ip, 0);
+                            TEST_CHECK_HEX_EQ(ip, i2p);
+                            TEST_CHECK_HEX_NE(ip, 0);
                             intptr_t op = (intptr_t)svGetArrElemPtr(o, a, b, c);
-                            CHECK_RESULT_HEX_NE(op, 0);
+                            TEST_CHECK_HEX_NE(op, 0);
                             *reinterpret_cast<int*>(op) = ~*reinterpret_cast<int*>(ip);
                         }
                     }

@@ -37,7 +37,7 @@ class OrderLogicVertex;
 // Most graph algorithms accept an arbitrary function that returns
 // True for those edges we should honor.
 
-typedef bool (*V3EdgeFuncP)(const V3GraphEdge* edgep);
+using V3EdgeFuncP = bool (*)(const V3GraphEdge* edgep);
 
 //=============================================================================
 // When the Graph represents a directional acyclical graph (DAG), following

@@ -71,11 +71,10 @@ private:
 template <typename T_Key> class TspGraphTmpl : public V3Graph {
 public:
     // TYPES
-    typedef TspVertexTmpl<T_Key> Vertex;
+    using Vertex = TspVertexTmpl<T_Key>;
 
     // MEMBERS
-    typedef std::unordered_map<T_Key, Vertex*> VMap;
-    VMap m_vertices;  // T_Key to Vertex lookup map
+    std::unordered_map<T_Key, Vertex*> m_vertices;  // T_Key to Vertex lookup map
 
     // CONSTRUCTORS
     TspGraphTmpl()
@@ -152,7 +151,7 @@ public:
         std::unordered_set<Vertex*> visited_set;
 
         EdgeCmp cmp;
-        typedef std::set<V3GraphEdge*, EdgeCmp&> PendingEdgeSet;
+        using PendingEdgeSet = std::set<V3GraphEdge*, EdgeCmp&>;
         // This is the set of pending edges from visited to unvisited
         // nodes.
         PendingEdgeSet pendingEdges(cmp);
@@ -222,7 +221,7 @@ public:
 
         std::list<Vertex*> odds = keysToVertexList(oddKeys);
         std::unordered_set<Vertex*> unmatchedOdds;
-        typedef typename std::list<Vertex*>::iterator VertexListIt;
+        using VertexListIt = typename std::list<Vertex*>::iterator;
         for (VertexListIt it = odds.begin(); it != odds.end(); ++it) {
             outp->addVertex((*it)->key());
             unmatchedOdds.insert(*it);
@@ -247,7 +246,7 @@ public:
         // bidir edge will collide in the pendingEdges set here, but this
         // is OK, we'll ignore the direction on the edge anyway.
         EdgeCmp cmp;
-        typedef std::set<V3GraphEdge*, EdgeCmp&> PendingEdgeSet;
+        using PendingEdgeSet = std::set<V3GraphEdge*, EdgeCmp&>;
         PendingEdgeSet pendingEdges(cmp);
 
         for (VertexListIt it = odds.begin(); it != odds.end(); ++it) {
@@ -409,7 +408,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
     }
 
     // Build the initial graph from the starting state set.
-    typedef TspGraphTmpl<const TspStateBase*> Graph;
+    using Graph = TspGraphTmpl<const TspStateBase*>;
     Graph graph;
     for (const auto& state : states) graph.addVertex(state);
     for (V3TSP::StateVec::const_iterator it = states.begin(); it != states.end(); ++it) {
@@ -614,7 +613,7 @@ void V3TSP::selfTestStates() {
 }
 
 void V3TSP::selfTestString() {
-    typedef TspGraphTmpl<string> Graph;
+    using Graph = TspGraphTmpl<std::string>;
     Graph graph;
     graph.addVertex("0");
     graph.addVertex("1");

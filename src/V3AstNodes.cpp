@@ -635,6 +635,7 @@ string AstNodeDType::cType(const string& name, bool forFunc, bool isRef) const {
 }
 
 AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
+    // Legacy compound argument currently just passed through and unused
     CTypeRecursed info;
 
     const AstNodeDType* dtypep = this->skipRefp();
@@ -656,14 +657,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
     } else if (const auto* adtypep = VN_CAST_CONST(dtypep, UnpackArrayDType)) {
         if (adtypep->isCompound()) compound = true;
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound);
-        if (compound) {
-            info.m_type = "VlUnpacked<" + sub.m_type;
-            info.m_type += ", " + cvtToStr(adtypep->declRange().elements());
-            info.m_type += ">";
-        } else {
-            info.m_type = sub.m_type;
-            info.m_dims = "[" + cvtToStr(adtypep->declRange().elements()) + "]" + sub.m_dims;
-        }
+        info.m_type = "VlUnpacked<" + sub.m_type;
+        info.m_type += ", " + cvtToStr(adtypep->declRange().elements());
+        info.m_type += ">";
     } else if (const AstBasicDType* bdtypep = dtypep->basicp()) {
         // We don't print msb()/lsb() as multidim packed would require recursion,
         // and may confuse users as C++ data is stored always with bit 0 used
@@ -687,12 +683,7 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         } else if (dtypep->isQuad()) {
             info.m_type = "QData" + bitvec;
         } else if (dtypep->isWide()) {
-            if (compound) {
-                info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + ">";
-            } else {
-                info.m_type += "WData" + bitvec;  // []'s added later
-                info.m_dims = "[" + cvtToStr(dtypep->widthWords()) + "]";
-            }
+            info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + ">" + bitvec;
         }
     } else {
         v3fatalSrc("Unknown data type in var type emitter: " << dtypep->prettyName());
@@ -784,7 +775,7 @@ std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) {
         }
         break;
     }
-    return make_pair(packed, unpacked);
+    return std::make_pair(packed, unpacked);
 }
 
 int AstNodeDType::widthPow2() const {
@@ -797,7 +788,7 @@ int AstNodeDType::widthPow2() const {
 }
 
 /// What is the base variable (or const) this dereferences?
-AstNode* AstArraySel::baseFromp(AstNode* nodep) {
+AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
     // Else AstArraySel etc; search for the base
     while (nodep) {
         if (VN_IS(nodep, ArraySel)) {
@@ -805,6 +796,9 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep) {
             continue;
         } else if (VN_IS(nodep, Sel)) {
             nodep = VN_CAST(nodep, Sel)->fromp();
+            continue;
+        } else if (overMembers && VN_IS(nodep, MemberSel)) {
+            nodep = VN_CAST(nodep, MemberSel)->fromp();
             continue;
         }
         // AstNodeSelPre stashes the associated variable under an ATTROF
