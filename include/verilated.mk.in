@@ -210,7 +210,7 @@ endif
 	$(info Archive $(AR) -rcs $@ $^)
 	$(file >$@.tmp)
 	$(foreach L, $(filter-out %.a,$^), $(file >>$@.tmp, $L))
-	if test $(words $(filter %.a,$^)) -eq 0; then \
+	@if test $(words $(filter %.a,$^)) -eq 0; then \
 		$(AR) -rcs $@ @$@.tmp; \
 	else \
 		$(RM) -rf $@.tmpdir; \
