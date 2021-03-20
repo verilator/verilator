@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2009-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,12 +12,13 @@
 //=========================================================================
 ///
 /// \file
-/// \brief Verilator: DPI implementation code
+/// \brief Verilated DPI implementation code
 ///
-///     This file must be compiled and linked against all objects
-///     created from Verilator or called by Verilator that use the DPI.
+/// This file must be compiled and linked against all Verilated objects
+/// that use the DPI.
 ///
-/// Code available from: https://verilator.org
+/// Declare any DPI routine inside Verilog to add this to the Makefile for
+/// the linker.
 ///
 //=========================================================================
 

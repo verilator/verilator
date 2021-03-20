@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,22 +12,19 @@
 //*************************************************************************
 ///
 /// \file
-/// \brief Verilator: Include to provide information about symbol inspection
+/// \brief Verilated symbol inspection header
 ///
-///     This file is for inclusion by internal files that need to inspect
-///     specific symbols.
+/// This file is for inclusion by internal files that need to inspect
+/// specific symbols.
 ///
-///     User routines wanting to inspect the symbol table should use
-///     verilated_syms.h instead.
-///
-///     These classes are thread safe, and read only.
-///
-/// Code available from: https://verilator.org
+/// User wrapper code wanting to inspect the symbol table should use
+/// verilated_syms.h instead.
 ///
 //*************************************************************************
+// These classes are thread safe, and read only.
 
 #ifndef VERILATOR_VERILATED_SYM_PROPS_H_
-#define VERILATOR_VERILATED_SYM_PROPS_H_  ///< Header Guard
+#define VERILATOR_VERILATED_SYM_PROPS_H_
 
 #include "verilatedos.h"
 

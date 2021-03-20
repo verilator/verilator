@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,21 +12,23 @@
 //*************************************************************************
 ///
 /// \file
-/// \brief Verilator: Common include for all Verilated C files
+/// \brief Verilated common header, include for all Verilated C files
 ///
-///     This file is included automatically by Verilator at the top of
-///     all C++ files it generates.  It contains standard macros and
-///     classes required by the Verilated code.
+/// This file is included automatically by Verilator at the top of all C++
+/// files it generates.  It contains standard macros and classes required
+/// by the Verilated code.
 ///
-///     Those macro/function/variable starting or ending in _ are internal,
-///     however many of the other function/macros here are also internal.
+/// User wrapper code may need to include this to get appropriate
+/// structures, however they would generally just include the
+/// Verilated-model's header instead (which then includes this).
 ///
-/// Code available from: https://verilator.org
+/// Those macro/function/variable starting or ending in _ are internal,
+/// however many of the other function/macros here are also internal.
 ///
 //*************************************************************************
 
 #ifndef VERILATOR_VERILATED_H_
-#define VERILATOR_VERILATED_H_  ///< Header Guard
+#define VERILATOR_VERILATED_H_
 
 // clang-format off
 #include "verilatedos.h"

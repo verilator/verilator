@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2000-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,7 +12,10 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Save-restore serialization of verilated modules
+/// \brief Verilated save-restore serialization header
+///
+/// This must be included in user wrapper code that wants to use
+/// save/restore.
 ///
 //=============================================================================
 

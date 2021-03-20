@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2010-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,19 +12,17 @@
 //*************************************************************************
 ///
 /// \file
-/// \brief Verilator: String include for all Verilated C files
+/// \brief Verilated string and data-type header
 ///
-///     This file is included automatically by Verilator at the top of
-///     all C++ files it generates.  It is used when strings or other
-///     heavyweight types are required; these contents are not part of
-///     verilated.h to save compile time when such types aren't used.
-///
-/// Code available from: https://verilator.org
+/// This file is included automatically by Verilator at the top of
+/// all C++ files it generates.  It is used when strings or other
+/// heavyweight types are required; these contents are not part of
+/// verilated.h to save compile time when such types aren't used.
 ///
 //*************************************************************************
 
 #ifndef VERILATOR_VERILATED_HEAVY_H_
-#define VERILATOR_VERILATED_HEAVY_H_  ///< Header Guard
+#define VERILATOR_VERILATED_HEAVY_H_
 
 #include "verilated.h"
 

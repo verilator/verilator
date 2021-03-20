@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,15 +12,15 @@
 //=========================================================================
 ///
 /// \file
-/// \brief Verilator: Linked against all applications using Verilated source.
+/// \brief Verilated general routine implementation code
 ///
-///     This file must be compiled and linked against all objects
-///     created from Verilator.
+/// This file must be compiled and linked against all Verilated objects
+/// (all code created from Verilator).
 ///
-///     Those macro/function/variable starting or ending in _ are internal,
-///     however many of the other function/macros here are also internal.
+/// Verilator always adds this file to the Makefile for the linker.
 ///
-/// Code available from: https://verilator.org
+/// Those macro/function/variable starting or ending in _ are internal,
+/// however many of the other function/macros here are also internal.
 ///
 //=========================================================================
 // Internal note:

@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2009-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,14 +12,15 @@
 //=========================================================================
 ///
 /// \file
-/// \brief Verilator: Implementation Header, only for verilated.cpp internals.
+/// \brief Verilated implementation Header, only for verilated.cpp internals.
 ///
-/// Code available from: https://verilator.org
+/// This file is not part of the Verilated public-facing API.
+/// It is only for internal use by the Verilated libraries.
 ///
 //=========================================================================
 
 #ifndef VERILATOR_VERILATED_IMP_H_
-#define VERILATOR_VERILATED_IMP_H_  ///< Header Guard
+#define VERILATOR_VERILATED_IMP_H_
 
 // clang-format off
 #if !defined(VERILATOR_VERILATED_CPP_) && !defined(VERILATOR_VERILATED_DPI_CPP_) \

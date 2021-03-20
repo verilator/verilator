@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,7 +12,13 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Coverage analysis support
+/// \brief Verilated coverage analysis support header
+///
+/// This must be included in user wrapper code that wants to save coverage
+/// data.
+///
+/// It declares the VerilatedCovContext::write() which writes the collected
+/// coverage information.
 ///
 //=============================================================================
 
@@ -29,7 +35,8 @@
 class VerilatedCovImp;
 
 //=============================================================================
-/// Conditionally compile coverage code
+/// Conditionally compile statements only when doing coverage (when
+/// VM_COVERAGE is defined)
 
 // clang-format off
 #ifdef VM_COVERAGE
@@ -50,7 +57,8 @@ class VerilatedCovImp;
 /// The value may be a string, or another type which will be auto-converted to a string.
 ///
 /// Some typical keys:
-///     filename        File the recording occurs in.  Defaults to __FILE__
+///
+///     filename        File the recording occurs in.  Defaults to __FILE__.
 ///     lineno          Line number the recording occurs in.  Defaults to __LINE__
 ///     column          Column number (or occurrence# for dup file/lines).  Defaults to undef.
 ///     hier            Hierarchical name.  Defaults to name()
@@ -61,13 +69,14 @@ class VerilatedCovImp;
 ///     thresh          Threshold to consider fully covered.
 ///                     If unspecified, downstream tools will determine it.
 ///
-/// Examples:
+/// Example:
 ///
-///     vluint32_t m_cases[10];
-///     constructor {
-///         for (int i=0; i<10; ++i) { m_cases[i]=0; }
-///     }
-///     for (int i=0; i<10; ++i) {
+///     vluint32_t m_cases[10];  // Storage for coverage data
+///     constructor() {
+///         // Initialize
+///         for (int i = 0; i < 10; ++i) m_cases[i] = 0;
+///         // Insert
+///         for (int i = 0; i < 10; ++i)
 ///             VL_COVER_INSERT(&m_cases[i], "comment", "Coverage Case", "i", cvtToNumStr(i));
 ///     }
 
@@ -76,7 +85,7 @@ class VerilatedCovImp;
                 covcontextp->_insertp("hier", name(), __VA_ARGS__))
 
 //=============================================================================
-/// Convert VL_COVER_INSERT value arguments to strings
+/// Convert VL_COVER_INSERT value arguments to strings, is \internal
 
 template <class T> std::string vlCovCvtToStr(const T& t) VL_PURE {
     std::ostringstream os;
@@ -86,7 +95,7 @@ template <class T> std::string vlCovCvtToStr(const T& t) VL_PURE {
 
 //=============================================================================
 //  VerilatedCov
-///  Verilator coverage per-context structure
+/// Verilator coverage per-context structure.
 /// All public methods in this class are thread safe.
 
 class VerilatedCovContext VL_NOT_FINAL : public VerilatedVirtualBase {

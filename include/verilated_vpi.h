@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2009-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,17 +12,17 @@
 //=========================================================================
 ///
 /// \file
-/// \brief Verilator: VPI implementation code
+/// \brief Verilated VPI header
 ///
-///     This file must be compiled and linked against all objects
-///     created from Verilator or called by Verilator that use the VPI.
+/// This file contains routines related to using VPI with Verilated models.
 ///
-/// Code available from: https://verilator.org
+/// User wrapper code may need to include this if controlling Verilated
+/// models that use ths VPI.
 ///
 //=========================================================================
 
 #ifndef VERILATOR_VERILATED_VPI_H_
-#define VERILATOR_VERILATED_VPI_H_  ///< Header Guard
+#define VERILATOR_VERILATED_VPI_H_
 
 #include "verilatedos.h"
 #include "verilated.h"

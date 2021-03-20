@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2009-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,14 +12,12 @@
 //=========================================================================
 ///
 /// \file
-/// \brief Verilator: VPI implementation code
+/// \brief Verilated VPI implementation code
 ///
-///     This file must be compiled and linked against all objects
-///     created from Verilator or called by Verilator that use the VPI.
+/// This file must be compiled and linked against all Verilated objects
+/// that use the VPI.
 ///
-///     Use "verilator --vpi" to add this to the Makefile for the linker.
-///
-/// Code available from: https://verilator.org
+/// Use "verilator --vpi" to add this to the Makefile for the linker.
 ///
 //=========================================================================
 

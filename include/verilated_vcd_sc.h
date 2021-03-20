@@ -10,7 +10,10 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Verilator tracing in VCD format
+/// \brief Verilated tracing in VCD format for SystemC header
+///
+/// User wrapper code should use this header when creating VCD SystemC
+/// traces.
 ///
 /// This class is not threadsafe, as the SystemC kernel is not threadsafe.
 ///

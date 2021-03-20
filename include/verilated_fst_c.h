@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,7 +12,9 @@
 //=============================================================================
 ///
 /// \file
-/// \brief C++ Tracing in FST Format
+/// \brief Verilated tracing in FST format header
+///
+/// User wrapper code should use this header when creating FST traces.
 ///
 //=============================================================================
 // SPDIFF_OFF

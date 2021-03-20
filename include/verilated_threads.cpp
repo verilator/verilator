@@ -1,6 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
+// Code available from: https://verilator.org
+//
 // Copyright 2012-2021 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
@@ -10,7 +12,12 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Thread pool for verilated modules
+/// \brief Verilated thread pool implementation code
+///
+/// This file must be compiled and linked against all Verilated objects
+/// that use --threads.
+///
+/// Use "verilator --threads" to add this to the Makefile for the linker.
 ///
 //=============================================================================
 

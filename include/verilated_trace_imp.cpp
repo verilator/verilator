@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,7 +12,12 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Implementation of tracing functionality common to all trace formats
+/// \brief Verilated common-format tracing implementation code
+///
+/// This file must be compiled and linked against all Verilated objects
+/// that use --trace.
+///
+/// Use "verilator --trace" to add this to the Makefile for the linker.
 ///
 //=============================================================================
 
