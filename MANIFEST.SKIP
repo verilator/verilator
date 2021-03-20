@@ -19,6 +19,7 @@
 .*\.1
 \.codacy\.yml
 \.travis\.yml
+/_build/
 /build/
 /obj_dbg/
 /obj_dir/
