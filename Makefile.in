@@ -508,8 +508,8 @@ PYLINT = pylint
 PYLINT_FLAGS = --disable=R0801
 
 lint-py:
-	$(FLAKE8) $(FLAKE8_FLAGS) $(PY_PROGRAMS)
-	$(PYLINT) $(PYLINT_FLAGS) $(PY_PROGRAMS)
+	-$(FLAKE8) $(FLAKE8_FLAGS) $(PY_PROGRAMS)
+	-$(PYLINT) $(PYLINT_FLAGS) $(PY_PROGRAMS)
 
 format-pl-exec:
 	-chmod a+x test_regress/t/*.pl

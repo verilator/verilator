@@ -362,7 +362,7 @@ Some relevant files and directories in this package are as follows:
 ::
 
    Changes                     => Version history
-   README.rst                 => This document
+   README.rst                  => This document
    bin/verilator               => Compiler wrapper invoked to Verilate code
    docs/                       => Additional documentation
    examples/make_hello_c       => Example GNU-make simple Verilog->C++ conversion

@@ -47,7 +47,7 @@ def test():
             #  to uncovered (in G++ 9.3.0) even with all inlining turned off.
             #  Having false negative coverage is more effort then missing negatives.
             #  Also this seems to explode the runtime (since a lot more data).
-            #+ " -fkeep-inline-functions"
+            #  + " -fkeep-inline-functions"
             # Otherwise static may not show as uncovered
             + " -fkeep-static-functions"
             # Exceptions can pollute the branch coverage data
