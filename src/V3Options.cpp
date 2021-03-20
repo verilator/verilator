@@ -1359,7 +1359,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         if (optval.legal()) {
             m_defaultLanguage = optval;
         } else {
-            fl->v3fatal("Unknown language specified: " << valp);
+            VSpellCheck spell;
+            for (int i = V3LangCode::L_ERROR + 1; i < V3LangCode::_ENUM_END; ++i) {
+                spell.pushCandidate(V3LangCode{i}.ascii());
+            }
+            fl->v3fatal("Unknown language specified: " << valp << spell.bestCandidateMsg(valp));
         }
     };
     DECL_OPTION("-language", CbVal, setLang);
