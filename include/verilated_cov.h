@@ -96,6 +96,8 @@ public:
     // METHODS
     /// Return default filename
     static const char* defaultFilename() VL_PURE { return "coverage.dat"; }
+    /// Make all data per_instance, overriding point's per_instance
+    void forcePerInstance(bool flag) VL_MT_SAFE;
     /// Write all coverage data to a file
     void write(const char* filenamep = defaultFilename()) VL_MT_SAFE;
     /// Clear coverage points (and call delete on all items)

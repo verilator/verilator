@@ -107,6 +107,7 @@ private:
     VerilatedCovImpItem* m_insertp VL_GUARDED_BY(m_mutex) = nullptr;  ///< Item about to insert
     const char* m_insertFilenamep VL_GUARDED_BY(m_mutex) = nullptr;  ///< Filename about to insert
     int m_insertLineno VL_GUARDED_BY(m_mutex) = 0;  ///< Line number about to insert
+    bool m_forcePerInstance VL_GUARDED_BY(m_mutex) = false;  ///< Force per_instance
 
 public:
     // CONSTRUCTORS
@@ -245,6 +246,11 @@ private:
 
 public:
     // PUBLIC METHODS
+    void forcePerInstance(bool flag) VL_MT_SAFE_EXCLUDES(m_mutex) {
+        Verilated::quiesce();
+        const VerilatedLockGuard lock(m_mutex);
+        m_forcePerInstance = flag;
+    }
     void clear() VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock(m_mutex);
@@ -362,6 +368,7 @@ public:
             std::string name;
             std::string hier;
             bool per_instance = false;
+            if (m_forcePerInstance) per_instance = true;
 
             for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
                 if (itemp->m_keys[i] != VerilatedCovConst::KEY_UNDEF) {
@@ -413,6 +420,9 @@ public:
 //=============================================================================
 // VerilatedCovContext
 
+void VerilatedCovContext::forcePerInstance(bool flag) VL_MT_SAFE {
+    impp()->forcePerInstance(flag);
+}
 void VerilatedCovContext::clear() VL_MT_SAFE { impp()->clear(); }
 void VerilatedCovContext::clearNonMatch(const char* matchp) VL_MT_SAFE {
     impp()->clearNonMatch(matchp);
