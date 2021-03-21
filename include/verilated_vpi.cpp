@@ -19,6 +19,9 @@
 ///
 /// Use "verilator --vpi" to add this to the Makefile for the linker.
 ///
+/// For documentation on the exported functions (named vpi_*) that are
+/// implemented here, refer to the IEEE DPI chapter.
+///
 //=========================================================================
 
 #define VERILATOR_VERILATED_VPI_CPP_
@@ -57,8 +60,8 @@ constexpr unsigned VL_VPI_LINE_SIZE_ = 8192;
 // Base VPI handled object
 class VerilatedVpio VL_NOT_FINAL {
     // CONSTANTS
-    /// Magic value stored in front of object to detect double free etc
-    /// Must be odd, as aligned pointer can never be odd
+    // Magic value stored in front of object to detect double free etc
+    // Must be odd, as aligned pointer can never be odd
     static constexpr vluint32_t activeMagic() { return 0xfeed100f; }
 
     // MEM MANGLEMENT
@@ -489,7 +492,7 @@ public:
 };
 
 struct VerilatedVpiTimedCbsCmp {
-    /// Ordering sets keyed by time, then callback unique id
+    // Ordering sets keyed by time, then callback unique id
     bool operator()(const std::pair<QData, vluint64_t>& a,
                     const std::pair<QData, vluint64_t>& b) const {
         if (a.first < b.first) return true;
@@ -509,7 +512,7 @@ class VerilatedVpiImp final {
     VpioCbList m_cbObjLists[CB_ENUM_MAX_VALUE];  // Callbacks for each supported reason
     VpioTimedCbs m_timedCbs;  // Time based callbacks
     VerilatedVpiError* m_errorInfop = nullptr;  // Container for vpi error info
-    VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
+    VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
     vluint64_t m_nextCallbackId = 1;  // Id to identify callback
 
     static VerilatedVpiImp& s() {  // Singleton
@@ -652,7 +655,7 @@ VL_THREAD_LOCAL vluint8_t* VerilatedVpio::t_freeHead = nullptr;
 
 //======================================================================
 // VerilatedVpiError
-/// Internal container for vpi error info
+// Internal container for vpi error info
 
 class VerilatedVpiError final {
     t_vpi_error_info m_errorInfo;

@@ -53,14 +53,14 @@
 // This size comes form VCD allowing use of printable ASCII characters between
 // '!' and '~' inclusive, which are a total of 94 different values. Encoding a
 // 32 bit code hence needs a maximum of ceil(log94(2**32-1)) == 5 bytes.
-constexpr unsigned VL_TRACE_MAX_VCD_CODE_SIZE = 5;  ///< Maximum length of a VCD string code
+constexpr unsigned VL_TRACE_MAX_VCD_CODE_SIZE = 5;  // Maximum length of a VCD string code
 
 // We use 8 bytes per code in a suffix buffer array.
 // 1 byte optional separator + VL_TRACE_MAX_VCD_CODE_SIZE bytes for code
 // + 1 byte '\n' + 1 byte suffix size. This luckily comes out to a power of 2,
 // meaning the array can be aligned such that entries never straddle multiple
 // cache-lines.
-constexpr unsigned VL_TRACE_SUFFIX_ENTRY_SIZE = 8;  ///< Size of a suffix entry
+constexpr unsigned VL_TRACE_SUFFIX_ENTRY_SIZE = 8;  // Size of a suffix entry
 
 //=============================================================================
 // Specialization of the generics for this trace format

@@ -49,8 +49,8 @@ private:
     std::map<vluint32_t, fstHandle> m_code2symbol;
     std::map<int, fstEnumHandle> m_local2fstdtype;
     std::list<std::string> m_curScope;
-    fstHandle* m_symbolp = nullptr;  ///< same as m_code2symbol, but as an array
-    char* m_strbuf = nullptr;  ///< String buffer long enough to hold maxBits() chars
+    fstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
+    char* m_strbuf = nullptr;  // String buffer long enough to hold maxBits() chars
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
@@ -128,7 +128,7 @@ template <> void VerilatedTrace<VerilatedFst>::set_time_resolution(const std::st
 /// Also derived for use in SystemC simulations.
 
 class VerilatedFstC final {
-    VerilatedFst m_sptrace;  ///< Trace file being created
+    VerilatedFst m_sptrace;  // Trace file being created
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFstC);

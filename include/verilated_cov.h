@@ -68,6 +68,7 @@ class VerilatedCovImp;
 ///                     Comments for type==block: 'if', 'else', 'elsif', 'case'
 ///     thresh          Threshold to consider fully covered.
 ///                     If unspecified, downstream tools will determine it.
+///     per_instance    If non-zero don't combine all hierarchies into one count
 ///
 /// Example:
 ///
@@ -97,6 +98,9 @@ template <class T> std::string vlCovCvtToStr(const T& t) VL_PURE {
 //  VerilatedCov
 /// Verilator coverage per-context structure.
 /// All public methods in this class are thread safe.
+///
+/// This structure is accessed and constructed on first access via
+/// VerilatedContext::coveragep()
 
 class VerilatedCovContext VL_NOT_FINAL : public VerilatedVirtualBase {
     VL_UNCOPYABLE(VerilatedCovContext);
@@ -117,10 +121,10 @@ public:
     void zero() VL_MT_SAFE;
 
 public:  // But Internal use only
-    /// Insert a coverage item
-    /// We accept from 1-30 key/value pairs, all as strings.
-    /// Call _insert1, followed by _insert2 and _insert3
-    /// Do not call directly; use VL_COVER_INSERT or higher level macros instead
+    // Insert a coverage item
+    // We accept from 1-30 key/value pairs, all as strings.
+    // Call _insert1, followed by _insert2 and _insert3
+    // Do not call directly; use VL_COVER_INSERT or higher level macros instead
     // _insert1: Remember item pointer with count.  (Not const, as may add zeroing function)
     void _inserti(vluint32_t* itemp) VL_MT_SAFE;
     void _inserti(vluint64_t* itemp) VL_MT_SAFE;
@@ -163,9 +167,9 @@ protected:
 //  VerilatedCov
 ///  Verilator coverage global class
 ///
-/// Global class that accesses via current thread's context.  These are
-/// provided for backward-compatibility, use VerilatedContext->coveragep()
-/// instead.
+/// Global class that accesses via current thread's context's
+/// VerilatedCovContext.  This class is provided only for
+/// backward-compatibility, use VerilatedContext::coveragep() instead.
 
 #ifndef VL_NO_LEGACY
 class VerilatedCov final {
@@ -189,7 +193,7 @@ public:
     static void zero() VL_MT_SAFE { threadCovp()->zero(); }
 
 private:
-    /// Current thread's coverage structure
+    // Current thread's coverage structure
     static VerilatedCovContext* threadCovp() VL_MT_SAFE;
 };
 #endif

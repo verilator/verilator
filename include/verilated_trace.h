@@ -139,20 +139,20 @@ private:
             , m_userp{userp} {}
     };
 
-    vluint32_t* m_sigs_oldvalp;  ///< Old value store
-    vluint64_t m_timeLastDump;  ///< Last time we did a dump
-    std::vector<CallbackRecord> m_initCbs;  ///< Routines to initialize traciong
-    std::vector<CallbackRecord> m_fullCbs;  ///< Routines to perform full dump
-    std::vector<CallbackRecord> m_chgCbs;  ///< Routines to perform incremental dump
-    std::vector<CallbackRecord> m_cleanupCbs;  ///< Routines to call at the end of dump
-    bool m_fullDump;  ///< Whether a full dump is required on the next call to 'dump'
-    vluint32_t m_nextCode;  ///< Next code number to assign
-    vluint32_t m_numSignals;  ///< Number of distinct signals
-    vluint32_t m_maxBits;  ///< Number of bits in the widest signal
-    std::string m_moduleName;  ///< Name of module being trace initialized now
+    vluint32_t* m_sigs_oldvalp;  // Old value store
+    vluint64_t m_timeLastDump;  // Last time we did a dump
+    std::vector<CallbackRecord> m_initCbs;  // Routines to initialize traciong
+    std::vector<CallbackRecord> m_fullCbs;  // Routines to perform full dump
+    std::vector<CallbackRecord> m_chgCbs;  // Routines to perform incremental dump
+    std::vector<CallbackRecord> m_cleanupCbs;  // Routines to call at the end of dump
+    bool m_fullDump;  // Whether a full dump is required on the next call to 'dump'
+    vluint32_t m_nextCode;  // Next code number to assign
+    vluint32_t m_numSignals;  // Number of distinct signals
+    vluint32_t m_maxBits;  // Number of bits in the widest signal
+    std::string m_moduleName;  // Name of module being trace initialized now
     char m_scopeEscape;
-    double m_timeRes;  ///< Time resolution (ns/ms etc)
-    double m_timeUnit;  ///< Time units (ns/ms etc)
+    double m_timeRes;  // Time resolution (ns/ms etc)
+    double m_timeUnit;  // Time units (ns/ms etc)
 
     void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord& cbRec)
         VL_MT_SAFE_EXCLUDES(m_mutex);

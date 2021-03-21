@@ -67,7 +67,7 @@
 #endif
 // clang-format on
 
-/// Max static char array for VL_VALUE_STRING
+// Max characters in static char string for VL_VALUE_STRING
 constexpr unsigned VL_VALUE_STRING_MAX_WIDTH = 8192;
 
 //===========================================================================

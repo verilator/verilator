@@ -15,7 +15,7 @@
 /// \brief Verilated symbol inspection header
 ///
 /// This file is for inclusion by internal files that need to inspect
-/// specific symbols.
+/// specific symbols.  Applications typically use the VPI instead.
 ///
 /// User wrapper code wanting to inspect the symbol table should use
 /// verilated_syms.h instead.
@@ -31,8 +31,8 @@
 #include <vector>
 
 //===========================================================================
-/// Verilator range
-/// Thread safety: Assume is constructed only with model, then any number of readers
+// Verilator range
+// Thread safety: Assume is constructed only with model, then any number of readers
 
 // See also V3Ast::VNumRange
 class VerilatedRange final {
@@ -64,8 +64,8 @@ public:
 };
 
 //===========================================================================
-/// Verilator variable
-/// Thread safety: Assume is constructed only with model, then any number of readers
+// Verilator variable
+// Thread safety: Assume is constructed only with model, then any number of readers
 
 class VerilatedVarProps VL_NOT_FINAL {
     // TYPES
@@ -144,7 +144,7 @@ public:
     }
     vluint32_t entSize() const;
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
-    /// DPI compatible C standard layout
+    // DPI compatible C standard layout
     bool isDpiCLayout() const { return ((m_vlflags & VLVF_DPI_CLAY) != 0); }
     int udims() const { return m_udims; }
     int dims() const { return m_pdims + m_udims; }
@@ -177,14 +177,14 @@ public:
                    ? m_packed.elements()
                    : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].elements() : 0;
     }
-    /// Total size in bytes (note DPI limited to 4GB)
+    // Total size in bytes (note DPI limited to 4GB)
     size_t totalSize() const;
-    /// Adjust a data pointer to access a given array element, NuLL if something goes bad
+    // Adjust a data pointer to access a given array element, NuLL if something goes bad
     void* datapAdjustIndex(void* datap, int dim, int indx) const;
 };
 
 //===========================================================================
-/// Verilator DPI open array variable
+// Verilator DPI open array variable
 
 class VerilatedDpiOpenVar final {
     // MEMBERS
@@ -221,8 +221,8 @@ public:
 };
 
 //===========================================================================
-/// Verilator variable
-/// Thread safety: Assume is constructed only with model, then any number of readers
+// Verilator variable
+// Thread safety: Assume is constructed only with model, then any number of readers
 
 class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS

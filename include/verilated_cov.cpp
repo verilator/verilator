@@ -36,19 +36,19 @@
 
 struct VerilatedCovConst VL_NOT_FINAL {
     // TYPES
-    enum { MAX_KEYS = 33 };  /// Maximum user arguments + filename+lineno
-    enum { KEY_UNDEF = 0 };  /// Magic key # for unspecified values
+    enum { MAX_KEYS = 33 };  // Maximum user arguments + filename+lineno
+    enum { KEY_UNDEF = 0 };  // Magic key # for unspecified values
 };
 
 //=============================================================================
 // VerilatedCovImpItem
-/// Implementation class for a VerilatedCov item
+// Implementation class for a VerilatedCov item
 
 class VerilatedCovImpItem VL_NOT_FINAL {
 public:  // But only local to this file
     // MEMBERS
-    int m_keys[VerilatedCovConst::MAX_KEYS];  ///< Key
-    int m_vals[VerilatedCovConst::MAX_KEYS];  ///< Value for specified key
+    int m_keys[VerilatedCovConst::MAX_KEYS];  // Key
+    int m_vals[VerilatedCovConst::MAX_KEYS];  // Value for specified key
     // CONSTRUCTORS
     // Derived classes should call zero() in their constructor
     VerilatedCovImpItem() {
@@ -63,15 +63,15 @@ public:  // But only local to this file
 };
 
 //=============================================================================
-/// VerilatedCoverItem templated for a specific class
-/// Creates a new coverage item for the specified type.
-/// This isn't in the header file for auto-magic conversion because it
-/// inlines to too much code and makes compilation too slow.
+// VerilatedCoverItem templated for a specific class
+// Creates a new coverage item for the specified type.
+// This isn't in the header file for auto-magic conversion because it
+// inlines to too much code and makes compilation too slow.
 
 template <class T> class VerilatedCoverItemSpec final : public VerilatedCovImpItem {
 private:
     // MEMBERS
-    T* m_countp;  ///< Count value
+    T* m_countp;  // Count value
 public:
     // METHODS
     // cppcheck-suppress truncLongCastReturn
@@ -88,11 +88,11 @@ public:
 
 //=============================================================================
 // VerilatedCovImp
-///
-/// Implementation class for VerilatedCovContext.  See that class for
-/// public method information.  All value and keys are indexed into a
-/// unique number.  Thus we can greatly reduce the storage requirements for
-/// otherwise identical keys.
+//
+// Implementation class for VerilatedCovContext.  See that class for
+// public method information.  All value and keys are indexed into a
+// unique number.  Thus we can greatly reduce the storage requirements for
+// otherwise identical keys.
 
 class VerilatedCovImp final : public VerilatedCovContext {
 private:
@@ -102,17 +102,17 @@ private:
     using ItemList = std::deque<VerilatedCovImpItem*>;
 
     // MEMBERS
-    VerilatedMutex m_mutex;  ///< Protects all members
-    ValueIndexMap m_valueIndexes VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for values
-    IndexValueMap m_indexValues VL_GUARDED_BY(m_mutex);  ///< Unique arbitrary value for keys
-    ItemList m_items VL_GUARDED_BY(m_mutex);  ///< List of all items
+    VerilatedMutex m_mutex;  // Protects all members
+    ValueIndexMap m_valueIndexes VL_GUARDED_BY(m_mutex);  // Unique arbitrary value for values
+    IndexValueMap m_indexValues VL_GUARDED_BY(m_mutex);  // Unique arbitrary value for keys
+    ItemList m_items VL_GUARDED_BY(m_mutex);  // List of all items
     int m_nextIndex VL_GUARDED_BY(m_mutex)
-        = (VerilatedCovConst::KEY_UNDEF + 1);  ///< Next insert value
+        = (VerilatedCovConst::KEY_UNDEF + 1);  // Next insert value
 
-    VerilatedCovImpItem* m_insertp VL_GUARDED_BY(m_mutex) = nullptr;  ///< Item about to insert
-    const char* m_insertFilenamep VL_GUARDED_BY(m_mutex) = nullptr;  ///< Filename about to insert
-    int m_insertLineno VL_GUARDED_BY(m_mutex) = 0;  ///< Line number about to insert
-    bool m_forcePerInstance VL_GUARDED_BY(m_mutex) = false;  ///< Force per_instance
+    VerilatedCovImpItem* m_insertp VL_GUARDED_BY(m_mutex) = nullptr;  // Item about to insert
+    const char* m_insertFilenamep VL_GUARDED_BY(m_mutex) = nullptr;  // Filename about to insert
+    int m_insertLineno VL_GUARDED_BY(m_mutex) = 0;  // Line number about to insert
+    bool m_forcePerInstance VL_GUARDED_BY(m_mutex) = false;  // Force per_instance
 
 public:
     // CONSTRUCTORS

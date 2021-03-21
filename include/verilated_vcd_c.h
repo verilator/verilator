@@ -38,7 +38,7 @@ class VerilatedVcd;
 
 class VerilatedVcdFile VL_NOT_FINAL {
 private:
-    int m_fd = 0;  ///< File descriptor we're writing to
+    int m_fd = 0;  // File descriptor we're writing to
 public:
     // METHODS
     VerilatedVcdFile() = default;
@@ -61,25 +61,25 @@ private:
     //=========================================================================
     // VCD specific internals
 
-    VerilatedVcdFile* m_filep;  ///< File we're writing to
-    bool m_fileNewed;  ///< m_filep needs destruction
-    bool m_isOpen = false;  ///< True indicates open file
-    bool m_evcd = false;  ///< True for evcd format
-    std::string m_filename;  ///< Filename we're writing to (if open)
-    vluint64_t m_rolloverMB = 0;  ///< MB of file size to rollover at
-    int m_modDepth = 0;  ///< Depth of module hierarchy
+    VerilatedVcdFile* m_filep;  // File we're writing to
+    bool m_fileNewed;  // m_filep needs destruction
+    bool m_isOpen = false;  // True indicates open file
+    bool m_evcd = false;  // True for evcd format
+    std::string m_filename;  // Filename we're writing to (if open)
+    vluint64_t m_rolloverMB = 0;  // MB of file size to rollover at
+    int m_modDepth = 0;  // Depth of module hierarchy
 
-    char* m_wrBufp;  ///< Output buffer
-    char* m_wrFlushp;  ///< Output buffer flush trigger location
-    char* m_writep;  ///< Write pointer into output buffer
-    vluint64_t m_wrChunkSize;  ///< Output buffer size
-    vluint64_t m_wroteBytes = 0;  ///< Number of bytes written to this file
+    char* m_wrBufp;  // Output buffer
+    char* m_wrFlushp;  // Output buffer flush trigger location
+    char* m_writep;  // Write pointer into output buffer
+    vluint64_t m_wrChunkSize;  // Output buffer size
+    vluint64_t m_wroteBytes = 0;  // Number of bytes written to this file
 
-    std::vector<char> m_suffixes;  ///< VCD line end string codes + metadata
-    const char* m_suffixesp;  ///< Pointer to first element of above
+    std::vector<char> m_suffixes;  // VCD line end string codes + metadata
+    const char* m_suffixesp;  // Pointer to first element of above
 
     using NameMap = std::map<const std::string, const std::string>;
-    NameMap* m_namemapp = nullptr;  ///< List of names for the header
+    NameMap* m_namemapp = nullptr;  // List of names for the header
 
     void bufferResize(vluint64_t minsize);
     void bufferFlush() VL_MT_UNSAFE_ONE;
@@ -331,7 +331,7 @@ template <> void VerilatedTrace<VerilatedVcd>::set_time_resolution(const std::st
 /// Also derived for use in SystemC simulations.
 
 class VerilatedVcdC VL_NOT_FINAL {
-    VerilatedVcd m_sptrace;  ///< Trace file being created
+    VerilatedVcd m_sptrace;  // Trace file being created
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcdC);

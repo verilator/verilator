@@ -55,7 +55,7 @@ using VlThrSymTab = void*;
 
 using VlExecFnp = void (*)(bool, VlThrSymTab);
 
-/// Track dependencies for a single MTask.
+// Track dependencies for a single MTask.
 class VlMTaskVertex final {
     // MEMBERS
     static std::atomic<vluint64_t> s_yields;  // Statistics

@@ -37,17 +37,17 @@
 
 class VerilatedVpi final {
 public:
-    /// Call timed callbacks
-    /// Users should call this from their main loops
+    /// Call timed callbacks.
+    /// User wrapper code should call this from their main loops.
     static void callTimedCbs() VL_MT_UNSAFE_ONE;
-    /// Call value based callbacks
-    /// Users should call this from their main loops
+    /// Call value based callbacks.
+    /// User wrapper code should call this from their main loops.
     static bool callValueCbs() VL_MT_UNSAFE_ONE;
-    /// Call callbacks of arbitrary types
-    /// Users can call this from their application code
+    /// Call callbacks of arbitrary types.
+    /// User wrapper code should call this from their main loops.
     static bool callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE;
     /// Returns time of the next registered VPI callback, or
-    /// ~(0) if none are registered
+    /// ~(0ULL) if none are registered
     static QData cbNextDeadline() VL_MT_UNSAFE_ONE;
 
     // Self test, for internal use only

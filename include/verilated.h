@@ -134,7 +134,7 @@ enum VerilatedVarFlags {
 //=========================================================================
 // Mutex and threading support
 
-/// Return current thread ID (or 0), not super fast, cache if needed
+// Return current thread ID (or 0), not super fast, cache if needed
 extern vluint32_t VL_THREAD_ID() VL_MT_SAFE;
 
 #if VL_THREADED
@@ -253,7 +253,7 @@ class VerilatedModule VL_NOT_FINAL {
     VL_UNCOPYABLE(VerilatedModule);
 
 private:
-    const char* m_namep;  ///< Module name
+    const char* m_namep;  // Module name
 public:
     explicit VerilatedModule(const char* namep);  ///< Create module with given hierarchy name
     ~VerilatedModule();
@@ -580,15 +580,15 @@ public:
     };  // Type of a scope, currently module is only interesting
 private:
     // Fastpath:
-    VerilatedSyms* m_symsp = nullptr;  ///< Symbol table
-    void** m_callbacksp = nullptr;  ///< Callback table pointer (Fastpath)
-    int m_funcnumMax = 0;  ///< Maxium function number stored (Fastpath)
+    VerilatedSyms* m_symsp = nullptr;  // Symbol table
+    void** m_callbacksp = nullptr;  // Callback table pointer (Fastpath)
+    int m_funcnumMax = 0;  // Maxium function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
-    VerilatedVarNameMap* m_varsp = nullptr;  ///< Variable map
-    const char* m_namep = nullptr;  ///< Scope name (Slowpath)
-    const char* m_identifierp = nullptr;  ///< Identifier of scope (with escapes removed)
-    vlsint8_t m_timeunit = 0;  ///< Timeunit in negative power-of-10
-    Type m_type = SCOPE_OTHER;  ///< Type of the scope
+    VerilatedVarNameMap* m_varsp = nullptr;  // Variable map
+    const char* m_namep = nullptr;  // Scope name (Slowpath)
+    const char* m_identifierp = nullptr;  // Identifier of scope (with escapes removed)
+    vlsint8_t m_timeunit = 0;  // Timeunit in negative power-of-10
+    Type m_type = SCOPE_OTHER;  // Type of the scope
 
 public:  // But internals only - called from VerilatedModule's
     VerilatedScope() = default;
@@ -639,9 +639,9 @@ class Verilated final {
     // Internal note: Globals may multi-construct, see verilated.cpp top.
 
     // Debug is reloaded from on command-line settings, so do not need to persist
-    static int s_debug;  ///< See accessors... only when VL_DEBUG set
+    static int s_debug;  // See accessors... only when VL_DEBUG set
 
-    static VerilatedContext* s_lastContextp;  ///< Last context constructed/attached
+    static VerilatedContext* s_lastContextp;  // Last context constructed/attached
 
     // Not covered by mutex, as per-thread
     static VL_THREAD_LOCAL struct ThreadLocal {
@@ -655,9 +655,9 @@ class Verilated final {
         // Messages maybe pending on thread, needs end-of-eval calls
         vluint32_t t_endOfEvalReqd = 0;
 #endif
-        const VerilatedScope* t_dpiScopep = nullptr;  ///< DPI context scope
-        const char* t_dpiFilename = nullptr;  ///< DPI context filename
-        int t_dpiLineno = 0;  ///< DPI context line number
+        const VerilatedScope* t_dpiScopep = nullptr;  // DPI context scope
+        const char* t_dpiFilename = nullptr;  // DPI context filename
+        int t_dpiLineno = 0;  // DPI context line number
 
         ThreadLocal() = default;
         ~ThreadLocal() = default;
@@ -715,11 +715,13 @@ public:
 #ifndef VL_NO_LEGACY
     /// Call VerilatedContext::assertOn using current thread's VerilatedContext
     static void assertOn(bool flag) VL_MT_SAFE { Verilated::threadContextp()->assertOn(flag); }
+    /// Return VerilatedContext::assertOn() using current thread's VerilatedContext
     static bool assertOn() VL_MT_SAFE { return Verilated::threadContextp()->assertOn(); }
     /// Call VerilatedContext::calcUnusedSigs using current thread's VerilatedContext
     static void calcUnusedSigs(bool flag) VL_MT_SAFE {
         Verilated::threadContextp()->calcUnusedSigs(flag);
     }
+    /// Return VerilatedContext::calcUnusedSigs using current thread's VerilatedContext
     static bool calcUnusedSigs() VL_MT_SAFE {
         return Verilated::threadContextp()->calcUnusedSigs();
     }
@@ -730,43 +732,55 @@ public:
     static void commandArgs(int argc, char** argv) VL_MT_SAFE {
         commandArgs(argc, const_cast<const char**>(argv));
     }
+    /// Call VerilatedContext::commandArgsAdd using current thread's VerilatedContext
     static void commandArgsAdd(int argc, const char** argv) {
         Verilated::threadContextp()->commandArgsAdd(argc, argv);
     }
+    /// Return VerilatedContext::commandArgsPlusMatch using current thread's VerilatedContext
     static const char* commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE {
         return Verilated::threadContextp()->commandArgsPlusMatch(prefixp);
     }
     /// Call VerilatedContext::errorLimit using current thread's VerilatedContext
     static void errorLimit(int val) VL_MT_SAFE { Verilated::threadContextp()->errorLimit(val); }
+    /// Return VerilatedContext::errorLimit using current thread's VerilatedContext
     static int errorLimit() VL_MT_SAFE { return Verilated::threadContextp()->errorLimit(); }
     /// Call VerilatedContext::fatalOnError using current thread's VerilatedContext
     static void fatalOnError(bool flag) VL_MT_SAFE {
         Verilated::threadContextp()->fatalOnError(flag);
     }
+    /// Return VerilatedContext::fatalOnError using current thread's VerilatedContext
     static bool fatalOnError() VL_MT_SAFE { return Verilated::threadContextp()->fatalOnError(); }
     /// Call VerilatedContext::fatalOnVpiError using current thread's VerilatedContext
     static void fatalOnVpiError(bool flag) VL_MT_SAFE {
         Verilated::threadContextp()->fatalOnVpiError(flag);
     }
+    /// Return VerilatedContext::fatalOnVpiError using current thread's VerilatedContext
     static bool fatalOnVpiError() VL_MT_SAFE {
         return Verilated::threadContextp()->fatalOnVpiError();
     }
     /// Call VerilatedContext::gotError using current thread's VerilatedContext
     static void gotError(bool flag) VL_MT_SAFE { Verilated::threadContextp()->gotError(flag); }
+    /// Return VerilatedContext::gotError using current thread's VerilatedContext
     static bool gotError() VL_MT_SAFE { return Verilated::threadContextp()->gotError(); }
     /// Call VerilatedContext::gotFinish using current thread's VerilatedContext
     static void gotFinish(bool flag) VL_MT_SAFE { Verilated::threadContextp()->gotFinish(flag); }
+    /// Return VerilatedContext::gotFinish using current thread's VerilatedContext
     static bool gotFinish() VL_MT_SAFE { return Verilated::threadContextp()->gotFinish(); }
     /// Call VerilatedContext::randReset using current thread's VerilatedContext
     static void randReset(int val) VL_MT_SAFE { Verilated::threadContextp()->randReset(val); }
+    /// Return VerilatedContext::randReset using current thread's VerilatedContext
     static int randReset() VL_MT_SAFE { return Verilated::threadContextp()->randReset(); }
     /// Call VerilatedContext::randSeed using current thread's VerilatedContext
     static void randSeed(int val) VL_MT_SAFE { Verilated::threadContextp()->randSeed(val); }
+    /// Return VerilatedContext::randSeed using current thread's VerilatedContext
     static int randSeed() VL_MT_SAFE { return Verilated::threadContextp()->randSeed(); }
     /// Call VerilatedContext::time using current thread's VerilatedContext
     static void time(vluint64_t val) VL_MT_SAFE { Verilated::threadContextp()->time(val); }
+    /// Return VerilatedContext::time using current thread's VerilatedContext
     static vluint64_t time() VL_MT_SAFE { return Verilated::threadContextp()->time(); }
+    /// Call VerilatedContext::timeInc using current thread's VerilatedContext
     static void timeInc(vluint64_t add) VL_MT_UNSAFE { Verilated::threadContextp()->timeInc(add); }
+    // Deprecated
     static int timeunit() VL_MT_SAFE { return Verilated::threadContextp()->timeunit(); }
     static int timeprecision() VL_MT_SAFE { return Verilated::threadContextp()->timeprecision(); }
     /// Call VerilatedContext::tracesEverOn using current thread's VerilatedContext
@@ -775,7 +789,8 @@ public:
     }
 #endif
 
-    typedef void (*VoidPCb)(void*);  // Callback type for below
+    /// Callback typedef for addFlushCb, addExitCb
+    using VoidPCb = void (*)(void*);
     /// Add callback to run on global flush
     static void addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE;
     /// Remove callback to run on global flush
@@ -921,7 +936,7 @@ extern vluint64_t vl_rand64() VL_MT_SAFE;
 inline IData VL_RANDOM_I(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_I(obits); }
 inline QData VL_RANDOM_Q(int obits) VL_MT_SAFE { return vl_rand64() & VL_MASK_Q(obits); }
 #ifndef VL_NO_LEGACY
-extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);  ///< Randomize a signal
+extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);
 #endif
 extern IData VL_RANDOM_SEEDED_II(int obits, IData seed) VL_MT_SAFE;
 inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
@@ -934,10 +949,13 @@ inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
     }
 }
 
-/// Init time only, so slow is fine
-extern IData VL_RAND_RESET_I(int obits);  ///< Random reset a signal
-extern QData VL_RAND_RESET_Q(int obits);  ///< Random reset a signal
-extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp);  ///< Random reset a signal
+// These are init time only, so slow is fine
+/// Random reset a signal of given width
+extern IData VL_RAND_RESET_I(int obits);
+/// Random reset a signal of given width
+extern QData VL_RAND_RESET_Q(int obits);
+/// Random reset a signal of given width
+extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp);
 /// Zero reset a signal (slow - else use VL_ZERO_W)
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);
 
@@ -953,11 +971,9 @@ inline QData VL_RDTSC_Q() {
 extern void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
                               const VerilatedContext* contextp) VL_MT_SAFE;
 
-/// Math
 extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
                               bool is_modulus);
 
-/// File I/O
 extern IData VL_FGETS_IXI(int obits, void* destp, IData fpi);
 
 extern void VL_FFLUSH_I(IData fdi);
@@ -1019,31 +1035,31 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
      | (static_cast<QData>((lwp)[1]) << (static_cast<QData>(VL_EDATASIZE))))
 #define VL_SET_QII(ld, rd) ((static_cast<QData>(ld) << 32ULL) | static_cast<QData>(rd))
 
-/// Return FILE* from IData
+// Return FILE* from IData
 extern FILE* VL_CVT_I_FP(IData lhs) VL_MT_SAFE;
 
 // clang-format off
 // Use a union to avoid cast-to-different-size warnings
-/// Return void* from QData
+// Return void* from QData
 static inline void* VL_CVT_Q_VP(QData lhs) VL_PURE {
     union { void* fp; QData q; } u;
     u.q = lhs;
     return u.fp;
 }
-/// Return QData from const void*
+// Return QData from const void*
 static inline QData VL_CVT_VP_Q(const void* fp) VL_PURE {
     union { const void* fp; QData q; } u;
     u.q = 0;
     u.fp = fp;
     return u.q;
 }
-/// Return double from QData (bits, not numerically)
+// Return double from QData (bits, not numerically)
 static inline double VL_CVT_D_Q(QData lhs) VL_PURE {
     union { double d; QData q; } u;
     u.q = lhs;
     return u.d;
 }
-/// Return QData from double (bits, not numerically)
+// Return QData from double (bits, not numerically)
 static inline QData VL_CVT_Q_D(double lhs) VL_PURE {
     union { double d; QData q; } u;
     u.d = lhs;
@@ -1051,7 +1067,7 @@ static inline QData VL_CVT_Q_D(double lhs) VL_PURE {
 }
 // clang-format on
 
-/// Return double from lhs (numeric) unsigned
+// Return double from lhs (numeric) unsigned
 double VL_ITOR_D_W(int lbits, WDataInP lwp) VL_PURE;
 static inline double VL_ITOR_D_I(int, IData lhs) VL_PURE {
     return static_cast<double>(static_cast<vluint32_t>(lhs));
@@ -1059,7 +1075,7 @@ static inline double VL_ITOR_D_I(int, IData lhs) VL_PURE {
 static inline double VL_ITOR_D_Q(int, QData lhs) VL_PURE {
     return static_cast<double>(static_cast<vluint64_t>(lhs));
 }
-/// Return double from lhs (numeric) signed
+// Return double from lhs (numeric) signed
 double VL_ISTOR_D_W(int lbits, WDataInP lwp) VL_PURE;
 static inline double VL_ISTOR_D_I(int lbits, IData lhs) VL_PURE {
     if (lbits == 32) return static_cast<double>(static_cast<vlsint32_t>(lhs));
@@ -1073,7 +1089,7 @@ static inline double VL_ISTOR_D_Q(int lbits, QData lhs) VL_PURE {
     VL_SET_WQ(lwp, lhs);
     return VL_ISTOR_D_W(lbits, lwp);
 }
-/// Return QData from double (numeric)
+// Return QData from double (numeric)
 static inline IData VL_RTOI_I_D(double lhs) VL_PURE {
     return static_cast<vlsint32_t>(VL_TRUNC(lhs));
 }
@@ -1162,24 +1178,24 @@ inline vluint64_t VerilatedContext::time() const VL_MT_SAFE {
 #define VL_TIME_Q() (Verilated::threadContextp()->time())
 #define VL_TIME_D() (static_cast<double>(VL_TIME_Q()))
 
-/// Time scaled from 1-per-precision into a module's time units ("Unit"-ed, not "United")
+// Time scaled from 1-per-precision into a module's time units ("Unit"-ed, not "United")
 // Optimized assuming scale is always constant.
 // Can't use multiply in Q flavor, as might lose precision
 #define VL_TIME_UNITED_Q(scale) (VL_TIME_Q() / static_cast<QData>(scale))
 #define VL_TIME_UNITED_D(scale) (VL_TIME_D() / static_cast<double>(scale))
 
-/// Time imported from units to time precision
+// Return time precision as multiplier of time units
 double vl_time_multiplier(int scale) VL_PURE;
 
-/// Evaluate expression if debug enabled
+/// Evaluate statement if debug enabled
 #ifdef VL_DEBUG
-# define VL_DEBUG_IF(text) \
+# define VL_DEBUG_IF(stmt) \
     do { \
-        if (VL_UNLIKELY(Verilated::debug())) {text} \
+        if (VL_UNLIKELY(Verilated::debug())) {stmt} \
     } while (false)
 #else
-// We intentionally do not compile the text to improve compile speed
-# define VL_DEBUG_IF(text) do {} while (false)
+// We intentionally do not compile the stmt to improve compile speed
+# define VL_DEBUG_IF(stmt) do {} while (false)
 #endif
 
 // clang-format on

@@ -61,8 +61,8 @@ public:
 
 private:
     // MEMBERS
-    vluint32_t m_mtaskId;  ///< MTask that did enqueue
-    std::function<void()> m_cb;  ///< Lambda to execute when message received
+    vluint32_t m_mtaskId;  // MTask that did enqueue
+    std::function<void()> m_cb;  // Lambda to execute when message received
 public:
     // CONSTRUCTORS
     explicit VerilatedMsg(const std::function<void()>& cb)
@@ -85,10 +85,10 @@ public:
 class VerilatedEvalMsgQueue final {
     using VerilatedThreadQueue = std::multiset<VerilatedMsg, VerilatedMsg::Cmp>;
 
-    std::atomic<vluint64_t> m_depth;  ///< Current depth of queue (see comments below)
+    std::atomic<vluint64_t> m_depth;  // Current depth of queue (see comments below)
 
-    VerilatedMutex m_mutex;  ///< Mutex protecting queue
-    VerilatedThreadQueue m_queue VL_GUARDED_BY(m_mutex);  ///< Message queue
+    VerilatedMutex m_mutex;  // Mutex protecting queue
+    VerilatedThreadQueue m_queue VL_GUARDED_BY(m_mutex);  // Message queue
 public:
     // CONSTRUCTORS
     VerilatedEvalMsgQueue()
@@ -197,7 +197,7 @@ public:
 //======================================================================
 // VerilatedContextImpData
 
-/// Class for hidden implementation members inside VerilatedContext
+// Class for hidden implementation members inside VerilatedContext
 // Avoids needing std::unordered_map inside verilated.h
 class VerilatedContextImpData final {
     friend class VerilatedContext;
@@ -206,7 +206,7 @@ class VerilatedContextImpData final {
 protected:
     /// Map of <scope_name, scope pointer>
     // Used by scopeInsert, scopeFind, scopeErase, scopeNameMap
-    mutable VerilatedMutex m_nameMutex;  ///< Protect m_nameMap
+    mutable VerilatedMutex m_nameMutex;  // Protect m_nameMap
     VerilatedScopeNameMap m_nameMap VL_GUARDED_BY(m_nameMutex);
 };
 
@@ -407,22 +407,22 @@ protected:
     // MEMBERS
     // Nothing below here is save-restored; users expected to re-register appropriately
 
-    VerilatedMutex m_userMapMutex;  ///< Protect m_userMap
+    VerilatedMutex m_userMapMutex;  // Protect m_userMap
     // For userInsert, userFind.  As indexed by pointer is common across contexts.
-    UserMap m_userMap VL_GUARDED_BY(m_userMapMutex);  ///< Map of <(scope,userkey), userData>
+    UserMap m_userMap VL_GUARDED_BY(m_userMapMutex);  // Map of <(scope,userkey), userData>
 
-    VerilatedMutex m_hierMapMutex;  ///< Protect m_hierMap
-    /// Map that represents scope hierarchy
+    VerilatedMutex m_hierMapMutex;  // Protect m_hierMap
+    // Map that represents scope hierarchy
     // Used by hierarchyAdd, hierarchyRemove, hierarchyMap
     VerilatedHierarchyMap m_hierMap VL_GUARDED_BY(m_hierMapMutex);
 
     // Slow - somewhat static:
-    VerilatedMutex m_exportMutex;  ///< Protect m_nameMap
-    /// Map of <export_func_proto, func number>
+    VerilatedMutex m_exportMutex;  // Protect m_nameMap
+    // Map of <export_func_proto, func number>
     // Used by exportInsert, exportFind, exportName.
     // Export numbers same across all contexts as just a string-to-number conversion
     ExportNameMap m_exportMap VL_GUARDED_BY(m_exportMutex);
-    int m_exportNext VL_GUARDED_BY(m_exportMutex) = 0;  ///< Next export funcnum
+    int m_exportNext VL_GUARDED_BY(m_exportMutex) = 0;  // Next export funcnum
 
     // CONSTRUCTORS
     VerilatedImpData() = default;

@@ -120,15 +120,16 @@
 # define VL_LIKELY(x) (!!(x))  ///< Boolean expression more often true than false
 # define VL_UNLIKELY(x) (!!(x))  ///< Boolean expression more often false than true
 #endif
-# define VL_UNCOVERABLE(x) VL_UNLIKELY(x)  ///< Boolean expression never hit by users (no coverage)
+/// Boolean expression never hit by users (branch coverage disabled)
+# define VL_UNCOVERABLE(x) VL_UNLIKELY(x)
 #ifndef VL_UNREACHABLE
 # define VL_UNREACHABLE  ///< Point that may never be reached
 #endif
 #ifndef VL_PREFETCH_RD
-# define VL_PREFETCH_RD(p)  ///< Prefetch data with read intent
+# define VL_PREFETCH_RD(p)  ///< Prefetch pointed-to-data with read intent
 #endif
 #ifndef VL_PREFETCH_RW
-# define VL_PREFETCH_RW(p)  ///< Prefetch data with read/write intent
+# define VL_PREFETCH_RW(p)  ///< Prefetch pointed-to-data with read/write intent
 #endif
 
 #if defined(VL_THREADED) && !defined(VL_CPPCHECK)
@@ -141,31 +142,38 @@
 # else
 #  error "Unsupported compiler for VL_THREADED: No thread-local declarator"
 # endif
-# define VL_THREAD_LOCAL thread_local  ///< Use new C++ static local thread
+# define VL_THREAD_LOCAL thread_local  ///< "thread_local" when supported
 #else
-# define VL_THREAD_LOCAL  ///< Use new C++ static local thread
+# define VL_THREAD_LOCAL  ///< "thread_local" when supported
 #endif
 
 #ifndef VL_NO_LEGACY
-# define VL_THREAD  ///< Deprecated
-# define VL_STATIC_OR_THREAD static  ///< Deprecated
+# define VL_THREAD  // Deprecated
+# define VL_STATIC_OR_THREAD static  // Deprecated
 #endif
 
-#define VL_PURE  ///< Comment tag that Function is pure (and thus also VL_MT_SAFE)
-#define VL_MT_SAFE  ///< Comment tag that function is threadsafe when VL_THREADED
-#define VL_MT_SAFE_POSTINIT  ///< Comment tag that function is threadsafe when VL_THREADED, only
-                             ///< during normal operation (post-init)
-#define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)  ///< Threadsafe and uses given mutex
-#define VL_MT_UNSAFE  ///< Comment tag that function is not threadsafe when VL_THREADED
-#define VL_MT_UNSAFE_ONE  ///< Comment tag that function is not threadsafe when VL_THREADED,
-                          ///< protected to make sure single-caller
+/// Comment tag that Function is pure (and thus also VL_MT_SAFE)
+#define VL_PURE
+/// Comment tag that function is threadsafe when VL_THREADED
+#define VL_MT_SAFE
+/// Comment tag that function is threadsafe when VL_THREADED, only
+/// during normal operation (post-init)
+#define VL_MT_SAFE_POSTINIT
+/// Clang threadsafe and uses given mutex
+#define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
+/// Comment tag that function is not threadsafe when VL_THREADED
+#define VL_MT_UNSAFE
+/// Comment tag that function is not threadsafe when VL_THREADED,
+/// protected to make sure single-caller
+#define VL_MT_UNSAFE_ONE
 
 #ifndef VL_NO_LEGACY
-# define VL_ULL(c) (c##ULL)  ///< Add appropriate suffix to 64-bit constant (deprecated)
+# define VL_ULL(c) (c##ULL)  // Add appropriate suffix to 64-bit constant (deprecated)
 #endif
 
-// This is not necessarily the same as #UL, depending on what the IData typedef is.
-#define VL_UL(c) (static_cast<IData>(c##UL))  ///< Add appropriate suffix to 32-bit constant
+/// Convert argument to IData
+/// This is not necessarily the same as #UL, depending on what the IData typedef is.
+#define VL_UL(c) (static_cast<IData>(c##UL))
 
 #if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
 # define VL_DANGLING(var)
@@ -384,7 +392,7 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #define VL_CACHE_LINE_BYTES 64  ///< Bytes in a cache line (for alignment)
 
 #ifndef VL_NO_LEGACY
-# define VL_WORDSIZE VL_IDATASIZE  ///< Legacy define
+# define VL_WORDSIZE VL_IDATASIZE  // Legacy define
 #endif
 
 /// Bytes this number of bits needs (1 bit=1 byte)
@@ -397,10 +405,10 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 //=========================================================================
 // Class definition helpers
 
-/// Used to indicate a base class, e.g. cannot label "class final"
+/// Comment tag to indicate a base class, e.g. cannot label "class final"
 #define VL_NOT_FINAL
 
-/// Used to declare a class as uncopyable; put after a private:
+/// Declare a class as uncopyable; put after a private:
 #define VL_UNCOPYABLE(Type) \
     Type(const Type& other) = delete; \
     Type& operator=(const Type&) = delete
