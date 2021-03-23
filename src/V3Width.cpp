@@ -1821,6 +1821,7 @@ private:
         if (m_vup->final()) {
             // CastSize not needed once sizes determined
             AstNode* underp = nodep->lhsp()->unlinkFrBack();
+            underp->dtypeFrom(nodep);
             nodep->replaceWith(underp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }

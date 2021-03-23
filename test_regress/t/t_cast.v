@@ -46,6 +46,10 @@ module t;
 				  (27'(coeff1 * samp1) >>> 11) +
 				  (27'(coeff2 * samp2) >>> 11)); // 15' size casting to avoid synthesis/simulator warnings
 
+   logic one = 1'b1;
+   logic [32:0] b33 = {32'(0), one};
+   logic [31:0] b32 = {31'(0), one};
+
    initial begin
       if (logic8bit != 8'h12) $stop;
       if (4'shf > 4'sh0) $stop;
@@ -78,6 +82,9 @@ module t;
       if (15'h6cec != outa) $stop;
       if (27'h7ffecec != mida) $stop;
       if (27'h7ffecec != midb) $stop;
+
+      if (b33 != 33'b1) $stop;
+      if (b32 != 32'b1) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
