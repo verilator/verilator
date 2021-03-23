@@ -249,7 +249,7 @@ public:
             const string& name = it->first;
             VSymEnt* subSrcp = it->second;
             const AstVar* varp = VN_CAST(subSrcp->nodep(), Var);
-            if (!onlyUnmodportable || (varp && varp->varType() == AstVarType::GPARAM)) {
+            if (!onlyUnmodportable || (varp && (varp->varType() == AstVarType::GPARAM || varp->varType() == AstVarType::LPARAM))) {
                 VSymEnt* subSymp = new VSymEnt(graphp, subSrcp);
                 reinsert(name, subSymp);
                 // And recurse to create children

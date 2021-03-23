@@ -11,6 +11,8 @@ interface test_if #(parameter integer FOO = 1);
    // Interface variable
    logic 	data;
 
+   localparam integer BAR = FOO + 1;
+
    // Modport
    modport mp(
               import  getFoo,
@@ -76,6 +78,9 @@ module testmod
    localparam THE_FOO = intf.FOO;
    localparam THE_OTHER_FOO = intf_no_mp.FOO;
    localparam THE_ARRAY_FOO = intf_array[0].FOO;
+   localparam THE_BAR = intf.BAR;
+   localparam THE_OTHER_BAR = intf_no_mp.BAR;
+   localparam THE_ARRAY_BAR = intf_array[0].BAR;
 
    always @(posedge clk) begin
       if (THE_FOO != 5) begin
@@ -106,6 +111,30 @@ module testmod
       //         $display("%%Error: i.getFoo() = %0d", i.getFoo());
       //	 $stop;
       //      end
+      if (THE_BAR != 6) begin
+         $display("%%Error: THE_BAR = %0d", THE_BAR);
+	 $stop;
+      end
+      if (THE_OTHER_BAR != 6) begin
+         $display("%%Error: THE_OTHER_BAR = %0d", THE_OTHER_BAR);
+         $stop;
+      end
+      if (THE_ARRAY_BAR != 8) begin
+         $display("%%Error: THE_ARRAY_BAR = %0d", THE_ARRAY_BAR);
+         $stop;
+      end
+      if (intf.BAR != 6) begin
+         $display("%%Error: intf.BAR = %0d", intf.BAR);
+	 $stop;
+      end
+      if (intf_no_mp.BAR != 6) begin
+         $display("%%Error: intf_no_mp.BAR = %0d", intf_no_mp.BAR);
+         $stop;
+      end
+      if (intf_array[0].BAR != 8) begin
+         $display("%%Error: intf_array[0].BAR = %0d", intf_array[0].BAR);
+         $stop;
+      end
       $write("*-* All Finished *-*\n");
       $finish;
    end
