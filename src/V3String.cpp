@@ -380,12 +380,55 @@ void VHashSha256::selfTest() {
 // VName
 
 string VName::dehash(const string& in) {
-    const string::size_type pos = in.find("__Vhsh");
-    if (VL_LIKELY(pos == string::npos)) return in;
-    const string vhsh = in.substr(pos);
-    const auto& it = s_dehashMap.find(vhsh);
-    UASSERT(it != s_dehashMap.end(), "String not in reverse hash map '" << vhsh << "'");
-    return in.substr(0, pos) + it->second;
+    static const char VHSH[] = "__Vhsh";
+    static const size_t DOT_LEN = strlen("__DOT__");
+
+    std::string dehashed;
+
+    // Need to split 'in' into components separated by __DOT__, 'last_dot_pos'
+    // keeps track of the position after the most recently found instance of __DOT__
+    for (string::size_type last_dot_pos = 0; last_dot_pos < in.size(); ) {
+        const string::size_type next_dot_pos = in.find("__DOT__", last_dot_pos);
+
+        // Two iterators defining the range between the last and next dots.
+        auto search_begin = std::begin(in) + last_dot_pos;
+        auto search_end = next_dot_pos == string::npos ? std::end(in)
+                                                       : std::begin(in) + next_dot_pos;
+
+        // Search for __Vhsh between the two dots.
+        auto begin_vhsh = std::search(search_begin, search_end,
+                                      std::begin(VHSH), std::end(VHSH) - 1);
+        if (begin_vhsh != search_end) {
+            std::string vhsh(begin_vhsh, search_end);
+            const auto& it = s_dehashMap.find(vhsh);
+            UASSERT(it != s_dehashMap.end(), "String not in reverse hash map '" << vhsh << "'");
+            // Is this not the first component, but the first to require dehashing?
+            if (last_dot_pos > 0 && dehashed.empty()) {
+                // Seed 'dehashed' with the previously processed components.
+                dehashed = in.substr(0, last_dot_pos);
+            }
+            // Append the unhashed part of the component.
+            dehashed += std::string(search_begin, begin_vhsh);
+            // Append the bit that was lost to truncation but retrieved from the dehash map.
+            dehashed += it->second;
+        }
+        // This component doesn't need dehashing but a previous one might have.
+        else if (!dehashed.empty()) {
+            dehashed += std::string(search_begin, search_end);
+        }
+
+        if (next_dot_pos != string::npos) {
+            // Is there a __DOT__ to add to the dehashed version of 'in'?
+            if (!dehashed.empty()) {
+                dehashed += "__DOT__";
+            }
+            last_dot_pos = next_dot_pos + DOT_LEN;
+        } else {
+            last_dot_pos = string::npos;
+        }
+    }
+
+    return dehashed.empty() ? in : dehashed;
 }
 
 string VName::hashedName() {
