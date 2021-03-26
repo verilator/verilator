@@ -154,6 +154,7 @@ public:
 private:
     // MEMBERS
     std::map<const string, std::unique_ptr<ActionIfs>> m_options;  // All actions for option
+    bool m_isFinalized{false};  // Becomes after finalize() is called
     VSpellCheck m_spellCheck;  // Suggests closest option when not found
 
     // METHODS
@@ -175,12 +176,11 @@ private:
         return nullptr;
     }
     template <class ACT, class ARG> ActionIfs& add(const std::string& opt, ARG arg) {
+        UASSERT(!m_isFinalized, "Cannot add after finalize() is called");
         std::unique_ptr<ACT> act{new ACT{std::move(arg)}};
         UASSERT(opt.size() >= 2, opt << " is too short");
         UASSERT(opt[0] == '-' || opt[0] == '+', opt << " does not start with either '-' or '+'");
         UASSERT(!(opt[0] == '-' && opt[1] == '-'), "Option must have single '-', but " << opt);
-        m_spellCheck.pushCandidate(opt);
-        if (act->isOnOffAllowed()) m_spellCheck.pushCandidate("-no" + opt);
         const auto insertedResult = m_options.emplace(opt, std::move(act));
         UASSERT(insertedResult.second, opt << " is already registered");
         return *insertedResult.first->second;
@@ -195,6 +195,7 @@ public:
     // METHODS
     // Returns how many args are consumed. 0 means not match
     int parse(int idx, int argc, char* argv[]) {
+        UASSERT(m_isFinalized, "finalize() must be called before parse()");
         const char* optp = argv[idx];
         if (optp[0] == '-' && optp[1] == '-') ++optp;
         ActionIfs* actp = find(optp);
@@ -211,13 +212,18 @@ public:
     // Find the most similar option
     string getSuggestion(const char* str) const {
         const string key = m_spellCheck.bestCandidate(str);
-        if (key.empty()) return key;
-        ActionIfs* actp = const_cast<V3OptionsParser&>(*this).find(key.c_str());
-        UASSERT(actp, key << " must found");
-        if (actp->isUndocumented()) return "";
         return m_spellCheck.bestCandidateMsg(str);
     }
     void addSuggestionCandidate(const string& s) { m_spellCheck.pushCandidate(s); }
+    void finalize() {
+        UASSERT(!m_isFinalized, "finalize() must not be called twice");
+        for (auto&& opt : m_options) {
+            if (opt.second->isUndocumented()) continue;
+            m_spellCheck.pushCandidate(opt.first);
+            if (opt.second->isOnOffAllowed()) m_spellCheck.pushCandidate("-no" + opt.first);
+        }
+        m_isFinalized = true;
+    }
 };
 
 #define V3OPTIONS_DEF_ACT_CLASS(className, type, body, enType) \
@@ -1669,6 +1675,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
         addIncDirUser(parseFileArg(optdir, string(valp)));
     });
+    parser.finalize();
 
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i] << endl);
