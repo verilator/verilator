@@ -210,10 +210,7 @@ public:
         return 0;
     }
     // Find the most similar option
-    string getSuggestion(const char* str) const {
-        const string key = m_spellCheck.bestCandidate(str);
-        return m_spellCheck.bestCandidateMsg(str);
-    }
+    string getSuggestion(const char* str) const { return m_spellCheck.bestCandidateMsg(str); }
     void addSuggestionCandidate(const string& s) { m_spellCheck.pushCandidate(s); }
     void finalize() {
         UASSERT(!m_isFinalized, "finalize() must not be called twice");
