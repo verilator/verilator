@@ -202,6 +202,8 @@ int mon_check() {
     return 0;  // Ok
 }
 
+void dpi_print(const char* somestring) { printf("SOMESTRING = %s\n", somestring); }
+
 //======================================================================
 
 #ifdef IS_VPI

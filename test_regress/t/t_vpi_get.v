@@ -12,6 +12,8 @@
 import "DPI-C" context function int mon_check();
 `endif
 
+import "DPI-C" function void dpi_print(input string somestring);
+
 `ifdef VERILATOR_COMMENTS
  `define PUBLIC_FLAT_RD /*verilator public_flat_rd*/
  `define PUBLIC_FLAT_RW /*verilator public_flat_rw @(posedge clk)*/
@@ -54,6 +56,7 @@ extern "C" int mon_check();
 
    // Test loop
    initial begin
+      dpi_print("foo");
 `ifdef VERILATOR
       status = $c32("mon_check()");
 `endif
