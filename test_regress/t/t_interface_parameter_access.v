@@ -113,7 +113,7 @@ module testmod
       //      end
       if (THE_BAR != 6) begin
          $display("%%Error: THE_BAR = %0d", THE_BAR);
-	 $stop;
+         $stop;
       end
       if (THE_OTHER_BAR != 6) begin
          $display("%%Error: THE_OTHER_BAR = %0d", THE_OTHER_BAR);
