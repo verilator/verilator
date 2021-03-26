@@ -1676,7 +1676,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             if (i < argc && isdigit(argv[i][0])) {
                 m_buildJobs = atoi(argv[i]);
                 if (m_buildJobs <= 0) {
-                    fl->v3error("-j accepts positive integer, but " << argv[i] << " is passed");
+                    fl->v3error("-j accepts positive integer, but '" << argv[i] << "' is passed");
                 }
                 ++i;
             }
