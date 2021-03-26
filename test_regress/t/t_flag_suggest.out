@@ -1,0 +1,11 @@
+%Error: Invalid option: -ccc... Suggested alternative: '-cc'
+%Error: Invalid option: --ccc... Suggested alternative: '-cc'
+%Error: Invalid option: -no-asserT... Suggested alternative: '-no-assert'
+%Error: Invalid option: -noasserT... Suggested alternative: '-no-assert'
+%Error: Invalid option: -asserT... Suggested alternative: '-assert'
+%Error: Invalid option: +definE+A=B... Suggested alternative: '+define+'
+%Error: Invalid option: -CFLAGs... Suggested alternative: '-CFLAGS'
+%Error: Invalid option: -debug-aborT
+%Error: Invalid option: -Won-SPLITVAR... Suggested alternative: '-Wno-SPLITVAR'
+%Error: Unknown warning specified: -Wno-SPLITVER... Suggested alternative: '-Wno-SPLITVAR'
+%Error: Unknown language specified: 1364-1997... Suggested alternative: '1364-1995'

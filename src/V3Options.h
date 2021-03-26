@@ -371,8 +371,6 @@ private:
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
-    static bool onoff(const char* sw, const char* arg, bool& flag);
-    static bool onoffb(const char* sw, const char* arg, VOptionBool& flagr);
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
