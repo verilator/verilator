@@ -1226,7 +1226,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             m_compLimitMembers = 0;  // probably ok, and AFAIK doesn't support anon structs
             m_compLimitParens = 80;  // 128, but allow some room
         } else {
-            fl->v3fatal("Unknown setting for --compiler: " << valp);
+            fl->v3fatal("Unknown setting for --compiler: '" << valp << "'\n" << fl->warnMore() << "... Suggest 'clang', 'gcc', or 'msvc'");
         }
     });
     DECL_OPTION("-coverage", CbOnOff, [this](bool flag) { coverage(flag); });
