@@ -1594,7 +1594,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         // Note it may not be a future option, but one that is currently implemented.
         addFuture(optp);
     });
-    DECL_OPTION("-Wno-", CbPartialMatch, [this, fl, &parser](const char* optp) {
+    DECL_OPTION("-Wno-", CbPartialMatch, [fl, &parser](const char* optp) {
         if (!FileLine::globalWarnOff(optp, true)) {
             const string fullopt = string{"-Wno-"} + optp;
             fl->v3fatal("Unknown warning specified: " << fullopt
@@ -1606,12 +1606,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             parser.addSuggestionCandidate(prefix + V3ErrorCode{i}.ascii());
     }
     DECL_OPTION("-Wno-context", CbCall, [this]() { m_context = false; });
-    DECL_OPTION("-Wno-fatal", CbCall, [this]() { V3Error::warnFatal(false); });
-    DECL_OPTION("-Wno-lint", CbCall, [this]() {
+    DECL_OPTION("-Wno-fatal", CbCall, []() { V3Error::warnFatal(false); });
+    DECL_OPTION("-Wno-lint", CbCall, []() {
         FileLine::globalWarnLintOff(true);
         FileLine::globalWarnStyleOff(true);
     });
-    DECL_OPTION("-Wno-style", CbCall, [this]() { FileLine::globalWarnStyleOff(true); });
+    DECL_OPTION("-Wno-style", CbCall, []() { FileLine::globalWarnStyleOff(true); });
     DECL_OPTION("-Wwarn-", CbPartialMatch, [this, fl, &parser](const char* optp) {
         const V3ErrorCode code{optp};
         if (code == V3ErrorCode::EC_ERROR) {
@@ -1625,8 +1625,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             V3Error::pretendError(code, false);
         }
     });
-    DECL_OPTION("-Wwarn-lint", CbCall, [this]() { FileLine::globalWarnLintOff(false); });
-    DECL_OPTION("-Wwarn-style", CbCall, [this]() { FileLine::globalWarnStyleOff(false); });
+    DECL_OPTION("-Wwarn-lint", CbCall, []() { FileLine::globalWarnLintOff(false); });
+    DECL_OPTION("-Wwarn-style", CbCall, []() { FileLine::globalWarnStyleOff(false); });
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
 
     DECL_OPTION("-x-assign", CbVal, [this, fl](const char* valp) {
