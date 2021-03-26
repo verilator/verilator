@@ -1595,50 +1595,38 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         addFuture(optp);
     });
     DECL_OPTION("-Wno-", CbPartialMatch, [this, fl, &parser](const char* optp) {
-        if (!strcmp(optp, "context")) {
-            m_context = false;
-        } else if (!strcmp(optp, "fatal")) {
-            V3Error::warnFatal(false);
-        } else if (!strcmp(optp, "lint")) {
-            FileLine::globalWarnLintOff(true);
-            FileLine::globalWarnStyleOff(true);
-        } else if (!strcmp(optp, "style")) {
-            FileLine::globalWarnStyleOff(true);
-        } else {
-            if (!FileLine::globalWarnOff(optp, true)) {
-                const string fullopt = string{"-Wno-"} + optp;
-                fl->v3fatal("Unknown warning specified: "
-                            << fullopt << parser.getSuggestion(fullopt.c_str()));
-            }
+        if (!FileLine::globalWarnOff(optp, true)) {
+            const string fullopt = string{"-Wno-"} + optp;
+            fl->v3fatal("Unknown warning specified: " << fullopt
+                                                      << parser.getSuggestion(fullopt.c_str()));
         }
     });
     for (int i = V3ErrorCode::EC_FIRST_WARN; i < V3ErrorCode::_ENUM_MAX; ++i) {
         for (const string prefix : {"-Wno-", "-Wwarn-"})
             parser.addSuggestionCandidate(prefix + V3ErrorCode{i}.ascii());
     }
-    for (const string s : {"fatal", "lint", "style"}) {
-        parser.addSuggestionCandidate("-Wno-" + s);
-    }
-    for (const string s : {"lint", "style"}) { parser.addSuggestionCandidate("-Wwarn-" + s); }
+    DECL_OPTION("-Wno-context", CbCall, [this]() { m_context = false; });
+    DECL_OPTION("-Wno-fatal", CbCall, [this]() { V3Error::warnFatal(false); });
+    DECL_OPTION("-Wno-lint", CbCall, [this]() {
+        FileLine::globalWarnLintOff(true);
+        FileLine::globalWarnStyleOff(true);
+    });
+    DECL_OPTION("-Wno-style", CbCall, [this]() { FileLine::globalWarnStyleOff(true); });
     DECL_OPTION("-Wwarn-", CbPartialMatch, [this, fl, &parser](const char* optp) {
-        if (!strcmp(optp, "lint")) {
-            FileLine::globalWarnLintOff(false);
-        } else if (!strcmp(optp, "style")) {
-            FileLine::globalWarnStyleOff(false);
-        } else {
-            V3ErrorCode code(optp);
-            if (code == V3ErrorCode::EC_ERROR) {
-                if (!isFuture(optp)) {
-                    const string fullopt = string{"-Wwarn-"} + optp;
-                    fl->v3fatal("Unknown warning specified: "
-                                << fullopt << parser.getSuggestion(fullopt.c_str()));
-                }
-            } else {
-                FileLine::globalWarnOff(code, false);
-                V3Error::pretendError(code, false);
+        const V3ErrorCode code{optp};
+        if (code == V3ErrorCode::EC_ERROR) {
+            if (!isFuture(optp)) {
+                const string fullopt = string{"-Wwarn-"} + optp;
+                fl->v3fatal("Unknown warning specified: "
+                            << fullopt << parser.getSuggestion(fullopt.c_str()));
             }
+        } else {
+            FileLine::globalWarnOff(code, false);
+            V3Error::pretendError(code, false);
         }
     });
+    DECL_OPTION("-Wwarn-lint", CbCall, [this]() { FileLine::globalWarnLintOff(false); });
+    DECL_OPTION("-Wwarn-style", CbCall, [this]() { FileLine::globalWarnStyleOff(false); });
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
 
     DECL_OPTION("-x-assign", CbVal, [this, fl](const char* valp) {
