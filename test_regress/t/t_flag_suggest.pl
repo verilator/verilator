@@ -40,7 +40,7 @@ foreach my $var (@opts) {
     $cmd = $cmd . $ENV{VERILATOR_ROOT} . "/bin/verilator ${var}; ";
 }
 
-run(cmd => ["${cmd}"],
+run(cmd => [$cmd],
     verilator_run => 1,
     logfile => "$Self->{obj_dir}/sim.log",
     fails => 1,
