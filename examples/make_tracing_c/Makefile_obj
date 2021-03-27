@@ -22,10 +22,13 @@ COMPILE.cc = $(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
 #######################################################################
 # Compile flags
 
-# Override some default compile flags
+# Turn on creating .d make dependency files
 CPPFLAGS += -MMD -MP
+
+# Compile in Verilator runtime debugging, so +verilator+debug works
 CPPFLAGS += -DVL_DEBUG=1
-# Turn on some more flags (when configured appropriately)
+
+# Turn on some more compiler lint flags (when configured appropriately)
 # For testing inside Verilator, "configure --enable-ccwarn" will do this
 # automatically; otherwise you may want this unconditionally enabled
 ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
@@ -36,6 +39,7 @@ endif
 # Support class optimizations.  This includes the tracing and symbol table.
 # SystemC takes minutes to optimize, thus it is off by default.
 OPT_SLOW =
+
 # Fast path optimizations.  Most time is spent in these classes.
 OPT_FAST = -Os -fstrict-aliasing
 #OPT_FAST = -O
