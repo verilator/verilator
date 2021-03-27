@@ -30,7 +30,8 @@
 
 // Return if two numbers within Epsilon of each other
 inline bool v3EpsilonEqual(double a, double b) {
-    return fabs(a - b) <= (std::numeric_limits<double>::epsilon() * std::max(1.0, std::max(a, b)));
+    return std::fabs(a - b)
+           <= (std::numeric_limits<double>::epsilon() * std::max(1.0, std::max(a, b)));
 }
 
 //============================================================================

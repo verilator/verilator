@@ -116,7 +116,7 @@ private:
         // Calc data storage in bytes
         size_t chgWidth = m_outVarps.size();  // Width of one change-it-vector
         if (chgWidth < 8) chgWidth = 8;
-        double space = (pow(static_cast<double>(2.0), static_cast<double>(m_inWidth))
+        double space = (std::pow(static_cast<double>(2.0), static_cast<double>(m_inWidth))
                         * static_cast<double>(m_outWidth + chgWidth));
         // Instruction count bytes (ok, it's space also not time :)
         double bytesPerInst = 4;

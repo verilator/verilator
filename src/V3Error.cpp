@@ -77,7 +77,7 @@ void V3Error::init() {
 
 string V3Error::lineStr(const char* filename, int lineno) {
     std::ostringstream out;
-    const char* fnslashp = strrchr(filename, '/');
+    const char* fnslashp = std::strrchr(filename, '/');
     if (fnslashp) filename = fnslashp + 1;
     out << filename << ":" << std::dec << lineno << ":";
     const char* const spaces = "                    ";
@@ -167,7 +167,7 @@ void V3Error::vlAbortOrExit() {
 
 void V3Error::vlAbort() {
     VL_GCOV_FLUSH();
-    abort();
+    std::abort();
 }
 
 //======================================================================

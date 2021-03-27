@@ -276,7 +276,7 @@ class ParamProcessor final {
             if (AstVar* varp = VN_CAST(stmtp, Var)) {
                 if (varp->isGParam() || varp->isIfaceRef()) {
                     char ch = varp->name()[0];
-                    ch = toupper(ch);
+                    ch = std::toupper(ch);
                     if (ch < 'A' || ch > 'Z') ch = 'Z';
                     varp->user4(usedLetter[static_cast<int>(ch)] * 256 + ch);
                     usedLetter[static_cast<int>(ch)]++;

@@ -56,16 +56,16 @@ public:
     string type() const { return keyExtract(VL_CIK_TYPE); }
     string thresh() const { return keyExtract(VL_CIK_THRESH); }  // string as maybe ""
     string linescov() const { return keyExtract(VL_CIK_LINESCOV); }
-    int lineno() const { return atoi(keyExtract(VL_CIK_LINENO).c_str()); }
-    int column() const { return atoi(keyExtract(VL_CIK_COLUMN).c_str()); }
+    int lineno() const { return std::atoi(keyExtract(VL_CIK_LINENO).c_str()); }
+    int column() const { return std::atoi(keyExtract(VL_CIK_COLUMN).c_str()); }
     // METHODS
     string keyExtract(const char* shortKey) const {
         // Hot function
-        size_t shortLen = strlen(shortKey);
+        size_t shortLen = std::strlen(shortKey);
         const string namestr = name();
         for (const char* cp = namestr.c_str(); *cp; ++cp) {
             if (*cp == '\001') {
-                if (0 == strncmp(cp + 1, shortKey, shortLen) && cp[shortLen + 1] == '\002') {
+                if (0 == std::strncmp(cp + 1, shortKey, shortLen) && cp[shortLen + 1] == '\002') {
                     cp += shortLen + 2;  // Skip \001+short+\002
                     const char* ep = cp;
                     while (*ep && *ep != '\001') ++ep;
