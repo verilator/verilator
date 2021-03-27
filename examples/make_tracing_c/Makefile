@@ -49,12 +49,6 @@ VERILATOR_FLAGS += --coverage
 #VERILATOR_FLAGS += --debug
 # Add this trace to get a backtrace in gdb
 #VERILATOR_FLAGS += --gdbbt
-# This example does not use vl_time_stamp but rather
-# VerilatedContext::timeInc(), so to avoid a linker error on cygwin which
-# does not support weak symbols, we need to define VL_TIME_CONTEXT *in CPP*
-# to not compile in the vl_time_stamp using code.
-VERILATOR_FLAGS += -CFLAGS -DVL_TIME_CONTEXT
-
 
 # Input files for Verilator
 VERILATOR_INPUT = -f input.vc top.v sim_main.cpp
