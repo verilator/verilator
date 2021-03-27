@@ -1295,11 +1295,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-gdbbt", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-generate-key", CbCall, [this]() {
         cout << protectKeyDefaulted() << endl;
-        exit(0);
+        std::exit(0);
     });
     DECL_OPTION("-getenv", CbVal, [](const char* valp) {
         cout << V3Options::getenvBuiltins(valp) << endl;
-        exit(0);
+        std::exit(0);
     });
 
     DECL_OPTION("-hierarchical", OnOff, &m_hierarchical);
@@ -1562,7 +1562,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     DECL_OPTION("-V", CbCall, [this]() {
         showVersion(true);
-        exit(0);
+        std::exit(0);
     });
     DECL_OPTION("-v", CbVal, [this, &optdir](const char* valp) {
         V3Options::addLibraryFile(parseFileArg(optdir, valp));
@@ -1570,7 +1570,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-verilate", OnOff, &m_verilate);
     DECL_OPTION("-version", CbCall, [this]() {
         showVersion(false);
-        exit(0);
+        std::exit(0);
     });
     DECL_OPTION("-vpi", OnOff, &m_vpi);
 

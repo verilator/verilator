@@ -45,11 +45,11 @@
 
 static double timescaleToDouble(const char* unitp) {
     char* endp = nullptr;
-    double value = strtod(unitp, &endp);
+    double value = std::strtod(unitp, &endp);
     // On error so we allow just "ns" to return 1e-9.
     if (value == 0.0 && endp == unitp) value = 1;
     unitp = endp;
-    for (; *unitp && isspace(*unitp); unitp++) {}
+    for (; *unitp && std::isspace(*unitp); unitp++) {}
     switch (*unitp) {
     case 's': value *= 1e0; break;
     case 'm': value *= 1e-3; break;

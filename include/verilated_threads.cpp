@@ -149,7 +149,7 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
     const VerilatedLockGuard lk(m_mutex);
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+threads writing to '%s'\n", filenamep););
 
-    FILE* fp = fopen(filenamep, "w");
+    FILE* fp = std::fopen(filenamep, "w");
     if (VL_UNLIKELY(!fp)) {
         VL_FATAL_MT(filenamep, 0, "", "+prof+threads+file file not writable");
         // cppcheck-suppress resourceLeak   // bug, doesn't realize fp is nullptr
@@ -191,5 +191,5 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed)
     }
     fprintf(fp, "VLPROF stat ticks %" VL_PRI64 "u\n", ticksElapsed);
 
-    fclose(fp);
+    std::fclose(fp);
 }

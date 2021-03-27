@@ -317,7 +317,7 @@ public:
     void createPrevDatap() {
         if (VL_UNLIKELY(!m_prevDatap)) {
             m_prevDatap = new vluint8_t[entSize()];
-            memcpy(prevDatap(), varp()->datap(), entSize());
+            std::memcpy(prevDatap(), varp()->datap(), entSize());
         }
     }
 };
@@ -422,7 +422,7 @@ public:
     explicit VerilatedVpioModule(const VerilatedScope* modulep)
         : VerilatedVpioScope{modulep} {
         m_fullname = m_scopep->name();
-        if (strncmp(m_fullname, "TOP.", 4) == 0) m_fullname += 4;
+        if (std::strncmp(m_fullname, "TOP.", 4) == 0) m_fullname += 4;
         m_name = m_scopep->identifier();
     }
     static VerilatedVpioModule* castp(vpiHandle h) {
@@ -628,7 +628,7 @@ public:
                 VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_test %s v[0]=%d/%d %p %p\n",
                                             varop->fullname(), *((CData*)newDatap),
                                             *((CData*)prevDatap), newDatap, prevDatap););
-                if (memcmp(prevDatap, newDatap, varop->entSize()) != 0) {
+                if (std::memcmp(prevDatap, newDatap, varop->entSize()) != 0) {
                     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_callback %" VL_PRI64
                                                 "d %s v[0]=%d\n",
                                                 ho.id(), varop->fullname(), *((CData*)newDatap)););
@@ -640,7 +640,9 @@ public:
             }
             if (was_last) break;
         }
-        for (const auto& ip : update) { memcpy(ip->prevDatap(), ip->varDatap(), ip->entSize()); }
+        for (const auto& ip : update) {
+            std::memcpy(ip->prevDatap(), ip->varDatap(), ip->entSize());
+        }
         return called;
     }
 
@@ -1099,7 +1101,7 @@ const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE {
 }
 
 #define SELF_CHECK_RESULT_CSTR(got, exp) \
-    if (0 != strcmp((got), (exp))) { \
+    if (0 != std::strcmp((got), (exp))) { \
         std::string msg \
             = std::string("%Error: ") + "GOT = '" + got + "'" + "  EXP = '" + exp + "'"; \
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str()); \
@@ -1236,7 +1238,7 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
         }
         const char* baseNamep = scopeAndName.c_str();
         std::string scopename;
-        const char* dotp = strrchr(namep, '.');
+        const char* dotp = std::strrchr(namep, '.');
         if (VL_LIKELY(dotp)) {
             baseNamep = dotp + 1;
             scopename = std::string(namep, dotp - namep);
@@ -1826,7 +1828,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             }
         } else if (valuep->format == vpiBinStrVal) {
             int bits = vop->varp()->packed().elements();
-            int len = strlen(valuep->value.str);
+            int len = std::strlen(valuep->value.str);
             CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
             for (int i = 0; i < bits; ++i) {
                 char set = (i < len) ? (valuep->value.str[len - i - 1] == '1') : 0;
@@ -1842,7 +1844,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         } else if (valuep->format == vpiOctStrVal) {
             int chars = (vop->varp()->packed().elements() + 2) / 3;
             int bytes = VL_BYTES_I(vop->varp()->packed().elements());
-            int len = strlen(valuep->value.str);
+            int len = std::strlen(valuep->value.str);
             CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
             div_t idx;
             datap[0] = 0;  // reset zero'th byte
@@ -1892,7 +1894,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         } else if (valuep->format == vpiDecStrVal) {
             char remainder[16];
             unsigned long long val;
-            int success = sscanf(valuep->value.str, "%30llu%15s", &val, remainder);
+            int success = std::sscanf(valuep->value.str, "%30llu%15s", &val, remainder);
             if (success < 1) {
                 VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Parsing failed for '%s' as value %s for %s",
                               VL_FUNC, valuep->value.str,
@@ -1925,7 +1927,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             char* val = valuep->value.str;
             // skip hex ident if one is detected at the start of the string
             if (val[0] == '0' && (val[1] == 'x' || val[1] == 'X')) val += 2;
-            int len = strlen(val);
+            int len = std::strlen(val);
             for (int i = 0; i < chars; ++i) {
                 char hex;
                 // compute hex digit value
@@ -1961,7 +1963,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             return object;
         } else if (valuep->format == vpiStringVal) {
             int bytes = VL_BYTES_I(vop->varp()->packed().elements());
-            int len = strlen(valuep->value.str);
+            int len = std::strlen(valuep->value.str);
             CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
             for (int i = 0; i < bytes; ++i) {
                 // prepend with 0 values before placing string the least significant bytes
@@ -2104,7 +2106,7 @@ PLI_INT32 vpi_mcd_flush(PLI_UINT32 mcd) {
     FILE* fp = VL_CVT_I_FP(mcd);
     VL_VPI_ERROR_RESET_();
     if (VL_UNLIKELY(!fp)) return 1;
-    fflush(fp);
+    std::fflush(fp);
     return 0;
 }
 

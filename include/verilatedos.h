@@ -240,7 +240,7 @@
 extern "C" {
 void __gcov_flush();  // gcc sources gcc/gcov-io.h has the prototype
 }
-/// Flush internal code coverage data before e.g. abort()
+/// Flush internal code coverage data before e.g. std::abort()
 # define VL_GCOV_FLUSH() \
     __gcov_flush()
 #else
@@ -446,11 +446,11 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 // #defines, to avoid requiring math.h on all compile runs
 
 #ifdef _MSC_VER
-# define VL_TRUNC(n) (((n) < 0) ? ceil((n)) : floor((n)))
-# define VL_ROUND(n) (((n) < 0) ? ceil((n)-0.5) : floor((n) + 0.5))
+# define VL_TRUNC(n) (((n) < 0) ? std::ceil((n)) : std::floor((n)))
+# define VL_ROUND(n) (((n) < 0) ? std::ceil((n)-0.5) : std::floor((n) + 0.5))
 #else
-# define VL_TRUNC(n) trunc(n)
-# define VL_ROUND(n) round(n)
+# define VL_TRUNC(n) std::trunc(n)
+# define VL_ROUND(n) std::round(n)
 #endif
 
 //=========================================================================

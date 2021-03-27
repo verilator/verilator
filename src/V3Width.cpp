@@ -3880,7 +3880,7 @@ private:
                                 newp = new AstMul(argp->fileline(),
                                                   new AstConst(argp->fileline(),
                                                                AstConst::Unsized64(),
-                                                               llround(scale)),
+                                                               std::llround(scale)),
                                                   argp);
                             }
                             relinkHandle.relink(newp);

@@ -52,7 +52,7 @@
 
 // This size comes form VCD allowing use of printable ASCII characters between
 // '!' and '~' inclusive, which are a total of 94 different values. Encoding a
-// 32 bit code hence needs a maximum of ceil(log94(2**32-1)) == 5 bytes.
+// 32 bit code hence needs a maximum of std::ceil(log94(2**32-1)) == 5 bytes.
 constexpr unsigned VL_TRACE_MAX_VCD_CODE_SIZE = 5;  // Maximum length of a VCD string code
 
 // We use 8 bytes per code in a suffix buffer array.
@@ -134,9 +134,9 @@ void VerilatedVcd::openNextImp(bool incFilename) {
         // Find _0000.{ext} in filename
         std::string name = m_filename;
         size_t pos = name.rfind('.');
-        if (pos > 8 && 0 == strncmp("_cat", name.c_str() + pos - 8, 4)
-            && isdigit(name.c_str()[pos - 4]) && isdigit(name.c_str()[pos - 3])
-            && isdigit(name.c_str()[pos - 2]) && isdigit(name.c_str()[pos - 1])) {
+        if (pos > 8 && 0 == std::strncmp("_cat", name.c_str() + pos - 8, 4)
+            && std::isdigit(name.c_str()[pos - 4]) && std::isdigit(name.c_str()[pos - 3])
+            && std::isdigit(name.c_str()[pos - 2]) && std::isdigit(name.c_str()[pos - 1])) {
             // Increment code.
             if ((++(name[pos - 1])) > '9') {
                 name[pos - 1] = '0';
@@ -287,7 +287,7 @@ void VerilatedVcd::bufferResize(vluint64_t minsize) {
         char* oldbufp = m_wrBufp;
         m_wrChunkSize = minsize * 2;
         m_wrBufp = new char[m_wrChunkSize * 8];
-        memcpy(m_wrBufp, oldbufp, m_writep - oldbufp);
+        std::memcpy(m_wrBufp, oldbufp, m_writep - oldbufp);
         m_writep = m_wrBufp + (m_writep - oldbufp);
         m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
         VL_DO_CLEAR(delete[] oldbufp, oldbufp = nullptr);
@@ -314,7 +314,8 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
             if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
                 // LCOV_EXCL_START
                 // write failed, presume error (perhaps out of disk space)
-                std::string msg = std::string("VerilatedVcd::bufferFlush: ") + strerror(errno);
+                std::string msg
+                    = std::string("VerilatedVcd::bufferFlush: ") + std::strerror(errno);
                 VL_FATAL_MT("", 0, "", msg.c_str());
                 closeErr();
                 break;
@@ -360,7 +361,7 @@ void VerilatedVcd::dumpHeader() {
         VL_LOCALTIME_R(&tick, &ticktm);
         constexpr int bufsize = 50;
         char buf[bufsize];
-        strftime(buf, bufsize, "%c", &ticktm);
+        std::strftime(buf, bufsize, "%c", &ticktm);
         printStr(buf);
     }
     printStr(" $end\n");
@@ -520,7 +521,8 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
         const bool isBit = bits == 1;
         entryp[0] = ' ';  // Separator
         // Use memcpy as we checked size above, and strcpy is flagged unsafe
-        std::memcpy(entryp + !isBit, buf, strlen(buf));  // Code (overwrite separator if isBit)
+        std::memcpy(entryp + !isBit, buf,
+                    std::strlen(buf));  // Code (overwrite separator if isBit)
         entryp[length + !isBit] = '\n';  // Replace '\0' with line termination '\n'
         // Set length of suffix (used to increment write pointer)
         entryp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1] = !isBit + length + 1;
@@ -673,7 +675,7 @@ void VerilatedVcd::emitDouble(vluint32_t code, double newval) {
     char* wp = m_writep;
     // Buffer can't overflow before VL_SNPRINTF; we sized during declaration
     VL_SNPRINTF(wp, m_wrChunkSize, "r%.16g", newval);
-    wp += strlen(wp);
+    wp += std::strlen(wp);
     finishLine(code, wp);
 }
 
@@ -787,7 +789,7 @@ void VerilatedVcd::fullDouble(vluint32_t code, const double newval) {
     (*(reinterpret_cast<double*>(oldp(code)))) = newval;
     // Buffer can't overflow before VL_SNPRINTF; we sized during declaration
     VL_SNPRINTF(m_writep, m_wrChunkSize, "r%.16g", newval);
-    m_writep += strlen(m_writep);
+    m_writep += std::strlen(m_writep);
     *m_writep++ = ' ';
     m_writep = writeCode(m_writep, code);
     *m_writep++ = '\n';

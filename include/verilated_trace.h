@@ -225,7 +225,7 @@ protected:
     void declCode(vluint32_t code, vluint32_t bits, bool tri);
 
     // Is this an escape?
-    bool isScopeEscape(char c) { return c != '\f' && (isspace(c) || c == m_scopeEscape); }
+    bool isScopeEscape(char c) { return c != '\f' && (std::isspace(c) || c == m_scopeEscape); }
     // Character that splits scopes.  Note whitespace are ALWAYS escapes.
     char scopeEscape() { return m_scopeEscape; }
 

@@ -142,7 +142,7 @@ private:
         // Quote any special characters
         std::string rtn;
         for (const char* pos = text.c_str(); *pos; ++pos) {
-            if (!isprint(*pos) || *pos == '%' || *pos == '"') {
+            if (!std::isprint(*pos) || *pos == '%' || *pos == '"') {
                 char hex[10];
                 VL_SNPRINTF(hex, 10, "%%%02X", pos[0]);
                 rtn += hex;
@@ -158,13 +158,13 @@ private:
         // a letter differently, nor want them to rely on our compression...
         // (Considered using numeric keys, but will remain back compatible.)
         if (key.length() < 2) return false;
-        if (key.length() == 2 && isdigit(key[1])) return false;
+        if (key.length() == 2 && std::isdigit(key[1])) return false;
         return true;
     }
     static std::string keyValueFormatter(const std::string& key,
                                          const std::string& value) VL_PURE {
         std::string name;
-        if (key.length() == 1 && isalpha(key[0])) {
+        if (key.length() == 1 && std::isalpha(key[0])) {
             name += std::string("\001") + key;
         } else {
             name += std::string("\001") + dequote(key);
@@ -196,8 +196,8 @@ private:
         std::string prefix = std::string(a, apre - a);
 
         // Scan backward to last mismatch
-        const char* apost = a + strlen(a) - 1;
-        const char* bpost = b + strlen(b) - 1;
+        const char* apost = a + std::strlen(a) - 1;
+        const char* bpost = b + std::strlen(b) - 1;
         while (*apost == *bpost && apost > apre && bpost > bpre) {
             apost--;
             bpost--;
@@ -305,7 +305,7 @@ public:
         valps[1] = linestr.c_str();
         // Default page if not specified
         const char* fnstartp = m_insertFilenamep;
-        while (const char* foundp = strchr(fnstartp, '/')) fnstartp = foundp + 1;
+        while (const char* foundp = std::strchr(fnstartp, '/')) fnstartp = foundp + 1;
         const char* fnendp = fnstartp;
         for (; *fnendp && *fnendp != '.'; fnendp++) {}
         std::string page_default = "sp_user/" + std::string(fnstartp, fnendp - fnstartp);

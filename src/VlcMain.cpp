@@ -101,10 +101,10 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
                 V3Error::debugDefault(atoi(argv[i]));
             } else if (!strcmp(sw, "-V")) {
                 showVersion(true);
-                exit(0);
+                std::exit(0);
             } else if (!strcmp(sw, "-version")) {
                 showVersion(false);
-                exit(0);
+                std::exit(0);
             } else if (!strcmp(sw, "-write") && (i + 1) < argc) {
                 shift;
                 m_writeFile = argv[i];

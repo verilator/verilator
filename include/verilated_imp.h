@@ -280,12 +280,12 @@ public:  // But only for verilated*.cpp
         if (m_fdFreeMct.empty()) return 0;
         IData idx = m_fdFreeMct.back();
         m_fdFreeMct.pop_back();
-        m_fdps[idx] = fopen(filenamep, "w");
+        m_fdps[idx] = std::fopen(filenamep, "w");
         if (VL_UNLIKELY(!m_fdps[idx])) return 0;
         return (1 << idx);
     }
     IData fdNew(const char* filenamep, const char* modep) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
-        FILE* fp = fopen(filenamep, modep);
+        FILE* fp = std::fopen(filenamep, modep);
         if (VL_UNLIKELY(!fp)) return 0;
         // Bit 31 indicates it's a descriptor not a MCD
         const VerilatedLockGuard lock(m_fdMutex);
@@ -308,20 +308,20 @@ public:  // But only for verilated*.cpp
     void fdFlush(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
         const VerilatedFpList fdlist = fdToFpList(fdi);
-        for (const auto& i : fdlist) fflush(i);
+        for (const auto& i : fdlist) std::fflush(i);
     }
     IData fdSeek(IData fdi, IData offset, IData origin) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
         const VerilatedFpList fdlist = fdToFpList(fdi);
         if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
         return static_cast<IData>(
-            fseek(*fdlist.begin(), static_cast<long>(offset), static_cast<int>(origin)));
+            std::fseek(*fdlist.begin(), static_cast<long>(offset), static_cast<int>(origin)));
     }
     IData fdTell(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
         const VerilatedFpList fdlist = fdToFpList(fdi);
         if (VL_UNLIKELY(fdlist.size() != 1)) return 0;
-        return static_cast<IData>(ftell(*fdlist.begin()));
+        return static_cast<IData>(std::ftell(*fdlist.begin()));
     }
     void fdWrite(IData fdi, const std::string& output) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock(m_fdMutex);
@@ -338,14 +338,14 @@ public:  // But only for verilated*.cpp
             IData idx = VL_MASK_I(31) & fdi;
             if (VL_UNLIKELY(idx >= m_fdps.size())) return;
             if (VL_UNLIKELY(!m_fdps[idx])) return;  // Already free
-            fclose(m_fdps[idx]);
+            std::fclose(m_fdps[idx]);
             m_fdps[idx] = (FILE*)0;
             m_fdFree.push_back(idx);
         } else {
             // MCD case
             for (int i = 0; (fdi != 0) && (i < 31); i++, fdi >>= 1) {
                 if (fdi & VL_MASK_I(1)) {
-                    fclose(m_fdps[i]);
+                    std::fclose(m_fdps[i]);
                     m_fdps[i] = nullptr;
                     m_fdFreeMct.push_back(i);
                 }
