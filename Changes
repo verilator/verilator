@@ -25,6 +25,8 @@ Verilator 4.201 devel
 * Fix false TIMESCALEMOD on generate-ignored instances (#2838). [Kaleb Barrett]
 * Fix --output-split with class extends (#2839). [Iru Cai]
 * Fix false WIDTHCONCAT on casted constant (#2849). [Rupert Swarbrick]
+* Fix --public-flat-rw / DPI issue (#2858). [Todd Strader]
+* Fix interface localparam access (#2859). [Todd Strader]
 * Fix Cygwin example compile issues (#2856). [Mark Shaw]
 
 
