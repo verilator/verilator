@@ -1498,7 +1498,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             m_threadsDpiPure = true;
             m_threadsDpiUnpure = false;
         } else {
-            fl->v3fatal("Unknown setting for --threads-dpi: " << valp);
+            fl->v3fatal("Unknown setting for --threads-dpi: '"
+                        << valp << "'\n"
+                        << fl->warnMore() << "... Suggest 'all', 'none', or 'pure'");
         }
     });
     DECL_OPTION("-threads-max-mtasks", CbVal, [this, fl](const char* valp) {
@@ -1636,7 +1638,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         } else if (!strcmp(valp, "unique")) {
             m_xAssign = "unique";
         } else {
-            fl->v3fatal("Unknown setting for --x-assign: " << valp);
+            fl->v3fatal("Unknown setting for --x-assign: '"
+                        << valp << "'\n"
+                        << fl->warnMore() << "... Suggest '0', '1', 'fast', or 'unique'");
         }
     });
     DECL_OPTION("-x-initial", CbVal, [this, fl](const char* valp) {
@@ -1647,7 +1651,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         } else if (!strcmp(valp, "unique")) {
             m_xInitial = "unique";
         } else {
-            fl->v3fatal("Unknown setting for --x-initial: " << valp);
+            fl->v3fatal("Unknown setting for --x-initial: '"
+                        << valp << "'\n"
+                        << fl->warnMore() << "... Suggest '0', 'fast', or 'unique'");
         }
     });
     DECL_OPTION("-x-initial-edge", OnOff, &m_xInitialEdge);
