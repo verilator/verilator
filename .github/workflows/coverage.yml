@@ -20,15 +20,11 @@ jobs:
 
 
   Build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-20.04 ]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
     env:
       CI_BUILD_STAGE_NAME: build
-      CI_RUNS_ON: ${{ matrix.os }}
-      CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}-coverage
+      CI_RUNS_ON: ubuntu-20.04
+      CACHE_KEY: ubuntu-20.04-${{ matrix.compiler.cc }}-coverage
     steps:
 
     - name: Checkout
@@ -63,19 +59,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-20.04 ]
         test:
         - vlt-
         - vltmt-
         num: [ 0 1 2 3 4 5 6 7 8 9 ]
         include:
         - { test: dist, num: '' }
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
     name: test-${{ matrix.test }}${{ matrix.num }}
     env:
       CI_BUILD_STAGE_NAME: test
-      CI_RUNS_ON: ${{ matrix.os }}
-      CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}-coverage
+      CI_RUNS_ON: ubuntu-20.04
+      CACHE_KEY: ubuntu-20.04-${{ matrix.compiler.cc }}-coverage
     steps:
 
     - name: Checkout
