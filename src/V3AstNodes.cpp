@@ -694,47 +694,6 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
     return info;
 }
 
-AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
-    // dimension passed from AstArraySel::dimension
-    // Dimension 0 means the VAR itself, 1 is the closest SEL to the AstVar,
-    // which is the lowest in the dtype list.
-    //     ref order:   a[1][2][3][4]
-    //     Created as:  reg [4] a [1][2][3];
-    //        *or*      reg a [1][2][3][4];
-    //                  // The bit select is optional; used only if "leftover" []'s
-    //     SEL:         SEL4(SEL3(SEL2(SEL1(VARREF0 a))))
-    //     DECL:        VAR a (ARRAYSEL0 (ARRAYSEL1 (ARRAYSEL2 (DT RANGE3))))
-    //        *or*      VAR a (ARRAYSEL0 (ARRAYSEL1 (ARRAYSEL2 (ARRAYSEL3 (DT))))
-    //     SEL1 needs to select from entire variable which is a pointer to ARRAYSEL0
-    // TODO this function should be removed in favor of recursing the dtype(),
-    // as that allows for more complicated data types.
-    int dim = 0;
-    for (AstNodeDType* dtypep = this; dtypep;) {
-        dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-        if (AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
-            if ((dim++) == dimension) return dtypep;
-            dtypep = adtypep->subDTypep();
-            continue;
-        } else if (AstBasicDType* adtypep = VN_CAST(dtypep, BasicDType)) {
-            // AstBasicDType - nothing below, return null
-            if (adtypep->isRanged()) {
-                // cppcheck-suppress unreadVariable  // Cppcheck bug - thinks dim isn't used
-                if ((dim++) == dimension) return adtypep;
-            }
-            return nullptr;
-        } else if (AstNodeUOrStructDType* adtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
-            if (adtypep->packed()) {
-                // cppcheck-suppress unreadVariable  // Cppcheck bug - thinks dim isn't used
-                if ((dim++) == dimension) return adtypep;
-            }
-            return nullptr;
-        }
-        // Node no ->next in loop; use continue where necessary
-        break;
-    }
-    return nullptr;
-}
-
 uint32_t AstNodeDType::arrayUnpackedElements() {
     uint32_t entries = 1;
     for (AstNodeDType* dtypep = this; dtypep;) {

@@ -2450,7 +2450,6 @@ public:
     bool widthSized() const { return !m_widthMin || m_widthMin == m_width; }
     bool generic() const { return m_generic; }
     void generic(bool flag) { m_generic = flag; }
-    AstNodeDType* dtypeDimensionp(int dimension);
     std::pair<uint32_t, uint32_t> dimensions(bool includeBasic);
     uint32_t arrayUnpackedElements();  // 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
