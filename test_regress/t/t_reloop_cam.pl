@@ -22,9 +22,9 @@ execute(
 
 if ($Self->{vlt_all}) {
     file_grep($Self->{stats}, qr/Optimizations, Reloop iterations\s+(\d+)/i,
-              512);
+              768);
     file_grep($Self->{stats}, qr/Optimizations, Reloops\s+(\d+)/i,
-              2);
+              3);
 }
 
 ok(1);
