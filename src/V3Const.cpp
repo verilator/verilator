@@ -913,7 +913,7 @@ private:
         // side effects can do this optimization
         // Eventually we'll recurse through tree when unknown, memoizing results so far,
         // but for now can disable en-mass until V3Purify takes effect.
-        return m_doShort || VN_IS(nodep, VarRef) || VN_IS(nodep, Const);
+        return m_doShort && (VN_IS(nodep, VarRef) || VN_IS(nodep, Const));
     }
 
     // Extraction checks
