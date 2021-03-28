@@ -201,9 +201,8 @@ private:
                         // If this case statement doesn't have the priority
                         // keyword, we want to warn on any overlap.
                         if (!reportedOverlap && foundOverlap) {
-                            icondp->v3warn(CASEOVERLAP,
-                                           "Case values overlap (example pattern 0x"
-                                           << std::hex << firstOverlap << ")");
+                            icondp->v3warn(CASEOVERLAP, "Case values overlap (example pattern 0x"
+                                                            << std::hex << firstOverlap << ")");
                             reportedOverlap = true;
                         }
                     } else {
