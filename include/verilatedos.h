@@ -49,7 +49,6 @@
 # if !defined(_WIN32) && !defined(__MINGW32__)
 #  define VL_ATTR_WEAK __attribute__((weak))
 # endif
-# define VL_FUNC __func__
 # if defined(__clang__) && defined(VL_THREADED)
 #  define VL_ACQUIRE(...) __attribute__((acquire_capability(__VA_ARGS__)))
 #  define VL_ACQUIRE_SHARED(...) __attribute__((acquire_shared_capability(__VA_ARGS__)))
@@ -68,8 +67,6 @@
 # define VL_UNREACHABLE __builtin_unreachable();
 # define VL_PREFETCH_RD(p) __builtin_prefetch((p), 0)
 # define VL_PREFETCH_RW(p) __builtin_prefetch((p), 1)
-#elif defined(_MSC_VER)
-# define VL_FUNC __FUNCTION__
 #endif
 
 // Defaults for unsupported compiler features
@@ -99,9 +96,6 @@
 #endif
 #ifndef VL_ATTR_WEAK
 # define VL_ATTR_WEAK  ///< Function external that is optionally defined
-#endif
-#ifndef VL_FUNC
-# define VL_FUNC "__func__"  ///< Name of current function for error macros
 #endif
 #ifndef VL_CAPABILITY
 # define VL_ACQUIRE(...)  ///< Function requires a capability/lock (-fthread-safety)
@@ -148,6 +142,7 @@
 #endif
 
 #ifndef VL_NO_LEGACY
+# define VL_FUNC __func__  // Deprecated
 # define VL_THREAD  // Deprecated
 # define VL_STATIC_OR_THREAD static  // Deprecated
 #endif
