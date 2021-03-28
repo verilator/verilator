@@ -23,7 +23,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ubuntu-20.04
+        os:
+        - ubuntu-20.04
     runs-on: ${{ matrix.os }}
     env:
       CI_BUILD_STAGE_NAME: build
@@ -63,7 +64,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ubuntu-20.04
+        os:
+        - ubuntu-20.04
         test:
         - vlt-
         - vltmt-
