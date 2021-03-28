@@ -20,16 +20,22 @@ jobs:
 
 
   Build:
-    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ matrix.os }}
       CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}-coverage
     steps:
 
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
 
-    - uses: actions/cache@v2
+    - name: Cache
+      uses: actions/cache@v2
       env:
         cache-name: ccache
       with:
@@ -37,15 +43,14 @@ jobs:
         key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
         restore-keys: coverage-${{ env.cache-name }}
 
-    - name: Install dependencies for build
+    - name: Install packages for build
       env:
         CI_BUILD_STAGE_NAME: build
       run: ./ci/ci-install.bash
 
-    - name: Build Verilator
+    - name: Build
       run: |
         ./ci/ci-script.bash
-
         tar cvzf verilator-${CI_COMMIT}-coverage.tgz bin src/obj*/*.o src/obj*/*.gcno
 
     - uses: actions/upload-artifact@v2
@@ -58,6 +63,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        os: ubuntu-20.04
         test:
         - vlt-
         - vltmt-
@@ -74,17 +80,19 @@ jobs:
         - 9
         include:
         - { test: dist, num: '' }
+    runs-on: ${{ matrix.os }}
     name: test-${{ matrix.test }}${{ matrix.num }}
-    runs-on: ubuntu-20.04
     env:
       CI_BUILD_STAGE_NAME: test
       CI_RUNS_ON: ${{ matrix.os }}
       CACHE_KEY: ${{ matrix.os }}-${{ matrix.compiler.cc }}-coverage
     steps:
 
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
 
-    - uses: actions/cache@v2
+    - name: Cache
+      uses: actions/cache@v2
       env:
         cache-name: ccache
       with:
