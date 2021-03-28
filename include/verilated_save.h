@@ -29,7 +29,7 @@
 
 //=============================================================================
 // VerilatedSerialize
-/// Convert structures to a stream representation.
+/// Class for writing serialization of structures to a stream representation.
 ///
 /// User wrapper code will more typically use VerilatedSave which uses this
 /// as a subclass to write a file.
@@ -100,7 +100,7 @@ private:
 
 //=============================================================================
 // VerilatedDeserialize
-/// Load structures from a stream representation
+/// Class for loading structures from a stream representation.
 ///
 /// User wrapper code will more typically use VerilatedRestore which uses
 /// this as a subclass to a read from a file.

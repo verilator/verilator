@@ -50,9 +50,9 @@
 // clang-format on
 
 // CONSTANTS
-/// Value of first bytes of each file (must be multiple of 8 bytes)
+// Value of first bytes of each file (must be multiple of 8 bytes)
 static const char* const VLTSAVE_HEADER_STR = "verilatorsave02\n";
-/// Value of last bytes of each file (must be multiple of 8 bytes)
+// Value of last bytes of each file (must be multiple of 8 bytes)
 static const char* const VLTSAVE_TRAILER_STR = "vltsaved";
 
 //=============================================================================

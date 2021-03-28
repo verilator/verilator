@@ -71,31 +71,31 @@
 
 // Defaults for unsupported compiler features
 #ifndef VL_ATTR_ALIGNED
-# define VL_ATTR_ALIGNED(alignment)  ///< Align structure to specified byte alignment
+# define VL_ATTR_ALIGNED(alignment)  ///< Attribute to align structure to byte alignment
 #endif
 #ifndef VL_ATTR_ALWINLINE
-# define VL_ATTR_ALWINLINE  ///< Inline, even when not optimizing
+# define VL_ATTR_ALWINLINE  ///< Attribute to inline, even when not optimizing
 #endif
 #ifndef VL_ATTR_COLD
-# define VL_ATTR_COLD  ///< Function is rarely executed
+# define VL_ATTR_COLD  ///< Attribute that function is rarely executed
 #endif
 #ifndef VL_ATTR_HOT
-# define VL_ATTR_HOT  ///< Function is highly executed
+# define VL_ATTR_HOT  ///< Attribute that function is highly executed
 #endif
 #ifndef VL_ATTR_NORETURN
-# define VL_ATTR_NORETURN  ///< Function does not ever return
+# define VL_ATTR_NORETURN  ///< Attribute that function does not ever return
 #endif
 #ifndef VL_ATTR_PRINTF
-# define VL_ATTR_PRINTF(fmtArgNum)  ///< Function with printf format checking
+# define VL_ATTR_PRINTF(fmtArgNum)  ///< Attribute for function with printf format checking
 #endif
 #ifndef VL_ATTR_PURE
-# define VL_ATTR_PURE  ///< Function is pure (and thus also VL_MT_SAFE)
+# define VL_ATTR_PURE  ///< Attribute that function is pure (and thus also VL_MT_SAFE)
 #endif
 #ifndef VL_ATTR_UNUSED
-# define VL_ATTR_UNUSED  ///< Function that may be never used
+# define VL_ATTR_UNUSED  ///< Attribute that function that may be never used
 #endif
 #ifndef VL_ATTR_WEAK
-# define VL_ATTR_WEAK  ///< Function external that is optionally defined
+# define VL_ATTR_WEAK  ///< Attribute that function external that is optionally defined
 #endif
 #ifndef VL_CAPABILITY
 # define VL_ACQUIRE(...)  ///< Function requires a capability/lock (-fthread-safety)
@@ -111,19 +111,19 @@
 # define VL_SCOPED_CAPABILITY  ///< Scoped threaded capability/lock (-fthread-safety)
 #endif
 #ifndef VL_LIKELY
-# define VL_LIKELY(x) (!!(x))  ///< Boolean expression more often true than false
-# define VL_UNLIKELY(x) (!!(x))  ///< Boolean expression more often false than true
+# define VL_LIKELY(x) (!!(x))  ///< Return boolean expression that is more often true
+# define VL_UNLIKELY(x) (!!(x))  ///< Return boolean expression that is more often false
 #endif
 /// Boolean expression never hit by users (branch coverage disabled)
 # define VL_UNCOVERABLE(x) VL_UNLIKELY(x)
 #ifndef VL_UNREACHABLE
-# define VL_UNREACHABLE  ///< Point that may never be reached
+# define VL_UNREACHABLE  ///< Statement that may never be reached (for coverage etc)
 #endif
 #ifndef VL_PREFETCH_RD
-# define VL_PREFETCH_RD(p)  ///< Prefetch pointed-to-data with read intent
+# define VL_PREFETCH_RD(p)  ///< Prefetch pointer argument with read intent
 #endif
 #ifndef VL_PREFETCH_RW
-# define VL_PREFETCH_RW(p)  ///< Prefetch pointed-to-data with read/write intent
+# define VL_PREFETCH_RW(p)  ///< Prefetch pointer argument with read/write intent
 #endif
 
 #if defined(VL_THREADED) && !defined(VL_CPPCHECK)
@@ -136,9 +136,9 @@
 # else
 #  error "Unsupported compiler for VL_THREADED: No thread-local declarator"
 # endif
-# define VL_THREAD_LOCAL thread_local  ///< "thread_local" when supported
+# define VL_THREAD_LOCAL thread_local  // "thread_local" when supported
 #else
-# define VL_THREAD_LOCAL  ///< "thread_local" when supported
+# define VL_THREAD_LOCAL  // "thread_local" when supported
 #endif
 
 #ifndef VL_NO_LEGACY
@@ -147,27 +147,27 @@
 # define VL_STATIC_OR_THREAD static  // Deprecated
 #endif
 
-/// Comment tag that Function is pure (and thus also VL_MT_SAFE)
+// Comment tag that Function is pure (and thus also VL_MT_SAFE)
 #define VL_PURE
-/// Comment tag that function is threadsafe when VL_THREADED
+// Comment tag that function is threadsafe when VL_THREADED
 #define VL_MT_SAFE
-/// Comment tag that function is threadsafe when VL_THREADED, only
-/// during normal operation (post-init)
+// Comment tag that function is threadsafe when VL_THREADED, only
+// during normal operation (post-init)
 #define VL_MT_SAFE_POSTINIT
-/// Clang threadsafe and uses given mutex
+// Attribute that function is clang threadsafe and uses given mutex
 #define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
-/// Comment tag that function is not threadsafe when VL_THREADED
+// Comment tag that function is not threadsafe when VL_THREADED
 #define VL_MT_UNSAFE
-/// Comment tag that function is not threadsafe when VL_THREADED,
-/// protected to make sure single-caller
+// Comment tag that function is not threadsafe when VL_THREADED,
+// protected to make sure single-caller
 #define VL_MT_UNSAFE_ONE
 
 #ifndef VL_NO_LEGACY
 # define VL_ULL(c) (c##ULL)  // Add appropriate suffix to 64-bit constant (deprecated)
 #endif
 
-/// Convert argument to IData
-/// This is not necessarily the same as #UL, depending on what the IData typedef is.
+// Convert argument to IData
+// This is not necessarily the same as "#UL", depending on what the IData typedef is.
 #define VL_UL(c) (static_cast<IData>(c##UL))
 
 #if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
@@ -235,7 +235,7 @@
 extern "C" {
 void __gcov_flush();  // gcc sources gcc/gcov-io.h has the prototype
 }
-/// Flush internal code coverage data before e.g. std::abort()
+// Flush internal code coverage data before e.g. std::abort()
 # define VL_GCOV_FLUSH() \
     __gcov_flush()
 #else
@@ -390,20 +390,20 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 # define VL_WORDSIZE VL_IDATASIZE  // Legacy define
 #endif
 
-/// Bytes this number of bits needs (1 bit=1 byte)
+/// Return number of bytes argument-number of bits needs (1 bit=1 byte)
 #define VL_BYTES_I(nbits) (((nbits) + (VL_BYTESIZE - 1)) / VL_BYTESIZE)
-/// Words/EDatas this number of bits needs (1 bit=1 word)
+/// Return Words/EDatas in argument-number of bits needs (1 bit=1 word)
 #define VL_WORDS_I(nbits) (((nbits) + (VL_EDATASIZE - 1)) / VL_EDATASIZE)
-/// Words/EDatas a quad requires
+// Number of Words/EDatas a quad requires
 #define VL_WQ_WORDS_E VL_WORDS_I(VL_QUADSIZE)
 
 //=========================================================================
 // Class definition helpers
 
-/// Comment tag to indicate a base class, e.g. cannot label "class final"
+// Comment tag to indicate a base class, e.g. cannot label "class final"
 #define VL_NOT_FINAL
 
-/// Declare a class as uncopyable; put after a private:
+// Declare a class as uncopyable; put after a private:
 #define VL_UNCOPYABLE(Type) \
     Type(const Type& other) = delete; \
     Type& operator=(const Type&) = delete
@@ -421,14 +421,14 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #define VL_SIZEBITS_Q (VL_QUADSIZE - 1)  ///< Bit mask for bits in a quad
 #define VL_SIZEBITS_E (VL_EDATASIZE - 1)  ///< Bit mask for bits in a quad
 
-/// Mask for words with 1's where relevant bits are (0=all bits)
+/// Return mask for words with 1's where relevant bits are (0=all bits)
 #define VL_MASK_I(nbits) (((nbits) & VL_SIZEBITS_I) ? ((1U << ((nbits) & VL_SIZEBITS_I)) - 1) : ~0)
-/// Mask for quads with 1's where relevant bits are (0=all bits)
+/// Return mask for quads with 1's where relevant bits are (0=all bits)
 #define VL_MASK_Q(nbits) \
     (((nbits) & VL_SIZEBITS_Q) ? ((1ULL << ((nbits) & VL_SIZEBITS_Q)) - 1ULL) : ~0ULL)
-/// Mask for EData with 1's where relevant bits are (0=all bits)
+/// Return mask for EData with 1's where relevant bits are (0=all bits)
 #define VL_MASK_E(nbits) VL_MASK_I(nbits)
-#define VL_EUL(n) VL_UL(n)  ///< Make constant number EData sized
+#define VL_EUL(n) VL_UL(n)  // Make constant number EData sized
 
 #define VL_BITWORD_I(bit) ((bit) / VL_IDATASIZE)  ///< Word number for sv DPI vectors
 #define VL_BITWORD_E(bit) ((bit) >> VL_EDATASIZE_LOG2)  ///< Word number for a wide quantity
@@ -451,9 +451,9 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 //=========================================================================
 // Performance counters
 
-/// The vluint64_t argument is loaded with a high-performance counter for profiling
-/// or 0x0 if not implemented on this platform
 #if defined(__i386__) || defined(__x86_64__)
+// The vluint64_t argument is loaded with a high-performance counter for profiling
+// or 0x0 if not implemented on this platform
 #define VL_RDTSC(val) \
     { \
         vluint32_t hi, lo; \
@@ -477,8 +477,8 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #  include "Windows.h"
 #  define VL_CPU_RELAX() YieldProcessor()
 # elif defined(__i386__) || defined(__x86_64__) || defined(VL_CPPCHECK)
-/// For more efficient busy waiting on SMT CPUs, let the processor know
-/// we're just waiting so it can let another thread run
+// For more efficient busy waiting on SMT CPUs, let the processor know
+// we're just waiting so it can let another thread run
 #  define VL_CPU_RELAX() asm volatile("rep; nop" ::: "memory")
 # elif defined(__ia64__)
 #  define VL_CPU_RELAX() asm volatile("hint @pause" ::: "memory")

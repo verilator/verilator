@@ -444,6 +444,7 @@ void VerilatedCovContext::_insertf(const char* filename, int lineno) VL_MT_SAFE 
     impp()->insertf(filename, lineno);
 }
 
+#ifndef DOXYGEN
 #define K(n) const char* key##n
 #define A(n) const char *key##n, const char *valp##n  // Argument list
 #define C(n) key##n, valp##n  // Calling argument list
@@ -492,6 +493,8 @@ void VerilatedCovContext::_insertp(A(0), A(1), K(2), int val2, K(3), int val3, K
 #undef C
 #undef N
 #undef K
+
+#endif  // DOXYGEN
 
 //=============================================================================
 // VerilatedCov

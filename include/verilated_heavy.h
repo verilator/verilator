@@ -88,12 +88,14 @@ public:
 };
 
 //===================================================================
-// Verilog wide-number-in-array container
-// Similar to std::array<WData, N>, but lighter weight, only methods needed
-// by Verilator, to help compile time.
-//
-// This is only used when we need an upper-level container and so can't
-// simply use a C style array (which is just a pointer).
+/// Verilog wide unpacked bit container.
+/// Similar to std::array<WData, N>, but lighter weight, only methods needed
+/// by Verilator, to help compile time.
+///
+/// For example a Verilog "bit [94:0]" will become a VlWide<3> because 3*32
+/// bits are needed to hold the 95 bits. The MSB (bit 96) must always be
+/// zero in memory, but during intermediate operations in the Verilated
+/// internals is unpredictable.
 
 template <std::size_t T_Words> class VlWide final {
     EData m_storage[T_Words];
@@ -795,9 +797,12 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
 }
 
 //===================================================================
-// Verilog packed array container
-// For when a standard C++[] array is not sufficient, e.g. an
-// array under a queue, or methods operating on the array
+/// Verilog packed array container
+/// For when a standard C++[] array is not sufficient, e.g. an
+/// array under a queue, or methods operating on the array.
+///
+/// This class may get exposed to a Verilated Model's top I/O, if the top
+/// IO has an unpacked array.
 
 template <class T_Value, std::size_t T_Depth> class VlUnpacked final {
 private:
@@ -849,7 +854,6 @@ std::string VL_TO_STRING(const VlUnpacked<T_Value, T_Depth>& obj) {
 // Verilog class reference container
 // There are no multithreaded locks on this; the base variable must
 // be protected by other means
-//
 
 #define VlClassRef std::shared_ptr
 

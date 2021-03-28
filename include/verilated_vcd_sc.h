@@ -29,8 +29,9 @@
 //=============================================================================
 // VerilatedVcdSc
 ///
-/// This class creates a Verilator-friendly VCD trace format with the
-/// SystemC simulation kernel, just like a SystemC-documented trace format.
+/// Class representing a Verilator-friendly VCD trace format registered
+/// with the SystemC simulation kernel, just like a SystemC-documented
+/// trace format.
 
 class VerilatedVcdSc final : sc_trace_file, public VerilatedVcdC {
     // CONSTRUCTORS

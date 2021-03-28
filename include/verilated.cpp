@@ -95,7 +95,7 @@ VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
 // Note a TODO is a future version of the API will pass a structure so that
 // the calling arguments allow for extension
 
-#ifndef VL_USER_FINISH  ///< Define this to override this function
+#ifndef VL_USER_FINISH  ///< Define this to override the vl_finish function
 void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
     if (false && hier) {}
     VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
@@ -111,7 +111,7 @@ void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE
 }
 #endif
 
-#ifndef VL_USER_STOP  ///< Define this to override this function
+#ifndef VL_USER_STOP  ///< Define this to override the vl_stop function
 void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
     const char* const msg = "Verilog $stop";
     Verilated::threadContextp()->gotError(true);
@@ -130,7 +130,7 @@ void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
 }
 #endif
 
-#ifndef VL_USER_FATAL  ///< Define this to override this function
+#ifndef VL_USER_FATAL  ///< Define this to override the vl_fatal function
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
     if (false && hier) {}
     Verilated::threadContextp()->gotError(true);
@@ -154,7 +154,7 @@ void vl_fatal(const char* filename, int linenum, const char* hier, const char* m
 }
 #endif
 
-#ifndef VL_USER_STOP_MAYBE  ///< Define this to override this function
+#ifndef VL_USER_STOP_MAYBE  ///< Define this to override the vl_stop_maybe function
 void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_UNSAFE {
     Verilated::threadContextp()->errorCountInc();
     if (maybe
@@ -204,7 +204,7 @@ void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char
 //===========================================================================
 // Debug prints
 
-/// sprintf but return as string (this isn't fast, for print messages only)
+// sprintf but return as string (this isn't fast, for print messages only)
 std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
     va_list aq;
     va_copy(aq, ap);
@@ -598,7 +598,7 @@ double VL_ISTOR_D_W(int lbits, WDataInP lwp) VL_PURE {
 //===========================================================================
 // Formatting
 
-/// Output a string representation of a wide number
+// Output a string representation of a wide number
 std::string VL_DECIMAL_NW(int width, WDataInP lwp) VL_MT_SAFE {
     int maxdecwidth = (width + 3) * 4 / 3;
     // Or (maxdecwidth+7)/8], but can't have more than 4 BCD bits per word

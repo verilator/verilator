@@ -35,6 +35,8 @@
 
 //======================================================================
 
+/// Class for namespace-like groupng of Verilator VPI functions.
+
 class VerilatedVpi final {
 public:
     /// Call timed callbacks.

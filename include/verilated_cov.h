@@ -86,7 +86,7 @@ class VerilatedCovImp;
                 covcontextp->_insertp("hier", name(), __VA_ARGS__))
 
 //=============================================================================
-/// Convert VL_COVER_INSERT value arguments to strings, is \internal
+// Convert VL_COVER_INSERT value arguments to strings, is \internal
 
 template <class T> std::string vlCovCvtToStr(const T& t) VL_PURE {
     std::ostringstream os;
@@ -96,7 +96,7 @@ template <class T> std::string vlCovCvtToStr(const T& t) VL_PURE {
 
 //=============================================================================
 //  VerilatedCov
-/// Verilator coverage per-context structure.
+/// Per-VerilatedContext coverage data class.
 /// All public methods in this class are thread safe.
 ///
 /// This structure is accessed and constructed on first access via
@@ -134,6 +134,7 @@ public:  // But Internal use only
     // We could have just the maximum argument version, but this compiles
     // much slower (nearly 2x) than having smaller versions also.  However
     // there's not much more gain in having a version for each number of args.
+#ifndef DOXYGEN
 #define K(n) const char* key##n
 #define A(n) const char *key##n, const char *valp##n  // Argument list
 #define D(n) const char *key##n = nullptr, const char *valp##n = nullptr  // Argument list
@@ -150,6 +151,7 @@ public:  // But Internal use only
 #undef K
 #undef A
 #undef D
+#endif  // DOXYGEN
 
 protected:
     friend class VerilatedCovImp;
@@ -165,7 +167,7 @@ protected:
 
 //=============================================================================
 //  VerilatedCov
-///  Verilator coverage global class
+/// Coverage global class.
 ///
 /// Global class that accesses via current thread's context's
 /// VerilatedCovContext.  This class is provided only for
@@ -196,6 +198,6 @@ private:
     // Current thread's coverage structure
     static VerilatedCovContext* threadCovp() VL_MT_SAFE;
 };
-#endif
+#endif  // VL_NO_LEGACY
 
 #endif  // Guard

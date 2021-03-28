@@ -17,7 +17,6 @@
 /// User wrapper code should use this header when creating VCD traces.
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 #ifndef VERILATOR_VERILATED_VCD_C_H_
 #define VERILATOR_VERILATED_VCD_C_H_
@@ -31,20 +30,25 @@
 
 class VerilatedVcd;
 
-// SPDIFF_ON
 //=============================================================================
 // VerilatedFile
-/// File handling routines, which can be overrode for e.g. socket I/O
+/// Class representing a file to write to. These virtual methods can be
+/// overrode for e.g. socket I/O.
 
 class VerilatedVcdFile VL_NOT_FINAL {
 private:
     int m_fd = 0;  // File descriptor we're writing to
 public:
     // METHODS
+    /// Construct a (as yet) closed file
     VerilatedVcdFile() = default;
+    /// Close and destruct
     virtual ~VerilatedVcdFile() = default;
+    /// Open a file with given filename
     virtual bool open(const std::string& name) VL_MT_UNSAFE;
+    /// Close object's file
     virtual void close() VL_MT_UNSAFE;
+    /// Write data to file (if it is open)
     virtual ssize_t write(const char* bufp, ssize_t len) VL_MT_UNSAFE;
 };
 
@@ -318,17 +322,19 @@ public:
 #endif  // VL_TRACE_VCD_OLD_API
 };
 
+#ifndef DOXYGEN
 // Declare specializations here they are used in VerilatedVcdC just below
 template <> void VerilatedTrace<VerilatedVcd>::dump(vluint64_t timeui);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_unit(const char* unitp);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_unit(const std::string& unit);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_resolution(const char* unitp);
 template <> void VerilatedTrace<VerilatedVcd>::set_time_resolution(const std::string& unit);
+#endif  // DOXYGEN
 
 //=============================================================================
 // VerilatedVcdC
-/// Create a VCD dump file in C standalone (no SystemC) simulations.
-/// Also derived for use in SystemC simulations.
+/// Class representing a VCD dump file in C standalone (no SystemC)
+/// simulations.  Also derived for use in SystemC simulations.
 
 class VerilatedVcdC VL_NOT_FINAL {
     VerilatedVcd m_sptrace;  // Trace file being created

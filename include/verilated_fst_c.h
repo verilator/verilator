@@ -17,7 +17,6 @@
 /// User wrapper code should use this header when creating FST traces.
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 #ifndef VERILATOR_VERILATED_FST_C_H_
 #define VERILATOR_VERILATED_FST_C_H_
@@ -115,12 +114,14 @@ public:
                     fstVarType vartype, bool array, int arraynum);
 };
 
+#ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below
 template <> void VerilatedTrace<VerilatedFst>::dump(vluint64_t timeui);
 template <> void VerilatedTrace<VerilatedFst>::set_time_unit(const char* unitp);
 template <> void VerilatedTrace<VerilatedFst>::set_time_unit(const std::string& unit);
 template <> void VerilatedTrace<VerilatedFst>::set_time_resolution(const char* unitp);
 template <> void VerilatedTrace<VerilatedFst>::set_time_resolution(const std::string& unit);
+#endif
 
 //=============================================================================
 // VerilatedFstC
