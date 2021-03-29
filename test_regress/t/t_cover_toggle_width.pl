@@ -8,23 +8,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(simulator => 1);
+scenarios(vlt => 1);
+
+top_filename("t/t_cover_toggle.v");
 
 compile(
-    verilator_flags2 => ['--cc --coverage-toggle --stats'],
+    verilator_flags2 => ['--cc --coverage-toggle --coverage-max-width 1025'],
     );
 
 execute(
     check_finished => 1,
     );
 
-# Read the input .v file and do any CHECK_COVER requests
-inline_checks();
-
-file_grep_not("$Self->{obj_dir}/coverage.dat", "largeish");
-
-file_grep($Self->{stats}, qr/Coverage, Toggle points joined\s+(\d+)/i, 25)
-    if $Self->{vlt_all};
+file_grep("$Self->{obj_dir}/coverage.dat", "largeish");
 
 ok(1);
 1;

@@ -313,6 +313,7 @@ arguments.
     --converge-limit <loops>    Tune convergence settle time
     --coverage                  Enable all coverage
     --coverage-line             Enable line coverage
+    --coverage-max-width <width>   Maximum array depth for coverage
     --coverage-toggle           Enable toggle coverage
     --coverage-user             Enable SVL user coverage
     --coverage-underscore       Enable coverage of _signals
@@ -696,6 +697,12 @@ coverage_on/coverage_off*/ will disable coverage around lines of code.
 Note Verilator may over-count combinatorial (non-clocked) blocks when those
 blocks receive signals which have had the UNOPTFLAT warning disabled; for
 most accurate results do not disable this warning when using coverage.
+
+=item --trace-max-width I<width>
+
+Rarely needed.  Specify the maximum bit width of a signal that is subject
+to toggle coverage.  Defaults to 256, as covering large vectors may greatly
+slow coverage simulations.
 
 =item --coverage-toggle
 

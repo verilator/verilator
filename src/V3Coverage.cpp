@@ -96,8 +96,9 @@ private:
             if (prettyName[0] == '_') return "Leading underscore";
             if (prettyName.find("._") != string::npos) return "Inlined leading underscore";
         }
-        if ((nodep->width() * nodep->dtypep()->arrayUnpackedElements()) > 256) {
-            return "Wide bus/array > 256 bits";
+        if ((nodep->width() * nodep->dtypep()->arrayUnpackedElements())
+            > static_cast<uint32_t>(v3Global.opt.coverageMaxWidth())) {
+            return "Wide bus/array > --coverage-max-width setting's bits";
         }
         // We allow this, though tracing doesn't
         // if (nodep->arrayp(1)) return "Unsupported: Multi-dimensional array";

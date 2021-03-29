@@ -17,6 +17,7 @@ Verilator 4.201 devel
 * Changed TIMESCALEMOD from error into a warning.
 * Verilated signals now use VlWide and VlPacked in place of C arrays.
 * Mark --no-relative-cfuncs as scheduled for deprecation.
+* Add --coverage-max-width (#2853). [xuejiazidi]
 * Add VerilatedCovContext::forcePerInstance (#2793). [Kevin Laeufer]
 * Fix class unpacked-array compile error (#2774). [Iru Cai]
 * Fix exceeding command-line ar limit (#2834). [Yinan Xu]

@@ -283,6 +283,7 @@ private:
 
     int         m_buildJobs = 1;    // main switch: -j
     int         m_convergeLimit = 100;  // main switch: --converge-limit
+    int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
     int         m_dumpTree = 0;     // main switch: --dump-tree
     int         m_gateStmts = 100;    // main switch: --gate-stmts
     int         m_ifDepth = 0;      // main switch: --if-depth
@@ -477,6 +478,7 @@ public:
 
     int buildJobs() const { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
+    int coverageMaxWidth() const { return m_coverageMaxWidth; }
     int dumpTree() const { return m_dumpTree; }
     bool dumpTreeAddrids() const { return m_dumpTreeAddrids; }
     int gateStmts() const { return m_gateStmts; }
