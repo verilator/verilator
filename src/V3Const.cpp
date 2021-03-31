@@ -909,34 +909,24 @@ private:
     }
 
     bool isTPure(AstNode* nodep) {
-        // Should cache the result. V3Purify will take over this check.
-        // This check is should be more rigorous. (any task is considered non-pure).
-        class Visitor final : public AstNVisitor {
-            // MEMBERS
-            bool m_isPure{true};  // True until not pure node is found
-
-            void commonHandler(AstNode* nodep) {
-                if (!nodep->isPure()) m_isPure = false;
-                if (!m_isPure) iterateChildren(nodep);
-            }
-            // VISITORS
-            virtual void visit(AstNode* nodep) override { m_isPure = false; }
-            virtual void visit(AstNodeUniop* nodep) override { commonHandler(nodep); }
-            virtual void visit(AstNodeBiop* nodep) override { commonHandler(nodep); }
-            virtual void visit(AstNodeTriop* nodep) override { commonHandler(nodep); }
-            virtual void visit(AstNodeQuadop* nodep) override { commonHandler(nodep); }
-            // Obviously pure leaf node
-            virtual void visit(AstVarRef*) override {}
-            virtual void visit(AstConst*) override {}
-
-        public:
-            static bool isPure(AstNode* nodep) {
-                Visitor v;
-                v.iterate(nodep);
-                return v.m_isPure;
-            }
-        };
-        return m_doShort && Visitor::isPure(nodep);
+        // Pure checks - if this node and all nodes under it are free of
+        // side effects can do this optimization
+        // Eventually we'll recurse through tree when unknown, memoizing results so far,
+        // but for now can disable en-mass until V3Purify takes effect.
+        if (!m_doShort) return false;
+        if (VN_IS(nodep, VarRef) || VN_IS(nodep, Const)) return true;
+        if (AstNot* notp = VN_CAST(nodep, Not)) return isTPure(notp->lhsp());
+        if (AstWordSel* selp = VN_CAST(nodep, WordSel))
+            return isTPure(selp->fromp()) && isTPure(selp->bitp());
+        if (AstNodeBiop* biopp = VN_CAST(nodep, And))
+            return isTPure(biopp->lhsp()) && isTPure(biopp->rhsp());
+        if (AstNodeBiop* biopp = VN_CAST(nodep, Or))
+            return isTPure(biopp->lhsp()) && isTPure(biopp->rhsp());
+        if (AstNodeBiop* biopp = VN_CAST(nodep, Eq))
+            return isTPure(biopp->lhsp()) && isTPure(biopp->rhsp());
+        if (AstNodeTriop* triopp = VN_CAST(nodep, Sel))
+            return isTPure(triopp->lhsp()) && isTPure(triopp->rhsp()) && isTPure(triopp->thsp());
+        return false;
     }
 
     // Extraction checks
