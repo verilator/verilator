@@ -131,6 +131,7 @@ public:
         VARHIDDEN,      // Hiding variable
         WIDTH,          // Width mismatch
         WIDTHCONCAT,    // Unsized numbers/parameters in concatenations
+        PINNOTFOUND,    // A pin name in a module instance does not exist in the module being instanced
         _ENUM_MAX
         // ***Add new elements below also***
     };
@@ -174,7 +175,7 @@ public:
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSED",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
+            "VARHIDDEN", "WIDTH", "WIDTHCONCAT", "PINNOTFOUND",
             " MAX"
         };
         // clang-format on
