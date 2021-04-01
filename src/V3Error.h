@@ -191,7 +191,8 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const {
         return (m_e == ASSIGNIN || m_e == BLKANDNBLK || m_e == BLKLOOPINIT || m_e == CONTASSREG
-                || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL || m_e == PROCASSWIRE);  // Says IEEE
+                || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL
+                || m_e == PROCASSWIRE);  // Says IEEE
     }
     // Warnings to mention manual
     bool mentionManual() const {
