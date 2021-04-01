@@ -161,7 +161,7 @@ public:
         of.puts(string("SYSTEMC_LIBDIR ?= ") + V3Options::getenvSYSTEMC_LIBDIR() + "\n");
 
         // Only check it if we really need the value
-        if (v3Global.opt.usingSystemCLibs() && !V3Options::systemCFound()) {
+        if (v3Global.opt.systemC() && !V3Options::systemCFound()) {
             v3fatal("Need $SYSTEMC_INCLUDE in environment or when Verilator configured,\n"
                     "and need $SYSTEMC_LIBDIR in environment or when Verilator configured\n"
                     "Probably System-C isn't installed, see http://www.systemc.org\n");

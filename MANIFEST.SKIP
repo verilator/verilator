@@ -19,6 +19,7 @@
 .*\.1
 \.codacy\.yml
 \.travis\.yml
+/_build/
 /build/
 /obj_dbg/
 /obj_dir/
@@ -43,6 +44,7 @@ docs/clang-format.txt$
 docs/doxygen-doc/.*
 examples/xml_py/copied/
 examples/xml_py/graph.*
+sonar-project.properties
 src/Makefile$
 src/Makefile_obj$
 include/verilated.mk$

@@ -34,8 +34,8 @@
 //          OrderPreCutEdge
 //*************************************************************************
 
-#ifndef _V3ORDERGRAPH_H_
-#define _V3ORDERGRAPH_H_
+#ifndef VERILATOR_V3ORDERGRAPH_H_
+#define VERILATOR_V3ORDERGRAPH_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -300,7 +300,7 @@ public:
 //--- Following only under the move graph, not the main graph
 
 class OrderMoveVertex final : public V3GraphVertex {
-    typedef enum : uint8_t { POM_WAIT, POM_READY, POM_MOVED } OrderMState;
+    enum OrderMState : uint8_t { POM_WAIT, POM_READY, POM_MOVED };
 
     OrderLogicVertex* m_logicp;
     OrderMState m_state;  // Movement state

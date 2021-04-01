@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,13 +12,15 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Tracing functionality common to all formats
+/// \brief Verilated internal common-tracing header
+///
+/// This file is not part of the Verilated public-facing API.
+/// It is only for internal use by Verilated tracing routines.
 ///
 //=============================================================================
-// SPDIFF_OFF
 
-#ifndef _VERILATED_TRACE_H_
-#define _VERILATED_TRACE_H_ 1
+#ifndef VERILATOR_VERILATED_TRACE_H_
+#define VERILATOR_VERILATED_TRACE_H_
 
 // clang-format off
 
@@ -48,21 +50,21 @@ private:
 
 public:
     // Put an element at the back of the queue
-    void put(T value) {
+    void put(T value) VL_MT_SAFE_EXCLUDES(m_mutex) {
         VerilatedLockGuard lock(m_mutex);
         m_queue.push_back(value);
         m_cv.notify_one();
     }
 
     // Put an element at the front of the queue
-    void put_front(T value) {
+    void put_front(T value) VL_MT_SAFE_EXCLUDES(m_mutex) {
         VerilatedLockGuard lock(m_mutex);
         m_queue.push_front(value);
         m_cv.notify_one();
     }
 
     // Get an element from the front of the queue. Blocks if none available
-    T get() {
+    T get() VL_MT_SAFE_EXCLUDES(m_mutex) {
         VerilatedLockGuard lock(m_mutex);
         m_cv.wait(lock, [this]() VL_REQUIRES(m_mutex) { return !m_queue.empty(); });
         assert(!m_queue.empty());
@@ -72,7 +74,7 @@ public:
     }
 
     // Non blocking get
-    bool tryGet(T& result) {
+    bool tryGet(T& result) VL_MT_SAFE_EXCLUDES(m_mutex) {
         const VerilatedLockGuard lockGuard(m_mutex);
         if (m_queue.empty()) return false;
         result = m_queue.front();
@@ -115,8 +117,8 @@ public:
     //=========================================================================
     // Generic tracing internals
 
-    typedef void (*initCb_t)(void*, T_Derived*, uint32_t);  // Type of init callbacks
-    typedef void (*dumpCb_t)(void*, T_Derived*);  // Type of all but init callbacks
+    using initCb_t = void (*)(void*, T_Derived*, vluint32_t);  // Type of init callbacks
+    using dumpCb_t = void (*)(void*, T_Derived*);  // Type of all but init callbacks
 
 private:
     struct CallbackRecord {
@@ -137,22 +139,23 @@ private:
             , m_userp{userp} {}
     };
 
-    vluint32_t* m_sigs_oldvalp;  ///< Old value store
-    vluint64_t m_timeLastDump;  ///< Last time we did a dump
-    std::vector<CallbackRecord> m_initCbs;  ///< Routines to initialize traciong
-    std::vector<CallbackRecord> m_fullCbs;  ///< Routines to perform full dump
-    std::vector<CallbackRecord> m_chgCbs;  ///< Routines to perform incremental dump
-    std::vector<CallbackRecord> m_cleanupCbs;  ///< Routines to call at the end of dump
-    bool m_fullDump;  ///< Whether a full dump is required on the next call to 'dump'
-    vluint32_t m_nextCode;  ///< Next code number to assign
-    vluint32_t m_numSignals;  ///< Number of distinct signals
-    vluint32_t m_maxBits;  ///< Number of bits in the widest signal
-    std::string m_moduleName;  ///< Name of module being trace initialized now
+    vluint32_t* m_sigs_oldvalp;  // Old value store
+    vluint64_t m_timeLastDump;  // Last time we did a dump
+    std::vector<CallbackRecord> m_initCbs;  // Routines to initialize traciong
+    std::vector<CallbackRecord> m_fullCbs;  // Routines to perform full dump
+    std::vector<CallbackRecord> m_chgCbs;  // Routines to perform incremental dump
+    std::vector<CallbackRecord> m_cleanupCbs;  // Routines to call at the end of dump
+    bool m_fullDump;  // Whether a full dump is required on the next call to 'dump'
+    vluint32_t m_nextCode;  // Next code number to assign
+    vluint32_t m_numSignals;  // Number of distinct signals
+    vluint32_t m_maxBits;  // Number of bits in the widest signal
+    std::string m_moduleName;  // Name of module being trace initialized now
     char m_scopeEscape;
-    double m_timeRes;  ///< Time resolution (ns/ms etc)
-    double m_timeUnit;  ///< Time units (ns/ms etc)
+    double m_timeRes;  // Time resolution (ns/ms etc)
+    double m_timeUnit;  // Time units (ns/ms etc)
 
-    void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord& cbRec);
+    void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord& cbRec)
+        VL_MT_SAFE_EXCLUDES(m_mutex);
 
     // Equivalent to 'this' but is of the sub-type 'T_Derived*'. Use 'self()->'
     // to access duck-typed functions to avoid a virtual function call.
@@ -204,7 +207,7 @@ protected:
     //=========================================================================
     // Internals available to format specific implementations
 
-    VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
+    VerilatedMutex m_mutex;  // Ensure dump() etc only called from single thread
 
     vluint32_t nextCode() const { return m_nextCode; }
     vluint32_t numSignals() const { return m_numSignals; }
@@ -221,13 +224,13 @@ protected:
 
     void declCode(vluint32_t code, vluint32_t bits, bool tri);
 
-    /// Is this an escape?
-    bool isScopeEscape(char c) { return c != '\f' && (isspace(c) || c == m_scopeEscape); }
-    /// Character that splits scopes.  Note whitespace are ALWAYS escapes.
+    // Is this an escape?
+    bool isScopeEscape(char c) { return c != '\f' && (std::isspace(c) || c == m_scopeEscape); }
+    // Character that splits scopes.  Note whitespace are ALWAYS escapes.
     char scopeEscape() { return m_scopeEscape; }
 
-    void close();
-    void flush();
+    void closeBase();
+    void flushBase();
 
     //=========================================================================
     // Virtual functions to be provided by the format specific implementation
@@ -248,30 +251,24 @@ public:
     ~VerilatedTrace();
 
     // Set time units (s/ms, defaults to ns)
-    void set_time_unit(const char* unitp);
-    void set_time_unit(const std::string& unit);
+    void set_time_unit(const char* unitp) VL_MT_SAFE;
+    void set_time_unit(const std::string& unit) VL_MT_SAFE;
     // Set time resolution (s/ms, defaults to ns)
-    void set_time_resolution(const char* unitp);
-    void set_time_resolution(const std::string& unit);
+    void set_time_resolution(const char* unitp) VL_MT_SAFE;
+    void set_time_resolution(const std::string& unit) VL_MT_SAFE;
 
     // Call
-    void dump(vluint64_t timeui);
+    void dump(vluint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex);
 
     //=========================================================================
     // Non-hot path internal interface to Verilator generated code
 
-    void addInitCb(initCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
-    void addFullCb(dumpCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
-    void addChgCb(dumpCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
-    void addCleanupCb(dumpCb_t cb, void* userp) VL_MT_UNSAFE_ONE;
+    void addInitCb(initCb_t cb, void* userp) VL_MT_SAFE;
+    void addFullCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
+    void addChgCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
+    void addCleanupCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
 
-    void changeThread() { m_assertOne.changeThread(); }
-
-    void module(const std::string& name) VL_MT_UNSAFE_ONE {
-        m_assertOne.check();
-        m_moduleName = name;
-    }
-
+    void module(const std::string& name) VL_MT_UNSAFE;
     void scopeEscape(char flag) { m_scopeEscape = flag; }
 
     //=========================================================================

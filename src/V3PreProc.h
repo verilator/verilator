@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3PREPROC_H_
-#define _V3PREPROC_H_ 1
+#ifndef VERILATOR_V3PREPROC_H_
+#define VERILATOR_V3PREPROC_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -61,7 +61,7 @@ public:
     virtual void insertUnreadback(const string& text) = 0;
 
     int debug() const { return m_debug; }
-    void debug(int level) { m_debug = level; }
+    void debug(int level);
 
     FileLine* fileline();  ///< File/Line number for last getline call
 

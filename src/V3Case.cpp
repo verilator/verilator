@@ -159,11 +159,13 @@ private:
             return false;  // Too wide for analysis
         }
         UINFO(8, "Simple case statement: " << nodep << endl);
+        uint32_t numCases = 1UL << m_caseWidth;
         // Zero list of items for each value
-        for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) m_valueItem[i] = nullptr;
+        for (uint32_t i = 0; i < numCases; ++i) m_valueItem[i] = nullptr;
         // Now pick up the values for each assignment
         // We can cheat and use uint32_t's because we only support narrow case's
-        bool bitched = false;
+        bool reportedOverlap = false;
+        bool reportedSubcase = false;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_CAST(itemp->nextp(), CaseItem)) {
             for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
@@ -179,29 +181,52 @@ private:
                     V3Number numval(itemp, iconstp->width());
                     numval.opBitsOne(iconstp->num());
                     uint32_t val = numval.toUInt();
-                    for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
+
+                    uint32_t firstOverlap = 0;
+                    bool foundOverlap = false;
+                    bool foundHit = false;
+                    for (uint32_t i = 0; i < numCases; ++i) {
                         if ((i & mask) == val) {
                             if (!m_valueItem[i]) {
                                 m_valueItem[i] = itemp;
-                            } else if (!itemp->ignoreOverlap() && !bitched) {
-                                icondp->v3warn(CASEOVERLAP,
-                                               "Case values overlap (example pattern 0x"
-                                                   << std::hex << i << ")");
-                                bitched = true;
+                                foundHit = true;
+                            } else if (!foundOverlap && !itemp->ignoreOverlap()) {
+                                firstOverlap = i;
+                                foundOverlap = true;
                                 m_caseNoOverlapsAllCovered = false;
                             }
+                        }
+                    }
+                    if (!nodep->priorityPragma()) {
+                        // If this case statement doesn't have the priority
+                        // keyword, we want to warn on any overlap.
+                        if (!reportedOverlap && foundOverlap) {
+                            icondp->v3warn(CASEOVERLAP, "Case values overlap (example pattern 0x"
+                                                            << std::hex << firstOverlap << ")");
+                            reportedOverlap = true;
+                        }
+                    } else {
+                        // If this is a priority case, we only want to complain
+                        // if every possible value for this item is already hit
+                        // by some other item. This is true if foundHit is
+                        // false.
+                        if (!reportedSubcase && !foundHit) {
+                            icondp->v3warn(CASEOVERLAP,
+                                           "Case item ignored: every matching value is covered "
+                                           "by an earlier item");
+                            reportedSubcase = true;
                         }
                     }
                 }
             }
             // Defaults were moved to last in the caseitem list by V3LinkDot
             if (itemp->isDefault()) {  // Case statement's default... Fill the table
-                for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
+                for (uint32_t i = 0; i < numCases; ++i) {
                     if (!m_valueItem[i]) m_valueItem[i] = itemp;
                 }
             }
         }
-        for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
+        for (uint32_t i = 0; i < numCases; ++i) {
             if (!m_valueItem[i]) {
                 nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
                                               "(example pattern 0x"
@@ -218,7 +243,7 @@ private:
 
         // Convert valueItem from AstCaseItem* to the expression
         // Not done earlier, as we may now have a nullptr because it's just a ";" NOP branch
-        for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
+        for (uint32_t i = 0; i < numCases; ++i) {
             m_valueItem[i] = VN_CAST(m_valueItem[i], CaseItem)->bodysp();
         }
         return true;  // All is fine

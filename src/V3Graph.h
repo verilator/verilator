@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3GRAPH_H_
-#define _V3GRAPH_H_ 1
+#ifndef VERILATOR_V3GRAPH_H_
+#define VERILATOR_V3GRAPH_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -37,7 +37,7 @@ class OrderLogicVertex;
 // Most graph algorithms accept an arbitrary function that returns
 // True for those edges we should honor.
 
-typedef bool (*V3EdgeFuncP)(const V3GraphEdge* edgep);
+using V3EdgeFuncP = bool (*)(const V3GraphEdge* edgep);
 
 //=============================================================================
 // When the Graph represents a directional acyclical graph (DAG), following

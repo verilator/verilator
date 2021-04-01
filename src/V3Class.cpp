@@ -37,8 +37,7 @@ private:
     AstScope* m_classScopep = nullptr;  // Package moving scopes into
     AstScope* m_packageScopep = nullptr;  // Class package scope
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
-    typedef std::vector<std::pair<AstNode*, AstScope*>> MoveVector;
-    MoveVector m_moves;
+    std::vector<std::pair<AstNode*, AstScope*>> m_moves;
 
     // NODE STATE
     //  AstClass::user1()       -> bool.  True if iterated already
@@ -101,7 +100,7 @@ private:
         // Don't move now, or wouldn't keep interating the class
         // TODO move class statics too
         if (m_packageScopep && m_ftaskp && m_ftaskp->lifetime().isStatic()) {
-            m_moves.push_back(make_pair(nodep, m_packageScopep));
+            m_moves.push_back(std::make_pair(nodep, m_packageScopep));
         }
     }
 
@@ -116,7 +115,7 @@ private:
             m_ftaskp = nodep;
             iterateChildren(nodep);
             if (m_packageScopep && nodep->lifetime().isStatic()) {
-                m_moves.push_back(make_pair(nodep, m_packageScopep));
+                m_moves.push_back(std::make_pair(nodep, m_packageScopep));
             }
         }
     }
@@ -126,7 +125,7 @@ private:
         // Don't move now, or wouldn't keep interating the class
         // TODO move function statics only
         // if (m_classScopep) {
-        //    m_moves.push_back(make_pair(nodep, m_classScopep));
+        //    m_moves.push_back(std::make_pair(nodep, m_classScopep));
         //}
     }
 

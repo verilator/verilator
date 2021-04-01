@@ -41,10 +41,10 @@ static void cycle() {
 }
 
 int main() {
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    contextp->traceEverOn(true);
 
-    Verilated::traceEverOn(true);
-
-    vcore = new Vt_order_multidriven;
+    vcore = new VM_PREFIX{contextp.get()};
     vcd = new VerilatedVcdC;
 
     vcore->trace(vcd, 99);

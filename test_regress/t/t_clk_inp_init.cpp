@@ -8,24 +8,23 @@
 // General headers
 #include "verilated.h"
 
-Vt_clk_inp_init* topp;
-
-vluint64_t main_time;
-double sc_time_stamp() { return main_time; }
-
-void oneTest(int seed) {
+void oneTest(int argc, char** argv, int seed) {
     vluint64_t sim_time = 1000;
 
 #ifdef TEST_VERBOSE
     VL_PRINTF("== Seed=%d\n", seed);
 #endif
 
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    contextp->commandArgs(argc, argv);
+
     // Randomise initial state
     srand48(seed);
     srand48(5);
-    Verilated::randReset(123);
+    contextp->randReset(123);
 
-    topp = new Vt_clk_inp_init("top");
+    // Construct the Verilated model, from Vtop.h generated from Verilating
+    const std::unique_ptr<Vt_clk_inp_init> topp{new Vt_clk_inp_init{contextp.get()}};
 
     // Start not in reset
     topp->rst_n = 1;
@@ -33,33 +32,31 @@ void oneTest(int seed) {
     topp->eval();
 
     // Tick for a little bit
-    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
+    while (contextp->time() < sim_time && !contextp->gotFinish()) {
         topp->clk = 0;
         topp->eval();
 
-        main_time += 5;
+        contextp->timeInc(5);
 
         topp->clk = 1;
         topp->eval();
 
-        main_time += 5;
+        contextp->timeInc(5);
     }
 
-    if (!Verilated::gotFinish()) {
+    if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
 
     topp->final();
-    VL_DO_DANGLING(delete topp, topp);
 }
 
 int main(int argc, char** argv, char** env) {
-    Verilated::commandArgs(argc, argv);
 #if VL_DEBUG
     // Verilated::debug(1);
 #endif
 
-    for (int seed = 123; seed < 133; ++seed) oneTest(seed);
+    for (int seed = 123; seed < 133; ++seed) oneTest(argc, argv, seed);
 
     return 0;
 }

@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,15 +12,18 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Verilator tracing in VCD Format
+/// \brief Verilated tracing in VCD Format implementation code
+///
+/// This file must be compiled and linked against all Verilated objects
+/// that use --trace.
+///
+/// Use "verilator --trace" to add this to the Makefile for the linker.
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 #include "verilatedos.h"
 #include "verilated_vcd_sc.h"
 
-// SPDIFF_ON
 //======================================================================
 //======================================================================
 

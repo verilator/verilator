@@ -15,8 +15,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3GRAPHSTREAM_H_
-#define _V3GRAPHSTREAM_H_
+#ifndef VERILATOR_V3GRAPHSTREAM_H_
+#define VERILATOR_V3GRAPHSTREAM_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -80,13 +80,12 @@ private:
         VL_UNCOPYABLE(VxHolderCmp);
     };
 
-    typedef std::set<VxHolder, VxHolderCmp&> ReadyVertices;
-    typedef std::map<const V3GraphVertex*, VxHolder> WaitingVertices;
+    using ReadyVertices = std::set<VxHolder, VxHolderCmp&>;
 
     // MEMBERS
     VxHolderCmp m_vxHolderCmp;  // Vertext comparison functor
     ReadyVertices m_readyVertices;  // List of ready vertices
-    WaitingVertices m_waitingVertices;  // List of waiting vertices
+    std::map<const V3GraphVertex*, VxHolder> m_waitingVertices;  // List of waiting vertices
     typename ReadyVertices::iterator m_last;  // Previously returned element
     GraphWay m_way;  // FORWARD or REVERSE order of traversal
 
@@ -228,6 +227,6 @@ private:
 // GraphStreamUnordered is GraphStream using a plain pointer compare to
 // break ties in the graph order. This WILL return nodes in
 // nondeterministic order.
-typedef GraphStream<std::less<const V3GraphVertex*>> GraphStreamUnordered;
+using GraphStreamUnordered = GraphStream<std::less<const V3GraphVertex*>>;
 
 #endif  // Guard

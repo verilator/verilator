@@ -45,7 +45,7 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
                 if (line[secspace] == '\'' && line[secspace + 1] == ' ') break;
             }
             string point = line.substr(3, secspace - 3);
-            vluint64_t hits = atoll(line.c_str() + secspace + 1);
+            vluint64_t hits = std::atoll(line.c_str() + secspace + 1);
             // UINFO(9,"   point '"<<point<<"'"<<" "<<hits<<endl);
 
             vluint64_t pointnum = points().findAddPoint(point, hits);
@@ -203,7 +203,8 @@ void VlcTop::annotateCalc() {
         if (!filename.empty() && lineno != 0) {
             VlcSource& source = sources().findNewSource(filename);
             string threshStr = point.thresh();
-            unsigned thresh = (!threshStr.empty()) ? atoi(threshStr.c_str()) : opt.annotateMin();
+            unsigned thresh
+                = (!threshStr.empty()) ? std::atoi(threshStr.c_str()) : opt.annotateMin();
             bool ok = (point.count() >= thresh);
             UINFO(9, "AnnoCalc count " << filename << ":" << lineno << ":" << point.column() << " "
                                        << point.count() << " " << point.linescov() << '\n');
@@ -225,12 +226,12 @@ void VlcTop::annotateCalc() {
                     range = false;
                 } else if (*covp == '-') {
                     range = true;
-                } else if (isdigit(*covp)) {
+                } else if (std::isdigit(*covp)) {
                     const char* digitsp = covp;
-                    while (isdigit(*covp)) ++covp;
+                    while (std::isdigit(*covp)) ++covp;
                     --covp;  // Will inc in for loop
-                    if (!range) start = atoi(digitsp);
-                    end = atoi(digitsp);
+                    if (!range) start = std::atoi(digitsp);
+                    end = std::atoi(digitsp);
                 }
             }
         }
@@ -314,7 +315,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
                         // Multiple columns on same line; print line just once
                         string indent;
                         for (string::const_iterator pos = line.begin();
-                             pos != line.end() && isspace(*pos); ++pos) {
+                             pos != line.end() && std::isspace(*pos); ++pos) {
                             indent += *pos;
                         }
                         line = indent + "verilator_coverage: (next point on previous line)\n";

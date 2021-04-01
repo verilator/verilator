@@ -357,7 +357,7 @@ private:
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
-            AstNode* basefromp = AstArraySel::baseFromp(nodep);
+            AstNode* basefromp = AstArraySel::baseFromp(nodep, true);
             bool lvalue = false;
             if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();
@@ -405,7 +405,7 @@ private:
         if (!nodep->user1SetOnce()) {
             if (debug() == 9) nodep->dumpTree(cout, "-in: ");
             // Guard against reading/writing past end of arrays
-            AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
+            AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp(), true);
             bool lvalue = false;
             if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();

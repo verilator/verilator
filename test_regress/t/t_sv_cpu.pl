@@ -34,7 +34,8 @@ compile(
                  "t/t_sv_cpu_code/cpu.sv",
                  "t/t_sv_cpu_code/chip.sv"],
     vcs_flags2 => ["-R -sverilog +memcbk -y t/t_sv_cpu_code +libext+.sv+ +incdir+t/t_sv_cpu_code"],
-    verilator_flags2 => ["-y t/t_sv_cpu_code +libext+.sv+ +incdir+t/t_sv_cpu_code --top-module t"],
+    verilator_flags2 => ["-y t/t_sv_cpu_code +libext+.sv+ +incdir+t/t_sv_cpu_code --top-module t",
+                         "--timescale-override 1ns/1ps"],
     iv_flags2 => ["-yt/t_sv_cpu_code -It/t_sv_cpu_code -Y.sv"],
     );
 

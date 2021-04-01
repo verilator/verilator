@@ -202,6 +202,8 @@ int mon_check() {
     return 0;  // Ok
 }
 
+void dpi_print(const char* somestring) { printf("SOMESTRING = %s\n", somestring); }
+
 //======================================================================
 
 #ifdef IS_VPI
@@ -278,7 +280,7 @@ int main(int argc, char** argv, char** env) {
 #endif
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return 0;
 }
 
 #endif

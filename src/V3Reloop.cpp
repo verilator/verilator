@@ -45,9 +45,6 @@ constexpr unsigned RELOOP_MIN_ITERS = 40;  // Need at least this many loops to d
 
 class ReloopVisitor final : public AstNVisitor {
 private:
-    // TYPES
-    typedef std::vector<AstNodeAssign*> AssVec;
-
     // NODE STATE
     // AstCFunc::user1p      -> Var* for temp var, 0=not set yet
     AstUser1InUse m_inuser1;
@@ -57,7 +54,7 @@ private:
     VDouble0 m_statReItems;  // Statistic tracking
     AstCFunc* m_cfuncp = nullptr;  // Current block
 
-    AssVec m_mgAssignps;  // List of assignments merging
+    std::vector<AstNodeAssign*> m_mgAssignps;  // List of assignments merging
     AstCFunc* m_mgCfuncp = nullptr;  // Parent C function
     AstNode* m_mgNextp = nullptr;  // Next node
     AstNodeSel* m_mgSelLp = nullptr;  // Parent select, nullptr = idle

@@ -67,10 +67,9 @@
 #include <iostream>
 
 // Avoid needing std:: prefixes on some very common items
-typedef std::string string;
+using string = std::string;
 using std::cout;
 using std::endl;
-using std::make_pair;
 
 //**********************************************************************
 //**** Configure-discovered library options

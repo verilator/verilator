@@ -77,10 +77,8 @@ public:
 
 class LatchDetectGraph final : public V3Graph {
 protected:
-    typedef std::vector<AstVarRef*> VarRefVec;
-
     LatchDetectGraphVertex* m_curVertexp;  // Current latch detection graph vertex
-    VarRefVec m_outputs;  // Vector of lvalues encountered on this pass
+    std::vector<AstVarRef*> m_outputs;  // Vector of lvalues encountered on this pass
 
     VL_DEBUG_FUNC;  // Declare debug()
 
@@ -213,7 +211,7 @@ private:
     AstActive* m_cActivep = nullptr;  // For current scope, the SActive(combo) we're building
 
     SenTreeSet m_activeSens;  // Sen lists for each active we've made
-    typedef std::unordered_map<AstSenTree*, AstActive*> ActiveMap;
+    using ActiveMap = std::unordered_map<AstSenTree*, AstActive*>;
     ActiveMap m_activeMap;  // Map sentree to active, for folding.
 
     // METHODS

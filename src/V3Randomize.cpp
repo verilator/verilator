@@ -39,8 +39,8 @@ private:
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
     AstUser1InUse m_inuser1;
 
-    typedef std::unordered_set<AstClass*> DerivedSet;
-    typedef std::unordered_map<AstClass*, DerivedSet> BaseToDerivedMap;
+    using DerivedSet = std::unordered_set<AstClass*>;
+    using BaseToDerivedMap = std::unordered_map<AstClass*, DerivedSet>;
 
     BaseToDerivedMap m_baseToDerivedMap;  // Mapping from base classes to classes that extend them
 

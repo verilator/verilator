@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _VLCOPTIONS_H_
-#define _VLCOPTIONS_H_ 1
+#ifndef VERILATOR_VLCOPTIONS_H_
+#define VERILATOR_VLCOPTIONS_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -29,7 +29,7 @@
 //######################################################################
 // V3Options - Command line options
 
-typedef std::set<string> VlStringSet;
+using VlStringSet = std::set<std::string>;
 
 class VlcOptions final {
     // MEMBERS (general options)

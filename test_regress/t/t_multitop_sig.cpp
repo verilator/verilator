@@ -10,15 +10,11 @@
 #include <verilated.h>
 #include "Vt_multitop_sig.h"
 
+#include "TestCheck.h"
+
 double sc_time_stamp() { return 0; }
 
-// Use cout to avoid issues with %d/%lx etc
-#define CHECK_RESULT(got, exp) \
-    if ((got) != (exp)) { \
-        std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
-                  << "   EXP = " << (exp) << std::endl; \
-        return __LINE__; \
-    }
+int errors = 0;
 
 int main(int argc, char* argv[]) {
     Vt_multitop_sig* topp = new Vt_multitop_sig("");
@@ -30,20 +26,21 @@ int main(int argc, char* argv[]) {
         topp->b__02Ein = 0;
         topp->uniq_in = 0;
         topp->eval();
-        CHECK_RESULT(topp->a__02Eout, 1);
-        CHECK_RESULT(topp->b__02Eout, 0);
-        CHECK_RESULT(topp->uniq_out, 1);
+        TEST_CHECK_EQ(topp->a__02Eout, 1);
+        TEST_CHECK_EQ(topp->b__02Eout, 0);
+        TEST_CHECK_EQ(topp->uniq_out, 1);
         topp->a__02Ein = 1;
         topp->b__02Ein = 1;
         topp->uniq_in = 1;
         topp->eval();
-        CHECK_RESULT(topp->a__02Eout, 0);
-        CHECK_RESULT(topp->b__02Eout, 1);
-        CHECK_RESULT(topp->uniq_out, 0);
+        TEST_CHECK_EQ(topp->a__02Eout, 0);
+        TEST_CHECK_EQ(topp->b__02Eout, 1);
+        TEST_CHECK_EQ(topp->uniq_out, 0);
     }
 
     topp->final();
     VL_DO_DANGLING(delete topp, topp);
 
     printf("*-* All Finished *-*\n");
+    return errors ? 10 : 0;
 }

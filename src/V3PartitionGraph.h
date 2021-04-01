@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3PARTITIONGRAPH_H_
-#define _V3PARTITIONGRAPH_H_
+#ifndef VERILATOR_V3PARTITIONGRAPH_H_
+#define VERILATOR_V3PARTITIONGRAPH_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -40,7 +40,7 @@ public:
 class AbstractLogicMTask VL_NOT_FINAL : public AbstractMTask {
 public:
     // TYPES
-    typedef std::list<MTaskMoveVertex*> VxList;
+    using VxList = std::list<MTaskMoveVertex*>;
     // CONSTRUCTORS
     AbstractLogicMTask(V3Graph* graphp)
         : AbstractMTask{graphp} {}

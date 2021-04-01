@@ -340,7 +340,7 @@ V3PreLex_pregen.yy.cpp:	V3PreLex.l $(HEADERS)
 	${LEX} ${LFLAGS} -o$@ $<
 
 V3PreLex.yy.cpp: V3PreLex_pregen.yy.cpp $(FLEXFIX)
-	$(PERL) $(FLEXFIX) V3PreLex <$< >$@
+	$(PYTHON3) $(FLEXFIX) V3PreLex <$< >$@
 
 .SUFFIXES:
 

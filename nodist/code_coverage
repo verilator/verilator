@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0115,C0116,R0912,R0914,R0915,W0125,W0621,exec-used
 ######################################################################
 
 import argparse
@@ -7,6 +8,7 @@ import multiprocessing
 import os
 import re
 import subprocess
+import sys
 
 RealPath = os.path.dirname(os.path.realpath(__file__))
 Exclude_Branch_Regexps = []
@@ -36,9 +38,23 @@ def test():
         ci_fold_start("configure")
         print("Stage 1: configure (coverage on)")
         run("autoconf")
-        # Exceptions can pollute the branch coverage data
-        run("./configure --enable-longtests CXX='g++ --coverage -fno-exceptions -DVL_GCOV'"
-            )
+        cxx_flags = (
+            "--coverage"
+            # Otherwise inline may not show as uncovered
+            #  If we use this then e.g. verilated.h functions properly show up
+            #  if unused.
+            #  However, VerilatedSerialize::write then changes from covered
+            #  to uncovered (in G++ 9.3.0) even with all inlining turned off.
+            #  Having false negative coverage is more effort then missing negatives.
+            #  Also this seems to explode the runtime (since a lot more data).
+            #  + " -fkeep-inline-functions"
+            # Otherwise static may not show as uncovered
+            + " -fkeep-static-functions"
+            # Exceptions can pollute the branch coverage data
+            + " -fno-exceptions"
+            # Define-out some impossible stuff
+            + " -DVL_GCOV")
+        run("./configure --enable-longtests CXX='g++ " + cxx_flags + "'")
         ci_fold_end()
 
     if Args.stage_enabled[2]:
@@ -123,8 +139,10 @@ def test():
         # Must run in root directory to find all files
         os.makedirs(cc_dir, exist_ok=True)
         run(RealPath + "/fastcov.py -b -c src/obj_dbg -X --lcov" +
-            " --exclude /usr --exclude test_regress" + " -o " + cc_dir +
-            "/app_total.info")
+            #            " --exclude /usr --exclude test_regress" + " -o " + cc_dir +
+            " -o " + cc_dir + "/app_total.info")
+        # For debug to convert single .gcna/.gcno in a directory to cov.info:
+        #    lcov -c -d . -o cov.info
         ci_fold_end()
 
     if Args.stage_enabled[6]:
@@ -223,7 +241,7 @@ def clone_sources(cc_dir):
                             if done:
                                 break
                             if re.search(regexp, line):
-                                #print("%s:%d: %s" % (infile, lineno, line)
+                                # print("%s:%d: %s" % (infile, lineno, line)
                                 line += "  //code_coverage: // LCOV_EXCL_LINE LCOV_EXCL_BR_LINE"
                                 excluded_lines += 1
                                 excluded_br_lines += 1
@@ -233,7 +251,7 @@ def clone_sources(cc_dir):
                             if done:
                                 break
                             if re.search(regexp, line):
-                                #print("%s:%d: %s" % (infile, lineno, line)
+                                # print("%s:%d: %s" % (infile, lineno, line)
                                 line += "  //code_coverage: // LCOV_EXCL_BR_LINE"
                                 excluded_br_lines += 1
                                 done = True
@@ -256,7 +274,7 @@ def cleanup_abs_paths_info(cc_dir, infile, outfile):
                               count=1)
                 line = re.sub(cc_dir + '/', '', line, count=1)
                 line = re.sub(r'obj_dbg/verilog.y$', 'verilog.y', line)
-                #print("Remaining SF: "+line)
+                # print("Remaining SF: "+line)
             lines.append(line)
 
     with open(outfile, "w") as ofh:
@@ -397,7 +415,7 @@ if True:
         elif match_from:
             start = int(match_from.group(1))
         else:
-            os.exit("%Error: --stages not understood: " + Args.stages)
+            sys.exit("%Error: --stages not understood: " + Args.stages)
     for n in range(0, 100):
         Args.stage_enabled[n] = False
     for n in range(start, end + 1):
@@ -406,6 +424,6 @@ if True:
 test()
 
 ######################################################################
-### Local Variables:
-### compile-command: "cd .. ; nodist/code_coverage "
-### End:
+# Local Variables:
+# compile-command: "cd .. ; nodist/code_coverage "
+# End:

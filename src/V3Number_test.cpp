@@ -16,7 +16,7 @@
 
 // CHEAT!
 #define V3NUMBER_ASCII_BINARY
-#define _V3ERROR_NO_GLOBAL_ 1
+#define V3ERROR_NO_GLOBAL_
 
 #include <config_build.h>
 #include "verilatedos.h"

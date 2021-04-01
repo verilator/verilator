@@ -24,5 +24,5 @@ int main(int argc, char* argv[]) {
     // We aren't calling Verilated::commandArgs(argc, argv)
     topp->eval();
 
-    exit(0);
+    return 0;
 }

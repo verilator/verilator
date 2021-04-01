@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,10 +12,14 @@
 //=============================================================================
 ///
 /// \file
-/// \brief C++ Tracing in FST Format
+/// \brief Verilated C++ tracing in FST format implementation code
+///
+/// This file must be compiled and linked against all Verilated objects
+/// that use --trace-fst.
+///
+/// Use "verilator --trace-fst" to add this to the Makefile for the linker.
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 // clang-format off
 
@@ -66,8 +70,8 @@ VerilatedFst::~VerilatedFst() {
     if (m_strbuf) VL_DO_CLEAR(delete[] m_strbuf, m_strbuf = nullptr);
 }
 
-void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
-    m_assertOne.check();
+void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock(m_mutex);
     m_fst = fstWriterCreate(filename, 1);
     fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
     fstWriterSetTimescaleFromString(m_fst, timeResStr().c_str());  // lintok-begin-on-ref
@@ -97,15 +101,16 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     if (!m_strbuf) m_strbuf = new char[maxBits() + 32];
 }
 
-void VerilatedFst::close() {
-    m_assertOne.check();
-    VerilatedTrace<VerilatedFst>::close();
+void VerilatedFst::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock(m_mutex);
+    VerilatedTrace<VerilatedFst>::closeBase();
     fstWriterClose(m_fst);
     m_fst = nullptr;
 }
 
-void VerilatedFst::flush() {
-    VerilatedTrace<VerilatedFst>::flush();
+void VerilatedFst::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock(m_mutex);
+    VerilatedTrace<VerilatedFst>::flushBase();
     fstWriterFlushContext(m_fst);
 }
 

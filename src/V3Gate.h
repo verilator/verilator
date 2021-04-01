@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3GATE_H_
-#define _V3GATE_H_ 1
+#ifndef VERILATOR_V3GATE_H_
+#define VERILATOR_V3GATE_H_
 
 #include "config_build.h"
 #include "verilatedos.h"

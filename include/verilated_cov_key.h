@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2001-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,12 +12,15 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Coverage item keys
+/// \brief Verilated coverage item keys internal header
+///
+/// This file is not part of the Verilated public-facing API.
+/// It is only for internal use by the Verilated library coverage routines.
 ///
 //=============================================================================
 
-#ifndef _VERILATED_COV_KEY_H_
-#define _VERILATED_COV_KEY_H_ 1
+#ifndef VERILATOR_VERILATED_COV_KEY_H_
+#define VERILATOR_VERILATED_COV_KEY_H_
 
 #include "verilatedos.h"
 
@@ -57,11 +60,11 @@ VLCOVGEN_ITEM("'name':'weight',      'short':'w',  'group':0, 'default':None, 'd
 
 //=============================================================================
 // VerilatedCovKey
-/// Verilator coverage global class.
-/// This class is thread safe.
+// Namespace-style static class for \internal use.
 
 class VerilatedCovKey final {
 public:
+    // Return the short key code for a given a long coverage key
     static std::string shortKey(const std::string& key) VL_PURE {
         // VLCOVGEN_SHORT_AUTO_EDIT_BEGIN
         if (key == "column") return VL_CIK_COLUMN;

@@ -19,12 +19,13 @@
 #include <iostream>
 #include <vector>
 
+#include "TestCheck.h"
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
 #include "vpi_user.h"
 
-bool got_error = false;
+int errors = 0;
 
 TestVpiHandle vh_value_cb;
 TestVpiHandle vh_rw_cb;
@@ -34,33 +35,6 @@ unsigned int last_rw_cb_time = 0;
 
 unsigned int main_time = 0;
 
-#ifdef TEST_VERBOSE
-bool verbose = true;
-#else
-bool verbose = false;
-#endif
-
-#define CHECK_RESULT_NZ(got) \
-    if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", __FILE__, __LINE__); \
-        got_error = true; \
-    }
-
-// Use cout to avoid issues with %d/%lx etc
-#define CHECK_RESULT_NE(got, exp) \
-    if ((got) == (exp)) { \
-        std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
-                  << "   EXP = !" << (exp) << std::endl; \
-        got_error = true; \
-    }
-
-// Use cout to avoid issues with %d/%lx etc
-#define CHECK_RESULT(got, exp) \
-    if ((got) != (exp)) { \
-        std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
-                  << "   EXP = " << (exp) << std::endl; \
-        got_error = true; \
-    }
 static void reregister_value_cb();
 static void reregister_rw_cb();
 
@@ -79,13 +53,13 @@ static void reregister_value_cb() {
         if (verbose) vpi_printf(const_cast<char*>("- Removing cbValueChange callback\n"));
         int ret = vpi_remove_cb(vh_value_cb);
         vh_value_cb.freed();
-        CHECK_RESULT(ret, 1);
+        TEST_CHECK_EQ(ret, 1);
 
         if (verbose) {
             vpi_printf(const_cast<char*>("- last_value_cb_time %d , main_time %d\n"),
                        last_value_cb_time, main_time);
         }
-        CHECK_RESULT_NE(main_time, last_value_cb_time);
+        TEST_CHECK_NE(main_time, last_value_cb_time);
         last_value_cb_time = main_time;
     }
     if (verbose) vpi_printf(const_cast<char*>("- Registering cbValueChange callback\n"));
@@ -95,7 +69,7 @@ static void reregister_value_cb() {
     cb_data_testcase.reason = cbValueChange;
 
     TestVpiHandle vh1 = VPI_HANDLE("count");
-    CHECK_RESULT_NZ(vh1);
+    TEST_CHECK_NZ(vh1);
 
     s_vpi_value v;
     v.format = vpiSuppressVal;
@@ -104,7 +78,7 @@ static void reregister_value_cb() {
     cb_data_testcase.value = &v;
 
     vh_value_cb = vpi_register_cb(&cb_data_testcase);
-    CHECK_RESULT_NZ(vh_value_cb);
+    TEST_CHECK_NZ(vh_value_cb);
 }
 
 static void reregister_rw_cb() {
@@ -112,13 +86,13 @@ static void reregister_rw_cb() {
         if (verbose) vpi_printf(const_cast<char*>("- Removing cbReadWriteSynch callback\n"));
         int ret = vpi_remove_cb(vh_rw_cb);
         vh_rw_cb.freed();
-        CHECK_RESULT(ret, 1);
+        TEST_CHECK_EQ(ret, 1);
 
         if (verbose) {
             vpi_printf(const_cast<char*>("- last_rw_cb_time %d , main_time %d\n"), last_rw_cb_time,
                        main_time);
         }
-        CHECK_RESULT_NE(main_time, last_rw_cb_time);
+        TEST_CHECK_NE(main_time, last_rw_cb_time);
         last_rw_cb_time = main_time;
     }
     if (verbose) vpi_printf(const_cast<char*>("- Registering cbReadWriteSynch callback\n"));
@@ -128,7 +102,7 @@ static void reregister_rw_cb() {
     cb_data_testcase.reason = cbReadWriteSynch;
 
     vh_rw_cb = vpi_register_cb(&cb_data_testcase);
-    CHECK_RESULT_NZ(vh_rw_cb);
+    TEST_CHECK_NZ(vh_rw_cb);
 }
 
 static int the_filler_callback(p_cb_data cb_data) { return 0; }
@@ -143,7 +117,7 @@ static void register_filler_cb() {
     cb_data_1.reason = cbReadWriteSynch;
 
     TestVpiHandle cb_data_1_h = vpi_register_cb(&cb_data_1);
-    CHECK_RESULT_NZ(cb_data_1_h);
+    TEST_CHECK_NZ(cb_data_1_h);
 
     if (verbose) {
         vpi_printf(const_cast<char*>("- Registering filler cbValueChange callback\n"));
@@ -154,7 +128,7 @@ static void register_filler_cb() {
     cb_data_2.reason = cbValueChange;
 
     TestVpiHandle vh2 = VPI_HANDLE("count");
-    CHECK_RESULT_NZ(vh2);
+    TEST_CHECK_NZ(vh2);
 
     s_vpi_value v;
     v.format = vpiSuppressVal;
@@ -163,7 +137,7 @@ static void register_filler_cb() {
     cb_data_2.value = &v;
 
     TestVpiHandle cb_data_2_h = vpi_register_cb(&cb_data_2);
-    CHECK_RESULT_NZ(cb_data_2_h);
+    TEST_CHECK_NZ(cb_data_2_h);
 }
 
 double sc_time_stamp() { return main_time; }
@@ -176,9 +150,9 @@ int main(int argc, char** argv, char** env) {
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 
     reregister_value_cb();
-    CHECK_RESULT_NZ(vh_value_cb);
+    TEST_CHECK_NZ(vh_value_cb);
     reregister_rw_cb();
-    CHECK_RESULT_NZ(vh_rw_cb);
+    TEST_CHECK_NZ(vh_rw_cb);
     register_filler_cb();
 
     topp->eval();
@@ -186,12 +160,12 @@ int main(int argc, char** argv, char** env) {
 
     while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
-        if (verbose) VL_PRINTF("Sim Time %d got_error %d\n", main_time, got_error);
+        if (verbose) VL_PRINTF("Sim Time %d got_error %d\n", main_time, errors);
         topp->clk = !topp->clk;
         topp->eval();
         VerilatedVpi::callValueCbs();
         VerilatedVpi::callCbs(cbReadWriteSynch);
-        if (got_error) vl_stop(__FILE__, __LINE__, "TOP-cpp");
+        if (errors) vl_stop(__FILE__, __LINE__, "TOP-cpp");
     }
 
     if (!Verilated::gotFinish()) {
@@ -200,5 +174,5 @@ int main(int argc, char** argv, char** env) {
     topp->final();
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return errors ? 10 : 0;
 }

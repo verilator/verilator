@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3WAIVER_H_
-#define _V3WAIVER_H_ 1
+#ifndef VERILATOR_V3WAIVER_H_
+#define VERILATOR_V3WAIVER_H_
 
 #include "V3Error.h"
 
@@ -24,7 +24,7 @@
 
 class V3Waiver final {
     // TYPES
-    typedef std::vector<std::string> WaiverList;
+    using WaiverList = std::vector<std::string>;
     static WaiverList s_waiverList;
 
 public:

@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3LINKLEVEL_H_
-#define _V3LINKLEVEL_H_ 1
+#ifndef VERILATOR_V3LINKLEVEL_H_
+#define VERILATOR_V3LINKLEVEL_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -27,7 +27,7 @@
 
 class V3LinkLevel final {
 private:
-    typedef std::vector<AstNodeModule*> ModVec;
+    using ModVec = std::vector<AstNodeModule*>;
 
     static void timescaling(const ModVec& mods);
     static void wrapTopCell(AstNetlist* rootp);
