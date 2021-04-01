@@ -4735,16 +4735,17 @@ correctly.
 
 =item PINNOTFOUND
 
-Warns that an instance pin was not found in the module being instanciated.
-Please note that Verilator raises these errors also on instances that should
-be disabled by generate/if/endgenerate constructs:
+Warns that an instance port or Parameter was not found in the module being
+instanciated. Please note that Verilator raises these errors also on instances
+that should be disabled by generate/if/endgenerate constructs:
 
     module a;
     localparam A=1;
     generate
     if (A==0)
     begin
-    b b_inst(.x(1'b0));
+    b b_inst1 (.x(1'b0)); // nonexistent port
+    b #(.PX(1'b0)) b_inst2 (); // nonexistent parameter
     end
     endgenerate
     endmodule
@@ -4753,9 +4754,10 @@ be disabled by generate/if/endgenerate constructs:
     endmodule
 
 In the example above, b is instanciated with a port named x, but module b has
-no such port at all. Technically, this code is in error because of this, but
-other commercial tools ignore it because the generate/if condition is false,
-and so module b in this example is not instanciated.
+no such port at all. In the next line, b is instantiated again, this tim with
+a nonexistent parameter PX. Technically, this code is in error because of
+this, but other commercial tools ignore it because the generate/if condition
+is false, and so module b in this example is not instanciated.
 
 It is possible to disable the error above using:
 /* verilator lint_off PINNOTFOUND */
