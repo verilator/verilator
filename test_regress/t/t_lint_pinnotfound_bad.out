@@ -1,0 +1,4 @@
+%Error-PINNOTFOUND: t/t_lint_pinnotfound_bad.v:12:11: Pin not found: 'x'
+   12 | b b_inst(.x(1'b0));
+      |           ^
+%Error: Exiting due to
