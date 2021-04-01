@@ -2023,9 +2023,10 @@ private:
                                                                  LinkNodeMatcherVarParam())
                                       : m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
                                                                  LinkNodeMatcherVarIO()));
-                nodep->v3error(ucfirst(whatp)
-                               << " not found: " << nodep->prettyNameQ() << '\n'
-                               << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+                nodep->v3warn(PINNOTFOUND,
+                              ucfirst(whatp)
+                                  << " not found: " << nodep->prettyNameQ() << '\n'
+                                  << (suggest.empty() ? "" : nodep->warnMore() + suggest));
             } else if (AstVar* refp = VN_CAST(foundp->nodep(), Var)) {
                 if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
                     nodep->v3error(ucfirst(whatp) << " is not an in/out/inout/param/interface: "

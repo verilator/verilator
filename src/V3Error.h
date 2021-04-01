@@ -101,9 +101,10 @@ public:
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
         NOLATCH,        // No latch detected in always_latch block
+        PINCONNECTEMPTY,// Cell pin connected by name with empty reference
         PINMISSING,     // Cell pin not specified
         PINNOCONNECT,   // Cell pin not connected
-        PINCONNECTEMPTY,// Cell pin connected by name with empty reference
+        PINNOTFOUND,    // instance port name not found in it's module
         PKGNODECL,      // Error: Package/class needs to be predeclared
         PROCASSWIRE,    // Procedural assignment on wire
         RANDC,          // Unsupported: 'randc' converted to 'rand'
@@ -166,8 +167,8 @@ public:
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MODDUP",
-            "MULTIDRIVEN", "MULTITOP","NOLATCH",
-            "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PKGNODECL", "PROCASSWIRE",
+            "MULTIDRIVEN", "MULTITOP","NOLATCH", "PINCONNECTEMPTY", 
+            "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
             "RANDC", "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
@@ -190,7 +191,8 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const {
         return (m_e == ASSIGNIN || m_e == BLKANDNBLK || m_e == BLKLOOPINIT || m_e == CONTASSREG
-                || m_e == IMPURE || m_e == PKGNODECL || m_e == PROCASSWIRE);  // Says IEEE
+                || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL
+                || m_e == PROCASSWIRE);  // Says IEEE
     }
     // Warnings to mention manual
     bool mentionManual() const {
