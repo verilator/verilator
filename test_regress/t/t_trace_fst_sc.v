@@ -33,7 +33,7 @@ module t (/*AUTOARG*/
    tri1            fst_tri1;
    tri             fst_tri;
    wire            fst_wire;
-   
+
    logic [4:0] state;
 
    Test test (/*AUTOINST*/
