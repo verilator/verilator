@@ -4755,7 +4755,7 @@ that should be disabled by generate/if/endgenerate constructs:
 In the example above, b is instantiated with a port named x, but module b has
 no such port. In the next line, b is instantiated again with
 a nonexistent parameter PX. Technically, this code is incorrect because of
-this, but other may tools ignore it because module b is not instantiated
+this, but other tools may ignore it because module b is not instantiated
 due to the generate/if condition being false.
 
 It is possible to disable the error above using:
