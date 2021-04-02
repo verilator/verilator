@@ -3605,6 +3605,10 @@ Disable the specified warning message for any warnings following the comment.
 
 Re-enable the specified warning message for any warnings following the comment.
 
+=item /*verilator lint_ignore I<msg>*/
+
+Disable the specified warning message for any warnings within the same line.
+
 =item /*verilator lint_restore*/
 
 After a /*verilator lint_save*/, pop the stack containing lint message

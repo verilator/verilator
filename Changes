@@ -29,6 +29,7 @@ Verilator 4.201 devel
 * Fix --public-flat-rw / DPI issue (#2858). [Todd Strader]
 * Fix interface localparam access (#2859). [Todd Strader]
 * Fix Cygwin example compile issues (#2856). [Mark Shaw]
+* Add lint_ignore meta comment (#2755). [Geza Lore]
 
 
 Verilator 4.200 2021-03-12

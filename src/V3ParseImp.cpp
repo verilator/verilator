@@ -129,14 +129,7 @@ void V3ParseImp::lexVerilatorCmtLintRestore(FileLine* fl) {
 }
 
 void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff) {
-    const char* sp = textp;
-    while (*sp && !isspace(*sp)) ++sp;
-    while (*sp && isspace(*sp)) ++sp;
-    while (*sp && !isspace(*sp)) ++sp;
-    while (*sp && isspace(*sp)) ++sp;
-    string msg = sp;
-    string::size_type pos;
-    if ((pos = msg.find('*')) != string::npos) msg.erase(pos);
+    const string msg = lexVerilatorCmtArg(textp);
     // Use parsep()->lexFileline() as want to affect later FileLine's warnings
     if (!(parsep()->lexFileline()->warnOff(msg, warnOff))) {
         if (!v3Global.opt.isFuture(msg)) {
@@ -214,6 +207,20 @@ double V3ParseImp::lexParseTimenum(const char* textp) {
 
     VL_DO_DANGLING(delete[] strgp, strgp);
     return d / divisor;
+}
+
+string V3ParseImp::lexVerilatorCmtArg(const char* textp) {
+    const char* sp = textp;
+    while (*sp && !isspace(*sp)) ++sp;
+    while (*sp && isspace(*sp)) ++sp;
+    while (*sp && !isspace(*sp)) ++sp;
+    while (*sp && isspace(*sp)) ++sp;
+    const char* ep = sp;
+    while (*ep && !isspace(*ep)) ++ep;
+    string msg(sp, ep - sp);
+    string::size_type pos;
+    if ((pos = msg.find('*')) != string::npos) msg.erase(pos);
+    return msg;
 }
 
 //######################################################################
@@ -327,18 +334,52 @@ void V3ParseImp::lexFile(const string& modname) {
     if (bisonParse()) v3fatal("Cannot continue\n");
 }
 
-void V3ParseImp::tokenPull() {
-    // Pull token from lex into the pipeline
+void V3ParseImp::linePull() {
+    // Pull whole lines worth of tokens from lex into the lookahead buffer.
+    // Pulls at least one line, but keeps going if necessary to ensure the
+    // lookahead buffer is non empty when this function returns.
+
     // This corrupts yylval, must save/restore if required
-    // Fetch next token from prefetch or real lexer
-    yylexReadTok();  // sets yylval
-    m_tokensAhead.push_back(yylval);
+
+    const auto prevTokenCount = m_tokensAhead.size();
+
+    do {  // Pull lines until lookahead buffer has grown
+        std::deque<V3ParseBisonYYSType> lineBuffer;
+
+        do {  // Pull tokens until and including EOL (or EOF)
+            yylexReadTok();  // sets yylval
+            lineBuffer.push_back(yylval);
+        } while (yylval.token != yEOL && yylval.token != 0);
+
+        // Process meta comments applying to this line,
+        // and transfer the rest to the lookahead buffer
+        for (const auto& tok : lineBuffer) {
+            switch (tok.token) {
+            case yEOL:  // Drop end of line tokens
+                break;
+            case yVL_LINT_IGNORE: {  // Apply, then drop
+                const string& msg = *tok.strp;
+                if (!tok.fl->warnOff(msg, true)) {
+                    if (!v3Global.opt.isFuture(msg)) {
+                        tok.fl->v3error("Unknown verilator lint message code: '" << msg << "'");
+                    }
+                } else {
+                    for (auto& other : lineBuffer) { other.fl->warnOff(msg, true); }
+                }
+                break;
+            }
+            default:  // Transfer token to lookahead buffer
+                m_tokensAhead.push_back(tok);
+                break;
+            }
+        }
+    } while (m_tokensAhead.size() <= prevTokenCount);
 }
 
 const V3ParseBisonYYSType* V3ParseImp::tokenPeekp(size_t depth) {
     // Look ahead "depth" number of tokens in the input stream
     // Returns pointer to token, which is no longer valid after changing m_tokensAhead
-    while (m_tokensAhead.size() <= depth) tokenPull();
+    while (m_tokensAhead.size() <= depth) linePull();
     return &m_tokensAhead.at(depth);
 }
 
@@ -371,7 +412,7 @@ size_t V3ParseImp::tokenPipeScanParam(size_t depth) {
 
 void V3ParseImp::tokenPipeline() {
     // called from bison's "yylex", has a "this"
-    if (m_tokensAhead.empty()) tokenPull();  // corrupts yylval
+    if (m_tokensAhead.empty()) linePull();  // corrupts yylval
     yylval = m_tokensAhead.front();
     m_tokensAhead.pop_front();
     int token = yylval.token;

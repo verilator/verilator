@@ -108,7 +108,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Verilator control files */
 <VLT>{
   {ws}                  { FL_FWD; FL_BRK; }  /* otherwise ignore white-space */
-  {crnl}                { FL_FWD; FL_BRK; }  /* Count line numbers */
+  {crnl}                { FL; return yEOL; }  /* Count line numbers */
 
   "clock_enable"        { FL; return yVLT_CLOCK_ENABLE; }
   "clocker"             { FL; return yVLT_CLOCKER; }
@@ -157,7 +157,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Verilog 1995 */
 <V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,SAX>{
   {ws}                  { FL_FWD; FL_BRK; }  /* otherwise ignore white-space */
-  {crnl}                { FL_FWD; FL_BRK; }  /* Count line numbers */
+  {crnl}                { FL; return yEOL; }  /* Count line numbers */
   /*     Extensions to Verilog set, some specified by PSL */
   "$c"[0-9]*            { FL; return yD_C; }  /*Verilator only*/
   /*     System Tasks */
@@ -727,6 +727,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator isolate_assignments*/"   { FL; return yVL_ISOLATE_ASSIGNMENTS; }
   "/*verilator lint_off"[^*]*"*/"       { FL; PARSEP->lexVerilatorCmtLint(yylval.fl, yytext, true); FL_BRK; }
   "/*verilator lint_on"[^*]*"*/"        { FL; PARSEP->lexVerilatorCmtLint(yylval.fl, yytext, false); FL_BRK; }
+  "/*verilator lint_ignore"[^*]*"*/"    { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexVerilatorCmtArg(yytext));
+                                          return yVL_LINT_IGNORE; }
   "/*verilator lint_restore*/"          { FL; PARSEP->lexVerilatorCmtLintRestore(PARSEP->lexFileline()); FL_BRK; }
   "/*verilator lint_save*/"             { FL; PARSEP->lexVerilatorCmtLintSave(PARSEP->lexFileline()); FL_BRK; }
   "/*verilator no_clocker*/"            { FL; return yVL_NO_CLOCKER; }

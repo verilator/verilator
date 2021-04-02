@@ -432,6 +432,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              '}'
 %token<fl>              '~'
 
+%token<fl>              yEOL
+
 // Specific keywords
 // yKEYWORD means match "keyword"
 // Other cases are yXX_KEYWORD where XX makes it unique,
@@ -850,6 +852,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_SFORMAT             "/*verilator sformat*/"
 %token<fl>              yVL_SPLIT_VAR           "/*verilator split_var*/"
 %token<strp>            yVL_TAG                 "/*verilator tag*/"
+%token<strp>            yVL_LINT_IGNORE         "/*verilator lint_ignore*/"
 
 %token<fl>              yP_TICK         "'"
 %token<fl>              yP_TICKBRA      "'{"

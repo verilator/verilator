@@ -1,0 +1,4 @@
+%Error: t/t_metacmt_ignore_bad.v:7:4: Unknown verilator lint message code: 'NONEXISTENTMESSAGE'
+    7 |    /*verilator lint_ignore NONEXISTENTMESSAGE*/ 
+      |    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to

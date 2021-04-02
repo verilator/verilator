@@ -223,6 +223,7 @@ public:
     static void lexErrorPreprocDirective(FileLine* fl, const char* textp);
     static string lexParseTag(const char* textp);
     static double lexParseTimenum(const char* text);
+    static string lexVerilatorCmtArg(const char* textp);
     void lexPpline(const char* textp);
     void lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff);
     void lexVerilatorCmtLintSave(const FileLine* fl);
@@ -331,7 +332,7 @@ public:
 private:
     void lexFile(const string& modname);
     void yylexReadTok();
-    void tokenPull();
+    void linePull();
     void tokenPipeline();  // Internal; called from tokenToBison
     void tokenPipelineSym();
     size_t tokenPipeScanParam(size_t depth);
