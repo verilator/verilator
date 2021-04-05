@@ -872,7 +872,7 @@ There are scripts included to facilitate fuzzing of Verilator. These
 have been successfully used to find a number of bugs in the frontend.
 
 The scripts are based on using `American fuzzy
-lop <http://lcamtuf.coredump.cx/afl/>`__ on a Debian-like system.
+lop <https://lcamtuf.coredump.cx/afl/>`__ on a Debian-like system.
 
 To get started, cd to "nodist/fuzzer/" and run "./all". A sudo password may
 be required to setup the system for fuzzing.

@@ -136,13 +136,11 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	docs/.gitignore \
 	docs/CONTRIBUTING.rst \
 	docs/CONTRIBUTORS \
-	docs/Makefile.in \
+	docs/Makefile \
 	docs/TODO \
-	docs/doxygen-mainpage \
-	docs/doxygen.config \
+	docs/_static/verilator_logo.png \
 	docs/install.rst \
 	docs/internals.rst \
-	docs/verilator_logo.png \
 	docs/xml.rst \
 	install-sh configure *.pod \
 	include/*.[chv]* \

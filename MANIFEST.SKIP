@@ -39,7 +39,7 @@ README.html
 bin/verilator_bin.*
 bin/verilator_coverage_bin.*
 docs/.*\.html$
-docs/Makefile$
+docs/_build/
 docs/clang-format.txt$
 docs/doxygen-doc/.*
 examples/xml_py/copied/
