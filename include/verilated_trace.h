@@ -25,8 +25,7 @@
 // clang-format off
 
 #include "verilated.h"
-
-#include "gtkwave/fstapi.h"
+#include "verilated_trace_defs.h"
 
 #include <string>
 #include <vector>

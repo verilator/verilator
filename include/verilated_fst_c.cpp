@@ -52,6 +52,24 @@
 // clang-format on
 
 //=============================================================================
+// Check that vltscope_t matches fstScopeType
+static_assert((int)FST_ST_VCD_MODULE == (int)VLT_SCOPE_MODULE, "VLT_SCOPE_MODULE mismatches");
+static_assert((int)FST_ST_VCD_TASK == (int)VLT_SCOPE_TASK, "VLT_SCOPE_TASK mismatches");
+static_assert((int)FST_ST_VCD_FUNCTION == (int)VLT_SCOPE_FUNCTION,
+              "VLT_SCOPE_FUNCTION mismatches");
+static_assert((int)FST_ST_VCD_BEGIN == (int)VLT_SCOPE_BEGIN, "VLT_SCOPE_BEGIN mismatches");
+static_assert((int)FST_ST_VCD_FORK == (int)VLT_SCOPE_FORK, "VLT_SCOPE_FORK mismatches");
+static_assert((int)FST_ST_VCD_GENERATE == (int)VLT_SCOPE_GENERATE,
+              "VLT_SCOPE_GENERATE mismatches");
+static_assert((int)FST_ST_VCD_STRUCT == (int)VLT_SCOPE_STRUCT, "VLT_SCOPE_STRUCT mismatches");
+static_assert((int)FST_ST_VCD_UNION == (int)VLT_SCOPE_UNION, "VLT_SCOPE_UNION mismatches");
+static_assert((int)FST_ST_VCD_CLASS == (int)VLT_SCOPE_CLASS, "VLT_SCOPE_CLASS mismatches");
+static_assert((int)FST_ST_VCD_INTERFACE == (int)VLT_SCOPE_INTERFACE,
+              "VLT_SCOPE_INTERFACE mismatches");
+static_assert((int)FST_ST_VCD_PACKAGE == (int)VLT_SCOPE_PACKAGE, "VLT_SCOPE_PACKAGE mismatches");
+static_assert((int)FST_ST_VCD_PROGRAM == (int)VLT_SCOPE_PROGRAM, "VLT_SCOPE_PROGRAM mismatches");
+
+//=============================================================================
 // Specialization of the generics for this trace format
 
 #define VL_DERIVED_T VerilatedFst

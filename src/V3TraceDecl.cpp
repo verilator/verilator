@@ -22,8 +22,7 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-
-#include "gtkwave/fstapi.h"  // For FST_ST_VCD_*
+#include "verilated_trace_defs.h"  // For VLT_SCOPE_*
 
 #include "V3Global.h"
 #include "V3TraceDecl.h"
@@ -87,7 +86,7 @@ private:
     void callCFuncSub(AstCFunc* basep, AstCFunc* funcp, AstIntfRef* irp) {
         AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
         if (irp) {
-            callp->argTypes("userp, tracep, FST_ST_VCD_INTERFACE");
+            callp->argTypes("userp, tracep, VLT_SCOPE_INTERFACE");
             callp->addArgsp(irp->unlinkFrBack());
         } else {
             callp->argTypes("userp, tracep");
@@ -101,7 +100,7 @@ private:
         return funcp;
     }
 
-    std::string getScopeChar(fstScopeType sct) { return std::string(1, (char)(0x80 + sct)); }
+    std::string getScopeChar(vltscope_t sct) { return std::string(1, (char)(0x80 + sct)); }
 
     void addTraceDecl(const VNumRange& arrayRange,
                       int widthOverride) {  // If !=0, is packed struct/array where basicp size
@@ -308,7 +307,7 @@ private:
                             // Mark scope as a struct by setting the last char to 0x80 + the
                             // fstScopeType
                             m_traShowname
-                                += getScopeChar(FST_ST_VCD_STRUCT) + " " + itemp->prettyName();
+                                += getScopeChar(VLT_SCOPE_STRUCT) + " " + itemp->prettyName();
 
                             m_traValuep
                                 = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
@@ -318,7 +317,7 @@ private:
                             VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);
                         } else {  // Else union, replicate fields
                             m_traShowname
-                                += getScopeChar(FST_ST_VCD_UNION) + " " + itemp->prettyName();
+                                += getScopeChar(VLT_SCOPE_UNION) + " " + itemp->prettyName();
                             iterate(subtypep);
                         }
                     }
