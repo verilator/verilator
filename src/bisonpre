@@ -172,8 +172,8 @@ def warning_check(filename):
             if re.search(r'(conflicts|warning:|^useless)',
                          line,
                          flags=re.IGNORECASE):
-                sys.exit("%Error: " + filename + ":" + linenum + ": " + line +
-                         "\n")
+                sys.exit("%Error: " + filename + ":" + str(linenum) + ": " +
+                         line + "\n")
 
 
 ######################################################################
