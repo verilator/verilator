@@ -4726,7 +4726,7 @@ correctly.
 
 =item NULLPORT
 
-Warns that a null port was detected in the module definition port list. null
+Warns that a null port was detected in the module definition port list. Null
 ports are empty placeholders, i.e. either one ore more commas at the beginning
 or the end of a module port list, or two or more consecutive commas in the
 middle of a module port list. A null port cannot be accessed within the module,
