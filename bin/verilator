@@ -4507,6 +4507,11 @@ likely all of them are oscillating.  It may also be that e.g. "a" may be
 oscillating, then "a" feeds signal "c" which then is also reported as
 oscillating.
 
+One way DIDNOTCONVERGE may occur is flops are built out of gate primitives.
+error. Verilator does not support building flops or latches out of gate
+primitives, and any such code must change to use behavioral constructs
+(e.g. always_ff and always_latch).
+
 Finally, rare, more difficult cases can be debugged like a "C" program;
 either enter GDB and use its tracing facilities, or edit the generated C++
 code to add appropriate prints to see what is going on.
@@ -5011,6 +5016,13 @@ The most complicated UNOPTFLAT path we've seen was due to low bits of a bus
 being generated from an always statement that consumed high bits of the
 same bus processed by another series of always blocks.  The fix is the
 same; split it into two separate signals generated from each block.
+
+Occasionally UNOPTFLAT may be indicated when there is a true circulation.
+e.g. if trying to implement a flop or latch using individual gate
+primitives.  If UNOPTFLAT is suppressed the code may get a DIDNOTCONVERGE
+error. Verilator does not support building flops or latches out of gate
+primitives, and any such code must change to use behavioral constructs
+(e.g. always_ff and always_latch).
 
 Another way to resolve this warning is to add a C<split_var> metacomment
 described above. This will cause the variable to be split internally,
