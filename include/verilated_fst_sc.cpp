@@ -12,15 +12,19 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Verilator tracing in FST Format
+/// \brief Verilated tracing in FST for SystemC implementation code
+///
+/// This file must be compiled and linked against all Verilated objects
+/// that use --sc --trace-fst.
+///
+/// Use "verilator --sc --trace-fst" to add this to the Makefile for the linker.
+/```
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 #include "verilatedos.h"
 #include "verilated_fst_sc.h"
 
-// SPDIFF_ON
 //======================================================================
 //======================================================================
 
