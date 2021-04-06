@@ -1280,29 +1280,52 @@ paramPortDeclOrArg<nodep>:	// IEEE: param_assignment + parameter_port_declaratio
 portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + empty
 		/* empty */				{ $$ = nullptr; }
 	|	'(' ')'					{ $$ = nullptr; }
-	|	'(' list_of_commas ')'	{ $$ = nullptr; $2->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); } // Insert proper null port handling here
+	|	'(' list_of_commas ')'	{ $$ = nullptr; $2->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
 	//			// .* expanded from module_declaration
 	//UNSUP	'(' yP_DOTSTAR ')'				{ UNSUP }
-	|	start_with_commas_or_none {VARRESET_LIST(PORT);} list_of_ports	{ $$ = $3; VARRESET_NONLIST(UNKNOWN); }
+	|	start_with_commas_or_none {VARRESET_LIST(PORT);} list_of_ports
+			{
+			  // if $1 is non-null (have some null ports) it will be added before list_of_ports
+			  $$ = $1->addNextNull($3);
+			  VARRESET_NONLIST(UNKNOWN); }
 	;
-start_with_commas_or_none:
-		'('
+
+start_with_commas_or_none<nodep>:
+		'('						{ $$ = nullptr; }
 	|	'(' list_of_commas
+			{ PINNUMINC();
+			  VARDTYPE_NDECL(new AstBasicDType($<fl>2, LOGIC_IMPLICIT));
+			  // if we got here we have one more comma in the beginning
+			  // add it before any further potential null ports on $2
+			  $$ = $2->addNextNull(VARDONEP($2, nullptr, nullptr));
+			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
 	;
 
 list_of_commas<nodep>:	// one or more commas for null port handling
-		',' {  int p = PINNUMINC(); $$ = new AstPort($<fl>1, p, std::to_string(p)); }
-	|	list_of_commas ',' { int p = PINNUMINC(); AstPort *ap; $$ = $1->addNextNull(ap = new AstPort($<fl>2, p, std::to_string(p))); ap->v3warn(NULLPORT, "null port detected"); } // Insert null port handling here
+		',' 		{ $$ = nullptr; } // 1st ',' is nullptr in case it's just a regular separator comma
+	|	list_of_commas ','
+			{ PINNUMINC();
+			  VARDTYPE_NDECL(new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
+			  // Add one more null port. if $1 is nullptr we are still protected
+			  $$ = $1->addNextNull(VARDONEP($1, nullptr, nullptr));
+			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
 	;
+
 list_of_ports_comma<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
-		portAndTag	list_of_commas			{ $$ = $1; }
-	|	list_of_ports_comma portAndTag	list_of_commas		{ $$ = $1->addNextNull($2); }
+		portAndTag	list_of_commas							{ $$ = $1->addNextNull($2); } // add $2 null port if not nullptr
+	|	list_of_ports_comma portAndTag	list_of_commas		{ $$ = $1->addNextNull($2)->addNextNull($3); } // add all potential ports and null ports
 	;
 
 list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 		portAndTag	')'			{ $$ = $1; }
 	|	list_of_ports_comma portAndTag	')'		{ $$ = $1->addNextNull($2); }
-	|	list_of_ports_comma ')'		{ $$ = $1; $1->v3warn(NULLPORT, "null port detected"); } // Insert null port handling here
+	|	list_of_ports_comma ')'
+			{ PINNUMINC();
+			  VARDTYPE_NDECL(new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
+			  // if we got here we have one more trailing comma
+			  std::cerr << "udif!" << std::endl;
+			  $$ = $1->addNextNull(VARDONEP($1, nullptr, nullptr));
+			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
 	;
 
 portAndTag<nodep>:
