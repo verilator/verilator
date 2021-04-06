@@ -556,8 +556,7 @@ private:
             return;
         }  // Fully computed
 
-        typedef std::set<AstSenTree*> SenSet;
-        SenSet senouts;  // List of all sensitivities for new signal
+        std::set<AstSenTree*> senouts;  // List of all sensitivities for new signal
         if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
             if (vvertexp) {}  // Unused
         } else if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(vertexp)) {

@@ -240,7 +240,7 @@ class HierBlockUsageCollectVisitor final : public AstNVisitor {
     AstUser1InUse m_inuser1;
 
     // STATE
-    typedef std::unordered_set<const AstModule*> ModuleSet;
+    using ModuleSet = std::unordered_set<const AstModule*>;
     V3HierBlockPlan* const m_planp;
     AstModule* m_modp = nullptr;  // The current module
     AstModule* m_hierBlockp = nullptr;  // The nearest parent module that is a hierarchical block
@@ -355,8 +355,8 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
 }
 
 V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
-    typedef std::unordered_map<const V3HierBlock*, std::unordered_set<const V3HierBlock*>>
-        ChildrenMap;
+    using ChildrenMap
+        = std::unordered_map<const V3HierBlock*, std::unordered_set<const V3HierBlock*>>;
     ChildrenMap childrenOfHierBlock;
 
     HierVector sorted;

@@ -14,10 +14,10 @@
 //
 //*************************************************************************
 
-#ifndef _V3ASTNODES_H_
-#define _V3ASTNODES_H_ 1
+#ifndef VERILATOR_V3ASTNODES_H_
+#define VERILATOR_V3ASTNODES_H_
 
-#ifndef _V3AST_H_
+#ifndef VERILATOR_V3AST_H_
 #error "Use V3Ast.h as the include"
 #endif
 
@@ -290,13 +290,14 @@ public:
     ASTNODE_NODE_FUNCS(ClassPackage)
     virtual string verilogKwd() const override { return "/*class*/package"; }
     virtual const char* broken() const override;
+    virtual bool timescaleMatters() const override { return false; }
     AstClass* classp() const { return m_classp; }
     void classp(AstClass* classp) { m_classp = classp; }
 };
 
 class AstClass final : public AstNodeModule {
     // TYPES
-    typedef std::map<const string, AstNode*> MemberNameMap;
+    using MemberNameMap = std::map<const std::string, AstNode*>;
     // MEMBERS
     MemberNameMap m_members;  // Members or method children
     AstClassPackage* m_classOrPackagep = nullptr;  // Class package this is under
@@ -317,6 +318,7 @@ public:
         BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
         return nullptr;
     }
+    virtual bool timescaleMatters() const override { return false; }
     // op1/op2/op3 in AstNodeModule
     AstClassPackage* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstClassPackage* classpackagep) { m_classOrPackagep = classpackagep; }
@@ -1595,8 +1597,8 @@ public:
     virtual bool same(const AstNode* samep) const override { return true; }
     virtual int instrCount() const override { return widthInstrs(); }
     // Special operators
-    static AstNode*
-    baseFromp(AstNode* nodep);  ///< What is the base variable (or const) this dereferences?
+    // Return base var (or const) nodep dereferences
+    static AstNode* baseFromp(AstNode* nodep, bool overMembers);
 };
 
 class AstAssocSel final : public AstNodeSel {
@@ -2559,6 +2561,7 @@ public:
         , m_isProgram{program} {}
     ASTNODE_NODE_FUNCS(Module)
     virtual string verilogKwd() const override { return m_isProgram ? "program" : "module"; }
+    virtual bool timescaleMatters() const override { return true; }
 };
 
 class AstNotFoundModule final : public AstNodeModule {
@@ -2568,6 +2571,7 @@ public:
         : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(NotFoundModule)
     virtual string verilogKwd() const override { return "/*not-found-*/ module"; }
+    virtual bool timescaleMatters() const override { return false; }
 };
 
 class AstPackage final : public AstNodeModule {
@@ -2577,6 +2581,7 @@ public:
         : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(Package)
     virtual string verilogKwd() const override { return "package"; }
+    virtual bool timescaleMatters() const override { return !isDollarUnit(); }
     static string dollarUnitName() { return AstNode::encodeName("$unit"); }
     bool isDollarUnit() const { return name() == dollarUnitName(); }
 };
@@ -2588,6 +2593,7 @@ public:
         : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(Primitive)
     virtual string verilogKwd() const override { return "primitive"; }
+    virtual bool timescaleMatters() const override { return false; }
 };
 
 class AstPackageExportStarStar final : public AstNode {
@@ -2653,6 +2659,9 @@ public:
     AstIface(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl, name) {}
     ASTNODE_NODE_FUNCS(Iface)
+    // Interfaces have `timescale applicability but lots of code seems to
+    // get false warnings if we enable this
+    virtual bool timescaleMatters() const override { return false; }
 };
 
 class AstMemberSel final : public AstNodeMath {
@@ -4980,7 +4989,7 @@ class AstInitArray final : public AstNode {
     // Parents: ASTVAR::init()
     // Children: AstInitItem
 public:
-    typedef std::map<uint32_t, AstInitItem*> KeyItemMap;
+    using KeyItemMap = std::map<uint32_t, AstInitItem*>;
 
 private:
     KeyItemMap m_map;  // Node value for each array index
@@ -6306,7 +6315,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(LogD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(log(lhs.toDouble()));
+        out.setDouble(std::log(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$ln(%l)"; }
     virtual string emitC() override { return "log(%li)"; }
@@ -6317,7 +6326,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(Log10D)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(log10(lhs.toDouble()));
+        out.setDouble(std::log10(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$log10(%l)"; }
     virtual string emitC() override { return "log10(%li)"; }
@@ -6329,7 +6338,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(ExpD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(exp(lhs.toDouble()));
+        out.setDouble(std::exp(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$exp(%l)"; }
     virtual string emitC() override { return "exp(%li)"; }
@@ -6341,7 +6350,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(SqrtD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(sqrt(lhs.toDouble()));
+        out.setDouble(std::sqrt(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$sqrt(%l)"; }
     virtual string emitC() override { return "sqrt(%li)"; }
@@ -6353,7 +6362,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(FloorD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(floor(lhs.toDouble()));
+        out.setDouble(std::floor(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$floor(%l)"; }
     virtual string emitC() override { return "floor(%li)"; }
@@ -6365,7 +6374,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(CeilD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(ceil(lhs.toDouble()));
+        out.setDouble(std::ceil(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$ceil(%l)"; }
     virtual string emitC() override { return "ceil(%li)"; }
@@ -6377,7 +6386,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(SinD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(sin(lhs.toDouble()));
+        out.setDouble(std::sin(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$sin(%l)"; }
     virtual string emitC() override { return "sin(%li)"; }
@@ -6389,7 +6398,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(CosD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(cos(lhs.toDouble()));
+        out.setDouble(std::cos(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$cos(%l)"; }
     virtual string emitC() override { return "cos(%li)"; }
@@ -6401,7 +6410,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(TanD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(tan(lhs.toDouble()));
+        out.setDouble(std::tan(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$tan(%l)"; }
     virtual string emitC() override { return "tan(%li)"; }
@@ -6413,7 +6422,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(AsinD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(asin(lhs.toDouble()));
+        out.setDouble(std::asin(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$asin(%l)"; }
     virtual string emitC() override { return "asin(%li)"; }
@@ -6425,7 +6434,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(AcosD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(acos(lhs.toDouble()));
+        out.setDouble(std::acos(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$acos(%l)"; }
     virtual string emitC() override { return "acos(%li)"; }
@@ -6437,7 +6446,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(AtanD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(atan(lhs.toDouble()));
+        out.setDouble(std::atan(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$atan(%l)"; }
     virtual string emitC() override { return "atan(%li)"; }
@@ -6449,7 +6458,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(SinhD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(sinh(lhs.toDouble()));
+        out.setDouble(std::sinh(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$sinh(%l)"; }
     virtual string emitC() override { return "sinh(%li)"; }
@@ -6461,7 +6470,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(CoshD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(cosh(lhs.toDouble()));
+        out.setDouble(std::cosh(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$cosh(%l)"; }
     virtual string emitC() override { return "cosh(%li)"; }
@@ -6473,7 +6482,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(TanhD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(tanh(lhs.toDouble()));
+        out.setDouble(std::tanh(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$tanh(%l)"; }
     virtual string emitC() override { return "tanh(%li)"; }
@@ -6485,7 +6494,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(AsinhD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(asinh(lhs.toDouble()));
+        out.setDouble(std::asinh(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$asinh(%l)"; }
     virtual string emitC() override { return "asinh(%li)"; }
@@ -6497,7 +6506,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(AcoshD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(acosh(lhs.toDouble()));
+        out.setDouble(std::acosh(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$acosh(%l)"; }
     virtual string emitC() override { return "acosh(%li)"; }
@@ -6509,7 +6518,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(AtanhD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) override {
-        out.setDouble(atanh(lhs.toDouble()));
+        out.setDouble(std::atanh(lhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$atanh(%l)"; }
     virtual string emitC() override { return "atanh(%li)"; }
@@ -8181,7 +8190,7 @@ public:
         return new AstAtan2D(this->fileline(), lhsp, rhsp);
     }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
-        out.setDouble(atan2(lhs.toDouble(), rhs.toDouble()));
+        out.setDouble(std::atan2(lhs.toDouble(), rhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$atan2(%l,%r)"; }
     virtual string emitC() override { return "atan2(%li,%ri)"; }
@@ -8196,7 +8205,7 @@ public:
         return new AstHypotD(this->fileline(), lhsp, rhsp);
     }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
-        out.setDouble(hypot(lhs.toDouble(), rhs.toDouble()));
+        out.setDouble(std::hypot(lhs.toDouble(), rhs.toDouble()));
     }
     virtual string emitVerilog() override { return "%f$hypot(%l,%r)"; }
     virtual string emitC() override { return "hypot(%li,%ri)"; }
@@ -9180,7 +9189,7 @@ class AstTypeTable final : public AstNode {
     AstQueueDType* m_queueIndexp = nullptr;
     AstBasicDType* m_basicps[AstBasicDTypeKwd::_ENUM_MAX];
     //
-    typedef std::map<VBasicTypeKey, AstBasicDType*> DetailedMap;
+    using DetailedMap = std::map<VBasicTypeKey, AstBasicDType*>;
     DetailedMap m_detailedMap;
 
 public:

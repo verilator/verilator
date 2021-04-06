@@ -285,9 +285,9 @@ public:
 
 class UnpackRefMap final {
 public:
-    typedef std::map<AstVar*, std::set<UnpackRef>, AstNodeComparator> MapType;
-    typedef MapType::iterator MapIt;
-    typedef MapType::value_type::second_type::iterator SetIt;
+    using MapType = std::map<AstVar*, std::set<UnpackRef>, AstNodeComparator>;
+    using MapIt = MapType::iterator;
+    using SetIt = MapType::value_type::second_type::iterator;
 
 private:
     MapType m_map;
@@ -334,12 +334,9 @@ public:
 
 // Found nodes for SplitPackedVarVisitor
 struct RefsInModule {
-    typedef std::set<AstVar*, AstNodeComparator> VarSet;
-    typedef std::set<AstVarRef*, AstNodeComparator> VarRefSet;
-    typedef std::set<AstSel*, AstNodeComparator> SelSet;
-    VarSet m_vars;
-    VarRefSet m_refs;
-    SelSet m_sels;
+    std::set<AstVar*, AstNodeComparator> m_vars;
+    std::set<AstVarRef*, AstNodeComparator> m_refs;
+    std::set<AstSel*, AstNodeComparator> m_sels;
 
 public:
     void add(AstVar* nodep) { m_vars.insert(nodep); }
@@ -362,7 +359,7 @@ public:
     }
     void visit(AstNVisitor* visitor) {
         for (const auto& varp : m_vars) visitor->iterate(varp);
-        for (SelSet::iterator it = m_sels.begin(), it_end = m_sels.end(); it != it_end; ++it) {
+        for (auto it = m_sels.begin(), it_end = m_sels.end(); it != it_end; ++it) {
             // If m_refs includes VarRef from ArraySel, remove it
             // because the VarRef would not be visited in SplitPackedVarVisitor::visit(AstSel*).
             if (AstVarRef* refp = VN_CAST((*it)->fromp(), VarRef)) {
@@ -375,17 +372,17 @@ public:
             UASSERT_OBJ(reinterpret_cast<uintptr_t>((*it)->op1p()) != 1, *it, "stale");
             visitor->iterate(*it);
         }
-        for (VarRefSet::iterator it = m_refs.begin(), it_end = m_refs.end(); it != it_end; ++it) {
+        for (auto it = m_refs.begin(), it_end = m_refs.end(); it != it_end; ++it) {
             UASSERT_OBJ(reinterpret_cast<uintptr_t>((*it)->op1p()) != 1, *it, "stale");
             visitor->iterate(*it);
         }
     }
 };
 
-typedef std::map<AstNodeModule*, RefsInModule, AstNodeComparator> SplitVarRefsMap;
+using SplitVarRefsMap = std::map<AstNodeModule*, RefsInModule, AstNodeComparator>;
 
 class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
-    typedef std::set<AstVar*, AstNodeComparator> VarSet;
+    using VarSet = std::set<AstVar*, AstNodeComparator>;
     VarSet m_foundTargetVar;
     UnpackRefMap m_refs;
     AstNodeModule* m_modp = nullptr;
@@ -871,21 +868,19 @@ class PackedVarRef final {
     bool m_dedupDone = false;
     static void dedupRefs(std::vector<PackedVarRefEntry>& refs) {
         // Use raw pointer to dedup
-        typedef std::map<AstNode*, size_t, AstNodeComparator> NodeIndices;
-        NodeIndices nodes;
+        std::map<AstNode*, size_t, AstNodeComparator> nodes;
         for (size_t i = 0; i < refs.size(); ++i) { nodes.emplace(refs[i].nodep(), i); }
         std::vector<PackedVarRefEntry> vect;
         vect.reserve(nodes.size());
-        for (NodeIndices::const_iterator it = nodes.begin(), it_end = nodes.end(); it != it_end;
-             ++it) {
+        for (auto it = nodes.cbegin(), it_end = nodes.cend(); it != it_end; ++it) {
             vect.push_back(refs[it->second]);
         }
         refs.swap(vect);
     }
 
 public:
-    typedef std::vector<PackedVarRefEntry>::iterator iterator;
-    typedef std::vector<PackedVarRefEntry>::const_iterator const_iterator;
+    using iterator = std::vector<PackedVarRefEntry>::iterator;
+    using const_iterator = std::vector<PackedVarRefEntry>::const_iterator;
     std::vector<PackedVarRefEntry>& lhs() {
         UASSERT(m_dedupDone, "cannot read before dedup()");
         return m_lhs;
@@ -955,12 +950,11 @@ public:
 };
 
 class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
-    typedef std::map<AstVar*, PackedVarRef, AstNodeComparator> PackedVarRefMap;
     AstNetlist* m_netp;
     AstNodeModule* m_modp = nullptr;  // Current module (just for log)
     int m_numSplit = 0;  // Total number of split variables
     // key:variable to be split. value:location where the variable is referenced.
-    PackedVarRefMap m_refs;
+    std::map<AstVar*, PackedVarRef, AstNodeComparator> m_refs;
     virtual void visit(AstNodeFTask* nodep) override {
         if (!cannotSplitTaskReason(nodep)) iterateChildren(nodep);
     }
@@ -1163,8 +1157,7 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
     }
     // Do the actual splitting operation
     void split() {
-        for (PackedVarRefMap::iterator it = m_refs.begin(), it_end = m_refs.end(); it != it_end;
-             ++it) {
+        for (auto it = m_refs.begin(), it_end = m_refs.end(); it != it_end; ++it) {
             it->second.dedup();
             AstVar* varp = it->first;
             UINFO(3, "In module " << m_modp->name() << " var " << varp->prettyNameQ()

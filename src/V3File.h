@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3FILE_H_
-#define _V3FILE_H_ 1
+#ifndef VERILATOR_V3FILE_H_
+#define VERILATOR_V3FILE_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -79,7 +79,7 @@ class VInFilterImp;
 class VInFilter final {
 public:
     // TYPES
-    typedef std::list<string> StrList;
+    using StrList = std::list<std::string>;
 
 private:
     VInFilterImp* m_impp;

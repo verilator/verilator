@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3STRING_H_
-#define _V3STRING_H_ 1
+#ifndef VERILATOR_V3STRING_H_
+#define VERILATOR_V3STRING_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -193,10 +193,9 @@ class VSpellCheck final {
     static constexpr unsigned NUM_CANDIDATE_LIMIT = 10000;  // Avoid searching huge netlists
     static constexpr unsigned LENGTH_LIMIT = 100;  // Maximum string length to search
     // TYPES
-    typedef unsigned int EditDistance;
-    typedef std::vector<string> Candidates;
+    using EditDistance = unsigned int;
     // MEMBERS
-    Candidates m_candidates;  // Strings we try to match
+    std::vector<std::string> m_candidates;  // Strings we try to match
 public:
     // CONSTRUCTORS
     VSpellCheck() = default;
@@ -208,12 +207,12 @@ public:
         if (m_candidates.size() < NUM_CANDIDATE_LIMIT) m_candidates.push_back(s);
     }
     // Return candidate is closest to provided string, or "" for none
-    string bestCandidate(const string& goal) {
+    string bestCandidate(const string& goal) const {
         EditDistance dist;
         return bestCandidateInfo(goal, dist /*ref*/);
     }
     // Return friendly message
-    string bestCandidateMsg(const string& goal) {
+    string bestCandidateMsg(const string& goal) const {
         string candidate = bestCandidate(goal);
         if (candidate.empty()) {
             return "";
@@ -226,7 +225,7 @@ public:
 private:
     static EditDistance editDistance(const string& s, const string& t);
     static EditDistance cutoffDistance(size_t goal_len, size_t candidate_len);
-    string bestCandidateInfo(const string& goal, EditDistance& distancer);
+    string bestCandidateInfo(const string& goal, EditDistance& distancer) const;
     static void selfTestDistanceOne(const string& a, const string& b, EditDistance expected);
     static void selfTestSuggestOne(bool matches, const string& c, const string& goal,
                                    EditDistance dist);

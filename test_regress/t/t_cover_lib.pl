@@ -26,6 +26,7 @@ files_identical_sorted("$Self->{obj_dir}/coverage1.dat", "t/t_cover_lib_1.out");
 files_identical_sorted("$Self->{obj_dir}/coverage2.dat", "t/t_cover_lib_2.out");
 files_identical_sorted("$Self->{obj_dir}/coverage3.dat", "t/t_cover_lib_3.out");
 files_identical_sorted("$Self->{obj_dir}/coverage4.dat", "t/t_cover_lib_4.out");
+files_identical_sorted("$Self->{obj_dir}/coverage1_per_instance.dat", "t/t_cover_lib_1_per_instance.out");
 
 ok(1);
 1;

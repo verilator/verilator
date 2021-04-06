@@ -141,8 +141,7 @@ class InstDeModVarVisitor final : public AstNVisitor {
     // Expand all module variables, and save names for later reference
 private:
     // STATE
-    typedef std::map<const string, AstVar*> VarNameMap;
-    VarNameMap m_modVarNameMap;  // Per module, name of cloned variables
+    std::map<const std::string, AstVar*> m_modVarNameMap;  // Per module, name of cloned variables
 
     VL_DEBUG_FUNC;  // Declare debug()
 
@@ -396,7 +395,7 @@ private:
             AstNode* prevPinp = nullptr;
             // Clone the var referenced by the pin, and clone each var referenced by the varref
             // Clone pin varp:
-            for (int in = 0; in < pinArrp->elementsConst(); ++in) {
+            for (int in = 0; in < pinArrp->elementsConst(); ++in) {  // 0 = leftmost
                 int i = pinArrp->left() + in * pinArrp->declRange().leftToRightInc();
                 string varNewName = pinVarp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 AstVar* varNewp = nullptr;
@@ -430,19 +429,22 @@ private:
                 newp->modVarp(varNewp);
                 newp->name(newp->name() + "__BRA__" + cvtToStr(i) + "__KET__");
                 // And replace exprp with a new varxref
-                const AstVarRef* varrefp = VN_CAST(newp->exprp(), VarRef);
-                int offset = 0;
-                if (varrefp) {
-                } else if (AstSliceSel* slicep = VN_CAST(newp->exprp(), SliceSel)) {
+                const AstVarRef* varrefp = VN_CAST(newp->exprp(), VarRef);  // Maybe null
+                int expr_i = i;
+                if (AstSliceSel* slicep = VN_CAST(newp->exprp(), SliceSel)) {
                     varrefp = VN_CAST(slicep->fromp(), VarRef);
                     UASSERT(VN_IS(slicep->rhsp(), Const), "Slices should be constant");
-                    offset = VN_CAST(slicep->rhsp(), Const)->toSInt();
+                    int slice_index
+                        = slicep->declRange().left() + in * slicep->declRange().leftToRightInc();
+                    auto* exprArrp = VN_CAST(varrefp->dtypep(), UnpackArrayDType);
+                    UASSERT_OBJ(exprArrp, slicep, "Slice of non-array");
+                    expr_i = slice_index + exprArrp->lo();
+                } else if (!varrefp) {
+                    newp->exprp()->v3error("Unexpected connection to arrayed port");
+                } else if (auto* exprArrp = VN_CAST(varrefp->dtypep(), UnpackArrayDType)) {
+                    expr_i = exprArrp->left() + in * exprArrp->declRange().leftToRightInc();
                 }
-                int expr_i = i;
-                if (auto* exprArrp = VN_CAST(newp->exprp()->dtypep(), UnpackArrayDType))
-                    expr_i = exprArrp->left()
-                             + (in + offset) * exprArrp->declRange().leftToRightInc();
-                if (!varrefp) newp->exprp()->v3error("Unexpected connection to arrayed port");
+
                 string newname = varrefp->name() + "__BRA__" + cvtToStr(expr_i) + "__KET__";
                 AstVarXRef* newVarXRefp
                     = new AstVarXRef(nodep->fileline(), newname, "", VAccess::WRITE);

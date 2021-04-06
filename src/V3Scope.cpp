@@ -45,10 +45,8 @@ private:
     AstUser2InUse m_inuser2;
 
     // TYPES
-    typedef std::unordered_map<AstNodeModule*, AstScope*> PackageScopeMap;
     // These cannot be unordered unless make a specialized hashing pair (gcc-8)
-    typedef std::map<std::pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
-    typedef std::set<std::pair<AstVarRef*, AstScope*>> VarRefScopeSet;
+    using VarScopeMap = std::map<std::pair<AstVar*, AstScope*>, AstVarScope*>;
 
     // STATE, inside processing a single module
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -57,9 +55,10 @@ private:
     AstCell* m_aboveCellp = nullptr;  // Cell that instantiates this module
     AstScope* m_aboveScopep = nullptr;  // Scope that instantiates this scope
 
-    PackageScopeMap m_packageScopes;  // Scopes for each package
+    std::unordered_map<AstNodeModule*, AstScope*> m_packageScopes;  // Scopes for each package
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
-    VarRefScopeSet m_varRefScopes;  // Varrefs-in-scopes needing fixup when done
+    std::set<std::pair<AstVarRef*, AstScope*>>
+        m_varRefScopes;  // Varrefs-in-scopes needing fixup when done
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -73,7 +72,7 @@ private:
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
             }
-            const auto it3 = m_varScopes.find(make_pair(nodep->varp(), scopep));
+            const auto it3 = m_varScopes.find(std::make_pair(nodep->varp(), scopep));
             UASSERT_OBJ(it3 != m_varScopes.end(), nodep, "Can't locate varref scope");
             AstVarScope* varscp = it3->second;
             nodep->varScopep(varscp);
@@ -272,7 +271,7 @@ private:
                 nodep->attrClocker(VVarAttrClocker::CLOCKER_NO);
             }
             UASSERT_OBJ(m_scopep, nodep, "No scope for var");
-            m_varScopes.emplace(make_pair(nodep, m_scopep), varscp);
+            m_varScopes.emplace(std::make_pair(nodep, m_scopep), varscp);
             m_scopep->addVarp(varscp);
         }
     }

@@ -103,28 +103,64 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       nodist/code_coverage --stages 1- --scenarios=--dist
       ;;
     coverage-vlt-0)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=0/4
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=0/10
       ;;
     coverage-vlt-1)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=1/4
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=1/10
       ;;
     coverage-vlt-2)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=2/4
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=2/10
       ;;
     coverage-vlt-3)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=3/4
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=3/10
+      ;;
+    coverage-vlt-4)
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=4/10
+      ;;
+    coverage-vlt-5)
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=5/10
+      ;;
+    coverage-vlt-6)
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=6/10
+      ;;
+    coverage-vlt-7)
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=7/10
+      ;;
+    coverage-vlt-8)
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=8/10
+      ;;
+    coverage-vlt-9)
+      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=9/10
       ;;
     coverage-vltmt-0)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=0/4
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=0/10
       ;;
     coverage-vltmt-1)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=1/4
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=1/10
       ;;
     coverage-vltmt-2)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=2/4
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=2/10
       ;;
     coverage-vltmt-3)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=3/4
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=3/10
+      ;;
+    coverage-vltmt-4)
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=4/10
+      ;;
+    coverage-vltmt-5)
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=5/10
+      ;;
+    coverage-vltmt-6)
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=6/10
+      ;;
+    coverage-vltmt-7)
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=7/10
+      ;;
+    coverage-vltmt-8)
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=8/10
+      ;;
+    coverage-vltmt-9)
+      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=9/10
       ;;
     *)
       fatal "Unknown test: $TESTS"

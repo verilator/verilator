@@ -1,0 +1,7 @@
+%Error: t/t_preproc_eof3_bad.v:10:1: EOF in define argument list
+   10 | %Error-internal-contents-bad-ct2-ln10
+      | ^
+%Error: t/t_preproc_eof3_bad.v:10:1: Expecting ) or , to end argument list for define reference. Found: EOF
+   10 | %Error-internal-contents-bad-ct2-ln10
+      | ^
+%Error: Exiting due to

@@ -9,6 +9,7 @@ module Vt_debug_emitv;
     signed int [31:0]  t.cyc;
     signed int [31:0]  t.fo;
     signed int [31:0]  t.sum;
+    signed real t.r;
     string t.str;
     signed int [31:0]  t._Vpast_0_0;
     signed int [31:0]  t._Vpast_1_0;
@@ -57,6 +58,7 @@ module Vt_debug_emitv;
     end
     always @(posedge clk)@(negedge clk) begin
         __Vdly__t.cyc <= (32'sh1 + t.cyc);
+        __Vdly__t.r <= (0.01 + t.r);
         t.fo = t.cyc;
         // Function: inc
         __Vtask_t.sub.inc__2__i = t.fo;
@@ -178,6 +180,24 @@ module Vt_debug_emitv;
         t.sum = 
         ???? // RAND
         32'sha;
+        $display("%g", $log10(t.r));
+        $display("%g", $ln(t.r));
+        $display("%g", $exp(t.r));
+        $display("%g", $sqrt(t.r));
+        $display("%g", $floor(t.r));
+        $display("%g", $ceil(t.r));
+        $display("%g", $sin(t.r));
+        $display("%g", $cos(t.r));
+        $display("%g", $tan(t.r));
+        $display("%g", $asin(t.r));
+        $display("%g", $acos(t.r));
+        $display("%g", $atan(t.r));
+        $display("%g", $sinh(t.r));
+        $display("%g", $cosh(t.r));
+        $display("%g", $tanh(t.r));
+        $display("%g", $asinh(t.r));
+        $display("%g", $acosh(t.r));
+        $display("%g", $atanh(t.r));
     end
     /*verilator public_flat_rw @(posedge clk)@(negedge 
                                                clk) t.pubflat*/
@@ -191,6 +211,8 @@ module Vt_debug_emitv;
     t._Vpast_1_0 = __Vdly__t._Vpast_1_0;
     __Vdly__t._Vpast_0_0 = t._Vpast_0_0;
     t._Vpast_0_0 = __Vdly__t._Vpast_0_0;
+    __Vdly__t.r = t.r;
+    t.r = __Vdly__t.r;
     __Vdly__t.cyc = t.cyc;
     t.cyc = __Vdly__t.cyc;
     __Vdly__t.pubflat_r = t.pubflat_r;
@@ -204,6 +226,7 @@ module Vt_debug_emitv;
     signed int [31:0]  __Vfunc_t.sub.f__3__v;
     logic [15:0]  __Vdly__t.pubflat_r;
     signed int [31:0]  __Vdly__t.cyc;
+    signed real __Vdly__t.r;
     signed int [31:0]  __Vdly__t._Vpast_0_0;
     signed int [31:0]  __Vdly__t._Vpast_1_0;
 endmodule

@@ -36,4 +36,6 @@ verilator_coverage_bin*
 verilator.pc
 verilator-config.cmake
 verilator-config-version.cmake
+**/__pycache__/*
+**/_build/*
 **/obj_dir/*

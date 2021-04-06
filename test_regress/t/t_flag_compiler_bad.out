@@ -1,0 +1,2 @@
+%Error: Unknown setting for --compiler: 'bad_one'
+        ... Suggest 'clang', 'gcc', or 'msvc'

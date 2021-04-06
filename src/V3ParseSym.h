@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3PARSESYM_H_
-#define _V3PARSESYM_H_ 1
+#ifndef VERILATOR_V3PARSESYM_H_
+#define VERILATOR_V3PARSESYM_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -32,7 +32,7 @@
 
 class V3ParseSym final {
     // TYPES
-    typedef std::vector<VSymEnt*> SymStack;
+    using SymStack = std::vector<VSymEnt*>;
 
 private:
     // MEMBERS
@@ -40,7 +40,7 @@ private:
     VSymGraph m_syms;  // Graph of symbol tree
     VSymEnt* m_symTableNextId = nullptr;  // Symbol table for next lexer lookup (parser use only)
     VSymEnt* m_symCurrentp;  // Active symbol table for additions/lookups
-    SymStack m_sympStack;  // Stack of upper nodes with pending symbol tables
+    std::vector<VSymEnt*> m_sympStack;  // Stack of upper nodes with pending symbol tables
 
 public:
     // CONSTRUCTORS

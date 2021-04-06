@@ -184,9 +184,9 @@ private:
     VDouble0 m_statUniqCodes;  // Statistic tracking
 
     // All activity numbers applying to a given trace
-    typedef std::set<uint32_t> ActCodeSet;
+    using ActCodeSet = std::set<uint32_t>;
     // For activity set, what traces apply
-    typedef std::multimap<ActCodeSet, TraceTraceVertex*> TraceVec;
+    using TraceVec = std::multimap<ActCodeSet, TraceTraceVertex*>;
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

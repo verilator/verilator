@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3HASHED_H_
-#define _V3HASHED_H_ 1
+#ifndef VERILATOR_V3HASHED_H_
+#define VERILATOR_V3HASHED_H_
 #include "config_build.h"
 #include "verilatedos.h"
 
@@ -50,8 +50,8 @@ class V3Hashed final : public VHashedBase {
 
     // TYPES
 public:
-    typedef std::multimap<V3Hash, AstNode*> HashMmap;
-    typedef HashMmap::iterator iterator;
+    using HashMmap = std::multimap<V3Hash, AstNode*>;
+    using iterator = HashMmap::iterator;
 
 private:
     // MEMBERS

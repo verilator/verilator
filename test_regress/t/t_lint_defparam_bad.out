@@ -1,4 +1,5 @@
-%Warning-DEFPARAM: t/t_lint_defparam.v:10:19: Suggest replace defparam assignment with Verilog 2001 #(.P(...etc...))
+%Warning-DEFPARAM: t/t_lint_defparam.v:10:19: defparam is deprecated (IEEE 1800-2017 C.4.1)
+                                            : ... Suggest use instantiation with #(.P(...etc...))
    10 |    defparam sub.P = 2;
       |                   ^
                    ... Use "/* verilator lint_off DEFPARAM */" and lint_on around source to disable this message.

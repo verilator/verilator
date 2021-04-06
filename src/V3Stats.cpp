@@ -34,7 +34,7 @@ class StatsVisitor final : public AstNVisitor {
 private:
     // NODE STATE/TYPES
 
-    typedef std::map<const string, int> NameMap;  // Number of times a name appears
+    using NameMap = std::map<const std::string, int>;  // Number of times a name appears
 
     // STATE
     string m_stage;  // Name of the stage we are scanning

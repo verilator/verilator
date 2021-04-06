@@ -218,7 +218,7 @@ private:
             // variable we're extracting from (to determine MSB/LSB/endianness/etc.)
             // So we replicate it in another node
             // Note that V3Param knows not to replace AstVarRef's under AstAttrOf's
-            AstNode* basefromp = AstArraySel::baseFromp(nodep);
+            AstNode* basefromp = AstArraySel::baseFromp(nodep, false);
             if (AstNodeVarRef* varrefp
                 = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,

@@ -544,9 +544,9 @@ scale printed, i.e. a certain about of time for each character width.  The
 Y-axis shows threads, each thread's execution is shown on one line.  That
 line shows "[" at the position in time when it executes.
 
-Following the "[" is the cpu number the task executed on, followed by zero
+Following the "[" is the CPU number the task executed on, followed by zero
 or more "-" to make the width of the characters match the scaled execution
-time, followed by a "]".  If the scale is too small, the cpu number and
+time, followed by a "]".  If the scale is too small, the CPU number and
 mtask number will not be printed.  If the scale is very small, a "&"
 indicates multiple mtasks started at that time position.
 

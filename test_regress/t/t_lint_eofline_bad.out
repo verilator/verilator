@@ -1,0 +1,5 @@
+%Warning-EOFNEWLINE: obj_vlt/t_lint_eofline_bad/t_lint_eofline_bad.v:4:10: Missing newline at end of file (POSIX 3.206).                                                                         : ... Suggest add newline.
+    4 | endmodule
+      |          ^
+                     ... Use "/* verilator lint_off EOFNEWLINE */" and lint_on around source to disable this message.
+%Error: Exiting due to

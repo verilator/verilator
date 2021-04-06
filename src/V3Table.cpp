@@ -77,8 +77,7 @@ private:
     //  State cleared on each module
     AstNodeModule* m_modp = nullptr;  // Current MODULE
     int m_modTables = 0;  // Number of tables created in this module
-    typedef std::deque<AstVarScope*> ModTableVector;
-    ModTableVector m_modTableVscs;  // All tables created
+    std::deque<AstVarScope*> m_modTableVscs;  // All tables created
 
     //  State cleared on each scope
     AstScope* m_scopep = nullptr;  // Current SCOPE
@@ -117,7 +116,7 @@ private:
         // Calc data storage in bytes
         size_t chgWidth = m_outVarps.size();  // Width of one change-it-vector
         if (chgWidth < 8) chgWidth = 8;
-        double space = (pow(static_cast<double>(2.0), static_cast<double>(m_inWidth))
+        double space = (std::pow(static_cast<double>(2.0), static_cast<double>(m_inWidth))
                         * static_cast<double>(m_outWidth + chgWidth));
         // Instruction count bytes (ok, it's space also not time :)
         double bytesPerInst = 4;
@@ -222,8 +221,7 @@ private:
 
     void createTableVars(AstNode* nodep) {
         // Create table for each output
-        typedef std::map<const string, int> NameCounts;
-        NameCounts namecounts;
+        std::map<const std::string, int> namecounts;
         for (const AstVarScope* outvscp : m_outVarps) {
             AstVar* outvarp = outvscp->varp();
             FileLine* fl = nodep->fileline();

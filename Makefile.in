@@ -124,7 +124,7 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	Changes \
 	LICENSE \
 	MANIFEST.SKIP \
-	README.adoc \
+	README.rst \
 	verilator-config.cmake.in \
 	verilator-config-version.cmake.in \
 	bin/verilator \
@@ -134,16 +134,16 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
 	docs/.gitignore \
-	docs/CONTRIBUTING.adoc \
+	docs/CONTRIBUTING.rst \
 	docs/CONTRIBUTORS \
 	docs/Makefile.in \
 	docs/TODO \
 	docs/doxygen-mainpage \
 	docs/doxygen.config \
-	docs/install.adoc \
-	docs/internals.adoc \
+	docs/install.rst \
+	docs/internals.rst \
 	docs/verilator_logo.png \
-	docs/xml.adoc \
+	docs/xml.rst \
 	install-sh configure *.pod \
 	include/*.[chv]* \
 	include/*.in \
@@ -463,7 +463,7 @@ analyzer-include:
 	-rm -rf examples/*/obj*
 	scan-build $(MAKE) -k examples
 
-format: clang-format yapf
+format: clang-format yapf format-pl-exec
 
 CLANGFORMAT = clang-format
 CLANGFORMAT_FLAGS = -i
@@ -474,9 +474,7 @@ clang-format:
 		|| echo "*** You are not using clang-format 10.0, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
-YAPF = yapf3
-YAPF_FLAGS = -i
-YAPF_FILES = \
+PY_PROGRAMS = \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \
 	src/astgen \
@@ -486,14 +484,36 @@ YAPF_FILES = \
 	src/flexfix \
 	src/vlcovgen \
 	nodist/code_coverage \
-	nodist/code_coverage.dat \
 	nodist/dot_importer \
 	nodist/fuzzer/actual_fail \
 	nodist/fuzzer/generate_dictionary \
 	nodist/install_test \
 
+PY_FILES = \
+	$(PY_PROGRAMS) \
+	nodist/code_coverage.dat \
+
+YAPF = yapf3
+YAPF_FLAGS = -i
+
 yapf:
-	$(YAPF) $(YAPF_FLAGS) $(YAPF_FILES)
+	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
+
+FLAKE8 = flake8
+FLAKE8_FLAGS = \
+	--extend-exclude=fastcov.py \
+	--ignore=E123,E129,E251,E501,W503,W504,E701
+
+PYLINT = pylint
+PYLINT_FLAGS = --disable=R0801
+
+lint-py:
+	-$(FLAKE8) $(FLAKE8_FLAGS) $(PY_PROGRAMS)
+	-$(PYLINT) $(PYLINT_FLAGS) $(PY_PROGRAMS)
+
+format-pl-exec:
+	-chmod a+x test_regress/t/*.pl
+
 
 ftp: info
 

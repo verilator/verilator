@@ -7,9 +7,17 @@
 `timescale 1s/1s
 
 module t;
+   sub sub ();
    initial begin
       $printtimescale;
+      sub.pts();
       $write("*-* All Finished *-*\n");
       $finish;
    end
+endmodule
+
+module sub;
+   task pts;
+      $printtimescale;
+   endtask
 endmodule

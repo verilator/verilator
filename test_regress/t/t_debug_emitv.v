@@ -107,9 +107,11 @@ module t (/*AUTOARG*/
    int cyc;
    int fo;
    int sum;
+   real r;
    string str;
    always_ff @ (posedge clk) begin
       cyc <= cyc + 1;
+      r <= r + 0.01;
       fo = cyc;
       sub.inc(fo, sum);
       sum = sub.f(sum);
@@ -176,6 +178,25 @@ module t (/*AUTOARG*/
 
       if (Pkg::PKG_PARAM != 1) $stop;
       sub.r = 62.0;
+
+      $display("%g", $log10(r));
+      $display("%g", $ln(r));
+      $display("%g", $exp(r));
+      $display("%g", $sqrt(r));
+      $display("%g", $floor(r));
+      $display("%g", $ceil(r));
+      $display("%g", $sin(r));
+      $display("%g", $cos(r));
+      $display("%g", $tan(r));
+      $display("%g", $asin(r));
+      $display("%g", $acos(r));
+      $display("%g", $atan(r));
+      $display("%g", $sinh(r));
+      $display("%g", $cosh(r));
+      $display("%g", $tanh(r));
+      $display("%g", $asinh(r));
+      $display("%g", $acosh(r));
+      $display("%g", $atanh(r));
    end
 endmodule
 
@@ -188,27 +209,6 @@ module sub();
       return {31'd0, v[2]} + 32'd1;
    endfunction
    real r;
-   initial begin
-      r = 1.0;
-      r = $log10(r);
-      r = $ln(r);
-      r = $exp(r);
-      r = $sqrt(r);
-      r = $floor(r);
-      r = $ceil(r);
-      r = $sin(r);
-      r = $cos(r);
-      r = $tan(r);
-      r = $asin(r);
-      r = $acos(r);
-      r = $atan(r);
-      r = $sinh(r);
-      r = $cosh(r);
-      r = $tanh(r);
-      r = $asinh(r);
-      r = $acosh(r);
-      r = $atanh(r);
-   end
 endmodule
 
 package p;

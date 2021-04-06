@@ -263,7 +263,7 @@ private:
             m_seqAssignsp = new AstTextBlock(fl, "if (last_seq_seqnum__V > "
                                                  "last_combo_seqnum__V) begin\n");
             txtp->addNodep(m_seqAssignsp);
-            m_comboAssignsp = new AstTextBlock(fl, "end else begin\n");
+            m_comboAssignsp = new AstTextBlock(fl, "end\nelse begin\n");
             txtp->addNodep(m_comboAssignsp);
             txtp->addText(fl, "end\n");
         } else {
@@ -321,7 +321,7 @@ private:
                               + " library, "
                                 "Verliog (%u) and library (%u) hash values do not "
                                 "agree\\n\", protectlib_hash__V, expected_hash__V);\n");
-        txtp->addText(fl, "exit(EXIT_FAILURE);\n");
+        txtp->addText(fl, "std::exit(EXIT_FAILURE);\n");
         txtp->addText(fl, "}\n");
         txtp->addText(fl, "}\n\n");
 
@@ -437,7 +437,6 @@ private:
         AstVar* newVarp
             = new AstVar(varp->fileline(), AstVarType::VAR, varp->name() + suffix, varp->dtypep());
         textp->addNodep(newVarp);
-        textp->addText(varp->fileline(), ";\n");
     }
 
     void handleOutput(AstVar* varp) {

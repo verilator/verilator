@@ -67,6 +67,12 @@ bool verbose = false;
         return __LINE__; \
     }
 
+#define CHECK_RESULT_Z(got) \
+    if ((got)) { \
+        printf("%%Error: %s:%d: GOT = !NULL  EXP = NULL\n", FILENM, __LINE__); \
+        return __LINE__; \
+    }
+
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
@@ -492,7 +498,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
     static TestVpiHandle cb;
     static struct {
         TestVpiHandle scope, sig, rfr, check, verbose;
-        char str[128 + 1];  // char per bit plus null terminator
+        std::string str;
         int type;  // value type in .str
         union {
             PLI_INT32 integer;
@@ -526,10 +532,10 @@ int _mon_check_putget_str(p_cb_data cb_data) {
                 vpi_get_value(data[i].sig, &v);
                 TEST_MSG("%s\n", v.value.str);
                 if (data[i].type) {
-                    CHECK_RESULT_CSTR(v.value.str, data[i].str);
+                    CHECK_RESULT_CSTR(v.value.str, data[i].str.c_str());
                 } else {
                     data[i].type = v.format;
-                    strcpy(data[i].str, v.value.str);
+                    data[i].str = std::string(v.value.str);
                 }
             }
 
@@ -550,7 +556,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
             if (callback_count_strs & 7) {
                 // put same value back - checking encoding/decoding equivalent
                 v.format = data[i].type;
-                v.value.str = data[i].str;
+                v.value.str = (PLI_BYTE8*)(data[i].str.c_str());  // Can't reinterpret_cast
                 vpi_put_value(data[i].sig, &v, &t, vpiNoDelay);
                 v.format = vpiIntVal;
                 v.value.integer = 1;
@@ -624,6 +630,7 @@ int _mon_check_vlog_info() {
     CHECK_RESULT_CSTR(vlog_info.argv[1], "+PLUS");
     CHECK_RESULT_CSTR(vlog_info.argv[2], "+INT=1234");
     CHECK_RESULT_CSTR(vlog_info.argv[3], "+STRSTR");
+    CHECK_RESULT_Z(vlog_info.argv[4]);
     if (TestSimulator::is_verilator()) {
         CHECK_RESULT_CSTR(vlog_info.product, "Verilator");
         CHECK_RESULT(strlen(vlog_info.version) > 0, 1);
@@ -734,7 +741,7 @@ int main(int argc, char** argv, char** env) {
 #endif
 
     VL_DO_DANGLING(delete topp, topp);
-    exit(0L);
+    return 0;
 }
 
 #endif

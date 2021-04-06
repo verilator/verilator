@@ -58,8 +58,8 @@ class GraphNfaToDfa final : GraphAlg<> {
     // Edges from DFA to DFA indicate a completed input transition
 private:
     // TYPES
-    typedef std::deque<DfaVertex*> DfaStates;
-    typedef std::multimap<vluint64_t, DfaVertex*> HashMap;
+    using DfaStates = std::deque<DfaVertex*>;
+    using HashMap = std::multimap<vluint64_t, DfaVertex*>;
 
     // MEMBERS
     uint32_t m_step;  // Processing step, so we can avoid clearUser all the time
@@ -177,7 +177,7 @@ private:
         uint32_t hash = hashDfaOrigins(nfasWithInput);
 
         const auto eqrange = m_hashMap.equal_range(hash);
-        for (HashMap::iterator it = eqrange.first; it != eqrange.second; ++it) {
+        for (auto it = eqrange.first; it != eqrange.second; ++it) {
             DfaVertex* testp = it->second;
             if (compareDfaOrigins(nfasWithInput, testp)) {
                 UINFO(9, "              DFA match for set: " << testp << endl);

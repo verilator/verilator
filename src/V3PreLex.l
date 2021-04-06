@@ -125,8 +125,8 @@ bom             [\357\273\277]
                           rtnfile += '"'; yytext = (char*)rtnfile.c_str(); yyleng = rtnfile.length();
                           return VP_STRING; }
 <INITIAL,STRIFY>"`__LINE__"     { FL_FWDC;
-                          static char buf[10];
-                          sprintf(buf, "%d", LEXP->curFilelinep()->lastLineno());
+                          static char buf[25];
+                          VL_SNPRINTF(buf, 25, "%d", LEXP->curFilelinep()->lastLineno());
                           yytext = buf; yyleng = strlen(yytext);
                           return VP_TEXT; }
 
@@ -348,7 +348,8 @@ void V3PreLex::pushStateIncFilename() {
 }
 
 void V3PreLex::debug(int level) {
-    yy_flex_debug = level; }
+    yy_flex_debug = level;  // Use --debugi-V3PreShell, if level<5 this level is 0
+}
 int V3PreLex::debug() {
     return yy_flex_debug; }
 
@@ -396,8 +397,8 @@ again:
         string forceOut = endOfStream(again /*ref*/);
         streamp = curStreamp();  // May have been updated
         if (forceOut != "") {
-            if (forceOut.length() > max_size) {
-                yyerrorf("Output buffer too small for a `line");
+            if (forceOut.length() > max_size) {  // LCOV_EXCL_LINE
+                yyerrorf("Output buffer too small for a `line");  // LCOV_EXCL_LINE
             } else {
                 got = forceOut.length();
                 strncpy(buf, forceOut.c_str(), got);

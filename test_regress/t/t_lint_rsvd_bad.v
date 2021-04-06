@@ -5,6 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 config cfgBad;
+   design rtlLib.top;
+   default liblist rtlLib;
+   instance top.a2 liblist gateLib;
+   include none;
+   library rtlLib *.v;
+   include aa;
+   use gateLib;
+   cell rtlLib.cell;
 endconfig
 
 module t;

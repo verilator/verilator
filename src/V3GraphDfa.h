@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3GRAPHDFA_H_
-#define _V3GRAPHDFA_H_ 1
+#ifndef VERILATOR_V3GRAPHDFA_H_
+#define VERILATOR_V3GRAPHDFA_H_
 #include "config_build.h"
 #include "verilatedos.h"
 
@@ -108,7 +108,7 @@ public:
 //============================================================================
 /// Abstract type indicating a specific "input" to the NFA
 /// DFA assumes each .toInt() is unique
-typedef VNUser DfaInput;
+using DfaInput = VNUser;
 
 //============================================================================
 // Edge types

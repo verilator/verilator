@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
+// Code available from: https://verilator.org
 //
 // Copyright 2012-2021 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
@@ -12,12 +12,16 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Thread pool and profiling for Verilated modules
+/// \brief Verilated thread pool and profiling header
+///
+/// This file is not part of the Verilated public-facing API.
+/// It is only for internal use by Verilated library multithreaded
+/// routines.
 ///
 //=============================================================================
 
-#ifndef _VERILATED_THREADS_H_
-#define _VERILATED_THREADS_H_
+#ifndef VERILATOR_VERILATED_THREADS_H_
+#define VERILATOR_VERILATED_THREADS_H_
 
 #include "verilatedos.h"
 #include "verilated.h"  // for VerilatedMutex and clang annotations
@@ -47,11 +51,11 @@
 // VlMTaskVertex and VlThreadpool will work with multiple symbol table types.
 // Since the type is opaque to VlMTaskVertex and VlThreadPool, represent it
 // as a void* here.
-typedef void* VlThrSymTab;
+using VlThrSymTab = void*;
 
-typedef void (*VlExecFnp)(bool, VlThrSymTab);
+using VlExecFnp = void (*)(bool, VlThrSymTab);
 
-/// Track dependencies for a single MTask.
+// Track dependencies for a single MTask.
 class VlMTaskVertex final {
     // MEMBERS
     static std::atomic<vluint64_t> s_yields;  // Statistics
@@ -189,7 +193,7 @@ private:
     VerilatedMutex m_mutex;
     std::condition_variable_any m_cv;
     // Only notify the condition_variable if the worker is waiting
-    bool m_waiting VL_GUARDED_BY(m_mutex);
+    bool m_waiting VL_GUARDED_BY(m_mutex) = false;
 
     // Why a vector? We expect the pending list to be very short, typically
     // 0 or 1 or 2, so popping from the front shouldn't be
@@ -203,16 +207,17 @@ private:
     bool m_profiling;  // Is profiling enabled?
     std::atomic<bool> m_exiting;  // Worker thread should exit
     std::thread m_cthread;  // Underlying C++ thread record
+    VerilatedContext* m_contextp;  // Context for spawned thread
 
     VL_UNCOPYABLE(VlWorkerThread);
 
 public:
     // CONSTRUCTORS
-    explicit VlWorkerThread(VlThreadPool* poolp, bool profiling);
+    explicit VlWorkerThread(VlThreadPool* poolp, VerilatedContext* contextp, bool profiling);
     ~VlWorkerThread();
 
     // METHODS
-    inline void dequeWork(ExecRec* workp) {
+    inline void dequeWork(ExecRec* workp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Spin for a while, waiting for new data
         for (int i = 0; i < VL_LOCK_SPINS; ++i) {
             if (VL_LIKELY(m_ready_size.load(std::memory_order_relaxed))) {  //
@@ -233,7 +238,8 @@ public:
         m_ready_size.fetch_sub(1, std::memory_order_relaxed);
     }
     inline void wakeUp() { addTask(nullptr, false, nullptr); }
-    inline void addTask(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym) {
+    inline void addTask(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym)
+        VL_MT_SAFE_EXCLUDES(m_mutex) {
         bool notify;
         {
             const VerilatedLockGuard lk(m_mutex);
@@ -249,8 +255,7 @@ public:
 
 class VlThreadPool final {
     // TYPES
-    typedef std::vector<VlProfileRec> ProfileTrace;
-    typedef std::set<ProfileTrace*> ProfileSet;
+    using ProfileTrace = std::vector<VlProfileRec>;
 
     // MEMBERS
     std::vector<VlWorkerThread*> m_workers;  // our workers
@@ -262,8 +267,9 @@ class VlThreadPool final {
     // corrupting the profiling data. It's super cheap to append
     // a VlProfileRec struct on the end of a pre-allocated vector;
     // this is the only cost we pay in real-time during a profiling cycle.
+    // Internal note: Globals may multi-construct, see verilated.cpp top.
     static VL_THREAD_LOCAL ProfileTrace* t_profilep;
-    ProfileSet m_allProfiles VL_GUARDED_BY(m_mutex);
+    std::set<ProfileTrace*> m_allProfiles VL_GUARDED_BY(m_mutex);
     VerilatedMutex m_mutex;
 
 public:
@@ -271,7 +277,7 @@ public:
     // Construct a thread pool with 'nThreads' dedicated threads. The thread
     // pool will create these threads and make them available to execute tasks
     // via this->workerp(index)->addTask(...)
-    VlThreadPool(int nThreads, bool profiling);
+    VlThreadPool(VerilatedContext* contextp, int nThreads, bool profiling);
     ~VlThreadPool();
 
     // METHODS
@@ -285,11 +291,11 @@ public:
         t_profilep->emplace_back();
         return &(t_profilep->back());
     }
-    void profileAppendAll(const VlProfileRec& rec);
-    void profileDump(const char* filenamep, vluint64_t ticksElapsed);
+    void profileAppendAll(const VlProfileRec& rec) VL_MT_SAFE_EXCLUDES(m_mutex);
+    void profileDump(const char* filenamep, vluint64_t ticksElapsed) VL_MT_SAFE_EXCLUDES(m_mutex);
     // In profiling mode, each executing thread must call
     // this once to setup profiling state:
-    void setupProfilingClientThread();
+    void setupProfilingClientThread() VL_MT_SAFE_EXCLUDES(m_mutex);
     void tearDownProfilingClientThread();
 
 private:
