@@ -18,7 +18,6 @@
 /// that use --sc --trace-fst.
 ///
 /// Use "verilator --sc --trace-fst" to add this to the Makefile for the linker.
-/```
 ///
 //=============================================================================
 
