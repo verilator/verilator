@@ -27,7 +27,7 @@ $var logic 1 ' b1 $end
 $var logic 1 ( b0 $end
 $upscope $end
 $upscope $end
-$scope struct v_unip_strp $end
+$scope union v_unip_strp $end
 $scope struct x1 $end
 $var logic 1 ) b1 $end
 $var logic 1 * b0 $end
