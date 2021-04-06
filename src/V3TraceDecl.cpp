@@ -306,7 +306,6 @@ private:
                     VL_RESTORER(m_traShowname);
                     VL_RESTORER(m_traValuep);
                     {
-                        
                         if (VN_IS(nodep, StructDType)) {
                             // Mark scope as a struct by setting the last char to 0x80 + the fstScopeType
                             m_traShowname +=  getScopeChar(FST_ST_VCD_STRUCT) + " " + itemp->prettyName();
