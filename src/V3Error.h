@@ -101,6 +101,7 @@ public:
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
         NOLATCH,        // No latch detected in always_latch block
+        NULLPORT,       // Null port detected in module definition
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
         PINMISSING,     // Cell pin not specified
         PINNOCONNECT,   // Cell pin not connected
@@ -167,7 +168,7 @@ public:
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MODDUP",
-            "MULTIDRIVEN", "MULTITOP","NOLATCH", "PINCONNECTEMPTY",
+            "MULTIDRIVEN", "MULTITOP","NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
             "RANDC", "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",

@@ -30,6 +30,7 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <stack>
+#include <string>
 
 #define YYERROR_VERBOSE 1  // For prior to Bison 3.6
 #define YYINITDEPTH 10000  // Older bisons ignore YYMAXDEPTH
@@ -1279,7 +1280,7 @@ paramPortDeclOrArg<nodep>:	// IEEE: param_assignment + parameter_port_declaratio
 portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + empty
 		/* empty */				{ $$ = nullptr; }
 	|	'(' ')'					{ $$ = nullptr; }
-	|	'(' list_of_commas ')'	{ $$ = nullptr; } // Insert null port handling here
+	|	'(' list_of_commas ')'	{ $$ = nullptr; $2->v3warn(NULLPORT, "null port detected"); } // Insert proper null port handling here
 	//			// .* expanded from module_declaration
 	//UNSUP	'(' yP_DOTSTAR ')'				{ UNSUP }
 	|	start_with_commas_or_none {VARRESET_LIST(PORT);} list_of_ports	{ $$ = $3; VARRESET_NONLIST(UNKNOWN); }
@@ -1289,9 +1290,9 @@ start_with_commas_or_none:
 	|	'(' list_of_commas
 	;
 
-list_of_commas:	// one or more commas for null port handling
-		','
-	|	list_of_commas ',' // Insert null port handling here
+list_of_commas<nodep>:	// one or more commas for null port handling
+		',' {  int p = PINNUMINC(); $$ = new AstPort($<fl>1, p, std::to_string(p)); }
+	|	list_of_commas ',' { int p = PINNUMINC(); AstPort *ap; $$ = $1->addNextNull(ap = new AstPort($<fl>2, p, std::to_string(p))); ap->v3warn(NULLPORT, "null port detected"); } // Insert null port handling here
 	;
 list_of_ports_comma<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 		portAndTag	list_of_commas			{ $$ = $1; }
@@ -1301,7 +1302,7 @@ list_of_ports_comma<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 		portAndTag	')'			{ $$ = $1; }
 	|	list_of_ports_comma portAndTag	')'		{ $$ = $1->addNextNull($2); }
-	|	list_of_ports_comma ')'		{ $$ = $1; }
+	|	list_of_ports_comma ')'		{ $$ = $1; $1->v3warn(NULLPORT, "null port detected"); } // Insert null port handling here
 	;
 
 portAndTag<nodep>:
