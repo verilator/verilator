@@ -159,17 +159,14 @@ void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstV
 
     // Follow the hierarchy of the new variable from the common scope point
     while (new_it != tokens.end()) {
-        if(new_it->back() == '\x86') {
+        if((new_it->back() & 0x80)) {
             tmpModName = *new_it;
             tmpModName.pop_back();
-            fstWriterSetScope(m_fst, FST_ST_VCD_STRUCT, tmpModName.c_str(), nullptr);
-        }
-        else if(new_it->back() == '\x87') {
-            tmpModName = *new_it;
-            tmpModName.pop_back();
-            fstWriterSetScope(m_fst, FST_ST_VCD_INTERFACE, tmpModName.c_str(), nullptr);
+            // If the scope ends with a non-ascii character, it will be 0x80 + fstScopeType
+            fstWriterSetScope(m_fst, (fstScopeType)(new_it->back() & 0x7f) , tmpModName.c_str(), nullptr);
         }
         else fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), nullptr);
+
         m_curScope.push_back(*new_it);
         new_it = tokens.erase(new_it);
     }

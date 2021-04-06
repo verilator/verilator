@@ -3606,7 +3606,7 @@ class EmitCTrace final : EmitCStmts {
         puts(",");
         if (nodep->isScoped()) puts("Verilated::catName(scopep,");
         putsQuoted(VIdProtect::protectWordsIf(nodep->showname(), nodep->protect()));
-        if (nodep->isScoped()) puts(",\"\x87 \")");
+        if (nodep->isScoped()) puts(",(int)scopet,\" \")");
         // Direction
         if (v3Global.opt.traceFormat().fst()) {
             puts("," + cvtToStr(enumNum));

@@ -24,8 +24,6 @@
 #include "verilated.h"
 #include "verilated_trace.h"
 
-#include "gtkwave/fstapi.h"
-
 #include <list>
 #include <map>
 #include <string>

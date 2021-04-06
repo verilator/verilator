@@ -22,6 +22,7 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+#include "gtkwave/fstapi.h"
 
 #include "V3Global.h"
 #include "V3TraceDecl.h"
@@ -72,7 +73,7 @@ private:
         FileLine* const flp = m_topScopep->fileline();
         AstCFunc* const funcp = new AstCFunc(flp, name, m_topScopep);
         string argTypes("void* userp, " + v3Global.opt.traceClassBase() + "* tracep");
-        if (m_interface) argTypes += ", const char* scopep";
+        if (m_interface) argTypes += ", int scopet, const char* scopep";
         funcp->argTypes(argTypes);
         funcp->funcType(type);
         funcp->symProlog(true);
@@ -84,8 +85,13 @@ private:
     }
     void callCFuncSub(AstCFunc* basep, AstCFunc* funcp, AstIntfRef* irp) {
         AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
-        callp->argTypes("userp, tracep");
-        if (irp) callp->addArgsp(irp->unlinkFrBack());
+        if (irp) {
+            callp->argTypes("userp, tracep, FST_ST_VCD_INTERFACE");
+            callp->addArgsp(irp->unlinkFrBack());
+        }
+        else {
+            callp->argTypes("userp, tracep");
+        }
         basep->addStmtsp(callp);
     }
     AstCFunc* newCFuncSub(AstCFunc* basep) {
@@ -94,6 +100,11 @@ private:
         if (!m_interface) callCFuncSub(basep, funcp, nullptr);
         return funcp;
     }
+
+    std::string getScopeChar(fstScopeType sct) {
+       return std::string(1, (char)(0x80+sct));
+    }
+
     void addTraceDecl(const VNumRange& arrayRange,
                       int widthOverride) {  // If !=0, is packed struct/array where basicp size
                                             // misreflects one element
@@ -295,12 +306,11 @@ private:
                     VL_RESTORER(m_traShowname);
                     VL_RESTORER(m_traValuep);
                     {
-                        // Add @ to mark as struct
-                        // Since it is not a valid symbol for verilog variable names, no
-                        // collision should happen
-                        m_traShowname += string("\x86 ") + itemp->prettyName();
-
+                        
                         if (VN_IS(nodep, StructDType)) {
+                            // Mark scope as a struct by setting the last char to 0x80 + the fstScopeType
+                            m_traShowname +=  getScopeChar(FST_ST_VCD_STRUCT) + " " + itemp->prettyName();
+
                             m_traValuep
                                 = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
                                              itemp->lsb(), subtypep->width());
@@ -308,6 +318,7 @@ private:
                             iterate(subtypep);
                             VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);
                         } else {  // Else union, replicate fields
+                            m_traShowname +=  getScopeChar(FST_ST_VCD_UNION) + " " + itemp->prettyName();
                             iterate(subtypep);
                         }
                     }

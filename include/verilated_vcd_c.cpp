@@ -421,13 +421,23 @@ void VerilatedVcd::dumpHeader() {
             const char* sp = np;
             while (*sp && *sp != ' ' && *sp != '\t' && !(*sp & '\x80')) sp++;
 
-            if (*sp == '\x86') {
-                printStr("$scope struct ");
-            } else if (*sp == '\x87') {
-                printStr("$scope interface ");
-            } else {
-                printStr("$scope module ");
+            printStr("$scope ");
+            if(*sp & '\x80') {
+                switch(*sp & 0x7f) {
+                    case FST_ST_VCD_STRUCT:
+                        printStr("struct ");
+                        break;
+                    case FST_ST_VCD_INTERFACE:
+                        printStr("interface ");
+                        break;
+                    case FST_ST_VCD_UNION:
+                        printStr("union ");
+                        break;
+                    default:
+                        printStr("module ");
+                }
             }
+            else printStr("module ");
 
             for (; *np && *np != ' ' && *np != '\t'; np++) {
                 if (*np == '[') {
