@@ -10,7 +10,10 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Verilator tracing in FST format
+/// \brief Verilator tracing in FST format for SystemC header
+///
+/// User wrapper code should use this header when creating FST SystemC
+/// traces.
 ///
 /// This class is not threadsafe, as the SystemC kernel is not threadsafe.
 ///
