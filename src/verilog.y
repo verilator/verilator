@@ -1279,14 +1279,19 @@ paramPortDeclOrArg<nodep>:	// IEEE: param_assignment + parameter_port_declaratio
 portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + empty
 		/* empty */				{ $$ = nullptr; }
 	|	'(' ')'					{ $$ = nullptr; }
+	|	'(' list_of_commas ')'	{ $$ = nullptr; } // Insert null port handling here
 	//			// .* expanded from module_declaration
 	//UNSUP	'(' yP_DOTSTAR ')'				{ UNSUP }
-	|	'(' {VARRESET_LIST(PORT);} list_of_ports	{ $$ = $3; VARRESET_NONLIST(UNKNOWN); }
+	|	start_with_commas_or_none {VARRESET_LIST(PORT);} list_of_ports	{ $$ = $3; VARRESET_NONLIST(UNKNOWN); }
+	;
+start_with_commas_or_none:
+		'('
+	|	'(' list_of_commas
 	;
 
 list_of_commas:	// one or more commas for null port handling
 		','
-	|	list_of_commas ','
+	|	list_of_commas ',' // Insert null port handling here
 	;
 list_of_ports_comma<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 		portAndTag	list_of_commas			{ $$ = $1; }
