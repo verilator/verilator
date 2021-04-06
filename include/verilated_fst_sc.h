@@ -18,7 +18,6 @@
 /// This class is not threadsafe, as the SystemC kernel is not threadsafe.
 ///
 //=============================================================================
-// SPDIFF_OFF
 
 #ifndef _VERILATED_FST_SC_H_
 #define _VERILATED_FST_SC_H_ 1
@@ -27,7 +26,6 @@
 #include "verilated_sc.h"
 #include "verilated_fst_c.h"
 
-// SPDIFF_ON
 //=============================================================================
 // VerilatedFstSc
 ///
