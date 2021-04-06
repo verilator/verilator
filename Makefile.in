@@ -137,7 +137,6 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	docs/CONTRIBUTING.rst \
 	docs/CONTRIBUTORS \
 	docs/Makefile \
-	docs/TODO \
 	docs/_static/verilator_logo.png \
 	docs/install.rst \
 	docs/internals.rst \
