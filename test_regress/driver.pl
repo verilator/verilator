@@ -888,7 +888,8 @@ sub compile_vlt_flags {
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
     $self->{trace} = ($opt_trace || $checkflags =~ /-trace\b/
                       || $checkflags =~ /-trace-fst\b/);
-    $self->{trace_format} = (($checkflags =~ /-trace-fst/ && 'fst-c')
+    $self->{trace_format} = (($checkflags =~ /-trace-fst/ && $self->{sc} && 'fst-sc')
+                             || ($checkflags =~ /-trace-fst/ && !$self->{sc} && 'fst-c')
                              || ($self->{sc} && 'vcd-sc')
                              || (!$self->{sc} && 'vcd-c'));
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
@@ -1747,6 +1748,7 @@ sub _make_main {
     print $fh "#include \"verilated.h\"\n";
     print $fh "#include \"systemc.h\"\n" if $self->sc;
     print $fh "#include \"verilated_fst_c.h\"\n" if $self->{trace} && $self->{trace_format} eq 'fst-c';
+    print $fh "#include \"verilated_fst_sc.h\"\n" if $self->{trace} && $self->{trace_format} eq 'fst-sc';
     print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-c';
     print $fh "#include \"verilated_vcd_sc.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-sc';
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
@@ -1808,6 +1810,7 @@ sub _make_main {
         $fh->print("#if VM_TRACE\n");
         $fh->print("    contextp->traceEverOn(true);\n");
         $fh->print("    std::unique_ptr<VerilatedFstC> tfp{new VerilatedFstC};\n") if $self->{trace_format} eq 'fst-c';
+        $fh->print("    std::unique_ptr<VerilatedFstSc> tfp{new VerilatedFstSc};\n") if $self->{trace_format} eq 'fst-sc';
         $fh->print("    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};\n") if $self->{trace_format} eq 'vcd-c';
         $fh->print("    std::unique_ptr<VerilatedVcdSc> tfp{new VerilatedVcdSc};\n") if $self->{trace_format} eq 'vcd-sc';
         $fh->print("    topp->trace(tfp.get(), 99);\n");
