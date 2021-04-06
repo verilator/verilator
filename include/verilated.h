@@ -841,7 +841,7 @@ public:
 public:
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
     // Internal: Create a new module name by concatenating two strings
-    static const char* catName(const char* n1, const char* n2, int scope_t = 0,
+    static const char* catName(const char* n1, const char* n2, int scopet = 0,
                                const char* delimiter = ".");  // Returns static data
 
     // Internal: Throw signal assertion
