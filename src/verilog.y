@@ -1281,12 +1281,18 @@ portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + em
 	|	'(' ')'					{ $$ = nullptr; }
 	//			// .* expanded from module_declaration
 	//UNSUP	'(' yP_DOTSTAR ')'				{ UNSUP }
-	|	'(' {VARRESET_LIST(PORT);} list_of_ports ')'	{ $$ = $3; VARRESET_NONLIST(UNKNOWN); }
+	|	'(' {VARRESET_LIST(PORT);} list_of_ports	{ $$ = $3; VARRESET_NONLIST(UNKNOWN); }
+	;
+
+list_of_ports_comma<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
+		portAndTag	','			{ $$ = $1; }
+	|	list_of_ports_comma portAndTag	','		{ $$ = $1->addNextNull($2); }
 	;
 
 list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
-		portAndTag				{ $$ = $1; }
-	|	list_of_ports ',' portAndTag		{ $$ = $1->addNextNull($3); }
+		portAndTag	')'			{ $$ = $1; }
+	|	list_of_ports_comma portAndTag	')'		{ $$ = $1->addNextNull($2); }
+	|	list_of_ports_comma ')'		{ $$ = $1; }
 	;
 
 portAndTag<nodep>:
