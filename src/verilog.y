@@ -1330,9 +1330,7 @@ list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 			  //VARDTYPE_NDECL(new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
 			  VARDTYPE_NDECL(nullptr);
 			  // if we got here we have one more trailing comma
-			  std::cerr << "udif!" << std::endl;
-			  $$ = $1->addNextNull(VARDONEP($1, nullptr, nullptr));
-			  std::cerr << std::dec << 1328 << " " << std::hex << $$ << std::endl;
+			  $$ = $1->addNextNull(VARDONEP($1, nullptr, nullptr)); DBG($$);
 			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
 	;
 
