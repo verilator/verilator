@@ -154,7 +154,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
                          << GRAMMARP->m_varIO << "  dt=" << (dtypep ? "set" : "") << endl);
     if (GRAMMARP->m_varIO == VDirection::NONE && GRAMMARP->m_varDecl == AstVarType::PORT) {
         // Just a port list with variable name (not v2k format); AstPort already created
-        if (dtypep) fileline->v3warn(E_UNSUPPORTED, "Unsupported: Ranges ignored in port-lists");
+        if (dtypep && !(VN_IS(dtypep, BasicDType) && VN_CAST(dtypep, BasicDType)->implicit())) fileline->v3warn(E_UNSUPPORTED, "Unsupported: Ranges ignored in port-lists");
         return nullptr;
     }
     if (GRAMMARP->m_varDecl == AstVarType::WREAL) {
