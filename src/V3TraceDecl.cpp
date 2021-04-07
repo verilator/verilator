@@ -306,8 +306,8 @@ private:
                         if (VN_IS(nodep, StructDType)) {
                             // Mark scope as a struct by setting the last char to 0x80 + the
                             // fstScopeType
-                            m_traShowname
-                                += getScopeChar(VLT_TRACE_SCOPE_STRUCT) + " " + itemp->prettyName();
+                            m_traShowname += getScopeChar(VLT_TRACE_SCOPE_STRUCT) + " "
+                                             + itemp->prettyName();
 
                             m_traValuep
                                 = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
