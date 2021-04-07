@@ -21,19 +21,22 @@
 #ifndef VERILATOR_VERILATED_TRACE_DEFS_H_
 #define VERILATOR_VERILATED_TRACE_DEFS_H_
 
-enum vltscope_t {
-    VLT_SCOPE_MODULE = 0,
-    VLT_SCOPE_TASK = 1,
-    VLT_SCOPE_FUNCTION = 2,
-    VLT_SCOPE_BEGIN = 3,
-    VLT_SCOPE_FORK = 4,
-    VLT_SCOPE_GENERATE = 5,
-    VLT_SCOPE_STRUCT = 6,
-    VLT_SCOPE_UNION = 7,
-    VLT_SCOPE_CLASS = 8,
-    VLT_SCOPE_INTERFACE = 9,
-    VLT_SCOPE_PACKAGE = 10,
-    VLT_SCOPE_PROGRAM = 11
+// Verilator tracing scope types:
+// The values should match FST_ST_VCD_* from fstScopeType in gtkwave/fstapi.h
+// verilated_fst_c.cpp contains assertions to enforce this
+enum VltTraceScope {
+    VLT_TRACE_SCOPE_MODULE = 0,
+    VLT_TRACE_SCOPE_TASK = 1,
+    VLT_TRACE_SCOPE_FUNCTION = 2,
+    VLT_TRACE_SCOPE_BEGIN = 3,
+    VLT_TRACE_SCOPE_FORK = 4,
+    VLT_TRACE_SCOPE_GENERATE = 5,
+    VLT_TRACE_SCOPE_STRUCT = 6,
+    VLT_TRACE_SCOPE_UNION = 7,
+    VLT_TRACE_SCOPE_CLASS = 8,
+    VLT_TRACE_SCOPE_INTERFACE = 9,
+    VLT_TRACE_SCOPE_PACKAGE = 10,
+    VLT_TRACE_SCOPE_PROGRAM = 11
 };
 
 #endif  // guard

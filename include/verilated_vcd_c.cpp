@@ -424,9 +424,9 @@ void VerilatedVcd::dumpHeader() {
             printStr("$scope ");
             if (*sp & '\x80') {
                 switch (*sp & 0x7f) {
-                case VLT_SCOPE_STRUCT: printStr("struct "); break;
-                case VLT_SCOPE_INTERFACE: printStr("interface "); break;
-                case VLT_SCOPE_UNION: printStr("union "); break;
+                case VLT_TRACE_SCOPE_STRUCT: printStr("struct "); break;
+                case VLT_TRACE_SCOPE_INTERFACE: printStr("interface "); break;
+                case VLT_TRACE_SCOPE_UNION: printStr("union "); break;
                 default: printStr("module ");
                 }
             } else
