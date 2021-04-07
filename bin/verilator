@@ -287,9 +287,11 @@ This is a short summary of the arguments to the "verilator" executable.
 See L</"VERILATION ARGUMENTS"> for the detailed descriptions of these
 arguments.
 
-    {file.v}                    Verilog package, module and top module filenames
-    {file.c/cc/cpp}             Optional C++ files to compile in
-    {file.a/o/so}               Optional C++ files to link in
+=for VL_SPHINX_EXTRACT "_build/gen/args_verilator.rst"
+
+    <file.v>                    Verilog package, module and top module filenames
+    <file.c/cc/cpp>             Optional C++ files to compile in
+    <file.a/o/so>               Optional C++ files to link in
 
      +1364-1995ext+<ext>        Use Verilog 1995 with file extension <ext>
      +1364-2001ext+<ext>        Use Verilog 2001 with file extension <ext>
@@ -304,7 +306,7 @@ arguments.
     --bbox-unsup                Blackbox unsupported language features
     --bin <filename>            Override Verilator binary
     --build                     Build model executable/library after Verilation
-     -CFLAGS <flags>            C++ compiler flags for makefile
+     -CFLAGS <flags>            C++ compiler arguments for makefile
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
     --clk <signal-name>         Mark specified signal as clock
@@ -334,8 +336,8 @@ arguments.
      -E                         Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
-     -F <file>                  Parse options from a file, relatively
-     -f <file>                  Parse options from a file
+     -F <file>                  Parse arguments from a file, relatively
+     -f <file>                  Parse arguments from a file
      -FI <file>                 Force include of a file
     --flatten                   Force inlining of all modules, tasks and functions
      -G<name>=<value>           Overwrite top-level parameter
@@ -352,12 +354,12 @@ arguments.
      +incdir+<dir>              Directory to search for includes
     --inhibit-sim               Create function to turn off sim
     --inline-mult <value>       Tune module inlining
-     -LDFLAGS <flags>           Linker pre-object flags for makefile
+     -LDFLAGS <flags>           Linker pre-object arguments for makefile
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
-     -MAKEFLAGS <flags>         Options to make during --build
+     -MAKEFLAGS <flags>         Arguments to pass to make during --build
     --max-num-width <value>     Maximum number width (default: 64K)
     --MMD                       Create .d dependency files
     --MP                        Create phony dependency targets
@@ -453,15 +455,18 @@ This is a short summary of the simulation runtime arguments, i.e. for the
 final Verilated simulation runtime models.  See L</"SIMULATION RUNTIME
 ARGUMENTS"> for the detailed description of these arguments.
 
+=for VL_SPHINX_EXTRACT "_build/gen/args_verilated.rst"
+
      +verilator+debug                  Enable debugging
      +verilator+debugi+<value>         Enable debugging at a level
+     +verilator+error+limit+<value>    Set error limit
      +verilator+help                   Display help
+     +verilator+noassert               Disable assert checking
      +verilator+prof+threads+file+<filename>  Set profile filename
      +verilator+prof+threads+start+<value>    Set profile starting point
      +verilator+prof+threads+window+<value>   Set profile duration
      +verilator+rand+reset+<value>     Set random reset technique
      +verilator+seed+<value>           Set random seed
-     +verilator+noassert               Disable assert checking
      +verilator+V                      Verbose version and config
      +verilator+version                Show version and exit
 
@@ -473,11 +478,11 @@ executable.
 
 =over 4
 
-=item {file.v}
+=item <file.v>
 
 Specifies the Verilog file containing the top module to be Verilated.
 
-=item {file.c/.cc/.cpp/.cxx}
+=item <file.c/.cc/.cpp/.cxx>
 
 Used with --exe to specify optional C++ files to be linked in with the
 Verilog code.  The file path should either be absolute, or relative to
@@ -487,7 +492,7 @@ appropriate directory to find the file.
 See also the -CFLAGS and -LDFLAGS options, which are useful when the C++
 files need special compiler flags.
 
-=item {file.a/.o/.so}
+=item <file.a/.o/.so>
 
 Specifies optional object or library files to be linked in with the Verilog
 code, as a shorthand for -LDFLAGS "<file>". The file path should either be
@@ -698,7 +703,7 @@ Note Verilator may over-count combinatorial (non-clocked) blocks when those
 blocks receive signals which have had the UNOPTFLAT warning disabled; for
 most accurate results do not disable this warning when using coverage.
 
-=item --trace-max-width I<width>
+=item --coverage-max-width I<width>
 
 Rarely needed.  Specify the maximum bit width of a signal that is subject
 to toggle coverage.  Defaults to 256, as covering large vectors may greatly
@@ -763,8 +768,11 @@ is fairly standard across Verilog tools while -D is similar to GCC.
 
 Select the debug executable of Verilator (if available), and enable more
 internal assertions (equivalent to C<--debug-check>), debugging messages
-(equivalent to C<--debugi 3>), and intermediate form dump files (equivalent
-to C<--dump-treei 3>).
+(equivalent to C<--debugi 3>), intermediate form dump files (equivalent to
+C<--dump-treei 3>), and leak to make node numbers unique (--debug-leak).
+
+Verilator will also abort() instead of exit() if there are any errors
+detected.
 
 =item --debug-check
 
@@ -790,7 +798,8 @@ option has no effect.
 Rarely needed - for developer use.  Set internal debugging level globally
 to the specified debug level (1-10) or set the specified Verilator source
 file to the specified level (e.g. C<--debugi-V3Width 9>). Higher levels
-produce more detailed messages.
+produce more detailed messages. See --debug for other implications of
+having debug on (at levels other than zero).
 
 =item --default-language I<value>
 
@@ -3070,8 +3079,9 @@ thread.
 =head1 CONFIGURATION FILES
 
 In addition to the command line, warnings and other features may be
-controlled by configuration files, typically named with the .vlt
-extension. An example:
+controlled by configuration files, typically named with the .vlt extension
+(what makes it a configuration file is the `verilator_config directive). An
+example:
 
   `verilator_config
   lint_off -rule WIDTH
@@ -4497,6 +4507,11 @@ likely all of them are oscillating.  It may also be that e.g. "a" may be
 oscillating, then "a" feeds signal "c" which then is also reported as
 oscillating.
 
+One way DIDNOTCONVERGE may occur is flops are built out of gate primitives.
+error. Verilator does not support building flops or latches out of gate
+primitives, and any such code must change to use behavioral constructs
+(e.g. always_ff and always_latch).
+
 Finally, rare, more difficult cases can be debugged like a "C" program;
 either enter GDB and use its tracing facilities, or edit the generated C++
 code to add appropriate prints to see what is going on.
@@ -4740,6 +4755,34 @@ Warns that an instance has a pin which is not connected to another signal.
 Disabled by default as this is a code style warning; it will simulate
 correctly.
 
+=item PINNOTFOUND
+
+Warns that an instance port or Parameter was not found in the module being
+instanciated. Please note that Verilator raises these errors also on instances
+that should be disabled by generate/if/endgenerate constructs:
+
+    module a;
+      localparam A=1;
+      generate
+         if (A==0) begin
+            b b_inst1 (.x(1'b0)); // nonexistent port
+            b #(.PX(1'b0)) b_inst2 (); // nonexistent parameter
+         end
+       endgenerate
+    endmodule
+
+    module b;
+    endmodule
+
+In the example above, b is instantiated with a port named x, but module b has
+no such port. In the next line, b is instantiated again with
+a nonexistent parameter PX. Technically, this code is incorrect because of
+this, but other tools may ignore it because module b is not instantiated
+due to the generate/if condition being false.
+
+It is possible to disable the error above using:
+/* verilator lint_off PINNOTFOUND */
+
 =item PKGNODECL
 
 Error that a package/class appears to have been referenced that has not yet
@@ -4973,6 +5016,13 @@ The most complicated UNOPTFLAT path we've seen was due to low bits of a bus
 being generated from an always statement that consumed high bits of the
 same bus processed by another series of always blocks.  The fix is the
 same; split it into two separate signals generated from each block.
+
+Occasionally UNOPTFLAT may be indicated when there is a true circulation.
+e.g. if trying to implement a flop or latch using individual gate
+primitives.  If UNOPTFLAT is suppressed the code may get a DIDNOTCONVERGE
+error. Verilator does not support building flops or latches out of gate
+primitives, and any such code must change to use behavioral constructs
+(e.g. always_ff and always_latch).
 
 Another way to resolve this warning is to add a C<split_var> metacomment
 described above. This will cause the variable to be split internally,
@@ -5352,8 +5402,19 @@ build time, should you require.
 
 =item How do I generate FST waveforms (aka dumps or traces) in SystemC?
 
-The FST library from GTKWave does not currently support SystemC; use VCD
-format instead.
+FST is a trace file format developed by GTKWave.  Verilator provides basic FST
+support.  To dump traces in FST format, add the --trace-fst switch to Verilator
+and either A. use $dumpfile/$dumpvars in Verilog as described in the FST
+example above, or B. in C++ change the include described in the FST example
+above:
+
+ #include "verilated_fst_sc.h"
+ VerilatedFstSc* tfp = new VerilatedFstSc;
+
+Note that currently supporting both FST and VCD in a single simulation is
+impossible, but such requirement should be rare.  You can however ifdef
+around the trace format in your C++ main loop, and select VCD or FST at
+build time, should you require.
 
 =item How do I view waveforms (aka dumps or traces)?
 

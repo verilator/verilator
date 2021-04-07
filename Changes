@@ -557,7 +557,7 @@ Verilator 4.014 2019-05-08
 * For FST tracing use LZ4 compression. [Tony Bybell]
 * Add error when use parameters without value. (#1424) [Peter Gerst]
 * Auto-extend and WIDTH warn on unsized X/Zs. (#1423) [Udi Finkelstein]
-* Fix missing VL_SHIFTL_ errors. (#1412) (#1415) [Larry Lee]
+* Fix missing VL_SHIFTL errors. (#1412) (#1415) [Larry Lee]
 * Fix MinGW GCC 6 printf formats. (#1413) [Sergey Kvachonok]
 * Fix test problems when missing fst2vcd. (#1417) [Todd Strader]
 * Fix GTKWave register warning. (#1421) [Pieter Kapsenberg]
@@ -626,7 +626,7 @@ Verilator 4.006 2018-10-27
 * Add --dump-defines.
 * For --trace-fst, save enum decoding information. (#1358) [Sergi Granell]
   (To visualize enumeration data you must use GTKwave 3.3.95 or newer.)
-* For --trace-fst, instead of *.fst.hier, put data into *.fst. [Tony Bybell]
+* For --trace-fst, combine hier information into FST. [Tony Bybell]
 * Fix --trace-lxt2 compile error on MinGW, msg2667. [HyungKi Jeong]
 * Fix Windows .exe not found. (#1361) [Patrick Stewart]
 
@@ -1960,7 +1960,7 @@ Verilator 3.700 2009-01-08
   more information on supported constructs.
 * Add --coverage_toggle for toggle coverage analysis.
   Running coverage now requires SystemPerl 1.301 or newer.
-* Add /*verilator coverage_on/_off */ to bracket coverage regions.
+* Add coverage_on/_off metacomments to bracket coverage regions.
 
 **Minor:**
 
@@ -2098,7 +2098,7 @@ Verilator 3.662 2008-04-25
 
 * Add Verilog 2005 $clog2() function.
   This is useful in calculating bus-widths from parameters.
-* Support /**/ comments in -f option files. [Stefan Thiede]
+* Support C-style comments in -f option files. [Stefan Thiede]
 * Add error message when modules have duplicate names. [Stefan Thiede]
 * Support defines terminated in EOF, though against spec. [Stefan Thiede]
 * Support optional argument to $finish and $stop. [by Stefan Thiede]
@@ -2224,7 +2224,7 @@ Verilator 3.652 2007-06-21
 * Support V2K portlists with "input a,b,...". [Mark Nodine]
 * Support V2K function/task argument lists.
 * Optimize constant $display arguments.
-* Fix Preprocessor dropping some `line directives. [Mark Nodine]
+* Fix preprocessor dropping some `line directives. [Mark Nodine]
 
 
 Verilator 3.651 2007-05-22
@@ -2944,7 +2944,7 @@ Verilator 3.300 2004-10-21
 
 **Major:**
 
-* New backend that eliminates most VL_ macros.
+* New backend that eliminates most VL macros.
   Improves performance 20%-50%, depending on frequency of use of signals
   over 64 bits. GCC compile times with -O2 shrink by a factor of 10.
 
@@ -3106,7 +3106,7 @@ Verilator 3.202 2004-01-27
 
 
 Verilator 3.201-beta 2003-12-10
-==========================
+===============================
 
 **Major:**
 
@@ -3402,8 +3402,8 @@ Verilator 3.004 2002-10-10
 
 **Minor:**
 
-* Add /* verilator module_inline */ and associated optimizations.
-* Allow /* verilator coverage_block_off */ in place of `coverage_block_off.
+* Add module_inline metacomment and associated optimizations.
+* Allow coverage_block_off metacomment in place of `coverage_block_off.
   This prevents problems with Emacs AUTORESET. [Ray Strouble]
 * Fix `coverage_block_off also disabling subsequent blocks.
 * Fix unrolling of loops with multiple simple statements.

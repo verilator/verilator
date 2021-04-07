@@ -888,7 +888,8 @@ sub compile_vlt_flags {
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
     $self->{trace} = ($opt_trace || $checkflags =~ /-trace\b/
                       || $checkflags =~ /-trace-fst\b/);
-    $self->{trace_format} = (($checkflags =~ /-trace-fst/ && 'fst-c')
+    $self->{trace_format} = (($checkflags =~ /-trace-fst/ && $self->{sc} && 'fst-sc')
+                             || ($checkflags =~ /-trace-fst/ && !$self->{sc} && 'fst-c')
                              || ($self->{sc} && 'vcd-sc')
                              || (!$self->{sc} && 'vcd-c'));
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
@@ -969,9 +970,9 @@ sub compile {
 
     compile_vlt_cmd(%param);
 
-    if (!$self->{make_top_shell}) {
+    if (!$param{make_top_shell}) {
         $param{top_shell_filename}
-        = $self->{top_shell_filename} = $self->{top_filename};
+        = $self->{top_shell_filename} = "";
     } else {
         $param{top_shell_filename}
         = $self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top.".$self->v_suffix;
@@ -979,7 +980,7 @@ sub compile {
 
     if ($param{atsim}) {
         $param{tool_define} ||= $param{atsim_define};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/atsim_compile.log",
                     fails=>$param{fails},
                     cmd=>[($ENV{VERILATOR_ATSIM}||"atsim"),
@@ -995,7 +996,7 @@ sub compile {
     elsif ($param{ghdl}) {
         $param{tool_define} ||= $param{ghdl_define};
         mkdir $self->{ghdl_work_dir};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/ghdl_compile.log",
                     fails=>$param{fails},
                     cmd=>[($ENV{VERILATOR_GHDL}||"ghdl"),
@@ -1013,7 +1014,7 @@ sub compile {
     }
     elsif ($param{vcs}) {
         $param{tool_define} ||= $param{vcs_define};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/vcs_compile.log",
                     fails=>$param{fails},
                     cmd=>[($ENV{VERILATOR_VCS}||"vcs"),
@@ -1029,7 +1030,7 @@ sub compile {
     }
     elsif ($param{nc}) {
         $param{tool_define} ||= $param{nc_define};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         my @more_args;
         if ($self->vhdl) {
             ((my $ts = $param{top_shell_filename}) =~ s!\.v!!);
@@ -1051,7 +1052,7 @@ sub compile {
     }
     elsif ($param{ms}) {
         $param{tool_define} ||= $param{ms_define};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/ms_compile.log",
                     fails=>$param{fails},
                     cmd=>[("vlib $self->{obj_dir}/work && "),
@@ -1067,7 +1068,7 @@ sub compile {
     }
     elsif ($param{iv}) {
         $param{tool_define} ||= $param{iv_define};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         my @cmd = (($ENV{VERILATOR_IVERILOG}||"iverilog"),
                    @{$param{iv_flags}},
                    @{$param{iv_flags2}},
@@ -1084,7 +1085,7 @@ sub compile {
     }
     elsif ($param{xsim}) {
         $param{tool_define} ||= $param{xsim_define};
-        $self->_make_top();
+        $self->_make_top() if $param{make_top_shell};
         $self->_run(logfile=>"$self->{obj_dir}/xsim_compile.log",
                     fails=>$param{fails},
                     cmd=>[($ENV{VERILATOR_XVLOG}||"xvlog"),
@@ -1747,6 +1748,7 @@ sub _make_main {
     print $fh "#include \"verilated.h\"\n";
     print $fh "#include \"systemc.h\"\n" if $self->sc;
     print $fh "#include \"verilated_fst_c.h\"\n" if $self->{trace} && $self->{trace_format} eq 'fst-c';
+    print $fh "#include \"verilated_fst_sc.h\"\n" if $self->{trace} && $self->{trace_format} eq 'fst-sc';
     print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-c';
     print $fh "#include \"verilated_vcd_sc.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-sc';
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
@@ -1808,6 +1810,7 @@ sub _make_main {
         $fh->print("#if VM_TRACE\n");
         $fh->print("    contextp->traceEverOn(true);\n");
         $fh->print("    std::unique_ptr<VerilatedFstC> tfp{new VerilatedFstC};\n") if $self->{trace_format} eq 'fst-c';
+        $fh->print("    std::unique_ptr<VerilatedFstSc> tfp{new VerilatedFstSc};\n") if $self->{trace_format} eq 'fst-sc';
         $fh->print("    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};\n") if $self->{trace_format} eq 'vcd-c';
         $fh->print("    std::unique_ptr<VerilatedVcdSc> tfp{new VerilatedVcdSc};\n") if $self->{trace_format} eq 'vcd-sc';
         $fh->print("    topp->trace(tfp.get(), 99);\n");

@@ -15,7 +15,7 @@ AC_INIT([Verilator],[4.201 devel],
 # Then 'make maintainer-dist'
 
 AC_CONFIG_HEADER(src/config_build.h)
-AC_CONFIG_FILES(Makefile docs/Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)
+AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)
 
 # Version
 AC_MSG_RESULT([configuring for $PACKAGE_STRING])

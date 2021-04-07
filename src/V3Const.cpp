@@ -1531,7 +1531,7 @@ private:
         // Return false if referenced, or tree too deep to be worth it, or side effects
         if (!nodep) return true;
         if (level > 2) return false;
-        if (nodep->isPure()) return false;  // For example a $fgetc can't be reordered
+        if (!nodep->isPure()) return false;  // For example a $fgetc can't be reordered
         if (VN_IS(nodep, NodeVarRef) && VN_CAST(nodep, NodeVarRef)->varp() == varp) return false;
         return (varNotReferenced(nodep->nextp(), varp, level + 1)
                 && varNotReferenced(nodep->op1p(), varp, level + 1)

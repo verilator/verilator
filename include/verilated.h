@@ -93,20 +93,20 @@ class VerilatedVcdSc;
 // Basic types
 
 // clang-format off
-//                   P          // Packed data of bit type (C/S/I/Q/W)
-typedef vluint8_t    CData;     ///< Data representing 'bit' of 1-8 packed bits
-typedef vluint16_t   SData;     ///< Data representing 'bit' of 9-16 packed bits
-typedef vluint32_t   IData;     ///< Data representing 'bit' of 17-32 packed bits
-typedef vluint64_t   QData;     ///< Data representing 'bit' of 33-64 packed bits
-typedef vluint32_t   EData;     ///< Data representing one element of WData array
-typedef EData        WData;     ///< Data representing >64 packed bits (used as pointer)
-//      float        F          // No typedef needed; Verilator uses float
-//      double       D          // No typedef needed; Verilator uses double
-//      string       N          // No typedef needed; Verilator uses string
+//    P                     // Packed data of bit type (C/S/I/Q/W)
+using CData = vluint8_t;    ///< Data representing 'bit' of 1-8 packed bits
+using SData = vluint16_t;   ///< Data representing 'bit' of 9-16 packed bits
+using IData = vluint32_t;   ///< Data representing 'bit' of 17-32 packed bits
+using QData = vluint64_t;   ///< Data representing 'bit' of 33-64 packed bits
+using EData = vluint32_t;   ///< Data representing one element of WData array
+using WData = EData;        ///< Data representing >64 packed bits (used as pointer)
+//    F     = float;        // No typedef needed; Verilator uses float
+//    D     = double;       // No typedef needed; Verilator uses double
+//    N     = std::string;  // No typedef needed; Verilator uses string
 // clang-format on
 
-typedef const WData* WDataInP;  ///< 'bit' of >64 packed bits as array input to a function
-typedef WData* WDataOutP;  ///< 'bit' of >64 packed bits as array output from a function
+using WDataInP = const WData*;  ///< 'bit' of >64 packed bits as array input to a function
+using WDataOutP = WData*;  ///< 'bit' of >64 packed bits as array output from a function
 
 enum VerilatedVarType : vluint8_t {
     VLVT_UNKNOWN = 0,

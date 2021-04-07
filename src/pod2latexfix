@@ -23,7 +23,7 @@ my $header =
      ."\n"
      ."\\setlength{\\parindent}{0pt} \\setlength{\\parskip}{\\baselineskip}\n"
      ."\n"
-     ."\\title{\\includegraphics[width=6cm]{docs/verilator_logo.png}\\\\ ${Opt_DistTitle}}\n"
+     ."\\title{\\includegraphics[width=6cm]{docs/_static/verilator_logo.png}\\\\ ${Opt_DistTitle}}\n"
      ."\\date{${Opt_DistDate}}\n"
      ."\\author{https:\/\/verilator.org}\n"
      ."\\lhead[${Opt_DistTitle}]{${Opt_DistTitle}}\n"

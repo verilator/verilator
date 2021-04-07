@@ -128,7 +128,7 @@ template <> void VerilatedTrace<VerilatedFst>::set_time_resolution(const std::st
 /// Create a FST dump file in C standalone (no SystemC) simulations.
 /// Also derived for use in SystemC simulations.
 
-class VerilatedFstC final {
+class VerilatedFstC VL_NOT_FINAL {
     VerilatedFst m_sptrace;  // Trace file being created
 
     // CONSTRUCTORS
