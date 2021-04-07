@@ -419,20 +419,25 @@ void VerilatedVcd::dumpHeader() {
             printIndent(1);
             // Find character after name end
             const char* sp = np;
-            while (*sp && *sp != ' ' && *sp != '\t' && *sp != '\f') sp++;
+            while (*sp && *sp != ' ' && *sp != '\t' && !(*sp & '\x80')) sp++;
 
-            if (*sp == '\f') {
-                printStr("$scope struct ");
-            } else {
-                printStr("$scope module ");
-            }
+            printStr("$scope ");
+            if (*sp & '\x80') {
+                switch (*sp & 0x7f) {
+                case VLT_TRACE_SCOPE_STRUCT: printStr("struct "); break;
+                case VLT_TRACE_SCOPE_INTERFACE: printStr("interface "); break;
+                case VLT_TRACE_SCOPE_UNION: printStr("union "); break;
+                default: printStr("module ");
+                }
+            } else
+                printStr("module ");
 
             for (; *np && *np != ' ' && *np != '\t'; np++) {
                 if (*np == '[') {
                     printStr("(");
                 } else if (*np == ']') {
                     printStr(")");
-                } else if (*np != '\f') {
+                } else if (!(*np & '\x80')) {
                     *m_writep++ = *np;
                 }
             }
