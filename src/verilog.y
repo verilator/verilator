@@ -272,7 +272,8 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
     }
 
 //#define DBG(x)
-#define DBG(x)  std::cerr << std::dec << __LINE__ << " " << #x << "=" << std::hex << (x) << std::endl;
+#define DBG(x) \
+    std::cerr << std::dec << __LINE__ << " " << #x << "=" << std::hex << (x) << std::endl;
 
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
     static int toldonce = 0;
