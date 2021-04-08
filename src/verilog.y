@@ -1292,7 +1292,18 @@ list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 	;
 
 portAndTag<nodep>:
-		/* empty */				{ $$ = nullptr; } // null port
+		/* empty */
+			{ $$ = new AstPort(CRELINE(), PINNUMINC(), "");
+			  AstVar* varp = new AstVar(CRELINE(), AstVarType::PORT, "", VFlagChildDType(), 
+			                            new AstBasicDType(CRELINE(), LOGIC_IMPLICIT));
+			  varp->declDirection(VDirection::INPUT);
+			  varp->direction(VDirection::INPUT);
+			  varp->ansi(false);
+			  varp->declTyped(true);
+			  varp->trace(false);
+			  $$ = $$->addNext(varp);
+			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)");
+			  DBG($$); } // 1st ',' is nullptr in case it's just a regular separator comma}
 	|	port					{ $$ = $1; }
 	|	vlTag port				{ $$ = $2; }  // Tag will associate with previous port
 	;
