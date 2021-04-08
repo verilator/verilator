@@ -272,8 +272,7 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
     }
 
 //#define DBG(x)
-#define DBG(x) \
-    std::cerr << std::dec << __LINE__ << " " << #x << "=" << std::hex << (x) << std::endl;
+#define DBG(x) UINFO(0, " " << #x << "=" << std::hex << (x) << std::endl);
 
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
     static int toldonce = 0;
@@ -1284,54 +1283,38 @@ paramPortDeclOrArg<nodep>:	// IEEE: param_assignment + parameter_port_declaratio
 portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + empty
 		/* empty */				{ $$ = nullptr; }
 	|	'(' ')'					{ $$ = nullptr; }
-	|	'(' list_of_commas ')'	{ $$ = nullptr; $2->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
+	|	'(' {VARRESET_LIST(PORT); DBG($1);} list_of_portsCommasE list_of_ports ')'
+    			{ $$ = AstNode::addNextNull($3, $4); VARRESET_NONLIST(UNKNOWN); }
 	//			// .* expanded from module_declaration
 	//UNSUP	'(' yP_DOTSTAR ')'				{ UNSUP }
-	|	start_with_commas_or_none {VARRESET_LIST(PORT); DBG($1);} list_of_ports
-			{
-			  // if $1 is non-null (have some null ports) it will be added before list_of_ports
-			  $$ = $1->addNextNull($3); DBG($$);
-			  VARRESET_NONLIST(UNKNOWN); }
 	;
 
-start_with_commas_or_none<nodep>:
-		'('						{ $$ = nullptr; DBG($$);}
-	|	'(' list_of_commas
-			{ PINNUMINC();
-			  //VARDTYPE_NDECL(new AstBasicDType($<fl>2, LOGIC_IMPLICIT));
-			  VARDTYPE_NDECL(nullptr);
-			  // if we got here we have one more comma in the beginning
-			  // add it before any further potential null ports on $2
-			  $$ = $2->addNextNull(VARDONEP($2, nullptr, nullptr));  DBG($$);
-			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
+list_of_portsCommasE<nodep>:	// IEEE: part of list_of_ports; zero or more commas for null port handling
+		/* empty */				{ $$ = nullptr; }
+	|	list_of_portsCommas			{ $$ = $1; }
 	;
 
-list_of_commas<nodep>:	// one or more commas for null port handling
-		',' 		{ $$ = nullptr;  DBG($$); } // 1st ',' is nullptr in case it's just a regular separator comma
-	|	list_of_commas ','
-			{ //PINNUMINC();
+list_of_portsCommas<nodep>:	// IEEE: part of list_of_ports; one or more commas for null port handling
+		list_of_portsNullComma			{ $$ = $1; }
+	|	list_of_portsCommas list_of_portsNullComma	{ $$ = AstNode::addNextNull($1, $2); }
+	;
+
+list_of_portsNullComma<nodep>:
+		','	{ //PINNUMINC();
 			  //VARDTYPE_NDECL(new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
+			  VARDECL(PORT);
 			  VARDTYPE_NDECL(nullptr);
+			  $1->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)");
 			  // Add one more null port. if $1 is nullptr we are still protected
-			  DBG($1); auto *po = new AstPort($<fl>1,PINNUMINC(),""); DBG(po); auto *p = VARDONEP(po, nullptr, nullptr); DBG(p); $$ = $1->addNextNull(p); DBG($$);
-			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
+//			  DBG($1); auto *po = new AstPort($<fl>1,PINNUMINC(),""); DBG(po); auto *p = VARDONEP(po, nullptr, nullptr); DBG(p); $$ = $1->addNextNull(p); DBG($$);
+			  $$ = GRAMMARP->createVariable($1, "", nullptr, nullptr);
+			  DBG($$); } // 1st ',' is nullptr in case it's just a regular separator comma
 	;
-
-list_of_ports_comma<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
-		portAndTag	list_of_commas							{ $$ = $1->addNextNull($2); DBG($$);} // add $2 null port if not nullptr
-	|	list_of_ports_comma portAndTag	list_of_commas		{ $$ = $1->addNextNull($2)->addNextNull($3); DBG($$);} // add all potential ports and null ports
-	;
-
+        
 list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
-		portAndTag	')'			{ $$ = $1; }
-	|	list_of_ports_comma portAndTag	')'		{ $$ = $1->addNextNull($2); }
-	|	list_of_ports_comma ')'
-			{ PINNUMINC();
-			  //VARDTYPE_NDECL(new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
-			  VARDTYPE_NDECL(nullptr);
-			  // if we got here we have one more trailing comma
-			  $$ = $1->addNextNull(VARDONEP($1, nullptr, nullptr)); DBG($$);
-			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
+		portAndTag				{ $$ = $1; }
+	|	list_of_ports ',' portAndTag		{ $$ = $1->addNextNull($3); }
+//		portAndTag list_of_portsCommasE		{ $$ = AstNode::addNextNull($1, $2); }
 	;
 
 portAndTag<nodep>:
