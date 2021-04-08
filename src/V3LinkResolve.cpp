@@ -227,6 +227,9 @@ private:
                        = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
                                            uvxrp->cloneTree(false)));
+            } else if (auto* fromp = VN_CAST(basefromp, LambdaArgRef)) {
+                nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
+                                           fromp->cloneTree(false)));
             } else if (AstMemberSel* fromp = VN_CAST(basefromp, MemberSel)) {
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::MEMBER_BASE,
                                            fromp->cloneTree(false)));
