@@ -1299,7 +1299,7 @@ portAndTagEmpty<nodep>:
 			{ int p = PINNUMINC();
 			  string pn = "__pinNumber"+cvtToStr(p);
 			  $$ = new AstPort(CRELINE(), p, pn);
-			  AstVar* varp = new AstVar(CRELINE(), AstVarType::PORT, pn, VFlagChildDType(), 
+			  AstVar* varp = new AstVar(CRELINE(), AstVarType::PORT, pn, VFlagChildDType(),
 			                            new AstBasicDType(CRELINE(), LOGIC_IMPLICIT));
 			  varp->declDirection(VDirection::INPUT);
 			  varp->direction(VDirection::INPUT);
