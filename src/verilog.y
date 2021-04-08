@@ -270,9 +270,6 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
         if (nodep) nodep->deleteTree(); \
     }
 
-//#define DBG(x)
-#define DBG(x) UINFO(0, " " << #x << "=" << std::hex << (x) << std::endl);
-
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
     static int toldonce = 0;
     fileline->v3error(
@@ -1293,8 +1290,10 @@ list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 
 portAndTag<nodep>:
 		/* empty */
-			{ $$ = new AstPort(CRELINE(), PINNUMINC(), "");
-			  AstVar* varp = new AstVar(CRELINE(), AstVarType::PORT, "", VFlagChildDType(), 
+			{ int p = PINNUMINC();
+			  string pn = "__pinNumber"+cvtToStr(p);
+			  $$ = new AstPort(CRELINE(), p, pn);
+			  AstVar* varp = new AstVar(CRELINE(), AstVarType::PORT, pn, VFlagChildDType(), 
 			                            new AstBasicDType(CRELINE(), LOGIC_IMPLICIT));
 			  varp->declDirection(VDirection::INPUT);
 			  varp->direction(VDirection::INPUT);
@@ -1302,8 +1301,7 @@ portAndTag<nodep>:
 			  varp->declTyped(true);
 			  varp->trace(false);
 			  $$ = $$->addNext(varp);
-			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)");
-			  DBG($$); } // 1st ',' is nullptr in case it's just a regular separator comma}
+			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
 	|	port					{ $$ = $1; }
 	|	vlTag port				{ $$ = $2; }  // Tag will associate with previous port
 	;
