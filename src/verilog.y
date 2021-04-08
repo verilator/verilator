@@ -1278,17 +1278,23 @@ paramPortDeclOrArg<nodep>:	// IEEE: param_assignment + parameter_port_declaratio
 
 portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + empty
 		/* empty */				{ $$ = nullptr; }
+	|	'(' ')'					{ $$ = nullptr; }
 	//			// .* expanded from module_declaration
 	//UNSUP	'(' yP_DOTSTAR ')'				{ UNSUP }
 	|	'(' {VARRESET_LIST(PORT);} list_of_ports ')'	{ $$ = $3; VARRESET_NONLIST(UNKNOWN); }
 	;
 
-list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
-		portAndTag				{ $$ = $1; }
-	|	list_of_ports ',' portAndTag		{ $$ = $1->addNextNull($3); }
+list_of_portsEmpty<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
+		portAndTagEmpty			{ $$ = $1; }
+	|	list_of_portsEmpty ',' portAndTagEmpty		{ $$ = $1->addNextNull($3); }
 	;
 
-portAndTag<nodep>:
+list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
+		portAndTag			{ $$ = $1; }
+	|	list_of_portsEmpty ',' portAndTagEmpty		{ $$ = $1->addNextNull($3); }
+	;
+
+portAndTagEmpty<nodep>:
 		/* empty */
 			{ int p = PINNUMINC();
 			  string pn = "__pinNumber"+cvtToStr(p);
@@ -1302,7 +1308,11 @@ portAndTag<nodep>:
 			  varp->trace(false);
 			  $$ = $$->addNext(varp);
 			  $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
-	|	port					{ $$ = $1; }
+	|	portAndTag				{ $$ = $1; }
+	;
+
+portAndTag<nodep>:
+		port					{ $$ = $1; }
 	|	vlTag port				{ $$ = $2; }  // Tag will associate with previous port
 	;
 

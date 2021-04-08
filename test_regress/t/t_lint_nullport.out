@@ -1,10 +1,7 @@
-%Warning-NULLPORT: t/t_lint_nullport.v:3:11: Null port on module (perhaps extraneous comma)
-    3 | module t1();
-      |           ^
-                   ... Use "/* verilator lint_off NULLPORT */" and lint_on around source to disable this message.
 %Warning-NULLPORT: t/t_lint_nullport.v:17:13: Null port on module (perhaps extraneous comma)
    17 | module t5(a,);
       |             ^
+                   ... Use "/* verilator lint_off NULLPORT */" and lint_on around source to disable this message.
 %Warning-NULLPORT: t/t_lint_nullport.v:21:13: Null port on module (perhaps extraneous comma)
    21 | module t6(a,,);
       |             ^
