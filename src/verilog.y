@@ -30,7 +30,6 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <stack>
-#include <string>
 
 #define YYERROR_VERBOSE 1  // For prior to Bison 3.6
 #define YYINITDEPTH 10000  // Older bisons ignore YYMAXDEPTH
@@ -1282,43 +1281,19 @@ paramPortDeclOrArg<nodep>:	// IEEE: param_assignment + parameter_port_declaratio
 
 portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + empty
 		/* empty */				{ $$ = nullptr; }
-	|	'(' ')'					{ $$ = nullptr; }
-	|	'(' {VARRESET_LIST(PORT); DBG($1);} list_of_portsCommasE list_of_ports ')'
-    			{ $$ = AstNode::addNextNull($3, $4); VARRESET_NONLIST(UNKNOWN); }
 	//			// .* expanded from module_declaration
 	//UNSUP	'(' yP_DOTSTAR ')'				{ UNSUP }
+	|	'(' {VARRESET_LIST(PORT);} list_of_ports ')'	{ $$ = $3; VARRESET_NONLIST(UNKNOWN); }
 	;
 
-list_of_portsCommasE<nodep>:	// IEEE: part of list_of_ports; zero or more commas for null port handling
-		/* empty */				{ $$ = nullptr; }
-	|	list_of_portsCommas			{ $$ = $1; }
-	;
-
-list_of_portsCommas<nodep>:	// IEEE: part of list_of_ports; one or more commas for null port handling
-		list_of_portsNullComma			{ $$ = $1; }
-	|	list_of_portsCommas list_of_portsNullComma	{ $$ = AstNode::addNextNull($1, $2); }
-	;
-
-list_of_portsNullComma<nodep>:
-		','	{ //PINNUMINC();
-			  //VARDTYPE_NDECL(new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
-			  VARDECL(PORT);
-			  VARDTYPE_NDECL(nullptr);
-			  $1->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)");
-			  // Add one more null port. if $1 is nullptr we are still protected
-//			  DBG($1); auto *po = new AstPort($<fl>1,PINNUMINC(),""); DBG(po); auto *p = VARDONEP(po, nullptr, nullptr); DBG(p); $$ = $1->addNextNull(p); DBG($$);
-			  $$ = GRAMMARP->createVariable($1, "", nullptr, nullptr);
-			  DBG($$); } // 1st ',' is nullptr in case it's just a regular separator comma
-	;
-        
 list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 		portAndTag				{ $$ = $1; }
 	|	list_of_ports ',' portAndTag		{ $$ = $1->addNextNull($3); }
-//		portAndTag list_of_portsCommasE		{ $$ = AstNode::addNextNull($1, $2); }
 	;
 
 portAndTag<nodep>:
-		port					{ $$ = $1; }
+		/* empty */				{ $$ = nullptr; } // null port
+	|	port					{ $$ = $1; }
 	|	vlTag port				{ $$ = $2; }  // Tag will associate with previous port
 	;
 
