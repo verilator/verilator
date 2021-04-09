@@ -4,7 +4,7 @@
 // any use, without warranty, 2021 by Udi Finkelstein.
 // SPDX-License-Identifier: CC0-1.0
 
-`/* verilator lint_off MULTITOP */
+/* verilator lint_off MULTITOP */
 // First, test we haven't broken normal ports
 module t1();
 endmodule
