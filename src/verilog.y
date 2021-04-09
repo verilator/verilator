@@ -1297,10 +1297,10 @@ list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 portAndTagE<nodep>:
 		/* empty */
 			{ int p = PINNUMINC();
-			  string pn = "__pinNumber"+cvtToStr(p);
-			  $$ = new AstPort(CRELINE(), p, pn);
-			  AstVar* varp = new AstVar(CRELINE(), AstVarType::PORT, pn, VFlagChildDType(),
-			                            new AstBasicDType(CRELINE(), LOGIC_IMPLICIT));
+			   const string name = "__pinNumber" + cvtToStr(p);
+			  $$ = new AstPort{CRELINE(), p, name};
+			  AstVar* varp = new AstVar{CRELINE(), AstVarType::PORT, name, VFlagChildDType{},
+			                            new AstBasicDType{CRELINE(), LOGIC_IMPLICIT}};
 			  varp->declDirection(VDirection::INPUT);
 			  varp->direction(VDirection::INPUT);
 			  varp->ansi(false);
