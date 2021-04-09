@@ -4729,6 +4729,17 @@ using a regular always may be more appropriate.
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
+=item NULLPORT
+
+Warns that a null port was detected in the module definition port list. Null
+ports are empty placeholders, i.e. either one ore more commas at the beginning
+or the end of a module port list, or two or more consecutive commas in the
+middle of a module port list. A null port cannot be accessed within the module,
+but when instantiating the module by port order, it is treated like a regular
+port and any wire connected to it is left unconnected.
+This is considered a warning because this feature is rarely used, and is mostly
+the result of a typing error such as a dangling comma at the end of a port list.
+
 =item PINCONNECTEMPTY
 
 Warns that an instance has a pin which is connected to .pin_name(),
