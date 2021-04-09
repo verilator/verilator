@@ -1284,17 +1284,17 @@ portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + em
 	|	'(' {VARRESET_LIST(PORT);} list_of_ports ')'	{ $$ = $3; VARRESET_NONLIST(UNKNOWN); }
 	;
 
-list_of_portsEmpty<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
-		portAndTagEmpty			{ $$ = $1; }
-	|	list_of_portsEmpty ',' portAndTagEmpty		{ $$ = $1->addNextNull($3); }
+list_of_portsE<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
+		portAndTagE			{ $$ = $1; }
+	|	list_of_portsE ',' portAndTagE		{ $$ = $1->addNextNull($3); }
 	;
 
 list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 		portAndTag			{ $$ = $1; }
-	|	list_of_portsEmpty ',' portAndTagEmpty		{ $$ = $1->addNextNull($3); }
+	|	list_of_portsE ',' portAndTagE		{ $$ = $1->addNextNull($3); }
 	;
 
-portAndTagEmpty<nodep>:
+portAndTagE<nodep>:
 		/* empty */
 			{ int p = PINNUMINC();
 			  string pn = "__pinNumber"+cvtToStr(p);
