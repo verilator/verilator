@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+# pylint: disable=C0112,C0114,C0116,C0301,R0903
+# -*- Python -*- See copyright, etc below
+######################################################################
+
+import argparse
+import os
+import re
+
+#######################################################################
+
+
+class VlSphinxFix:
+    debug = 0
+    SkipBasenames = {}
+
+    def process(self, path):
+        if os.path.isdir(path):
+            for basefile in os.listdir(path):
+                file = os.path.join(path, basefile)
+                if ((basefile != ".") and (basefile != "..")
+                        and basefile not in self.SkipBasenames
+                        and not os.path.islink(file)):
+                    self.process(file)
+        elif re.search(r'\.(html|tex)$', path):
+            self._edit(path)
+
+    def _edit(self, filename):
+        is_html = re.search(r'\.(html)$', filename)
+        with open(filename) as fhr:
+            origfile = fhr.read()
+            wholefile = origfile
+            # Option doesn't like spaces, so we use
+            # :option:`/*verilator&32;metacomment*/`
+            wholefile = re.sub(r'verilator-32-', r'verilator-', wholefile)
+            if is_html:
+                wholefile = re.sub(r'&amp;32;', r'&nbsp;', wholefile)
+                wholefile = re.sub(r'&amp;96;', r'`', wholefile)
+            else:
+                wholefile = re.sub(r'&amp;32;', r' ', wholefile)
+                wholefile = re.sub(r'&amp;96;', r'`', wholefile)
+            if wholefile != origfile:
+                if self.debug:
+                    print("Edit %s" % filename)
+                tempname = filename + ".tmp"
+                with open(tempname, "w") as fhw:
+                    fhw.write(wholefile)
+                os.rename(tempname, filename)
+
+
+#######################################################################
+
+parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description="""Post-process Sphinx HTML.""",
+    epilog=
+    """ Copyright 2021-2021 by Wilson Snyder.  This package is free software;
+you can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License Version 3 or the Perl Artistic License
+Version 2.0.
+
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
+
+parser.add_argument('--debug',
+                    action='store_const',
+                    const=9,
+                    help='enable debug')
+parser.add_argument('path', help='path to edit')
+Args = parser.parse_args()
+
+o = VlSphinxFix()
+o.debug = Args.debug
+o.process(Args.path)
+
+######################################################################
+# Local Variables:
+# compile-command: "./vl_sphinx_fix --debug _build"
+# End:

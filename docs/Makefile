@@ -5,24 +5,25 @@
 #
 # Code available from: https://verilator.org
 #
-#*****************************************************************************
-#
 # Copyright 2003-2021 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
-#****************************************************************************/
+######################################################################
 #
 # This file is intended only to be called from the top-level Verilator Makefile.
 
-#### Start of system configuration section. ####
-
-DOXYGEN = doxygen
 RST2HTML = rst2html
+PYTHON3 = python3
+DOXYGEN = doxygen
+SPHINXOPTS ?= -c guide
+SPHINXBUILD ?= sphinx-build
 
-#### End of system configuration section. ####
+SOURCEDIR = .
+BUILDDIR = _build
+
 ######################################################################
 
 .SUFFIXES:
@@ -30,8 +31,48 @@ RST2HTML = rst2html
 default:
 	@echo "error: make not supported here, run 'make docs' from Verilator top-level"
 
+######################################################################
+# Intermediate rules
+
+vl-extract: ../bin/verilator ../Changes
+	mkdir -p _build/gen
+	$(PYTHON3) bin/vl_sphinx_extract ../bin/verilator
+	sed 's/`/\&96;/g' < ../Changes > _build/gen/Changes
+
+######################################################################
+# HTML
+
+htmled:
+	$(MAKE) vl-extract
+	$(MAKE) html
+	$(PYTHON3) bin/vl_sphinx_fix _build
+
+server: htmled
+	cd _build/html && $(PYTHON3) -m http.server
+
 %.html: %.rst
 	$(RST2HTML) $< $@
+
+######################################################################
+# PDF
+
+.PHONY: verilator.pdf
+
+verilator.pdf: pdf
+pdf:
+	$(MAKE) vl-extract
+	$(MAKE) latex
+	$(PYTHON3) bin/vl_sphinx_fix _build
+	$(MAKE) -C _build/latex
+	cp _build/latex/verilator.pdf ..
+
+######################################################################
+
+html latex clean linkcheck spelling::
+	$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
+
+help:
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
 
 clean mostlyclean distclean maintainer-clean::
 	rm -f $(SCRIPTS) *.tmp
@@ -42,9 +83,3 @@ clean mostlyclean distclean maintainer-clean::
 
 distclean maintainer-clean::
 	rm -f *.info* *.1 *.html *.pdf $(INFOS)
-	rm -f Makefile
-
-.PHONY: doxygen
-
-doxygen:
-	$(DOXYGEN) doxygen.config

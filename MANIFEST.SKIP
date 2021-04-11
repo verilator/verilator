@@ -42,6 +42,7 @@ docs/.*\.html$
 docs/_build/
 docs/clang-format.txt$
 docs/doxygen-doc/.*
+docs/spelling.txt
 examples/xml_py/copied/
 examples/xml_py/graph.*
 sonar-project.properties

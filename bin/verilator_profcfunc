@@ -214,15 +214,12 @@ the functions are then transformed, assuming the user used Verilator's
 --prof-cfuncs, and a report printed showing the percentage of time, etc,
 in each Verilog block.
 
-=head1 ARGUMENTS
+For documentation see L<https://verilator.org/verilator_doc.html>.
 
-=over 4
+=head1 ARGUMENT SUMMARY
 
-=item --help
-
-Displays this message and program version and exits.
-
-=back
+    <filename>  Input file (gprof.out)
+    --help      Display this help
 
 =head1 DISTRIBUTION
 
@@ -235,13 +232,11 @@ Version 2.0.
 
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-=head1 AUTHORS
-
-Wilson Snyder <wsnyder@wsnyder.org>
-
 =head1 SEE ALSO
 
 C<verilator>
+
+and L<https://verilator.org/verilator_doc.html> for detailed documentation.
 
 =cut
 
