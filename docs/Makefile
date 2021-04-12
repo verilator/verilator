@@ -21,7 +21,7 @@ DOXYGEN = doxygen
 SPHINXOPTS ?= -c guide
 SPHINXBUILD ?= sphinx-build
 
-SOURCEDIR = .
+SOURCEDIR = guide
 BUILDDIR = _build
 
 ######################################################################

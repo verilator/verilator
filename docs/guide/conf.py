@@ -41,7 +41,7 @@ copyright = '2021 by Wilson Snyder, under LGPL-3.0 or Artistic-2.0'
 author = 'Wilson Snyder'
 
 # The master toctree document.
-master_doc = "guide/index"
+master_doc = "index"
 
 version = get_vlt_version()
 release = get_vlt_version()
@@ -120,7 +120,7 @@ html_context = {
     'display_github': True,
     'github_user': 'verilator',
     'github_repo': 'verilator',
-    'github_version': 'master/docs/',
+    'github_version': 'master/docs/guide/',
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
