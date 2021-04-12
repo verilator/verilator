@@ -20,14 +20,16 @@ import sphinx_rtd_theme
 
 
 def get_vlt_version():
-    filename = "../../src/config_rev.h"
+    filename = "../../Makefile"
     with open(filename) as fh:
         for line in fh:
-            match = re.search(r'= "([a-z0-9.]+)', line)
+            match = re.search(r"PACKAGE_VERSION_NUMBER *= *([a-z0-9.]+)", line)
             if match:
                 return match.group(1)
     return "unknown"
 
+def setup(app):
+    app.add_css_file('css/vlt_sphinx.css')
 
 # ----------------------------------------------------------------------
 # -- Project information
@@ -63,7 +65,7 @@ extensions = []
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
-    '_build', 'Thumbs.db', '.DS_Store', 'internals.rst', 'xml.rst'
+    '_build', 'Thumbs.db', '.DS_Store', 'internals.rst', 'xml.rst', 'gen/ex_*'
 ]
 
 # Warn about refs

@@ -54,6 +54,9 @@ POD2TEXT = pod2text
 MKINSTALLDIRS = $(SHELL) $(srcdir)/src/mkinstalldirs
 PERL = @PERL@
 
+# Version (for docs/guide/conf.py)
+PACKAGE_VERSION_NUMBER = @PACKAGE_VERSION_NUMBER@
+
 # Destination prefix for RPMs
 DESTDIR =
 
