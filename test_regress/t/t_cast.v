@@ -4,6 +4,13 @@
 // any use, without warranty, 2011 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+interface intf;
+   typedef logic [7:0] octet;
+   typedef octet [1:0] word;
+   octet [1:0] octets;
+   word [1:0] words;
+endinterface
+
 module t;
 
    typedef logic [3:0] mc_t;
@@ -12,6 +19,9 @@ module t;
    typedef struct packed {
       logic [15:0] data;
    } packed_t;
+   typedef struct packed {
+      logic [31:0] data;
+   } packed2_t;
 
    typedef enum [15:0] {
       ONE = 1
@@ -19,12 +29,15 @@ module t;
 
    packed_t pdata;
    packed_t pdata_reg;
+   packed2_t pdata2_reg;
    assign pdata.data = 16'h1234;
    logic [7:0] logic8bit;
    assign logic8bit = $bits(logic8bit)'(pdata >> 8);
 
    mc_t o;
    enum_t e;
+
+   intf the_intf();
 
    logic [15:0] allones = 16'hffff;
    parameter FOUR = 4;
@@ -78,6 +91,14 @@ module t;
 
       o = tocast_t'(4'b1);
       if (o != 4'b1) $stop;
+
+      the_intf.octets = 16'd1;
+      pdata_reg = packed_t'(the_intf.octets);
+      if (pdata_reg.data != 16'd1) $stop;
+
+      the_intf.words = 32'd1;
+      pdata2_reg = packed2_t'(the_intf.words);
+      if (pdata2_reg.data != 32'd1) $stop;
 
       if (15'h6cec != outa) $stop;
       if (27'h7ffecec != mida) $stop;
