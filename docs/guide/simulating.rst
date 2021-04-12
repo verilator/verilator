@@ -304,7 +304,7 @@ The :command:`verilator_gantt` program may then be run to transform the
 saved profiling file into a nicer visual format and produce some related
 statistics.
 
-.. figure:: ../_static/fig_gantt_min.png
+.. figure:: figures/fig_gantt_min.png
 
    Example verilator_gantt output, as viewed with GTKWave.
 

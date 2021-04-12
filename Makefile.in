@@ -139,10 +139,13 @@ DISTFILES1 = $(INFOS) .gitignore \
 	docs/CONTRIBUTING.rst \
 	docs/CONTRIBUTORS \
 	docs/Makefile \
-	docs/_static/* \
+	docs/_static/*.png \
+	docs/_static/css/* \
 	docs/bin/* \
 	docs/gen/* \
-	docs/guide/* \
+	docs/guide/*.py \
+	docs/guide/*.rst \
+	docs/guide/figures/* \
 	docs/install.rst \
 	docs/internals.rst \
 	docs/internals.rst \
