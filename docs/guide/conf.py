@@ -28,8 +28,10 @@ def get_vlt_version():
                 return match.group(1)
     return "unknown"
 
+
 def setup(app):
     app.add_css_file('css/vlt_sphinx.css')
+
 
 # ----------------------------------------------------------------------
 # -- Project information
