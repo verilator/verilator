@@ -488,5 +488,3 @@ or "`ifdef`"'s may break other tools.
 
    Re-enable waveform tracing for all future signals or instances that are
    declared.
-
-

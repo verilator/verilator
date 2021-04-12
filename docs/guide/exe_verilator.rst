@@ -1620,4 +1620,3 @@ The grammar of configuration commands is as follows:
 
    For tracing_off, instances below any module in the files/ranges
    specified will also not be traced.
-

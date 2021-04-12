@@ -14,5 +14,3 @@ point to the kit:
      # See above; don't do this if using an OS-distributed Verilator
      export VERILATOR_ROOT=/path/to/where/verilator/was/installed
      export PATH=$VERILATOR_ROOT/bin:$PATH
-
-

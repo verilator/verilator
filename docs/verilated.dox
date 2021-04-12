@@ -39,4 +39,3 @@ PREDEFINED             = \
                          "VL_REQUIRES()=" \
                          "VL_THREAD_LOCAL=" \
                          "__restrict=" \
-
