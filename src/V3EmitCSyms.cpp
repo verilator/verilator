@@ -298,11 +298,12 @@ class EmitCSyms final : EmitCBaseVisitor {
         m_scopes.emplace_back(std::make_pair(nodep, m_modp));
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
+            string type = VN_IS(nodep->modp(), Package) ? "SCOPE_OTHER" : "SCOPE_MODULE";
             string name_dedot = AstNode::dedotName(nodep->shortName());
             int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
                 std::make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_dedot,
-                                                        timeunit, "SCOPE_MODULE")));
+                                                        timeunit, type)));
         }
     }
     virtual void visit(AstScopeName* nodep) override {
