@@ -119,7 +119,7 @@ html_context = {
     'display_github': True,
     'github_user': 'verilator',
     'github_repo': 'verilator',
-    'github_version': 'master/docs/user/',
+    'github_version': 'master/docs/',
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -129,6 +129,9 @@ html_static_path = ['../_static']
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 html_show_sphinx = False
+
+html_copy_source = False
+html_show_sourcelink = False
 
 html_use_index = False
 
