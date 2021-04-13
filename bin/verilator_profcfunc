@@ -214,7 +214,8 @@ the functions are then transformed, assuming the user used Verilator's
 --prof-cfuncs, and a report printed showing the percentage of time, etc,
 in each Verilog block.
 
-For documentation see L<https://verilator.org/verilator_doc.html>.
+For documentation see
+L<https://verilator.org/guide/latest/exe_verilator_profcfuncs.html>.
 
 =head1 ARGUMENT SUMMARY
 
@@ -236,7 +237,8 @@ SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 C<verilator>
 
-and L<https://verilator.org/verilator_doc.html> for detailed documentation.
+and L<https://verilator.org/guide/latest/exe_verilator_profcfuncs.html> for
+detailed documentation.
 
 =cut
 

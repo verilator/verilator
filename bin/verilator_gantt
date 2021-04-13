@@ -539,7 +539,8 @@ Verilator_gantt creates a visual representation to help analyze Verilator
 multithreaded simulation performance, by showing when each macro-task
 starts and ends, and showing when each thread is busy or idle.
 
-For documentation see L<https://verilator.org/verilator_doc.html>.
+For documentation see
+L<https://verilator.org/guide/latest/exe_verilator_gantt.html>.
 
 =head1 ARGUMENT SUMMARY
 
@@ -564,7 +565,8 @@ SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 C<verilator>
 
-and L<https://verilator.org/verilator_doc.html> for detailed documentation.
+and L<https://verilator.org/guide/latest/exe_verilator_gantt.html> for
+detailed documentation.
 
 =cut
 

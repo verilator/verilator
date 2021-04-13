@@ -263,8 +263,8 @@ For documentation see L<https://verilator.org/verilator_doc.html>.
 =head1 ARGUMENT SUMMARY
 
 This is a short summary of the arguments to the "verilator" executable.
-See L<https://verilator.org/verilator_doc.html> for the detailed
-descriptions of these arguments.
+See L<https://verilator.org/guide/latest/exe_verilator.html> for the
+detailed descriptions of these arguments.
 
 =for VL_SPHINX_EXTRACT "_build/gen/args_verilator.rst"
 
@@ -432,8 +432,8 @@ descriptions of these arguments.
 
 This is a short summary of the simulation runtime arguments, i.e. for the
 final Verilated simulation runtime models.  See
-L<https://verilator.org/verilator_doc.html> for the detailed description of
-these arguments.
+L<https://verilator.org/guide/latest/exe_verilator.html> for the detailed
+description of these arguments.
 
 =for VL_SPHINX_EXTRACT "_build/gen/args_verilated.rst"
 

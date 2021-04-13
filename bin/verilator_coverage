@@ -160,7 +160,8 @@ verilator_coverage - Verilator coverage analyzer
 
 Verilator_coverage processes Verilated model-generated coverage reports.
 
-For documentation see L<https://verilator.org/verilator_doc.html>.
+For documentation see
+L<https://verilator.org/guide/latest/exe_verilator_coverage.html>.
 
 =head1 ARGUMENT SUMMARY
 
@@ -199,7 +200,8 @@ C<verilator>, C<lcov>
 
 L<verilator_coverage --help> which is the source for this document.
 
-and L<https://verilator.org/verilator_doc.html> for detailed documentation.
+and L<https://verilator.org/guide/latest/exe_verilator_coverage.html> for
+detailed documentation.
 
 =cut
 
