@@ -42,12 +42,7 @@ vl-extract: ../bin/verilator ../Changes
 ######################################################################
 # HTML
 
-htmled:
-	$(MAKE) vl-extract
-	$(MAKE) html
-	$(PYTHON3) bin/vl_sphinx_fix _build
-
-server: htmled
+server: html
 	cd _build/html && $(PYTHON3) -m http.server
 
 %.html: %.rst
@@ -68,8 +63,10 @@ pdf:
 
 ######################################################################
 
-html latex clean linkcheck spelling::
+html latex linkcheck spelling::
+	$(MAKE) vl-extract
 	$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
+	$(PYTHON3) bin/vl_sphinx_fix _build
 
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
