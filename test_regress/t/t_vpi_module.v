@@ -6,9 +6,7 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-`ifdef USE_VPI_NOT_DPI
-//We call it via $c so we can verify DPI isn't required - see bug572
-`else
+`ifndef USE_VPI_NOT_DPI
 import "DPI-C" context function int mon_check();
 `endif
 
@@ -43,9 +41,6 @@ extern "C" int mon_check();
 
    // Test loop
    initial begin
-`ifdef VERILATOR
-      status = $c32("mon_check()");
-`endif
 `ifdef IVERILOG
       status = $mon_check();
 `endif
