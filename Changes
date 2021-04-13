@@ -34,6 +34,7 @@ Verilator 4.201 devel
 * Fix interface localparam access (#2859). [Todd Strader]
 * Fix Cygwin example compile issues (#2856). [Mark Shaw]
 * Fix select of with index variable (#2880). [Alexander Grobman]
+* Fix cmake version number to be numeric (#2881). [Yuri Victorovich]
 
 
 Verilator 4.200 2021-03-12
@@ -387,7 +388,7 @@ Verilator 4.028 2020-02-08
 * Add loc column location in XML (replaces fl). (#2122) [Pieter Kapsenberg]
 * Add error on misused define. [Topa Tota]
 * Add parameter to set maximum signal width. (#2082) [Øyvind Harboe]
-* Add warning on genvar in normal for loop. (#2143) [yurivict]
+* Add warning on genvar in normal for loop. (#2143) [Yuri Victorovich]
 * Fix VPI scope naming for public modules. [Nandu Raj]
 * Fix FST tracing of enums inside structs. [fsiegle]
 * Fix WIDTH warning on </<= of narrower value. (#2141) [agrobman]
