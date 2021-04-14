@@ -442,6 +442,16 @@ List Of Warnings
    Other tools with similar warnings: Veriable's forbid_defparam_rule.
 
 
+.. option:: DEPRECATED
+
+   Warning that a Verilator metacomment, or configuration file command uses
+   syntax that has been deprecated.  Upgrade the code to the replacement
+   that should be suggested by the warning message.
+
+   Ignoring this warning will only suppress the lint check, it will
+   simulate correctly.
+
+
 .. option:: DETECTARRAY
 
    .. TODO better example
@@ -500,6 +510,16 @@ List Of Warnings
    Finally, rare, more difficult cases can be debugged like a C++ program;
    either enter :command:`gdb` and use its tracing facilities, or edit the
    generated C++ code to add appropriate prints to see what is going on.
+
+
+.. option:: ENDCAPSULATED
+
+   Warns that a class member is declared is local or protected, but is
+   being accessed from outside that class (if local) or a derrived class
+   (if protected).
+
+   Ignoring this warning will only suppress the lint check, it will
+   simulate correctly.
 
 
 .. option:: ENDLABEL
@@ -926,6 +946,29 @@ List Of Warnings
    due to the generate/if condition being false.
 
    This error may be disabled with a lint_off PINNOTFOUND metacomment.
+
+
+.. option:: PORTSHORT
+
+   Warns that an output port is connected to a constant.
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 5-6
+
+       module a;
+         sub sub
+            (.out(1'b1));  //<--- error PORTSHORT
+       endmodule
+
+       module sub (output out);
+         assign out = '1;
+       endmodule
+
+   In the example above, out is an output but is connected to a constant
+   implying it is an input.
+
+   This error may be disabled with a lint_off PORTSHORT metacomment.
 
 
 .. option:: PKGNODECL
