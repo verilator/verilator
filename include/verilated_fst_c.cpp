@@ -105,6 +105,7 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
 #ifdef VL_TRACE_FST_WRITER_THREAD
     fstWriterSetParallelMode(m_fst, 1);
 #endif
+    fullDump(true);  // First dump must be full for fst
 
     m_curScope.clear();
 
