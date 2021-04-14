@@ -104,7 +104,8 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     fstWriterSetTimescaleFromString(m_fst, timeResStr().c_str());  // lintok-begin-on-ref
 #ifdef VL_TRACE_FST_WRITER_THREAD
     fstWriterSetParallelMode(m_fst, 1);
-#endif
+#endif    
+    fullDump(true);  // First dump must be full for fst
 
     m_curScope.clear();
 
