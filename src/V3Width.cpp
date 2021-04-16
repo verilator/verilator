@@ -6026,8 +6026,15 @@ private:
         toDtp = toDtp->skipRefToEnump();
         fromDtp = fromDtp->skipRefToEnump();
         if (toDtp == fromDtp) return COMPATIBLE;
-        bool fromNumericable = VN_IS(fromDtp, BasicDType) || VN_IS(fromDtp, EnumDType)
-                               || VN_IS(fromDtp, NodeUOrStructDType);
+        AstNodeDType* fromBaseDtp = fromDtp;
+        while (AstPackArrayDType* packp = VN_CAST(fromBaseDtp, PackArrayDType)) {
+            fromBaseDtp = packp->subDTypep();
+            while (AstRefDType* refp = VN_CAST(fromBaseDtp, RefDType)) {
+                fromBaseDtp = refp->refDTypep();
+            }
+        }
+        bool fromNumericable = VN_IS(fromBaseDtp, BasicDType) || VN_IS(fromBaseDtp, EnumDType)
+                               || VN_IS(fromBaseDtp, NodeUOrStructDType);
         // UNSUP unpacked struct/unions (treated like BasicDType)
         if (VN_IS(toDtp, BasicDType) || VN_IS(toDtp, NodeUOrStructDType)) {
             if (fromNumericable) return COMPATIBLE;
