@@ -42,12 +42,13 @@ extern "C" int mon_check();
    reg [2:1]    twoone          `PUBLIC_FLAT_RW;
    reg          onetwo [1:2]    `PUBLIC_FLAT_RW;
    reg [2:1]    fourthreetwoone[4:3] `PUBLIC_FLAT_RW;
+   reg [1:0] [1:0] twobytwo     `PUBLIC_FLAT_RW;
 
    integer      status;
 
 `ifdef IVERILOG
    // stop icarus optimizing signals away
-   wire 	redundant = onebit | onetwo[1] | twoone | fourthreetwoone[3];
+   wire 	redundant = onebit | onetwo[1] | twoone | fourthreetwoone[3] | twobytwo;
 `endif
 
    wire         subin  `PUBLIC_FLAT_RD;
