@@ -98,6 +98,7 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
         V3Number m_bitPolarity;  // Coefficient of each bit
         static int widthOfRef(AstVarRef* refp) {
             if (AstWordSel* selp = VN_CAST(refp->backp(), WordSel)) return selp->width();
+            if (AstCCast* castp = VN_CAST(refp->backp(), CCast)) return castp->width();
             return refp->width();
         }
 
