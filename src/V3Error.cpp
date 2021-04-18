@@ -242,7 +242,8 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
                           << " */\" and lint_on around source to disable this message." << endl;
             }
             if (s_errorCode.dangerous()) {
-                std::cerr << warnMore() << "*** See the manual before disabling this,\n";
+                std::cerr << warnMore() << "*** See https://verilator.org/warn/"
+                          << s_errorCode.ascii() << " before disabling this,\n";
                 std::cerr << warnMore() << "else you may end up with different sim results."
                           << endl;
             }
@@ -267,10 +268,10 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
             if (!inFatal) {
                 inFatal = true;
                 if (s_tellManual == 1) {
-                    std::cerr
-                        << warnMore()
-                        << "... See the manual and https://verilator.org for more assistance."
-                        << endl;
+                    std::cerr << warnMore()
+                              << "... See the manual at https://verilator.org/verilator_doc.html "
+                                 "for more assistance."
+                              << endl;
                     s_tellManual = 2;
                 }
 #ifndef V3ERROR_NO_GLOBAL_

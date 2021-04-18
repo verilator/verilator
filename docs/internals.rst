@@ -707,7 +707,7 @@ Testing
 =======
 
 For an overview of how to write a test see the BUGS section of the
-Verilator primary manual.
+`Verilator Manual <https://verilator.org/verilator_doc.html>`_.
 
 It is important to add tests for failures as well as success (for
 example to check that an error message is correctly triggered).
