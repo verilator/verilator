@@ -2,6 +2,7 @@
                                            : ... Suggest use of always_latch for intentional latches
    18 | always @(reset or en or a or b)
       | ^~~~~~
+                ... For warning description see https://verilator.org/warn/LATCH?v=4.201
                 ... Use "/* verilator lint_off LATCH */" and lint_on around source to disable this message.
 %Warning-COMBDLY: t/t_lint_latch_bad_3.v:70:12: Delayed assignments (<=) in non-clocked (non flop or latch) block
                                               : ... Suggest blocking assignments (=)

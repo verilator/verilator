@@ -2,6 +2,7 @@
                                             : ... In instance t
    11 | typedef paramed_class_t#(real, 1) paramed_class_double_t;
       |                          ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Error-UNSUPPORTED: t/t_class_vparam.v:13:56: Unsupported: class parameters
                                             : ... In instance t
    13 | virtual class vclass #(type CTYPE_t = arg_class_t, int I = 0);

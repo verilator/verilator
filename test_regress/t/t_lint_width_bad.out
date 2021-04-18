@@ -2,6 +2,7 @@
                                           : ... In instance t
    17 |    localparam [3:0]     XS = 'hx;   
       |                         ^~
+                ... For warning description see https://verilator.org/warn/WIDTH?v=4.201
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
 %Warning-WIDTH: t/t_lint_width_bad.v:47:19: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
                                           : ... In instance t.p4

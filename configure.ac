@@ -21,6 +21,7 @@ AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk incl
 AC_MSG_RESULT([configuring for $PACKAGE_STRING])
 PACKAGE_VERSION_NUMBER=`AS_ECHO("$PACKAGE_VERSION") | sed 's/ .*//g'`
 AC_SUBST(PACKAGE_VERSION_NUMBER)
+AC_DEFINE_UNQUOTED([PACKAGE_VERSION_NUMBER_STRING],["$PACKAGE_VERSION_NUMBER"],[Package version as a number])
 
 # Ignore automake flags passed by Ubuntu builds
 AC_ARG_ENABLE([dependency-tracking],

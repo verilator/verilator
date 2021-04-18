@@ -5,6 +5,7 @@
                       t/t_lint_multidriven_bad.v:24:7: ... Location of other driving block
    24 |       mem[a0] <= d0;
       |       ^~~
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=4.201
                       ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
 %Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:19:22: Signal has multiple driving blocks with different clocking: 'out2'
                       t/t_lint_multidriven_bad.v:35:7: ... Location of first driving block

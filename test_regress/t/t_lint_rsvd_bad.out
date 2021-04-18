@@ -1,6 +1,7 @@
 %Error-UNSUPPORTED: t/t_lint_rsvd_bad.v:7:1: Unsupported: Verilog 2001-config reserved word not implemented: 'config'
     7 | config cfgBad;
       | ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Error: t/t_lint_rsvd_bad.v:7:8: syntax error, unexpected IDENTIFIER
     7 | config cfgBad;
       |        ^~~~~~

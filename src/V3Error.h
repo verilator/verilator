@@ -44,6 +44,7 @@ public:
         EC_FATALEXIT,   // Kill the program, suppress with --quiet-exit
         EC_FATALSRC,    // Kill the program, for internal source errors
         EC_ERROR,       // General error out, can't suppress
+        EC_FIRST_NAMED,  // Just a code so the program knows where to start info/errors
         // Boolean information we track per-line, but aren't errors
         I_CELLDEFINE,   // Inside cell define from `celldefine/`endcelldefine
         I_COVERAGE,     // Coverage is on/off from /*verilator coverage_on/off*/
@@ -151,7 +152,7 @@ public:
         // clang-format off
         static const char* const names[] = {
             // Leading spaces indicate it can't be disabled.
-            " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR",
+            " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
             " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
             // Errors
@@ -235,6 +236,7 @@ class V3Error final {
 
 private:
     static bool s_describedWarnings;  // Told user how to disable warns
+    static bool s_describedWeb;  // Told user to see web
     static std::array<bool, V3ErrorCode::_ENUM_MAX>
         s_describedEachWarn;  // Told user specifics about this warning
     static std::array<bool, V3ErrorCode::_ENUM_MAX>

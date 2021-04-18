@@ -2,5 +2,6 @@
                                                  : ... In instance t.b9k.c9
    12 |    localparam SOMEP = {BITS{1'b0}};
       |                            ^
+                      ... For warning description see https://verilator.org/warn/WIDTHCONCAT?v=4.201
                       ... Use "/* verilator lint_off WIDTHCONCAT */" and lint_on around source to disable this message.
 %Error: Exiting due to

@@ -1,6 +1,7 @@
 %Warning-PINNOCONNECT: t/t_inst_missing_bad.v:9:22: Cell pin is not connected: '__pinNumber2'
     9 |    sub sub (.ok(ok), , .nc());
       |                      ^
+                       ... For warning description see https://verilator.org/warn/PINNOCONNECT?v=4.201
                        ... Use "/* verilator lint_off PINNOCONNECT */" and lint_on around source to disable this message.
 %Warning-PINCONNECTEMPTY: t/t_inst_missing_bad.v:9:25: Cell pin connected by name with empty reference: 'nc'
     9 |    sub sub (.ok(ok), , .nc());

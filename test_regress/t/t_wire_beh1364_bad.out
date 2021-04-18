@@ -2,6 +2,7 @@
                                                : ... In instance t
    25 |       w = '0;   
       |       ^
+                    ... For error description see https://verilator.org/warn/PROCASSWIRE?v=4.201
 %Error-PROCASSWIRE: t/t_wire_beh1364_bad.v:26:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'o'
                                                : ... In instance t
    26 |       o = '0;   

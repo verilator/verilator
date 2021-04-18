@@ -1,2 +1,3 @@
 %Error-UNSUPPORTED: --main not usable with SystemC. Suggest see examples for sc_main().
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Error: Exiting due to

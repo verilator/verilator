@@ -17,6 +17,7 @@ Verilator 4.201 devel
 
 **Minor:**
 
+* Add an URL on warnings to point to the manual's description.
 * Add EOFNEWLINE warning when missing a newline at EOF.
 * Changed TIMESCALEMOD from error into a warning.
 * Verilated signals now use VlWide and VlPacked in place of C arrays.

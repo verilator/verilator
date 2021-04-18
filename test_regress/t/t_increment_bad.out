@@ -1,6 +1,7 @@
 %Error-UNSUPPORTED: t/t_increment_bad.v:15:31: Unsupported: Incrementation in this context.
    15 |       if (0 && test_string[pos++] != "e");
       |                               ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Error-UNSUPPORTED: t/t_increment_bad.v:16:19: Unsupported: Incrementation in this context.
    16 |       if (1 || pos-- != 1);
       |                   ^~

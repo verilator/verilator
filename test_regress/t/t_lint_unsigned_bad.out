@@ -2,5 +2,6 @@
                                                 : ... In instance t
    13 |       if (uns < 0) $stop;
       |               ^
+                   ... For warning description see https://verilator.org/warn/UNSIGNED?v=4.201
                    ... Use "/* verilator lint_off UNSIGNED */" and lint_on around source to disable this message.
 %Error: Exiting due to

@@ -6,6 +6,7 @@
                                           : ... In instance t
    10 |       for (j=0; P; j++)
       |       ^~~
+                ... For warning description see https://verilator.org/warn/WIDTH?v=4.201
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
 %Error: t/t_param_noval_bad.v:10:7: Non-genvar used in generate for: 'j'
                                   : ... In instance t

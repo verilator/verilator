@@ -2,5 +2,6 @@
                                            : ... In instance t.sub2
    18 |    wire [0:0] b = a;
       |                 ^
+                ... For warning description see https://verilator.org/warn/WIDTH?v=4.201
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
 %Error: Exiting due to

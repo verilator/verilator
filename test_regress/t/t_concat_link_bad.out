@@ -10,5 +10,6 @@
 %Warning-IMPLICIT: t/t_concat_link_bad.v:13:12: Signal definition not found, creating implicitly: 'bar_s'
    13 |     assign bar_s = {foo_s, foo_s}.f1;
       |            ^~~~~
+                   ... For warning description see https://verilator.org/warn/IMPLICIT?v=4.201
                    ... Use "/* verilator lint_off IMPLICIT */" and lint_on around source to disable this message.
 %Error: Exiting due to

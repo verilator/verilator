@@ -3,4 +3,5 @@
                                                 : ... Suggest try static cast
    13 |       $cast(q, aarray);
       |       ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=4.201
 %Error: Exiting due to

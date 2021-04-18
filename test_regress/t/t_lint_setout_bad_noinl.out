@@ -2,4 +2,5 @@
                                             : ... In instance t
    17 |       .cpu_if_timeout(1'b0)
       |        ^~~~~~~~~~~~~~
+                  ... For error description see https://verilator.org/warn/PORTSHORT?v=4.201
 %Error: Exiting due to

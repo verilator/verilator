@@ -1,5 +1,6 @@
 %Warning-DECLFILENAME: t/t_lint_declfilename.v:7:8: Filename 't_lint_declfilename' does not match MODULE name: 't'
     7 | module t;
       |        ^
+                       ... For warning description see https://verilator.org/warn/DECLFILENAME?v=4.201
                        ... Use "/* verilator lint_off DECLFILENAME */" and lint_on around source to disable this message.
 %Error: Exiting due to

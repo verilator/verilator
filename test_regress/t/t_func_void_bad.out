@@ -1,5 +1,6 @@
 %Warning-IGNOREDRETURN: t/t_func_void_bad.v:26:7: Ignoring return value of non-void function (IEEE 1800-2017 13.4.1)
    26 |       f1(20);
       |       ^~
+                        ... For warning description see https://verilator.org/warn/IGNOREDRETURN?v=4.201
                         ... Use "/* verilator lint_off IGNOREDRETURN */" and lint_on around source to disable this message.
 %Error: Exiting due to
