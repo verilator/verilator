@@ -382,7 +382,6 @@ void VHashSha256::selfTest() {
 string VName::dehash(const string& in) {
     static const char VHSH[] = "__Vhsh";
     static const size_t DOT_LEN = strlen("__DOT__");
-
     std::string dehashed;
 
     // Need to split 'in' into components separated by __DOT__, 'last_dot_pos'
