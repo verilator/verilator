@@ -388,7 +388,6 @@ string VName::dehash(const string& in) {
     // keeps track of the position after the most recently found instance of __DOT__
     for (string::size_type last_dot_pos = 0; last_dot_pos < in.size(); ) {
         const string::size_type next_dot_pos = in.find("__DOT__", last_dot_pos);
-
         // Two iterators defining the range between the last and next dots.
         auto search_begin = std::begin(in) + last_dot_pos;
         auto search_end = next_dot_pos == string::npos ? std::end(in)
