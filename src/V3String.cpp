@@ -427,7 +427,6 @@ string VName::dehash(const string& in) {
             last_dot_pos = string::npos;
         }
     }
-
     return dehashed.empty() ? in : dehashed;
 }
 
