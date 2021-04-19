@@ -22,6 +22,10 @@ import "DPI-C" function void dpi_print(input string somestring);
  `define PUBLIC_FLAT_RW
 `endif
 
+interface intf #(parameter int param `PUBLIC_FLAT_RD = 7);
+   logic [7:0] bytesig `PUBLIC_FLAT_RD;
+endinterface
+
 module t (/*AUTOARG*/
    // Inputs
    input clk                            `PUBLIC_FLAT_RD,
@@ -42,6 +46,8 @@ extern "C" int mon_check();
    reg [2:1]    twoone          `PUBLIC_FLAT_RW;
    reg          onetwo [1:2]    `PUBLIC_FLAT_RW;
    reg [2:1]    fourthreetwoone[4:3] `PUBLIC_FLAT_RW;
+   reg [1:0] [1:0] twobytwo     `PUBLIC_FLAT_RW;
+   int          theint          `PUBLIC_FLAT_RW;
 
    integer      status;
 
@@ -67,7 +73,7 @@ extern "C" int mon_check();
      status = mon_check();
 `endif
       if (status!=0) begin
-	 $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);
+	 $write("%%Error: t_vpi_get.cpp:%0d: C Test failed\n", status);
 	 $stop;
       end
       $write("*-* All Finished *-*\n");
@@ -76,8 +82,11 @@ extern "C" int mon_check();
 
 endmodule : t
 
-module sub (
+module sub #(
+   parameter int subparam `PUBLIC_FLAT_RD = 2
+) (
    input  subin  `PUBLIC_FLAT_RD,
    output subout `PUBLIC_FLAT_RD
 );
+   intf the_intf();
 endmodule : sub
