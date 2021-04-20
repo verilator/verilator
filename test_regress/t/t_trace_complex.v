@@ -78,6 +78,8 @@ module t (clk);
    p #(.PARAM(2)) p2 ();
    p #(.PARAM(3)) p3 ();
 
+   p #(.PARAM(4)) a_module_instantiation_with_a_very_long_name_that_once_its_signals_get_concatenated_and_inlined_will_almost_certainly_result_in_them_getting_hashed ();
+
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       v_strp <= ~v_strp;
