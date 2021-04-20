@@ -106,10 +106,14 @@ class ConstBitOpTreeVisitor final : public AstNVisitor {
             UASSERT_OBJ(bit < VL_QUADSIZE, m_refp,
                         "bit:" << bit << " is too big after V3Expand"
                                << " back:" << m_refp->backp());
-            if (bit >= m_bitPolarity.width()) {
+            if (bit >= m_bitPolarity.width()) {  // Need to expand m_bitPolarity
                 const V3Number oldPol = std::move(m_bitPolarity);
                 // oldPol.width() is 8, 16, or 32 because this visitor is called after V3Expand
-                const int newWidth = oldPol.width() * 2;
+                // newWidth is increased by 2x because
+                //  - CCast will cast to such bitwidth anyway
+                //  - can avoid frequent expansion
+                int newWidth = oldPol.width();
+                while (bit >= newWidth) newWidth *= 2;
                 m_bitPolarity = V3Number{m_refp, newWidth};
                 UASSERT_OBJ(newWidth == 16 || newWidth == 32 || newWidth == 64, m_refp,
                             "bit:" << bit << " newWidth:" << newWidth);
