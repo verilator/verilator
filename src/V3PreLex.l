@@ -120,6 +120,9 @@ bom             [\357\273\277]
     /* we win only because we both match to the end of the line so the length */
     /* is equal and we are first*/
 <INITIAL>"`pragma"{wsn}+"protect"[^\n\r]*[\n\r] { FL_FWDC; linenoInc();
+                          if (v3Global.opt.preprocOnly()) {
+                              return VP_TEXT;
+                          }
                           int res, yypos = 7; /* length of `pragma */
                           char *yyt = yytext;
                           yyt[yyleng] = 0; /* this is OK because the last char here is \n or \r */
