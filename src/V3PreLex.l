@@ -143,7 +143,7 @@ bom             [\357\273\277]
                           }
                         }
 <BASE64>[A-Za-z0-9+/]+[=]{0,2}[\n\r] {FL_FWDC; linenoInc();
-                        if ((yyleng-1) <= length && ((yyleng & 3) == 1)) {
+                        if ((yyourleng()-1) <= size_t(length) && ((yyleng & 3) == 1)) {
                             bytes -= (yyleng-1)/4*3;
                         } else {
                             yyerrorf("BASE64 line too long");
