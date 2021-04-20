@@ -49,9 +49,6 @@ void yyourtext(const char* textp, size_t size) {
     yyleng = size;
 }
 
-int length;
-int bytes = 0;
-
 // FL_FWD only tracks columns; preproc uses linenoInc() to track lines, so
 // insertion of a \n does not mess up line count
 #define FL_FWDC (LEXP->curFilelinep()->forwardToken(yytext, yyleng, false))
@@ -130,11 +127,11 @@ bom             [\357\273\277]
                           if ((res = sscanf(yyt, " protect %n", &yypos)) != 0)
                             yyerrorf("scanf failure");
                           yyt += yypos;
-                          if (bytes == 0) {
-                            res = sscanf(yyt, "encoding = (enctype = \"BASE64\", line_length = %d, bytes = %d)%n", &length, &bytes, &yypos);
+                          if (LEXP->m_protBytes == 0) {
+                            res = sscanf(yyt, "encoding = (enctype = \"BASE64\", line_length = %d, bytes = %d)%n", &LEXP->m_protLength, &LEXP->m_protBytes, &yypos);
                             if (res == 2)
                                 return VP_TEXT; /* silently skip it */
-                            bytes = 0;
+                            LEXP->m_protBytes = 0;
                           } else if ((strncmp(yyt, "key_block", 9) == 0) || (strncmp(yyt, "data_block", 10) == 0)) {
                             BEGIN(BASE64);
                             return VP_TEXT;
@@ -143,18 +140,18 @@ bom             [\357\273\277]
                           }
                         }
 <BASE64>[A-Za-z0-9+/]+[=]{0,2}[\n\r] {FL_FWDC; linenoInc();
-                        if ((yyourleng()-1) <= size_t(length) && ((yyleng & 3) == 1)) {
-                            bytes -= (yyleng-1)/4*3;
+                        if ((yyourleng()-1) <= size_t(LEXP->m_protLength) && ((yyleng & 3) == 1)) {
+                            LEXP->m_protBytes -= (yyleng-1)/4*3;
                         } else {
                             yyerrorf("BASE64 line too long");
                         }
                         if (yytext[yyleng-3] == '=')
-                            bytes++;
+                            LEXP->m_protBytes++;
                         if (yytext[yyleng-2] == '=')
-                            bytes++;
-                        if (bytes == 0) {
+                            LEXP->m_protBytes++;
+                        if (LEXP->m_protBytes == 0) {
                             BEGIN(INITIAL);
-                        } else if (bytes < 0)
+                        } else if (LEXP->m_protBytes < 0)
                             yyerrorf("BASE64 encoding corrupted");
                         /*return VP_TEXT;*/ }
 <INITIAL>"`pragma"{wsn}*[^\n\r]*  { FL_FWDC;

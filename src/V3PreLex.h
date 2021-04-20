@@ -170,6 +170,8 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     bool m_defQuote = false;  // Definition value inside quote
     string m_defValue;  // Definition value being built.
     int m_enterExit = 0;  // For VL_LINE, the enter/exit level
+    int m_protLength;
+    int m_protBytes = 0;
 
     // CONSTRUCTORS
     V3PreLex(V3PreProcImp* preimpp, FileLine* filelinep)
