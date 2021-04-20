@@ -23,6 +23,7 @@ import "DPI-C" function void dpi_print(input string somestring);
 `endif
 
 interface intf #(parameter int param `PUBLIC_FLAT_RD = 7);
+   localparam int lparam `PUBLIC_FLAT_RD = param + 1;
    logic [7:0] bytesig `PUBLIC_FLAT_RD;
 endinterface
 

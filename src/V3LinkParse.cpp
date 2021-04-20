@@ -218,6 +218,8 @@ private:
         if (v3Global.opt.publicFlatRW()) {
             switch (nodep->varType()) {
             case AstVarType::VAR:  // FALLTHRU
+            case AstVarType::GPARAM:  // FALLTHRU
+            case AstVarType::LPARAM:  // FALLTHRU
             case AstVarType::PORT:  // FALLTHRU
             case AstVarType::WIRE: nodep->sigUserRWPublic(true); break;
             default: break;

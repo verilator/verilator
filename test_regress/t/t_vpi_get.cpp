@@ -171,6 +171,8 @@ int mon_check_props() {
            {"sub.subout", {1, vpiOutput, 1, vpiPort}, {0, 0, 0, 0}},
            {"sub.subparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
            {"sub.the_intf.bytesig", {8, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
+           {"sub.the_intf.param", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+           {"sub.the_intf.lparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
            {NULL, {0, 0, 0, 0}, {0, 0, 0, 0}}};
     struct params* value = values;
     while (value->signal) {
