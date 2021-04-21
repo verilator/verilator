@@ -168,6 +168,7 @@ int mon_check_props() {
            {"testout", {24, vpiOutput, 0, vpiPort}, {0, 0, 0, 0}},
            {"sub.subin", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
            {"sub.subout", {1, vpiOutput, 1, vpiPort}, {0, 0, 0, 0}},
+           {"twobytwo", {2, vpiNoDirection, 0, vpiMemory}, {2, vpiNoDirection, 0, vpiMemoryWord}},
            {NULL, {0, 0, 0, 0}, {0, 0, 0, 0}}};
     struct params* value = values;
     while (value->signal) {
