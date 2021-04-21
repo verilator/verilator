@@ -92,7 +92,7 @@ int mon_check() {
 
     TestVpiHandle topmod;
     // both somepackage and t exist at the top level
-    while (topmod = vpi_scan(it)) {
+    while ((topmod = vpi_scan(it))) {
         if (vpi_get(vpiType, topmod) == vpiModule) break;
     }
     CHECK_RESULT_NZ(topmod);
