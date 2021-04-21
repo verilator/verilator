@@ -36,6 +36,7 @@ Verilator 4.201 devel
 * Fix Cygwin example compile issues (#2856). [Mark Shaw]
 * Fix select of with index variable (#2880). [Alexander Grobman]
 * Fix cmake version number to be numeric (#2881). [Yuri Victorovich]
+* Fix V3Premit infinite loop on always read-and-write (#2898). [Raynard Qiao]
 
 
 Verilator 4.200 2021-03-12
