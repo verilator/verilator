@@ -171,29 +171,51 @@ public:
     vlsint32_t num() const { return m_num; }
 };
 
-class VerilatedVpioParam final : public VerilatedVpio {
-    const VerilatedVar* m_varp;
-    const VerilatedScope* m_scopep;
+class VerilatedVpioVarBase VL_NOT_FINAL : public VerilatedVpio {
+protected:
+    const VerilatedVar* m_varp = nullptr;
+    const VerilatedScope* m_scopep = nullptr;
+    const VerilatedRange& get_range() const {
+        // Determine number of dimensions and return outermost
+        return (m_varp->dims() > 1) ? m_varp->unpacked() : m_varp->packed();
+    }
 
 public:
-    VerilatedVpioParam(const VerilatedVar* varp, const VerilatedScope* scopep)
+    VerilatedVpioVarBase(const VerilatedVar* varp, const VerilatedScope* scopep)
         : m_varp{varp}
         , m_scopep{scopep} {}
-    virtual ~VerilatedVpioParam() override = default;
-
-    static VerilatedVpioParam* castp(vpiHandle h) {
-        return dynamic_cast<VerilatedVpioParam*>(reinterpret_cast<VerilatedVpio*>(h));
+    explicit VerilatedVpioVarBase(const VerilatedVpioVarBase* varp) {
+        if (varp) {
+            m_varp = varp->m_varp;
+            m_scopep = varp->m_scopep;
+        }
     }
-    virtual vluint32_t type() const override { return vpiParameter; }
+    static VerilatedVpioVarBase* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioVarBase*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
     const VerilatedVar* varp() const { return m_varp; }
-    void* varDatap() const { return m_varp->datap(); }
     const VerilatedScope* scopep() const { return m_scopep; }
+    virtual vluint32_t size() const override { return get_range().elements(); }
+    virtual const VerilatedRange* rangep() const override { return &get_range(); }
     virtual const char* name() const override { return m_varp->name(); }
     virtual const char* fullname() const override {
         static VL_THREAD_LOCAL std::string t_out;
         t_out = std::string(m_scopep->name()) + "." + name();
         return t_out.c_str();
     }
+};
+
+class VerilatedVpioParam final : public VerilatedVpioVarBase {
+public:
+    VerilatedVpioParam(const VerilatedVar* varp, const VerilatedScope* scopep)
+        : VerilatedVpioVarBase(varp, scopep) {}
+    virtual ~VerilatedVpioParam() override = default;
+
+    static VerilatedVpioParam* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioParam*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    virtual vluint32_t type() const override { return vpiParameter; }
+    void* varDatap() const { return m_varp->datap(); }
 };
 
 class VerilatedVpioRange final : public VerilatedVpio {
@@ -251,9 +273,7 @@ public:
     virtual const char* fullname() const override { return m_scopep->name(); }
 };
 
-class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpio {
-    const VerilatedVar* m_varp = nullptr;
-    const VerilatedScope* m_scopep = nullptr;
+class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
     vluint8_t* m_prevDatap = nullptr;  // Previous value of data, for cbValueChange
     union {
         vluint8_t u8[4];
@@ -263,23 +283,17 @@ class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpio {
 protected:
     void* m_varDatap = nullptr;  // varp()->datap() adjusted for array entries
     vlsint32_t m_index = 0;
-    const VerilatedRange& get_range() const {
-        // Determine number of dimensions and return outermost
-        return (m_varp->dims() > 1) ? m_varp->unpacked() : m_varp->packed();
-    }
 
 public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
-        : m_varp{varp}
-        , m_scopep{scopep} {
+        : VerilatedVpioVarBase(varp, scopep) {
         m_mask.u32 = VL_MASK_I(varp->packed().elements());
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();
     }
-    explicit VerilatedVpioVar(const VerilatedVpioVar* varp) {
+    explicit VerilatedVpioVar(const VerilatedVpioVar* varp)
+        : VerilatedVpioVarBase(varp) {
         if (varp) {
-            m_varp = varp->m_varp;
-            m_scopep = varp->m_scopep;
             m_mask.u32 = varp->m_mask.u32;
             m_entSize = varp->m_entSize;
             m_varDatap = varp->m_varDatap;
@@ -295,22 +309,12 @@ public:
     static VerilatedVpioVar* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioVar*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    const VerilatedVar* varp() const { return m_varp; }
-    const VerilatedScope* scopep() const { return m_scopep; }
     vluint32_t mask() const { return m_mask.u32; }
     vluint8_t mask_byte(int idx) { return m_mask.u8[idx & 3]; }
     vluint32_t entSize() const { return m_entSize; }
     vluint32_t index() const { return m_index; }
     virtual vluint32_t type() const override {
         return (varp()->dims() > 1) ? vpiMemory : vpiReg;  // but might be wire, logic
-    }
-    virtual vluint32_t size() const override { return get_range().elements(); }
-    virtual const VerilatedRange* rangep() const override { return &get_range(); }
-    virtual const char* name() const override { return m_varp->name(); }
-    virtual const char* fullname() const override {
-        static VL_THREAD_LOCAL std::string t_out;
-        t_out = std::string(m_scopep->name()) + "." + name();
-        return t_out.c_str();
     }
     void* prevDatap() const { return m_prevDatap; }
     void* varDatap() const { return m_varDatap; }
@@ -1433,7 +1437,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
     VL_VPI_ERROR_RESET_();
     switch (type) {
     case vpiLeftRange: {
-        if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
+        if (VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object)) {
             if (VL_UNLIKELY(!vop->rangep())) return nullptr;
             return (new VerilatedVpioConst(vop->rangep()->left()))->castVpiHandle();
         } else if (VerilatedVpioRange* vop = VerilatedVpioRange::castp(object)) {
@@ -1446,7 +1450,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
         return nullptr;
     }
     case vpiRightRange: {
-        if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
+        if (VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object)) {
             if (VL_UNLIKELY(!vop->rangep())) return nullptr;
             return (new VerilatedVpioConst(vop->rangep()->right()))->castVpiHandle();
         } else if (VerilatedVpioRange* vop = VerilatedVpioRange::castp(object)) {
@@ -1464,7 +1468,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
         return (new VerilatedVpioConst(vop->index()))->castVpiHandle();
     }
     case vpiScope: {
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
+        VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
         return (new VerilatedVpioScope(vop->scopep()))->castVpiHandle();
     }
@@ -1568,18 +1572,18 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
     }
     case vpiDirection: {
         // By forthought, the directions already are vpi enumerated
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
+        VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return vop->varp()->vldir();
     }
     case vpiScalar:  // FALLTHRU
     case vpiVector: {
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
+        VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return (property == vpiVector) ^ (vop->varp()->dims() == 0);
     }
     case vpiSize: {
-        VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
+        VerilatedVpioVarBase* vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return vop->size();
     }
