@@ -90,9 +90,12 @@ int mon_check() {
     // modDump(it, 0);
     // return 1;
 
-    TestVpiHandle topmod = vpi_scan(it);
+    TestVpiHandle topmod;
+    // both somepackage and t exist at the top level
+    while (topmod = vpi_scan(it)) {
+        if (vpi_get(vpiType, topmod) == vpiModule) break;
+    }
     CHECK_RESULT_NZ(topmod);
-    CHECK_RESULT(vpi_get(vpiType, topmod), vpiModule);
 
     const char* t_name = vpi_get_str(vpiName, topmod);
     CHECK_RESULT_NZ(t_name);

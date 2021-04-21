@@ -168,8 +168,6 @@ class EmitCSyms final : EmitCBaseVisitor {
     void varHierarchyScopes(string scp) {
         while (!scp.empty()) {
             const auto scpit = m_vpiScopeCandidates.find(scp);
-            // QUESTION -- why do we search for scp but insert scpit->second.m_symName?
-            // in the case of t_vpi_module those are "TOP.t" and "t" respectively
             if ((scpit != m_vpiScopeCandidates.end())
                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
                 auto scopeNameit = m_scopeNames.find(scpit->second.m_symName);
