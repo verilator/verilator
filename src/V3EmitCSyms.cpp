@@ -789,7 +789,7 @@ void EmitCSyms::emitSymImp() {
                 }
             }
             //
-            if (pdim > 1 || udim > 1) {
+            if (udim > 1 && (pdim && udim)) {
                 puts("//UNSUP ");  // VerilatedImp can't deal with >2d or packed arrays
             }
             puts(protect("__Vscope_" + it->second.m_scopeName) + ".varInsert(__Vfinal,");

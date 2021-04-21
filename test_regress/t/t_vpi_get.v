@@ -54,7 +54,7 @@ extern "C" int mon_check();
 
 `ifdef IVERILOG
    // stop icarus optimizing signals away
-   wire 	redundant = onebit | onetwo[1] | twoone | fourthreetwoone[3];
+   wire 	redundant = onebit | onetwo[1] | twoone | fourthreetwoone[3] | twobytwo;
 `endif
 
    wire         subin  `PUBLIC_FLAT_RD;
